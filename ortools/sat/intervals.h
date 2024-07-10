@@ -582,7 +582,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // If recompute_cache_[t] is true, then we need to update all the cached
   // value for the task t in SynchronizeAndSetTimeDirection().
   bool recompute_all_cache_ = true;
-  std::vector<bool> recompute_cache_;
+  Bitset64<int> recompute_cache_;
 
   // Reason vectors.
   std::vector<Literal> literal_reason_;

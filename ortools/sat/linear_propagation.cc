@@ -603,6 +603,7 @@ bool LinearPropagator::AddConstraint(
     info.rev_rhs = upper_bound;
     info.rev_size = vars.size();
     infos_.push_back(std::move(info));
+    initial_rhs_.push_back(upper_bound);
   }
 
   id_to_propagation_count_.push_back(0);
@@ -643,20 +644,17 @@ bool LinearPropagator::AddConstraint(
             watcher_->CallOnNextPropagate(watcher_id_);
           }
 
-          // When a conditional precedence becomes enforced, add it. Note that
-          // we cannot just use rev_size == 2 since we might miss some
-          // explanation if a longer constraint only have 2 non-fixed variable
-          // now.. It is however okay not to push precedence involving a fixed
-          // variable, since these should be reflected in the variable domain
-          // anyway.
+          // When a conditional precedence becomes enforced, add it.
+          // Note that we only look at relation that were a "precedence" from
+          // the start, note the one currently of size 2 if we ignore fixed
+          // variables.
           if (status == EnforcementStatus::IS_ENFORCED) {
             const auto info = infos_[id];
-            if (info.initial_size == 2 && info.rev_size == 2 &&
-                info.all_coeffs_are_one) {
+            if (info.initial_size == 2 && info.all_coeffs_are_one) {
               const auto vars = GetVariables(info);
               precedences_->PushConditionalRelation(
                   enforcement_propagator_->GetEnforcementLiterals(enf_id),
-                  vars[0], vars[1], info.rev_rhs);
+                  vars[0], vars[1], initial_rhs_[id]);
             }
           }
         });
@@ -887,6 +885,39 @@ bool LinearPropagator::PropagateInfeasibleConstraint(int id,
                                                      integer_reason_);
 }
 
+void LinearPropagator::Explain(int id, IntegerValue propagation_slack,
+                               IntegerLiteral literal_to_explain,
+                               int trail_index,
+                               std::vector<Literal>* literals_reason,
+                               std::vector<int>* trail_indices_reason) {
+  literals_reason->clear();
+  trail_indices_reason->clear();
+  const ConstraintInfo& info = infos_[id];
+  enforcement_propagator_->AddEnforcementReason(info.enf_id, literals_reason);
+  reason_coeffs_.clear();
+
+  const auto coeffs = GetCoeffs(info);
+  const auto vars = GetVariables(info);
+  for (int i = 0; i < info.initial_size; ++i) {
+    const IntegerVariable var = vars[i];
+    if (PositiveVariable(var) == PositiveVariable(literal_to_explain.var)) {
+      continue;
+    }
+    const int index =
+        integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
+    if (index >= 0) {
+      trail_indices_reason->push_back(index);
+      if (propagation_slack > 0) {
+        reason_coeffs_.push_back(coeffs[i]);
+      }
+    }
+  }
+  if (propagation_slack > 0) {
+    integer_trail_->RelaxLinearReason(propagation_slack, reason_coeffs_,
+                                      trail_indices_reason);
+  }
+}
+
 bool LinearPropagator::PropagateOneConstraint(int id) {
   const auto [slack, num_to_push] = AnalyzeConstraint(id);
   if (slack < 0) return PropagateInfeasibleConstraint(id, slack);
@@ -927,39 +958,9 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
     const IntegerValue div = slack / coeff;
     const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
     const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(var, new_ub),
-            /*lazy_reason=*/[this, info, propagation_slack](
-                                IntegerLiteral i_lit, int trail_index,
-                                std::vector<Literal>* literal_reason,
-                                std::vector<int>* trail_indices_reason) {
-              literal_reason->clear();
-              trail_indices_reason->clear();
-              enforcement_propagator_->AddEnforcementReason(info.enf_id,
-                                                            literal_reason);
-              reason_coeffs_.clear();
-
-              const auto coeffs = GetCoeffs(info);
-              const auto vars = GetVariables(info);
-              for (int i = 0; i < info.initial_size; ++i) {
-                const IntegerVariable var = vars[i];
-                if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
-                  continue;
-                }
-                const int index =
-                    integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
-                if (index >= 0) {
-                  trail_indices_reason->push_back(index);
-                  if (propagation_slack > 0) {
-                    reason_coeffs_.push_back(coeffs[i]);
-                  }
-                }
-              }
-              if (propagation_slack > 0) {
-                integer_trail_->RelaxLinearReason(
-                    propagation_slack, reason_coeffs_, trail_indices_reason);
-              }
-            })) {
+    if (!integer_trail_->EnqueueWithLazyReason(
+            IntegerLiteral::LowerOrEqual(var, new_ub), id, propagation_slack,
+            this)) {
       return false;
     }
 

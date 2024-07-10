@@ -27,7 +27,8 @@ ThetaLambdaTree<IntegerType>::ThetaLambdaTree() = default;
 
 template <typename IntegerType>
 typename ThetaLambdaTree<IntegerType>::TreeNode
-ThetaLambdaTree<IntegerType>::ComposeTreeNodes(TreeNode left, TreeNode right) {
+ThetaLambdaTree<IntegerType>::ComposeTreeNodes(const TreeNode& left,
+                                               const TreeNode& right) {
   return {std::max(right.envelope, left.envelope + right.sum_of_energy_min),
           std::max(right.envelope_opt,
                    right.sum_of_energy_min +
@@ -213,11 +214,12 @@ IntegerType ThetaLambdaTree<IntegerType>::GetEnvelopeOf(int event) const {
 
 template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::RefreshNode(int node) {
+  TreeNode* tree = tree_.data();
   do {
     const int right = node | 1;
     const int left = right ^ 1;
     node >>= 1;
-    tree_[node] = ComposeTreeNodes(tree_[left], tree_[right]);
+    tree[node] = ComposeTreeNodes(tree[left], tree[right]);
   } while (node > 1);
 }
 

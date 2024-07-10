@@ -1149,22 +1149,24 @@ void IntegerTrail::RemoveLevelZeroBounds(
 }
 
 std::vector<Literal>* IntegerTrail::InitializeConflict(
-    IntegerLiteral integer_literal, const LazyReasonFunction& lazy_reason,
+    IntegerLiteral integer_literal, bool use_lazy_reason,
     absl::Span<const Literal> literals_reason,
     absl::Span<const IntegerLiteral> bounds_reason) {
   DCHECK(tmp_queue_.empty());
   std::vector<Literal>* conflict = trail_->MutableConflict();
-  if (lazy_reason == nullptr) {
+  if (use_lazy_reason) {
+    // We use the current trail index here.
+    conflict->clear();
+    const int trail_index = integer_trail_.size();
+    lazy_reasons_[trail_index].Explain(integer_literal, trail_index, conflict,
+                                       &tmp_queue_);
+  } else {
     conflict->assign(literals_reason.begin(), literals_reason.end());
     const int num_vars = var_lbs_.size();
     for (const IntegerLiteral& literal : bounds_reason) {
       const int trail_index = FindLowestTrailIndexThatExplainBound(literal);
       if (trail_index >= num_vars) tmp_queue_.push_back(trail_index);
     }
-  } else {
-    // We use the current trail index here.
-    conflict->clear();
-    lazy_reason(integer_literal, integer_trail_.size(), conflict, &tmp_queue_);
   }
   return conflict;
 }
@@ -1248,13 +1250,6 @@ bool IntegerTrail::SafeEnqueue(
   return Enqueue(i_lit, {}, tmp_cleaned_reason_);
 }
 
-bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
-                           absl::Span<const Literal> literal_reason,
-                           absl::Span<const IntegerLiteral> integer_reason) {
-  return EnqueueInternal(i_lit, nullptr, literal_reason, integer_reason,
-                         integer_trail_.size());
-}
-
 bool IntegerTrail::ConditionalEnqueue(
     Literal lit, IntegerLiteral i_lit, std::vector<Literal>* literal_reason,
     std::vector<IntegerLiteral>* integer_reason) {
@@ -1290,19 +1285,6 @@ bool IntegerTrail::ConditionalEnqueue(
   }
 
   return true;
-}
-
-bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
-                           absl::Span<const Literal> literal_reason,
-                           absl::Span<const IntegerLiteral> integer_reason,
-                           int trail_index_with_same_reason) {
-  return EnqueueInternal(i_lit, nullptr, literal_reason, integer_reason,
-                         trail_index_with_same_reason);
-}
-
-bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
-                           LazyReasonFunction lazy_reason) {
-  return EnqueueInternal(i_lit, lazy_reason, {}, {}, integer_trail_.size());
 }
 
 bool IntegerTrail::ReasonIsValid(
@@ -1394,15 +1376,15 @@ bool IntegerTrail::ReasonIsValid(
 void IntegerTrail::EnqueueLiteral(
     Literal literal, absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason) {
-  EnqueueLiteralInternal(literal, nullptr, literal_reason, integer_reason);
+  EnqueueLiteralInternal(literal, false, literal_reason, integer_reason);
 }
 
 void IntegerTrail::EnqueueLiteralInternal(
-    Literal literal, LazyReasonFunction lazy_reason,
+    Literal literal, bool use_lazy_reason,
     absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason) {
   DCHECK(!trail_->Assignment().LiteralIsAssigned(literal));
-  DCHECK(lazy_reason != nullptr ||
+  DCHECK(!use_lazy_reason ||
          ReasonIsValid(literal, literal_reason, integer_reason));
   if (integer_search_levels_.empty()) {
     // Level zero. We don't keep any reason.
@@ -1412,7 +1394,7 @@ void IntegerTrail::EnqueueLiteralInternal(
 
   // If we are fixing something at a positive level, remember it.
   if (!integer_search_levels_.empty() && integer_reason.empty() &&
-      literal_reason.empty() && lazy_reason == nullptr) {
+      literal_reason.empty() && !use_lazy_reason) {
     delayed_to_fix_->literal_to_fix.push_back(literal);
   }
 
@@ -1422,23 +1404,10 @@ void IntegerTrail::EnqueueLiteralInternal(
   }
   boolean_trail_index_to_integer_one_[trail_index] = integer_trail_.size();
 
-  int reason_index = literals_reason_starts_.size();
-  if (lazy_reason != nullptr) {
-    if (integer_trail_.size() >= lazy_reasons_.size()) {
-      lazy_reasons_.resize(integer_trail_.size() + 1, nullptr);
-    }
-    lazy_reasons_[integer_trail_.size()] = lazy_reason;
-    reason_index = -1;
-  } else {
-    // Copy the reason.
-    literals_reason_starts_.push_back(literals_reason_buffer_.size());
-    literals_reason_buffer_.insert(literals_reason_buffer_.end(),
-                                   literal_reason.begin(),
-                                   literal_reason.end());
-    bounds_reason_starts_.push_back(bounds_reason_buffer_.size());
-    bounds_reason_buffer_.insert(bounds_reason_buffer_.end(),
-                                 integer_reason.begin(), integer_reason.end());
-  }
+  const int reason_index =
+      use_lazy_reason
+          ? -1
+          : AppendReasonToInternalBuffers(literal_reason, integer_reason);
 
   integer_trail_.push_back({/*bound=*/IntegerValue(0),
                             /*var=*/kNoIntegerVariable,
@@ -1520,12 +1489,34 @@ void IntegerTrail::CanonicalizeLiteralIfNeeded(IntegerLiteral* i_lit) {
   }
 }
 
+int IntegerTrail::AppendReasonToInternalBuffers(
+    absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  const int reason_index = literals_reason_starts_.size();
+  DCHECK_EQ(reason_index, bounds_reason_starts_.size());
+
+  literals_reason_starts_.push_back(literals_reason_buffer_.size());
+  if (!literal_reason.empty()) {
+    literals_reason_buffer_.insert(literals_reason_buffer_.end(),
+                                   literal_reason.begin(),
+                                   literal_reason.end());
+  }
+
+  bounds_reason_starts_.push_back(bounds_reason_buffer_.size());
+  if (!integer_reason.empty()) {
+    bounds_reason_buffer_.insert(bounds_reason_buffer_.end(),
+                                 integer_reason.begin(), integer_reason.end());
+  }
+
+  return reason_index;
+}
+
 bool IntegerTrail::EnqueueInternal(
-    IntegerLiteral i_lit, LazyReasonFunction lazy_reason,
+    IntegerLiteral i_lit, bool use_lazy_reason,
     absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason,
     int trail_index_with_same_reason) {
-  DCHECK(lazy_reason != nullptr ||
+  DCHECK(use_lazy_reason ||
          ReasonIsValid(i_lit, literal_reason, integer_reason));
   const IntegerVariable var(i_lit.var);
 
@@ -1550,8 +1541,8 @@ bool IntegerTrail::EnqueueInternal(
 
     // Note that we want only one call to MergeReasonIntoInternal() for
     // efficiency and a potential smaller reason.
-    auto* conflict =
-        InitializeConflict(i_lit, lazy_reason, literal_reason, integer_reason);
+    auto* conflict = InitializeConflict(i_lit, use_lazy_reason, literal_reason,
+                                        integer_reason);
     {
       const int trail_index = FindLowestTrailIndexThatExplainBound(ub_reason);
       const int num_vars = var_lbs_.size();  // must be signed.
@@ -1606,8 +1597,8 @@ bool IntegerTrail::EnqueueInternal(
   if (literal_index != kNoLiteralIndex) {
     const Literal to_enqueue = Literal(literal_index);
     if (trail_->Assignment().LiteralIsFalse(to_enqueue)) {
-      auto* conflict = InitializeConflict(i_lit, lazy_reason, literal_reason,
-                                          integer_reason);
+      auto* conflict = InitializeConflict(i_lit, use_lazy_reason,
+                                          literal_reason, integer_reason);
       conflict->push_back(to_enqueue);
       MergeReasonIntoInternal(conflict);
       return false;
@@ -1620,7 +1611,7 @@ bool IntegerTrail::EnqueueInternal(
     if (bound >= i_lit.bound) {
       DCHECK_EQ(bound, i_lit.bound);
       if (!trail_->Assignment().LiteralIsTrue(to_enqueue)) {
-        EnqueueLiteralInternal(to_enqueue, lazy_reason, literal_reason,
+        EnqueueLiteralInternal(to_enqueue, use_lazy_reason, literal_reason,
                                integer_reason);
       }
       return EnqueueAssociatedIntegerLiteral(i_lit, to_enqueue);
@@ -1638,7 +1629,7 @@ bool IntegerTrail::EnqueueInternal(
           boolean_trail_index_to_integer_one_.resize(trail_index + 1);
         }
         boolean_trail_index_to_integer_one_[trail_index] =
-            trail_index_with_same_reason;
+            integer_trail_.size();
         trail_->Enqueue(to_enqueue, propagator_id_);
       }
     }
@@ -1662,32 +1653,16 @@ bool IntegerTrail::EnqueueInternal(
   // If we are not at level zero but there is not reason, we have a root level
   // deduction. Remember it so that we don't forget on the next restart.
   if (!integer_search_levels_.empty() && integer_reason.empty() &&
-      literal_reason.empty() && lazy_reason == nullptr &&
-      trail_index_with_same_reason >= integer_trail_.size()) {
+      literal_reason.empty() && !use_lazy_reason) {
     if (!RootLevelEnqueue(i_lit)) return false;
   }
 
-  int reason_index = literals_reason_starts_.size();
-  if (lazy_reason != nullptr) {
-    if (integer_trail_.size() >= lazy_reasons_.size()) {
-      lazy_reasons_.resize(integer_trail_.size() + 1, nullptr);
-    }
-    lazy_reasons_[integer_trail_.size()] = lazy_reason;
+  int reason_index;
+  if (use_lazy_reason) {
     reason_index = -1;
   } else if (trail_index_with_same_reason >= integer_trail_.size()) {
-    // Save the reason into our internal buffers.
-    literals_reason_starts_.push_back(literals_reason_buffer_.size());
-    if (!literal_reason.empty()) {
-      literals_reason_buffer_.insert(literals_reason_buffer_.end(),
-                                     literal_reason.begin(),
-                                     literal_reason.end());
-    }
-    bounds_reason_starts_.push_back(bounds_reason_buffer_.size());
-    if (!integer_reason.empty()) {
-      bounds_reason_buffer_.insert(bounds_reason_buffer_.end(),
-                                   integer_reason.begin(),
-                                   integer_reason.end());
-    }
+    reason_index =
+        AppendReasonToInternalBuffers(literal_reason, integer_reason);
   } else {
     reason_index = integer_trail_[trail_index_with_same_reason].reason_index;
   }
@@ -1741,12 +1716,8 @@ bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
   }
   DCHECK_GT(trail_->CurrentDecisionLevel(), 0);
 
-  const int reason_index = literals_reason_starts_.size();
-  CHECK_EQ(reason_index, bounds_reason_starts_.size());
-  literals_reason_starts_.push_back(literals_reason_buffer_.size());
-  bounds_reason_starts_.push_back(bounds_reason_buffer_.size());
-  literals_reason_buffer_.push_back(literal_reason.Negated());
-
+  const int reason_index =
+      AppendReasonToInternalBuffers({literal_reason.Negated()}, {});
   const int prev_trail_index = var_trail_index_[i_lit.var];
   integer_trail_.push_back({/*bound=*/i_lit.bound,
                             /*var=*/i_lit.var,
@@ -1763,8 +1734,9 @@ void IntegerTrail::ComputeLazyReasonIfNeeded(int trail_index) const {
   if (reason_index == -1) {
     const TrailEntry& entry = integer_trail_[trail_index];
     const IntegerLiteral literal(entry.var, entry.bound);
-    lazy_reasons_[trail_index](literal, trail_index, &lazy_reason_literals_,
-                               &lazy_reason_trail_indices_);
+    lazy_reasons_[trail_index].Explain(literal, trail_index,
+                                       &lazy_reason_literals_,
+                                       &lazy_reason_trail_indices_);
   }
 }
 

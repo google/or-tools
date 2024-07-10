@@ -293,7 +293,7 @@ bool SchedulingConstraintHelper::Propagate() {
 
 bool SchedulingConstraintHelper::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
-  for (const int t : watch_indices) recompute_cache_[t] = true;
+  for (const int t : watch_indices) recompute_cache_.Set(t);
   return true;
 }
 
@@ -326,7 +326,6 @@ void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
-  recompute_cache_[t] = false;
   if (IsAbsent(t)) return true;
 
   IntegerValue smin = integer_trail_->LowerBound(starts_[t]);
@@ -432,7 +431,10 @@ void SchedulingConstraintHelper::InitSortedVectors() {
   const int num_tasks = starts_.size();
 
   recompute_all_cache_ = true;
-  recompute_cache_.resize(num_tasks, true);
+  recompute_cache_.Resize(num_tasks);
+  for (int t = 0; t < num_tasks; ++t) {
+    recompute_cache_.Set(t);
+  }
 
   // Make sure all the cached_* arrays can hold enough data.
   CHECK_LE(num_tasks, capacity_);
@@ -485,12 +487,11 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
       if (!UpdateCachedValues(t)) return false;
     }
   } else {
-    for (int t = 0; t < recompute_cache_.size(); ++t) {
-      if (recompute_cache_[t]) {
-        if (!UpdateCachedValues(t)) return false;
-      }
+    for (const int t : recompute_cache_) {
+      if (!UpdateCachedValues(t)) return false;
     }
   }
+  recompute_cache_.ClearAll();
   recompute_all_cache_ = false;
   return true;
 }
@@ -506,13 +507,17 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
     return kMinIntegerValue;
   }
 
-  const IntegerValue offset =
+  // We take the max of the level zero offset and the one coming from a
+  // conditional precedence at true.
+  const IntegerValue conditional_offset =
       precedence_relations_->GetConditionalOffset(before.var, after.var);
-  if (offset == kMinIntegerValue) return kMinIntegerValue;
+  const IntegerValue known = integer_trail_->LevelZeroLowerBound(after.var) -
+                             integer_trail_->LevelZeroUpperBound(before.var);
+  const IntegerValue offset = std::max(conditional_offset, known);
 
   const IntegerValue needed_offset = before.constant - after.constant;
   const IntegerValue distance = offset - needed_offset;
-  if (add_reason_if_after && distance >= 0) {
+  if (add_reason_if_after && distance >= 0 && known < conditional_offset) {
     for (const Literal l : precedence_relations_->GetConditionalEnforcements(
              before.var, after.var)) {
       literal_reason_.push_back(l.Negated());
@@ -722,6 +727,7 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (!PushIntegerLiteralIfTaskPresent(t, lit)) return false;
   if (IsAbsent(t)) return true;
   if (!UpdateCachedValues(t)) return false;
+  recompute_cache_.Clear(t);
   return true;
 }
 

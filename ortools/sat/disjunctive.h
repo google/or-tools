@@ -53,7 +53,7 @@ void AddDisjunctiveWithBooleanPrecedencesOnly(
 // for most of the function here, not a O(log(n)) one.
 class TaskSet {
  public:
-  explicit TaskSet(int num_tasks) { sorted_tasks_.reserve(num_tasks); }
+  explicit TaskSet(int num_tasks) { sorted_tasks_.ClearAndReserve(num_tasks); }
 
   struct Entry {
     int task;
@@ -113,10 +113,10 @@ class TaskSet {
   // another unneeded loop.
   int GetCriticalIndex() const { return optimized_restart_; }
 
-  const std::vector<Entry>& SortedTasks() const { return sorted_tasks_; }
+  absl::Span<const Entry> SortedTasks() const { return sorted_tasks_; }
 
  private:
-  std::vector<Entry> sorted_tasks_;
+  FixedCapacityVector<Entry> sorted_tasks_;
   mutable int optimized_restart_ = 0;
 };
 
@@ -160,18 +160,22 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
                                    SchedulingConstraintHelper* helper)
       : time_direction_(time_direction),
         helper_(helper),
-        task_set_(helper->NumTasks()) {}
+        task_set_(helper->NumTasks()) {
+    task_by_increasing_end_min_.ClearAndReserve(helper->NumTasks());
+    task_by_increasing_start_max_.ClearAndReserve(helper->NumTasks());
+    to_propagate_.ClearAndReserve(helper->NumTasks());
+  }
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow();
+  bool PropagateSubwindow(IntegerValue max_end_min);
 
-  std::vector<TaskTime> task_by_increasing_end_min_;
-  std::vector<TaskTime> task_by_increasing_start_max_;
+  FixedCapacityVector<TaskTime> task_by_increasing_end_min_;
+  FixedCapacityVector<TaskTime> task_by_increasing_start_max_;
 
   std::vector<bool> processed_;
-  std::vector<int> to_propagate_;
+  FixedCapacityVector<int> to_propagate_;
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
@@ -214,15 +218,18 @@ class DisjunctiveNotLast : public PropagatorInterface {
   DisjunctiveNotLast(bool time_direction, SchedulingConstraintHelper* helper)
       : time_direction_(time_direction),
         helper_(helper),
-        task_set_(helper->NumTasks()) {}
+        task_set_(helper->NumTasks()) {
+    start_min_window_.ClearAndReserve(helper->NumTasks());
+    start_max_window_.ClearAndReserve(helper->NumTasks());
+  }
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow();
 
-  std::vector<TaskTime> start_min_window_;
-  std::vector<TaskTime> start_max_window_;
+  FixedCapacityVector<TaskTime> start_min_window_;
+  FixedCapacityVector<TaskTime> start_max_window_;
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
@@ -233,7 +240,11 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
  public:
   DisjunctiveEdgeFinding(bool time_direction,
                          SchedulingConstraintHelper* helper)
-      : time_direction_(time_direction), helper_(helper) {}
+      : time_direction_(time_direction), helper_(helper) {
+    task_by_increasing_end_max_.ClearAndReserve(helper->NumTasks());
+    window_.ClearAndReserve(helper->NumTasks());
+    event_size_.ClearAndReserve(helper->NumTasks());
+  }
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -244,12 +255,12 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
   SchedulingConstraintHelper* helper_;
 
   // This only contains non-gray tasks.
-  std::vector<TaskTime> task_by_increasing_end_max_;
+  FixedCapacityVector<TaskTime> task_by_increasing_end_max_;
 
   // All these member are indexed in the same way.
-  std::vector<TaskTime> window_;
+  FixedCapacityVector<TaskTime> window_;
   ThetaLambdaTree<IntegerValue> theta_tree_;
-  std::vector<IntegerValue> event_size_;
+  FixedCapacityVector<IntegerValue> event_size_;
 
   // Task indexed.
   std::vector<int> non_gray_task_to_event_;
@@ -267,7 +278,10 @@ class DisjunctivePrecedences : public PropagatorInterface {
         helper_(helper),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {
+    window_.ClearAndReserve(helper->NumTasks());
+    index_to_end_vars_.ClearAndReserve(helper->NumTasks());
+  }
   ~DisjunctivePrecedences() override;
 
   bool Propagate() final;
@@ -284,8 +298,8 @@ class DisjunctivePrecedences : public PropagatorInterface {
 
   int64_t num_propagations_ = 0;
 
-  std::vector<TaskTime> window_;
-  std::vector<IntegerVariable> index_to_end_vars_;
+  FixedCapacityVector<TaskTime> window_;
+  FixedCapacityVector<IntegerVariable> index_to_end_vars_;
 
   std::vector<int> indices_before_;
   std::vector<bool> skip_;

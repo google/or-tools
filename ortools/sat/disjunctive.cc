@@ -181,7 +181,10 @@ void TaskSet::NotifyEntryIsNowLastIfPresent(const Entry& e) {
   for (int i = 0;; ++i) {
     if (i == size) return;
     if (sorted_tasks_[i].task == e.task) {
-      sorted_tasks_.erase(sorted_tasks_.begin() + i);
+      for (int j = i; j + 1 < size; ++j) {
+        sorted_tasks_[j] = sorted_tasks_[j + 1];
+      }
+      sorted_tasks_.pop_back();
       break;
     }
   }
@@ -413,7 +416,7 @@ bool CombinedDisjunctive<time_direction>::Propagate() {
     // TODO(user): Maybe factor out the code? It does require a function with a
     // lot of arguments though.
     helper_->ClearReason();
-    const std::vector<TaskSet::Entry>& sorted_tasks =
+    const absl::Span<const TaskSet::Entry> sorted_tasks =
         task_sets_[best_d_index].SortedTasks();
     const IntegerValue window_start =
         sorted_tasks[best_critical_index].start_min;
@@ -652,48 +655,49 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
   // start_max >= end_min, so wouldn't be in detectable precedence.
   task_by_increasing_end_min_.clear();
   IntegerValue window_end = kMinIntegerValue;
+  IntegerValue max_end_min = kMinIntegerValue;
   for (const TaskTime task_time : helper_->TaskByIncreasingStartMin()) {
     const int task = task_time.task_index;
     if (helper_->IsAbsent(task)) continue;
 
     // Note that the helper returns value assuming the task is present.
     const IntegerValue start_min = helper_->StartMin(task);
-    const IntegerValue size_min = helper_->SizeMin(task);
     const IntegerValue end_min = helper_->EndMin(task);
-    DCHECK_GE(end_min, start_min + size_min);
 
     if (start_min < window_end) {
+      const IntegerValue size_min = helper_->SizeMin(task);
+      DCHECK_GE(end_min, start_min + size_min);
+
       task_by_increasing_end_min_.push_back({task, end_min});
+      max_end_min = std::max(max_end_min, end_min);
       window_end = std::max(window_end, start_min) + size_min;
       continue;
     }
 
     // Process current window.
-    if (task_by_increasing_end_min_.size() > 1 && !PropagateSubwindow()) {
+    if (task_by_increasing_end_min_.size() > 1 &&
+        !PropagateSubwindow(max_end_min)) {
       return false;
     }
 
     // Start of the next window.
     task_by_increasing_end_min_.clear();
     task_by_increasing_end_min_.push_back({task, end_min});
+    max_end_min = end_min;
     window_end = end_min;
   }
 
-  if (task_by_increasing_end_min_.size() > 1 && !PropagateSubwindow()) {
+  if (task_by_increasing_end_min_.size() > 1 &&
+      !PropagateSubwindow(max_end_min)) {
     return false;
   }
 
   return true;
 }
 
-bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
+bool DisjunctiveDetectablePrecedences::PropagateSubwindow(
+    const IntegerValue max_end_min) {
   DCHECK(!task_by_increasing_end_min_.empty());
-
-  // The vector is already sorted by shifted_start_min, so there is likely a
-  // good correlation, hence the incremental sort.
-  IncrementalSort(task_by_increasing_end_min_.begin(),
-                  task_by_increasing_end_min_.end());
-  const IntegerValue max_end_min = task_by_increasing_end_min_.back().time;
 
   // Fill and sort task_by_increasing_start_max_.
   //
@@ -708,8 +712,15 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
     }
   }
   if (task_by_increasing_start_max_.empty()) return true;
+
   std::sort(task_by_increasing_start_max_.begin(),
             task_by_increasing_start_max_.end());
+
+  // The vector is already sorted by shifted_start_min, so there is likely a
+  // good correlation, hence the incremental sort.
+  IncrementalSort(task_by_increasing_end_min_.begin(),
+                  task_by_increasing_end_min_.end());
+  DCHECK_EQ(max_end_min, task_by_increasing_end_min_.back().time);
 
   // Invariant: need_update is false implies that task_set_end_min is equal to
   // task_set_.ComputeEndMin().
@@ -802,7 +813,7 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
       // Note that this works as well when IsPresent(t) is false.
       if (task_set_end_min > helper_->StartMin(t)) {
         const int critical_index = task_set_.GetCriticalIndex();
-        const std::vector<TaskSet::Entry>& sorted_tasks =
+        const absl::Span<const TaskSet::Entry> sorted_tasks =
             task_set_.SortedTasks();
         helper_->ClearReason();
 
@@ -1251,7 +1262,8 @@ bool DisjunctiveNotLast::PropagateSubwindow() {
     // Find the largest start-max of the critical tasks (excluding t). The
     // end-max for t need to be smaller than or equal to this.
     IntegerValue largest_ct_start_max = kMinIntegerValue;
-    const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
+    const absl::Span<const TaskSet::Entry> sorted_tasks =
+        task_set_.SortedTasks();
     const int sorted_tasks_size = sorted_tasks.size();
     for (int i = critical_index; i < sorted_tasks_size; ++i) {
       const int ct = sorted_tasks[i].task;
