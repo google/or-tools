@@ -1,5 +1,6 @@
 // ADD HEADER
 #include <stdio.h>
+#include <time.h>
 
 #include <cstdlib>
 #include <filesystem>
@@ -488,16 +489,10 @@ TEST(KnitroInterface, AddSolutionHintToOptimizer) {
 /** Unit Test of the method SetSolverSpecificParametersAsString()*/
 TEST(KnitroInterface, SetSolverSpecificParametersAsString) {
   UNITTEST_INIT_MIP();
-  std::ofstream param_file;
-  param_file.open("knitro_interface__test_param.opt");
-  param_file << "feastol   1e-08\n";
-  param_file << "linsolver_scaling always";
-  param_file.close();
   EXPECT_TRUE(solver.SetSolverSpecificParametersAsString(""));
-  EXPECT_FALSE(
-      solver.SetSolverSpecificParametersAsString("not_a_param_file.opt"));
+  EXPECT_FALSE(solver.SetSolverSpecificParametersAsString("blabla 5 "));
   solver.SetSolverSpecificParametersAsString(
-      "knitro_interface__test_param.opt");
+      "KN_PARAM_FEASTOL 1e-8 KN_PARAM_LINSOLVER_SCALING 1 ");
   solver.Solve();
   int value;
   getter.Int_Param(KN_PARAM_LINSOLVER_SCALING, &value);
@@ -876,12 +871,7 @@ TEST(KnitroInterface, FeasibleSolLP) {
   objective->SetMaximization();
 
   // setting max iter limit
-  std::ofstream param_file;
-  param_file.open("knitro_interface_feasible_test.opt");
-  param_file << "maxit   4\n";
-  param_file.close();
-  solver.SetSolverSpecificParametersAsString(
-      "knitro_interface_feasible_test.opt");
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_MAXIT 4 ");
 
   const MPSolver::ResultStatus result_status = solver.Solve();
   EXPECT_EQ(result_status, MPSolver::ResultStatus::FEASIBLE);
@@ -1061,12 +1051,7 @@ TEST(KnitroInterface, BranchingPriorityChangedForVariable) {
   obj->SetCoefficient(y, .86);
   obj->SetMaximization();
 
-  std::ofstream param_file;
-  param_file.open("knitro_interface_bpcfv.opt");
-  param_file << "act_lpalg   1\n";
-  param_file << "mip_lpalg   3\n";
-  param_file.close();
-  solver.SetSolverSpecificParametersAsString("knitro_interface_bpcfv.opt");
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_ACT_LPALG 1 KN_PARAM_MIP_LPALG 3 ");
 
   // Prioritize branching on x
   x->SetBranchingPriority(10);
@@ -1392,6 +1377,184 @@ TEST(KnitroInterface, AddVarToExistingConstraint) {
   EXPECT_NEAR(y->solution_value(), 1, ERROR_RATE);
 }
 
+/**
+ * Since GLOP do not implement Write method
+ *
+ */
+void write_readible_problem_model(MPSolver& solver, char* file_name) {
+  FILE* file;
+  file = fopen(file_name, "w");
+
+  // writing variables
+  int nb_var = solver.NumVariables();
+  fprintf(file, "nb variables : %i\n", nb_var);
+  for (int i = 0; i < nb_var; i++) {
+    fprintf(file, "%4.0f %4.0f\n", solver.variable(i)->ub(),
+            solver.variable(i)->lb());
+  }
+  fprintf(file, "\n");
+
+  // writing A matrix
+  int nb_con = solver.NumConstraints();
+  fprintf(file, "A : %i x %i\n", nb_con, nb_var);
+  for (int j = 0; j < nb_con; j++) {
+    MPConstraint* ct = solver.constraint(j);
+    for (int i = 0; i < nb_var; i++) {
+      fprintf(file, "%3.0f ", ct->GetCoefficient(solver.variable(i)));
+    }
+    fprintf(file, "\n");
+  }
+  fprintf(file, "\n");
+
+  // writing cT vector
+  MPObjective* const obj = solver.MutableObjective();
+  for (int i = 0; i < nb_var; i++)
+    fprintf(file, "%3.0f ", obj->GetCoefficient(solver.variable(i)));
+
+  fclose(file);
+}
+
+/**
+ * Solve a random generated LP
+ * max cT.x
+ * st. Ax <= b
+ *     u <= x <= v
+ * With
+ *  x \in R^n
+ *  Matrix A a randomly generated invertible lower triangular matrix
+ *  u and v the lower and upper bound of x respectively
+ */
+TEST(KnitroInterface, RandomLP) {
+  srand(time(NULL));
+
+  // Create a LP problem with Knitro solver
+  UNITTEST_INIT_LP();
+  double infinity = solver.infinity();
+  const int nb_var = 100;
+  std::vector<MPVariable*> vars;
+  for (int i = 0; i < nb_var; i++)
+    vars.push_back(solver.MakeNumVar(-rand() % 1000, rand() % 1000,
+                                     "x_" + std::to_string(i)));
+  std::vector<MPConstraint*> cons;
+  for (int j = 0; j < nb_var; j++) {
+    cons.push_back(solver.MakeRowConstraint(-infinity, rand() % 2001 - 1000,
+                                            "c_" + std::to_string(j)));
+    for (int i = 0; i <= j; i++) {
+      cons.back()->SetCoefficient(
+          vars[i], (i == j) ? rand() % 100 + 1 : rand() % 199 - 99);
+    }
+  }
+  MPObjective* const objective = solver.MutableObjective();
+  for (int i = 0; i < nb_var; i++) {
+    objective->SetCoefficient(vars[i], rand() % 199 - 99);
+  }
+  objective->SetMaximization();
+  time_t start_time;
+  time(&start_time);
+  MPSolver::ResultStatus kc_status = solver.Solve();
+  printf("KNITRO solving time = %ld\n", time(NULL) - start_time);
+  write_readible_problem_model(solver, "lp_problem_knitro.mps");
+
+  // Create the same problem with GLOP solver
+  MPSolver solverbis("GLOP_LP", MPSolver::GLOP_LINEAR_PROGRAMMING);
+  for (int i = 0; i < nb_var; i++)
+    solverbis.MakeNumVar(vars[i]->lb(), vars[i]->ub(), vars[i]->name());
+  for (int j = 0; j < nb_var; j++) {
+    MPConstraint* ct = solverbis.MakeRowConstraint(cons[j]->lb(), cons[j]->ub(),
+                                                   cons[j]->name());
+    for (int i = 0; i <= j; i++) {
+      ct->SetCoefficient(solverbis.variable(i),
+                         cons[j]->GetCoefficient(vars[i]));
+    }
+  }
+  MPObjective* const objectivebis = solverbis.MutableObjective();
+  for (int i = 0; i < nb_var; i++) {
+    objectivebis->SetCoefficient(solverbis.variable(i),
+                                 objective->GetCoefficient(vars[i]));
+  }
+  objectivebis->SetMaximization();
+  time(&start_time);
+  MPSolver::ResultStatus glop_status = solverbis.Solve();
+  printf("GLOP solving time = %ld\n", time(NULL) - start_time);
+  write_readible_problem_model(solverbis, "lp_problem_glop.mps");
+
+  EXPECT_EQ(kc_status, glop_status);
+  if (glop_status == MPSolver::ResultStatus::OPTIMAL) {
+    EXPECT_NEAR(objective->Value(), objectivebis->Value(), 1e-3);
+  }
+}
+
+/**
+ * Solve a random generated MIP
+ * max cT.x
+ * st. Ax <= b
+ *     u <= x <= v
+ * With
+ *  x \in Z^n
+ *  Matrix A a randomly generated invertible lower triangular matrix
+ *  u and v the lower and upper bound of x respectively
+ */
+TEST(KnitroInterface, RandomMIP) {
+  srand(time(NULL));
+
+  // Create a LP problem with Knitro solver
+  UNITTEST_INIT_MIP();
+
+  double infinity = solver.infinity();
+  const int nb_var = 30;
+  std::vector<MPVariable*> vars;
+  for (int i = 0; i < nb_var; i++)
+    vars.push_back(solver.MakeIntVar(-rand() % 1000, rand() % 1000,
+                                     "x_" + std::to_string(i)));
+  std::vector<MPConstraint*> cons;
+  for (int j = 0; j < nb_var; j++) {
+    cons.push_back(solver.MakeRowConstraint(-infinity, rand() % 2001 - 1000,
+                                            "c_" + std::to_string(j)));
+    for (int i = 0; i <= j; i++) {
+      cons.back()->SetCoefficient(
+          vars[i], (i == j) ? rand() % 100 + 1 : rand() % 199 - 99);
+    }
+  }
+  MPObjective* const objective = solver.MutableObjective();
+  for (int i = 0; i < nb_var; i++) {
+    objective->SetCoefficient(vars[i], rand() % 199 - 99);
+  }
+  objective->SetMaximization();
+  time_t start_time;
+  time(&start_time);
+  MPSolver::ResultStatus kc_status = solver.Solve();
+  printf("KNITRO solving time = %ld\n", time(NULL) - start_time);
+  write_readible_problem_model(solver, "mip_problem_knitro.mps");
+
+  // Create the same problem with SCIP solver
+  MPSolver solverbis("SCIP_MIP", MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  for (int i = 0; i < nb_var; i++)
+    solverbis.MakeIntVar(vars[i]->lb(), vars[i]->ub(), vars[i]->name());
+  for (int j = 0; j < nb_var; j++) {
+    MPConstraint* ct = solverbis.MakeRowConstraint(cons[j]->lb(), cons[j]->ub(),
+                                                   cons[j]->name());
+    for (int i = 0; i <= j; i++) {
+      ct->SetCoefficient(solverbis.variable(i),
+                         cons[j]->GetCoefficient(vars[i]));
+    }
+  }
+  MPObjective* const objectivebis = solverbis.MutableObjective();
+  for (int i = 0; i < nb_var; i++) {
+    objectivebis->SetCoefficient(solverbis.variable(i),
+                                 objective->GetCoefficient(vars[i]));
+  }
+  objectivebis->SetMaximization();
+  time(&start_time);
+  MPSolver::ResultStatus scip_status = solverbis.Solve();
+  printf("SCIP solving time = %ld\n", time(NULL) - start_time);
+  write_readible_problem_model(solverbis, "mip_problem_scip.mps");
+
+  EXPECT_EQ(kc_status, scip_status);
+  if (scip_status == MPSolver::ResultStatus::OPTIMAL) {
+    EXPECT_NEAR(objective->Value(), objectivebis->Value(), 1e-3);
+  }
+}
+
 /*-------------------- Callback --------------------*/
 
 /**
@@ -1709,16 +1872,6 @@ TEST(KnitroInterface, LazyConstraint) {
   // Solve //
   ///////////
 
-  // std::ofstream param_file;
-  // param_file.open("knitro_interface_lazy_constraint_callback_settings.opt");
-  // // add the following line to allow debug printf display in KNMPCallback
-  // // param_file << "mip_numthreads  1\n";
-  // // add the following line to allow summary display of Knitro solver
-  // param_file << "outlev  1\n";
-  // param_file.close();
-  // solver.SetSolverSpecificParametersAsString("knitro_interface_lazy_constraint_callback_settings.opt");
-
-  // Solve.
   solver.Solve();
 
   ///////////////////////////////
@@ -1751,11 +1904,11 @@ int main(int argc, char** argv) {
   } else {
     if (!RUN_ALL_TESTS()) {
       remove("knitro_interface_test_LP_model");
-      remove("knitro_interface__test_param.opt");
-      remove("knitro_interface_bpcfv.opt");
-      remove("knitro_interface_feasible_test.opt");
       remove("knitro_interface_test_empty");
-      remove("knitro_interface_lazy_constraint_callback_settings.opt");
+      remove("lp_problem_knitro.mps");
+      remove("lp_problem_glop.mps");
+      remove("mip_problem_knitro.mps");
+      remove("mip_problem_scip.mps");
       return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;

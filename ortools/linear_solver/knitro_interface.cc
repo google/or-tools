@@ -680,58 +680,36 @@ void KnitroInterface::AddVariable(MPVariable* var) {
 }
 
 void KnitroInterface::ExtractNewVariables() {
-  // std::cout << "Extracting Variables " << std::endl;
   int const total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
     int const len = total_num_vars - last_variable_index_;
-    // for init and def basic properties
-    std::unique_ptr<int[]> idx_vars(new int[len]);
-    std::unique_ptr<double[]> lb(new double[len]);
-    std::unique_ptr<double[]> ub(new double[len]);
-    std::unique_ptr<int[]> types(new int[len]);
-    // lambda fn to destroy the array of names
-    auto deleter = [len](char** ptr) {
-      for (int i = 0; i < len; ++i) {
-        delete[] ptr[i];
-      }
-      delete[] ptr;
-    };
-    std::unique_ptr<char*[], decltype(deleter)> names(new char*[len], deleter);
-    // for priority properties
-    std::unique_ptr<int[]> prior(new int[len]);
-    std::unique_ptr<int[]> prior_idx(new int[len]);
-    int prior_nb = 0;
-    // std::cout << "Variables' Containers created" << std::endl;
-    // Define new variables
-    for (int j = 0, var_index = last_variable_index_; j < len;
-         ++j, ++var_index) {
+    // Create new variables
+    CHECK_STATUS(KN_add_vars(kc_, len, NULL));
+    for (int var_index = last_variable_index_; var_index < total_num_vars;
+         ++var_index) {
       MPVariable* const var = solver_->variables_[var_index];
       DCHECK(!variable_is_extracted(var_index));
       set_variable_as_extracted(var_index, true);
-      idx_vars[j] = var_index;
-      lb[j] = redefine_infinity_double(var->lb());
-      ub[j] = redefine_infinity_double(var->ub());
-      // Def buffer size at 256 for variables' name
-      names[j] = new char[256];
-      strcpy(names[j], var->name().c_str());
-      types[j] =
-          (mip_ && var->integer()) ? KN_VARTYPE_INTEGER : KN_VARTYPE_CONTINUOUS;
+      // Defines the bounds and type of var
+      CHECK_STATUS(KN_set_var_lobnd(kc_, var_index,
+                                    redefine_infinity_double(var->lb())));
+      CHECK_STATUS(KN_set_var_upbnd(kc_, var_index,
+                                    redefine_infinity_double(var->ub())));
+      CHECK_STATUS(KN_set_var_type(kc_, var_index,
+                                   (mip_ && var->integer())
+                                       ? KN_VARTYPE_INTEGER
+                                       : KN_VARTYPE_CONTINUOUS));
+      // Creates char * value to name the var
+      std::unique_ptr<char[]> name(new char[256]);
+      strcpy(name.get(), var->name().c_str());
+      CHECK_STATUS(KN_set_var_name(kc_, var_index, name.get()));
+      // Branching priority 
       if (var->integer() && (var->branching_priority() != 0)) {
-        prior_idx[prior_nb] = var_index;
-        prior[prior_nb] = var->branching_priority();
-        prior_nb++;
+        KN_set_mip_branching_priority(kc_, var_index,
+                                      var->branching_priority());
       }
     }
-    // std::cout << "Variables' Containers filled" << std::endl;
-    CHECK_STATUS(KN_add_vars(kc_, len, NULL));
-    CHECK_STATUS(KN_set_var_lobnds(kc_, len, idx_vars.get(), lb.get()));
-    CHECK_STATUS(KN_set_var_upbnds(kc_, len, idx_vars.get(), ub.get()));
-    CHECK_STATUS(KN_set_var_types(kc_, len, idx_vars.get(), types.get()));
-    // CHECK_STATUS(KN_set_var_names(kc_, len, idx_vars.get(), names.get()));
-    CHECK_STATUS(KN_set_mip_branching_priorities(kc_, prior_nb, prior_idx.get(),
-                                                 prior.get()));
-    // std::cout << "Variables added to the Knitro Context" << std::endl;
-    // Add new variables to existing constraints.
+    // Adds new variables to existing constraints.
     for (int i = 0; i < last_constraint_index_; i++) {
       MPConstraint* const ct = solver_->constraints_[i];
       for (const auto& entry : ct->coefficients_) {
@@ -745,77 +723,51 @@ void KnitroInterface::ExtractNewVariables() {
       }
     }
   }
-  // std::cout << "Extracting Variables End" << std::endl;
 }
 
 void KnitroInterface::ExtractNewConstraints() {
-  // std::cout << "Extracting Constraints " << std::endl;
   int const total_num_cons = solver_->constraints_.size();
   int const total_num_vars = solver_->variables_.size();
-  // std::cout << "Sizes extracted" << std::endl;
   if (total_num_cons > last_constraint_index_) {
     int const len = total_num_cons - last_constraint_index_;
-    std::unique_ptr<int[]> idx_cons(new int[len]);
-    std::unique_ptr<double[]> lb(new double[len]);
-    std::unique_ptr<double[]> ub(new double[len]);
-    std::unique_ptr<int[]> lin_idx_cons(new int[len * total_num_vars]);
-    std::unique_ptr<int[]> lin_idx_vars(new int[len * total_num_vars]);
-    std::unique_ptr<double[]> lin_coefs(new double[len * total_num_vars]);
-    // std::cout << "Creating Char deleter lambda exp" << std::endl;
-    // lambda fn to destroy the array of names
-    auto deleter = [len](char** ptr) {
-      for (int i = 0; i < len; ++i) {
-        delete[] ptr[i];
-      }
-      delete[] ptr;
-    };
-    std::unique_ptr<char*[], decltype(deleter)> names(new char*[len], deleter);
-    // std::cout << "Constraints' Containers created" << std::endl;
-    int idx_lin_term = 0;
-    // Define new constraints
-    for (int j = 0, con_index = last_constraint_index_; j < len;
-         ++j, ++con_index) {
+    // Create new constraints
+    CHECK_STATUS(KN_add_cons(kc_, len, NULL));
+    // Counts the number of non zero linear term in case of update Knitro model
+    int nb_lin_term = 0;
+    for (int con_index = last_constraint_index_; con_index < total_num_cons;
+         ++con_index) {
       MPConstraint* const ct = solver_->constraints_[con_index];
       DCHECK(!constraint_is_extracted(con_index));
       set_constraint_as_extracted(con_index, true);
-      idx_cons[j] = con_index;
-      lb[j] = redefine_infinity_double(ct->lb());
-      ub[j] = redefine_infinity_double(ct->ub());
-      for (int i = 0; i < total_num_vars; ++i) {
-        lin_idx_cons[idx_lin_term] = con_index;
-        lin_idx_vars[idx_lin_term] = i;
-        lin_coefs[idx_lin_term] = ct->GetCoefficient(solver_->variables_[i]);
-        idx_lin_term++;
-      }
-      // Def buffer size at 256 for variables' name
-      names[j] = new char[256];
-      strcpy(names[j], ct->name().c_str());
-    }
-    // std::cout << "Constraints' Containers filled" << std::endl;
-    CHECK_STATUS(KN_add_cons(kc_, len, NULL));
-    CHECK_STATUS(KN_set_con_lobnds(kc_, len, idx_cons.get(), lb.get()));
-    CHECK_STATUS(KN_set_con_upbnds(kc_, len, idx_cons.get(), ub.get()));
-
-    // CHECK_STATUS(KN_set_con_names(kc_, len, idx_cons.get(), names.get()));
-    if (idx_lin_term) {
+      // Define the bounds of the constraint
       CHECK_STATUS(
-          KN_add_con_linear_struct(kc_, idx_lin_term, lin_idx_cons.get(),
-                                   lin_idx_vars.get(), lin_coefs.get()));
-      KN_update(kc_);
+          KN_set_con_lobnd(kc_, con_index, redefine_infinity_double(ct->lb())));
+      CHECK_STATUS(
+          KN_set_con_upbnd(kc_, con_index, redefine_infinity_double(ct->ub())));
+      // Add linear term one by one
+      for (int i = 0; i < total_num_vars; i++) {
+        double value = ct->GetCoefficient(solver_->variables_[i]);
+        if (value) {
+          CHECK_STATUS(KN_add_con_linear_term(kc_, con_index, i, value));
+          nb_lin_term++;
+        }
+      }
+      // Creates char* to name the constraint
+      std::unique_ptr<char[]> name(new char[256]);
+      strcpy(name.get(), ct->name().c_str());
+      CHECK_STATUS(KN_set_con_name(kc_, con_index, name.get()));
     }
-    // std::cout << "Constraints added to the Knitro Context" << std::endl;
+    // if a new linear term is added, the Knitro model must be updated 
+    if (nb_lin_term) CHECK_STATUS(KN_update(kc_));
   }
-  // std::cout << "Extracting Constraints End" << std::endl;
 }
 
 void KnitroInterface::ExtractObjective() {
-  // std::cout << "Extracting Objective Function " << std::endl;
   int const len = solver_->variables_.size();
 
   if (len) {
     std::unique_ptr<int[]> ind(new int[len]);
     std::unique_ptr<double[]> val(new double[len]);
-    // std::cout << "Objective's Containers created" << std::endl;
     for (int j = 0; j < len; ++j) {
       ind[j] = j;
       val[j] = 0.0;
@@ -830,7 +782,6 @@ void KnitroInterface::ExtractObjective() {
         val[idx] = coeff.second;
       }
     }
-    // std::cout << "Objective's Containers filled" << std::endl;
     // if a init solve occured, remove prev coef to add the new ones
     if (!no_obj_) {
       CHECK_STATUS(KN_chg_obj_linear_struct(kc_, len, ind.get(), val.get()));
@@ -843,7 +794,6 @@ void KnitroInterface::ExtractObjective() {
     CHECK_STATUS(KN_update(kc_));
     no_obj_ = false;
   }
-  // std::cout << "Objective added into the Knitro Context" << std::endl;
 
   // Extra check on the optimization direction
   SetOptimizationDirection(maximize_);
