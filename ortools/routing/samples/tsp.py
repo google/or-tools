@@ -26,8 +26,6 @@ from ortools.routing.python import model
 
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
 RoutingSearchStatus = enums_pb2.RoutingSearchStatus
-RoutingSearchParameters = parameters_pb2.RoutingSearchParameters
-
 # [END import]
 
 
@@ -142,14 +140,16 @@ def main():
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = model.default_routing_search_parameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        model.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = FirstSolutionStrategy.PATH_CHEAPEST_ARC
     # [END parameters]
 
     # Solve the problem.
     # [START solve]
-    #solution = routing.solve()
-    solution = routing.solve_with_parameters(search_parameters)
+    solution = routing.solve()
+    # solution = routing.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.

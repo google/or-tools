@@ -78,5 +78,6 @@ class ConstraintSolverTest(absltest.TestCase):
         solver.add(4 * rabbits + 2 * pheasants == 56)
         solver.accept(solver.print_model_visitor())
 
+
 if __name__ == "__main__":
     absltest.main()

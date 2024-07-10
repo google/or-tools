@@ -520,6 +520,7 @@ class Solver {
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
     ///   1 -> [5] -> 4 with 2 and 3 inactive
     SWAPACTIVECHAIN,
+
     /// Operator which makes an inactive node active and an active one inactive.
     /// It is similar to SwapActiveOperator except that it tries to insert the
     /// inactive node in all possible positions instead of just the position of
@@ -1091,6 +1092,7 @@ class Solver {
   int64_t GetGuidedLocalSearchPenalty(int64_t i, int64_t j, int64_t k) const {
     return (penalty_callback_ == nullptr) ? 0 : penalty_callback_(i, j, k);
   }
+
   // All factories (MakeXXX methods) encapsulate creation of objects
   // through RevAlloc(). Hence, the Solver used for allocating the
   // returned object will retain ownership of the allocated memory.
@@ -3328,6 +3330,7 @@ class Solver {
   std::unique_ptr<LocalSearchMonitor> local_search_monitor_;
   int anonymous_variable_index_;
   bool should_fail_;
+
   std::function<int64_t(int64_t, int64_t, int64_t)> penalty_callback_;
 };
 

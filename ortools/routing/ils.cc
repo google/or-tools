@@ -201,10 +201,12 @@ std::unique_ptr<RuinProcedure> MakeRuinProcedure(
       std::min(parameters.route_selection_max_neighbors(),
                std::max(parameters.route_selection_min_neighbors(),
                         preferred_num_neighbors));
+
   if (parameters.ruin_strategies().size() == 1) {
     return MakeRuinProcedure(model, rnd, *parameters.ruin_strategies().begin(),
                              num_neighbors_for_route_selection);
   }
+
   return std::make_unique<CompositeRuinProcedure>(
       model,
       MakeRuinProcedures(model, rnd, parameters.ruin_strategies(),
@@ -431,6 +433,7 @@ bool HasPerformedNodes(const RoutingModel& model,
 }
 
 }  // namespace
+
 RoutingSolution::RoutingSolution(const RoutingModel& model) : model_(model) {
   const int all_nodes = model.Size() + model.vehicles();
 
@@ -668,8 +671,6 @@ std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
 
   int64_t curr_node = seed_node;
 
-  // TODO(user): consider whether this should remain fixed or can vary at
-  // every ruin.
   int walk_length = walk_length_;
 
   while (walk_length-- > 0) {

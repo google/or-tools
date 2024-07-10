@@ -17,6 +17,7 @@
 import functools
 
 from absl.testing import absltest
+
 from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2
 from ortools.routing import parameters_pb2
@@ -25,6 +26,7 @@ from ortools.routing.python import model
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
 RoutingSearchStatus = enums_pb2.RoutingSearchStatus
 RoutingSearchParameters = parameters_pb2.RoutingSearchParameters
+
 
 def Distance(node_i, node_j):
     return node_i + node_j
@@ -48,7 +50,6 @@ def Two(unused_i, unused_j):
 
 def Three(unused_i, unused_j):
     return 1
-
 
 
 class TestRoutingIndexManager(absltest.TestCase):

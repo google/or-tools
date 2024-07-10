@@ -358,7 +358,6 @@ std::optional<ArcOrEdge> ParseArcOrEdge(std::string_view line,
       absl::StrSplit(line, absl::ByAnyChar(" :\t(),"), absl::SkipEmpty());
 
   // Parse the name.
-  const std::string name = words[0];
 
   // Parse the tail and the head of the arc/edge.
   std::optional<int64_t> opt_tail = ParseNodeIndex(words[1]);

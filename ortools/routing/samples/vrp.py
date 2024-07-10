@@ -65,7 +65,7 @@ def create_data_model():
 
 # [START solution_printer]
 def print_solution(manager, routing, solution):
-    """Prints solution on console."""
+    """Prints assignment on console."""
     status = routing.status()
     print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
     if (
@@ -92,6 +92,7 @@ def print_solution(manager, routing, solution):
         print(plan_output)
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
+
 # [END solution_printer]
 
 

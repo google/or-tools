@@ -4865,6 +4865,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(
         RELOCATE_PATH_GLOBAL_CHEAPEST_INSERTION_INSERT_UNPERFORMED,
         relocate_path_global_cheapest_insertion_insert_unperformed);
+
     // NOTE: A subtlety here is that the path-LNS operators are concatenated
     // into one single group before concatenating it with the main group. This
     // is because the path-LNS operators are considerably faster than the arc
@@ -4877,6 +4878,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     operators.assign({main_operator_group, path_lns_operator_group});
     main_operator_group = ConcatenateOperators(search_parameters, operators);
   }
+
   operators.assign({main_operator_group});
   CP_ROUTING_PUSH_OPERATOR(GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
                            global_cheapest_insertion_expensive_chain_lns);

@@ -49,6 +49,7 @@ message RandomWalkRuinStrategy {
   // removal.
   optional uint32 num_removed_visits = 7;
 }
+
 // Ruin strategies, used in perturbation based on ruin and recreate approaches.
 message RuinStrategy {
   oneof strategy {

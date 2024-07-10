@@ -140,15 +140,15 @@ class MathUtil {
   // The input_value must be greater than or equal to zero, and the
   // rounding_value must be greater than zero.
   template <typename IntType>
-    static IntType RoundUpTo(IntType input_value, IntType rounding_value) {
-      static_assert(MathLimits<IntType>::kIsInteger,
-          "RoundUpTo() operation type is not integer");
-      DCHECK_GE(input_value, 0);
-      DCHECK_GT(rounding_value, 0);
-      const IntType remainder = input_value % rounding_value;
-      return (remainder == 0) ? input_value
-        : (input_value - remainder + rounding_value);
-    }
+  static IntType RoundUpTo(IntType input_value, IntType rounding_value) {
+    static_assert(MathLimits<IntType>::kIsInteger,
+                  "RoundUpTo() operation type is not integer");
+    DCHECK_GE(input_value, 0);
+    DCHECK_GT(rounding_value, 0);
+    const IntType remainder = input_value % rounding_value;
+    return (remainder == 0) ? input_value
+                            : (input_value - remainder + rounding_value);
+  }
 
   // Convert a floating-point number to an integer. For all inputs x where
   // static_cast<IntOut>(x) is legal according to the C++ standard, the result
