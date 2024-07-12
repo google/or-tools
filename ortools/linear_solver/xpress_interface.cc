@@ -227,7 +227,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
       : xprsprob_(xprsprob),
         event_(event),
         num_nodes_(num_nodes),
-        variable_values_(0) {};
+        variable_values_(0){};
 
   // Implementation of the interface.
   MPCallbackEvent Event() override { return event_; };
@@ -260,7 +260,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
 // Wraps the MPCallback in order to catch and store exceptions
 class MPCallbackWrapper {
  public:
-  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback) {};
+  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback){};
   MPCallback* GetCallback() const { return callback_; }
   // Since our (C++) call-back functions are called from the XPRESS (C) code,
   // exceptions thrown in our call-back code are not caught by XPRESS.
@@ -2248,7 +2248,9 @@ bool XpressMPCallbackContext::CanQueryVariableValues() {
   return Event() == MPCallbackEvent::kMipSolution;
 }
 
-double XpressInterface::infinity() { return std::max(XPRS_PLUSINFINITY, -XPRS_MINUSINFINITY); }
+double XpressInterface::infinity() {
+  return std::max(XPRS_PLUSINFINITY, -XPRS_MINUSINFINITY);
+}
 
 double XpressMPCallbackContext::VariableValue(const MPVariable* variable) {
   if (variable_values_.empty()) {

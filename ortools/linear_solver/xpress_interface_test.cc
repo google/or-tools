@@ -274,6 +274,23 @@ void buildLargeLp(MPSolver& solver, int numVars) {
   solver.EnableOutput();
 }
 
+void compareXpressInternalMps(MPSolver& solver, std::string& expectedMps) {
+  const std::filesystem::path temporary_working_dir =
+      std::filesystem::temp_directory_path() / "temporary_working_dir";
+  std::filesystem::create_directories(temporary_working_dir);
+
+  std::string tmpName = (temporary_working_dir / "dummy.mps").string();
+  solver.Write(tmpName);
+
+  std::ifstream tmpFile(tmpName);
+  std::stringstream tmpBuffer;
+  tmpBuffer << tmpFile.rdbuf();
+  tmpFile.close();
+  std::filesystem::remove_all(temporary_working_dir);
+
+  EXPECT_EQ(tmpBuffer.str(), expectedMps);
+}
+
 class MyMPCallback : public MPCallback {
  private:
   MPSolver* mpSolver_;
@@ -285,9 +302,9 @@ class MyMPCallback : public MPCallback {
   MyMPCallback(MPSolver* mpSolver, bool should_throw)
       : MPCallback(false, false),
         mpSolver_(mpSolver),
-        should_throw_(should_throw) {};
+        should_throw_(should_throw){};
 
-  ~MyMPCallback() override {};
+  ~MyMPCallback() override{};
 
   void RunCallback(MPCallbackContext* callback_context) override {
     if (should_throw_) {
@@ -717,19 +734,6 @@ TEST_F(XpressFixtureMIP, Write) {
   obj->SetCoefficient(x1, 1);
   obj->SetCoefficient(x2, 2);
 
-  const std::filesystem::path temporary_working_dir =
-      std::filesystem::temp_directory_path() / "temporary_working_dir";
-  std::filesystem::create_directories(temporary_working_dir);
-
-  std::string tmpName = (temporary_working_dir / "dummy.mps").string();
-  solver.Write(tmpName);
-
-  std::ifstream tmpFile(tmpName);
-  std::stringstream tmpBuffer;
-  tmpBuffer << tmpFile.rdbuf();
-  tmpFile.close();
-  std::filesystem::remove_all(temporary_working_dir);
-
   // disable formatting to keep the expected MPS readable
   // clang-format off
   std::string expectedMps = std::string("") +
@@ -757,7 +761,8 @@ TEST_F(XpressFixtureMIP, Write) {
                             " LO BND00001          SomeColumnName    -1" + "\n" +
                             "ENDATA" + "\n";
   // clang-format on
-  EXPECT_EQ(tmpBuffer.str(), expectedMps);
+
+  compareXpressInternalMps(solver, expectedMps);
 }
 
 TEST_F(XpressFixtureLP, SetPrimalTolerance) {
@@ -1255,7 +1260,140 @@ TEST(XpressInterface, setInt64Control) {
 
 TEST(XpressInterface, getInfinity) {
   MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
-  EXPECT_EQ(std::max(XPRS_PLUSINFINITY, -XPRS_MINUSINFINITY), solver.solver_infinity());
+  EXPECT_EQ(std::max(XPRS_PLUSINFINITY, -XPRS_MINUSINFINITY),
+            solver.solver_infinity());
+}
+
+TEST_F(XpressFixtureMIP, mixedRhsTypes) {
+  MPVariable* var1 = solver.MakeVar(-1e20, 1e20, false, "var1");
+  MPVariable* var2 = solver.MakeVar(-2000, 2000, false, "var2");
+  MPVariable* var3 = solver.MakeVar(0, 1e20, false, "var3");
+  MPVariable* var4 = solver.MakeVar(-6, 6, false, "var4");
+  MPVariable* var5 = solver.MakeVar(0, 1e20, false, "var5");
+  MPVariable* var6 = solver.MakeVar(-1e20, 1e20, false, "var6");
+  MPVariable* var7 = solver.MakeVar(0, 1, true, "var7");
+  MPVariable* var8 = solver.MakeVar(0, 1, true, "var8");
+  MPVariable* var9 = solver.MakeVar(0, 1, false, "var9");
+
+  MPConstraint* const1 = solver.MakeRowConstraint(932, 932, "const1");
+  const1->SetCoefficient(var1, 1);
+  const1->SetCoefficient(var2, 0.7);
+  const1->SetCoefficient(var4, 6);
+  MPConstraint* const2 = solver.MakeRowConstraint(0, 1e20, "const2");
+  const2->SetCoefficient(var3, 1);
+  const2->SetCoefficient(var2, -1);
+  MPConstraint* const3 = solver.MakeRowConstraint(0, 1e20, "const3");
+  const3->SetCoefficient(var3, 1);
+  const3->SetCoefficient(var2, 1);
+  MPConstraint* const4 = solver.MakeRowConstraint(0, 1e20, "const4");
+  const4->SetCoefficient(var4, -1);
+  const4->SetCoefficient(var5, 1);
+  MPConstraint* const5 = solver.MakeRowConstraint(0, 1e20, "const5");
+  const5->SetCoefficient(var4, 1);
+  const5->SetCoefficient(var5, 1);
+  MPConstraint* const6 = solver.MakeRowConstraint(-1e20, 300, "const6");
+  const6->SetCoefficient(var6, 1);
+  const6->SetCoefficient(var1, -1);
+  MPConstraint* const7 = solver.MakeRowConstraint(-1e20, 300, "const7");
+  const7->SetCoefficient(var6, 1);
+  const7->SetCoefficient(var1, 1);
+  MPConstraint* const8 = solver.MakeRowConstraint(-1e20, 0.0001, "const8");
+  const8->SetCoefficient(var3, 1);
+  const8->SetCoefficient(var7, -4000);
+  MPConstraint* const9 = solver.MakeRowConstraint(-1e20, 0.0001, "const9");
+  const9->SetCoefficient(var5, 1);
+  const9->SetCoefficient(var8, -12);
+  MPConstraint* const10 = solver.MakeRowConstraint(0, 1, "const10");
+  const10->SetCoefficient(var7, 1);
+  const10->SetCoefficient(var8, 1);
+  MPConstraint* const11 = solver.MakeRowConstraint(0, 2e9, "const11");
+  const11->SetCoefficient(var9, 1);
+  MPConstraint* const12 = solver.MakeRowConstraint(0, 1e20, "const12");
+  const12->SetCoefficient(var9, 1);
+  const12->SetCoefficient(var7, -1);
+  MPConstraint* const13 = solver.MakeRowConstraint(0, 1e20, "const13");
+  const13->SetCoefficient(var9, 1);
+  const13->SetCoefficient(var8, -1);
+
+  solver.MutableObjective()->SetMinimization();
+  solver.MutableObjective()->SetCoefficient(var3, 0.001);
+  solver.MutableObjective()->SetCoefficient(var5, 0.01);
+  solver.MutableObjective()->SetCoefficient(var6, -1);
+
+  // disable formatting to keep the expected MPS readable
+  // clang-format off
+  std::string expectedMps = std::string("") +
+                            "NAME          newProb" + "\n" +
+                            "ROWS" + "\n" +
+                            " N  __OBJ___" + "\n" +
+                            " E  const1  " + "\n" +
+                            " G  const2  " + "\n" +
+                            " G  const3  " + "\n" +
+                            " G  const4  " + "\n" +
+                            " G  const5  " + "\n" +
+                            " L  const6  " + "\n" +
+                            " L  const7  " + "\n" +
+                            " L  const8  " + "\n" +
+                            " L  const9  " + "\n" +
+                            " L  const10 " + "\n" +
+                            " L  const11 " + "\n" +
+                            " G  const12 " + "\n" +
+                            " G  const13 " + "\n" +
+                            "COLUMNS" + "\n" +
+                            "    var1      const1    1" + "\n" +
+                            "    var1      const6    -1" + "\n" +
+                            "    var1      const7    1" + "\n" +
+                            "    var2      const1    0.7" + "\n" +
+                            "    var2      const2    -1" + "\n" +
+                            "    var2      const3    1" + "\n" +
+                            "    var3      __OBJ___  0.001" + "\n" +
+                            "    var3      const2    1" + "\n" +
+                            "    var3      const3    1" + "\n" +
+                            "    var3      const8    1" + "\n" +
+                            "    var4      const1    6" + "\n" +
+                            "    var4      const4    -1" + "\n" +
+                            "    var4      const5    1" + "\n" +
+                            "    var5      __OBJ___  0.01" + "\n" +
+                            "    var5      const4    1" + "\n" +
+                            "    var5      const5    1" + "\n" +
+                            "    var5      const9    1" + "\n" +
+                            "    var6      __OBJ___  -1" + "\n" +
+                            "    var6      const6    1" + "\n" +
+                            "    var6      const7    1" + "\n" +
+                            "    var7      const8    -4000" + "\n" +
+                            "    var7      const10   1" + "\n" +
+                            "    var7      const12   -1" + "\n" +
+                            "    var8      const9    -12" + "\n" +
+                            "    var8      const10   1" + "\n" +
+                            "    var8      const13   -1" + "\n" +
+                            "    var9      const11   1" + "\n" +
+                            "    var9      const12   1" + "\n" +
+                            "    var9      const13   1" + "\n" +
+                            "RHS" + "\n" +
+                            "    RHS00001  const1    932" + "\n" +
+                            "    RHS00001  const6    300" + "\n" +
+                            "    RHS00001  const7    300" + "\n" +
+                            "    RHS00001  const8    0.0001" + "\n" +
+                            "    RHS00001  const9    0.0001" + "\n" +
+                            "    RHS00001  const10   1" + "\n" +
+                            "    RHS00001  const11   2e+09" + "\n" +
+                            "RANGES" + "\n" +
+                            "    RNG00001  const10   1" + "\n" +
+                            "    RNG00001  const11   2e+09" + "\n" +
+                            "BOUNDS" + "\n" +
+                            " FR BND00001  var1    " + "\n" +
+                            " UP BND00001  var2      2000" + "\n" +
+                            " LO BND00001  var2      -2000" + "\n" +
+                            " UP BND00001  var4      6" + "\n" +
+                            " LO BND00001  var4      -6" + "\n" +
+                            " FR BND00001  var6    " + "\n" +
+                            " UI BND00001  var7      1" + "\n" +
+                            " UI BND00001  var8      1" + "\n" +
+                            " UP BND00001  var9      1" + "\n" +
+                            "ENDATA" + "\n";
+  // clang-format on
+
+  compareXpressInternalMps(solver, expectedMps);
 }
 
 TEST_F(XpressFixtureMIP, SolveMIP) {
