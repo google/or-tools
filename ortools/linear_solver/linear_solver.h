@@ -1354,10 +1354,7 @@ class MPConstraint {
    * For more info see: http://tinyurl.com/lazy-constraints.
    */
   void set_is_lazy(bool laziness) { is_lazy_ = laziness; }
-
-  void set_indicator_variable(const MPVariable* variable) {
-    indicator_variable_ = variable;
-  }
+  
   const MPVariable* indicator_variable() const { return indicator_variable_; }
   bool indicator_value() const { return indicator_value_; }
 
