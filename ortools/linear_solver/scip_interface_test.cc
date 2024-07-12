@@ -54,7 +54,7 @@ TEST(ScipInterface, IndicatorConstraint1) {
   EXPECT_EQ(var->solution_value(), 1);
   EXPECT_EQ(x->solution_value(), 100);
 }
-}
+}  // namespace operations_research
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_stderrthreshold, 0);
