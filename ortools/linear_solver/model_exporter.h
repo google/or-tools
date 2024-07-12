@@ -16,7 +16,9 @@
 
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
@@ -93,6 +95,35 @@ absl::StatusOr<std::string> ExportModelAsLpFormat(
  */
 absl::StatusOr<std::string> ExportModelAsMpsFormat(
     const MPModelProto& model,
+    const MPModelExportOptions& options = MPModelExportOptions());
+
+/**
+ * Write the current model (variables, constraints, objective) to a file in MPS
+ * file format, using the "free" MPS format.
+ *
+ * Returns false if some error has occurred during execution. Models with
+ * maximization objectives trigger an error, because MPS can encode only
+ * minimization problems.
+ *
+ * The validity of names is automatically checked. If a variable name or a
+ * constraint name is invalid or non-existent, a new valid name is
+ * automatically generated.
+ *
+ * Name validity and obfuscation works exactly as in ExportModelAsLpFormat().
+ *
+ * For more information about the MPS format:
+ * http://en.wikipedia.org/wiki/MPS_(format)
+ * A close-to-original description coming from OSL:
+ * http://tinyurl.com/mps-format-by-osl
+ * A recent description from CPLEX:
+ * http://tinyurl.com/mps-format-by-cplex
+ * CPLEX extensions:
+ * http://tinyurl.com/mps-extensions-by-cplex
+ * Gurobi's description:
+ * http://www.gurobi.com/documentation/5.1/reference-manual/node869
+ */
+absl::Status WriteModelAsMpsFormat(
+    absl::string_view filename, const MPModelProto& model,
     const MPModelExportOptions& options = MPModelExportOptions());
 
 }  // namespace operations_research
