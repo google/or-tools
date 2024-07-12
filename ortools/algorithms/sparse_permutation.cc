@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_join.h"
@@ -66,7 +67,7 @@ std::string SparsePermutation::DebugString() const {
     std::vector<int> cycle;
     for (int i = min_pos; i < end; ++i) cycle.push_back(cycles_[i]);
     for (int i = start; i < min_pos; ++i) cycle.push_back(cycles_[i]);
-    cycles.push_back(cycle);
+    cycles.push_back(std::move(cycle));
     start = end;
   }
   std::sort(cycles.begin(), cycles.end());

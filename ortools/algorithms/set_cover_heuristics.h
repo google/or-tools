@@ -19,6 +19,7 @@
 
 #include "absl/base/nullability.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/adjustable_k_ary_heap.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
 
@@ -27,9 +28,9 @@ namespace operations_research {
 // Priority aggregate for the subset priority queue.
 class SubsetIndexWithPriority {
  public:
-  using Index = int;
+  using Index = SubsetIndex::ValueType;
   using Priority = float;
-  SubsetIndexWithPriority() = default;
+  SubsetIndexWithPriority() : index_(-1), priority_(0) {}
   SubsetIndexWithPriority(Priority priority, Index index)
       : index_(index), priority_(priority) {}
   Priority priority() const { return priority_; }
@@ -54,12 +55,12 @@ class SubsetIndexWithPriority {
 // But first, we have to generate a first solution that is as good as possible.
 //
 // The first solution is then improved by using local search descent, which
-// eliminates the T_j's that have no interest in the solution.
+// eliminates the S_j's that have no interest in the solution.
 //
 // A mix of the guided local search (GLS) and Tabu Search (TS) metaheuristic
 // is also provided.
 //
-// The term 'focus' hereafter means a subset of the T_j's designated by their
+// The term 'focus' hereafter means a subset of the S_j's designated by their
 // indices. Focus make it possible to run the algorithms on the corresponding
 // subproblems.
 //
@@ -95,10 +96,10 @@ class Preprocessor {
 
   // The number of columns that are the only one for a given row, i.e.
   // the subsets that are unique in covering a particular element.
-  int num_columns_fixed_by_singleton_row_;
+  BaseInt num_columns_fixed_by_singleton_row_;
 };
 
-// An obvious idea is to take all the T_j's (or equivalently to set all the
+// An obvious idea is to take all the S_j's (or equivalently to set all the
 // x_j's to 1). It's a bit silly but fast, and we can improve on it later using
 // local search.
 class TrivialSolutionGenerator {
@@ -172,7 +173,8 @@ class GreedySolutionGenerator {
   // indices are in focus.
   bool NextSolution(const std::vector<SubsetIndex>& focus);
 
-  bool NextSolution(const std::vector<SubsetIndex>& focus,
+  // Same with a different set of costs.
+  bool NextSolution(const std ::vector<SubsetIndex>& focus,
                     const SubsetCostVector& costs);
 
  private:
@@ -195,22 +197,28 @@ class ElementDegreeSolutionGenerator {
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(const std::vector<SubsetIndex>& focus);
+  bool NextSolution(absl::Span<const SubsetIndex> focus);
 
-  bool NextSolution(const std::vector<SubsetIndex>& focus,
+  // Same with a different set of costs.
+  bool NextSolution(absl::Span<const SubsetIndex> focus,
                     const SubsetCostVector& costs);
 
  private:
+  // Same with a different set of costs, and the focus defined as a vector of
+  // Booleans. This is the actual implementation of NextSolution.
+  bool NextSolution(const SubsetBoolVector& in_focus,
+                    const SubsetCostVector& costs);
+
   // The data structure that will maintain the invariant for the model.
   SetCoverInvariant* inv_;
 };
 
 // Once we have a first solution to the problem, there may be (most often,
-// there are) elements in S that are covered several times. To decrease the
-// total cost, SteepestSearch tries to eliminate some redundant T_j's from
+// there are) elements in E that are covered several times. To decrease the
+// total cost, SteepestSearch tries to eliminate some redundant S_j's from
 // the solution or equivalently, to flip some x_j's from 1 to 0. the algorithm
 // gets its name because it goes in the steepest immediate direction, taking
-// the T_j with the largest total cost.
+// the S_j with the largest total cost.
 class SteepestSearch {
  public:
   explicit SteepestSearch(SetCoverInvariant* inv) : inv_(inv) {}
@@ -219,12 +227,20 @@ class SteepestSearch {
   // TODO(user): Add time-outs and exit with a partial solution.
   bool NextSolution(int num_iterations);
 
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
   bool NextSolution(absl::Span<const SubsetIndex> focus, int num_iterations);
 
+  // Same as above, with a different set of costs.
   bool NextSolution(absl::Span<const SubsetIndex> focus,
                     const SubsetCostVector& costs, int num_iterations);
 
  private:
+  // Same with a different set of costs, and the focus defined as a vector of
+  // Booleans. This is the actual implementation of NextSolution.
+  bool NextSolution(const SubsetBoolVector& in_focus,
+                    const SubsetCostVector& costs, int num_iterations);
+
   // Updates the priorities on the impacted_subsets.
   void UpdatePriorities(absl::Span<const SubsetIndex> impacted_subsets);
 
@@ -324,7 +340,9 @@ class GuidedTabuSearch {
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(const std::vector<SubsetIndex>& focus, int num_iterations);
+  bool NextSolution(absl::Span<const SubsetIndex> focus, int num_iterations);
+
+  bool NextSolution(const SubsetBoolVector& in_focus, int num_iterations);
 
   // TODO(user): re-introduce this is the code. It was used to favor
   // subsets with the same marginal costs but that would cover more elements.
@@ -361,14 +379,14 @@ class GuidedTabuSearch {
   double penalty_factor_;
 
   // Tabu Search parameters.
-  static constexpr double kDefaultEpsilon = 1e-8;
+  static constexpr double kDefaultEpsilon = 1e-6;
   double epsilon_;
 
   // Penalized costs for each subset as used in Guided Tabu Search.
   SubsetCostVector augmented_costs_;
 
   // The number of times each subset was penalized during Guided Tabu Search.
-  SubsetCountVector times_penalized_;
+  SubsetToIntVector times_penalized_;
 
   // TODO(user): remove and use priority_queue.
   // Utilities for the different subsets. They are updated ("penalized") costs.
@@ -379,8 +397,86 @@ class GuidedTabuSearch {
   TabuList<SubsetIndex> tabu_list_;
 };
 
+// Guided Local Search penalizes the parts of the solution that have been often
+// used. It behaves as a long-term memory which "learns" the most used
+// features and introduces some diversification in the search.
+// At each iteration, the algorithm selects a subset from the focus with maximum
+// utility of penalization and penalizes it.
+
+// It has been observed that good values for the penalisation factor can be
+// found by dividing the value of the objective function of a local minimum
+// with the number of features present in it [1]. In our case, the penalisation
+// factor is the sum of the costs of the subsets selected in the focus divided
+// by the number of subsets in the focus times a tunable factor alpha_.
+// [1] C. Voudouris (1997) "Guided local search for combinatorial optimisation
+// problems", PhD Thesis, University of Essex, Colchester, UK, July, 1997.
+class GuidedLocalSearch {
+ public:
+  explicit GuidedLocalSearch(SetCoverInvariant* inv)
+      : inv_(inv), epsilon_(kDefaultEpsilon), alpha_(kDefaultAlpha) {
+    Initialize();
+  }
+
+  // Initializes the Guided Local Search algorithm.
+  void Initialize();
+
+  // Returns the next solution by running the Guided Local  algorithm for
+  // maximum num_iterations iterations.
+  bool NextSolution(int num_iterations);
+
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(absl::Span<const SubsetIndex> focus, int num_iterations);
+
+  bool NextSolution(const SubsetBoolVector& in_focus, int num_iterations);
+
+ private:
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
+
+  // Setters and getters for the Guided Local Search algorithm parameters.
+  void SetEpsilon(double r) { epsilon_ = r; }
+
+  double GetEpsilon() const { return epsilon_; }
+
+  void SetAlpha(double r) { alpha_ = r; }
+
+  double GetAlpha() const { return alpha_; }
+
+  // The epsilon value for the Guided Local Search algorithm.
+  // Used to penalize the subsets within epsilon of the maximum utility.
+  static constexpr double kDefaultEpsilon = 1e-8;
+  double epsilon_;
+
+  // The alpha value for the Guided Local Search algorithm.
+  // Tunable factor used to penalize the subsets.
+  static constexpr double kDefaultAlpha = 0.5;
+  double alpha_;
+
+  // The penalization value for the Guided Local Search algorithm.
+  double penalization_factor_;
+
+  // The penalties of each feature during Guided Local Search.
+  SubsetToIntVector penalties_;
+
+  // Computes the delta of the cost of the solution if subset state changed.
+  Cost ComputeDelta(SubsetIndex subset) const;
+
+  // The priority heap used to select the subset with the maximum priority to be
+  // updated.
+  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> priority_heap_;
+
+  // The utility heap used to select the subset with the maximum utility to be
+  // penalized.
+  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> utility_heap_;
+};
+
 // Randomly clears a proportion num_subsets variables in the solution.
 // Returns a list of subset indices to be potentially reused as a focus.
+// Randomly clears at least num_subsets variables in the
+// solution. There can be more than num_subsets variables cleared because the
+// intersecting subsets are also removed from the solution. Returns a list of
+// subset indices that can be reused as a focus.
 std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
                                             SetCoverInvariant* inv);
 

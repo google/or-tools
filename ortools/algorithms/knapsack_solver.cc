@@ -19,6 +19,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -1623,7 +1624,7 @@ void KnapsackSolver::InitReducedProblem(
         one_dimension_reduced_weights.push_back(one_dimension_weights[item_id]);
       }
     }
-    reduced_weights.push_back(one_dimension_reduced_weights);
+    reduced_weights.push_back(std::move(one_dimension_reduced_weights));
   }
   solver_->Init(reduced_profits, reduced_weights, reduced_capacities);
 }
