@@ -28,8 +28,13 @@ TEST(ScipInterface, IndicatorConstraint0) {
   // With indicator constraint
   // if var = 0, then x <= 10
   auto var = solver.MakeBoolVar("indicator_var");
-  auto ct = solver.MakeIndicatorConstraint(0, 10, "test", var);
+  auto ct = solver.MakeIndicatorConstraint(0, 10, "test", var, false);
   ct->SetCoefficient(x, 1);
+
+  // Leave var free ==> x = 100
+  solver.Solve();
+  EXPECT_EQ(var->solution_value(), 1);
+  EXPECT_EQ(x->solution_value(), 100);
 
   // Force var to 0 ==> x = 10
   var->SetUB(0);
@@ -44,15 +49,20 @@ TEST(ScipInterface, IndicatorConstraint1) {
   solver.MutableObjective()->SetMaximization();
   solver.MutableObjective()->SetCoefficient(x, 1);
   // With indicator constraint
-  // if var = 0, then x <= 10
+  // if var = 1, then x <= 10
   auto var = solver.MakeBoolVar("indicator_var");
-  auto ct = solver.MakeIndicatorConstraint(0, 10, "test", var);
+  auto ct = solver.MakeIndicatorConstraint(0, 10, "test", var, true);
   ct->SetCoefficient(x, 1);
 
   // Leave var free ==> x = 100
   solver.Solve();
-  EXPECT_EQ(var->solution_value(), 1);
+  EXPECT_EQ(var->solution_value(), 0);
   EXPECT_EQ(x->solution_value(), 100);
+
+  // Force var to 0 ==> x = 10
+  var->SetLB(1);
+  solver.Solve();
+  EXPECT_EQ(x->solution_value(), 10);
 }
 }  // namespace operations_research
 

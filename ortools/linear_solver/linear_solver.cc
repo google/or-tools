@@ -1513,12 +1513,13 @@ MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range,
 
 MPConstraint* MPSolver::MakeIndicatorConstraint(
     double lb, double ub, const std::string& name,
-    const MPVariable* indicator_variable) {
+    const MPVariable* indicator_variable, bool indicator_value) {
   const int constraint_index = NumConstraints();
   MPConstraint* const constraint =
       new MPConstraint(constraint_index, lb, ub, name, interface_.get());
   // TODO: check that variable is boolean?
   constraint->indicator_variable_ = indicator_variable;
+  constraint->indicator_value_ = indicator_value;
   if (constraint_name_to_index_) {
     gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
                      constraint_index);

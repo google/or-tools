@@ -447,7 +447,8 @@ class MPSolver {
   /// indicator variable.
   MPConstraint* MakeIndicatorConstraint(double lb, double ub,
                                         const std::string& name,
-                                        const MPVariable* indicator_variable);
+                                        const MPVariable* indicator_variable,
+                                        bool indicator_value);
 
   /**
    * Returns the objective object.
