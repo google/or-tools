@@ -31,8 +31,8 @@ TEST(ProtoToProblemTest, TransformC33) {
   ::absl::Status status =
       ReadFile(file::JoinPathRespectAbsolute(
                    ::testing::SrcDir(), "operations_research_data/",
-          "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
-      &request);
+                   "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
+               &request);
   EXPECT_OK(status);
   CapacityPlanningProblem problem;
   status = Convert(request, &problem);

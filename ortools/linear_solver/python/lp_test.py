@@ -257,7 +257,7 @@ class PyWrapLpTest(unittest.TestCase):
         solver.Add(x >= 20)
 
         result_status = solver.Solve()
-        print(result_status) # outputs: 0
+        print(result_status)  # outputs: 0
 
     def testLoadSolutionFromProto(self):
         print("testLoadSolutionFromProto", flush=True)
