@@ -201,7 +201,7 @@ void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
 }
 
 void VariableValues::UpdateGivenNonBasicVariables(
-    const std::vector<ColIndex>& cols_to_update, bool update_basic_variables) {
+    absl::Span<const ColIndex> cols_to_update, bool update_basic_variables) {
   SCOPED_TIME_STAT(&stats_);
   if (!update_basic_variables) {
     for (ColIndex col : cols_to_update) {
