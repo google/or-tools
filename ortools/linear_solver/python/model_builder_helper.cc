@@ -175,6 +175,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
            arg("options") = MPModelExportOptions())
       .def("export_to_lp_string", &ModelBuilderHelper::ExportToLpString,
            arg("options") = MPModelExportOptions())
+      .def("write_to_mps_file", &ModelBuilderHelper::WriteToMpsFile,
+           arg("filename"), arg("options") = MPModelExportOptions())
       .def("read_model_from_proto_file",
            &ModelBuilderHelper::ReadModelFromProtoFile, arg("filename"))
       .def("write_model_to_proto_file",
