@@ -523,6 +523,7 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       helper_(model->GetOrCreate<IntegerSearchHelper>()),
       heuristics_(model->GetOrCreate<SearchHeuristics>()),
       restart_policy_(model->GetOrCreate<RestartPolicy>()),
+      level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
       assigned_tree_lbds_(/*window_size=*/8) {}
 
 const std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
@@ -593,7 +594,6 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
     if (!helper_->BeforeTakingDecision()) return false;
     const int level = sat_solver_->CurrentDecisionLevel();
     if (level >= assigned_tree_.MaxLevel()) break;
-    if (level == assigned_tree_.MaxLevel()) break;
     // The next decision is assigned, make sure it makes sense.
     const Literal next_decision = assigned_tree_literals_[level];
     if (!sat_solver_->Assignment().LiteralIsAssigned(next_decision)) break;
@@ -603,6 +603,7 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
               << " assigned=" << assigned_tree_.MaxLevel();
       manager_->CloseTree(assigned_tree_, level + 1);
       assigned_tree_literals_.clear();
+      sat_solver_->Backtrack(0);
     } else {
       // The next level is implied by the current one.
       assigned_tree_.SetLevelImplied(level + 1);
@@ -691,7 +692,7 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
          restart_policy_->LbdAverageSinceReset();
 }
 
-void SharedTreeWorker::SyncWithSharedTree() {
+bool SharedTreeWorker::SyncWithSharedTree() {
   manager_->SyncTree(assigned_tree_);
   if (ShouldReplaceSubtree()) {
     ++num_trees_;
@@ -712,6 +713,7 @@ void SharedTreeWorker::SyncWithSharedTree() {
     assigned_tree_literals_.push_back(
         DecodeDecision(assigned_tree_.Decision(i)));
   }
+  return true;
 }
 
 SatSolver::Status SharedTreeWorker::Search(
@@ -723,6 +725,8 @@ SatSolver::Status SharedTreeWorker::Search(
   sat_solver_->Backtrack(0);
   encoder_->GetTrueLiteral();
   encoder_->GetFalseLiteral();
+  level_zero_callbacks_->callbacks.push_back(
+      [this]() { return SyncWithSharedTree(); });
   const bool has_objective =
       objective_ != nullptr && objective_->objective_var != kNoIntegerVariable;
   std::vector<Literal> clause;
@@ -735,9 +739,6 @@ SatSolver::Status SharedTreeWorker::Search(
       heuristics_->policy_index =
           num_restarts_ % heuristics_->decision_policies.size();
       sat_solver_->Backtrack(0);
-    }
-    if (trail_->CurrentDecisionLevel() == 0) {
-      SyncWithSharedTree();
     }
     if (!SyncWithLocalTrail()) return sat_solver_->UnsatStatus();
     LiteralIndex decision_index;

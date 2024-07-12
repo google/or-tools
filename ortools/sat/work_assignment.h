@@ -238,7 +238,7 @@ class SharedTreeWorker {
   // implications are synced. This is a noop if the search is deeper than the
   // assigned tree. Returns false if the problem is unsat.
   bool SyncWithLocalTrail();
-  void SyncWithSharedTree();
+  bool SyncWithSharedTree();
   Literal DecodeDecision(ProtoLiteral literal);
   std::optional<ProtoLiteral> EncodeDecision(Literal decision);
   bool NextDecision(LiteralIndex* decision_index);
@@ -266,6 +266,7 @@ class SharedTreeWorker {
   IntegerSearchHelper* helper_;
   SearchHeuristics* heuristics_;
   RestartPolicy* restart_policy_;
+  LevelZeroCallbackHelper* level_zero_callbacks_;
 
   int64_t num_restarts_ = 0;
   int64_t num_trees_ = 0;
