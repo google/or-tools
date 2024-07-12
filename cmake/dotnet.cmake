@@ -301,7 +301,9 @@ configure_file(
   COPYONLY)
 set(DOTNET_README_DIR "${PROJECT_BINARY_DIR}/dotnet")
 
-configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props)
+configure_file(
+  ${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in
+  ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props)
 
 ############################
 ##  .Net SNK file  ##
@@ -636,7 +638,8 @@ if(NOT EXAMPLE_FILE_NAME)
     OUTPUT ${DOTNET_EXAMPLE_DIR}/timestamp
     COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
       ${DOTNET_EXECUTABLE} build --nologo -c Release ${EXAMPLE_NAME}.csproj
-    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} pack -c Release ${EXAMPLE_NAME}.csproj
+    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+      ${DOTNET_EXECUTABLE} pack --nologo -c Release ${EXAMPLE_NAME}.csproj
     COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_EXAMPLE_DIR}/timestamp
     DEPENDS
       ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.csproj
