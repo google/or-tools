@@ -82,11 +82,17 @@ if(BUILD_TESTING)
     set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN:$ORIGIN/../lib:$ORIGIN")
   endif ()
 
+  if(USE_SCIP)
+    add_executable(test_scip_interface scip_interface_test.cc)
+    target_compile_features(test_scip_interface PRIVATE cxx_std_17)
+    target_link_libraries(test_scip_interface PRIVATE ortools::ortools GTest::gtest_main)
+    add_test(NAME cxx_unittests_scip_interface COMMAND test_scip_interface)
+  endif()
+
   if(USE_XPRESS)
     add_executable(test_xprs_interface xpress_interface_test.cc)
     target_compile_features(test_xprs_interface PRIVATE cxx_std_17)
     target_link_libraries(test_xprs_interface PRIVATE ortools::ortools GTest::gtest_main)
-
     add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
   endif()
 endif ()

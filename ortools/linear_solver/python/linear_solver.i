@@ -329,6 +329,7 @@ PY_CONVERT(MPVariable);
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint();
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
+%rename (IndicatorConstraint) operations_research::MPSolver::MakeIndicatorConstraint;
 %unignore operations_research::MPSolver::~MPSolver;
 %newobject operations_research::MPSolver::CreateSolver;
 %unignore operations_research::MPSolver::CreateSolver;

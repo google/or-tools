@@ -1511,6 +1511,23 @@ MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range,
   return constraint;
 }
 
+MPConstraint* MPSolver::MakeIndicatorConstraint(
+    double lb, double ub, const std::string& name,
+    const MPVariable* indicator_variable) {
+  const int constraint_index = NumConstraints();
+  MPConstraint* const constraint =
+      new MPConstraint(constraint_index, lb, ub, name, interface_.get());
+  constraint->indicator_variable_ = indicator_variable;
+  if (constraint_name_to_index_) {
+    gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
+                     constraint_index);
+  }
+  constraints_.push_back(constraint);
+  constraint_is_extracted_.push_back(false);
+  interface_->AddIndicatorConstraint(constraint);
+  return constraint;
+}
+
 int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
                                        int max_constraint_index) const {
   int max_constraint_size = 0;
@@ -1530,8 +1547,8 @@ bool MPSolver::HasInfeasibleConstraints() const {
   for (int i = 0; i < static_cast<int>(constraints_.size()); ++i) {
     if (constraints_[i]->lb() > constraints_[i]->ub()) {
       LOG(WARNING) << "Constraint " << constraints_[i]->name() << " (" << i
-                   << ") has contradictory bounds:" << " lower bound = "
-                   << constraints_[i]->lb()
+                   << ") has contradictory bounds:"
+                   << " lower bound = " << constraints_[i]->lb()
                    << " upper bound = " << constraints_[i]->ub();
       hasInfeasibleConstraints = true;
     }

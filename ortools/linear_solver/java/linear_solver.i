@@ -347,6 +347,7 @@ PROTO2_RETURN(
 %rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint();
 %rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
 %rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
+%rename (makeIndicatorConstraint) operations_research::MPSolver::MakeIndicatorConstraint;
 
 // Expose the MPSolver's basic API, with trivial renames.
 %rename (makeBoolVar) operations_research::MPSolver::MakeBoolVar;  // no test
