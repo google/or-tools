@@ -123,14 +123,13 @@
 #ifndef OR_TOOLS_GRAPH_MAX_FLOW_H_
 #define OR_TOOLS_GRAPH_MAX_FLOW_H_
 
-#include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/graph/graph.h"

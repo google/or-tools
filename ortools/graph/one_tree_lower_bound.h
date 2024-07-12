@@ -121,8 +121,6 @@
 #ifndef OR_TOOLS_GRAPH_ONE_TREE_LOWER_BOUND_H_
 #define OR_TOOLS_GRAPH_ONE_TREE_LOWER_BOUND_H_
 
-#include <math.h>
-
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -131,8 +129,9 @@
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/base/types.h"
+#include "ortools/base/logging.h"
 #include "ortools/graph/christofides.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"
 
 namespace operations_research {

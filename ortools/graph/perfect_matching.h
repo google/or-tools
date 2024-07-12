@@ -28,21 +28,16 @@
 
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 
 namespace operations_research {
 

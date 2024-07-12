@@ -22,6 +22,10 @@
 // | Yen   | No           | No                | (Un)directed | Yes            |
 //
 //
+// Loopless path: path not going through the same node more than once. Also
+// called simple path.
+//
+//
 // Design choices
 // ==============
 //
@@ -60,8 +64,11 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/optimization.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/shortest_paths.h"
@@ -302,16 +309,25 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
       std::priority_queue<internal::PathWithPriority>>
       variant_path_queue;
 
-  for (; k > 0; --k) {
+  // One path has already been generated (the shortest one). Only k-1 more
+  // paths need to be generated.
+  for (; k > 1; --k) {
+    VLOG(1) << "k: " << k;
+
     // Generate variant paths from the last shortest path.
     const absl::Span<NodeIndex> last_shortest_path =
         absl::MakeSpan(paths.paths.back());
 
     // TODO(user): think about adding parallelism for this loop to improve
-    // running times.
+    // running times. This is not a priority as long as the algorithm is
+    // faster than the one in `shortest_paths.h`.
     for (int spur_node_position = 0;
          spur_node_position < last_shortest_path.size() - 1;
          ++spur_node_position) {
+      VLOG(4) << "  spur_node_position: " << spur_node_position;
+      VLOG(4) << "  last_shortest_path: "
+              << absl::StrJoin(last_shortest_path, " - ") << " ("
+              << last_shortest_path.size() << ")";
       if (spur_node_position > 0) {
         DCHECK_NE(last_shortest_path[spur_node_position], source);
       }
@@ -342,18 +358,34 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
         // of the path in the search for the next shortest path. More
         // precisely, in that case, avoid the arc from the spur node to the
         // next node in the path.
-        if (previous_path.size() < spur_node_position) continue;
+        if (previous_path.size() <= root_path.length()) continue;
         const bool has_same_prefix_as_root_path = std::equal(
             root_path.begin(), root_path.end(), previous_path.begin(),
             previous_path.begin() + root_path.length());
-        if (has_same_prefix_as_root_path) {
-          const ArcIndex after_spur_node_arc =
-              internal::FindArcIndex(graph, previous_path[spur_node_position],
-                                     previous_path[spur_node_position + 1]);
-          arc_lengths_for_detour[after_spur_node_arc] =
-              internal::kDisconnectedDistance;
+        if (!has_same_prefix_as_root_path) continue;
+
+        const ArcIndex after_spur_node_arc =
+            internal::FindArcIndex(graph, previous_path[spur_node_position],
+                                   previous_path[spur_node_position + 1]);
+        VLOG(4) << "  after_spur_node_arc: " << graph.Tail(after_spur_node_arc)
+                << " - " << graph.Head(after_spur_node_arc) << " (" << source
+                << " - " << destination << ")";
+        arc_lengths_for_detour[after_spur_node_arc] =
+            internal::kDisconnectedDistance;
+      }
+      // Ensure that the path computed from the new weights is loopless by
+      // "removing" the nodes of the root path from the graph (by tweaking the
+      // weights, again). The previous operation only disallows the arc from the
+      // spur node (at the end of the root path) to the next node in the
+      // previously found paths.
+      for (int node_position = 0; node_position < spur_node_position;
+           ++node_position) {
+        for (const int arc : graph.OutgoingArcs(root_path[node_position])) {
+          arc_lengths_for_detour[arc] = internal::kDisconnectedDistance;
         }
       }
+      VLOG(3) << "  arc_lengths_for_detour: "
+              << absl::StrJoin(arc_lengths_for_detour, " - ");
 
       // Generate a new candidate path from the spur node to the destination
       // without using the forbidden arcs.
@@ -366,11 +398,16 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
           // Node unreachable after some arcs are forbidden.
           continue;
         }
+        VLOG(2) << "  detour_path: "
+                << absl::StrJoin(std::get<0>(detour_path), " - ") << " ("
+                << std::get<0>(detour_path).size()
+                << "): " << std::get<1>(detour_path);
         std::vector<NodeIndex> spur_path = std::move(std::get<0>(detour_path));
         if (ABSL_PREDICT_FALSE(spur_path.empty())) continue;
 
 #ifndef NDEBUG
         CHECK_EQ(root_path.back(), spur_path.front());
+        CHECK_EQ(spur_node, spur_path.front());
 
         if (spur_path.size() == 1) {
           CHECK_EQ(spur_path.front(), destination);
@@ -386,6 +423,22 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
               });
           CHECK(root_path_leads_to_spur_path);
         }
+
+        // Ensure the forbidden arc is not present in any previously generated
+        // path.
+        for (absl::Span<const NodeIndex> previous_path : paths.paths) {
+          if (previous_path.size() <= spur_node_position + 1) continue;
+          const bool has_same_prefix_as_root_path = std::equal(
+              root_path.begin(), root_path.end(), previous_path.begin(),
+              previous_path.begin() + root_path.length());
+          if (has_same_prefix_as_root_path) {
+            CHECK_NE(spur_path[1], previous_path[spur_node_position + 1])
+                << "Forbidden arc " << previous_path[spur_node_position]
+                << " - " << previous_path[spur_node_position + 1]
+                << " is present in the spur path "
+                << absl::StrJoin(spur_path, " - ");
+          }
+        }
 #endif  // !defined(NDEBUG)
 
         // Assemble the new path.
@@ -396,6 +449,15 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
 
         DCHECK_EQ(new_path.front(), source);
         DCHECK_EQ(new_path.back(), destination);
+
+#ifndef NDEBUG
+        // Ensure the assembled path is loopless, i.e. no node is repeated.
+        {
+          absl::flat_hash_set<NodeIndex> visited_nodes(new_path.begin(),
+                                                       new_path.end());
+          CHECK_EQ(visited_nodes.size(), new_path.size());
+        }
+#endif  // !defined(NDEBUG)
 
         // Ensure the new path is not one of the previously known ones. This
         // operation is required, as there are two sources of paths from the
@@ -419,6 +481,13 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
 
         const PathDistance path_length =
             internal::ComputePathLength(graph, arc_lengths, new_path);
+        VLOG(5) << "  New potential path generated: "
+                << absl::StrJoin(new_path, " - ") << " (" << new_path.size()
+                << ")";
+        VLOG(5) << "    Root: " << absl::StrJoin(root_path, " - ") << " ("
+                << root_path.size() << ")";
+        VLOG(5) << "    Spur: " << absl::StrJoin(spur_path, " - ") << " ("
+                << spur_path.size() << ")";
         variant_path_queue.emplace(
             /*priority=*/path_length, /*path=*/std::move(new_path));
       }
@@ -431,6 +500,9 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
 
     const internal::PathWithPriority& next_shortest_path =
         variant_path_queue.top();
+    VLOG(5) << "> New path generated: "
+            << absl::StrJoin(next_shortest_path.path(), " - ") << " ("
+            << next_shortest_path.path().size() << ")";
     paths.paths.emplace_back(next_shortest_path.path());
     paths.distances.push_back(next_shortest_path.priority());
     variant_path_queue.pop();

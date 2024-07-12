@@ -49,11 +49,11 @@ namespace operations_research {
 // Basic API.
 // -----------------------------------------------------------------------------
 
-// `tail` and `head` should both be in [0, num_nodes)
+// `from` and `to` should both be in [0, num_nodes).
 // If the length is +inf, then the arc should not be used.
 struct ArcWithLength {
-  int tail = 0;
-  int head = 0;
+  int from = 0;
+  int to = 0;
   double length = 0.0;
 };
 
@@ -368,13 +368,13 @@ ShortestPathsOnDagWrapper<GraphType>::ShortestPathsOnDagWrapper(
   CHECK_GT(graph_->num_nodes(), 0) << "The graph is empty: it has no nodes";
   CHECK_GT(graph_->num_arcs(), 0) << "The graph is empty: it has no arcs";
 #ifndef NDEBUG
-    CHECK_EQ(arc_lengths_->size(), graph_->num_arcs());
-    for (const double arc_length : *arc_lengths_) {
+  CHECK_EQ(arc_lengths_->size(), graph_->num_arcs());
+  for (const double arc_length : *arc_lengths_) {
     CHECK(arc_length != -kInf && !std::isnan(arc_length))
-          << absl::StrFormat("length cannot be -inf nor NaN");
-    }
-    CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
-        << "Invalid topological order";
+        << absl::StrFormat("length cannot be -inf nor NaN");
+  }
+  CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
+      << "Invalid topological order";
 #endif
 
   // Memory allocation is done here and only once in order to avoid reallocation
@@ -507,15 +507,15 @@ KShortestPathsOnDagWrapper<GraphType>::KShortestPathsOnDagWrapper(
   reverse_graph_ = GraphType(graph_->num_nodes(), num_arcs);
   for (ArcIndex arc_index = 0; arc_index < num_arcs; ++arc_index) {
     reverse_graph_.AddArc(graph->Head(arc_index), graph->Tail(arc_index));
-    }
+  }
   std::vector<ArcIndex> permutation;
   reverse_graph_.Build(&permutation);
   arc_indices_.resize(permutation.size());
   if (!permutation.empty()) {
     for (int i = 0; i < permutation.size(); ++i) {
       arc_indices_[permutation[i]] = i;
+    }
   }
-      }
 
   // Memory allocation is done here and only once in order to avoid reallocation
   // at each call of `RunKShortestPathOnDag()` for better performance.
@@ -526,10 +526,10 @@ KShortestPathsOnDagWrapper<GraphType>::KShortestPathsOnDagWrapper(
     lengths_from_sources_[k].resize(graph_->num_nodes(), kInf);
     incoming_shortest_paths_arc_[k].resize(graph_->num_nodes(), -1);
     incoming_shortest_paths_index_[k].resize(graph_->num_nodes(), -1);
-    }
+  }
   is_source_.resize(graph_->num_nodes(), false);
   reached_nodes_.reserve(graph_->num_nodes());
-  }
+}
 
 template <class GraphType>
 #if __cplusplus >= 202002L
