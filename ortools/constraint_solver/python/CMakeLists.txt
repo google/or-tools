@@ -47,6 +47,7 @@ if(MSVC)
   target_link_libraries(pywrapcp PRIVATE ${Python3_LIBRARIES})
 endif()
 
+# Test
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)

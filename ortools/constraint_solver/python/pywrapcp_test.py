@@ -15,6 +15,7 @@
 """Test Constraint Solver API."""
 
 import sys
+
 from absl.testing import absltest
 from ortools.constraint_solver import search_limit_pb2
 from ortools.constraint_solver import solver_parameters_pb2
@@ -26,6 +27,7 @@ def inc_callback(i):
 
 
 class ClassIncCallback:
+
     def __init__(self, increment):
         self.__increment = increment
 
@@ -34,6 +36,7 @@ class ClassIncCallback:
 
 
 class TestIntVarContainerAPI(absltest.TestCase):
+
     def test_contains(self):
         self.assertTrue(
             hasattr(pywrapcp.IntVarContainer, "Contains"),
@@ -65,6 +68,7 @@ class TestIntVarContainerAPI(absltest.TestCase):
 
 
 class TestIntervalVarContainerAPI(absltest.TestCase):
+
     def test_contains(self):
         self.assertTrue(
             hasattr(pywrapcp.IntervalVarContainer, "Contains"),
@@ -97,6 +101,7 @@ class TestIntervalVarContainerAPI(absltest.TestCase):
 
 
 class TestSequenceVarContainerAPI(absltest.TestCase):
+
     def test_contains(self):
         self.assertTrue(
             hasattr(pywrapcp.SequenceVarContainer, "Contains"),
@@ -129,6 +134,7 @@ class TestSequenceVarContainerAPI(absltest.TestCase):
 
 
 class PyWrapCPTest(absltest.TestCase):
+
     def testRabbitPheasant(self):
         # Create the solver.
         solver = pywrapcp.Solver("testRabbitPheasant")
@@ -527,6 +533,7 @@ class PyWrapCPTest(absltest.TestCase):
 
 
 class CustomSearchMonitor(pywrapcp.SearchMonitor):
+
     def __init__(self, solver, nexts):
         pywrapcp.SearchMonitor.__init__(self, solver)
         self._nexts = nexts
@@ -539,6 +546,7 @@ class CustomSearchMonitor(pywrapcp.SearchMonitor):
 
 
 class SearchMonitorTest(absltest.TestCase):
+
     def test_search_monitor(self):
         print("test_search_monitor")
         solver = pywrapcp.Solver("test search monitor")
@@ -551,6 +559,7 @@ class SearchMonitorTest(absltest.TestCase):
 
 
 class CustomDemon(pywrapcp.PyDemon):
+
     def __init__(self, x):
         super().__init__()
         self._x = x
@@ -561,6 +570,7 @@ class CustomDemon(pywrapcp.PyDemon):
 
 
 class DemonTest(absltest.TestCase):
+
     def test_demon(self):
         print("test_demon")
         solver = pywrapcp.Solver("test export")
@@ -570,6 +580,7 @@ class DemonTest(absltest.TestCase):
 
 
 class CustomConstraint(pywrapcp.PyConstraint):
+
     def __init__(self, solver, x):
         super().__init__(solver)
         self._x = x
@@ -592,6 +603,7 @@ class CustomConstraint(pywrapcp.PyConstraint):
 
 
 class InitialPropagateDemon(pywrapcp.PyDemon):
+
     def __init__(self, constraint):
         super().__init__()
         self._ct = constraint
@@ -601,6 +613,7 @@ class InitialPropagateDemon(pywrapcp.PyDemon):
 
 
 class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
+
     def __init__(self, solver, x):
         super().__init__(solver)
         self._x = x
@@ -619,6 +632,7 @@ class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
 
 
 class WatchDomain(pywrapcp.PyDemon):
+
     def __init__(self, x):
         super().__init__()
         self._x = x
@@ -629,6 +643,7 @@ class WatchDomain(pywrapcp.PyDemon):
 
 
 class HoleConstraint(pywrapcp.PyConstraint):
+
     def __init__(self, solver, x):
         super().__init__(solver)
         self._x = x
@@ -642,6 +657,7 @@ class HoleConstraint(pywrapcp.PyConstraint):
 
 
 class BinarySum(pywrapcp.PyConstraint):
+
     def __init__(self, solver, x, y, z):
         super().__init__(solver)
         self._x = x
@@ -661,6 +677,7 @@ class BinarySum(pywrapcp.PyConstraint):
 
 
 class ConstraintTest(absltest.TestCase):
+
     def test_member(self):
         print("test_member")
         solver = pywrapcp.Solver("test member")
@@ -759,6 +776,7 @@ class ConstraintTest(absltest.TestCase):
 
 
 class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
+
     def __init__(self):
         super().__init__()
         self._counter = 0
@@ -773,6 +791,7 @@ class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
 
 class CustomDecision(pywrapcp.PyDecision):
+
     def __init__(self):
         print("In CustomDecision ctor", file=sys.stderr)
         super().__init__()
@@ -792,6 +811,7 @@ class CustomDecision(pywrapcp.PyDecision):
 
 
 class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
+
     def __init__(self):
         super().__init__()
         self.__done = False
@@ -811,6 +831,7 @@ class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
 
 
 class DecisionTest(absltest.TestCase):
+
     def test_custom_decision_builder(self):
         solver = pywrapcp.Solver("test_custom_decision_builder")
         db = CustomDecisionBuilder()
@@ -827,6 +848,7 @@ class DecisionTest(absltest.TestCase):
 
 
 class LocalSearchTest(absltest.TestCase):
+
     class OneVarLNS(pywrapcp.BaseLns):
         """One Var LNS."""
 
@@ -959,6 +981,7 @@ class LocalSearchTest(absltest.TestCase):
 
 
 class MyDecisionBuilder(pywrapcp.PyDecisionBuilder):
+
     def __init__(self, var, value):
         super().__init__()
         self.__var = var
@@ -971,6 +994,7 @@ class MyDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
 
 class MyLns(pywrapcp.BaseLns):
+
     def __init__(self, int_vars):
         super().__init__(int_vars)
         self.__current = 0
@@ -989,6 +1013,7 @@ class MyLns(pywrapcp.BaseLns):
 
 
 class MyLnsNoValues(pywrapcp.BaseLns):
+
     def __init__(self, int_vars):
         super().__init__(int_vars)
         self.__current = 0
@@ -1005,6 +1030,7 @@ class MyLnsNoValues(pywrapcp.BaseLns):
 
 
 class MyDecisionBuilderWithRev(pywrapcp.PyDecisionBuilder):
+
     def __init__(self, var, value, rev):
         super().__init__()
         self.__var = var
@@ -1022,6 +1048,7 @@ class MyDecisionBuilderWithRev(pywrapcp.PyDecisionBuilder):
 
 
 class MyDecisionBuilderThatFailsWithRev(pywrapcp.PyDecisionBuilder):
+
     def Next(self, solver):
         solver.Fail()
         return None
@@ -1260,6 +1287,7 @@ class PyWrapCPSearchTest(absltest.TestCase):
 
 
 class SplitDomainDecisionBuilder(pywrapcp.PyDecisionBuilder):
+
     def __init__(self, var, value, lower):
         super().__init__()
         self.__var = var
@@ -1275,6 +1303,7 @@ class SplitDomainDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
 
 class PyWrapCPDecisionTest(absltest.TestCase):
+
     def testSplitDomainLower(self):
         solver = pywrapcp.Solver("testSplitDomainLower")
         x = solver.IntVar(0, 10, "x")
@@ -1331,6 +1360,7 @@ class PyWrapCPDecisionTest(absltest.TestCase):
 
 
 class IntVarLocalSearchOperatorTest(absltest.TestCase):
+
     def test_ctor(self):
         solver = pywrapcp.Solver("Solve")
         int_vars = [solver.IntVar(0, 4) for _ in range(4)]
