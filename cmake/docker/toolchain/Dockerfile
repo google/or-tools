@@ -5,7 +5,7 @@ FROM ubuntu:latest AS env
 ENV PATH=/usr/local/bin:$PATH
 RUN apt-get update -qq \
 && DEBIAN_FRONTEND=noninteractive apt-get install -yq git wget libssl-dev build-essential \
- ninja-build python3 pkgconf libglib2.0-dev \
+ ninja-build python3 python3-venv pkgconf libglib2.0-dev \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENTRYPOINT ["/usr/bin/bash", "-c"]
@@ -23,9 +23,12 @@ COPY . .
 
 ENV PROJECT=or-tools
 ARG TARGET
-ENV TARGET ${TARGET:-unknown}
+ENV TARGET=${TARGET:-unknown}
 
-FROM devel AS build
+FROM devel AS toolchain
+RUN ./tools/cross_compile.sh toolchain
+
+FROM toolchain AS build
 RUN cmake --version
 RUN ./tools/cross_compile.sh build
 
