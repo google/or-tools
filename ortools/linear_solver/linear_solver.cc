@@ -1517,6 +1517,7 @@ MPConstraint* MPSolver::MakeIndicatorConstraint(
   const int constraint_index = NumConstraints();
   MPConstraint* const constraint =
       new MPConstraint(constraint_index, lb, ub, name, interface_.get());
+  // TODO: check that variable is boolean?
   constraint->indicator_variable_ = indicator_variable;
   if (constraint_name_to_index_) {
     gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
@@ -1547,8 +1548,8 @@ bool MPSolver::HasInfeasibleConstraints() const {
   for (int i = 0; i < static_cast<int>(constraints_.size()); ++i) {
     if (constraints_[i]->lb() > constraints_[i]->ub()) {
       LOG(WARNING) << "Constraint " << constraints_[i]->name() << " (" << i
-                   << ") has contradictory bounds:"
-                   << " lower bound = " << constraints_[i]->lb()
+                   << ") has contradictory bounds:"<< " lower bound = "
+                   << constraints_[i]->lb()
                    << " upper bound = " << constraints_[i]->ub();
       hasInfeasibleConstraints = true;
     }
