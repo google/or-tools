@@ -18,6 +18,7 @@
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_cat.h"
 
@@ -27,7 +28,7 @@ SolverLogger::SolverLogger() { timer_.Start(); }
 
 void SolverLogger::AddInfoLoggingCallback(
     std::function<void(const std::string& message)> callback) {
-  info_callbacks_.push_back(callback);
+  info_callbacks_.push_back(std::move(callback));
 }
 
 void SolverLogger::ClearInfoLoggingCallbacks() { info_callbacks_.clear(); }

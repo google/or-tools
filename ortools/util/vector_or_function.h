@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 
 namespace operations_research {
 
