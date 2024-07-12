@@ -16,6 +16,8 @@
 #ifndef OR_TOOLS_UTIL_RANDOM_ENGINE_H_
 #define OR_TOOLS_UTIL_RANDOM_ENGINE_H_
 
+#include <random>
+
 namespace operations_research {
 
 using random_engine_t = std::mt19937_64;
