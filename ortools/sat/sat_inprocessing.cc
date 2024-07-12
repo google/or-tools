@@ -124,7 +124,9 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     // TODO(user): Combine the two? this way we don't create a full literal <->
     // clause graph twice. It might make sense to reach the BCE fix point which
     // is unique before each variable elimination.
-    blocked_clause_simplifier_->DoOneRound(log_round_info);
+    if (!params_.fill_tightened_domains_in_response()) {
+      blocked_clause_simplifier_->DoOneRound(log_round_info);
+    }
 
     // TODO(user): this break some binary graph invariant. Fix!
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -188,6 +190,9 @@ bool Inprocessing::InprocessingRound() {
   }
 
   // Try to spend a given ratio of time in the inprocessing.
+  //
+  // TODO(user): Tune the heuristic, in particular, with the current code we
+  // start some inprocessing before the first search.
   const double diff = start_dtime - reference_dtime_;
   if (total_dtime_ > params_.inprocessing_dtime_ratio() * diff) {
     return true;
@@ -366,7 +371,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 
   // Used to mark clause literals.
   const int num_literals(sat_solver_->NumVariables() * 2);
-  absl::StrongVector<LiteralIndex, bool> marked(num_literals, false);
+  util_intops::StrongVector<LiteralIndex, bool> marked(num_literals, false);
 
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
@@ -472,8 +477,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Clause index in clauses.
   // TODO(user): Storing signatures here might be faster?
-  absl::StrongVector<LiteralIndex, absl::InlinedVector<int, 6>> one_watcher(
-      num_literals.value());
+  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<int, 6>>
+      one_watcher(num_literals.value());
 
   // Clause signatures in the same order as clauses.
   std::vector<uint64_t> signatures(clauses.size());

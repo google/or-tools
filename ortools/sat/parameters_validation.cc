@@ -92,6 +92,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(mip_drop_tolerance);
   TEST_IS_FINITE(shared_tree_worker_objective_split_probability);
   TEST_IS_FINITE(shared_tree_open_leaves_per_worker);
+  TEST_IS_FINITE(feasibility_jump_batch_dtime);
 
   TEST_POSITIVE(at_most_one_max_expansion_size);
 
@@ -102,7 +103,6 @@ std::string ValidateParameters(const SatParameters& params) {
   const int kMaxReasonableParallelism = 10'000;
   TEST_IN_RANGE(num_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(num_search_workers, 0, kMaxReasonableParallelism);
-  TEST_IN_RANGE(min_num_lns_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(shared_tree_num_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(interleave_batch_size, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(shared_tree_open_leaves_per_worker, 1,
@@ -163,14 +163,6 @@ std::string ValidateParameters(const SatParameters& params) {
     return "Do not specify both num_search_workers and num_workers";
   }
 
-  if (params.has_shared_tree_num_workers() &&
-      static_cast<int64_t>(params.shared_tree_num_workers()) +
-              static_cast<int64_t>(params.min_num_lns_workers()) >
-          std::max<int64_t>(params.num_workers(),
-                            params.num_search_workers())) {
-    return "Cannot have more shared tree + lns workers than total workers";
-  }
-
   if (params.use_shared_tree_search()) {
     return "use_shared_tree_search must only be set on workers' parameters";
   }
@@ -199,11 +191,6 @@ std::string ValidateParameters(const SatParameters& params) {
     }
   }
 
-  for (const std::string& subsolver : params.ignore_subsolvers()) {
-    if (!strategies.contains(subsolver)) {
-      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
-    }
-  }
   return "";
 }
 

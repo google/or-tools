@@ -201,12 +201,12 @@ class IntervalsRepository {
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
-  absl::StrongVector<IntervalVariable, LiteralIndex> is_present_;
+  util_intops::StrongVector<IntervalVariable, LiteralIndex> is_present_;
 
   // The integer variables for each tasks.
-  absl::StrongVector<IntervalVariable, AffineExpression> starts_;
-  absl::StrongVector<IntervalVariable, AffineExpression> ends_;
-  absl::StrongVector<IntervalVariable, AffineExpression> sizes_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> starts_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> ends_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> sizes_;
 
   // We can share the helper for all the propagators that work on the same set
   // of intervals.
@@ -241,6 +241,19 @@ struct TaskTime {
   IntegerValue time;
   bool operator<(TaskTime other) const { return time < other.time; }
   bool operator>(TaskTime other) const { return time > other.time; }
+};
+
+// We have some free space in TaskTime.
+// We stick the presence_lit to save an indirection in some algo.
+//
+// TODO(user): Experiment caching more value. In particular
+// TaskByIncreasingShiftedStartMin() could tie break task for better heuristics?
+struct CachedTaskBounds {
+  int task_index;
+  LiteralIndex presence_lit;
+  IntegerValue time;
+  bool operator<(CachedTaskBounds other) const { return time < other.time; }
+  bool operator>(CachedTaskBounds other) const { return time > other.time; }
 };
 
 // Helper class shared by the propagators that manage a given list of tasks.
@@ -317,6 +330,9 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   IntegerValue LevelZeroStartMax(int t) const {
     return integer_trail_->LevelZeroUpperBound(starts_[t]);
   }
+  IntegerValue LevelZeroEndMax(int t) const {
+    return integer_trail_->LevelZeroUpperBound(ends_[t]);
+  }
 
   // In the presence of tasks with a variable size, we do not necessarily
   // have start_min + size_min = end_min, we can instead have a situation
@@ -353,6 +369,11 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   bool IsPresent(int t) const;
   bool IsAbsent(int t) const;
 
+  // Same if one already have the presence LiteralIndex of a task.
+  bool IsOptional(LiteralIndex lit) const;
+  bool IsPresent(LiteralIndex lit) const;
+  bool IsAbsent(LiteralIndex lit) const;
+
   // Return a value so that End(a) + dist <= Start(b).
   // Returns kMinInterValue if we don't have any such relation.
   IntegerValue GetCurrentMinDistanceBetweenTasks(
@@ -382,7 +403,8 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   absl::Span<const TaskTime> TaskByIncreasingEndMin();
   absl::Span<const TaskTime> TaskByDecreasingStartMax();
   absl::Span<const TaskTime> TaskByDecreasingEndMax();
-  absl::Span<const TaskTime> TaskByIncreasingShiftedStartMin();
+
+  absl::Span<const CachedTaskBounds> TaskByIncreasingShiftedStartMin();
 
   // Returns a sorted vector where each task appear twice, the first occurrence
   // is at size (end_min - size_min) and the second one at (end_min).
@@ -414,6 +436,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   void AddStartMaxReason(int t, IntegerValue upper_bound);
   void AddEndMinReason(int t, IntegerValue lower_bound);
   void AddEndMaxReason(int t, IntegerValue upper_bound);
+  void AddShiftedEndMaxReason(int t, IntegerValue upper_bound);
 
   void AddEnergyAfterReason(int t, IntegerValue energy_min, IntegerValue time);
   void AddEnergyMinInIntervalReason(int t, IntegerValue min, IntegerValue max);
@@ -571,15 +594,15 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   // This one is the most commonly used, so we optimized a bit more its
   // computation by detecting when there is nothing to do.
-  std::vector<TaskTime> task_by_increasing_shifted_start_min_;
-  std::vector<TaskTime> task_by_negated_shifted_end_max_;
+  std::vector<CachedTaskBounds> task_by_increasing_shifted_start_min_;
+  std::vector<CachedTaskBounds> task_by_negated_shifted_end_max_;
   bool recompute_shifted_start_min_ = true;
   bool recompute_negated_shifted_end_max_ = true;
 
   // If recompute_cache_[t] is true, then we need to update all the cached
   // value for the task t in SynchronizeAndSetTimeDirection().
   bool recompute_all_cache_ = true;
-  std::vector<bool> recompute_cache_;
+  Bitset64<int> recompute_cache_;
 
   // Reason vectors.
   std::vector<Literal> literal_reason_;
@@ -612,8 +635,12 @@ class SchedulingDemandHelper {
   // this.
   IntegerValue DemandMin(int t) const;
   IntegerValue DemandMax(int t) const;
+  IntegerValue LevelZeroDemandMin(int t) const {
+    return integer_trail_->LevelZeroLowerBound(demands_[t]);
+  }
   bool DemandIsFixed(int t) const;
   void AddDemandMinReason(int t);
+  void AddDemandMinReason(int t, IntegerValue min_demand);
   const std::vector<AffineExpression>& Demands() const { return demands_; }
 
   // Adds the linearized demand (either the affine demand expression, or the
@@ -747,6 +774,20 @@ inline bool SchedulingConstraintHelper::IsAbsent(int t) const {
   return trail_->Assignment().LiteralIsFalse(Literal(reason_for_presence_[t]));
 }
 
+inline bool SchedulingConstraintHelper::IsOptional(LiteralIndex lit) const {
+  return lit != kNoLiteralIndex;
+}
+
+inline bool SchedulingConstraintHelper::IsPresent(LiteralIndex lit) const {
+  if (lit == kNoLiteralIndex) return true;
+  return trail_->Assignment().LiteralIsTrue(Literal(lit));
+}
+
+inline bool SchedulingConstraintHelper::IsAbsent(LiteralIndex lit) const {
+  if (lit == kNoLiteralIndex) return false;
+  return trail_->Assignment().LiteralIsFalse(Literal(lit));
+}
+
 inline void SchedulingConstraintHelper::ClearReason() {
   integer_reason_.clear();
   literal_reason_.clear();
@@ -846,6 +887,11 @@ inline void SchedulingConstraintHelper::AddEndMaxReason(
   AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   AddGenericReason(ends_[t], upper_bound, starts_[t], sizes_[t]);
+}
+
+inline void SchedulingConstraintHelper::AddShiftedEndMaxReason(
+    int t, IntegerValue upper_bound) {
+  AddStartMaxReason(t, upper_bound - SizeMin(t));
 }
 
 inline void SchedulingConstraintHelper::AddEnergyAfterReason(

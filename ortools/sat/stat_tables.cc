@@ -68,8 +68,9 @@ SharedStatTables::SharedStatTables() {
   lns_table_.push_back(
       {"LNS stats", "Improv/Calls", "Closed", "Difficulty", "TimeLimit"});
 
-  ls_table_.push_back({"LS stats", "Batches", "Restarts", "LinMoves",
-                       "GenMoves", "CompoundMoves", "WeightUpdates"});
+  ls_table_.push_back({"LS stats", "Batches", "Restarts/Perturbs", "LinMoves",
+                       "GenMoves", "CompoundMoves", "Bactracks",
+                       "WeightUpdates", "ScoreComputed"});
 }
 
 void SharedStatTables::AddTimingStat(const SubSolver& subsolver) {
@@ -245,13 +246,16 @@ void SharedStatTables::AddLsStat(absl::string_view name, int64_t num_batches,
                                  int64_t num_restarts, int64_t num_linear_moves,
                                  int64_t num_general_moves,
                                  int64_t num_compound_moves,
-                                 int64_t num_weight_updates) {
+                                 int64_t num_backtracks,
+                                 int64_t num_weight_updates,
+                                 int64_t num_scores_computed) {
   absl::MutexLock mutex_lock(&mutex_);
   ls_table_.push_back(
       {FormatName(name), FormatCounter(num_batches),
        FormatCounter(num_restarts), FormatCounter(num_linear_moves),
        FormatCounter(num_general_moves), FormatCounter(num_compound_moves),
-       FormatCounter(num_weight_updates)});
+       FormatCounter(num_backtracks), FormatCounter(num_weight_updates),
+       FormatCounter(num_scores_computed)});
 }
 
 void SharedStatTables::Display(SolverLogger* logger) {

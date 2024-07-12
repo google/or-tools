@@ -375,11 +375,13 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import java.util.function.Consumer;
 
 /** Solves an optimization problem and displays all intermediate solutions. */
-public class SolveAndPrintIntermediateSolutionsSampleSat {
+public final class SolveAndPrintIntermediateSolutionsSampleSat {
   static class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
       variableArray = variables;
@@ -403,6 +405,27 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
     private final IntVar[] variableArray;
   }
 
+  static class BestBoundCallback implements Consumer<Double> {
+    public BestBoundCallback() {
+      bestBound = 0.0;
+      numImprovements = 0;
+    }
+
+    @Override
+    public void accept(Double bound) {
+      bestBound = bound;
+      numImprovements++;
+    }
+
+    public double getBestBound() {
+      return bestBound;
+    }
+
+    double bestBound;
+    int numImprovements;
+  }
+
+
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // Create the model.
@@ -425,10 +448,18 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
-    solver.solve(model, cb);
+    solver.getParameters().setNumWorkers(1);
+    solver.getParameters().setLinearizationLevel(2);
+    BestBoundCallback bestBoundCallback = new BestBoundCallback();
 
-    System.out.println(cb.getSolutionCount() + " solutions found.");
+    solver.setBestBoundCallback(bestBoundCallback);
+    CpSolverStatus unusedStatus = solver.solve(model, cb);
+
+    System.out.println("solution count: " + cb.getSolutionCount());
+    System.out.println("best bound count: " + bestBoundCallback.numImprovements);
   }
+
+  private SolveAndPrintIntermediateSolutionsSampleSat() {}
 }
 ```
 
@@ -707,6 +738,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays all solutions. */
@@ -754,7 +786,7 @@ public class SearchForAllSolutionsSampleSat {
     // Tell the solver to enumerate all solutions.
     solver.getParameters().setEnumerateAllSolutions(true);
     // And solve.
-    solver.solve(model, cb);
+    CpSolverStatus unusedStatus = solver.solve(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
   }
@@ -1037,6 +1069,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays a small number of solutions. */
@@ -1087,7 +1120,7 @@ public final class StopAfterNSolutionsSampleSat {
     // Tell the solver to enumerate all solutions.
     solver.getParameters().setEnumerateAllSolutions(true);
     // And solve.
-    solver.solve(model, cb);
+    CpSolverStatus unusedStatus = solver.solve(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
     if (cb.getSolutionCount() != 5) {

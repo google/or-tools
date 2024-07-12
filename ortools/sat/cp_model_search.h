@@ -97,7 +97,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
-    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
+    std::function<BooleanOrIntegerLiteral()> instrumented_strategy,
     Model* model);
 
 // Returns all the named set of parameters known to the solver. This include our
@@ -106,29 +106,69 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 //
 // Usually, named strategies just override a few field from the base_params.
 absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
+    SatParameters base_params);
+
+// Returns a list of full workers to run.
+class SubsolverNameFilter;
+std::vector<SatParameters> GetFullWorkerParameters(
+    const SatParameters& base_params, const CpModelProto& cp_model,
+    int num_already_present, SubsolverNameFilter* name_filter);
+
+// Given a base set of parameter, if non-empty, this repeat them (round-robbin)
+// until we get num_params_to_generate. Note that if we don't have a multiple,
+// the first base parameters will be repeated more than the others.
+//
+// Note that this will also change the random_seed of each of these parameters.
+std::vector<SatParameters> RepeatParameters(
+    absl::Span<const SatParameters> base_params, int num_params_to_generate);
+
+// Returns a vector of base parameters to specify solvers specialized to find a
+// initial solution. This is meant to be used with RepeatParameters() and
+// FilterParameters().
+std::vector<SatParameters> GetFirstSolutionBaseParams(
     const SatParameters& base_params);
 
-// Returns up to base_params.num_workers() different parameters.
-// We do not always return num_worker parameters to leave room for strategies
-// like LNS that do not consume a full worker and can always be interleaved.
-std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model);
+// Simple class used to filter executed subsolver names.
+class SubsolverNameFilter {
+ public:
+  // Warning, params must outlive the class and be constant.
+  explicit SubsolverNameFilter(const SatParameters& params);
 
-// Returns a vector of num_params_to_generate set of parameters to specify
-// solvers specialized to find a initial solution.
-std::vector<SatParameters> GetFirstSolutionParams(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    int num_params_to_generate);
+  // Shall we keep a parameter with given name?
+  bool Keep(absl::string_view name);
 
-// Returns a vector of num_params_to_generate set of parameters to specify
-// solvers that cooperatively explore a search tree.
-std::vector<SatParameters> GetWorkSharingParams(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    int num_params_to_generate);
+  // Applies Keep() to all the input list.
+  std::vector<SatParameters> Filter(absl::Span<const SatParameters> input) {
+    std::vector<SatParameters> result;
+    for (const SatParameters& param : input) {
+      if (Keep(param.name())) {
+        result.push_back(param);
+      }
+    }
+    return result;
+  }
 
-// This generates a valid random seed (base_seed + delta) without overflow.
-// We assume |delta| is small.
-int ValidSumSeed(int base_seed, int delta);
+  // This is just a convenient function to follow the pattern
+  // if (filter.Keep("my_name")) subsovers.Add(.... filter.LastName() ... )
+  // And not repeat "my_name" twice.
+  std::string LastName() const { return last_name_; }
+
+  // Returns the list of all ignored subsolver for use in logs.
+  const std::vector<std::string>& AllIgnored() {
+    gtl::STLSortAndRemoveDuplicates(&ignored_);
+    return ignored_;
+  }
+
+ private:
+  // Copy of absl::log_internal::FNMatch().
+  bool FNMatch(absl::string_view pattern, absl::string_view str);
+
+  std::vector<std::string> filter_patterns_;
+  std::vector<std::string> ignore_patterns_;
+  std::string last_name_;
+
+  std::vector<std::string> ignored_;
+};
 
 }  // namespace sat
 }  // namespace operations_research

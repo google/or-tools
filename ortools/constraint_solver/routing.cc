@@ -1028,7 +1028,7 @@ namespace {
 struct ResourceClass {
   using DimensionIndex = RoutingModel::DimensionIndex;
   /// The attributes for each dimension.
-  absl::StrongVector<DimensionIndex, ResourceGroup::Attributes>
+  util_intops::StrongVector<DimensionIndex, ResourceGroup::Attributes>
       dimension_attributes;
   /// Assignability of vehicles.
   std::vector<bool> assignable_to_vehicle;
@@ -1054,7 +1054,7 @@ void ResourceGroup::ComputeResourceClasses() {
   for (int r = 0; r < resources_.size(); ++r) {
     ResourceClass resource_class;
 
-    absl::StrongVector<DimensionIndex, Attributes>& dim_attributes =
+    util_intops::StrongVector<DimensionIndex, Attributes>& dim_attributes =
         resource_class.dimension_attributes;
     dim_attributes.resize(model_->dimensions_.size(), Attributes());
     for (const auto& [dim_index, attributes] :
@@ -1355,14 +1355,14 @@ struct VehicleClass {
   int end_equivalence_class;
   /// Bounds of cumul variables at start and end vehicle nodes.
   /// dimension_{start,end}_cumuls_{min,max}[d] is the bound for dimension d.
-  absl::StrongVector<DimensionIndex, int64_t> dimension_start_cumuls_min;
-  absl::StrongVector<DimensionIndex, int64_t> dimension_start_cumuls_max;
-  absl::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_min;
-  absl::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_max;
-  absl::StrongVector<DimensionIndex, int64_t> dimension_capacities;
+  util_intops::StrongVector<DimensionIndex, int64_t> dimension_start_cumuls_min;
+  util_intops::StrongVector<DimensionIndex, int64_t> dimension_start_cumuls_max;
+  util_intops::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_min;
+  util_intops::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_max;
+  util_intops::StrongVector<DimensionIndex, int64_t> dimension_capacities;
   /// dimension_evaluators[d]->Run(from, to) is the transit value of arc
   /// from->to for a dimension d.
-  absl::StrongVector<DimensionIndex, int64_t> dimension_evaluator_classes;
+  util_intops::StrongVector<DimensionIndex, int64_t> dimension_evaluator_classes;
   /// Hash of the visitability of (non-start/end) nodes.
   uint64_t visitable_nodes_hash;
   /// Hash of allowed resources for each resource group, or -1 if a given

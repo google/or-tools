@@ -16,30 +16,39 @@
 // the input problem.
 
 #include <atomic>
+#include <cstdint>
+#include <cstdlib>
+#include <optional>
 #include <string>
-#include <utility>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
+#include "absl/log/check.h"
+#include "absl/log/flags.h"
 #include "absl/strings/match.h"
-#include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/options.h"
 #include "ortools/pdlp/iteration_stats.h"
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
+#include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/quadratic_program_io.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sigint.h"
 
 // TODO: .mps.gz files aren't working. As a workaround, use .mps.
 
-ABSL_FLAG(std::string, input, "", "REQUIRED: Input file name.");
+ABSL_FLAG(
+    std::string, input, "",
+    "REQUIRED: Input file name. The following formats are supported: \n"
+    "  - a .mps, .mps.bz2 file,\n"
+    "  - an MPModelProto [.pb (binary), .textproto (text), *.json, *.json.gz]");
 ABSL_FLAG(std::string, params, "",
           "PrimalDualHybridGradientParams in text format");
 ABSL_FLAG(std::string, solve_log_file, "",
@@ -48,11 +57,6 @@ ABSL_FLAG(std::string, solve_log_file, "",
 ABSL_FLAG(
     std::string, sol_file, "",
     "If non-empty, output the final primal solution in Miplib .sol format.");
-
-static const char kUsageStr[] =
-    "Run PDLP on the given input file. The following formats are supported: \n"
-    "  - a .mps, .mps.gz, .mps.bz2 file,\n"
-    "  - an MPModelProto [.pb (binary), .textproto (text), *.json, *.json.gz]";
 
 namespace operations_research::pdlp {
 
@@ -68,11 +72,12 @@ void WriteSolveLog(const std::string& solve_log_file, const SolveLog& log) {
     LOG(FATAL) << "Unrecognized file extension for --solve_log_file: "
                << solve_log_file << ". Expected .textproto, .pb, or .json";
   }
-  QCHECK(WriteProtoToFile(solve_log_file, log, write_format, /*gzipped=*/false,
-                          /*append_extension_to_file_name=*/false).ok());
+  QCHECK_OK(WriteProtoToFile(solve_log_file, log, write_format,
+                             /*gzipped=*/false,
+                             /*append_extension_to_file_name=*/false));
 }
 
-void Solve(const std::string& input, const std::string& params_str,
+void Solve(const std::string& input, absl::string_view params_str,
            const std::string& solve_log_file, const std::string& sol_file) {
   QCHECK(!input.empty()) << "--input is required";
   PrimalDualHybridGradientParams params;
@@ -104,8 +109,9 @@ void Solve(const std::string& input, const std::string& params_str,
   // TODO: In what format should we write the dual solution?
   if (!sol_file.empty() && convergence_information.has_value()) {
     std::string sol_string;
-    absl::StrAppend(&sol_string,
-                    "=obj= ", convergence_information->primal_objective(),
+    absl::StrAppend(
+        &sol_string, "=obj= ",
+        RoundTripDoubleFormat(convergence_information->primal_objective()),
                     "\n");
     for (int64_t i = 0; i < result.primal_solution.size(); ++i) {
       std::string name;
@@ -114,7 +120,8 @@ void Solve(const std::string& input, const std::string& params_str,
       } else {
         name = absl::StrCat("var", i);
       }
-      absl::StrAppend(&sol_string, name, " ", result.primal_solution(i), "\n");
+      absl::StrAppend(&sol_string, name, " ",
+                      RoundTripDoubleFormat(result.primal_solution(i)), "\n");
     }
     LOG(INFO) << "Writing .sol solution to '" << sol_file << "'.\n";
     CHECK_OK(file::SetContents(sol_file, sol_string, file::Defaults()));
@@ -125,8 +132,7 @@ void Solve(const std::string& input, const std::string& params_str,
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_stderrthreshold, 0);
-  google::InitGoogleLogging(kUsageStr);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);
 
   operations_research::pdlp::Solve(
       absl::GetFlag(FLAGS_input), absl::GetFlag(FLAGS_params),

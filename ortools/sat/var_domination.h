@@ -182,16 +182,16 @@ class VarDomination {
   // S.
   std::vector<int> tmp_vars_;
   std::unique_ptr<SimpleDynamicPartition> partition_;
-  absl::StrongVector<IntegerVariable, bool> can_freely_decrease_;
+  util_intops::StrongVector<IntegerVariable, bool> can_freely_decrease_;
 
   // For all one sided constraints, we keep the bitmap of constraint indices
   // modulo 64 that block on the lower side each variable.
   int64_t ct_index_for_signature_ = 0;
-  absl::StrongVector<IntegerVariable, uint64_t> block_down_signatures_;
+  util_intops::StrongVector<IntegerVariable, uint64_t> block_down_signatures_;
 
   // Used by FilterUsingTempRanks().
   int num_vars_with_negation_;
-  absl::StrongVector<IntegerVariable, int> tmp_var_to_rank_;
+  util_intops::StrongVector<IntegerVariable, int> tmp_var_to_rank_;
 
   // We don't use absl::Span() because the underlying buffer can be resized.
   // This however serve the same purpose.
@@ -203,14 +203,16 @@ class VarDomination {
   // This hold the first phase best candidate.
   // Warning, the initial candidates span can overlap in the shared_buffer_.
   std::vector<IntegerVariable> shared_buffer_;
-  absl::StrongVector<IntegerVariable, bool> has_initial_candidates_;
-  absl::StrongVector<IntegerVariable, IntegerVariableSpan> initial_candidates_;
+  util_intops::StrongVector<IntegerVariable, bool> has_initial_candidates_;
+  util_intops::StrongVector<IntegerVariable, IntegerVariableSpan>
+      initial_candidates_;
 
   // This will hold the final result.
   // Buffer with independent content for each vars.
   std::vector<IntegerVariable> buffer_;
   std::vector<IntegerVariable> other_buffer_;
-  absl::StrongVector<IntegerVariable, IntegerVariableSpan> dominating_vars_;
+  util_intops::StrongVector<IntegerVariable, IntegerVariableSpan>
+      dominating_vars_;
 };
 
 // This detects variables that can move freely in one direction, or that can
@@ -266,15 +268,16 @@ class DualBoundStrengthening {
   }
 
   // Starts with kMaxIntegerValue, and decrease as constraints are processed.
-  absl::StrongVector<IntegerVariable, IntegerValue> can_freely_decrease_until_;
+  util_intops::StrongVector<IntegerVariable, IntegerValue>
+      can_freely_decrease_until_;
 
   // How many times can_freely_decrease_until_[var] was set by a constraints.
   // If only one constraint is blocking, we can do more presolve.
-  absl::StrongVector<IntegerVariable, int> num_locks_;
+  util_intops::StrongVector<IntegerVariable, int> num_locks_;
 
   // If num_locks_[var] == 1, this will be the unique constraint that block var
   // in this direction. Note that it can be set to -1 if this wasn't recorded.
-  absl::StrongVector<IntegerVariable, int> locking_ct_index_;
+  util_intops::StrongVector<IntegerVariable, int> locking_ct_index_;
 
   int num_deleted_constraints_ = 0;
 };

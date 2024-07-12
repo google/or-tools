@@ -332,8 +332,8 @@ struct AffineExpression {
   }
 
   // Returns the affine expression value under a given LP solution.
-  double LpValue(
-      const absl::StrongVector<IntegerVariable, double>& lp_values) const {
+  double LpValue(const util_intops::StrongVector<IntegerVariable, double>&
+                     lp_values) const {
     if (var == kNoIntegerVariable) return ToDouble(constant);
     return ToDouble(coeff) * lp_values[var] + ToDouble(constant);
   }
@@ -372,7 +372,8 @@ H AbslHashValue(H h, const AffineExpression& e) {
 
 // A model singleton that holds the root level integer variable domains.
 // we just store a single domain for both var and its negation.
-struct IntegerDomains : public absl::StrongVector<PositiveOnlyIndex, Domain> {};
+struct IntegerDomains
+    : public util_intops::StrongVector<PositiveOnlyIndex, Domain> {};
 
 // A model singleton used for debugging. If this is set in the model, then we
 // can check that various derived constraint do not exclude this solution (if it
@@ -390,8 +391,8 @@ struct DebugSolution {
   // TODO(user): When this happen we should be able to infer the value of these
   // derived variable in the solution. For now, we only do that for the
   // objective variable.
-  absl::StrongVector<IntegerVariable, bool> ivar_has_value;
-  absl::StrongVector<IntegerVariable, IntegerValue> ivar_values;
+  util_intops::StrongVector<IntegerVariable, bool> ivar_has_value;
+  util_intops::StrongVector<IntegerVariable, IntegerValue> ivar_values;
 };
 
 // A value and a literal.
@@ -698,15 +699,16 @@ class IntegerEncoder {
   //
   // TODO(user): Remove the entry no longer needed because of level zero
   // propagations.
-  absl::StrongVector<PositiveOnlyIndex, absl::btree_map<IntegerValue, Literal>>
+  util_intops::StrongVector<PositiveOnlyIndex,
+                            absl::btree_map<IntegerValue, Literal>>
       encoding_by_var_;
 
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
-  absl::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
+  util_intops::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
       reverse_encoding_;
   const InlinedIntegerValueVector empty_integer_value_vector_;
-  absl::StrongVector<LiteralIndex, InlinedIntegerValueVector>
+  util_intops::StrongVector<LiteralIndex, InlinedIntegerValueVector>
       reverse_equality_encoding_;
 
   // Used by GetAllAssociatedVariables().
@@ -714,7 +716,7 @@ class IntegerEncoder {
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
   // if there is none.
-  absl::StrongVector<LiteralIndex, IntegerVariable> literal_view_;
+  util_intops::StrongVector<LiteralIndex, IntegerVariable> literal_view_;
 
   // Mapping (variable == value) -> associated literal. Note that even if
   // there is more than one literal associated to the same fact, we just keep
@@ -726,12 +728,12 @@ class IntegerEncoder {
       equality_to_associated_literal_;
 
   // Mutable because this is lazily cleaned-up by PartialDomainEncoding().
-  mutable absl::StrongVector<PositiveOnlyIndex,
-                             absl::InlinedVector<ValueLiteralPair, 2>>
+  mutable util_intops::StrongVector<PositiveOnlyIndex,
+                                    absl::InlinedVector<ValueLiteralPair, 2>>
       equality_by_var_;
 
   // Variables that are fully encoded.
-  mutable absl::StrongVector<PositiveOnlyIndex, bool> is_fully_encoded_;
+  mutable util_intops::StrongVector<PositiveOnlyIndex, bool> is_fully_encoded_;
 
   // A literal that is always true, convenient to encode trivial domains.
   // This will be lazily created when needed.
@@ -745,10 +747,35 @@ class IntegerEncoder {
   mutable std::vector<ValueLiteralPair> partial_encoding_;
 };
 
+class LazyReasonInterface {
+ public:
+  LazyReasonInterface() = default;
+  virtual ~LazyReasonInterface() = default;
+
+  // The function is provided with the IntegerLiteral to explain and its index
+  // in the integer trail. It must fill the two vectors so that literals
+  // contains any Literal part of the reason and dependencies contains the trail
+  // index of any IntegerLiteral that is also part of the reason.
+  //
+  // Remark: sometimes this is called to fill the conflict while the literal to
+  // explain is propagated. In this case, trail_index will be the current trail
+  // index, and we cannot assume that there is anything filled yet in
+  // integer_literal[trail_index].
+  //
+  // TODO(user): Right now this is only used by "linear" propagator, if we need
+  // more we could replace {id, propagation_slack} by a generic payload so that
+  // each implementation can cast it to its need. Then the memory will just be
+  // the max size of this payload data (16 bytes should be fine).
+  virtual void Explain(int id, IntegerValue propagation_slack,
+                       IntegerLiteral literal_to_explain, int trail_index,
+                       std::vector<Literal>* literals_reason,
+                       std::vector<int>* trail_indices_reason) = 0;
+};
+
 // This class maintains a set of integer variables with their current bounds.
 // Bounds can be propagated from an external "source" and this class helps
 // to maintain the reason for each propagation.
-class IntegerTrail : public SatPropagator {
+class IntegerTrail final : public SatPropagator {
  public:
   explicit IntegerTrail(Model* model)
       : SatPropagator("IntegerTrail"),
@@ -945,9 +972,15 @@ class IntegerTrail : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
+  ABSL_MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit) {
+    return EnqueueInternal(i_lit, false, {}, {}, integer_trail_.size());
+  }
   ABSL_MUST_USE_RESULT bool Enqueue(
       IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
-      absl::Span<const IntegerLiteral> integer_reason);
+      absl::Span<const IntegerLiteral> integer_reason) {
+    return EnqueueInternal(i_lit, false, literal_reason, integer_reason,
+                           integer_trail_.size());
+  }
 
   // Enqueue new information about a variable bound. It has the same behavior
   // as the Enqueue() method, except that it accepts true and false integer
@@ -981,24 +1014,22 @@ class IntegerTrail : public SatPropagator {
   ABSL_MUST_USE_RESULT bool Enqueue(
       IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
-      int trail_index_with_same_reason);
+      int trail_index_with_same_reason) {
+    return EnqueueInternal(i_lit, false, literal_reason, integer_reason,
+                           trail_index_with_same_reason);
+  }
 
   // Lazy reason API.
-  //
-  // The function is provided with the IntegerLiteral to explain and its index
-  // in the integer trail. It must fill the two vectors so that literals
-  // contains any Literal part of the reason and dependencies contains the trail
-  // index of any IntegerLiteral that is also part of the reason.
-  //
-  // Remark: sometimes this is called to fill the conflict while the literal
-  // to explain is propagated. In this case, trail_index_of_literal will be
-  // the current trail index, and we cannot assume that there is anything filled
-  // yet in integer_literal[trail_index_of_literal].
-  using LazyReasonFunction = std::function<void(
-      IntegerLiteral literal_to_explain, int trail_index_of_literal,
-      std::vector<Literal>* literals, std::vector<int>* dependencies)>;
-  ABSL_MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                                    LazyReasonFunction lazy_reason);
+  ABSL_MUST_USE_RESULT bool EnqueueWithLazyReason(
+      IntegerLiteral i_lit, int id, IntegerValue propagation_slack,
+      LazyReasonInterface* explainer) {
+    const int trail_index = integer_trail_.size();
+    if (trail_index >= lazy_reasons_.size()) {
+      lazy_reasons_.resize(trail_index + 1);
+    }
+    lazy_reasons_[trail_index] = {explainer, propagation_slack, id};
+    return EnqueueInternal(i_lit, true, {}, {}, 0);
+  }
 
   // Sometimes we infer some root level bounds but we are not at the root level.
   // In this case, we will update the level-zero bounds right away, but will
@@ -1143,19 +1174,24 @@ class IntegerTrail : public SatPropagator {
   // common conflict initialization that must terminate by a call to
   // MergeReasonIntoInternal(conflict) where conflict is the returned vector.
   std::vector<Literal>* InitializeConflict(
-      IntegerLiteral integer_literal, const LazyReasonFunction& lazy_reason,
+      IntegerLiteral integer_literal, bool use_lazy_reason,
       absl::Span<const Literal> literals_reason,
       absl::Span<const IntegerLiteral> bounds_reason);
 
+  // Saves the given reason and return its index.
+  int AppendReasonToInternalBuffers(
+      absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
+
   // Internal implementation of the different public Enqueue() functions.
   ABSL_MUST_USE_RESULT bool EnqueueInternal(
-      IntegerLiteral i_lit, LazyReasonFunction lazy_reason,
+      IntegerLiteral i_lit, bool use_lazy_reason,
       absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
       int trail_index_with_same_reason);
 
   // Internal implementation of the EnqueueLiteral() functions.
-  void EnqueueLiteralInternal(Literal literal, LazyReasonFunction lazy_reason,
+  void EnqueueLiteralInternal(Literal literal, bool use_lazy_reason,
                               absl::Span<const Literal> literal_reason,
                               absl::Span<const IntegerLiteral> integer_reason);
 
@@ -1197,8 +1233,8 @@ class IntegerTrail : public SatPropagator {
 
   // Information for each integer variable about its current lower bound and
   // position of the last TrailEntry in the trail referring to this var.
-  absl::StrongVector<IntegerVariable, IntegerValue> var_lbs_;
-  absl::StrongVector<IntegerVariable, int> var_trail_index_;
+  util_intops::StrongVector<IntegerVariable, IntegerValue> var_lbs_;
+  util_intops::StrongVector<IntegerVariable, int> var_trail_index_;
 
   // This is used by FindLowestTrailIndexThatExplainBound() and
   // FindTrailIndexOfVarBefore() to speed up the lookup. It keeps a trail index
@@ -1207,7 +1243,8 @@ class IntegerTrail : public SatPropagator {
   //
   // The cache will only be updated with trail_index >= threshold.
   mutable int var_trail_index_cache_threshold_ = 0;
-  mutable absl::StrongVector<IntegerVariable, int> var_trail_index_cache_;
+  mutable util_intops::StrongVector<IntegerVariable, int>
+      var_trail_index_cache_;
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.
@@ -1226,7 +1263,20 @@ class IntegerTrail : public SatPropagator {
     int32_t reason_index;
   };
   std::vector<TrailEntry> integer_trail_;
-  std::vector<LazyReasonFunction> lazy_reasons_;
+
+  struct LazyReasonEntry {
+    LazyReasonInterface* explainer;
+    IntegerValue propagation_slack;
+    int id;
+
+    void Explain(IntegerLiteral literal_to_explain, int trail_index_of_literal,
+                 std::vector<Literal>* literals,
+                 std::vector<int>* dependencies) const {
+      explainer->Explain(id, propagation_slack, literal_to_explain,
+                         trail_index_of_literal, literals, dependencies);
+    }
+  };
+  std::vector<LazyReasonEntry> lazy_reasons_;
 
   // Start of each decision levels in integer_trail_.
   // TODO(user): use more general reversible mechanism?
@@ -1256,7 +1306,7 @@ class IntegerTrail : public SatPropagator {
   mutable bool has_dependency_ = false;
   mutable std::vector<int> tmp_queue_;
   mutable std::vector<IntegerVariable> tmp_to_clear_;
-  mutable absl::StrongVector<IntegerVariable, int>
+  mutable util_intops::StrongVector<IntegerVariable, int>
       tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
 
@@ -1362,7 +1412,7 @@ class RevIntegerValueRepository : public RevRepository<IntegerValue> {
 // watched Literal or LbVar changes.
 //
 // TODO(user): Move this to its own file. Add unit tests!
-class GenericLiteralWatcher : public SatPropagator {
+class GenericLiteralWatcher final : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(Model* model);
 
@@ -1520,8 +1570,10 @@ class GenericLiteralWatcher : public SatPropagator {
       return id == o.id && watch_index == o.watch_index;
     }
   };
-  absl::StrongVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
-  absl::StrongVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
+  util_intops::StrongVector<LiteralIndex, std::vector<WatchData>>
+      literal_to_watcher_;
+  util_intops::StrongVector<IntegerVariable, std::vector<WatchData>>
+      var_to_watcher_;
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 

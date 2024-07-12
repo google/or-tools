@@ -100,7 +100,7 @@ struct EnergyEvent : BaseEvent {
   // It must be called before the EnergyEvent is used.
   ABSL_MUST_USE_RESULT bool FillEnergyLp(
       AffineExpression x_size,
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values,
       Model* model) {
     LinearConstraintBuilder tmp_energy(model);
     if (IsPresent()) {
@@ -245,7 +245,7 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
 bool CutIsEfficient(
     absl::Span<const EnergyEvent> events, IntegerValue window_start,
     IntegerValue window_end, double available_energy_lp,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraintBuilder* temp_builder) {
   temp_builder->Clear();
   for (const EnergyEvent& event : events) {
@@ -273,7 +273,7 @@ bool CutIsEfficient(
 // as the available energy.
 void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
     absl::string_view cut_name,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, IntegerValue capacity,
     AffineExpression makespan, TimeLimit* time_limit, Model* model,
     LinearConstraintManager* manager) {
@@ -480,7 +480,7 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
 
 void GenerateCumulativeEnergeticCuts(
     const std::string& cut_name,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, const AffineExpression& capacity,
     TimeLimit* time_limit, Model* model, LinearConstraintManager* manager) {
   double max_possible_energy_lp = 0.0;
@@ -848,7 +848,7 @@ struct CachedIntervalData {
 
 void GenerateCutsBetweenPairOfNonOverlappingTasks(
     const std::string& cut_name,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<CachedIntervalData> events, IntegerValue capacity_max,
     Model* model, LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);

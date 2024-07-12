@@ -45,6 +45,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
 
 namespace operations_research {
@@ -83,8 +84,8 @@ struct ArcFlowGraph {
 //           num_dimensions
 ArcFlowGraph BuildArcFlowGraph(
     const std::vector<int>& bin_dimensions,
-    const std::vector<std::vector<int>>& item_dimensions_by_type,
-    const std::vector<int>& demand_by_type);
+    absl::Span<const std::vector<int>> item_dimensions_by_type,
+    absl::Span<const int> demand_by_type);
 
 }  // namespace packing
 }  // namespace operations_research

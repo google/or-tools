@@ -152,8 +152,8 @@ void SparseMatrixScaler::Scale(GlopParameters::ScalingAlgorithm method) {
 
 namespace {
 template <class I>
-void ScaleVector(const absl::StrongVector<I, Fractional>& scale, bool up,
-                 absl::StrongVector<I, Fractional>* vector_to_scale) {
+void ScaleVector(const util_intops::StrongVector<I, Fractional>& scale, bool up,
+                 util_intops::StrongVector<I, Fractional>* vector_to_scale) {
   RETURN_IF_NULL(vector_to_scale);
   const I size(std::min(scale.size(), vector_to_scale->size()));
   if (up) {
@@ -170,7 +170,7 @@ void ScaleVector(const absl::StrongVector<I, Fractional>& scale, bool up,
 template <typename InputIndexType>
 ColIndex CreateOrGetScaleIndex(
     InputIndexType num, LinearProgram* lp,
-    absl::StrongVector<InputIndexType, ColIndex>* scale_var_indices) {
+    util_intops::StrongVector<InputIndexType, ColIndex>* scale_var_indices) {
   if ((*scale_var_indices)[num] == -1) {
     (*scale_var_indices)[num] = lp->CreateNewVariable();
   }
@@ -367,8 +367,8 @@ Status SparseMatrixScaler::LPScale() {
 
   // Indices to variables in the LinearProgram populated by
   // GenerateLinearProgram.
-  absl::StrongVector<ColIndex, ColIndex> col_scale_var_indices;
-  absl::StrongVector<RowIndex, ColIndex> row_scale_var_indices;
+  util_intops::StrongVector<ColIndex, ColIndex> col_scale_var_indices;
+  util_intops::StrongVector<RowIndex, ColIndex> row_scale_var_indices;
   row_scale_var_indices.resize(RowToIntIndex(matrix_->num_rows()), kInvalidCol);
   col_scale_var_indices.resize(ColToIntIndex(matrix_->num_cols()), kInvalidCol);
   const ColIndex beta = linear_program->CreateNewVariable();

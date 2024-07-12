@@ -42,6 +42,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
 #include "absl/time/clock.h"
@@ -1001,7 +1002,7 @@ bool InCategory(int status, int category) {
   return status == category;
 }
 
-void AppendStatusStr(const std::string& msg, MPSolutionResponse* response) {
+void AppendStatusStr(absl::string_view msg, MPSolutionResponse* response) {
   response->set_status_str(
       absl::StrCat(response->status_str(),
                    (response->status_str().empty() ? "" : "\n"), msg));

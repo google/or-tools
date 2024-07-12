@@ -1769,11 +1769,11 @@ class SubDagComputer {
   // Initialized by BuildGraph(), after which the outgoing arcs of node n are
   // the range from arcs_[arcs_of_node_[n]] included to
   // arcs_[arcs_of_node_[n+1]] excluded.
-  absl::StrongVector<NodeId, int> arcs_of_node_;
+  util_intops::StrongVector<NodeId, int> arcs_of_node_;
   // Must be false before BuildGraph() is called, true afterwards.
   bool graph_was_built_ = false;
   // Used by ComputeSortedSubDagArcs.
-  absl::StrongVector<NodeId, int> indegree_of_node_;
+  util_intops::StrongVector<NodeId, int> indegree_of_node_;
   // Used by ComputeSortedSubDagArcs.
   std::vector<NodeId> nodes_to_visit_;
   // Used as output, set up as a member to allow reuse.
@@ -1839,14 +1839,14 @@ class LocalSearchState {
                            const VariableDomain& d2) const {
     return d1.max < d2.min || d2.max < d1.min;
   }
-  absl::StrongVector<VariableDomainId, VariableDomain> relaxed_domains_;
-  absl::StrongVector<VariableDomainId, VariableDomain> current_domains_;
+  util_intops::StrongVector<VariableDomainId, VariableDomain> relaxed_domains_;
+  util_intops::StrongVector<VariableDomainId, VariableDomain> current_domains_;
   struct TrailedVariableDomain {
     VariableDomain committed_domain;
     VariableDomainId domain_id;
   };
   std::vector<TrailedVariableDomain> trailed_domains_;
-  absl::StrongVector<VariableDomainId, bool> domain_is_trailed_;
+  util_intops::StrongVector<VariableDomainId, bool> domain_is_trailed_;
   // True iff all domains have their min <= max.
   bool state_domains_are_all_nonempty_ = true;
   bool state_has_relaxed_domains_ = false;
@@ -1907,11 +1907,11 @@ class LocalSearchState {
     // Structure of the expression DAG, used to buffer propagation storage.
     SubDagComputer dag_;
     // Maps arcs of dag_ to domain/constraint dependencies.
-    absl::StrongVector<ArcId, Dependency> dependency_of_dag_arc_;
+    util_intops::StrongVector<ArcId, Dependency> dependency_of_dag_arc_;
     // Maps domain ids to dag_ nodes.
-    absl::StrongVector<VariableDomainId, NodeId> dag_node_of_domain_;
+    util_intops::StrongVector<VariableDomainId, NodeId> dag_node_of_domain_;
     // Maps constraint ids to dag_ nodes.
-    absl::StrongVector<ConstraintId, NodeId> dag_node_of_constraint_;
+    util_intops::StrongVector<ConstraintId, NodeId> dag_node_of_constraint_;
     // Number of nodes currently allocated in dag_.
     // Reserve node 0 as a default dummy node with no dependencies.
     int num_dag_nodes_ = 1;
@@ -1931,7 +1931,7 @@ class LocalSearchState {
   // The triggers of domain i are stored from triggers_of_domain_[i]
   // to triggers_of_domain_[i+1] excluded.
   std::vector<Trigger> triggers_;
-  absl::StrongVector<VariableDomainId, int> triggers_of_domain_;
+  util_intops::StrongVector<VariableDomainId, int> triggers_of_domain_;
 
   // Constraints are used to form expressions that make up the objective.
   // Constraints are directed: they have inputs and an output, moreover the
@@ -2001,7 +2001,7 @@ class LocalSearchState {
     bool constraint_is_trailed_ = false;
   };
   // Used to identify constraints and hold ownership.
-  absl::StrongVector<ConstraintId, std::unique_ptr<Constraint>> constraints_;
+  util_intops::StrongVector<ConstraintId, std::unique_ptr<Constraint>> constraints_;
 };
 
 // A LocalSearchState Variable can only be created by a LocalSearchState,

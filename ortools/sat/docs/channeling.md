@@ -165,13 +165,14 @@ import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.SatParameters;
 
 /** Link integer constraints together. */
-public class ChannelingSampleSat {
+public final class ChannelingSampleSat {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // Create the CP-SAT model.
@@ -207,7 +208,7 @@ public class ChannelingSampleSat {
     solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.solve(model, new CpSolverSolutionCallback() {
+    CpSolverStatus unusedStatus = solver.solve(model, new CpSolverSolutionCallback() {
       public CpSolverSolutionCallback init(IntVar[] variables) {
         variableArray = variables;
         return this;
@@ -224,6 +225,8 @@ public class ChannelingSampleSat {
       private IntVar[] variableArray;
     }.init(new IntVar[] {vars[0], vars[1], b}));
   }
+
+  private ChannelingSampleSat() {}
 }
 ```
 

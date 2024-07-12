@@ -35,6 +35,15 @@ class Callback(swig_helper.SolutionCallback):
         return self.__solution_count
 
 
+class BestBoundCallback:
+
+    def __init__(self):
+        self.best_bound: float = 0.0
+
+    def new_best_bound(self, bb: float):
+        self.best_bound = bb
+
+
 class SwigHelperTest(absltest.TestCase):
 
     def testVariableDomain(self):
@@ -178,6 +187,35 @@ class SwigHelperTest(absltest.TestCase):
         solution = solve_wrapper.solve(model)
 
         self.assertEqual(5, callback.solution_count())
+        self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
+
+    def testBestBoundCallback(self):
+        model_string = """
+      variables { domain: 0 domain: 1 }
+      variables { domain: 0 domain: 1 }
+      variables { domain: 0 domain: 1 }
+      variables { domain: 0 domain: 1 }
+      constraints { bool_or { literals: [0, 1, 2, 3] } }
+      objective {
+        vars: [0, 1, 2, 3]
+        coeffs: [3, 2, 4, 5]
+        offset: 0.6
+      }
+      """
+        model = cp_model_pb2.CpModelProto()
+        self.assertTrue(text_format.Parse(model_string, model))
+
+        solve_wrapper = swig_helper.SolveWrapper()
+        best_bound_callback = BestBoundCallback()
+        solve_wrapper.add_best_bound_callback(best_bound_callback.new_best_bound)
+        params = sat_parameters_pb2.SatParameters()
+        params.num_workers = 1
+        params.linearization_level = 2
+        params.log_search_progress = True
+        solve_wrapper.set_parameters(params)
+        solution = solve_wrapper.solve(model)
+
+        self.assertEqual(2.6, best_bound_callback.best_bound)
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
 
     def testModelStats(self):

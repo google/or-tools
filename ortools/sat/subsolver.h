@@ -175,8 +175,11 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 //    which one to run.
 // 3/ wait for all task to finish.
 // 4/ repeat until no task can be generated in step 2.
+//
+// If max_num_batches is > 0, stop after that many batches.
 void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                       int num_threads, int batch_size);
+                       int num_threads, int batch_size,
+                       int max_num_batches = 0);
 
 // Same as above, but specialized implementation for the case num_threads=1.
 // This avoids using a Threadpool altogether. It should have the same behavior

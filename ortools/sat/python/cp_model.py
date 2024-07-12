@@ -2768,6 +2768,10 @@ class CpModel:
             self.assert_is_boolean_variable(arg.negated())
             return arg.index
         if isinstance(arg, IntegralTypes):
+            if arg == ~False:  # -1
+                return self.get_or_make_index_from_constant(1)
+            if arg == ~True:  # -2
+                return self.get_or_make_index_from_constant(0)
             arg = cmh.assert_is_zero_or_one(arg)
             return self.get_or_make_index_from_constant(arg)
         if cmh.is_boolean(arg):

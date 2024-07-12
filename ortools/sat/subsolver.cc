@@ -27,6 +27,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -44,7 +45,7 @@ namespace {
 //
 // For now we use a really basic logic: call the least frequently called.
 int NextSubsolverToSchedule(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                            const std::vector<int64_t>& num_generated_tasks) {
+                            absl::Span<const int64_t> num_generated_tasks) {
   int best = -1;
   for (int i = 0; i < subsolvers.size(); ++i) {
     if (subsolvers[i] == nullptr) continue;
@@ -110,14 +111,14 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 }
 
 void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                       int num_threads, int batch_size) {
+                       int num_threads, int batch_size, int max_num_batches) {
   SequentialLoop(subsolvers);
 }
 
 #else  // __PORTABLE_PLATFORM__
 
 void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                       int num_threads, int batch_size) {
+                       int num_threads, int batch_size, int max_num_batches) {
   CHECK_GT(num_threads, 0);
   CHECK_GT(batch_size, 0);
   if (batch_size == 1) {
@@ -133,9 +134,14 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   to_run.reserve(batch_size);
   ThreadPool pool("DeterministicLoop", num_threads);
   pool.StartWorkers();
-  while (true) {
+  for (int batch_index = 0;; ++batch_index) {
+    VLOG(2) << "Starting deterministic batch of size " << batch_size;
     SynchronizeAll(subsolvers);
     ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
+
+    // We abort the loop after the last synchronize to properly reports final
+    // status in case max_num_batches is used.
+    if (max_num_batches > 0 && batch_index >= max_num_batches) break;
 
     // We first generate all task to run in this batch.
     // Note that we can't start the task right away since if a task finish

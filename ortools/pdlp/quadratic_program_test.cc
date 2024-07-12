@@ -36,11 +36,16 @@ namespace {
 using ::google::protobuf::util::ParseTextOrDie;
 using ::operations_research::pdlp::internal::CombineRepeatedTripletsInPlace;
 using ::testing::ElementsAre;
+using ::testing::EndsWith;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Optional;
 using ::testing::PrintToString;
+using ::testing::SizeIs;
+using ::testing::StartsWith;
+using ::testing::StrEq;
+
 const double kInfinity = std::numeric_limits<double>::infinity();
 
 TEST(QuadraticProgram, DefaultConstructorWorks) { QuadraticProgram qp; }
@@ -59,6 +64,15 @@ TEST(QuadraticProgram, MoveAssignment) {
 }
 
 TEST(ValidateQuadraticProgramDimensions, ValidProblem) {
+  const absl::Status status =
+      ValidateQuadraticProgramDimensions(TestDiagonalQp1());
+  EXPECT_TRUE(status.ok()) << status;
+}
+
+TEST(ValidateQuadraticProgramDimensions, ValidProblemWithNames) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  qp.variable_names = {"x0", "x1"};
+  qp.constraint_names = {"c0"};
   const absl::Status status =
       ValidateQuadraticProgramDimensions(TestDiagonalQp1());
   EXPECT_TRUE(status.ok()) << status;
@@ -125,6 +139,22 @@ TEST(ValidateQuadraticProgramDimensions, ObjectiveMatrixRowsInconsistent) {
   qp.ResizeAndInitialize(/*num_variables=*/2, /*num_constraints=*/3);
   qp.objective_matrix.emplace();
   qp.objective_matrix->resize(10);
+  EXPECT_EQ(ValidateQuadraticProgramDimensions(qp).code(),
+            absl::StatusCode::kInvalidArgument);
+}
+
+TEST(ValidateQuadraticProgramDimensions, VariableNamesInconsistent) {
+  QuadraticProgram qp;
+  qp.ResizeAndInitialize(/*num_variables=*/2, /*num_constraints=*/3);
+  qp.variable_names = {"x0"};
+  EXPECT_EQ(ValidateQuadraticProgramDimensions(qp).code(),
+            absl::StatusCode::kInvalidArgument);
+}
+
+TEST(ValidateQuadraticProgramDimensions, ConstraintNamesInconsistent) {
+  QuadraticProgram qp;
+  qp.ResizeAndInitialize(/*num_variables=*/2, /*num_constraints=*/3);
+  qp.constraint_names = {"c0"};
   EXPECT_EQ(ValidateQuadraticProgramDimensions(qp).code(),
             absl::StatusCode::kInvalidArgument);
 }
@@ -397,6 +427,79 @@ INSTANTIATE_TEST_SUITE_P(
         return "minimize";
       }
     });
+
+TEST(QuadraticProgramToStringTest, TestLpIsCorrect) {
+  QuadraticProgram qp = TestLp();
+  EXPECT_THAT(ToString(qp),
+              StrEq("minimize 1 * (-14 + 5.5 x0 + -2 x1 + -1 x2 + 1 x3)\n"
+                    "c0: 12 <= + 2 x0 + 1 x1 + 1 x2 + 2 x3 <= 12\n"
+                    "c1: + 1 x0 + 1 x2 <= 7\n"
+                    "c2: -4 <= + 4 x0\n"
+                    "c3: -1 <= + 1.5 x2 + -1 x3 <= 1\n"
+                    "Bounds\n"
+                    "x0 free\n"
+                    "x1 >= -2\n"
+                    "x2 <= 6\n"
+                    "2.5 <= x3 <= 3.5\n"));
+}
+
+TEST(QuadraticProgramToStringTest, TestLpIsCorrectWithMaximization) {
+  QuadraticProgram qp = TestLp();
+  qp.objective_scaling_factor = -1;
+  EXPECT_THAT(ToString(qp),
+              StrEq("maximize -1 * (-14 + 5.5 x0 + -2 x1 + -1 x2 + 1 x3)\n"
+                    "c0: 12 <= + 2 x0 + 1 x1 + 1 x2 + 2 x3 <= 12\n"
+                    "c1: + 1 x0 + 1 x2 <= 7\n"
+                    "c2: -4 <= + 4 x0\n"
+                    "c3: -1 <= + 1.5 x2 + -1 x3 <= 1\n"
+                    "Bounds\n"
+                    "x0 free\n"
+                    "x1 >= -2\n"
+                    "x2 <= 6\n"
+                    "2.5 <= x3 <= 3.5\n"));
+}
+
+TEST(QuadraticProgramToStringTest, TestLpTruncatesCorrectly) {
+  QuadraticProgram qp = TestLp();
+  EXPECT_THAT(ToString(qp, 100),
+              AllOf(SizeIs(100), EndsWith("...\n"),
+                    StrEq("minimize 1 * (-14 + 5.5 x0 + -2 x1 + -1 x2 + 1 x3)\n"
+                          "c0: 12 <= + 2 x0 + 1 x1 + 1 x2 + 2 x3 <= 12\n"
+                          "c...\n")));
+}
+
+TEST(QuadraticProgramToStringTest, TestDiagonalQp1IsCorrect) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  EXPECT_THAT(
+      ToString(qp),
+      StrEq("minimize 1 * (5 + -1 x0 + -1 x1 + 1/2 * ( + 4 x0^2 + 1 x1^2))\n"
+            "c0: + 1 x0 + 1 x1 <= 1\n"
+            "Bounds\n"
+            "1 <= x0 <= 2\n"
+            "-2 <= x1 <= 4\n"));
+}
+
+TEST(QuadraticProgramToStringTest, UsesVariableAndConstraintNames) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  qp.problem_name = "test";
+  qp.variable_names = {"x", "y"};
+  qp.constraint_names = {"total"};
+  EXPECT_THAT(
+      ToString(qp),
+      StrEq("test:\n"
+            "minimize 1 * (5 + -1 x + -1 y + 1/2 * ( + 4 x^2 + 1 y^2))\n"
+            "total: + 1 x + 1 y <= 1\n"
+            "Bounds\n"
+            "1 <= x <= 2\n"
+            "-2 <= y <= 4\n"));
+}
+
+TEST(QuadraticProgramToStringTest, InvalidLpVectorSizes) {
+  QuadraticProgram qp = TestLp();
+  qp.variable_lower_bounds.resize(3);
+  EXPECT_THAT(ToString(qp),
+              StartsWith("Quadratic program with inconsistent dimensions: "));
+}
 
 // A matcher for Eigen Triplets.
 MATCHER_P3(IsEigenTriplet, row, col, value,

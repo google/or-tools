@@ -44,8 +44,9 @@ DratProofHandler::DratProofHandler(bool in_binary_format, File* output,
 }
 
 void DratProofHandler::ApplyMapping(
-    const absl::StrongVector<BooleanVariable, BooleanVariable>& mapping) {
-  absl::StrongVector<BooleanVariable, BooleanVariable> new_mapping;
+    const util_intops::StrongVector<BooleanVariable, BooleanVariable>&
+        mapping) {
+  util_intops::StrongVector<BooleanVariable, BooleanVariable> new_mapping;
   for (BooleanVariable v(0); v < mapping.size(); ++v) {
     const BooleanVariable image = mapping[v];
     if (image != kNoBooleanVariable) {

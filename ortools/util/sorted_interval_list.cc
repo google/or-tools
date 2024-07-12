@@ -630,7 +630,7 @@ Domain Domain::SquareSuperset() const {
     for (const int64_t value : abs_domain.Values()) {
       values.push_back(CapProd(value, value));
     }
-    return Domain::FromValues(values);
+    return Domain::FromValues(std::move(values));
   }
 }
 

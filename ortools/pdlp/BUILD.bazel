@@ -17,6 +17,14 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
+cc_library(
+    name = "scheduler",
+    hdrs = ["scheduler.h"],
+    deps = [
+        "@com_google_absl//absl/functional:any_invocable",
+    ],
+)
+
 proto_library(
     name = "solve_log_proto",
     srcs = ["solve_log.proto"],

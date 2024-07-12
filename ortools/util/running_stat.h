@@ -14,7 +14,9 @@
 #ifndef OR_TOOLS_UTIL_RUNNING_STAT_H_
 #define OR_TOOLS_UTIL_RUNNING_STAT_H_
 
+#include <cstddef>
 #include <deque>
+#include <vector>
 
 #include "ortools/base/logging.h"
 

@@ -95,7 +95,7 @@ class PortfolioOptimizer : public BopOptimizerBase {
   int64_t state_update_stamp_;
   BopConstraintTerms objective_terms_;
   std::unique_ptr<OptimizerSelector> selector_;
-  absl::StrongVector<OptimizerIndex, BopOptimizerBase*> optimizers_;
+  util_intops::StrongVector<OptimizerIndex, BopOptimizerBase*> optimizers_;
   sat::SatSolver sat_propagator_;
   BopParameters parameters_;
   double lower_bound_;
@@ -110,7 +110,8 @@ class OptimizerSelector {
   // Note that the list of optimizers is only used to get the names for
   // debug purposes, the ownership of the optimizers is not transferred.
   explicit OptimizerSelector(
-      const absl::StrongVector<OptimizerIndex, BopOptimizerBase*>& optimizers);
+      const util_intops::StrongVector<OptimizerIndex, BopOptimizerBase*>&
+          optimizers);
 
   // Selects the next optimizer to run based on the user defined order and
   // history of success. Returns kInvalidOptimizerIndex if no optimizer is
@@ -202,7 +203,7 @@ class OptimizerSelector {
   };
 
   std::vector<RunInfo> run_infos_;
-  absl::StrongVector<OptimizerIndex, int> info_positions_;
+  util_intops::StrongVector<OptimizerIndex, int> info_positions_;
   int selected_index_;
 };
 

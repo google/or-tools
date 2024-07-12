@@ -165,7 +165,7 @@ class ImpliedBounds {
   // all variables at once, so no need to organize it by IntegerVariable even
   // if that might be more friendly cache-wise.
   std::vector<ImpliedBoundEntry> empty_implied_bounds_;
-  absl::StrongVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
+  util_intops::StrongVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
       var_to_bounds_;
   SparseBitset<IntegerVariable> has_implied_bounds_;
 
@@ -299,7 +299,7 @@ class ProductDetector {
   // And set-up data structure to query this efficiently.
   void InitializeBooleanRLTCuts(
       const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars,
-      const absl::StrongVector<IntegerVariable, double>& lp_values);
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values);
 
   // BoolRLTCandidates()[var] contains the list of factor for which we have
   // a violated upper bound on lit(var) * lit(factor).
@@ -328,7 +328,7 @@ class ProductDetector {
 
   // Process a relation lit(var1) * lit(var2) <= lit(bound_var).
   void UpdateRLTMaps(
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values,
       IntegerVariable var1, double lp1, IntegerVariable var2, double lp2,
       IntegerVariable bound_var, double bound_lp);
 
@@ -342,7 +342,7 @@ class ProductDetector {
   SharedStatistics* shared_stats_;
 
   // No need to process implication a => b if a was never seen.
-  absl::StrongVector<LiteralIndex, bool> seen_;
+  util_intops::StrongVector<LiteralIndex, bool> seen_;
 
   // For each clause of size 3 (l0, l1, l2) and a permutation of index (i, j, k)
   // we bitset[i] to true if lj => not(lk) and lk => not(lj).

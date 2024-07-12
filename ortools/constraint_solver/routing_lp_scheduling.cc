@@ -2645,7 +2645,7 @@ void MoveValuesToIndicesFrom(std::vector<T>* out_values,
 
 bool ComputeVehicleToResourceClassAssignmentCosts(
     int v, const RoutingModel::ResourceGroup& resource_group,
-    const absl::StrongVector<RoutingModel::ResourceClassIndex,
+    const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
                              absl::flat_hash_set<int>>&
         ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
@@ -2791,9 +2791,9 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
 
 int64_t ComputeBestVehicleToResourceAssignment(
     const std::vector<int>& vehicles,
-    const absl::StrongVector<RoutingModel::ResourceClassIndex,
+    const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
                              std::vector<int>>& resource_indices_per_class,
-    const absl::StrongVector<RoutingModel::ResourceClassIndex,
+    const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
                              absl::flat_hash_set<int>>&
         ignored_resources_per_class,
     std::function<const std::vector<int64_t>*(int)>

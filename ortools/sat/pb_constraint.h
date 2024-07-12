@@ -103,7 +103,7 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
 // Finally, this will return false if some integer overflow or underflow
 // occurred during the constraint simplification.
 bool ApplyLiteralMapping(
-    const absl::StrongVector<LiteralIndex, LiteralIndex>& mapping,
+    const util_intops::StrongVector<LiteralIndex, LiteralIndex>& mapping,
     std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
     Coefficient* max_value);
 
@@ -331,7 +331,7 @@ class MutableUpperBoundedLinearConstraint {
   // The encoding is special:
   // - If terms_[x] > 0, then the associated term is 'terms_[x] . x'
   // - If terms_[x] < 0, then the associated term is 'terms_[x] . (x - 1)'
-  absl::StrongVector<BooleanVariable, Coefficient> terms_;
+  util_intops::StrongVector<BooleanVariable, Coefficient> terms_;
 
   // The right hand side of the constraint (sum terms <= rhs_).
   Coefficient rhs_;
@@ -657,11 +657,11 @@ class PbConstraints : public SatPropagator {
   std::vector<std::unique_ptr<UpperBoundedLinearConstraint>> constraints_;
 
   // The current value of the threshold for each constraints.
-  absl::StrongVector<ConstraintIndex, Coefficient> thresholds_;
+  util_intops::StrongVector<ConstraintIndex, Coefficient> thresholds_;
 
   // For each literal, the list of all the constraints that contains it together
   // with the literal coefficient in these constraints.
-  absl::StrongVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>>
+  util_intops::StrongVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>>
       to_update_;
 
   // Bitset used to optimize the Untrail() function.
@@ -736,7 +736,7 @@ class VariableWithSameReasonIdentifier {
 
  private:
   const Trail& trail_;
-  absl::StrongVector<BooleanVariable, BooleanVariable> first_variable_;
+  util_intops::StrongVector<BooleanVariable, BooleanVariable> first_variable_;
   SparseBitset<BooleanVariable> seen_;
 };
 

@@ -159,8 +159,8 @@ absl::Span<int> FilterBoxesAndRandomize(
 // box" conflict. As we remove this box, the total energy decrease, so we might
 // remove more. This works in O(n log n).
 absl::Span<int> FilterBoxesThatAreTooLarge(
-    const std::vector<Rectangle>& cached_rectangles,
-    const std::vector<IntegerValue>& energies, absl::Span<int> boxes);
+    absl::Span<const Rectangle> cached_rectangles,
+    absl::Span<const IntegerValue> energies, absl::Span<int> boxes);
 
 struct IndexedInterval {
   int index;

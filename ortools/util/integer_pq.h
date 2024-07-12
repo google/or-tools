@@ -23,10 +23,10 @@
 #ifndef OR_TOOLS_UTIL_INTEGER_PQ_H_
 #define OR_TOOLS_UTIL_INTEGER_PQ_H_
 
+#include <functional>
 #include <vector>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 

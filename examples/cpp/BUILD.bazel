@@ -1012,6 +1012,7 @@ cc_binary(
         "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:file_util",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:sigint",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:check",

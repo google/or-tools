@@ -208,8 +208,8 @@ void PrecedenceRelations::Build() {
   is_built_ = true;
 
   const int num_nodes = graph_.num_nodes();
-  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>> before(
-      num_nodes);
+  util_intops::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
+      before(num_nodes);
 
   // We will construct a graph with the current relation from all_relations_.
   // And use this to compute the "closure".
@@ -402,7 +402,7 @@ void PrecedenceRelations::ComputeFullPrecedences(
 }
 
 void PrecedenceRelations::CollectPrecedences(
-    const std::vector<IntegerVariable>& vars,
+    absl::Span<const IntegerVariable> vars,
     std::vector<PrecedenceData>* output) {
   // +1 for the negation.
   const int needed_size =
@@ -1245,7 +1245,7 @@ int GreaterThanAtLeastOneOfDetector::
   auto* solver = model->GetOrCreate<SatSolver>();
 
   // Fill the set of interesting relations for each variables.
-  absl::StrongVector<IntegerVariable, std::vector<int>> var_to_relations;
+  util_intops::StrongVector<IntegerVariable, std::vector<int>> var_to_relations;
   for (int index = 0; index < relations_.size(); ++index) {
     const Relation& r = relations_[index];
     if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {

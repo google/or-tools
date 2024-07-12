@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_UTIL_LOGGING_H_
 #define OR_TOOLS_UTIL_LOGGING_H_
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

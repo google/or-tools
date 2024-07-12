@@ -48,7 +48,8 @@ class SharedStatTables {
   void AddLsStat(absl::string_view name, int64_t num_batches,
                  int64_t num_restarts, int64_t num_linear_moves,
                  int64_t num_general_moves, int64_t num_compound_moves,
-                 int64_t num_weight_updates);
+                 int64_t num_bactracks, int64_t num_weight_updates,
+                 int64_t num_scores_computed);
 
   // Display the set of table at the end.
   void Display(SolverLogger* logger);

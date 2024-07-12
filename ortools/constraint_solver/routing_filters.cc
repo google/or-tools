@@ -259,9 +259,9 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
 
   const RoutingModel& routing_model_;
 
-  absl::StrongVector<RoutingModel::DisjunctionIndex, int>
+  util_intops::StrongVector<RoutingModel::DisjunctionIndex, int>
       active_per_disjunction_;
-  absl::StrongVector<RoutingModel::DisjunctionIndex, int>
+  util_intops::StrongVector<RoutingModel::DisjunctionIndex, int>
       inactive_per_disjunction_;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
@@ -2820,7 +2820,7 @@ bool ResourceGroupAssignmentFilter::AcceptPath(int64_t path_start,
   // AcceptPath(), and delay calls to
   // ComputeVehicleToResourceClassAssignmentCosts() to FinalizeAcceptPath().
   using RCIndex = RoutingModel::ResourceClassIndex;
-  const absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+  const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
       ignored_resources_per_class(resource_group_.GetResourceClassesCount());
   return ComputeVehicleToResourceClassAssignmentCosts(
       vehicle, resource_group_, ignored_resources_per_class,
@@ -2834,7 +2834,7 @@ bool ResourceGroupAssignmentFilter::AcceptPath(int64_t path_start,
 bool ResourceGroupAssignmentFilter::FinalizeAcceptPath(
     int64_t /*objective_min*/, int64_t objective_max) {
   using RCIndex = RoutingModel::ResourceClassIndex;
-  const absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+  const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
       ignored_resources_per_class(resource_group_.GetResourceClassesCount());
   delta_cost_without_transit_ = ComputeBestVehicleToResourceAssignment(
       resource_group_.GetVehiclesRequiringAResource(),
@@ -2871,7 +2871,7 @@ void ResourceGroupAssignmentFilter::OnSynchronizePathFromStart(int64_t start) {
   // OnSynchronizePathFromStart(), and delay calls to
   // ComputeVehicleToResourceClassAssignmentCosts() to OnAfterSynchronizePaths()
   using RCIndex = RoutingModel::ResourceClassIndex;
-  const absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+  const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
       ignored_resources_per_class(resource_group_.GetResourceClassesCount());
   if (!ComputeVehicleToResourceClassAssignmentCosts(
           v, resource_group_, ignored_resources_per_class, next_accessor,
@@ -2886,7 +2886,7 @@ void ResourceGroupAssignmentFilter::OnSynchronizePathFromStart(int64_t start) {
 
 void ResourceGroupAssignmentFilter::OnAfterSynchronizePaths() {
   using RCIndex = RoutingModel::ResourceClassIndex;
-  const absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+  const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
       ignored_resources_per_class(resource_group_.GetResourceClassesCount());
   synchronized_cost_without_transit_ =
       (current_synch_failed_ || !filter_objective_cost_)

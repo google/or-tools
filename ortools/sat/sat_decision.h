@@ -204,24 +204,24 @@ class SatDecisionPolicy {
 
   // Stores variable activity and the number of time each variable was "bumped".
   // The later is only used with the ERWA heuristic.
-  absl::StrongVector<BooleanVariable, double> activities_;
-  absl::StrongVector<BooleanVariable, float> tie_breakers_;
-  absl::StrongVector<BooleanVariable, int64_t> num_bumps_;
+  util_intops::StrongVector<BooleanVariable, double> activities_;
+  util_intops::StrongVector<BooleanVariable, float> tie_breakers_;
+  util_intops::StrongVector<BooleanVariable, int64_t> num_bumps_;
 
   // If the polarity if forced (externally) we always use this first.
-  absl::StrongVector<BooleanVariable, bool> has_forced_polarity_;
-  absl::StrongVector<BooleanVariable, bool> forced_polarity_;
+  util_intops::StrongVector<BooleanVariable, bool> has_forced_polarity_;
+  util_intops::StrongVector<BooleanVariable, bool> forced_polarity_;
 
   // If we are in a stable phase, we follow the current target.
   bool in_stable_phase_ = false;
   int target_length_ = 0;
-  absl::StrongVector<BooleanVariable, bool> has_target_polarity_;
-  absl::StrongVector<BooleanVariable, bool> target_polarity_;
+  util_intops::StrongVector<BooleanVariable, bool> has_target_polarity_;
+  util_intops::StrongVector<BooleanVariable, bool> target_polarity_;
 
   // Otherwise we follow var_polarity_ which is reset at the beginning of
   // each new polarity phase. This is also overwritten by phase saving.
   // Each phase last for an arithmetically increasing number of conflicts.
-  absl::StrongVector<BooleanVariable, bool> var_polarity_;
+  util_intops::StrongVector<BooleanVariable, bool> var_polarity_;
   bool maybe_enable_phase_saving_ = true;
   int64_t polarity_phase_ = 0;
   int64_t num_conflicts_until_rephase_ = 1000;

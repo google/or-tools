@@ -3785,8 +3785,8 @@ void SubDagComputer::BuildGraph(int num_nodes) {
 
 bool SubDagComputer::HasDirectedCycle() const {
   DCHECK(graph_was_built_);
-  absl::StrongVector<NodeId, bool> node_is_open(num_nodes_, false);
-  absl::StrongVector<NodeId, bool> node_was_visited(num_nodes_, false);
+  util_intops::StrongVector<NodeId, bool> node_is_open(num_nodes_, false);
+  util_intops::StrongVector<NodeId, bool> node_was_visited(num_nodes_, false);
   // Depth first search event: a node and a boolean indicating whether
   // to open or to close it.
   struct DFSEvent {

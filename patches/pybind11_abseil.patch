@@ -55,7 +55,7 @@ index ceb65a8..e142837 100644
  include_directories(${TOP_LEVEL_DIR} ${pybind11_INCLUDE_DIRS})
 diff --git a/cmake/dependencies/CMakeLists.txt b/cmake/dependencies/CMakeLists.txt
 new file mode 100644
-index 0000000..ffe4d38
+index 0000000..826eda8
 --- /dev/null
 +++ b/cmake/dependencies/CMakeLists.txt
 @@ -0,0 +1,15 @@
@@ -64,7 +64,7 @@ index 0000000..ffe4d38
 +set(ABSL_PROPAGATE_CXX_STD ON)
 +set(BUILD_TESTING OFF)
 +FetchContent_Declare(
-+  abseil-cpp
++  absl
 +  URL https://github.com/abseil/abseil-cpp/archive/refs/tags/20230802.0.tar.gz
 +  URL_HASH
 +    SHA256=59d2976af9d6ecf001a81a35749a6e551a335b949d34918cfade07737b9d93c5)
@@ -73,9 +73,9 @@ index 0000000..ffe4d38
 +  pybind11
 +  URL https://github.com/pybind/pybind11/archive/refs/heads/master.tar.gz)
 +
-+FetchContent_MakeAvailable(abseil-cpp pybind11)
++FetchContent_MakeAvailable(absl pybind11)
 diff --git a/pybind11_abseil/BUILD b/pybind11_abseil/BUILD
-index 4cff8b7..33e614a 100644
+index 791c245..33e614a 100644
 --- a/pybind11_abseil/BUILD
 +++ b/pybind11_abseil/BUILD
 @@ -25,43 +25,39 @@ pybind_library(
@@ -90,7 +90,7 @@ index 4cff8b7..33e614a 100644
      visibility = ["//visibility:public"],
      deps = [
          "@com_google_absl//absl/status",
--        "@local_config_python//:python_headers",  # buildcleaner: keep
+-        "@rules_python//python/cc:current_py_cc_headers",  # buildcleaner: keep
      ],
  )
  
@@ -101,7 +101,7 @@ index 4cff8b7..33e614a 100644
      visibility = ["//visibility:private"],
      deps = [
          ":ok_status_singleton_lib",
--        "@local_config_python//:python_headers",  # buildcleaner: keep
+-        "@rules_python//python/cc:current_py_cc_headers",  # buildcleaner: keep
      ],
  )
  
@@ -113,7 +113,7 @@ index 4cff8b7..33e614a 100644
 -    linkshared = 1,
      deps = [
          ":ok_status_singleton_pyinit_google3",
--        "@local_config_python//:python_headers",  # buildcleaner: keep
+-        "@rules_python//python/cc:current_py_cc_headers",  # buildcleaner: keep
      ],
  )
  
@@ -149,7 +149,7 @@ index 4cff8b7..33e614a 100644
 -    linkshared = 1,
      deps = [
          ":status_pyinit_google3",
--        "@local_config_python//:python_headers",  # buildcleaner: keep
+-        "@rules_python//python/cc:current_py_cc_headers",  # buildcleaner: keep
      ],
  )
  

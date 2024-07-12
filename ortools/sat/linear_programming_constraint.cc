@@ -23,7 +23,6 @@
 #include <memory>
 #include <numeric>
 #include <optional>
-#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,6 +46,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -258,6 +258,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
+      watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       product_detector_(model->GetOrCreate<ProductDetector>()),
       objective_definition_(model->GetOrCreate<ObjectiveDefinition>()),
@@ -290,7 +291,6 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   // Register SharedStatistics with the cut helpers.
   auto* stats = model->GetOrCreate<SharedStatistics>();
   integer_rounding_cut_helper_.SetSharedStatistics(stats);
-  flow_cover_cut_helper_.SetSharedStatistics(stats);
   cover_cut_helper_.SetSharedStatistics(stats);
 
   // Initialize the IntegerVariable -> ColIndex mapping.
@@ -531,22 +531,21 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
     return;
   }
 
-  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  const int watcher_id = watcher->Register(this);
+  watcher_id_ = watcher_->Register(this);
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
-    watcher->WatchIntegerVariable(integer_variables_[i], watcher_id, i);
+    watcher_->WatchIntegerVariable(integer_variables_[i], watcher_id_, i);
   }
   if (objective_is_defined_) {
-    watcher->WatchUpperBound(objective_cp_, watcher_id);
+    watcher_->WatchUpperBound(objective_cp_, watcher_id_);
   }
-  watcher->SetPropagatorPriority(watcher_id, 2);
-  watcher->AlwaysCallAtLevelZero(watcher_id);
+  watcher_->SetPropagatorPriority(watcher_id_, 2);
+  watcher_->AlwaysCallAtLevelZero(watcher_id_);
 
   // Registering it with the trail make sure this class is always in sync when
   // it is used in the decision heuristics.
   integer_trail_->RegisterReversibleClass(this);
-  watcher->RegisterReversibleInt(watcher_id, &rev_optimal_constraints_size_);
+  watcher_->RegisterReversibleInt(watcher_id_, &rev_optimal_constraints_size_);
 }
 
 void LinearProgrammingConstraint::SetLevel(int level) {
@@ -557,6 +556,7 @@ void LinearProgrammingConstraint::SetLevel(int level) {
   if (lp_solution_is_set_ && level < lp_solution_level_) {
     lp_solution_is_set_ = false;
   }
+
   if (level < previous_level_) {
     lp_at_optimal_ = false;
     lp_objective_lower_bound_ = -std::numeric_limits<double>::infinity();
@@ -568,6 +568,8 @@ void LinearProgrammingConstraint::SetLevel(int level) {
   //
   // TODO(user): Keep all optimal solution in the current branch?
   // TODO(user): Still try to add cuts/constraints though!
+  // TODO(user): Reload the basis? This might cause issue with the basis
+  // saving/loading code in lb_tree_search.
   if (level == 0 && !lp_solution_is_set_ && !level_zero_lp_solution_.empty()) {
     lp_solution_is_set_ = true;
     lp_solution_ = level_zero_lp_solution_;
@@ -637,6 +639,12 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
   // to be careful since the reversible int in IntegerSumLE are not registered.
   // However, because we delete "optimalconstraints" on backtrack, we might not
   // care.
+  //
+  // Remark: Note that if we do the sequence SetBasis() / Propagate() /
+  // GetAndSaveBasis() and we are in the case where the solution is still
+  // optimal, we should get the basis from when the lp solution was set which
+  // should be what we want. Even if we set garbage during SetBasis() it should
+  // be ignored. TODO(user): We might still have problem at level zero.
   return true;
 }
 
@@ -667,11 +675,13 @@ void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
 }
 
 bool LinearProgrammingConstraint::SolveLp() {
-  if (trail_->CurrentDecisionLevel() == 0) {
+  const int level = trail_->CurrentDecisionLevel();
+  if (level == 0) {
     lp_at_level_zero_is_final_ = false;
   }
 
   const auto status = simplex_.Solve(lp_data_, time_limit_);
+  state_ = simplex_.GetState();
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
   if (!status.ok()) {
     VLOG(1) << "The LP solver encountered an error: " << status.error_message();
@@ -724,6 +734,7 @@ bool LinearProgrammingConstraint::SolveLp() {
       level_zero_lp_solution_ = lp_solution_;
     }
   }
+
   return true;
 }
 
@@ -809,7 +820,6 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
   // Copy more info about the current solution.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     CHECK(lp_solution_is_set_);
-
     lp_solution_is_integer_ = true;
     const int num_vars = integer_variables_.size();
     for (int i = 0; i < num_vars; i++) {
@@ -1085,9 +1095,18 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     }
   }
 
+  // Note that the indexing will survive ComplementForSmallerLpValues() below.
+  if (ib_processor != nullptr) {
+    if (!ib_processor->CacheDataForCut(first_slack, &base_ct_)) {
+      ib_processor = nullptr;
+    }
+  }
+
   // Try cover approach to find cut.
   // TODO(user): Share common computation between kinds.
   {
+    cover_cut_helper_.ClearCache();
+
     if (cover_cut_helper_.TrySingleNodeFlow(base_ct_, ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_FF"), cover_cut_helper_.Info(), first_slack,
@@ -1098,6 +1117,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
           absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_slack,
           cover_cut_helper_.cut());
     }
+
+    // This one need to be called after TrySimpleKnapsack() in order to reuse
+    // some cached data if possible.
     if (cover_cut_helper_.TryWithLetchfordSouliLifting(base_ct_,
                                                        ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
@@ -1350,11 +1372,35 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
     return;
   }
 
-  // Try knapsack.
+  // If there are no integer (all Booleans), no need to try implied bounds
+  // heurititics. By setting this to nullptr, we are a bit faster.
+  ImpliedBoundsProcessor* ib_processor = nullptr;
+  {
+    bool some_ints = false;
+    bool some_relevant_positions = false;
+    for (const CutTerm& term : base_ct_.terms) {
+      if (term.bound_diff > 1) some_ints = true;
+      if (term.HasRelevantLpValue()) some_relevant_positions = true;
+    }
+
+    // If all value are integer, we will not be able to cut anything.
+    if (!some_relevant_positions) return;
+    if (some_ints) ib_processor = &implied_bounds_processor_;
+  }
+
+  // Note that the indexing will survive the complement of terms below.
   const IntegerVariable first_slack(
       std::numeric_limits<IntegerVariable::ValueType>::max());
+  if (ib_processor != nullptr) {
+    if (!ib_processor->CacheDataForCut(first_slack, &base_ct_)) {
+      ib_processor = nullptr;
+    }
+  }
+
+  // Try knapsack.
   base_ct_.ComplementForPositiveCoefficients();
-  if (cover_cut_helper_.TrySimpleKnapsack(base_ct_)) {
+  cover_cut_helper_.ClearCache();
+  if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
     PostprocessAndAddCut("Objective_K", cover_cut_helper_.Info(), first_slack,
                          cover_cut_helper_.cut());
   }
@@ -1364,7 +1410,7 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
   options.max_scaling = parameters_.max_integer_rounding_scaling();
   base_ct_.ComplementForSmallerLpValues();
   if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
-                                              &implied_bounds_processor_)) {
+                                              ib_processor)) {
     PostprocessAndAddCut("Objective_R", integer_rounding_cut_helper_.Info(),
                          first_slack, integer_rounding_cut_helper_.cut());
   }
@@ -1385,7 +1431,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   // TODO(user): We could combine n rows to make sure we eliminate n variables
   // far away from their bounds by solving exactly in integer small linear
   // system.
-  absl::StrongVector<ColIndex, IntegerValue> dense_cut(
+  util_intops::StrongVector<ColIndex, IntegerValue> dense_cut(
       integer_variables_.size(), IntegerValue(0));
   SparseBitset<ColIndex> non_zeros_(ColIndex(integer_variables_.size()));
 
@@ -1393,9 +1439,9 @@ void LinearProgrammingConstraint::AddMirCuts() {
   // for the MIR_n procedure below.
   const int num_rows = lp_data_.num_constraints().value();
   std::vector<std::pair<RowIndex, IntegerValue>> base_rows;
-  absl::StrongVector<RowIndex, double> row_weights(num_rows, 0.0);
-  absl::StrongVector<RowIndex, bool> at_ub(num_rows, false);
-  absl::StrongVector<RowIndex, bool> at_lb(num_rows, false);
+  util_intops::StrongVector<RowIndex, double> row_weights(num_rows, 0.0);
+  util_intops::StrongVector<RowIndex, bool> at_ub(num_rows, false);
+  util_intops::StrongVector<RowIndex, bool> at_lb(num_rows, false);
   for (RowIndex row(0); row < num_rows; ++row) {
     // We only consider tight rows.
     // We use both the status and activity to have as much options as possible.
@@ -1443,7 +1489,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   std::shuffle(base_rows.begin(), base_rows.end(), *random_);
 
   std::vector<double> weights;
-  absl::StrongVector<RowIndex, bool> used_rows;
+  util_intops::StrongVector<RowIndex, bool> used_rows;
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   for (const std::pair<RowIndex, IntegerValue>& entry : base_rows) {
     if (time_limit_->LimitReached()) break;
@@ -1786,8 +1832,8 @@ bool LinearProgrammingConstraint::Propagate() {
     }
 
     int num_added = 0;
-    state_ = simplex_.GetState();
     if (constraint_manager_.ChangeLp(&state_, &num_added)) {
+      ++num_lp_changes_;
       simplex_.LoadStateForNextSolve(state_);
       if (!CreateLpFromConstraintManager()) {
         return integer_trail_->ReportConflict({});
@@ -1838,20 +1884,21 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
     const std::vector<std::pair<glop::RowIndex, double>>& multipliers,
     int64_t overflow_cap) const {
   int64_t bound = 0;
+  const int64_t factor = int64_t{1} << power;
+  const double factor_as_double = static_cast<double>(factor);
+  if (take_objective_into_account) {
+    bound = CapAdd(bound, CapProd(factor, objective_infinity_norm_.value()));
+    if (bound >= overflow_cap) return true;
+  }
   for (const auto [row, double_coeff] : multipliers) {
     const double magnitude =
-        std::abs(std::round(std::ldexp(double_coeff, power)));
+        std::abs(std::round(double_coeff * factor_as_double));
     if (std::isnan(magnitude)) return true;
     if (magnitude >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
       return true;
     }
     bound = CapAdd(bound, CapProd(static_cast<int64_t>(magnitude),
                                   infinity_norms_[row].value()));
-    if (bound >= overflow_cap) return true;
-  }
-  if (take_objective_into_account) {
-    bound = CapAdd(
-        bound, CapProd(int64_t{1} << power, objective_infinity_norm_.value()));
     if (bound >= overflow_cap) return true;
   }
   return bound >= overflow_cap;
@@ -1925,8 +1972,9 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
   // Scale the multipliers by *scaling.
   // Note that we use the exact same formula as in ScalingCanOverflow().
   int64_t gcd = scaling->value();
+  const double scaling_as_double = static_cast<double>(scaling->value());
   for (const auto [row, double_coeff] : tmp_cp_multipliers_) {
-    const IntegerValue coeff(std::round(std::ldexp(double_coeff, power)));
+    const IntegerValue coeff(std::round(double_coeff * scaling_as_double));
     if (coeff != 0) {
       gcd = std::gcd(gcd, std::abs(coeff.value()));
       integer_multipliers.push_back({row, coeff});

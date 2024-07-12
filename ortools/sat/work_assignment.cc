@@ -213,21 +213,6 @@ int SharedTreeManager::NumNodes() const {
   return nodes_.size();
 }
 
-int SharedTreeManager::SplitsToGeneratePerWorker() const {
-  absl::MutexLock mutex_lock(&mu_);
-  const int max_additional_nodes = max_nodes_ - static_cast<int>(nodes_.size());
-  const int total_splits_wanted =
-      std::min(num_splits_wanted_,
-               // Each split generates 2 nodes, so divide by 2, rounding up.
-               CeilOfRatio(max_additional_nodes, 2));
-  // We want workers to propose too many splits as we expect to reject some,
-  // and it's more efficient to generate several splits on the same worker
-  // restart so we don't want to divide by num_workers_.
-  // But we also don't want more than half the splits to come from a single
-  // restart on a single worker so we divide by 2.
-  return CeilOfRatio(total_splits_wanted, 2);
-}
-
 bool SharedTreeManager::SyncTree(ProtoTrail& path) {
   absl::MutexLock mutex_lock(&mu_);
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
@@ -280,7 +265,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
         << "/" << nodes.size();
     return;
   }
-  if (nodes_.size() >= max_nodes_) {
+  if (nodes_.size() + 2 > max_nodes_) {
     VLOG(2) << "Too many nodes to accept split";
     return;
   }
@@ -538,6 +523,7 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       helper_(model->GetOrCreate<IntegerSearchHelper>()),
       heuristics_(model->GetOrCreate<SearchHeuristics>()),
       restart_policy_(model->GetOrCreate<RestartPolicy>()),
+      level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
       assigned_tree_lbds_(/*window_size=*/8) {}
 
 const std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
@@ -608,7 +594,6 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
     if (!helper_->BeforeTakingDecision()) return false;
     const int level = sat_solver_->CurrentDecisionLevel();
     if (level >= assigned_tree_.MaxLevel()) break;
-    if (level == assigned_tree_.MaxLevel()) break;
     // The next decision is assigned, make sure it makes sense.
     const Literal next_decision = assigned_tree_literals_[level];
     if (!sat_solver_->Assignment().LiteralIsAssigned(next_decision)) break;
@@ -618,6 +603,7 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
               << " assigned=" << assigned_tree_.MaxLevel();
       manager_->CloseTree(assigned_tree_, level + 1);
       assigned_tree_literals_.clear();
+      sat_solver_->Backtrack(0);
     } else {
       // The next level is implied by the current one.
       assigned_tree_.SetLevelImplied(level + 1);
@@ -631,6 +617,8 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
   const auto& decision_policy =
       heuristics_->decision_policies[heuristics_->policy_index];
   const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
+  new_split_available_ = next_level == assigned_tree_.MaxLevel() + 1;
+
   CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   if (next_level <= assigned_tree_.MaxLevel()) {
     VLOG(2) << "Following shared trail depth=" << next_level << " "
@@ -675,10 +663,11 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
 }
 
 void SharedTreeWorker::MaybeProposeSplit() {
-  if (splits_wanted_ == 0 ||
+  if (!new_split_available_ ||
       sat_solver_->CurrentDecisionLevel() != assigned_tree_.MaxLevel() + 1) {
     return;
   }
+  new_split_available_ = false;
   const Literal split_decision =
       sat_solver_->Decisions()[assigned_tree_.MaxLevel()].literal;
   const std::optional<ProtoLiteral> encoded = EncodeDecision(split_decision);
@@ -686,14 +675,7 @@ void SharedTreeWorker::MaybeProposeSplit() {
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
     manager_->ProposeSplit(assigned_tree_, *encoded);
     if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
-      --splits_wanted_;
       assigned_tree_literals_.push_back(split_decision);
-    } else {
-      // If we managed to encode the decision and it wasn't accepted, it's
-      // unlikely any splits in this subtree will be accepted, skip the
-      // unnecessary synchronisation until the next time we backtrack to level
-      // 0.
-      splits_wanted_ = 0;
     }
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   }
@@ -710,9 +692,7 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
          restart_policy_->LbdAverageSinceReset();
 }
 
-void SharedTreeWorker::SyncWithSharedTree() {
-  splits_wanted_ = manager_->SplitsToGeneratePerWorker();
-  VLOG(2) << "Splits wanted: " << splits_wanted_ << " " << parameters_->name();
+bool SharedTreeWorker::SyncWithSharedTree() {
   manager_->SyncTree(assigned_tree_);
   if (ShouldReplaceSubtree()) {
     ++num_trees_;
@@ -733,6 +713,7 @@ void SharedTreeWorker::SyncWithSharedTree() {
     assigned_tree_literals_.push_back(
         DecodeDecision(assigned_tree_.Decision(i)));
   }
+  return true;
 }
 
 SatSolver::Status SharedTreeWorker::Search(
@@ -744,6 +725,8 @@ SatSolver::Status SharedTreeWorker::Search(
   sat_solver_->Backtrack(0);
   encoder_->GetTrueLiteral();
   encoder_->GetFalseLiteral();
+  level_zero_callbacks_->callbacks.push_back(
+      [this]() { return SyncWithSharedTree(); });
   const bool has_objective =
       objective_ != nullptr && objective_->objective_var != kNoIntegerVariable;
   std::vector<Literal> clause;
@@ -756,9 +739,6 @@ SatSolver::Status SharedTreeWorker::Search(
       heuristics_->policy_index =
           num_restarts_ % heuristics_->decision_policies.size();
       sat_solver_->Backtrack(0);
-    }
-    if (trail_->CurrentDecisionLevel() == 0) {
-      SyncWithSharedTree();
     }
     if (!SyncWithLocalTrail()) return sat_solver_->UnsatStatus();
     LiteralIndex decision_index;

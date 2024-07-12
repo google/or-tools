@@ -108,10 +108,10 @@ class ScatteredIntegerVector {
   // from sparse to dense as needed.
   bool is_sparse_ = true;
   std::vector<glop::ColIndex> non_zeros_;
-  absl::StrongVector<glop::ColIndex, bool> is_zeros_;
+  util_intops::StrongVector<glop::ColIndex, bool> is_zeros_;
 
   // The dense representation of the vector.
-  absl::StrongVector<glop::ColIndex, IntegerValue> dense_vector_;
+  util_intops::StrongVector<glop::ColIndex, IntegerValue> dense_vector_;
 };
 
 // A SAT constraint that enforces a set of linear inequality constraints on
@@ -219,6 +219,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int64_t num_bad_cuts() const { return num_bad_cuts_; }
   int64_t num_scaling_issues() const { return num_scaling_issues_; }
 
+  // This can serve as a timestamp to know if a saved basis is out of date.
+  int64_t num_lp_changes() const { return num_lp_changes_; }
+
   const std::vector<int64_t>& num_solves_by_status() const {
     return num_solves_by_status_;
   }
@@ -240,8 +243,17 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // This api allows to temporarily disable the LP propagator which can be
   // costly during probing or other heavy propagation phase.
-  void EnablePropagation(bool enable) { enabled_ = enable; }
+  void EnablePropagation(bool enable) {
+    enabled_ = enable;
+    watcher_->CallOnNextPropagate(watcher_id_);
+  }
   bool PropagationIsEnabled() const { return enabled_; }
+
+  const glop::BasisState& GetBasisState() const { return state_; }
+  void LoadBasisState(const glop::BasisState& state) {
+    state_ = state;
+    simplex_.LoadStateForNextSolve(state_);
+  }
 
  private:
   // Helper method to fill reduced cost / dual ray reason in 'integer_reason'.
@@ -355,7 +367,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Converts a dense representation of a linear constraint to a sparse one
   // expressed in terms of IntegerVariable.
   void ConvertToLinearConstraint(
-      const absl::StrongVector<glop::ColIndex, IntegerValue>& dense_vector,
+      const util_intops::StrongVector<glop::ColIndex, IntegerValue>&
+          dense_vector,
       IntegerValue upper_bound, LinearConstraint* result);
 
   // Compute the implied lower bound of the given linear expression using the
@@ -435,8 +448,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   LinearExpression integer_objective_;
   IntegerValue integer_objective_offset_ = IntegerValue(0);
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
-  absl::StrongVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
-  absl::StrongVector<glop::RowIndex, IntegerValue> infinity_norms_;
+  util_intops::StrongVector<glop::RowIndex, LinearConstraintInternal>
+      integer_lp_;
+  util_intops::StrongVector<glop::RowIndex, IntegerValue> infinity_norms_;
 
   // Underlying LP solver API.
   glop::GlopParameters simplex_params_;
@@ -451,7 +465,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Temporary data for cuts.
   ZeroHalfCutHelper zero_half_cut_helper_;
   CoverCutHelper cover_cut_helper_;
-  FlowCoverCutHelper flow_cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
 
   bool problem_proven_infeasible_by_cuts_ = false;
@@ -477,7 +490,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Note that these indices are dense in [0, mirror_lp_variable_.size()] so
   // they can be used as vector indices.
   //
-  // TODO(user): This should be absl::StrongVector<glop::ColIndex,
+  // TODO(user): This should be util_intops::StrongVector<glop::ColIndex,
   // IntegerVariable> Except if we have too many LinearProgrammingConstraint.
   std::vector<IntegerVariable> integer_variables_;
   absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
@@ -497,12 +510,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
+  GenericLiteralWatcher* watcher_;
   IntegerEncoder* integer_encoder_;
   ProductDetector* product_detector_;
   ObjectiveDefinition* objective_definition_;
   SharedStatistics* shared_stats_;
   SharedResponseManager* shared_response_manager_;
   ModelRandomGenerator* random_;
+
+  int watcher_id_;
 
   BoolRLTCutHelper rlt_cut_helper_;
 
@@ -586,6 +602,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   FirstFewValues<10> reachable_;
   int64_t total_num_cut_propagations_ = 0;
   int64_t total_num_eq_propagations_ = 0;
+
+  // The number of times we changed the LP.
+  int64_t num_lp_changes_ = 0;
 
   // Some stats on the LP statuses encountered.
   int64_t num_solves_ = 0;

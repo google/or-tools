@@ -14,7 +14,9 @@
 #ifndef OR_TOOLS_SAT_SYNCHRONIZATION_H_
 #define OR_TOOLS_SAT_SYNCHRONIZATION_H_
 
+#include <array>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -97,6 +99,10 @@ class SharedSolutionRepository {
   // Returns the solution #i where i must be smaller than NumSolutions().
   Solution GetSolution(int index) const;
 
+  // Returns the rank of the best known solution.
+  // You shouldn't call this if NumSolutions() is zero.
+  int64_t GetBestRank() const;
+
   // Returns the variable value of variable 'var_index' from solution
   // 'solution_index' where solution_index must be smaller than NumSolutions()
   // and 'var_index' must be smaller than number of variables.
@@ -106,9 +112,9 @@ class SharedSolutionRepository {
   Solution GetRandomBiasedSolution(absl::BitGenRef random) const;
 
   // Add a new solution. Note that it will not be added to the pool of solution
-  // right away. One must call Synchronize for this to happen.
-  //
-  // Works in O(num_solutions_to_keep_).
+  // right away. One must call Synchronize for this to happen. In order to be
+  // deterministic, this will keep all solutions until Synchronize() is called,
+  // so we need to be careful not to generate too many solutions at once.
   void Add(const Solution& solution);
 
   // Updates the current pool of solution with the one recently added. Note that
@@ -122,21 +128,15 @@ class SharedSolutionRepository {
   std::vector<std::string> TableLineStats() const {
     absl::MutexLock mutex_lock(&mutex_);
     return {FormatName(name_), FormatCounter(num_added_),
-            FormatCounter(num_queried_), FormatCounter(num_ignored_),
-            FormatCounter(num_synchronization_)};
+            FormatCounter(num_queried_), FormatCounter(num_synchronization_)};
   }
 
  protected:
-  // Helper method for adding the solutions once the mutex is acquired.
-  void AddInternal(const Solution& solution)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-
   const std::string name_;
   const int num_solutions_to_keep_;
 
   mutable absl::Mutex mutex_;
   int64_t num_added_ ABSL_GUARDED_BY(mutex_) = 0;
-  int64_t num_ignored_ ABSL_GUARDED_BY(mutex_) = 0;
   mutable int64_t num_queried_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t num_synchronization_ ABSL_GUARDED_BY(mutex_) = 0;
 
@@ -281,14 +281,12 @@ class SharedResponseManager {
   // Note that these bound correspond to valid bound for the problem of finding
   // a strictly better objective than the current one. Thus the lower bound is
   // always a valid bound for the global problem, but the upper bound is NOT.
+  //
+  // This is always the last bounds in "always_synchronize" mode, otherwise it
+  // correspond to the bounds at the last Synchronize() call.
+  void Synchronize();
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
-
-  // These functions return the same as the non-synchronized() version but
-  // only the values at the last time Synchronize() was called.
-  void Synchronize();
-  IntegerValue SynchronizedInnerObjectiveLowerBound();
-  IntegerValue SynchronizedInnerObjectiveUpperBound();
 
   // Returns the current best solution inner objective value or kInt64Max if
   // there is no solution.
@@ -570,8 +568,115 @@ class SharedBoundsManager {
   int export_counter_ = 0;
 };
 
-// This class holds all the binary clauses that were found and shared by the
-// workers.
+// Emit a stream of clauses in batches without duplicates. Each batch has a
+// fixed number of literals, containing the smallest clauses added.
+// It has a finite size internal buffer that is a small multiple of the batch
+// size.
+//
+// This class is thread-safe, the idea is to have one per worker plus a
+// global one to deduplicate between workers to minimize contention.
+//
+// This uses a finite buffer, so some clauses may be dropped if we generate too
+// many more than we export, but that is rarely a problem because we never
+// overfill the "global" stream, and if we drop a clause on a worker, one of the
+// following will most likely happen:
+//   1. Some other worker learns the clause and shares it later.
+//   2. All other workers also learn and drop the clause.
+//   3. No other worker learns the clause, so it was not that helpful anyway.
+//
+// Note that this uses literals as encoded in a cp_model.proto. Thus, the
+// literals can be negative numbers.
+class UniqueClauseStream {
+ public:
+  static constexpr int kMinClauseSize = 3;
+  static constexpr int kMaxClauseSize = 8;
+  // Export 4KiB of clauses per batch.
+  static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
+  // Bound the total literals we buffer, approximately enforced so shorter
+  // clauses can replace longer ones.
+  static constexpr int kMaxBufferedLiterals = 4 * kMaxLiteralsPerBatch;
+
+  UniqueClauseStream();
+  // Move only - this is an expensive class to copy.
+  UniqueClauseStream(const UniqueClauseStream&) = delete;
+  UniqueClauseStream(UniqueClauseStream&&) = default;
+
+  // Adds the clause to a future batch and returns true if the clause was added.
+  // Otherwise returns false. This may return false if the buffer is full.
+  // It will not block the clause if it is dropped to avoid unbounded growth of
+  // the hash table.
+  bool Add(absl::Span<const int> clause) ABSL_LOCKS_EXCLUDED(mutex_);
+
+  // Lazily deletes a clause with the same hash, returns true if it was present.
+  // The deleted clause will not be exported (either via NextBatch or
+  // FillUpstreamBuffer). A clause with the same hash may be re-added after
+  // calling Delete. If another clause with the same hash is added before the
+  // deleted clause is emitted then both clauses may be emitted.
+  bool Delete(absl::Span<const int> clause) ABSL_LOCKS_EXCLUDED(mutex_);
+
+  // Returns a set of clauses totalling up to kMaxLiteralsPerBatch and removes
+  // exported clauses from the internal buffer.
+  CompactVectorVector<int> NextBatch() ABSL_LOCKS_EXCLUDED(mutex_);
+
+  // Adds up to max_clauses_to_export clauses of a given size to upstream and
+  // removes them from the internal buffer.
+  int FillUpstreamBuffer(UniqueClauseStream& upstream, int clause_size,
+                         int max_clauses_to_export) ABSL_LOCKS_EXCLUDED(mutex_);
+
+  // Returns the number of literals in the buffer in clauses with size <=
+  // max_size.
+  int NumBufferedLiteralsOfSize(int size) const ABSL_LOCKS_EXCLUDED(mutex_) {
+    absl::MutexLock lock(&mutex_);
+    return NumLiteralsOfSize(size);
+  }
+  int NumBufferedLiterals() const ABSL_LOCKS_EXCLUDED(mutex_);
+
+  // Returns true if the stream can accept a clause of the specified size and
+  // LBD without dropping it.
+  bool CanAccept(int size, int lbd) const;
+
+  // Delete longest clauses while keeping at least kMaxBufferedLiterals.
+  // This guarantees that CanAccept will return the same result as before, and
+  // at least the next 4 batches will contain the same clauses, but we will emit
+  // fewer old, long clauses many batches in the future.
+  void RemoveWorstClauses();
+
+  int lbd_threshold() const ABSL_LOCKS_EXCLUDED(mutex_) {
+    absl::MutexLock lock(&mutex_);
+    return lbd_threshold_;
+  }
+  void set_lbd_threshold(int lbd) ABSL_LOCKS_EXCLUDED(mutex_);
+
+  // Computes a hash that is independent of the order of literals in the clause.
+  static size_t HashClause(absl::Span<const int> clause, size_t hash_seed = 0);
+
+ private:
+  bool BlockClause(absl::Span<const int> clause)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  std::vector<int>* MutableBufferForSize(int size)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+    return &clauses_by_size_[size - kMinClauseSize];
+  }
+  absl::Span<const int> BufferForSize(int size) const
+      ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    return clauses_by_size_[size - kMinClauseSize];
+  }
+  absl::Span<const int> NextClause(int size) const
+      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  void PopClause(int size) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  // Computes the number of clauses of a given size.
+  int NumClausesOfSize(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  int NumLiteralsOfSize(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+
+  mutable absl::Mutex mutex_;
+  int lbd_threshold_ ABSL_GUARDED_BY(mutex_) = 2;
+  absl::flat_hash_set<size_t> fingerprints_ ABSL_GUARDED_BY(mutex_);
+  std::array<std::vector<int>, kMaxClauseSize - kMinClauseSize + 1>
+      clauses_by_size_ ABSL_GUARDED_BY(mutex_);
+};
+
+// This class holds clauses found and shared by workers.
+// It is exact for binary clauses, but approximate for longer ones.
 //
 // It is thread-safe.
 //
@@ -579,8 +684,14 @@ class SharedBoundsManager {
 // literals can be negative numbers.
 class SharedClausesManager {
  public:
-  explicit SharedClausesManager(bool always_synchronize);
+  explicit SharedClausesManager(bool always_synchronize,
+                                absl::Duration share_frequency);
   void AddBinaryClause(int id, int lit1, int lit2);
+
+  // Returns new glue clauses.
+  // The spans are guaranteed to remain valid until the next call to
+  // SyncClauses().
+  std::vector<absl::Span<const int>> GetUnseenClauses(int id);
 
   // Fills new_clauses with
   //   {{lit1 of clause1, lit2 of clause1},
@@ -593,26 +704,48 @@ class SharedClausesManager {
   int RegisterNewId();
   void SetWorkerNameForId(int id, const std::string& worker_name);
 
+  // A worker can add or remove clauses from its own clause set.
+  // Retains ownership of the returned ClauseFilter.
+  UniqueClauseStream* GetClauseStream(int id) {
+    absl::ReaderMutexLock mutex_lock(&mutex_);
+    return &id_to_clause_stream_[id];
+  }
+
   // Search statistics.
   void LogStatistics(SolverLogger* logger);
 
   // Unlocks waiting binary clauses for workers if always_synchronize is false.
+  // Periodically starts a new sharing round, making glue clauses visible.
   void Synchronize();
 
  private:
+  static constexpr int kMinBatches = 10;
   absl::Mutex mutex_;
 
-  // Cache to avoid adding the same clause twice.
+  // Binary clauses:
+  // Cache to avoid adding the same binary clause twice.
   absl::flat_hash_set<std::pair<int, int>> added_binary_clauses_set_
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::pair<int, int>> added_binary_clauses_
       ABSL_GUARDED_BY(mutex_);
   std::vector<int> id_to_last_processed_binary_clause_ ABSL_GUARDED_BY(mutex_);
-  std::vector<int64_t> id_to_clauses_exported_;
-  int last_visible_clause_ ABSL_GUARDED_BY(mutex_) = 0;
-  const bool always_synchronize_ = true;
+  int last_visible_binary_clause_ ABSL_GUARDED_BY(mutex_) = 0;
 
-  // Used for reporting statistics.
+  // Longer clauses:
+  UniqueClauseStream all_clauses_ ABSL_GUARDED_BY(mutex_);
+  // This is slightly subtle - we need to track the batches that might be
+  // currently being processed by each worker.
+  std::vector<int> id_to_last_returned_batch_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int> id_to_last_finished_batch_ ABSL_GUARDED_BY(mutex_);
+  std::deque<CompactVectorVector<int>> batches_ ABSL_GUARDED_BY(mutex_);
+  std::deque<UniqueClauseStream> id_to_clause_stream_ ABSL_GUARDED_BY(mutex_);
+  WallTimer share_timer_ ABSL_GUARDED_BY(mutex_);
+
+  const bool always_synchronize_ = true;
+  const absl::Duration share_frequency_;
+
+  // Stats:
+  std::vector<int64_t> id_to_clauses_exported_;
   absl::flat_hash_map<int, std::string> id_to_worker_name_;
 };
 
@@ -644,6 +777,13 @@ SharedSolutionRepository<ValueType>::GetSolution(int i) const {
   absl::MutexLock mutex_lock(&mutex_);
   ++num_queried_;
   return solutions_[i];
+}
+
+template <typename ValueType>
+int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  CHECK_GT(solutions_.size(), 0);
+  return solutions_[0].rank;
 }
 
 template <typename ValueType>
@@ -695,29 +835,8 @@ template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Add(const Solution& solution) {
   if (num_solutions_to_keep_ <= 0) return;
   absl::MutexLock mutex_lock(&mutex_);
-  AddInternal(solution);
-}
-
-template <typename ValueType>
-void SharedSolutionRepository<ValueType>::AddInternal(
-    const Solution& solution) {
-  int worse_solution_index = 0;
-  for (int i = 0; i < new_solutions_.size(); ++i) {
-    // Do not add identical solution.
-    if (new_solutions_[i] == solution) return;
-    if (new_solutions_[worse_solution_index] < new_solutions_[i]) {
-      worse_solution_index = i;
-    }
-  }
-  if (new_solutions_.size() < num_solutions_to_keep_) {
-    ++num_added_;
-    new_solutions_.push_back(solution);
-  } else if (solution < new_solutions_[worse_solution_index]) {
-    ++num_added_;
-    new_solutions_[worse_solution_index] = solution;
-  } else {
-    ++num_ignored_;
-  }
+  ++num_added_;
+  new_solutions_.push_back(solution);
 }
 
 template <typename ValueType>

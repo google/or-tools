@@ -131,7 +131,7 @@ TEST(BufferedMessageCallbackTest, NullFunctionNoEffect) {
 
 TEST(BufferedMessageCallbackTest, NonNullFunctionHasCallback) {
   BufferedMessageCallback buffered_cb(
-      [](const std::vector<std::string>& messages) {});
+      [](absl::Span<const std::string> messages) {});
   EXPECT_TRUE(buffered_cb.has_user_message_callback());
 }
 

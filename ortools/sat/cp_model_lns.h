@@ -159,7 +159,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   bool DifficultyMeansFullNeighborhood(double difficulty) const {
     absl::ReaderMutexLock lock(&graph_mutex_);
-    const int target_size = std::ceil(difficulty * active_variables_.size());
+    const int target_size =
+        static_cast<int>(std::ceil(difficulty * active_variables_.size()));
     return target_size == active_variables_.size();
   }
 
@@ -309,7 +310,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // A copy of CpModelProto where we did some basic presolving to remove all
   // constraint that are always true. The Variable-Constraint graph is based on
   // this model. Note that only the constraints field is present here.
-  CpModelProto simplied_model_proto_ ABSL_GUARDED_BY(graph_mutex_);
+  CpModelProto simplified_model_proto_ ABSL_GUARDED_BY(graph_mutex_);
 
   // Variable-Constraint graph.
   // We replace an interval by its variables in the scheduling constraints.

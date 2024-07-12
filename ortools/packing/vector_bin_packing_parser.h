@@ -36,7 +36,7 @@ class VbpParser {
  public:
   // Return true iff there were no error, in which case problem() can be
   // called to retrieve the parsed problem.
-  bool ParseFile(const std::string& data_filename);
+  bool ParseFile(absl::string_view data_filename);
 
   // We keep the fully qualified name for SWIG.
   ::operations_research::packing::vbp::VectorBinPackingProblem problem() const {

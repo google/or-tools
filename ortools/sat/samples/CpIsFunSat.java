@@ -13,11 +13,13 @@
 
 // [START program]
 package com.google.ortools.sat.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 // [END import]
@@ -46,9 +48,10 @@ public final class CpIsFunSat {
     private int solutionCount;
     private final IntVar[] variableArray;
   }
+
   // [END solution_printer]
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     // [START model]
@@ -56,7 +59,7 @@ public final class CpIsFunSat {
     // [END model]
 
     // [START variables]
-    int base = 10;
+    final int base = 10;
     IntVar c = model.newIntVar(1, base - 1, "C");
     IntVar p = model.newIntVar(0, base - 1, "P");
     IntVar i = model.newIntVar(1, base - 1, "I");
@@ -90,7 +93,7 @@ public final class CpIsFunSat {
     // Tell the solver to enumerate all solutions.
     solver.getParameters().setEnumerateAllSolutions(true);
     // And solve.
-    solver.solve(model, cb);
+    CpSolverStatus unusedStatus = solver.solve(model, cb);
     // [END solve]
 
     // Statistics.

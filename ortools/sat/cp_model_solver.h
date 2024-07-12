@@ -16,9 +16,7 @@
 
 #include <functional>
 #include <string>
-#include <vector>
 
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -90,9 +88,10 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
  *  - etc...
  */
 std::function<void(Model*)> NewFeasibleSolutionObserver(
-    const std::function<void(const CpSolverResponse& response)>& observer);
+    const std::function<void(const CpSolverResponse& response)>& callback);
 
-/** Creates a callbacks that will append a string to the search log when
+/**
+ * Creates a callbacks that will append a string to the search log when
  * reporting a new solution.
  *
  * The given function will be called on each improving feasible solution found
@@ -103,8 +102,9 @@ std::function<void(Model*)> NewFeasibleSolutionLogCallback(
     const std::function<std::string(const CpSolverResponse& response)>&
         callback);
 
-/** Creates a callbacks that will be called on each new best objective bound
- *  found.
+/**
+ * Creates a callbacks that will be called on each new best objective bound
+ * found.
  *
  * Note that this function is called before the update takes place.
  */

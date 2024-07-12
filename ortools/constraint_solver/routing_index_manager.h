@@ -109,7 +109,7 @@ class RoutingIndexManager {
       const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
 
   std::vector<NodeIndex> index_to_node_;
-  absl::StrongVector<NodeIndex, int64_t> node_to_index_;
+  util_intops::StrongVector<NodeIndex, int64_t> node_to_index_;
   std::vector<int64_t> vehicle_to_start_;
   std::vector<int64_t> vehicle_to_end_;
   int num_nodes_;

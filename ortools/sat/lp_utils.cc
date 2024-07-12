@@ -871,8 +871,8 @@ double FindFractionalScaling(const std::vector<double>& coefficients,
 
 double FindBestScalingAndComputeErrors(
     const std::vector<double>& coefficients,
-    const std::vector<double>& lower_bounds,
-    const std::vector<double>& upper_bounds, int64_t max_absolute_activity,
+    absl::Span<const double> lower_bounds,
+    absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
     double wanted_absolute_activity_precision, double* relative_coeff_error,
     double* scaled_sum_error) {
   // Starts by computing the highest possible factor.

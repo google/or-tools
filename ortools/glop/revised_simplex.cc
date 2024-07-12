@@ -139,7 +139,12 @@ void RevisedSimplex::ClearStateForNextSolve() {
 }
 
 void RevisedSimplex::LoadStateForNextSolve(const BasisState& state) {
-  SCOPED_TIME_STAT(&function_stats_);
+  // We avoid marking the state as set externally if it is the same as the
+  // current one.
+  //
+  // TODO(user): Add comparison operator.
+  if (state.statuses == solution_state_.statuses) return;
+
   solution_state_ = state;
   solution_state_has_been_set_externally_ = true;
 }
@@ -3820,9 +3825,9 @@ void RevisedSimplex::DisplayVariableBounds() {
   }
 }
 
-absl::StrongVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
-    const DenseRow* column_scales) {
-  absl::StrongVector<RowIndex, SparseRow> dictionary(num_rows_.value());
+util_intops::StrongVector<RowIndex, SparseRow>
+RevisedSimplex::ComputeDictionary(const DenseRow* column_scales) {
+  util_intops::StrongVector<RowIndex, SparseRow> dictionary(num_rows_.value());
   for (ColIndex col(0); col < num_cols_; ++col) {
     ComputeDirection(col);
     for (const auto e : direction_) {

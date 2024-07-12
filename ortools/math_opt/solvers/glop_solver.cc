@@ -188,8 +188,8 @@ void UpdateIdIndexMap(glop::StrictITIVector<IndexType, bool> indices_to_delete,
 
                       IndexType num_indices,
                       absl::flat_hash_map<int64_t, IndexType>& id_index_map) {
-  absl::StrongVector<IndexType, IndexType> new_indices(num_indices.value(),
-                                                       IndexType(0));
+  util_intops::StrongVector<IndexType, IndexType> new_indices(
+      num_indices.value(), IndexType(0));
   IndexType new_index(0);
   for (IndexType index(0); index < num_indices; ++index) {
     if (indices_to_delete[index]) {

@@ -227,7 +227,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
       : xprsprob_(xprsprob),
         event_(event),
         num_nodes_(num_nodes),
-        variable_values_(0){};
+        variable_values_(0) {};
 
   // Implementation of the interface.
   MPCallbackEvent Event() override { return event_; };
@@ -260,7 +260,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
 // Wraps the MPCallback in order to catch and store exceptions
 class MPCallbackWrapper {
  public:
-  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback){};
+  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback) {};
   MPCallback* GetCallback() const { return callback_; }
   // Since our (C++) call-back functions are called from the XPRESS (C) code,
   // exceptions thrown in our call-back code are not caught by XPRESS.
@@ -971,8 +971,6 @@ void XpressInterface::SetVariableInteger(int var_index, bool integer) {
 }
 
 // Setup the right-hand side of a constraint.
-// The function is expected to _always_ set rhs, sense, range. So for
-// non-ranged rows it must set range to zero.
 void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
                               double& range) {
   if (lb == ub) {
@@ -1246,7 +1244,8 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-MPSolver::BasisStatus XpressToMPSolverBasisStatus(int xpress_basis_status) {
+static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
+    int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
       return MPSolver::AT_LOWER_BOUND;
@@ -1824,13 +1823,15 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   // Set log level.
   XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, quiet() ? 0 : 1);
   // Set parameters.
-  // NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
-  //       Its current implementation invokes ReadParameterFile() which in
-  //       turn invokes XPRSreadcopyparam(). The latter will _overwrite_
-  //       all current parameter settings in the environment.
+  // We first set our internal MPSolverParameters from 'param' and then set
+  // any user-specified internal solver parameters via
+  // solver_specific_parameter_string_.
+  // Default MPSolverParameters can override custom parameters while specific
+  // parameters allow a higher level of customization (for example for
+  // presolving) and therefore we apply MPSolverParameters first.
+  SetParameters(param);
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
-  SetParameters(param);
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     // In Xpress, a time limit should usually have a negative sign. With a

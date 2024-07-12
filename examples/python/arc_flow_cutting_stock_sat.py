@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,15 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Cutting stock problem with the objective to minimize wasted space."""
 
+"""Cutting stock problem with the objective to minimize wasted space."""
 
 import collections
 import time
-import numpy as np
 
 from absl import app
 from absl import flags
+import numpy as np
+
 from google.protobuf import text_format
 from ortools.linear_solver.python import model_builder as mb
 from ortools.sat.python import cp_model
@@ -26,13 +28,14 @@ from ortools.sat.python import cp_model
 FLAGS = flags.FLAGS
 
 _OUTPUT_PROTO = flags.DEFINE_string(
-    'output_proto', '', 'Output file to write the cp_model proto to.')
+    "output_proto", "", "Output file to write the cp_model proto to."
+)
 _PARAMS = flags.DEFINE_string(
-    'params',
-    'num_search_workers:8,log_search_progress:true,max_time_in_seconds:10',
-    'Sat solver parameters.')
-_SOLVER = flags.DEFINE_string(
-    'solver', 'sat', 'Method used to solve: sat, mip.')
+    "params",
+    "num_search_workers:8,log_search_progress:true,max_time_in_seconds:10",
+    "Sat solver parameters.",
+)
+_SOLVER = flags.DEFINE_string("solver", "sat", "Method used to solve: sat, mip.")
 
 
 DESIRED_LENGTHS = [
@@ -104,9 +107,9 @@ def create_state_graph(items, max_capacity):
                     states.append(new_state)
                     state_to_index[new_state] = new_state_index
                 # Add the transition
-                transitions.append([
-                    current_state_index, new_state_index, item_index, card + 1
-                ])
+                transitions.append(
+                    [current_state_index, new_state_index, item_index, card + 1]
+                )
 
     return states, transitions
 
@@ -114,14 +117,19 @@ def create_state_graph(items, max_capacity):
 def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: str):
     """Solve the cutting stock with arc-flow and the CP-SAT solver."""
     items = regroup_and_count(DESIRED_LENGTHS)
-    print('Items:', items)
+    print("Items:", items)
     num_items = len(DESIRED_LENGTHS)
 
     max_capacity = max(POSSIBLE_CAPACITIES)
     states, transitions = create_state_graph(items, max_capacity)
 
-    print('Dynamic programming has generated', len(states), 'states and',
-          len(transitions), 'transitions')
+    print(
+        "Dynamic programming has generated",
+        len(states),
+        "states and",
+        len(transitions),
+        "transitions",
+    )
 
     incoming_vars = collections.defaultdict(list)
     outgoing_vars = collections.defaultdict(list)
@@ -139,8 +147,8 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: st
         count = items[item_index][1]
         max_count = count // card
         count_var = model.NewIntVar(
-            0, max_count,
-            'i%i_f%i_t%i_C%s' % (item_index, incoming, outgoing, card))
+            0, max_count, "i%i_f%i_t%i_C%s" % (item_index, incoming, outgoing, card)
+        )
         incoming_vars[incoming].append(count_var)
         outgoing_vars[outgoing].append(count_var)
         item_vars[item_index].append(count_var)
@@ -150,7 +158,7 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: st
     for state_index, state in enumerate(states):
         if state_index == 0:
             continue
-        exit_var = model.NewIntVar(0, num_items, 'e%i' % state_index)
+        exit_var = model.NewIntVar(0, num_items, "e%i" % state_index)
         outgoing_vars[state_index].append(exit_var)
         incoming_sink_vars.append(exit_var)
         price = price_usage(state, POSSIBLE_CAPACITIES)
@@ -159,8 +167,7 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: st
 
     # Flow conservation
     for state_index in range(1, len(states)):
-        model.Add(
-            sum(incoming_vars[state_index]) == sum(outgoing_vars[state_index]))
+        model.Add(sum(incoming_vars[state_index]) == sum(outgoing_vars[state_index]))
 
     # Flow going out of the source must go in the sink
     model.Add(sum(outgoing_vars[0]) == sum(incoming_sink_vars))
@@ -169,13 +176,17 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: st
     for item_index, size_and_count in enumerate(items):
         num_arcs = len(item_vars[item_index])
         model.Add(
-            sum(item_vars[item_index][i] * item_coeffs[item_index][i]
-                for i in range(num_arcs)) == size_and_count[1])
+            sum(
+                item_vars[item_index][i] * item_coeffs[item_index][i]
+                for i in range(num_arcs)
+            )
+            == size_and_count[1]
+        )
 
     # Objective is the sum of waste
     model.Minimize(
-        sum(objective_vars[i] * objective_coeffs[i]
-            for i in range(len(objective_vars))))
+        sum(objective_vars[i] * objective_coeffs[i] for i in range(len(objective_vars)))
+    )
 
     # Output model proto to file.
     if output_proto_file:
@@ -192,13 +203,18 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: st
 def solve_cutting_stock_with_arc_flow_and_mip():
     """Solve the cutting stock with arc-flow and a MIP solver."""
     items = regroup_and_count(DESIRED_LENGTHS)
-    print('Items:', items)
+    print("Items:", items)
     num_items = len(DESIRED_LENGTHS)
     max_capacity = max(POSSIBLE_CAPACITIES)
     states, transitions = create_state_graph(items, max_capacity)
 
-    print('Dynamic programming has generated', len(states), 'states and',
-          len(transitions), 'transitions')
+    print(
+        "Dynamic programming has generated",
+        len(states),
+        "states and",
+        len(transitions),
+        "transitions",
+    )
 
     incoming_vars = collections.defaultdict(list)
     outgoing_vars = collections.defaultdict(list)
@@ -216,8 +232,10 @@ def solve_cutting_stock_with_arc_flow_and_mip():
     for outgoing, incoming, item_index, card in transitions:
         count = items[item_index][1]
         count_var = model.new_int_var(
-            0, count, 'a%i_i%i_f%i_t%i_c%i' % (var_index, item_index, incoming,
-                                               outgoing, card))
+            0,
+            count,
+            "a%i_i%i_f%i_t%i_c%i" % (var_index, item_index, incoming, outgoing, card),
+        )
         var_index += 1
         incoming_vars[incoming].append(count_var)
         outgoing_vars[outgoing].append(count_var)
@@ -227,7 +245,7 @@ def solve_cutting_stock_with_arc_flow_and_mip():
     for state_index, state in enumerate(states):
         if state_index == 0:
             continue
-        exit_var = model.new_int_var(0, num_items, 'e%i' % state_index)
+        exit_var = model.new_int_var(0, num_items, "e%i" % state_index)
         outgoing_vars[state_index].append(exit_var)
         incoming_sink_vars.append(exit_var)
         price = price_usage(state, POSSIBLE_CAPACITIES)
@@ -237,44 +255,52 @@ def solve_cutting_stock_with_arc_flow_and_mip():
     # Flow conservation
     for state_index in range(1, len(states)):
         model.add(
-            mb.LinearExpr.sum(incoming_vars[state_index]) == mb.LinearExpr.sum(
-                outgoing_vars[state_index]))
+            mb.LinearExpr.sum(incoming_vars[state_index])
+            == mb.LinearExpr.sum(outgoing_vars[state_index])
+        )
 
     # Flow going out of the source must go in the sink
     model.add(
-        mb.LinearExpr.sum(outgoing_vars[0]) == mb.LinearExpr.sum(
-            incoming_sink_vars))
+        mb.LinearExpr.sum(outgoing_vars[0]) == mb.LinearExpr.sum(incoming_sink_vars)
+    )
 
     # Items must be placed
     for item_index, size_and_count in enumerate(items):
         num_arcs = len(item_vars[item_index])
         model.add(
-            mb.LinearExpr.sum([item_vars[item_index][i] * item_coeffs[item_index][i]
-                for i in range(num_arcs)]) == size_and_count[1])
+            mb.LinearExpr.sum(
+                [
+                    item_vars[item_index][i] * item_coeffs[item_index][i]
+                    for i in range(num_arcs)
+                ]
+            )
+            == size_and_count[1]
+        )
 
     # Objective is the sum of waste
     model.minimize(np.dot(objective_vars, objective_coeffs))
 
-    solver = mb.ModelSolver('scip')
+    solver = mb.ModelSolver("scip")
     solver.enable_output(True)
     status = solver.solve(model)
 
     ### Output the solution.
     if status == mb.SolveStatus.OPTIMAL or status == mb.SolveStatus.FEASIBLE:
-        print('Objective value = %f found in %.2f s' %
-              (solver.objective_value, time.time() - start_time))
+        print(
+            "Objective value = %f found in %.2f s"
+            % (solver.objective_value, time.time() - start_time)
+        )
     else:
-        print('No solution')
+        print("No solution")
 
 
 def main(_):
-    """Main function"""
-    if _SOLVER.value == 'sat':
-        solve_cutting_stock_with_arc_flow_and_sat(_OUTPUT_PROTO.value,
-                                                  _PARAMS.value)
+    """Main function."""
+    if _SOLVER.value == "sat":
+        solve_cutting_stock_with_arc_flow_and_sat(_OUTPUT_PROTO.value, _PARAMS.value)
     else:  # 'mip'
         solve_cutting_stock_with_arc_flow_and_mip()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

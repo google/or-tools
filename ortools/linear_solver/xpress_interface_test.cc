@@ -768,11 +768,27 @@ TEST_F(XpressFixtureLP, SetPrimalTolerance) {
   EXPECT_EQ(getter.getDoubleControl(XPRS_FEASTOL), tol);
 }
 
+TEST_F(XpressFixtureLP, SetPrimalToleranceNotOverridenByMPSolverParameters) {
+  double tol = 1e-4;  // Choose a value different from kDefaultPrimalTolerance
+  std::string xpressParamString = "FEASTOL " + std::to_string(tol);
+  solver.SetSolverSpecificParametersAsString(xpressParamString);
+  solver.Solve();
+  EXPECT_EQ(getter.getDoubleControl(XPRS_FEASTOL), tol);
+}
+
 TEST_F(XpressFixtureLP, SetDualTolerance) {
   MPSolverParameters params;
   double tol = 1e-2;
   params.SetDoubleParam(MPSolverParameters::DUAL_TOLERANCE, tol);
   solver.Solve(params);
+  EXPECT_EQ(getter.getDoubleControl(XPRS_OPTIMALITYTOL), tol);
+}
+
+TEST_F(XpressFixtureLP, SetDualToleranceNotOverridenByMPSolverParameters) {
+  double tol = 1e-4;  // Choose a value different from kDefaultDualTolerance
+  std::string xpressParamString = "OPTIMALITYTOL " + std::to_string(tol);
+  solver.SetSolverSpecificParametersAsString(xpressParamString);
+  solver.Solve();
   EXPECT_EQ(getter.getDoubleControl(XPRS_OPTIMALITYTOL), tol);
 }
 
@@ -786,6 +802,17 @@ TEST_F(XpressFixtureMIP, SetPresolveMode) {
                          MPSolverParameters::PRESOLVE_ON);
   solver.Solve(params);
   EXPECT_EQ(getter.getIntegerControl(XPRS_PRESOLVE), 1);
+}
+
+TEST_F(XpressFixtureMIP, SetPresolveModeNotOverridenByMPSolverParameters) {
+  // Test all presolve modes of Xpress
+  std::vector<int> presolveModes{-1, 0, 1, 2, 3};
+  for (int presolveMode : presolveModes) {
+    std::string xpressParamString = "PRESOLVE " + std::to_string(presolveMode);
+    solver.SetSolverSpecificParametersAsString(xpressParamString);
+    solver.Solve();
+    EXPECT_EQ(getter.getIntegerControl(XPRS_PRESOLVE), presolveMode);
+  }
 }
 
 TEST_F(XpressFixtureLP, SetLpAlgorithm) {
@@ -804,6 +831,16 @@ TEST_F(XpressFixtureLP, SetLpAlgorithm) {
   EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 4);
 }
 
+TEST_F(XpressFixtureLP, SetLPAlgorithmNotOverridenByMPSolverParameters) {
+  std::vector<int> defaultAlgs{1, 2, 3, 4};
+  for (int defaultAlg : defaultAlgs) {
+    std::string xpressParamString = "DEFAULTALG " + std::to_string(defaultAlg);
+    solver.SetSolverSpecificParametersAsString(xpressParamString);
+    solver.Solve();
+    EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), defaultAlg);
+  }
+}
+
 TEST_F(XpressFixtureMIP, SetScaling) {
   MPSolverParameters params;
   params.SetIntegerParam(MPSolverParameters::SCALING,
@@ -816,12 +853,31 @@ TEST_F(XpressFixtureMIP, SetScaling) {
   EXPECT_EQ(getter.getIntegerControl(XPRS_SCALING), 163);
 }
 
+TEST_F(XpressFixtureMIP, SetScalingNotOverridenByMPSolverParameters) {
+  // Scaling is a bitmap on 16 bits in Xpress, test only a random value among
+  // all possible
+  int scaling = 2354;
+
+  std::string xpressParamString = "SCALING " + std::to_string(scaling);
+  solver.SetSolverSpecificParametersAsString(xpressParamString);
+  solver.Solve();
+  EXPECT_EQ(getter.getIntegerControl(XPRS_SCALING), scaling);
+}
+
 TEST_F(XpressFixtureMIP, SetRelativeMipGap) {
   MPSolverParameters params;
   double relativeMipGap = 1e-3;
   params.SetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP, relativeMipGap);
   solver.Solve(params);
   EXPECT_EQ(getter.getDoubleControl(XPRS_MIPRELSTOP), relativeMipGap);
+}
+
+TEST_F(XpressFixtureMIP, SetRelativeMipGapNotOverridenByMPSolverParameters) {
+  double gap = 1e-2;  // Choose a value different from kDefaultRelativeMipGap
+  std::string xpressParamString = "MIPRELSTOP " + std::to_string(gap);
+  solver.SetSolverSpecificParametersAsString(xpressParamString);
+  solver.Solve();
+  EXPECT_EQ(getter.getDoubleControl(XPRS_MIPRELSTOP), gap);
 }
 
 TEST(XpressInterface, setStringControls) {

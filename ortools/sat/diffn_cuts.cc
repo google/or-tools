@@ -98,7 +98,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
   // It must be called before the EnergyEvent is used.
   ABSL_MUST_USE_RESULT bool FillEnergyLp(
       AffineExpression x_size,
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values,
       Model* model) {
     LinearConstraintBuilder tmp_energy(model);
     if (IsPresent()) {

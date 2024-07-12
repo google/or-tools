@@ -62,22 +62,36 @@ size_t File::Size() {
 
 bool File::Flush() { return fflush(f_) == 0; }
 
+// Deletes "this" on closing.
 bool File::Close() {
+  bool ok = true;
+  if (f_ == nullptr) {
+    return ok;
+  }
   if (fclose(f_) == 0) {
     f_ = nullptr;
-    return true;
   } else {
-    return false;
+    ok = false;
   }
+  delete this;
+  return ok;
 }
 
+// Deletes "this" on closing.
 absl::Status File::Close(int flags) {
-  if (flags != file::Defaults())
-    return absl::Status(absl::StatusCode::kInvalidArgument, "Wrong flags");
-  return Close()
-             ? absl::OkStatus()
-             : absl::Status(absl::StatusCode::kInvalidArgument,
-                            absl::StrCat("Could not close file '", name_, "'"));
+  absl::Status status;
+  if (f_ == nullptr) {
+    return status;
+  }
+  if (fclose(f_) == 0) {
+    f_ = nullptr;
+  } else {
+    status.Update(
+        absl::Status(absl::StatusCode::kInvalidArgument,
+                     absl::StrCat("Could not close file '", name_, "'")));
+  }
+  delete this;
+  return status;
 }
 
 void File::ReadOrDie(void* buf, size_t size) {
@@ -182,13 +196,11 @@ absl::Status GetContents(absl::string_view filename, std::string* output,
   const int64_t size = file->Size();
   if (file->ReadToString(output, size) == size) {
     status.Update(file->Close(flags));
-    delete file;
     return status;
   }
 #if defined(_MSC_VER)
   // On windows, binary files needs to be opened with the "rb" flags.
   file->Close();
-  delete file;
   // Retry in binary mode.
   status = file::Open(filename, "rb", &file, flags);
   if (!status.ok()) return status;
@@ -196,13 +208,11 @@ absl::Status GetContents(absl::string_view filename, std::string* output,
   const int64_t b_size = file->Size();
   if (file->ReadToString(output, b_size) == b_size) {
     status.Update(file->Close(flags));
-    delete file;
     return status;
   }
 #endif  // _MSC_VER
 
   file->Close(flags).IgnoreError();  // Even if ReadToString() fails!
-  delete file;
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("Could not read from '", filename, "'."));
 }
@@ -224,7 +234,6 @@ absl::Status SetContents(absl::string_view filename, absl::string_view contents,
   if (!status.ok()) return status;
   status = file::WriteString(file, contents, flags);
   status.Update(file->Close(flags));  // Even if WriteString() fails!
-  delete file;
   return status;
 }
 

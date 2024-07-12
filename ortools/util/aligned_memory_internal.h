@@ -15,6 +15,7 @@
 #define OR_TOOLS_UTIL_ALIGNED_MEMORY_INTERNAL_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <memory>
 

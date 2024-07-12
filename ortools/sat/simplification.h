@@ -74,8 +74,8 @@ class SatPostsolver {
   //
   // This can be called more than once. But each call must refer to the current
   // variables set (after all the previous mapping have been applied).
-  void ApplyMapping(
-      const absl::StrongVector<BooleanVariable, BooleanVariable>& mapping);
+  void ApplyMapping(const util_intops::StrongVector<BooleanVariable,
+                                                    BooleanVariable>& mapping);
 
   // Extracts the current assignment of the given solver and postsolve it.
   //
@@ -128,7 +128,7 @@ class SatPostsolver {
   // All the added clauses will be mapped back to the initial variables using
   // this reverse mapping. This way, clauses_ and associated_literal_ are only
   // in term of the initial problem.
-  absl::StrongVector<BooleanVariable, BooleanVariable> reverse_mapping_;
+  util_intops::StrongVector<BooleanVariable, BooleanVariable> reverse_mapping_;
 
   // This will stores the fixed variables value and later the postsolved
   // assignment.
@@ -169,7 +169,7 @@ class SatPresolver {
   // Registers a mapping to encode equivalent literals.
   // See ProbeAndFindEquivalentLiteral().
   void SetEquivalentLiteralMapping(
-      const absl::StrongVector<LiteralIndex, LiteralIndex>& mapping) {
+      const util_intops::StrongVector<LiteralIndex, LiteralIndex>& mapping) {
     equiv_mapping_ = mapping;
   }
 
@@ -204,7 +204,8 @@ class SatPresolver {
   // clause pointing to them. This return a mapping that maps this interval to
   // [0, new_size) such that now all variables are used. The unused variable
   // will be mapped to BooleanVariable(-1).
-  absl::StrongVector<BooleanVariable, BooleanVariable> VariableMapping() const;
+  util_intops::StrongVector<BooleanVariable, BooleanVariable> VariableMapping()
+      const;
 
   // Loads the current presolved problem in to the given sat solver.
   // Note that the variables will be re-indexed according to the mapping given
@@ -305,7 +306,7 @@ class SatPresolver {
     BooleanVariable variable;
     double weight;
   };
-  absl::StrongVector<BooleanVariable, PQElement> var_pq_elements_;
+  util_intops::StrongVector<BooleanVariable, PQElement> var_pq_elements_;
   AdjustablePriorityQueue<PQElement> var_pq_;
 
   // Literal priority queue for BVA. The literals are ordered by descending
@@ -336,7 +337,7 @@ class SatPresolver {
   // Temporary data for SimpleBva().
   absl::btree_set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
-  absl::StrongVector<LiteralIndex, int> literal_to_p_size_;
+  util_intops::StrongVector<LiteralIndex, int> literal_to_p_size_;
   std::vector<std::pair<LiteralIndex, ClauseIndex>> flattened_p_;
   std::vector<Literal> tmp_new_clause_;
 
@@ -356,18 +357,18 @@ class SatPresolver {
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
-  absl::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
+  util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
 
   // Because we only lazily clean the occurrence list after clause deletions,
   // we keep the size of the occurrence list (without the deleted clause) here.
-  absl::StrongVector<LiteralIndex, int> literal_to_clause_sizes_;
+  util_intops::StrongVector<LiteralIndex, int> literal_to_clause_sizes_;
 
   // Used for postsolve.
   SatPostsolver* postsolver_;
 
   // Equivalent literal mapping.
-  absl::StrongVector<LiteralIndex, LiteralIndex> equiv_mapping_;
+  util_intops::StrongVector<LiteralIndex, LiteralIndex> equiv_mapping_;
 
   int num_trivial_clauses_;
   SatParameters parameters_;
@@ -433,7 +434,7 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
     DratProofHandler* drat_proof_handler,
-    absl::StrongVector<LiteralIndex, LiteralIndex>* mapping,
+    util_intops::StrongVector<LiteralIndex, LiteralIndex>* mapping,
     SolverLogger* = nullptr);
 
 }  // namespace sat

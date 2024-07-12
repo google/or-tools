@@ -152,7 +152,8 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
                               : MPModelRequest::HIGHS_LINEAR_PROGRAMMING);
 
   // Set parameters.
-  absl::StatusOr<MPSolutionResponse> response = HighsSolveProto(request);
+  absl::StatusOr<MPSolutionResponse> response =
+      HighsSolveProto(std::move(request));
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();

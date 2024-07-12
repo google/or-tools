@@ -134,8 +134,8 @@ struct LinearExpression {
   IntegerValue offset = IntegerValue(0);
 
   // Return[s] the evaluation of the linear expression.
-  double LpValue(
-      const absl::StrongVector<IntegerVariable, double>& lp_values) const;
+  double LpValue(const util_intops::StrongVector<IntegerVariable, double>&
+                     lp_values) const;
 
   IntegerValue LevelZeroMin(IntegerTrail* integer_trail) const;
 
@@ -294,7 +294,7 @@ class LinearConstraintBuilder {
 // the linear terms.
 double ComputeActivity(
     const LinearConstraint& constraint,
-    const absl::StrongVector<IntegerVariable, double>& values);
+    const util_intops::StrongVector<IntegerVariable, double>& values);
 
 // Tests for possible overflow in the given linear constraint used for the
 // linear relaxation. This is a bit relaxed compared to what we require for

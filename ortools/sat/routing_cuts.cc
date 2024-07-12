@@ -798,7 +798,7 @@ void SeparateFlowInequalities(
                        IntegerValue* min_incoming_flow,
                        IntegerValue* min_outgoing_flow)>
         get_flows,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraintManager* manager, Model* model) {
   // We will collect only the arcs with a positive lp capacity value to speed up
   // some computation below.

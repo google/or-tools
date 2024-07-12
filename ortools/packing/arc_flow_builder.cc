@@ -78,7 +78,7 @@ class ArcFlowBuilder {
   void ForwardCompressionPass(const std::vector<int>& source_node);
 
   // Can we fit one more item in the bin?
-  bool CanFitNewItem(const std::vector<int>& used_dimensions, int item) const;
+  bool CanFitNewItem(absl::Span<const int> used_dimensions, int item) const;
   // Create a new used_dimensions that is used_dimensions + item dimensions.
   std::vector<int> AddItem(const std::vector<int>& used_dimensions,
                            int item) const;
@@ -151,7 +151,7 @@ ArcFlowBuilder::ArcFlowBuilder(
   });
 }
 
-bool ArcFlowBuilder::CanFitNewItem(const std::vector<int>& used_dimensions,
+bool ArcFlowBuilder::CanFitNewItem(absl::Span<const int> used_dimensions,
                                    int item) const {
   for (int d = 0; d < bin_dimensions_.size(); ++d) {
     if (used_dimensions[d] + items_[item].dimensions[d] > bin_dimensions_[d]) {
@@ -402,8 +402,8 @@ bool ArcFlowGraph::Arc::operator<(const ArcFlowGraph::Arc& other) const {
 
 ArcFlowGraph BuildArcFlowGraph(
     const std::vector<int>& bin_dimensions,
-    const std::vector<std::vector<int>>& item_dimensions_by_type,
-    const std::vector<int>& demand_by_type) {
+    absl::Span<const std::vector<int>> item_dimensions_by_type,
+    absl::Span<const int> demand_by_type) {
   ArcFlowBuilder afb(bin_dimensions, item_dimensions_by_type, demand_by_type);
   return afb.BuildVectorBinPackingGraph();
 }

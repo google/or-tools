@@ -64,7 +64,8 @@ namespace sat {
 // constraint implementation. But we do need support for enforcement literals
 // there.
 template <bool use_int128 = false>
-class LinearConstraintPropagator : public PropagatorInterface {
+class LinearConstraintPropagator : public PropagatorInterface,
+                                   LazyReasonInterface {
  public:
   // If refied_literal is kNoLiteralIndex then this is a normal constraint,
   // otherwise we enforce the implication refied_literal => constraint is true.
@@ -98,6 +99,12 @@ class LinearConstraintPropagator : public PropagatorInterface {
   // kMinIntegerValue.
   std::pair<IntegerValue, IntegerValue> ConditionalLb(
       IntegerLiteral integer_literal, IntegerVariable target_var) const;
+
+  // For LazyReasonInterface.
+  void Explain(int id, IntegerValue propagation_slack,
+               IntegerLiteral literal_to_explain, int trail_index,
+               std::vector<Literal>* literals_reason,
+               std::vector<int>* trail_indices_reason) final;
 
  private:
   // Fills integer_reason_ with all the current lower_bounds. The real
@@ -233,7 +240,7 @@ class MinPropagator : public PropagatorInterface {
 // Same as MinPropagator except this works on min = MIN(exprs) where exprs are
 // linear expressions. It uses IntegerSumLE to propagate bounds on the exprs.
 // Assumes Canonical expressions (all positive coefficients).
-class LinMinPropagator : public PropagatorInterface {
+class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
  public:
   LinMinPropagator(const std::vector<LinearExpression>& exprs,
                    IntegerVariable min_var, Model* model);
@@ -243,12 +250,18 @@ class LinMinPropagator : public PropagatorInterface {
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
+  // For LazyReasonInterface.
+  void Explain(int id, IntegerValue propagation_slack,
+               IntegerLiteral literal_to_explain, int trail_index,
+               std::vector<Literal>* literals_reason,
+               std::vector<int>* trail_indices_reason) final;
+
  private:
   // Lighter version of IntegerSumLE. This uses the current value of
   // integer_reason_ in addition to the reason for propagating the linear
   // constraint. The coeffs are assumed to be positive here.
-  bool PropagateLinearUpperBound(const std::vector<IntegerVariable>& vars,
-                                 const std::vector<IntegerValue>& coeffs,
+  bool PropagateLinearUpperBound(int id, absl::Span<const IntegerVariable> vars,
+                                 absl::Span<const IntegerValue> coeffs,
                                  IntegerValue upper_bound);
 
   const std::vector<LinearExpression> exprs_;
