@@ -133,13 +133,15 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_start_ + static_cast<int64_t>(array().size()));
-    return rmq_min_.RangeMinimum(from - domain_start_, to - domain_start_);
+    return rmq_min_.GetMinimumFromRange(from - domain_start_,
+                                        to - domain_start_);
   }
   int64_t RangeMax(int64_t from, int64_t to) const override {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_start_ + static_cast<int64_t>(array().size()));
-    return rmq_max_.RangeMinimum(from - domain_start_, to - domain_start_);
+    return rmq_max_.GetMinimumFromRange(from - domain_start_,
+                                        to - domain_start_);
   }
   int64_t RangeFirstInsideInterval(int64_t range_begin, int64_t range_end,
                                    int64_t interval_begin,
