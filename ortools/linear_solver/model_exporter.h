@@ -122,7 +122,7 @@ absl::StatusOr<std::string> ExportModelAsMpsFormat(
  * Gurobi's description:
  * http://www.gurobi.com/documentation/5.1/reference-manual/node869
  */
-absl::Status WriteModelAsMpsFormat(
+absl::Status WriteModelToMpsFile(
     absl::string_view filename, const MPModelProto& model,
     const MPModelExportOptions& options = MPModelExportOptions());
 

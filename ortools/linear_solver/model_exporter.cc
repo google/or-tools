@@ -250,9 +250,9 @@ absl::StatusOr<std::string> ExportModelAsMpsFormat(
   return output;
 }
 
-absl::Status WriteModelAsMpsFormat(absl::string_view filename,
-                                   const MPModelProto& model,
-                                   const MPModelExportOptions& options) {
+absl::Status WriteModelToMpsFile(absl::string_view filename,
+                                 const MPModelProto& model,
+                                 const MPModelExportOptions& options) {
   if (model.general_constraint_size() > 0) {
     return absl::InvalidArgumentError("General constraints are not supported.");
   }

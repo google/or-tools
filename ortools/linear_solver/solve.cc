@@ -316,8 +316,8 @@ void Run() {
   }
 
   if (!absl::GetFlag(FLAGS_dump_mps).empty()) {
-    CHECK_OK(WriteModelAsMpsFormat(absl::GetFlag(FLAGS_dump_mps),
-                                   request_proto.model()));
+    CHECK_OK(WriteModelToMpsFile(absl::GetFlag(FLAGS_dump_mps),
+                                 request_proto.model()));
   }
 
   // Set or override request proto options from the command line flags.
