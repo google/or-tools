@@ -1,13 +1,13 @@
-FROM minizinc/mznc2023:latest AS env
+FROM minizinc/mznc2024:latest AS env
 
-ENV SRC_GIT_BRANCH main
+ENV SRC_GIT_BRANCH v99bugfix
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update -yq \
 && apt-get -y install pkg-config git wget autoconf libtool zlib1g-dev gawk g++ \
- curl make lsb-release python-dev gfortran
+ curl make lsb-release python3-dev gfortran
 
 # GCC 11
 RUN apt update -qq \
