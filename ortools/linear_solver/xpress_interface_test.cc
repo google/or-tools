@@ -274,7 +274,7 @@ void buildLargeLp(MPSolver& solver, int numVars) {
   solver.EnableOutput();
 }
 
-void compareXpressInternalMps(MPSolver& solver, std::string& expectedMps) {
+void compareXpressInternalMpsCleanTempData(MPSolver& solver, std::string& expectedMps) {
   const std::filesystem::path temporary_working_dir =
       std::filesystem::temp_directory_path() / "temporary_working_dir";
   std::filesystem::create_directories(temporary_working_dir);
@@ -762,7 +762,7 @@ TEST_F(XpressFixtureMIP, Write) {
                             "ENDATA" + "\n";
   // clang-format on
 
-  compareXpressInternalMps(solver, expectedMps);
+  compareXpressInternalMpsCleanTempData(solver, expectedMps);
 }
 
 TEST_F(XpressFixtureLP, SetPrimalTolerance) {
@@ -1393,7 +1393,7 @@ TEST_F(XpressFixtureMIP, mixedRhsTypes) {
                             "ENDATA" + "\n";
   // clang-format on
 
-  compareXpressInternalMps(solver, expectedMps);
+  compareXpressInternalMpsCleanTempData(solver, expectedMps);
 }
 
 TEST_F(XpressFixtureMIP, SolveMIP) {
