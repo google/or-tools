@@ -630,46 +630,54 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
   };
 }
 
-std::function<void(Model*)> SubcircuitConstraint(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals,
-    bool multiple_subcircuit_through_zero) {
-  return [=](Model* model) {
-    const int num_arcs = tails.size();
-    CHECK_GT(num_arcs, 0);
-    CHECK_EQ(heads.size(), num_arcs);
-    CHECK_EQ(literals.size(), num_arcs);
+void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
+                              const std::vector<int>& heads,
+                              const std::vector<Literal>& literals,
+                              Model* model,
+                              bool multiple_subcircuit_through_zero) {
+  const int num_arcs = tails.size();
+  CHECK_GT(num_arcs, 0);
+  CHECK_EQ(heads.size(), num_arcs);
+  CHECK_EQ(literals.size(), num_arcs);
 
-    // If a node has no outgoing or no incoming arc, the model will be unsat
-    // as soon as we add the corresponding ExactlyOneConstraint().
-    auto sat_solver = model->GetOrCreate<SatSolver>();
+  // If a node has no outgoing or no incoming arc, the model will be unsat
+  // as soon as we add the corresponding ExactlyOneConstraint().
+  auto sat_solver = model->GetOrCreate<SatSolver>();
+  auto implications = model->GetOrCreate<BinaryImplicationGraph>();
 
-    std::vector<std::vector<Literal>> exactly_one_incoming(num_nodes);
-    std::vector<std::vector<Literal>> exactly_one_outgoing(num_nodes);
-    for (int arc = 0; arc < num_arcs; arc++) {
-      const int tail = tails[arc];
-      const int head = heads[arc];
-      exactly_one_outgoing[tail].push_back(literals[arc]);
-      exactly_one_incoming[head].push_back(literals[arc]);
+  std::vector<std::vector<Literal>> exactly_one_incoming(num_nodes);
+  std::vector<std::vector<Literal>> exactly_one_outgoing(num_nodes);
+  for (int arc = 0; arc < num_arcs; arc++) {
+    const int tail = tails[arc];
+    const int head = heads[arc];
+    exactly_one_outgoing[tail].push_back(literals[arc]);
+    exactly_one_incoming[head].push_back(literals[arc]);
+  }
+  for (int i = 0; i < exactly_one_incoming.size(); ++i) {
+    if (i == 0 && multiple_subcircuit_through_zero) continue;
+    if (!implications->AddAtMostOne(exactly_one_incoming[i])) {
+      sat_solver->NotifyThatModelIsUnsat();
+      return;
     }
-    for (int i = 0; i < exactly_one_incoming.size(); ++i) {
-      if (i == 0 && multiple_subcircuit_through_zero) continue;
-      model->Add(ExactlyOneConstraint(exactly_one_incoming[i]));
-      if (sat_solver->ModelIsUnsat()) return;
+    sat_solver->AddProblemClause(exactly_one_incoming[i]);
+    if (sat_solver->ModelIsUnsat()) return;
+  }
+  for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
+    if (i == 0 && multiple_subcircuit_through_zero) continue;
+    if (!implications->AddAtMostOne(exactly_one_outgoing[i])) {
+      sat_solver->NotifyThatModelIsUnsat();
+      return;
     }
-    for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
-      if (i == 0 && multiple_subcircuit_through_zero) continue;
-      model->Add(ExactlyOneConstraint(exactly_one_outgoing[i]));
-      if (sat_solver->ModelIsUnsat()) return;
-    }
+    sat_solver->AddProblemClause(exactly_one_outgoing[i]);
+    if (sat_solver->ModelIsUnsat()) return;
+  }
 
-    CircuitPropagator::Options options;
-    options.multiple_subcircuit_through_zero = multiple_subcircuit_through_zero;
-    CircuitPropagator* constraint = new CircuitPropagator(
-        num_nodes, tails, heads, literals, options, model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+  CircuitPropagator::Options options;
+  options.multiple_subcircuit_through_zero = multiple_subcircuit_through_zero;
+  CircuitPropagator* constraint =
+      new CircuitPropagator(num_nodes, tails, heads, literals, options, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
 }
 
 std::function<void(Model*)> CircuitCovering(
