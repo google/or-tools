@@ -395,6 +395,8 @@ class XpressInterface : public MPSolverInterface {
     return true;
   }
 
+  double infinity() override;
+
  protected:
   // Set all parameters in the underlying solver.
   void SetParameters(MPSolverParameters const& param) override;
@@ -2244,6 +2246,10 @@ void XPRS_CC XpressIntSolCallbackImpl(XPRSprob cbprob, void* cbdata) {
 
 bool XpressMPCallbackContext::CanQueryVariableValues() {
   return Event() == MPCallbackEvent::kMipSolution;
+}
+
+double XpressInterface::infinity() {
+  return std::max(XPRS_PLUSINFINITY, -XPRS_MINUSINFINITY);
 }
 
 double XpressMPCallbackContext::VariableValue(const MPVariable* variable) {
