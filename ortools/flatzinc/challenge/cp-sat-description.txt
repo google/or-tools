@@ -1,0 +1,27 @@
+CP-SAT is a discrete optimization solver built on top of a SAT engine.
+
+It is available within the OR-Tools open-source repository
+   - website: https://developers.google.com/optimization
+   - github repository: https://github.com/google/or-Tools
+It has won multiple gold medals at the MiniZinc challenge:
+    https://www.minizinc.org/challenge.html since its debut in 2017.
+
+The CP-SAT solver is architectured around five components:
+  - The base layer is a clause learning SAT solver.
+  - Above the SAT layer sits a Constraint Programming (CP) module with Boolean,
+    integer and interval variables, and standard integer, scheduling and routing
+    constraints.
+  - Alongside the CP solver, a simplex provides a global linear relaxation.
+    Its integration with the CP and SAT layers enable the CP-SAT solver to solve
+    MIP problems with the same techniques as (commercial) MIP solvers:
+      relaxation, cuts, heuristics and duality based techniques.
+  - Both the CP and MIP modules rely on a unified protobuf representation of the
+    model that can serve as a file format, as well as an intermediate
+    representation of the model during all phases of the solve (input format,
+    presolved model, LNS fragment, Local Search).
+  - On top, the search layer implements a robust information-sharing portfolio
+    of specialized workers that offers both good and fast solutions, and
+    superior optimality proving capabilities.
+
+This work was presented at the CPAIOR 2020 masterclass. The recording is
+available on youtube (https://www.youtube.com/watch?v=lmy1ddn4cyw).

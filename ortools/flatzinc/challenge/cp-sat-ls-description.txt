@@ -1,0 +1,24 @@
+CP-SAT-LS is a discrete optimization solver built on top of a SAT engine.
+
+It is available within the OR-Tools open-source repository
+   - website: https://developers.google.com/optimization
+   - github repository: https://github.com/google/or-Tools
+It has won multiple gold medals at the MiniZinc challenge:
+    https://www.minizinc.org/challenge.html since its debut in 2017.
+
+The CP-SAT-LS solver is a pure Local Search solver using the same interface as
+the CP-SAT solver.
+
+It is build on top of the Feasibility Jump article:
+   Luteberget, B., Sartor, G.
+   Feasibility Jump: an LP-free Lagrangian MIP heuristic.
+   Math. Prog. Comp. 15, 365–388 (2023).
+   https://doi.org/10.1007/s12532-023-00234-8
+
+Complemented by the ViolationLS article:
+    Davies, T.O., Didier, F., Perron, L. (2024).
+    ViolationLS: Constraint-Based Local Search in CP-SAT.
+    Dilkina, B. (eds) Integration of Constraint Programming, Artificial
+      Intelligence, and Operations Research. CPAIOR 2024.
+      Lecture Notes in Computer Science, vol 14742. Springer, Cham.
+    https://doi.org/10.1007/978-3-031-60597-0_16
