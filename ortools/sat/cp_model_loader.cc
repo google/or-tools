@@ -1508,8 +1508,8 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
     case 0: {
       auto* integer_trail = m->GetOrCreate<IntegerTrail>();
       auto* sat_solver = m->GetOrCreate<SatSolver>();
-      if (!integer_trail->Enqueue(prod.LowerOrEqual(1), {}) ||
-          !integer_trail->Enqueue(prod.GreaterOrEqual(1), {})) {
+      if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
+          !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
         sat_solver->NotifyThatModelIsUnsat();
       }
       break;
@@ -1637,7 +1637,7 @@ void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
   std::vector<Literal> literals =
       m->GetOrCreate<CpModelMapping>()->Literals(circuit.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals));
+  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m);
 }
 
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
@@ -1649,8 +1649,8 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
   std::vector<Literal> literals =
       m->GetOrCreate<CpModelMapping>()->Literals(routes.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals,
-                              /*multiple_subcircuit_through_zero=*/true));
+  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m,
+                           /*multiple_subcircuit_through_zero=*/true);
 }
 
 bool LoadConstraint(const ConstraintProto& ct, Model* m) {

@@ -439,9 +439,6 @@ class SatSolver {
   void SaveDebugAssignment();
   void LoadDebugSolution(const std::vector<Literal>& solution);
 
-  // Returns true iff the loaded problem only contains clauses.
-  bool ProblemIsPureSat() const { return problem_is_pure_sat_; }
-
   void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
     clauses_propagator_->SetDratProofHandler(drat_proof_handler_);
@@ -853,9 +850,6 @@ class SatSolver {
   // As the deterministic time in the time limit has to be advanced manually,
   // it is necessary to keep track of the last time the time was advanced.
   double deterministic_time_at_last_advanced_time_limit_ = 0;
-
-  // This is true iff the loaded problem only contains clauses.
-  bool problem_is_pure_sat_;
 
   DratProofHandler* drat_proof_handler_;
 

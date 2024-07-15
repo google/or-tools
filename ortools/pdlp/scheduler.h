@@ -11,17 +11,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines the random engine type to use within operations_research code.
+#ifndef PDLP_SCHEDULER_H_
+#define PDLP_SCHEDULER_H_
 
-#ifndef OR_TOOLS_UTIL_RANDOM_ENGINE_H_
-#define OR_TOOLS_UTIL_RANDOM_ENGINE_H_
+#include <string>
 
-#include <random>
+#include "absl/functional/any_invocable.h"
 
-namespace operations_research {
+namespace operations_research::pdlp {
 
-using random_engine_t = std::mt19937_64;
+// Thread scheduling interface.
+class Scheduler {
+ public:
+  virtual ~Scheduler() = default;
+  virtual int num_threads() const = 0;
+  virtual std::string info_string() const = 0;
 
-}  // namespace operations_research
+  // Calls `do_func(i)` in parallel for `i` from `start` to `end-1`.
+  virtual void ParallelFor(int start, int end,
+                           absl::AnyInvocable<void(int)> do_func) = 0;
+};
 
-#endif  // OR_TOOLS_UTIL_RANDOM_ENGINE_H_
+}  // namespace operations_research::pdlp
+
+#endif  // PDLP_SCHEDULER_H_

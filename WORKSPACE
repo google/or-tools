@@ -20,7 +20,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 ## Bazel Skylib rules.
 git_repository(
     name = "bazel_skylib",
-    tag = "1.5.0",
+    tag = "1.7.1",
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
@@ -29,7 +29,7 @@ bazel_skylib_workspace()
 ## Bazel rules.
 git_repository(
     name = "platforms",
-    tag = "0.0.9",
+    tag = "0.0.10",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
@@ -47,25 +47,25 @@ git_repository(
 
 git_repository(
     name = "rules_java",
-    tag = "7.5.0",
+    tag = "7.7.0",
     remote = "https://github.com/bazelbuild/rules_java.git",
 )
 
 git_repository(
     name = "rules_jvm_external",
-    tag = "6.0",
+    tag = "6.2",
     remote = "https://github.com/bazelbuild/rules_jvm_external.git",
 )
 
 git_repository(
     name = "contrib_rules_jvm",
-    tag = "v0.24.0",
+    tag = "v0.27.0",
     remote = "https://github.com/bazel-contrib/rules_jvm.git",
 )
 
 git_repository(
     name = "rules_python",
-    tag = "0.33.2",
+    tag = "0.34.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
@@ -252,7 +252,6 @@ http_archive(
 git_repository(
     name = "pybind11_bazel",
     tag = "v2.12.0", # 2024/04/08
-    #commit = "23926b00e2b2eb2fc46b17e587cf0c0cfd2f2c4b", # 2023/11/29
     patches = ["//patches:pybind11_bazel.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/pybind/pybind11_bazel.git",
@@ -261,7 +260,6 @@ git_repository(
 new_git_repository(
     name = "pybind11",
     build_file = "@pybind11_bazel//:pybind11-BUILD.bazel",
-    #build_file = "@pybind11_bazel//:pybind11.BUILD",
     tag = "v2.13.1",
     remote = "https://github.com/pybind/pybind11.git",
 )
@@ -276,16 +274,9 @@ new_git_repository(
 
 new_git_repository(
     name = "pybind11_protobuf",
-    commit = "e90f33efeb2ae5c4e85ef83b22298f58e1e30894", # 2024/06/21
+    commit = "84653a591aea5df482dc2bde42c19efafbd53a57", # 2024/06/28
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
-
-#load("@pybind11_bazel//:python_configure.bzl", "python_configure")
-#python_configure(name = "local_config_python", python_version = "3")
-#bind(
-#    name = "python_headers",
-#    actual = "@local_config_python//:python_headers",
-#)
 
 ## Java support (with junit 5)
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")

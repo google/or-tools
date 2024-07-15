@@ -297,7 +297,9 @@ class ConstraintPropagationOrder {
 // - Lack detection and propagation of at least one of these linear is true
 //   which can be used to propagate more bound if a variable appear in all these
 //   constraint.
-class LinearPropagator : public PropagatorInterface, ReversibleInterface {
+class LinearPropagator : public PropagatorInterface,
+                         ReversibleInterface,
+                         LazyReasonInterface {
  public:
   explicit LinearPropagator(Model* model);
   ~LinearPropagator() override;
@@ -312,6 +314,12 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
                      absl::Span<const IntegerVariable> vars,
                      absl::Span<const IntegerValue> coeffs,
                      IntegerValue upper_bound);
+
+  // For LazyReasonInterface.
+  void Explain(int id, IntegerValue propagation_slack,
+               IntegerLiteral literal_to_explain, int trail_index,
+               std::vector<Literal>* literals_reason,
+               std::vector<int>* trail_indices_reason) final;
 
  private:
   // We try to pack the struct as much as possible. Using a maximum size of
@@ -393,6 +401,7 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // Per constraint info used during propagation. Note that we keep pointer for
   // the rev_size/rhs there, so we do need a deque.
   std::deque<ConstraintInfo> infos_;
+  std::vector<IntegerValue> initial_rhs_;
 
   // Buffer of the constraints data.
   std::vector<IntegerVariable> variables_buffer_;

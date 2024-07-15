@@ -386,6 +386,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
         // performed, so the move is not acceptable.
         return false;
       }
+
       const RoutingModel::PenaltyCostBehavior penalty_cost_behavior =
           routing_model_.GetDisjunctionPenaltyCostBehavior(disjunction_index);
       switch (penalty_cost_behavior) {
@@ -4219,7 +4220,7 @@ class DimensionFilter : public LocalSearchFilter {
 
 LocalSearchFilter* MakeDimensionFilter(
     Solver* solver, std::unique_ptr<DimensionChecker> checker,
-    const std::string& dimension_name) {
+    absl::string_view dimension_name) {
   DimensionFilter* filter =
       new DimensionFilter(std::move(checker), dimension_name);
   return solver->RevAlloc(filter);

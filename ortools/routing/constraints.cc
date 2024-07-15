@@ -706,6 +706,7 @@ std::string LightRangeLessOrEqual::DebugString() const {
   return left_->DebugString() + " < " + right_->DebugString();
 }
 }  // namespace
+
 namespace {
 
 class RouteConstraint : public Constraint {

@@ -495,10 +495,19 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     // Update dtime.
     // Since we execute only one task at the time, this is safe.
     {
-      const double dtime = DeterministicTime();
-      const double delta = dtime - deterministic_time();
-      AddTaskDeterministicDuration(delta);
-      shared_time_limit_->AdvanceDeterministicTime(delta);
+      // TODO(user): Find better names. DeterministicTime() is maintained by
+      // this class while deterministic_time() is the one saved in the SubSolver
+      // base class).
+      const double current_dtime = DeterministicTime();
+      const double delta = current_dtime - deterministic_time();
+
+      // Because deterministic_time() is computed with a sum of difference, it
+      // might be slighlty different than DeterministicTime() and we don't want
+      // to go backward, even by 1e-18.
+      if (delta >= 0) {
+        AddTaskDeterministicDuration(delta);
+        shared_time_limit_->AdvanceDeterministicTime(delta);
+      }
     }
 
     ReleaseState();

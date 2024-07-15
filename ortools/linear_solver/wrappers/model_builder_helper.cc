@@ -69,6 +69,11 @@ std::string ModelBuilderHelper::ExportToLpString(
       .value_or("");
 }
 
+bool ModelBuilderHelper::WriteToMpsFile(const std::string& filename,
+                                        const MPModelExportOptions& options) {
+  return WriteModelToMpsFile(filename, model_, options).ok();
+}
+
 bool ModelBuilderHelper::ReadModelFromProtoFile(const std::string& filename) {
   if (file::GetTextProto(filename, &model_, file::Defaults()).ok() ||
       file::GetBinaryProto(filename, &model_, file::Defaults()).ok()) {

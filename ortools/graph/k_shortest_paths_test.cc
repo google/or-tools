@@ -285,6 +285,7 @@ Graph GenerateUniformDirectedGraph(URBG&& urbg, const NodeIndexType num_nodes,
                                         URBG, /*IsDirected=*/true>(
       urbg, num_nodes, num_arcs);
 }
+
 TEST(KShortestPathsYenTest, RandomTest) {
   std::mt19937 random(12345);
   constexpr int kNumGraphs = 10;
@@ -390,6 +391,7 @@ TEST(KShortestPathsYenTest, RandomTest) {
     }
   }
 }
+
 void BM_Yen(benchmark::State& state) {
   const int num_nodes = state.range(0);
   // Use half the maximum number of arcs, so that the graph is a bit sparse.

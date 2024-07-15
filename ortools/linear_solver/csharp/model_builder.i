@@ -39,6 +39,12 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
     options.obfuscate = obfuscate;
     return $self->ExportToLpString(options);
   }
+
+  bool WriteToMpsFile(const std::string& filename, bool obfuscate) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscate;
+    return $self->WriteToMpsFile(filename, options);
+  }
 }  // Extend operations_research::ModelBuilderHelper
 
 %ignoreall
@@ -120,6 +126,7 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 %unignore operations_research::ModelBuilderHelper::ImportFromMpsFile;
 %unignore operations_research::ModelBuilderHelper::ImportFromLpString;
 %unignore operations_research::ModelBuilderHelper::ImportFromLpFile;
+%unignore operations_research::ModelBuilderHelper::WriteToMpsFile(std::string, bool);
 %unignore operations_research::ModelBuilderHelper::ExportToMpsString(bool);
 %unignore operations_research::ModelBuilderHelper::ExportToLpString(bool);
 %unignore operations_research::ModelBuilderHelper::OverwriteModel;

@@ -399,6 +399,11 @@ public class Model
         return helper_.ExportToLpString(obfuscate);
     }
 
+    public bool WriteToMpsFile(String filename, bool obfuscate)
+    {
+        return helper_.WriteToMpsFile(filename, obfuscate);
+    }
+
     public bool ImportFromMpsString(String mpsString)
     {
         return helper_.ImportFromMpsString(mpsString);

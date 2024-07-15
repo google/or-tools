@@ -114,7 +114,6 @@ PYBIND11_MODULE(model, m) {
       .def("cumul_var", &RoutingDimension::CumulVar,
            pybind11::return_value_policy::reference_internal, arg("index"));
 
-
   pybind11::class_<RoutingModel> rm(m, "RoutingModel");
   rm.def(pybind11::init([](const RoutingIndexManager& routing_index_manager) {
     return new RoutingModel(routing_index_manager);

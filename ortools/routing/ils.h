@@ -75,6 +75,7 @@ class RoutingSolution {
   // Reset call.
   const Assignment* assignment_ = nullptr;
 };
+
 // Ruin interface.
 class RuinProcedure {
  public:
@@ -119,7 +120,6 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
 
  private:
-
   // Removes the sibling pickup or delivery of node, if any.
   void RemovePickupDeliverySiblings(const Assignment* assignment, int node);
 

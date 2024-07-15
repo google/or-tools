@@ -293,7 +293,7 @@ bool SchedulingConstraintHelper::Propagate() {
 
 bool SchedulingConstraintHelper::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
-  for (const int t : watch_indices) recompute_cache_[t] = true;
+  for (const int t : watch_indices) recompute_cache_.Set(t);
   return true;
 }
 
@@ -326,7 +326,6 @@ void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
-  recompute_cache_[t] = false;
   if (IsAbsent(t)) return true;
 
   IntegerValue smin = integer_trail_->LowerBound(starts_[t]);
@@ -432,7 +431,10 @@ void SchedulingConstraintHelper::InitSortedVectors() {
   const int num_tasks = starts_.size();
 
   recompute_all_cache_ = true;
-  recompute_cache_.resize(num_tasks, true);
+  recompute_cache_.Resize(num_tasks);
+  for (int t = 0; t < num_tasks; ++t) {
+    recompute_cache_.Set(t);
+  }
 
   // Make sure all the cached_* arrays can hold enough data.
   CHECK_LE(num_tasks, capacity_);
@@ -448,8 +450,12 @@ void SchedulingConstraintHelper::InitSortedVectors() {
     task_by_increasing_end_min_[t].task_index = t;
     task_by_decreasing_start_max_[t].task_index = t;
     task_by_decreasing_end_max_[t].task_index = t;
+
     task_by_increasing_shifted_start_min_[t].task_index = t;
+    task_by_increasing_shifted_start_min_[t].presence_lit =
+        reason_for_presence_[t];
     task_by_negated_shifted_end_max_[t].task_index = t;
+    task_by_negated_shifted_end_max_[t].presence_lit = reason_for_presence_[t];
   }
 
   recompute_energy_profile_ = true;
@@ -485,12 +491,11 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
       if (!UpdateCachedValues(t)) return false;
     }
   } else {
-    for (int t = 0; t < recompute_cache_.size(); ++t) {
-      if (recompute_cache_[t]) {
-        if (!UpdateCachedValues(t)) return false;
-      }
+    for (const int t : recompute_cache_) {
+      if (!UpdateCachedValues(t)) return false;
     }
   }
+  recompute_cache_.ClearAll();
   recompute_all_cache_ = false;
   return true;
 }
@@ -506,13 +511,17 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
     return kMinIntegerValue;
   }
 
-  const IntegerValue offset =
+  // We take the max of the level zero offset and the one coming from a
+  // conditional precedence at true.
+  const IntegerValue conditional_offset =
       precedence_relations_->GetConditionalOffset(before.var, after.var);
-  if (offset == kMinIntegerValue) return kMinIntegerValue;
+  const IntegerValue known = integer_trail_->LevelZeroLowerBound(after.var) -
+                             integer_trail_->LevelZeroUpperBound(before.var);
+  const IntegerValue offset = std::max(conditional_offset, known);
 
   const IntegerValue needed_offset = before.constant - after.constant;
   const IntegerValue distance = offset - needed_offset;
-  if (add_reason_if_after && distance >= 0) {
+  if (add_reason_if_after && distance >= 0 && known < conditional_offset) {
     for (const Literal l : precedence_relations_->GetConditionalEnforcements(
              before.var, after.var)) {
       literal_reason_.push_back(l.Negated());
@@ -553,9 +562,7 @@ bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
 
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingStartMin() {
-  const int num_tasks = NumTasks();
-  for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_increasing_start_min_[i];
+  for (TaskTime& ref : task_by_increasing_start_min_) {
     ref.time = StartMin(ref.task_index);
   }
   IncrementalSort(task_by_increasing_start_min_.begin(),
@@ -565,9 +572,7 @@ SchedulingConstraintHelper::TaskByIncreasingStartMin() {
 
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingEndMin() {
-  const int num_tasks = NumTasks();
-  for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_increasing_end_min_[i];
+  for (TaskTime& ref : task_by_increasing_end_min_) {
     ref.time = EndMin(ref.task_index);
   }
   IncrementalSort(task_by_increasing_end_min_.begin(),
@@ -577,9 +582,7 @@ SchedulingConstraintHelper::TaskByIncreasingEndMin() {
 
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByDecreasingStartMax() {
-  const int num_tasks = NumTasks();
-  for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_decreasing_start_max_[i];
+  for (TaskTime& ref : task_by_decreasing_start_max_) {
     ref.time = StartMax(ref.task_index);
   }
   IncrementalSort(task_by_decreasing_start_max_.begin(),
@@ -590,9 +593,7 @@ SchedulingConstraintHelper::TaskByDecreasingStartMax() {
 
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByDecreasingEndMax() {
-  const int num_tasks = NumTasks();
-  for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_decreasing_end_max_[i];
+  for (TaskTime& ref : task_by_decreasing_end_max_) {
     ref.time = EndMax(ref.task_index);
   }
   IncrementalSort(task_by_decreasing_end_max_.begin(),
@@ -600,15 +601,13 @@ SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   return task_by_decreasing_end_max_;
 }
 
-absl::Span<const TaskTime>
+absl::Span<const CachedTaskBounds>
 SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
   if (recompute_shifted_start_min_) {
     recompute_shifted_start_min_ = false;
-    const int num_tasks = NumTasks();
     bool is_sorted = true;
     IntegerValue previous = kMinIntegerValue;
-    for (int i = 0; i < num_tasks; ++i) {
-      TaskTime& ref = task_by_increasing_shifted_start_min_[i];
+    for (CachedTaskBounds& ref : task_by_increasing_shifted_start_min_) {
       ref.time = ShiftedStartMin(ref.task_index);
       is_sorted = is_sorted && ref.time >= previous;
       previous = ref.time;
@@ -722,6 +721,7 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (!PushIntegerLiteralIfTaskPresent(t, lit)) return false;
   if (IsAbsent(t)) return true;
   if (!UpdateCachedValues(t)) return false;
+  recompute_cache_.Clear(t);
   return true;
 }
 

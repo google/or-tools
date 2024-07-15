@@ -376,6 +376,7 @@ cc_library(
     deps = [
         ":linear_solver_cc_proto",
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/base:hash",
         "//ortools/base:map_util",
         "//ortools/util:fp_utils",
@@ -395,6 +396,7 @@ cc_binary(
         ":linear_solver",
         ":linear_solver_cc_proto",
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/lp_data:lp_parser",
         "//ortools/lp_data:model_reader",
         "//ortools/lp_data:mps_reader",

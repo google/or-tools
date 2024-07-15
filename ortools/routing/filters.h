@@ -39,6 +39,7 @@ namespace operations_research {
 /// Returns a filter tracking route constraints.
 IntVarLocalSearchFilter* MakeRouteConstraintFilter(
     const RoutingModel& routing_model);
+
 /// Returns a filter ensuring that max active vehicles constraints are enforced.
 IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
     const RoutingModel& routing_model);
@@ -551,7 +552,7 @@ class DimensionChecker {
 // - Revert() must be called before.
 LocalSearchFilter* MakeDimensionFilter(
     Solver* solver, std::unique_ptr<DimensionChecker> checker,
-    const std::string& dimension_name);
+    absl::string_view dimension_name);
 #endif  // !defined(SWIG)
 
 class LightVehicleBreaksChecker {

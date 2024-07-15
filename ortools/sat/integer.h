@@ -747,6 +747,31 @@ class IntegerEncoder {
   mutable std::vector<ValueLiteralPair> partial_encoding_;
 };
 
+class LazyReasonInterface {
+ public:
+  LazyReasonInterface() = default;
+  virtual ~LazyReasonInterface() = default;
+
+  // The function is provided with the IntegerLiteral to explain and its index
+  // in the integer trail. It must fill the two vectors so that literals
+  // contains any Literal part of the reason and dependencies contains the trail
+  // index of any IntegerLiteral that is also part of the reason.
+  //
+  // Remark: sometimes this is called to fill the conflict while the literal to
+  // explain is propagated. In this case, trail_index will be the current trail
+  // index, and we cannot assume that there is anything filled yet in
+  // integer_literal[trail_index].
+  //
+  // TODO(user): Right now this is only used by "linear" propagator, if we need
+  // more we could replace {id, propagation_slack} by a generic payload so that
+  // each implementation can cast it to its need. Then the memory will just be
+  // the max size of this payload data (16 bytes should be fine).
+  virtual void Explain(int id, IntegerValue propagation_slack,
+                       IntegerLiteral literal_to_explain, int trail_index,
+                       std::vector<Literal>* literals_reason,
+                       std::vector<int>* trail_indices_reason) = 0;
+};
+
 // This class maintains a set of integer variables with their current bounds.
 // Bounds can be propagated from an external "source" and this class helps
 // to maintain the reason for each propagation.
@@ -947,9 +972,15 @@ class IntegerTrail final : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
+  ABSL_MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit) {
+    return EnqueueInternal(i_lit, false, {}, {}, integer_trail_.size());
+  }
   ABSL_MUST_USE_RESULT bool Enqueue(
       IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
-      absl::Span<const IntegerLiteral> integer_reason);
+      absl::Span<const IntegerLiteral> integer_reason) {
+    return EnqueueInternal(i_lit, false, literal_reason, integer_reason,
+                           integer_trail_.size());
+  }
 
   // Enqueue new information about a variable bound. It has the same behavior
   // as the Enqueue() method, except that it accepts true and false integer
@@ -983,24 +1014,22 @@ class IntegerTrail final : public SatPropagator {
   ABSL_MUST_USE_RESULT bool Enqueue(
       IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
-      int trail_index_with_same_reason);
+      int trail_index_with_same_reason) {
+    return EnqueueInternal(i_lit, false, literal_reason, integer_reason,
+                           trail_index_with_same_reason);
+  }
 
   // Lazy reason API.
-  //
-  // The function is provided with the IntegerLiteral to explain and its index
-  // in the integer trail. It must fill the two vectors so that literals
-  // contains any Literal part of the reason and dependencies contains the trail
-  // index of any IntegerLiteral that is also part of the reason.
-  //
-  // Remark: sometimes this is called to fill the conflict while the literal
-  // to explain is propagated. In this case, trail_index_of_literal will be
-  // the current trail index, and we cannot assume that there is anything filled
-  // yet in integer_literal[trail_index_of_literal].
-  using LazyReasonFunction = std::function<void(
-      IntegerLiteral literal_to_explain, int trail_index_of_literal,
-      std::vector<Literal>* literals, std::vector<int>* dependencies)>;
-  ABSL_MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                                    LazyReasonFunction lazy_reason);
+  ABSL_MUST_USE_RESULT bool EnqueueWithLazyReason(
+      IntegerLiteral i_lit, int id, IntegerValue propagation_slack,
+      LazyReasonInterface* explainer) {
+    const int trail_index = integer_trail_.size();
+    if (trail_index >= lazy_reasons_.size()) {
+      lazy_reasons_.resize(trail_index + 1);
+    }
+    lazy_reasons_[trail_index] = {explainer, propagation_slack, id};
+    return EnqueueInternal(i_lit, true, {}, {}, 0);
+  }
 
   // Sometimes we infer some root level bounds but we are not at the root level.
   // In this case, we will update the level-zero bounds right away, but will
@@ -1145,19 +1174,24 @@ class IntegerTrail final : public SatPropagator {
   // common conflict initialization that must terminate by a call to
   // MergeReasonIntoInternal(conflict) where conflict is the returned vector.
   std::vector<Literal>* InitializeConflict(
-      IntegerLiteral integer_literal, const LazyReasonFunction& lazy_reason,
+      IntegerLiteral integer_literal, bool use_lazy_reason,
       absl::Span<const Literal> literals_reason,
       absl::Span<const IntegerLiteral> bounds_reason);
 
+  // Saves the given reason and return its index.
+  int AppendReasonToInternalBuffers(
+      absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
+
   // Internal implementation of the different public Enqueue() functions.
   ABSL_MUST_USE_RESULT bool EnqueueInternal(
-      IntegerLiteral i_lit, LazyReasonFunction lazy_reason,
+      IntegerLiteral i_lit, bool use_lazy_reason,
       absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
       int trail_index_with_same_reason);
 
   // Internal implementation of the EnqueueLiteral() functions.
-  void EnqueueLiteralInternal(Literal literal, LazyReasonFunction lazy_reason,
+  void EnqueueLiteralInternal(Literal literal, bool use_lazy_reason,
                               absl::Span<const Literal> literal_reason,
                               absl::Span<const IntegerLiteral> integer_reason);
 
@@ -1229,7 +1263,20 @@ class IntegerTrail final : public SatPropagator {
     int32_t reason_index;
   };
   std::vector<TrailEntry> integer_trail_;
-  std::vector<LazyReasonFunction> lazy_reasons_;
+
+  struct LazyReasonEntry {
+    LazyReasonInterface* explainer;
+    IntegerValue propagation_slack;
+    int id;
+
+    void Explain(IntegerLiteral literal_to_explain, int trail_index_of_literal,
+                 std::vector<Literal>* literals,
+                 std::vector<int>* dependencies) const {
+      explainer->Explain(id, propagation_slack, literal_to_explain,
+                         trail_index_of_literal, literals, dependencies);
+    }
+  };
+  std::vector<LazyReasonEntry> lazy_reasons_;
 
   // Start of each decision levels in integer_trail_.
   // TODO(user): use more general reversible mechanism?
@@ -1822,26 +1869,33 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(
 
 // Creates a 0-1 integer variable "view" of the given literal. It will have a
 // value of 1 when the literal is true, and 0 when the literal is false.
+inline IntegerVariable CreateNewIntegerVariableFromLiteral(Literal lit,
+                                                           Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  const IntegerVariable candidate = encoder->GetLiteralView(lit);
+  if (candidate != kNoIntegerVariable) return candidate;
+
+  IntegerVariable var;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const auto& assignment = model->GetOrCreate<SatSolver>()->Assignment();
+  if (assignment.LiteralIsTrue(lit)) {
+    var = integer_trail->GetOrCreateConstantIntegerVariable(IntegerValue(1));
+  } else if (assignment.LiteralIsFalse(lit)) {
+    var = integer_trail->GetOrCreateConstantIntegerVariable(IntegerValue(0));
+  } else {
+    var = integer_trail->AddIntegerVariable(IntegerValue(0), IntegerValue(1));
+  }
+
+  encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
+  DCHECK_NE(encoder->GetLiteralView(lit), kNoIntegerVariable);
+  return var;
+}
+
+// Deprecated.
 inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     Literal lit) {
   return [=](Model* model) {
-    auto* encoder = model->GetOrCreate<IntegerEncoder>();
-    const IntegerVariable candidate = encoder->GetLiteralView(lit);
-    if (candidate != kNoIntegerVariable) return candidate;
-
-    IntegerVariable var;
-    const auto& assignment = model->GetOrCreate<SatSolver>()->Assignment();
-    if (assignment.LiteralIsTrue(lit)) {
-      var = model->Add(ConstantIntegerVariable(1));
-    } else if (assignment.LiteralIsFalse(lit)) {
-      var = model->Add(ConstantIntegerVariable(0));
-    } else {
-      var = model->Add(NewIntegerVariable(0, 1));
-    }
-
-    encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
-    DCHECK_NE(encoder->GetLiteralView(lit), kNoIntegerVariable);
-    return var;
+    return CreateNewIntegerVariableFromLiteral(lit, model);
   };
 }
 

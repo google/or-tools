@@ -338,6 +338,10 @@ public final class ModelBuilder {
     return helper.exportToLpString(obfuscate);
   }
 
+  public boolean writeToMpsFile(String filename, boolean obfuscate) {
+    return helper.writeToMpsFile(filename, obfuscate);
+  }
+
   public boolean importFromMpsString(String mpsString) {
     return helper.importFromMpsString(mpsString);
   }

@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 26dce5c..26d1648 100644
+index 2139dc0..1942ad0 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -21,7 +21,7 @@ option(BUILD_TESTS "Build tests." OFF)
+@@ -27,7 +27,7 @@ include(CTest)
  # ============================================================================
  # Find Python
  
@@ -11,7 +11,7 @@ index 26dce5c..26d1648 100644
  
  # ============================================================================
  # Build dependencies
-@@ -50,8 +50,10 @@ pybind11_add_module(
+@@ -87,8 +87,10 @@ pybind11_add_module(
    pybind11_protobuf/proto_utils.h)
  
  target_link_libraries(
@@ -24,16 +24,7 @@ index 26dce5c..26d1648 100644
  
  target_include_directories(
    pybind11_proto_utils PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS}
-@@ -60,7 +62,7 @@ target_include_directories(
- # ============================================================================
- # pybind11_native_proto_caster shared library
- add_library(
--  pybind11_native_proto_caster SHARED
-+  pybind11_native_proto_caster STATIC
-   # bazel: pybind_library: native_proto_caster
-   pybind11_protobuf/native_proto_caster.h
-   # bazel: pybind_library: enum_type_caster
-@@ -79,10 +81,12 @@ target_link_libraries(
+@@ -116,10 +118,11 @@ target_link_libraries(
    absl::optional
    protobuf::libprotobuf
    pybind11::pybind11
@@ -42,12 +33,11 @@ index 26dce5c..26d1648 100644
  
  target_include_directories(
    pybind11_native_proto_caster
-+  PUBLIC
-+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
++  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
    PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS} ${protobuf_SOURCE_DIR}
            ${pybind11_INCLUDE_DIRS})
  
-@@ -106,7 +110,7 @@ target_link_libraries(
+@@ -143,7 +146,7 @@ target_link_libraries(
    absl::optional
    protobuf::libprotobuf
    pybind11::pybind11
@@ -56,25 +46,3 @@ index 26dce5c..26d1648 100644
  
  target_include_directories(
    pybind11_wrapped_proto_caster
-diff --git a/cmake/dependencies/CMakeLists.txt b/cmake/dependencies/CMakeLists.txt
-index 111b34f..337dc60 100644
---- a/cmake/dependencies/CMakeLists.txt
-+++ b/cmake/dependencies/CMakeLists.txt
-@@ -35,7 +35,7 @@ if(NOT pybind11_FOUND)
- endif()
- 
- # ============================================================================
--# Make dependencies avaialble
-+# Make dependencies available
- 
- if(NOT absl_FOUND)
-   message(CHECK_START "Fetching Abseil-cpp")
-@@ -45,7 +45,7 @@ if(NOT absl_FOUND)
-   message(CHECK_PASS "fetched")
- endif()
- 
--if(NOT Protobuf_FOUND)
-+if(NOT protobuf_FOUND)
-   message(CHECK_START "Fetching Protobuf")
-   list(APPEND CMAKE_MESSAGE_INDENT "  ")
-   FetchContent_MakeAvailable(Protobuf)

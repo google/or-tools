@@ -178,6 +178,7 @@ class FixedCapacityVector {
   T& back() { return data_[size_ - 1]; }
 
   void clear() { size_ = 0; }
+  void resize(size_t size) { size_ = size; }
   void pop_back() { --size_; }
   void push_back(T t) { data_[size_++] = t; }
 

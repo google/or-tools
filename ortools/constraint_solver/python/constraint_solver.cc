@@ -243,6 +243,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, IntVar, RemoveValue), arg("v"))
       .def("size", &IntVarPythonHelper::Size,
            DOC(operations_research, IntVar, Size));
+
   // Note: no ctor.
   pybind11::class_<Constraint>(m, "Constraint",
                                DOC(operations_research, Constraint))
