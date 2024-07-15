@@ -1869,26 +1869,33 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(
 
 // Creates a 0-1 integer variable "view" of the given literal. It will have a
 // value of 1 when the literal is true, and 0 when the literal is false.
+inline IntegerVariable CreateNewIntegerVariableFromLiteral(Literal lit,
+                                                           Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  const IntegerVariable candidate = encoder->GetLiteralView(lit);
+  if (candidate != kNoIntegerVariable) return candidate;
+
+  IntegerVariable var;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const auto& assignment = model->GetOrCreate<SatSolver>()->Assignment();
+  if (assignment.LiteralIsTrue(lit)) {
+    var = integer_trail->GetOrCreateConstantIntegerVariable(IntegerValue(1));
+  } else if (assignment.LiteralIsFalse(lit)) {
+    var = integer_trail->GetOrCreateConstantIntegerVariable(IntegerValue(0));
+  } else {
+    var = integer_trail->AddIntegerVariable(IntegerValue(0), IntegerValue(1));
+  }
+
+  encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
+  DCHECK_NE(encoder->GetLiteralView(lit), kNoIntegerVariable);
+  return var;
+}
+
+// Deprecated.
 inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     Literal lit) {
   return [=](Model* model) {
-    auto* encoder = model->GetOrCreate<IntegerEncoder>();
-    const IntegerVariable candidate = encoder->GetLiteralView(lit);
-    if (candidate != kNoIntegerVariable) return candidate;
-
-    IntegerVariable var;
-    const auto& assignment = model->GetOrCreate<SatSolver>()->Assignment();
-    if (assignment.LiteralIsTrue(lit)) {
-      var = model->Add(ConstantIntegerVariable(1));
-    } else if (assignment.LiteralIsFalse(lit)) {
-      var = model->Add(ConstantIntegerVariable(0));
-    } else {
-      var = model->Add(NewIntegerVariable(0, 1));
-    }
-
-    encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
-    DCHECK_NE(encoder->GetLiteralView(lit), kNoIntegerVariable);
-    return var;
+    return CreateNewIntegerVariableFromLiteral(lit, model);
   };
 }
 

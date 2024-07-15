@@ -1637,7 +1637,7 @@ void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
   std::vector<Literal> literals =
       m->GetOrCreate<CpModelMapping>()->Literals(circuit.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals));
+  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m);
 }
 
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
@@ -1649,8 +1649,8 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
   std::vector<Literal> literals =
       m->GetOrCreate<CpModelMapping>()->Literals(routes.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals,
-                              /*multiple_subcircuit_through_zero=*/true));
+  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m,
+                           /*multiple_subcircuit_through_zero=*/true);
 }
 
 bool LoadConstraint(const ConstraintProto& ct, Model* m) {
