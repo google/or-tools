@@ -10,6 +10,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#if defined(_MSC_VER)
+#define _USE_MATH_DEFINES
+#include <cmath>
+#endif
 
 #include "ortools/base/mathutil.h"
 
