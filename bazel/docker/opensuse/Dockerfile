@@ -15,6 +15,12 @@ https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-
 && chmod +x bazelisk-linux-amd64 \
 && mv bazelisk-linux-amd64 /usr/local/bin/bazel
 
+# Install Java JDK and Maven
+RUN zypper refresh \
+&& zypper install -y java-17-openjdk-devel maven \
+&& zypper clean -a
+ENV PATH=/usr/share/maven/bin:$PATH
+
 # Install Python
 RUN zypper update -y \
 && zypper install -y python3 python3-pip python3-devel \
