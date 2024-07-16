@@ -1484,7 +1484,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   if (p.ortools_mode) {
     if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
-      if (!p.display_all_solutions) {  // Already printed otherwise.
+      if (!p.display_all_solutions && !p.search_all_solutions) {
+        // Already printed otherwise.
         const std::string solution_string = SolutionString(
             fz_model,
             [&response, &m](fz::Variable* v) {
