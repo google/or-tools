@@ -22,6 +22,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
@@ -30,7 +31,7 @@
 namespace operations_research {
 
 // Displays the path.
-std::string PathToString(const std::vector<int>& path) {
+std::string PathToString(absl::Span<const int> path) {
   std::string path_string;
   const int size = path.size();
   for (int i = 0; i < size; i++) {

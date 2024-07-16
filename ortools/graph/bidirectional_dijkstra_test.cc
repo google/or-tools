@@ -24,6 +24,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph/bounded_dijkstra.h"
@@ -154,7 +155,7 @@ TEST(BidirectionalDijkstraTest, RandomizedCorrectnessTest) {
       return out;
     };
     auto print_node_distances =
-        [&](const std::vector<Dijkstra::NodeDistance>& nds) -> std::string {
+        [&](absl::Span<const Dijkstra::NodeDistance> nds) -> std::string {
       std::string out = "{";
       for (const Dijkstra::NodeDistance& nd : nds) {
         absl::StrAppend(&out, " #", nd.node, " dist=", (nd.distance), ",");
