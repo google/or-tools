@@ -1514,7 +1514,7 @@ MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range,
 MPConstraint* MPSolver::MakeIndicatorConstraint(
     double lb, double ub, const std::string& name,
     const MPVariable* indicator_variable, bool indicator_value) {
-  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(indicator_variable)) 
+  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(indicator_variable))
       << indicator_variable;
   if (indicator_variable == nullptr) return nullptr;
   if (!indicator_variable->integer() || indicator_variable->lb() != 0 ||
