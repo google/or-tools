@@ -82,7 +82,6 @@ if(MSVC)
     "/D_CRT_SECURE_NO_DEPRECATE"
     "/MP" # Build with multiple processes
     "/Zc:preprocessor" # Enable preprocessor conformance mode
-    "/DNDEBUG"
     "/fp:precise"
     )
   # MSVC warning suppressions
