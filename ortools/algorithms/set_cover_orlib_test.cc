@@ -59,6 +59,7 @@ void LogCostAndTiming(std::string name, std::string algo, double cost,
   LOG(INFO) << ", " << name << ", " << algo << "_cost, " << cost << ", "
             << absl::ToInt64Microseconds(duration) << "e-6, s";
 }
+
 SetCoverInvariant RunChvatalAndSteepest(std::string name,
                                         SetCoverModel* model) {
   SetCoverInvariant inv(model);
@@ -361,7 +362,6 @@ SCP_TEST("scpnrh5.txt", 55, 62, FEWTENTHS);
 #endif
 
 #ifdef EXTRA_SCP
-
 SCP_TEST("scpclr10.txt", 0, 32, FEWMILLIS);
 SCP_TEST("scpclr11.txt", 0, 30, FEWMILLIS);
 SCP_TEST("scpclr12.txt", 0, 31, FEWMILLIS);

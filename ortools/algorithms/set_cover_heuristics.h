@@ -497,7 +497,6 @@ std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
 std::vector<SubsetIndex> ClearMostCoveredElements(
     absl::Span<const SubsetIndex> focus, std::size_t num_subsets,
     SetCoverInvariant* inv);
-
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_ALGORITHMS_SET_COVER_HEURISTICS_H_
