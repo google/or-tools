@@ -1514,19 +1514,27 @@ MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range,
 MPConstraint* MPSolver::MakeIndicatorConstraint(
     double lb, double ub, const std::string& name,
     const MPVariable* indicator_variable, bool indicator_value) {
+  if (!indicator_variable->integer() || indicator_variable->lb() != 0 ||
+      indicator_variable->ub() != 1) {
+    LOG(ERROR) << "Variable " << indicator_variable->name()
+               << " is not boolean";
+    return nullptr;
+  }
   const int constraint_index = NumConstraints();
   MPConstraint* const constraint =
       new MPConstraint(constraint_index, lb, ub, name, interface_.get());
-  // TODO: check that variable is boolean?
   constraint->indicator_variable_ = indicator_variable;
   constraint->indicator_value_ = indicator_value;
+  if (!interface_->AddIndicatorConstraint(constraint)) {
+    LOG(ERROR) << "Solver doesn't support indicator constraints";
+    return nullptr;
+  }
   if (constraint_name_to_index_) {
     gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
                      constraint_index);
   }
   constraints_.push_back(constraint);
   constraint_is_extracted_.push_back(false);
-  interface_->AddIndicatorConstraint(constraint);
   return constraint;
 }
 
