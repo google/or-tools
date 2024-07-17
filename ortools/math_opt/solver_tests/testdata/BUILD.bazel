@@ -12,6 +12,6 @@
 # limitations under the License.
 
 exports_files([
-  "23588.mps",
-  "beavma.mps",
+    "23588.mps",
+    "beavma.mps",
 ])
