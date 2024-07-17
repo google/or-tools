@@ -30,11 +30,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 ABSL_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
@@ -93,8 +91,7 @@ class MPModelProtoExporter {
   bool ExportModelAsLpFormat(const MPModelExportOptions& options,
                              std::string* output);
   bool ExportModelAsMpsFormat(const MPModelExportOptions& options,
-                              std::string* output, File* output_file);
-  void FlushAndResetString(std::string* output, File* file);
+                              std::string* output);
 
  private:
   // Computes the number of continuous, integer and binary variables.
@@ -122,7 +119,7 @@ class MPModelProtoExporter {
   // Therefore, a name "$20<=40" for proto #3 could be "_$20__40_1".
   template <class ListOfProtosWithNameFields>
   std::vector<std::string> ExtractAndProcessNames(
-      const ListOfProtosWithNameFields& proto, const std::string& prefix,
+      const ListOfProtosWithNameFields& proto, absl::string_view prefix,
       bool obfuscate, bool log_invalid_names,
       const std::string& forbidden_first_chars,
       const std::string& forbidden_chars);
@@ -244,7 +241,7 @@ absl::StatusOr<std::string> ExportModelAsMpsFormat(
   }
   MPModelProtoExporter exporter(model);
   std::string output;
-  if (!exporter.ExportModelAsMpsFormat(options, &output, nullptr)) {
+  if (!exporter.ExportModelAsMpsFormat(options, &output)) {
     return absl::InvalidArgumentError("Unable to export model.");
   }
   return output;
@@ -256,18 +253,13 @@ absl::Status WriteModelToMpsFile(absl::string_view filename,
   if (model.general_constraint_size() > 0) {
     return absl::InvalidArgumentError("General constraints are not supported.");
   }
-  File* file;
-  RETURN_IF_ERROR(file::Open(filename, "w", &file, file::Defaults()));
 
-  absl::Status status = absl::OkStatus();
   MPModelProtoExporter exporter(model);
-  std::string output;
-  if (!exporter.ExportModelAsMpsFormat(options, &output, file)) {
-    status.Update(file->Close(file::Defaults()));  // Even if Write() fails!
+  std::string mps_model;
+  if (!exporter.ExportModelAsMpsFormat(options, &mps_model)) {
     return absl::InvalidArgumentError("Unable to export model.");
   }
-  status.Update(file->Close(file::Defaults()));
-  return status;
+  return file::SetContents(filename, mps_model, file::Defaults());
 }
 
 namespace {
@@ -328,7 +320,7 @@ std::string MakeExportableName(const std::string& name,
 
 template <class ListOfProtosWithNameFields>
 std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
-    const ListOfProtosWithNameFields& proto, const std::string& prefix,
+    const ListOfProtosWithNameFields& proto, absl::string_view prefix,
     bool obfuscate, bool log_invalid_names,
     const std::string& forbidden_first_chars,
     const std::string& forbidden_chars) {
@@ -763,17 +755,8 @@ void MPModelProtoExporter::AppendMpsColumns(
   }
 }
 
-void MPModelProtoExporter::FlushAndResetString(std::string* output,
-                                               File* output_file) {
-  if (output_file == nullptr) return;
-  if (output->empty()) return;
-  CHECK_OK(file::WriteString(output_file, *output, file::Defaults()));
-  output->clear();
-}
-
 bool MPModelProtoExporter::ExportModelAsMpsFormat(
-    const MPModelExportOptions& options, std::string* output,
-    File* output_file) {
+    const MPModelExportOptions& options, std::string* output) {
   output->clear();
   Setup();
   ComputeMpsSmartColumnWidths(options.obfuscate);
@@ -819,7 +802,6 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   if (!rows_section.empty()) {
     absl::StrAppend(output, "ROWS\n", rows_section);
   }
-  FlushAndResetString(output, output_file);
 
   // As the information regarding a column needs to be contiguous, we create
   // a vector associating a variable index to a vector containing the indices
@@ -858,7 +840,6 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   if (!columns_section.empty()) {
     absl::StrAppend(output, "COLUMNS\n", columns_section);
   }
-  FlushAndResetString(output, output_file);
 
   // RHS (right-hand-side) section.
   current_mps_column_ = 0;
@@ -884,7 +865,6 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   if (!rhs_section.empty()) {
     absl::StrAppend(output, "RHS\n", rhs_section);
   }
-  FlushAndResetString(output, output_file);
 
   // RANGES section.
   current_mps_column_ = 0;
@@ -901,7 +881,6 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   if (!ranges_section.empty()) {
     absl::StrAppend(output, "RANGES\n", ranges_section);
   }
-  FlushAndResetString(output, output_file);
 
   // BOUNDS section.
   current_mps_column_ = 0;
@@ -962,10 +941,8 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   if (!bounds_section.empty()) {
     absl::StrAppend(output, "BOUNDS\n", bounds_section);
   }
-  FlushAndResetString(output, output_file);
 
   absl::StrAppend(output, "ENDATA\n");
-  FlushAndResetString(output, output_file);
   return true;
 }
 
