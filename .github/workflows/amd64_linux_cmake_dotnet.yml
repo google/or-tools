@@ -15,7 +15,7 @@ jobs:
           sudo apt install -y swig
           swig -version
       - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.x
       - name: Check dotnet
