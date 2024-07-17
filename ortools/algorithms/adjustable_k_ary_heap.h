@@ -169,6 +169,7 @@ class AdjustableKAryHeap {
   bool Contains(Index index) const {
     return GetHeapPosition(index) != kNonExistent;
   }
+
   // Checks that the heap is well-formed.
   bool CheckHeapProperty() const {
     for (HeapIndex i = heap_size() - 1; i >= Arity; --i) {
@@ -254,14 +255,12 @@ class AdjustableKAryHeap {
     std::swap(heap_positions_[index(i)], heap_positions_[index(j)]);
   }
 
-
   // Compares two elements based on whether we are dealing with a min- or a
   // max-heap. Returns true if (data indexed by) i has more priority
   // than j. Note that we only use operator::<.
   bool HasPriority(HeapIndex i, HeapIndex j) const {
     return IsMaxHeap ? data_[j] < data_[i] : data_[i] < data_[j];
   }
-
 
   // Since Arity is a (small) constant, we expect compilers to avoid
   // multiplication instructions and use LEA instructions or a combination
@@ -280,7 +279,6 @@ class AdjustableKAryHeap {
 
   // Gets the parent index of a given index.
   HeapIndex Parent(HeapIndex index) const { return (index - 1) / Arity; }
-
 
   // Returns the index of the element at position i in the heap.
   Index index(HeapIndex i) const { return data_[i].second; }
@@ -306,6 +304,7 @@ class AdjustableKAryHeap {
   // either when removing an element (which is not removed from data_), or
   // adding a new one.
   HeapIndex heap_size_ = 0;
+
   // The index for Aggregates not in the heap.
   const Index kNonExistent = -1;
 };

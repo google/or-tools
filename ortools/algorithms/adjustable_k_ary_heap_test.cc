@@ -23,7 +23,6 @@
 
 namespace operations_research {
 
-
 TEST(AdjustableKAryHeapTest, RandomDataStrongCheck) {
   const int kSize = 10'000;
   const double priority_range = kSize / 100;
