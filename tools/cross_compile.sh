@@ -446,7 +446,6 @@ function main() {
       expand_bootlin_config
       declare -r QEMU_ARCH=ppc64le ;;
 
-
     riscv64)
       expand_bootlin_config
       declare -r QEMU_ARCH=riscv64 ;;
