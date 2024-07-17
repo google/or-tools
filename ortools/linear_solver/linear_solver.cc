@@ -1516,8 +1516,8 @@ MPConstraint* MPSolver::MakeIndicatorConstraint(
     const MPVariable* indicator_variable, bool indicator_value) {
   if (!indicator_variable->integer() || indicator_variable->lb() != 0 ||
       indicator_variable->ub() != 1) {
-    LOG(ERROR) << "Variable " << indicator_variable->name()
-               << " is not boolean";
+    LOG(ERROR) << "Error adding indicator constraint " << name << ". Variable " << indicator_variable->name()
+               << " is not Boolean";
     return nullptr;
   }
   const int constraint_index = NumConstraints();
