@@ -26,7 +26,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
 # Install Python
 RUN dnf -y update \
-&& dnf -y install python3 python3-devel python3-pip \
+&& dnf -y install python3 python3-devel python3-pip python3-numpy \
 && dnf clean all
 
 FROM env AS devel
