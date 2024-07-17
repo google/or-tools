@@ -27,7 +27,6 @@ if(MSVC)
     "/D_CRT_SECURE_NO_WARNINGS"
     "/D_CRT_SECURE_NO_DEPRECATE"
     "/MP" # Build with multiple processes
-    "/DNDEBUG"
     )
   # MSVC warning suppressions
   list(APPEND FLATZINC_COMPILE_OPTIONS
