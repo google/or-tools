@@ -198,6 +198,7 @@ DEFAULT_PYTHON = "3.12"
 python_register_toolchains(
     name = "python3_12",
     python_version = DEFAULT_PYTHON,
+    ignore_root_user_error=True,
 )
 
 # Create a central external repo, @pip_deps, that contains Bazel targets for all the
