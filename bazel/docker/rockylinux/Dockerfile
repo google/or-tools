@@ -35,6 +35,7 @@ RUN dnf -y update \
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
+RUN sed -i 's/\(DEFAULT_PYTHON =\) "3.[0-9]\+"/\1 "3.9"/' WORKSPACE
 
 FROM devel AS build
 RUN bazel version

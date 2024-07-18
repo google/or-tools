@@ -34,6 +34,12 @@ jobs:
         run: python --version
       - name: Check Bazel
         run: bazel version
+      - name: Change Python in WORKSPACE
+        run: >
+          sed
+          -i ''
+          -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{ matrix.python.version }}"/g'
+          WORKSPACE
       - name: Build
         run: >
           bazel build
