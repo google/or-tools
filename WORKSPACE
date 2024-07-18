@@ -193,19 +193,11 @@ new_git_repository(
 load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
 
-load("@rules_python//python:repositories.bzl", "python_register_multi_toolchains")
-DEFAULT_PYTHON = "3.11"
-python_register_multi_toolchains(
-    name = "python",
-    default_version = DEFAULT_PYTHON,
-    python_versions = [
-      "3.12",
-      "3.11",
-      "3.10",
-      "3.9",
-      "3.8"
-    ],
-    ignore_root_user_error=True,
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+DEFAULT_PYTHON = "3.12"
+python_register_toolchains(
+    name = "python3_12",
+    python_version = DEFAULT_PYTHON,
 )
 
 # Create a central external repo, @pip_deps, that contains Bazel targets for all the
