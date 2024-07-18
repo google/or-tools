@@ -25,9 +25,12 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
@@ -190,6 +193,10 @@ class CpModelPresolver {
   // Remove duplicate constraints. This also merge domain of linear constraints
   // with duplicate linear expressions.
   void DetectDuplicateConstraints();
+  void DetectDuplicateConstraintsWithDifferentEnforcements(
+      const CpModelMapping* mapping = nullptr,
+      BinaryImplicationGraph* implication_graph = nullptr,
+      Trail* trail = nullptr);
 
   // Detects variable that must take different values.
   void DetectDifferentVariables();

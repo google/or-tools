@@ -7017,6 +7017,9 @@ void CpModelPresolver::Probe() {
   }
   probing_timer->AddCounter("fixed_bools", num_fixed);
 
+  DetectDuplicateConstraintsWithDifferentEnforcements(
+      mapping, implication_graph, model.GetOrCreate<Trail>());
+
   int num_equiv = 0;
   int num_changed_bounds = 0;
   const int num_variables = context_->working_model->variables().size();
@@ -8758,7 +8761,23 @@ void CpModelPresolver::DetectDuplicateConstraints() {
     context_->UpdateConstraintVariableUsage(dup);
     context_->UpdateRuleStats("duplicate: removed constraint");
   }
+}
 
+void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
+    const CpModelMapping* mapping, BinaryImplicationGraph* implication_graph,
+    Trail* trail) {
+  if (time_limit_->LimitReached()) return;
+  if (context_->ModelIsUnsat()) return;
+  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+
+  // We need the objective written for this.
+  if (context_->working_model->has_objective()) {
+    if (!context_->CanonicalizeObjective()) return;
+    context_->WriteObjectiveToProto();
+  }
+
+  absl::flat_hash_set<Literal> enforcement_vars;
+  std::vector<std::pair<Literal, Literal>> implications_used;
   // TODO(user): We can also do similar stuff to linear constraint that just
   // differ at a singleton variable. Or that are equalities. Like if expr + X =
   // cte and expr + Y = other_cte, we can see that X is in affine relation with
@@ -8772,6 +8791,35 @@ void CpModelPresolver::DetectDuplicateConstraints() {
     auto* rep_ct = context_->working_model->mutable_constraints(rep);
     if (rep_ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
       continue;
+    }
+
+    // If we have a trail, we can check if any variable of the enforcement is
+    // fixed to false. This is useful for what follows since calling
+    // implication_graph->DirectImplications() is invalid for fixed variables.
+    if (trail != nullptr) {
+      bool found_false_enforcement = false;
+      for (const int c : {dup, rep}) {
+        for (const int l :
+             context_->working_model->constraints(c).enforcement_literal()) {
+          if (trail->Assignment().LiteralIsFalse(mapping->Literal(l))) {
+            found_false_enforcement = true;
+            break;
+          }
+        }
+        if (found_false_enforcement) {
+          context_->UpdateRuleStats("enforcement: false literal");
+          if (c == rep) {
+            rep_ct->Swap(dup_ct);
+            context_->UpdateConstraintVariableUsage(rep);
+          }
+          dup_ct->Clear();
+          context_->UpdateConstraintVariableUsage(dup);
+          break;
+        }
+      }
+      if (found_false_enforcement) {
+        continue;
+      }
     }
 
     // If one of them has no enforcement, then the other can be ignored.
@@ -8847,10 +8895,67 @@ void CpModelPresolver::DetectDuplicateConstraints() {
           rep_ct->enforcement_literal().size() == 1) {
         dup_ct->Clear();
         context_->UpdateConstraintVariableUsage(dup);
+        continue;
       }
-    } else {
-      context_->UpdateRuleStats(
-          "TODO duplicate: identical constraint with different enforcements");
+    }
+
+    // Check if the enforcement of one constraint implies the ones of the other.
+    if (implication_graph != nullptr && mapping != nullptr &&
+        trail != nullptr) {
+      for (int i = 0; i < 2; i++) {
+        // When A and B only differ on their enforcement literals and the
+        // enforcements of constraint A implies the enforcements of constraint
+        // B, then constraint A is redundant and we can remove it.
+        const int c_a = i == 0 ? dup : rep;
+        const int c_b = i == 0 ? rep : dup;
+
+        enforcement_vars.clear();
+        implications_used.clear();
+        for (const int proto_lit :
+             context_->working_model->constraints(c_b).enforcement_literal()) {
+          const Literal lit = mapping->Literal(proto_lit);
+          if (trail->Assignment().LiteralIsTrue(lit)) continue;
+          enforcement_vars.insert(lit);
+        }
+        for (const int proto_lit :
+             context_->working_model->constraints(c_a).enforcement_literal()) {
+          const Literal lit = mapping->Literal(proto_lit);
+          if (trail->Assignment().LiteralIsTrue(lit)) continue;
+          for (const Literal implication_lit :
+               implication_graph->DirectImplications(lit)) {
+            auto extracted = enforcement_vars.extract(implication_lit);
+            if (!extracted.empty() && lit != implication_lit) {
+              implications_used.push_back({lit, implication_lit});
+            }
+          }
+        }
+        if (enforcement_vars.empty()) {
+          context_->UpdateRuleStats(
+              "duplicate: identical constraint with implied enforcements");
+          if (c_a == rep) {
+            // We don't want to remove the representative element of the
+            // duplicates detection, so swap the constraints.
+            rep_ct->Swap(dup_ct);
+            context_->UpdateConstraintVariableUsage(rep);
+          }
+          dup_ct->Clear();
+          context_->UpdateConstraintVariableUsage(dup);
+          // Subtle point: we need to add the implications we used back to the
+          // graph. This is because in some case the implications are only true
+          // in the presence of the "duplicated" constraints.
+          for (const auto& [a, b] : implications_used) {
+            const int var_a =
+                mapping->GetProtoVariableFromBooleanVariable(a.Variable());
+            const int proto_lit_a = a.IsPositive() ? var_a : NegatedRef(var_a);
+            const int var_b =
+                mapping->GetProtoVariableFromBooleanVariable(b.Variable());
+            const int proto_lit_b = b.IsPositive() ? var_b : NegatedRef(var_b);
+            context_->AddImplication(proto_lit_a, proto_lit_b);
+          }
+          context_->UpdateNewConstraintsVariableUsage();
+          break;
+        }
+      }
     }
   }
 }
@@ -12635,6 +12740,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // TODO(user): merge these code instead of doing many passes?
     ProcessAtMostOneAndLinear();
     DetectDuplicateConstraints();
+    DetectDuplicateConstraintsWithDifferentEnforcements();
     DetectDominatedLinearConstraints();
     DetectDifferentVariables();
     ProcessSetPPC();
