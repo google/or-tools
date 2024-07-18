@@ -398,6 +398,9 @@ CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_DOC "Build the Python doc" OFF "NOT BUILD_DO
   message(STATUS "Python: Fetch dependencies: ${FETCH_PYTHON_DEPS}")
 endif()
 
+# Find system deps
+include(system_deps)
+
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
@@ -426,7 +429,9 @@ message(STATUS "Found int * size: ${SIZEOF_INT_P}")
 cmake_pop_check_state()
 
 include(host)
-include(deps)
+# verify deps
+include(check_deps)
+
 include(cpp)
 include(flatzinc)
 include(glop)

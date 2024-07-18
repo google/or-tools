@@ -14,6 +14,7 @@ COPY . .
 FROM devel AS build
 # Archlinux do not provide pybind11 protobuf package
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
+ -DBUILD_pybind11_abseil=ON \
  -DBUILD_pybind11_protobuf=ON \
  -DUSE_COINOR=ON \
  -DUSE_GLPK=ON \

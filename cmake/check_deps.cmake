@@ -12,25 +12,12 @@
 # limitations under the License.
 
 # Check dependencies
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-set(THREAD_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
-
-# Tell find_package() to try “Config” mode before “Module” mode if no mode was specified.
-# This should avoid find_package() to first find our FindXXX.cmake modules if
-# distro package already provide a CMake config file...
-set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
-
-# libprotobuf force us to depends on ZLIB::ZLIB target
-if(NOT BUILD_ZLIB)
- find_package(ZLIB REQUIRED)
-endif()
 if(NOT TARGET ZLIB::ZLIB)
   message(FATAL_ERROR "Target ZLIB::ZLIB not available.")
 endif()
 
-if(NOT BUILD_absl)
-  find_package(absl REQUIRED)
+if(NOT TARGET absl::base)
+  message(FATAL_ERROR "Target absl::base not available.")
 endif()
 set(ABSL_DEPS
   absl::base
@@ -67,105 +54,56 @@ set(ABSL_DEPS
   absl::any
   )
 
-if(NOT BUILD_Protobuf)
-  find_package(Protobuf REQUIRED)
-endif()
 if(NOT TARGET protobuf::libprotobuf)
   message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
 endif()
 
-if(NOT BUILD_Eigen3)
-  find_package(Eigen3 REQUIRED)
-endif()
 if(NOT TARGET Eigen3::Eigen)
   message(FATAL_ERROR "Target Eigen3::Eigen not available.")
 endif()
 
 if(BUILD_LP_PARSER OR BUILD_TESTING)
-  if(NOT BUILD_re2)
-    find_package(re2 REQUIRED)
-  endif()
   if(NOT TARGET re2::re2)
     message(FATAL_ERROR "Target re2::re2 not available.")
   endif()
-endif()
-
-if(BUILD_LP_PARSER)
   set(RE2_DEPS re2::re2)
 endif()
 
 if(USE_COINOR)
-  if(NOT BUILD_CoinUtils)
-    find_package(CoinUtils REQUIRED)
+  if(NOT TARGET Coin::CbcSolver)
+    message(FATAL_ERROR "Target Coin::CbcSolver not available.")
   endif()
-
-  if(NOT BUILD_Osi)
-    find_package(Osi REQUIRED)
+  if(NOT TARGET Coin::ClpSolver)
+    message(FATAL_ERROR "Target Coin::ClpSolver not available.")
   endif()
-
-  if(NOT BUILD_Clp)
-    find_package(Clp REQUIRED)
-  endif()
-
-  if(NOT BUILD_Cgl)
-    find_package(Cgl REQUIRED)
-  endif()
-
-  if(NOT BUILD_Cbc)
-    find_package(Cbc REQUIRED)
-  endif()
-
   set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
 endif()
 
-if(USE_GLPK)
-  if(NOT BUILD_GLPK)
-    find_package(GLPK REQUIRED)
-  endif()
+if(USE_PDLP AND BUILD_PDLP)
+  set(PDLP_DEPS Eigen3::Eigen)
 endif()
 
-if(USE_HIGHS)
-  if(NOT BUILD_HIGHS)
-    find_package(HIGHS REQUIRED)
-  endif()
-endif()
-
-if(USE_PDLP)
-  if(NOT BUILD_PDLP)
-    find_package(PDLP REQUIRED)
-  else()
-    set(PDLP_DEPS Eigen3::Eigen)
-  endif()
-endif()
-
-if(USE_SCIP)
-  if(NOT BUILD_SCIP)
-    find_package(SCIP REQUIRED)
-  endif()
+if(USE_SCIP AND NOT TARGET libscip)
+  message(FATAL_ERROR "Target libscip not available.")
 endif()
 
 # Check optional Dependencies
-if(USE_CPLEX)
-  find_package(CPLEX REQUIRED)
+if(USE_CPLEX AND NOT TARGET CPLEX::CPLEX)
+  message(FATAL_ERROR "Target CPLEX::CPLEX not available.")
 endif()
 
 # CXX Test
-if(BUILD_TESTING)
-  if(NOT BUILD_googletest)
-    find_package(GTest REQUIRED)
-  endif()
-  if(NOT TARGET GTest::gtest_main)
-    message(FATAL_ERROR "Target GTest::gtest_main not available.")
-  endif()
+if(BUILD_TESTING AND NOT TARGET GTest::gtest_main)
+  message(FATAL_ERROR "Target GTest::gtest_main not available.")
 endif()
 
 # Check language Dependencies
 if(BUILD_PYTHON)
-  if(NOT BUILD_pybind11)
-    find_package(pybind11 REQUIRED)
+  if(NOT TARGET pybind11_abseil::absl_casters)
+    message(FATAL_ERROR "Target pybind11_abseil::absl_casters not available.")
   endif()
 
-  if(NOT BUILD_pybind11_protobuf)
-    find_package(pybind11_protobuf REQUIRED)
+  if(NOT TARGET pybind11_native_proto_caster)
+    message(FATAL_ERROR "Target pybind11_native_proto_caster not available.")
   endif()
 endif()
