@@ -1873,6 +1873,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:mathlimits",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:random_engine",

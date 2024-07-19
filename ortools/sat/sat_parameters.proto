@@ -1094,7 +1094,7 @@ message SatParameters {
   // Minimum number of restarts before a worker will replace a subtree
   // that looks "bad" based on the average LBD of learned clauses.
   optional int32 shared_tree_worker_min_restarts_per_subtree = 282
-      [default = 32];
+      [default = 1];
 
   // If true, workers share more of the information from their local trail.
   // Specifically, literals implied by the shared tree decisions and
