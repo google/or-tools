@@ -150,7 +150,7 @@ class TspLibParser final {
   void ParseNodeCoord(absl::Span<const std::string> words);
   void SetUpEdgeWeightSection();
   void FinalizeEdgeWeights();
-  void ParseSections(const std::vector<std::string>& words);
+  void ParseSections(absl::Span<const std::string> words);
   void ProcessNewLine(const std::string& line);
   void SetExplicitCost(int from, int to, int64_t cost) {
     if (explicit_costs_.size() != size_ * size_) {
