@@ -99,6 +99,10 @@ endif()
 
 # Check language Dependencies
 if(BUILD_PYTHON)
+  if(NOT TARGET pybind11::pybind11_headers)
+    message(FATAL_ERROR "Target pybind11::pybind11_headers not available.")
+  endif()
+
   if(NOT TARGET pybind11_abseil::absl_casters)
     message(FATAL_ERROR "Target pybind11_abseil::absl_casters not available.")
   endif()
