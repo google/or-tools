@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "absl/base/casts.h"
@@ -141,7 +142,7 @@ class MathUtil {
   // rounding_value must be greater than zero.
   template <typename IntType>
   static IntType RoundUpTo(IntType input_value, IntType rounding_value) {
-    static_assert(MathLimits<IntType>::kIsInteger,
+    static_assert(std::numeric_limits<IntType>::is_integer,
                   "RoundUpTo() operation type is not integer");
     DCHECK_GE(input_value, 0);
     DCHECK_GT(rounding_value, 0);
@@ -161,10 +162,10 @@ class MathUtil {
   //  1. If x is NaN, the result is zero.
   //
   //  2. If the truncated form of x is above the representable range of IntOut,
-  //     the result is MathLimits<IntOut>::kMax.
+  //     the result is std::numeric_limits<IntOut>::max().
   //
   //  3. If the truncated form of x is below the representable range of IntOut,
-  //     the result is MathLimits<IntOut>::kMin.
+  //     the result is std::numeric_limits<IntOut>::lowest().
   //
   // Note that cases #2 and #3 cover infinities as well as finite numbers.
   //
@@ -172,8 +173,10 @@ class MathUtil {
   // the results are undefined.
   template <class IntOut, class FloatIn>
   static IntOut SafeCast(FloatIn x) {
-    COMPILE_ASSERT(!MathLimits<FloatIn>::kIsInteger, FloatIn_is_integer);
-    COMPILE_ASSERT(MathLimits<IntOut>::kIsInteger, IntOut_is_not_integer);
+    COMPILE_ASSERT(!std::numeric_limits<FloatIn>::is_integer,
+                   FloatIn_is_integer);
+    COMPILE_ASSERT(std::numeric_limits<IntOut>::is_integer,
+                   IntOut_is_not_integer);
     COMPILE_ASSERT(std::numeric_limits<IntOut>::radix == 2, IntOut_is_base_2);
 
     // Special case NaN, for which the logic below doesn't work.
@@ -182,13 +185,14 @@ class MathUtil {
     }
 
     // Negative values all clip to zero for unsigned results.
-    if (!MathLimits<IntOut>::kIsSigned && x < 0) {
+    if (!std::numeric_limits<IntOut>::is_signed && x < 0) {
       return 0;
     }
 
     // Handle infinities.
     if (MathLimits<FloatIn>::IsInf(x)) {
-      return x < 0 ? MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
+      return x < 0 ? std::numeric_limits<IntOut>::lowest()
+                   : std::numeric_limits<IntOut>::max();
     }
 
     // Set exp such that x == f * 2^exp for some f with |f| in [0.5, 1.0),
@@ -207,7 +211,8 @@ class MathUtil {
     }
 
     // Handle numbers with magnitude >= 2^N.
-    return x < 0 ? MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
+    return x < 0 ? std::numeric_limits<IntOut>::lowest()
+                 : std::numeric_limits<IntOut>::max();
   }
 
   // --------------------------------------------------------------------
@@ -218,15 +223,17 @@ class MathUtil {
   //   return type. In those cases, Round has undefined
   //   behavior. SafeRound returns 0 when the argument is
   //   NaN, and returns the closest possible integer value otherwise (i.e.
-  //   MathLimits<IntOut>::kMax for large positive values, and
-  //   MathLimits<IntOut>::kMin for large negative values).
+  //   std::numeric_limits<IntOut>::max() for large positive values, and
+  //   std::numeric_limits<IntOut>::lowest() for large negative values).
   //   The range of FloatIn must include the range of IntOut, otherwise
   //   the results are undefined.
   // --------------------------------------------------------------------
   template <class IntOut, class FloatIn>
   static IntOut SafeRound(FloatIn x) {
-    COMPILE_ASSERT(!MathLimits<FloatIn>::kIsInteger, FloatIn_is_integer);
-    COMPILE_ASSERT(MathLimits<IntOut>::kIsInteger, IntOut_is_not_integer);
+    COMPILE_ASSERT(!std::numeric_limits<FloatIn>::is_integer,
+                   FloatIn_is_integer);
+    COMPILE_ASSERT(std::numeric_limits<IntOut>::is_integer,
+                   IntOut_is_not_integer);
 
     if (MathLimits<FloatIn>::IsNaN(x)) {
       return 0;

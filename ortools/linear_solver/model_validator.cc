@@ -471,7 +471,7 @@ class LazyMPModelNameToIndexMaps {
         map = &general_constraint_name_to_index_.value();
         break;
     }
-    const int index = gtl::FindWithDefault(*map, std::string(name), -2);
+    const int index = gtl::FindWithDefault(*map, name, -2);
     if (index == -2) return absl::NotFoundError("name not found");
     if (index == -1) return absl::InvalidArgumentError("name is not unique");
     return index;
