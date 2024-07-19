@@ -1014,6 +1014,12 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(size_expr, 2)
         self.assertEqual(str(end_expr), "(x + 2)")
 
+    def testAbsentInterval(self):
+        print("testInterval")
+        model = cp_model.CpModel()
+        i = model.new_optional_interval_var(1, 0, 1, False, "")
+        self.assertEqual(0, i.index)
+
     def testOptionalInterval(self):
         print("testOptionalInterval")
         model = cp_model.CpModel()

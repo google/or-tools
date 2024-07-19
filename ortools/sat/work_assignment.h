@@ -67,6 +67,7 @@ class ProtoLiteral {
     return H::combine(std::move(h), literal.proto_var_, literal.lb_);
   }
 
+  // Note you should only decode integer literals at the root level.
   Literal Decode(CpModelMapping*, IntegerEncoder*) const;
   static std::optional<ProtoLiteral> Encode(Literal, CpModelMapping*,
                                             IntegerEncoder*);
@@ -324,6 +325,7 @@ class SharedTreeWorker {
 
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
+  std::vector<std::vector<Literal>> assigned_tree_implications_;
   // How many restarts had happened when the current tree was assigned?
   int64_t tree_assignment_restart_ = -1;
 

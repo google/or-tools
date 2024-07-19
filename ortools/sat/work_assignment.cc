@@ -626,15 +626,15 @@ bool SharedTreeWorker::AddImplications() {
   rev_num_processed_implications_.resize(level + 1, 0);
   auto& num_processed_implications = rev_num_processed_implications_[level];
   reversible_int_repository_->SaveState(&num_processed_implications);
-  absl::Span<const ProtoLiteral> implied_literals =
-      assigned_tree_.Implications(level).subspan(num_processed_implications);
+  absl::Span<const Literal> implied_literals =
+      absl::MakeConstSpan(assigned_tree_implications_[level - 1])
+          .subspan(num_processed_implications);
   bool added_clause = false;
-  for (const ProtoLiteral& impl : implied_literals) {
-    Literal lit(DecodeDecision(impl));
+  for (Literal impl : implied_literals) {
     ++num_processed_implications;
-    if (sat_solver_->Assignment().LiteralIsTrue(lit)) continue;
+    if (sat_solver_->Assignment().LiteralIsTrue(impl)) continue;
     added_clause = true;
-    if (!AddDecisionImplication(lit, level)) return true;
+    if (!AddDecisionImplication(impl, level)) return true;
   }
   if (objective_ != nullptr &&
       objective_->objective_var != kNoIntegerVariable) {
@@ -687,10 +687,19 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
               << " assigned=" << assigned_tree_.MaxLevel();
       manager_->CloseTree(assigned_tree_, level + 1);
       assigned_tree_literals_.clear();
+      assigned_tree_implications_.clear();
       sat_solver_->Backtrack(0);
     } else {
       // The next level is implied by the current one.
       assigned_tree_.SetLevelImplied(level + 1);
+      if (level > 0) {
+        assigned_tree_implications_[level - 1].insert(
+            assigned_tree_implications_[level - 1].end(),
+            assigned_tree_implications_[level].begin(),
+            assigned_tree_implications_[level].end());
+      }
+      assigned_tree_implications_.erase(assigned_tree_implications_.begin() +
+                                        level);
       assigned_tree_literals_.erase(assigned_tree_literals_.begin() + level);
     }
   }
@@ -760,6 +769,7 @@ void SharedTreeWorker::MaybeProposeSplit() {
     manager_->ProposeSplit(assigned_tree_, *encoded);
     if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
       assigned_tree_literals_.push_back(split_decision);
+      assigned_tree_implications_.push_back({});
     }
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   }
@@ -808,9 +818,15 @@ bool SharedTreeWorker::SyncWithSharedTree() {
   VLOG(2) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();
   assigned_tree_literals_.clear();
+  assigned_tree_implications_.clear();
   for (int i = 1; i <= assigned_tree_.MaxLevel(); ++i) {
     assigned_tree_literals_.push_back(
         DecodeDecision(assigned_tree_.Decision(i)));
+    std::vector<Literal> implications;
+    for (const ProtoLiteral& impl : assigned_tree_.Implications(i)) {
+      implications.push_back(DecodeDecision(impl));
+    }
+    assigned_tree_implications_.push_back(std::move(implications));
   }
   return true;
 }
