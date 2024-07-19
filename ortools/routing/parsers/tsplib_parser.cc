@@ -398,7 +398,7 @@ void TspLibParser::FinalizeEdgeWeights() {
   }
 }
 
-void TspLibParser::ParseSections(const std::vector<std::string>& words) {
+void TspLibParser::ParseSections(absl::Span<const std::string> words) {
   const int words_size = words.size();
   CHECK_GT(words_size, 0);
   if (!gtl::FindCopy(*kSections, words[0], &section_)) {
