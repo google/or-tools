@@ -28,6 +28,8 @@ public interface ILiteral
     ILiteral Not();
     /** <summary>Returns the logical index of the literal. </summary> */
     int GetIndex();
+    /** <summary>Returns the literal as a linear expression.</summary> */
+    LinearExpr AsExpr();
     /** <summary>Returns the Boolean negation of the literal as a linear expression.</summary> */
     LinearExpr NotAsExpr();
 }
@@ -803,6 +805,12 @@ public sealed class BoolVar : IntVar, ILiteral
         return negation_ ??= new NotBoolVar(this);
     }
 
+    /** <summary>Returns the literal as a linear expression.</summary> */
+    public LinearExpr AsExpr()
+    {
+        return this;
+    }
+
     /** <summary> Returns the Boolean negation of that variable as a linear expression.</summary> */
     public LinearExpr NotAsExpr()
     {
@@ -834,6 +842,11 @@ public sealed class NotBoolVar : LinearExpr, ILiteral
     public ILiteral Not()
     {
         return boolvar_;
+    }
+
+    public LinearExpr AsExpr()
+    {
+        return this;
     }
 
     public LinearExpr NotAsExpr()
