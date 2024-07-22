@@ -98,7 +98,7 @@ class PrecedenceRelations : public ReversibleInterface {
   // support the general non-DAG cases.
   //
   // TODO(user): Many relations can be redundant. Filter them.
-  void ComputeFullPrecedences(const std::vector<IntegerVariable>& vars,
+  void ComputeFullPrecedences(absl::Span<const IntegerVariable> vars,
                               std::vector<FullIntegerPrecedence>* output);
 
   // Returns a set of precedences (var, index) such that var is after

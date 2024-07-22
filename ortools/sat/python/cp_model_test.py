@@ -1252,7 +1252,6 @@ class CpModelTest(absltest.TestCase):
         status = solver.solve(model, solution_counter)
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(5, solution_counter.solution_count)
-        model.minimize(x)
 
     def testSolveWithSolutionCallback(self):
         print("testSolveWithSolutionCallback")
