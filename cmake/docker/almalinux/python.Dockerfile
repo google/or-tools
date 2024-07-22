@@ -1,4 +1,5 @@
 FROM ortools/cmake:almalinux_swig AS env
+
 ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install python3-devel python3-pip python3-numpy \

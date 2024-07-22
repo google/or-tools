@@ -1,4 +1,5 @@
 FROM ortools/cmake:rockylinux_swig AS env
+
 RUN dnf -y update \
 && dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
 && dnf clean all \

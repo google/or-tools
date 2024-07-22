@@ -1,4 +1,5 @@
 FROM ortools/cmake:debian_swig AS env
+
 ENV PATH=/root/.local/bin:$PATH
 RUN apt-get update -qq \
 && apt-get install -yq \

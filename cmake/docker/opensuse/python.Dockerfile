@@ -1,4 +1,5 @@
 FROM ortools/cmake:opensuse_swig AS env
+
 ENV PATH=/root/.local/bin:$PATH
 RUN zypper refresh \
 && zypper install -y python311 python311-devel \

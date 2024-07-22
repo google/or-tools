@@ -1,4 +1,5 @@
 FROM ortools/cmake:alpine_swig AS env
+
 ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
 RUN apk add --no-cache openjdk8 maven
 

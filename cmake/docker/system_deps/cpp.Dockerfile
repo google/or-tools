@@ -1,4 +1,5 @@
 FROM ortools/cmake:system_deps_base AS env
+
 RUN cmake -version
 
 FROM env AS devel
