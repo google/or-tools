@@ -14,6 +14,7 @@
 """Helper macro to compile and test code samples."""
 
 load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 
 def code_sample_cc(name):
     native.cc_binary(
@@ -41,7 +42,7 @@ def code_sample_cc(name):
     )
 
 def code_sample_py(name):
-    native.py_binary(
+    py_binary(
         name = name + "_py3",
         srcs = [name + ".py"],
         main = name + ".py",
@@ -57,7 +58,7 @@ def code_sample_py(name):
         srcs_version = "PY3",
     )
 
-    native.py_test(
+    py_test(
         name = name + "_py_test",
         size = "small",
         srcs = [name + ".py"],
