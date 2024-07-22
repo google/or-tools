@@ -846,7 +846,7 @@ public sealed class NotBoolVar : LinearExpr, ILiteral
 
     public LinearExpr AsExpr()
     {
-        return this;
+        return 1 - boolvar_;
     }
 
     public LinearExpr NotAsExpr()
