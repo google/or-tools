@@ -20,6 +20,9 @@ as a linear boolean problem.
 
 This problem comes from the game Katamino:
 http://boardgamegeek.com/boardgame/6931/katamino
+
+This example also includes suggestions from
+https://web.ma.utexas.edu/users/smmg/archive/1997/radin.html
 """
 
 from collections.abc import Sequence
@@ -41,6 +44,8 @@ _PARAMS = flags.DEFINE_string(
 _PIECES = flags.DEFINE_string(
     "pieces", "FILNPTUVWXYZ", "The subset of pieces to consider."
 )
+
+_HEIGHT = flags.DEFINE_integer("height", 5, "The height of the box.")
 
 
 def is_one(mask: List[List[int]], x: int, y: int, orientation: int) -> bool:
@@ -104,8 +109,9 @@ def orientation_is_redundant(mask: List[List[int]], orientation: int) -> bool:
 
 def generate_and_solve_problem(pieces: Dict[str, List[List[int]]]) -> None:
     """Solves the pentominoes problem."""
-    box_width = len(pieces)
-    box_height = 5
+    box_height = _HEIGHT.value
+    box_width = 5 * len(pieces) // box_height
+    print(f"Box has dimension {box_height} * {box_width}")
 
     model = cp_model.CpModel()
     position_to_variables: List[List[List[cp_model.IntVar]]] = [
@@ -142,8 +148,8 @@ def generate_and_solve_problem(pieces: Dict[str, List[List[int]]]) -> None:
     status = solver.solve(model)
 
     print(
-        f"Problem {_PIECES.value} solved in {solver.wall_time}s with status"
-        f" {solver.status_name(status)}"
+        f"Problem {_PIECES.value} box {box_height}*{box_width} solved in"
+        f" {solver.wall_time}s with status {solver.status_name(status)}"
     )
 
     # Print the solution.
@@ -183,6 +189,16 @@ def main(argv: Sequence[str]) -> None:
             print(f"Piece {p} not found in the list of pieces")
             return
         selected_pieces[p] = pieces[p]
+    if (len(selected_pieces) * 5) % _HEIGHT.value != 0:
+        print(
+            f"The height {_HEIGHT.value} does not divide the total area"
+            f" {5 * len(selected_pieces)}"
+        )
+        return
+    if _HEIGHT.value < 3 or 5 * len(selected_pieces) // _HEIGHT.value < 3:
+        print(f"The height {_HEIGHT.value} is not compatible with the pieces.")
+        return
+
     generate_and_solve_problem(selected_pieces)
 
 
