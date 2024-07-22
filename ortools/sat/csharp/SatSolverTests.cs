@@ -16,6 +16,81 @@ using System.Collections.Generic;
 using Xunit;
 using Google.OrTools.Sat;
 
+public class SolutionCounter : CpSolverSolutionCallback
+{
+    public SolutionCounter()
+    {
+        Console.WriteLine("SolutionCounter Ctor");
+        solution_count_ = 0;
+    }
+
+    public override void OnSolutionCallback()
+    {
+        solution_count_ += 1;
+    }
+
+    public int SolutionCount
+    {
+        get {
+            return solution_count_;
+        }
+        set {
+            solution_count_ = value;
+        }
+    }
+    private int solution_count_;
+}
+
+public class SolutionDivisionCounter : SolutionCounter
+{
+    public SolutionDivisionCounter(int result, IntVar a, IntVar b) : base()
+    {
+        result_ = result;
+        a_ = a;
+        b_ = b;
+    }
+
+    public override void OnSolutionCallback()
+    {
+        base.OnSolutionCallback();
+        foreach (IntVar v in new IntVar[] { a_, b_ })
+        {
+            Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
+        }
+        Console.WriteLine();
+        Assert.Equal(result_, Value(a_) / Value(b_));
+    }
+
+    private int result_;
+    private IntVar a_;
+    private IntVar b_;
+}
+
+public class SolutionModuloCounter : SolutionCounter
+{
+    public SolutionModuloCounter(int result, IntVar a, IntVar b) : base()
+    {
+        result_ = result;
+        a_ = a;
+        b_ = b;
+    }
+
+    public override void OnSolutionCallback()
+    {
+        base.OnSolutionCallback();
+        foreach (IntVar v in new IntVar[] { a_, b_ })
+        {
+            Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
+        }
+        Console.WriteLine();
+        Assert.Equal(result_, Value(a_) % Value(b_));
+    }
+
+    private int result_;
+    private IntVar a_;
+    private IntVar b_;
+}
+
 namespace Google.OrTools.Tests
 {
 public class SatSolverTest
@@ -257,15 +332,19 @@ public class SatSolverTest
         model.AddDivisionEquality(3, v1, v2);
         // Console.WriteLine(model.Model);
 
+        SolutionDivisionCounter solution_callback = new SolutionDivisionCounter(3, v1, v2);
+
         CpSolver solver = new CpSolver();
-        CpSolverStatus status = solver.Solve(model);
+        // Tell the solver to search for all solutions.
+        solver.StringParameters = "enumerate_all_solutions:true";
+        CpSolverStatus status = solver.Solve(model, solution_callback);
+
         Assert.Equal(CpSolverStatus.Optimal, status);
+        Assert.Equal(0, solver.ObjectiveValue);
+
+        Assert.Equal(5, solution_callback.SolutionCount);
 
         CpSolverResponse response = solver.Response;
-        Assert.Equal(3, solver.Value(v1));
-        Assert.Equal(1, solver.Value(v2));
-        Assert.Equal(new long[] { 3, 1 }, response.Solution);
-        Assert.Equal(0, response.ObjectiveValue);
         // Console.WriteLine("response = " + response.ToString());
     }
 
@@ -278,15 +357,19 @@ public class SatSolverTest
         model.AddModuloEquality(3, v1, v2);
         // Console.WriteLine(model.Model);
 
+        SolutionModuloCounter solution_callback = new SolutionModuloCounter(3, v1, v2);
+
         CpSolver solver = new CpSolver();
-        CpSolverStatus status = solver.Solve(model);
+        // Tell the solver to search for all solutions.
+        solver.StringParameters = "enumerate_all_solutions:true";
+        CpSolverStatus status = solver.Solve(model, solution_callback);
+
         Assert.Equal(CpSolverStatus.Optimal, status);
+        Assert.Equal(0, solver.ObjectiveValue);
+
+        Assert.Equal(11, solution_callback.SolutionCount);
 
         CpSolverResponse response = solver.Response;
-        Assert.Equal(3, solver.Value(v1));
-        Assert.Equal(4, solver.Value(v2));
-        Assert.Equal(new long[] { 3, 4 }, response.Solution);
-        Assert.Equal(0, response.ObjectiveValue);
         // Console.WriteLine("response = " + response.ToString());
     }
 
@@ -648,7 +731,7 @@ public class SatSolverTest
         IntervalVar i = model.NewFixedSizeIntervalVar(v, 3, "i");
         Assert.Equal("v", i.StartExpr().ToString());
         Assert.Equal("3", i.SizeExpr().ToString());
-        Assert.Equal("v + 3", i.EndExpr().ToString());
+        Assert.Equal("(v + 3)", i.EndExpr().ToString());
     }
 }
 } // namespace Google.OrTools.Tests

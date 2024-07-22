@@ -605,6 +605,7 @@ public sealed class LinearExprBuilder : LinearExpr
     public override string ToString()
     {
         string result = "";
+        bool need_parenthesis = false;
         foreach (Term term in terms_)
         {
             bool first = String.IsNullOrEmpty(result);
@@ -617,6 +618,7 @@ public sealed class LinearExprBuilder : LinearExpr
                 if (!first)
                 {
                     result += " + ";
+                    need_parenthesis = true;
                 }
 
                 result += term.expr.ToString();
@@ -625,6 +627,7 @@ public sealed class LinearExprBuilder : LinearExpr
             {
                 if (!first)
                 {
+                    need_parenthesis = true;
                     result += " + ";
                 }
 
@@ -634,6 +637,7 @@ public sealed class LinearExprBuilder : LinearExpr
             {
                 if (!first)
                 {
+                    need_parenthesis = true;
                     result += String.Format(" - {0}", term.expr.ToString());
                 }
                 else
@@ -645,6 +649,7 @@ public sealed class LinearExprBuilder : LinearExpr
             {
                 if (!first)
                 {
+                    need_parenthesis = true;
                     result += String.Format(" - {0} * {1}", -term.coefficient, term.expr.ToString());
                 }
                 else
@@ -657,6 +662,7 @@ public sealed class LinearExprBuilder : LinearExpr
         {
             if (!String.IsNullOrEmpty(result))
             {
+                need_parenthesis = true;
                 result += String.Format(" + {0}", offset_);
             }
             else
@@ -668,12 +674,18 @@ public sealed class LinearExprBuilder : LinearExpr
         {
             if (!String.IsNullOrEmpty(result))
             {
+                need_parenthesis = true;
                 result += String.Format(" - {0}", -offset_);
             }
             else
             {
                 result += String.Format("{0}", offset_);
             }
+        }
+
+        if (need_parenthesis)
+        {
+            return string.Format("({0})", result);
         }
         return result;
     }
@@ -846,12 +858,12 @@ public sealed class NotBoolVar : LinearExpr, ILiteral
 
     public LinearExpr AsExpr()
     {
-        return 1 - boolvar_;
+        return LinearExpr.Affine(boolvar_, -1, 1); // 1 - boolvar_.
     }
 
     public LinearExpr NotAsExpr()
     {
-        return (LinearExpr)Not();
+        return boolvar_;
     }
 
     public override string ToString()
