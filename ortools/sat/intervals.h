@@ -299,6 +299,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // MUST be called at the beginning of all Propagate() call that uses this
   // helper.
   void SetTimeDirection(bool is_forward);
+  bool CurrentTimeIsForward() const { return current_time_direction_; }
   ABSL_MUST_USE_RESULT bool SynchronizeAndSetTimeDirection(bool is_forward);
 
   // Helpers for the current bounds on the current task time window.
@@ -487,9 +488,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   // Registers the given propagator id to be called if any of the tasks
   // in this class change. Note that we do not watch size max though.
-  void WatchAllTasks(int id, GenericLiteralWatcher* watcher,
-                     bool watch_start_max = true,
-                     bool watch_end_max = true) const;
+  void WatchAllTasks(int id, bool watch_max_side = true);
 
   // Manages the other helper (used by the diffn constraint).
   //
@@ -546,6 +545,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   Model* model_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  GenericLiteralWatcher* watcher_;
   PrecedenceRelations* precedence_relations_;
 
   // The current direction of time, true for forward, false for backward.
@@ -613,6 +613,9 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   absl::Span<const int> map_to_other_helper_;
   IntegerValue event_for_other_helper_;
   std::vector<bool> already_added_to_other_reasons_;
+
+  // List of watcher to "wake-up" each time one of the task bounds changes.
+  std::vector<int> propagator_ids_;
 };
 
 // Helper class for cumulative constraint to wrap demands and expose concept

@@ -202,6 +202,33 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   PropagationStatistics stats_;
 };
 
+// This one is a simpler version of DisjunctiveDetectablePrecedences, it
+// detect all implied precedences between TWO tasks and push bounds accordingly.
+// If we created all pairwise precedence Booleans, this would already be
+// propagated and in this case we don't create this propagator.
+//
+// Otherwise, this generate short reason and is good to do early as it
+// propagates a lot.
+class DisjunctiveSimplePrecedences : public PropagatorInterface {
+ public:
+  explicit DisjunctiveSimplePrecedences(SchedulingConstraintHelper* helper,
+                                        Model* model = nullptr)
+      : helper_(helper), stats_("DisjunctiveSimplePrecedences", model) {
+    to_propagate_.ClearAndReserve(helper->NumTasks());
+  }
+  bool Propagate() final;
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  bool PropagateOneDirection();
+
+  std::vector<bool> processed_;
+  FixedCapacityVector<int> to_propagate_;
+
+  SchedulingConstraintHelper* helper_;
+  PropagationStatistics stats_;
+};
+
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {
  public:
   DisjunctiveDetectablePrecedences(bool time_direction,
@@ -212,17 +239,16 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
         task_set_(helper->NumTasks()),
         stats_("DisjunctiveDetectablePrecedences", model) {
     task_by_increasing_end_min_.ClearAndReserve(helper->NumTasks());
-    task_by_increasing_start_max_.ClearAndReserve(helper->NumTasks());
     to_propagate_.ClearAndReserve(helper->NumTasks());
   }
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(IntegerValue max_end_min);
+  bool PropagateSubwindow(IntegerValue min_start_min, IntegerValue max_end_min);
 
   FixedCapacityVector<TaskTime> task_by_increasing_end_min_;
-  FixedCapacityVector<TaskTime> task_by_increasing_start_max_;
+  absl::Span<const TaskTime> task_by_decreasing_start_max_;
 
   std::vector<bool> processed_;
   FixedCapacityVector<int> to_propagate_;

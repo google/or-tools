@@ -267,9 +267,9 @@ std::string ValidateLinearExpression(const CpModelProto& model,
     return absl::StrCat("Possible overflow in linear expression: ",
                         ProtobufShortDebugString(expr));
   }
-  for (const int ref : expr.vars()) {
-    if (!RefIsPositive(ref)) {
-      return absl::StrCat("Invalid negated reference in linear expression: ",
+  for (const int var : expr.vars()) {
+    if (!RefIsPositive(var)) {
+      return absl::StrCat("Invalid negated variable in linear expression: ",
                           ProtobufShortDebugString(expr));
     }
   }
@@ -303,6 +303,12 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
   if (ct.linear().coeffs_size() != ct.linear().vars_size()) {
     return absl::StrCat("coeffs_size() != vars_size() in constraint: ",
                         ProtobufShortDebugString(ct));
+  }
+  for (const int var : ct.linear().vars()) {
+    if (!RefIsPositive(var)) {
+      return absl::StrCat("Invalid negated variable in linear constraint: ",
+                          ProtobufShortDebugString(ct));
+    }
   }
   const LinearConstraintProto& arg = ct.linear();
   if (PossibleIntegerOverflow(model, arg.vars(), arg.coeffs())) {

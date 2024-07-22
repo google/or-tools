@@ -29,6 +29,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "google/protobuf/arena.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -293,12 +294,17 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   SharedBoundsManager* shared_bounds_;
   SharedResponseManager* shared_response_;
 
+  // Arena holding the memory of the CpModelProto* of this class. This saves the
+  // destruction cost that can take time on problem with millions of
+  // variables/constraints.
+  google::protobuf::Arena local_arena_;
+
   // This proto will only contain the field variables() with an updated version
   // of the domains compared to model_proto_.variables(). We do it like this to
   // reduce the memory footprint of the helper when the model is large.
   //
   // TODO(user): Use custom domain repository rather than a proto?
-  CpModelProto model_proto_with_only_variables_ ABSL_GUARDED_BY(domain_mutex_);
+  CpModelProto* model_proto_with_only_variables_ ABSL_GUARDED_BY(domain_mutex_);
 
   // Constraints by types. This never changes.
   std::vector<std::vector<int>> type_to_constraints_;
@@ -310,7 +316,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // A copy of CpModelProto where we did some basic presolving to remove all
   // constraint that are always true. The Variable-Constraint graph is based on
   // this model. Note that only the constraints field is present here.
-  CpModelProto simplified_model_proto_ ABSL_GUARDED_BY(graph_mutex_);
+  CpModelProto* simplified_model_proto_ ABSL_GUARDED_BY(graph_mutex_);
 
   // Variable-Constraint graph.
   // We replace an interval by its variables in the scheduling constraints.

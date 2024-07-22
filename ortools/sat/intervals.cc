@@ -230,6 +230,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
     : model_(model),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
       interval_variables_(tasks),
       capacity_(tasks.size()),
@@ -288,12 +289,14 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
 
 bool SchedulingConstraintHelper::Propagate() {
   recompute_all_cache_ = true;
+  for (const int id : propagator_ids_) watcher_->CallOnNextPropagate(id);
   return true;
 }
 
 bool SchedulingConstraintHelper::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
   for (const int t : watch_indices) recompute_cache_.Set(t);
+  for (const int id : propagator_ids_) watcher_->CallOnNextPropagate(id);
   return true;
 }
 
@@ -791,24 +794,29 @@ bool SchedulingConstraintHelper::ReportConflict() {
   return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
 }
 
-void SchedulingConstraintHelper::WatchAllTasks(int id,
-                                               GenericLiteralWatcher* watcher,
-                                               bool watch_start_max,
-                                               bool watch_end_max) const {
+void SchedulingConstraintHelper::WatchAllTasks(int id, bool watch_max_side) {
+  // In all cases, we watch presence literals since this class is not waked up
+  // when those changes.
   const int num_tasks = starts_.size();
   for (int t = 0; t < num_tasks; ++t) {
-    watcher->WatchLowerBound(starts_[t], id);
-    watcher->WatchLowerBound(ends_[t], id);
-    watcher->WatchLowerBound(sizes_[t], id);
-    if (watch_start_max) {
-      watcher->WatchUpperBound(starts_[t], id);
-    }
-    if (watch_end_max) {
-      watcher->WatchUpperBound(ends_[t], id);
-    }
     if (!IsPresent(t) && !IsAbsent(t)) {
-      watcher->WatchLiteral(Literal(reason_for_presence_[t]), id);
+      watcher_->WatchLiteral(Literal(reason_for_presence_[t]), id);
     }
+  }
+
+  // If everything is watched, it is slighlty more efficient to enqueue the
+  // propagator when the helper Propagate() is called. This result in less
+  // entries in our watched lists.
+  if (watch_max_side) {
+    propagator_ids_.push_back(id);
+    return;
+  }
+
+  // We only watch "min" side.
+  for (int t = 0; t < num_tasks; ++t) {
+    watcher_->WatchLowerBound(starts_[t], id);
+    watcher_->WatchLowerBound(ends_[t], id);
+    watcher_->WatchLowerBound(sizes_[t], id);
   }
 }
 
