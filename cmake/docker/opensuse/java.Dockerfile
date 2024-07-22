@@ -1,4 +1,5 @@
 FROM ortools/cmake:opensuse_swig AS env
+
 # Install Java JDK and Maven
 RUN zypper refresh \
 && zypper install -y java-17-openjdk-devel maven \

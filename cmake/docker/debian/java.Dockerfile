@@ -1,4 +1,5 @@
 FROM ortools/cmake:debian_swig AS env
+
 RUN apt-get update -qq \
 && apt-get install -yq default-jdk maven \
 && apt-get clean \

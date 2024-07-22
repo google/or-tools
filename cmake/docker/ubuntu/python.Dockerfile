@@ -1,4 +1,5 @@
 FROM ortools/cmake:ubuntu_swig AS env
+
 ENV PATH=/root/.local/bin:$PATH
 RUN apt-get update -qq \
 && DEBIAN_FRONTEND=noninteractive apt-get install -yq \

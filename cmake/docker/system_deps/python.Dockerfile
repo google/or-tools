@@ -1,4 +1,5 @@
 FROM ortools/cmake:system_deps_swig AS env
+
 ENV PATH=/root/.local/bin:$PATH
 RUN pacman -Syu --noconfirm pybind11
 RUN pacman -Syu --noconfirm python \

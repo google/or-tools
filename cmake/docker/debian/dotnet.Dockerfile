@@ -1,4 +1,5 @@
 FROM ortools/cmake:debian_swig AS env
+
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
 RUN apt-get update -qq \
 && apt-get install -yq wget gpg apt-transport-https \

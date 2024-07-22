@@ -1,4 +1,5 @@
 FROM ortools/cmake:fedora_swig AS env
+
 ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install python3 python3-devel python3-pip \

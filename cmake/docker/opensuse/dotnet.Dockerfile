@@ -1,5 +1,4 @@
 FROM ortools/cmake:opensuse_swig AS env
-# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
 
 # .NET install
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
