@@ -631,7 +631,7 @@ public class SatSolverTest
     {
         Console.WriteLine("LinearExprBoolVarNotOperatorTest");
         CpModel model = new CpModel();
-        ILiteral v = model.NewBoolVar("v");TestInter
+        ILiteral v = model.NewBoolVar("v");
         e = v.NotAsExpr() - 1;
         Console.WriteLine(e);
     }
