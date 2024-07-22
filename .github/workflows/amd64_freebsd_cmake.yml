@@ -2,7 +2,7 @@ name: amd64 FreeBSD CMake
 
 on: [push, pull_request, workflow_dispatch]
 
-# Only macos runner provide virtualisation with vagrant/virtualbox installed.
+# Only macos-12 runner provide virtualisation with vagrant/virtualbox installed.
 # ref: https://github.com/actions/runner-images/tree/main/images/macos
 # ref: https://app.vagrantup.com/generic/boxes/freebsd13
 jobs:
@@ -21,7 +21,7 @@ jobs:
           lang: java
           allow_failure: true
     name: FreeBSD • CMake • ${{ matrix.lang }}
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v4
       - name: vagrant version
