@@ -48,7 +48,13 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
   must_be_in_cycle_.resize(num_nodes_);
   absl::flat_hash_map<LiteralIndex, int> literal_to_watch_index;
 
+  // Temporary data to fill watch_index_to_arcs_.
   const int num_arcs = tails.size();
+  std::vector<int> keys;
+  std::vector<Arc> values;
+  keys.reserve(num_arcs);
+  values.reserve(num_arcs);
+
   graph_.reserve(num_arcs);
   self_arcs_.resize(num_nodes_,
                     model->GetOrCreate<IntegerEncoder>()->GetFalseLiteral());
@@ -83,10 +89,12 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
       watch_index = watch_index_to_literal_.size();
       literal_to_watch_index[watched_literal.Index()] = watch_index;
       watch_index_to_literal_.push_back(watched_literal);
-      watch_index_to_arcs_.push_back(std::vector<Arc>());
     }
-    watch_index_to_arcs_[watch_index].push_back({tail, head});
+
+    keys.push_back(watch_index);
+    values.push_back({tail, head});
   }
+  watch_index_to_arcs_.ResetFromFlatMapping(keys, values);
 
   for (int node = 0; node < num_nodes_; ++node) {
     if (assignment_.LiteralIsFalse(self_arcs_[node])) {

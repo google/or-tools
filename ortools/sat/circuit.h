@@ -96,7 +96,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
     int head;
   };
   std::vector<Literal> watch_index_to_literal_;
-  std::vector<std::vector<Arc>> watch_index_to_arcs_;
+  CompactVectorVector<int, Arc> watch_index_to_arcs_;
 
   // Current partial chains of arc that are present.
   std::vector<int> next_;  // -1 if not assigned yet.

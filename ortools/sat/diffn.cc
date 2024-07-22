@@ -513,10 +513,8 @@ NonOverlappingRectanglesEnergyPropagator::GeneralizeExplanation(
 int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  x_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
-                   /*watch_end_max=*/true);
-  y_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
-                   /*watch_end_max=*/true);
+  x_.WatchAllTasks(id);
+  y_.WatchAllTasks(id);
   return id;
 }
 
@@ -682,8 +680,8 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
     int fast_priority, int slow_priority) {
   fast_id_ = watcher_->Register(this);
   watcher_->SetPropagatorPriority(fast_id_, fast_priority);
-  global_x_.WatchAllTasks(fast_id_, watcher_);
-  global_y_.WatchAllTasks(fast_id_, watcher_);
+  global_x_.WatchAllTasks(fast_id_);
+  global_y_.WatchAllTasks(fast_id_);
 
   // This propagator is the one making sure our propagation is complete, so
   // we do need to make sure it is called again if it modified some bounds.
@@ -691,8 +689,8 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
 
   const int slow_id = watcher_->Register(this);
   watcher_->SetPropagatorPriority(slow_id, slow_priority);
-  global_x_.WatchAllTasks(slow_id, watcher_);
-  global_y_.WatchAllTasks(slow_id, watcher_);
+  global_x_.WatchAllTasks(slow_id);
+  global_y_.WatchAllTasks(slow_id);
 }
 
 bool NonOverlappingRectanglesDisjunctivePropagator::
@@ -850,10 +848,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
 int RectanglePairwisePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  global_x_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
-                          /*watch_end_max=*/false);
-  global_y_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
-                          /*watch_end_max=*/false);
+  global_x_.WatchAllTasks(id);
+  global_y_.WatchAllTasks(id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   return id;
 }
