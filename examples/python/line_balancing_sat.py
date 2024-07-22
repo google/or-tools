@@ -47,7 +47,7 @@ _MODEL = flags.DEFINE_string(
 )
 
 
-class SectionInfo(object):
+class SectionInfo:
     """Store model information for each section of the input file."""
 
     def __init__(self):

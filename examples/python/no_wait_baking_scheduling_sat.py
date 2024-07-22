@@ -50,7 +50,7 @@ DECORATING = "decorating"
 DISPLAY = "display"
 
 
-class Task(object):
+class Task:
     """A unit baking task.
 
     - Simple baking tasks have a fixed duration. They are performed by workers.
@@ -64,7 +64,7 @@ class Task(object):
         self.max_duration = max_duration
 
 
-class Skill(object):
+class Skill:
     """The skill of a worker or the capability of a machine."""
 
     def __init__(self, name, efficiency):
@@ -73,7 +73,7 @@ class Skill(object):
         self.efficiency = efficiency
 
 
-class Recipe(object):
+class Recipe:
     """A recipe is a sequence of cooking tasks."""
 
     def __init__(self, name):
@@ -85,7 +85,7 @@ class Recipe(object):
         return self
 
 
-class Resource(object):
+class Resource:
     """A resource is a worker, a machine, or just some space for cakes to rest.
 
     - Workers have a capacity of 1 and can have variable efficiency.
@@ -106,7 +106,7 @@ class Resource(object):
         return self
 
 
-class Order(object):
+class Order:
     """An order is a recipe that should be delivered at a given due date."""
 
     def __init__(self, unique_id, recipe_name, due_date, quantity):

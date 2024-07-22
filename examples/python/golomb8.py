@@ -23,10 +23,7 @@ of the rule.
 """
 
 from absl import app
-from absl import flags
 from ortools.constraint_solver import pywrapcp
-
-FLAGS = flags.FLAGS
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
