@@ -12,6 +12,7 @@ RUN dotnet --info
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
+RUN sed -i 's/\(<SignAssembly>\).*\(<\/SignAssembly>\)/\1false\2/' ortools/dotnet/Google.OrTools*.csproj.in
 
 FROM devel AS build
 RUN cmake -version
