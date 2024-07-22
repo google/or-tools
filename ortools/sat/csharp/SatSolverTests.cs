@@ -496,6 +496,54 @@ public class SatSolverTest
     }
 
     [Fact]
+    public void TrueLiteralAsExpressionTest()
+    {
+        Console.WriteLine("TrueLiteralAsExpressionTest");
+        CpModel model = new CpModel();
+        ILiteral v = model.TrueLiteral();
+        LinearExpr e = v.AsExpr() * 2;
+        Console.WriteLine(e);
+        e = 2 * v.AsExpr();
+        Console.WriteLine(e);
+        e = v.AsExpr() + 2;
+        Console.WriteLine(e);
+        e = 2 + v.AsExpr();
+        Console.WriteLine(e);
+        e = v.AsExpr();
+        Console.WriteLine(e);
+        e = -v.AsExpr();
+        Console.WriteLine(e);
+        e = 1 - v.AsExpr();
+        Console.WriteLine(e);
+        e = v.AsExpr() - 1;
+        Console.WriteLine(e);
+    }
+
+    [Fact]
+    public void FalseLiteralAsExpressionTest()
+    {
+        Console.WriteLine("FalseLiteralAsExpressionTest");
+        CpModel model = new CpModel();
+        ILiteral v = model.FalseLiteral();
+        LinearExpr e = v.AsExpr() * 2;
+        Console.WriteLine(e);
+        e = 2 * v.AsExpr();
+        Console.WriteLine(e);
+        e = v.AsExpr() + 2;
+        Console.WriteLine(e);
+        e = 2 + v.AsExpr();
+        Console.WriteLine(e);
+        e = v.AsExpr();
+        Console.WriteLine(e);
+        e = -v.AsExpr();
+        Console.WriteLine(e);
+        e = 1 - v.AsExpr();
+        Console.WriteLine(e);
+        e = v.AsExpr() - 1;
+        Console.WriteLine(e);
+    }
+
+    [Fact]
     public void LinearExprNotBoolVarOperatorTest()
     {
         Console.WriteLine("LinearExprBoolVarNotOperatorTest");
