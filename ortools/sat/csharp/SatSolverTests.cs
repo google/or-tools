@@ -20,7 +20,7 @@ public class SolutionCounter : CpSolverSolutionCallback
 {
     public SolutionCounter()
     {
-        Console.WriteLine("SolutionCounter Ctor");
+        // Console.WriteLine("SolutionCounter Ctor");
         solution_count_ = 0;
     }
 
@@ -55,7 +55,7 @@ public class SolutionDivisionCounter : SolutionCounter
         base.OnSolutionCallback();
         foreach (IntVar v in new IntVar[] { a_, b_ })
         {
-            Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
+            Console.Write($"{v.ToString()}={Value(v)} ");
         }
         Console.WriteLine();
         Assert.Equal(result_, Value(a_) / Value(b_));
@@ -80,7 +80,7 @@ public class SolutionModuloCounter : SolutionCounter
         base.OnSolutionCallback();
         foreach (IntVar v in new IntVar[] { a_, b_ })
         {
-            Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
+            Console.Write($"{v.ToString()}={Value(v)} ");
         }
         Console.WriteLine();
         Assert.Equal(result_, Value(a_) % Value(b_));
