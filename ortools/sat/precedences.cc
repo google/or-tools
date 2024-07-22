@@ -308,7 +308,7 @@ void PrecedenceRelations::Build() {
 }
 
 void PrecedenceRelations::ComputeFullPrecedences(
-    const std::vector<IntegerVariable>& vars,
+    absl::Span<const IntegerVariable> vars,
     std::vector<FullIntegerPrecedence>* output) {
   output->clear();
   if (!is_built_) Build();

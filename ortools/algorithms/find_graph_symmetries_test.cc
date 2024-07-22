@@ -374,7 +374,7 @@ TEST_F(FindSymmetriesTest, CyclesOfDifferentLength) {
 // This can be used to convert a list of M undirected edges into the list of
 // 2*M corresponding directed arcs.
 std::vector<std::pair<int, int>> AppendReversedPairs(
-    const std::vector<std::pair<int, int>>& pairs) {
+    absl::Span<const std::pair<int, int>> pairs) {
   std::vector<std::pair<int, int>> out;
   out.reserve(pairs.size() * 2);
   out.insert(out.begin(), pairs.begin(), pairs.end());
