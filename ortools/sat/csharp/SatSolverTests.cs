@@ -20,44 +20,29 @@ public class SolutionCounter : CpSolverSolutionCallback
 {
     public SolutionCounter()
     {
-<<<<<<< HEAD
         Console.WriteLine("SolutionCounter Ctor");
         solution_count_ = 0;
-=======
-      Console.WriteLine("SolutionCounter Ctor");
-      solution_count_ = 0;
->>>>>>> 95b10aa0eb976d381ed94839e0725f0454391f79
     }
 
     public override void OnSolutionCallback()
     {
-<<<<<<< HEAD
         solution_count_ += 1;
-=======
-      solution_count_ += 1;
->>>>>>> 95b10aa0eb976d381ed94839e0725f0454391f79
     }
 
     public int SolutionCount
     {
-<<<<<<< HEAD
         get {
             return solution_count_;
         }
         set {
             solution_count_ = value;
         }
-=======
-      get { return solution_count_; }
-      set { solution_count_ = value; }
->>>>>>> 95b10aa0eb976d381ed94839e0725f0454391f79
     }
     private int solution_count_;
 }
 
 public class SolutionDivisionCounter : SolutionCounter
 {
-<<<<<<< HEAD
     public SolutionDivisionCounter(int result, IntVar a, IntVar b) : base()
     {
         result_ = result;
@@ -79,34 +64,10 @@ public class SolutionDivisionCounter : SolutionCounter
     private int result_;
     private IntVar a_;
     private IntVar b_;
-=======
-  public SolutionDivisionCounter(int result, IntVar a, IntVar b): base()
-  {
-    result_ = result;
-    a_ = a;
-    b_ = b;
-  }
-
-  public override void OnSolutionCallback()
-  {
-    base.OnSolutionCallback();
-    foreach (IntVar v in new IntVar[] {a_, b_})
-    {
-      Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
-    }
-    Console.WriteLine();
-    Assert.Equal(result_, Value(a_) / Value(b_));
-  }
-
-  private int result_;
-  private IntVar a_;
-  private IntVar b_;
->>>>>>> 95b10aa0eb976d381ed94839e0725f0454391f79
 }
 
 public class SolutionModuloCounter : SolutionCounter
 {
-<<<<<<< HEAD
     public SolutionModuloCounter(int result, IntVar a, IntVar b) : base()
     {
         result_ = result;
@@ -128,29 +89,6 @@ public class SolutionModuloCounter : SolutionCounter
     private int result_;
     private IntVar a_;
     private IntVar b_;
-=======
-  public SolutionModuloCounter(int result, IntVar a, IntVar b): base()
-  {
-    result_ = result;
-    a_ = a;
-    b_ = b;
-  }
-
-  public override void OnSolutionCallback()
-  {
-    base.OnSolutionCallback();
-    foreach (IntVar v in new IntVar[] {a_, b_})
-    {
-      Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
-    }
-    Console.WriteLine();
-    Assert.Equal(result_, Value(a_) % Value(b_));
-  }
-
-  private int result_;
-  private IntVar a_;
-  private IntVar b_;
->>>>>>> 95b10aa0eb976d381ed94839e0725f0454391f79
 }
 
 namespace Google.OrTools.Tests
