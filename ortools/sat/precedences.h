@@ -514,9 +514,9 @@ class GreaterThanAtLeastOneOfDetector {
     IntegerValue lhs;
     IntegerValue rhs;
   };
-
   std::vector<Relation> relations_;
-  util_intops::StrongVector<LiteralIndex, std::vector<int>> lit_to_relations_;
+
+  std::unique_ptr<CompactVectorVector<LiteralIndex, int>> lit_to_relations_;
 };
 
 // =============================================================================
