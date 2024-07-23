@@ -71,7 +71,9 @@ def build_data() -> tuple[pd.Series, int, int]:
     return (data, max_height, max_width)
 
 
-def solve_with_duplicate_items(data: pd.Series, max_height: int, max_width: int):
+def solve_with_duplicate_items(
+    data: pd.Series, max_height: int, max_width: int
+) -> None:
     """solve the problem by building 2 items (rotated or not) for each item."""
     # Derived data (expanded to individual items).
     data_widths = data["width"].to_numpy()

@@ -65,7 +65,7 @@ distance_matrix = [
 ]
 
 
-def clustering_sat():
+def clustering_sat() -> None:
     """Entry point of the program."""
     num_nodes = len(distance_matrix)
     print("Num nodes =", num_nodes)

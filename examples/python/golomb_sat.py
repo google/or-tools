@@ -38,7 +38,7 @@ _PARAMS = flags.DEFINE_string(
 )
 
 
-def solve_golomb_ruler(order: int, params: str):
+def solve_golomb_ruler(order: int, params: str) -> None:
     """Solve the Golomb ruler problem."""
     # Create the model.
     model = cp_model.CpModel()

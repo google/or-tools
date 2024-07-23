@@ -25,7 +25,7 @@ _COEFF = flags.DEFINE_integer("coeff", 1, "The Pell equation coefficient.")
 _MAX_VALUE = flags.DEFINE_integer("max_value", 5000_000, "The maximum value.")
 
 
-def solve_pell(coeff: int, max_value: int):
+def solve_pell(coeff: int, max_value: int) -> None:
     """Solves Pell's equation x^2 - coeff * y^2 = 1."""
     model = cp_model.CpModel()
 

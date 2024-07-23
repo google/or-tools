@@ -34,7 +34,7 @@ class ObjectivePrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def tasks_and_workers_assignment_sat():
+def tasks_and_workers_assignment_sat() -> None:
     """solve the assignment problem."""
     model = cp_model.CpModel()
 

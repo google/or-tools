@@ -54,6 +54,8 @@ code_sample_test_arg_py(
     suffix = "salbp_20_1",
 )
 
+code_sample_py("maximize_combinations_sat")
+
 code_sample_py("maze_escape_sat")
 
 code_sample_py("no_wait_baking_scheduling_sat")

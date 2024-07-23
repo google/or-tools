@@ -21,7 +21,8 @@ We are scheduling a full day of baking:
 """
 
 import collections
-from typing import Sequence
+from typing import List, Sequence, Tuple
+
 from absl import app
 from absl import flags
 
@@ -124,7 +125,7 @@ class Order:
         self.quantity = quantity
 
 
-def set_up_data():
+def set_up_data() -> Tuple[List[Recipe], List[Resource], List[Order]]:
     """Set up the bakery problem data."""
 
     # Recipes.
@@ -193,7 +194,9 @@ def set_up_data():
     return recipes, resources, orders
 
 
-def solve_with_cp_sat(recipes, resources, orders):
+def solve_with_cp_sat(
+    recipes: List[Recipe], resources: List[Resource], orders: List[Order]
+) -> None:
     """Build the optimization model, and solve the problem."""
 
     model = cp_model.CpModel()

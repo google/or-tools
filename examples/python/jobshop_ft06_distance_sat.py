@@ -36,7 +36,7 @@ def distance_between_jobs(x: int, y: int) -> int:
     return abs(x - y)
 
 
-def jobshop_ft06_distance():
+def jobshop_ft06_distance() -> None:
     """Solves the ft06 jobshop with distances between tasks."""
     # Creates the model.
     model = cp_model.CpModel()

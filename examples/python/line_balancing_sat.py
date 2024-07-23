@@ -115,7 +115,7 @@ def read_model(filename):
     return model
 
 
-def print_stats(model):
+def print_stats(model) -> None:
     print("Model Statistics")
     for key, value in model.items():
         print(f"  - {key}: {value}")
@@ -183,7 +183,7 @@ def solve_model_greedily(model):
     return assignment
 
 
-def solve_boolean_model(model, hint):
+def solve_boolean_model(model, hint) -> None:
     """solve the given model."""
 
     print("Solving using the Boolean model")

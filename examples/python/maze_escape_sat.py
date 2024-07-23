@@ -35,7 +35,9 @@ _PARAMS = flags.DEFINE_string(
 )
 
 
-def add_neighbor(size, x, y, z, dx, dy, dz, model, index_map, position_to_rank, arcs):
+def add_neighbor(
+    size, x, y, z, dx, dy, dz, model, index_map, position_to_rank, arcs
+) -> None:
     """Checks if the neighbor is valid, and adds it to the model."""
     if (
         x + dx < 0
@@ -55,7 +57,7 @@ def add_neighbor(size, x, y, z, dx, dy, dz, model, index_map, position_to_rank, 
     arcs.append((before_index, after_index, move_literal))
 
 
-def escape_the_maze(params, output_proto):
+def escape_the_maze(params, output_proto) -> None:
     """Escapes the maze."""
     size = 4
     boxes = [(0, 1, 0), (2, 0, 1), (1, 3, 1), (3, 1, 3)]
