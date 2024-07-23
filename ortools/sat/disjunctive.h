@@ -213,17 +213,13 @@ class DisjunctiveSimplePrecedences : public PropagatorInterface {
  public:
   explicit DisjunctiveSimplePrecedences(SchedulingConstraintHelper* helper,
                                         Model* model = nullptr)
-      : helper_(helper), stats_("DisjunctiveSimplePrecedences", model) {
-    to_propagate_.ClearAndReserve(helper->NumTasks());
-  }
+      : helper_(helper), stats_("DisjunctiveSimplePrecedences", model) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateOneDirection();
-
-  std::vector<bool> processed_;
-  FixedCapacityVector<int> to_propagate_;
+  bool Push(TaskTime before, int t);
 
   SchedulingConstraintHelper* helper_;
   PropagationStatistics stats_;

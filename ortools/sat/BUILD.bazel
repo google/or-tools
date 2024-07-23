@@ -1223,6 +1223,7 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         ":synchronization",
+        ":util",
         "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",

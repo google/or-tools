@@ -56,8 +56,7 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
   values.reserve(num_arcs);
 
   graph_.reserve(num_arcs);
-  self_arcs_.resize(num_nodes_,
-                    model->GetOrCreate<IntegerEncoder>()->GetFalseLiteral());
+  self_arcs_.resize(num_nodes_, kFalseLiteralIndex);
   for (int arc = 0; arc < num_arcs; ++arc) {
     const int head = heads[arc];
     const int tail = tails[arc];
@@ -65,7 +64,7 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
     if (assignment_.LiteralIsFalse(literal)) continue;
 
     if (tail == head) {
-      self_arcs_[tail] = literal;
+      self_arcs_[tail] = literal.Index();
     } else {
       graph_[{tail, head}] = literal;
     }
@@ -97,7 +96,8 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
   watch_index_to_arcs_.ResetFromFlatMapping(keys, values);
 
   for (int node = 0; node < num_nodes_; ++node) {
-    if (assignment_.LiteralIsFalse(self_arcs_[node])) {
+    if (self_arcs_[node] == kFalseLiteralIndex ||
+        assignment_.LiteralIsFalse(Literal(self_arcs_[node]))) {
       // For the multiple_subcircuit_through_zero case, must_be_in_cycle_ will
       // be const and only contains zero.
       if (node == 0 || !options_.multiple_subcircuit_through_zero) {
@@ -280,7 +280,7 @@ bool CircuitPropagator::Propagate() {
       const int node = must_be_in_cycle_[i];
       if (!in_current_path_[node]) {
         miss_some_nodes = true;
-        extra_reason = self_arcs_[node].Index();
+        extra_reason = self_arcs_[node];
         break;
       }
     }
@@ -320,7 +320,10 @@ bool CircuitPropagator::Propagate() {
     BooleanVariable variable_with_same_reason = kNoBooleanVariable;
     for (int node = 0; node < num_nodes_; ++node) {
       if (in_current_path_[node]) continue;
-      if (assignment_.LiteralIsTrue(self_arcs_[node])) continue;
+      if (self_arcs_[node] >= 0 &&
+          assignment_.LiteralIsTrue(Literal(self_arcs_[node]))) {
+        continue;
+      }
 
       // This shouldn't happen because ExactlyOnePerRowAndPerColumn() should
       // have executed first and propagated self_arcs_[node] to false.
@@ -329,9 +332,12 @@ bool CircuitPropagator::Propagate() {
       // We should have detected that above (miss_some_nodes == true). But we
       // still need this for corner cases where the same literal is used for
       // many arcs, and we just propagated it here.
-      if (assignment_.LiteralIsFalse(self_arcs_[node])) {
+      if (self_arcs_[node] == kFalseLiteralIndex ||
+          assignment_.LiteralIsFalse(Literal(self_arcs_[node]))) {
         FillReasonForPath(start_node, trail_->MutableConflict());
-        trail_->MutableConflict()->push_back(self_arcs_[node]);
+        if (self_arcs_[node] != kFalseLiteralIndex) {
+          trail_->MutableConflict()->push_back(Literal(self_arcs_[node]));
+        }
         return false;
       }
 

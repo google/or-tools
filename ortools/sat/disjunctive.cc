@@ -732,96 +732,111 @@ bool DisjunctiveSimplePrecedences::Propagate() {
   return true;
 }
 
+bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
+  const int t_before = before.task_index;
+  DCHECK_NE(t_before, t);
+  helper_->ClearReason();
+  helper_->AddPresenceReason(t_before);
+  helper_->AddReasonForBeingBefore(t_before, t);
+  helper_->AddEndMinReason(t_before, before.time);
+  if (!helper_->IncreaseStartMin(t, before.time)) {
+    return false;
+  }
+  ++stats_.num_propagations;
+  return true;
+}
+
 bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
   // We will loop in a decreasing way here.
   // And add tasks that are present to the task_set_.
   absl::Span<const TaskTime> task_by_decreasing_start_max =
       helper_->TaskByDecreasingStartMax();
 
-  // We just keep amongst all the task before current_task, the one with the
+  // We just keep amongst all the task before current_end_min, the one with the
   // highesh end-min.
   TaskTime best_task_before = {-1, kMinIntegerValue};
-  to_propagate_.clear();
 
-  int blocking_task = -1;
-  processed_.assign(task_by_decreasing_start_max.size(), false);
-  for (const auto [current_task, current_end_min] :
-       helper_->TaskByIncreasingEndMin()) {
-    if (helper_->IsAbsent(current_task)) continue;
+  // We will loop in an increasing way here and consume task from beginning.
+  absl::Span<const TaskTime> task_by_increasing_end_min =
+      helper_->TaskByIncreasingEndMin();
 
-    for (; !task_by_decreasing_start_max.empty();
-         task_by_decreasing_start_max.remove_suffix(1)) {
+  for (; !task_by_increasing_end_min.empty();) {
+    // Skip absent task.
+    if (helper_->IsAbsent(task_by_increasing_end_min.front().task_index)) {
+      task_by_increasing_end_min.remove_prefix(1);
+      continue;
+    }
+
+    // Consider all task with a start_max < current_end_min.
+    int blocking_task = -1;
+    IntegerValue blocking_start_max;
+    IntegerValue current_end_min = task_by_increasing_end_min.front().time;
+    for (; true; task_by_decreasing_start_max.remove_suffix(1)) {
+      if (task_by_decreasing_start_max.empty()) {
+        // Small optim: this allows to process all remaining task rather than
+        // looping around are retesting this for all remaining tasks.
+        current_end_min = kMaxIntegerValue;
+        break;
+      }
+
       const auto [t, start_max] = task_by_decreasing_start_max.back();
       if (current_end_min <= start_max) break;
       if (!helper_->IsPresent(t)) continue;
 
-      // If t has not been processed yet, it has a mandatory part, and we will
-      // delay all propagation until current_task is equal to this
-      // "blocking task".
+      // If t has a mandatory part, and extend further than current_end_min
+      // then we can push it first. All tasks for which their push is delayed
+      // are necessarily after this "blocking task".
       //
       // This idea is introduced in "Linear-Time Filtering Algorithms for the
       // Disjunctive Constraints" Hamed Fahimi, Claude-Guy Quimper.
-      if (!processed_[t]) {
-        if (blocking_task != -1) {
-          // We have two blocking tasks, which means they are in conflict.
-          helper_->ClearReason();
-          helper_->AddPresenceReason(blocking_task);
-          helper_->AddPresenceReason(t);
-          helper_->AddReasonForBeingBefore(blocking_task, t);
-          helper_->AddReasonForBeingBefore(t, blocking_task);
-          return helper_->ReportConflict();
-        }
-        DCHECK_LT(start_max, helper_->ShiftedStartMin(t) + helper_->SizeMin(t))
-            << " task should have mandatory part: "
-            << helper_->TaskDebugString(t);
-        DCHECK(to_propagate_.empty());
+      const IntegerValue end_min = helper_->EndMin(t);
+      if (blocking_task == -1 && end_min >= current_end_min) {
+        DCHECK_LT(start_max, end_min) << " task should have mandatory part: "
+                                      << helper_->TaskDebugString(t);
         blocking_task = t;
-        to_propagate_.push_back(t);
-      } else {
-        const IntegerValue end_min = helper_->EndMin(t);
-        if (end_min > best_task_before.time) {
-          best_task_before = {t, end_min};
-        }
-      }
-    }
-
-    // If we have a blocking task, we delay the propagation until current_task
-    // is the blocking task.
-    if (blocking_task != current_task) {
-      to_propagate_.push_back(current_task);
-      if (blocking_task != -1) continue;
-    }
-
-    for (const int t : to_propagate_) {
-      DCHECK_NE(best_task_before.task_index, t);
-      DCHECK(!processed_[t]);
-      processed_[t] = true;
-
-      if (best_task_before.time > helper_->StartMin(t)) {
-        // Corner case if a previous push from to_propagate_ caused a subsequent
-        // task to be absent.
-        if (helper_->IsAbsent(t)) continue;
-
-        const int t_before = best_task_before.task_index;
+        blocking_start_max = start_max;
+        current_end_min = end_min;
+      } else if (blocking_task != -1 && blocking_start_max < end_min) {
+        // Conflict! the task is after the blocking_task but also before.
         helper_->ClearReason();
-        helper_->AddPresenceReason(t_before);
-        helper_->AddReasonForBeingBefore(t_before, t);
-        helper_->AddEndMinReason(t_before, best_task_before.time);
-        if (!helper_->IncreaseStartMin(t, best_task_before.time)) {
-          return false;
-        }
-        ++stats_.num_propagations;
-      }
-
-      if (t == blocking_task) {
-        blocking_task = -1;
-        const IntegerValue end_min = helper_->EndMin(t);
-        if (end_min > best_task_before.time) {
-          best_task_before = {t, end_min};
-        }
+        helper_->AddPresenceReason(blocking_task);
+        helper_->AddPresenceReason(t);
+        helper_->AddReasonForBeingBefore(blocking_task, t);
+        helper_->AddReasonForBeingBefore(t, blocking_task);
+        return helper_->ReportConflict();
+      } else if (end_min > best_task_before.time) {
+        best_task_before = {t, end_min};
       }
     }
-    to_propagate_.clear();
+
+    // If we have a blocking task. We need to propagate it first.
+    if (blocking_task != -1) {
+      DCHECK(!helper_->IsAbsent(blocking_task));
+      if (best_task_before.time > helper_->StartMin(blocking_task)) {
+        if (!Push(best_task_before, blocking_task)) return false;
+      }
+
+      // Update best_task_before (it should likely be the blocking task).
+      const IntegerValue end_min = helper_->EndMin(blocking_task);
+      if (end_min > best_task_before.time) {
+        best_task_before = {blocking_task, end_min};
+      }
+    }
+
+    // Lets propagate all task after best_task_before.
+    for (; !task_by_increasing_end_min.empty();
+         task_by_increasing_end_min.remove_prefix(1)) {
+      const auto [t, end_min] = task_by_increasing_end_min.front();
+      if (end_min > current_end_min) break;
+      if (t == blocking_task) continue;  // Already done.
+
+      // Lets propagate current_task.
+      if (best_task_before.time > helper_->StartMin(t)) {
+        // Corner case if a previous push caused a subsequent task to be absent.
+        if (helper_->IsAbsent(t)) continue;
+        if (!Push(best_task_before, t)) return false;
+      }
+    }
   }
   return true;
 }

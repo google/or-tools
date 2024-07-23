@@ -37,7 +37,7 @@ namespace sat {
 //
 // Nodes that are not in the unique allowed sub-circuit must point to themseves.
 // A nodes that has no self-arc must thus be inside the sub-circuit. If there is
-// no self-arc at all, then this constaint forces the circuit to go through all
+// no self-arc at all, then this constraint forces the circuit to go through all
 // the nodes. Multi-arcs are NOT supported.
 //
 // Important: for correctness, this constraint requires that "exactly one"
@@ -87,7 +87,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   //
   // TODO(user): for large dense graph, using a matrix is faster and uses less
   // memory. If the need arise we can have the two implementations.
-  std::vector<Literal> self_arcs_;
+  std::vector<LiteralIndex> self_arcs_;
   absl::flat_hash_map<std::pair<int, int>, Literal> graph_;
 
   // Data used to interpret the watch indices passed to IncrementalPropagate().
