@@ -36,7 +36,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def jobshop_with_maintenance():
+def jobshop_with_maintenance() -> None:
     """Solves a jobshop with maintenance on one machine."""
     # Create the model.
     model = cp_model.CpModel()

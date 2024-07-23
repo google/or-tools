@@ -130,7 +130,7 @@ def build_data():
     return num_tables, table_capacity, min_known_neighbors, connections, names
 
 
-def solve_with_discrete_model():
+def solve_with_discrete_model() -> None:
     """Discrete approach."""
     num_tables, table_capacity, min_known_neighbors, connections, names = build_data()
 

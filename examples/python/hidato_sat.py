@@ -147,7 +147,7 @@ def build_puzzle(problem: int) -> Union[None, list[list[int]]]:
     return puzzle
 
 
-def solve_hidato(puzzle: list[list[int]], index: int):
+def solve_hidato(puzzle: list[list[int]], index: int) -> None:
     """solve the given hidato table."""
     # Create the model.
     model = cp_model.CpModel()

@@ -23,7 +23,7 @@ from absl import app
 from ortools.sat.python import cp_model
 
 
-def task_allocation_sat():
+def task_allocation_sat() -> None:
     """Solves the task allocation problem."""
     # Availability matrix.
     available = [

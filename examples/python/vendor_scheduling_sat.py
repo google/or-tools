@@ -63,7 +63,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def vendor_scheduling_sat():
+def vendor_scheduling_sat() -> None:
     """Create the shift scheduling model and solve it."""
     # Create the model.
     model = cp_model.CpModel()

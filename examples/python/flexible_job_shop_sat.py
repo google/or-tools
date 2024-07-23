@@ -46,7 +46,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def flexible_jobshop():
+def flexible_jobshop() -> None:
     """solve a small flexible jobshop problem."""
     # Data part.
     jobs = [  # task = (processing_time, machine_id)

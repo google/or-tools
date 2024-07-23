@@ -30,7 +30,7 @@ from ortools.constraint_solver import pywrapcp
 # pylint: disable=g-explicit-bool-comparison
 
 
-def main(_):
+def main(_) -> None:
     # Create the solver.
     solver = pywrapcp.Solver("golomb ruler")
 

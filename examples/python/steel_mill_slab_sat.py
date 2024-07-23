@@ -158,7 +158,7 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
                 print(line)
 
 
-def steel_mill_slab(problem, break_symmetries):
+def steel_mill_slab(problem, break_symmetries) -> None:
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
     (num_slabs, capacities, num_colors, orders) = build_problem(problem)
