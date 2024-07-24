@@ -33,7 +33,7 @@ namespace operations_research::sat {
 // such a way that for a pivot P of the basis and the correspond entry x of v at
 // the end of the reduction, we have
 //     -floor(|P|/2) <= v < ceil(|P|/2).
-void ReduceModuloBasis(const std::vector<std::vector<absl::int128>>& basis,
+void ReduceModuloBasis(absl::Span<const std::vector<absl::int128>> basis,
                        int elements_to_consider, std::vector<absl::int128>& v);
 
 // Returns an ordering of the indices of coefficients such that the GCD of its

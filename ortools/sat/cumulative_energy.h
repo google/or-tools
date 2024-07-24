@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -92,7 +93,7 @@ class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
   CumulativeIsAfterSubsetConstraint(IntegerVariable var,
                                     AffineExpression capacity,
                                     const std::vector<int>& subtasks,
-                                    const std::vector<IntegerValue>& offsets,
+                                    absl::Span<const IntegerValue> offsets,
                                     SchedulingConstraintHelper* helper,
                                     SchedulingDemandHelper* demands,
                                     Model* model);
