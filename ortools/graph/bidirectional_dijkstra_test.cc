@@ -142,7 +142,7 @@ TEST(BidirectionalDijkstraTest, RandomizedCorrectnessTest) {
         &forward_graph, &forward_lengths);
 
     // To print some debugging info in case the test fails.
-    auto print_arc_path = [&](const std::vector<int>& arc_path) -> std::string {
+    auto print_arc_path = [&](absl::Span<const int> arc_path) -> std::string {
       if (arc_path.empty()) return "<EMPTY>";
       std::string out = absl::StrCat(forward_graph.Tail(arc_path[0]));
       double total_length = 0.0;
