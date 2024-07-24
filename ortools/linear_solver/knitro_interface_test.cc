@@ -1381,7 +1381,7 @@ TEST(KnitroInterface, AddVarToExistingConstraint) {
  * Since GLOP do not implement Write method
  *
  */
-void write_readible_problem_model(MPSolver& solver, char* file_name) {
+void write_readible_problem_model(MPSolver& solver, const char* file_name) {
   FILE* file;
   file = fopen(file_name, "w");
 
