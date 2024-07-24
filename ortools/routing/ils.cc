@@ -432,6 +432,22 @@ bool HasPerformedNodes(const RoutingModel& model,
   return false;
 }
 
+// Returns a random performed customer for the given assignment and customer
+// distribution. The procedure assumes the assignment has at least one
+// performed customer.
+int64_t PickRandomPerformedVisit(
+    const RoutingModel& model, const Assignment& assignment, std::mt19937& rnd,
+    std::uniform_int_distribution<int64_t>& customer_dist) {
+  DCHECK(HasPerformedNodes(model, assignment));
+
+  int64_t customer;
+  do {
+    customer = customer_dist(rnd);
+  } while (model.IsStart(customer) ||
+           assignment.Value(model.VehicleVar(customer)) == -1);
+  DCHECK(!model.IsEnd(customer));
+  return customer;
+}
 }  // namespace
 
 RoutingSolution::RoutingSolution(const RoutingModel& model) : model_(model) {
@@ -439,6 +455,7 @@ RoutingSolution::RoutingSolution(const RoutingModel& model) : model_(model) {
 
   nexts_.resize(all_nodes, -1);
   prevs_.resize(all_nodes, -1);
+  route_sizes_.resize(model.vehicles(), 0);
 }
 
 void RoutingSolution::Reset(const Assignment* assignment) {
@@ -446,7 +463,10 @@ void RoutingSolution::Reset(const Assignment* assignment) {
 
   // TODO(user): consider resetting only previously set values.
   nexts_.assign(nexts_.size(), -1);
+  // TODO(user): consider removing the resets below, and only rely on
+  // nexts_.
   prevs_.assign(prevs_.size(), -1);
+  route_sizes_.assign(model_.vehicles(), -1);
 }
 
 void RoutingSolution::InitializeRouteInfoIfNeeded(int vehicle) {
@@ -462,11 +482,13 @@ void RoutingSolution::InitializeRouteInfoIfNeeded(int vehicle) {
   int64_t curr = start;
 
   // Setup the start and inner nodes.
+  route_sizes_[vehicle] = -1;
   while (curr != end) {
     const int64_t next = assignment_->Value(model_.NextVar(curr));
 
     nexts_[curr] = next;
     prevs_[curr] = prev;
+    ++route_sizes_[vehicle];
 
     prev = curr;
     curr = next;
@@ -493,11 +515,9 @@ int64_t RoutingSolution::GetInitializedPrevNodeIndex(int64_t node_index) const {
   return prevs_[node_index];
 }
 
-bool RoutingSolution::IsSingleCustomerRoute(int vehicle) const {
-  const int64_t start = model_.Start(vehicle);
-  DCHECK(BelongsToInitializedRoute(start));
-
-  return nexts_[nexts_[start]] == model_.End(vehicle);
+int RoutingSolution::GetRouteSize(int vehicle) const {
+  DCHECK(BelongsToInitializedRoute(model_.Start(vehicle)));
+  return route_sizes_[vehicle];
 }
 
 bool RoutingSolution::CanBeRemoved(int64_t node_index) const {
@@ -514,11 +534,57 @@ void RoutingSolution::RemoveNode(int64_t node_index) {
   const int64_t next = nexts_[node_index];
   const int64_t prev = prevs_[node_index];
 
+  const int vehicle = assignment_->Value(model_.VehicleVar(node_index));
+  --route_sizes_[vehicle];
+  DCHECK_GE(route_sizes_[vehicle], 0);
+
   nexts_[prev] = next;
   prevs_[next] = prev;
 
   nexts_[node_index] = node_index;
   prevs_[node_index] = node_index;
+}
+
+void RoutingSolution::RemovePerformedPickupDeliverySibling(int64_t customer) {
+  DCHECK(!model_.IsStart(customer));
+  DCHECK(!model_.IsEnd(customer));
+  if (const std::optional<int64_t> sibling_node =
+          model_.GetFirstMatchingPickupDeliverySibling(
+              customer, [this](int64_t node) { return CanBeRemoved(node); });
+      sibling_node.has_value()) {
+    const int sibling_vehicle =
+        assignment_->Value(model_.VehicleVar(sibling_node.value()));
+    DCHECK_NE(sibling_vehicle, -1);
+
+    InitializeRouteInfoIfNeeded(sibling_vehicle);
+    RemoveNode(sibling_node.value());
+  }
+}
+
+int64_t RoutingSolution::GetRandomAdjacentVisit(
+    int64_t visit, std::mt19937& rnd,
+    std::bernoulli_distribution& boolean_dist) const {
+  DCHECK(BelongsToInitializedRoute(visit));
+  DCHECK(!model_.IsStart(visit));
+  DCHECK(!model_.IsEnd(visit));
+  // The visit is performed.
+  DCHECK(CanBeRemoved(visit));
+
+  const int vehicle = assignment_->Value(model_.VehicleVar(visit));
+  if (GetRouteSize(vehicle) <= 1) {
+    return -1;
+  }
+
+  const bool move_forward = boolean_dist(rnd);
+  int64_t next_node = move_forward ? GetNextNodeIndex(visit)
+                                   : GetInitializedPrevNodeIndex(visit);
+  if (model_.IsStart(next_node) || model_.IsEnd(next_node)) {
+    next_node = move_forward ? GetInitializedPrevNodeIndex(visit)
+                             : GetNextNodeIndex(visit);
+  }
+  DCHECK(!model_.IsStart(next_node));
+  DCHECK(!model_.IsEnd(next_node));
+  return next_node;
 }
 
 CompositeRuinProcedure::CompositionStrategy::CompositionStrategy(
@@ -597,13 +663,10 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
   removed_routes_.SparseClearAll();
 
   if (num_routes_ > 0 && HasPerformedNodes(model_, *assignment)) {
-    int64_t seed_node;
-    int seed_route = -1;
-    do {
-      seed_node = customer_dist_(rnd_);
-      seed_route = assignment->Value(model_.VehicleVar(seed_node));
-    } while (model_.IsStart(seed_node) || seed_route == -1);
-    DCHECK(!model_.IsEnd(seed_node));
+    const int64_t seed_node =
+        PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
+    const int seed_route = assignment->Value(model_.VehicleVar(seed_node));
+    DCHECK_GE(seed_route, 0);
 
     removed_routes_.Set(seed_route);
 
@@ -662,14 +725,8 @@ std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
 
   routing_solution_.Reset(assignment);
 
-  int64_t seed_node;
-  do {
-    seed_node = customer_dist_(rnd_);
-  } while (model_.IsStart(seed_node) ||
-           assignment->Value(model_.VehicleVar(seed_node)) == -1);
-  DCHECK(!model_.IsEnd(seed_node));
-
-  int64_t curr_node = seed_node;
+  int64_t curr_node =
+      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
 
   int walk_length = walk_length_;
 
@@ -677,7 +734,7 @@ std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
     // Remove the active siblings node of curr before selecting next, so that
     // we do not accidentally end up with next being one of these sibling
     // nodes.
-    RemovePickupDeliverySiblings(assignment, curr_node);
+    routing_solution_.RemovePerformedPickupDeliverySibling(curr_node);
 
     const int64_t next_node = GetNextNodeToRemove(assignment, curr_node);
 
@@ -696,46 +753,17 @@ std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
       [this](int64_t node) { return routing_solution_.GetNextNodeIndex(node); };
 }
 
-void RandomWalkRemovalRuinProcedure::RemovePickupDeliverySiblings(
-    const Assignment* assignment, int node) {
-  if (const std::optional<int64_t> sibling_node =
-          model_.GetFirstMatchingPickupDeliverySibling(
-              node,
-              [&routing_solution = routing_solution_](int64_t node) {
-                return routing_solution.CanBeRemoved(node);
-              });
-      sibling_node.has_value()) {
-    const int sibling_vehicle =
-        assignment->Value(model_.VehicleVar(sibling_node.value()));
-    DCHECK_NE(sibling_vehicle, -1);
-
-    routing_solution_.InitializeRouteInfoIfNeeded(sibling_vehicle);
-    routing_solution_.RemoveNode(sibling_node.value());
-  }
-}
-
 int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
     const Assignment* assignment, int node) {
   const int curr_vehicle = assignment->Value(model_.VehicleVar(node));
   routing_solution_.InitializeRouteInfoIfNeeded(curr_vehicle);
 
-  if (!routing_solution_.IsSingleCustomerRoute(curr_vehicle) &&
-      boolean_dist_(rnd_)) {
-    const bool move_forward = boolean_dist_(rnd_);
-    int64_t next_node =
-        move_forward ? routing_solution_.GetNextNodeIndex(node)
-                     : routing_solution_.GetInitializedPrevNodeIndex(node);
-    if (model_.IsStart(next_node) || model_.IsEnd(next_node)) {
-      // The Next or Prev of the node is a vehicle start/end, so we go in the
-      // opposite direction from before (and since the route isn't a
-      // single-customer route we shouldn't have a start/end again).
-      next_node = move_forward
-                      ? routing_solution_.GetInitializedPrevNodeIndex(node)
-                      : routing_solution_.GetNextNodeIndex(node);
+  if (boolean_dist_(rnd_)) {
+    const int64_t next_node =
+        routing_solution_.GetRandomAdjacentVisit(node, rnd_, boolean_dist_);
+    if (next_node != -1) {
+      return next_node;
     }
-    DCHECK(!model_.IsStart(next_node));
-    DCHECK(!model_.IsEnd(next_node));
-    return next_node;
   }
 
   // Pick the next node by jumping to a neighboring (non empty) route,

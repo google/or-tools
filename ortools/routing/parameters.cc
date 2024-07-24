@@ -56,9 +56,14 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   IteratedLocalSearchParameters ils;
   ils.set_perturbation_strategy(PerturbationStrategy::RUIN_AND_RECREATE);
   RuinRecreateParameters* rr = ils.mutable_ruin_recreate_parameters();
-  rr->add_ruin_strategies()
-      ->mutable_spatially_close_routes()
-      ->set_num_ruined_routes(2);
+  // NOTE: As of 07/2024, we no longer add any default ruin strategies to the
+  // default RuinRecreateParameters, because since ruin_strategies is a repeated
+  // field, it will only be appended to when merging with a proto containing
+  // this field.
+  // A ruin strategy can be added as follows.
+  // rr->add_ruin_strategies()
+  //     ->mutable_spatially_close_routes()
+  //     ->set_num_ruined_routes(2);
   rr->set_ruin_composition_strategy(RuinCompositionStrategy::UNSET);
   rr->set_recreate_strategy(FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
   rr->set_route_selection_neighbors_ratio(1.0);
@@ -315,12 +320,17 @@ void FindErrorsInIteratedLocalSearchParameters(
     }
 
     if (const double ratio = rr.route_selection_neighbors_ratio();
-        std::isnan(ratio) || ratio < 0 || ratio > 1) {
+        std::isnan(ratio) || ratio <= 0 || ratio > 1) {
       errors.emplace_back(
           StrCat("Invalid "
                  "iterated_local_search_parameters.ruin_recreate_parameters."
                  "route_selection_neighbors_ratio: ",
                  ratio));
+    }
+    if (rr.route_selection_min_neighbors() == 0) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_min_neighbors must be positive"));
     }
     if (rr.route_selection_min_neighbors() >
         rr.route_selection_max_neighbors()) {

@@ -86,7 +86,7 @@ void AddLinearConstraint(
 // lower_bound <= sum variable * coeff <= upper_bound.
 void AddLinearConstraint(
     CpModelProto* cp_model, int64_t lower_bound, int64_t upper_bound,
-    const std::vector<std::pair<int, double>>& variable_coeffs) {
+    absl::Span<const std::pair<int, double>> variable_coeffs) {
   AddLinearConstraint(cp_model, lower_bound, upper_bound, variable_coeffs, {});
 }
 
@@ -613,7 +613,7 @@ std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
 void AddGeneralizedPickupDeliveryConstraints(
     const RoutingModel& model, const ArcVarMap& arc_vars,
     absl::Span<const absl::flat_hash_map<int, int>> vehicle_performs_node,
-    const std::vector<int>& is_unperformed, CpModelProto* cp_model) {
+    absl::Span<const int> is_unperformed, CpModelProto* cp_model) {
   if (model.GetPickupAndDeliveryPairs().empty()) return;
   const std::vector<int> ranks =
       CreateGeneralizedRanks(model, arc_vars, is_unperformed, cp_model);

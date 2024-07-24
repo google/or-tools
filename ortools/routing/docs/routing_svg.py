@@ -571,7 +571,9 @@ class SVG:
             'xmlns="http://www.w3.org/2000/svg" version="1.1"\n'
             'width="{width}" height="{height}" '
             'viewBox="-{margin} -{margin} {width} {height}">'.format(
-                width=size[0] + 2 * margin, height=size[1] + 2 * margin, margin=margin
+                width=size[0] + 2 * margin,
+                height=size[1] + 2 * margin,
+                margin=margin,
             )
         )
 
@@ -586,7 +588,8 @@ class SVG:
         for color in colors:
             print(
                 r'  <marker id="arrow_{colorname}" viewBox="0 0 16 16" '
-                'refX="8" refY="8" markerUnits="strokeWidth" markerWidth="5" markerHeight="5" '
+                'refX="8" refY="8" markerUnits="strokeWidth" markerWidth="5"'
+                ' markerHeight="5" '
                 'orient="auto">'.format(colorname=color[0])
             )
             print(
@@ -658,7 +661,11 @@ class SVG:
         ).format(sz=size, fg=fg_color, bg=bg_color)
         print(
             r'<text x="{x}" y="{y}" dy="{dy}" {style}>{txt}</text>'.format(
-                x=position[0], y=position[1], dy=size / 3, style=text_style, txt=text
+                x=position[0],
+                y=position[1],
+                dy=size / 3,
+                style=text_style,
+                txt=text,
             )
         )
 
@@ -991,7 +998,10 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     parser.add_argument("-tsp", "--tsp", action="store_true", help="use 1 vehicle")
     parser.add_argument("-vrp", "--vrp", action="store_true", help="use 4 vehicle")
     parser.add_argument(
-        "-gs", "--global-span", action="store_true", help="use global span constraints"
+        "-gs",
+        "--global-span",
+        action="store_true",
+        help="use global span constraints",
     )
     parser.add_argument(
         "-c", "--capacity", action="store_true", help="use capacity constraints"
@@ -1006,10 +1016,16 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         help="allow drop nodes (disjuntion constraints)",
     )
     parser.add_argument(
-        "-tw", "--time-windows", action="store_true", help="use time-window constraints"
+        "-tw",
+        "--time-windows",
+        action="store_true",
+        help="use time-window constraints",
     )
     parser.add_argument(
-        "-se", "--starts-ends", action="store_true", help="use multiple starts & ends"
+        "-se",
+        "--starts-ends",
+        action="store_true",
+        help="use multiple starts & ends",
     )
     parser.add_argument(
         "-pd",
@@ -1018,10 +1034,16 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         help="use pickup & delivery constraints",
     )
     parser.add_argument(
-        "-fifo", "--fifo", action="store_true", help="use pickup & delivery FIFO Policy"
+        "-fifo",
+        "--fifo",
+        action="store_true",
+        help="use pickup & delivery FIFO Policy",
     )
     parser.add_argument(
-        "-lifo", "--lifo", action="store_true", help="use pickup & delivery LIFO Policy"
+        "-lifo",
+        "--lifo",
+        action="store_true",
+        help="use pickup & delivery LIFO Policy",
     )
     parser.add_argument("-s", "--solution", action="store_true", help="print solution")
     args = vars(parser.parse_args())
