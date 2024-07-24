@@ -139,6 +139,22 @@ MPSolutionResponse InvalidParametersResponse(SolverLogger& logger,
   return response;
 }
 
+MPSolutionResponse TimeLimitResponse(SolverLogger& logger) {
+  SOLVER_LOG(&logger, "Time limit reached in sat_solve_proto.\n");
+
+  // This is needed for our benchmark scripts.
+  if (logger.LoggingIsEnabled()) {
+    sat::CpSolverResponse cp_response;
+    cp_response.set_status(sat::CpSolverStatus::UNKNOWN);
+    SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
+  }
+
+  MPSolutionResponse response;
+  response.set_status(MPSolverResponseStatus::MPSOLVER_NOT_SOLVED);
+  response.set_status_str("Time limit reached in sat_solve_proto.");
+  return response;
+}
+
 }  // namespace
 
 MPSolutionResponse SatSolveProto(
@@ -200,6 +216,8 @@ MPSolutionResponse SatSolveProto(
   if (request->has_solver_time_limit_seconds()) {
     params.set_max_time_in_seconds(request->solver_time_limit_seconds());
   }
+
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromParameters(params);
 
   // Model validation and delta handling.
   MPSolutionResponse response;
@@ -287,6 +305,9 @@ MPSolutionResponse SatSolveProto(
     }
   }
 
+  if (time_limit->LimitReached()) {
+    return TimeLimitResponse(logger);
+  }
   // We need to do that before the automatic detection of integers.
   RemoveNearZeroTerms(params, mp_model.get(), &logger);
 
@@ -368,6 +389,12 @@ MPSolutionResponse SatSolveProto(
   const int old_num_constraints = mp_model->constraint().size();
   const bool is_maximize = mp_model->maximize();
   mp_model.reset();
+
+  params.set_max_time_in_seconds(time_limit->GetTimeLeft());
+  if (time_limit->GetDeterministicTimeLeft() !=
+      std::numeric_limits<double>::infinity()) {
+    params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
+  }
 
   // Configure model.
   sat::Model sat_model;
