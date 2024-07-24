@@ -228,8 +228,8 @@ bool ClauseManager::AddClause(absl::Span<const Literal> literals, Trail* trail,
   return AttachAndPropagate(clause, trail);
 }
 
-SatClause* ClauseManager::AddRemovableClause(
-    const std::vector<Literal>& literals, Trail* trail, int lbd) {
+SatClause* ClauseManager::AddRemovableClause(absl::Span<const Literal> literals,
+                                             Trail* trail, int lbd) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
   if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);

@@ -816,11 +816,13 @@ bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
         if (!Push(best_task_before, blocking_task)) return false;
       }
 
-      // Update best_task_before (it should likely be the blocking task).
+      // Update best_task_before.
+      //
+      // Note that we want the blocking task here as it is the only one
+      // guaranteed to be before all the task we push below. If we are not in a
+      // propagation loop, it should also be the best.
       const IntegerValue end_min = helper_->EndMin(blocking_task);
-      if (end_min > best_task_before.time) {
-        best_task_before = {blocking_task, end_min};
-      }
+      best_task_before = {blocking_task, end_min};
     }
 
     // Lets propagate all task after best_task_before.
@@ -847,9 +849,6 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
     ++stats_.num_conflicts;
     return false;
   }
-
-  to_propagate_.clear();
-  processed_.assign(helper_->NumTasks(), false);
 
   // TODO(user): cache this more.
   // We will "consume" tasks from here across PropagateSubwindow() calls.
@@ -908,6 +907,95 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
   return true;
 }
 
+// task_set_ contains all the tasks that must be executed before t. They
+// are in "detectable precedence" because their start_max is smaller than
+// the end-min of t like so:
+//          [(the task t)
+//                     (a task in task_set_)]
+// From there, we deduce that the start-min of t is greater or equal to
+// the end-min of the critical tasks.
+//
+// Note that this works as well when IsPresent(t) is false.
+bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
+                                            int t) {
+  const int critical_index = task_set_.GetCriticalIndex();
+  const absl::Span<const TaskSet::Entry> sorted_tasks = task_set_.SortedTasks();
+  helper_->ClearReason();
+
+  // We need:
+  // - StartMax(ct) < EndMin(t) for the detectable precedence.
+  // - StartMin(ct) >= window_start for the value of task_set_end_min.
+  const IntegerValue end_min_if_present =
+      helper_->ShiftedStartMin(t) + helper_->SizeMin(t);
+  const IntegerValue window_start = sorted_tasks[critical_index].start_min;
+  IntegerValue min_slack = kMaxIntegerValue;
+  bool all_already_before = true;
+  IntegerValue energy_of_task_before = 0;
+  for (int i = critical_index; i < sorted_tasks.size(); ++i) {
+    const int ct = sorted_tasks[i].task;
+    DCHECK_NE(ct, t);
+    helper_->AddPresenceReason(ct);
+
+    // Heuristic, if some tasks are known to be after the first one,
+    // we just add the min-size as a reason.
+    if (i > critical_index && helper_->GetCurrentMinDistanceBetweenTasks(
+                                  sorted_tasks[critical_index].task, ct,
+                                  /*add_reason_if_after=*/true) >= 0) {
+      helper_->AddSizeMinReason(ct);
+    } else {
+      helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min, window_start);
+    }
+
+    // We only need the reason for being before if we don't already have
+    // a static precedence between the tasks.
+    const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(
+        ct, t, /*add_reason_if_after=*/true);
+    if (dist >= 0) {
+      energy_of_task_before += sorted_tasks[i].size_min;
+      min_slack = std::min(min_slack, dist);
+    } else {
+      all_already_before = false;
+      helper_->AddStartMaxReason(ct, end_min_if_present - 1);
+    }
+  }
+
+  // We only need the end-min of t if not all the task are already known
+  // to be before.
+  IntegerValue new_start_min = task_set_end_min;
+  if (all_already_before) {
+    // We can actually push further!
+    // And we don't need other reason except the precedences.
+    new_start_min += min_slack;
+  } else {
+    helper_->AddEndMinReason(t, end_min_if_present);
+  }
+
+  // In some situation, we can push the task further.
+  // TODO(user): We can also reduce the reason in this case.
+  if (min_slack != kMaxIntegerValue &&
+      window_start + energy_of_task_before + min_slack > new_start_min) {
+    new_start_min = window_start + energy_of_task_before + min_slack;
+  }
+
+  // Process detected precedence.
+  if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t)) {
+    for (int i = critical_index; i < sorted_tasks.size(); ++i) {
+      if (!helper_->PropagatePrecedence(sorted_tasks[i].task, t)) {
+        return false;
+      }
+    }
+  }
+
+  // This augment the start-min of t. Note that t is not in task set
+  // yet, so we will use this updated start if we ever add it there.
+  ++stats_.num_propagations;
+  if (!helper_->IncreaseStartMin(t, new_start_min)) {
+    return false;
+  }
+
+  return true;
+}
+
 bool DisjunctiveDetectablePrecedences::PropagateSubwindow(
     const IntegerValue min_start_min, const IntegerValue max_end_min) {
   DCHECK(!task_by_increasing_end_min_.empty());
@@ -933,6 +1021,10 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow(
   IncrementalSort(task_by_increasing_end_min_.begin(),
                   task_by_increasing_end_min_.end());
   DCHECK_EQ(max_end_min, task_by_increasing_end_min_.back().time);
+  absl::Span<const TaskTime> task_by_increasing_end_min =
+      absl::MakeSpan(task_by_increasing_end_min_);
+
+  // We will loop in an increasing way here and consume task from beginning.
 
   // Invariant: need_update is false implies that task_set_end_min is equal to
   // task_set_.ComputeEndMin().
@@ -940,183 +1032,99 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow(
   // TODO(user): Maybe it is just faster to merge ComputeEndMin() with
   // AddEntry().
   task_set_.Clear();
-  to_propagate_.clear();
   bool need_update = false;
   IntegerValue task_set_end_min = kMinIntegerValue;
+  for (; !task_by_increasing_end_min.empty();) {
+    // Consider all task with a start_max < current_end_min.
+    int blocking_task = -1;
+    IntegerValue blocking_start_max;
+    IntegerValue current_end_min = task_by_increasing_end_min.front().time;
+    for (; true; task_by_decreasing_start_max_.remove_suffix(1)) {
+      if (task_by_decreasing_start_max_.empty()) {
+        // Small optim: this allows to process all remaining task rather than
+        // looping around are retesting this for all remaining tasks.
+        current_end_min = kMaxIntegerValue;
+        break;
+      }
 
-  int blocking_task = -1;
-  for (const auto task_time : task_by_increasing_end_min_) {
-    // Note that we didn't put absent task in task_by_increasing_end_min_, but
-    // the absence might have been pushed while looping here. This is fine since
-    // any push we do on this task should handle this case correctly.
-    const int current_task = task_time.task_index;
-    const IntegerValue current_end_min = task_time.time;
-    if (helper_->IsAbsent(current_task)) continue;
-
-    for (; !task_by_decreasing_start_max_.empty();
-         task_by_decreasing_start_max_.remove_suffix(1)) {
       const auto [t, start_max] = task_by_decreasing_start_max_.back();
-      if (!helper_->IsPresent(t)) continue;
-      if (helper_->EndMin(t) <= min_start_min) continue;
       if (current_end_min <= start_max) break;
+      if (!helper_->IsPresent(t)) continue;
 
-      // If t has not been processed yet, it has a mandatory part, and rather
-      // than adding it right away to task_set, we will delay all propagation
-      // until current_task is equal to this "blocking task".
+      // If t has a mandatory part, and extend further than current_end_min
+      // then we can push it first. All tasks for which their push is delayed
+      // are necessarily after this "blocking task".
       //
       // This idea is introduced in "Linear-Time Filtering Algorithms for the
       // Disjunctive Constraints" Hamed Fahimi, Claude-Guy Quimper.
-      //
-      // Experiments seems to indicate that it is slighlty faster rather than
-      // having to ignore one of the task already inserted into task_set_ when
-      // we have tasks with mandatory parts. It also open-up more option for the
-      // data structure used in task_set_.
-      if (!processed_[t]) {
-        if (blocking_task != -1) {
-          // We have two blocking tasks, which means they are in conflict.
-          helper_->ClearReason();
-          helper_->AddPresenceReason(blocking_task);
-          helper_->AddPresenceReason(t);
-          helper_->AddReasonForBeingBefore(blocking_task, t);
-          helper_->AddReasonForBeingBefore(t, blocking_task);
-          return helper_->ReportConflict();
-        }
-        DCHECK_LT(start_max, helper_->ShiftedStartMin(t) + helper_->SizeMin(t))
-            << " task should have mandatory part: "
-            << helper_->TaskDebugString(t);
-        DCHECK(to_propagate_.empty());
+      const IntegerValue end_min = helper_->EndMin(t);
+      if (blocking_task == -1 && end_min >= current_end_min) {
+        DCHECK_LT(start_max, end_min) << " task should have mandatory part: "
+                                      << helper_->TaskDebugString(t);
         blocking_task = t;
-        to_propagate_.push_back(t);
+        blocking_start_max = start_max;
+        current_end_min = end_min;
+      } else if (blocking_task != -1 && blocking_start_max < end_min) {
+        // Conflict! the task is after the blocking_task but also before.
+        helper_->ClearReason();
+        helper_->AddPresenceReason(blocking_task);
+        helper_->AddPresenceReason(t);
+        helper_->AddReasonForBeingBefore(blocking_task, t);
+        helper_->AddReasonForBeingBefore(t, blocking_task);
+        return helper_->ReportConflict();
       } else {
         need_update = true;
         task_set_.AddShiftedStartMinEntry(*helper_, t);
       }
     }
 
-    // If we have a blocking task, we delay the propagation until current_task
-    // is the blocking task.
-    if (blocking_task != current_task) {
-      to_propagate_.push_back(current_task);
-      if (blocking_task != -1) continue;
-    }
-    for (const int t : to_propagate_) {
-      DCHECK(!processed_[t]);
-      processed_[t] = true;
+    // If we have a blocking task. We need to propagate it first.
+    if (blocking_task != -1) {
+      DCHECK(!helper_->IsAbsent(blocking_task));
       if (need_update) {
         need_update = false;
         task_set_end_min = task_set_.ComputeEndMin();
       }
 
-      // task_set_ contains all the tasks that must be executed before t. They
-      // are in "detectable precedence" because their start_max is smaller than
-      // the end-min of t like so:
-      //          [(the task t)
-      //                     (a task in task_set_)]
-      // From there, we deduce that the start-min of t is greater or equal to
-      // the end-min of the critical tasks.
-      //
-      // Note that this works as well when IsPresent(t) is false.
-      if (task_set_end_min > helper_->StartMin(t)) {
-        // Corner case if a previous push from to_propagate_ caused a subsequent
-        // task to be absent.
-        if (helper_->IsAbsent(t)) continue;
-
-        const int critical_index = task_set_.GetCriticalIndex();
-        const absl::Span<const TaskSet::Entry> sorted_tasks =
-            task_set_.SortedTasks();
-        helper_->ClearReason();
-
-        // We need:
-        // - StartMax(ct) < EndMin(t) for the detectable precedence.
-        // - StartMin(ct) >= window_start for the value of task_set_end_min.
-        const IntegerValue end_min_if_present =
-            helper_->ShiftedStartMin(t) + helper_->SizeMin(t);
-        const IntegerValue window_start =
-            sorted_tasks[critical_index].start_min;
-        IntegerValue min_slack = kMaxIntegerValue;
-        bool all_already_before = true;
-        IntegerValue energy_of_task_before = 0;
-        for (int i = critical_index; i < sorted_tasks.size(); ++i) {
-          const int ct = sorted_tasks[i].task;
-          DCHECK_NE(ct, t);
-          helper_->AddPresenceReason(ct);
-
-          // Heuristic, if some tasks are known to be after the first one,
-          // we just add the min-size as a reason.
-          if (i > critical_index && helper_->GetCurrentMinDistanceBetweenTasks(
-                                        sorted_tasks[critical_index].task, ct,
-                                        /*add_reason_if_after=*/true) >= 0) {
-            helper_->AddSizeMinReason(ct);
-          } else {
-            helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min,
-                                          window_start);
-          }
-
-          // We only need the reason for being before if we don't already have
-          // a static precedence between the tasks.
-          const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(
-              ct, t, /*add_reason_if_after=*/true);
-          if (dist >= 0) {
-            energy_of_task_before += sorted_tasks[i].size_min;
-            min_slack = std::min(min_slack, dist);
-          } else {
-            all_already_before = false;
-            helper_->AddStartMaxReason(ct, end_min_if_present - 1);
-          }
-        }
-
-        // We only need the end-min of t if not all the task are already known
-        // to be before.
-        IntegerValue new_start_min = task_set_end_min;
-        if (all_already_before) {
-          // We can actually push further!
-          // And we don't need other reason except the precedences.
-          new_start_min += min_slack;
-        } else {
-          helper_->AddEndMinReason(t, end_min_if_present);
-        }
-
-        // In some situation, we can push the task further.
-        // TODO(user): We can also reduce the reason in this case.
-        if (min_slack != kMaxIntegerValue &&
-            window_start + energy_of_task_before + min_slack > new_start_min) {
-          new_start_min = window_start + energy_of_task_before + min_slack;
-        }
-
-        // Process detected precedence.
-        if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t)) {
-          for (int i = critical_index; i < sorted_tasks.size(); ++i) {
-            if (!helper_->PropagatePrecedence(sorted_tasks[i].task, t)) {
-              return false;
-            }
-          }
-        }
-
-        // This augment the start-min of t. Note that t is not in task set
-        // yet, so we will use this updated start if we ever add it there.
-        ++stats_.num_propagations;
-        if (!helper_->IncreaseStartMin(t, new_start_min)) {
-          return false;
-        }
-
-        // This propagators assumes that every push is reflected for its
-        // correctness.
-        if (helper_->InPropagationLoop()) return true;
+      if (task_set_end_min > helper_->StartMin(blocking_task)) {
+        if (!Push(task_set_end_min, blocking_task)) return false;
       }
 
-      if (t == blocking_task) {
-        // Insert the blocking_task. Note that because we just pushed it,
-        // it will be last in task_set_ and also the only reason used to push
-        // any of the subsequent tasks. In particular, the reason will be valid
-        // even though task_set might contains tasks with a start_max greater or
-        // equal to the end_min of the task we push.
-        need_update = true;
-        blocking_task = -1;
-        task_set_.AddShiftedStartMinEntry(*helper_, t);
+      // This propagators assumes that every push is reflected for its
+      // correctness.
+      if (helper_->InPropagationLoop()) return true;
+
+      // Insert the blocking_task. Note that because we just pushed it,
+      // it will be last in task_set_ and also the only reason used to push
+      // any of the subsequent tasks below. In particular, the reason will be
+      // valid even though task_set might contains tasks with a start_max
+      // greater or equal to the end_min of the task we push.
+      need_update = true;
+      task_set_.AddShiftedStartMinEntry(*helper_, blocking_task);
+    }
+
+    // Lets propagate all task with end_min <= current_end_min that are also
+    // after all the task in task_set_.
+    for (; !task_by_increasing_end_min.empty();
+         task_by_increasing_end_min.remove_prefix(1)) {
+      const auto [t, end_min] = task_by_increasing_end_min.front();
+      if (end_min > current_end_min) break;
+      if (t == blocking_task) continue;  // Already done.
+
+      if (need_update) {
+        need_update = false;
+        task_set_end_min = task_set_.ComputeEndMin();
+      }
+
+      // Lets propagate current_task.
+      if (task_set_end_min > helper_->StartMin(t)) {
+        // Corner case if a previous push caused a subsequent task to be absent.
+        if (helper_->IsAbsent(t)) continue;
+        if (!Push(task_set_end_min, t)) return false;
       }
     }
-    to_propagate_.clear();
   }
+
   return true;
 }
 

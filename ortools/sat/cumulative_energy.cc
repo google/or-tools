@@ -23,6 +23,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
@@ -238,7 +239,7 @@ bool CumulativeEnergyConstraint::Propagate() {
 
 CumulativeIsAfterSubsetConstraint::CumulativeIsAfterSubsetConstraint(
     IntegerVariable var, AffineExpression capacity,
-    const std::vector<int>& subtasks, const std::vector<IntegerValue>& offsets,
+    const std::vector<int>& subtasks, absl::Span<const IntegerValue> offsets,
     SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands,
     Model* model)
     : var_to_push_(var),

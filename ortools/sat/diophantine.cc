@@ -42,7 +42,7 @@ int64_t Gcd(const absl::Span<const int64_t> coeffs) {
 
 }  // namespace
 
-void ReduceModuloBasis(const std::vector<std::vector<absl::int128>>& basis,
+void ReduceModuloBasis(absl::Span<const std::vector<absl::int128>> basis,
                        const int elements_to_consider,
                        std::vector<absl::int128>& v) {
   DCHECK(!basis.empty());
