@@ -54,7 +54,7 @@ def jobshop_with_maintenance() -> None:
     horizon = sum(task[1] for job in jobs_data for task in job)
 
     # Named tuple to store information about created variables.
-    task_type = collections.namedtuple("Task", "start end interval")
+    task_type = collections.namedtuple("task_type", "start end interval")
     # Named tuple to manipulate solution information.
     assigned_task_type = collections.namedtuple(
         "assigned_task_type", "start job index duration"
@@ -69,7 +69,7 @@ def jobshop_with_maintenance() -> None:
             task_id, task = entry
             machine = task[0]
             duration = task[1]
-            suffix = "_%i_%i" % (job_id, task_id)
+            suffix = f"_{job_id}_{task_id}"
             start_var = model.new_int_var(0, horizon, "start" + suffix)
             end_var = model.new_int_var(0, horizon, "end" + suffix)
             interval_var = model.new_interval_var(

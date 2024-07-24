@@ -19,8 +19,10 @@ be as close to the average as possible.
 Furthermore, if one color is an a group, at least k items with this color must
 be in that group.
 """
-from typing import Sequence
+from typing import Dict, Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 
@@ -88,18 +90,15 @@ def main(argv: Sequence[str]) -> None:
     num_items_per_group = num_items // num_groups
 
     # Collect all items in a given color.
-    items_per_color = {}
-    for c in all_colors:
-        items_per_color[c] = []
+    items_per_color: Dict[int, list[int]] = {}
+    for color in all_colors:
+        items_per_color[color] = []
         for i in all_items:
-            if colors[i] == c:
-                items_per_color[c].append(i)
+            if colors[i] == color:
+                items_per_color[color].append(i)
 
-    print(
-        "Model has %i items, %i groups, and %i colors"
-        % (num_items, num_groups, num_colors)
-    )
-    print("  average sum per group = %i" % average_sum_per_group)
+    print(f"Model has {num_items} items, {num_groups} groups, and {num_colors} colors")
+    print(f"  average sum per group = {average_sum_per_group}")
 
     # Model.
 

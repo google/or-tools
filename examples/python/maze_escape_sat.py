@@ -20,7 +20,7 @@ visit all boxes in order, and walk on each block in a 4x4x4 map exactly once.
 Admissible moves are one step in one of the 6 directions:
   x+, x-, y+, y-, z+(up), z-(down)
 """
-from typing import Sequence
+from typing import Sequence, Tuple
 
 from absl import app
 from absl import flags
@@ -91,7 +91,7 @@ def escape_the_maze(params, output_proto) -> None:
 
     # Circuit constraint: visit all blocks exactly once, and maintains the rank
     # of each block.
-    arcs = []
+    arcs: list[Tuple[int, int, cp_model.LiteralT]] = []
     for x in range(size):
         for y in range(size):
             for z in range(size):

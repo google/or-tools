@@ -44,7 +44,7 @@ _PARAMS = flags.DEFINE_string(
 )
 
 
-def build_data() -> tuple[pd.DataFrame, pd.Series, pd.Series]:
+def build_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Build the data frame."""
     tests_str = """
   Name Operator    TestTime    AveragePower
@@ -76,7 +76,7 @@ def build_data() -> tuple[pd.DataFrame, pd.Series, pd.Series]:
 
 
 def solve(
-    tests_data: pd.DataFrame, operator_data: pd.Series, supplies_data: pd.Series
+    tests_data: pd.DataFrame, operator_data: pd.DataFrame, supplies_data: pd.DataFrame
 ) -> None:
     """Solve the scheduling of tests problem."""
 
@@ -153,6 +153,7 @@ def solve(
 
 
 def main(argv: Sequence[str]) -> None:
+    """Builds the data and solve the scheduling problem."""
     if len(argv) > 1:
         raise app.UsageError("Too many command-line arguments.")
 
