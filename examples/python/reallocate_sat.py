@@ -19,7 +19,6 @@ from ortools.sat.python import cp_model
 
 
 def main():
-
     # Data
     data_0 = [
         [107, 107, 107, 0, 0],  # pr1
@@ -35,7 +34,7 @@ def main():
         [298836792, 0, 0, 0],
         [3713428, 4118530, 4107277, 3072018],
         [6477273, 7183884, 5358471, 0],
-        [1485371, 1647412, 1642911, 1228807]
+        [1485371, 1647412, 1642911, 1228807],
     ]
 
     data_2 = [
@@ -45,7 +44,7 @@ def main():
         [2988367, 0, 0, 0],
         [37134, 41185, 41072, 30720],
         [64772, 71838, 53584, 0],
-        [14853, 16474, 16429, 12288]
+        [14853, 16474, 16429, 12288],
     ]
 
     pr = data_0
@@ -59,7 +58,7 @@ def main():
     model = cp_model.CpModel()
 
     # Variables
-    delta = model.NewIntVar(0, total, 'delta')
+    delta = model.NewIntVar(0, total, "delta")
 
     contributions_per_years = collections.defaultdict(list)
     contributions_per_prs = collections.defaultdict(list)
@@ -68,14 +67,12 @@ def main():
     for p, inner_l in enumerate(pr):
         for y, item in enumerate(inner_l):
             if item != 0:
-                contrib = model.NewIntVar(0, total, 'r%d c%d' % (p, y))
+                contrib = model.NewIntVar(0, total, "r%d c%d" % (p, y))
                 contributions_per_years[y].append(contrib)
                 contributions_per_prs[p].append(contrib)
                 all_contribs[p, y] = contrib
 
-    year_var = [
-        model.NewIntVar(0, total, 'y[%i]' % i) for i in range(num_years)
-    ]
+    year_var = [model.NewIntVar(0, total, "y[%i]" % i) for i in range(num_years)]
 
     # Constraints
 
@@ -103,34 +100,34 @@ def main():
 
     # Output solution.
     if status == cp_model.OPTIMAL:
-        print('Data')
-        print('  - total = ', total)
-        print('  - year_average = ', avg)
-        print('  - number of projects = ', num_pr)
-        print('  - number of years = ', num_years)
+        print("Data")
+        print("  - total = ", total)
+        print("  - year_average = ", avg)
+        print("  - number of projects = ", num_pr)
+        print("  - number of years = ", num_years)
 
-        print('  - input production')
+        print("  - input production")
         for p in range(num_pr):
             for y in range(num_years):
                 if pr[p][y] == 0:
-                    print('        ', end='')
+                    print("        ", end="")
                 else:
-                    print('%10i' % pr[p][y], end='')
+                    print("%10i" % pr[p][y], end="")
             print()
 
-        print('Solution')
+        print("Solution")
         for p in range(num_pr):
             for y in range(num_years):
                 if pr[p][y] == 0:
-                    print('        ', end='')
+                    print("        ", end="")
                 else:
-                    print('%10i' % solver.Value(all_contribs[p, y]), end='')
+                    print("%10i" % solver.Value(all_contribs[p, y]), end="")
             print()
 
         for y in range(num_years):
-            print('%10i' % solver.Value(year_var[y]), end='')
+            print("%10i" % solver.Value(year_var[y]), end="")
         print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

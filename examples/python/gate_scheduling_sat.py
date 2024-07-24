@@ -67,34 +67,34 @@ def main(_) -> None:
 
     for i in all_jobs:
         # Create main interval.
-        start = model.new_int_var(0, horizon, "start_%i" % i)
+        start = model.new_int_var(0, horizon, f"start_{i}")
         duration = jobs[i][0]
-        end = model.new_int_var(0, horizon, "end_%i" % i)
-        interval = model.new_interval_var(start, duration, end, "interval_%i" % i)
+        end = model.new_int_var(0, horizon, f"end_{i}")
+        interval = model.new_interval_var(start, duration, end, f"interval_{i}")
         starts.append(start)
         intervals.append(interval)
         ends.append(end)
         demands.append(jobs[i][1])
 
         # Create an optional copy of interval to be executed on machine 0.
-        performed_on_m0 = model.new_bool_var("perform_%i_on_m0" % i)
+        performed_on_m0 = model.new_bool_var(f"perform_{i}_on_m0")
         performed.append(performed_on_m0)
-        start0 = model.new_int_var(0, horizon, "start_%i_on_m0" % i)
-        end0 = model.new_int_var(0, horizon, "end_%i_on_m0" % i)
+        start0 = model.new_int_var(0, horizon, f"start_{i}_on_m0")
+        end0 = model.new_int_var(0, horizon, f"end_{i}_on_m0")
         interval0 = model.new_optional_interval_var(
-            start0, duration, end0, performed_on_m0, "interval_%i_on_m0" % i
+            start0, duration, end0, performed_on_m0, f"interval_{i}_on_m0"
         )
         intervals0.append(interval0)
 
         # Create an optional copy of interval to be executed on machine 1.
-        start1 = model.new_int_var(0, horizon, "start_%i_on_m1" % i)
-        end1 = model.new_int_var(0, horizon, "end_%i_on_m1" % i)
+        start1 = model.new_int_var(0, horizon, f"start_{i}_on_m1")
+        end1 = model.new_int_var(0, horizon, f"end_{i}_on_m1")
         interval1 = model.new_optional_interval_var(
             start1,
             duration,
             end1,
             ~performed_on_m0,
-            "interval_%i_on_m1" % i,
+            f"interval_{i}_on_m1",
         )
         intervals1.append(interval1)
 
@@ -124,18 +124,24 @@ def main(_) -> None:
     # Output solution.
     if visualization.RunFromIPython():
         output = visualization.SvgWrapper(solver.objective_value, max_width, 40.0)
-        output.AddTitle("Makespan = %i" % solver.objective_value)
+        output.AddTitle(f"Makespan = {solver.objective_value}")
         color_manager = visualization.ColorManager()
         color_manager.SeedRandomColor(0)
 
         for i in all_jobs:
             performed_machine = 1 - solver.value(performed[i])
-            start = solver.value(starts[i])
+            start_of_task = solver.value(starts[i])
             d_x = jobs[i][0]
             d_y = jobs[i][1]
             s_y = performed_machine * (max_width - d_y)
             output.AddRectangle(
-                start, s_y, d_x, d_y, color_manager.RandomColor(), "black", "j%i" % i
+                start_of_task,
+                s_y,
+                d_x,
+                d_y,
+                color_manager.RandomColor(),
+                "black",
+                f"j{i}",
             )
 
         output.AddXScale()
@@ -143,17 +149,17 @@ def main(_) -> None:
         output.Display()
     else:
         print("Solution")
-        print("  - makespan = %i" % solver.objective_value)
+        print(f"  - makespan = {solver.objective_value}")
         for i in all_jobs:
             performed_machine = 1 - solver.value(performed[i])
-            start = solver.value(starts[i])
+            start_of_task = solver.value(starts[i])
             print(
-                "  - Job %i starts at %i on machine %i" % (i, start, performed_machine)
+                f"  - Job {i} starts at {start_of_task} on machine {performed_machine}"
             )
         print("Statistics")
-        print("  - conflicts : %i" % solver.num_conflicts)
-        print("  - branches  : %i" % solver.num_branches)
-        print("  - wall time : %f s" % solver.wall_time)
+        print(f"  - conflicts : {solver.num_conflicts}")
+        print(f"  - branches  : {solver.num_branches}")
+        print(f"  - wall time : {solver.wall_time} s")
 
 
 if __name__ == "__main__":

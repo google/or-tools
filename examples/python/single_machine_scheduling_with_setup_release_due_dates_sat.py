@@ -503,7 +503,7 @@ def single_machine_scheduling():
     if parameters:
         text_format.Parse(parameters, solver.parameters)
     solution_printer = SolutionPrinter()
-    solver.best_bound_callback = lambda a : print(f"New objective lower bound: {a}")
+    solver.best_bound_callback = lambda a: print(f"New objective lower bound: {a}")
     solver.solve(model, solution_printer)
     for job_id in all_jobs:
         print(

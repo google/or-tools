@@ -90,7 +90,7 @@ def flexible_jobshop() -> None:
     intervals_per_resources = collections.defaultdict(list)
     starts = {}  # indexed by (job_id, task_id).
     presences = {}  # indexed by (job_id, task_id, alt_id).
-    job_ends = []
+    job_ends: list[cp_model.IntVar] = []
 
     # Scan the jobs and create the relevant variables and intervals.
     for job_id in all_jobs:
@@ -161,7 +161,8 @@ def flexible_jobshop() -> None:
                 intervals_per_resources[task[0][1]].append(interval)
                 presences[(job_id, task_id, 0)] = model.new_constant(1)
 
-        job_ends.append(previous_end)
+        if previous_end is not None:
+            job_ends.append(previous_end)
 
     # Create machines constraints.
     for machine_id in all_machines:
@@ -181,28 +182,27 @@ def flexible_jobshop() -> None:
 
     # Print final solution.
     for job_id in all_jobs:
-        print("Job %i:" % job_id)
+        print(f"Job {job_id}")
         for task_id in range(len(jobs[job_id])):
             start_value = solver.value(starts[(job_id, task_id)])
-            machine = -1
-            duration = -1
-            selected = -1
+            machine: int = -1
+            task_duration: int = -1
+            selected: int = -1
             for alt_id in range(len(jobs[job_id][task_id])):
-                if solver.value(presences[(job_id, task_id, alt_id)]):
-                    duration = jobs[job_id][task_id][alt_id][0]
+                if solver.boolean_value(presences[(job_id, task_id, alt_id)]):
+                    task_duration = jobs[job_id][task_id][alt_id][0]
                     machine = jobs[job_id][task_id][alt_id][1]
                     selected = alt_id
             print(
-                "  task_%i_%i starts at %i (alt %i, machine %i, duration %i)"
-                % (job_id, task_id, start_value, selected, machine, duration)
+                f"  task_{job_id}_{task_id} starts at {start_value} (alt {selected}, machine {machine}, duration {task_duration})"
             )
 
-    print("solve status: %s" % solver.status_name(status))
-    print("Optimal objective value: %i" % solver.objective_value)
+    print(f"solve status: {solver.status_name(status)}")
+    print(f"Optimal objective value: {solver.objective_value}")
     print("Statistics")
-    print("  - conflicts : %i" % solver.num_conflicts)
-    print("  - branches  : %i" % solver.num_branches)
-    print("  - wall time : %f s" % solver.wall_time)
+    print(f"  - conflicts : {solver.num_conflicts}")
+    print(f"  - branches  : {solver.num_branches}")
+    print(f"  - wall time : {solver.wall_time} s")
 
 
 flexible_jobshop()
