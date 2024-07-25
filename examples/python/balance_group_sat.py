@@ -40,10 +40,10 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__item_in_group = item_in_group
 
     def on_solution_callback(self):
-        print("Solution %i" % self.__solution_count)
+        print(f"Solution {self.__solution_count}")
         self.__solution_count += 1
 
-        print("  objective value = %i" % self.objective_value)
+        print(f"  objective value = {self.objective_value}")
         groups = {}
         sums = {}
         for g in self.__all_groups:
@@ -56,11 +56,11 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 
         for g in self.__all_groups:
             group = groups[g]
-            print("group %i: sum = %0.2f [" % (g, sums[g]), end="")
+            print(f"group {g}: sum = {sums[g]:0.2f} [", end="")
             for item in group:
                 value = self.__values[item]
                 color = self.__colors[item]
-                print(" (%i, %i, %i)" % (item, value, color), end="")
+                print(f" ({item}, {value}, {color})", end="")
             print("]")
 
 
@@ -97,7 +97,9 @@ def main(argv: Sequence[str]) -> None:
             if colors[i] == color:
                 items_per_color[color].append(i)
 
-    print(f"Model has {num_items} items, {num_groups} groups, and {num_colors} colors")
+    print(
+        f"Model has {num_items} items, {num_groups} groups, and" f" {num_colors} colors"
+    )
     print(f"  average sum per group = {average_sum_per_group}")
 
     # Model.
@@ -107,7 +109,7 @@ def main(argv: Sequence[str]) -> None:
     item_in_group = {}
     for i in all_items:
         for g in all_groups:
-            item_in_group[(i, g)] = model.new_bool_var("item %d in group %d" % (i, g))
+            item_in_group[(i, g)] = model.new_bool_var(f"item {i} in group {g}")
 
     # Each group must have the same size.
     for g in all_groups:
@@ -135,9 +137,7 @@ def main(argv: Sequence[str]) -> None:
     color_in_group = {}
     for g in all_groups:
         for c in all_colors:
-            color_in_group[(c, g)] = model.new_bool_var(
-                "color %d is in group %d" % (c, g)
-            )
+            color_in_group[(c, g)] = model.new_bool_var(f"color {c} is in group {g}")
 
     # Item is in a group implies its color is in that group.
     for i in all_items:
@@ -174,11 +174,8 @@ def main(argv: Sequence[str]) -> None:
     status = solver.solve(model, solution_printer)
 
     if status == cp_model.OPTIMAL:
-        print("Optimal epsilon: %i" % solver.objective_value)
-        print("Statistics")
-        print("  - conflicts : %i" % solver.num_conflicts)
-        print("  - branches  : %i" % solver.num_branches)
-        print("  - wall time : %f s" % solver.wall_time)
+        print(f"Optimal epsilon: {solver.objective_value}")
+        print(solver.response_stats())
     else:
         print("No solution found")
 

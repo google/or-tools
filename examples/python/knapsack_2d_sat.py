@@ -164,7 +164,7 @@ def solve_with_duplicate_items(
     status = solver.solve(model)
 
     # Report solution.
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
             {
@@ -266,7 +266,7 @@ def solve_with_duplicate_optional_items(
     status = solver.solve(model)
 
     # Report solution.
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
             {
@@ -387,7 +387,7 @@ def solve_with_rotations(data: pd.Series, max_height: int, max_width: int):
     status = solver.solve(model)
 
     # Report solution.
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
             {

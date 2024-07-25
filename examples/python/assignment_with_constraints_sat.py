@@ -42,24 +42,24 @@ def solve_assignment():
         [0, 1, 0, 1],  # Workers 1, 3
         [0, 1, 1, 0],  # Workers 1, 2
         [1, 1, 0, 0],  # Workers 0, 1
-        [1, 0, 1, 0],
-    ]  # Workers 0, 2
+        [1, 0, 1, 0],  # Workers 0, 2
+    ]
 
     group2 = [
         [0, 0, 1, 1],  # Workers 6, 7
         [0, 1, 0, 1],  # Workers 5, 7
         [0, 1, 1, 0],  # Workers 5, 6
         [1, 1, 0, 0],  # Workers 4, 5
-        [1, 0, 0, 1],
-    ]  # Workers 4, 7
+        [1, 0, 0, 1],  # Workers 4, 7
+    ]
 
     group3 = [
         [0, 0, 1, 1],  # Workers 10, 11
         [0, 1, 0, 1],  # Workers 9, 11
         [0, 1, 1, 0],  # Workers 9, 10
         [1, 0, 1, 0],  # Workers 8, 10
-        [1, 0, 0, 1],
-    ]  # Workers 8, 11
+        [1, 0, 0, 1],  # Workers 8, 11
+    ]
 
     sizes = [10, 7, 3, 12, 15, 4, 11, 5]
     total_size_max = 15
@@ -73,10 +73,9 @@ def solve_assignment():
     model = cp_model.CpModel()
     # Variables
     selected = [
-        [model.new_bool_var("x[%i,%i]" % (i, j)) for j in all_tasks]
-        for i in all_workers
+        [model.new_bool_var(f"x[{i},{j}]") for j in all_tasks] for i in all_workers
     ]
-    works = [model.new_bool_var("works[%i]" % i) for i in all_workers]
+    works = [model.new_bool_var(f"works[{i}]") for i in all_workers]
 
     # Constraints
 
@@ -107,21 +106,16 @@ def solve_assignment():
     status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
-        print("Total cost = %i" % solver.objective_value)
+        print(f"Total cost = {solver.objective_value}")
         print()
         for i in all_workers:
             for j in all_tasks:
                 if solver.boolean_value(selected[i][j]):
-                    print(
-                        "Worker ", i, " assigned to task ", j, "  Cost = ", cost[i][j]
-                    )
+                    print(f"Worker {i} assigned to task {j} with Cost = {cost[i][j]}")
 
         print()
 
-    print("Statistics")
-    print("  - conflicts : %i" % solver.num_conflicts)
-    print("  - branches  : %i" % solver.num_branches)
-    print("  - wall time : %f s" % solver.wall_time)
+    print(solver.response_stats())
 
 
 def main(argv: Sequence[str]) -> None:

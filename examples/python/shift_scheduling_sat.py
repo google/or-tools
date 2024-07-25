@@ -110,7 +110,7 @@ def add_soft_sequence_constraint(
         for length in range(hard_min, soft_min):
             for start in range(len(works) - length + 1):
                 span = negated_bounded_span(works, start, length)
-                name = ": under_span(start=%i, length=%i)" % (start, length)
+                name = f": under_span(start={start}, length={length})"
                 lit = model.new_bool_var(prefix + name)
                 span.append(lit)
                 model.add_bool_or(span)
@@ -124,7 +124,7 @@ def add_soft_sequence_constraint(
         for length in range(soft_max + 1, hard_max + 1):
             for start in range(len(works) - length + 1):
                 span = negated_bounded_span(works, start, length)
-                name = ": over_span(start=%i, length=%i)" % (start, length)
+                name = f": over_span(start={start}, length={length})"
                 lit = model.new_bool_var(prefix + name)
                 span.append(lit)
                 model.add_bool_or(span)
@@ -299,7 +299,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
     for e in range(num_employees):
         for s in range(num_shifts):
             for d in range(num_days):
-                work[e, s, d] = model.new_bool_var("work%i_%i_%i" % (e, s, d))
+                work[e, s, d] = model.new_bool_var(f"work{e}_{s}_{d}")
 
     # Linear terms of the objective in a minimization context.
     obj_int_vars: list[cp_model.IntVar] = []
@@ -335,7 +335,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
                 soft_max,
                 hard_max,
                 max_cost,
-                "shift_constraint(employee %i, shift %i)" % (e, shift),
+                f"shift_constraint(employee {e}, shift {shift})",
             )
             obj_bool_vars.extend(variables)
             obj_bool_coeffs.extend(coeffs)
@@ -355,8 +355,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
                     soft_max,
                     hard_max,
                     max_cost,
-                    "weekly_sum_constraint(employee %i, shift %i, week %i)"
-                    % (e, shift, w),
+                    f"weekly_sum_constraint(employee {e}, shift {shift}, week {w})",
                 )
                 obj_int_vars.extend(variables)
                 obj_int_coeffs.extend(coeffs)
@@ -373,7 +372,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
                     model.add_bool_or(transition)
                 else:
                     trans_var = model.new_bool_var(
-                        "transition (employee=%i, day=%i)" % (e, d)
+                        f"transition (employee={e}, day={d})"
                     )
                     transition.append(trans_var)
                     model.add_bool_or(transition)
@@ -391,7 +390,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
                 model.add(worked == sum(works))
                 over_penalty = excess_cover_penalties[s - 1]
                 if over_penalty > 0:
-                    name = "excess_demand(shift=%i, week=%i, day=%i)" % (s, w, d)
+                    name = f"excess_demand(shift={s}, week={w}, day={d})"
                     excess = model.new_int_var(0, num_employees - min_demand, name)
                     model.add(excess == worked - min_demand)
                     obj_int_vars.append(excess)
@@ -404,7 +403,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
     )
 
     if output_proto:
-        print("Writing proto to %s" % output_proto)
+        print(f"Writing proto to {output_proto}")
         with open(output_proto, "w") as text_file:
             text_file.write(str(model))
 
@@ -428,7 +427,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
                 for s in range(num_shifts):
                     if solver.boolean_value(work[e, s, d]):
                         schedule += shifts[s] + " "
-            print("worker %i: %s" % (e, schedule))
+            print(f"worker {e}: {schedule}")
         print()
         print("Penalties:")
         for i, var in enumerate(obj_bool_vars):
@@ -442,16 +441,12 @@ def solve_shift_scheduling(params: str, output_proto: str):
         for i, var in enumerate(obj_int_vars):
             if solver.value(var) > 0:
                 print(
-                    "  %s violated by %i, linear penalty=%i"
-                    % (var.name, solver.value(var), obj_int_coeffs[i])
+                    f"  {var.name} violated by {solver.value(var)}, linear"
+                    f" penalty={obj_int_coeffs[i]}"
                 )
 
     print()
-    print("Statistics")
-    print("  - status          : %s" % solver.status_name(status))
-    print("  - conflicts       : %i" % solver.num_conflicts)
-    print("  - branches        : %i" % solver.num_branches)
-    print("  - wall time       : %f s" % solver.wall_time)
+    print(solver.response_stats())
 
 
 def main(_):

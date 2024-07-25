@@ -25,7 +25,6 @@ from google.protobuf import text_format
 from ortools.linear_solver.python import model_builder as mb
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
 
 _OUTPUT_PROTO = flags.DEFINE_string(
     "output_proto", "", "Output file to write the cp_model proto to."
@@ -225,7 +224,6 @@ def create_state_graph(items, max_capacity):
                 new_state = current_state + size * (card + 1)
                 if new_state > max_capacity:
                     break
-                new_state_index = -1
                 if new_state in state_to_index:
                     new_state_index = state_to_index[new_state]
                 else:

@@ -28,26 +28,26 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def __init__(self, queens: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__queens = queens
-        self.__solution_count = 0
-        self.__start_time = time.time()
+        self._queens = queens
+        self._solution_count = 0
+        self._start_time = time.time()
 
     @property
     def solution_count(self) -> int:
-        return self.__solution_count
+        return self._solution_count
 
     def on_solution_callback(self) -> None:
         current_time = time.time()
         print(
-            "Solution %i, time = %f s"
-            % (self.__solution_count, current_time - self.__start_time)
+            f"Solution{self._solution_count}, time ="
+            f" {current_time - self._start_time} s"
         )
-        self.__solution_count += 1
+        self._solution_count += 1
 
-        all_queens = range(len(self.__queens))
+        all_queens = range(len(self._queens))
         for i in all_queens:
             for j in all_queens:
-                if self.value(self.__queens[j]) == i:
+                if self.value(self._queens[j]) == i:
                     # There is a queen in column j, row i.
                     print("Q", end=" ")
                 else:

@@ -40,17 +40,16 @@ _PREPROCESS = flags.DEFINE_bool(
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__solution_count = 0
 
-    def on_solution_callback(self):
-        """Called after each new solution found."""
+    def on_solution_callback(self) -> None:
+        """Called at each new solution."""
         print(
-            "Solution %i, time = %f s, objective = %i"
-            % (self.__solution_count, self.wall_time, self.objective_value)
+            f"Solution {self.__solution_count}, time = {self.wall_time} s,"
+            f" objective = {self.objective_value}"
         )
-        self.__solution_count += 1
 
 
 def single_machine_scheduling():
@@ -393,9 +392,7 @@ def single_machine_scheduling():
             if min_incoming_setup == 0:
                 continue
 
-            print(
-                "job %i has a min incoming setup of %i" % (job_id, min_incoming_setup)
-            )
+            print(f"job {job_id} has a min incoming setup of {min_incoming_setup}")
             # We can transfer some setup times to the duration of the job.
             job_durations[job_id] += min_incoming_setup
             # Decrease corresponding incoming setup times.
@@ -414,7 +411,7 @@ def single_machine_scheduling():
     horizon = sum(job_durations) + sum(
         max(setup_times[i][j] for i in range(num_jobs + 1)) for j in range(num_jobs)
     )
-    print("Greedy horizon =", horizon)
+    print(f"Greedy horizon = {horizon}")
 
     # ----------------------------------------------------------------------------
     # Global storage of variables.
@@ -429,10 +426,10 @@ def single_machine_scheduling():
         release_date = release_dates[job_id]
         due_date = due_dates[job_id] if due_dates[job_id] != -1 else horizon
         print(
-            "job %2i: start = %5i, duration = %4i, end = %6i"
-            % (job_id, release_date, duration, due_date)
+            f"job {job_id:2}: start = {release_date:5}, duration = {duration:4},"
+            f" end = {due_date:6}"
         )
-        name_suffix = "_%i" % job_id
+        name_suffix = f"_{job_id}"
         start = model.new_int_var(release_date, due_date, "s" + name_suffix)
         end = model.new_int_var(release_date, due_date, "e" + name_suffix)
         interval = model.new_interval_var(start, duration, end, "i" + name_suffix)
@@ -460,7 +457,7 @@ def single_machine_scheduling():
             if i == j:
                 continue
 
-            lit = model.new_bool_var("%i follows %i" % (j, i))
+            lit = model.new_bool_var(f"{j} follows {i}")
             arcs.append((i + 1, j + 1, lit))
 
             # We add the reified precedence to link the literal with the times of the
@@ -481,7 +478,7 @@ def single_machine_scheduling():
     # ----------------------------------------------------------------------------
     # Precedences.
     for before, after in precedences:
-        print("job %i is after job %i" % (after, before))
+        print(f"job {after} is after job {before}")
         model.add(ends[before] <= starts[after])
 
     # ----------------------------------------------------------------------------
@@ -493,7 +490,7 @@ def single_machine_scheduling():
     # ----------------------------------------------------------------------------
     # Write problem to file.
     if output_proto_file:
-        print("Writing proto to %s" % output_proto_file)
+        print(f"Writing proto to {output_proto_file}")
         with open(output_proto_file, "w") as text_file:
             text_file.write(str(model))
 
@@ -507,8 +504,8 @@ def single_machine_scheduling():
     solver.solve(model, solution_printer)
     for job_id in all_jobs:
         print(
-            "job %i starts at %i end ends at %i"
-            % (job_id, solver.value(starts[job_id]), solver.value(ends[job_id]))
+            f"job {job_id} starts at {solver.value(starts[job_id])} end ends at"
+            f" {solver.value(ends[job_id])}"
         )
 
 

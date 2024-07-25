@@ -89,24 +89,24 @@ def chemical_balance():
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
     status = solver.solve(model)
-    print(f"Status = {solver.status_name(status)}")
-    # The objective value of the solution.
-    print(f"Optimal objective value = {solver.objective_value / 10000.0}")
+    if status == cp_model.OPTIMAL:
+        # The objective value of the solution.
+        print(f"Optimal objective value = {solver.objective_value / 10000.0}")
 
-    for s in all_sets:
-        print(
-            f"  {chemical_set[s][0]} = {solver.value(set_vars[s]) / 1000.0}",
-            end=" ",
-        )
-        print()
-    for p in all_products:
-        name = max_quantities[p][0]
-        max_quantity = max_quantities[p][1]
-        quantity = sum(
-            solver.value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
-            for s in all_sets
-        )
-        print(f"{name}: {quantity} out of {max_quantity}")
+        for s in all_sets:
+            print(
+                f"  {chemical_set[s][0]} = {solver.value(set_vars[s]) / 1000.0}",
+                end=" ",
+            )
+            print()
+        for p in all_products:
+            name = max_quantities[p][0]
+            max_quantity = max_quantities[p][1]
+            quantity = sum(
+                solver.value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
+                for s in all_sets
+            )
+            print(f"{name}: {quantity:.3f} out of {max_quantity}")
 
 
 def main(argv: Sequence[str]) -> None:
