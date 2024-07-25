@@ -73,11 +73,11 @@ def jobshop_ft06_distance() -> None:
     all_tasks = {}
     for i in all_jobs:
         for j in all_machines:
-            start_var = model.new_int_var(0, horizon, "start_%i_%i" % (i, j))
+            start_var = model.new_int_var(0, horizon, f"start_{i}_{j}")
             duration = durations[i][j]
-            end_var = model.new_int_var(0, horizon, "end_%i_%i" % (i, j))
+            end_var = model.new_int_var(0, horizon, f"end_{i}_{j}")
             interval_var = model.new_interval_var(
-                start_var, duration, end_var, "interval_%i_%i" % (i, j)
+                start_var, duration, end_var, f"interval_{i}_{j}"
             )
             all_tasks[(i, j)] = task_type(
                 start=start_var, end=end_var, interval=interval_var
@@ -101,16 +101,16 @@ def jobshop_ft06_distance() -> None:
         arcs = []
         for j1 in range(len(job_intervals)):
             # Initial arc from the dummy node (0) to a task.
-            start_lit = model.new_bool_var("%i is first job" % j1)
+            start_lit = model.new_bool_var(f"{j1} is first job")
             arcs.append((0, j1 + 1, start_lit))
             # Final arc from an arc to the dummy node.
-            arcs.append((j1 + 1, 0, model.new_bool_var("%i is last job" % j1)))
+            arcs.append((j1 + 1, 0, model.new_bool_var(f"{j1} is last job")))
 
             for j2 in range(len(job_intervals)):
                 if j1 == j2:
                     continue
 
-                lit = model.new_bool_var("%i follows %i" % (j2, j1))
+                lit = model.new_bool_var(f"{j2} follows {j1}")
                 arcs.append((j1 + 1, j2 + 1, lit))
 
                 # We add the reified precedence to link the literal with the
@@ -140,7 +140,8 @@ def jobshop_ft06_distance() -> None:
 
     # Output solution.
     if status == cp_model.OPTIMAL:
-        print("Optimal makespan: %i" % solver.objective_value)
+        print(f"Optimal makespan: {solver.objective_value}")
+    print(solver.response_stats())
 
 
 jobshop_ft06_distance()

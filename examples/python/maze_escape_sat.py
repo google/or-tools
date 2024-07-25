@@ -20,10 +20,11 @@ visit all boxes in order, and walk on each block in a 4x4x4 map exactly once.
 Admissible moves are one step in one of the 6 directions:
   x+, x-, y+, y-, z+(up), z-(down)
 """
-from typing import Sequence, Tuple
+from typing import Dict, Sequence, Tuple
 
 from absl import app
 from absl import flags
+
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
@@ -31,12 +32,24 @@ _OUTPUT_PROTO = flags.DEFINE_string(
     "output_proto", "", "Output file to write the cp_model proto to."
 )
 _PARAMS = flags.DEFINE_string(
-    "params", "num_search_workers:8,log_search_progress:true", "Sat solver parameters."
+    "params",
+    "num_search_workers:8,log_search_progress:true",
+    "Sat solver parameters.",
 )
 
 
 def add_neighbor(
-    size, x, y, z, dx, dy, dz, model, index_map, position_to_rank, arcs
+    size: int,
+    x: int,
+    y: int,
+    z: int,
+    dx: int,
+    dy: int,
+    dz: int,
+    model: cp_model.CpModel,
+    index_map: Dict[Tuple[int, int, int], int],
+    position_to_rank: Dict[Tuple[int, int, int], cp_model.IntVar],
+    arcs: list[Tuple[int, int, cp_model.LiteralT]],
 ) -> None:
     """Checks if the neighbor is valid, and adds it to the model."""
     if (
@@ -57,7 +70,7 @@ def add_neighbor(
     arcs.append((before_index, after_index, move_literal))
 
 
-def escape_the_maze(params, output_proto) -> None:
+def escape_the_maze(params: str, output_proto: str) -> None:
     """Escapes the maze."""
     size = 4
     boxes = [(0, 1, 0), (2, 0, 1), (1, 3, 1), (3, 1, 3)]
@@ -145,8 +158,8 @@ def escape_the_maze(params, output_proto) -> None:
                     elif position == end:
                         msg += " [end]"
                     else:
-                        for b in range(len(boxes)):
-                            if position == boxes[b]:
+                        for b, box in enumerate(boxes):
+                            if position == box:
                                 msg += f" [boxes {b}]"
                     path[rank] = msg
         print(path)

@@ -76,7 +76,9 @@ def build_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
 
 def solve(
-    tests_data: pd.DataFrame, operator_data: pd.DataFrame, supplies_data: pd.DataFrame
+    tests_data: pd.DataFrame,
+    operator_data: pd.DataFrame,
+    supplies_data: pd.DataFrame,
 ) -> None:
     """Solve the scheduling of tests problem."""
 

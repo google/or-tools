@@ -154,12 +154,10 @@ def main(_) -> None:
             performed_machine = 1 - solver.value(performed[i])
             start_of_task = solver.value(starts[i])
             print(
-                f"  - Job {i} starts at {start_of_task} on machine {performed_machine}"
+                f"  - Job {i} starts at {start_of_task} on machine"
+                f" {performed_machine}"
             )
-        print("Statistics")
-        print(f"  - conflicts : {solver.num_conflicts}")
-        print(f"  - branches  : {solver.num_branches}")
-        print(f"  - wall time : {solver.wall_time} s")
+        print(solver.response_stats())
 
 
 if __name__ == "__main__":

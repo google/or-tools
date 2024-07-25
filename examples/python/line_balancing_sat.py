@@ -29,7 +29,7 @@ and solves the corresponding problem.
 
 import collections
 import re
-from typing import Sequence
+from typing import Dict, Sequence
 
 from absl import app
 from absl import flags
@@ -48,7 +48,7 @@ _MODEL = flags.DEFINE_string(
 
 
 class SectionInfo:
-    """Store model information for each section of the input file."""
+    """Store problem information for each section of the input file."""
 
     def __init__(self):
         self.value = None
@@ -66,44 +66,43 @@ class SectionInfo:
             return "SectionInfo()"
 
 
-def read_model(filename):
-    """Reads a .alb file and returns the model."""
+def read_problem(filename: str) -> Dict[str, SectionInfo]:
+    """Reads a .alb file and returns the problem."""
 
     current_info = SectionInfo()
 
-    model = {}
+    problem: Dict[str, SectionInfo] = {}
     with open(filename, "r") as input_file:
-        print(f"Reading model from '{filename}'")
-        section_name = ""
+        print(f"Reading problem from '{filename}'")
 
         for line in input_file:
             stripped_line = line.strip()
             if not stripped_line:
                 continue
 
-            match_section_def = re.match(r"<([\w\s]+)>", stripped_line)
+            match_section_def = re.fullmatch(r"<([\w\s]+)>", stripped_line)
             if match_section_def:
                 section_name = match_section_def.group(1)
                 if section_name == "end":
                     continue
 
                 current_info = SectionInfo()
-                model[section_name] = current_info
+                problem[section_name] = current_info
                 continue
 
-            match_single_number = re.match(r"^([0-9]+)$", stripped_line)
+            match_single_number = re.fullmatch(r"^([0-9]+)$", stripped_line)
             if match_single_number:
                 current_info.value = int(match_single_number.group(1))
                 continue
 
-            match_key_value = re.match(r"^([0-9]+)\s+([0-9]+)$", stripped_line)
+            match_key_value = re.fullmatch(r"^([0-9]+)\s+([0-9]+)$", stripped_line)
             if match_key_value:
                 key = int(match_key_value.group(1))
                 value = int(match_key_value.group(2))
                 current_info.index_map[key] = value
                 continue
 
-            match_pair = re.match(r"^([0-9]+),([0-9]+)$", stripped_line)
+            match_pair = re.fullmatch(r"^([0-9]+),([0-9]+)$", stripped_line)
             if match_pair:
                 left = int(match_pair.group(1))
                 right = int(match_pair.group(2))
@@ -112,24 +111,26 @@ def read_model(filename):
 
             print(f"Unrecognized line '{stripped_line}'")
 
-    return model
+    return problem
 
 
-def print_stats(model) -> None:
-    print("Model Statistics")
-    for key, value in model.items():
+def print_stats(problem: Dict[str, SectionInfo]) -> None:
+    print("Problem Statistics")
+    for key, value in problem.items():
         print(f"  - {key}: {value}")
 
 
-def solve_model_greedily(model):
+def solve_problem_greedily(problem: Dict[str, SectionInfo]) -> Dict[int, int]:
     """Compute a greedy solution."""
     print("Solving using a Greedy heuristics")
 
-    num_tasks = model["number of tasks"].value
+    num_tasks = problem["number of tasks"].value
+    if num_tasks is None:
+        return {}
     all_tasks = range(1, num_tasks + 1)  # Tasks are 1 based in the data.
-    precedences = model["precedence relations"].set_of_pairs
-    durations = model["task times"].index_map
-    cycle_time = model["cycle time"].value
+    precedences = problem["precedence relations"].set_of_pairs
+    durations = problem["task times"].index_map
+    cycle_time = problem["cycle time"].value
 
     weights = collections.defaultdict(int)
     successors = collections.defaultdict(list)
@@ -142,7 +143,7 @@ def solve_model_greedily(model):
         if after in candidates:
             candidates.remove(after)
 
-    assignment = {}
+    assignment: Dict[int, int] = {}
     current_pod = 0
     residual_capacity = cycle_time
 
@@ -183,16 +184,20 @@ def solve_model_greedily(model):
     return assignment
 
 
-def solve_boolean_model(model, hint) -> None:
-    """solve the given model."""
+def solve_problem_with_boolean_model(
+    problem: Dict[str, SectionInfo], hint: Dict[int, int]
+) -> None:
+    """solve the given problem."""
 
     print("Solving using the Boolean model")
-    # Model data
-    num_tasks = model["number of tasks"].value
-    all_tasks = range(1, num_tasks + 1)  # Tasks are 1 based in the model.
-    durations = model["task times"].index_map
-    precedences = model["precedence relations"].set_of_pairs
-    cycle_time = model["cycle time"].value
+    # problem data
+    num_tasks = problem["number of tasks"].value
+    if num_tasks is None:
+        return
+    all_tasks = range(1, num_tasks + 1)  # Tasks are 1 based in the problem.
+    durations = problem["task times"].index_map
+    precedences = problem["precedence relations"].set_of_pairs
+    cycle_time = problem["cycle time"].value
 
     num_pods = max(p for _, p in hint.items()) + 1 if hint else num_tasks - 1
     all_pods = range(num_pods)
@@ -272,16 +277,20 @@ def solve_boolean_model(model, hint) -> None:
     solver.solve(model)
 
 
-def solve_scheduling_model(model, hint):
-    """solve the given model using a cumutive model."""
+def solve_problem_with_scheduling_model(
+    problem: Dict[str, SectionInfo], hint: Dict[int, int]
+) -> None:
+    """solve the given problem using a cumulative model."""
 
     print("Solving using the scheduling model")
-    # Model data
-    num_tasks = model["number of tasks"].value
+    # Problem data
+    num_tasks = problem["number of tasks"].value
+    if num_tasks is None:
+        return
     all_tasks = range(1, num_tasks + 1)  # Tasks are 1 based in the data.
-    durations = model["task times"].index_map
-    precedences = model["precedence relations"].set_of_pairs
-    cycle_time = model["cycle time"].value
+    durations = problem["task times"].index_map
+    precedences = problem["precedence relations"].set_of_pairs
+    cycle_time = problem["cycle time"].value
 
     num_pods = max(p for _, p in hint.items()) + 1 if hint else num_tasks
 
@@ -339,14 +348,14 @@ def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
         raise app.UsageError("Too many command-line arguments.")
 
-    model = read_model(_INPUT.value)
-    print_stats(model)
-    greedy_solution = solve_model_greedily(model)
+    problem = read_problem(_INPUT.value)
+    print_stats(problem)
+    greedy_solution = solve_problem_greedily(problem)
 
     if _MODEL.value == "boolean":
-        solve_boolean_model(model, greedy_solution)
+        solve_problem_with_boolean_model(problem, greedy_solution)
     elif _MODEL.value == "scheduling":
-        solve_scheduling_model(model, greedy_solution)
+        solve_problem_with_scheduling_model(problem, greedy_solution)
 
 
 if __name__ == "__main__":

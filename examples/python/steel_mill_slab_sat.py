@@ -39,13 +39,10 @@ _PARAMS = flags.DEFINE_string(
 )
 
 
-def build_problem(problem_id):
+def build_problem(
+    problem_id: int,
+) -> tuple[int, list[int], int, list[tuple[int, int]]]:
     """Build problem data."""
-    capacities = None
-    num_colors = None
-    num_slabs = None
-    orders = None
-
     if problem_id == 0:
         capacities = [
             # fmt:off
@@ -100,15 +97,22 @@ def build_problem(problem_id):
             # fmt:on
         ]
 
-    elif problem_id == 3:
+    else:  # problem_id == 3, default problem.
         capacities = [0, 17, 44]
         num_colors = 8
         num_slabs = 10
         orders = [  # (size, color)
-            # fmt:off
-        (4, 1), (22, 2), (9, 3), (5, 4), (8, 5), (3, 6), (3, 4), (4, 7),
-        (7, 4), (7, 8), (3, 6),
-            # fmt:on
+            (4, 1),
+            (22, 2),
+            (9, 3),
+            (5, 4),
+            (8, 5),
+            (3, 6),
+            (3, 4),
+            (4, 7),
+            (7, 4),
+            (7, 8),
+            (3, 6),
         ]
 
     return (num_slabs, capacities, num_colors, orders)
@@ -117,7 +121,7 @@ def build_problem(problem_id):
 class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, orders, assign, load, loss):
+    def __init__(self, orders, assign, load, loss) -> None:
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__orders = orders
         self.__assign = assign
@@ -128,13 +132,13 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__all_slabs = range(len(assign[0]))
         self.__start_time = time.time()
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         """Called on each new solution."""
         current_time = time.time()
         objective = sum(self.value(l) for l in self.__loss)
         print(
-            "Solution %i, time = %f s, objective = %i"
-            % (self.__solution_count, current_time - self.__start_time, objective)
+            f"Solution {self.__solution_count}, time ="
+            f" {current_time - self.__start_time} s, objective = {objective}"
         )
         self.__solution_count += 1
         orders_in_slab = [
@@ -143,25 +147,20 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
         ]
         for s in self.__all_slabs:
             if orders_in_slab[s]:
-                line = "  - slab %i, load = %i, loss = %i, orders = [" % (
-                    s,
-                    self.value(self.__load[s]),
-                    self.value(self.__loss[s]),
+                line = (
+                    f"  - slab {s}, load = {self.value(self.__load[s])}, loss ="
+                    f" {self.value(self.__loss[s])}, orders = ["
                 )
                 for o in orders_in_slab[s]:
-                    line += "#%i(w%i, c%i) " % (
-                        o,
-                        self.__orders[o][0],
-                        self.__orders[o][1],
-                    )
+                    line += f"#{o}(w{self.__orders[o][0]}, c{self.__orders[o][1]})"
                 line += "]"
                 print(line)
 
 
-def steel_mill_slab(problem, break_symmetries) -> None:
+def steel_mill_slab(problem_id: int, break_symmetries: bool) -> None:
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
+    num_slabs, capacities, num_colors, orders = build_problem(problem_id)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
@@ -169,8 +168,8 @@ def steel_mill_slab(problem, break_symmetries) -> None:
     all_colors = range(num_colors)
     all_orders = range(len(orders))
     print(
-        "Solving steel mill with %i orders, %i slabs, and %i capacities"
-        % (num_orders, num_slabs, num_capacities - 1)
+        f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
+        f" {num_capacities - 1} capacities"
     )
 
     # Compute auxiliary data.
@@ -193,14 +192,12 @@ def steel_mill_slab(problem, break_symmetries) -> None:
     # Create the model and the decision variables.
     model = cp_model.CpModel()
     assign = [
-        [model.new_bool_var("assign_%i_to_slab_%i" % (o, s)) for s in all_slabs]
+        [model.new_bool_var(f"assign_{o}_to_slab_{s}") for s in all_slabs]
         for o in all_orders
     ]
-    loads = [
-        model.new_int_var(0, max_capacity, "load_of_slab_%i" % s) for s in all_slabs
-    ]
+    loads = [model.new_int_var(0, max_capacity, f"load_of_slab_{s}") for s in all_slabs]
     color_is_in_slab = [
-        [model.new_bool_var("color_%i_in_slab_%i" % (c + 1, s)) for c in all_colors]
+        [model.new_bool_var(f"color_{c + 1}_in_slab_{s}") for c in all_colors]
         for s in all_slabs
     ]
 
@@ -267,19 +264,19 @@ def steel_mill_slab(problem, break_symmetries) -> None:
     # Create position variables if there are symmetries to be broken.
     if break_symmetries and ordered_equivalent_orders:
         print(
-            "  - creating %i symmetry breaking constraints"
-            % len(ordered_equivalent_orders)
+            f"  - creating {len(ordered_equivalent_orders)} symmetry breaking"
+            " constraints"
         )
         positions = {}
         for p in ordered_equivalent_orders:
             if p[0] not in positions:
                 positions[p[0]] = model.new_int_var(
-                    0, num_slabs - 1, "position_of_slab_%i" % p[0]
+                    0, num_slabs - 1, f"position_of_slab_{p[0]}"
                 )
                 model.add_map_domain(positions[p[0]], assign[p[0]])
             if p[1] not in positions:
                 positions[p[1]] = model.new_int_var(
-                    0, num_slabs - 1, "position_of_slab_%i" % p[1]
+                    0, num_slabs - 1, f"position_of_slab_{p[1]}"
                 )
                 model.add_map_domain(positions[p[1]], assign[p[1]])
             # Finally add the symmetry breaking constraint.
@@ -287,7 +284,7 @@ def steel_mill_slab(problem, break_symmetries) -> None:
 
     # Objective.
     obj = model.new_int_var(0, num_slabs * max_loss, "obj")
-    losses = [model.new_int_var(0, max_loss, "loss_%i" % s) for s in all_slabs]
+    losses = [model.new_int_var(0, max_loss, f"loss_{s}") for s in all_slabs]
     for s in all_slabs:
         model.add_element(loads[s], loss_array, losses[s])
     model.add(obj == sum(losses))
@@ -303,14 +300,19 @@ def steel_mill_slab(problem, break_symmetries) -> None:
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         print(
-            "Loss = %i, time = %f s, %i conflicts"
-            % (solver.objective_value, solver.wall_time, solver.num_conflicts)
+            f"Loss = {solver.objective_value}, time = {solver.wall_time} s,"
+            f" {solver.num_conflicts} conflicts"
         )
     else:
         print("No solution")
 
 
-def collect_valid_slabs_dp(capacities, colors, widths, loss_array):
+def collect_valid_slabs_dp(
+    capacities: list[int],
+    colors: list[int],
+    widths: list[int],
+    loss_array: list[int],
+) -> list[list[int]]:
     """Collect valid columns (assign, loss) for one slab."""
     start_time = time.time()
 
@@ -339,8 +341,8 @@ def collect_valid_slabs_dp(capacities, colors, widths, loss_array):
         all_valid_assignments.extend(new_assignments)
 
     print(
-        "%i assignments created in %.2f s"
-        % (len(all_valid_assignments), time.time() - start_time)
+        f"{len(all_valid_assignments)} assignments created in"
+        f" {time.time() - start_time:2f} s"
     )
     tuples = []
     for assignment in all_valid_assignments:
@@ -354,10 +356,10 @@ def collect_valid_slabs_dp(capacities, colors, widths, loss_array):
     return tuples
 
 
-def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
+def steel_mill_slab_with_valid_slabs(problem_id: int, break_symmetries: bool) -> None:
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
+    (num_slabs, capacities, num_colors, orders) = build_problem(problem_id)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
@@ -365,8 +367,8 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
     all_colors = range(num_colors)
     all_orders = range(len(orders))
     print(
-        "Solving steel mill with %i orders, %i slabs, and %i capacities"
-        % (num_orders, num_slabs, num_capacities - 1)
+        f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
+        f" {num_capacities - 1} capacities"
     )
 
     # Compute auxiliary data.
@@ -383,11 +385,11 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
     # Create the model and the decision variables.
     model = cp_model.CpModel()
     assign = [
-        [model.new_bool_var("assign_%i_to_slab_%i" % (o, s)) for s in all_slabs]
+        [model.new_bool_var(r"assign_{o}_to_slab_{s}") for s in all_slabs]
         for o in all_orders
     ]
-    loads = [model.new_int_var(0, max_capacity, "load_%i" % s) for s in all_slabs]
-    losses = [model.new_int_var(0, max_loss, "loss_%i" % s) for s in all_slabs]
+    loads = [model.new_int_var(0, max_capacity, f"load_{s}") for s in all_slabs]
+    losses = [model.new_int_var(0, max_loss, f"loss_{s}") for s in all_slabs]
 
     unsorted_valid_slabs = collect_valid_slabs_dp(
         capacities, colors, widths, loss_array
@@ -449,19 +451,19 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
         # Create position variables if there are symmetries to be broken.
         if ordered_equivalent_orders:
             print(
-                "  - creating %i symmetry breaking constraints"
-                % len(ordered_equivalent_orders)
+                f"  - creating {len(ordered_equivalent_orders)} symmetry breaking"
+                " constraints"
             )
             positions = {}
             for p in ordered_equivalent_orders:
                 if p[0] not in positions:
                     positions[p[0]] = model.new_int_var(
-                        0, num_slabs - 1, "position_of_slab_%i" % p[0]
+                        0, num_slabs - 1, f"position_of_slab_{p[0]}"
                     )
                     model.add_map_domain(positions[p[0]], assign[p[0]])
                 if p[1] not in positions:
                     positions[p[1]] = model.new_int_var(
-                        0, num_slabs - 1, "position_of_slab_%i" % p[1]
+                        0, num_slabs - 1, f"position_of_slab_{p[1]}"
                     )
                     model.add_map_domain(positions[p[1]], assign[p[1]])
                     # Finally add the symmetry breaking constraint.
@@ -483,24 +485,24 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
     ### Output the solution.
     if status == cp_model.OPTIMAL:
         print(
-            "Loss = %i, time = %.2f s, %i conflicts"
-            % (solver.objective_value, solver.wall_time, solver.num_conflicts)
+            f"Loss = {solver.objective_value}, time = {solver.wall_time:2f} s,"
+            f" {solver.num_conflicts} conflicts"
         )
     else:
         print("No solution")
 
 
-def steel_mill_slab_with_column_generation(problem):
+def steel_mill_slab_with_column_generation(problem_id: int) -> None:
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, _, orders) = build_problem(problem)
+    (num_slabs, capacities, _, orders) = build_problem(problem_id)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
     all_orders = range(len(orders))
     print(
-        "Solving steel mill with %i orders, %i slabs, and %i capacities"
-        % (num_orders, num_slabs, num_capacities - 1)
+        f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
+        f" {num_capacities - 1} capacities"
     )
 
     # Compute auxiliary data.
@@ -524,7 +526,7 @@ def steel_mill_slab_with_column_generation(problem):
 
     # create model and decision variables.
     model = cp_model.CpModel()
-    selected = [model.new_bool_var("selected_%i" % i) for i in all_valid_slabs]
+    selected = [model.new_bool_var(f"selected_{i}") for i in all_valid_slabs]
 
     for order_id in all_orders:
         model.add(
@@ -552,8 +554,8 @@ def steel_mill_slab_with_column_generation(problem):
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         print(
-            "Loss = %i, time = %.2f s, %i conflicts"
-            % (solver.objective_value, solver.wall_time, solver.num_conflicts)
+            f"Loss = {solver.objective_value}, time = {solver.wall_time:2f} s,"
+            f" {solver.num_conflicts} conflicts"
         )
     else:
         print("No solution")

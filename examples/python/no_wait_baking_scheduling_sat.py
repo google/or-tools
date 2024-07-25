@@ -30,10 +30,9 @@ from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _PARAMS = flags.DEFINE_string(
-    "params", "num_search_workers:16, max_time_in_seconds:30", "Sat solver parameters."
-)
-_PROTO_FILE = flags.DEFINE_string(
-    "proto_file", "", "If not empty, output the proto to this file."
+    "params",
+    "num_search_workers:16, max_time_in_seconds:30",
+    "Sat solver parameters.",
 )
 
 # Recipes
@@ -81,7 +80,9 @@ class Recipe:
         self.name = name
         self.tasks = []
 
-    def add_task(self, resource_name, min_duration, max_duration):
+    def add_task(
+        self, resource_name: str, min_duration: int, max_duration: int
+    ) -> "Recipe":
         self.tasks.append(Task(resource_name, min_duration, max_duration))
         return self
 
@@ -102,7 +103,7 @@ class Resource:
         self.capacity = capacity
         self.skills = []
 
-    def add_skill(self, skill_name, efficiency):
+    def add_skill(self, skill_name: str, efficiency: float) -> "Resource":
         self.skills.append(Skill(skill_name, efficiency))
         return self
 
@@ -233,7 +234,6 @@ def solve_with_cp_sat(
                 skill_name = task.name
                 suffix = f"_{order.unique_id}_batch{batch}_{skill_name}"
 
-                start = None
                 if previous_end is None:
                     start = model.new_int_var(start_work, horizon, f"start{suffix}")
                     orders_sequence_of_events[order_id].append(
@@ -245,7 +245,6 @@ def solve_with_cp_sat(
                 size = model.new_int_var(
                     task.min_duration, task.max_duration, f"size{suffix}"
                 )
-                end = None
                 if task == recipe.tasks[-1]:
                     # The order must end after the due_date. Ideally, exactly at the
                     # due_date.
