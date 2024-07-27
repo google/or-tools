@@ -14,11 +14,19 @@
 using System;
 using Xunit;
 using Google.OrTools.LinearSolver;
+using Xunit.Abstractions;
 
 namespace Google.OrTools.Tests
 {
 public class LinearSolverTest
 {
+    private readonly ITestOutputHelper output;
+
+    public LinearSolverTest(ITestOutputHelper output)
+    {
+        this.output = output;
+    }
+
     [Fact]
     public void VarOperator()
     {
@@ -267,38 +275,38 @@ public class LinearSolverTest
 
     void SolveAndPrint(in Solver solver, in Variable[] variables, in Constraint[] constraints)
     {
-        Console.WriteLine($"Number of variables = {solver.NumVariables()}");
-        Console.WriteLine($"Number of constraints = {solver.NumConstraints()}");
+        output.WriteLine($"Number of variables = {solver.NumVariables()}");
+        output.WriteLine($"Number of constraints = {solver.NumConstraints()}");
 
         Solver.ResultStatus resultStatus = solver.Solve();
         // Check that the problem has an optimal solution.
         if (resultStatus != Solver.ResultStatus.OPTIMAL)
         {
-            Console.WriteLine("The problem does not have an optimal solution!");
+            output.WriteLine("The problem does not have an optimal solution!");
         }
         else
         {
-            Console.WriteLine("Solution:");
+            output.WriteLine("Solution:");
             foreach (Variable var in variables)
             {
-                Console.WriteLine($"{var.Name()} = {var.SolutionValue()}");
+                output.WriteLine($"{var.Name()} = {var.SolutionValue()}");
             }
-            Console.WriteLine($"Optimal objective value = {solver.Objective().Value()}");
-            Console.WriteLine("");
-            Console.WriteLine("Advanced usage:");
-            Console.WriteLine($"Problem solved in {solver.WallTime()} milliseconds");
-            Console.WriteLine($"Problem solved in {solver.Iterations()} iterations");
+            output.WriteLine($"Optimal objective value = {solver.Objective().Value()}");
+            output.WriteLine("");
+            output.WriteLine("Advanced usage:");
+            output.WriteLine($"Problem solved in {solver.WallTime()} milliseconds");
+            output.WriteLine($"Problem solved in {solver.Iterations()} iterations");
             if (!solver.IsMip())
             {
                 foreach (Variable var in variables)
                 {
-                    Console.WriteLine($"{var.Name()}: reduced cost {var.ReducedCost()}");
+                    output.WriteLine($"{var.Name()}: reduced cost {var.ReducedCost()}");
                 }
 
                 double[] activities = solver.ComputeConstraintActivities();
                 foreach (Constraint ct in constraints)
                 {
-                    Console.WriteLine($"{ct.Name()}: dual value = {ct.DualValue()}",
+                    output.WriteLine($"{ct.Name()}: dual value = {ct.DualValue()}",
                                       $" activity = {activities[ct.Index()]}");
                 }
             }
@@ -307,7 +315,7 @@ public class LinearSolverTest
 
     void RunLinearProgrammingExample(in String problemType)
     {
-        Console.WriteLine($"------ Linear programming example with {problemType} ------");
+        output.WriteLine($"------ Linear programming example with {problemType} ------");
 
         Solver solver = Solver.CreateSolver(problemType);
         if (solver is null)
@@ -342,7 +350,7 @@ public class LinearSolverTest
     }
     void RunMixedIntegerProgrammingExample(in String problemType)
     {
-        Console.WriteLine($"------ Mixed integer programming example with {problemType} ------");
+        output.WriteLine($"------ Mixed integer programming example with {problemType} ------");
 
         Solver solver = Solver.CreateSolver(problemType);
         if (solver == null)
@@ -372,7 +380,7 @@ public class LinearSolverTest
     }
     void RunBooleanProgrammingExample(in String problemType)
     {
-        Console.WriteLine($"------ Boolean programming example with {problemType} ------");
+        output.WriteLine($"------ Boolean programming example with {problemType} ------");
 
         Solver solver = Solver.CreateSolver(problemType);
         if (solver == null)
@@ -414,9 +422,9 @@ public class LinearSolverTest
     }
 
     [Fact]
-    static void testSetHintAndSolverGetters()
+    public void testSetHintAndSolverGetters()
     {
-        Console.WriteLine("testSetHintAndSolverGetters");
+        output.WriteLine("testSetHintAndSolverGetters");
         Solver solver = Solver.CreateSolver("glop");
         // x and y are continuous non-negative variables.
         Variable x = solver.MakeIntVar(0.0, double.PositiveInfinity, "x");
@@ -447,9 +455,9 @@ public class LinearSolverTest
     }
 
     [Fact]
-    static void Given_a_LinearExpr_and_a_solution_When_SolutionValue_is_called_then_the_result_is_correct()
+    public void Given_a_LinearExpr_and_a_solution_When_SolutionValue_is_called_then_the_result_is_correct()
     {
-        Console.WriteLine(
+        output.WriteLine(
             nameof(Given_a_LinearExpr_and_a_solution_When_SolutionValue_is_called_then_the_result_is_correct));
         Solver solver = Solver.CreateSolver("glop");
         // x, y and z are fixed; we don't want to test the solver here.
