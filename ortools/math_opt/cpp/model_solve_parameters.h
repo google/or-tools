@@ -88,6 +88,10 @@ struct ModelSolveParameters {
   // The filter that is applied to dual_values of DualSolution and DualRay.
   MapFilter<LinearConstraint> dual_values_filter;
 
+  // The filter that is applied to quadratic_dual_values of DualSolution and
+  // DualRay.
+  MapFilter<QuadraticConstraint> quadratic_dual_values_filter;
+
   // The filter that is applied to reduced_costs of DualSolution and DualRay.
   MapFilter<Variable> reduced_costs_filter;
 

@@ -16,8 +16,6 @@
 #include <cmath>
 #include <memory>
 #include <ostream>
-#include <string>
-#include <type_traits>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -75,9 +73,9 @@ TEST_P(SimpleSecondOrderConeTest, CanBuildSecondOrderConeModel) {
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   model.AddSecondOrderConeConstraint({x}, 2 * x);
   if (GetParam().supports_soc_constraints) {
-    EXPECT_OK(IncrementalSolver::New(&model, GetParam().solver_type, {}));
+    EXPECT_OK(NewIncrementalSolver(&model, GetParam().solver_type, {}));
   } else {
-    EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+    EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
                 StatusIs(AnyOf(absl::StatusCode::kInvalidArgument,
                                absl::StatusCode::kUnimplemented),
                          HasSubstr("second-order cone constraints")));
@@ -179,7 +177,7 @@ TEST_P(IncrementalSecondOrderConeTest, LinearToSecondOrderConeUpdate) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(1.5, {{x, 0.5}, {y, 1.0}})));
 
@@ -244,7 +242,7 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesSecondOrderConeConstraint) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(1.0, {{x, 0.5}, {y, 0.5}},
                                                  kTolerance)));
@@ -286,7 +284,7 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesUpperBoundingVariable) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(2.0, {{x, 1.0}, {y, 1.0}})));
 
@@ -329,7 +327,7 @@ TEST_P(IncrementalSecondOrderConeTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(3.0, {{x, 2.0}, {y, 1.0}})));
 
@@ -371,7 +369,7 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableThatIsAnArgument) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(1.0, {{x, 1.0}, {y, 1.0}})));
 
@@ -413,7 +411,7 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableInAnArgument) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(2.0, {{x, 1.0}, {y, 2.0}})));
 

@@ -14,12 +14,12 @@
 #ifndef OR_TOOLS_MATH_OPT_CORE_SOLVER_H_
 #define OR_TOOLS_MATH_OPT_CORE_SOLVER_H_
 
-#include <functional>
 #include <memory>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/base_solver.h"
 #include "ortools/math_opt/core/concurrent_calls_guard.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -29,10 +29,8 @@
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
-#include "ortools/util/solve_interrupter.h"
 
-namespace operations_research {
-namespace math_opt {
+namespace operations_research::math_opt {
 
 // A solver for a given model and solver implementation.
 //
@@ -65,94 +63,14 @@ namespace math_opt {
 //   CHECK_OK(second_solution.status());
 //   // Use the second_solution of the updated problem here.
 //
-class Solver {
+class Solver : public BaseSolver {
  public:
   using InitArgs = SolverInterface::InitArgs;
-
-  // Callback function for messages callback sent by the solver.
-  //
-  // Each message represents a single output line from the solver, and each
-  // message does not contain any '\n' character in it.
-  //
-  // Thread-safety: a callback may be called concurrently from multiple
-  // threads. The users is expected to use proper synchronization primitives to
-  // deal with that.
-  using MessageCallback = SolverInterface::MessageCallback;
-
-  // Callback function type for MIP/LP callbacks.
-  using Callback = std::function<CallbackResultProto(const CallbackDataProto&)>;
-
-  // Arguments used when calling Solve() to solve the problem.
-  struct SolveArgs {
-    SolveParametersProto parameters;
-    ModelSolveParametersProto model_parameters;
-
-    // An optional callback for messages emitted by the solver.
-    //
-    // When set it enables the solver messages and ignores the `enable_output`
-    // in solve parameters; messages are redirected to the callback and not
-    // printed on stdout/stderr/logs anymore.
-    MessageCallback message_callback = nullptr;
-
-    CallbackRegistrationProto callback_registration;
-    Callback user_cb = nullptr;
-
-    // An optional interrupter that the solver can use to interrupt the solve
-    // early.
-    const SolveInterrupter* interrupter = nullptr;
-  };
-
-  // Arguments used when calling ComputeInfeasibleSubsystem().
-  struct ComputeInfeasibleSubsystemArgs {
-    SolveParametersProto parameters;
-
-    // An optional callback for messages emitted by the solver.
-    //
-    // When set it enables the solver messages and ignores the `enable_output`
-    // in solve parameters; messages are redirected to the callback and not
-    // printed on stdout/stderr/logs anymore.
-    MessageCallback message_callback = nullptr;
-
-    // An optional interrupter that the solver can use to interrupt the solve
-    // early.
-    const SolveInterrupter* interrupter = nullptr;
-  };
 
   // A shortcut for calling Solver::New() and then Solver::Solve().
   static absl::StatusOr<SolveResultProto> NonIncrementalSolve(
       const ModelProto& model, SolverTypeProto solver_type,
       const InitArgs& init_args, const SolveArgs& solve_args);
-
-  // Builds a solver of the given type with the provided model and
-  // initialization parameters.
-  static absl::StatusOr<std::unique_ptr<Solver>> New(
-      SolverTypeProto solver_type, const ModelProto& model,
-      const InitArgs& arguments);
-
-  Solver(const Solver&) = delete;
-  Solver& operator=(const Solver&) = delete;
-
-  ~Solver();
-
-  // Solves the current model (included all updates).
-  absl::StatusOr<SolveResultProto> Solve(const SolveArgs& arguments);
-
-  // Updates the model to solve and returns true, or returns false if this
-  // update is not supported by the underlying solver.
-  //
-  // A status error will be returned if the model_update is invalid or the
-  // underlying solver has an internal error.
-  //
-  // When this function returns false, the Solver object is in a failed
-  // state. In that case the underlying SolverInterface implementation has been
-  // destroyed (this enables the caller to instantiate a new Solver without
-  // destroying the previous one first even if they use Gurobi with a single-use
-  // license).
-  absl::StatusOr<bool> Update(const ModelUpdateProto& model_update);
-
-  // Computes an infeasible subsystem of `model`.
-  absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const ComputeInfeasibleSubsystemArgs& arguments);
 
   // A shortcut for calling Solver::New() and then
   // Solver()::ComputeInfeasibleSubsystem()
@@ -161,6 +79,29 @@ class Solver {
       const ModelProto& model, SolverTypeProto solver_type,
       const InitArgs& init_args,
       const ComputeInfeasibleSubsystemArgs& compute_infeasible_subsystem_args);
+
+  // Builds a solver of the given type with the provided model and
+  // initialization parameters.
+  static absl::StatusOr<std::unique_ptr<Solver>> New(
+      SolverTypeProto solver_type, const ModelProto& model,
+      const InitArgs& arguments);
+
+  ~Solver() override;
+
+  absl::StatusOr<SolveResultProto> Solve(const SolveArgs& arguments) override;
+
+  // See BaseSolver::Update.
+  //
+  // When this function returns false, the Solver object is in a failed
+  // state. In that case the underlying SolverInterface implementation has been
+  // destroyed (this enables the caller to instantiate a new Solver without
+  // destroying the previous one first even if they use Gurobi with a single-use
+  // license).
+  absl::StatusOr<bool> Update(ModelUpdateProto model_update) override;
+
+  absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  ComputeInfeasibleSubsystem(
+      const ComputeInfeasibleSubsystemArgs& arguments) override;
 
  private:
   Solver(std::unique_ptr<SolverInterface> underlying_solver,
@@ -191,7 +132,6 @@ absl::Status ValidateInitArgs(const Solver::InitArgs& init_args,
                               SolverTypeProto solver_type);
 
 }  // namespace internal
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt
 
 #endif  // OR_TOOLS_MATH_OPT_CORE_SOLVER_H_

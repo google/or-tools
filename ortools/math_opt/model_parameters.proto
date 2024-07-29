@@ -111,6 +111,14 @@ message ModelSolveParametersProto {
   //  * filtered_ids are elements of LinearConstraints.ids.
   SparseVectorFilterProto dual_values_filter = 2;
 
+  // Filter that is applied to all returned sparse containers keyed by quadratic
+  // constraints in DualSolutionProto and DualRay
+  // (DualSolutionProto.quadratic_dual_values, DualRay.quadratic_dual_values).
+  //
+  // Requirements:
+  //  * filtered_ids are keys of ModelProto.quadratic_constraints.
+  SparseVectorFilterProto quadratic_dual_values_filter = 10;
+
   // Filter that is applied to all returned sparse containers keyed by variables
   // in DualSolutionProto and DualRay (DualSolutionProto.reduced_costs,
   // DualRay.reduced_costs).

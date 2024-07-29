@@ -269,7 +269,7 @@ message ModelProto {
   //  * linear_constraint_matrix.row_ids are elements of linear_constraints.ids.
   //  * linear_constraint_matrix.column_ids are elements of variables.ids.
   //  * Matrix entries not specified are zero.
-  //  * linear_constraint_matrix.values must all be finite.
+  //  * linear_constraint_matrix.coefficients must all be finite.
   SparseDoubleMatrixProto linear_constraint_matrix = 5;
 
   // Mapped constraints (i.e., stored in "constraint ID"-to-"constraint data"

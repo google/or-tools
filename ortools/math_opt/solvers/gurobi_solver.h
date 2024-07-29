@@ -256,7 +256,7 @@ class GurobiSolver : public SolverInterface {
   GetConvexPrimalSolutionIfAvailable(
       const ModelSolveParametersProto& model_parameters);
   absl::StatusOr<SolutionAndClaim<DualSolutionProto>>
-  GetLpDualSolutionIfAvailable(
+  GetConvexDualSolutionIfAvailable(
       const ModelSolveParametersProto& model_parameters);
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable();
 

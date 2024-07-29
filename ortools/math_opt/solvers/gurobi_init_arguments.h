@@ -63,11 +63,11 @@ namespace math_opt {
 //
 //   ASSIGN_OR_RETURN(
 //       const std::unique_ptr<IncrementalSolver> incremental_solve_1,
-//       IncrementalSolver::New(model, SOLVER_TYPE_GUROBI,
+//       NewIncrementalSolver(model, SOLVER_TYPE_GUROBI,
 //                              SolverInitArguments(gurobi_args)));
 //   ASSIGN_OR_RETURN(
 //       const std::unique_ptr<IncrementalSolver> incremental_solve_2,
-//       IncrementalSolver::New(model, SOLVER_TYPE_GUROBI,
+//       NewIncrementalSolver(model, SOLVER_TYPE_GUROBI,
 //                              SolverInitArguments(gurobi_args)));
 //
 //   ASSIGN_OR_RETURN(const SolveResult result_1, incremental_solve_1->Solve());

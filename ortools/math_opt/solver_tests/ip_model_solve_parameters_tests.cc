@@ -310,7 +310,7 @@ TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
   // tight node limit. We expect the solver to load the priorities, but not to
   // make any progress towards the optimal solution.
   ASSERT_OK_AND_ASSIGN(const auto solver,
-                       IncrementalSolver::New(&model, TestedSolver()));
+                       NewIncrementalSolver(&model, TestedSolver()));
   {
     SolveParameters params = SolveParams();
     params.node_limit = 0;
@@ -407,7 +407,7 @@ TEST_P(LazyConstraintsTest, AnnotationsAreClearedAfterSolve) {
   const LinearConstraint d = model.AddLinearConstraint(y >= -x);
   model.Minimize(y);
   ASSERT_OK_AND_ASSIGN(const auto solver,
-                       IncrementalSolver::New(&model, TestedSolver()));
+                       NewIncrementalSolver(&model, TestedSolver()));
 
   SolveArguments args = {
       .parameters = NerfedSolveParams(),

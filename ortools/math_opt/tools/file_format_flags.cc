@@ -34,6 +34,7 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/io/lp_converter.h"
+#include "ortools/math_opt/io/lp_parser.h"
 #include "ortools/math_opt/io/mps_converter.h"
 #include "ortools/math_opt/io/proto_converter.h"
 #include "ortools/math_opt/model.pb.h"
@@ -225,8 +226,10 @@ ReadModel(const absl::string_view file_path, const FileFormat format) {
       return std::make_pair(std::move(model), std::nullopt);
     }
     case FileFormat::kLP: {
-      return absl::UnimplementedError(
-          "MathOpt does not yet support reading .lp files; only writing them");
+      ASSIGN_OR_RETURN(const std::string lp_data,
+                       file::GetContents(file_path, file::Defaults()));
+      ASSIGN_OR_RETURN(ModelProto model, ModelProtoFromLp(lp_data));
+      return std::make_pair(std::move(model), std::nullopt);
     }
   }
 }

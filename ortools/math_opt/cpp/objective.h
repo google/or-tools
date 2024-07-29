@@ -74,6 +74,12 @@ class Objective {
   // Returns the constant offset of the objective.
   inline double offset() const;
 
+  // Returns the number of linear terms in the objective.
+  inline int64_t num_linear_terms() const;
+
+  // Returns the number of quadratic terms in the objective.
+  inline int64_t num_quadratic_terms() const;
+
   // Returns the linear coefficient for the variable in the model.
   inline double coefficient(Variable variable) const;
   // Returns the quadratic coefficient for the pair of variables in the model.
@@ -149,6 +155,14 @@ absl::string_view Objective::name() const {
 }
 
 double Objective::offset() const { return storage_->objective_offset(id_); }
+
+int64_t Objective::num_quadratic_terms() const {
+  return storage_->num_quadratic_objective_terms(id_);
+}
+
+int64_t Objective::num_linear_terms() const {
+  return storage_->num_linear_objective_terms(id_);
+}
 
 double Objective::coefficient(const Variable variable) const {
   CHECK_EQ(variable.storage(), storage_)

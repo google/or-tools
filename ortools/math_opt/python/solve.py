@@ -16,9 +16,11 @@ import types
 from typing import Callable, Optional
 
 from ortools.math_opt import parameters_pb2
+from ortools.math_opt import rpc_pb2
 from ortools.math_opt.core.python import solver
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import compute_infeasible_subsystem_result
+from ortools.math_opt.python import errors
 from ortools.math_opt.python import message_callback
 from ortools.math_opt.python import model
 from ortools.math_opt.python import model_parameters
@@ -86,7 +88,7 @@ def solve(
             None,
         )
     except StatusNotOk as e:
-        raise RuntimeError(str(e)) from None
+        raise _status_not_ok_to_exception(e) from None
     return result.parse_solve_result(proto_result, opt_model)
 
 
@@ -126,7 +128,7 @@ def compute_infeasible_subsystem(
             None,
         )
     except StatusNotOk as e:
-        raise RuntimeError(str(e)) from None
+        raise _status_not_ok_to_exception(e) from None
     return (
         compute_infeasible_subsystem_result.parse_compute_infeasible_subsystem_result(
             proto_result, opt_model
@@ -172,7 +174,7 @@ class IncrementalSolver:
                 parameters_pb2.SolverInitializerProto(),
             )
         except StatusNotOk as e:
-            raise RuntimeError(str(e)) from None
+            raise _status_not_ok_to_exception(e) from None
         self._closed = False
 
     def solve(
@@ -212,7 +214,7 @@ class IncrementalSolver:
                         parameters_pb2.SolverInitializerProto(),
                     )
             except StatusNotOk as e:
-                raise RuntimeError(str(e)) from None
+                raise _status_not_ok_to_exception(e) from None
             self._update_tracker.advance_checkpoint()
         params = params or parameters.SolveParameters()
         model_params = model_params or model_parameters.ModelSolveParameters()
@@ -232,7 +234,7 @@ class IncrementalSolver:
                 None,
             )
         except StatusNotOk as e:
-            raise RuntimeError(str(e)) from None
+            raise _status_not_ok_to_exception(e) from None
         return result.parse_solve_result(result_proto, self._model)
 
     def close(self) -> None:
@@ -268,3 +270,20 @@ class IncrementalSolver:
     ) -> None:
         """Closes the solver."""
         self.close()
+
+
+def _status_not_ok_to_exception(err: StatusNotOk) -> Exception:
+    """Converts a StatusNotOk to the best matching Python exception.
+
+    Args:
+      err: The input errors.
+
+    Returns:
+      The corresponding exception.
+    """
+    ret = errors.status_proto_to_exception(
+        rpc_pb2.StatusProto(code=err.canonical_code, message=err.message)
+    )
+    # We never expect StatusNotOk to be OK.
+    assert ret is not None, err
+    return ret

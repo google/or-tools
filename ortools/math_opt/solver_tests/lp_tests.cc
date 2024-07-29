@@ -81,7 +81,7 @@ IncrementalLpTest::IncrementalLpTest()
       y_3_(model_.AddContinuousVariable(0, 1, "y_3")),
       c_3_(model_.AddLinearConstraint(x_3_ + y_3_ <= 1.5, "c_3")) {
   model_.Maximize(0.1 + 3 * (x_1_ + x_2_ + x_3_) + 2 * (y_1_ + y_2_ + y_3_));
-  solver_ = IncrementalSolver::New(&model_, TestedSolver()).value();
+  solver_ = NewIncrementalSolver(&model_, TestedSolver()).value();
   const SolveResult first_solve = solver_->Solve().value();
   CHECK_OK(first_solve.termination.EnsureIsOptimal());
   CHECK_LE(std::abs(first_solve.objective_value() - 12.1), kTolerance);
@@ -953,7 +953,7 @@ TEST_P(SimpleLpTest, OptimalAfterInfeasible) {
   const SolveArguments arguments{.parameters = GetParam().parameters};
 
   ASSERT_OK_AND_ASSIGN(auto solver,
-                       IncrementalSolver::New(&model, TestedSolver()));
+                       NewIncrementalSolver(&model, TestedSolver()));
   EXPECT_THAT(solver->Solve(arguments),
               IsOkAndHolds(TerminatesWithOneOf(
                   {TerminationReason::kInfeasible,
@@ -975,7 +975,7 @@ TEST_P(SimpleLpTest, OptimalAfterUnbounded) {
   const SolveArguments arguments{.parameters = GetParam().parameters};
 
   ASSERT_OK_AND_ASSIGN(auto solver,
-                       IncrementalSolver::New(&model, TestedSolver()));
+                       NewIncrementalSolver(&model, TestedSolver()));
   EXPECT_THAT(solver->Solve(arguments),
               IsOkAndHolds(TerminatesWithOneOf(
                   {TerminationReason::kUnbounded,

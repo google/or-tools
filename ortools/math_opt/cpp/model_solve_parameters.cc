@@ -25,6 +25,7 @@
 #include "google/protobuf/repeated_field.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
+#include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/solution.h"
 #include "ortools/math_opt/cpp/sparse_containers.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -42,6 +43,8 @@ using ::google::protobuf::RepeatedField;
 ModelSolveParameters ModelSolveParameters::OnlyPrimalVariables() {
   ModelSolveParameters parameters;
   parameters.dual_values_filter = MakeSkipAllFilter<LinearConstraint>();
+  parameters.quadratic_dual_values_filter =
+      MakeSkipAllFilter<QuadraticConstraint>();
   parameters.reduced_costs_filter = MakeSkipAllFilter<Variable>();
   return parameters;
 }
@@ -65,6 +68,9 @@ absl::Status ModelSolveParameters::CheckModelStorage(
       << "invalid variable_values_filter";
   RETURN_IF_ERROR(dual_values_filter.CheckModelStorage(expected_storage))
       << "invalid dual_values_filter";
+  RETURN_IF_ERROR(
+      quadratic_dual_values_filter.CheckModelStorage(expected_storage))
+      << "invalid quadratic_dual_values_filter";
   RETURN_IF_ERROR(reduced_costs_filter.CheckModelStorage(expected_storage))
       << "invalid reduced_costs_filter";
   for (const auto [var, unused] : branching_priorities) {
@@ -165,6 +171,8 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
   ModelSolveParametersProto ret;
   *ret.mutable_variable_values_filter() = variable_values_filter.Proto();
   *ret.mutable_dual_values_filter() = dual_values_filter.Proto();
+  *ret.mutable_quadratic_dual_values_filter() =
+      quadratic_dual_values_filter.Proto();
   *ret.mutable_reduced_costs_filter() = reduced_costs_filter.Proto();
 
   if (initial_basis.has_value()) {
@@ -219,6 +227,10 @@ absl::StatusOr<ModelSolveParameters> ModelSolveParameters::FromProto(
       result.dual_values_filter,
       LinearConstraintFilterFromProto(model, proto.dual_values_filter()),
       _ << "invalid dual_values_filter");
+  OR_ASSIGN_OR_RETURN3(result.quadratic_dual_values_filter,
+                       QuadraticConstraintFilterFromProto(
+                           model, proto.quadratic_dual_values_filter()),
+                       _ << "invalid quadratic_dual_values_filter");
   OR_ASSIGN_OR_RETURN3(
       result.reduced_costs_filter,
       VariableFilterFromProto(model, proto.reduced_costs_filter()),

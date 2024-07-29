@@ -335,7 +335,7 @@ TEST_P(CallbackTest, EventSimplex) {
   // solve, we know the starting basis. It would be simpler to set the starting
   // basis, once this is supported.
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<IncrementalSolver> solver,
-                       IncrementalSolver::New(&model, GetParam().solver_type));
+                       NewIncrementalSolver(&model, GetParam().solver_type));
   {
     ASSERT_OK_AND_ASSIGN(const SolveResult result, solver->Solve(args));
     ASSERT_THAT(result, IsOptimal(6.0));

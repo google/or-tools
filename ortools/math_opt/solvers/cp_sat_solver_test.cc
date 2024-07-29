@@ -112,6 +112,7 @@ INSTANTIATE_TEST_SUITE_P(CpSatSimpleQcTest, SimpleQcTest,
                          ValuesIn(GetCpSatQcTestParameters()));
 INSTANTIATE_TEST_SUITE_P(CpSatIncrementalQcTest, IncrementalQcTest,
                          ValuesIn(GetCpSatQcTestParameters()));
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 
 SecondOrderConeTestParameters GetCpSatSecondOrderConeTestParameters() {
   return SecondOrderConeTestParameters(

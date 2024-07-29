@@ -101,6 +101,7 @@
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/update_result.h"
@@ -142,25 +143,19 @@ testing::Matcher<LinearConstraintMap<double>> IsNearlySubsetOf(
     LinearConstraintMap<double> expected,
     double tolerance = kMatcherDefaultTolerance);
 
-// Checks that the maps have identical keys and values within tolerance. Works
-// for VariableMap, LinearConstraintMap, among other realizations of
-// absl::flat_hash_map. This factory will CHECK-fail if expected contains any
-// NaN values, and any NaN values in the expression compared against will result
-// in the matcher failing.
-template <typename K>
-testing::Matcher<absl::flat_hash_map<K, double>> IsNear(
-    absl::flat_hash_map<K, double> expected,
+// Checks that the maps have identical keys and values within tolerance. This
+// factory will CHECK-fail if expected contains any NaN values.
+testing::Matcher<absl::flat_hash_map<QuadraticConstraint, double>> IsNear(
+    absl::flat_hash_map<QuadraticConstraint, double> expected,
     double tolerance = kMatcherDefaultTolerance);
 
 // Checks that the keys of actual are a subset of the keys of expected, and that
-// for all shared keys, the values are within tolerance. Works for VariableMap,
-// LinearConstraintMap, among other realizations of absl::flat_hash_map. This
-// factory will CHECK-fail if expected contains any NaN values, and any NaN
-// values in the expression compared against will result in the matcher failing.
-template <typename K>
-testing::Matcher<absl::flat_hash_map<K, double>> IsNearlySubsetOf(
-    absl::flat_hash_map<K, double> expected,
-    double tolerance = kMatcherDefaultTolerance);
+// for all shared keys, the values are within tolerance. This factory will
+// CHECK-fail if expected contains any NaN values, and any NaN values in the
+// expression compared against will result in the matcher failing.
+testing::Matcher<absl::flat_hash_map<QuadraticConstraint, double>>
+IsNearlySubsetOf(absl::flat_hash_map<QuadraticConstraint, double> expected,
+                 double tolerance = kMatcherDefaultTolerance);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Matchers for various Variable expressions (e.g. LinearExpression)
@@ -262,10 +257,21 @@ testing::Matcher<Termination> TerminationIsOptimal();
 // Checks that the termination reason is optimal, that the objective bounds
 // match the provided ones and that problem status is consistent with
 // optimality (i.e. status is primal and dual feasible).
+//
+// If dual_objective_value is not set, use the primal_objective_value.
 testing::Matcher<Termination> TerminationIsOptimal(
-    double primal_objective_value, double dual_objective_value,
+    double primal_objective_value,
+    std::optional<double> dual_objective_value = std::nullopt,
     double tolerance = kMatcherDefaultTolerance);
 
+// Checks the following:
+//  * The reason is kFeasible or kNoSolutionFound.
+//  * The limit is the expected one.
+//  * If the optional `detail_matcher` is provided, it matches the `detail`.
+//
+// See TerminatesWithLimit() for a similar matcher for SolveResult.
+//
+// TODO: b/343234961 - Maybe change the name and sync the signatures/features.
 testing::Matcher<Termination> LimitIs(
     Limit limit, testing::Matcher<std::string> detail_matcher = testing::_);
 
@@ -303,6 +309,13 @@ testing::Matcher<SolveResult> IsOptimalWithDualSolution(
     VariableMap<double> expected_reduced_costs,
     double tolerance = kMatcherDefaultTolerance);
 
+testing::Matcher<SolveResult> IsOptimalWithDualSolution(
+    double expected_objective, LinearConstraintMap<double> expected_dual_values,
+    absl::flat_hash_map<QuadraticConstraint, double>
+        expected_quadratic_dual_values,
+    VariableMap<double> expected_reduced_costs,
+    double tolerance = kMatcherDefaultTolerance);
+
 // Checks the following:
 //  * The result has the expected termination reason.
 testing::Matcher<SolveResult> TerminatesWith(TerminationReason expected);
@@ -314,6 +327,8 @@ testing::Matcher<SolveResult> TerminatesWithOneOf(
 // Checks the following:
 //  * The result has termination reason kFeasible or kNoSolutionFound.
 //  * The limit is expected, or is kUndetermined if allow_limit_undetermined.
+//
+// See LimitIs() for a matcher for Termination only.
 testing::Matcher<SolveResult> TerminatesWithLimit(
     Limit expected, bool allow_limit_undetermined = false);
 

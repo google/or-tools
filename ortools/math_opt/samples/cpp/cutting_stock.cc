@@ -189,7 +189,7 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
     add_config(Configuration{.pieces = {i}, .quantity = {1}});
   }
 
-  ASSIGN_OR_RETURN(auto solver, math_opt::IncrementalSolver::New(
+  ASSIGN_OR_RETURN(auto solver, math_opt::NewIncrementalSolver(
                                     &model, math_opt::SolverType::kGlop));
   int pricing_round = 0;
   while (true) {

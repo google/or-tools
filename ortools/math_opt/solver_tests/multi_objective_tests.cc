@@ -13,7 +13,6 @@
 
 #include "ortools/math_opt/solver_tests/multi_objective_tests.h"
 
-#include <limits>
 #include <memory>
 #include <ostream>
 
@@ -81,9 +80,9 @@ TEST_P(SimpleMultiObjectiveTest, CanBuildMultiObjectiveModel) {
   model.AddMinimizationObjective(-3.0 * x + 2.0, /*priority=*/1);
 
   if (GetParam().supports_auxiliary_objectives) {
-    EXPECT_OK(IncrementalSolver::New(&model, GetParam().solver_type, {}));
+    EXPECT_OK(NewIncrementalSolver(&model, GetParam().solver_type, {}));
   } else {
-    EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+    EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
                 StatusIs(AnyOf(absl::StatusCode::kInvalidArgument,
                                absl::StatusCode::kUnimplemented),
                          HasSubstr("multiple objectives")));
@@ -145,7 +144,7 @@ TEST_P(SimpleMultiObjectiveTest, PrimaryAndAuxiliaryObjectiveSharePriority) {
   Model model;
   model.set_objective_priority(model.primary_objective(), 1);
   model.AddAuxiliaryObjective(1);
-  EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+  EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("repeated objective priority: 1")));
 }
@@ -157,7 +156,7 @@ TEST_P(SimpleMultiObjectiveTest, AuxiliaryObjectivesSharePriority) {
   Model model;
   model.AddAuxiliaryObjective(1);
   model.AddAuxiliaryObjective(1);
-  EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+  EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("repeated objective priority: 1")));
 }
@@ -369,7 +368,7 @@ TEST_P(IncrementalMultiObjectiveTest, SingleToMultiObjectiveModel) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   // Since there are multiple optimal solutions we do not match against the
   // solution value.
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
@@ -438,7 +437,7 @@ TEST_P(IncrementalMultiObjectiveTest, AddObjectiveToMultiObjectiveModel) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   {
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          solver->Solve({.parameters = GetParam().parameters}));
@@ -493,7 +492,7 @@ TEST_P(IncrementalMultiObjectiveTest, DeleteObjectiveFromMultiObjectiveModel) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   {
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          solver->Solve({.parameters = GetParam().parameters}));
@@ -547,7 +546,7 @@ TEST_P(IncrementalMultiObjectiveTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   {
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          solver->Solve({.parameters = GetParam().parameters}));
@@ -587,7 +586,7 @@ TEST_P(IncrementalMultiObjectiveTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   {
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          solver->Solve({.parameters = GetParam().parameters}));
