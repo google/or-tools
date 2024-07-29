@@ -40,4 +40,10 @@ absl::StatusOr<ModelProto> ReadMpsFile(const absl::string_view filename) {
   return MPModelProtoToMathOptModel(mp_model);
 }
 
+absl::StatusOr<ModelProto> MpsToModelProto(absl::string_view mps_data) {
+  ASSIGN_OR_RETURN(const MPModelProto mp_model,
+                   glop::MpsDataToMPModelProto(mps_data));
+  return MPModelProtoToMathOptModel(mp_model);
+}
+
 }  // namespace operations_research::math_opt

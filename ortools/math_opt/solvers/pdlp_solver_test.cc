@@ -111,6 +111,7 @@ INSTANTIATE_TEST_SUITE_P(PdlpSimpleQcTest, SimpleQcTest,
                          testing::Values(GetPdlpQcTestParameters()));
 INSTANTIATE_TEST_SUITE_P(PdlpIncrementalQcTest, IncrementalQcTest,
                          testing::Values(GetPdlpQcTestParameters()));
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 
 SecondOrderConeTestParameters GetPdlpSecondOrderConeTestParameters() {
   return SecondOrderConeTestParameters(

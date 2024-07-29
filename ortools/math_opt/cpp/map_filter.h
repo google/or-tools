@@ -17,11 +17,12 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_
 #define OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_
 
-#include <algorithm>
 #include <initializer_list>
 #include <optional>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/key_types.h"
@@ -31,8 +32,7 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
-namespace operations_research {
-namespace math_opt {
+namespace operations_research::math_opt {
 
 // A filter that only keeps some specific key-value pairs of a map.
 //
@@ -122,6 +122,14 @@ absl::StatusOr<MapFilter<Variable>> VariableFilterFromProto(
 //  * proto.filtered_ids has elements that are linear constraints in `model`.
 absl::StatusOr<MapFilter<LinearConstraint>> LinearConstraintFilterFromProto(
     const Model& model, const SparseVectorFilterProto& proto);
+
+// Returns the MapFilter<QuadraticConstraint> equivalent to `proto`.
+//
+// Requires that (or returns a status error):
+//  * proto.filtered_ids has elements that are quadratic constraints in `model`.
+absl::StatusOr<MapFilter<QuadraticConstraint>>
+QuadraticConstraintFilterFromProto(const Model& model,
+                                   const SparseVectorFilterProto& proto);
 
 // Returns a filter that skips all key-value pairs.
 //
@@ -213,7 +221,6 @@ SparseVectorFilterProto MapFilter<KeyType>::Proto() const {
   return ret;
 }
 
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt
 
 #endif  // OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_

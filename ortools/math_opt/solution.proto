@@ -105,6 +105,14 @@ message DualSolutionProto {
   SparseDoubleVectorProto dual_values = 1;
 
   // Requirements:
+  //  * quadratic_dual_values.ids are keys of ModelProto.quadratic_constraints.
+  //  * quadratic_dual_values.values must all be finite.
+  // Note: Some solvers only return quadratic constraint duals when a
+  // solver-specific parameter is set
+  // (see go/mathopt-qcqp-dual#solver-specific).
+  SparseDoubleVectorProto quadratic_dual_values = 5;
+
+  // Requirements:
   //  * reduced_costs.ids are elements of VariablesProto.ids.
   //  * reduced_costs.values must all be finite.
   SparseDoubleVectorProto reduced_costs = 2;

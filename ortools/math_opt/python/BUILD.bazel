@@ -25,6 +25,7 @@ py_library(
     deps = [
         ":callback",
         ":compute_infeasible_subsystem_result",
+        ":errors",
         ":expressions",
         ":hash_model_storage",
         ":message_callback",
@@ -158,12 +159,14 @@ py_library(
     deps = [
         ":callback",
         ":compute_infeasible_subsystem_result",
+        ":errors",
         ":message_callback",
         ":model",
         ":model_parameters",
         ":parameters",
         ":result",
         "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/core/python:solver",
     ],
 )
@@ -199,5 +202,11 @@ py_library(
 py_library(
     name = "solver_resources",
     srcs = ["solver_resources.py"],
+    deps = ["//ortools/math_opt:rpc_py_pb2"],
+)
+
+py_library(
+    name = "errors",
+    srcs = ["errors.py"],
     deps = ["//ortools/math_opt:rpc_py_pb2"],
 )

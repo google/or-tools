@@ -313,7 +313,6 @@ cc_test(
     name = "cp_sat_solver_test",
     srcs = ["cp_sat_solver_test.cc"],
     shard_count = 10,
-    timeout = "eternal",
     deps = [
         ":cp_sat_solver",
         "//ortools/base:gmock_main",

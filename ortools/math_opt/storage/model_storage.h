@@ -20,18 +20,14 @@
 #include <optional>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/quadratic/storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/second_order_cone/storage.h"
@@ -42,8 +38,8 @@
 #include "ortools/math_opt/storage/atomic_constraint_storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/storage/iterators.h"
 #include "ortools/math_opt/storage/linear_constraint_storage.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
 #include "ortools/math_opt/storage/objective_storage.h"
-#include "ortools/math_opt/storage/sparse_matrix.h"
 #include "ortools/math_opt/storage/update_trackers.h"
 #include "ortools/math_opt/storage/variable_storage.h"
 
@@ -394,6 +390,8 @@ class ModelStorage {
   // The variables with nonzero linear objective coefficients.
   inline const absl::flat_hash_map<VariableId, double>& linear_objective(
       ObjectiveId id) const;
+
+  inline int64_t num_linear_objective_terms(ObjectiveId id) const;
 
   inline int64_t num_quadratic_objective_terms(ObjectiveId id) const;
 
@@ -1010,6 +1008,10 @@ void ModelStorage::clear_objective(const ObjectiveId id) {
 const absl::flat_hash_map<VariableId, double>& ModelStorage::linear_objective(
     const ObjectiveId id) const {
   return objectives_.linear_terms(id);
+}
+
+int64_t ModelStorage::num_linear_objective_terms(const ObjectiveId id) const {
+  return objectives_.linear_terms(id).size();
 }
 
 int64_t ModelStorage::num_quadratic_objective_terms(

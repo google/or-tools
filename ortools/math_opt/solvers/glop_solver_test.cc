@@ -145,6 +145,7 @@ INSTANTIATE_TEST_SUITE_P(GlopSimpleQcTest, SimpleQcTest,
                          testing::Values(GetGlopQcTestParameters()));
 INSTANTIATE_TEST_SUITE_P(GlopIncrementalQcTest, IncrementalQcTest,
                          testing::Values(GetGlopQcTestParameters()));
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 
 SecondOrderConeTestParameters GetGlopSecondOrderConeTestParameters() {
   return SecondOrderConeTestParameters(

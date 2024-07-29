@@ -20,6 +20,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -442,9 +443,8 @@ TEST_P(GenericTest, InvertedVariableBounds) {
     model.Maximize(3.0 * x);
 
     // The instantiation should not fail, even if the bounds are reversed.
-    ASSERT_OK_AND_ASSIGN(
-        const std::unique_ptr<IncrementalSolver> solver,
-        IncrementalSolver::New(&model, GetParam().solver_type));
+    ASSERT_OK_AND_ASSIGN(const std::unique_ptr<IncrementalSolver> solver,
+                         NewIncrementalSolver(&model, GetParam().solver_type));
 
     // Solving should fail because of the inverted bounds.
     EXPECT_THAT(solver->Solve(solve_args),
@@ -482,9 +482,8 @@ TEST_P(GenericTest, InvertedVariableBounds) {
 
     model.Maximize(3.0 * x);
 
-    ASSERT_OK_AND_ASSIGN(
-        const std::unique_ptr<IncrementalSolver> solver,
-        IncrementalSolver::New(&model, GetParam().solver_type));
+    ASSERT_OK_AND_ASSIGN(const std::unique_ptr<IncrementalSolver> solver,
+                         NewIncrementalSolver(&model, GetParam().solver_type));
 
     // As of 2022-11-17 the glp_interior() algorithm returns GLP_EFAIL when the
     // model is "empty" (no rows or columns). The issue is that the emptiness is
@@ -531,15 +530,14 @@ TEST_P(GenericTest, InvertedVariableBounds) {
 
     model.Maximize(3.0 * x);
 
-    ASSERT_OK_AND_ASSIGN(
-        const std::unique_ptr<IncrementalSolver> solver,
-        IncrementalSolver::New(&model, GetParam().solver_type));
+    ASSERT_OK_AND_ASSIGN(const std::unique_ptr<IncrementalSolver> solver,
+                         NewIncrementalSolver(&model, GetParam().solver_type));
 
     EXPECT_THAT(solver->SolveWithoutUpdate(solve_args),
                 IsOkAndHolds(IsOptimal(3.0 * 4.0)));
 
     // Test the update using a new variable with inverted bounds (in case the
-    // update code path is not identical to the IncrementalSolver::New() one).
+    // update code path is not identical to the NewIncrementalSolver() one).
     const Variable y = model.AddVariable(/*lower_bound=*/lb, /*upper_bound=*/ub,
                                          GetParam().integer_variables, "y");
     model.Maximize(3.0 * x + y);
@@ -573,9 +571,8 @@ TEST_P(GenericTest, InvertedLinearConstraintBounds) {
     model.Maximize(3.0 * x);
 
     // The instantiation should not fail, even if the bounds are reversed.
-    ASSERT_OK_AND_ASSIGN(
-        const std::unique_ptr<IncrementalSolver> solver,
-        IncrementalSolver::New(&model, GetParam().solver_type));
+    ASSERT_OK_AND_ASSIGN(const std::unique_ptr<IncrementalSolver> solver,
+                         NewIncrementalSolver(&model, GetParam().solver_type));
 
     // Solving should fail because of the inverted bounds.
     EXPECT_THAT(solver->Solve(solve_args),
@@ -602,9 +599,8 @@ TEST_P(GenericTest, InvertedLinearConstraintBounds) {
 
     model.Maximize(3.0 * x);
 
-    ASSERT_OK_AND_ASSIGN(
-        const std::unique_ptr<IncrementalSolver> solver,
-        IncrementalSolver::New(&model, GetParam().solver_type));
+    ASSERT_OK_AND_ASSIGN(const std::unique_ptr<IncrementalSolver> solver,
+                         NewIncrementalSolver(&model, GetParam().solver_type));
 
     EXPECT_THAT(solver->SolveWithoutUpdate(solve_args),
                 IsOkAndHolds(IsOptimal(3.0 * 4.0)));
@@ -638,15 +634,14 @@ TEST_P(GenericTest, InvertedLinearConstraintBounds) {
 
     model.Maximize(3.0 * x);
 
-    ASSERT_OK_AND_ASSIGN(
-        const std::unique_ptr<IncrementalSolver> solver,
-        IncrementalSolver::New(&model, GetParam().solver_type));
+    ASSERT_OK_AND_ASSIGN(const std::unique_ptr<IncrementalSolver> solver,
+                         NewIncrementalSolver(&model, GetParam().solver_type));
 
     EXPECT_THAT(solver->SolveWithoutUpdate(solve_args),
                 IsOkAndHolds(IsOptimal(3.0 * 4.0)));
 
     // Test the update with a new constraint with inverted bounds (in case the
-    // update code path is not identical to the IncrementalSolver::New() one).
+    // update code path is not identical to the NewIncrementalSolver() one).
     const LinearConstraint v = model.AddLinearConstraint(5.0 <= x <= 3.0, "v");
 
     ASSERT_OK(solver->Update());

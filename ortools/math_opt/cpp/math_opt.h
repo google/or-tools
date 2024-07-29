@@ -16,7 +16,8 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_MATH_OPT_H_
 #define OR_TOOLS_MATH_OPT_CPP_MATH_OPT_H_
 
-#include "ortools/math_opt/cpp/model.h"  // IWYU pragma: export
-#include "ortools/math_opt/cpp/solve.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/model.h"             // IWYU pragma: export
+#include "ortools/math_opt/cpp/solve.h"             // IWYU pragma: export
+#include "ortools/math_opt/cpp/solver_resources.h"  // IWYU pragma: export
 
 #endif  // OR_TOOLS_MATH_OPT_CPP_MATH_OPT_H_

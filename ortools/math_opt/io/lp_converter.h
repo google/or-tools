@@ -26,6 +26,10 @@ namespace operations_research::math_opt {
 // The RemoveNames() function can be used on the model to remove names if they
 // should not be exported.
 //
+// Warning: LP format does not support "range constraints" (linear constraints
+// with both upper and lower bounds). An equivalent model without range
+// constraints is exported instead.
+//
 // For more information about the different LP file formats:
 // http://lpsolve.sourceforge.net/5.5/lp-format.htm
 // http://lpsolve.sourceforge.net/5.5/CPLEX-format.htm

@@ -155,7 +155,7 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   return result;
 }
 
-absl::StatusOr<bool> Solver::Update(const ModelUpdateProto& model_update) {
+absl::StatusOr<bool> Solver::Update(const ModelUpdateProto model_update) {
   ASSIGN_OR_RETURN(const auto guard,
                    ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
 

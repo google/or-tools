@@ -83,6 +83,23 @@ class SimpleQcTest : public testing::TestWithParam<QcTestParameters> {
 //                                        use_integer_variables)));
 class IncrementalQcTest : public testing::TestWithParam<QcTestParameters> {};
 
+// A suite of unit tests focused on testing dual solutions from QC solvers.
+//
+// To use these tests, in file <solver>_test.cc, write:
+//   INSTANTIATE_TEST_SUITE_P(
+//       <Solver>QcDualsTest, QcDualsTest,
+//       testing::Values(QcTestParameters(SolverType::k<Solver>,
+//                                        parameters, supports_qc,
+//                                        supports_incremental_add_and_deletes,
+//                                        supports_incremental_variable_deletions,
+//                                        use_integer_variables)));
+class QcDualsTest : public testing::TestWithParam<QcTestParameters> {
+ protected:
+  absl::StatusOr<SolveResult> SimpleSolve(const Model& model) {
+    return Solve(model, GetParam().solver_type,
+                 {.parameters = GetParam().parameters});
+  }
+};
 }  // namespace operations_research::math_opt
 
 #endif  // OR_TOOLS_MATH_OPT_SOLVER_TESTS_QC_TESTS_H_

@@ -16,8 +16,6 @@
 #include <cmath>
 #include <memory>
 #include <ostream>
-#include <string>
-#include <type_traits>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -94,10 +92,10 @@ TEST_P(SimpleQcTest, CanBuildQcModel) {
   UnivariateQcProblem qc_problem(GetParam().use_integer_variables);
   if (GetParam().supports_qc) {
     EXPECT_OK(
-        IncrementalSolver::New(&qc_problem.model, GetParam().solver_type, {}));
+        NewIncrementalSolver(&qc_problem.model, GetParam().solver_type, {}));
   } else {
     EXPECT_THAT(
-        IncrementalSolver::New(&qc_problem.model, GetParam().solver_type, {}),
+        NewIncrementalSolver(&qc_problem.model, GetParam().solver_type, {}),
         StatusIs(AnyOf(absl::StatusCode::kInvalidArgument,
                        absl::StatusCode::kUnimplemented),
                  HasSubstr("quadratic constraints")));
@@ -180,7 +178,7 @@ TEST_P(IncrementalQcTest, LinearToQuadraticUpdate) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(2.0, {{x, 1.0}})));
 
@@ -237,7 +235,7 @@ TEST_P(IncrementalQcTest, UpdateDeletesQuadraticConstraint) {
   HalfEllipseProblem qc_problem(GetParam().use_integer_variables);
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&qc_problem.model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&qc_problem.model, GetParam().solver_type, {}));
   // We test that the solution is correct elsewhere.
   ASSERT_OK(solver->Solve({.parameters = GetParam().parameters}));
 
@@ -272,7 +270,7 @@ TEST_P(IncrementalQcTest, UpdateDeletesVariableInQuadraticConstraint) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&qc_problem.model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&qc_problem.model, GetParam().solver_type, {}));
   // We test that the solution is correct elsewhere.
   ASSERT_OK(solver->Solve({.parameters = GetParam().parameters}));
 
@@ -285,6 +283,163 @@ TEST_P(IncrementalQcTest, UpdateDeletesVariableInQuadraticConstraint) {
   EXPECT_THAT(solver->SolveWithoutUpdate({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(1.0, {{qc_problem.y, 1.0}},
                                                  kTolerance)));
+}
+
+// Primal:
+//   min_{x} x
+//   s.t.
+//   Quadratic constraint:
+//       x^2 <= 1
+//
+// Optimal solution: x* = -1.
+//
+// Dual (go/mathopt-qcqp-dual):
+//   max_{mu, x, r}  mu + mu*x^2
+//   s.t.   mu*2*x + r  = 1
+//                  mu <= 0
+//                   r  = 0
+//
+// Optimal solution: x* = -1, mu* = -0.5.
+TEST_P(QcDualsTest, OnlyQuadraticConstraintLess) {
+  if (!GetParam().supports_qc) {
+    return;
+  }
+  Model model;
+  const Variable x = model.AddVariable();
+  const QuadraticConstraint mu = model.AddQuadraticConstraint(x * x <= 1);
+  model.Minimize(x);
+
+  ASSERT_OK_AND_ASSIGN(const SolveResult solve_result, SimpleSolve(model));
+  const double expected_objective_value = -1.0;
+  EXPECT_THAT(solve_result,
+              IsOptimalWithSolution(expected_objective_value, {{x, -1.0}}));
+  EXPECT_THAT(solve_result,
+              IsOptimalWithDualSolution(expected_objective_value, {},
+                                        {{mu, -0.5}}, {{x, 0.0}}));
+}
+
+// Primal:
+//   min_{x} x
+//   s.t.
+//   Quadratic constraint:
+//       -x^2 >= -1
+//
+// Optimal solution: x* = -1.
+//
+// Dual (go/mathopt-qcqp-dual):
+//   max_{mu, x, r}  -mu - mu*x^2
+//   s.t.  -mu*2*x + r  = 1
+//                  mu >= 0
+//                   r  = 0
+//
+// Optimal solution: x* = -1, mu* = 0.5.
+TEST_P(QcDualsTest, OnlyQuadraticConstraintGreater) {
+  if (!GetParam().supports_qc) {
+    return;
+  }
+  Model model;
+  const Variable x = model.AddVariable();
+  const QuadraticConstraint mu = model.AddQuadraticConstraint(-x * x >= -1);
+  model.Minimize(x);
+
+  ASSERT_OK_AND_ASSIGN(const SolveResult solve_result, SimpleSolve(model));
+  const double expected_objective_value = -1.0;
+  EXPECT_THAT(solve_result,
+              IsOptimalWithSolution(expected_objective_value, {{x, -1.0}}));
+  EXPECT_THAT(solve_result,
+              IsOptimalWithDualSolution(expected_objective_value, {},
+                                        {{mu, 0.5}}, {{x, 0.0}}));
+}
+
+// Primal:
+//   min_{x} x1^2 - 10 x1
+//   s.t.
+//   Quadratic constraints:
+//        x1^2 + x0 <= 2
+//   Linear constraints:
+//          x1 - x0 <= 0
+//         -x1 - x0 <= 0
+//
+// Optimal solution: x* = (1, 1).
+//
+// Dual (go/mathopt-qcqp-dual):
+//   max_{mu, x, y, r}  2*mu + mu*x1^2 - x1^2
+//   s.t.   -y0 - y1 + r0 + mu       = 0
+//           y0 - y1 + r1 + mu*2*x1  = 2*x1 - 10
+//                               mu <= 0
+//                               y0 <= 0
+//                               y1 <= 0
+//                               r0  = 0
+//                               r1  = 0
+//
+// Optimal solution: x* = (1, 1), mu* = -8/3, y = (-8/3, 0), r = (0, 0).
+TEST_P(QcDualsTest, QuadraticObjectiveAndLinearAndQuadraticConstraints) {
+  if (!GetParam().supports_qc) {
+    return;
+  }
+  Model model;
+  const Variable x0 = model.AddVariable();
+  const Variable x1 = model.AddVariable();
+  const LinearConstraint y0 = model.AddLinearConstraint(x1 - x0 <= 0.0);
+  const LinearConstraint y1 = model.AddLinearConstraint(-x1 - x0 <= 0.0);
+  const QuadraticConstraint mu =
+      model.AddQuadraticConstraint(x1 * x1 + x0 <= 2);
+  model.Minimize(x1 * x1 - 10.0 * x1);
+
+  ASSERT_OK_AND_ASSIGN(const SolveResult solve_result, SimpleSolve(model));
+  const double expected_objective_value = -9.0;
+  EXPECT_THAT(solve_result, IsOptimalWithSolution(expected_objective_value,
+                                                  {{x0, 1.0}, {x1, 1.0}}));
+  EXPECT_THAT(solve_result,
+              IsOptimalWithDualSolution(
+                  expected_objective_value, {{y0, -8.0 / 3.0}, {y1, 0.0}},
+                  {{mu, -8.0 / 3.0}}, {{x0, 0.0}, {x1, 0.0}}));
+}
+
+// Primal:
+//   max_{x} -x0^2 + 4x0
+//   s.t.
+//   Quadratic constraints:
+//        x0^2 + x1^2 + x2^2 <= 3
+//   Linear constraints:
+//          x1 = 1
+//   Variable bounds:
+//          x2 = 1
+//
+// Optimal solution: x* = (1, 1, 1).
+//
+// Dual (go/mathopt-qcqp-dual):
+//   min_{mu, x, y, r}  y + r2 + 3*mu + mu*(x0^2 + x1^2 + x2^2) + x0^2
+//   s.t.       r0     + mu*2*x0   = -2x0 + 4
+//              r1 + y + mu*2*x1   = 0
+//              r2 + mu*2*x2       = 0
+//                             mu >= 0
+//                             r0  = 0
+//                             r1  = 0
+//
+// Optimal solution: x* = (1, 1, 1), mu* = 1, y = -2, r = (0, 0, -2).
+TEST_P(QcDualsTest, MaxAndVariableBounds) {
+  if (!GetParam().supports_qc) {
+    return;
+  }
+  Model model;
+  const Variable x0 = model.AddVariable();
+  const Variable x1 = model.AddVariable();
+  const Variable x2 = model.AddContinuousVariable(1.0, 1.0);
+  const LinearConstraint y = model.AddLinearConstraint(x1 == 1.0);
+  const QuadraticConstraint mu =
+      model.AddQuadraticConstraint(x0 * x0 + x1 * x1 + x2 * x2 <= 3.0);
+  model.Maximize(-x0 * x0 + 4.0 * x0);
+
+  ASSERT_OK_AND_ASSIGN(const SolveResult solve_result, SimpleSolve(model));
+  const double expected_objective_value = 3.0;
+  EXPECT_THAT(solve_result,
+              IsOptimalWithSolution(expected_objective_value,
+                                    {{x0, 1.0}, {x1, 1.0}, {x2, 1.0}}));
+  EXPECT_THAT(solve_result,
+              IsOptimalWithDualSolution(expected_objective_value, {{y, -2.0}},
+                                        {{mu, 1.0}},
+                                        {{x0, 0.0}, {x1, 0.0}, {x2, -2.0}}));
 }
 
 }  // namespace

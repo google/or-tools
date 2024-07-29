@@ -20,12 +20,8 @@
 #include <cstdint>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/string_view.h"
-#include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/math_opt/core/sparse_vector_view.h"
+#include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/cpp/basis_status.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/objective.h"
@@ -33,9 +29,6 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
-#include "ortools/math_opt/validators/ids_validator.h"
-#include "ortools/math_opt/validators/sparse_vector_validator.h"
-#include "ortools/util/status_macros.h"
 
 namespace operations_research::math_opt {
 
@@ -100,6 +93,26 @@ absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
 // Returns the proto equivalent of linear_constraint_values.
 SparseDoubleVectorProto LinearConstraintValuesToProto(
     const LinearConstraintMap<double>& linear_constraint_values);
+
+// Returns the absl::flat_hash_map<QuadraticConstraint, double> equivalent to
+// `quad_cons_proto`.
+//
+// Requires that (or returns a status error):
+//  * quad_cons_proto.ids and quad_cons_proto.values have equal size.
+//  * quad_cons_proto.ids is sorted.
+//  * quad_cons_proto.ids has elements that are quadratic constraints in `model`
+//    (this implies that each id is in [0, max(int64_t))).
+//
+// Note that the values of quad_cons_proto.values are not checked (it may have
+// NaNs).
+absl::StatusOr<absl::flat_hash_map<QuadraticConstraint, double>>
+QuadraticConstraintValuesFromProto(
+    const ModelStorage* model, const SparseDoubleVectorProto& quad_cons_proto);
+
+// Returns the proto equivalent of quadratic_constraint_values.
+SparseDoubleVectorProto QuadraticConstraintValuesToProto(
+    const absl::flat_hash_map<QuadraticConstraint, double>&
+        quadratic_constraint_values);
 
 // Returns the VariableMap<BasisStatus> equivalent to `basis_proto`.
 //
