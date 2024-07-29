@@ -28,6 +28,9 @@ absl::Status Match(std::string_view pattern, std::vector<std::string>* result,
 
 absl::Status IsDirectory(std::string_view path, const file::Options& options);
 
+absl::Status RecursivelyCreateDir(std::string_view path,
+                                  const file::Options& options);
+
 }  // namespace file
 
 #endif  // OR_TOOLS_BASE_FILESYSTEM_H_
