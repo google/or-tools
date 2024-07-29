@@ -71,4 +71,15 @@ absl::Status IsDirectory(std::string_view path, const file::Options& options) {
   }
 }
 
+absl::Status RecursivelyCreateDir(std::string_view path,
+                                  const file::Options& options) {
+  (void)options;
+  try {
+    std::filesystem::create_directories(std::filesystem::path(path));
+    return absl::OkStatus();
+  } catch (const std::exception& e) {
+    return absl::InvalidArgumentError(e.what());
+  }
+}
+
 }  // namespace file

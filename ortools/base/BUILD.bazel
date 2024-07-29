@@ -421,6 +421,21 @@ cc_library(
 )
 
 cc_library(
+    name = "temp_path",
+    srcs = ["temp_path.cc"],
+    hdrs = ["temp_path.h"],
+    deps = [
+        ":base",
+        ":file",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_library(
     name = "protobuf_util",
     hdrs = ["protobuf_util.h"],
 )

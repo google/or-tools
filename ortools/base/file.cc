@@ -78,7 +78,7 @@ bool File::Close() {
 }
 
 // Deletes "this" on closing.
-absl::Status File::Close(int flags) {
+absl::Status File::Close(int /*flags*/) {
   absl::Status status;
   if (f_ == nullptr) {
     return status;
@@ -168,8 +168,8 @@ void File::Init() {}
 
 namespace file {
 absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
-                  int flags) {
-  if (flags == Defaults()) {
+                  Options options) {
+  if (options == Defaults()) {
     *f = File::Open(filename, mode);
     if (*f != nullptr) {
       return absl::OkStatus();
@@ -179,23 +179,34 @@ absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
                       absl::StrCat("Could not open '", filename, "'"));
 }
 
-File* OpenOrDie(absl::string_view filename, absl::string_view mode, int flags) {
+File* OpenOrDie(absl::string_view filename, absl::string_view mode,
+                Options options) {
   File* f;
-  CHECK_EQ(flags, Defaults());
+  CHECK_EQ(options, Defaults());
   f = File::Open(filename, mode);
   CHECK(f != nullptr) << absl::StrCat("Could not open '", filename, "'");
   return f;
 }
 
+absl::StatusOr<std::string> GetContents(absl::string_view path,
+                                        Options options) {
+  absl::StatusOr<std::string> contents_or = std::string();
+  absl::Status status = GetContents(path, &contents_or.value(), options);
+  if (!status.ok()) {
+    contents_or = status;
+  }
+  return contents_or;
+}
+
 absl::Status GetContents(absl::string_view filename, std::string* output,
-                         int flags) {
+                         Options options) {
   File* file;
-  auto status = file::Open(filename, "r", &file, flags);
+  auto status = file::Open(filename, "r", &file, options);
   if (!status.ok()) return status;
 
   const int64_t size = file->Size();
   if (file->ReadToString(output, size) == size) {
-    status.Update(file->Close(flags));
+    status.Update(file->Close(options));
     return status;
   }
 #if defined(_MSC_VER)
@@ -212,13 +223,14 @@ absl::Status GetContents(absl::string_view filename, std::string* output,
   }
 #endif  // _MSC_VER
 
-  file->Close(flags).IgnoreError();  // Even if ReadToString() fails!
+  file->Close(options).IgnoreError();  // Even if ReadToString() fails!
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("Could not read from '", filename, "'."));
 }
 
-absl::Status WriteString(File* file, absl::string_view contents, int flags) {
-  if (flags == Defaults() && file != nullptr &&
+absl::Status WriteString(File* file, absl::string_view contents,
+                         Options options) {
+  if (options == Defaults() && file != nullptr &&
       file->Write(contents.data(), contents.size()) == contents.size()) {
     return absl::OkStatus();
   }
@@ -228,12 +240,12 @@ absl::Status WriteString(File* file, absl::string_view contents, int flags) {
 }
 
 absl::Status SetContents(absl::string_view filename, absl::string_view contents,
-                         int flags) {
+                         Options options) {
   File* file;
-  auto status = file::Open(filename, "w", &file, flags);
+  auto status = file::Open(filename, "w", &file, options);
   if (!status.ok()) return status;
-  status = file::WriteString(file, contents, flags);
-  status.Update(file->Close(flags));  // Even if WriteString() fails!
+  status = file::WriteString(file, contents, options);
+  status.Update(file->Close(options));  // Even if WriteString() fails!
   return status;
 }
 
@@ -313,8 +325,8 @@ void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
 }
 
 absl::Status GetTextProto(absl::string_view filename,
-                          google::protobuf::Message* proto, int flags) {
-  if (flags == Defaults()) {
+                          google::protobuf::Message* proto, Options options) {
+  if (options == Defaults()) {
     if (ReadFileToProto(filename, proto)) return absl::OkStatus();
   }
   return absl::Status(
@@ -323,8 +335,9 @@ absl::Status GetTextProto(absl::string_view filename,
 }
 
 absl::Status SetTextProto(absl::string_view filename,
-                          const google::protobuf::Message& proto, int flags) {
-  if (flags == Defaults()) {
+                          const google::protobuf::Message& proto,
+                          Options options) {
+  if (options == Defaults()) {
     if (WriteProtoToASCIIFile(proto, filename)) return absl::OkStatus();
   }
   return absl::Status(
@@ -333,9 +346,9 @@ absl::Status SetTextProto(absl::string_view filename,
 }
 
 absl::Status GetBinaryProto(const absl::string_view filename,
-                            google::protobuf::Message* proto, const int flags) {
+                            google::protobuf::Message* proto, Options options) {
   std::string str;
-  if (flags == Defaults() && ReadFileToString(filename, &str) &&
+  if (options == Defaults() && ReadFileToString(filename, &str) &&
       proto->ParseFromString(str)) {
     return absl::OkStatus();
   }
@@ -345,8 +358,9 @@ absl::Status GetBinaryProto(const absl::string_view filename,
 }
 
 absl::Status SetBinaryProto(absl::string_view filename,
-                            const google::protobuf::Message& proto, int flags) {
-  if (flags == Defaults()) {
+                            const google::protobuf::Message& proto,
+                            Options options) {
+  if (options == Defaults()) {
     if (WriteProtoToFile(proto, filename)) return absl::OkStatus();
   }
   return absl::Status(
@@ -354,8 +368,8 @@ absl::Status SetBinaryProto(absl::string_view filename,
       absl::StrCat("Could not write proto to '", filename, "'."));
 }
 
-absl::Status Delete(absl::string_view path, int flags) {
-  if (flags == Defaults()) {
+absl::Status Delete(absl::string_view path, Options options) {
+  if (options == Defaults()) {
     std::string null_terminated_path = std::string(path);
     if (remove(null_terminated_path.c_str()) == 0) return absl::OkStatus();
   }
@@ -363,8 +377,8 @@ absl::Status Delete(absl::string_view path, int flags) {
                       absl::StrCat("Could not delete '", path, "'."));
 }
 
-absl::Status Exists(absl::string_view path, int flags) {
-  if (flags == Defaults()) {
+absl::Status Exists(absl::string_view path, Options options) {
+  if (options == Defaults()) {
     std::string null_terminated_path = std::string(path);
     if (access(null_terminated_path.c_str(), F_OK) == 0) {
       return absl::OkStatus();
