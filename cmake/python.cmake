@@ -358,12 +358,13 @@ if(BUILD_MATH_OPT)
   file(COPY
     ortools/math_opt/python/callback.py
     ortools/math_opt/python/compute_infeasible_subsystem_result.py
+    ortools/math_opt/python/errors.py
     ortools/math_opt/python/expressions.py
     ortools/math_opt/python/hash_model_storage.py
     ortools/math_opt/python/mathopt.py
     ortools/math_opt/python/message_callback.py
-    ortools/math_opt/python/model_parameters.py
     ortools/math_opt/python/model.py
+    ortools/math_opt/python/model_parameters.py
     ortools/math_opt/python/model_storage.py
     ortools/math_opt/python/normalize.py
     ortools/math_opt/python/parameters.py
