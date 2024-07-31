@@ -213,12 +213,12 @@ absl::Status GetContents(absl::string_view filename, std::string* output,
   // On windows, binary files needs to be opened with the "rb" flags.
   file->Close();
   // Retry in binary mode.
-  status = file::Open(filename, "rb", &file, flags);
+  status = file::Open(filename, "rb", &file, options);
   if (!status.ok()) return status;
 
   const int64_t b_size = file->Size();
   if (file->ReadToString(output, b_size) == b_size) {
-    status.Update(file->Close(flags));
+    status.Update(file->Close(options));
     return status;
   }
 #endif  // _MSC_VER
