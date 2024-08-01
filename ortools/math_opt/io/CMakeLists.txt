@@ -15,6 +15,10 @@ set(NAME ${PROJECT_NAME}_math_opt_io)
 add_library(${NAME} OBJECT)
 
 file(GLOB _SRCS "*.h" "*.cc")
+if(NOT USE_SCIP)
+  list(FILTER _SRCS EXCLUDE REGEX "/lp_parser.h$")
+  list(FILTER _SRCS EXCLUDE REGEX "/lp_parser.cc$")
+endif()
 target_sources(${NAME} PRIVATE ${_SRCS})
 set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
