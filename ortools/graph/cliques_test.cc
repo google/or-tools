@@ -85,7 +85,7 @@ class CliqueSizeVerifier {
   }
 
   std::function<CliqueResponse(const std::vector<int>&)> MakeCliqueCallback() {
-    return [this](const std::vector<int>& clique) {
+    return [this](absl::Span<const int> clique) {
       return AppendClique(clique) ? CliqueResponse::STOP
                                   : CliqueResponse::CONTINUE;
     };

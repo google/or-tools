@@ -207,7 +207,7 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 //
 // TODO(user): incorporate the gcd computation here? The issue is that I am
 // not sure if I just do factor /= gcd that round(x * factor) will be the same.
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
+void GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
                                     int64_t max_absolute_sum,
                                     double* scaling_factor,
                                     double* max_relative_coeff_error);
