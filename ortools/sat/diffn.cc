@@ -704,7 +704,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // Compute relevant boxes, the one with a mandatory part of y. Because we will
   // need to sort it this way, we consider them by increasing start max.
   indexed_boxes_.clear();
-  const auto temp = y->TaskByDecreasingStartMax();
+  const auto temp = y->TaskByIncreasingNegatedStartMax();
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
     // Ignore absent boxes.
@@ -718,7 +718,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
       continue;
     }
 
-    const IntegerValue start_max = temp[i].time;
+    const IntegerValue start_max = -temp[i].time;
     const IntegerValue end_min = y->EndMin(box);
     if (start_max < end_min) {
       indexed_boxes_.push_back({box, start_max, end_min});

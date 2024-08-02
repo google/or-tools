@@ -88,8 +88,8 @@ class ScatteredIntegerVector {
           std::nullopt);
 
   void ConvertToCutData(absl::int128 rhs,
-                        const std::vector<IntegerVariable>& integer_variables,
-                        const std::vector<double>& lp_solution,
+                        absl::Span<const IntegerVariable> integer_variables,
+                        absl::Span<const double> lp_solution,
                         IntegerTrail* integer_trail, CutData* result);
 
   // Similar to ConvertToLinearConstraint().
@@ -287,7 +287,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Return true if a new cut was added to the cut manager.
   bool AddCutFromConstraints(
       absl::string_view name,
-      const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
+      absl::Span<const std::pair<glop::RowIndex, IntegerValue>>
           integer_multipliers);
 
   // Second half of AddCutFromConstraints().
@@ -337,7 +337,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // std::round(std::ldexp(coeff, power)) ?
   bool ScalingCanOverflow(
       int power, bool take_objective_into_account,
-      const std::vector<std::pair<glop::RowIndex, double>>& multipliers,
+      absl::Span<const std::pair<glop::RowIndex, double>> multipliers,
       int64_t overflow_cap) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a

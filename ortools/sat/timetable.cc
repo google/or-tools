@@ -416,7 +416,7 @@ bool TimeTablingPerTask::BuildProfile() {
   const IntegerValue default_non_relevant_height =
       has_demand_equal_to_capacity_ ? 1 : 0;
 
-  const auto& by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
+  const auto& by_negated_start_max = helper_->TaskByIncreasingNegatedStartMax();
   const auto& by_end_min = helper_->TaskByIncreasingEndMin();
 
   // Next start/end of the compulsory parts to be processed. Note that only the
@@ -427,13 +427,12 @@ bool TimeTablingPerTask::BuildProfile() {
   while (next_end < num_tasks) {
     IntegerValue time = by_end_min[next_end].time;
     if (next_start >= 0) {
-      time = std::min(time, by_decreasing_start_max[next_start].time);
+      time = std::min(time, -by_negated_start_max[next_start].time);
     }
 
     // Process the starting compulsory parts.
-    while (next_start >= 0 &&
-           by_decreasing_start_max[next_start].time == time) {
-      const int t = by_decreasing_start_max[next_start].task_index;
+    while (next_start >= 0 && -by_negated_start_max[next_start].time == time) {
+      const int t = by_negated_start_max[next_start].task_index;
       current_height += demands_min[t];
       --next_start;
     }

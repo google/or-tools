@@ -17,7 +17,9 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <random>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -26,6 +28,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/clause.h"
@@ -169,7 +172,7 @@ IntegerLiteral SplitUsingBestSolutionValueInRepository(
 std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [/*copy*/ vars, integer_trail]() {
+  return [/*copy*/ vars = vars, integer_trail]() {
     for (const IntegerVariable var : vars) {
       const IntegerLiteral decision = AtMinValue(var, integer_trail);
       if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
@@ -254,7 +257,7 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
       if (info.score > best_score) {
         best_score = info.score;
 
-        // This direction works better than the inverse in the benchs. But
+        // This direction works better than the inverse in the benchmarks. But
         // always branching up seems even better. TODO(user): investigate.
         if (info.down_score > info.up_score) {
           decision = BooleanOrIntegerLiteral(info.down_branch);
@@ -1022,8 +1025,8 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   // Special case: Don't change the decision value.
   value_selection_weight.push_back(10);
 
-  // TODO(user): These distribution values are just guessed values. They
-  // need to be tuned.
+  // TODO(user): These distribution values are just guessed values.
+  // They need to be tuned.
   std::discrete_distribution<int> val_dist(value_selection_weight.begin(),
                                            value_selection_weight.end());
 
@@ -1114,9 +1117,9 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
 
-  // This is not ideal as we reserve an int for the full duration of the model
-  // even if we use this FollowHint() function just for a while. But it is
-  // an easy solution to not have reference to deleted memory in the
+  // This is not ideal as we reserve an int for the full duration of the
+  // model even if we use this FollowHint() function just for a while. But
+  // it is an easy solution to not have reference to deleted memory in the
   // RevIntRepository(). Note that once we backtrack, these reference will
   // disappear.
   int* rev_start_index = model->TakeOwnership(new int);
@@ -1305,7 +1308,7 @@ void ConfigureSearchHeuristics(Model* model) {
 }
 
 std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
-    const std::vector<std::function<BooleanOrIntegerLiteral()>>&
+    absl::Span<const std::function<BooleanOrIntegerLiteral()>>
         incomplete_heuristics,
     const std::function<BooleanOrIntegerLiteral()>& completion_heuristic) {
   std::vector<std::function<BooleanOrIntegerLiteral()>> complete_heuristics;
@@ -1456,15 +1459,15 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
   CHECK_EQ(num_policies, heuristics.restart_policies.size());
 
   // Note that it is important to do the level-zero propagation if it wasn't
-  // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
-  // the solver is in a "propagated" state.
+  // already done because EnqueueDecisionAndBackjumpOnConflict() assumes
+  // that the solver is in a "propagated" state.
   //
-  // TODO(user): We have the issue that at level zero. calling the propagation
-  // loop more than once can propagate more! This is because we call the LP
-  // again and again on each level zero propagation. This is causing some
-  // CHECKs() to fail in multithread (rarely) because when we associate new
-  // literals to integer ones, Propagate() is indirectly called. Not sure yet
-  // how to fix.
+  // TODO(user): We have the issue that at level zero. calling the
+  // propagation loop more than once can propagate more! This is because we
+  // call the LP again and again on each level zero propagation. This is
+  // causing some CHECKs() to fail in multithread (rarely) because when we
+  // associate new literals to integer ones, Propagate() is indirectly
+  // called. Not sure yet how to fix.
   if (!sat_solver_->FinishPropagation()) return sat_solver_->UnsatStatus();
 
   // Main search loop.
@@ -1508,20 +1511,21 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
     // No decision means that we reached a leave of the search tree and that
     // we have a feasible solution.
     //
-    // Tricky: If the time limit is reached during the final propagation when
-    // all variables are fixed, there is no guarantee that the propagation
-    // responsible for testing the validity of the solution was run to
-    // completion. So we cannot report a feasible solution.
+    // Tricky: If the time limit is reached during the final propagation
+    // when all variables are fixed, there is no guarantee that the
+    // propagation responsible for testing the validity of the solution was
+    // run to completion. So we cannot report a feasible solution.
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (decision == kNoLiteralIndex) {
-      // Save the current polarity of all Booleans in the solution. It will be
-      // followed for the next SAT decisions. This is known to be a good policy
-      // for optimization problem. Note that for decision problem we don't care
-      // since we are just done as soon as a solution is found.
+      // Save the current polarity of all Booleans in the solution. It will
+      // be followed for the next SAT decisions. This is known to be a good
+      // policy for optimization problem. Note that for decision problem we
+      // don't care since we are just done as soon as a solution is found.
       //
       // This idea is kind of "well known", see for instance the "LinSBPS"
-      // submission to the maxSAT 2018 competition by Emir Demirovic and Peter
-      // Stuckey where they show it is a good idea and provide more references.
+      // submission to the maxSAT 2018 competition by Emir Demirovic and
+      // Peter Stuckey where they show it is a good idea and provide more
+      // references.
       if (parameters_.use_optimization_hints()) {
         auto* sat_decision = model_->GetOrCreate<SatDecisionPolicy>();
         const auto& trail = *model_->GetOrCreate<Trail>();
@@ -1536,9 +1540,9 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
       return sat_solver_->UnsatStatus();
     }
 
-    // In multi-thread, we really only want to save the LP relaxation for thread
-    // with high linearization level to avoid to pollute the repository with
-    // sub-par lp solutions.
+    // In multi-thread, we really only want to save the LP relaxation for
+    // thread with high linearization level to avoid to pollute the
+    // repository with sub-par lp solutions.
     //
     // TODO(user): Experiment more around dynamically changing the
     // threshold for storing LP solutions in the pool. Alternatively expose
@@ -1552,9 +1556,10 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
         parameters_.linearization_level() >= 2) {
       num_decisions_since_last_lp_record_++;
       if (num_decisions_since_last_lp_record_ >= 100) {
-        // NOTE: We can actually record LP solutions more frequently. However
-        // this process is time consuming and workers waste a lot of time doing
-        // this. To avoid this we don't record solutions after each decision.
+        // NOTE: We can actually record LP solutions more frequently.
+        // However this process is time consuming and workers waste a lot of
+        // time doing this. To avoid this we don't record solutions after
+        // each decision.
         RecordLPRelaxationValues(model_);
         num_decisions_since_last_lp_record_ = 0;
       }

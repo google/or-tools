@@ -850,7 +850,7 @@ void OrbitAndPropagation(absl::Span<const int> orbits, int var,
 }
 
 std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
-    const std::vector<int64_t>& maximum_values, int64_t max_linear_size,
+    absl::Span<const int64_t> maximum_values, int64_t max_linear_size,
     bool* is_approximated) {
   std::vector<int64_t> out(maximum_values.size());
   int64_t range_product = 1;
@@ -872,8 +872,8 @@ std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
   *is_approximated = true;
 
   const auto compute_approximate_coeffs =
-      [max_linear_size, &maximum_values](double scaling_factor,
-                                         std::vector<int64_t>* coeffs) -> bool {
+      [max_linear_size, maximum_values](double scaling_factor,
+                                        std::vector<int64_t>* coeffs) -> bool {
     int64_t max_size = 0;
     double cumulative_product_double = 1.0;
     for (int i = 0; i < maximum_values.size(); ++i) {

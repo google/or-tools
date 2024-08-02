@@ -14,19 +14,15 @@
 #ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
@@ -183,9 +179,9 @@ class LinearConstraintManager {
     return type_to_num_cuts_;
   }
 
-  // If a debug solution has been loaded, this checks if the given constaint cut
-  // it or not. Returns true iff everything is fine and the cut does not violate
-  // the loaded solution.
+  // If a debug solution has been loaded, this checks if the given constraint
+  // cut it or not. Returns true if and only if everything is fine and the cut
+  // does not violate the loaded solution.
   bool DebugCheckConstraint(const LinearConstraint& cut);
 
  private:
@@ -193,7 +189,7 @@ class LinearConstraintManager {
   // LP. Note that such constraints can be added back later by the heuristic
   // responsible for adding new constraints from the pool.
   //
-  // Returns true iff one or more constraints where removed.
+  // Returns true if and only if one or more constraints where removed.
   //
   // If the solutions_state is empty, then this function does nothing and
   // returns false (this is used for tests). Otherwise, the solutions_state is

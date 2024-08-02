@@ -1039,7 +1039,8 @@ void SatSolver::Backtrack(int target_level) {
   // that will cause some problems. Note that we could forbid a user to call
   // Backtrack() with the current level, but that is annoying when you just
   // want to reset the solver with Backtrack(0).
-  if (CurrentDecisionLevel() == target_level) return;
+  DCHECK(target_level == 0 || !Decisions().empty());
+  if (CurrentDecisionLevel() == target_level || Decisions().empty()) return;
   DCHECK_GE(target_level, 0);
   DCHECK_LE(target_level, CurrentDecisionLevel());
 
