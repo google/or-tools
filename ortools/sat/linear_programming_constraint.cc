@@ -201,8 +201,8 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
 }
 
 void ScatteredIntegerVector::ConvertToCutData(
-    absl::int128 rhs, const std::vector<IntegerVariable>& integer_variables,
-    const std::vector<double>& lp_solution, IntegerTrail* integer_trail,
+    absl::int128 rhs, absl::Span<const IntegerVariable> integer_variables,
+    absl::Span<const double> lp_solution, IntegerTrail* integer_trail,
     CutData* result) {
   result->terms.clear();
   result->rhs = rhs;
@@ -981,7 +981,7 @@ bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
 
 bool LinearProgrammingConstraint::AddCutFromConstraints(
     absl::string_view name,
-    const std::vector<std::pair<RowIndex, IntegerValue>>& integer_multipliers) {
+    absl::Span<const std::pair<RowIndex, IntegerValue>> integer_multipliers) {
   // This is initialized to a valid linear constraint (by taking linear
   // combination of the LP rows) and will be transformed into a cut if
   // possible.
@@ -1881,7 +1881,7 @@ absl::int128 LinearProgrammingConstraint::GetImpliedLowerBound(
 
 bool LinearProgrammingConstraint::ScalingCanOverflow(
     int power, bool take_objective_into_account,
-    const std::vector<std::pair<glop::RowIndex, double>>& multipliers,
+    absl::Span<const std::pair<glop::RowIndex, double>> multipliers,
     int64_t overflow_cap) const {
   int64_t bound = 0;
   const int64_t factor = int64_t{1} << power;

@@ -164,7 +164,7 @@ namespace {
 //
 // Precondition: var must be the only non-integer in the given constraint.
 double GetIntegralityMultiplier(const MPModelProto& mp_model,
-                                const std::vector<double>& var_scaling, int var,
+                                absl::Span<const double> var_scaling, int var,
                                 int ct_index, double tolerance) {
   DCHECK(!mp_model.variable(var).is_integer());
   const MPConstraintProto& ct = mp_model.constraint(ct_index);

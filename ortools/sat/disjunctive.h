@@ -234,17 +234,18 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
         helper_(helper),
         task_set_(helper->NumTasks()),
         stats_("DisjunctiveDetectablePrecedences", model) {
-    task_by_increasing_end_min_.ClearAndReserve(helper->NumTasks());
+    ranks_.resize(helper->NumTasks());
+    to_add_.ClearAndReserve(helper->NumTasks());
   }
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(IntegerValue min_start_min, IntegerValue max_end_min);
+  bool PropagateWithRanks();
   bool Push(IntegerValue task_set_end_min, int t);
 
-  FixedCapacityVector<TaskTime> task_by_increasing_end_min_;
-  absl::Span<const TaskTime> task_by_decreasing_start_max_;
+  FixedCapacityVector<int> to_add_;
+  std::vector<int> ranks_;
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;

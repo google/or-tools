@@ -382,6 +382,11 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
     recompute_energy_profile_ = true;
   }
 
+  // We might only want to do that if the value changed, but I am not sure it
+  // is worth the test.
+  recompute_by_start_max_ = true;
+  recompute_by_end_min_ = true;
+
   cached_start_min_[t] = smin;
   cached_end_min_[t] = emin;
   cached_negated_start_max_[t] = -smax;
@@ -444,14 +449,14 @@ void SchedulingConstraintHelper::InitSortedVectors() {
 
   task_by_increasing_start_min_.resize(num_tasks);
   task_by_increasing_end_min_.resize(num_tasks);
-  task_by_decreasing_start_max_.resize(num_tasks);
+  task_by_increasing_negated_start_max_.resize(num_tasks);
   task_by_decreasing_end_max_.resize(num_tasks);
   task_by_increasing_shifted_start_min_.resize(num_tasks);
   task_by_negated_shifted_end_max_.resize(num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
     task_by_increasing_start_min_[t].task_index = t;
     task_by_increasing_end_min_[t].task_index = t;
-    task_by_decreasing_start_max_[t].task_index = t;
+    task_by_increasing_negated_start_max_[t].task_index = t;
     task_by_decreasing_end_max_[t].task_index = t;
 
     task_by_increasing_shifted_start_min_[t].task_index = t;
@@ -461,6 +466,8 @@ void SchedulingConstraintHelper::InitSortedVectors() {
     task_by_negated_shifted_end_max_[t].presence_lit = reason_for_presence_[t];
   }
 
+  recompute_by_start_max_ = true;
+  recompute_by_end_min_ = true;
   recompute_energy_profile_ = true;
   recompute_shifted_start_min_ = true;
   recompute_negated_shifted_end_max_ = true;
@@ -474,7 +481,9 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
     std::swap(ends_, minus_starts_);
 
     std::swap(task_by_increasing_start_min_, task_by_decreasing_end_max_);
-    std::swap(task_by_increasing_end_min_, task_by_decreasing_start_max_);
+    std::swap(task_by_increasing_end_min_,
+              task_by_increasing_negated_start_max_);
+    std::swap(recompute_by_end_min_, recompute_by_start_max_);
     std::swap(task_by_increasing_shifted_start_min_,
               task_by_negated_shifted_end_max_);
 
@@ -575,23 +584,26 @@ SchedulingConstraintHelper::TaskByIncreasingStartMin() {
 
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingEndMin() {
+  if (!recompute_by_end_min_) return task_by_increasing_end_min_;
   for (TaskTime& ref : task_by_increasing_end_min_) {
     ref.time = EndMin(ref.task_index);
   }
   IncrementalSort(task_by_increasing_end_min_.begin(),
                   task_by_increasing_end_min_.end());
+  recompute_by_end_min_ = false;
   return task_by_increasing_end_min_;
 }
 
 absl::Span<const TaskTime>
-SchedulingConstraintHelper::TaskByDecreasingStartMax() {
-  for (TaskTime& ref : task_by_decreasing_start_max_) {
-    ref.time = StartMax(ref.task_index);
+SchedulingConstraintHelper::TaskByIncreasingNegatedStartMax() {
+  if (!recompute_by_start_max_) return task_by_increasing_negated_start_max_;
+  for (TaskTime& ref : task_by_increasing_negated_start_max_) {
+    ref.time = cached_negated_start_max_[ref.task_index];
   }
-  IncrementalSort(task_by_decreasing_start_max_.begin(),
-                  task_by_decreasing_start_max_.end(),
-                  std::greater<TaskTime>());
-  return task_by_decreasing_start_max_;
+  IncrementalSort(task_by_increasing_negated_start_max_.begin(),
+                  task_by_increasing_negated_start_max_.end());
+  recompute_by_start_max_ = false;
+  return task_by_increasing_negated_start_max_;
 }
 
 absl::Span<const TaskTime>

@@ -401,9 +401,10 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // TODO(user): we could merge the first loop of IncrementalSort() with the
   // loop that fill TaskTime.time at each call.
   absl::Span<const TaskTime> TaskByIncreasingStartMin();
-  absl::Span<const TaskTime> TaskByIncreasingEndMin();
-  absl::Span<const TaskTime> TaskByDecreasingStartMax();
   absl::Span<const TaskTime> TaskByDecreasingEndMax();
+
+  absl::Span<const TaskTime> TaskByIncreasingNegatedStartMax();
+  absl::Span<const TaskTime> TaskByIncreasingEndMin();
 
   absl::Span<const CachedTaskBounds> TaskByIncreasingShiftedStartMin();
 
@@ -584,9 +585,12 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   // Sorted vectors returned by the TasksBy*() functions.
   std::vector<TaskTime> task_by_increasing_start_min_;
-  std::vector<TaskTime> task_by_increasing_end_min_;
-  std::vector<TaskTime> task_by_decreasing_start_max_;
   std::vector<TaskTime> task_by_decreasing_end_max_;
+
+  bool recompute_by_start_max_ = true;
+  bool recompute_by_end_min_ = true;
+  std::vector<TaskTime> task_by_increasing_negated_start_max_;
+  std::vector<TaskTime> task_by_increasing_end_min_;
 
   // Sorted vector returned by GetEnergyProfile().
   bool recompute_energy_profile_ = true;
