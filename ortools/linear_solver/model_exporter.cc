@@ -33,9 +33,10 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
-ABSL_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
+ABSL_RETIRED_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
 
 namespace operations_research {
 namespace {
@@ -250,16 +251,9 @@ absl::StatusOr<std::string> ExportModelAsMpsFormat(
 absl::Status WriteModelToMpsFile(absl::string_view filename,
                                  const MPModelProto& model,
                                  const MPModelExportOptions& options) {
-  if (model.general_constraint_size() > 0) {
-    return absl::InvalidArgumentError("General constraints are not supported.");
-  }
-
-  MPModelProtoExporter exporter(model);
-  std::string mps_model;
-  if (!exporter.ExportModelAsMpsFormat(options, &mps_model)) {
-    return absl::InvalidArgumentError("Unable to export model.");
-  }
-  return file::SetContents(filename, mps_model, file::Defaults());
+  ASSIGN_OR_RETURN(std::string mps_data,
+                   ExportModelAsMpsFormat(model, options));
+  return file::SetContents(filename, mps_data, file::Defaults());
 }
 
 namespace {
@@ -478,10 +472,6 @@ void UpdateMaxSize(double new_number, int* size) {
 }  // namespace
 
 void MPModelProtoExporter::Setup() {
-  if (absl::GetFlag(FLAGS_lp_log_invalid_name)) {
-    LOG(WARNING) << "The \"lp_log_invalid_name\" flag is deprecated. Use "
-                    "MPModelProtoExportOptions instead.";
-  }
   num_binary_variables_ = 0;
   num_integer_variables_ = 0;
   for (const MPVariableProto& var : proto_.variable()) {

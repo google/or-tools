@@ -379,6 +379,7 @@ cc_library(
         "//ortools/base:file",
         "//ortools/base:hash",
         "//ortools/base:map_util",
+        "//ortools/base:status_macros",
         "//ortools/util:fp_utils",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
