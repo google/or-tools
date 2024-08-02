@@ -586,7 +586,7 @@ void PartialRandomAssignment(typename MaxFlowSolver<Graph>::Solver f,
 }
 
 template <typename Graph>
-void ChangeCapacities(const std::vector<int64_t>& arc_capacity,
+void ChangeCapacities(absl::Span<const int64_t> arc_capacity,
                       FlowQuantity delta, GenericMaxFlow<Graph>* max_flow) {
   const Graph* graph = max_flow->graph();
   for (typename Graph::ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {
