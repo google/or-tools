@@ -22,6 +22,7 @@
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/log/check.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"

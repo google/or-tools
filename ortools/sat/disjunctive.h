@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
