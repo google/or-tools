@@ -207,7 +207,7 @@ if(BUILD_PYTHON AND BUILD_pybind11_protobuf)
     GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
     GIT_TAG "84653a591aea5df482dc2bde42c19efafbd53a57" # 2024/06/28
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
-    GIT_SHALLOW TRUE
+    #GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(pybind11_protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
