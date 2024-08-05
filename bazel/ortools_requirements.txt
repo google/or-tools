@@ -8,7 +8,7 @@ absl-py==2.0.0
     # via -r bazel/ortools_requirements.in
 black==24.3.0
     # via -r bazel/ortools_requirements.in
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
 charset-normalizer==3.3.2
     # via requests
@@ -30,7 +30,7 @@ mypy-extensions==1.0.0
     #   mypy
 mypy-protobuf==3.5.0
     # via -r bazel/ortools_requirements.in
-numpy==1.26.1
+numpy==1.26.4
     # via
     #   -r bazel/ortools_requirements.in
     #   pandas
@@ -67,7 +67,7 @@ typing-extensions==4.8.0
     # via mypy
 tzdata==2023.3
     # via pandas
-urllib3==2.1.0
+urllib3==2.2.2
     # via requests
 virtualenv==20.24.6
     # via -r bazel/ortools_requirements.in
