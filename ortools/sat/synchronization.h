@@ -593,8 +593,10 @@ class UniqueClauseStream {
   // Export 4KiB of clauses per batch.
   static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
   // Bound the total literals we buffer, approximately enforced so shorter
-  // clauses can replace longer ones.
-  static constexpr int kMaxBufferedLiterals = 4 * kMaxLiteralsPerBatch;
+  // clauses can replace longer ones. This can be larger than
+  // kMaxLiteralsPerBatch (hence the separate constant), but experiments suggest
+  // that this doesn't help.
+  static constexpr int kMaxBufferedLiterals = kMaxLiteralsPerBatch;
 
   UniqueClauseStream();
   // Move only - this is an expensive class to copy.
@@ -637,8 +639,8 @@ class UniqueClauseStream {
 
   // Delete longest clauses while keeping at least kMaxBufferedLiterals.
   // This guarantees that CanAccept will return the same result as before, and
-  // at least the next 4 batches will contain the same clauses, but we will emit
-  // fewer old, long clauses many batches in the future.
+  // at least the next batch will contain the same clauses, but we will emit
+  // fewer old, long clauses in the future.
   void RemoveWorstClauses();
 
   int lbd_threshold() const ABSL_LOCKS_EXCLUDED(mutex_) {

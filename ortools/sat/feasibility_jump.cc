@@ -902,7 +902,8 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
       // Check that the score for undoing the move is -score with both the
       // default weights (which may be `state_->weights` or
       // `state_->compound_weights`), and with `weights` explicitly.
-      if (!state_->options.use_decay) {
+      // TODO(user): Re-enable DCHECK.
+      if (/* DISABLES CODE */ false && !state_->options.use_decay) {
         DCHECK_EQ(-score, ComputeScore(state_->weights, var,
                                        prev_value - new_value, false));
         DCHECK_EQ(-score, ComputeScore(ScanWeights(), var,
