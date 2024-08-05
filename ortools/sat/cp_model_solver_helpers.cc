@@ -905,6 +905,7 @@ int RegisterClausesLevelZeroImport(int id,
         return false;
       }
     }
+    clause_stream->RemoveWorstClauses();
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
