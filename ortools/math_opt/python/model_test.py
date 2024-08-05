@@ -160,6 +160,20 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
         self.assertEqual(c, mod.get_linear_constraint(0))
         self.assertEqual(d, mod.get_linear_constraint(1))
 
+    def test_linear_constraint_as_bounded_expression(
+        self, storage_class: StorageClass
+    ) -> None:
+        mod = model.Model(name="test_model", storage_class=storage_class)
+        x = mod.add_binary_variable(name="x")
+        y = mod.add_binary_variable(name="y")
+        c = mod.add_linear_constraint(lb=-1.0, ub=2.5, name="c", expr=3 * x - 2 * y)
+        bounded_expr = c.as_bounded_linear_expression()
+        self.assertEqual(bounded_expr.lower_bound, -1.0)
+        self.assertEqual(bounded_expr.upper_bound, 2.5)
+        expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertEqual(expr.offset, 0.0)
+        self.assertDictEqual(dict(expr.terms), {x: 3.0, y: -2.0})
+
     def test_get_linear_constraint_does_not_exist_key_error(
         self, storage_class: StorageClass
     ) -> None:

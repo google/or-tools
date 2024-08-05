@@ -384,7 +384,7 @@ Matcher<std::optional<Basis>> BasisIs(const std::optional<Basis>& expected) {
 }
 
 testing::Matcher<std::vector<Solution>> IsNear(
-    const std::vector<Solution>& expected_solutions,
+    absl::Span<const Solution> expected_solutions,
     const SolutionMatcherOptions options) {
   if (expected_solutions.empty()) {
     return IsEmpty();

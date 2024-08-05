@@ -1333,7 +1333,7 @@ absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
 }
 
 absl::StatusOr<double> GurobiSolver::GetBestDualBound(
-    const std::vector<SolutionProto>& solutions) const {
+    absl::Span<const SolutionProto> solutions) const {
   ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   // GetGurobiBestDualBound() returns the correct bound for problems without
   // dual solutions (e.g. MIP).

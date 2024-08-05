@@ -1279,6 +1279,12 @@ class LinearConstraint:
                 ),
             )
 
+    def as_bounded_linear_expression(self) -> BoundedLinearExpression:
+        """Returns the bounded expression from lower_bound, upper_bound and terms."""
+        return BoundedLinearExpression(
+            self.lower_bound, LinearSum(self.terms()), self.upper_bound
+        )
+
     def __str__(self):
         """Returns the name, or a string containing the id if the name is empty."""
         return self.name if self.name else f"linear_constraint_{self.id}"

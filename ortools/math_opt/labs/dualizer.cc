@@ -198,11 +198,10 @@ RobustConstraintDualizer::RobustConstraintDualizer(
 
 }  // namespace
 
-void AddRobustConstraint(
-    const Model& uncertainty_model, const Variable rhs,
-    const std::vector<std::pair<LinearExpression, Variable>>&
-        uncertain_coefficients,
-    Model& main_model) {
+void AddRobustConstraint(const Model& uncertainty_model, const Variable rhs,
+                         absl::Span<const std::pair<LinearExpression, Variable>>
+                             uncertain_coefficients,
+                         Model& main_model) {
   RobustConstraintDualizer dualizer(uncertainty_model, rhs,
                                     uncertain_coefficients, main_model);
 }
