@@ -587,10 +587,9 @@ class CallMethod2 : public Demon {
   }
 
   std::string DebugString() const override {
-    return absl::StrCat(absl::StrCat("CallMethod_", name_),
-                        absl::StrCat("(", constraint_->DebugString()),
-                        absl::StrCat(", ", ParameterDebugString(param1_)),
-                        absl::StrCat(", ", ParameterDebugString(param2_), ")"));
+    return absl::StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
+                        ", ", ParameterDebugString(param1_), ", ",
+                        ParameterDebugString(param2_), ")");
   }
 
  private:

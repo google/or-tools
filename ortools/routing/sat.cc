@@ -41,9 +41,26 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/time_limit.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace sat {
 namespace {
+
+using operations_research::sat::BoolArgumentProto;
+using operations_research::sat::CircuitConstraintProto;
+using operations_research::sat::ConstraintProto;
+using operations_research::sat::CpModelProto;
+using operations_research::sat::CpObjectiveProto;
+using operations_research::sat::CpSolverResponse;
+using operations_research::sat::CpSolverStatus;
+using operations_research::sat::IntegerVariableProto;
+using operations_research::sat::kMaxIntegerValue;
+using operations_research::sat::kMinxIntegerValue;
+using operations_research::sat::LinearConstraintProto;
+using operations_research::sat::Model;
+using operations_research::sat::NewSatParameters;
+using operations_research::sat::PartialVariableAssignment;
+using operations_research::sat::RoutesConstraintProto;
+using operations_research::sat::SatParameters;
 
 // As of 07/2019, TSPs and VRPs with homogeneous fleets of vehicles are
 // supported.
@@ -1202,4 +1219,4 @@ bool SolveModelWithSat(RoutingModel* model,
       objective, *model, arc_vars, solution);
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

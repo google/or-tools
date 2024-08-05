@@ -29,7 +29,7 @@
 #include "ortools/routing/routing.h"
 #include "ortools/util/bitset.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Wraps a routing assignment providing extra features.
 class RoutingSolution {
@@ -223,6 +223,6 @@ std::pair<double, double> GetSimulatedAnnealingTemperatures(
     const RoutingModel& model, const SimulatedAnnealingParameters& sa_params,
     std::mt19937* rnd);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_ILS_H_

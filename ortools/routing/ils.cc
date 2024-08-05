@@ -37,7 +37,7 @@
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 // Returns global cheapest insertion parameters based on the given search
@@ -227,13 +227,15 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
           parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
-          filter_manager, model->GetBinCapacities());
+          parameters.local_cheapest_insertion_sorting_mode(), filter_manager,
+          model->GetBinCapacities());
     case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION:
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           /*evaluator=*/nullptr,
           parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
-          filter_manager, model->GetBinCapacities());
+          parameters.local_cheapest_insertion_sorting_mode(), filter_manager,
+          model->GetBinCapacities());
     case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION: {
       GlobalCheapestInsertionFilteredHeuristic::
           GlobalCheapestInsertionParameters gci_parameters =
@@ -432,13 +434,18 @@ bool HasPerformedNodes(const RoutingModel& model,
   return false;
 }
 
-// Returns a random performed customer for the given assignment and customer
-// distribution. The procedure assumes the assignment has at least one
-// performed customer.
+// Returns a random performed visit for the given assignment. The procedure
+// requires a distribution including all visits. Returns -1 if there are no
+// performed visits.
 int64_t PickRandomPerformedVisit(
     const RoutingModel& model, const Assignment& assignment, std::mt19937& rnd,
     std::uniform_int_distribution<int64_t>& customer_dist) {
-  DCHECK(HasPerformedNodes(model, assignment));
+  DCHECK_EQ(customer_dist.min(), 0);
+  DCHECK_EQ(customer_dist.max(), model.Size() - model.vehicles());
+
+  if (!HasPerformedNodes(model, assignment)) {
+    return -1;
+  }
 
   int64_t customer;
   do {
@@ -652,42 +659,53 @@ CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
       neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
           {num_neighbors_for_route_selection,
            /*add_vehicle_starts_to_neighbors=*/false,
+           /*add_vehicle_ends_to_neighbors=*/false,
            /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
       num_routes_(num_routes),
       rnd_(*rnd),
-      customer_dist_(0, model->Size() - 1),
+      customer_dist_(0, model->Size() - model->vehicles()),
       removed_routes_(model->vehicles()) {}
 
 std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
     const Assignment* assignment) {
+  if (num_routes_ == 0) {
+    return [this, assignment](int64_t node) {
+      return assignment->Value(model_.NextVar(node));
+    };
+  }
+
+  const int64_t seed_node =
+      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
+  if (seed_node == -1) {
+    return [this, assignment](int64_t node) {
+      return assignment->Value(model_.NextVar(node));
+    };
+  }
+
   removed_routes_.SparseClearAll();
 
-  if (num_routes_ > 0 && HasPerformedNodes(model_, *assignment)) {
-    const int64_t seed_node =
-        PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
-    const int seed_route = assignment->Value(model_.VehicleVar(seed_node));
-    DCHECK_GE(seed_route, 0);
+  const int seed_route = assignment->Value(model_.VehicleVar(seed_node));
+  DCHECK_GE(seed_route, 0);
 
-    removed_routes_.Set(seed_route);
+  removed_routes_.Set(seed_route);
 
-    const RoutingCostClassIndex cost_class_index =
-        model_.GetCostClassIndexOfVehicle(seed_route);
+  const RoutingCostClassIndex cost_class_index =
+      model_.GetCostClassIndexOfVehicle(seed_route);
 
-    const std::vector<int>& neighbors =
-        neighbors_manager_->GetNeighborsOfNodeForCostClass(
-            cost_class_index.value(), seed_node);
+  const std::vector<int>& neighbors =
+      neighbors_manager_->GetOutgoingNeighborsOfNodeForCostClass(
+          cost_class_index.value(), seed_node);
 
-    for (int neighbor : neighbors) {
-      if (removed_routes_.NumberOfSetCallsWithDifferentArguments() ==
-          num_routes_) {
-        break;
-      }
-      const int64_t route = assignment->Value(model_.VehicleVar(neighbor));
-      if (route < 0 || removed_routes_[route]) {
-        continue;
-      }
-      removed_routes_.Set(route);
+  for (int neighbor : neighbors) {
+    if (removed_routes_.NumberOfSetCallsWithDifferentArguments() ==
+        num_routes_) {
+      break;
     }
+    const int64_t route = assignment->Value(model_.VehicleVar(neighbor));
+    if (route < 0 || removed_routes_[route]) {
+      continue;
+    }
+    removed_routes_.Set(route);
   }
 
   return [this, assignment](int64_t node) {
@@ -710,23 +728,29 @@ RandomWalkRemovalRuinProcedure::RandomWalkRemovalRuinProcedure(
       neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
           {num_neighbors_for_route_selection,
            /*add_vehicle_starts_to_neighbors=*/false,
+           /*add_vehicle_ends_to_neighbors=*/false,
            /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
       rnd_(*rnd),
       walk_length_(walk_length),
-      customer_dist_(0, model->Size() - 1) {}
+      customer_dist_(0, model->Size() - model->vehicles()) {}
 
 std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
     const Assignment* assignment) {
-  if (!HasPerformedNodes(model_, *assignment) || walk_length_ == 0) {
-    return [&model = model_, assignment](int64_t node) {
-      return assignment->Value(model.NextVar(node));
+  if (walk_length_ == 0) {
+    return [this, assignment](int64_t node) {
+      return assignment->Value(model_.NextVar(node));
+    };
+  }
+
+  int64_t curr_node =
+      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
+  if (curr_node == -1) {
+    return [this, assignment](int64_t node) {
+      return assignment->Value(model_.NextVar(node));
     };
   }
 
   routing_solution_.Reset(assignment);
-
-  int64_t curr_node =
-      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
 
   int walk_length = walk_length_;
 
@@ -772,7 +796,7 @@ int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
       model_.GetCostClassIndexOfVehicle(curr_vehicle);
 
   const std::vector<int>& neighbors =
-      neighbors_manager_->GetNeighborsOfNodeForCostClass(
+      neighbors_manager_->GetOutgoingNeighborsOfNodeForCostClass(
           cost_class_index.value(), node);
 
   int64_t same_route_closest_neighbor = -1;
@@ -931,4 +955,4 @@ std::pair<double, double> GetSimulatedAnnealingTemperatures(
   return {reference_temperature * 0.1, reference_temperature * 0.001};
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

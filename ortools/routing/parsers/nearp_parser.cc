@@ -26,7 +26,7 @@
 #include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 NearpParser::NearpParser() { Initialize(); }
 
@@ -447,4 +447,4 @@ std::string NearpParser::GetEdgeName(Edge edge) const {
     return absl::StrCat("NrE", edge_position - num_edges_with_servicing_ + 1);
   }
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing

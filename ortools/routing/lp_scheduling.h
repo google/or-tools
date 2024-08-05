@@ -47,7 +47,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Classes to solve dimension cumul placement (aka scheduling) problems using
 // linear programming.
@@ -1065,6 +1065,6 @@ std::vector<SlopeAndYIntercept> PiecewiseLinearFormulationToSlopeAndYIntercept(
         PiecewiseLinearFormulation& pwl_function,
     int index_start = 0, int index_end = -1);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_LP_SCHEDULING_H_

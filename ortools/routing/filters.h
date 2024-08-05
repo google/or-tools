@@ -34,7 +34,7 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/range_minimum_query.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 /// Returns a filter tracking route constraints.
 IntVarLocalSearchFilter* MakeRouteConstraintFilter(
@@ -589,7 +589,7 @@ class LightVehicleBreaksChecker {
 
 LocalSearchFilter* MakeLightVehicleBreaksFilter(
     Solver* solver, std::unique_ptr<LightVehicleBreaksChecker> checker,
-    const std::string& dimension_name);
+    absl::string_view dimension_name);
 
 // This class allows making fast range queries on sequences of elements.
 // * Main characteristics.
@@ -978,6 +978,6 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   bool lns_detected_;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_FILTERS_H_

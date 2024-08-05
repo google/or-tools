@@ -32,7 +32,7 @@
 
 #define ROOT_DIR "com_google_ortools/"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 TEST(TspLibParserTest, GeneratedDataSets) {
@@ -342,4 +342,4 @@ TEST(CVRPToursParserTest, LoadAllDataSets) {
   }
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

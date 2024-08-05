@@ -36,7 +36,7 @@
 #include "ortools/util/filelineiter.h"
 #include "re2/re2.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 // ----- Distances -----
@@ -852,4 +852,4 @@ void CVRPToursParser::ProcessNewLine(const std::string& line) {
   }
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

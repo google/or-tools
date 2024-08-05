@@ -26,7 +26,7 @@
 #include "ortools/base/strtoint.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 using absl::ByAnyChar;
@@ -104,4 +104,4 @@ void PdTspParser::ProcessNewLine(const std::string& line) {
   }
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

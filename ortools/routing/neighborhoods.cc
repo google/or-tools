@@ -28,7 +28,7 @@
 #include "ortools/routing/utils.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 MakeRelocateNeighborsOperator::MakeRelocateNeighborsOperator(
     const std::vector<IntVar*>& vars,
@@ -1356,4 +1356,4 @@ bool ExchangeSubtrip::ExtractChainsFromDelivery(int64_t base_node,
   return true;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

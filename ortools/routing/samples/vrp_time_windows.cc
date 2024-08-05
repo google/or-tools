@@ -26,7 +26,7 @@
 // [END import]
 
 // [START program_part1]
-namespace operations_research {
+namespace operations_research::routing {
 // [START data_model]
 struct DataModel {
   const std::vector<std::vector<int64_t>> time_matrix{
@@ -192,7 +192,7 @@ void VrpTimeWindows() {
   PrintSolution(data, manager, routing, *solution);
   // [END print_solution]
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpTimeWindows();

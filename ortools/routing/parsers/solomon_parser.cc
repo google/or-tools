@@ -31,7 +31,7 @@
 #include "ortools/util/filelineiter.h"
 #include "re2/re2.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 SolomonParser::SolomonParser()
     : sections_({{"VEHICLE", VEHICLE}, {"CUSTOMER", CUSTOMER}}) {
@@ -179,4 +179,4 @@ bool SolomonSolutionParser::ParseFile(absl::string_view file_name) {
   return success;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

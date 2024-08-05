@@ -23,7 +23,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 const int64_t RoutingIndexManager::kUnassigned = -1;
 
@@ -146,4 +146,4 @@ std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
   return nodes;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

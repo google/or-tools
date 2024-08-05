@@ -25,7 +25,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 RoutingOutputFormat RoutingOutputFormatFromString(std::string_view format) {
   const std::string format_normalized =
@@ -422,4 +422,4 @@ std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
   return current_route;
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

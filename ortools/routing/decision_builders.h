@@ -24,7 +24,7 @@
 #include "ortools/routing/lp_scheduling.h"
 #include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 /// A decision builder which tries to assign values to variables as close as
 /// possible to target values first.
@@ -108,5 +108,5 @@ class FinalizerVariables {
 #endif
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 #endif  // OR_TOOLS_ROUTING_DECISION_BUILDERS_H_

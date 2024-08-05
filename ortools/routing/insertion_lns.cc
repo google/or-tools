@@ -30,7 +30,7 @@
 #include "ortools/routing/utils.h"
 #include "ortools/util/bitset.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // FilteredHeuristicLocalSearchOperator
 
@@ -524,4 +524,4 @@ bool FilteredHeuristicExpensiveChainLNSOperator::
   return false;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

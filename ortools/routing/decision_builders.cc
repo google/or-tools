@@ -31,7 +31,7 @@
 #include "ortools/routing/routing.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 
@@ -897,4 +897,4 @@ DecisionBuilder* FinalizerVariables::CreateFinalizer() {
                                   std::move(targets));
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

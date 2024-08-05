@@ -55,7 +55,7 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 
@@ -3421,4 +3421,4 @@ std::string RoutingCPSatWrapper::PrintModel() const {
   return s;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

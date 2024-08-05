@@ -29,7 +29,7 @@ and .Net. Each language have different requirements for the code samples.
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 void SimpleRoutingProgram() {
   // Instantiate the data problem.
@@ -79,7 +79,7 @@ void SimpleRoutingProgram() {
   LOG(INFO) << "Distance of the route: " << route_distance << "m";
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::SimpleRoutingProgram();

@@ -26,7 +26,7 @@
 #include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 CarpParser::CarpParser() { Initialize(); }
 
@@ -247,4 +247,4 @@ std::optional<int64_t> ParseNodeIndex(std::string_view text) {
   return {node - 1};
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

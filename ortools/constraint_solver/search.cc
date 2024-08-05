@@ -2963,11 +2963,116 @@ SolutionCollector* Solver::MakeAllSolutionCollector() {
 
 // ---------- Objective Management ----------
 
+class RoundRobinCompoundObjectiveMonitor : public BaseObjectiveMonitor {
+ public:
+  RoundRobinCompoundObjectiveMonitor(
+      std::vector<BaseObjectiveMonitor*> monitors,
+      int num_max_local_optima_before_metaheuristic_switch)
+      : BaseObjectiveMonitor(monitors[0]->solver()),
+        monitors_(std::move(monitors)),
+        enabled_monitors_(monitors_.size(), true),
+        local_optimum_limit_(num_max_local_optima_before_metaheuristic_switch) {
+  }
+  void EnterSearch() override {
+    active_monitor_ = 0;
+    num_local_optimum_ = 0;
+    enabled_monitors_.assign(monitors_.size(), true);
+    for (auto& monitor : monitors_) {
+      monitor->set_active(monitor == monitors_[active_monitor_]);
+      monitor->EnterSearch();
+    }
+  }
+  void ApplyDecision(Decision* d) override {
+    monitors_[active_monitor_]->ApplyDecision(d);
+  }
+  void AcceptNeighbor() override {
+    monitors_[active_monitor_]->AcceptNeighbor();
+  }
+  bool AtSolution() override {
+    bool ok = true;
+    for (auto& monitor : monitors_) {
+      ok &= monitor->AtSolution();
+    }
+    return ok;
+  }
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override {
+    return monitors_[active_monitor_]->AcceptDelta(delta, deltadelta);
+  }
+  void BeginNextDecision(DecisionBuilder* db) override {
+    monitors_[active_monitor_]->BeginNextDecision(db);
+  }
+  void RefuteDecision(Decision* d) override {
+    monitors_[active_monitor_]->RefuteDecision(d);
+  }
+  bool AcceptSolution() override {
+    return monitors_[active_monitor_]->AcceptSolution();
+  }
+  bool LocalOptimum() override {
+    const bool ok = monitors_[active_monitor_]->LocalOptimum();
+    if (!ok) {
+      enabled_monitors_[active_monitor_] = false;
+    }
+    if (++num_local_optimum_ >= local_optimum_limit_ || !ok) {
+      monitors_[active_monitor_]->set_active(false);
+      int next_active_monitor = (active_monitor_ + 1) % monitors_.size();
+      while (!enabled_monitors_[next_active_monitor]) {
+        if (next_active_monitor == active_monitor_) return false;
+        next_active_monitor = (active_monitor_ + 1) % monitors_.size();
+      }
+      active_monitor_ = next_active_monitor;
+      monitors_[active_monitor_]->set_active(true);
+      num_local_optimum_ = 0;
+      VLOG(2) << "Switching to monitor " << active_monitor_ << " "
+              << monitors_[active_monitor_]->DebugString();
+    }
+    return true;
+  }
+  IntVar* ObjectiveVar(int index) const override {
+    return monitors_[active_monitor_]->ObjectiveVar(index);
+  }
+  IntVar* MinimizationVar(int index) const override {
+    return monitors_[active_monitor_]->MinimizationVar(index);
+  }
+  int64_t Step(int index) const override {
+    return monitors_[active_monitor_]->Step(index);
+  }
+  bool Maximize(int index) const override {
+    return monitors_[active_monitor_]->Maximize(index);
+  }
+  int64_t BestValue(int index) const override {
+    return monitors_[active_monitor_]->BestValue(index);
+  }
+  int Size() const override { return monitors_[active_monitor_]->Size(); }
+  std::string DebugString() const override {
+    return monitors_[active_monitor_]->DebugString();
+  }
+  void Accept(ModelVisitor* visitor) const override {
+    // TODO(user): properly implement this.
+    for (auto& monitor : monitors_) {
+      monitor->Accept(visitor);
+    }
+  }
+
+ private:
+  const std::vector<BaseObjectiveMonitor*> monitors_;
+  std::vector<bool> enabled_monitors_;
+  int active_monitor_ = 0;
+  int num_local_optimum_ = 0;
+  const int local_optimum_limit_;
+};
+
+BaseObjectiveMonitor* Solver::MakeRoundRobinCompoundObjectiveMonitor(
+    std::vector<BaseObjectiveMonitor*> monitors,
+    int num_max_local_optima_before_metaheuristic_switch) {
+  return RevAlloc(new RoundRobinCompoundObjectiveMonitor(
+      std::move(monitors), num_max_local_optima_before_metaheuristic_switch));
+}
+
 ObjectiveMonitor::ObjectiveMonitor(Solver* solver,
                                    const std::vector<bool>& maximize,
                                    std::vector<IntVar*> vars,
                                    std::vector<int64_t> steps)
-    : SearchMonitor(solver),
+    : BaseObjectiveMonitor(solver),
       found_initial_solution_(false),
       objective_vars_(std::move(vars)),
       minimization_vars_(objective_vars_),
@@ -3102,14 +3207,14 @@ void OptimizeVar::BeginNextDecision(DecisionBuilder*) {
 void OptimizeVar::ApplyBound() {
   if (found_initial_solution_) {
     MakeMinimizationVarsLessOrEqualWithSteps(
-        [this](int i) { return BestInternalValue(i); });
+        [this](int i) { return CurrentInternalValue(i); });
   }
 }
 
 void OptimizeVar::RefuteDecision(Decision*) { ApplyBound(); }
 
 bool OptimizeVar::AcceptSolution() {
-  if (!found_initial_solution_) {
+  if (!found_initial_solution_ || !is_active()) {
     return true;
   } else {
     // This code should never return false in sequential mode because
@@ -3121,8 +3226,8 @@ bool OptimizeVar::AcceptSolution() {
       // accepted.
       if (!minimization_var->Bound()) return true;
       const int64_t value = minimization_var->Value();
-      if (value == BestInternalValue(i)) continue;
-      return value < BestInternalValue(i);
+      if (value == CurrentInternalValue(i)) continue;
+      return value < CurrentInternalValue(i);
     }
     return false;
   }
@@ -3304,6 +3409,7 @@ class TabuSearch : public Metaheuristic {
 
   const std::vector<IntVar*> vars_;
   Assignment::IntContainer assignment_container_;
+  bool has_stored_assignment_ = false;
   std::vector<int64_t> last_values_;
   TabuList keep_tabu_list_;
   TabuList synced_keep_tabu_list_;
@@ -3337,6 +3443,7 @@ void TabuSearch::EnterSearch() {
   Metaheuristic::EnterSearch();
   solver()->SetUseFastLocalSearch(true);
   stamp_ = 0;
+  has_stored_assignment_ = false;
 }
 
 void TabuSearch::ApplyDecision(Decision* const d) {
@@ -3415,7 +3522,7 @@ bool TabuSearch::AtSolution() {
 
   // New solution found: add new assignments to tabu lists; this is only
   // done after the first local optimum (stamp_ != 0)
-  if (0 != stamp_) {
+  if (0 != stamp_ && has_stored_assignment_) {
     for (int index = 0; index < vars_.size(); ++index) {
       IntVar* var = vars(index);
       const int64_t old_value = assignment_container_.Element(index).Value();
@@ -3431,6 +3538,7 @@ bool TabuSearch::AtSolution() {
     }
   }
   assignment_container_.Store();
+  has_stored_assignment_ = true;
 
   return true;
 }
@@ -3945,7 +4053,9 @@ void GuidedLocalSearch<P>::ApplyDecision(Decision* const d) {
         assignment_penalized_value_ =
             CapAdd(assignment_penalized_value_, penalty);
       }
-      penalized_objective_ = solver()->MakeSum(elements)->Var();
+      solver()->SaveAndSetValue(
+          reinterpret_cast<void**>(&penalized_objective_),
+          reinterpret_cast<void*>(solver()->MakeSum(elements)->Var()));
     }
     penalized_values_.Commit();
     old_penalized_value_ = assignment_penalized_value_;
@@ -3983,7 +4093,7 @@ bool GuidedLocalSearch<P>::AtSolution() {
   if (!ObjectiveMonitor::AtSolution()) {
     return false;
   }
-  if (penalized_objective_ != nullptr) {
+  if (penalized_objective_ != nullptr && penalized_objective_->Bound()) {
     // If the value of the best solution has changed (aka a new best solution
     // has been found), triggering a reset on the penalties to start fresh.
     // The immediate consequence is a greedy dive towards a local minimum,

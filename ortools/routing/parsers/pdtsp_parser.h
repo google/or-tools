@@ -25,7 +25,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/types.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 class PdTspParser {
  public:
@@ -55,6 +55,6 @@ class PdTspParser {
   std::vector<int> deliveries_;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_PDTSP_PARSER_H_

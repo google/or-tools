@@ -37,7 +37,7 @@
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/testing_utils.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 RoutingModelParameters DefaultRoutingModelParameters() {
   RoutingModelParameters parameters;
@@ -147,6 +147,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
   p.set_heuristic_close_nodes_lns_num_nodes(5);
   p.set_local_search_metaheuristic(LocalSearchMetaheuristic::AUTOMATIC);
+  p.set_num_max_local_optima_before_metaheuristic_switch(200);
   p.set_guided_local_search_lambda_coefficient(0.1);
   p.set_guided_local_search_reset_penalties_on_new_best_solution(false);
   p.set_use_depth_first_search(false);
@@ -306,14 +307,14 @@ void FindErrorsInIteratedLocalSearchParameters(
           ruin.spatially_close_routes().num_ruined_routes() == 0) {
         errors.emplace_back(StrCat(
             "iterated_local_search_parameters.ruin_recreate_parameters."
-            "ruin is set to SpatiallyCloseRoutesRuinStrategy",
+            "ruin_strategy is set to SpatiallyCloseRoutesRuinStrategy"
             " but spatially_close_routes.num_ruined_routes is 0 (should be "
             "strictly positive)"));
       } else if (ruin.strategy_case() == RuinStrategy::kRandomWalk &&
                  ruin.random_walk().num_removed_visits() == 0) {
         errors.emplace_back(
             StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
-                   "ruin is set to RandomWalkRuinStrategy",
+                   "ruin_strategy is set to RandomWalkRuinStrategy"
                    " but random_walk.num_removed_visits is 0 (should be "
                    "strictly positive)"));
       }
@@ -570,10 +571,34 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     errors.emplace_back(StrCat("Invalid first_solution_strategy: ",
                                search_parameters.first_solution_strategy()));
   }
-  if (!LocalSearchMetaheuristic::Value_IsValid(
-          search_parameters.local_search_metaheuristic())) {
-    errors.emplace_back(StrCat("Invalid metaheuristic: ",
-                               search_parameters.local_search_metaheuristic()));
+  const LocalSearchMetaheuristic::Value local_search_metaheuristic =
+      search_parameters.local_search_metaheuristic();
+  if (local_search_metaheuristic != LocalSearchMetaheuristic::UNSET &&
+      local_search_metaheuristic != LocalSearchMetaheuristic::AUTOMATIC &&
+      !search_parameters.local_search_metaheuristics().empty()) {
+    errors.emplace_back(
+        StrCat("local_search_metaheuristics cannot be set if "
+               "local_search_metaheuristic is different from "
+               "UNSET or AUTOMATIC: ",
+               local_search_metaheuristic));
+  }
+  if (!LocalSearchMetaheuristic::Value_IsValid(local_search_metaheuristic)) {
+    errors.emplace_back(
+        StrCat("Invalid metaheuristic: ", local_search_metaheuristic));
+  }
+  for (const int metaheuristic :
+       search_parameters.local_search_metaheuristics()) {
+    if (!LocalSearchMetaheuristic::Value_IsValid(metaheuristic) ||
+        metaheuristic == LocalSearchMetaheuristic::UNSET) {
+      errors.emplace_back(StrCat("Invalid metaheuristic: ", metaheuristic));
+    }
+  }
+  if (!search_parameters.local_search_metaheuristics().empty() &&
+      search_parameters.num_max_local_optima_before_metaheuristic_switch() <
+          1) {
+    errors.emplace_back(StrCat(
+        "Invalid num_max_local_optima_before_metaheuristic_switch: ",
+        search_parameters.num_max_local_optima_before_metaheuristic_switch()));
   }
 
   const double scaling_factor = search_parameters.log_cost_scaling_factor();
@@ -667,4 +692,4 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
   return errors;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

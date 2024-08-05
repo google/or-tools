@@ -140,6 +140,7 @@ class LocalSearchProfiler;
 class ModelCache;
 class ModelVisitor;
 class ObjectiveMonitor;
+class BaseObjectiveMonitor;
 class OptimizeVar;
 class Pack;
 class ProfiledDecisionBuilder;
@@ -2364,6 +2365,14 @@ class Solver {
       bool reset_penalties_on_new_best_solution = false);
 #endif
 
+  // Creates a composite objective monitor which alternates between objective
+  // monitors every time the search reaches a local optimum local optimium
+  // reached. This will stop if all monitors return false when LocalOptimium is
+  // called.
+  BaseObjectiveMonitor* MakeRoundRobinCompoundObjectiveMonitor(
+      std::vector<BaseObjectiveMonitor*> monitors,
+      int num_max_local_optima_before_metaheuristic_switch);
+
   /// This search monitor will restart the search periodically.
   /// At the iteration n, it will restart after scale_factor * Luby(n) failures
   /// where Luby is the Luby Strategy (i.e. 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8...).
@@ -4477,8 +4486,32 @@ class SolutionCollector : public SearchMonitor {
 #endif  // SWIG
 };
 
-// Base objective monitor class. All metaheuristics derive from this.
-class ObjectiveMonitor : public SearchMonitor {
+// Base objective monitor class. All metaheuristics and metaheuristic combiners
+// derive from this.
+class BaseObjectiveMonitor : public SearchMonitor {
+ public:
+  explicit BaseObjectiveMonitor(Solver* solver) : SearchMonitor(solver) {}
+  ~BaseObjectiveMonitor() override {}
+#ifndef SWIG
+  BaseObjectiveMonitor(const BaseObjectiveMonitor&) = delete;
+  BaseObjectiveMonitor& operator=(const BaseObjectiveMonitor&) = delete;
+#endif  // SWIG
+  virtual IntVar* ObjectiveVar(int index) const = 0;
+  virtual IntVar* MinimizationVar(int index) const = 0;
+  virtual int64_t Step(int index) const = 0;
+  virtual bool Maximize(int index) const = 0;
+  virtual int64_t BestValue(int index) const = 0;
+  virtual int Size() const = 0;
+  bool is_active() const { return is_active_; }
+  void set_active(bool is_active) { is_active_ = is_active; }
+
+ private:
+  bool is_active_ = true;
+};
+
+// Base atomic objective monitor class. All non-composite metaheuristics derive
+// from this.
+class ObjectiveMonitor : public BaseObjectiveMonitor {
  public:
   ObjectiveMonitor(Solver* solver, const std::vector<bool>& maximize,
                    std::vector<IntVar*> vars, std::vector<int64_t> steps);
@@ -4487,17 +4520,21 @@ class ObjectiveMonitor : public SearchMonitor {
   ObjectiveMonitor(const ObjectiveMonitor&) = delete;
   ObjectiveMonitor& operator=(const ObjectiveMonitor&) = delete;
 #endif  // SWIG
-  IntVar* ObjectiveVar(int index) const { return objective_vars_[index]; }
-  IntVar* MinimizationVar(int index) const { return minimization_vars_[index]; }
-  int64_t Step(int index) const { return steps_[index]; }
-  bool Maximize(int index) const {
+  IntVar* ObjectiveVar(int index) const override {
+    return objective_vars_[index];
+  }
+  IntVar* MinimizationVar(int index) const override {
+    return minimization_vars_[index];
+  }
+  int64_t Step(int index) const override { return steps_[index]; }
+  bool Maximize(int index) const override {
     return ObjectiveVar(index) != MinimizationVar(index);
   }
-  int64_t BestValue(int index) const {
+  int64_t BestValue(int index) const override {
     return Maximize(index) ? CapOpp(BestInternalValue(index))
                            : BestInternalValue(index);
   }
-  int Size() const { return objective_vars_.size(); }
+  int Size() const override { return objective_vars_.size(); }
   void EnterSearch() override;
   bool AtSolution() override;
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;

@@ -45,7 +45,7 @@
 #include "ortools/routing/utils.h"
 #include "ortools/util/bitset.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 class IntVarFilteredHeuristic;
 #ifndef SWIG
@@ -345,8 +345,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     }
   };
   struct Seed {
-    uint64_t num_allowed_vehicles;
-    int64_t neg_penalty;
+    std::tuple<int64_t, int64_t> key;
     StartEndValue start_end_value;
     /// Indicates whether this Seed corresponds to a pair or a single node.
     /// If false, the 'index' is the pair_index, otherwise it's the node index.
@@ -354,10 +353,9 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     int index;
 
     bool operator>(const Seed& other) const {
-      return std::tie(num_allowed_vehicles, neg_penalty, start_end_value,
-                      is_node_index, index) >
-             std::tie(other.num_allowed_vehicles, other.neg_penalty,
-                      other.start_end_value, other.is_node_index, other.index);
+      return std::tie(key, start_end_value, is_node_index, index) >
+             std::tie(other.key, other.start_end_value, other.is_node_index,
+                      other.index);
     }
   };
   // clang-format off
@@ -1069,6 +1067,7 @@ class LocalCheapestInsertionFilteredHeuristic
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
+      RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode,
       LocalSearchFilterManager* filter_manager,
       BinCapacities* bin_capacities = nullptr,
       std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
@@ -1131,6 +1130,7 @@ class LocalCheapestInsertionFilteredHeuristic
 
   std::vector<Seed> insertion_order_;
   const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
+  const RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
 
@@ -1454,6 +1454,6 @@ DecisionBuilder* MakeSweepDecisionBuilder(RoutingModel* model,
 // Returns a DecisionBuilder making all nodes unperformed.
 DecisionBuilder* MakeAllUnperformed(RoutingModel* model);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_SEARCH_H_

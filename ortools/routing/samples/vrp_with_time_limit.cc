@@ -25,7 +25,7 @@
 #include "ortools/routing/routing.h"
 // [END import]
 
-namespace operations_research {
+namespace operations_research::routing {
 //! @brief Print the solution.
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
@@ -122,7 +122,7 @@ void VrpGlobalSpan() {
   PrintSolution(manager, routing, *solution);
   // [END print_solution]
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpGlobalSpan();

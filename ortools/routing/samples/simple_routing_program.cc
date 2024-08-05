@@ -24,7 +24,7 @@
 #include "ortools/routing/routing.h"
 // [END import]
 
-namespace operations_research {
+namespace operations_research::routing {
 
 void SimpleRoutingProgram() {
   // Instantiate the data problem.
@@ -88,7 +88,7 @@ void SimpleRoutingProgram() {
   // [END print_solution]
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::SimpleRoutingProgram();

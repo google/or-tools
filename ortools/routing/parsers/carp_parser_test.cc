@@ -23,7 +23,7 @@
 
 #define ROOT_DIR "com_google_ortools/"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(CarpParserTest, Constructor) {
   CarpParser parser;
@@ -271,4 +271,4 @@ TEST(CarpParserTest, LoadInstanceFileWithDifferentDepot) {
   EXPECT_EQ(parser.depot(), 4);
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

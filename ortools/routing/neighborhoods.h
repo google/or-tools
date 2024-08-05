@@ -27,7 +27,7 @@
 #include "ortools/routing/types.h"
 #include "ortools/util/bitset.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 /// Relocate neighborhood which moves chains of neighbors.
 /// The operator starts by relocating a node n after a node m, then continues
@@ -748,6 +748,6 @@ class ExchangeSubtrip : public PathOperator {
   std::vector<int64_t> path1_;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_NEIGHBORHOODS_H_

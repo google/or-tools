@@ -24,7 +24,7 @@
 #include "ortools/routing/routing.h"
 // [END import]
 
-namespace operations_research {
+namespace operations_research::routing {
 // [START data_model]
 struct DataModel {
   const std::vector<std::vector<int64_t>> distance_matrix{
@@ -128,7 +128,7 @@ void Tsp() {
   // [END print_solution]
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::Tsp();

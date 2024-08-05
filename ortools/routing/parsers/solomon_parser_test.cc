@@ -30,7 +30,7 @@ ABSL_FLAG(std::string, solomon_test_archive,
 ABSL_FLAG(std::string, solomon_test_instance, "google2.txt",
           "Solomon: testing instance");
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(SolomonParserTest, LoadEmptyFileName) {
   std::string empty_file_name;
@@ -95,4 +95,4 @@ TEST(SolomonSolutionParserTest, LoadFile) {
 }
 
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

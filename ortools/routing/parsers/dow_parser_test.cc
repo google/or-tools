@@ -21,7 +21,7 @@
 #include "ortools/base/path.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(CapacityPlanningReaderTest, C33PassesOK) {
   CapacityPlanningInstance request;
@@ -57,4 +57,4 @@ TEST(CapacityPlanningReaderTest, C34DoesNotExist) {
 }
 
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing
