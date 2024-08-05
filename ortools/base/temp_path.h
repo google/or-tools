@@ -17,6 +17,7 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 
 class TempPath {
@@ -24,7 +25,8 @@ class TempPath {
   // default mode to create directories (a+rwx):
   static constexpr int kDefaultMode = 0777;
 
-  explicit TempPath(const std::string& prefix);
+  explicit TempPath(absl::string_view prefix);
+  TempPath(absl::string_view prefix, absl::Status* status);
 
   // TempPath is moveable, but not copyable.
   TempPath(TempPath&& rhs);
