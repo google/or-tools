@@ -38,6 +38,8 @@ constexpr absl::string_view kDeletedObjectiveDefaultDescription =
 
 // A value type that references an objective (either primary or auxiliary) from
 // ModelStorage. Usually this type is passed by copy.
+//
+// This type implements https://abseil.io/docs/cpp/guides/hash.
 class Objective {
  public:
   // The type used for ids.

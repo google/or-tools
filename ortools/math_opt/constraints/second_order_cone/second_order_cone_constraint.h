@@ -32,6 +32,8 @@ namespace operations_research::math_opt {
 
 // A value type that references a second-order cone constraint from
 // ModelStorage. Usually this type is passed by copy.
+//
+// This type implements https://abseil.io/docs/cpp/guides/hash.
 class SecondOrderConeConstraint {
  public:
   // The typed integer used for ids.

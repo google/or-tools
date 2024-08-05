@@ -32,6 +32,8 @@ namespace operations_research::math_opt {
 
 // A value type that references a SOS1 constraint from ModelStorage.
 // Usually this type is passed by copy.
+//
+// This type implements https://abseil.io/docs/cpp/guides/hash.
 class Sos1Constraint {
  public:
   // The typed integer used for ids.

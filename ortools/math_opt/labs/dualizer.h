@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research {
@@ -42,11 +43,10 @@ namespace math_opt {
 //   * uncertain_coefficients: pairs [a(w)_i, x_i] for all i
 // Input-output argument:
 //   * main_model
-void AddRobustConstraint(
-    const Model& uncertainty_model, Variable rhs,
-    const std::vector<std::pair<LinearExpression, Variable>>&
-        uncertain_coefficients,
-    Model& main_model);
+void AddRobustConstraint(const Model& uncertainty_model, Variable rhs,
+                         absl::Span<const std::pair<LinearExpression, Variable>>
+                             uncertain_coefficients,
+                         Model& main_model);
 
 }  // namespace math_opt
 }  // namespace operations_research

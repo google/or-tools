@@ -118,6 +118,9 @@ class LinearExpression;
 
 // A value type that references a variable from ModelStorage. Usually this type
 // is passed by copy.
+//
+// This type implements https://abseil.io/docs/cpp/guides/hash (see
+// VariablesEquality for details about how operator== works).
 class Variable {
  public:
   // The typed integer used for ids.
@@ -642,6 +645,8 @@ using QuadraticProductId = std::pair<VariableId, VariableId>;
 // Invariant:
 //   * variable_ids_.first <= variable_ids_.second. The constructor will
 //     silently correct this if not satisfied by the inputs.
+//
+// This type can be used as a key in ABSL hash containers.
 class QuadraticTermKey {
  public:
   // NOTE: this definition is for use by IdMap; clients should not rely upon it.

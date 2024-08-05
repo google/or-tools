@@ -32,6 +32,8 @@ namespace operations_research::math_opt {
 
 // A value type that references an indicator constraint from ModelStorage.
 // Usually this type is passed by copy.
+//
+// This type implements https://abseil.io/docs/cpp/guides/hash.
 class IndicatorConstraint {
  public:
   // The typed integer used for ids.
