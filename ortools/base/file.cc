@@ -190,12 +190,12 @@ File* OpenOrDie(absl::string_view filename, absl::string_view mode,
 
 absl::StatusOr<std::string> GetContents(absl::string_view path,
                                         Options options) {
-  absl::StatusOr<std::string> contents_or = std::string();
-  absl::Status status = GetContents(path, &contents_or.value(), options);
+  std::string contents;
+  absl::Status status = GetContents(path, &contents, options);
   if (!status.ok()) {
-    contents_or = status;
+    return status;
   }
-  return contents_or;
+  return contents;
 }
 
 absl::Status GetContents(absl::string_view filename, std::string* output,
