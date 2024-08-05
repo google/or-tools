@@ -16,4 +16,4 @@ pybind11=v2.12.0
 pybind11_abseil=52f2739
 pybind11_protobuf=3b11990
 # Testing
-googletest=v1.14.0
+googletest=v1.15.2

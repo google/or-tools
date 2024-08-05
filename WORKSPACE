@@ -309,12 +309,12 @@ contrib_rules_jvm_setup()
 ## Testing
 git_repository(
     name = "com_google_googletest",
-    tag = "v1.14.0",
+    tag = "v1.15.2",
     remote = "https://github.com/google/googletest.git",
 )
 
 git_repository(
     name = "com_google_benchmark",
-    tag = "v1.8.3",
+    tag = "v1.8.5",
     remote = "https://github.com/google/benchmark.git",
 )
