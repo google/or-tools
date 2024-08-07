@@ -52,3 +52,4 @@ jobs:
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.install_target }}
           -v
+          
