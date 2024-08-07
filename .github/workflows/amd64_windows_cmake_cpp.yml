@@ -5,7 +5,9 @@ on: [push, pull_request, workflow_dispatch]
 
 # Building using the github runner environement directly.
 jobs:
-  native:
+  build:
+    env :
+      KNITRODIR: ${{ github.workspace }}/knitro-14.1.0-Win64
     strategy:
       matrix:
         cmake: [
@@ -29,6 +31,8 @@ jobs:
           -G "${{ matrix.cmake.generator }}"
           -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
           -DBUILD_DEPS=ON
+          -DUSE_KNITRO=ON
+          -DBUILD_TESTING=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build
         run: >

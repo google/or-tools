@@ -103,3 +103,7 @@ CMakeFiles
 DartConfiguration.tcl
 *build*/*
 build/
+
+# workflow stuff
+.github/workflows/hyrae/
+.github/workflows/not_used/
