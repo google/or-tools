@@ -5,7 +5,7 @@ on: [push, pull_request, workflow_dispatch]
 
 # Building using the github runner environement directly.
 jobs:
-  build:
+  native:
     env :
       KNITRODIR: ${{ github.workspace }}/knitro-14.1.0-Win64
     strategy:
