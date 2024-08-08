@@ -23,7 +23,7 @@ jobs:
       - name: Checkout Knitro Windows
         uses: actions/checkout@v4
         with:
-          repository: loicli/Knitro-Distrib-Windows
+          repository: loicli/powsybl-open-rao
           path: ${{ env.KNITRODIR }}
           ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
