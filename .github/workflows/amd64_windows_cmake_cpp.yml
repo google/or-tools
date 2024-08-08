@@ -26,6 +26,7 @@ jobs:
           repository: loicli/Knitro-Distrib-Windows
           path: ${{ env.KNITRODIR }}
           ref: main
+          token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Check what I have
         run: |
           ls .
