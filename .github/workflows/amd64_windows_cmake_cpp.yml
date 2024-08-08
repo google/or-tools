@@ -25,6 +25,11 @@ jobs:
         with:
           repository: loicli/Knitro-Distrib-Windows
           path: ${{ env.KNITRODIR }}
+          ref: main
+      - name: Check what I have
+        run: |
+          ls .
+          ls ${{ env.KNITRODIR }}
       - name: Check cmake
         run: |
           cmake --version
