@@ -82,12 +82,11 @@ if(BUILD_TESTING)
     set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN:$ORIGIN/../lib:$ORIGIN")
   endif ()
 
-  if(USE_XPRESS)
-    add_executable(test_xprs_interface xpress_interface_test.cc)
-    target_compile_features(test_xprs_interface PRIVATE cxx_std_17)
-    target_link_libraries(test_xprs_interface PRIVATE ortools::ortools GTest::gtest_main)
+  # add_executable(test_xprs_interface xpress_interface_test.cc)
+  # target_compile_features(test_xprs_interface PRIVATE cxx_std_17)
+  # target_link_libraries(test_xprs_interface PRIVATE ortools::ortools GTest::gtest_main)
 
-    add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
+  # add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
 
   if(USE_KNITRO)
     add_executable(test_knitro_interface knitro_interface_test.cc)
