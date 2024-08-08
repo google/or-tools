@@ -103,7 +103,7 @@ std::unique_ptr<RuinProcedure> MakeRuinProcedure(
 std::vector<std::unique_ptr<RuinProcedure>> MakeRuinProcedures(
     RoutingModel* model, std::mt19937* rnd,
     const google::protobuf::RepeatedPtrField<
-        ::operations_research::RuinStrategy>& ruin_strategies,
+        ::operations_research::routing::RuinStrategy>& ruin_strategies,
     int num_neighbors_for_route_selection) {
   std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures;
   for (const RuinStrategy& ruin : ruin_strategies) {

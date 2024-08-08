@@ -53,7 +53,7 @@ ABSL_FLAG(std::string, routing_search_parameters,
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Random seed generator.
 int32_t GetSeed() {
@@ -179,10 +179,10 @@ void Tsp() {
     LOG(INFO) << "Specify an instance size greater than 0.";
   }
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
-  operations_research::Tsp();
+  operations_research::routing::Tsp();
   return EXIT_SUCCESS;
 }

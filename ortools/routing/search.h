@@ -125,7 +125,7 @@ class VehicleTypeCurator {
 
 /// Returns the best value for the automatic first solution strategy, based on
 /// the given model parameters.
-operations_research::FirstSolutionStrategy::Value
+operations_research::routing::FirstSolutionStrategy::Value
 AutomaticFirstSolutionStrategy(bool has_pickup_deliveries,
                                bool has_node_precedences,
                                bool has_single_vehicle_node);

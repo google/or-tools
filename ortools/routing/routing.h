@@ -1974,7 +1974,7 @@ class RoutingModel {
   int64_t GetNumberOfRejectsInFirstSolution(
       const RoutingSearchParameters& search_parameters) const;
   /// Returns the automatic first solution strategy selected.
-  operations_research::FirstSolutionStrategy::Value
+  operations_research::routing::FirstSolutionStrategy::Value
   GetAutomaticFirstSolutionStrategy() const {
     return automatic_first_solution_strategy_;
   }

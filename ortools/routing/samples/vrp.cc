@@ -164,7 +164,7 @@ void Vrp() {
 }  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::Vrp();
+  operations_research::routing::Vrp();
   return EXIT_SUCCESS;
 }
 // [END program]

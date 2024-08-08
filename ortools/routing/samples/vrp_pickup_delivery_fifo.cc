@@ -14,9 +14,12 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
@@ -199,7 +202,7 @@ void VrpGlobalSpan() {
 }  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::VrpGlobalSpan();
+  operations_research::routing::VrpGlobalSpan();
   return EXIT_SUCCESS;
 }
 // [END program]

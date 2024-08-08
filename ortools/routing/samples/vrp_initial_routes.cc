@@ -193,6 +193,6 @@ void VrpInitialRoutes() {
 }  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::VrpInitialRoutes();
+  operations_research::routing::VrpInitialRoutes();
   return EXIT_SUCCESS;
 }

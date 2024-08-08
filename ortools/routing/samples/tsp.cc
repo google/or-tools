@@ -155,7 +155,7 @@ void Tsp() {
 }  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::Tsp();
+  operations_research::routing::Tsp();
   return EXIT_SUCCESS;
 }
 // [END program]
