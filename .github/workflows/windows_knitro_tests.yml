@@ -8,7 +8,7 @@ jobs:
   native:
     env :
       KNITRODIR: ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Win64
-      ARTELYS_LICENSE: ${{ github.workspace }}
+      ARTELYS_LICENSE: ${{ github.workspace }}/knitro_distrib
     strategy:
       matrix:
         cmake: [
@@ -28,8 +28,8 @@ jobs:
           ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Copy license
-        run: |
-          echo ${{ secrets.KNITRO_DISTRIB_LICENSE }} > artelys_lic_cicd.txt
+        run: >
+          echo ${{ secrets.KNITRO_DISTRIB_LICENSE }} >> knitro_distrib/artelys_lic_cicd.txt
       - name: Check what I have
         run: |
           ls .
