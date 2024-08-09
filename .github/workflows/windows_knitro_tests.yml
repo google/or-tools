@@ -23,6 +23,7 @@ jobs:
       - name: Checkout Knitro Windows
         uses: actions/checkout@v4
         with:
+          lfs: true
           repository: loicli/Knitro-Distrib-Windows
           path: knitro_distrib
           ref: main

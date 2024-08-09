@@ -30,6 +30,7 @@ jobs:
           path: knitro_distrib
           ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
+          lfs: true
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
