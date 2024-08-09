@@ -29,7 +29,7 @@ jobs:
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Copy license
         run: >
-          echo ${{ secrets.KNITRO_DISTRIB_LICENSE }} >> knitro_distrib/artelys_lic_cicd.txt
+          echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
       - name: Check what I have
         run: |
           ls .
