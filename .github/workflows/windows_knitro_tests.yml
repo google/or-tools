@@ -7,8 +7,8 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   native:
     env :
-      KNITRODIR: ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Win64
-      ARTELYS_LICENSE: ${{ github.workspace }}/knitro_distrib
+      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
+      ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
     strategy:
       matrix:
         cmake: [
@@ -33,6 +33,7 @@ jobs:
       - name: Check what I have
         run: |
           ls .
+          ls ${{ env.ARTELYS_LICENSE }}
           ls ${{ env.KNITRODIR }}
       - name: Check cmake
         run: |
