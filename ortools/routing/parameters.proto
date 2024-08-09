@@ -28,7 +28,7 @@ import "ortools/routing/ils.proto";
 import "ortools/sat/sat_parameters.proto";
 import "ortools/util/optional_boolean.proto";
 
-package operations_research;
+package operations_research.routing;
 
 // Parameters defining the search used to solve vehicle routing problems.
 //

@@ -35,11 +35,11 @@
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
-namespace operations_research {
+namespace operations_research::routing {
 class RoutingModelParameters;
 class RoutingSearchParameters;
 class RoutingSearchStatus;
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 // Include the files we want to wrap a first time.
 %{
@@ -52,20 +52,20 @@ class RoutingSearchStatus;
 %}
 
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingCostClassIndex,
-    operations_research::RoutingModel::CostClassIndex);
+    operations_research::routing::RoutingCostClassIndex,
+    operations_research::routing::RoutingModel::CostClassIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingDimensionIndex,
-    operations_research::RoutingModel::DimensionIndex);
+    operations_research::routing::RoutingDimensionIndex,
+    operations_research::routing::RoutingModel::DimensionIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingDisjunctionIndex,
-    operations_research::RoutingModel::DisjunctionIndex);
+    operations_research::routing::RoutingDisjunctionIndex,
+    operations_research::routing::RoutingModel::DisjunctionIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingVehicleClassIndex,
-    operations_research::RoutingModel::VehicleClassIndex);
+    operations_research::routing::RoutingVehicleClassIndex,
+    operations_research::routing::RoutingModel::VehicleClassIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingResourceClassIndex,
-    operations_research::RoutingModel::ResourceClassIndex);
+    operations_research::routing::RoutingResourceClassIndex,
+    operations_research::routing::RoutingModel::ResourceClassIndex);
 
 // ============= Type conversions ==============
 
@@ -76,19 +76,19 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_PTR(LocalSearchOperator);
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 
-%ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
-%ignore operations_research::RoutingModel::StateDependentTransitCallback;
-%ignore operations_research::RoutingModel::MakeStateDependentTransit;
-%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore operations_research::RoutingModel::AddResourceGroup;
-%ignore operations_research::RoutingModel::GetResourceGroups;
+%ignore operations_research::routing::RoutingModel::RegisterStateDependentTransitCallback;
+%ignore operations_research::routing::RoutingModel::StateDependentTransitCallback;
+%ignore operations_research::routing::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::routing::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore operations_research::routing::RoutingModel::AddResourceGroup;
+%ignore operations_research::routing::RoutingModel::GetResourceGroups;
 
 PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingModelParameters,
-                 operations_research::RoutingModelParameters)
+                 operations_research::routing::RoutingModelParameters)
 PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingSearchParameters,
-                 operations_research::RoutingSearchParameters)
+                 operations_research::routing::RoutingSearchParameters)
 
 // Wrap types.h, parameters.h according to the SWIG style guide.
 %ignoreall
@@ -106,7 +106,6 @@ PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
 %unignoreall
 
 %unignore operations_research;
-
 namespace operations_research {
 
 // %including a .pb.h is frowned upon (for good general reasons), so we
@@ -116,6 +115,11 @@ enum OptionalBoolean {
   BOOL_FALSE = 2,
   BOOL_TRUE = 3,
 };
+
+}  // namespace operations_research
+
+%unignore operations_research::routing;
+namespace operations_research::routing {
 
 struct FirstSolutionStrategy {
   enum Value {};
@@ -136,7 +140,7 @@ struct RoutingSearchStatus {
 %unignore SimpleBoundCosts::bound_cost;
 %rename("size") SimpleBoundCosts::Size;
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals

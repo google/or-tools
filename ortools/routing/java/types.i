@@ -81,9 +81,9 @@ MATRIX_AS_JAVA_ARRAY(IndexT, int, Int);
 %apply const std::vector<std::vector<IndexT> >& { const std::vector<std::vector<NewIndexT> >& };
 %enddef  // DEFINE_INDEX_TYPE_TYPEDEF
 
-DEFINE_INDEX_TYPE(operations_research::RoutingNodeIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingCostClassIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingDimensionIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingDisjunctionIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingVehicleClassIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingResourceClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingNodeIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingCostClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingDimensionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingDisjunctionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingVehicleClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingResourceClassIndex);

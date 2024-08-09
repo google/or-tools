@@ -70,22 +70,22 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(IndexT, int, int, IntVectorVector);
 %apply const std::vector<std::vector<IndexT> >& { const std::vector<std::vector<NewIndexT> >& };
 %enddef  // DEFINE_INDEX_TYPE_TYPEDEF
 
-DEFINE_INDEX_TYPE(operations_research::RoutingNodeIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingCostClassIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingDimensionIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingDisjunctionIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingVehicleClassIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingResourceClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingNodeIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingCostClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingDimensionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingDisjunctionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingVehicleClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingResourceClassIndex);
 
 %ignoreall
 
-%unignore operations_research;
-namespace operations_research {
+%unignore operations_research::routing;
+namespace operations_research::routing {
 
 // PickupDeliveryPair
 %unignore PickupDeliveryPair;
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 %include "ortools/routing/types.h"
 
