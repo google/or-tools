@@ -25,8 +25,8 @@ jobs:
         with:
           lfs: true
           repository: loicli/Knitro-Distrib-Windows
-          path: knitro_distrib
-          ref: main
+          # path: knitro_distrib
+          # ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Checkout LFS objects
         run: git lfs checkout
@@ -35,10 +35,11 @@ jobs:
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
       - name: Unzip
         run: |
-          7z x knitro_distrib/knitro-14.1.0-Win64.zip -o knitro_distrib/
+        mkdir knitro_distrib
+          7z x knitro-14.1.0-Win64.zip -o knitro_distrib/
       - name: Check unzip
         run: |
-          ls -l ${{ ARTELYS_LICENSE }}
+          ls -l ${{ env.ARTELYS_LICENSE }}
           ls -l knitro_distrib/lib
       - name: Check what I have
         run: |
