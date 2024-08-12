@@ -28,12 +28,8 @@ jobs:
           path: knitro_distrib
           ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
-      - name: Install Git LFS
-        run: git lfs install
-      - name: Pull LFS objects
-        run: |
-          cd knitro_distrib
-          git lfs pull
+      - name: Checkout LFS objects
+        run: git lfs checkout
       - name: Copy license
         run: >
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
