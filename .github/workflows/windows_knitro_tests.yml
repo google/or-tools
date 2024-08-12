@@ -1,62 +1,62 @@
-# ref: https://github.com/actions/runner-images
-name: Windows knitro tests
+# # ref: https://github.com/actions/runner-images
+# name: Windows knitro tests
 
-on: [push, pull_request, workflow_dispatch]
+# on: [push, pull_request, workflow_dispatch]
 
-# Building using the github runner environement directly.
-jobs:
-  native:
-    env :
-      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
-      ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
-    strategy:
-      matrix:
-        cmake: [
-          {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
-        ]
-      fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} • C++
-    runs-on: windows-latest
-    steps:
-      - name: Checkout or-tools
-        uses: actions/checkout@v4
-      - name: Checkout Knitro Windows
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          repository: loicli/Knitro-Distrib-Windows
-          path: knitro_distrib
-          ref: main
-          token: ${{ secrets.KNITRO_DISTRIB }}
-      - name: Checkout LFS objects
-        run: git lfs checkout
-      - name: Copy license
-        run: >
-          echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
-      - name: Check what I have
-        run: |
-          ls -l .
-          ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l ${{ env.KNITRODIR }}
-          ls -l ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64\lib
-      - name: Check cmake
-        run: |
-          cmake --version
-          cmake -G || true
-      - name: Configure
-        run: >
-          cmake -S. -Bbuild
-          -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
-          -DBUILD_DEPS=ON
-          -DUSE_KNITRO=ON
-          -DBUILD_TESTING=ON
-      - name: Build
-        run: >
-          cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.build_target }}
-          -v -j2
-      - name: Run Knitr Test
-        run: >
-          ./build/RELEASE/bin/test_knitro_interface
+# # Building using the github runner environement directly.
+# jobs:
+#   native:
+#     env :
+#       KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
+#       ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
+#     strategy:
+#       matrix:
+#         cmake: [
+#           {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
+#         ]
+#       fail-fast: false
+#     name: Windows • ${{ matrix.cmake.generator }} • C++
+#     runs-on: windows-latest
+#     steps:
+#       - name: Checkout or-tools
+#         uses: actions/checkout@v4
+#       - name: Checkout Knitro Windows
+#         uses: actions/checkout@v4
+#         with:
+#           lfs: true
+#           repository: loicli/Knitro-Distrib-Windows
+#           path: knitro_distrib
+#           ref: main
+#           token: ${{ secrets.KNITRO_DISTRIB }}
+#       - name: Checkout LFS objects
+#         run: git lfs checkout
+#       - name: Copy license
+#         run: >
+#           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
+#       - name: Check what I have
+#         run: |
+#           ls -l .
+#           ls -l ${{ env.ARTELYS_LICENSE }}
+#           ls -l ${{ env.KNITRODIR }}
+#           ls -l ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64\lib
+#       - name: Check cmake
+#         run: |
+#           cmake --version
+#           cmake -G || true
+#       - name: Configure
+#         run: >
+#           cmake -S. -Bbuild
+#           -G "${{ matrix.cmake.generator }}"
+#           -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+#           -DBUILD_DEPS=ON
+#           -DUSE_KNITRO=ON
+#           -DBUILD_TESTING=ON
+#       - name: Build
+#         run: >
+#           cmake --build build
+#           --config ${{ matrix.cmake.config }}
+#           --target ${{ matrix.cmake.build_target }}
+#           -v -j2
+#       - name: Run Knitr Test
+#         run: >
+#           ./build/RELEASE/bin/test_knitro_interface

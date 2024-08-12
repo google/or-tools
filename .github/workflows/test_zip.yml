@@ -1,0 +1,35 @@
+# ref: https://github.com/actions/runner-images
+name: Windows test zip
+
+on: [push, pull_request, workflow_dispatch]
+
+# Building using the github runner environement directly.
+jobs:
+  native:
+    env :
+      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
+      ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
+    strategy:
+      fail-fast: false
+    name: un zip knitro distrib
+    runs-on: windows-latest
+    steps:
+      - name: Checkout or-tools
+        uses: actions/checkout@v4
+      - name: Checkout Knitro Windows
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          repository: loicli/Knitro-Distrib-Windows
+          path: knitro_distrib
+          token: ${{ secrets.KNITRO_DISTRIB }}
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Check the files
+        run: ls -l knitro_distrib
+      - name: Unzip
+        run: 7z x knitro_distrib/knitro-14.1.0-Win64.zip -o knitro_distrib/
+      - name: Check unzip
+        run: |
+          ls -l ${{ ARTELYS_LICENSE }}
+          ls -l knitro_distrib/lib
