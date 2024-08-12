@@ -42,16 +42,16 @@ jobs:
       - name: Unzip
         run: |
           mkdir knitro_distrib
-          7z x "knitro-14.1.0-Win64.zip" -o"${{ env.KNITRODIR }}"
+          7z x "knitro-14.1.0-Win64.zip" -o"${{ env.ARTELYS_LICENSE }}"
       - name: Copy license
         run: |
-          echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
+          echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
       - name: Check what I have
         run: |
-          ls -l .
-          ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l ${{ env.KNITRODIR }}
-          ls -l ${{ env.KNITRODIR }}\lib
+          ls -lR .
+        # ls -l ${{ env.ARTELYS_LICENSE }}
+        # ls -l ${{ env.KNITRODIR }}
+        # ls -l ${{ env.KNITRODIR }}\lib
       - name: Check cmake
         run: |
           cmake --version
