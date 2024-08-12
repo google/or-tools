@@ -7,7 +7,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   native:
     env :
-      KNITRODIR: ${{ github.workspace }}\knitro_distrib
+      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
       ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
     strategy:
       matrix:
@@ -37,16 +37,12 @@ jobs:
       - name: Unzip
         run: |
           7z x "knitro-14.1.0-Win64.zip" -o"${{ env.KNITRODIR }}"
-      - name: Check unzip
-        run: |
-          ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l knitro_distrib/lib
       - name: Check what I have
         run: |
           ls -l .
           ls -l ${{ env.ARTELYS_LICENSE }}
           ls -l ${{ env.KNITRODIR }}
-          ls -l ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64\lib
+          ls -l ${{ env.KNITRODIR }}\lib
       - name: Check cmake
         run: |
           cmake --version
