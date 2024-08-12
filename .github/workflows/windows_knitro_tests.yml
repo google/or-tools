@@ -48,10 +48,10 @@ jobs:
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
       - name: Check what I have
         run: |
-          ls -lR .
-        # ls -l ${{ env.ARTELYS_LICENSE }}
-        # ls -l ${{ env.KNITRODIR }}
-        # ls -l ${{ env.KNITRODIR }}\lib
+          ls -l .
+          ls -l ${{ env.ARTELYS_LICENSE }}
+          ls -l ${{ env.KNITRODIR }}
+          ls -l ${{ env.KNITRODIR }}\lib
       - name: Check cmake
         run: |
           cmake --version
