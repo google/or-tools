@@ -28,14 +28,19 @@ jobs:
           path: knitro_distrib
           ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
+      - name: Install Git LFS
+        run: git lfs install
+      - name: Pull LFS objects
+        run: git lfs pull
       - name: Copy license
         run: >
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
       - name: Check what I have
         run: |
-          ls .
-          ls ${{ env.ARTELYS_LICENSE }}
-          ls ${{ env.KNITRODIR }}
+          ls -l .
+          ls -l ${{ env.ARTELYS_LICENSE }}
+          ls -l ${{ env.KNITRODIR }}
+          ls -l ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64\lib
       - name: Check cmake
         run: |
           cmake --version
