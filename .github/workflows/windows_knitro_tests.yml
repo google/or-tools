@@ -26,7 +26,7 @@ jobs:
           lfs: true
           repository: loicli/Knitro-Distrib-Windows
           path: knitro_distrib
-          # ref: main
+          ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Checkout LFS objects
         run: git lfs checkout
