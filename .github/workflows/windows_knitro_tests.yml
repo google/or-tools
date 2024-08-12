@@ -7,8 +7,8 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   native:
     env :
-      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64\knitro-14.1.0-Win64
-      ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
+      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
+      ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
     strategy:
       matrix:
         cmake: [
@@ -18,6 +18,9 @@ jobs:
     name: Windows • ${{ matrix.cmake.generator }} • C++
     runs-on: windows-latest
     steps:
+      - name: Set up Git
+        run: |
+          git config --global core.autocrlf false
       - name: Checkout or-tools
         uses: actions/checkout@v4
       - name: Checkout Knitro Windows
@@ -28,6 +31,12 @@ jobs:
           # path: knitro_distrib
           # ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
+      - name: Install Git LFS
+        run: |
+          git lfs install
+      - name: Pull LFS objects
+        run: |
+          git lfs pull
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Unzip
