@@ -28,7 +28,7 @@ jobs:
         with:
           lfs: true
           repository: loicli/Knitro-Distrib-Windows
-          # path: knitro_distrib
+          path: knitro_distrib_zip
           # ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Install Git LFS
@@ -42,7 +42,7 @@ jobs:
       - name: Unzip
         run: |
           mkdir knitro_distrib
-          7z x "knitro-14.1.0-Win64.zip" -o"${{ env.ARTELYS_LICENSE }}"
+          7z x "knitro_distrib_zip/knitro-14.1.0-Win64.zip" -o"${{ env.ARTELYS_LICENSE }}"
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
