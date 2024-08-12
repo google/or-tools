@@ -7,8 +7,8 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   native:
     env :
-      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
-      ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
+      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64\knitro-14.1.0-Win64
+      ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
     strategy:
       matrix:
         cmake: [
@@ -30,13 +30,13 @@ jobs:
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Checkout LFS objects
         run: git lfs checkout
-      - name: Copy license
-        run: |
-          mkdir knitro_distrib
-          echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
       - name: Unzip
         run: |
+          mkdir knitro_distrib
           7z x "knitro-14.1.0-Win64.zip" -o"${{ env.KNITRODIR }}"
+      - name: Copy license
+        run: |
+          echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
       - name: Check what I have
         run: |
           ls -l .
