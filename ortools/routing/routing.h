@@ -1674,7 +1674,11 @@ class RoutingModel {
 
    private:
     const RoutingModel& routing_model_;
+#if __cplusplus >= 202002L
     static constexpr std::vector<int> empty_neighbors_ = {};
+#else
+    inline static const std::vector<int> empty_neighbors_ = {};
+#endif
 
     std::vector<std::vector<std::vector<int>>>
         node_index_to_incoming_neighbors_by_cost_class_;
