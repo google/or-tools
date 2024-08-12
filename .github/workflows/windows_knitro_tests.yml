@@ -36,7 +36,7 @@ jobs:
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
       - name: Unzip
         run: |
-          7z x knitro-14.1.0-Win64.zip -o knitro_distrib/
+          7z x "knitro-14.1.0-Win64.zip" -o"${{ env.KNITRODIR }}"
       - name: Check unzip
         run: |
           ls -l ${{ env.ARTELYS_LICENSE }}
