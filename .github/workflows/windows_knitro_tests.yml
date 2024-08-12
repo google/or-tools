@@ -31,7 +31,9 @@ jobs:
       - name: Install Git LFS
         run: git lfs install
       - name: Pull LFS objects
-        run: git lfs pull
+        run: |
+          cd knitro_distrib
+          git lfs pull
       - name: Copy license
         run: >
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> knitro_distrib/artelys_lic_cicd.txt
