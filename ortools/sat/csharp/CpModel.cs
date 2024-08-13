@@ -1042,6 +1042,23 @@ public class CpModel
         model_.SolutionHint.Values.Add(value);
     }
 
+    /** <summary>Adds variable hinting to the model.</summary>*/
+    public void AddHint(ILiteral lit, bool value)
+    {
+        model_.SolutionHint ??= new PartialVariableAssignment();
+        int index = lit.GetIndex();
+        if (index >= 0)
+        {
+            model_.SolutionHint.Vars.Add(index);
+            model_.SolutionHint.Values.Add(value ? 1 : 0);
+        }
+        else
+        {
+            model_.SolutionHint.Vars.Add(Negated(index));
+            model_.SolutionHint.Values.Add(value ? 0 : 1);
+        }
+    }    
+
     /** <summary>Clears all hinting from the model.</summary>*/
     public void ClearHints()
     {
