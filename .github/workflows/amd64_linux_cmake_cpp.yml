@@ -31,7 +31,7 @@ jobs:
       - name: Untar knitro distribution
         run: |
           mkdir knitro_distrib
-          tar xzvf "knitro_distrib_targz/knitro-14.1.0-Linux64.tar.gz" -C ${{ env.ARTELYS_LICENSE }}
+          tar -xzvf knitro_distrib_targz/knitro-14.1.0-Linux64.tar.gz -C ${{ env.ARTELYS_LICENSE }}
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
