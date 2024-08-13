@@ -32,7 +32,7 @@
 #include "ortools/routing/search.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 // Constraint which ensures that var != values.
@@ -793,4 +793,4 @@ Constraint* MakeRouteConstraint(
       model, std::move(route_cost_vars), std::move(route_evaluator)));
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

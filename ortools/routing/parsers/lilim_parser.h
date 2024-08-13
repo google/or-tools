@@ -51,7 +51,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Li&Lim parser class
 class LiLimParser {
@@ -122,6 +122,6 @@ class LiLimParser {
   std::vector<SimpleTimeWindow<int64_t>> time_windows_;
   std::vector<int64_t> service_times_;
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_LILIM_PARSER_H_

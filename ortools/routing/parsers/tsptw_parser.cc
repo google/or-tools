@@ -29,7 +29,7 @@
 #include "ortools/base/zipfile.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 
@@ -211,4 +211,4 @@ bool TspTWParser::ParseDaSilvaUrrutia(absl::string_view file_name) {
   return true;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

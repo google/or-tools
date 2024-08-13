@@ -55,7 +55,7 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 
@@ -1310,8 +1310,8 @@ namespace {
 // Find a "good" scaling factor for constraints with non-integers coefficients.
 // See sat::FindBestScalingAndComputeErrors() for more infos.
 double FindBestScaling(const std::vector<double>& coefficients,
-                       const std::vector<double>& lower_bounds,
-                       const std::vector<double>& upper_bounds,
+                       absl::Span<const double> lower_bounds,
+                       absl::Span<const double> upper_bounds,
                        int64_t max_absolute_activity,
                        double wanted_absolute_activity_precision) {
   double unused_relative_coeff_error = 0;
@@ -3421,4 +3421,4 @@ std::string RoutingCPSatWrapper::PrintModel() const {
   return s;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

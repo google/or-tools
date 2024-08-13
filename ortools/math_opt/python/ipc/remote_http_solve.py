@@ -96,7 +96,7 @@ def create_optimization_service_session(
 
     Returns:
       requests.Session a session with the necessary headers to call the
-      optimization serive.
+      optimization service.
     """
     session = requests.Session()
     server_timeout = deadline_sec * (1 - _RELATIVE_TIME_BUFFER)

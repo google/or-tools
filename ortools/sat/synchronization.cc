@@ -1281,7 +1281,8 @@ void SharedClausesManager::Synchronize() {
         num_buffered_literals <
         UniqueClauseStream::kMaxLiteralsPerBatch / num_workers;
     const bool overfull =
-        num_buffered_literals > UniqueClauseStream::kMaxLiteralsPerBatch;
+        num_buffered_literals >
+        2 * UniqueClauseStream::kMaxLiteralsPerBatch / num_workers;
     const int new_lbd = std::clamp(lbd_threshold + underfull - overfull, 2,
                                    UniqueClauseStream::kMaxClauseSize);
     if (new_lbd != lbd_threshold) {
@@ -1329,9 +1330,6 @@ void SharedClausesManager::Synchronize() {
     VLOG(2) << "Batch #" << batches_.size() << " w/ " << batches_.back().size()
             << " clauses max size = "
             << batches_.back()[batches_.back().size() - 1].size();
-    for (auto& stream : id_to_clause_stream_) {
-      stream.RemoveWorstClauses();
-    }
   }
   // Delete batches that have been consumed by all workers.
   // Keep a few batches around for startup (min finished batch doesn't count

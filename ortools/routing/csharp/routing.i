@@ -48,11 +48,11 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
-namespace operations_research {
+namespace operations_research::routing {
 class RoutingModelParameters;
 class RoutingSearchParameters;
 class RoutingSearchStatus;
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 %module(directors="1") RoutingGlobals;
 
@@ -68,22 +68,22 @@ class RoutingSearchStatus;
 
 // RoutingModel methods.
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingCostClassIndex,
-    operations_research::RoutingModel::CostClassIndex);
+    operations_research::routing::RoutingCostClassIndex,
+    operations_research::routing::RoutingModel::CostClassIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingDimensionIndex,
-    operations_research::RoutingModel::DimensionIndex);
+    operations_research::routing::RoutingDimensionIndex,
+    operations_research::routing::RoutingModel::DimensionIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingDisjunctionIndex,
-    operations_research::RoutingModel::DisjunctionIndex);
+    operations_research::routing::RoutingDisjunctionIndex,
+    operations_research::routing::RoutingModel::DisjunctionIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingVehicleClassIndex,
-    operations_research::RoutingModel::VehicleClassIndex);
+    operations_research::routing::RoutingVehicleClassIndex,
+    operations_research::routing::RoutingModel::VehicleClassIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingResourceClassIndex,
-    operations_research::RoutingModel::ResourceClassIndex);
+    operations_research::routing::RoutingResourceClassIndex,
+    operations_research::routing::RoutingModel::ResourceClassIndex);
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // GlobalVehicleBreaksConstraint
 %unignore GlobalVehicleBreaksConstraint;
@@ -219,7 +219,7 @@ using Google.OrTools.ConstraintSolver;
 %unignore TypeRegulationsChecker;
 %ignore TypeRegulationsChecker::CheckVehicle;
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 %rename("%(camelcase)s", %$isfunction) "";
 
@@ -230,17 +230,17 @@ using Google.OrTools.ConstraintSolver;
 %}
 
 // Protobuf support
-PROTO_INPUT(operations_research::RoutingSearchParameters,
+PROTO_INPUT(operations_research::routing::RoutingSearchParameters,
             Google.OrTools.Routing.RoutingSearchParameters,
             search_parameters)
-PROTO_INPUT(operations_research::RoutingModelParameters,
+PROTO_INPUT(operations_research::routing::RoutingModelParameters,
             Google.OrTools.Routing.RoutingModelParameters,
             parameters)
-PROTO2_RETURN(operations_research::RoutingSearchParameters,
+PROTO2_RETURN(operations_research::routing::RoutingSearchParameters,
               Google.OrTools.Routing.RoutingSearchParameters)
-PROTO2_RETURN(operations_research::RoutingModelParameters,
+PROTO2_RETURN(operations_research::routing::RoutingModelParameters,
               Google.OrTools.Routing.RoutingModelParameters)
-PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
+PROTO_ENUM_RETURN(operations_research::routing::RoutingSearchStatus::Value,
                   Google.OrTools.Routing.RoutingSearchStatus.Types.Value)
 
 // Add needed import to RoutingGlobals.cs

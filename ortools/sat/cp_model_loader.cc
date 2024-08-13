@@ -176,12 +176,29 @@ void LoadVariables(const CpModelProto& model_proto,
     // Compute the integer variable references used by the model.
     absl::flat_hash_set<int> used_variables;
 
+    const bool some_linerization =
+        m->GetOrCreate<SatParameters>()->linearization_level() > 0;
+
     IndexReferences refs;
     for (int c = 0; c < model_proto.constraints_size(); ++c) {
       const ConstraintProto& ct = model_proto.constraints(c);
       refs = GetReferencesUsedByConstraint(ct);
       for (const int ref : refs.variables) {
         used_variables.insert(PositiveRef(ref));
+      }
+
+      // We always add a linear relaxation for circuit/route except for
+      // linearization level zero.
+      if (some_linerization) {
+        if (ct.constraint_case() == ConstraintProto::kCircuit) {
+          for (const int ref : ct.circuit().literals()) {
+            used_variables.insert(PositiveRef(ref));
+          }
+        } else if (ct.constraint_case() == ConstraintProto::kRoutes) {
+          for (const int ref : ct.routes().literals()) {
+            used_variables.insert(PositiveRef(ref));
+          }
+        }
       }
     }
 
@@ -1637,7 +1654,7 @@ void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
   std::vector<Literal> literals =
       m->GetOrCreate<CpModelMapping>()->Literals(circuit.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals));
+  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m);
 }
 
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
@@ -1649,8 +1666,8 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
   std::vector<Literal> literals =
       m->GetOrCreate<CpModelMapping>()->Literals(routes.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals,
-                              /*multiple_subcircuit_through_zero=*/true));
+  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m,
+                           /*multiple_subcircuit_through_zero=*/true);
 }
 
 bool LoadConstraint(const ConstraintProto& ct, Model* m) {

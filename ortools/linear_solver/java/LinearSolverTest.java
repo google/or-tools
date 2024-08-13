@@ -89,7 +89,7 @@ public final class LinearSolverTest {
     objective.setCoefficient(x2, 6);
     objective.setCoefficient(x3, 4);
     objective.setMaximization();
-    assertEquals(6.0, objective.getCoefficient(x2), 1e-6);
+    assertThat(objective.getCoefficient(x2)).isWithin(1e-6).of(6.0);
     assertTrue(objective.maximization());
     assertFalse(objective.minimization());
 
@@ -102,7 +102,7 @@ public final class LinearSolverTest {
     c1.setCoefficient(x1, 10);
     c1.setCoefficient(x2, 4);
     c1.setCoefficient(x3, 5);
-    assertEquals(4.0, c1.getCoefficient(x2), 1e-6);
+    assertThat(c1.getCoefficient(x2)).isWithin(1e-6).of(4.0);
 
     final MPConstraint c2 = solver.makeConstraint(-1000, 300.0);
     c2.setCoefficient(x1, 2);
@@ -111,15 +111,15 @@ public final class LinearSolverTest {
 
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
     if (integerVariables) {
-      assertEquals(732.0, objective.value(), NUM_TOLERANCE);
-      assertEquals(33.0, x1.solutionValue(), NUM_TOLERANCE);
-      assertEquals(67.0, x2.solutionValue(), NUM_TOLERANCE);
-      assertEquals(0.0, x3.solutionValue(), NUM_TOLERANCE);
+      assertThat(objective.value()).isWithin(NUM_TOLERANCE).of(732.0);
+      assertThat(x1.solutionValue()).isWithin(NUM_TOLERANCE).of(33.0);
+      assertThat(x2.solutionValue()).isWithin(NUM_TOLERANCE).of(67.0);
+      assertThat(x3.solutionValue()).isWithin(NUM_TOLERANCE).of(0.0);
     } else {
-      assertEquals(733.333333, objective.value(), NUM_TOLERANCE);
-      assertEquals(33.333333, x1.solutionValue(), NUM_TOLERANCE);
-      assertEquals(66.666667, x2.solutionValue(), NUM_TOLERANCE);
-      assertEquals(0, x3.solutionValue(), NUM_TOLERANCE);
+      assertThat(objective.value()).isWithin(NUM_TOLERANCE).of(733.333333);
+      assertThat(x1.solutionValue()).isWithin(NUM_TOLERANCE).of(33.333333);
+      assertThat(x2.solutionValue()).isWithin(NUM_TOLERANCE).of(66.666667);
+      assertThat(x3.solutionValue()).isWithin(NUM_TOLERANCE).of(0);
     }
   }
 
@@ -181,42 +181,42 @@ public final class LinearSolverTest {
     // The problem has an optimal solution.;
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
 
-    assertEquals(733.333333, objective.value(), NUM_TOLERANCE);
-    assertEquals(33.333333, x1.solutionValue(), NUM_TOLERANCE);
-    assertEquals(66.666667, x2.solutionValue(), NUM_TOLERANCE);
-    assertEquals(0, x3.solutionValue(), NUM_TOLERANCE);
+    assertThat(objective.value()).isWithin(NUM_TOLERANCE).of(733.333333);
+    assertThat(x1.solutionValue()).isWithin(NUM_TOLERANCE).of(33.333333);
+    assertThat(x2.solutionValue()).isWithin(NUM_TOLERANCE).of(66.666667);
+    assertThat(x3.solutionValue()).isWithin(NUM_TOLERANCE).of(0);
 
     // c0 and c1 are binding;
     final double[] activities = solver.computeConstraintActivities();
     assertEquals(3, activities.length);
-    assertEquals(3.333333, c0.dualValue(), NUM_TOLERANCE);
-    assertEquals(0.666667, c1.dualValue(), NUM_TOLERANCE);
-    assertEquals(rhs0, activities[c0.index()], NUM_TOLERANCE);
-    assertEquals(rhs1, activities[c1.index()], NUM_TOLERANCE);
+    assertThat(c0.dualValue()).isWithin(NUM_TOLERANCE).of(3.333333);
+    assertThat(c1.dualValue()).isWithin(NUM_TOLERANCE).of(0.666667);
+    assertThat(activities[c0.index()]).isWithin(NUM_TOLERANCE).of(rhs0);
+    assertThat(activities[c1.index()]).isWithin(NUM_TOLERANCE).of(rhs1);
     assertEquals(MPSolver.BasisStatus.AT_UPPER_BOUND, c0.basisStatus());
     assertEquals(MPSolver.BasisStatus.AT_UPPER_BOUND, c1.basisStatus());
     // c2 is not binding;
-    assertEquals(0.0, c2.dualValue(), NUM_TOLERANCE);
-    assertEquals(200.0, activities[c2.index()], NUM_TOLERANCE);
+    assertThat(c2.dualValue()).isWithin(NUM_TOLERANCE).of(0.0);
+    assertThat(activities[c2.index()]).isWithin(NUM_TOLERANCE).of(200.0);
     assertEquals(MPSolver.BasisStatus.BASIC, c2.basisStatus());
     // The optimum of the dual problem is equal to the optimum of the;
     // primal problem.;
     final double dualObjectiveValue = c0.dualValue() * rhs0 + c1.dualValue() * rhs1;
-    assertEquals(objective.value(), dualObjectiveValue, NUM_TOLERANCE);
+    assertThat(dualObjectiveValue).isWithin(NUM_TOLERANCE).of(objective.value());
 
     // x1 and x2 are basic;
-    assertEquals(0.0, x1.reducedCost(), NUM_TOLERANCE);
-    assertEquals(0.0, x2.reducedCost(), NUM_TOLERANCE);
+    assertThat(x1.reducedCost()).isWithin(NUM_TOLERANCE).of(0.0);
+    assertThat(x2.reducedCost()).isWithin(NUM_TOLERANCE).of(0.0);
     assertEquals(MPSolver.BasisStatus.BASIC, x1.basisStatus());
     assertEquals(MPSolver.BasisStatus.BASIC, x2.basisStatus());
     // x3 is non-basic;
     final double x3ExpectedReducedCost =
         (obj[2] - coef0[2] * c0.dualValue() - coef1[2] * c1.dualValue());
-    assertEquals(x3ExpectedReducedCost, x3.reducedCost(), NUM_TOLERANCE);
+    assertThat(x3.reducedCost()).isWithin(NUM_TOLERANCE).of(x3ExpectedReducedCost);
     assertEquals(MPSolver.BasisStatus.AT_LOWER_BOUND, x3.basisStatus());
 
     if (solver.problemType() == MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING) {
-      assertEquals(56.333333, solver.computeExactConditionNumber(), NUM_TOLERANCE);
+      assertThat(solver.computeExactConditionNumber()).isWithin(NUM_TOLERANCE).of(56.333333);
     }
   }
 
@@ -253,10 +253,12 @@ public final class LinearSolverTest {
     // Check the solution.
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
     final double optObjValue = 6.0;
-    assertEquals(optObjValue, solver.objective().value(), 1e-6);
-    assertEquals(optObjValue, solver.objective().bestBound(), 1e-6);
+    assertThat(solver.objective().value()).isWithin(1e-6).of(optObjValue);
+    assertThat(solver.objective().bestBound()).isWithin(1e-6).of(optObjValue);
     final double optRowActivity = 18.0;
-    assertEquals(optRowActivity, solver.computeConstraintActivities()[ct.index()], NUM_TOLERANCE);
+    assertThat(solver.computeConstraintActivities()[ct.index()])
+        .isWithin(NUM_TOLERANCE)
+        .of(optRowActivity);
     // BOP does not support nodes().
     if (solver.problemType() != MPSolver.OptimizationProblemType.BOP_INTEGER_PROGRAMMING) {
       assertThat(solver.nodes()).isAtLeast(0);
@@ -294,8 +296,8 @@ public final class LinearSolverTest {
 
     // Check the solution.
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
-    assertEquals(10.0, x1.solutionValue(), NUM_TOLERANCE);
-    assertEquals(0.0, x2.solutionValue(), NUM_TOLERANCE);
+    assertThat(x1.solutionValue()).isWithin(NUM_TOLERANCE).of(10.0);
+    assertThat(x2.solutionValue()).isWithin(NUM_TOLERANCE).of(0.0);
 
     objective.setCoefficient(x1, 0);
     objective.setCoefficient(x2, 1);
@@ -303,8 +305,8 @@ public final class LinearSolverTest {
 
     // Check the solution
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
-    assertEquals(0.0, x1.solutionValue(), NUM_TOLERANCE);
-    assertEquals(5.0, x2.solutionValue(), NUM_TOLERANCE);
+    assertThat(x1.solutionValue()).isWithin(NUM_TOLERANCE).of(0.0);
+    assertThat(x2.solutionValue()).isWithin(NUM_TOLERANCE).of(5.0);
 
     objective.setCoefficient(x1, -1);
     objective.setCoefficient(x2, 0);
@@ -312,8 +314,8 @@ public final class LinearSolverTest {
 
     // Check the solution.
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
-    assertEquals(10.0, x1.solutionValue(), NUM_TOLERANCE);
-    assertEquals(0.0, x2.solutionValue(), NUM_TOLERANCE);
+    assertThat(x1.solutionValue()).isWithin(NUM_TOLERANCE).of(10.0);
+    assertThat(x2.solutionValue()).isWithin(NUM_TOLERANCE).of(0.0);
   }
 
   @Test
@@ -355,7 +357,7 @@ public final class LinearSolverTest {
     objective.setOptimizationDirection(false);
 
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
-    assertEquals(2.0 + objectiveOffset, objective.value(), 1e-6);
+    assertThat(objective.value()).isWithin(1e-6).of(2.0 + objectiveOffset);
 
     // Offset is provided in several separate constants.
     objective.setCoefficient(x1, 1.0);
@@ -364,7 +366,7 @@ public final class LinearSolverTest {
     objective.setOffset(objectiveOffset + objective.offset());
     objective.setOffset(1.0 + objective.offset());
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
-    assertEquals(2.0 + objectiveOffset, objective.value(), 1e-6);
+    assertThat(objective.value()).isWithin(1e-6).of(2.0 + objectiveOffset);
 
     // Simple maximization.
     objective.setCoefficient(x1, 1.0);
@@ -372,7 +374,7 @@ public final class LinearSolverTest {
     objective.setOffset(objectiveOffset);
     objective.setOptimizationDirection(true);
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
-    assertEquals(3.0 + objectiveOffset, objective.value(), 1e-6);
+    assertThat(objective.value()).isWithin(1e-6).of(3.0 + objectiveOffset);
   }
 
   @Test
@@ -418,7 +420,7 @@ public final class LinearSolverTest {
     objective.setCoefficient(y, 1.0);
     objective.setOptimizationDirection(true);
     assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
-    assertEquals(solver.objective().value(), 6.0, NUM_TOLERANCE);
+    assertThat(6.0).isWithin(NUM_TOLERANCE).of(solver.objective().value());
   }
 
   @Test
@@ -468,7 +470,7 @@ public final class LinearSolverTest {
     solver.solve();
     final MPSolutionResponse response = solver.createSolutionResponseProto();
     assertEquals(MPSolverResponseStatus.MPSOLVER_OPTIMAL, response.getStatus());
-    assertEquals(10.0, response.getObjectiveValue(), 1e-6);
+    assertThat(response.getObjectiveValue()).isWithin(1e-6).of(10.0);
   }
 
   @Test
@@ -494,7 +496,7 @@ public final class LinearSolverTest {
             .build();
     final MPSolutionResponse response = MPSolver.solveWithProto(request);
     assertEquals(MPSolverResponseStatus.MPSOLVER_OPTIMAL, response.getStatus());
-    assertEquals(10.0, response.getObjectiveValue(), 1e-6);
+    assertThat(response.getObjectiveValue()).isWithin(1e-6).of(10.0);
   }
 
   @Test
@@ -566,9 +568,9 @@ public final class LinearSolverTest {
     assertEquals(2, hint.getVarIndexCount());
     assertEquals(2, hint.getVarValueCount());
     assertEquals(0, hint.getVarIndex(0));
-    assertEquals(5.0, hint.getVarValue(0), 1e-6);
+    assertThat(hint.getVarValue(0)).isWithin(1e-6).of(5.0);
     assertEquals(1, hint.getVarIndex(1));
-    assertEquals(6.0, hint.getVarValue(1), 1e-6);
+    assertThat(hint.getVarValue(1)).isWithin(1e-6).of(6.0);
   }
 
   @Test

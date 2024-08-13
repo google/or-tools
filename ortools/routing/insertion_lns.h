@@ -30,7 +30,7 @@
 #include "ortools/routing/types.h"
 #include "ortools/util/bitset.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 /// Class of operators using a RoutingFilteredHeuristic to insert unperformed
 /// nodes after changes have been made to the current solution.
@@ -243,6 +243,6 @@ class FilteredHeuristicCloseNodesLNSOperator
   SparseBitset<> changed_prevs_;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_INSERTION_LNS_H_

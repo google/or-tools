@@ -98,7 +98,7 @@ class PrecedenceRelations : public ReversibleInterface {
   // support the general non-DAG cases.
   //
   // TODO(user): Many relations can be redundant. Filter them.
-  void ComputeFullPrecedences(const std::vector<IntegerVariable>& vars,
+  void ComputeFullPrecedences(absl::Span<const IntegerVariable> vars,
                               std::vector<FullIntegerPrecedence>* output);
 
   // Returns a set of precedences (var, index) such that var is after
@@ -514,9 +514,9 @@ class GreaterThanAtLeastOneOfDetector {
     IntegerValue lhs;
     IntegerValue rhs;
   };
-
   std::vector<Relation> relations_;
-  util_intops::StrongVector<LiteralIndex, std::vector<int>> lit_to_relations_;
+
+  std::unique_ptr<CompactVectorVector<LiteralIndex, int>> lit_to_relations_;
 };
 
 // =============================================================================

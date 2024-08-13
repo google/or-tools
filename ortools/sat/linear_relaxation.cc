@@ -500,9 +500,6 @@ void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
     const Literal arc = mapping->Literal(ct.circuit().literals(i));
     const int tail = ct.circuit().tails(i);
     const int head = ct.circuit().heads(i);
-
-    // Make sure this literal has a view.
-    model->Add(NewIntegerVariableFromLiteral(arc));
     outgoing_arc_constraints[tail].push_back(arc);
     incoming_arc_constraints[head].push_back(arc);
   }
@@ -543,9 +540,6 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
     const Literal arc = mapping->Literal(ct.routes().literals(i));
     const int tail = ct.routes().tails(i);
     const int head = ct.routes().heads(i);
-
-    // Make sure this literal has a view.
-    model->Add(NewIntegerVariableFromLiteral(arc));
     outgoing_arc_constraints[tail].push_back(arc);
     incoming_arc_constraints[head].push_back(arc);
   }

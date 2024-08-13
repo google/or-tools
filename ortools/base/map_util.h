@@ -19,17 +19,23 @@
 #include "ortools/base/logging.h"
 
 namespace gtl {
+template <typename M>
+using MapUtilValueT = typename M::value_type;
+template <typename M>
+using MapUtilKeyT = typename MapUtilValueT<M>::first_type;
+template <typename M>
+using MapUtilMappedT = typename MapUtilValueT<M>::second_type;
+
 // Perform a lookup in a std::map or std::unordered_map.
 // If the key is present in the map then the value associated with that
 // key is returned, otherwise the value passed as a default is returned.
 //
 // Prefer the two-argument form unless you need to specify a custom default
 // value (i.e., one that is not equal to a value-initialized instance).
-template <class Collection>
-const typename Collection::value_type::second_type& FindWithDefault(
-    const Collection& collection,
-    const typename Collection::value_type::first_type& key,
-    const typename Collection::value_type::second_type& value) {
+template <typename Collection, typename KeyType = MapUtilKeyT<Collection>>
+const MapUtilMappedT<Collection>& FindWithDefault(
+    const Collection& collection, const KeyType& key,
+    const MapUtilMappedT<Collection>& value) {
   typename Collection::const_iterator it = collection.find(key);
   if (it == collection.end()) {
     return value;
@@ -40,12 +46,11 @@ const typename Collection::value_type::second_type& FindWithDefault(
 // Returns a const reference to the value associated with the given key if it
 // exists, otherwise returns a const reference to a value-initialized object
 // that is never destroyed.
-template <class Collection>
-const typename Collection::value_type::second_type& FindWithDefault(
-    const Collection& collection,
-    const typename Collection::value_type::first_type& key) {
-  static const typename Collection::value_type::second_type* const
-      default_value = new typename Collection::value_type::second_type{};
+template <class Collection, typename KeyType = MapUtilKeyT<Collection>>
+const MapUtilMappedT<Collection>& FindWithDefault(const Collection& collection,
+                                                  const KeyType& key) {
+  static const MapUtilMappedT<Collection>* const default_value =
+      new MapUtilMappedT<Collection>{};
   typename Collection::const_iterator it = collection.find(key);
   if (it == collection.end()) {
     return *default_value;

@@ -58,7 +58,7 @@ ABSL_FLAG(bool, routing_strong_debug_checks, false,
           "Run stronger checks in debug; these stronger tests might change "
           "the complexity of the code in particular.");
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 // Route constraint filter
@@ -4289,7 +4289,7 @@ class LightVehicleBreaksFilter : public LocalSearchFilter {
 
 LocalSearchFilter* MakeLightVehicleBreaksFilter(
     Solver* solver, std::unique_ptr<LightVehicleBreaksChecker> checker,
-    const std::string& dimension_name) {
+    absl::string_view dimension_name) {
   LightVehicleBreaksFilter* filter =
       new LightVehicleBreaksFilter(std::move(checker), dimension_name);
   return solver->RevAlloc(filter);
@@ -4751,4 +4751,4 @@ LocalSearchFilter* MakePathEnergyCostFilter(
 // TODO(user): Implement same-vehicle filter. Could be merged with node
 // precedence filter.
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

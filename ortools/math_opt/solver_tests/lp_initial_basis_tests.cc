@@ -16,7 +16,6 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -53,7 +52,7 @@ SolveStats LpBasisStartTest::SolveWithWarmStart(
 SolveStats LpBasisStartTest::RoundTripSolve() {
   model_.Maximize(objective_expression_);
   const std::unique_ptr<IncrementalSolver> solver =
-      IncrementalSolver::New(&model_, TestedSolver()).value();
+      NewIncrementalSolver(&model_, TestedSolver()).value();
   const SolveResult max_result = solver->Solve({.parameters = params_}).value();
   CHECK_OK(max_result.termination.EnsureIsOptimal());
   ModelSolveParameters max_model_parameters;

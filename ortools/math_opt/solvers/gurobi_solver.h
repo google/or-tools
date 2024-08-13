@@ -201,7 +201,7 @@ class GurobiSolver : public SolverInterface {
 
   absl::StatusOr<double> GetGurobiBestDualBound() const;
   absl::StatusOr<double> GetBestDualBound(
-      const std::vector<SolutionProto>& solutions) const;
+      absl::Span<const SolutionProto> solutions) const;
   absl::StatusOr<double> GetBestPrimalBound(
       absl::Span<const SolutionProto> solutions) const;
 
@@ -256,7 +256,7 @@ class GurobiSolver : public SolverInterface {
   GetConvexPrimalSolutionIfAvailable(
       const ModelSolveParametersProto& model_parameters);
   absl::StatusOr<SolutionAndClaim<DualSolutionProto>>
-  GetLpDualSolutionIfAvailable(
+  GetConvexDualSolutionIfAvailable(
       const ModelSolveParametersProto& model_parameters);
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable();
 

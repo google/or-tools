@@ -33,7 +33,7 @@ _PARAMS = flags.DEFINE_string(
 )
 
 
-def spread_robots(num_robots: int, room_size: int, params: str):
+def spread_robots(num_robots: int, room_size: int, params: str) -> None:
     """Optimize robots placement."""
     model = cp_model.CpModel()
 

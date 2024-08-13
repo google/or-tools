@@ -23,6 +23,7 @@
 
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
@@ -485,7 +486,7 @@ void GenerateRandomArcValuations(const Graph& graph, const int64_t max_range,
 }
 
 template <typename Graph>
-void SetUpNetworkData(const std::vector<int64_t>& arc_capacity,
+void SetUpNetworkData(absl::Span<const int64_t> arc_capacity,
                       GenericMaxFlow<Graph>* max_flow) {
   const Graph* graph = max_flow->graph();
   for (typename Graph::ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {
@@ -585,7 +586,7 @@ void PartialRandomAssignment(typename MaxFlowSolver<Graph>::Solver f,
 }
 
 template <typename Graph>
-void ChangeCapacities(const std::vector<int64_t>& arc_capacity,
+void ChangeCapacities(absl::Span<const int64_t> arc_capacity,
                       FlowQuantity delta, GenericMaxFlow<Graph>* max_flow) {
   const Graph* graph = max_flow->graph();
   for (typename Graph::ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {

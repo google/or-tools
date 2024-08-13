@@ -19,7 +19,7 @@ from absl import app
 from ortools.sat.python import cp_model
 
 
-def send_more_money():
+def send_more_money() -> None:
     """solve the cryptarithmic puzzle SEND+MORE=MONEY."""
     model = cp_model.CpModel()
 
@@ -74,7 +74,7 @@ def send_more_money():
     print("y:", solver.value(y))
 
 
-def main(_):
+def main(_) -> None:
     send_more_money()
 
 

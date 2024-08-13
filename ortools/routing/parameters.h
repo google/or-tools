@@ -19,7 +19,7 @@
 
 #include "ortools/routing/parameters.pb.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 RoutingModelParameters DefaultRoutingModelParameters();
 RoutingSearchParameters DefaultRoutingSearchParameters();
@@ -35,6 +35,6 @@ std::string FindErrorInRoutingSearchParameters(
 std::vector<std::string> FindErrorsInRoutingSearchParameters(
     const RoutingSearchParameters& search_parameters);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARAMETERS_H_

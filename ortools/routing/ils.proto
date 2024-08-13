@@ -27,7 +27,7 @@ option csharp_namespace = "Google.OrTools.Routing";
 
 import "ortools/routing/enums.proto";
 
-package operations_research;
+package operations_research.routing;
 
 // Ruin strategy that removes a number of spatially close routes.
 message SpatiallyCloseRoutesRuinStrategy {

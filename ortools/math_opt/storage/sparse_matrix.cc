@@ -151,7 +151,7 @@ SparseDoubleMatrixProto SparseSymmetricMatrix::Proto() const {
     // supported.
     std::vector<std::pair<VariableId, double>> related = Terms(v);
     absl::c_sort(related);
-    for (const auto [other, coef] : related) {
+    for (const auto& [other, coef] : related) {
       if (v <= other) {
         result.add_row_ids(v.value());
         result.add_column_ids(other.value());
@@ -167,7 +167,7 @@ SparseDoubleMatrixProto SparseSymmetricMatrix::Update(
     const absl::Span<const VariableId> new_variables,
     const absl::flat_hash_set<std::pair<VariableId, VariableId>>& dirty) const {
   std::vector<std::tuple<VariableId, VariableId, double>> updates;
-  for (const std::pair<VariableId, VariableId> pair : dirty) {
+  for (const std::pair<VariableId, VariableId>& pair : dirty) {
     // If either variable has been deleted, don't add it.
     if (deleted_variables.contains(pair.first) ||
         deleted_variables.contains(pair.second)) {
@@ -179,7 +179,7 @@ SparseDoubleMatrixProto SparseSymmetricMatrix::Update(
   for (const VariableId v : new_variables) {
     if (related_variables_.contains(v)) {
       // TODO(b/233630053): do not allocate here.
-      for (const auto [other, coef] : Terms(v)) {
+      for (const auto& [other, coef] : Terms(v)) {
         if (v <= other) {
           updates.push_back({v, other, coef});
         } else if (new_variables.empty() || other < new_variables[0]) {

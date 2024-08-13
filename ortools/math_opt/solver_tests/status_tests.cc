@@ -99,6 +99,9 @@ TEST_P(StatusTest, PrimalAndDualInfeasible) {
         << "Ignoring this test as GLPK gets stuck in presolve for IP's "
            "with a primal-dual infeasible LP relaxation.";
   }
+  if (GetParam().solver_type == SolverType::kHighs) {
+    GTEST_SKIP() << "Ignoring this test as Highs 1.7+ returns error.";
+  }
 
   Model model;
   const Variable x1 =
@@ -334,7 +337,7 @@ TEST_P(StatusTest, InfeasibleIpWithPrimalDualFeasibleRelaxation2) {
     EXPECT_THAT(result, TerminatesWith(TerminationReason::kInfeasible));
     // Result validators imply primal problem status is kInfeasible.
     EXPECT_THAT(result.termination.problem_status,
-        Not(DualStatusIs(FeasibilityStatus::kInfeasible)));
+                Not(DualStatusIs(FeasibilityStatus::kInfeasible)));
   }
 }
 
@@ -372,6 +375,9 @@ TEST_P(StatusTest, IncompleteIpSolve) {
   if (!GetParam().use_integer_variables || !GetParam().supports_node_limit) {
     GTEST_SKIP() << "Ignoring this test as it is an IP-only test and requires "
                     "support for node_limit.";
+  }
+  if (GetParam().solver_type == SolverType::kHighs) {
+    GTEST_SKIP() << "Ignoring this test as Highs 1.7+ returns MODEL_INVALID";
   }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const Model> model, Load23588());
   SolveArguments args = {

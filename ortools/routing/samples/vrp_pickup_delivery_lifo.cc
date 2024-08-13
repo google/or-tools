@@ -14,16 +14,19 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
 // [END import]
 
-namespace operations_research {
+namespace operations_research::routing {
 // [START data_model]
 struct DataModel {
   const std::vector<std::vector<int64_t>> distance_matrix{
@@ -196,10 +199,10 @@ void VrpGlobalSpan() {
   PrintSolution(data, manager, routing, *solution);
   // [END print_solution]
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::VrpGlobalSpan();
+  operations_research::routing::VrpGlobalSpan();
   return EXIT_SUCCESS;
 }
 // [END program]

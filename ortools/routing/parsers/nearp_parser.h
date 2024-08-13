@@ -85,7 +85,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 class NearpParser {
  public:
   NearpParser();
@@ -253,6 +253,6 @@ class NearpParser {
   int num_vehicles_;
   int64_t capacity_;
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_NEARP_PARSER_H_

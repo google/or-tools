@@ -13,9 +13,9 @@
 
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 Edge::Edge(const Arc& arc) : tail_(arc.tail()), head_(arc.head()) {}
 Arc::Arc(const Edge& edge) : tail_(edge.tail()), head_(edge.head()) {}
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

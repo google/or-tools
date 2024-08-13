@@ -29,7 +29,7 @@
 #include "ortools/routing/routing.h"
 #include "ortools/util/bitset.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Wraps a routing assignment providing extra features.
 class RoutingSolution {
@@ -53,10 +53,9 @@ class RoutingSolution {
   // This must be called for node_index belonging to initialized routes.
   int64_t GetInitializedPrevNodeIndex(int64_t node_index) const;
 
-  // Returns whether the route served by the given vehicle contains a single
-  // customer.
-  // This must be called for vehicle which has been previously initialized.
-  bool IsSingleCustomerRoute(int vehicle) const;
+  // Returns the number of visits performed by the given vehicle.
+  // This must be called for a vehicle associated with an initialized route.
+  int GetRouteSize(int vehicle) const;
 
   // Returns whether node_index can be removed from the solution.
   // This must be called for node_index belonging to initialized routes.
@@ -66,10 +65,24 @@ class RoutingSolution {
   // This must be called for node_index belonging to initialized routes.
   void RemoveNode(int64_t node_index);
 
+  // Removes the performed sibling pickup or delivery of customer, if any.
+  void RemovePerformedPickupDeliverySibling(int64_t customer);
+
+  // Randomly returns the next or previous visit of the given performed
+  // visit. Returns -1 if there are no other available visits. When the
+  // selected adjacent vertex is a vehicle start/end, we always pick the
+  // visit in the opposite direction.
+  // This must be called for a performed visit belonging to an initialized
+  // route.
+  int64_t GetRandomAdjacentVisit(
+      int64_t visit, std::mt19937& rnd,
+      std::bernoulli_distribution& boolean_dist) const;
+
  private:
   const RoutingModel& model_;
   std::vector<int64_t> nexts_;
   std::vector<int64_t> prevs_;
+  std::vector<int> route_sizes_;
 
   // Assignment that the routing solution refers to. It's changed at every
   // Reset call.
@@ -120,9 +133,6 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
 
  private:
-  // Removes the sibling pickup or delivery of node, if any.
-  void RemovePickupDeliverySiblings(const Assignment* assignment, int node);
-
   // Returns the next node towards which the random walk is extended.
   int64_t GetNextNodeToRemove(const Assignment* assignment, int node);
 
@@ -213,6 +223,6 @@ std::pair<double, double> GetSimulatedAnnealingTemperatures(
     const RoutingModel& model, const SimulatedAnnealingParameters& sa_params,
     std::mt19937* rnd);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_ILS_H_

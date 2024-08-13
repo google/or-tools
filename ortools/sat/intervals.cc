@@ -230,6 +230,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
     : model_(model),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
       interval_variables_(tasks),
       capacity_(tasks.size()),
@@ -288,12 +289,14 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
 
 bool SchedulingConstraintHelper::Propagate() {
   recompute_all_cache_ = true;
+  for (const int id : propagator_ids_) watcher_->CallOnNextPropagate(id);
   return true;
 }
 
 bool SchedulingConstraintHelper::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
   for (const int t : watch_indices) recompute_cache_.Set(t);
+  for (const int id : propagator_ids_) watcher_->CallOnNextPropagate(id);
   return true;
 }
 
@@ -379,6 +382,11 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
     recompute_energy_profile_ = true;
   }
 
+  // We might only want to do that if the value changed, but I am not sure it
+  // is worth the test.
+  recompute_by_start_max_ = true;
+  recompute_by_end_min_ = true;
+
   cached_start_min_[t] = smin;
   cached_end_min_[t] = emin;
   cached_negated_start_max_[t] = -smax;
@@ -441,14 +449,14 @@ void SchedulingConstraintHelper::InitSortedVectors() {
 
   task_by_increasing_start_min_.resize(num_tasks);
   task_by_increasing_end_min_.resize(num_tasks);
-  task_by_decreasing_start_max_.resize(num_tasks);
+  task_by_increasing_negated_start_max_.resize(num_tasks);
   task_by_decreasing_end_max_.resize(num_tasks);
   task_by_increasing_shifted_start_min_.resize(num_tasks);
   task_by_negated_shifted_end_max_.resize(num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
     task_by_increasing_start_min_[t].task_index = t;
     task_by_increasing_end_min_[t].task_index = t;
-    task_by_decreasing_start_max_[t].task_index = t;
+    task_by_increasing_negated_start_max_[t].task_index = t;
     task_by_decreasing_end_max_[t].task_index = t;
 
     task_by_increasing_shifted_start_min_[t].task_index = t;
@@ -458,6 +466,8 @@ void SchedulingConstraintHelper::InitSortedVectors() {
     task_by_negated_shifted_end_max_[t].presence_lit = reason_for_presence_[t];
   }
 
+  recompute_by_start_max_ = true;
+  recompute_by_end_min_ = true;
   recompute_energy_profile_ = true;
   recompute_shifted_start_min_ = true;
   recompute_negated_shifted_end_max_ = true;
@@ -471,7 +481,9 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
     std::swap(ends_, minus_starts_);
 
     std::swap(task_by_increasing_start_min_, task_by_decreasing_end_max_);
-    std::swap(task_by_increasing_end_min_, task_by_decreasing_start_max_);
+    std::swap(task_by_increasing_end_min_,
+              task_by_increasing_negated_start_max_);
+    std::swap(recompute_by_end_min_, recompute_by_start_max_);
     std::swap(task_by_increasing_shifted_start_min_,
               task_by_negated_shifted_end_max_);
 
@@ -572,23 +584,26 @@ SchedulingConstraintHelper::TaskByIncreasingStartMin() {
 
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingEndMin() {
+  if (!recompute_by_end_min_) return task_by_increasing_end_min_;
   for (TaskTime& ref : task_by_increasing_end_min_) {
     ref.time = EndMin(ref.task_index);
   }
   IncrementalSort(task_by_increasing_end_min_.begin(),
                   task_by_increasing_end_min_.end());
+  recompute_by_end_min_ = false;
   return task_by_increasing_end_min_;
 }
 
 absl::Span<const TaskTime>
-SchedulingConstraintHelper::TaskByDecreasingStartMax() {
-  for (TaskTime& ref : task_by_decreasing_start_max_) {
-    ref.time = StartMax(ref.task_index);
+SchedulingConstraintHelper::TaskByIncreasingNegatedStartMax() {
+  if (!recompute_by_start_max_) return task_by_increasing_negated_start_max_;
+  for (TaskTime& ref : task_by_increasing_negated_start_max_) {
+    ref.time = cached_negated_start_max_[ref.task_index];
   }
-  IncrementalSort(task_by_decreasing_start_max_.begin(),
-                  task_by_decreasing_start_max_.end(),
-                  std::greater<TaskTime>());
-  return task_by_decreasing_start_max_;
+  IncrementalSort(task_by_increasing_negated_start_max_.begin(),
+                  task_by_increasing_negated_start_max_.end());
+  recompute_by_start_max_ = false;
+  return task_by_increasing_negated_start_max_;
 }
 
 absl::Span<const TaskTime>
@@ -791,24 +806,29 @@ bool SchedulingConstraintHelper::ReportConflict() {
   return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
 }
 
-void SchedulingConstraintHelper::WatchAllTasks(int id,
-                                               GenericLiteralWatcher* watcher,
-                                               bool watch_start_max,
-                                               bool watch_end_max) const {
+void SchedulingConstraintHelper::WatchAllTasks(int id, bool watch_max_side) {
+  // In all cases, we watch presence literals since this class is not waked up
+  // when those changes.
   const int num_tasks = starts_.size();
   for (int t = 0; t < num_tasks; ++t) {
-    watcher->WatchLowerBound(starts_[t], id);
-    watcher->WatchLowerBound(ends_[t], id);
-    watcher->WatchLowerBound(sizes_[t], id);
-    if (watch_start_max) {
-      watcher->WatchUpperBound(starts_[t], id);
-    }
-    if (watch_end_max) {
-      watcher->WatchUpperBound(ends_[t], id);
-    }
     if (!IsPresent(t) && !IsAbsent(t)) {
-      watcher->WatchLiteral(Literal(reason_for_presence_[t]), id);
+      watcher_->WatchLiteral(Literal(reason_for_presence_[t]), id);
     }
+  }
+
+  // If everything is watched, it is slighlty more efficient to enqueue the
+  // propagator when the helper Propagate() is called. This result in less
+  // entries in our watched lists.
+  if (watch_max_side) {
+    propagator_ids_.push_back(id);
+    return;
+  }
+
+  // We only watch "min" side.
+  for (int t = 0; t < num_tasks; ++t) {
+    watcher_->WatchLowerBound(starts_[t], id);
+    watcher_->WatchLowerBound(ends_[t], id);
+    watcher_->WatchLowerBound(sizes_[t], id);
   }
 }
 

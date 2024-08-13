@@ -196,14 +196,12 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 class FinalizerVariables;
 class GlobalDimensionCumulOptimizer;
 class LocalDimensionCumulOptimizer;
-class LocalSearchPhaseParameters;
 #ifndef SWIG
-class IndexNeighborFinder;
 class IntVarFilteredDecisionBuilder;
 #endif
 class RoutingDimension;
@@ -1591,6 +1589,7 @@ class RoutingModel {
   struct NodeNeighborsParameters {
     int num_neighbors;
     bool add_vehicle_starts_to_neighbors = true;
+    bool add_vehicle_ends_to_neighbors = false;
     // In NodeNeighborsByCostClass, neighbors for each node are sorted by
     // increasing "cost" for each node. The following parameter determines if
     // neighbors are sorted based on distance only when the neighborhood is
@@ -1602,6 +1601,8 @@ class RoutingModel {
       return num_neighbors == other.num_neighbors &&
              add_vehicle_starts_to_neighbors ==
                  other.add_vehicle_starts_to_neighbors &&
+             add_vehicle_ends_to_neighbors ==
+                 other.add_vehicle_ends_to_neighbors &&
              only_sort_neighbors_for_partial_neighborhoods ==
                  other.only_sort_neighbors_for_partial_neighborhoods;
     }
@@ -1609,41 +1610,85 @@ class RoutingModel {
     friend H AbslHashValue(H h, const NodeNeighborsParameters& params) {
       return H::combine(std::move(h), params.num_neighbors,
                         params.add_vehicle_starts_to_neighbors,
+                        params.add_vehicle_ends_to_neighbors,
                         params.only_sort_neighbors_for_partial_neighborhoods);
     }
   };
   class NodeNeighborsByCostClass {
    public:
-    NodeNeighborsByCostClass() = default;
+    explicit NodeNeighborsByCostClass(const RoutingModel* routing_model)
+        : routing_model_(*routing_model) {};
 
     /// Computes num_neighbors neighbors of all nodes for every cost class in
     /// routing_model.
-    void ComputeNeighbors(const RoutingModel& routing_model,
-                          const NodeNeighborsParameters& params);
-    /// Returns the neighbors of the given node for the given cost_class.
-    const std::vector<int>& GetNeighborsOfNodeForCostClass(
+    void ComputeNeighbors(const NodeNeighborsParameters& params);
+    /// Returns the incoming neighbors of the given node for the given
+    /// cost_class, i.e. all 'neighbor' indices such that neighbor -> node_index
+    /// is a neighborhood arc for 'cost_class'.
+    const std::vector<int>& GetIncomingNeighborsOfNodeForCostClass(
         int cost_class, int node_index) const {
-      return node_index_to_neighbors_by_cost_class_.empty()
-                 ? all_nodes_
-                 : node_index_to_neighbors_by_cost_class_[cost_class]
-                                                         [node_index];
+      if (routing_model_.IsStart(node_index)) return empty_neighbors_;
+
+      if (node_index_to_incoming_neighbors_by_cost_class_.empty()) {
+        return all_incoming_nodes_;
+      }
+      const std::vector<std::vector<int>>& node_index_to_incoming_neighbors =
+          node_index_to_incoming_neighbors_by_cost_class_[cost_class];
+      if (node_index_to_incoming_neighbors.empty()) {
+        return empty_neighbors_;
+      }
+      return node_index_to_incoming_neighbors[node_index];
     }
-    /// Returns whether or not node 'neighbor_index' is actually a neighbor of
-    /// node 'node_index' for the given cost_class.
-    bool IsNeighborOfNodeForCostClass(int cost_class, int node_index,
-                                      int neighbor_index) const {
-      return node_index_to_neighbor_indicator_by_cost_class_.empty()
-                 ? true
-                 : node_index_to_neighbor_indicator_by_cost_class_
-                       [cost_class][node_index][neighbor_index];
+
+    /// Returns the neighbors that are outgoing from 'node_index', i.e.
+    /// 'neighbor' indices such that node_index -> neighbor is a neighborhood
+    /// arc for 'cost_class'.
+    const std::vector<int>& GetOutgoingNeighborsOfNodeForCostClass(
+        int cost_class, int node_index) const {
+      if (routing_model_.IsEnd(node_index)) return empty_neighbors_;
+
+      if (node_index_to_outgoing_neighbors_by_cost_class_.empty()) {
+        return all_outgoing_nodes_;
+      }
+      const std::vector<std::vector<int>>& node_index_to_outgoing_neighbors =
+          node_index_to_outgoing_neighbors_by_cost_class_[cost_class];
+      if (node_index_to_outgoing_neighbors.empty()) {
+        return empty_neighbors_;
+      }
+      return node_index_to_outgoing_neighbors[node_index];
+    }
+    /// Returns true iff arc from_node -> to_node is a neighborhood arc for the
+    /// given cost_class, i.e. iff arc.to_node is an outgoing neighbor of
+    /// arc.from_node for 'cost_class'.
+    bool IsNeighborhoodArcForCostClass(int cost_class, int64_t from,
+                                       int64_t to) const {
+      if (node_index_to_outgoing_neighbor_indicator_by_cost_class_.empty()) {
+        return true;
+      }
+      if (routing_model_.IsEnd(from)) {
+        return false;
+      }
+      return node_index_to_outgoing_neighbor_indicator_by_cost_class_
+          [cost_class][from][to];
     }
 
    private:
+    const RoutingModel& routing_model_;
+#if __cplusplus >= 202002L
+    static constexpr std::vector<int> empty_neighbors_ = {};
+#else
+    inline static const std::vector<int> empty_neighbors_ = {};
+#endif
+
     std::vector<std::vector<std::vector<int>>>
-        node_index_to_neighbors_by_cost_class_;
+        node_index_to_incoming_neighbors_by_cost_class_;
+    std::vector<std::vector<std::vector<int>>>
+        node_index_to_outgoing_neighbors_by_cost_class_;
     std::vector<std::vector<std::vector<bool>>>
-        node_index_to_neighbor_indicator_by_cost_class_;
-    std::vector<int> all_nodes_;
+        node_index_to_outgoing_neighbor_indicator_by_cost_class_;
+
+    std::vector<int> all_outgoing_nodes_;
+    std::vector<int> all_incoming_nodes_;
   };
 
   /// Returns neighbors of all nodes for every cost class. The result is cached
@@ -1653,6 +1698,7 @@ class RoutingModel {
   const NodeNeighborsByCostClass* GetOrCreateNodeNeighborsByCostClass(
       double neighbors_ratio, int64_t min_neighbors,
       double& neighbors_ratio_used, bool add_vehicle_starts_to_neighbors = true,
+      bool add_vehicle_ends_to_neighbors = false,
       bool only_sort_neighbors_for_partial_neighborhoods = true);
   /// Returns parameters.num_neighbors neighbors of all nodes for every cost
   /// class. The result is cached and is computed once.
@@ -1928,7 +1974,7 @@ class RoutingModel {
   int64_t GetNumberOfRejectsInFirstSolution(
       const RoutingSearchParameters& search_parameters) const;
   /// Returns the automatic first solution strategy selected.
-  operations_research::FirstSolutionStrategy::Value
+  operations_research::routing::FirstSolutionStrategy::Value
   GetAutomaticFirstSolutionStrategy() const {
     return automatic_first_solution_strategy_;
   }
@@ -3760,5 +3806,5 @@ IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
     const RoutingModel& routing_model, const RoutingDimension& dimension);
 #endif
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 #endif  // OR_TOOLS_ROUTING_ROUTING_H_

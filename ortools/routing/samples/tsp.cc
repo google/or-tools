@@ -26,7 +26,7 @@
 #include "ortools/routing/routing.h"
 // [END import]
 
-namespace operations_research {
+namespace operations_research::routing {
 // [START data_model]
 struct DataModel {
   const std::vector<std::vector<int>> locations{
@@ -152,10 +152,10 @@ void Tsp() {
   PrintSolution(manager, routing, *solution);
   // [END print_solution]
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::Tsp();
+  operations_research::routing::Tsp();
   return EXIT_SUCCESS;
 }
 // [END program]

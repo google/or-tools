@@ -68,9 +68,9 @@ PY_LIST_LIST_INPUT_TYPEMAP(IndexT, PyInt_Check);
 %apply const std::vector<IndexT>& { std::vector<NewIndexT>& };
 %enddef  // DEFINE_INDEX_TYPE_TYPEDEF
 
-DEFINE_INDEX_TYPE(operations_research::RoutingNodeIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingCostClassIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingDimensionIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingDisjunctionIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingVehicleClassIndex);
-DEFINE_INDEX_TYPE(operations_research::RoutingResourceClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingNodeIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingCostClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingDimensionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingDisjunctionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingVehicleClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::RoutingResourceClassIndex);

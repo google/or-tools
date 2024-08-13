@@ -2205,7 +2205,25 @@ class CpModel:
     def add_modulo_equality(
         self, target: LinearExprT, expr: LinearExprT, mod: LinearExprT
     ) -> Constraint:
-        """Adds `target = expr % mod`."""
+        """Adds `target = expr % mod`.
+
+        It uses the C convention, that is the result is the remainder of the
+        integral division rounded towards 0.
+
+            For example:
+            * 10 % 3 = 1
+            * -10 % 3 = -1
+            * 10 % -3 = 1
+            * -10 % -3 = -1
+
+        Args:
+          target: the target expression.
+          expr: the expression to compute the modulo of.
+          mod: the modulus expression.
+
+        Returns:
+          A `Constraint` object.
+        """
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
         model_ct.int_mod.exprs.append(self.parse_linear_expression(expr))

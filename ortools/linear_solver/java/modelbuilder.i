@@ -99,6 +99,12 @@ class GlobalRefGuard {
     options.obfuscate = obfuscate;
     return $self->ExportToLpString(options);
   }
+
+  bool writeToMpsFile(const std::string& filename, bool obfuscate) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscate;
+    return $self->WriteToMpsFile(filename, options);
+  }
 }  // Extend operations_research::ModelBuilderHelper
 
 %ignoreall
@@ -182,6 +188,7 @@ class GlobalRefGuard {
 %rename (importFromLpFile) operations_research::ModelBuilderHelper::ImportFromLpFile;
 %unignore operations_research::ModelBuilderHelper::exportToMpsString;
 %unignore operations_research::ModelBuilderHelper::exportToLpString;
+%unignore operations_research::ModelBuilderHelper::writeToMpsFile;
 %rename (overwriteModel) operations_research::ModelBuilderHelper::OverwriteModel;
 
 %unignore operations_research::ModelSolverHelper;

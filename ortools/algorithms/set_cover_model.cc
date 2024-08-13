@@ -248,6 +248,7 @@ std::vector<T> ComputeDeciles(std::vector<T> values) {
   return deciles;
 }
 }  // namespace
+
 SetCoverModel::Stats SetCoverModel::ComputeCostStats() {
   std::vector<Cost> subset_costs(num_subsets());
   std::copy(subset_costs_.begin(), subset_costs_.end(), subset_costs.begin());

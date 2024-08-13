@@ -107,7 +107,7 @@ public class CpModel
      */
     public ILiteral TrueLiteral()
     {
-        return true_literal_ ??= new BoolVar(model_, ConvertConstant(1));
+        return true_literal_ ??= new BoolVar(model_, ConvertConstantWithName(1, "true"));
     }
 
     /**
@@ -1168,6 +1168,24 @@ public class CpModel
         var.Domain.Capacity = 2;
         var.Domain.Add(value);
         var.Domain.Add(value);
+        constant_map_.Add(value, index);
+        model_.Variables.Add(var);
+        return index;
+    }
+
+    private int ConvertConstantWithName(long value, string name)
+    {
+        if (constant_map_.TryGetValue(value, out var index))
+        {
+            return index;
+        }
+
+        index = model_.Variables.Count;
+        IntegerVariableProto var = new IntegerVariableProto();
+        var.Domain.Capacity = 2;
+        var.Domain.Add(value);
+        var.Domain.Add(value);
+        var.Name = name;
         constant_map_.Add(value, index);
         model_.Variables.Add(var);
         return index;

@@ -29,7 +29,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 using NodeIndex = RoutingIndexManager::NodeIndex;
 
@@ -243,4 +243,4 @@ void DisplayPlan(
   }
   LOG(INFO) << plan_output;
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing

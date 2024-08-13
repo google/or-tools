@@ -106,7 +106,7 @@ class TwoOpt;
 
 // Trace settings
 
-namespace operations_research {
+namespace operations_research::routing {
 
 std::string RoutingModel::RouteDimensionTravelInfo::DebugString(
     std::string line_prefix) const {
@@ -238,165 +238,247 @@ SweepArranger* RoutingModel::sweep_arranger() const {
 }
 
 void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
-    const RoutingModel& routing_model, const NodeNeighborsParameters& params) {
+    const NodeNeighborsParameters& params) {
   auto [num_neighbors, add_vehicle_starts_to_neighbors,
+        add_vehicle_ends_to_neighbors,
         only_sort_neighbors_for_partial_neighborhoods] = params;
   DCHECK_GE(num_neighbors, 0);
   // TODO(user): consider checking search limits.
-  const int size = routing_model.Size();
-  const int num_non_start_end_nodes = size - routing_model.vehicles();
-  const int size_with_vehicle_nodes = size + routing_model.vehicles();
+  const int size = routing_model_.Size();
+  const int num_non_start_end_nodes = size - routing_model_.vehicles();
+  const int size_with_vehicle_nodes = size + routing_model_.vehicles();
 
   const int max_num_neighbors = std::max(num_non_start_end_nodes - 1, 0);
   num_neighbors = std::min<int>(max_num_neighbors, num_neighbors);
-  node_index_to_neighbors_by_cost_class_.clear();
-  node_index_to_neighbor_indicator_by_cost_class_.clear();
+  node_index_to_incoming_neighbors_by_cost_class_.clear();
+  node_index_to_outgoing_neighbors_by_cost_class_.clear();
+  node_index_to_outgoing_neighbor_indicator_by_cost_class_.clear();
+  all_incoming_nodes_.clear();
+  all_outgoing_nodes_.clear();
   if (num_neighbors == max_num_neighbors &&
       only_sort_neighbors_for_partial_neighborhoods) {
-    all_nodes_.reserve(size);
-    for (int node = 0; node < size; node++) {
-      if (add_vehicle_starts_to_neighbors || !routing_model.IsStart(node)) {
-        all_nodes_.push_back(node);
+    all_incoming_nodes_.reserve(size);
+    all_outgoing_nodes_.reserve(size);
+    for (int node = 0; node < size_with_vehicle_nodes; node++) {
+      const bool not_start = !routing_model_.IsStart(node);
+      const bool not_end = !routing_model_.IsEnd(node);
+      if (not_start && (not_end || add_vehicle_ends_to_neighbors)) {
+        all_outgoing_nodes_.push_back(node);
+      }
+      if (not_end && (not_start || add_vehicle_starts_to_neighbors)) {
+        all_incoming_nodes_.push_back(node);
       }
     }
     return;
   }
 
-  const int num_cost_classes = routing_model.GetCostClassesCount();
-  node_index_to_neighbors_by_cost_class_.resize(num_cost_classes);
-  node_index_to_neighbor_indicator_by_cost_class_.resize(num_cost_classes);
+  const int num_cost_classes = routing_model_.GetCostClassesCount();
+  node_index_to_incoming_neighbors_by_cost_class_.resize(num_cost_classes);
+  node_index_to_outgoing_neighbors_by_cost_class_.resize(num_cost_classes);
+  node_index_to_outgoing_neighbor_indicator_by_cost_class_.resize(
+      num_cost_classes);
   std::vector<std::vector<std::vector<int64_t>>>
-      node_index_to_costs_by_cost_class(num_cost_classes);
+      node_index_to_outgoing_costs_by_cost_class(num_cost_classes);
   for (int cc = 0; cc < num_cost_classes; cc++) {
-    node_index_to_neighbors_by_cost_class_[cc].resize(size_with_vehicle_nodes);
-    if (!routing_model.HasVehicleWithCostClassIndex(
+    if (!routing_model_.HasVehicleWithCostClassIndex(
             RoutingCostClassIndex(cc))) {
       continue;
     }
-    node_index_to_neighbor_indicator_by_cost_class_[cc].resize(
+    node_index_to_incoming_neighbors_by_cost_class_[cc].resize(
         size_with_vehicle_nodes);
-    node_index_to_costs_by_cost_class[cc].resize(size_with_vehicle_nodes);
+    node_index_to_outgoing_neighbors_by_cost_class_[cc].resize(size);
+    node_index_to_outgoing_neighbor_indicator_by_cost_class_[cc].resize(size);
+    node_index_to_outgoing_costs_by_cost_class[cc].resize(size);
     for (int node = 0; node < size_with_vehicle_nodes; node++) {
-      node_index_to_neighbors_by_cost_class_[cc][node].reserve(
-          num_neighbors + routing_model.vehicles());
-      node_index_to_neighbor_indicator_by_cost_class_[cc][node].resize(size,
-                                                                       false);
-      node_index_to_costs_by_cost_class[cc][node].resize(size, -1);
+      node_index_to_incoming_neighbors_by_cost_class_[cc][node].reserve(
+          num_neighbors + routing_model_.vehicles());
+      if (node < size) {
+        node_index_to_outgoing_neighbors_by_cost_class_[cc][node].reserve(
+            num_neighbors + routing_model_.vehicles());
+        node_index_to_outgoing_neighbor_indicator_by_cost_class_[cc][node]
+            .resize(size_with_vehicle_nodes, false);
+        node_index_to_outgoing_costs_by_cost_class[cc][node].resize(
+            size_with_vehicle_nodes, -1);
+      }
     }
   }
 
-  std::vector<int> neighbors;
+  std::vector<int> outgoing_neighbors;
   for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
-    if (!routing_model.HasVehicleWithCostClassIndex(
+    if (!routing_model_.HasVehicleWithCostClassIndex(
             RoutingCostClassIndex(cost_class))) {
       // No vehicle with this cost class, avoid unnecessary computations.
       continue;
     }
-    std::vector<std::vector<int>>& node_index_to_neighbors =
-        node_index_to_neighbors_by_cost_class_[cost_class];
-    std::vector<std::vector<bool>>& node_index_to_neighbor_indicator =
-        node_index_to_neighbor_indicator_by_cost_class_[cost_class];
-    std::vector<std::vector<int64_t>>& node_index_to_costs =
-        node_index_to_costs_by_cost_class[cost_class];
+    std::vector<std::vector<int>>& node_index_to_incoming_neighbors =
+        node_index_to_incoming_neighbors_by_cost_class_[cost_class];
+    std::vector<std::vector<int>>& node_index_to_outgoing_neighbors =
+        node_index_to_outgoing_neighbors_by_cost_class_[cost_class];
+    std::vector<std::vector<bool>>& node_index_to_outgoing_neighbor_indicator =
+        node_index_to_outgoing_neighbor_indicator_by_cost_class_[cost_class];
+    std::vector<std::vector<int64_t>>& node_index_to_outgoing_costs =
+        node_index_to_outgoing_costs_by_cost_class[cost_class];
     for (int node_index = 0; node_index < size; ++node_index) {
-      if (routing_model.IsStart(node_index)) {
+      if (routing_model_.IsStart(node_index)) {
         // For vehicle start/ends, we consider all nodes (see below).
         continue;
       }
 
       // TODO(user): Use the model's IndexNeighborFinder when available.
-      neighbors.clear();
-      neighbors.reserve(num_non_start_end_nodes);
+      outgoing_neighbors.clear();
+      outgoing_neighbors.reserve(num_non_start_end_nodes);
       if (num_neighbors > 0) {
-        std::vector<int64_t>& costs = node_index_to_costs[node_index];
+        std::vector<int64_t>& costs = node_index_to_outgoing_costs[node_index];
         for (int after_node = 0; after_node < size; ++after_node) {
-          if (after_node != node_index && !routing_model.IsStart(after_node)) {
-            costs[after_node] = routing_model.GetArcCostForClass(
+          if (after_node != node_index && !routing_model_.IsStart(after_node)) {
+            costs[after_node] = routing_model_.GetArcCostForClass(
                 node_index, after_node, cost_class);
-            neighbors.push_back(after_node);
+            outgoing_neighbors.push_back(after_node);
           }
         }
         // Get the 'num_neighbors' closest neighbors.
-        DCHECK_GE(neighbors.size(), num_neighbors);
-        std::nth_element(
-            neighbors.begin(), neighbors.begin() + num_neighbors - 1,
-            neighbors.end(), [&costs](int n1, int n2) {
-              return std::tie(costs[n1], n1) < std::tie(costs[n2], n2);
-            });
-        neighbors.resize(num_neighbors);
+        DCHECK_GE(outgoing_neighbors.size(), num_neighbors);
+        std::nth_element(outgoing_neighbors.begin(),
+                         outgoing_neighbors.begin() + num_neighbors - 1,
+                         outgoing_neighbors.end(), [&costs](int n1, int n2) {
+                           return std::tie(costs[n1], n1) <
+                                  std::tie(costs[n2], n2);
+                         });
+        outgoing_neighbors.resize(num_neighbors);
       }
 
       // Add neighborhoods.
-      for (int neighbor : neighbors) {
-        DCHECK(!routing_model.IsEnd(neighbor) &&
-               !routing_model.IsStart(neighbor));
-        if (node_index_to_neighbor_indicator[node_index][neighbor]) {
-          DCHECK(node_index_to_neighbor_indicator[neighbor][node_index]);
-          continue;
-        }
-        DCHECK(!node_index_to_neighbor_indicator[node_index][neighbor]);
-        node_index_to_neighbor_indicator[node_index][neighbor] = true;
-        node_index_to_neighbors[node_index].push_back(neighbor);
-        DCHECK(!node_index_to_neighbor_indicator[neighbor][node_index]);
-        node_index_to_neighbor_indicator[neighbor][node_index] = true;
-        node_index_to_neighbors[neighbor].push_back(node_index);
-      }
-
-      // Add all vehicle starts as neighbors to this node and vice-versa.
-      // TODO(user): Consider keeping vehicle start/ends out of neighbors, to
-      // prune arcs going from node to start for instance.
-      // TODO(user): Investigate whether we actually need to keep track of
-      // neighbors for vehicle ends.
-      // TODO(user): Investigate if vehicle ends should be considered as
-      // neighbors for every node too.
-      // TODO(user): In the current state of the function, vehicle starts
-      // aren't set as neighbors for vehicle ends. Investigate if that's WAI.
-      for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
-        const int vehicle_start = routing_model.Start(vehicle);
-        const int64_t cost_from_start = routing_model.GetArcCostForClass(
-            vehicle_start, node_index, cost_class);
-        if (add_vehicle_starts_to_neighbors) {
-          DCHECK(!node_index_to_neighbor_indicator[node_index][vehicle_start]);
-          node_index_to_neighbor_indicator[node_index][vehicle_start] = true;
-          node_index_to_neighbors[node_index].push_back(vehicle_start);
-          node_index_to_costs[node_index][vehicle_start] = cost_from_start;
-        }
-        DCHECK(!node_index_to_neighbor_indicator[vehicle_start][node_index]);
-        node_index_to_neighbor_indicator[vehicle_start][node_index] = true;
-        node_index_to_neighbors[vehicle_start].push_back(node_index);
-        node_index_to_costs[vehicle_start][node_index] = cost_from_start;
-
-        const int vehicle_end = routing_model.End(vehicle);
-        DCHECK(!node_index_to_neighbor_indicator[vehicle_end][node_index]);
-        node_index_to_neighbor_indicator[vehicle_end][node_index] = true;
-        node_index_to_neighbors[vehicle_end].push_back(node_index);
-        node_index_to_costs[vehicle_end][node_index] =
-            routing_model.GetArcCostForClass(node_index, vehicle_end,
-                                             cost_class);
+      for (int outgoing_neighbor : outgoing_neighbors) {
+        DCHECK(!routing_model_.IsEnd(outgoing_neighbor) &&
+               !routing_model_.IsStart(outgoing_neighbor));
+        DCHECK(!node_index_to_outgoing_neighbor_indicator[node_index]
+                                                         [outgoing_neighbor]);
+        node_index_to_outgoing_neighbor_indicator[node_index]
+                                                 [outgoing_neighbor] = true;
+        node_index_to_outgoing_neighbors[node_index].push_back(
+            outgoing_neighbor);
+        // node_index is an incoming neighbor of outgoing_neighbor.
+        node_index_to_incoming_neighbors[outgoing_neighbor].push_back(
+            node_index);
       }
     }
   }
 
-  // Sort the neighbors into node_index_to_neighbors_by_cost_class_ by cost.
+  // Add all vehicle start/ends as incoming/outgoing neighbors for all nodes.
   for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
-    if (!routing_model.HasVehicleWithCostClassIndex(
+    if (!routing_model_.HasVehicleWithCostClassIndex(
+            RoutingCostClassIndex(cost_class))) {
+      // No vehicle with this cost class, avoid unnecessary computations.
+      continue;
+    }
+    std::vector<std::vector<int>>& node_index_to_incoming_neighbors =
+        node_index_to_incoming_neighbors_by_cost_class_[cost_class];
+    std::vector<std::vector<int>>& node_index_to_outgoing_neighbors =
+        node_index_to_outgoing_neighbors_by_cost_class_[cost_class];
+    std::vector<std::vector<bool>>& node_index_to_outgoing_neighbor_indicator =
+        node_index_to_outgoing_neighbor_indicator_by_cost_class_[cost_class];
+    std::vector<std::vector<int64_t>>& node_index_to_outgoing_costs =
+        node_index_to_outgoing_costs_by_cost_class[cost_class];
+    for (int vehicle = 0; vehicle < routing_model_.vehicles(); vehicle++) {
+      const int vehicle_start = routing_model_.Start(vehicle);
+      const int vehicle_end = routing_model_.End(vehicle);
+
+      // Mark vehicle_start -> vehicle_end as a neighborhood arc.
+      DCHECK(!node_index_to_outgoing_neighbor_indicator[vehicle_start]
+                                                       [vehicle_end]);
+      node_index_to_outgoing_neighbor_indicator[vehicle_start][vehicle_end] =
+          true;
+      if (add_vehicle_starts_to_neighbors) {
+        node_index_to_incoming_neighbors[vehicle_end].push_back(vehicle_start);
+      }
+      if (add_vehicle_ends_to_neighbors) {
+        node_index_to_outgoing_neighbors[vehicle_start].push_back(vehicle_end);
+      }
+      node_index_to_outgoing_costs[vehicle_start][vehicle_end] =
+          routing_model_.GetArcCostForClass(vehicle_start, vehicle_end,
+                                            cost_class);
+
+      for (int node_index = 0; node_index < size; ++node_index) {
+        if (routing_model_.IsStart(node_index)) continue;
+
+        // Mark vehicle_start -> node_index as a neighborhood arc.
+        DCHECK(!node_index_to_outgoing_neighbor_indicator[node_index]
+                                                         [vehicle_start]);
+        DCHECK(!node_index_to_outgoing_neighbor_indicator[vehicle_start]
+                                                         [node_index]);
+        node_index_to_outgoing_neighbor_indicator[vehicle_start][node_index] =
+            true;
+        if (add_vehicle_starts_to_neighbors) {
+          node_index_to_incoming_neighbors[node_index].push_back(vehicle_start);
+        }
+        node_index_to_outgoing_neighbors[vehicle_start].push_back(node_index);
+        node_index_to_outgoing_costs[vehicle_start][node_index] =
+            routing_model_.GetArcCostForClass(vehicle_start, node_index,
+                                              cost_class);
+
+        // Mark node_index -> vehicle_end as a neighborhood arc.
+        DCHECK(!node_index_to_outgoing_neighbor_indicator[node_index]
+                                                         [vehicle_end]);
+        node_index_to_outgoing_neighbor_indicator[node_index][vehicle_end] =
+            true;
+        node_index_to_incoming_neighbors[vehicle_end].push_back(node_index);
+        if (add_vehicle_ends_to_neighbors) {
+          node_index_to_outgoing_neighbors[node_index].push_back(vehicle_end);
+        }
+        node_index_to_outgoing_costs[node_index][vehicle_end] =
+            routing_model_.GetArcCostForClass(node_index, vehicle_end,
+                                              cost_class);
+      }
+    }
+  }
+
+  // Sort the neighbors into
+  // node_index_to_{incoming,outgoing}_neighbors_by_cost_class_ by cost.
+  for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
+    if (!routing_model_.HasVehicleWithCostClassIndex(
             RoutingCostClassIndex(cost_class))) {
       // No vehicle with this cost class.
       continue;
     }
+    const std::vector<std::vector<int64_t>>& node_index_to_outgoing_costs =
+        node_index_to_outgoing_costs_by_cost_class[cost_class];
     for (int node_index = 0; node_index < size_with_vehicle_nodes;
          ++node_index) {
-      auto& node_neighbors =
-          node_index_to_neighbors_by_cost_class_[cost_class][node_index];
-      const std::vector<int64_t>& costs =
-          node_index_to_costs_by_cost_class[cost_class][node_index];
-      absl::c_sort(node_neighbors, [&costs](int n1, int n2) {
-        DCHECK_GE(costs[n1], 0);
-        DCHECK_GE(costs[n2], 0);
-        return std::tie(costs[n1], n1) < std::tie(costs[n2], n2);
-      });
+      std::vector<int>& incoming_node_neighbors =
+          node_index_to_incoming_neighbors_by_cost_class_[cost_class]
+                                                         [node_index];
+      absl::c_sort(
+          incoming_node_neighbors,
+          [node_index, size, &node_index_to_outgoing_costs](int n1, int n2) {
+            DCHECK_GE(node_index_to_outgoing_costs[n1][node_index], 0);
+            DCHECK_GE(node_index_to_outgoing_costs[n2][node_index], 0);
+            DCHECK_LT(n1, size);
+            DCHECK_LT(n2, size);
+            return std::tie(node_index_to_outgoing_costs[n1][node_index], n1) <
+                   std::tie(node_index_to_outgoing_costs[n2][node_index], n2);
+          });
       // Check that there are no duplicate elements.
-      DCHECK(absl::c_adjacent_find(node_neighbors) == node_neighbors.end());
+      DCHECK(absl::c_adjacent_find(incoming_node_neighbors) ==
+             incoming_node_neighbors.end());
+
+      if (node_index < size) {
+        std::vector<int>& outgoing_node_neighbors =
+            node_index_to_outgoing_neighbors_by_cost_class_[cost_class]
+                                                           [node_index];
+        const std::vector<int64_t>& outgoing_costs =
+            node_index_to_outgoing_costs[node_index];
+        absl::c_sort(outgoing_node_neighbors,
+                     [&outgoing_costs](int n1, int n2) {
+                       DCHECK_GE(outgoing_costs[n1], 0);
+                       DCHECK_GE(outgoing_costs[n2], 0);
+                       return std::tie(outgoing_costs[n1], n1) <
+                              std::tie(outgoing_costs[n2], n2);
+                     });
+
+        // Check that there are no duplicate elements.
+        DCHECK(absl::c_adjacent_find(outgoing_node_neighbors) ==
+               outgoing_node_neighbors.end());
+      }
     }
   }
 }
@@ -404,7 +486,7 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
 const RoutingModel::NodeNeighborsByCostClass*
 RoutingModel::GetOrCreateNodeNeighborsByCostClass(
     double neighbors_ratio, int64_t min_neighbors, double& neighbors_ratio_used,
-    bool add_vehicle_starts_to_neighbors,
+    bool add_vehicle_starts_to_neighbors, bool add_vehicle_ends_to_neighbors,
     bool only_sort_neighbors_for_partial_neighborhoods) {
   const int64_t num_non_start_end_nodes = Size() - vehicles();
   neighbors_ratio_used = neighbors_ratio;
@@ -417,6 +499,7 @@ RoutingModel::GetOrCreateNodeNeighborsByCostClass(
   }
   return GetOrCreateNodeNeighborsByCostClass(
       {num_neighbors, add_vehicle_starts_to_neighbors,
+       add_vehicle_ends_to_neighbors,
        only_sort_neighbors_for_partial_neighborhoods});
 }
 
@@ -428,8 +511,9 @@ RoutingModel::GetOrCreateNodeNeighborsByCostClass(
   if (node_neighbors_by_cost_class != nullptr) {
     return node_neighbors_by_cost_class.get();
   }
-  node_neighbors_by_cost_class = std::make_unique<NodeNeighborsByCostClass>();
-  node_neighbors_by_cost_class->ComputeNeighbors(*this, params);
+  node_neighbors_by_cost_class =
+      std::make_unique<NodeNeighborsByCostClass>(this);
+  node_neighbors_by_cost_class->ComputeNeighbors(params);
   return node_neighbors_by_cost_class.get();
 }
 
@@ -4548,11 +4632,25 @@ void RoutingModel::CreateNeighborhoodOperators(
       GetOrCreateNodeNeighborsByCostClass(
           parameters.ls_operator_neighbors_ratio(),
           parameters.ls_operator_min_neighbors(), neighbors_ratio_used,
-          /*add_vehicle_starts_to_neighbors=*/false);
+          /*add_vehicle_starts_to_neighbors=*/false,
+          /*add_vehicle_ends_to_neighbors=*/false);
+  // TODO(user): Consider passing incoming/outgoing neighbors separately to
+  // LS operators. This would allow the Cross operator to use both incoming and
+  // outgoing neighbors, to exchange path starts and ends independently.
   const auto get_neighbors = [neighbors_by_cost_class, this](
                                  int64_t node,
                                  int64_t start) -> const std::vector<int>& {
-    return neighbors_by_cost_class->GetNeighborsOfNodeForCostClass(
+    if (IsEnd(node)) {
+      // HACK(user): As of CL/651760817, vehicle end nodes no longer have
+      // outgoing neighbors, which causes neighborhood operators that iterate
+      // on vehicle ends as seeds to fail. This is a temporary hack to consider
+      // the incoming neighbors for vehicle ends, before the proper fix which is
+      // to pass 2 separate callbacks for incoming and outgoing neighbors to
+      // neighborhood operators.
+      return neighbors_by_cost_class->GetIncomingNeighborsOfNodeForCostClass(
+          GetCostClassIndexOfVehicle(VehicleIndex(start)).value(), node);
+    }
+    return neighbors_by_cost_class->GetOutgoingNeighborsOfNodeForCostClass(
         GetCostClassIndexOfVehicle(VehicleIndex(start)).value(), node);
   };
 
@@ -4714,6 +4812,7 @@ void RoutingModel::CreateNeighborhoodOperators(
             this, [this]() { return CheckLimit(time_buffer_); },
             GetLocalSearchArcCostCallback(parameters),
             parameters.local_cheapest_insertion_pickup_delivery_strategy(),
+            parameters.local_cheapest_insertion_sorting_mode(),
             GetOrCreateLocalSearchFilterManager(
                 parameters,
                 {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}),
@@ -5667,6 +5766,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   }
   const RoutingSearchParameters::PairInsertionStrategy lci_pair_strategy =
       search_parameters.local_cheapest_insertion_pickup_delivery_strategy();
+  const RoutingSearchParameters::InsertionSortingMode sorting_mode =
+      search_parameters.local_cheapest_insertion_sorting_mode();
   first_solution_filtered_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] =
           CreateIntVarFilteredDecisionBuilder<
@@ -5674,7 +5775,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
               [this](int64_t i, int64_t j, int64_t vehicle) {
                 return GetArcCostForVehicle(i, j, vehicle);
               },
-              lci_pair_strategy,
+              lci_pair_strategy, sorting_mode,
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/false,
                                       /*filter_with_cp_solver=*/false}),
@@ -5685,7 +5786,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
           [this](int64_t i, int64_t j, int64_t vehicle) {
             return GetArcCostForVehicle(i, j, vehicle);
           },
-          lci_pair_strategy,
+          lci_pair_strategy, sorting_mode,
           GetOrCreateLocalSearchFilterManager(search_parameters,
                                               {/*filter_objective=*/false,
                                                /*filter_with_cp_solver=*/true}),
@@ -5706,7 +5807,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
       [FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION] =
           CreateIntVarFilteredDecisionBuilder<
               LocalCheapestInsertionFilteredHeuristic>(
-              /*evaluator=*/nullptr, lcci_pair_strategy,
+              /*evaluator=*/nullptr, lcci_pair_strategy, sorting_mode,
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/true,
                                       /*filter_with_cp_solver=*/false}),
@@ -5714,7 +5815,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   IntVarFilteredDecisionBuilder* const strong_lcci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
-          /*evaluator=*/nullptr, lcci_pair_strategy,
+          /*evaluator=*/nullptr, lcci_pair_strategy, sorting_mode,
           GetOrCreateLocalSearchFilterManager(search_parameters,
                                               {/*filter_objective=*/true,
                                                /*filter_with_cp_solver=*/true}),
@@ -5973,75 +6074,94 @@ void RoutingModel::SetupDecisionBuilders(
 
 void RoutingModel::SetupMetaheuristics(
     const RoutingSearchParameters& search_parameters) {
-  SearchMonitor* optimize = nullptr;
-  const LocalSearchMetaheuristic::Value metaheuristic =
-      search_parameters.local_search_metaheuristic();
-  // Some metaheuristics will effectively never terminate; warn
-  // user if they fail to set a time limit.
-  bool limit_too_long =
-      !search_parameters.has_time_limit() &&
-      search_parameters.solution_limit() == std::numeric_limits<int64_t>::max();
-  const int64_t optimization_step = std::max(
-      MathUtil::SafeRound<int64_t>(search_parameters.optimization_step()),
-      One());
-  switch (metaheuristic) {
-    case LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH: {
-      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
-          same_class_arc_getter;
-      if (search_parameters
-              .guided_local_search_penalize_with_vehicle_classes()) {
-        same_class_arc_getter =
-            absl::bind_front(&RoutingModel::GetSameVehicleClassArcs, this);
+  BaseObjectiveMonitor* optimize = nullptr;
+  const auto build_metaheuristic = [this, &search_parameters](
+                                       LocalSearchMetaheuristic::Value
+                                           metaheuristic) {
+    BaseObjectiveMonitor* optimize = nullptr;
+    // Some metaheuristics will effectively never terminate; warn
+    // user if they fail to set a time limit.
+    bool limit_too_long = !search_parameters.has_time_limit() &&
+                          search_parameters.solution_limit() ==
+                              std::numeric_limits<int64_t>::max();
+    const int64_t optimization_step = std::max(
+        MathUtil::SafeRound<int64_t>(search_parameters.optimization_step()),
+        One());
+    switch (metaheuristic) {
+      case LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH: {
+        std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t,
+                                                               int64_t)>
+            same_class_arc_getter;
+        if (search_parameters
+                .guided_local_search_penalize_with_vehicle_classes()) {
+          same_class_arc_getter =
+              absl::bind_front(&RoutingModel::GetSameVehicleClassArcs, this);
+        }
+        if (CostsAreHomogeneousAcrossVehicles()) {
+          optimize = solver_->MakeGuidedLocalSearch(
+              false, cost_,
+              [this](int64_t i, int64_t j) { return GetHomogeneousCost(i, j); },
+              optimization_step, nexts_,
+              search_parameters.guided_local_search_lambda_coefficient(),
+              std::move(same_class_arc_getter),
+              search_parameters
+                  .guided_local_search_reset_penalties_on_new_best_solution());
+        } else {
+          optimize = solver_->MakeGuidedLocalSearch(
+              false, cost_,
+              [this](int64_t i, int64_t j, int64_t k) {
+                return GetArcCostForVehicle(i, j, k);
+              },
+              optimization_step, nexts_, vehicle_vars_,
+              search_parameters.guided_local_search_lambda_coefficient(),
+              std::move(same_class_arc_getter),
+              search_parameters
+                  .guided_local_search_reset_penalties_on_new_best_solution());
+        }
+        break;
       }
-      if (CostsAreHomogeneousAcrossVehicles()) {
-        optimize = solver_->MakeGuidedLocalSearch(
-            false, cost_,
-            [this](int64_t i, int64_t j) { return GetHomogeneousCost(i, j); },
-            optimization_step, nexts_,
-            search_parameters.guided_local_search_lambda_coefficient(),
-            std::move(same_class_arc_getter),
-            search_parameters
-                .guided_local_search_reset_penalties_on_new_best_solution());
-      } else {
-        optimize = solver_->MakeGuidedLocalSearch(
-            false, cost_,
-            [this](int64_t i, int64_t j, int64_t k) {
-              return GetArcCostForVehicle(i, j, k);
-            },
-            optimization_step, nexts_, vehicle_vars_,
-            search_parameters.guided_local_search_lambda_coefficient(),
-            std::move(same_class_arc_getter),
-            search_parameters
-                .guided_local_search_reset_penalties_on_new_best_solution());
+      case LocalSearchMetaheuristic::SIMULATED_ANNEALING:
+        optimize = solver_->MakeSimulatedAnnealing(false, cost_,
+                                                   optimization_step, 100);
+        break;
+      case LocalSearchMetaheuristic::TABU_SEARCH:
+        optimize = solver_->MakeTabuSearch(false, cost_, optimization_step,
+                                           nexts_, 10, 10, .8);
+        break;
+      case LocalSearchMetaheuristic::GENERIC_TABU_SEARCH: {
+        std::vector<operations_research::IntVar*> tabu_vars;
+        if (tabu_var_callback_) {
+          tabu_vars = tabu_var_callback_(this);
+        } else {
+          tabu_vars.push_back(cost_);
+        }
+        optimize = solver_->MakeGenericTabuSearch(
+            false, cost_, optimization_step, tabu_vars, 100);
+        break;
       }
-      break;
+      default:
+        limit_too_long = false;
+        optimize = solver_->MakeMinimize(cost_, optimization_step);
     }
-    case LocalSearchMetaheuristic::SIMULATED_ANNEALING:
-      optimize =
-          solver_->MakeSimulatedAnnealing(false, cost_, optimization_step, 100);
-      break;
-    case LocalSearchMetaheuristic::TABU_SEARCH:
-      optimize = solver_->MakeTabuSearch(false, cost_, optimization_step,
-                                         nexts_, 10, 10, .8);
-      break;
-    case LocalSearchMetaheuristic::GENERIC_TABU_SEARCH: {
-      std::vector<operations_research::IntVar*> tabu_vars;
-      if (tabu_var_callback_) {
-        tabu_vars = tabu_var_callback_(this);
-      } else {
-        tabu_vars.push_back(cost_);
-      }
-      optimize = solver_->MakeGenericTabuSearch(false, cost_, optimization_step,
-                                                tabu_vars, 100);
-      break;
+    if (limit_too_long) {
+      LOG(WARNING) << LocalSearchMetaheuristic::Value_Name(metaheuristic)
+                   << " specified without sane timeout: solve may run forever.";
     }
-    default:
-      limit_too_long = false;
-      optimize = solver_->MakeMinimize(cost_, optimization_step);
-  }
-  if (limit_too_long) {
-    LOG(WARNING) << LocalSearchMetaheuristic::Value_Name(metaheuristic)
-                 << " specified without sane timeout: solve may run forever.";
+    return optimize;
+  };
+  if (!search_parameters.local_search_metaheuristics().empty()) {
+    std::vector<BaseObjectiveMonitor*> metaheuristics;
+    for (int i = 0; i < search_parameters.local_search_metaheuristics_size();
+         ++i) {
+      metaheuristics.push_back(build_metaheuristic(
+          search_parameters.local_search_metaheuristics(i)));
+    }
+    optimize = solver_->MakeRoundRobinCompoundObjectiveMonitor(
+        metaheuristics,
+        search_parameters.num_max_local_optima_before_metaheuristic_switch());
+  } else {
+    optimize =
+        build_metaheuristic(search_parameters.local_search_metaheuristic());
   }
   metaheuristic_ = optimize;
   monitors_.push_back(optimize);
@@ -7314,4 +7434,4 @@ void RoutingDimension::SetupSlackAndDependentTransitCosts() const {
   }
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

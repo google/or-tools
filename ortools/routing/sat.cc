@@ -41,9 +41,26 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/time_limit.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace sat {
 namespace {
+
+using operations_research::sat::BoolArgumentProto;
+using operations_research::sat::CircuitConstraintProto;
+using operations_research::sat::ConstraintProto;
+using operations_research::sat::CpModelProto;
+using operations_research::sat::CpObjectiveProto;
+using operations_research::sat::CpSolverResponse;
+using operations_research::sat::CpSolverStatus;
+using operations_research::sat::IntegerVariableProto;
+using operations_research::sat::kMaxIntegerValue;
+using operations_research::sat::kMinIntegerValue;
+using operations_research::sat::LinearConstraintProto;
+using operations_research::sat::Model;
+using operations_research::sat::NewSatParameters;
+using operations_research::sat::PartialVariableAssignment;
+using operations_research::sat::RoutesConstraintProto;
+using operations_research::sat::SatParameters;
 
 // As of 07/2019, TSPs and VRPs with homogeneous fleets of vehicles are
 // supported.
@@ -86,7 +103,7 @@ void AddLinearConstraint(
 // lower_bound <= sum variable * coeff <= upper_bound.
 void AddLinearConstraint(
     CpModelProto* cp_model, int64_t lower_bound, int64_t upper_bound,
-    const std::vector<std::pair<int, double>>& variable_coeffs) {
+    absl::Span<const std::pair<int, double>> variable_coeffs) {
   AddLinearConstraint(cp_model, lower_bound, upper_bound, variable_coeffs, {});
 }
 
@@ -613,7 +630,7 @@ std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
 void AddGeneralizedPickupDeliveryConstraints(
     const RoutingModel& model, const ArcVarMap& arc_vars,
     absl::Span<const absl::flat_hash_map<int, int>> vehicle_performs_node,
-    const std::vector<int>& is_unperformed, CpModelProto* cp_model) {
+    absl::Span<const int> is_unperformed, CpModelProto* cp_model) {
   if (model.GetPickupAndDeliveryPairs().empty()) return;
   const std::vector<int> ranks =
       CreateGeneralizedRanks(model, arc_vars, is_unperformed, cp_model);
@@ -1202,4 +1219,4 @@ bool SolveModelWithSat(RoutingModel* model,
       objective, *model, arc_vars, solution);
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

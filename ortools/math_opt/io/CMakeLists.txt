@@ -14,12 +14,21 @@
 set(NAME ${PROJECT_NAME}_math_opt_io)
 add_library(${NAME} OBJECT)
 
-file(GLOB _SRCS "*.h" "*.cc")
+file(GLOB_RECURSE _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX "/python/.*")
+list(FILTER _SRCS EXCLUDE REGEX "/lp/matchers\..*")
+if(NOT USE_SCIP)
+  list(FILTER _SRCS EXCLUDE REGEX "/lp_parser.h$")
+  list(FILTER _SRCS EXCLUDE REGEX "/lp_parser.cc$")
+endif()
 target_sources(${NAME} PRIVATE ${_SRCS})
 set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
+  ${PROJECT_NAMESPACE}::math_opt_proto
   absl::strings
-  ${PROJECT_NAMESPACE}::math_opt_proto)
+  $<$<BOOL:${USE_SCIP}>:libscip>
+)

@@ -194,7 +194,7 @@ double GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
   return scaling_factor;
 }
 
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
+void GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
                                     int64_t max_absolute_sum,
                                     double* scaling_factor,
                                     double* max_relative_coeff_error) {

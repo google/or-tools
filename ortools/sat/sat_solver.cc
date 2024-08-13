@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
@@ -76,7 +75,6 @@ SatSolver::SatSolver(Model* model)
       clause_activity_increment_(1.0),
       same_reason_identifier_(*trail_),
       is_relevant_for_core_computation_(true),
-      problem_is_pure_sat_(true),
       drat_proof_handler_(nullptr),
       stats_("SatSolver") {
   InitializePropagators();
@@ -318,8 +316,6 @@ bool SatSolver::AddLinearConstraintInternal(
     return true;
   }
 
-  problem_is_pure_sat_ = false;
-
   // TODO(user): If this constraint forces all its literal to false (when rhs is
   // zero for instance), we still add it. Optimize this?
   return pb_constraints_->AddConstraint(cst, rhs, trail_);
@@ -446,7 +442,6 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
 
 void SatSolver::AddPropagator(SatPropagator* propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
-  problem_is_pure_sat_ = false;
   trail_->RegisterPropagator(propagator);
   external_propagators_.push_back(propagator);
   InitializePropagators();
@@ -455,7 +450,6 @@ void SatSolver::AddPropagator(SatPropagator* propagator) {
 void SatSolver::AddLastPropagator(SatPropagator* propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   CHECK(last_propagator_ == nullptr);
-  problem_is_pure_sat_ = false;
   trail_->RegisterPropagator(propagator);
   last_propagator_ = propagator;
   InitializePropagators();
@@ -1044,7 +1038,8 @@ void SatSolver::Backtrack(int target_level) {
   // that will cause some problems. Note that we could forbid a user to call
   // Backtrack() with the current level, but that is annoying when you just
   // want to reset the solver with Backtrack(0).
-  if (CurrentDecisionLevel() == target_level) return;
+  DCHECK(target_level == 0 || !Decisions().empty());
+  if (CurrentDecisionLevel() == target_level || Decisions().empty()) return;
   DCHECK_GE(target_level, 0);
   DCHECK_LE(target_level, CurrentDecisionLevel());
 

@@ -1,4 +1,5 @@
 FROM ortools/cmake:system_deps_base AS env
+
 RUN cmake -version
 
 FROM env AS devel
@@ -7,7 +8,10 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
- -DUSE_COINOR=ON -DUSE_GLPK=ON -DUSE_SCIP=ON
+ -DUSE_COINOR=ON \
+ -DUSE_GLPK=ON \
+ -DUSE_HIGHS=OFF \
+ -DUSE_SCIP=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

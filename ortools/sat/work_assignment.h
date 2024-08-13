@@ -28,6 +28,9 @@
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/container/node_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
@@ -37,6 +40,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
@@ -58,6 +62,12 @@ class ProtoLiteral {
     return proto_var_ == other.proto_var_ && lb_ == other.lb_;
   }
   bool operator!=(const ProtoLiteral& other) const { return !(*this == other); }
+  template <typename H>
+  friend H AbslHashValue(H h, const ProtoLiteral& literal) {
+    return H::combine(std::move(h), literal.proto_var_, literal.lb_);
+  }
+
+  // Note you should only decode integer literals at the root level.
   Literal Decode(CpModelMapping*, IntegerEncoder*) const;
   static std::optional<ProtoLiteral> Encode(Literal, CpModelMapping*,
                                             IntegerEncoder*);
@@ -111,6 +121,12 @@ class ProtoTrail {
   // Returns literals which may be propagated at `level`, this does not include
   // the decision.
   absl::Span<const ProtoLiteral> Implications(int level) const;
+  void AddImplication(int level, ProtoLiteral implication) {
+    auto it = implication_level_.find(implication);
+    if (it != implication_level_.end() && it->second <= level) return;
+    MutableImplications(level).push_back(implication);
+    implication_level_[implication] = level;
+  }
 
   IntegerValue ObjectiveLb(int level) const {
     CHECK_GE(level, 1);
@@ -119,16 +135,35 @@ class ProtoTrail {
 
   absl::Span<const ProtoLiteral> Literals() const { return literals_; }
 
+  const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
+  void SetPhase(absl::Span<const ProtoLiteral> phase) {
+    target_phase_.clear();
+    for (const ProtoLiteral& lit : phase) {
+      if (implication_level_.contains(lit)) return;
+      target_phase_.push_back(lit);
+    }
+  }
+
  private:
+  std::vector<ProtoLiteral>& MutableImplications(int level) {
+    return implications_[level - 1];
+  }
   // Parallel vectors encoding the literals and node ids on the trail.
   std::vector<ProtoLiteral> literals_;
   std::vector<int> node_ids_;
+
+  // Extra implications that can be propagated at each level but were never
+  // branches in the shared tree.
+  std::vector<std::vector<ProtoLiteral>> implications_;
+  absl::flat_hash_map<ProtoLiteral, int> implication_level_;
 
   // The index in the literals_/node_ids_ vectors for the start of each level.
   std::vector<int> decision_indexes_;
 
   // The objective lower bound of each level.
   std::vector<IntegerValue> level_to_objective_lbs_;
+
+  std::vector<ProtoLiteral> target_phase_;
 };
 
 // Experimental thread-safe class for managing work assignments between workers.
@@ -168,6 +203,16 @@ class SharedTreeManager {
   }
 
  private:
+  // Because it is quite difficult to get a flat_hash_set to release memory,
+  // we store info we need only for open nodes implications via a unique_ptr.
+  // Note to simplify code, the root will always have a NodeTrailInfo after it
+  // is closed.
+  struct NodeTrailInfo {
+    absl::flat_hash_set<ProtoLiteral> implications;
+    // This is only non-empty for nodes where all but one descendent is closed
+    // (i.e. mostly leaves).
+    std::vector<ProtoLiteral> phase;
+  };
   struct Node {
     ProtoLiteral literal;
     IntegerValue objective_lb = kMinIntegerValue;
@@ -177,9 +222,14 @@ class SharedTreeManager {
     int id;
     bool closed = false;
     bool implied = false;
+    // Only set for open, non-implied nodes.
+    std::unique_ptr<NodeTrailInfo> trail_info;
   };
   bool IsValid(const ProtoTrail& path) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   Node* GetSibling(Node* node) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  // Returns the NodeTrailInfo for `node` or it's closest non-closed,
+  // non-implied ancestor. `node` must be valid, never returns nullptr.
+  NodeTrailInfo* GetTrailInfo(Node* node);
   void Split(std::vector<std::pair<Node*, int>>& nodes, ProtoLiteral lit)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   Node* MakeSubtree(Node* parent, ProtoLiteral literal)
@@ -247,7 +297,7 @@ class SharedTreeWorker {
 
   // Add any implications to the clause database for the current level.
   // Return true if any new information was added.
-  bool AddImplications(absl::Span<const ProtoLiteral> implied_literals);
+  bool AddImplications();
   bool AddDecisionImplication(Literal literal, int level);
 
   const std::vector<Literal>& DecisionReason(int level);
@@ -265,14 +315,17 @@ class SharedTreeWorker {
   ModelRandomGenerator* random_;
   IntegerSearchHelper* helper_;
   SearchHeuristics* heuristics_;
+  SatDecisionPolicy* decision_policy_;
   RestartPolicy* restart_policy_;
   LevelZeroCallbackHelper* level_zero_callbacks_;
+  RevIntRepository* reversible_int_repository_;
 
   int64_t num_restarts_ = 0;
   int64_t num_trees_ = 0;
 
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
+  std::vector<std::vector<Literal>> assigned_tree_implications_;
   // How many restarts had happened when the current tree was assigned?
   int64_t tree_assignment_restart_ = -1;
 
@@ -288,6 +341,12 @@ class SharedTreeWorker {
   // If a tree has worse LBD than the average over the last few trees we replace
   // the tree.
   RunningAverage assigned_tree_lbds_;
+
+  // Stores the trail index of the last implication added to assigned_tree_.
+  int reversible_trail_index_ = 0;
+  // Stores the number of implications processed for each level in
+  // assigned_tree_.
+  std::deque<int> rev_num_processed_implications_;
 };
 
 }  // namespace operations_research::sat

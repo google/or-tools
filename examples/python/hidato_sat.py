@@ -74,7 +74,7 @@ def print_matrix(game: list[list[int]]) -> None:
             if game[i][j] == 0:
                 line += "  ."
             else:
-                line += "% 3s" % game[i][j]
+                line += f"{game[i][j]:3}"
         print(line)
 
 
@@ -102,7 +102,7 @@ def build_puzzle(problem: int) -> Union[None, list[list[int]]]:
 
     elif problem == 3:
         # Problems from the book:
-        # Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
+        # Gyora Bededek: 'Hidato: 2000 Pure Logic Puzzles'
         # Problem 1 (Practice)
         puzzle = [
             [0, 0, 20, 0, 0],
@@ -147,7 +147,7 @@ def build_puzzle(problem: int) -> Union[None, list[list[int]]]:
     return puzzle
 
 
-def solve_hidato(puzzle: list[list[int]], index: int):
+def solve_hidato(puzzle: list[list[int]], index: int) -> None:
     """solve the given hidato table."""
     # Create the model.
     model = cp_model.CpModel()
@@ -156,15 +156,15 @@ def solve_hidato(puzzle: list[list[int]], index: int):
     c = len(puzzle[0])
     if not visualization.RunFromIPython():
         print("")
-        print("----- Solving problem %i -----" % index)
+        print(f"----- Solving problem {index} -----")
         print("")
-        print(("Initial game (%i x %i)" % (r, c)))
+        print(f"Initial game ({r} x {c})")
         print_matrix(puzzle)
 
     #
     # Declare variables.
     #
-    positions = [model.new_int_var(0, r * c - 1, "p[%i]" % i) for i in range(r * c)]
+    positions = [model.new_int_var(0, r * c - 1, f"p[{i}]") for i in range(r * c)]
 
     #
     # Constraints.
@@ -202,7 +202,7 @@ def solve_hidato(puzzle: list[list[int]], index: int):
                 color = "white" if puzzle[y][x] == 0 else "lightgreen"
                 output.AddRectangle(x, r - y - 1, 1, 1, color, "black", str(i + 1))
 
-            output.AddTitle("Puzzle %i solved in %f s" % (index, solver.wall_time))
+            output.AddTitle(f"Puzzle {index} solved in {solver.wall_time:.2f} s")
             output.Display()
         else:
             print_solution(
@@ -210,10 +210,7 @@ def solve_hidato(puzzle: list[list[int]], index: int):
                 r,
                 c,
             )
-            print("Statistics")
-            print("  - conflicts : %i" % solver.num_conflicts)
-            print("  - branches  : %i" % solver.num_branches)
-            print("  - wall time : %f s" % solver.wall_time)
+            print(solver.response_stats())
 
 
 def main(_):

@@ -23,17 +23,14 @@ of the rule.
 """
 
 from absl import app
-from absl import flags
 from ortools.constraint_solver import pywrapcp
-
-FLAGS = flags.FLAGS
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
 # pylint: disable=g-explicit-bool-comparison
 
 
-def main(_):
+def main(_) -> None:
     # Create the solver.
     solver = pywrapcp.Solver("golomb ruler")
 

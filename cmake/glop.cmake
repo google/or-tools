@@ -180,7 +180,6 @@ if(MSVC)
     "/D_CRT_SECURE_NO_DEPRECATE"
     "/MP" # Build with multiple processes
     "/Zc:preprocessor" # Enable preprocessor conformance mode
-    "/DNDEBUG"
     )
   # MSVC warning suppressions
   list(APPEND GLOP_COMPILE_OPTIONS
@@ -262,8 +261,8 @@ target_link_libraries(glop PUBLIC
   absl::strings
   absl::statusor
   absl::str_format
+  absl::random_random
   protobuf::libprotobuf
-  ${RE2_DEPS}
   )
 if(WIN32)
   #target_link_libraries(glop PUBLIC psapi.lib ws2_32.lib)

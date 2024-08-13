@@ -122,7 +122,7 @@ void ZeroHalfCutHelper::AddOneConstraint(const glop::RowIndex row,
   }
 }
 
-void ZeroHalfCutHelper::SymmetricDifference(const std::vector<int>& a,
+void ZeroHalfCutHelper::SymmetricDifference(absl::Span<const int> a,
                                             std::vector<int>* b) {
   for (const int v : *b) tmp_marked_[v] = true;
   for (const int v : a) {

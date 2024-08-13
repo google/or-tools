@@ -21,7 +21,7 @@
 
 #include "absl/types/span.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Tracks whether bins constrained by several nonnegative dimensions can contain
 // items added incrementally. Also tracks soft violation costs.
@@ -89,6 +89,6 @@ bool FindMostExpensiveArcsOnRoute(
     std::vector<std::pair<int64_t, int>>* most_expensive_arc_starts_and_ranks,
     std::pair<int, int>* first_expensive_arc_indices);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_UTILS_H_

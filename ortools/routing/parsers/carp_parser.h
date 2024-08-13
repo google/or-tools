@@ -66,7 +66,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 class CarpParser {
  public:
   CarpParser();
@@ -182,6 +182,6 @@ class CarpParser {
   int64_t n_vehicles_;
   int64_t capacity_;
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_CARP_PARSER_H_

@@ -36,7 +36,7 @@
 #include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 class TspLibParser final {
  public:
@@ -150,7 +150,7 @@ class TspLibParser final {
   void ParseNodeCoord(absl::Span<const std::string> words);
   void SetUpEdgeWeightSection();
   void FinalizeEdgeWeights();
-  void ParseSections(const std::vector<std::string>& words);
+  void ParseSections(absl::Span<const std::string> words);
   void ProcessNewLine(const std::string& line);
   void SetExplicitCost(int from, int to, int64_t cost) {
     if (explicit_costs_.size() != size_ * size_) {
@@ -248,6 +248,6 @@ class CVRPToursParser final {
   std::vector<std::vector<int>> tours_;
   int64_t cost_;
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_

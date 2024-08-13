@@ -21,7 +21,8 @@ We are scheduling a full day of baking:
 """
 
 import collections
-from typing import Sequence
+from typing import List, Sequence, Tuple
+
 from absl import app
 from absl import flags
 
@@ -29,10 +30,9 @@ from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _PARAMS = flags.DEFINE_string(
-    "params", "num_search_workers:16, max_time_in_seconds:30", "Sat solver parameters."
-)
-_PROTO_FILE = flags.DEFINE_string(
-    "proto_file", "", "If not empty, output the proto to this file."
+    "params",
+    "num_search_workers:16, max_time_in_seconds:30",
+    "Sat solver parameters.",
 )
 
 # Recipes
@@ -50,7 +50,7 @@ DECORATING = "decorating"
 DISPLAY = "display"
 
 
-class Task(object):
+class Task:
     """A unit baking task.
 
     - Simple baking tasks have a fixed duration. They are performed by workers.
@@ -64,7 +64,7 @@ class Task(object):
         self.max_duration = max_duration
 
 
-class Skill(object):
+class Skill:
     """The skill of a worker or the capability of a machine."""
 
     def __init__(self, name, efficiency):
@@ -73,19 +73,21 @@ class Skill(object):
         self.efficiency = efficiency
 
 
-class Recipe(object):
+class Recipe:
     """A recipe is a sequence of cooking tasks."""
 
     def __init__(self, name):
         self.name = name
         self.tasks = []
 
-    def add_task(self, resource_name, min_duration, max_duration):
+    def add_task(
+        self, resource_name: str, min_duration: int, max_duration: int
+    ) -> "Recipe":
         self.tasks.append(Task(resource_name, min_duration, max_duration))
         return self
 
 
-class Resource(object):
+class Resource:
     """A resource is a worker, a machine, or just some space for cakes to rest.
 
     - Workers have a capacity of 1 and can have variable efficiency.
@@ -101,12 +103,12 @@ class Resource(object):
         self.capacity = capacity
         self.skills = []
 
-    def add_skill(self, skill_name, efficiency):
+    def add_skill(self, skill_name: str, efficiency: float) -> "Resource":
         self.skills.append(Skill(skill_name, efficiency))
         return self
 
 
-class Order(object):
+class Order:
     """An order is a recipe that should be delivered at a given due date."""
 
     def __init__(self, unique_id, recipe_name, due_date, quantity):
@@ -124,7 +126,7 @@ class Order(object):
         self.quantity = quantity
 
 
-def set_up_data():
+def set_up_data() -> Tuple[List[Recipe], List[Resource], List[Order]]:
     """Set up the bakery problem data."""
 
     # Recipes.
@@ -193,7 +195,9 @@ def set_up_data():
     return recipes, resources, orders
 
 
-def solve_with_cp_sat(recipes, resources, orders):
+def solve_with_cp_sat(
+    recipes: List[Recipe], resources: List[Resource], orders: List[Order]
+) -> None:
     """Build the optimization model, and solve the problem."""
 
     model = cp_model.CpModel()
@@ -230,7 +234,6 @@ def solve_with_cp_sat(recipes, resources, orders):
                 skill_name = task.name
                 suffix = f"_{order.unique_id}_batch{batch}_{skill_name}"
 
-                start = None
                 if previous_end is None:
                     start = model.new_int_var(start_work, horizon, f"start{suffix}")
                     orders_sequence_of_events[order_id].append(
@@ -242,7 +245,6 @@ def solve_with_cp_sat(recipes, resources, orders):
                 size = model.new_int_var(
                     task.min_duration, task.max_duration, f"size{suffix}"
                 )
-                end = None
                 if task == recipe.tasks[-1]:
                     # The order must end after the due_date. Ideally, exactly at the
                     # due_date.

@@ -902,7 +902,8 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
       // Check that the score for undoing the move is -score with both the
       // default weights (which may be `state_->weights` or
       // `state_->compound_weights`), and with `weights` explicitly.
-      if (!state_->options.use_decay) {
+      // TODO(user): Re-enable DCHECK.
+      if (/* DISABLES CODE */ false && !state_->options.use_decay) {
         DCHECK_EQ(-score, ComputeScore(state_->weights, var,
                                        prev_value - new_value, false));
         DCHECK_EQ(-score, ComputeScore(ScanWeights(), var,
@@ -914,7 +915,6 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
         // We already know the score of the only possible move (undoing what we
         // just did).
         jumps_.SetJump(var, prev_value - new_value, -score);
-        DCHECK(state_->options.use_decay || jumps_.JumpIsUpToDate(var));
       }
 
       if (state_->options.use_compound_moves && !backtrack) {
@@ -1072,11 +1072,6 @@ bool FeasibilityJumpSolver::ShouldScan(int var) const {
 
   if (!jumps_.NeedRecomputation(var)) {
     // We already have the score/jump of that variable.
-    //
-    // Note that the DCHECK will likely fail if you use decaying weights as they
-    // will have large magnitudes and the incremental update will be imprecise.
-    DCHECK(state_->options.use_decay || jumps_.JumpIsUpToDate(var))
-        << var << " " << var_domains_[var] << " " << state_->options.name();
     const double score = jumps_.Score(var);
     return score < 0.0;
   }

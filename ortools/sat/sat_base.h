@@ -105,6 +105,11 @@ class Literal {
   bool operator!=(Literal other) const { return index_ != other.index_; }
   bool operator<(const Literal& other) const { return index_ < other.index_; }
 
+  template <typename H>
+  friend H AbslHashValue(H h, Literal literal) {
+    return H::combine(std::move(h), literal.index_);
+  }
+
  private:
   int index_;
 };

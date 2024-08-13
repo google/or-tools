@@ -32,7 +32,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Indicates the format in which the output should be done. This enumeration is
 // used for solutions and solver statistics.
@@ -291,6 +291,6 @@ void PrintStatistic(absl::string_view name, T value,
                     RoutingOutputFormat format) {
   absl::PrintF("%s\n", FormatStatistic(name, value, format));
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_

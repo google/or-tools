@@ -17,20 +17,18 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/math_opt/core/sparse_vector_view.h"
-#include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/sparse_containers.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
-#include "ortools/math_opt/validators/ids_validator.h"
-#include "ortools/math_opt/validators/sparse_vector_validator.h"
 #include "ortools/util/status_macros.h"
 
 namespace operations_research {
@@ -128,6 +126,10 @@ absl::StatusOr<DualSolution> DualSolution::FromProto(
       dual_solution.dual_values,
       LinearConstraintValuesFromProto(model, dual_solution_proto.dual_values()),
       _ << "invalid dual_values");
+  OR_ASSIGN_OR_RETURN3(dual_solution.quadratic_dual_values,
+                       QuadraticConstraintValuesFromProto(
+                           model, dual_solution_proto.quadratic_dual_values()),
+                       _ << "invalid quadratic_dual_values");
   OR_ASSIGN_OR_RETURN3(
       dual_solution.reduced_costs,
       VariableValuesFromProto(model, dual_solution_proto.reduced_costs()),
@@ -147,6 +149,8 @@ absl::StatusOr<DualSolution> DualSolution::FromProto(
 DualSolutionProto DualSolution::Proto() const {
   DualSolutionProto result;
   *result.mutable_dual_values() = LinearConstraintValuesToProto(dual_values);
+  *result.mutable_quadratic_dual_values() =
+      QuadraticConstraintValuesToProto(quadratic_dual_values);
   *result.mutable_reduced_costs() = VariableValuesToProto(reduced_costs);
   if (objective_value.has_value()) {
     result.set_objective_value(*objective_value);

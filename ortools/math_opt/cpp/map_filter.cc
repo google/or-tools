@@ -63,4 +63,25 @@ absl::StatusOr<MapFilter<LinearConstraint>> LinearConstraintFilterFromProto(
   return result;
 }
 
+absl::StatusOr<MapFilter<QuadraticConstraint>>
+QuadraticConstraintFilterFromProto(const Model& model,
+                                   const SparseVectorFilterProto& proto) {
+  MapFilter<QuadraticConstraint> result = {.skip_zero_values =
+                                               proto.skip_zero_values()};
+  if (proto.filter_by_ids()) {
+    absl::flat_hash_set<QuadraticConstraint> filtered;
+    for (const int64_t id : proto.filtered_ids()) {
+      if (!model.has_quadratic_constraint(id)) {
+        return util::InvalidArgumentErrorBuilder()
+               << "cannot create MapFilter<QuadraticConstraint> from proto, "
+                  "quadratic constraint id: "
+               << id << " not in model";
+      }
+      filtered.insert(model.quadratic_constraint(id));
+    }
+    result.filtered_keys = std::move(filtered);
+  }
+  return result;
+}
+
 }  // namespace operations_research::math_opt

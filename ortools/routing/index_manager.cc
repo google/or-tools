@@ -20,9 +20,10 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 const int64_t RoutingIndexManager::kUnassigned = -1;
 
@@ -136,7 +137,7 @@ std::vector<int64_t> RoutingIndexManager::NodesToIndices(
 }
 
 std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
-    const std::vector<int64_t>& indices) const {
+    absl::Span<const int64_t> indices) const {
   std::vector<NodeIndex> nodes;
   nodes.reserve(indices.size());
   for (const int64_t index : indices) {
@@ -145,4 +146,4 @@ std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
   return nodes;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

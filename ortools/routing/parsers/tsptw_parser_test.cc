@@ -20,7 +20,7 @@
 
 #define ROOT_DIR "com_google_ortools/"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 TEST(TspTWParserTest, LoadDataSet) {
@@ -69,4 +69,4 @@ TEST(TspTWParserTest, LoadDataSet) {
 }
 
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

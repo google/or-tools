@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,6 +42,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
@@ -308,7 +310,7 @@ void PrecedenceRelations::Build() {
 }
 
 void PrecedenceRelations::ComputeFullPrecedences(
-    const std::vector<IntegerVariable>& vars,
+    absl::Span<const IntegerVariable> vars,
     std::vector<FullIntegerPrecedence>* output) {
   output->clear();
   if (!is_built_) Build();
@@ -1117,13 +1119,7 @@ void GreaterThanAtLeastOneOfDetector::Add(Literal lit, LinearTerm a,
     r.b.coeff = -r.b.coeff;
   }
 
-  const int index = relations_.size();
   relations_.push_back(std::move(r));
-
-  if (lit.Index() >= lit_to_relations_.size()) {
-    lit_to_relations_.resize(lit.Index() + 1);
-  }
-  lit_to_relations_[lit.Index()].push_back(index);
 }
 
 bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
@@ -1192,8 +1188,8 @@ int GreaterThanAtLeastOneOfDetector::
   // Collect all relations impacted by this clause.
   std::vector<std::pair<IntegerVariable, int>> infos;
   for (const Literal l : clause) {
-    if (l.Index() >= lit_to_relations_.size()) continue;
-    for (const int index : lit_to_relations_[l.Index()]) {
+    if (l.Index() >= lit_to_relations_->size()) continue;
+    for (const int index : (*lit_to_relations_)[l.Index()]) {
       const Relation& r = relations_[index];
       if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {
         infos.push_back({r.a.var, index});
@@ -1324,6 +1320,19 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   SOLVER_LOG(logger, "[Precedences] num_relations=", relations_.size(),
              " num_clauses=", clauses->AllClausesInCreationOrder().size());
 
+  // Initialize lit_to_relations_.
+  {
+    std::vector<LiteralIndex> keys;
+    const int num_relations = relations_.size();
+    keys.reserve(num_relations);
+    for (int i = 0; i < num_relations; ++i) {
+      keys.push_back(relations_[i].enforcement.Index());
+    }
+    lit_to_relations_ =
+        std::make_unique<CompactVectorVector<LiteralIndex, int>>();
+    lit_to_relations_->ResetFromFlatMapping(keys, IdentityMap<int>());
+  }
+
   // We have two possible approaches. For now, we prefer the first one except if
   // there is too many clauses in the problem.
   //
@@ -1374,9 +1383,8 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   }
 
   // Release the memory, it is not longer needed.
+  lit_to_relations_.reset(nullptr);
   gtl::STLClearObject(&relations_);
-  gtl::STLClearObject(&lit_to_relations_);
-
   return num_added_constraints;
 }
 

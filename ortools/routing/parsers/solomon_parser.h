@@ -53,7 +53,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Solomon parser class.
 class SolomonParser {
@@ -172,6 +172,6 @@ class SolomonSolutionParser {
   absl::flat_hash_map<std::string, std::string> key_values_;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_SOLOMON_PARSER_H_

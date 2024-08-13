@@ -23,7 +23,7 @@
 
 #include "absl/hash/hash.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 class Arc;
 
@@ -150,6 +150,6 @@ struct SimpleTimeWindow {
   T end;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_SIMPLE_GRAPH_H_

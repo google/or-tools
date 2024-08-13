@@ -1581,6 +1581,11 @@ class Model:
         options.obfuscate = obfuscate
         return self.__helper.export_to_mps_string(options)
 
+    def write_to_mps_file(self, filename: str, obfuscate: bool = False) -> bool:
+        options: mbh.MPModelExportOptions = mbh.MPModelExportOptions()
+        options.obfuscate = obfuscate
+        return self.__helper.write_to_mps_file(filename, options)
+
     def export_to_proto(self) -> linear_solver_pb2.MPModelProto:
         """Exports the optimization model to a ProtoBuf format."""
         return mbh.to_mpmodel_proto(self.__helper)

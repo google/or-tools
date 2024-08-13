@@ -18,13 +18,15 @@
 #include <cstdlib>
 #include <sstream>
 
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
 // [END import]
 
-namespace operations_research {
+namespace operations_research::routing {
 
 void SimpleRoutingProgram() {
   // Instantiate the data problem.
@@ -88,10 +90,10 @@ void SimpleRoutingProgram() {
   // [END print_solution]
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::SimpleRoutingProgram();
+  operations_research::routing::SimpleRoutingProgram();
   return EXIT_SUCCESS;
 }
 // [END program]

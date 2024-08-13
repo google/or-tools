@@ -22,7 +22,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 Constraint* MakeDifferentFromValues(Solver* solver, IntVar* var,
                                     std::vector<int64_t> values);
@@ -49,6 +49,6 @@ Constraint* MakeRouteConstraint(
     std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
         route_evaluator);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_CONSTRAINTS_H_

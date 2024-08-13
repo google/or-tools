@@ -14,26 +14,18 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
 #define OR_TOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
 
-#include <optional>
-#include <utility>
-
 #include "ortools/math_opt/model_update.pb.h"
 
 namespace operations_research::math_opt {
 
 // Result of the Update() on an incremental solver.
 struct UpdateResult {
-  UpdateResult(const bool did_update, std::optional<ModelUpdateProto> update)
-      : did_update(did_update), update(std::move(update)) {}
+  explicit UpdateResult(const bool did_update) : did_update(did_update) {}
 
   // True if the solver has been successfully updated or if no update was
   // necessary (in which case `update` will be nullopt). False if the solver
   // had to be recreated.
   bool did_update;
-
-  // The update that was attempted on the solver. Can be nullopt when no
-  // update was needed (the model was not changed).
-  std::optional<ModelUpdateProto> update;
 };
 
 }  // namespace operations_research::math_opt

@@ -68,12 +68,12 @@ void TimeTableEdgeFinding::BuildTimeTable() {
   ecp_.clear();
 
   // Build start of compulsory part events.
-  const auto by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
-  for (const auto task_time : ::gtl::reversed_view(by_decreasing_start_max)) {
-    const int t = task_time.task_index;
+  const auto by_negated_smax = helper_->TaskByIncreasingNegatedStartMax();
+  for (const auto [t, negated_smax] : ::gtl::reversed_view(by_negated_smax)) {
     if (!helper_->IsPresent(t)) continue;
-    if (task_time.time < helper_->EndMin(t)) {
-      scp_.push_back(task_time);
+    const IntegerValue start_max = -negated_smax;
+    if (start_max < helper_->EndMin(t)) {
+      scp_.push_back({t, start_max});
     }
   }
 

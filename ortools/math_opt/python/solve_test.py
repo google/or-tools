@@ -68,9 +68,7 @@ class SolveTest(absltest.TestCase):
     def test_solve_error(self) -> None:
         mod = model.Model(name="test_model")
         mod.add_variable(lb=1.0, ub=-1.0, name="x1")
-        with self.assertRaisesRegex(
-            RuntimeError, "variables.*lower_bound > upper_bound"
-        ):
+        with self.assertRaisesRegex(ValueError, "variables.*lower_bound > upper_bound"):
             solve.solve(mod, parameters.SolverType.GLOP)
 
     def test_lp_solve(self) -> None:
@@ -213,16 +211,14 @@ class SolveTest(absltest.TestCase):
         mod = model.Model(name="test_model")
         mod.add_variable(lb=1.0, ub=1.0, name="x1")
         mod.add_variable(lb=1.0, ub=1.0, name="x1")
-        with self.assertRaisesRegex(RuntimeError, "duplicate name*"):
+        with self.assertRaisesRegex(ValueError, "duplicate name*"):
             solve.IncrementalSolver(mod, parameters.SolverType.GLOP)
 
     def test_incremental_solve_error(self) -> None:
         mod = model.Model(name="test_model")
         mod.add_variable(lb=1.0, ub=-1.0, name="x1")
         solver = solve.IncrementalSolver(mod, parameters.SolverType.GLOP)
-        with self.assertRaisesRegex(
-            RuntimeError, "variables.*lower_bound > upper_bound"
-        ):
+        with self.assertRaisesRegex(ValueError, "variables.*lower_bound > upper_bound"):
             solver.solve()
 
     def test_incremental_solve_error_on_reject(self) -> None:
@@ -250,7 +246,7 @@ class SolveTest(absltest.TestCase):
         )
 
         opt_model.add_binary_variable(name="x")
-        with self.assertRaisesRegex(RuntimeError, "duplicate name*"):
+        with self.assertRaisesRegex(ValueError, "duplicate name*"):
             solver.solve(
                 msg_cb=message_callback.printer_message_callback(prefix="[solve 2] ")
             )

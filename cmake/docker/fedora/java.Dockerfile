@@ -1,4 +1,5 @@
 FROM ortools/cmake:fedora_swig AS env
+
 RUN dnf -y update \
 && dnf -y install java-11-openjdk java-11-openjdk-devel maven \
 && dnf clean all

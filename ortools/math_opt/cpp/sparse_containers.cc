@@ -22,9 +22,11 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "google/protobuf/map.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/basis_status.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
@@ -32,6 +34,7 @@
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
+#include "ortools/math_opt/validators/sparse_vector_validator.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -123,6 +126,17 @@ absl::Status LinearConstraintIdsExist(const ModelStorage* const model,
   return absl::OkStatus();
 }
 
+absl::Status QuadraticConstraintIdsExist(const ModelStorage* const model,
+                                         const absl::Span<const int64_t> ids) {
+  for (const int64_t id : ids) {
+    if (!model->has_constraint(QuadraticConstraintId(id))) {
+      return util::InvalidArgumentErrorBuilder()
+             << "no quadratic constraint with id " << id << " exists";
+    }
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
@@ -183,6 +197,21 @@ absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
 SparseDoubleVectorProto LinearConstraintValuesToProto(
     const LinearConstraintMap<double>& linear_constraint_values) {
   return MapToProto(linear_constraint_values);
+}
+
+absl::StatusOr<absl::flat_hash_map<QuadraticConstraint, double>>
+QuadraticConstraintValuesFromProto(
+    const ModelStorage* const model,
+    const SparseDoubleVectorProto& quad_cons_proto) {
+  RETURN_IF_ERROR(CheckSparseVectorProto(quad_cons_proto));
+  RETURN_IF_ERROR(QuadraticConstraintIdsExist(model, quad_cons_proto.ids()));
+  return MakeView(quad_cons_proto).as_map<QuadraticConstraint>(model);
+}
+
+SparseDoubleVectorProto QuadraticConstraintValuesToProto(
+    const absl::flat_hash_map<QuadraticConstraint, double>&
+        quadratic_constraint_values) {
+  return MapToProto(quadratic_constraint_values);
 }
 
 absl::StatusOr<VariableMap<BasisStatus>> VariableBasisFromProto(

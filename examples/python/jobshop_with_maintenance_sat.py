@@ -23,20 +23,20 @@ from ortools.sat.python import cp_model
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__solution_count = 0
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         """Called at each new solution."""
         print(
-            "Solution %i, time = %f s, objective = %i"
-            % (self.__solution_count, self.wall_time, self.objective_value)
+            f"Solution {self.__solution_count}, time = {self.wall_time} s,"
+            f" objective = {self.objective_value}"
         )
         self.__solution_count += 1
 
 
-def jobshop_with_maintenance():
+def jobshop_with_maintenance() -> None:
     """Solves a jobshop with maintenance on one machine."""
     # Create the model.
     model = cp_model.CpModel()
@@ -54,7 +54,7 @@ def jobshop_with_maintenance():
     horizon = sum(task[1] for job in jobs_data for task in job)
 
     # Named tuple to store information about created variables.
-    task_type = collections.namedtuple("Task", "start end interval")
+    task_type = collections.namedtuple("task_type", "start end interval")
     # Named tuple to manipulate solution information.
     assigned_task_type = collections.namedtuple(
         "assigned_task_type", "start job index duration"
@@ -67,9 +67,8 @@ def jobshop_with_maintenance():
     for job_id, job in enumerate(jobs_data):
         for entry in enumerate(job):
             task_id, task = entry
-            machine = task[0]
-            duration = task[1]
-            suffix = "_%i_%i" % (job_id, task_id)
+            machine, duration = task
+            suffix = f"_{job_id}_{task_id}"
             start_var = model.new_int_var(0, horizon, "start" + suffix)
             end_var = model.new_int_var(0, horizon, "end" + suffix)
             interval_var = model.new_interval_var(
@@ -132,15 +131,15 @@ def jobshop_with_maintenance():
             sol_line = "           "
 
             for assigned_task in assigned_jobs[machine]:
-                name = "job_%i_%i" % (assigned_task.job, assigned_task.index)
+                name = f"job_{assigned_task.job}_{assigned_task.index}"
                 # add spaces to output to align columns.
-                sol_line_tasks += "%-10s" % name
+                sol_line_tasks += f"{name:>10}"
                 start = assigned_task.start
                 duration = assigned_task.duration
 
-                sol_tmp = "[%i,%i]" % (start, start + duration)
+                sol_tmp = f"[{start}, {start + duration}]"
                 # add spaces to output to align columns.
-                sol_line += "%-10s" % sol_tmp
+                sol_line += f"{sol_tmp:>10}"
 
             sol_line += "\n"
             sol_line_tasks += "\n"
@@ -148,12 +147,9 @@ def jobshop_with_maintenance():
             output += sol_line
 
         # Finally print the solution found.
-        print("Optimal Schedule Length: %i" % solver.objective_value)
+        print(f"Optimal Schedule Length: {solver.objective_value}")
         print(output)
-        print("Statistics")
-        print("  - conflicts : %i" % solver.num_conflicts)
-        print("  - branches  : %i" % solver.num_branches)
-        print("  - wall time : %f s" % solver.wall_time)
+        print(solver.response_stats())
 
 
 def main(argv: Sequence[str]) -> None:

@@ -17,7 +17,7 @@
 from ortools.sat.python import cp_model
 
 
-def solve_sudoku():
+def solve_sudoku() -> None:
     """Solves the sudoku problem with the CP-SAT solver."""
     # Create the model.
     model = cp_model.CpModel()

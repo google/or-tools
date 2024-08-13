@@ -24,7 +24,7 @@
 #include "absl/types/span.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 void BinCapacities::AddDimension(
     std::function<int64_t(int, int)> load_demand_of_item_for_bin,
@@ -173,4 +173,4 @@ bool FindMostExpensiveArcsOnRoute(
   return true;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

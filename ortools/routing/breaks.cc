@@ -33,7 +33,7 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 bool DisjunctivePropagator::Propagate(Tasks* tasks) {
   DCHECK_LE(tasks->num_chain_tasks, tasks->start_min.size());
@@ -1086,4 +1086,4 @@ IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
       new VehicleBreaksFilter(routing_model, dimension));
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

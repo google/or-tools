@@ -23,7 +23,7 @@ from absl import app
 from ortools.sat.python import cp_model
 
 
-def task_allocation_sat():
+def task_allocation_sat() -> None:
     """Solves the task allocation problem."""
     # Availability matrix.
     available = [
@@ -246,9 +246,9 @@ def task_allocation_sat():
     assign = {}
     for task in all_tasks:
         for slot in all_slots:
-            assign[(task, slot)] = model.new_bool_var("x[%i][%i]" % (task, slot))
+            assign[(task, slot)] = model.new_bool_var(f"x[{task}][{slot}]")
     count = model.new_int_var(0, nslots, "count")
-    slot_used = [model.new_bool_var("slot_used[%i]" % s) for s in all_slots]
+    slot_used = [model.new_bool_var(f"slot_used[{s}]") for s in all_slots]
 
     for task in all_tasks:
         model.add(
@@ -285,12 +285,7 @@ def task_allocation_sat():
     # Uses the portfolion of heuristics.
     solver.parameters.log_search_progress = True
     solver.parameters.num_search_workers = 16
-    status = solver.solve(model)
-
-    print("Statistics")
-    print("  - status =", solver.status_name(status))
-    print("  - optimal solution =", solver.objective_value)
-    print("  - wall time : %f s" % solver.wall_time)
+    solver.solve(model)
 
 
 def main(argv: Sequence[str]) -> None:

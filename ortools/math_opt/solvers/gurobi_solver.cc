@@ -1333,7 +1333,7 @@ absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
 }
 
 absl::StatusOr<double> GurobiSolver::GetBestDualBound(
-    const std::vector<SolutionProto>& solutions) const {
+    absl::Span<const SolutionProto> solutions) const {
   ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   // GetGurobiBestDualBound() returns the correct bound for problems without
   // dual solutions (e.g. MIP).
@@ -1393,7 +1393,7 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetLpSolution(
   ASSIGN_OR_RETURN(auto primal_solution_and_claim,
                    GetConvexPrimalSolutionIfAvailable(model_parameters));
   ASSIGN_OR_RETURN(auto dual_solution_and_claim,
-                   GetLpDualSolutionIfAvailable(model_parameters));
+                   GetConvexDualSolutionIfAvailable(model_parameters));
   ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable());
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists =
@@ -1423,7 +1423,7 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetLpSolution(
 }
 
 absl::StatusOr<GurobiSolver::SolutionAndClaim<DualSolutionProto>>
-GurobiSolver::GetLpDualSolutionIfAvailable(
+GurobiSolver::GetConvexDualSolutionIfAvailable(
     const ModelSolveParametersProto& model_parameters) {
   if (!gurobi_->IsAttrAvailable(GRB_DBL_ATTR_PI) ||
       !gurobi_->IsAttrAvailable(GRB_DBL_ATTR_RC)) {
@@ -1449,6 +1449,17 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
   GurobiVectorToSparseDoubleVector(grb_reduced_cost_values, variables_map_,
                                    *dual_solution.mutable_reduced_costs(),
                                    model_parameters.reduced_costs_filter());
+
+  if (!quadratic_constraints_map_.empty() &&
+      gurobi_->IsAttrAvailable(GRB_DBL_ATTR_QCPI)) {
+    ASSIGN_OR_RETURN(
+        const std::vector<double> grb_quad_constraint_duals,
+        gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_QCPI, num_gurobi_quad_cons_));
+    GurobiVectorToSparseDoubleVector(
+        grb_quad_constraint_duals, quadratic_constraints_map_,
+        *dual_solution.mutable_quadratic_dual_values(),
+        model_parameters.quadratic_dual_values_filter());
+  }
 
   ASSIGN_OR_RETURN(const int grb_termination,
                    gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
@@ -1532,7 +1543,7 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
   // TODO(b/225189115): Expand QpDualsTest to check maximization problems and
   // other edge cases.
   ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
-                   GetLpDualSolutionIfAvailable(model_parameters));
+                   GetConvexDualSolutionIfAvailable(model_parameters));
   // TODO(b/280353996): we want to extract the basis here (when we solve via
   // simplex), but the existing code extracts a basis which fails our validator.
 
@@ -1559,11 +1570,8 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQcpSolution(
     const ModelSolveParametersProto& model_parameters) {
   ASSIGN_OR_RETURN((auto [primal_solution, found_primal_feasible_solution]),
                    GetConvexPrimalSolutionIfAvailable(model_parameters));
-  // TODO(b/227217735): Expose duals. Note that the user must set the QCPDual
-  //                    parameter for Gurobi to return any dual values.
-  ASSIGN_OR_RETURN((auto [_, found_dual_feasible_solution]),
-                   GetLpDualSolutionIfAvailable(model_parameters));
-
+  ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
+                   GetConvexDualSolutionIfAvailable(model_parameters));
   ASSIGN_OR_RETURN(const int grb_termination,
                    gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
   // By default, Gurobi will not return duals for optimally solved QCPs.
@@ -1574,9 +1582,15 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQcpSolution(
           found_dual_feasible_solution || proven_feasible};
 
   SolutionsAndClaims solution_and_claims{.solution_claims = solution_claims};
-  if (primal_solution.has_value()) {
-    *solution_and_claims.solutions.emplace_back().mutable_primal_solution() =
-        *std::move(primal_solution);
+  if (primal_solution.has_value() || dual_solution.has_value()) {
+    SolutionProto& solution =
+        solution_and_claims.solutions.emplace_back(SolutionProto());
+    if (primal_solution.has_value()) {
+      *solution.mutable_primal_solution() = *std::move(primal_solution);
+    }
+    if (dual_solution.has_value()) {
+      *solution.mutable_dual_solution() = *std::move(dual_solution);
+    }
   }
   return solution_and_claims;
 }

@@ -29,7 +29,7 @@
 #include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 class TspTWParser final {
  public:
@@ -84,6 +84,6 @@ class TspTWParser final {
   std::vector<double> distance_matrix_;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_TSPTW_PARSER_H_

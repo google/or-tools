@@ -70,3 +70,19 @@ cc_library(
         "@com_google_absl//absl/types:span",
     ],
 )
+
+cc_library(
+    name = "dualizer",
+    srcs = [
+        "dualizer.cc",
+    ],
+    hdrs = ["dualizer.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base:map_util",
+        "//ortools/math_opt/cpp:math_opt",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/types:span",
+    ],
+    alwayslink = 1,
+)

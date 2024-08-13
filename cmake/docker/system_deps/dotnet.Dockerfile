@@ -1,4 +1,5 @@
 FROM ortools/cmake:system_deps_swig AS env
+
 RUN pacman -Syu --noconfirm dotnet-sdk
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
@@ -9,7 +10,10 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
- -DUSE_COINOR=ON -DUSE_GLPK=ON -DUSE_SCIP=ON \
+ -DUSE_COINOR=ON \
+ -DUSE_GLPK=ON \
+ -DUSE_HIGHS=OFF \
+ -DUSE_SCIP=ON \
  -DBUILD_DOTNET=ON \
  -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v

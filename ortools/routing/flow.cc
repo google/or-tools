@@ -34,7 +34,7 @@
 #include "ortools/routing/routing.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 // Compute set of disjunctions involved in a pickup and delivery pair.
@@ -452,4 +452,4 @@ bool RoutingModel::SolveMatchingModel(
   return true;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

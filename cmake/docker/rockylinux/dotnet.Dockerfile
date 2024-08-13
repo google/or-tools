@@ -1,4 +1,5 @@
 FROM ortools/cmake:rockylinux_swig AS env
+
 # Install .NET SDK
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
@@ -12,6 +13,7 @@ RUN dotnet --info
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
+RUN sed -i 's/\(<SignAssembly>\).*\(<\/SignAssembly>\)/\1false\2/' ortools/dotnet/Google.OrTools*.csproj.in
 
 FROM devel AS build
 RUN cmake -version

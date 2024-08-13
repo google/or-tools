@@ -55,7 +55,7 @@ def build_model():
     return x, y, profits
 
 
-def solve_with_cp_sat(x, y, profits):
+def solve_with_cp_sat(x, y, profits) -> None:
     """Solves the problem with the CP-SAT solver."""
     model = cp_model.CpModel()
 

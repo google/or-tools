@@ -49,7 +49,6 @@ swig_add_library(pywrapcp
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/constraint_solver
   SOURCES constraint_solver.i)
 
-
 target_include_directories(pywrapcp PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywrapcp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
 target_compile_definitions(pywrapcp PUBLIC "PY3")

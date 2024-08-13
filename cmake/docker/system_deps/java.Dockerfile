@@ -1,4 +1,5 @@
 FROM ortools/cmake:system_deps_swig AS env
+
 RUN pacman -Syu --noconfirm jdk-openjdk maven
 ENV JAVA_HOME=/usr/lib/jvm/default
 
@@ -8,7 +9,10 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
- -DUSE_COINOR=ON -DUSE_GLPK=ON -DUSE_SCIP=ON \
+ -DUSE_COINOR=ON \
+ -DUSE_GLPK=ON \
+ -DUSE_HIGHS=OFF \
+ -DUSE_SCIP=ON \
  -DBUILD_JAVA=ON -DSKIP_GPG=ON \
  -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v

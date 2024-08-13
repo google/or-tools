@@ -19,10 +19,11 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/routing/types.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 /// Manager for any NodeIndex <-> variable index conversion. The routing solver
 /// uses variable indices internally and through its API. These variable indices
@@ -95,7 +96,7 @@ class RoutingIndexManager {
   }
   // Same as IndexToNode but for a given vector of indices.
   std::vector<NodeIndex> IndicesToNodes(
-      const std::vector<int64_t>& indices) const;
+      absl::Span<const int64_t> indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
   /// complete.
@@ -116,6 +117,6 @@ class RoutingIndexManager {
   int num_unique_depots_;
 };
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_INDEX_MANAGER_H_

@@ -17,9 +17,6 @@
 #include <initializer_list>
 #include <limits>
 #include <ostream>
-#include <string>
-#include <type_traits>
-#include <utility>
 
 #include "absl/log/check.h"
 #include "absl/status/statusor.h"
@@ -65,7 +62,7 @@ IncrementalMipTest::IncrementalMipTest()
       y_(model_.AddIntegerVariable(0.0, 2.0, "y")),
       c_(model_.AddLinearConstraint(0 <= x_ + y_ <= 1.5, "c")) {
   model_.Maximize(3.0 * x_ + 2.0 * y_ + 0.1);
-  solver_ = IncrementalSolver::New(&model_, TestedSolver()).value();
+  solver_ = NewIncrementalSolver(&model_, TestedSolver()).value();
   const SolveResult first_solve = solver_->Solve().value();
   CHECK(first_solve.has_primal_feasible_solution());
   CHECK_LE(std::abs(first_solve.objective_value() - 3.6), kTolerance)
@@ -179,7 +176,7 @@ TEST_P(IncrementalMipTest, DISABLED_MakeContinuousWithNonIntegralBounds) {
   model.Maximize(x);
 
   ASSERT_OK_AND_ASSIGN(const auto solver,
-                       IncrementalSolver::New(&model, TestedSolver()));
+                       NewIncrementalSolver(&model, TestedSolver()));
   ASSERT_THAT(solver->Solve(), IsOkAndHolds(IsOptimal(1.0)));
 
   // Switching to continuous should use the fractional bound. For solvers that
@@ -203,7 +200,7 @@ TEST_P(IncrementalMipTest, MakeIntegralWithNonIntegralBounds) {
   model.Maximize(x);
 
   ASSERT_OK_AND_ASSIGN(const auto solver,
-                       IncrementalSolver::New(&model, TestedSolver()));
+                       NewIncrementalSolver(&model, TestedSolver()));
   ASSERT_THAT(solver->Solve(), IsOkAndHolds(IsOptimal(1.5)));
 
   model.set_integer(x);

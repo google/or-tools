@@ -81,8 +81,8 @@ new_git_repository(
 ## Abseil-cpp
 git_repository(
     name = "com_google_absl",
-    tag = "20240116.2",
-    patches = ["//patches:abseil-cpp-20240116.2.patch"],
+    tag = "20240722.0",
+    patches = ["//patches:abseil-cpp-20240722.0.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
@@ -101,9 +101,9 @@ git_repository(
 # This statement defines the @com_google_protobuf repo.
 git_repository(
     name = "com_google_protobuf",
-    patches = ["//patches:protobuf-v27.2.patch"],
+    patches = ["//patches:protobuf-v27.3.patch"],
     patch_args = ["-p1"],
-    tag = "v27.2",
+    tag = "v27.3",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
@@ -156,7 +156,7 @@ cc_library(
 
 git_repository(
     name = "highs",
-    branch = "v1.7.1",
+    branch = "v1.7.2",
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 
@@ -193,18 +193,11 @@ new_git_repository(
 load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
 
-load("@rules_python//python:repositories.bzl", "python_register_multi_toolchains")
-DEFAULT_PYTHON = "3.11"
-python_register_multi_toolchains(
-    name = "python",
-    default_version = DEFAULT_PYTHON,
-    python_versions = [
-      "3.12",
-      "3.11",
-      "3.10",
-      "3.9",
-      "3.8"
-    ],
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+DEFAULT_PYTHON = "3.12"
+python_register_toolchains(
+    name = "python3_12",
+    python_version = DEFAULT_PYTHON,
     ignore_root_user_error=True,
 )
 
@@ -316,12 +309,12 @@ contrib_rules_jvm_setup()
 ## Testing
 git_repository(
     name = "com_google_googletest",
-    tag = "v1.14.0",
+    tag = "v1.15.2",
     remote = "https://github.com/google/googletest.git",
 )
 
 git_repository(
     name = "com_google_benchmark",
-    tag = "v1.8.3",
+    tag = "v1.8.5",
     remote = "https://github.com/google/benchmark.git",
 )

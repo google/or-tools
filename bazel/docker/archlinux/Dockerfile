@@ -1,23 +1,14 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/archlinux/
 FROM archlinux:latest AS env
+
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN pacman -Syu --noconfirm git wget base-devel
-
-# Install Bazelisk
-RUN wget \
-https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64 \
-&& chmod +x bazelisk-linux-amd64 \
-&& mv bazelisk-linux-amd64 /usr/local/bin/bazel
-
-# Java
-RUN pacman -Syu --noconfirm jdk11-openjdk
-ENV JAVA_HOME=/usr/lib/jvm/default
-ENV PATH=${JAVA_HOME}/bin:$PATH
+RUN pacman -Syu --noconfirm git base-devel bazel
 
 # Install Python
-RUN pacman -Syu --noconfirm python python-pip python-setuptools
+RUN pacman -Syu --noconfirm python python-pip python-setuptools \
+ python-numpy python-pandas
 
 FROM env AS devel
 WORKDIR /home/project

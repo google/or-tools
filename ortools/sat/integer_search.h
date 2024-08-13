@@ -261,7 +261,7 @@ std::function<bool()> SatSolverRestartPolicy(Model* model);
 // Concatenates each input_heuristic with a default heuristic that instantiate
 // all the problem's Boolean variables, into a new vector.
 std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
-    const std::vector<std::function<BooleanOrIntegerLiteral()>>&
+    absl::Span<const std::function<BooleanOrIntegerLiteral()>>
         incomplete_heuristics,
     const std::function<BooleanOrIntegerLiteral()>& completion_heuristic);
 

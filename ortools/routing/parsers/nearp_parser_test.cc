@@ -21,7 +21,7 @@
 
 #define ROOT_DIR "com_google_ortools/"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(NearpParserTest, Constructor) {
   NearpParser parser;
@@ -130,4 +130,4 @@ TEST(NearpParserTest, LoadToy) {
   EXPECT_EQ(parser.GetNodeName(3), "N4");
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

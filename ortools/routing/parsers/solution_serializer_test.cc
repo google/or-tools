@@ -28,7 +28,7 @@
 #include "ortools/base/options.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 using testing::MatchesRegex;
@@ -629,4 +629,4 @@ TEST(RoutingSolutionSerializerTest, FormatStatisticAsNearplibLongPrecision) {
             "STAT : 591.556557");
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

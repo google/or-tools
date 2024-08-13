@@ -98,8 +98,8 @@ message SolveResponse {
   // Either `result` or `status` must be set. This is equivalent to C++
   // StatusOr<SolveResult>.
   oneof status_or {
-  // Description of the output of solving the model in the request.
-  SolveResultProto result = 1;
+    // Description of the output of solving the model in the request.
+    SolveResultProto result = 1;
 
     // The absl::Status returned by the solver. It should never be OK when set.
     StatusProto status = 3;

@@ -92,6 +92,8 @@ void PrintTo(const PrimalSolution& primal_solution, std::ostream* const os) {
 
 void PrintTo(const DualSolution& dual_solution, std::ostream* const os) {
   *os << "{dual_values: " << Print(dual_solution.dual_values)
+      << ", quadratic_dual_values: "
+      << Print(dual_solution.quadratic_dual_values)
       << ", reduced_costs: " << Print(dual_solution.reduced_costs)
       << ", objective_value: " << Print(dual_solution.objective_value)
       << ", feasibility_status: " << Print(dual_solution.feasibility_status)
@@ -232,6 +234,23 @@ Matcher<LinearConstraintMap<double>> IsNear(
                                                /*all_keys=*/true, tolerance));
 }
 
+Matcher<absl::flat_hash_map<QuadraticConstraint, double>> IsNear(
+    absl::flat_hash_map<QuadraticConstraint, double> expected,
+    const double tolerance) {
+  return Matcher<absl::flat_hash_map<QuadraticConstraint, double>>(
+      new MapToDoubleMatcher<QuadraticConstraint>(
+          std::move(expected), /*all_keys=*/true, tolerance));
+}
+
+Matcher<absl::flat_hash_map<QuadraticConstraint, double>> IsNearlySubsetOf(
+    absl::flat_hash_map<QuadraticConstraint, double> expected,
+    double tolerance) {
+  return Matcher<absl::flat_hash_map<QuadraticConstraint, double>>(
+      new MapToDoubleMatcher<QuadraticConstraint>(std::move(expected),
+                                                  /*all_keys=*/false,
+                                                  tolerance));
+}
+
 template <typename K>
 Matcher<absl::flat_hash_map<K, double>> IsNear(
     absl::flat_hash_map<K, double> expected, const double tolerance) {
@@ -365,7 +384,7 @@ Matcher<std::optional<Basis>> BasisIs(const std::optional<Basis>& expected) {
 }
 
 testing::Matcher<std::vector<Solution>> IsNear(
-    const std::vector<Solution>& expected_solutions,
+    absl::Span<const Solution> expected_solutions,
     const SolutionMatcherOptions options) {
   if (expected_solutions.empty()) {
     return IsEmpty();
@@ -407,6 +426,8 @@ Matcher<DualSolution> IsNear(DualSolution expected, const double tolerance,
   return AllOf(
       Field("dual_values", &DualSolution::dual_values,
             IsNear(expected.dual_values, tolerance)),
+      Field("quadratic_dual_values", &DualSolution::quadratic_dual_values,
+            IsNear(expected.quadratic_dual_values, tolerance)),
       Field("reduced_costs", &DualSolution::reduced_costs,
             IsNear(expected.reduced_costs, tolerance)),
       Field("objective_value", &DualSolution::objective_value,
@@ -587,8 +608,16 @@ Matcher<SolveResult> TerminatesWith(const TerminationReason expected) {
 }
 
 namespace {
-testing::Matcher<SolveResult> LimitIs(const Limit expected,
-                                      const bool allow_limit_undetermined) {
+
+// Returns a matcher matching only Termination.limit.
+//
+// Note that this is different from LimitIs() which tests both the
+// Termination.limit and the Termination.reason.
+//
+// It matches if either the limit is the expected one, or if it is kUndetermined
+// and when allow_limit_undetermined is true.
+testing::Matcher<SolveResult> TerminationLimitIs(
+    const Limit expected, const bool allow_limit_undetermined) {
   if (allow_limit_undetermined) {
     return Field("termination", &SolveResult::termination,
                  Field("limit", &Termination::limit,
@@ -603,7 +632,7 @@ testing::Matcher<SolveResult> LimitIs(const Limit expected,
 testing::Matcher<SolveResult> TerminatesWithLimit(
     const Limit expected, const bool allow_limit_undetermined) {
   std::vector<Matcher<SolveResult>> matchers;
-  matchers.push_back(LimitIs(expected, allow_limit_undetermined));
+  matchers.push_back(TerminationLimitIs(expected, allow_limit_undetermined));
   matchers.push_back(TerminatesWithOneOf(
       {TerminationReason::kFeasible, TerminationReason::kNoSolutionFound}));
   return AllOfArray(matchers);
@@ -612,7 +641,7 @@ testing::Matcher<SolveResult> TerminatesWithLimit(
 testing::Matcher<SolveResult> TerminatesWithReasonFeasible(
     const Limit expected, const bool allow_limit_undetermined) {
   std::vector<Matcher<SolveResult>> matchers;
-  matchers.push_back(LimitIs(expected, allow_limit_undetermined));
+  matchers.push_back(TerminationLimitIs(expected, allow_limit_undetermined));
   matchers.push_back(TerminatesWith(TerminationReason::kFeasible));
   return AllOfArray(matchers);
 }
@@ -620,7 +649,7 @@ testing::Matcher<SolveResult> TerminatesWithReasonFeasible(
 testing::Matcher<SolveResult> TerminatesWithReasonNoSolutionFound(
     const Limit expected, const bool allow_limit_undetermined) {
   std::vector<Matcher<SolveResult>> matchers;
-  matchers.push_back(LimitIs(expected, allow_limit_undetermined));
+  matchers.push_back(TerminationLimitIs(expected, allow_limit_undetermined));
   matchers.push_back(TerminatesWith(TerminationReason::kNoSolutionFound));
   return AllOfArray(matchers);
 }
@@ -697,14 +726,15 @@ Matcher<Termination> TerminationIsOptimal() {
                              .primal_or_dual_infeasible = false})));
 }
 
-Matcher<Termination> TerminationIsOptimal(const double primal_objective_value,
-                                          const double dual_objective_value,
-                                          const double tolerance) {
+Matcher<Termination> TerminationIsOptimal(
+    const double primal_objective_value,
+    const std::optional<double> dual_objective_value, const double tolerance) {
   return AllOf(
       TerminationIsOptimal(),
       Field("objective_bounds", &Termination::objective_bounds,
             ObjectiveBoundsNear({.primal_bound = primal_objective_value,
-                                 .dual_bound = dual_objective_value},
+                                 .dual_bound = dual_objective_value.value_or(
+                                     primal_objective_value)},
                                 tolerance)));
 }
 
@@ -750,6 +780,24 @@ Matcher<SolveResult> IsOptimalWithDualSolution(
       HasDualSolution(
           DualSolution{
               .dual_values = expected_dual_values,
+              .reduced_costs = expected_reduced_costs,
+              .objective_value = std::make_optional(expected_objective),
+              .feasibility_status = SolutionStatus::kFeasible},
+          tolerance));
+}
+
+Matcher<SolveResult> IsOptimalWithDualSolution(
+    const double expected_objective,
+    const LinearConstraintMap<double> expected_dual_values,
+    const absl::flat_hash_map<QuadraticConstraint, double>
+        expected_quadratic_dual_values,
+    const VariableMap<double> expected_reduced_costs, const double tolerance) {
+  return AllOf(
+      IsOptimal(std::make_optional(expected_objective), tolerance),
+      HasDualSolution(
+          DualSolution{
+              .dual_values = expected_dual_values,
+              .quadratic_dual_values = expected_quadratic_dual_values,
               .reduced_costs = expected_reduced_costs,
               .objective_value = std::make_optional(expected_objective),
               .feasibility_status = SolutionStatus::kFeasible},

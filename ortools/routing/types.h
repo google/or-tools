@@ -20,7 +20,7 @@
 
 #include "ortools/base/int_type.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 /// Defining common types used in the routing library outside the main
 /// RoutingModel class has several purposes:
@@ -48,6 +48,6 @@ struct PickupDeliveryPair {
 typedef std::function<int64_t(int64_t)> RoutingTransitCallback1;
 typedef std::function<int64_t(int64_t, int64_t)> RoutingTransitCallback2;
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_TYPES_H_

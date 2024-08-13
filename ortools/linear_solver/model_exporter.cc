@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
@@ -29,13 +30,13 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
+#include "ortools/base/options.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/util/fp_utils.h"
 
-ABSL_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
+ABSL_RETIRED_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
 
 namespace operations_research {
 namespace {
@@ -119,7 +120,7 @@ class MPModelProtoExporter {
   // Therefore, a name "$20<=40" for proto #3 could be "_$20__40_1".
   template <class ListOfProtosWithNameFields>
   std::vector<std::string> ExtractAndProcessNames(
-      const ListOfProtosWithNameFields& proto, const std::string& prefix,
+      const ListOfProtosWithNameFields& proto, absl::string_view prefix,
       bool obfuscate, bool log_invalid_names,
       const std::string& forbidden_first_chars,
       const std::string& forbidden_chars);
@@ -247,6 +248,14 @@ absl::StatusOr<std::string> ExportModelAsMpsFormat(
   return output;
 }
 
+absl::Status WriteModelToMpsFile(absl::string_view filename,
+                                 const MPModelProto& model,
+                                 const MPModelExportOptions& options) {
+  ASSIGN_OR_RETURN(std::string mps_data,
+                   ExportModelAsMpsFormat(model, options));
+  return file::SetContents(filename, mps_data, file::Defaults());
+}
+
 namespace {
 MPModelProtoExporter::MPModelProtoExporter(const MPModelProto& model)
     : proto_(model),
@@ -305,7 +314,7 @@ std::string MakeExportableName(const std::string& name,
 
 template <class ListOfProtosWithNameFields>
 std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
-    const ListOfProtosWithNameFields& proto, const std::string& prefix,
+    const ListOfProtosWithNameFields& proto, absl::string_view prefix,
     bool obfuscate, bool log_invalid_names,
     const std::string& forbidden_first_chars,
     const std::string& forbidden_chars) {
@@ -463,10 +472,6 @@ void UpdateMaxSize(double new_number, int* size) {
 }  // namespace
 
 void MPModelProtoExporter::Setup() {
-  if (absl::GetFlag(FLAGS_lp_log_invalid_name)) {
-    LOG(WARNING) << "The \"lp_log_invalid_name\" flag is deprecated. Use "
-                    "MPModelProtoExportOptions instead.";
-  }
   num_binary_variables_ = 0;
   num_integer_variables_ = 0;
   for (const MPVariableProto& var : proto_.variable()) {

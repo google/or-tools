@@ -191,7 +191,16 @@ endif
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 # Currently supported distro
-DISTROS := almalinux alpine archlinux debian fedora opensuse rockylinux ubuntu system_deps
+DISTROS := \
+ almalinux \
+ alpine \
+ archlinux \
+ debian \
+ fedora \
+ opensuse \
+ rockylinux \
+ ubuntu \
+ system_deps
 
 # $* stem
 # $< first prerequist

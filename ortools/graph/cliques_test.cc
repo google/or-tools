@@ -26,6 +26,7 @@
 #include "absl/functional/bind_front.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/mathutil.h"
@@ -76,7 +77,7 @@ class CliqueSizeVerifier {
 
   int64_t num_cliques() const { return num_cliques_; }
 
-  bool AppendClique(const std::vector<int>& new_clique) {
+  bool AppendClique(absl::Span<const int> new_clique) {
     EXPECT_GE(expected_max_clique_size_, new_clique.size());
     EXPECT_LE(expected_min_clique_size_, new_clique.size());
     ++num_cliques_;
@@ -84,7 +85,7 @@ class CliqueSizeVerifier {
   }
 
   std::function<CliqueResponse(const std::vector<int>&)> MakeCliqueCallback() {
-    return [this](const std::vector<int>& clique) {
+    return [this](absl::Span<const int> clique) {
       return AppendClique(clique) ? CliqueResponse::STOP
                                   : CliqueResponse::CONTINUE;
     };

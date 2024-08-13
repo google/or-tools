@@ -185,7 +185,7 @@ class ClauseManager : public SatPropagator {
 
   // Same as AddClause() for a removable clause. This is only called on learned
   // conflict, so this should never have all its literal at false (CHECKED).
-  SatClause* AddRemovableClause(const std::vector<Literal>& literals,
+  SatClause* AddRemovableClause(absl::Span<const Literal> literals,
                                 Trail* trail, int lbd);
 
   // Lazily detach the given clause. The deletion will actually occur when

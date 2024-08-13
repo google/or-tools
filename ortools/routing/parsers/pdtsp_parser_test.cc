@@ -22,7 +22,7 @@
 
 #define ROOT_DIR "com_google_ortools/"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(PdTspParserTest, LoadDataSet) {
   for (const std::string& data : {
@@ -45,4 +45,4 @@ TEST(PdTspParserTest, LoadDataSet) {
   }
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

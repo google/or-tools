@@ -113,3 +113,13 @@ py_binary(
         "//ortools/math_opt/python:mathopt",
     ],
 )
+
+py_binary(
+    name = "writing_seminar",
+    srcs = ["writing_seminar.py"],
+    deps = [
+        requirement("absl-py"),
+        "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:highs_solver",
+    ],
+)

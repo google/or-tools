@@ -37,7 +37,7 @@ namespace sat {
 //
 // Nodes that are not in the unique allowed sub-circuit must point to themseves.
 // A nodes that has no self-arc must thus be inside the sub-circuit. If there is
-// no self-arc at all, then this constaint forces the circuit to go through all
+// no self-arc at all, then this constraint forces the circuit to go through all
 // the nodes. Multi-arcs are NOT supported.
 //
 // Important: for correctness, this constraint requires that "exactly one"
@@ -87,7 +87,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   //
   // TODO(user): for large dense graph, using a matrix is faster and uses less
   // memory. If the need arise we can have the two implementations.
-  std::vector<Literal> self_arcs_;
+  std::vector<LiteralIndex> self_arcs_;
   absl::flat_hash_map<std::pair<int, int>, Literal> graph_;
 
   // Data used to interpret the watch indices passed to IncrementalPropagate().
@@ -96,7 +96,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
     int head;
   };
   std::vector<Literal> watch_index_to_literal_;
-  std::vector<std::vector<Arc>> watch_index_to_arcs_;
+  CompactVectorVector<int, Arc> watch_index_to_arcs_;
 
   // Current partial chains of arc that are present.
   std::vector<int> next_;  // -1 if not assigned yet.
@@ -246,10 +246,11 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads,
 // This just wraps CircuitPropagator. See the comment there to see what this
 // does. Note that any nodes with no outgoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
-std::function<void(Model*)> SubcircuitConstraint(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals,
-    bool multiple_subcircuit_through_zero = false);
+void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
+                              const std::vector<int>& heads,
+                              const std::vector<Literal>& literals,
+                              Model* model,
+                              bool multiple_subcircuit_through_zero = false);
 
 // TODO(user): Change to a sparse API like for the function above.
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(

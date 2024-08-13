@@ -1014,6 +1014,12 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(size_expr, 2)
         self.assertEqual(str(end_expr), "(x + 2)")
 
+    def testAbsentInterval(self):
+        print("testInterval")
+        model = cp_model.CpModel()
+        i = model.new_optional_interval_var(1, 0, 1, False, "")
+        self.assertEqual(0, i.index)
+
     def testOptionalInterval(self):
         print("testOptionalInterval")
         model = cp_model.CpModel()
@@ -1246,7 +1252,6 @@ class CpModelTest(absltest.TestCase):
         status = solver.solve(model, solution_counter)
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(5, solution_counter.solution_count)
-        model.minimize(x)
 
     def testSolveWithSolutionCallback(self):
         print("testSolveWithSolutionCallback")

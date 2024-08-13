@@ -13,11 +13,8 @@
 
 #include "ortools/math_opt/solver_tests/logical_constraint_tests.h"
 
-#include <limits>
 #include <memory>
 #include <ostream>
-#include <string>
-#include <type_traits>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -97,9 +94,9 @@ TEST_P(SimpleLogicalConstraintTest, CanBuildSos1Model) {
   model.AddSos1Constraint({3.0 * x + 2.0}, {3.0});
   model.AddSos1Constraint({2.0 * x + 1.0}, {});
   if (GetParam().supports_sos1) {
-    EXPECT_OK(IncrementalSolver::New(&model, GetParam().solver_type, {}));
+    EXPECT_OK(NewIncrementalSolver(&model, GetParam().solver_type, {}));
   } else {
-    EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+    EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
                 StatusIs(AnyOf(absl::StatusCode::kInvalidArgument,
                                absl::StatusCode::kUnimplemented),
                          HasSubstr("sos1 constraints")));
@@ -113,9 +110,9 @@ TEST_P(SimpleLogicalConstraintTest, CanBuildSos2Model) {
   model.AddSos2Constraint({3.0 * x + 2.0}, {3.0});
   model.AddSos2Constraint({2.0 * x + 1.0}, {});
   if (GetParam().supports_sos2) {
-    EXPECT_OK(IncrementalSolver::New(&model, GetParam().solver_type, {}));
+    EXPECT_OK(NewIncrementalSolver(&model, GetParam().solver_type, {}));
   } else {
-    EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+    EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
                 StatusIs(AnyOf(absl::StatusCode::kInvalidArgument,
                                absl::StatusCode::kUnimplemented),
                          HasSubstr("sos2 constraints")));
@@ -294,7 +291,7 @@ TEST_P(IncrementalLogicalConstraintTest, LinearToSos1Update) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(3.0, {{x, 1.0}, {y, 1.0}})));
 
@@ -346,7 +343,7 @@ TEST_P(IncrementalLogicalConstraintTest, LinearToSos2Update) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(
       solver->Solve({.parameters = GetParam().parameters}),
       IsOkAndHolds(IsOptimalWithSolution(6.0, {{x, 1.0}, {y, 1.0}, {z, 1.0}})));
@@ -409,7 +406,7 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos1Constraint) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(2.5, {{x, 0.25}, {y, 0.75}})));
 
@@ -455,7 +452,7 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos2Constraint) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(
       solver->Solve({.parameters = GetParam().parameters}),
       IsOkAndHolds(IsOptimalWithSolution(4.5, {{x, 0.5}, {y, 1.0}, {z, 0.5}})));
@@ -503,7 +500,7 @@ TEST_P(IncrementalLogicalConstraintTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(
                   3.0, {{x, 0.0}, {y, 1.0}, {z, 0.0}, {w, 1.0}})));
@@ -551,7 +548,7 @@ TEST_P(IncrementalLogicalConstraintTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(
                   5.0, {{x, 0.0}, {y, 1.0}, {z, 1.0}, {w, 1.0}})));
@@ -600,7 +597,7 @@ TEST_P(IncrementalLogicalConstraintTest, InstanceWithSos1AndSos2AndDeletion) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(
       solver->Solve({.parameters = GetParam().parameters}),
       IsOkAndHolds(IsOptimalWithSolution(3.5, {{x, 1.0}, {y, 1.0}, {z, 0.0}})));
@@ -629,9 +626,9 @@ TEST_P(SimpleLogicalConstraintTest, CanBuildIndicatorModel) {
   model.AddIndicatorConstraint(x, y <= 0.5);
 
   if (GetParam().supports_indicator_constraints) {
-    EXPECT_OK(IncrementalSolver::New(&model, GetParam().solver_type, {}));
+    EXPECT_OK(NewIncrementalSolver(&model, GetParam().solver_type, {}));
   } else {
-    EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+    EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
                 StatusIs(AnyOf(absl::StatusCode::kInvalidArgument,
                                absl::StatusCode::kUnimplemented),
                          HasSubstr("indicator constraints")));
@@ -712,7 +709,7 @@ TEST_P(SimpleLogicalConstraintTest, IndicatorWithRangedImpliedConstraint) {
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
   model.AddIndicatorConstraint(x, 0.25 <= y <= 0.75);
 
-  EXPECT_THAT(IncrementalSolver::New(&model, GetParam().solver_type, {}),
+  EXPECT_THAT(NewIncrementalSolver(&model, GetParam().solver_type, {}),
               StatusIs(AnyOf(absl::StatusCode::kInvalidArgument,
                              absl::StatusCode::kUnimplemented),
                        HasSubstr("ranged")));
@@ -805,7 +802,7 @@ TEST_P(IncrementalLogicalConstraintTest, LinearToIndicatorUpdate) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(2.0, {{x, 1.0}, {y, 1.0}})));
 
@@ -865,7 +862,7 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesIndicatorConstraint) {
   const IndicatorConstraint c = model.AddIndicatorConstraint(x, y <= 0.5);
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(1.5, {{x, 1.0}, {y, 0.5}})));
 
@@ -911,7 +908,7 @@ TEST_P(IncrementalLogicalConstraintTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(1.0, {{x, 1.0}})));
 
@@ -953,7 +950,7 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesIndicatorVariable) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(1.5, {{x, 1.0}, {y, 0.5}})));
 
@@ -1002,7 +999,7 @@ TEST_P(IncrementalLogicalConstraintTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_THAT(
       solver->Solve({.parameters = GetParam().parameters}),
       IsOkAndHolds(IsOptimalWithSolution(3.0, {{x, 0.0}, {y, 1.0}, {z, 1.0}})));
@@ -1032,7 +1029,7 @@ TEST_P(IncrementalLogicalConstraintTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_OK(solver->Solve({.parameters = GetParam().parameters}));
 
   model.set_continuous(x);
@@ -1084,7 +1081,7 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateChangesIndicatorVariableBound) {
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   EXPECT_THAT(solver->Solve({.parameters = GetParam().parameters}),
               IsOkAndHolds(IsOptimalWithSolution(
                   1.6, {{x, 1.0}, {y, 0.0}, {u, 0.6}, {v, 1.0}})));
@@ -1143,7 +1140,7 @@ TEST_P(IncrementalLogicalConstraintTest,
 
   ASSERT_OK_AND_ASSIGN(
       const auto solver,
-      IncrementalSolver::New(&model, GetParam().solver_type, {}));
+      NewIncrementalSolver(&model, GetParam().solver_type, {}));
   ASSERT_OK(solver->Solve({.parameters = GetParam().parameters}));
 
   model.set_upper_bound(x, 2.0);

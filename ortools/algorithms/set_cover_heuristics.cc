@@ -477,16 +477,17 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
   inv_->MakeFullyUpdated();
   Cost best_cost = inv_->cost();
   SubsetBoolVector best_choices = inv_->is_selected();
+
   for (const SubsetIndex& subset : focus) {
     const float delta = ComputeDelta(subset);
     if (delta < kInfinity) {
       priority_heap_.Insert({delta, subset.value()});
     }
   }
+
   for (int iteration = 0; iteration < num_iterations; ++iteration) {
     // Improve current solution respective to the current penalties.
     const SubsetIndex best_subset(priority_heap_.TopIndex());
-
     if (inv_->is_selected()[best_subset]) {
       utility_heap_.Insert({0, best_subset.value()});
     } else {
@@ -512,23 +513,27 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                                     inv_->model()->subset_costs()[subset]);
       priority_heap_.Insert({delta_selected, subset.value()});
     }
+
     for (const SubsetIndex subset : {penalized_subset, best_subset}) {
       const float delta = ComputeDelta(subset);
       if (delta < kInfinity) {
         priority_heap_.Insert({delta, subset.value()});
       }
     }
+
     // Get new non removable subsets.
     // (Delete them from the heap)
     for (const SubsetIndex subset : inv_->new_non_removable_subsets()) {
       priority_heap_.Remove(subset.value());
     }
+
     if (inv_->cost() < best_cost) {
       best_cost = inv_->cost();
       best_choices = inv_->is_selected();
     }
   }
   inv_->LoadSolution(best_choices);
+
   // Improve the solution by removing redundant subsets.
   for (const SubsetIndex& subset : focus) {
     if (inv_->is_selected()[subset] && inv_->ComputeIsRedundant(subset))

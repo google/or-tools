@@ -20,13 +20,13 @@
 #include "ortools/routing/index_manager.h"
 %}
 
-DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
-                          operations_research::RoutingIndexManager::NodeIndex);
+DEFINE_INDEX_TYPE_TYPEDEF(operations_research::routing::RoutingNodeIndex,
+                          operations_research::routing::RoutingIndexManager::NodeIndex);
 
 %ignoreall
 
-%unignore operations_research;
-namespace operations_research {
+%unignore operations_research::routing;
+namespace operations_research::routing {
 
 %unignore RoutingIndexManager;
 %unignore RoutingIndexManager::~RoutingIndexManager;
@@ -46,7 +46,7 @@ namespace operations_research {
 %rename (nodeToIndex) RoutingIndexManager::NodeToIndex;
 %rename (nodesToIndices) RoutingIndexManager::NodesToIndices;
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 %include "ortools/routing/index_manager.h"
 

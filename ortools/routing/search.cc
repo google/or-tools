@@ -71,7 +71,7 @@ ABSL_FLAG(int64_t, sweep_sectors, 1,
           "The number of sectors the space is divided into before it is sweeped"
           " by the ray.");
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // --- VehicleTypeCurator ---
 
@@ -618,10 +618,12 @@ void CheapestInsertionFilteredHeuristic::AddSeedNodeToQueue(
   if (sq->prioritize_farthest_nodes) {
     start_end_value.distance = CapOpp(start_end_value.distance);
   }
-  const uint64_t num_allowed_vehicles = model()->VehicleVar(node)->Size();
+  const int64_t num_allowed_vehicles = model()->VehicleVar(node)->Size();
   const int64_t neg_penalty = CapOpp(model()->UnperformedPenalty(node));
-  sq->priority_queue.push(
-      {num_allowed_vehicles, neg_penalty, start_end_value, true, node});
+  sq->priority_queue.push({.key = {num_allowed_vehicles, neg_penalty},
+                           .start_end_value = start_end_value,
+                           .is_node_index = true,
+                           .index = node});
   start_end_distances->pop_back();
 }
 
@@ -1630,8 +1632,8 @@ void GlobalCheapestInsertionFilteredHeuristic::
         existing_insertion_positions;
     // Explore the neighborhood of the pickup.
     for (const int64_t pickup_insert_after :
-         node_index_to_neighbors_by_cost_class_->GetNeighborsOfNodeForCostClass(
-             cost_class, pickup)) {
+         node_index_to_neighbors_by_cost_class_
+             ->GetIncomingNeighborsOfNodeForCostClass(cost_class, pickup)) {
       if (!Contains(pickup_insert_after)) {
         continue;
       }
@@ -1661,8 +1663,8 @@ void GlobalCheapestInsertionFilteredHeuristic::
 
     // Explore the neighborhood of the delivery.
     for (const int64_t delivery_insert_after :
-         node_index_to_neighbors_by_cost_class_->GetNeighborsOfNodeForCostClass(
-             cost_class, delivery)) {
+         node_index_to_neighbors_by_cost_class_
+             ->GetIncomingNeighborsOfNodeForCostClass(cost_class, delivery)) {
       if (!Contains(delivery_insert_after)) {
         continue;
       }
@@ -1794,8 +1796,8 @@ bool GlobalCheapestInsertionFilteredHeuristic::AddPairEntriesWithPickupAfter(
       model()->GetPickupAndDeliveryPairs();
   DCHECK(pickup_to_entries->at(insert_after).empty());
   for (const int64_t pickup :
-       node_index_to_neighbors_by_cost_class_->GetNeighborsOfNodeForCostClass(
-           cost_class, insert_after)) {
+       node_index_to_neighbors_by_cost_class_
+           ->GetOutgoingNeighborsOfNodeForCostClass(cost_class, insert_after)) {
     if (StopSearchAndCleanup(priority_queue)) return false;
     if (Contains(pickup) || !model()->VehicleVar(pickup)->Contains(vehicle)) {
       continue;
@@ -1843,8 +1845,8 @@ bool GlobalCheapestInsertionFilteredHeuristic::AddPairEntriesWithDeliveryAfter(
   const std::vector<PickupDeliveryPair>& pickup_delivery_pairs =
       model()->GetPickupAndDeliveryPairs();
   for (const int64_t delivery :
-       node_index_to_neighbors_by_cost_class_->GetNeighborsOfNodeForCostClass(
-           cost_class, insert_after)) {
+       node_index_to_neighbors_by_cost_class_
+           ->GetOutgoingNeighborsOfNodeForCostClass(cost_class, insert_after)) {
     if (StopSearchAndCleanup(priority_queue)) return false;
     if (Contains(delivery) ||
         !model()->VehicleVar(delivery)->Contains(vehicle)) {
@@ -2041,8 +2043,8 @@ void GlobalCheapestInsertionFilteredHeuristic::
     return;
   }
 
-  // We're only considering the closest neighbors as insertion positions for
-  // the node.
+  // We're only considering the closest incoming neighbors as insertion
+  // positions for the node.
   const auto insert_on_vehicle_for_cost_class = [this, &vehicles, all_vehicles](
                                                     int v, int cost_class) {
     return (model()->GetCostClassIndexOfVehicle(v).value() == cost_class) &&
@@ -2051,8 +2053,8 @@ void GlobalCheapestInsertionFilteredHeuristic::
   for (int cost_class = 0; cost_class < model()->GetCostClassesCount();
        cost_class++) {
     for (const int64_t insert_after :
-         node_index_to_neighbors_by_cost_class_->GetNeighborsOfNodeForCostClass(
-             cost_class, node)) {
+         node_index_to_neighbors_by_cost_class_
+             ->GetIncomingNeighborsOfNodeForCostClass(cost_class, node)) {
       if (!Contains(insert_after)) {
         continue;
       }
@@ -2078,6 +2080,13 @@ bool GlobalCheapestInsertionFilteredHeuristic::UpdateAfterNodeInsertion(
     return false;
   }
   // Add new entries after "node" which has just been inserted.
+  // TODO(user): Also add node entries *before* the newly inserted node
+  // in the case where we have non-full neighborhoods. This will leverage the
+  // incoming neighbors of the newly inserted node, in case they're not also
+  // outgoing neighbors of 'insert_after'.
+  // NOTE: UpdateExistingNodeEntriesOnChain() could return the set of node
+  // indices that already have entries between insert_after and node, to avoid
+  // adding entries again for them when looking at incoming neighbors of node.
   if (!AddNodeEntriesAfter(nodes, vehicle, node, all_vehicles, queue)) {
     return false;
   }
@@ -2105,8 +2114,8 @@ bool GlobalCheapestInsertionFilteredHeuristic::AddNodeEntriesAfter(
   // entries or if unperformed node insertions were present.
   queue->ClearInsertions(insert_after);
   const std::vector<int>& neighbors =
-      node_index_to_neighbors_by_cost_class_->GetNeighborsOfNodeForCostClass(
-          cost_class, insert_after);
+      node_index_to_neighbors_by_cost_class_
+          ->GetOutgoingNeighborsOfNodeForCostClass(cost_class, insert_after);
   if (neighbors.size() < nodes.NumberOfSetCallsWithDifferentArguments()) {
     // Iterate on the neighbors.
     for (int node : neighbors) {
@@ -2120,7 +2129,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::AddNodeEntriesAfter(
     for (int node : nodes.PositionsSetAtLeastOnce()) {
       if (StopSearch()) return false;
       if (!Contains(node) &&
-          node_index_to_neighbors_by_cost_class_->IsNeighborOfNodeForCostClass(
+          node_index_to_neighbors_by_cost_class_->IsNeighborhoodArcForCostClass(
               cost_class, insert_after, node)) {
         AddNodeEntry(node, insert_after, vehicle, all_vehicles, queue);
       }
@@ -2268,6 +2277,7 @@ LocalCheapestInsertionFilteredHeuristic::
         RoutingModel* model, std::function<bool()> stop_search,
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
         RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
+        RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode,
         LocalSearchFilterManager* filter_manager, BinCapacities* bin_capacities,
         std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
                            std::vector<RoutingModel::VariableValuePair>*)>
@@ -2276,6 +2286,7 @@ LocalCheapestInsertionFilteredHeuristic::
                                          std::move(evaluator), nullptr,
                                          filter_manager),
       pair_insertion_strategy_(pair_insertion_strategy),
+      insertion_sorting_mode_(insertion_sorting_mode),
       bin_capacities_(bin_capacities),
       optimize_on_insertion_(std::move(optimize_on_insertion)) {}
 
@@ -2385,33 +2396,51 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
   insertion_order_.reserve(model.Size() +
                            model.GetPickupAndDeliveryPairs().size());
 
+  auto get_insertion_key =
+      [this](int64_t penalty,
+             int64_t num_allowed_vehicles) -> std::tuple<int64_t, int64_t> {
+    DCHECK_NE(0, num_allowed_vehicles);
+    switch (insertion_sorting_mode_) {
+      case RoutingSearchParameters::SORT_BY_PENALTY_THEN_ALLOWED_VEHICLES:
+        return {CapOpp(penalty), num_allowed_vehicles};
+      case RoutingSearchParameters::
+          SORT_BY_PENALTY_ALLOWED_VEHICLES_RATIO_THEN_PENALTY:
+        return {CapOpp(penalty / num_allowed_vehicles), CapOpp(penalty)};
+      default:
+        return {num_allowed_vehicles, CapOpp(penalty)};
+    }
+  };
+
   // Iterating on pickup and delivery pairs
   const std::vector<PickupDeliveryPair>& pairs =
       model.GetPickupAndDeliveryPairs();
 
   for (int pair_index = 0; pair_index < pairs.size(); ++pair_index) {
     const auto& [pickups, deliveries] = pairs[pair_index];
-    uint64_t num_allowed_vehicles = std::numeric_limits<uint64_t>::max();
+    int64_t num_allowed_vehicles = std::numeric_limits<int64_t>::max();
     int64_t pickup_penalty = 0;
     for (int64_t pickup : pickups) {
       num_allowed_vehicles =
-          std::min(num_allowed_vehicles, model.VehicleVar(pickup)->Size());
+          std::min(num_allowed_vehicles,
+                   static_cast<int64_t>(model.VehicleVar(pickup)->Size()));
       pickup_penalty =
           std::max(pickup_penalty, model.UnperformedPenalty(pickup));
     }
     int64_t delivery_penalty = 0;
     for (int64_t delivery : deliveries) {
       num_allowed_vehicles =
-          std::min(num_allowed_vehicles, model.VehicleVar(delivery)->Size());
+          std::min(num_allowed_vehicles,
+                   static_cast<int64_t>(model.VehicleVar(delivery)->Size()));
       delivery_penalty =
           std::max(delivery_penalty, model.UnperformedPenalty(delivery));
     }
     insertion_order_.push_back(
-        {num_allowed_vehicles,
-         CapOpp(CapAdd(pickup_penalty, delivery_penalty)),
-         {GetNegMaxDistanceFromVehicles(model, pair_index), 0},
-         false,
-         pair_index});
+        {.key = get_insertion_key(CapAdd(pickup_penalty, delivery_penalty),
+                                  num_allowed_vehicles),
+         .start_end_value = {GetNegMaxDistanceFromVehicles(model, pair_index),
+                             0},
+         .is_node_index = false,
+         .index = pair_index});
   }
 
   Bitset64<int> vehicle_set(model.vehicles());
@@ -2427,14 +2456,12 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
           min_distance = std::min(min_distance, dist);
         },
         vehicle_set);
-
-    const uint64_t num_allowed_vehicles = model.VehicleVar(node)->Size();
-    const int64_t neg_penalty = CapOpp(model.UnperformedPenalty(node));
-    insertion_order_.push_back({num_allowed_vehicles,
-                                neg_penalty,
-                                {CapOpp(min_distance), 0},
-                                true,
-                                node});
+    insertion_order_.push_back(
+        {.key = get_insertion_key(model.UnperformedPenalty(node),
+                                  model.VehicleVar(node)->Size()),
+         .start_end_value = {CapOpp(min_distance), 0},
+         .is_node_index = true,
+         .index = node});
   }
 
   absl::c_sort(insertion_order_, std::greater<Seed>());
@@ -5104,4 +5131,4 @@ DecisionBuilder* RoutingModel::MakeSelfDependentDimensionFinalizer(
       solver_->MakeLocalSearchPhase(first_solution, parameters);
   return finalizer;
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing

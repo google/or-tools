@@ -820,6 +820,10 @@ class FullProblemSolver : public SubSolver {
   }
 
   bool IsDone() override {
+    // On large problem, deletion can take a while, so is is better to do it
+    // while waiting for the slower worker to finish.
+    if (shared_->SearchIsDone()) return true;
+
     return stop_at_first_solution_ &&
            shared_->response->first_solution_solvers_should_stop()->load();
   }
@@ -982,6 +986,8 @@ class FeasibilityPumpSolver : public SubSolver {
   ~FeasibilityPumpSolver() override {
     shared_->stat_tables.AddTimingStat(*this);
   }
+
+  bool IsDone() override { return shared_->SearchIsDone(); }
 
   bool TaskIsAvailable() override {
     if (shared_->SearchIsDone()) return false;

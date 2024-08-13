@@ -29,13 +29,13 @@
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
-namespace operations_research {
+namespace operations_research::routing {
 class RoutingModelParameters;
 class RoutingSearchParameters;
 
 class RoutingSearchStatus;
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 // Include the files we want to wrap a first time.
 %{
@@ -49,22 +49,22 @@ class RoutingSearchStatus;
 
 // RoutingModel methods.
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingCostClassIndex,
-    operations_research::RoutingModel::CostClassIndex);
+    operations_research::routing::RoutingCostClassIndex,
+    operations_research::routing::RoutingModel::CostClassIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingDimensionIndex,
-    operations_research::RoutingModel::DimensionIndex);
+    operations_research::routing::RoutingDimensionIndex,
+    operations_research::routing::RoutingModel::DimensionIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingDisjunctionIndex,
-    operations_research::RoutingModel::DisjunctionIndex);
+    operations_research::routing::RoutingDisjunctionIndex,
+    operations_research::routing::RoutingModel::DisjunctionIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingVehicleClassIndex,
-    operations_research::RoutingModel::VehicleClassIndex);
+    operations_research::routing::RoutingVehicleClassIndex,
+    operations_research::routing::RoutingModel::VehicleClassIndex);
 DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::RoutingResourceClassIndex,
-    operations_research::RoutingModel::ResourceClassIndex);
+    operations_research::routing::RoutingResourceClassIndex,
+    operations_research::routing::RoutingModel::ResourceClassIndex);
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // GlobalVehicleBreaksConstraint
 %typemap(javaimports) GlobalVehicleBreaksConstraint %{
@@ -342,7 +342,7 @@ import com.google.ortools.constraintsolver.Constraint;
 %rename (getBoundCost) SimpleBoundCosts::bound_cost;
 %rename (getSize) SimpleBoundCosts::Size;
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 // Generic rename rules.
 %rename (buildSolution) *::BuildSolution;
@@ -410,17 +410,17 @@ import java.lang.Runnable;
 %}
 
 // Protobuf support
-PROTO_INPUT(operations_research::RoutingSearchParameters,
+PROTO_INPUT(operations_research::routing::RoutingSearchParameters,
             com.google.ortools.routing.RoutingSearchParameters,
             search_parameters)
-PROTO_INPUT(operations_research::RoutingModelParameters,
+PROTO_INPUT(operations_research::routing::RoutingModelParameters,
             com.google.ortools.routing.RoutingModelParameters,
             parameters)
-PROTO2_RETURN(operations_research::RoutingSearchParameters,
+PROTO2_RETURN(operations_research::routing::RoutingSearchParameters,
               com.google.ortools.routing.RoutingSearchParameters)
-PROTO2_RETURN(operations_research::RoutingModelParameters,
+PROTO2_RETURN(operations_research::routing::RoutingModelParameters,
               com.google.ortools.routing.RoutingModelParameters)
-PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
+PROTO_ENUM_RETURN(operations_research::routing::RoutingSearchStatus::Value,
                   com.google.ortools.routing.RoutingSearchStatus.Value)
 
 // Wrap types.h, parameters.h according to the SWIG style guide.
@@ -437,7 +437,7 @@ import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.IntVar;
 %}
 
-namespace operations_research {
+namespace operations_research::routing {
 // Globals
 // IMPORTANT(user): These functions from parameters.h are global, so in Java
 // they are in the Globals.java (import com.[...].routing.Globals).
@@ -445,7 +445,7 @@ namespace operations_research {
 %rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;
 %rename (findErrorInRoutingSearchParameters) FindErrorInRoutingSearchParameters;
 %rename (makeSetValuesFromTargets) MakeSetValuesFromTargets;
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 %include "ortools/routing/types.h"
 %include "ortools/routing/parameters.h"

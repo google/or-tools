@@ -259,6 +259,7 @@ INSTANTIATE_TEST_SUITE_P(GlpkSimpleQcTest, SimpleQcTest,
                          ValuesIn(GetGlpkQcTestParameters()));
 INSTANTIATE_TEST_SUITE_P(GlpkIncrementalQcTest, IncrementalQcTest,
                          ValuesIn(GetGlpkQcTestParameters()));
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 
 SecondOrderConeTestParameters GetGlpkSecondOrderConeTestParameters() {
   return SecondOrderConeTestParameters(
@@ -423,7 +424,7 @@ TEST(GlpkSolverDeathTest, DestroySolverFromAnotherThread) {
   Model model("model");
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<IncrementalSolver> incremental_solver,
-                       IncrementalSolver::New(&model, SolverType::kGlpk));
+                       NewIncrementalSolver(&model, SolverType::kGlpk));
 
 #if 0
   EXPECT_DEATH_IF_SUPPORTED(
@@ -450,7 +451,7 @@ TEST(GlpkSolverTest, SolveFromAnotherThread) {
   model.Maximize(x + y);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<IncrementalSolver> incremental_solver,
-                       IncrementalSolver::New(&model, SolverType::kGlpk));
+                       NewIncrementalSolver(&model, SolverType::kGlpk));
 
   absl::StatusOr<SolveResult> solve_result_or;
   std::thread([&]() { solve_result_or = incremental_solver->Solve(); }).join();
@@ -466,7 +467,7 @@ TEST(GlpkSolverTest, UpdateFromAnotherThread) {
   model.Maximize(x + y);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<IncrementalSolver> incremental_solver,
-                       IncrementalSolver::New(&model, SolverType::kGlpk));
+                       NewIncrementalSolver(&model, SolverType::kGlpk));
 
   model.set_lower_bound(x, 1.2);
 
@@ -486,7 +487,7 @@ TEST(GlpkSolverTest, FailedUpdateFromAnotherThread) {
   model.Maximize(x + y);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<IncrementalSolver> incremental_solver,
-                       IncrementalSolver::New(&model, SolverType::kGlpk));
+                       NewIncrementalSolver(&model, SolverType::kGlpk));
 
   // Quadratic objectives are not supported by GLPK.
   model.Maximize(x * x);

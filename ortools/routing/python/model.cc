@@ -33,13 +33,13 @@
 #include "pybind11_protobuf/native_proto_caster.h"
 
 using ::operations_research::Assignment;
-using ::operations_research::DefaultRoutingModelParameters;
-using ::operations_research::DefaultRoutingSearchParameters;
-using ::operations_research::RoutingDimension;
-using ::operations_research::RoutingIndexManager;
-using ::operations_research::RoutingModel;
-using ::operations_research::RoutingModelParameters;
-using ::operations_research::RoutingSearchParameters;
+using ::operations_research::routing::DefaultRoutingModelParameters;
+using ::operations_research::routing::DefaultRoutingSearchParameters;
+using ::operations_research::routing::RoutingDimension;
+using ::operations_research::routing::RoutingIndexManager;
+using ::operations_research::routing::RoutingModel;
+using ::operations_research::routing::RoutingModelParameters;
+using ::operations_research::routing::RoutingSearchParameters;
 using ::pybind11::arg;
 
 PYBIND11_MODULE(model, m) {

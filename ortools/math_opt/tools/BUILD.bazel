@@ -74,6 +74,7 @@ cc_library(
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt/io:lp_converter",
+        "//ortools/math_opt/io:lp_parser",
         "//ortools/math_opt/io:mps_converter",
         "//ortools/math_opt/io:proto_converter",
         "@com_google_absl//absl/algorithm:container",

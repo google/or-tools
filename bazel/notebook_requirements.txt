@@ -187,7 +187,7 @@ notebook-shim==0.2.3
     # via
     #   jupyterlab
     #   notebook
-numpy==1.26.1
+numpy==1.26.4
     # via
     #   -r bazel/notebook_requirements.in
     #   pandas
@@ -230,7 +230,7 @@ prompt-toolkit==3.0.39
     # via
     #   ipython
     #   jupyter-console
-protobuf==5.27.2
+protobuf==5.27.3
     # via
     #   -r bazel/notebook_requirements.in
     #   mypy-protobuf
@@ -278,7 +278,7 @@ referencing==0.30.2
     #   jsonschema
     #   jsonschema-specifications
     #   jupyter-events
-requests==2.31.0
+requests==2.32.0
     # via
     #   -r bazel/notebook_requirements.in
     #   jupyterlab-server

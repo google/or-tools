@@ -21,7 +21,7 @@
 
 #define ROOT_DIR "com_google_ortools/"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 void CheckData(const LiLimParser& parser) {
@@ -78,4 +78,4 @@ TEST(LiLimParserTest, LoadNonExistingInstance) {
 }
 
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

@@ -24,7 +24,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 typedef std::function<int64_t(RoutingNodeIndex, RoutingNodeIndex)>
     RoutingNodeEvaluator2;
@@ -132,6 +132,6 @@ void DisplayPlan(
     const operations_research::RoutingDimension& capacity_dimension,
     const operations_research::RoutingDimension& time_dimension);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
