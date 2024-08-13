@@ -58,7 +58,7 @@ jobs:
           echo ${{ env.KNITRODIR }}
           cmake -S . -B build
           cmake --build build
-          ./build/Debug/my_test.exe
+          .\build\Debug\my_test.exe
       - name: Check what I have
         run: |
           ls -l .
