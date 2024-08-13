@@ -46,6 +46,12 @@ jobs:
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
+      - name: check knitro distrib
+        run: |
+          cd ${{ ARTELYS_LICENSE }}
+          cmake -S . -B build
+          cmake --build build
+          ./build/Debug/my_test.exe
       - name: Check what I have
         run: |
           ls -l .

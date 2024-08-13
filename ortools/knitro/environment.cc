@@ -1389,6 +1389,9 @@ absl::Status LoadKnitroDynamicLibrary(std::string& knitropath) {
     const std::vector<std::string> canonical_paths =
         KnitroDynamicLibraryPotentialPaths();
     for (const std::string& path : canonical_paths) {
+      const char* command = ("ls -l " + path).c_str();
+      system("ls .");
+      system(command);
       if (knitro_library.TryToLoad(path)) {
         LOG(INFO) << "Found the Knitro library in " << path << ".";
         knitro_lib_path.clear();
