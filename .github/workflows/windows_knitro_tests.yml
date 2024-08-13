@@ -48,12 +48,13 @@ jobs:
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
       - name: Grant access to knitro distrib
         run: |
-          icacls ${{ env.ARTELYS_LICENSE }} /grant Everyone:RX /t
+          icacls ${{ env.KNITRODIR }} /grant Everyone:RX /t
+          ls -l ${{ env.KNITRODIR }}
       - name: check knitro distrib
         run: |
-          cp knitro_distrib_zip/CMakeLists.txt ${{ env.ARTELYS_LICENSE }}/
-          cp knitro_distrib_zip/basic_milp.cpp ${{ env.ARTELYS_LICENSE }}/
-          cd ${{ env.ARTELYS_LICENSE }}
+          cd knitro_distrib_zip/knitro_test
+          ls .
+          echo ${{ env.KNITRODIR }}
           cmake -S . -B build
           cmake --build build
           ./build/Debug/my_test.exe
