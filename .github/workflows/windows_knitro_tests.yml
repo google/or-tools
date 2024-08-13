@@ -50,6 +50,7 @@ jobs:
         run: |
           icacls ${{ env.KNITRODIR }} /grant Everyone:RX /t
           ls -l ${{ env.KNITRODIR }}
+          ls -l ${{ env.KNITRODIR }}\lib
       - name: check knitro distrib
         run: |
           cd knitro_distrib_zip/knitro_test
