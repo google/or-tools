@@ -15,7 +15,7 @@ jobs:
           {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} • C++
+    name: Windows • Knitro Test • C++
     runs-on: windows-latest
     steps:
       - name: Set up Git
@@ -58,7 +58,14 @@ jobs:
           echo ${{ env.KNITRODIR }}
           cmake -S . -B build
           cmake --build build
-          .\build\Debug\mytest.exe
+      - name: run Knitro Test
+        run: |
+          cd knitro_distrib_zip/knitro_test
+          ls .
+          ls -l build/Debug
+          cd build/Debug
+          echo ${{ env.ARTELYS_LICENSE }}
+          ./mytest.exe
       - name: Check what I have
         run: |
           ls -l .
