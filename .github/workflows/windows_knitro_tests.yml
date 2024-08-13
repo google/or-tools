@@ -46,6 +46,9 @@ jobs:
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
+      - name: Grant access to knitro distrib
+        run: |
+          icacls ${{ ARTELYS_LICENSE }} /grant Everyone:RX /t
       - name: check knitro distrib
         run: |
           cp knitro_distrib_zip/CMakeLists.txt ${{ env.ARTELYS_LICENSE }}/
