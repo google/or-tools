@@ -756,7 +756,7 @@ public class SatSolverTest
     [Fact]
     public void TestHint()
     {
-        output_.WriteLine("TestInterval test");
+        output_.WriteLine("TestHint test");
         CpModel model = new CpModel();
         IntVar v = model.NewIntVar(-10, 10, "v");
         BoolVar b = model.NewBoolVar("b");
