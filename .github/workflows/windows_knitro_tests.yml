@@ -49,20 +49,20 @@ jobs:
       - name: Grant access to knitro distrib
         run: |
           icacls ${{ env.KNITRODIR }} /grant Everyone:RX /t
-      # - name: check knitro distrib
-      #   run: |
-      #     cd knitro_distrib_zip/knitro_test
-      #     ls .
-      #     echo ${{ env.KNITRODIR }}
-      #     cmake -S . -B build
-      #     cmake --build build
-      # - name: run Knitro Test
-      #   run: |
-      #     cd knitro_distrib_zip/knitro_test
-      #     ls .
-      #     ls -l build/Debug
-      #     cd build/Debug
-      #     ./mytest.exe
+      - name: check knitro distrib
+        run: |
+          cd knitro_distrib_zip/knitro_test
+          ls .
+          echo ${{ env.KNITRODIR }}
+          cmake -S . -B build
+          cmake --build build
+      - name: run Knitro Test
+        run: |
+          cd knitro_distrib_zip/knitro_test
+          ls .
+          ls -l build/Debug
+          cd build/Debug
+          ./mytest.exe
       - name: Check what I have
         run: |
           ls -l .
