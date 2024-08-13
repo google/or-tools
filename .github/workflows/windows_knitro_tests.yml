@@ -18,9 +18,9 @@ jobs:
     name: Windows • Knitro Test • C++
     runs-on: windows-latest
     steps:
-      - name: Set up Git
-        run: |
-          git config --global core.autocrlf false
+      # - name: Set up Git
+      #   run: |
+      #     git config --global core.autocrlf false
       - name: Checkout or-tools
         uses: actions/checkout@v4
       - name: Checkout Knitro Windows
@@ -31,14 +31,14 @@ jobs:
           path: knitro_distrib_zip
           # ref: main
           token: ${{ secrets.KNITRO_DISTRIB }}
-      - name: Install Git LFS
-        run: |
-          git lfs install
-      - name: Pull LFS objects
-        run: |
-          git lfs pull
-      - name: Checkout LFS objects
-        run: git lfs checkout
+      # - name: Install Git LFS
+      #   run: |
+      #     git lfs install
+      # - name: Pull LFS objects
+      #   run: |
+      #     git lfs pull
+      # - name: Checkout LFS objects
+      #   run: git lfs checkout
       - name: Unzip
         run: |
           mkdir knitro_distrib
@@ -62,7 +62,7 @@ jobs:
           ls .
           ls -l build/Debug
           cd build/Debug
-          ./mytest.exe
+          ./my_test.exe
       - name: Check what I have
         run: |
           ls -l .
