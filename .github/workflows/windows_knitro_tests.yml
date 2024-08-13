@@ -65,7 +65,7 @@ jobs:
           ls -l build/Debug
           cd build/Debug
           echo ${{ env.ARTELYS_LICENSE }}
-          ./mytest.exe
+          mytest.exe
       - name: Check what I have
         run: |
           ls -l .
