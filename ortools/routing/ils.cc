@@ -434,6 +434,25 @@ bool HasPerformedNodes(const RoutingModel& model,
   return false;
 }
 
+// Returns the number of used vehicles.
+int CountUsedVehicles(const RoutingModel& model, const Assignment& assignment) {
+  int count = 0;
+  for (int vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
+    count += model.Next(assignment, model.Start(vehicle)) != model.End(vehicle);
+  }
+  return count;
+}
+
+// Returns the average route size of non empty routes.
+double ComputeAverageNonEmptyRouteSize(const RoutingModel& model,
+                                       const Assignment& assignment) {
+  const int num_used_vehicles = CountUsedVehicles(model, assignment);
+  if (num_used_vehicles == 0) return 0;
+
+  const double num_visits = model.Size() - model.vehicles();
+  return num_visits / num_used_vehicles;
+}
+
 // Returns a random performed visit for the given assignment. The procedure
 // requires a distribution including all visits. Returns -1 if there are no
 // performed visits.
@@ -592,6 +611,56 @@ int64_t RoutingSolution::GetRandomAdjacentVisit(
   DCHECK(!model_.IsStart(next_node));
   DCHECK(!model_.IsEnd(next_node));
   return next_node;
+}
+
+std::vector<int64_t> RoutingSolution::GetRandomSequenceOfVisits(
+    int64_t seed_visit, std::mt19937& rnd,
+    std::bernoulli_distribution& boolean_dist, int size) const {
+  DCHECK(BelongsToInitializedRoute(seed_visit));
+  DCHECK(!model_.IsStart(seed_visit));
+  DCHECK(!model_.IsEnd(seed_visit));
+  // The seed visit is actually performed.
+  DCHECK(CanBeRemoved(seed_visit));
+
+  // The seed visit is always included.
+  --size;
+
+  // Sequence's excluded boundaries.
+  int64_t left = GetInitializedPrevNodeIndex(seed_visit);
+  int64_t right = GetNextNodeIndex(seed_visit);
+
+  while (size-- > 0) {
+    if (model_.IsStart(left) && model_.IsEnd(right)) {
+      // We can no longer extend the sequence either way.
+      break;
+    }
+
+    // When left is at the start (resp. right is at the end), we can
+    // only extend right (resp. left), and if both ends are free to
+    // move we decide the direction at random.
+    if (model_.IsStart(left)) {
+      right = GetNextNodeIndex(right);
+    } else if (model_.IsEnd(right)) {
+      left = GetInitializedPrevNodeIndex(left);
+    } else {
+      const bool move_forward = boolean_dist(rnd);
+      if (move_forward) {
+        right = GetNextNodeIndex(right);
+      } else {
+        left = GetInitializedPrevNodeIndex(left);
+      }
+    }
+  }
+
+  // TODO(user): consider taking the container in input to avoid multiple
+  // memory allocations.
+  std::vector<int64_t> sequence;
+  int64_t curr = GetNextNodeIndex(left);
+  while (curr != right) {
+    sequence.push_back(curr);
+    curr = GetNextNodeIndex(curr);
+  }
+  return sequence;
 }
 
 CompositeRuinProcedure::CompositionStrategy::CompositionStrategy(
@@ -823,6 +892,158 @@ int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
   // Note that it can be -1 if no removable neighbor was found for the input
   // node.
   return same_route_closest_neighbor;
+}
+
+SISRRuinProcedure::SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd,
+                                     int num_neighbors)
+    : model_(*model),
+      rnd_(*rnd),
+      neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
+          {num_neighbors,
+           /*add_vehicle_starts_to_neighbors=*/false,
+           /*add_vehicle_ends_to_neighbors=*/false,
+           /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
+      customer_dist_(0, model->Size() - model->vehicles()),
+      probability_dist_(0.0, 1.0),
+      ruined_routes_(model->vehicles()),
+      routing_solution_(*model) {}
+
+std::function<int64_t(int64_t)> SISRRuinProcedure::Ruin(
+    const Assignment* assignment) {
+  const int64_t seed_node =
+      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
+  if (seed_node == -1) {
+    return [this, assignment](int64_t node) {
+      return assignment->Value(model_.NextVar(node));
+    };
+  }
+
+  routing_solution_.Reset(assignment);
+  ruined_routes_.SparseClearAll();
+
+  // TODO(user): add to proto.
+  const int max_cardinality_removed_sequences = 10;
+
+  // TODO(user): add to proto.
+  const int avg_num_removed_visits = 10;
+
+  const double max_sequence_size =
+      std::min<double>(max_cardinality_removed_sequences,
+                       ComputeAverageNonEmptyRouteSize(model_, *assignment));
+
+  const double max_num_removed_sequences =
+      (4 * avg_num_removed_visits) / (1 + max_sequence_size) - 1;
+  DCHECK_GE(max_num_removed_sequences, 1);
+
+  const int num_sequences_to_remove =
+      std::floor(std::uniform_real_distribution<double>(
+          1.0, max_num_removed_sequences)(rnd_));
+
+  // We start by disrupting the route where the seed visit is served.
+  const int seed_route = RuinRoute(*assignment, seed_node, max_sequence_size);
+  DCHECK_NE(seed_route, -1);
+
+  const RoutingCostClassIndex cost_class_index =
+      model_.GetCostClassIndexOfVehicle(seed_route);
+
+  for (const int neighbor :
+       neighbors_manager_->GetOutgoingNeighborsOfNodeForCostClass(
+           cost_class_index.value(), seed_node)) {
+    if (ruined_routes_.NumberOfSetCallsWithDifferentArguments() ==
+        num_sequences_to_remove) {
+      break;
+    }
+
+    if (!routing_solution_.CanBeRemoved(neighbor)) {
+      continue;
+    }
+
+    RuinRoute(*assignment, neighbor, max_sequence_size);
+  }
+
+  return
+      [this](int64_t node) { return routing_solution_.GetNextNodeIndex(node); };
+}
+
+int SISRRuinProcedure::RuinRoute(const Assignment& assignment,
+                                 int64_t seed_visit,
+                                 double global_max_sequence_size) {
+  const int route = assignment.Value(model_.VehicleVar(seed_visit));
+  DCHECK_GE(route, 0);
+  if (ruined_routes_[route]) return -1;
+
+  routing_solution_.InitializeRouteInfoIfNeeded(route);
+  ruined_routes_.Set(route);
+
+  const double max_sequence_size = std::min<double>(
+      routing_solution_.GetRouteSize(route), global_max_sequence_size);
+
+  int sequence_size = std::floor(
+      std::uniform_real_distribution<double>(1.0, max_sequence_size)(rnd_));
+
+  if (sequence_size == 1 || sequence_size == max_sequence_size ||
+      boolean_dist_(rnd_)) {
+    RuinRouteWithSequenceProcedure(seed_visit, sequence_size);
+  } else {
+    RuinRouteWithSplitSequenceProcedure(route, seed_visit, sequence_size);
+  }
+
+  return route;
+}
+
+void SISRRuinProcedure::RuinRouteWithSequenceProcedure(int64_t seed_visit,
+                                                       int sequence_size) {
+  const std::vector<int64_t> sequence =
+      routing_solution_.GetRandomSequenceOfVisits(seed_visit, rnd_,
+                                                  boolean_dist_, sequence_size);
+
+  // Remove the selected visits.
+  for (const int64_t visit : sequence) {
+    routing_solution_.RemoveNode(visit);
+  }
+
+  // Remove any still performed pickup or delivery siblings.
+  for (const int64_t visit : sequence) {
+    routing_solution_.RemovePerformedPickupDeliverySibling(visit);
+  }
+}
+
+void SISRRuinProcedure::RuinRouteWithSplitSequenceProcedure(int64_t route,
+                                                            int64_t seed_visit,
+                                                            int sequence_size) {
+  // TODO(user): add to proto.
+  const double alpha = 0.01;
+
+  const int max_num_bypassed_visits =
+      routing_solution_.GetRouteSize(route) - sequence_size;
+  int num_bypassed_visits = 1;
+  while (num_bypassed_visits < max_num_bypassed_visits &&
+         probability_dist_(rnd_) >= alpha * probability_dist_(rnd_)) {
+    ++num_bypassed_visits;
+  }
+
+  const std::vector<int64_t> sequence =
+      routing_solution_.GetRandomSequenceOfVisits(
+          seed_visit, rnd_, boolean_dist_, sequence_size + num_bypassed_visits);
+
+  const int start_bypassed_visits = rnd_() % (sequence_size + 1);
+  const int end_bypassed_visits = start_bypassed_visits + num_bypassed_visits;
+
+  // Remove the selected visits.
+  for (int i = 0; i < start_bypassed_visits; ++i) {
+    routing_solution_.RemoveNode(sequence[i]);
+  }
+  for (int i = end_bypassed_visits; i < sequence.size(); ++i) {
+    routing_solution_.RemoveNode(sequence[i]);
+  }
+
+  // Remove any still performed pickup or delivery siblings.
+  for (int i = 0; i < start_bypassed_visits; ++i) {
+    routing_solution_.RemovePerformedPickupDeliverySibling(sequence[i]);
+  }
+  for (int i = end_bypassed_visits; i < sequence.size(); ++i) {
+    routing_solution_.RemovePerformedPickupDeliverySibling(sequence[i]);
+  }
 }
 
 class RuinAndRecreateDecisionBuilder : public DecisionBuilder {

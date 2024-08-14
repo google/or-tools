@@ -78,6 +78,14 @@ class RoutingSolution {
       int64_t visit, std::mt19937& rnd,
       std::bernoulli_distribution& boolean_dist) const;
 
+  // Returns a randomly selected sequence of contiguous visits that includes
+  // the seed visit.
+  // This must be called for a performed seed visit belonging to an
+  // initialized route.
+  std::vector<int64_t> GetRandomSequenceOfVisits(
+      int64_t seed_visit, std::mt19937& rnd,
+      std::bernoulli_distribution& boolean_dist, int size) const;
+
  private:
   const RoutingModel& model_;
   std::vector<int64_t> nexts_;
@@ -183,6 +191,47 @@ class CompositeRuinProcedure : public RuinProcedure {
   // from next accessors. Stored at the object level to minimize re-allocations.
   Assignment* ruined_assignment_;
   Assignment* next_assignment_;
+};
+
+// Performs a ruin based on the Slack Induction by String Removals (SISR)
+// procedure described in "Slack Induction by String Removals for Vehicle
+// Routing Problems" by Jan Christiaens and Greet Vanden Berghe, Transportation
+// Science 2020.
+// Link to paper:
+// https://kuleuven.limo.libis.be/discovery/search?query=any,contains,LIRIAS1988666&tab=LIRIAS&search_scope=lirias_profile&vid=32KUL_KUL:Lirias&offset=0
+// Note that, in this implementation, the notion of "string" is replaced by
+// "sequence".
+//  In short, at every ruin application a number of routes are
+// disrupted. This number of routes is selected according to a careful
+// combination of user-defined parameters and solution and instance properties.
+// Every selected route is then disrupted by removing a contiguous sequence of
+// visits, possibly bypassing a contiguous subsequence.
+class SISRRuinProcedure : public RuinProcedure {
+ public:
+  SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd, int num_neighbors);
+
+  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+
+ private:
+  int RuinRoute(const Assignment& assignment, int64_t seed_visit,
+                double global_max_sequence_size);
+
+  // Removes a randomly selected sequence that includes the given seed visit.
+  void RuinRouteWithSequenceProcedure(int64_t seed_visit, int sequence_size);
+
+  // Randomly removes a sequence including the seed visit but bypassing and
+  // preserving a random subsequence.
+  void RuinRouteWithSplitSequenceProcedure(int64_t route, int64_t seed_visit,
+                                           int sequence_size);
+
+  const RoutingModel& model_;
+  std::mt19937& rnd_;
+  const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
+  std::uniform_int_distribution<int64_t> customer_dist_;
+  std::bernoulli_distribution boolean_dist_;
+  std::uniform_real_distribution<double> probability_dist_;
+  SparseBitset<int64_t> ruined_routes_;
+  RoutingSolution routing_solution_;
 };
 
 // Returns a DecisionBuilder implementing a perturbation step of an Iterated
