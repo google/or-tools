@@ -19,8 +19,23 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "scheduler",
+    srcs = ["scheduler.cc"],
     hdrs = ["scheduler.h"],
     deps = [
+        ":solvers_cc_proto",
+        "//ortools/base:threadpool",
+        "@com_google_absl//absl/functional:any_invocable",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_test(
+    name = "scheduler_test",
+    srcs = ["scheduler_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":scheduler",
+        ":solvers_cc_proto",
         "@com_google_absl//absl/functional:any_invocable",
     ],
 )

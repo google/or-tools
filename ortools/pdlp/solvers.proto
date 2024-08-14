@@ -40,6 +40,16 @@ enum OptimalityNorm {
   OPTIMALITY_NORM_L_INF_COMPONENTWISE = 3;
 }
 
+// The type of system used to schedule CPU threads to do work in parallel.
+enum SchedulerType {
+  SCHEDULER_TYPE_UNSPECIFIED = 0;
+  // Google ThreadPool with barrier synchronization.
+  SCHEDULER_TYPE_GOOGLE_THREADPOOL = 1;
+  // Eigen non-blocking ThreadPool with barrier synchronization (see
+  // <Eigen/ThreadPool>).
+  SCHEDULER_TYPE_EIGEN_THREADPOOL = 3;
+}
+
 // A description of solver termination criteria. The criteria are defined in
 // terms of the quantities recorded in IterationStats in solve_log.proto.
 
