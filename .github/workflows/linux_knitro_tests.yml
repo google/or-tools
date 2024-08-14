@@ -1,0 +1,64 @@
+# ref: https://github.com/actions/runner-images
+name: amd64 Linux CMake C++
+
+on: [push, pull_request, workflow_dispatch]
+
+# Building using the github runner environement directly.
+jobs:
+  native:
+    env:
+      KNITRODIR: ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Linux64
+      ARTELYS_LICENSE: ${{ github.workspace }}/knitro_distrib
+    strategy:
+       matrix:
+         cmake: [
+           {generator: "Unix Makefiles", config: "Release"},
+           {generator: "Ninja", config: "Release"},
+           {generator: "Ninja Multi-Config", config: "Release"},
+         ]
+       fail-fast: false
+    name: Linux • ${{ matrix.cmake.generator }} • C++
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout Knitro Linux
+        uses: actions/checkout@v4
+        with:
+          repository: loicli/Knitro-Distrib-Linux
+          path: knitro_distrib_targz
+          token: ${{ secrets.KNITRO_DISTRIB }}
+          lfs: true
+      - name: Untar knitro distribution
+        run: |
+          mkdir knitro_distrib
+          tar -xzvf knitro_distrib_targz/knitro-14.1.0-Linux64.tar.gz -C ${{ env.ARTELYS_LICENSE }}
+      - name: Copy license
+        run: |
+          echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
+      - name: Check Knitro install
+        run: |
+          ls -l ${{ env.ARTELYS_LICENSE }}
+          ls -l ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Linux64
+          ls -l ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Linux64/lib
+      - name: Install Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build
+      - name: Check cmake
+        run: cmake --version
+      - name: Configure
+        run: >
+          cmake -S. -Bbuild
+          -G "${{ matrix.cmake.generator }}"
+          -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
+          -DBUILD_DEPS=ON
+          -DCMAKE_INSTALL_PREFIX=install
+      - name: Build
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target all
+          -v -j2
+      - name: Run Knitro Test
+        run: >
+          ./build/bin/test_knitro_interface

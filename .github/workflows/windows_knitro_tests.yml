@@ -87,6 +87,6 @@ jobs:
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.build_target }}
           -v -j2
-      - name: Run Knitr Test
+      - name: Run Knitro Test
         run: >
           ./build/RELEASE/bin/test_knitro_interface
