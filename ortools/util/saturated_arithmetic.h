@@ -311,6 +311,11 @@ inline int64_t CapSub(int64_t x, int64_t y) {
 #endif
 }
 
+// Updates *target with CapSub(*target, amount).
+inline void CapSubFrom(int64_t amount, int64_t* target) {
+  *target = CapSub(*target, amount);
+}
+
 inline int64_t CapProd(int64_t x, int64_t y) {
 #if defined(__GNUC__) && defined(__x86_64__)
   // On x86_64, the product of two 64-bit registeres is a 128-bit integer,

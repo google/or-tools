@@ -1057,7 +1057,7 @@ public class CpModel
             model_.SolutionHint.Vars.Add(Negated(index));
             model_.SolutionHint.Values.Add(value ? 0 : 1);
         }
-    }    
+    }
 
     /** <summary>Clears all hinting from the model.</summary>*/
     public void ClearHints()

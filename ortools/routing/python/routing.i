@@ -115,7 +115,6 @@ enum OptionalBoolean {
   BOOL_FALSE = 2,
   BOOL_TRUE = 3,
 };
-
 }  // namespace operations_research
 
 %unignore operations_research::routing;

@@ -15,9 +15,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <map>
 #include <ostream>
 #include <string>
 #include <utility>

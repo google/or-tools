@@ -39,44 +39,44 @@ TempPath::TempPath(absl::string_view prefix) : path_(file::TempFile(prefix)) {
 }
 
 TempPath::TempPath(absl::string_view prefix, absl::Status* status)
-  : path_(file::TempFile(prefix)) {
+    : path_(file::TempFile(prefix)) {
   *status = Init(kDefaultMode);
 }
 
-  TempPath::TempPath(TempPath && rhs) : path_(std::move(rhs.path_)) {}
+TempPath::TempPath(TempPath&& rhs) : path_(std::move(rhs.path_)) {}
 
-  TempPath& TempPath::operator=(TempPath&& rhs) {
-    TempPath tmp(std::move(*this));
-    path_ = std::move(rhs.path_);
-    return *this;
-  }
+TempPath& TempPath::operator=(TempPath&& rhs) {
+  TempPath tmp(std::move(*this));
+  path_ = std::move(rhs.path_);
+  return *this;
+}
 
-  TempPath::~TempPath() {}
+TempPath::~TempPath() {}
 
-  TempPath* TempPath::Create(Location location) {
-    std::string dirname;
-    switch (location) {
-      case Local:
+TempPath* TempPath::Create(Location location) {
+  std::string dirname;
+  switch (location) {
+    case Local:
       dirname = file::TempFile("");
-    }
-    if (dirname.empty()) {
-      return nullptr;
-    }
-    absl::Status status;
-    TempPath* temp_path = new TempPath(dirname, &status);
-    if (!status.ok()) {
-      delete temp_path;
-      return nullptr;
-    }
-    return temp_path;
   }
+  if (dirname.empty()) {
+    return nullptr;
+  }
+  absl::Status status;
+  TempPath* temp_path = new TempPath(dirname, &status);
+  if (!status.ok()) {
+    delete temp_path;
+    return nullptr;
+  }
+  return temp_path;
+}
 
-  TempPath::TempPath(const std::string& dirname, file::Options options,
-                     absl::Status* status)
-      : path_(dirname) {
-    *status = Init(options);
-  }
+TempPath::TempPath(const std::string& dirname, file::Options options,
+                   absl::Status* status)
+    : path_(dirname) {
+  *status = Init(options);
+}
 
-  absl::Status TempPath::Init(file::Options options) {
-    return file::RecursivelyCreateDir(path(), options);
-  }
+absl::Status TempPath::Init(file::Options options) {
+  return file::RecursivelyCreateDir(path(), options);
+}

@@ -771,6 +771,6 @@ public class SatSolverTest
         Assert.Equal(0, model.Model.SolutionHint.Values[1]);
         Assert.Equal(2, model.Model.SolutionHint.Vars[2]);
         Assert.Equal(1, model.Model.SolutionHint.Values[2]);
-    }    
+    }
 }
 } // namespace Google.OrTools.Tests

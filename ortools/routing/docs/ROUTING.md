@@ -24,6 +24,8 @@ and .Net. Each language have different requirements for the code samples.
 #include <cstdlib>
 #include <sstream>
 
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
@@ -82,7 +84,7 @@ void SimpleRoutingProgram() {
 }  // namespace operations_research::routing
 
 int main(int /*argc*/, char* /*argv*/[]) {
-  operations_research::SimpleRoutingProgram();
+  operations_research::routing::SimpleRoutingProgram();
   return EXIT_SUCCESS;
 }
 ```
