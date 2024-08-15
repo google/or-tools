@@ -501,6 +501,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <c>var == i + offset ⇔ bool_vars[i] == true for all i</c>.
+     * </summary>
+     */
     public void AddMapDomain(IntVar var, IEnumerable<IntVar> bool_vars, long offset = 0)
     {
         int i = 0;
