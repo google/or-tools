@@ -523,11 +523,11 @@ public class CpModel
             model_.Constraints.Add(ct1);
 
             LinearConstraintProto lin2 = new LinearConstraintProto();
-            lin1.Vars.Capacity = 1;
+            lin2.Vars.Capacity = 1;
             lin2.Vars.Add(var_index);
-            lin1.Coeffs.Capacity = 1;
+            lin2.Coeffs.Capacity = 1;
             lin2.Coeffs.Add(1L);
-            lin1.Domain.Capacity = 4;
+            lin2.Domain.Capacity = 4;
             lin2.Domain.Add(Int64.MinValue);
             lin2.Domain.Add(offset + i - 1);
             lin2.Domain.Add(offset + i + 1);
