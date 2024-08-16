@@ -501,6 +501,11 @@ public class CpModel
         return ct;
     }
 
+    /**
+     * <summary>
+     * Adds <c>var == i + offset ⇔ bool_vars[i] == true for all i</c>.
+     * </summary>
+     */
     public void AddMapDomain(IntVar var, IEnumerable<IntVar> bool_vars, long offset = 0)
     {
         int i = 0;
@@ -523,11 +528,11 @@ public class CpModel
             model_.Constraints.Add(ct1);
 
             LinearConstraintProto lin2 = new LinearConstraintProto();
-            lin1.Vars.Capacity = 1;
+            lin2.Vars.Capacity = 1;
             lin2.Vars.Add(var_index);
-            lin1.Coeffs.Capacity = 1;
+            lin2.Coeffs.Capacity = 1;
             lin2.Coeffs.Add(1L);
-            lin1.Domain.Capacity = 4;
+            lin2.Domain.Capacity = 4;
             lin2.Domain.Add(Int64.MinValue);
             lin2.Domain.Add(offset + i - 1);
             lin2.Domain.Add(offset + i + 1);
@@ -1057,7 +1062,7 @@ public class CpModel
             model_.SolutionHint.Vars.Add(Negated(index));
             model_.SolutionHint.Values.Add(value ? 0 : 1);
         }
-    }    
+    }
 
     /** <summary>Clears all hinting from the model.</summary>*/
     public void ClearHints()
