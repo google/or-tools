@@ -206,9 +206,6 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
   }
 }
 
-%unignore operations_research::MPSolver::WriteModelAsLpFormat;
-%unignore operations_research::MPSolver::WriteModelAsMpsFormat;
-
 // MPVariable: writer API.
 %unignore operations_research::MPVariable::SetInteger;
 %rename (SetLb) operations_research::MPVariable::SetLB;
