@@ -17,29 +17,39 @@ jobs:
            {generator: "Ninja Multi-Config", config: "Release"},
          ]
        fail-fast: false
-    name: Linux • ${{ matrix.cmake.generator }} • C++
+    name: Linux • Knitro Test • C++
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Checkout Knitro Linux
         uses: actions/checkout@v4
         with:
-          repository: loicli/Knitro-Distrib-Linux
-          path: knitro_distrib_targz
+          repository: loicli/knitro1400-Linux64
+          path: knitro_distrib
           token: ${{ secrets.KNITRO_DISTRIB }}
-          lfs: true
-      - name: Untar knitro distribution
+      - name: Untar large files
         run: |
-          mkdir knitro_distrib
-          tar -xzvf knitro_distrib_targz/knitro-14.1.0-Linux64.tar.gz -C ${{ env.ARTELYS_LICENSE }}
+          cd ${{ env.KNITRODIR }}
+          cd knitromatlab
+          tar -xzf knitromatlab_mex.mexa64.tar.gz
+          rm knitromatlab_mex.mexa64.tar.gz
+          cd ../knitroampl
+          tar -xzf knitroampl.tar.gz
+          rm knitroampl.tar.gz
+          cd ../lib
+          tar -xzf libknitro1400.a.tar.gz
+          tar -xzf libknitro1400.a.tar.gz
+          rm libknitro1400.*.tar.gz
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
       - name: Check Knitro install
         run: |
           ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Linux64
-          ls -l ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Linux64/lib
+          ls -l ${{ env.KNITRODIR }}
+          ls -l ${{ env.KNITRODIR }}/lib
+          ls -l ${{ env.KNITRODIR }}/knitroampl
+          ls -l ${{ env.KNITRODIR }}/knitromatlab
       - name: Install Ninja
         run: |
           sudo apt-get update
