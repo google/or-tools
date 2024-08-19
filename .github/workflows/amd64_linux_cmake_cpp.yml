@@ -38,7 +38,7 @@ jobs:
           rm knitroampl.tar.gz
           cd ../lib
           tar -xzf libknitro1400.a.tar.gz
-          tar -xzf libknitro1400.a.tar.gz
+          tar -xzf libknitro1400.so.tar.gz
           rm libknitro1400.*.tar.gz
       - name: Copy license
         run: |
