@@ -1,5 +1,5 @@
 # ref: https://github.com/actions/runner-images
-name: amd64 Linux CMake C++
+name: Linux Knitro Test
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -7,7 +7,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   native:
     env:
-      KNITRODIR: ${{ github.workspace }}/knitro_distrib/knitro-14.1.0-Linux64
+      KNITRODIR: ${{ github.workspace }}/knitro_distrib/knitro-14.0.0-Linux64
       ARTELYS_LICENSE: ${{ github.workspace }}/knitro_distrib
     strategy:
        matrix:
@@ -69,6 +69,9 @@ jobs:
           --config ${{ matrix.cmake.config }}
           --target all
           -v -j2
+      - name: check build
+        run: |
+          ls build
       - name: Run Knitro Test
         run: >
           ./build/bin/test_knitro_interface
