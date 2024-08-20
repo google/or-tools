@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 #include "ortools/base/init_google.h"
 #include "ortools/knitro/environment.h"
@@ -1772,10 +1771,9 @@ TEST(KnitroInterface, LazyConstraint) {
     if (file != nullptr) {
       printf("bayg29.tsp found in submodule OR-Tools Knitro resources rep\n");
     } else {
-      const char *filename = absl::StrCat(getenv("OR_ROOT"), "/ortools/knitro/resources/bayg29.tsp");
-      file = fopen(filename, "r");
+      file = fopen(absl::StrCat(getenv("OR_ROOT"), "/ortools/knitro/resources/bayg29.tsp"), "r");
       if (file != nullptr) {
-        printf("bayg29.tsp found with path %s\n", filename);
+        printf("bayg29.tsp found with OR_ROOT %s\n", getenv("OR_ROOT"));
       } else {
         printf("bayg29.tsp not found !\n");
         EXPECT_TRUE(false);
