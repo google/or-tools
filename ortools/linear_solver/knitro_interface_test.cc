@@ -1771,7 +1771,7 @@ TEST(KnitroInterface, LazyConstraint) {
     if (file != nullptr) {
       printf("bayg29.tsp found in submodule OR-Tools Knitro resources rep\n");
     } else {
-      file = fopen(absl::StrCat(getenv("OR_ROOT"), "/ortools/knitro/resources/bayg29.tsp"), "r");
+      file = fopen(absl::StrCat(getenv("OR_ROOT"), "/ortools/knitro/resources/bayg29.tsp").c_str(), "r");
       if (file != nullptr) {
         printf("bayg29.tsp found with OR_ROOT %s\n", getenv("OR_ROOT"));
       } else {
