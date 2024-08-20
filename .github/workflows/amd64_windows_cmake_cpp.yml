@@ -7,7 +7,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   native:
     env :
-      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.1.0-Win64
+      KNITRODIR: ${{ github.workspace }}\knitro_distrib\knitro-14.0.0-Win64
       ARTELYS_LICENSE: ${{ github.workspace }}\knitro_distrib
     strategy:
       matrix:
