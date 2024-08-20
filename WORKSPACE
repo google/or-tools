@@ -26,6 +26,16 @@ git_repository(
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 bazel_skylib_workspace()
 
+http_archive(
+    name = "bazel_features",
+    sha256 = "cec7fbc7bce6597cf2e83e01ddd9328a1bb057dc1a3092745238f49d3301ab5a",
+    strip_prefix = "bazel_features-1.12.0",
+    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.12.0/bazel_features-v1.12.0.tar.gz",
+)
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+bazel_features_deps()
+
 ## Bazel rules.
 git_repository(
     name = "platforms",
@@ -41,7 +51,7 @@ git_repository(
 
 git_repository(
     name = "rules_proto",
-    tag = "5.3.0-21.7",
+    tag = "6.0.0",
     remote = "https://github.com/bazelbuild/rules_proto.git",
 )
 
@@ -109,6 +119,12 @@ git_repository(
 # Load common dependencies.
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
+
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
+rules_proto_dependencies()
+
+load("@rules_proto//proto:toolchains.bzl", "rules_proto_toolchains")
+rules_proto_toolchains()
 
 ## Solvers
 http_archive(
@@ -317,4 +333,46 @@ git_repository(
     name = "com_google_benchmark",
     tag = "v1.8.5",
     remote = "https://github.com/google/benchmark.git",
+)
+
+# Go
+
+http_archive(
+    name = "io_bazel_rules_go",
+    sha256 = "33acc4ae0f70502db4b893c9fc1dd7a9bf998c23e7ff2c4517741d4049a976f8",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.48.0/rules_go-v0.48.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.48.0/rules_go-v0.48.0.zip",
+    ],
+)
+
+http_archive(
+    name = "bazel_gazelle",
+    sha256 = "d76bf7a60fd8b050444090dfa2837a4eaf9829e1165618ee35dceca5cbdf58d5",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.37.0/bazel-gazelle-v0.37.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.37.0/bazel-gazelle-v0.37.0.tar.gz",
+    ],
+)
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("//:deps.bzl", "go_dependencies")
+# gazelle:repository_macro deps.bzl%go_dependencies
+go_dependencies()
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
+
+go_download_sdk(
+    name = "go_sdk_linux",
+    version = "1.22.4",
+)
+
+go_register_toolchains()
+
+gazelle_dependencies(
+    go_env = {
+        "GOPROXY": "https://proxy.golang.org|direct",
+    },
 )

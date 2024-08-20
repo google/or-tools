@@ -28,9 +28,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/golang/glog"
-
-	cmpb "ortools/sat/cp_model_go_proto"
+	log "github.com/golang/glog"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
 // ErrMixedModels holds the error when elements added to a model are different.
@@ -39,9 +38,9 @@ var ErrMixedModels = errors.New("elements are not part of the same model")
 type (
 	// VarIndex is the index of a variable in the CP model proto, if positive. If this value is
 	// negative, it represents the negation of a Boolean variable in the position (-1*VarIndex-1).
-	VarIndex int32_t
+	VarIndex int32
 	// ConstrIndex is the index of a constraint in the CP model proto.
-	ConstrIndex int32_t
+	ConstrIndex int32
 )
 
 func (v VarIndex) positiveIndex() VarIndex {
@@ -53,21 +52,21 @@ func (v VarIndex) positiveIndex() VarIndex {
 
 // LinearArgument provides an interface for BoolVar, IntVar, and LinearExpr.
 type LinearArgument interface {
-	addToLinearExpr(e *LinearExpr, c int64_t)
+	addToLinearExpr(e *LinearExpr, c int64)
 	// asLinearExpressionProto returns the LinearArgument as a LinearExpressionProto.
 	asLinearExpressionProto() *cmpb.LinearExpressionProto
-	evaluateSolutionValue(r *cmpb.CpSolverResponse) int64_t
+	evaluateSolutionValue(r *cmpb.CpSolverResponse) int64
 }
 
 // LinearExpr is a container for a linear expression.
 type LinearExpr struct {
 	varCoeffs []varCoeff
-	offset    int64_t
+	offset    int64
 }
 
 type varCoeff struct {
 	ind   VarIndex
-	coeff int64_t
+	coeff int64
 }
 
 // NewLinearExpr creates a new empty LinearExpr.
@@ -76,7 +75,7 @@ func NewLinearExpr() *LinearExpr {
 }
 
 // NewConstant creates and returns a LinearExpr containing the constant `c`.
-func NewConstant(c int64_t) *LinearExpr {
+func NewConstant(c int64) *LinearExpr {
 	return &LinearExpr{offset: c}
 }
 
@@ -87,13 +86,13 @@ func (l *LinearExpr) Add(la LinearArgument) *LinearExpr {
 }
 
 // AddConstant adds the constant to the LinearExpr and returns itself.
-func (l *LinearExpr) AddConstant(c int64_t) *LinearExpr {
+func (l *LinearExpr) AddConstant(c int64) *LinearExpr {
 	l.offset += c
 	return l
 }
 
 // AddTerm adds the linear argument term with the given coefficient to the LinearExpr and returns itself.
-func (l *LinearExpr) AddTerm(la LinearArgument, coeff int64_t) *LinearExpr {
+func (l *LinearExpr) AddTerm(la LinearArgument, coeff int64) *LinearExpr {
 	la.addToLinearExpr(l, coeff)
 	return l
 }
@@ -118,7 +117,7 @@ func (l *LinearExpr) AddWeightedSum(las []LinearArgument, coeffs []int64) *Linea
 	return l
 }
 
-func (l *LinearExpr) addToLinearExpr(e *LinearExpr, c int64_t) {
+func (l *LinearExpr) addToLinearExpr(e *LinearExpr, c int64) {
 	for _, vc := range l.varCoeffs {
 		e.varCoeffs = append(e.varCoeffs, varCoeff{ind: vc.ind, coeff: vc.coeff * c})
 	}
@@ -129,15 +128,15 @@ func (l *LinearExpr) asLinearExpressionProto() *cmpb.LinearExpressionProto {
 	linExprProto := &cmpb.LinearExpressionProto{}
 
 	for _, vc := range l.varCoeffs {
-		linExprProto.SetVars(append(linExprProto.GetVars(), int32_t(vc.ind)))
-		linExprProto.SetCoeffs(append(linExprProto.GetCoeffs(), vc.coeff))
+		linExprProto.Vars = append(linExprProto.GetVars(), int32(vc.ind))
+		linExprProto.Coeffs = append(linExprProto.GetCoeffs(), vc.coeff)
 	}
-	linExprProto.SetOffset(l.offset)
+	linExprProto.Offset = l.offset
 
 	return linExprProto
 }
 
-func (l *LinearExpr) evaluateSolutionValue(r *cmpb.CpSolverResponse) int64_t {
+func (l *LinearExpr) evaluateSolutionValue(r *cmpb.CpSolverResponse) int64 {
 	result := l.offset
 
 	for _, vc := range l.varCoeffs {
@@ -147,9 +146,9 @@ func (l *LinearExpr) evaluateSolutionValue(r *cmpb.CpSolverResponse) int64_t {
 	return result
 }
 
-func int64AsLinearExpressionProto(l int64_t) *cmpb.LinearExpressionProto {
+func int64AsLinearExpressionProto(l int64) *cmpb.LinearExpressionProto {
 	linExprProto := &cmpb.LinearExpressionProto{}
-	linExprProto.SetOffset(l)
+	linExprProto.Offset = l
 
 	return linExprProto
 }
@@ -178,24 +177,24 @@ func (i IntVar) Index() VarIndex {
 
 // WithName sets the name of the variable.
 func (i IntVar) WithName(s string) IntVar {
-	i.cpb.cmpb.GetVariables()[i.ind].SetName(s)
+	i.cpb.cmpb.GetVariables()[i.ind].Name = s
 	return i
 }
 
-func (i IntVar) addToLinearExpr(e *LinearExpr, c int64_t) {
+func (i IntVar) addToLinearExpr(e *LinearExpr, c int64) {
 	e.varCoeffs = append(e.varCoeffs, varCoeff{ind: i.ind, coeff: c})
 }
 
 func (i IntVar) asLinearExpressionProto() *cmpb.LinearExpressionProto {
 	linExprProto := &cmpb.LinearExpressionProto{}
 
-	linExprProto.SetVars([]int32{int32_t(i.ind)})
-	linExprProto.SetCoeffs([]int64{1})
+	linExprProto.Vars = []int32{int32(i.ind)}
+	linExprProto.Coeffs = []int64{1}
 
 	return linExprProto
 }
 
-func (i IntVar) evaluateSolutionValue(r *cmpb.CpSolverResponse) int64_t {
+func (i IntVar) evaluateSolutionValue(r *cmpb.CpSolverResponse) int64 {
 	return r.GetSolution()[i.ind]
 }
 
@@ -230,11 +229,11 @@ func (b BoolVar) Index() VarIndex {
 
 // WithName sets the name of the variable.
 func (b BoolVar) WithName(s string) BoolVar {
-	b.cpb.cmpb.GetVariables()[b.ind.positiveIndex()].SetName(s)
+	b.cpb.cmpb.GetVariables()[b.ind.positiveIndex()].Name = s
 	return b
 }
 
-func (b BoolVar) addToLinearExpr(e *LinearExpr, c int64_t) {
+func (b BoolVar) addToLinearExpr(e *LinearExpr, c int64) {
 	if b.ind < 0 {
 		e.varCoeffs = append(e.varCoeffs, varCoeff{ind: b.ind.positiveIndex(), coeff: -c})
 		e.offset += c
@@ -246,20 +245,20 @@ func (b BoolVar) addToLinearExpr(e *LinearExpr, c int64_t) {
 func (b BoolVar) asLinearExpressionProto() *cmpb.LinearExpressionProto {
 	linExprProto := &cmpb.LinearExpressionProto{}
 
-	linExprProto.SetVars([]int32{int32_t(b.ind.positiveIndex())})
-	coeff := int64_t(1)
-	var offset int64_t
+	linExprProto.Vars = []int32{int32(b.ind.positiveIndex())}
+	coeff := int64(1)
+	var offset int64
 	if b.ind < 0 {
 		coeff = -1
 		offset = 1
 	}
-	linExprProto.SetCoeffs([]int64{coeff})
-	linExprProto.SetOffset(offset)
+	linExprProto.Coeffs = []int64{coeff}
+	linExprProto.Offset = offset
 
 	return linExprProto
 }
 
-func (b BoolVar) evaluateSolutionValue(r *cmpb.CpSolverResponse) int64_t {
+func (b BoolVar) evaluateSolutionValue(r *cmpb.CpSolverResponse) int64 {
 	if b.ind < 0 {
 		return 1 - r.GetSolution()[b.ind.positiveIndex()]
 	}
@@ -272,7 +271,7 @@ func asNegatedLinearExpressionProto(la LinearArgument) *cmpb.LinearExpressionPro
 	for i, c := range result.GetCoeffs() {
 		result.GetCoeffs()[i] = -c
 	}
-	result.SetOffset(-result.GetOffset())
+	result.Offset = -result.GetOffset()
 
 	return result
 }
@@ -297,7 +296,7 @@ func (iv IntervalVar) Index() ConstrIndex {
 
 // WithName sets the name of the interval variable.
 func (iv IntervalVar) WithName(s string) IntervalVar {
-	iv.cpb.cmpb.GetConstraints()[iv.ind].SetName(s)
+	iv.cpb.cmpb.GetConstraints()[iv.ind].Name = s
 	return iv
 }
 
@@ -309,7 +308,7 @@ type Constraint struct {
 
 // WithName sets the name of the constraint.
 func (c Constraint) WithName(s string) Constraint {
-	c.cpb.cmpb.GetConstraints()[c.ind].SetName(s)
+	c.cpb.cmpb.GetConstraints()[c.ind].Name = s
 	return c
 }
 
@@ -328,7 +327,7 @@ func (c Constraint) Index() ConstrIndex {
 func (c Constraint) OnlyEnforceIf(bvs ...BoolVar) Constraint {
 	cstrpb := c.cpb.cmpb.GetConstraints()[c.ind]
 	for _, bv := range bvs {
-		cstrpb.SetEnforcementLiteral(append(cstrpb.GetEnforcementLiteral(), int32_t(bv.ind)))
+		cstrpb.EnforcementLiteral = append(cstrpb.GetEnforcementLiteral(), int32(bv.ind))
 	}
 	return c
 }
@@ -345,8 +344,8 @@ func (noc NoOverlap2DConstraint) AddRectangle(xInterval, yInterval IntervalVar) 
 		return
 	}
 	noOverlapCt := noc.cpb.cmpb.GetConstraints()[noc.ind].GetNoOverlap_2D()
-	noOverlapCt.SetXIntervals(append(noOverlapCt.GetXIntervals(), int32_t(xInterval.ind)))
-	noOverlapCt.SetYIntervals(append(noOverlapCt.GetYIntervals(), int32_t(yInterval.ind)))
+	noOverlapCt.XIntervals = append(noOverlapCt.GetXIntervals(), int32(xInterval.ind))
+	noOverlapCt.YIntervals = append(noOverlapCt.GetYIntervals(), int32(yInterval.ind))
 }
 
 // CircuitConstraint is a reference to a specialized circuit constraint that allows for
@@ -357,14 +356,14 @@ type CircuitConstraint struct {
 
 // AddArc adds an arc to the circuit constraint. `tail` and `head` are the indices of the tail
 // and head nodes, respectively, and `literal` is true if the arc is selected.
-func (cc *CircuitConstraint) AddArc(tail, head int32_t, literal BoolVar) {
+func (cc *CircuitConstraint) AddArc(tail, head int32, literal BoolVar) {
 	if !cc.cpb.checkSameModelAndSetErrorf(literal.cpb, "invalid parameter Boolvar %v added to CircuitConstraint %v", literal.Index(), cc.Index()) {
 		return
 	}
 	cirCt := cc.cpb.cmpb.GetConstraints()[cc.ind].GetCircuit()
-	cirCt.SetTails(append(cirCt.GetTails(), tail))
-	cirCt.SetHeads(append(cirCt.GetHeads(), head))
-	cirCt.SetLiterals(append(cirCt.GetLiterals(), int32_t(literal.ind)))
+	cirCt.Tails = append(cirCt.GetTails(), tail)
+	cirCt.Heads = append(cirCt.GetHeads(), head)
+	cirCt.Literals = append(cirCt.GetLiterals(), int32(literal.ind))
 }
 
 // MultipleCircuitConstraint is a reference to a specialized circuit constraint that allows for
@@ -375,14 +374,14 @@ type MultipleCircuitConstraint struct {
 
 // AddRoute adds an arc to the circuit constraint. `tail` and `head` and the indices of the tail
 // and head nodes, respectively, and `literal` is true if the arc is selected.
-func (mc *MultipleCircuitConstraint) AddRoute(tail, head int32_t, literal BoolVar) {
+func (mc *MultipleCircuitConstraint) AddRoute(tail, head int32, literal BoolVar) {
 	if !mc.cpb.checkSameModelAndSetErrorf(literal.cpb, "invalid parameter boolvar %v added to MultipleCircuitConstraint %v", literal.Index(), mc.Index()) {
 		return
 	}
 	multCirCt := mc.cpb.cmpb.GetConstraints()[mc.ind].GetRoutes()
-	multCirCt.SetTails(append(multCirCt.GetTails(), tail))
-	multCirCt.SetHeads(append(multCirCt.GetHeads(), head))
-	multCirCt.SetLiterals(append(multCirCt.GetLiterals(), int32_t(literal.ind)))
+	multCirCt.Tails = append(multCirCt.GetTails(), tail)
+	multCirCt.Heads = append(multCirCt.GetHeads(), head)
+	multCirCt.Literals = append(multCirCt.GetLiterals(), int32(literal.ind))
 }
 
 // TableConstraint is a reference to a specialized assignment constraint that allows for adding
@@ -392,13 +391,13 @@ type TableConstraint struct {
 }
 
 // AddTuple adds a tuple of possible values to the table constraint.
-func (tc *TableConstraint) AddTuple(tuple ...int64_t) {
+func (tc *TableConstraint) AddTuple(tuple ...int64) {
 	ct := tc.cpb.cmpb.GetConstraints()[tc.ind].GetTable()
 	if len(ct.GetVars()) != len(tuple) {
 		log.Fatalf("length of vars in the proto must be the same length as the input tuple: %v != %v", len(ct.GetVars()), len(tuple))
 	}
 
-	ct.SetValues(append(ct.GetValues(), tuple...))
+	ct.Values = append(ct.GetValues(), tuple...)
 }
 
 // ReservoirConstraint is a reference to a specialized reservoir constraint that allows for
@@ -412,9 +411,9 @@ type ReservoirConstraint struct {
 // by `levelChange` at time `time`.
 func (rc *ReservoirConstraint) AddEvent(time LinearArgument, levelChange LinearArgument) {
 	ct := rc.cpb.cmpb.GetConstraints()[rc.ind].GetReservoir()
-	ct.SetTimeExprs(append(ct.GetTimeExprs(), time.asLinearExpressionProto()))
-	ct.SetLevelChanges(append(ct.GetLevelChanges(), levelChange.asLinearExpressionProto()))
-	ct.SetActiveLiterals(append(ct.GetActiveLiterals(), int32_t(rc.oneIndex)))
+	ct.TimeExprs = append(ct.GetTimeExprs(), time.asLinearExpressionProto())
+	ct.LevelChanges = append(ct.GetLevelChanges(), levelChange.asLinearExpressionProto())
+	ct.ActiveLiterals = append(ct.GetActiveLiterals(), int32(rc.oneIndex))
 }
 
 // AutomatonConstraint is a reference to a specialized automaton constraint that allows for
@@ -426,11 +425,11 @@ type AutomatonConstraint struct {
 // AddTransition adds a transition to the constraint. Both tail and head are states, label
 // is any variable value. No two outgoing transitions from the same state can have the same
 // label.
-func (ac *AutomatonConstraint) AddTransition(tail, head int64_t, label int64_t) {
+func (ac *AutomatonConstraint) AddTransition(tail, head int64, label int64) {
 	ct := ac.cpb.cmpb.GetConstraints()[ac.ind].GetAutomaton()
-	ct.SetTransitionTail(append(ct.GetTransitionTail(), tail))
-	ct.SetTransitionHead(append(ct.GetTransitionHead(), head))
-	ct.SetTransitionLabel(append(ct.GetTransitionLabel(), label))
+	ct.TransitionTail = append(ct.GetTransitionTail(), tail)
+	ct.TransitionHead = append(ct.GetTransitionHead(), head)
+	ct.TransitionLabel = append(ct.GetTransitionLabel(), label)
 }
 
 // CumulativeConstraint is a reference to a specialized cumulative constraint that allows for
@@ -445,8 +444,8 @@ func (cc *CumulativeConstraint) AddDemand(interval IntervalVar, demand LinearArg
 		return
 	}
 	ct := cc.cpb.cmpb.GetConstraints()[cc.ind].GetCumulative()
-	ct.SetIntervals(append(ct.GetIntervals(), int32_t(interval.ind)))
-	ct.SetDemands(append(ct.GetDemands(), demand.asLinearExpressionProto()))
+	ct.Intervals = append(ct.GetIntervals(), int32(interval.ind))
+	ct.Demands = append(ct.GetDemands(), demand.asLinearExpressionProto())
 }
 
 // checkSameModelAndSetErrorf returns true if `cp` and `cp2` point to the same Builder.
@@ -481,11 +480,11 @@ func NewCpModelBuilder() *Builder {
 }
 
 // NewIntVar creates a new intVar in the CpModel proto.
-func (cp *Builder) NewIntVar(lb, ub int64_t) IntVar {
+func (cp *Builder) NewIntVar(lb, ub int64) IntVar {
 	intVar := IntVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
 
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{lb, ub}}.Build()
-	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
+	pVar := &cmpb.IntegerVariableProto{Domain: []int64{lb, ub}}
+	cp.cmpb.Variables = append(cp.cmpb.GetVariables(), pVar)
 
 	return intVar
 }
@@ -494,8 +493,8 @@ func (cp *Builder) NewIntVar(lb, ub int64_t) IntVar {
 func (cp *Builder) NewIntVarFromDomain(d Domain) IntVar {
 	intVar := IntVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
 
-	pVar := cmpb.IntegerVariableProto_builder{Domain: d.FlattenedIntervals()}.Build()
-	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
+	pVar := &cmpb.IntegerVariableProto{Domain: d.FlattenedIntervals()}
+	cp.cmpb.Variables = append(cp.cmpb.GetVariables(), pVar)
 
 	return intVar
 }
@@ -504,15 +503,15 @@ func (cp *Builder) NewIntVarFromDomain(d Domain) IntVar {
 func (cp *Builder) NewBoolVar() BoolVar {
 	boolVar := BoolVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
 
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{0, 1}}.Build()
-	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
+	pVar := &cmpb.IntegerVariableProto{Domain: []int64{0, 1}}
+	cp.cmpb.Variables = append(cp.cmpb.GetVariables(), pVar)
 
 	return boolVar
 }
 
 // NewConstant creates a constant variable. If this is called multiple times, the same variable will
 // always be returned.
-func (cp *Builder) NewConstant(v int64_t) IntVar {
+func (cp *Builder) NewConstant(v int64) IntVar {
 	if i, ok := cp.constants[v]; ok {
 		return IntVar{cpb: cp, ind: i}
 	}
@@ -531,8 +530,8 @@ func (cp *Builder) TrueVar() BoolVar {
 	}
 
 	boolVar := BoolVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{1, 1}}.Build()
-	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
+	pVar := &cmpb.IntegerVariableProto{Domain: []int64{1, 1}}
+	cp.cmpb.Variables = append(cp.cmpb.GetVariables(), pVar)
 
 	cp.constants[1] = boolVar.ind
 
@@ -547,8 +546,8 @@ func (cp *Builder) FalseVar() BoolVar {
 	}
 
 	boolVar := BoolVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{0, 0}}.Build()
-	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
+	pVar := &cmpb.IntegerVariableProto{Domain: []int64{0, 0}}
+	cp.cmpb.Variables = append(cp.cmpb.GetVariables(), pVar)
 
 	cp.constants[0] = boolVar.ind
 
@@ -562,7 +561,7 @@ func (cp *Builder) NewIntervalVar(start, size, end LinearArgument) IntervalVar {
 }
 
 // NewFixedSizeIntervalVar creates a new interval variable with the fixed size.
-func (cp *Builder) NewFixedSizeIntervalVar(start LinearArgument, size int64_t) IntervalVar {
+func (cp *Builder) NewFixedSizeIntervalVar(start LinearArgument, size int64) IntervalVar {
 	return cp.NewOptionalFixedSizeIntervalVar(start, size, cp.TrueVar())
 }
 
@@ -573,21 +572,21 @@ func (cp *Builder) NewOptionalIntervalVar(start, size, end LinearArgument, prese
 	cp.AddEquality(NewLinearExpr().Add(start).Add(size), end).OnlyEnforceIf(presence)
 
 	ind := ConstrIndex(len(cp.cmpb.GetConstraints()))
-	cp.cmpb.SetConstraints(append(cp.cmpb.GetConstraints(), cmpb.ConstraintProto_builder{
-		EnforcementLiteral: []int32{int32_t(presence.ind)},
-		Interval: cmpb.IntervalConstraintProto_builder{
+	cp.cmpb.Constraints = append(cp.cmpb.GetConstraints(), &cmpb.ConstraintProto{
+		EnforcementLiteral: []int32{int32(presence.ind)},
+		Constraint: &cmpb.ConstraintProto_Interval{&cmpb.IntervalConstraintProto{
 			Start: start.asLinearExpressionProto(),
 			Size:  size.asLinearExpressionProto(),
 			End:   end.asLinearExpressionProto(),
-		}.Build(),
-	}.Build()))
+		},
+		}})
 
 	return IntervalVar{cpb: cp, ind: ind}
 }
 
 // NewOptionalFixedSizeIntervalVar creates an optional interval variable with the fixed size. It
 // only enforces that the interval is of the fixed size when the `presence` variable is true.
-func (cp *Builder) NewOptionalFixedSizeIntervalVar(start LinearArgument, size int64_t, presence BoolVar) IntervalVar {
+func (cp *Builder) NewOptionalFixedSizeIntervalVar(start LinearArgument, size int64, presence BoolVar) IntervalVar {
 	sizeLinExpr := NewConstant(size)
 	end := NewLinearExpr().Add(start).Add(sizeLinExpr)
 
@@ -596,7 +595,7 @@ func (cp *Builder) NewOptionalFixedSizeIntervalVar(start LinearArgument, size in
 
 func (cp *Builder) appendConstraint(ct *cmpb.ConstraintProto) Constraint {
 	i := ConstrIndex(len(cp.cmpb.GetConstraints()))
-	cp.cmpb.SetConstraints(append(cp.cmpb.GetConstraints(), ct))
+	cp.cmpb.Constraints = append(cp.cmpb.GetConstraints(), ct)
 
 	return Constraint{cpb: cp, ind: i}
 }
@@ -605,30 +604,30 @@ func buildBoolArgumentProto(cp *Builder, bvs ...BoolVar) *cmpb.BoolArgumentProto
 	var literals []int32
 	for _, b := range bvs {
 		cp.checkSameModelAndSetErrorf(b.cpb, "BoolVar %v added to Constraint %v", b.Index(), len(cp.cmpb.GetConstraints()))
-		literals = append(literals, int32_t(b.ind))
+		literals = append(literals, int32(b.ind))
 	}
-	return cmpb.BoolArgumentProto_builder{Literals: literals}.Build()
+	return &cmpb.BoolArgumentProto{Literals: literals}
 }
 
 // AddBoolOr adds the constraint that at least one of the literals must be true.
 func (cp *Builder) AddBoolOr(bvs ...BoolVar) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		BoolOr: buildBoolArgumentProto(cp, bvs...),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_BoolOr{buildBoolArgumentProto(cp, bvs...)},
+	})
 }
 
 // AddBoolAnd adds the constraint that all of the literals must be true.
 func (cp *Builder) AddBoolAnd(bvs ...BoolVar) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		BoolAnd: buildBoolArgumentProto(cp, bvs...),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_BoolAnd{buildBoolArgumentProto(cp, bvs...)},
+	})
 }
 
 // AddBoolXor adds the constraint that an odd number of the literals must be true.
 func (cp *Builder) AddBoolXor(bvs ...BoolVar) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		BoolXor: buildBoolArgumentProto(cp, bvs...),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_BoolXor{buildBoolArgumentProto(cp, bvs...)},
+	})
 }
 
 // AddAtLeastOne adds the constraint that at least one of the literals must be true.
@@ -638,16 +637,16 @@ func (cp *Builder) AddAtLeastOne(bvs ...BoolVar) Constraint {
 
 // AddAtMostOne adds the constraint that at most one of the literals must be true.
 func (cp *Builder) AddAtMostOne(bvs ...BoolVar) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		AtMostOne: buildBoolArgumentProto(cp, bvs...),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_AtMostOne{buildBoolArgumentProto(cp, bvs...)},
+	})
 }
 
 // AddExactlyOne adds the constraint that exactly one of the literals must be true.
 func (cp *Builder) AddExactlyOne(bvs ...BoolVar) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		ExactlyOne: buildBoolArgumentProto(cp, bvs...),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_ExactlyOne{buildBoolArgumentProto(cp, bvs...)},
+	})
 }
 
 // AddImplication adds the constraint a => b.
@@ -664,7 +663,7 @@ func (cp *Builder) addLinearConstraint(le *LinearExpr, intervals ...ClosedInterv
 	var varCoeffs []int64
 	var domain []int64
 	for _, varCoeff := range le.varCoeffs {
-		varIndices = append(varIndices, int32_t(varCoeff.ind))
+		varIndices = append(varIndices, int32(varCoeff.ind))
 		varCoeffs = append(varCoeffs, varCoeff.coeff)
 	}
 	for _, i := range intervals {
@@ -672,11 +671,11 @@ func (cp *Builder) addLinearConstraint(le *LinearExpr, intervals ...ClosedInterv
 		domain = append(domain, iOffset.Start, iOffset.End)
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Linear: cmpb.LinearConstraintProto_builder{
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
 			Vars: varIndices, Coeffs: varCoeffs, Domain: domain,
-		}.Build(),
-	}.Build())
+		}},
+	})
 }
 
 // AddLinearConstraintForDomain adds the linear constraint `expr` in `domain`.
@@ -686,7 +685,7 @@ func (cp *Builder) AddLinearConstraintForDomain(expr LinearArgument, domain Doma
 }
 
 // AddLinearConstraint adds the linear constraint `lb <= expr <= ub`
-func (cp *Builder) AddLinearConstraint(expr LinearArgument, lb, ub int64_t) Constraint {
+func (cp *Builder) AddLinearConstraint(expr LinearArgument, lb, ub int64) Constraint {
 	linExpr := NewLinearExpr().Add(expr)
 	return cp.addLinearConstraint(linExpr, ClosedInterval{lb, ub})
 }
@@ -740,25 +739,25 @@ func (cp *Builder) AddAllDifferent(la ...LinearArgument) Constraint {
 		exprs = append(exprs, l.asLinearExpressionProto())
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		AllDiff: cmpb.AllDifferentConstraintProto_builder{Exprs: exprs}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_AllDiff{&cmpb.AllDifferentConstraintProto{Exprs: exprs}},
+	})
 }
 
 // AddVariableElement adds the variable element constraint: vars[ind] == target.
 func (cp *Builder) AddVariableElement(ind IntVar, vars []IntVar, target IntVar) Constraint {
 	var varIndices []int32
 	for _, v := range vars {
-		varIndices = append(varIndices, int32_t(v.ind))
+		varIndices = append(varIndices, int32(v.ind))
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Element: cmpb.ElementConstraintProto_builder{
-			Index:  int32_t(ind.ind),
-			Target: int32_t(target.ind),
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Element{&cmpb.ElementConstraintProto{
+			Index:  int32(ind.ind),
+			Target: int32(target.ind),
 			Vars:   varIndices,
-		}.Build(),
-	}.Build())
+		}},
+	})
 }
 
 // AddElement adds the element constraint: values[ind] == target
@@ -781,19 +780,19 @@ func (cp *Builder) AddInverseConstraint(vars []IntVar, inverseVars []IntVar) Con
 
 	var fDirect []int32
 	for _, v := range vars {
-		fDirect = append(fDirect, int32_t(v.ind))
+		fDirect = append(fDirect, int32(v.ind))
 	}
 	var fInverse []int32
 	for _, v := range inverseVars {
-		fInverse = append(fInverse, int32_t(v.ind))
+		fInverse = append(fInverse, int32(v.ind))
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Inverse: cmpb.InverseConstraintProto_builder{
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Inverse{&cmpb.InverseConstraintProto{
 			FDirect:  fDirect,
 			FInverse: fInverse,
-		}.Build(),
-	}.Build())
+		}},
+	})
 }
 
 // AddMinEquality adds the constraint: target == min(exprs).
@@ -803,12 +802,13 @@ func (cp *Builder) AddMinEquality(target LinearArgument, exprs ...LinearArgument
 		protos = append(protos, asNegatedLinearExpressionProto(e))
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		LinMax: cmpb.LinearArgumentProto_builder{
-			Target: asNegatedLinearExpressionProto(target),
-			Exprs:  protos,
-		}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_LinMax{
+			&cmpb.LinearArgumentProto{
+				Target: asNegatedLinearExpressionProto(target),
+				Exprs:  protos,
+			}},
+	})
 }
 
 // AddMaxEquality adds the constraint: target == max(expr).
@@ -818,12 +818,13 @@ func (cp *Builder) AddMaxEquality(target LinearArgument, exprs ...LinearArgument
 		protos = append(protos, e.asLinearExpressionProto())
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		LinMax: cmpb.LinearArgumentProto_builder{
-			Target: target.asLinearExpressionProto(),
-			Exprs:  protos,
-		}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_LinMax{
+			&cmpb.LinearArgumentProto{
+				Target: target.asLinearExpressionProto(),
+				Exprs:  protos,
+			}},
+	})
 }
 
 // AddMultiplicationEquality adds the constraint: target == Product(exprs).
@@ -833,51 +834,55 @@ func (cp *Builder) AddMultiplicationEquality(target LinearArgument, exprs ...Lin
 		protos = append(protos, e.asLinearExpressionProto())
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		IntProd: cmpb.LinearArgumentProto_builder{
-			Target: target.asLinearExpressionProto(),
-			Exprs:  protos,
-		}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_IntProd{
+			&cmpb.LinearArgumentProto{
+				Target: target.asLinearExpressionProto(),
+				Exprs:  protos,
+			}},
+	})
 }
 
 // AddDivisionEquality adds the constraint: target == num / denom.
 func (cp *Builder) AddDivisionEquality(target, num, denom LinearArgument) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		IntDiv: cmpb.LinearArgumentProto_builder{
-			Target: target.asLinearExpressionProto(),
-			Exprs: []*cmpb.LinearExpressionProto{
-				num.asLinearExpressionProto(),
-				denom.asLinearExpressionProto(),
-			},
-		}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_IntDiv{
+			&cmpb.LinearArgumentProto{
+				Target: target.asLinearExpressionProto(),
+				Exprs: []*cmpb.LinearExpressionProto{
+					num.asLinearExpressionProto(),
+					denom.asLinearExpressionProto(),
+				},
+			}},
+	})
 }
 
 // AddAbsEquality adds the constraint: target == Abs(expr).
 func (cp *Builder) AddAbsEquality(target, expr LinearArgument) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		LinMax: cmpb.LinearArgumentProto_builder{
-			Target: target.asLinearExpressionProto(),
-			Exprs: []*cmpb.LinearExpressionProto{
-				expr.asLinearExpressionProto(),
-				asNegatedLinearExpressionProto(expr),
-			},
-		}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_LinMax{
+			&cmpb.LinearArgumentProto{
+				Target: target.asLinearExpressionProto(),
+				Exprs: []*cmpb.LinearExpressionProto{
+					expr.asLinearExpressionProto(),
+					asNegatedLinearExpressionProto(expr),
+				},
+			}},
+	})
 }
 
 // AddModuloEquality adds the constraint: target == v % mod.
 func (cp *Builder) AddModuloEquality(target, v, mod LinearArgument) Constraint {
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		IntMod: cmpb.LinearArgumentProto_builder{
-			Target: target.asLinearExpressionProto(),
-			Exprs: []*cmpb.LinearExpressionProto{
-				v.asLinearExpressionProto(),
-				mod.asLinearExpressionProto(),
-			},
-		}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_IntMod{
+			&cmpb.LinearArgumentProto{
+				Target: target.asLinearExpressionProto(),
+				Exprs: []*cmpb.LinearExpressionProto{
+					v.asLinearExpressionProto(),
+					mod.asLinearExpressionProto(),
+				},
+			}},
+	})
 }
 
 // AddNoOverlap adds a constraint that ensures that all present intervals do not overlap in time.
@@ -885,37 +890,41 @@ func (cp *Builder) AddNoOverlap(vars ...IntervalVar) Constraint {
 	intervals := make([]int32, len(vars))
 	for i, v := range vars {
 		cp.checkSameModelAndSetErrorf(v.cpb, "invalid parameter intervalVar %v added to the AddNoOverlap constraint %v", v.Index(), len(cp.cmpb.GetConstraints()))
-		intervals[i] = int32_t(v.ind)
+		intervals[i] = int32(v.ind)
 	}
 
-	return cp.appendConstraint(cmpb.ConstraintProto_builder{
-		NoOverlap: cmpb.NoOverlapConstraintProto_builder{
-			Intervals: intervals,
-		}.Build(),
-	}.Build())
+	return cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_NoOverlap{
+			&cmpb.NoOverlapConstraintProto{
+				Intervals: intervals,
+			}},
+	})
 }
 
 // AddNoOverlap2D adds a no_overlap2D constraint that prevents a set of boxes from overlapping.
 func (cp *Builder) AddNoOverlap2D() NoOverlap2DConstraint {
-	return NoOverlap2DConstraint{cp.appendConstraint(cmpb.ConstraintProto_builder{
-		NoOverlap_2D: &cmpb.NoOverlap2DConstraintProto{},
-	}.Build())}
+	return NoOverlap2DConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_NoOverlap_2D{
+			&cmpb.NoOverlap2DConstraintProto{},
+		}})}
 }
 
 // AddCircuitConstraint adds a circuit constraint to the model. The circuit constraint is
 // defined on a graph where the arcs are present if the corresponding literals are set to true.
 func (cp *Builder) AddCircuitConstraint() CircuitConstraint {
-	return CircuitConstraint{cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Circuit: &cmpb.CircuitConstraintProto{},
-	}.Build())}
+	return CircuitConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Circuit{
+			&cmpb.CircuitConstraintProto{},
+		}})}
 }
 
 // AddMultipleCircuitConstraint adds a multiple circuit constraint to the model, aka the "VRP"
 // (Vehicle Routing Problem) constraint.
 func (cp *Builder) AddMultipleCircuitConstraint() MultipleCircuitConstraint {
-	return MultipleCircuitConstraint{cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Routes: &cmpb.RoutesConstraintProto{},
-	}.Build())}
+	return MultipleCircuitConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Routes{
+			&cmpb.RoutesConstraintProto{},
+		}})}
 }
 
 // AddAllowedAssignments adds an allowed assignments constraint to the model. When all variables
@@ -924,12 +933,13 @@ func (cp *Builder) AddMultipleCircuitConstraint() MultipleCircuitConstraint {
 func (cp *Builder) AddAllowedAssignments(vars ...IntVar) TableConstraint {
 	var varsInd []int32
 	for _, v := range vars {
-		varsInd = append(varsInd, int32_t(v.ind))
+		varsInd = append(varsInd, int32(v.ind))
 	}
 
-	return TableConstraint{cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Table: cmpb.TableConstraintProto_builder{Vars: varsInd}.Build(),
-	}.Build())}
+	return TableConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Table{
+			&cmpb.TableConstraintProto{Vars: varsInd},
+		}})}
 }
 
 // AddReservoirConstraint adds a reservoir constraint with optional refill/emptying events.
@@ -949,12 +959,14 @@ func (cp *Builder) AddAllowedAssignments(vars ...IntVar) TableConstraint {
 //
 // It returns a ReservoirConstraint that allows adding optional and non
 // optional events incrementally after construction.
-func (cp *Builder) AddReservoirConstraint(min, max int64_t) ReservoirConstraint {
+func (cp *Builder) AddReservoirConstraint(min, max int64) ReservoirConstraint {
 	return ReservoirConstraint{
 		cp.appendConstraint(
-			cmpb.ConstraintProto_builder{Reservoir: cmpb.ReservoirConstraintProto_builder{
-				MinLevel: min, MaxLevel: max,
-			}.Build()}.Build(),
+			&cmpb.ConstraintProto{
+				Constraint: &cmpb.ConstraintProto_Reservoir{
+					&cmpb.ReservoirConstraintProto{
+						MinLevel: min, MaxLevel: max,
+					}}},
 		), cp.NewConstant(1).Index()}
 }
 
@@ -982,30 +994,32 @@ func (cp *Builder) AddReservoirConstraint(min, max int64_t) ReservoirConstraint 
 //
 // It returns an AutomatonConstraint that allows adding transition
 // incrementally after construction.
-func (cp *Builder) AddAutomaton(transitionVars []IntVar, startState int64_t, finalStates []int64) AutomatonConstraint {
+func (cp *Builder) AddAutomaton(transitionVars []IntVar, startState int64, finalStates []int64) AutomatonConstraint {
 	var transitions []int32
 	for _, v := range transitionVars {
 		cp.checkSameModelAndSetErrorf(v.cpb, "invalid parameter intVar %v added to the AutomatonConstraint %v", v.Index(), len(cp.cmpb.GetConstraints()))
-		transitions = append(transitions, int32_t(v.Index()))
+		transitions = append(transitions, int32(v.Index()))
 	}
-	return AutomatonConstraint{cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Automaton: cmpb.AutomatonConstraintProto_builder{
-			Vars:          transitions,
-			StartingState: startState,
-			FinalStates:   finalStates,
-		}.Build(),
-	}.Build())}
+	return AutomatonConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Automaton{
+			&cmpb.AutomatonConstraintProto{
+				Vars:          transitions,
+				StartingState: startState,
+				FinalStates:   finalStates,
+			}},
+	})}
 }
 
 // AddCumulative adds a cumulative constraint to the model that ensures that for any integer
 // point, the sum of the demands of the intervals containging that point does not exceed the
 // capacity.
 func (cp *Builder) AddCumulative(capacity LinearArgument) CumulativeConstraint {
-	return CumulativeConstraint{cp.appendConstraint(cmpb.ConstraintProto_builder{
-		Cumulative: cmpb.CumulativeConstraintProto_builder{
-			Capacity: capacity.asLinearExpressionProto(),
-		}.Build(),
-	}.Build())}
+	return CumulativeConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
+		Constraint: &cmpb.ConstraintProto_Cumulative{
+			&cmpb.CumulativeConstraintProto{
+				Capacity: capacity.asLinearExpressionProto(),
+			},
+		}})}
 }
 
 // Minimize adds a linear minimization objective.
@@ -1014,12 +1028,12 @@ func (cp *Builder) Minimize(obj LinearArgument) {
 
 	opb := &cmpb.CpObjectiveProto{}
 	for _, varCoeff := range o.varCoeffs {
-		opb.SetVars(append(opb.GetVars(), int32_t(varCoeff.ind)))
-		opb.SetCoeffs(append(opb.GetCoeffs(), varCoeff.coeff))
+		opb.Vars = append(opb.GetVars(), int32(varCoeff.ind))
+		opb.Coeffs = append(opb.GetCoeffs(), varCoeff.coeff)
 	}
-	opb.SetOffset(float64(o.offset))
+	opb.Offset = float64(o.offset)
 
-	cp.cmpb.SetObjective(opb)
+	cp.cmpb.Objective = opb
 }
 
 // Maximize adds a linear maximization objective.
@@ -1028,13 +1042,13 @@ func (cp *Builder) Maximize(obj LinearArgument) {
 
 	opb := &cmpb.CpObjectiveProto{}
 	for _, varCoeff := range o.varCoeffs {
-		opb.SetVars(append(opb.GetVars(), int32_t(varCoeff.ind)))
-		opb.SetCoeffs(append(opb.GetCoeffs(), -varCoeff.coeff))
+		opb.Vars = append(opb.GetVars(), int32(varCoeff.ind))
+		opb.Coeffs = append(opb.GetCoeffs(), -varCoeff.coeff)
 	}
-	opb.SetOffset(float64(-o.offset))
-	opb.SetScalingFactor(-1)
+	opb.Offset = float64(-o.offset)
+	opb.ScalingFactor = -1
 
-	cp.cmpb.SetObjective(opb)
+	cp.cmpb.Objective = opb
 }
 
 // Hint is a container for IntVar and BoolVar hints to the CP model.
@@ -1069,33 +1083,33 @@ func (h *Hint) proto() *cmpb.PartialVariableAssignment {
 	var vars []int32
 	var hints []int64
 	for iv, hint := range h.Ints {
-		vars = append(vars, int32_t(iv.ind))
+		vars = append(vars, int32(iv.ind))
 		hints = append(hints, hint)
 	}
 	for bv, hint := range h.Bools {
-		var hintInt int64_t
+		var hintInt int64
 		if hint {
 			hintInt = 1
 		}
 		if bv.ind < 0 {
 			hintInt = 1 - hintInt
 		}
-		vars = append(vars, int32_t(bv.ind.positiveIndex()))
+		vars = append(vars, int32(bv.ind.positiveIndex()))
 		hints = append(hints, hintInt)
 	}
 	sort.Sort(indexValueSlices{vars, hints})
 
-	return cmpb.PartialVariableAssignment_builder{Vars: vars, Values: hints}.Build()
+	return &cmpb.PartialVariableAssignment{Vars: vars, Values: hints}
 }
 
 // SetHint sets the hint on the model.
 func (cp *Builder) SetHint(hint *Hint) {
-	cp.cmpb.SetSolutionHint(hint.proto())
+	cp.cmpb.SolutionHint = hint.proto()
 }
 
 // ClearHint clears any hints on the model.
 func (cp *Builder) ClearHint() {
-	cp.cmpb.ClearSolutionHint()
+	cp.cmpb.SolutionHint = nil
 }
 
 // AddAssumption adds the literals to the model as assumptions.
@@ -1104,13 +1118,13 @@ func (cp *Builder) AddAssumption(lits ...BoolVar) {
 		if !cp.checkSameModelAndSetErrorf(lit.cpb, "BoolVar %v added as an Assumption", lit.Index()) {
 			return
 		}
-		cp.cmpb.SetAssumptions(append(cp.cmpb.GetAssumptions(), int32_t(lit.ind)))
+		cp.cmpb.Assumptions = append(cp.cmpb.GetAssumptions(), int32(lit.ind))
 	}
 }
 
 // ClearAssumption clears all the assumptions on the model.
 func (cp *Builder) ClearAssumption() {
-	cp.cmpb.SetAssumptions(nil)
+	cp.cmpb.Assumptions = nil
 }
 
 // AddDecisionStrategy adds a decision strategy on a list of integer variables.
@@ -1120,14 +1134,14 @@ func (cp *Builder) AddDecisionStrategy(vars []IntVar, vs cmpb.DecisionStrategyPr
 		if !cp.checkSameModelAndSetErrorf(v.cpb, "invalid parameter var %v added to the DecisionStrategy", v.Index()) {
 			return
 		}
-		indices = append(indices, int32_t(v.ind))
+		indices = append(indices, int32(v.ind))
 	}
 
-	cp.cmpb.SetSearchStrategy(append(cp.cmpb.GetSearchStrategy(), cmpb.DecisionStrategyProto_builder{
+	cp.cmpb.SearchStrategy = append(cp.cmpb.GetSearchStrategy(), &cmpb.DecisionStrategyProto{
 		Variables:                 indices,
 		VariableSelectionStrategy: vs,
 		DomainReductionStrategy:   ds,
-	}.Build()))
+	})
 }
 
 // Model returns the built CP model proto. The proto returned is a pointer to the proto in Builder,

@@ -16,10 +16,10 @@ package cpmodel
 import (
 	"testing"
 
-	"golang/protobuf/v2/proto/proto"
+	"google.golang.org/protobuf/proto"
 
-	cmpb "ortools/sat/cp_model_go_proto"
-	sppb "ortools/sat/sat_parameters_go_proto"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 )
 
 func TestCpSolver_SolveIntVar(t *testing.T) {
@@ -50,8 +50,8 @@ func TestCpSolver_SolveIntVar(t *testing.T) {
 	if wantObj != gotObj {
 		t.Errorf("SolveCpModel() returned objective = %v, got %v", gotObj, wantObj)
 	}
-	wantX := int64_t(10)
-	wantY := int64_t(5)
+	wantX := int64(10)
+	wantY := int64(5)
 	gotX := SolutionIntegerValue(res, x)
 	gotY := SolutionIntegerValue(res, y)
 	if wantX != gotX || wantY != gotY {
@@ -97,15 +97,15 @@ func TestCpSolver_SolveBoolVar(t *testing.T) {
 	if !gotNotX || !gotNotY {
 		t.Errorf("SolutionBooleanValue() returned (x.Not(), y.Not()) = (%v, %v), want (true, true)", gotX, gotY)
 	}
-	wantIntX := int64_t(0)
-	wantIntY := int64_t(0)
+	wantIntX := int64(0)
+	wantIntY := int64(0)
 	gotIntX := SolutionIntegerValue(res, x)
 	gotIntY := SolutionIntegerValue(res, y)
 	if wantIntX != gotIntX || wantIntY != gotIntY {
 		t.Errorf("SolutionIntegerValue() returned (x, y) = (%v, %v), want (%v, %v)", gotIntX, gotIntY, wantIntX, wantIntY)
 	}
-	wantNotX := int64_t(1)
-	wantNotY := int64_t(1)
+	wantNotX := int64(1)
+	wantNotY := int64(1)
 	gotIntNotX := SolutionIntegerValue(res, x.Not())
 	gotIntNotY := SolutionIntegerValue(res, y.Not())
 	if wantNotX != gotIntNotX || wantNotY != gotIntNotY {
@@ -170,9 +170,9 @@ func TestCpSolver_SolveWithParameters(t *testing.T) {
 	model.AddAllDifferent(x, y)
 	model.Maximize(NewLinearExpr().AddTerm(x, 5).AddTerm(y, 6))
 
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		MaxTimeInSeconds: proto.Float64(-1),
-	}.Build()
+	}
 
 	m, err := model.Model()
 	if err != nil {
@@ -199,9 +199,9 @@ func TestCpSolver_SolveInterruptible(t *testing.T) {
 	y := model.NewIntVar(0, 5)
 	model.AddAllDifferent(x, y)
 	model.Maximize(NewLinearExpr().AddTerm(x, 5).AddTerm(y, 6))
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		MaxTimeInSeconds: proto.Float64(10),
-	}.Build()
+	}
 
 	m, err := model.Model()
 	if err != nil {
@@ -226,9 +226,9 @@ func TestCpSolver_SolveInterruptible_NotCancelled(t *testing.T) {
 	y := model.NewIntVar(0, 5)
 	model.AddAllDifferent(x, y)
 	model.Maximize(NewLinearExpr().AddTerm(x, 5).AddTerm(y, 6))
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		MaxTimeInSeconds: proto.Float64(10),
-	}.Build()
+	}
 
 	m, err := model.Model()
 	if err != nil {
@@ -253,9 +253,9 @@ func TestCpSolver_SolveInterruptible_BadParameters(t *testing.T) {
 	y := model.NewIntVar(0, 5)
 	model.AddAllDifferent(x, y)
 	model.Maximize(NewLinearExpr().AddTerm(x, 5).AddTerm(y, 6))
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		MaxTimeInSeconds: proto.Float64(-1),
-	}.Build()
+	}
 
 	m, err := model.Model()
 	if err != nil {

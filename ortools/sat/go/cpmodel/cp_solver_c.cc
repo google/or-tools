@@ -11,23 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/go/cp_solver_c.h"
+#include "ortools/sat/go/cpmodel/cp_solver_c.h"
 
 #include <atomic>
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/strings/internal/memutil.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
-#include "strings/memutil.h"
 
 namespace operations_research::sat {
 
 namespace {
+
+char* memdup(const char* s, size_t slen) {
+  void* copy;
+  if ((copy = malloc(slen)) == nullptr) return nullptr;
+  memcpy(copy, s, slen);
+  return reinterpret_cast<char*>(copy);
+}
 
 CpSolverResponse solveWithParameters(std::atomic<bool>* const limit_reached,
                                      const CpModelProto& proto,
@@ -75,7 +81,7 @@ void SolveCpInterruptible(void* const limit_reached, const void* creq,
   CHECK(res.SerializeToString(&res_str));
 
   *cres_len = static_cast<int>(res_str.size());
-  *cres = strings::memdup(res_str.data(), *cres_len);
+  *cres = memdup(res_str.data(), *cres_len);
   CHECK(*cres != nullptr);
 }
 
