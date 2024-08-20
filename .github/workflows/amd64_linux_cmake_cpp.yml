@@ -9,6 +9,7 @@ jobs:
     env:
       KNITRODIR: ${{ github.workspace }}/knitro_distrib/knitro-14.0.0-Linux64
       ARTELYS_LICENSE: ${{ github.workspace }}/knitro_distrib
+      OR_ROOT: ${{ github.workspace }}
     strategy:
        matrix:
          cmake: [
