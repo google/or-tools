@@ -47,7 +47,8 @@ jobs:
           ls -l ${{ env.KNITRODIR }}
           ls -l ${{ env.KNITRODIR }}/knitroampl/
           ls -l ${{ env.KNITRODIR }}/knitromatlab/
-          ls -l ${{ env.KNITRODIR }}/lib/      - name: Check cmake
+          ls -l ${{ env.KNITRODIR }}/lib/      
+      - name: Check cmake
         run: |
           cmake --version
           cmake -G || true
