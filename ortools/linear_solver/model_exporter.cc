@@ -31,6 +31,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/gzipfile.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/status_macros.h"
@@ -253,6 +254,11 @@ absl::Status WriteModelToMpsFile(absl::string_view filename,
                                  const MPModelExportOptions& options) {
   ASSIGN_OR_RETURN(std::string mps_data,
                    ExportModelAsMpsFormat(model, options));
+
+  if (options.use_gzip_compression) {
+    return WriteToGzipFile(filename, mps_data);
+  }
+
   return file::SetContents(filename, mps_data, file::Defaults());
 }
 

@@ -1870,11 +1870,13 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
 
 bool MPSolver::ExportModelToMpsFile(const std::string& filename,
                                     bool fixed_format,
-                                    bool obfuscate) const {
+                                    bool obfuscate,
+                                    bool use_gzip_compression) const {
   MPModelProto proto;
   ExportModelToProto(&proto);
   MPModelExportOptions options;
   options.obfuscate = obfuscate;
+  options.use_gzip_compression = use_gzip_compression;
   const auto status_or =
       operations_research::WriteModelToMpsFile(filename, proto, options);
   return status_or.ok();
