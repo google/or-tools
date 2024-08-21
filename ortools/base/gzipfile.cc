@@ -40,14 +40,14 @@ absl::Status WriteToGzipFile(const absl::string_view filename,
   // have to write in chunks, otherwise fails to compress big files.
   constexpr size_t chunk = 1024 * 1024; // 1 MB chunk size.
   size_t remaining = contents.size();
-  const char* dataPtr = contents.data();
+  const char* chunk_start_point = contents.data();
 
   while (remaining > 0) {
     size_t current_chunk = std::min(chunk, remaining);
-    size_t written = gzwrite(gz_file, dataPtr, current_chunk);
+    size_t written = gzwrite(gz_file, chunk_start_point, current_chunk);
     if (written != current_chunk) {
-      int errNo = 0;
-      absl::string_view error_message = gzerror(gz_file, &errNo);
+      int err_no = 0;
+      absl::string_view error_message = gzerror(gz_file, &err_no);
       gzclose(gz_file);
       return {
         absl::StatusCode::kInternal,
@@ -58,13 +58,13 @@ absl::Status WriteToGzipFile(const absl::string_view filename,
       };
     }
 
-    dataPtr += current_chunk;
+    chunk_start_point += current_chunk;
     remaining -= current_chunk;
   }
 
   if (const int status = gzclose(gz_file); status != Z_OK) {
-    int errNo;
-    absl::string_view error_message = gzerror(gz_file, &errNo);
+    int err_no;
+    absl::string_view error_message = gzerror(gz_file, &err_no);
     return {
       absl::StatusCode::kInternal,
       absl::StrCat(
