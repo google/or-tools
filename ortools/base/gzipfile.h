@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_GZIPFILE_H_
 #define OR_TOOLS_BASE_GZIPFILE_H_
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/basictypes.h"  // for Ownership enum
 #include "zlib.h"                     // for Z_DEFAULT_COMPRESSION
@@ -64,5 +65,10 @@ inline File* GZipFileReader(absl::string_view name, File* compressed_file,
   return GZipFileReader(name, compressed_file, ownership,
                         AppendedStreams::kConcatenateStreams);
 }
+
+// Write contents into a gzip compressed file with the lowest compression level
+// which is the fastest.
+absl::Status WriteToGzipFile(absl::string_view filename,
+                             absl::string_view contents);
 
 #endif  // OR_TOOLS_BASE_GZIPFILE_H_
