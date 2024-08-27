@@ -10,9 +10,10 @@ jobs:
       matrix:
         cmake: [
           {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
+          {generator: "Visual Studio 17 2022", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} • C++
+    name: Windows • ${{ matrix.cmake.generator }} (${{ matrix.cmake.config }}) • C++
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
