@@ -1,14 +1,20 @@
 # OR-Tools Bazel Build Instructions
-| OS       | C++   |
-|:-------- | :---: |
-| Linux    | [![Status][linux_svg]][linux_link] |
-| MacOS    | [![Status][macos_svg]][macos_link] |
-| Windows  | [![Status][windows_svg]][windows_link] |
+| OS   | C++   |
+|:---- | :---: |
+| amd64 Linux   | [![Status][linux_svg]][linux_link] |
+| arm64 MacOS   | [![Status][arm64_macos_svg]][arm64_macos_link] |
+| amd64 MacOS   | [![Status][amd64_macos_svg]][amd64_macos_link] |
+| amd64 Windows | [![Status][windows_svg]][windows_link] |
 
 [linux_svg]: ./../../../actions/workflows/amd64_linux_bazel.yml/badge.svg?branch=main
 [linux_link]: ./../../../actions/workflows/amd64_linux_bazel.yml
-[macos_svg]: ./../../../actions/workflows/amd64_macos_bazel.yml/badge.svg?branch=main
-[macos_link]: ./../../../actions/workflows/amd64_macos_bazel.yml
+
+[arm64_macos_svg]: ./../../../actions/workflows/arm64_macos_bazel.yml/badge.svg?branch=main
+[arm64_macos_link]: ./../../../actions/workflows/arm64_macos_bazel.yml
+
+[amd64_macos_svg]: ./../../../actions/workflows/amd64_macos_bazel.yml/badge.svg?branch=main
+[amd64_macos_link]: ./../../../actions/workflows/amd64_macos_bazel.yml
+
 [windows_svg]: ./../../../actions/workflows/amd64_windows_bazel.yml/badge.svg?branch=main
 [windows_link]: ./../../../actions/workflows/amd64_windows_bazel.yml
 
