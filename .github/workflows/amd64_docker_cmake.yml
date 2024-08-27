@@ -1,4 +1,4 @@
-# ref: https://github.com/actions/runner-images
+# ref: https://github.com/docker-library/official-images
 name: amd64 Docker CMake
 
 on: [push, pull_request, workflow_dispatch]

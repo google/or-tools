@@ -1,5 +1,5 @@
 # ref: https://github.com/actions/runner-images
-name: amd64 MacOS CMake Python
+name: arm64 MacOS CMake Python
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -20,7 +20,7 @@ jobs:
         ]
       fail-fast: false
     name: MacOS • ${{ matrix.cmake.generator }} • Python-${{ matrix.python.version }}
-    runs-on: macos-13 # last macos intel based runner
+    runs-on: macos-latest # macos arm64 based runner
     steps:
       - uses: actions/checkout@v4
       - name: Swig install

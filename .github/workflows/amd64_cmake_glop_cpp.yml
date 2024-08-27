@@ -39,7 +39,15 @@ jobs:
             install_target: install
           },
           {
-            runner: "macos-latest",
+            runner: "macos-13", # last macos intel based runner
+            generator: "Xcode",
+            config: Release,
+            build_target: ALL_BUILD,
+            test_target: RUN_TESTS,
+            install_target: install
+          },
+          {
+            runner: "macos-latest", # macos arm64 based runner
             generator: "Xcode",
             config: Release,
             build_target: ALL_BUILD,
