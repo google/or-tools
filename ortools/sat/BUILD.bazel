@@ -1035,6 +1035,17 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "symmetry_util_test",
+    size = "small",
+    srcs = ["symmetry_util_test.cc"],
+    deps = [
+        ":symmetry_util",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "var_domination",
     srcs = ["var_domination.cc"],
