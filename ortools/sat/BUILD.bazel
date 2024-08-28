@@ -65,7 +65,7 @@ cc_proto_library(
 go_proto_library(
     name = "sat_parameters_go_proto",
     proto = ":sat_parameters_proto",
-	importpath = "github.com/google/or-tools/ortools/sat/proto/satparameters"
+    importpath = "github.com/google/or-tools/ortools/sat/proto/satparameters"
 )
 
 py_proto_library(
@@ -90,7 +90,7 @@ cc_proto_library(
 
 go_proto_library(
     name = "cp_model_go_proto",
-	importpath = "github.com/google/or-tools/ortools/sat/proto/cpmodel",
+    importpath = "github.com/google/or-tools/ortools/sat/proto/cpmodel",
     proto = ":cp_model_proto",
 )
 
