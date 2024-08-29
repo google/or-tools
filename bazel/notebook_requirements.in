@@ -20,8 +20,9 @@ svgwrite==1.4.3
 plotly==5.15.0
 
 # Notebook
-jupyter==1.0.0
-jupyter-server==2.12.5
+jupyterlab==4.2.5
+notebook==7.2.2
+jupyter-server==2.14.2
 tornado==6.4.1
 Pygments==2.15.0
 jsonschema==4.19.0
