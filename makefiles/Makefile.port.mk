@@ -288,7 +288,7 @@ ifeq ($(OR_TOOLS_PATCH),)
     $(warning you are using a shallow copy)
     OR_TOOLS_PATCH:= 9999
    else
-     OR_TOOLS_PATCH:= $(shell git rev-list --count --quiet v$(OR_TOOLS_MAJOR).0..HEAD || echo 0)
+     OR_TOOLS_PATCH:= $(shell git rev-list --count v$(OR_TOOLS_MAJOR).0..HEAD || echo 0)
    endif
   else
     $(warning you are not using a .git archive)
