@@ -94,7 +94,6 @@ TEST(SolutionProtoTest, SaveReloadTwice) {
   inv.ImportSolutionFromProto(greedy_proto);
   CHECK(steepest.NextSolution(500));
   EXPECT_TRUE(inv.CheckConsistency());
-  SetCoverSolutionResponse reloaded_proto = inv.ExportSolutionAsProto();
 }
 
 TEST(SetCoverTest, InitialValues) {
@@ -121,6 +120,7 @@ TEST(SetCoverTest, InitialValues) {
   LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
   EXPECT_TRUE(inv.CheckConsistency());
 
+  EXPECT_EQ(inv.num_uncovered_elements(), 0);
   SteepestSearch steepest(&inv);
   CHECK(steepest.NextSolution(500));
   LOG(INFO) << "SteepestSearch cost: " << inv.cost();
@@ -367,8 +367,6 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
 #endif
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
   SetCoverInvariant inv(&model);
-  Cost best_cost = std::numeric_limits<Cost>::max();
-  SubsetBoolVector best_choices = inv.is_selected();
   GreedySolutionGenerator greedy(&inv);
   CHECK(greedy.NextSolution());
   LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
@@ -377,8 +375,8 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
   CHECK(steepest.NextSolution(10'000));
   LOG(INFO) << "SteepestSearch cost: " << inv.cost();
 
-  best_cost = inv.cost();
-  best_choices = inv.is_selected();
+  Cost best_cost = inv.cost();
+  SubsetBoolVector best_choices = inv.is_selected();
   for (int i = 0; i < 100; ++i) {
     inv.LoadSolution(best_choices);
     auto focus = ClearRandomSubsets(0.1 * model.num_subsets(), &inv);

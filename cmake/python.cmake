@@ -450,6 +450,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:knapsack_solver_pybind11> ${PYTHON_PROJECT}/algorithms/python
   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/algorithms/python
+  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
@@ -480,6 +482,7 @@ add_custom_command(
   DEPENDS
     init_pybind11
     knapsack_solver_pybind11
+    set_cover_pybind11
     linear_sum_assignment_pybind11
     max_flow_pybind11
     min_cost_flow_pybind11
@@ -515,6 +518,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E remove -f stub_timestamp
   COMMAND ${stubgen_EXECUTABLE} -p ortools.init.python.init --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.knapsack_solver --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.set_cover --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.linear_sum_assignment --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .

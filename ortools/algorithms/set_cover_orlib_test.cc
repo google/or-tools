@@ -22,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "ortools/algorithms/set_cover_heuristics.h"
 #include "ortools/algorithms/set_cover_invariant.h"
+#include "ortools/algorithms/set_cover_lagrangian.h"
 #include "ortools/algorithms/set_cover_mip.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/algorithms/set_cover_reader.h"
@@ -112,26 +113,25 @@ SetCoverInvariant RunElementDegreeGreedyAndSteepest(std::string name,
   return inv;
 }
 
-SetCoverInvariant IterateClearAndMip(std::string name, SetCoverInvariant inv) {
+void IterateClearAndMip(std::string name, SetCoverInvariant* inv) {
   WallTimer timer;
   timer.Start();
-  std::vector<SubsetIndex> focus = inv.model()->all_subsets();
-  double best_cost = inv.cost();
-  SubsetBoolVector best_choices = inv.is_selected();
+  std::vector<SubsetIndex> focus = inv->model()->all_subsets();
+  double best_cost = inv->cost();
+  SubsetBoolVector best_choices = inv->is_selected();
   for (int i = 0; i < 10; ++i) {
     std::vector<SubsetIndex> range =
-        ClearMostCoveredElements(std::min(100UL, focus.size()), &inv);
-    SetCoverMip mip(&inv);
+        ClearMostCoveredElements(std::min(100UL, focus.size()), inv);
+    SetCoverMip mip(inv);
     mip.NextSolution(range, true, 0.02);
-    DCHECK(inv.CheckConsistency());
-    if (inv.cost() < best_cost) {
-      best_cost = inv.cost();
-      best_choices = inv.is_selected();
+    DCHECK(inv->CheckConsistency());
+    if (inv->cost() < best_cost) {
+      best_cost = inv->cost();
+      best_choices = inv->is_selected();
     }
   }
   timer.Stop();
   LogCostAndTiming(name, "IterateClearAndMip", best_cost, timer.GetDuration());
-  return inv;
 }
 
 SetCoverInvariant ComputeLPLowerBound(std::string name, SetCoverModel* model) {
@@ -145,6 +145,17 @@ SetCoverInvariant ComputeLPLowerBound(std::string name, SetCoverModel* model) {
   return inv;
 }
 
+void ComputeLagrangianLowerBound(std::string name, SetCoverInvariant* inv) {
+  const SetCoverModel* model = inv->model();
+  WallTimer timer;
+  timer.Start();
+  SetCoverLagrangian lagrangian(inv, /*num_threads=*/4);
+  const auto [lower_bound, reduced_costs, multipliers] =
+      lagrangian.ComputeLowerBound(model->subset_costs(), inv->cost());
+  LogCostAndTiming(name, "LagrangianLowerBound", lower_bound,
+                   timer.GetDuration());
+}
+
 SetCoverInvariant RunMip(std::string name, SetCoverModel* model) {
   SetCoverInvariant inv(model);
   WallTimer timer;
@@ -156,29 +167,28 @@ SetCoverInvariant RunMip(std::string name, SetCoverModel* model) {
   return inv;
 }
 
-SetCoverInvariant IterateClearElementDegreeAndSteepest(std::string name,
-                                                       SetCoverInvariant inv) {
+void IterateClearElementDegreeAndSteepest(std::string name,
+                                          SetCoverInvariant* inv) {
   WallTimer timer;
   timer.Start();
-  double best_cost = inv.cost();
-  SubsetBoolVector best_choices = inv.is_selected();
-  ElementDegreeSolutionGenerator element_degree(&inv);
-  SteepestSearch steepest(&inv);
+  double best_cost = inv->cost();
+  SubsetBoolVector best_choices = inv->is_selected();
+  ElementDegreeSolutionGenerator element_degree(inv);
+  SteepestSearch steepest(inv);
   for (int i = 0; i < 1000; ++i) {
     std::vector<SubsetIndex> range =
-        ClearRandomSubsets(0.1 * inv.trace().size(), &inv);
+        ClearRandomSubsets(0.1 * inv->trace().size(), inv);
     CHECK(element_degree.NextSolution());
     steepest.NextSolution(range, 100000);
-    DCHECK(inv.CheckConsistency());
-    if (inv.cost() < best_cost) {
-      best_cost = inv.cost();
-      best_choices = inv.is_selected();
+    DCHECK(inv->CheckConsistency());
+    if (inv->cost() < best_cost) {
+      best_cost = inv->cost();
+      best_choices = inv->is_selected();
     }
   }
   timer.Stop();
   LogCostAndTiming(name, "IterateClearElementDegreeAndSteepest", best_cost,
                    timer.GetDuration());
-  return inv;
 }
 
 double RunSolver(std::string name, SetCoverModel* model) {
@@ -186,12 +196,13 @@ double RunSolver(std::string name, SetCoverModel* model) {
   WallTimer global_timer;
   global_timer.Start();
   RunChvatalAndSteepest(name, model);
-  //  SetCoverInvariant inv = ComputeLPLowerBound(name, model);
+  // SetCoverInvariant inv = ComputeLPLowerBound(name, model);
   RunMip(name, model);
   RunChvatalAndGLS(name, model);
   SetCoverInvariant inv = RunElementDegreeGreedyAndSteepest(name, model);
+  ComputeLagrangianLowerBound(name, &inv);
   //  IterateClearAndMip(name, inv);
-  IterateClearElementDegreeAndSteepest(name, inv);
+  IterateClearElementDegreeAndSteepest(name, &inv);
   return inv.cost();
 }
 

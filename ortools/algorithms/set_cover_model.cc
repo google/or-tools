@@ -120,7 +120,7 @@ void SetCoverModel::CreateSparseRowView() {
   }
   rows_.resize(num_elements_, SparseRow());
   ElementToIntVector row_sizes(num_elements_, 0);
-  for (SubsetIndex subset : SubsetRange()) {
+  for (const SubsetIndex subset : SubsetRange()) {
     // Sort the columns. It's not super-critical to improve performance here as
     // this needs to be done only once.
     std::sort(columns_[subset].begin(), columns_[subset].end());
@@ -128,10 +128,10 @@ void SetCoverModel::CreateSparseRowView() {
       ++row_sizes[element];
     }
   }
-  for (ElementIndex element : ElementRange()) {
+  for (const ElementIndex element : ElementRange()) {
     rows_[element].reserve(RowEntryIndex(row_sizes[element]));
   }
-  for (SubsetIndex subset : SubsetRange()) {
+  for (const SubsetIndex subset : SubsetRange()) {
     for (const ElementIndex element : columns_[subset]) {
       rows_[element].push_back(subset);
     }
@@ -192,7 +192,7 @@ void SetCoverModel::ImportModelFromProto(const SetCoverProto& message) {
     if (subset_proto.element_size() > 0) {
       columns_[subset_index].reserve(
           ColumnEntryIndex(subset_proto.element_size()));
-      for (BaseInt element : subset_proto.element()) {
+      for (const BaseInt element : subset_proto.element()) {
         columns_[subset_index].push_back(ElementIndex(element));
         num_elements_ = std::max(num_elements_, element + 1);
       }

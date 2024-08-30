@@ -37,7 +37,7 @@ void SimpleKnapsackProgram() {
                                                 230, 315, 393, 125, 670, 892,
                                                 600, 293, 712, 147, 421, 255}};
   std::vector<int64_t> capacities = {850};
-  std::vector<int64_t> values = weights[0];
+  const std::vector<int64_t>& values = weights[0];
   // [END data]
 
   // [START solve]
