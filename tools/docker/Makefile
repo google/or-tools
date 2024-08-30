@@ -91,7 +91,6 @@ help:
 	@echo -e "\t${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
-	@echo -e "\t\t${BOLD}centos-7${RESET} (Centos 7 LTS)"
 	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
 	@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
 	@echo -e "\t\t${BOLD}debian-12${RESET} (Bookworm)"
@@ -127,8 +126,6 @@ help:
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_test'"
 	@echo
 	@echo -e "\tnote: Few custom merge targets (e.g. ${BOLD}export${RESET}) are also provided."
-	@echo -e "\te.g. 'make amd64_centos-7_export'"
-	@echo -e "\te.g. 'make arm64_centos-7_export'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
@@ -404,7 +401,6 @@ PLATFORMS := amd64 arm64 # riscv64
 DISTROS := \
  alpine-edge \
  archlinux \
- centos-7 \
  debian-11 debian-12 debian-sid \
  fedora-37 fedora-38 fedora-39 \
  ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04 \
