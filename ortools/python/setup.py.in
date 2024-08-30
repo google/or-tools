@@ -57,6 +57,7 @@ setup(
         ],
         '@PYTHON_PROJECT@.algorithms.python':[
             '$<TARGET_FILE_NAME:knapsack_solver_pybind11>',
+            '$<TARGET_FILE_NAME:set_cover_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.bop':['*.pyi'],

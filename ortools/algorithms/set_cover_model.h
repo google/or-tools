@@ -202,7 +202,7 @@ class SetCoverModel {
   bool ComputeFeasibility() const;
 
   // Reserves num_subsets columns in the model.
-  void ReserveNumSubsets(BaseInt number_of_subsets);
+  void ReserveNumSubsets(BaseInt num_subsets);
   void ReserveNumSubsets(SubsetIndex num_subsets);
 
   // Reserves num_elements rows in the column indexed by subset.
