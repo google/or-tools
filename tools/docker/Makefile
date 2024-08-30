@@ -444,7 +444,7 @@ cache/$1/$2/docker_$3.tar: $1_$2_$3
 .PHONY: sh_$1_$2_$3
 sh_$1_$2_$3: $1_$2_$3 | export
 	${DOCKER_RUN_CMD} \
- -v `pwd`/export:/export \
+ -v $$$$(pwd)/export:/export \
  -it \
  --name ortools_$$< \
  ${IMAGE}:$$<
@@ -499,7 +499,7 @@ cache/$1/$2/docker_$3_$4.tar: $1_$2_$3_$4
 .PHONY: sh_$1_$2_$3_$4
 sh_$1_$2_$3_$4: $1_$2_$3_$4 | export
 	${DOCKER_RUN_CMD} \
- -v `pwd`/export:/export \
+ -v $$$$(pwd)/export:/export \
  -it \
  --name ortools_$$< \
  ${IMAGE}:$$<
@@ -539,9 +539,9 @@ export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz: $1_$2_$3_archive 
 	-mkdir -p export/$1/$2
 	${DOCKER_RUN_CMD} \
  -w /root/or-tools \
- -v `pwd`/export:/export \
+ -v $$$$(pwd)/export:/export \
  ${IMAGE}:$$< \
- "cp or-tools_*_v*.tar.gz /export/$1/$2"
+ "cp or-tools_*_v*.tar.gz /export/$1/$2/"
 	cp export/$1/$2/or-tools_*_$3*_v*.tar.gz $$@
 
 .PHONY: clean_$1_$2_$3_export

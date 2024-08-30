@@ -10,6 +10,7 @@ RUN dnf -y update \
 && dnf -y groupinstall "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
+ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD [ "/usr/bin/bash" ]
 
 # Install SWIG 4.2.1
