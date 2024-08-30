@@ -89,6 +89,7 @@ help:
 #	@echo -e "\t\t${BOLD}riscv64 (RISC-V 64bits, experimental)${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
+	@echo -e "\t\t${BOLD}almalinux-9${RESET} (latest)"
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
@@ -105,6 +106,7 @@ help:
 	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
+	@echo -e "\t\t${BOLD}rockylinux-9${RESET} (latest)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -126,6 +128,8 @@ help:
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_test'"
 	@echo
 	@echo -e "\tnote: Few custom merge targets (e.g. ${BOLD}export${RESET}) are also provided."
+	@echo -e "\te.g. 'make amd64_almalinux-9_export'"
+	@echo -e "\te.g. 'make arm64_almalinux-9_export'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
@@ -399,12 +403,14 @@ PLATFORMS := amd64 arm64 # riscv64
 
 # Currently supported distro
 DISTROS := \
+ almalinux-9 \
  alpine-edge \
  archlinux \
  debian-11 debian-12 debian-sid \
  fedora-37 fedora-38 fedora-39 \
  ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04 \
  opensuse-leap \
+ rockylinux-9
 
 # List of stages
 STAGES := env devel
