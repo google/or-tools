@@ -172,6 +172,7 @@ ifdef VERBOSE
 DOCKER_BUILD_CMD := ${DOCKER_BUILD_CMD} --progress=plain
 DOCKER_BUILDX_CMD := ${DOCKER_BUILDX_CMD} --progress=plain
 endif
+DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 #################
 ###  DELIVERY  ##
