@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -47,6 +48,53 @@ namespace sat {
 bool Rectangle::IsDisjoint(const Rectangle& other) const {
   return x_min >= other.x_max || other.x_min >= x_max || y_min >= other.y_max ||
          other.y_min >= y_max;
+}
+
+absl::InlinedVector<Rectangle, 4> Rectangle::SetDifference(
+    const Rectangle& other) const {
+  const Rectangle intersect = Intersect(other);
+  if (intersect.SizeX() == 0) {
+    return {*this};
+  }
+
+  //-------------------
+  //|   |    4    |   |
+  //|   |---------|   |
+  //| 1 |  other  | 2 |
+  //|   |---------|   |
+  //|   |    3    |   |
+  //-------------------
+  absl::InlinedVector<Rectangle, 4> result;
+  if (x_min < intersect.x_min) {
+    // Piece 1
+    result.push_back({.x_min = x_min,
+                      .x_max = intersect.x_min,
+                      .y_min = y_min,
+                      .y_max = y_max});
+  }
+  if (x_max > intersect.x_max) {
+    // Piece 2
+    result.push_back({.x_min = intersect.x_max,
+                      .x_max = x_max,
+                      .y_min = y_min,
+                      .y_max = y_max});
+  }
+  if (y_min < intersect.y_min) {
+    // Piece 3
+    result.push_back({.x_min = intersect.x_min,
+                      .x_max = intersect.x_max,
+                      .y_min = y_min,
+                      .y_max = intersect.y_min});
+  }
+  if (y_max > intersect.y_max) {
+    // Piece 4
+    result.push_back({.x_min = intersect.x_min,
+                      .x_max = intersect.x_max,
+                      .y_min = intersect.y_max,
+                      .y_max = y_max});
+  }
+
+  return result;
 }
 
 std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
@@ -160,7 +208,7 @@ bool BoxesAreInEnergyConflict(const std::vector<Rectangle>& rectangles,
               for (int k = 0; k < i; ++k) {
                 const int task_index = boxes_by_increasing_y_max[k].task_index;
                 if (rectangles[task_index].y_min >= y_starts[j]) {
-                  conflict->TakeUnionWith(rectangles[task_index]);
+                  conflict->GrowToInclude(rectangles[task_index]);
                 }
               }
             }
@@ -280,7 +328,7 @@ bool AnalyzeIntervals(bool transpose, absl::Span<const int> local_boxes,
                                                 ? rectangles[task_index].y_min
                                                 : rectangles[task_index].x_min;
             if (task_x_min < starts[j]) continue;
-            conflict->TakeUnionWith(rectangles[task_index]);
+            conflict->GrowToInclude(rectangles[task_index]);
           }
         }
         return false;
@@ -1490,18 +1538,20 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
   return result;
 }
 
-std::string RenderDot(std::pair<IntegerValue, IntegerValue> bb_sizes,
+std::string RenderDot(std::optional<Rectangle> bb,
                       absl::Span<const Rectangle> solution) {
   const std::vector<std::string> colors = {"red",  "green",  "blue",
                                            "cyan", "yellow", "purple"};
   std::stringstream ss;
   ss << "digraph {\n";
-  ss << "  graph [ bgcolor=lightgray width=" << 2 * bb_sizes.first
-     << " height=" << 2 * bb_sizes.second << "]\n";
+  ss << "  graph [ bgcolor=lightgray ]\n";
   ss << "  node [style=filled]\n";
-  ss << "  bb [fillcolor=\"grey\" pos=\"" << bb_sizes.first << ","
-     << bb_sizes.second << "!\" shape=box width=" << 2 * bb_sizes.first
-     << " height=" << 2 * bb_sizes.second << "]\n";
+  if (bb.has_value()) {
+    ss << "  bb [fillcolor=\"grey\" pos=\"" << 2 * bb->x_min + bb->SizeX()
+       << "," << 2 * bb->y_min + bb->SizeY()
+       << "!\" shape=box width=" << 2 * bb->SizeX()
+       << " height=" << 2 * bb->SizeY() << "]\n";
+  }
   for (int i = 0; i < solution.size(); ++i) {
     ss << "  " << i << " [fillcolor=\"" << colors[i % colors.size()]
        << "\" pos=\"" << 2 * solution[i].x_min + solution[i].SizeX() << ","
@@ -1511,6 +1561,31 @@ std::string RenderDot(std::pair<IntegerValue, IntegerValue> bb_sizes,
   }
   ss << "}\n";
   return ss.str();
+}
+
+std::vector<Rectangle> FindEmptySpaces(
+    const Rectangle& bounding_box, std::vector<Rectangle> ocupied_rectangles) {
+  std::vector<Rectangle> empty_spaces = {bounding_box};
+  std::vector<Rectangle> new_empty_spaces;
+  // Sorting is not necessary for correctness but makes it faster.
+  std::sort(ocupied_rectangles.begin(), ocupied_rectangles.end(),
+            [](const Rectangle& a, const Rectangle& b) {
+              return std::tuple(a.x_min, -a.x_max, a.y_min) <
+                     std::tuple(b.x_min, -b.x_max, b.y_min);
+            });
+  for (const Rectangle& ocupied_rectangle : ocupied_rectangles) {
+    new_empty_spaces.clear();
+    for (const auto& empty_space : empty_spaces) {
+      for (Rectangle& r : empty_space.SetDifference(ocupied_rectangle)) {
+        new_empty_spaces.push_back(std::move(r));
+      }
+    }
+    empty_spaces.swap(new_empty_spaces);
+    if (empty_spaces.empty()) {
+      break;
+    }
+  }
+  return empty_spaces;
 }
 
 }  // namespace sat

@@ -553,8 +553,8 @@ class PbConstraints : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  absl::Span<const Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail, int trail_index,
+                                   int64_t conflict_id) const final;
 
   // Changes the number of variables.
   void Resize(int num_variables) {

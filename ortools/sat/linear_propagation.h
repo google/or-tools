@@ -317,7 +317,7 @@ class LinearPropagator : public PropagatorInterface,
 
   // For LazyReasonInterface.
   void Explain(int id, IntegerValue propagation_slack,
-               IntegerLiteral literal_to_explain, int trail_index,
+               IntegerVariable var_to_explain, int trail_index,
                std::vector<Literal>* literals_reason,
                std::vector<int>* trail_indices_reason) final;
 

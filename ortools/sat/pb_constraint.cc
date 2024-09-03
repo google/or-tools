@@ -14,6 +14,7 @@
 #include "ortools/sat/pb_constraint.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -976,7 +977,8 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
 }
 
 absl::Span<const Literal> PbConstraints::Reason(const Trail& trail,
-                                                int trail_index) const {
+                                                int trail_index,
+                                                int64_t /*conflict_id*/) const {
   SCOPED_TIME_STAT(&stats_);
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];

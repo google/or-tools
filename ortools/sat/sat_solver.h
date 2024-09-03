@@ -391,6 +391,7 @@ class SatSolver {
   int64_t num_branches() const;
   int64_t num_failures() const;
   int64_t num_propagations() const;
+  int64_t num_backtracks() const;
 
   // Note that we count the number of backtrack to level zero from a positive
   // level. Those can corresponds to actual restarts, or conflicts that learn
@@ -403,6 +404,7 @@ class SatSolver {
     int64_t num_branches = 0;
     int64_t num_failures = 0;
     int64_t num_restarts = 0;
+    int64_t num_backtracks = 0;
 
     // Minimization stats.
     int64_t num_minimizations = 0;
