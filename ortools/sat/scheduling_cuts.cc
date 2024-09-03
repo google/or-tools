@@ -847,7 +847,7 @@ struct CachedIntervalData {
 };
 
 void GenerateCutsBetweenPairOfNonOverlappingTasks(
-    const std::string& cut_name,
+    absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<CachedIntervalData> events, IntegerValue capacity_max,
     Model* model, LinearConstraintManager* manager) {
@@ -1268,7 +1268,7 @@ void GenerateShortCompletionTimeCutsWithExactBound(
 // after a given start_min, sorted by relative (end_lp - start_min).
 //
 // TODO(user): merge with Packing cuts.
-void GenerateCompletionTimeCutsWithEnergy(const std::string& cut_name,
+void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
                                           std::vector<CtEvent> events,
                                           IntegerValue capacity_max,
                                           bool skip_low_sizes, Model* model,
@@ -1407,7 +1407,7 @@ void GenerateCompletionTimeCutsWithEnergy(const std::string& cut_name,
         add_energy_to_name |= event.use_energy;
         cut.AddTerm(event.x_end, event.energy_min * best_capacity);
       }
-      std::string full_name = cut_name;
+      std::string full_name(cut_name);
       if (is_lifted) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
       if (best_capacity < capacity_max) {

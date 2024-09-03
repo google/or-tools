@@ -681,8 +681,8 @@ BruteForceResult BruteForceOrthogonalPacking(
   for (const PermutableItem& item : items) {
     result[item.index] = item.position;
   }
-  VLOG_EVERY_N_SEC(3, 3) << "Found a feasible packing by brute force. Dot:\n "
-                         << RenderDot(bounding_box_size, result);
+  // VLOG_EVERY_N_SEC(3, 3) << "Found a feasible packing by brute force. Dot:\n "
+  //                        << RenderDot(bounding_box_size, result);
   return {.status = BruteForceResult::Status::kFoundSolution,
           .positions_for_solution = result};
 }

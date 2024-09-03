@@ -171,8 +171,8 @@ class ClauseManager : public SatPropagator {
 
   // SatPropagator API.
   bool Propagate(Trail* trail) final;
-  absl::Span<const Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail, int trail_index,
+                                   int64_t conflict_id) const final;
 
   // Returns the reason of the variable at given trail_index. This only works
   // for variable propagated by this class and is almost the same as Reason()
@@ -504,8 +504,8 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // SatPropagator interface.
   bool Propagate(Trail* trail) final;
-  absl::Span<const Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail, int trail_index,
+                                   int64_t conflict_id) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);

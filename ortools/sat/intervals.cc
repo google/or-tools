@@ -229,6 +229,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
     const std::vector<IntervalVariable>& tasks, Model* model)
     : model_(model),
       trail_(model->GetOrCreate<Trail>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
@@ -273,6 +274,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
                                                        Model* model)
     : model_(model),
       trail_(model->GetOrCreate<Trail>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
       capacity_(num_tasks),
@@ -300,19 +302,6 @@ bool SchedulingConstraintHelper::IncrementalPropagate(
   return true;
 }
 
-void SchedulingConstraintHelper::SetLevel(int level) {
-  // If there was an Untrail before, we need to refresh the cache so that
-  // we never have value from lower in the search tree.
-  //
-  // TODO(user): We could be smarter here, but then this is not visible in our
-  // cpu_profile since we call many times IncrementalPropagate() for each new
-  // decision, but just call Propagate() once after each Untrail().
-  if (level < previous_level_) {
-    recompute_all_cache_ = true;
-  }
-  previous_level_ = level;
-}
-
 void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   const int num_tasks = starts_.size();
@@ -322,10 +311,6 @@ void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchIntegerVariable(ends_[t].var, id, t);
   }
   watcher->SetPropagatorPriority(id, 0);
-
-  // Note that it is important to register with the integer_trail_ so we are
-  // ALWAYS called before any propagator that depends on this helper.
-  integer_trail_->RegisterReversibleClass(this);
 }
 
 bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
@@ -498,6 +483,14 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
 bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
     bool is_forward) {
   SetTimeDirection(is_forward);
+
+  // If there was any backtracks since the last time this was called, we
+  // recompute our cache.
+  if (sat_solver_->num_backtracks() != saved_num_backtracks_) {
+    recompute_all_cache_ = true;
+    saved_num_backtracks_ = sat_solver_->num_backtracks();
+  }
+
   if (recompute_all_cache_) {
     for (int t = 0; t < recompute_cache_.size(); ++t) {
       if (!UpdateCachedValues(t)) return false;

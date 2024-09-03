@@ -229,16 +229,15 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
 
 template <bool use_int128>
 void LinearConstraintPropagator<use_int128>::Explain(
-    int /*id*/, IntegerValue propagation_slack,
-    IntegerLiteral literal_to_explain, int trail_index,
-    std::vector<Literal>* literals_reason,
+    int /*id*/, IntegerValue propagation_slack, IntegerVariable var_to_explain,
+    int trail_index, std::vector<Literal>* literals_reason,
     std::vector<int>* trail_indices_reason) {
   *literals_reason = literal_reason_;
   trail_indices_reason->clear();
   shared_->reason_coeffs.clear();
   for (int i = 0; i < size_; ++i) {
     const IntegerVariable var = vars_[i];
-    if (PositiveVariable(var) == PositiveVariable(literal_to_explain.var)) {
+    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
       continue;
     }
     const int index =
@@ -653,8 +652,7 @@ LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
       integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}
 
 void LinMinPropagator::Explain(int id, IntegerValue propagation_slack,
-                               IntegerLiteral literal_to_explain,
-                               int trail_index,
+                               IntegerVariable var_to_explain, int trail_index,
                                std::vector<Literal>* literals_reason,
                                std::vector<int>* trail_indices_reason) {
   const auto& vars = exprs_[id].vars;
@@ -665,7 +663,7 @@ void LinMinPropagator::Explain(int id, IntegerValue propagation_slack,
   const int size = vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = vars[i];
-    if (PositiveVariable(var) == PositiveVariable(literal_to_explain.var)) {
+    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
       continue;
     }
     const int index =

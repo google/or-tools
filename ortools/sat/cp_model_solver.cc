@@ -609,9 +609,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
 
 namespace {
 
-void LogSubsolverNames(
-    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-    absl::Span<const std::string> ignored, SolverLogger* logger) {
+void LogSubsolverNames(absl::Span<const std::unique_ptr<SubSolver>> subsolvers,
+                       absl::Span<const std::string> ignored,
+                       SolverLogger* logger) {
   if (!logger->LoggingIsEnabled()) return;
 
   std::vector<std::string> full_problem_solver_names;

@@ -208,7 +208,8 @@ bool ClauseManager::Propagate(Trail* trail) {
 }
 
 absl::Span<const Literal> ClauseManager::Reason(const Trail& /*trail*/,
-                                                int trail_index) const {
+                                                int trail_index,
+                                                int64_t /*conflict_id*/) const {
   return reasons_[trail_index]->PropagationReason();
 }
 
@@ -849,7 +850,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
 }
 
 absl::Span<const Literal> BinaryImplicationGraph::Reason(
-    const Trail& /*trail*/, int trail_index) const {
+    const Trail& /*trail*/, int trail_index, int64_t /*conflict_id*/) const {
   return {&reasons_[trail_index], 1};
 }
 

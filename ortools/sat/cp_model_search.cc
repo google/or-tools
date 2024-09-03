@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
@@ -644,14 +645,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_dynamic_precedence_in_disjunctive(false);
     new_params.set_use_dynamic_precedence_in_cumulative(false);
     strategies["fixed"] = new_params;
-
-    new_params.set_linearization_level(0);
-    strategies["fixed_no_lp"] = new_params;
-
-    new_params.set_linearization_level(2);
-    new_params.set_add_lp_constraints_lazily(false);
-    new_params.set_root_lp_iterations(100'000);
-    strategies["fixed_max_lp"] = new_params;
   }
 
   // Quick restart.

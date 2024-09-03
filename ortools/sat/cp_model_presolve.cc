@@ -41,6 +41,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "google/protobuf/repeated_field.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -51,6 +52,7 @@
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/graph/topologicalsorter.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/2d_rectangle_presolve.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -2401,6 +2403,17 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
   return CanonicalizeLinear(ct);
 }
 
+namespace {
+
+bool IsLinearEqualityConstraint(const ConstraintProto& ct) {
+  return ct.constraint_case() == ConstraintProto::kLinear &&
+         ct.linear().domain().size() == 2 &&
+         ct.linear().domain(0) == ct.linear().domain(1) &&
+         ct.enforcement_literal().empty();
+}
+
+}  // namespace
+
 // Any equality must be true modulo n.
 //
 // If the gcd of all but one term is not one, we can rewrite the last term using
@@ -2414,10 +2427,7 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
 // problem to two problem of half size. So at least we can do it in O(n log n).
 bool CpModelPresolver::PresolveLinearEqualityWithModulo(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
-  if (ct->linear().domain().size() != 2) return false;
-  if (ct->linear().domain(0) != ct->linear().domain(1)) return false;
-  if (!ct->enforcement_literal().empty()) return false;
+  if (!IsLinearEqualityConstraint(*ct)) return false;
 
   const int num_variables = ct->linear().vars().size();
   if (num_variables < 2) return false;
@@ -5633,11 +5643,14 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   bool x_constant = true;
   bool y_constant = true;
   bool has_zero_sized_interval = false;
+  bool has_potential_zero_sized_interval = false;
 
   // Filter absent boxes.
   int new_size = 0;
-  std::vector<Rectangle> bounding_boxes;
+  std::vector<Rectangle> bounding_boxes, fixed_boxes;
+  std::vector<RectangleInRange> non_fixed_boxes;
   std::vector<int> active_boxes;
+  absl::flat_hash_set<int> fixed_item_indexes;
   for (int i = 0; i < proto.x_intervals_size(); ++i) {
     const int x_interval_index = proto.x_intervals(i);
     const int y_interval_index = proto.y_intervals(i);
@@ -5655,6 +5668,19 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
          IntegerValue(context_->StartMin(y_interval_index)),
          IntegerValue(context_->EndMax(y_interval_index))});
     active_boxes.push_back(new_size);
+    if (context_->IntervalIsConstant(x_interval_index) &&
+        context_->IntervalIsConstant(y_interval_index) &&
+        context_->SizeMax(x_interval_index) > 0 &&
+        context_->SizeMax(y_interval_index) > 0) {
+      fixed_boxes.push_back(bounding_boxes.back());
+      fixed_item_indexes.insert(new_size);
+    } else {
+      non_fixed_boxes.push_back(
+          {.box_index = new_size,
+           .bounding_area = bounding_boxes.back(),
+           .x_size = context_->SizeMin(x_interval_index),
+           .y_size = context_->SizeMin(y_interval_index)});
+    }
     new_size++;
 
     if (x_constant && !context_->IntervalIsConstant(x_interval_index)) {
@@ -5666,6 +5692,10 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     if (context_->SizeMax(x_interval_index) == 0 ||
         context_->SizeMax(y_interval_index) == 0) {
       has_zero_sized_interval = true;
+    }
+    if (context_->SizeMin(x_interval_index) == 0 ||
+        context_->SizeMin(y_interval_index) == 0) {
+      has_potential_zero_sized_interval = true;
     }
   }
 
@@ -5736,6 +5766,69 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
+  // We check if the fixed boxes are not overlapping so downstream code can
+  // assume it to be true.
+  for (int i = 0; i < fixed_boxes.size(); ++i) {
+    const Rectangle& fixed_box = fixed_boxes[i];
+    for (int j = i + 1; j < fixed_boxes.size(); ++j) {
+      const Rectangle& other_fixed_box = fixed_boxes[j];
+      if (!fixed_box.IsDisjoint(other_fixed_box)) {
+        return context_->NotifyThatModelIsUnsat(
+            "Two fixed boxes in no_overlap_2d overlap");
+      }
+    }
+  }
+
+  if (fixed_boxes.size() == active_boxes.size()) {
+    context_->UpdateRuleStats("no_overlap_2d: all boxes are fixed");
+    return RemoveConstraint(ct);
+  }
+
+  // TODO(user): presolve the zero-size fixed items so they are disjoint from
+  // the other fixed items. Then the following presolve is still valid. On the
+  // other hand, we cannot do much with non-fixed zero-size items.
+  if (!has_potential_zero_sized_interval && !fixed_boxes.empty()) {
+    const bool presolved =
+        PresolveFixed2dRectangles(non_fixed_boxes, &fixed_boxes);
+    if (presolved) {
+      NoOverlap2DConstraintProto new_no_overlap_2d;
+
+      // Replace the old fixed intervals by the new ones.
+      const int old_size = proto.x_intervals_size();
+      for (int i = 0; i < old_size; ++i) {
+        if (fixed_item_indexes.contains(i)) {
+          continue;
+        }
+        new_no_overlap_2d.add_x_intervals(proto.x_intervals(i));
+        new_no_overlap_2d.add_y_intervals(proto.y_intervals(i));
+      }
+      for (const Rectangle& fixed_box : fixed_boxes) {
+        const int item_x_interval =
+            context_->working_model->constraints().size();
+        IntervalConstraintProto* new_interval =
+            context_->working_model->add_constraints()->mutable_interval();
+        new_interval->mutable_start()->set_offset(fixed_box.x_min.value());
+        new_interval->mutable_size()->set_offset(fixed_box.SizeX().value());
+        new_interval->mutable_end()->set_offset(fixed_box.x_max.value());
+
+        const int item_y_interval =
+            context_->working_model->constraints().size();
+        new_interval =
+            context_->working_model->add_constraints()->mutable_interval();
+        new_interval->mutable_start()->set_offset(fixed_box.y_min.value());
+        new_interval->mutable_size()->set_offset(fixed_box.SizeY().value());
+        new_interval->mutable_end()->set_offset(fixed_box.y_max.value());
+
+        new_no_overlap_2d.add_x_intervals(item_x_interval);
+        new_no_overlap_2d.add_y_intervals(item_y_interval);
+      }
+      context_->working_model->add_constraints()->mutable_no_overlap_2d()->Swap(
+          &new_no_overlap_2d);
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->UpdateRuleStats("no_overlap_2d: presolved fixed rectangles");
+      return RemoveConstraint(ct);
+    }
+  }
   return new_size < initial_num_boxes;
 }
 
@@ -7516,6 +7609,7 @@ void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
 // This assumes we are more or less at the propagation fix point, even if we
 // try to address cases where we are not.
 void CpModelPresolver::ExpandObjective() {
+  if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
 
@@ -7558,6 +7652,15 @@ void CpModelPresolver::ExpandObjective() {
 
     // Deal with exactly one.
     // An exactly one is always tight on the upper bound of one term.
+    //
+    // Note(user): This code assume there is no fixed variable in the exactly
+    // one. We thus make sure the constraint is re-presolved if for some reason
+    // we didn't reach the fixed point before calling this code.
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      if (PresolveExactlyOne(context_->working_model->mutable_constraints(c))) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+    }
     if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
       const int num_terms = ct.exactly_one().literals().size();
       ++num_tight_constraints;
@@ -7583,11 +7686,7 @@ void CpModelPresolver::ExpandObjective() {
     }
 
     // Skip everything that is not a linear equality constraint.
-    if (ct.constraint_case() != ConstraintProto::kLinear ||
-        ct.linear().domain().size() != 2 ||
-        ct.linear().domain(0) != ct.linear().domain(1)) {
-      continue;
-    }
+    if (!IsLinearEqualityConstraint(ct)) continue;
 
     // Let see for which variable is it "tight". We need a coeff of 1, and that
     // the implied bounds match exactly.
@@ -9105,11 +9204,13 @@ void CpModelPresolver::DetectDifferentVariables() {
           continue;
         }
 
+        const int lit1 = ct1.enforcement_literal(0);
+        const int lit2 = ct2.enforcement_literal(0);
+
         // Detect x != y via lit => x > y && not(lit) => x < y.
         if (ct1.linear().vars().size() == 2 &&
             ct1.linear().coeffs(0) == -ct1.linear().coeffs(1) &&
-            ct1.enforcement_literal(0) ==
-                NegatedRef(ct2.enforcement_literal(0))) {
+            lit1 == NegatedRef(lit2)) {
           // We have x - y in domain1 or in domain2, so it must be in the union.
           Domain union_of_domain =
               ReadDomainFromProto(ct1.linear())
@@ -9125,9 +9226,10 @@ void CpModelPresolver::DetectDifferentVariables() {
           }
         }
 
-        context_->UpdateRuleStats("incompatible linear: add implication");
-        context_->AddImplication(ct1.enforcement_literal(0),
-                                 NegatedRef(ct2.enforcement_literal(0)));
+        if (lit1 != NegatedRef(lit2)) {
+          context_->UpdateRuleStats("incompatible linear: add implication");
+          context_->AddImplication(lit1, NegatedRef(lit2));
+        }
       }
     }
   }
@@ -9593,10 +9695,10 @@ bool CpModelPresolver::RemoveCommonPart(
   int definiting_equation = -1;
   for (const auto [c, multiple] : block) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
-    if (ct.linear().vars().size() != common_var_coeff_map.size() + 1) continue;
-    if (ct.linear().domain(0) != ct.linear().domain(1)) continue;
-    if (!ct.enforcement_literal().empty()) continue;
     if (std::abs(multiple) != 1) continue;
+    if (!IsLinearEqualityConstraint(ct)) continue;
+    if (ct.linear().vars().size() != common_var_coeff_map.size() + 1) continue;
+
     context_->UpdateRuleStats(
         "linear matrix: defining equation for common rectangle");
     definiting_equation = c;
@@ -10385,11 +10487,8 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
   const int num_constraints = context_->working_model->constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
-    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
-    if (!ct.enforcement_literal().empty()) continue;
+    if (!IsLinearEqualityConstraint(ct)) continue;
     if (ct.linear().vars().size() <= 2) continue;
-    if (ct.linear().domain().size() != 2) continue;
-    if (ct.linear().domain(0) != ct.linear().domain(1)) continue;
 
     // Our canonicalization should sort constraints, we skip non-canonical ones.
     if (!std::is_sorted(ct.linear().vars().begin(), ct.linear().vars().end())) {
@@ -10544,9 +10643,7 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
       }
       case ConstraintProto::kLinear: {
         // We only consider equality with no enforcement.
-        if (!ct.enforcement_literal().empty()) continue;
-        if (ct.linear().domain().size() != 2) continue;
-        if (ct.linear().domain(0) != ct.linear().domain(1)) continue;
+        if (!IsLinearEqualityConstraint(ct)) continue;
 
         // We also want a single non-Boolean.
         // Note that this assume the constraint is canonicalized.
@@ -11435,6 +11532,7 @@ bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
 }
 
 void CpModelPresolver::PresolveToFixPoint() {
+  if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
 

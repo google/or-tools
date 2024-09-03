@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
@@ -36,7 +37,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/mathlimits.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -582,7 +583,7 @@ class Percentile {
   // Returns number of stored records.
   int64_t NumRecords() const { return records_.size(); }
 
-  // Note that this is not fast and runs in O(n log n) for n records.
+  // Note that this runs in O(n) for n records.
   double GetPercentile(double percent);
 
  private:

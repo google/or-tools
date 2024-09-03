@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/implied_bounds.h"

@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
@@ -425,25 +426,29 @@ double Percentile::GetPercentile(double percent) {
   CHECK_GT(records_.size(), 0);
   CHECK_LE(percent, 100.0);
   CHECK_GE(percent, 0.0);
-  std::vector<double> sorted_records(records_.begin(), records_.end());
-  std::sort(sorted_records.begin(), sorted_records.end());
-  const int num_records = sorted_records.size();
 
+  const int num_records = records_.size();
   const double percentile_rank =
       static_cast<double>(num_records) * percent / 100.0 - 0.5;
   if (percentile_rank <= 0) {
-    return sorted_records.front();
+    return *absl::c_min_element(records_);
   } else if (percentile_rank >= num_records - 1) {
-    return sorted_records.back();
+    return *absl::c_max_element(records_);
   }
+  std::vector<double> sorted_records;
+  sorted_records.assign(records_.begin(), records_.end());
   // Interpolate.
   DCHECK_GE(num_records, 2);
   DCHECK_LT(percentile_rank, num_records - 1);
   const int lower_rank = static_cast<int>(std::floor(percentile_rank));
   DCHECK_LT(lower_rank, num_records - 1);
-  return sorted_records[lower_rank] +
-         (percentile_rank - lower_rank) *
-             (sorted_records[lower_rank + 1] - sorted_records[lower_rank]);
+  auto upper_it = sorted_records.begin() + lower_rank + 1;
+  // Ensure that sorted_records[lower_rank + 1] is in the correct place as if
+  // records were actually sorted, the next closest is then the largest element
+  // to the left of this element.
+  absl::c_nth_element(sorted_records, upper_it);
+  auto lower_it = std::max_element(sorted_records.begin(), upper_it);
+  return *lower_it + (percentile_rank - lower_rank) * (*upper_it - *lower_it);
 }
 
 void CompressTuples(absl::Span<const int64_t> domain_sizes,

@@ -856,7 +856,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
 }
 
 // TODO(user): unit test this.
-double FindFractionalScaling(const std::vector<double>& coefficients,
+double FindFractionalScaling(absl::Span<const double> coefficients,
                              double tolerance) {
   double multiplier = 1.0;
   for (const double coeff : coefficients) {

@@ -108,6 +108,8 @@ int64_t SatSolver::num_propagations() const {
   return trail_->NumberOfEnqueues() - counters_.num_branches;
 }
 
+int64_t SatSolver::num_backtracks() const { return counters_.num_backtracks; }
+
 int64_t SatSolver::num_restarts() const { return counters_.num_restarts; }
 
 double SatSolver::deterministic_time() const {
@@ -1044,6 +1046,7 @@ void SatSolver::Backtrack(int target_level) {
   DCHECK_LE(target_level, CurrentDecisionLevel());
 
   // Any backtrack to the root from a positive one is counted as a restart.
+  counters_.num_backtracks++;
   if (target_level == 0) counters_.num_restarts++;
 
   // Per the SatPropagator interface, this is needed before calling Untrail.
@@ -2024,6 +2027,7 @@ void SatSolver::ComputeFirstUIPConflict(
     std::vector<Literal>* reason_used_to_infer_the_conflict,
     std::vector<SatClause*>* subsumed_clauses) {
   SCOPED_TIME_STAT(&stats_);
+  const int64_t conflict_id = counters_.num_failures;
 
   // This will be used to mark all the literals inspected while we process the
   // conflict and the reasons behind each of its variable assignments.
@@ -2131,7 +2135,7 @@ void SatSolver::ComputeFirstUIPConflict(
             literal.Variable()) != literal.Variable()) {
       clause_to_expand = {};
     } else {
-      clause_to_expand = trail_->Reason(literal.Variable());
+      clause_to_expand = trail_->Reason(literal.Variable(), conflict_id);
     }
     sat_clause = ReasonClauseOrNull(literal.Variable());
 
