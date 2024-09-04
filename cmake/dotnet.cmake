@@ -264,11 +264,27 @@ function(add_dotnet_test)
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
   if(BUILD_TESTING)
-    add_test(
-      NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-      ${DOTNET_EXECUTABLE} test --nologo -c Release ${TEST_NAME}.csproj
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    if(USE_DOTNET_6)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net60
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} test --nologo --framework net6.0 -c Release
+          WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    endif()
+    if(USE_DOTNET_7)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net70
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} test --nologo --framework net7.0 -c Release
+          WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    endif()
+    if(USE_DOTNET_8)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net80
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} test --nologo --framework net8.0 -c Release
+          WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    endif()
   endif()
   message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
 endfunction()
