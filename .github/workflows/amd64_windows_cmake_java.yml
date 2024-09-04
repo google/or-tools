@@ -30,6 +30,8 @@ jobs:
       fail-fast: false
     name: Windows • ${{ matrix.cmake.generator }} • ${{ matrix.java.distrib }}-${{ matrix.java.version }}
     runs-on: windows-latest
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
