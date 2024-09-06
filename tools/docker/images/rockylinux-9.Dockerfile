@@ -4,12 +4,12 @@ FROM rockylinux:9 AS env
 #############
 ##  SETUP  ##
 #############
-#ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install git wget openssl-devel cmake \
 && dnf -y groupinstall "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
+ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD [ "/usr/bin/bash" ]
 
 # Install SWIG 4.2.1
@@ -58,6 +58,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 ##  OR-TOOLS  ##
 ################
 FROM env AS devel
+ENV DISTRIBUTION=rockylinux-9
+
 WORKDIR /root
 # Copy the snk key
 COPY or-tools.snk /root/or-tools.snk
