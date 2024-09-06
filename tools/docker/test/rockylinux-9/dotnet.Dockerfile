@@ -9,6 +9,7 @@ RUN dnf -y update \
 && dnf -y install zlib-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf
+#CMD ["/usr/bin/bash"]
 
 # Install .Net
 RUN dnf -y update \
