@@ -21,18 +21,18 @@ RUN wget -q --no-check-certificate "https://cmake.org/files/v3.28/cmake-3.28.3-l
 && ./cmake-3.28.3-linux-aarch64.sh --prefix=/usr --skip-license \
 && rm cmake-3.28.3-linux-aarch64.sh
 
-# Install Swig 4.1.1
+# Install SWIG 4.2.1
 RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.1.1/swig-4.1.1.tar.gz" \
- -o swig-4.1.1.tar.gz \
-&& tar xvf swig-4.1.1.tar.gz \
-&& rm swig-4.1.1.tar.gz \
-&& cd swig-4.1.1 \
+ --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.2.1/swig-4.2.1.tar.gz" \
+ -o swig-4.2.1.tar.gz \
+&& tar xvf swig-4.2.1.tar.gz \
+&& rm swig-4.2.1.tar.gz \
+&& cd swig-4.2.1 \
 && ./configure --prefix=/usr/local \
 && make -j 4 \
 && make install \
 && cd .. \
-&& rm -rf swig-4.1.1
+&& rm -rf swig-4.2.1
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
