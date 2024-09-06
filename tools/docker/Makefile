@@ -93,7 +93,7 @@ help:
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
-	@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
+#	@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
 	@echo -e "\t\t${BOLD}debian-12${RESET} (Bookworm)"
 	@echo -e "\t\t${BOLD}debian-11${RESET} (Bullseye)"
 #	@echo -e "\t\t${BOLD}debian-10${RESET} (buster)"
@@ -132,6 +132,7 @@ help:
 	@echo -e "\te.g. 'make arm64_almalinux-9_export'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
+	@echo -e "\t${BOLD}VERBOSE=1${RESET}: use 'docker build --progress=plain' when building container."
 	@echo
 	@echo -e "${BOLD}NOTES${RESET}"
 	@echo -e "\tAll generated code will be located in the export/ folder, use target ${BOLD}distclean${RESET} to remove it."
@@ -161,14 +162,17 @@ $(info version: ${OR_TOOLS_VERSION})
 # Docker image name prefix.
 IMAGE := or-tools/docker
 
-ifdef NOCACHE
-DOCKER_BUILD_CMD := docker build --no-cache
-DOCKER_BUILDX_CMD := docker buildx build --no-cache
-else
 DOCKER_BUILD_CMD := docker build
 DOCKER_BUILDX_CMD := docker buildx build
+ifdef NOCACHE
+DOCKER_BUILD_CMD := ${DOCKER_BUILD_CMD} --no-cache
+DOCKER_BUILDX_CMD := ${DOCKER_BUILDX_CMD} --no-cache
 endif
-DOCKER_RUN_CMD := docker run --rm --init
+ifdef VERBOSE
+DOCKER_BUILD_CMD := ${DOCKER_BUILD_CMD} --progress=plain
+DOCKER_BUILDX_CMD := ${DOCKER_BUILDX_CMD} --progress=plain
+endif
+DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 #################
 ###  DELIVERY  ##
@@ -406,7 +410,7 @@ DISTROS := \
  almalinux-9 \
  alpine-edge \
  archlinux \
- debian-11 debian-12 debian-13 debian-sid \
+ debian-11 debian-12 debian-sid \
  fedora-37 fedora-38 fedora-39 \
  opensuse-leap \
  rockylinux-9 \
@@ -440,7 +444,7 @@ cache/$1/$2/docker_$3.tar: $1_$2_$3
 .PHONY: sh_$1_$2_$3
 sh_$1_$2_$3: $1_$2_$3 | export
 	${DOCKER_RUN_CMD} \
- -v `pwd`/export:/export \
+ -v $$$$(pwd)/export:/export \
  -it \
  --name ortools_$$< \
  ${IMAGE}:$$<
@@ -495,7 +499,7 @@ cache/$1/$2/docker_$3_$4.tar: $1_$2_$3_$4
 .PHONY: sh_$1_$2_$3_$4
 sh_$1_$2_$3_$4: $1_$2_$3_$4 | export
 	${DOCKER_RUN_CMD} \
- -v `pwd`/export:/export \
+ -v $$$$(pwd)/export:/export \
  -it \
  --name ortools_$$< \
  ${IMAGE}:$$<
@@ -535,9 +539,9 @@ export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz: $1_$2_$3_archive 
 	-mkdir -p export/$1/$2
 	${DOCKER_RUN_CMD} \
  -w /root/or-tools \
- -v `pwd`/export:/export \
+ -v $$$$(pwd)/export:/export \
  ${IMAGE}:$$< \
- "cp or-tools_*_v*.tar.gz /export/$1/$2"
+ "cp or-tools_*_v*.tar.gz /export/$1/$2/"
 	cp export/$1/$2/or-tools_*_$3*_v*.tar.gz $$@
 
 .PHONY: clean_$1_$2_$3_export
