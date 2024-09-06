@@ -38,9 +38,9 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Java Install
+# Install Java 8 SDK
 RUN dnf -y update \
-&& dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
+&& dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 
@@ -74,7 +74,6 @@ ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
-SHELL ["/bin/bash", "-c"]
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch --depth=1 https://github.com/google/or-tools \
 && [[ $(cd or-tools && git rev-parse --verify HEAD) == ${SRC_GIT_SHA1} ]]
 WORKDIR /root/or-tools
