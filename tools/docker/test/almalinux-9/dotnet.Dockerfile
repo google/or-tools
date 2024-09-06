@@ -4,20 +4,18 @@ FROM almalinux:9
 #############
 ##  SETUP  ##
 #############
-ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
-&& dnf -y install git wget openssl-devel cmake \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y install zlib-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-CMD [ "/usr/bin/bash" ]
+#CMD ["/usr/bin/bash"]
 
 # Install .Net
-# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
-RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
-&& chmod a+x dotnet-install.sh \
-&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
-&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
+RUN dnf -y update \
+&& dnf -y install dotnet-sdk-6.0 \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

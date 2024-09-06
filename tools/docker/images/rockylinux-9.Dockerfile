@@ -11,10 +11,9 @@ RUN dnf -y update \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 ENTRYPOINT ["/usr/bin/bash", "-c"]
-CMD [ "/usr/bin/bash" ]
+CMD ["/usr/bin/bash"]
 
 # Install SWIG 4.2.1
-FROM base AS swig
 RUN dnf -y update \
 && dnf -y install pcre2-devel \
 && dnf clean all \
@@ -38,9 +37,9 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Java Install
+# Install Java 8 SDK
 RUN dnf -y update \
-&& dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
+&& dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 
@@ -74,7 +73,6 @@ ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
-SHELL ["/bin/bash", "-c"]
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch --depth=1 https://github.com/google/or-tools \
 && [[ $(cd or-tools && git rev-parse --verify HEAD) == ${SRC_GIT_SHA1} ]]
 WORKDIR /root/or-tools
@@ -91,6 +89,7 @@ RUN make archive_cpp
 # .Net
 ## build
 FROM cpp_build AS dotnet_build
+RUN sed -i 's/\(<SignAssembly>\).*\(<\/SignAssembly>\)/\1false\2/' ortools/dotnet/Google.OrTools*.csproj.in
 ENV USE_DOTNET_CORE_31=ON
 RUN make detect_dotnet \
 && make dotnet JOBS=8

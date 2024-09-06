@@ -4,17 +4,16 @@ FROM almalinux:9
 #############
 ##  SETUP  ##
 #############
-ENV PATH=/usr/local/bin:$PATH
+#ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
-&& dnf -y install git wget openssl-devel cmake \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y groupinstall 'Development Tools' \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-CMD [ "/usr/bin/bash" ]
+#CMD ["/usr/bin/bash"]
 
 # Install Python
 RUN dnf -y update \
-&& dnf -y install python3-devel python3-pip python3-numpy \
+&& dnf -y install python3 python3-devel python3-pip python3-numpy \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 RUN python3 -m pip install \
