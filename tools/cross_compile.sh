@@ -46,7 +46,7 @@ function install_qemu() {
     >&2 echo 'QEMU is disabled !'
     return 0
   fi
-  local -r QEMU_VERSION=${QEMU_VERSION:=9.0.1}
+  local -r QEMU_VERSION=${QEMU_VERSION:=9.0.2}
   local -r QEMU_TARGET=${QEMU_ARCH}-linux-user
 
   if echo "${QEMU_VERSION} ${QEMU_TARGET}" | cmp --silent "${QEMU_INSTALL}/.build" -; then
@@ -108,38 +108,38 @@ function expand_bootlin_config() {
   # ref: https://toolchains.bootlin.com/
   case "${TARGET}" in
     "arm64" | "aarch64")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--stable-2024.02-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--stable-2024.05-1.tar.xz"
       local -r GCC_PREFIX="aarch64"
       local -r GCC_SUFFIX=""
       ;;
     "arm64be" | "aarch64be")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64be/tarballs/aarch64be--glibc--stable-2024.02-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64be/tarballs/aarch64be--glibc--stable-2024.05-1.tar.xz"
       local -r GCC_PREFIX="aarch64_be"
       local -r GCC_SUFFIX=""
       ;;
     "ppc" | "ppc-440fp")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-440fp/tarballs/powerpc-440fp--glibc--stable-2024.02-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-440fp/tarballs/powerpc-440fp--glibc--stable-2024.05-1.tar.xz"
       local -r GCC_PREFIX="powerpc"
       local -r GCC_SUFFIX=""
       ;;
     "ppc-e500mc")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-e500mc/tarballs/powerpc-e500mc--glibc--stable-2024.02-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-e500mc/tarballs/powerpc-e500mc--glibc--stable-2024.05-1.tar.xz"
       local -r GCC_PREFIX="powerpc"
       local -r GCC_SUFFIX=""
       QEMU_ARGS+=( -cpu "e500mc" )
       ;;
     "ppc64" | "ppc64-power8")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64-power8/tarballs/powerpc64-power8--glibc--stable-2024.02-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64-power8/tarballs/powerpc64-power8--glibc--stable-2024.05-1.tar.xz"
       local -r GCC_PREFIX="powerpc64"
       local -r GCC_SUFFIX=""
       ;;
     "ppc64le" | "ppc64le-power8")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64le-power8/tarballs/powerpc64le-power8--glibc--stable-2024.02-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64le-power8/tarballs/powerpc64le-power8--glibc--stable-2024.05-1.tar.xz"
       local -r GCC_PREFIX="powerpc64le"
       local -r GCC_SUFFIX=""
       ;;
     "riscv64")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/riscv64-lp64d/tarballs/riscv64-lp64d--glibc--stable-2024.02-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/riscv64-lp64d/tarballs/riscv64-lp64d--glibc--stable-2024.05-1.tar.xz"
       local -r GCC_PREFIX="riscv64"
       local -r GCC_SUFFIX=""
       ;;
@@ -150,7 +150,7 @@ function expand_bootlin_config() {
 
   local -r TOOLCHAIN_RELATIVE_DIR="${TARGET}"
   unpack "${TOOLCHAIN_URL}" "${TOOLCHAIN_RELATIVE_DIR}"
-  local -r EXTRACT_DIR="${ARCHIVE_DIR}/$(basename ${TOOLCHAIN_URL%.tar.bz2})"
+  local -r EXTRACT_DIR="${ARCHIVE_DIR}/$(basename ${TOOLCHAIN_URL%.tar.xz})"
 
   local -r TOOLCHAIN_DIR=${ARCHIVE_DIR}/${TOOLCHAIN_RELATIVE_DIR}
   if [[ -d "${EXTRACT_DIR}" ]]; then
@@ -419,6 +419,7 @@ function main() {
   declare -a CMAKE_ADDITIONAL_ARGS=()
 
   declare -a QEMU_ARGS=()
+  # ref: https://go.dev/doc/install/source#environment
   case ${TARGET} in
     x86_64)
       declare -r QEMU_ARCH=x86_64 ;;
