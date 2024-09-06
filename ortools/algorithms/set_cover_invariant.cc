@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 
@@ -64,7 +65,7 @@ void SetCoverInvariant::Initialize() {
 bool SetCoverInvariant::CheckConsistency() const {
   auto [cst, cvrg] = ComputeCostAndCoverage(is_selected_);
   CHECK_EQ(cost_, cst);
-  for (ElementIndex element : model_->ElementRange()) {
+  for (const ElementIndex element : model_->ElementRange()) {
     CHECK_EQ(cvrg[element], coverage_[element]);
   }
   auto [num_uncvrd_elts, num_free_elts] =
@@ -112,13 +113,26 @@ std::tuple<Cost, ElementToIntVector> SetCoverInvariant::ComputeCostAndCoverage(
   for (SubsetIndex subset(0); bool b : choices) {
     if (b) {
       cst += subset_costs[subset];
-      for (ElementIndex element : columns[subset]) {
+      for (const ElementIndex element : columns[subset]) {
         ++cvrg[element];
       }
     }
     ++subset;
   }
   return {cst, cvrg};
+}
+
+ElementToIntVector SetCoverInvariant::ComputeCoverageInFocus(
+    const absl::Span<const SubsetIndex> focus) const {
+  ElementToIntVector coverage;
+  for (const SubsetIndex subset : focus) {
+    if (is_selected_[subset]) {
+      for (const ElementIndex element : model_->columns()[subset]) {
+        ++coverage[element];
+      }
+    }
+  }
+  return coverage;
 }
 
 std::tuple<BaseInt, SubsetToIntVector>
@@ -139,7 +153,7 @@ SetCoverInvariant::ComputeNumUncoveredAndFreeElements(
   for (const ElementIndex element : model_->ElementRange()) {
     if (cvrg[element] >= 1) {
       --num_uncvrd_elts;
-      for (SubsetIndex subset : rows[element]) {
+      for (const SubsetIndex subset : rows[element]) {
         --num_free_elts[subset];
       }
     }
@@ -163,7 +177,7 @@ SetCoverInvariant::ComputeNumNonOvercoveredElementsAndIsRedundant(
   const SparseRowView& rows = model_->rows();
   for (const ElementIndex element : model_->ElementRange()) {
     if (cvrg[element] >= 2) {
-      for (SubsetIndex subset : rows[element]) {
+      for (const SubsetIndex subset : rows[element]) {
         --num_cvrg_le_1_elts[subset];
         if (num_cvrg_le_1_elts[subset] == 0) {
           is_rdndnt[subset] = true;

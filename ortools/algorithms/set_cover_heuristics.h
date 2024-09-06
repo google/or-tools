@@ -174,7 +174,7 @@ class GreedySolutionGenerator {
   bool NextSolution(const std::vector<SubsetIndex>& focus);
 
   // Same with a different set of costs.
-  bool NextSolution(const std ::vector<SubsetIndex>& focus,
+  bool NextSolution(const std::vector<SubsetIndex>& focus,
                     const SubsetCostVector& costs);
 
  private:

@@ -46,7 +46,7 @@ setup(
         'absl-py >= 2.0.0',
         'numpy >= 1.13.3',
         'pandas >= 2.0.0',
-        'protobuf >= 5.27.3',
+        'protobuf >= 5.27.3,<5.28',
         'immutabledict >= 3.0.0',
     ],
     package_data={
@@ -57,6 +57,7 @@ setup(
         ],
         '@PYTHON_PROJECT@.algorithms.python':[
             '$<TARGET_FILE_NAME:knapsack_solver_pybind11>',
+            '$<TARGET_FILE_NAME:set_cover_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.bop':['*.pyi'],

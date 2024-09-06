@@ -110,6 +110,11 @@ class SetCoverInvariant {
   // Returns vector containing number of subsets covering each element.
   const ElementToIntVector& coverage() const { return coverage_; }
 
+  // Returns a vector containing the number of subsets within `focus` covering
+  // each element. Subsets that are without `focus` are not considered.
+  ElementToIntVector ComputeCoverageInFocus(
+      absl::Span<const SubsetIndex> focus) const;
+
   // Returns vector of Booleans telling whether each subset can be removed from
   // the solution.
   const SubsetBoolVector& is_redundant() const { return is_redundant_; }
