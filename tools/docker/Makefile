@@ -150,7 +150,7 @@ OR_TOOLS_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 OR_TOOLS_SHA1 := $(shell git rev-parse --verify HEAD)
 # OR_TOOLS_MAJOR & OR_TOOLS_MINOR
 include ../../Version.txt
-OR_TOOLS_PATCH := $(shell git rev-list --count v${OR_TOOLS_MAJOR}.0..HEAD)
+OR_TOOLS_PATCH := $(shell git rev-list --count v${OR_TOOLS_MAJOR}.0..HEAD || echo 0)
 OR_TOOLS_VERSION := ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.${OR_TOOLS_PATCH}
 ifdef PRE_RELEASE
 OR_TOOLS_VERSION := ${OR_TOOLS_VERSION}-rc
