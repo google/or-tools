@@ -102,12 +102,12 @@
   <plugins>
     <plugin>
       <artifactId>maven-surefire-plugin</artifactId>
-      <version>2.22.2</version>
+      <version>3.5.0</version>
     </plugin>
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-source-plugin</artifactId>
-      <version>3.2.0</version>
+      <version>3.3.1</version>
       <executions>
         <execution>
           <id>attach-sources</id>
@@ -120,7 +120,7 @@
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-javadoc-plugin</artifactId>
-      <version>3.2.0</version>
+      <version>3.8.0</version>
       <configuration>
         <detectJavaApiLink>false</detectJavaApiLink>
         <source>${maven.compiler.source}</source>
@@ -139,7 +139,7 @@
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-gpg-plugin</artifactId>
-      <version>1.6</version>
+      <version>3.2.5</version>
       <executions>
         <execution>
           <id>sign-artifacts</id>
