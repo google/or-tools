@@ -124,7 +124,7 @@ std::tuple<Cost, ElementToIntVector> SetCoverInvariant::ComputeCostAndCoverage(
 
 ElementToIntVector SetCoverInvariant::ComputeCoverageInFocus(
     const absl::Span<const SubsetIndex> focus) const {
-  ElementToIntVector coverage;
+  ElementToIntVector coverage(coverage_.size());
   for (const SubsetIndex subset : focus) {
     if (is_selected_[subset]) {
       for (const ElementIndex element : model_->columns()[subset]) {

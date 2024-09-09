@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -29,7 +30,8 @@ namespace {
 // Returns the vector a - b.
 ElementToIntVector Subtract(const ElementToIntVector& a,
                             const ElementToIntVector& b) {
-  ElementToIntVector delta;
+  ElementToIntVector delta(a.size());
+  DCHECK_EQ(a.size(), b.size());
   for (const ElementIndex i : a.index_range()) {
     delta[i] = a[i] - b[i];
   }
