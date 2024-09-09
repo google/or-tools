@@ -76,24 +76,24 @@
   <dependency>
     <groupId>org.junit.jupiter</groupId>
     <artifactId>junit-jupiter-engine</artifactId>
-    <version>5.7.0</version>
+    <version>5.11.0</version>
     <scope>test</scope>
   </dependency>
   <dependency>
     <groupId>com.google.truth</groupId>
     <artifactId>truth</artifactId>
-    <version>1.1.3</version>
+    <version>1.4.4</version>
     <scope>test</scope>
   </dependency>
   <dependency>
     <groupId>com.google.guava</groupId>
     <artifactId>guava</artifactId>
-    <version>30.1.1-jre</version>
+    <version>33.3.0-jre</version>
   </dependency>
   <dependency>
     <groupId>com.google.auto.value</groupId>
     <artifactId>auto-value</artifactId>
-    <version>1.8.2</version>
+    <version>1.11.0</version>
     <scope>provided</scope>
   </dependency>
 </dependencies>
@@ -102,12 +102,16 @@
   <plugins>
     <plugin>
       <artifactId>maven-surefire-plugin</artifactId>
-      <version>2.22.2</version>
+      <version>3.5.0</version>
+      <configuration>
+        <!-- Activate the use of TCP to transmit events to the plugin -->
+        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+      </configuration>
     </plugin>
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-source-plugin</artifactId>
-      <version>3.2.0</version>
+      <version>3.3.1</version>
       <executions>
         <execution>
           <id>attach-sources</id>
@@ -120,7 +124,7 @@
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-javadoc-plugin</artifactId>
-      <version>3.2.0</version>
+      <version>3.8.0</version>
       <configuration>
         <detectJavaApiLink>false</detectJavaApiLink>
         <source>${maven.compiler.source}</source>
@@ -139,7 +143,7 @@
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-gpg-plugin</artifactId>
-      <version>1.6</version>
+      <version>3.2.5</version>
       <executions>
         <execution>
           <id>sign-artifacts</id>
