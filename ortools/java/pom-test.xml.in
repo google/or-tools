@@ -103,6 +103,10 @@
     <plugin>
       <artifactId>maven-surefire-plugin</artifactId>
       <version>3.5.0</version>
+      <configuration>
+        <!-- Activate the use of TCP to transmit events to the plugin -->
+        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+      </configuration>
     </plugin>
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
