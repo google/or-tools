@@ -100,13 +100,13 @@ help:
 	@echo -e "\t\t${BOLD}fedora-39${RESET}"
 	@echo -e "\t\t${BOLD}fedora-38${RESET}"
 	@echo -e "\t\t${BOLD}fedora-37${RESET}"
+	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
+	@echo -e "\t\t${BOLD}rockylinux-9${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-24.04${RESET} (Ubuntu 24.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-23.10${RESET} (Ubuntu 23.10, rolling)"
 	@echo -e "\t\t${BOLD}ubuntu-23.04${RESET} (Ubuntu 23.04)"
 	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
-	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
-	@echo -e "\t\t${BOLD}rockylinux-9${RESET} (latest)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -150,7 +150,7 @@ OR_TOOLS_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 OR_TOOLS_SHA1 := $(shell git rev-parse --verify HEAD)
 # OR_TOOLS_MAJOR & OR_TOOLS_MINOR
 include ../../Version.txt
-OR_TOOLS_PATCH := $(shell git rev-list --count v${OR_TOOLS_MAJOR}.0..HEAD)
+OR_TOOLS_PATCH := $(shell git rev-list --count v${OR_TOOLS_MAJOR}.0..HEAD || echo 0)
 OR_TOOLS_VERSION := ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.${OR_TOOLS_PATCH}
 ifdef PRE_RELEASE
 OR_TOOLS_VERSION := ${OR_TOOLS_VERSION}-rc
@@ -412,9 +412,9 @@ DISTROS := \
  archlinux \
  debian-11 debian-12 debian-sid \
  fedora-37 fedora-38 fedora-39 \
- ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04 \
  opensuse-leap \
- rockylinux-9
+ rockylinux-9 \
+ ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04
 
 # List of stages
 STAGES := env devel
