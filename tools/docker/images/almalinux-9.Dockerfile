@@ -4,13 +4,14 @@ FROM almalinux:9 AS env
 #############
 ##  SETUP  ##
 #############
+ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install git wget openssl-devel cmake \
 && dnf -y groupinstall "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 ENTRYPOINT ["/usr/bin/bash", "-c"]
-CMD [ "/usr/bin/bash" ]
+CMD ["/usr/bin/bash"]
 
 # Install SWIG 4.2.1
 RUN dnf -y update \
@@ -41,7 +42,6 @@ RUN dnf -y update \
 && dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Install Python
 RUN dnf -y update \
@@ -50,9 +50,6 @@ RUN dnf -y update \
 && rm -rf /var/cache/dnf
 RUN python3 -m pip install \
  absl-py mypy mypy-protobuf pandas
-
-ENV TZ=America/Los_Angeles
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ################
 ##  OR-TOOLS  ##
@@ -92,6 +89,7 @@ RUN make archive_cpp
 # .Net
 ## build
 FROM cpp_build AS dotnet_build
+RUN sed -i 's/\(<SignAssembly>\).*\(<\/SignAssembly>\)/\1false\2/' ortools/dotnet/Google.OrTools*.csproj.in
 ENV USE_DOTNET_CORE_31=ON
 RUN make detect_dotnet \
 && make dotnet JOBS=8
