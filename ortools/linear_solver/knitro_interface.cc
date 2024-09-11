@@ -431,14 +431,14 @@ int64_t KnitroMPCallbackContext::NumExploredNodes() {
  * @param linear_range the constraint
  */
 void GenerateConstraint(KN_context* kc, const LinearRange& linear_range) {
-  std::vector<int> variable_indices;
-  std::vector<double> variable_coefficients;
   const int num_terms = linear_range.linear_expr().terms().size();
-  variable_indices.reserve(num_terms);
-  variable_coefficients.reserve(num_terms);
+  std::unique_ptr<int[]> var_indexes(new int[num_terms]);
+  std::unique_ptr<double[]> var_coefficients(new double[num_terms]);
+  int term_index = 0;
   for (const auto& var_coef_pair : linear_range.linear_expr().terms()) {
-    variable_indices.push_back(var_coef_pair.first->index());
-    variable_coefficients.push_back(var_coef_pair.second);
+    var_indexes[term_index] = var_coef_pair.first->index();
+    var_coefficients[term_index] = var_coef_pair.second;
+    ++term_index;
   }
   int cb_con;
   CHECK_STATUS(KN_add_con(kc, &cb_con));
@@ -447,8 +447,8 @@ void GenerateConstraint(KN_context* kc, const LinearRange& linear_range) {
   CHECK_STATUS(KN_set_con_upbnd(
       kc, cb_con, redefine_infinity_double(linear_range.upper_bound())));
   CHECK_STATUS(KN_add_con_linear_struct_one(kc, num_terms, cb_con,
-                                            variable_indices.data(),
-                                            variable_coefficients.data()));
+                                            var_indexes.get(),
+                                            var_coefficients.get()));
 }
 
 void KnitroMPCallbackContext::AddCut(const LinearRange& cutting_plane) {
@@ -682,33 +682,60 @@ void KnitroInterface::AddVariable(MPVariable* var) {
 void KnitroInterface::ExtractNewVariables() {
   int const total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
-    int const len = total_num_vars - last_variable_index_;
+    int const number_added_vars = total_num_vars - last_variable_index_;
+
+    std::unique_ptr<int[]> idx_vars(new int[number_added_vars]);
+    std::unique_ptr<double[]> lb(new double[number_added_vars]);
+    std::unique_ptr<double[]> ub(new double[number_added_vars]);
+    std::unique_ptr<int[]> types(new int[number_added_vars]);
+    // for priority properties
+    std::unique_ptr<int[]> priority(new int[number_added_vars]);
+    std::unique_ptr<int[]> priority_idx(new int[number_added_vars]);
+    int num_priority_vars = 0;
+
     // Create new variables
-    CHECK_STATUS(KN_add_vars(kc_, len, NULL));
+    CHECK_STATUS(KN_add_vars(kc_, number_added_vars, NULL));
     for (int var_index = last_variable_index_; var_index < total_num_vars;
          ++var_index) {
       MPVariable* const var = solver_->variables_[var_index];
       DCHECK(!variable_is_extracted(var_index));
       set_variable_as_extracted(var_index, true);
-      // Defines the bounds and type of var
-      CHECK_STATUS(KN_set_var_lobnd(kc_, var_index,
-                                    redefine_infinity_double(var->lb())));
-      CHECK_STATUS(KN_set_var_upbnd(kc_, var_index,
-                                    redefine_infinity_double(var->ub())));
-      CHECK_STATUS(KN_set_var_type(kc_, var_index,
-                                   (mip_ && var->integer())
-                                       ? KN_VARTYPE_INTEGER
-                                       : KN_VARTYPE_CONTINUOUS));
-      // Creates char * value to name the var
-      std::unique_ptr<char[]> name(new char[256]);
-      strcpy(name.get(), var->name().c_str());
-      CHECK_STATUS(KN_set_var_name(kc_, var_index, name.get()));
+
+      // // Defines the bounds and type of var
+      // CHECK_STATUS(KN_set_var_lobnd(kc_, var_index,
+      //                               redefine_infinity_double(var->lb())));
+      // CHECK_STATUS(KN_set_var_upbnd(kc_, var_index,
+      //                               redefine_infinity_double(var->ub())));
+      // CHECK_STATUS(KN_set_var_type(kc_, var_index,
+      //                              (mip_ && var->integer())
+      //                                  ? KN_VARTYPE_INTEGER
+      //                                  : KN_VARTYPE_CONTINUOUS));
+
+      // Define the bounds and type of var
+      idx_vars[var_index - last_variable_index_] = var_index;
+      lb[var_index - last_variable_index_] = redefine_infinity_double(var->lb());
+      ub[var_index - last_variable_index_] = redefine_infinity_double(var->ub());
+      types[var_index - last_variable_index_] = ((mip_ && var->integer())
+                                                  ? KN_VARTYPE_INTEGER
+                                                  : KN_VARTYPE_CONTINUOUS);
+      
+      // Name the var
+      CHECK_STATUS(KN_set_var_name(kc_, var_index, (char*)var->name().c_str()));
+
       // Branching priority 
       if (var->integer() && (var->branching_priority() != 0)) {
-        KN_set_mip_branching_priority(kc_, var_index,
-                                      var->branching_priority());
+        priority_idx[num_priority_vars] = var_index;
+        priority[num_priority_vars] = var->branching_priority();
+        num_priority_vars++;
       }
     }
+
+    CHECK_STATUS(KN_set_var_lobnds(kc_, number_added_vars, idx_vars.get(), lb.get()));
+    CHECK_STATUS(KN_set_var_upbnds(kc_, number_added_vars, idx_vars.get(), ub.get()));
+    CHECK_STATUS(KN_set_var_types(kc_, number_added_vars, idx_vars.get(), types.get()));
+    CHECK_STATUS(KN_set_mip_branching_priorities(kc_, num_priority_vars, priority_idx.get(),
+                                                 priority.get()));
+
     // Adds new variables to existing constraints.
     for (int i = 0; i < last_constraint_index_; i++) {
       MPConstraint* const ct = solver_->constraints_[i];
@@ -729,36 +756,52 @@ void KnitroInterface::ExtractNewConstraints() {
   int const total_num_cons = solver_->constraints_.size();
   int const total_num_vars = solver_->variables_.size();
   if (total_num_cons > last_constraint_index_) {
-    int const len = total_num_cons - last_constraint_index_;
+    int const number_added_constraints = total_num_cons - last_constraint_index_;
     // Create new constraints
-    CHECK_STATUS(KN_add_cons(kc_, len, NULL));
+    CHECK_STATUS(KN_add_cons(kc_, number_added_constraints, NULL));
     // Counts the number of non zero linear term in case of update Knitro model
-    int nb_lin_term = 0;
-    for (int con_index = last_constraint_index_; con_index < total_num_cons;
-         ++con_index) {
+    int number_linear_terms = 0;
+
+    // Add all constraints as a block
+    std::unique_ptr<int[]> con_indexes(new int[total_num_vars * number_added_constraints]);
+    std::unique_ptr<int[]> var_indexes(new int[total_num_vars * number_added_constraints]);
+    std::unique_ptr<double[]> var_coefficients(new double[total_num_vars * number_added_constraints]);
+
+    std::unique_ptr<int[]> idx_cons(new int[number_added_constraints]);
+    std::unique_ptr<double[]> lb(new double[number_added_constraints]);
+    std::unique_ptr<double[]> ub(new double[number_added_constraints]);
+
+    for (int con_index = last_constraint_index_; con_index < total_num_cons; ++con_index) {
       MPConstraint* const ct = solver_->constraints_[con_index];
       DCHECK(!constraint_is_extracted(con_index));
       set_constraint_as_extracted(con_index, true);
-      // Define the bounds of the constraint
-      CHECK_STATUS(
-          KN_set_con_lobnd(kc_, con_index, redefine_infinity_double(ct->lb())));
-      CHECK_STATUS(
-          KN_set_con_upbnd(kc_, con_index, redefine_infinity_double(ct->ub())));
-      // Add linear term one by one
-      for (int i = 0; i < total_num_vars; i++) {
-        double value = ct->GetCoefficient(solver_->variables_[i]);
-        if (value) {
-          CHECK_STATUS(KN_add_con_linear_term(kc_, con_index, i, value));
-          nb_lin_term++;
-        }
+
+      // Name the constraint
+      CHECK_STATUS(KN_set_con_name(kc_, con_index, (char*)ct->name().c_str()));
+
+      const auto& coeffs = ct->coefficients_;
+      for (auto coeff : coeffs) {
+        con_indexes[number_linear_terms] = con_index;
+        var_indexes[number_linear_terms] = coeff.first->index();
+        var_coefficients[number_linear_terms] = coeff.second;
+        ++number_linear_terms;;
       }
-      // Creates char* to name the constraint
-      std::unique_ptr<char[]> name(new char[256]);
-      strcpy(name.get(), ct->name().c_str());
-      CHECK_STATUS(KN_set_con_name(kc_, con_index, name.get()));
+
+      idx_cons[con_index - last_constraint_index_] = con_index;
+      lb[con_index - last_constraint_index_] = redefine_infinity_double(ct->lb());
+      ub[con_index - last_constraint_index_] = redefine_infinity_double(ct->ub());
     }
+
+    CHECK_STATUS(KN_set_con_lobnds(kc_, number_added_constraints, idx_cons.get(), lb.get()));
+    CHECK_STATUS(KN_set_con_upbnds(kc_, number_added_constraints, idx_cons.get(), ub.get()));
+
+    if (number_linear_terms) {
+      CHECK_STATUS(KN_add_con_linear_struct(kc_, number_linear_terms, 
+                    con_indexes.get(), var_indexes.get(), var_coefficients.get()));
+    }
+
     // if a new linear term is added, the Knitro model must be updated 
-    if (nb_lin_term) CHECK_STATUS(KN_update(kc_));
+    if (number_linear_terms) CHECK_STATUS(KN_update(kc_));
   }
 }
 
