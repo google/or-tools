@@ -59,6 +59,13 @@ RUN dnf -y update \
 && rm -rf /var/cache/dnf
 ENV JAVA_HOME=/usr/lib/jvm/java
 
+# Update maven
+ADD https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz /usr/local
+RUN mkdir -p /usr/local/maven \
+ && tar xzvf /usr/local/apache-maven-3.9.9-bin.tar.gz --strip-components=1 -C /usr/local/maven \
+ && rm /usr/local/apache-maven-3.9.9-bin.tar.gz
+ENV PATH=/usr/local/maven/bin:$PATH
+
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -72,9 +79,9 @@ WORKDIR /root
 # use ORTOOLS_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
 ARG ORTOOLS_GIT_BRANCH
-ENV ORTOOLS_GIT_BRANCH ${ORTOOLS_GIT_BRANCH:-main}
+ENV ORTOOLS_GIT_BRANCH=${ORTOOLS_GIT_BRANCH:-main}
 ARG ORTOOLS_GIT_SHA1
-ENV ORTOOLS_GIT_SHA1 ${ORTOOLS_GIT_SHA1:-unknown}
+ENV ORTOOLS_GIT_SHA1=${ORTOOLS_GIT_SHA1:-unknown}
 RUN git clone -b "${ORTOOLS_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
 && cd or-tools \
 && git reset --hard "${ORTOOLS_GIT_SHA1}"
@@ -84,9 +91,9 @@ FROM devel AS delivery
 WORKDIR /root/or-tools
 
 ARG ORTOOLS_TOKEN
-ENV ORTOOLS_TOKEN ${ORTOOLS_TOKEN}
+ENV ORTOOLS_TOKEN=${ORTOOLS_TOKEN}
 ARG ORTOOLS_DELIVERY
-ENV ORTOOLS_DELIVERY ${ORTOOLS_DELIVERY:-all}
+ENV ORTOOLS_DELIVERY=${ORTOOLS_DELIVERY:-all}
 RUN ./tools/release/build_delivery_linux.sh "${ORTOOLS_DELIVERY}"
 
 # Publish delivery
