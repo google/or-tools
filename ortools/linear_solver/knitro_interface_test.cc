@@ -1520,6 +1520,7 @@ TEST(KnitroInterface, RandomMIP) {
     objective->SetCoefficient(vars[i], rand() % 199 - 99);
   }
   objective->SetMaximization();
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_OPTTOL 0");
   time_t start_time;
   time(&start_time);
   MPSolver::ResultStatus kc_status = solver.Solve();

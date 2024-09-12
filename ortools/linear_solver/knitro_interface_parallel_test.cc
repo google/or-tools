@@ -163,13 +163,7 @@ TEST(KnitroInterface, SetNumThreads) {
 TEST(KnitroInterface, PBLAS) {
   MOCK_MIP();
   set_problem(solver, true);
-  std::ofstream param_file;
-  param_file.open("knitro_interface_parallel_settings.opt");
-  param_file << "blasoption   1\n";
-  param_file << "blas_numthreads 4";
-  param_file.close();
-  solver.SetSolverSpecificParametersAsString(
-      "knitro_interface_parallel_settings.opt");
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_BLASOPTION 1 KN_PARAM_BLAS_NUMTHREADS 4");
   solver.Solve();
   CHECK_MIP();
   int value;
@@ -177,7 +171,6 @@ TEST(KnitroInterface, PBLAS) {
   EXPECT_EQ(value, 1);
   getter.Int_Param(KN_PARAM_BLAS_NUMTHREADS, &value);
   EXPECT_EQ(value, 4);
-  remove("knitro_interface_parallel_settings.opt");
 }
 
 // TODO : KN_PARAM_CONCURRENT_EVALS -> Callback
@@ -188,13 +181,7 @@ TEST(KnitroInterface, PBLAS) {
 TEST(KnitroInterface, linsolver_numthreads) {
   MOCK_MIP();
   set_problem(solver, true);
-  std::ofstream param_file;
-  param_file.open("knitro_interface_parallel_settings.opt");
-  param_file << "linsolver   6\n";
-  param_file << "linsolver_numthreads 4";
-  param_file.close();
-  solver.SetSolverSpecificParametersAsString(
-      "knitro_interface_parallel_settings.opt");
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_LINSOLVER 6 KN_PARAM_LINSOLVER_NUMTHREADS 4");
   solver.Solve();
   CHECK_MIP();
   int value;
@@ -202,20 +189,13 @@ TEST(KnitroInterface, linsolver_numthreads) {
   EXPECT_EQ(value, 6);
   getter.Int_Param(KN_PARAM_LINSOLVER_NUMTHREADS, &value);
   EXPECT_EQ(value, 4);
-  remove("knitro_interface_parallel_settings.opt");
 }
 
 /** Unit Test to modify mip_numthreads*/
 TEST(KnitroInterface, mip_numthreads) {
   MOCK_MIP();
   set_problem(solver, true);
-  std::ofstream param_file;
-  param_file.open("knitro_interface_parallel_settings.opt");
-  param_file << "mip_method   1\n";
-  param_file << "mip_numthreads 4";
-  param_file.close();
-  solver.SetSolverSpecificParametersAsString(
-      "knitro_interface_parallel_settings.opt");
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_MIP_METHOD 1 KN_PARAM_MIP_NUMTHREADS 4");
   solver.Solve();
   CHECK_MIP();
   int value;
@@ -223,7 +203,6 @@ TEST(KnitroInterface, mip_numthreads) {
   EXPECT_EQ(value, 1);
   getter.Int_Param(KN_PARAM_MIP_NUMTHREADS, &value);
   EXPECT_EQ(value, 4);
-  remove("knitro_interface_parallel_settings.opt");
 }
 
 // -------------------- Multi-start --------------------
@@ -248,19 +227,7 @@ TEST(KnitroInterface, multistart) {
   obj->SetCoefficient(x, 3);
   obj->SetCoefficient(y, 1);
   obj->SetMaximization();
-  std::ofstream param_file;
-  param_file.open("knitro_interface_parallel_settings.opt");
-  param_file << "outlev   1\n";
-  param_file << "ms_enable   1\n";
-  param_file << "ms_maxsolves 16\n";
-  param_file << "ms_num_to_save  20\n";
-  param_file << "ms_maxtime_cpu  1e6\n";
-  param_file << "ms_maxtime_real  1e6\n";
-  param_file << "ms_savetol  1e-9\n";
-  param_file << "ms_numthreads 4";
-  param_file.close();
-  solver.SetSolverSpecificParametersAsString(
-      "knitro_interface_parallel_settings.opt");
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_OUTLEV 1 KN_PARAM_MS_ENABLE 1 KN_PARAM_MS_MAXSOLVES 16 KN_PARAM_MS_NUMTOSAVE 20 KN_PARAM_MS_MAXTIMECPU 1e6 KN_PARAM_MS_MAXTIMEREAL 1e6 KN_PARAM_MS_SAVETOL 1e-9 KN_PARAM_MS_NUMTHREADS 4");
   solver.Solve();
   EXPECT_NEAR(obj->Value(), 18, ERROR_RATE);
   int value;
@@ -279,8 +246,6 @@ TEST(KnitroInterface, multistart) {
   EXPECT_EQ(value2, 1e6);
   getter.Double_Param(KN_PARAM_MS_SAVETOL, &value2);
   EXPECT_EQ(value2, 1e-9);
-  remove("knitro_interface_parallel_settings.opt");
-  remove("knitro_mspoints.log");
 }
 
 // -------------------- Tuner --------------------
@@ -295,25 +260,14 @@ TEST(KnitroInterface, KnitroTuner) {
   set_problem(solver, false);
   std::ofstream tuner_file;
   tuner_file.open("knitro_interface_tuner_settings.opt");
-  tuner_file << "algorithm\n";
-  tuner_file << "feastol 1e-8 1e-10`\n";
+  tuner_file << "KN_PARAM_ALG\n";
+  tuner_file << "KN_PARAM_FEASTOL 1e-8 1e-10`\n";
   tuner_file.close();
 
-  std::ofstream param_file;
-  param_file.open("knitro_interface_parallel_settings.opt");
-  param_file << "outlev   1\n";
-  param_file << "tuner   1\n";
-  param_file << "tuner_optionsfile knitro_interface_tuner_settings.opt\n";
-  param_file << "tuner_outsub 1\n";
-  param_file.close();
-  solver.SetSolverSpecificParametersAsString(
-      "knitro_interface_parallel_settings.opt");
+  solver.SetSolverSpecificParametersAsString("KN_PARAM_OUTLEV 1 KN_PARAM_TUNER 1 KN_PARAM_TUNER_OPTIONSFILE knitro_interface_tuner_settings.opt KN_PARAM_TUNER_OUTSUB 1");
   solver.Solve();
   CHECK_LP();
   remove("knitro_interface_tuner_settings.opt");
-  remove("knitro_interface_parallel_settings.opt");
-  remove("knitro_tuner_summary.csv");
-  remove("knitro_tuner_summary.log");
 }
 
 }  // namespace operations_research
