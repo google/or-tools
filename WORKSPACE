@@ -163,7 +163,7 @@ cc_library(
     name = 'eigen3',
     srcs = [],
     includes = ['.'],
-    hdrs = glob(['Eigen/**']),
+    hdrs = glob(['Eigen/**', 'unsupported/**']),
     defines = ["EIGEN_MPL2_ONLY",],
     visibility = ['//visibility:public'],
 )
