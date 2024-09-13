@@ -17,14 +17,19 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 
@@ -234,8 +239,6 @@ struct Edge {
   IntegerValue y_start;
   IntegerValue size;
 
-  enum class EdgePosition { TOP, BOTTOM, LEFT, RIGHT };
-
   static Edge GetEdge(const Rectangle& rectangle, EdgePosition pos) {
     switch (pos) {
       case EdgePosition::TOP:
@@ -266,6 +269,15 @@ struct Edge {
     return x_start == other.x_start && y_start == other.y_start &&
            size == other.size;
   }
+
+  static bool CompareXThenY(const Edge& a, const Edge& b) {
+    return std::tie(a.x_start, a.y_start, a.size) <
+           std::tie(b.x_start, b.y_start, b.size);
+  }
+  static bool CompareYThenX(const Edge& a, const Edge& b) {
+    return std::tie(a.y_start, a.x_start, a.size) <
+           std::tie(b.y_start, b.x_start, b.size);
+  }
 };
 }  // namespace
 
@@ -289,8 +301,6 @@ bool ReduceNumberofBoxes(std::vector<Rectangle>* mandatory_rectangles,
   absl::flat_hash_map<Edge, int> bottom_edges_to_rectangle;
   absl::flat_hash_map<Edge, int> left_edges_to_rectangle;
   absl::flat_hash_map<Edge, int> right_edges_to_rectangle;
-
-  using EdgePosition = Edge::EdgePosition;
 
   bool changed_optional = false;
   bool changed_mandatory = false;
@@ -401,6 +411,480 @@ bool ReduceNumberofBoxes(std::vector<Rectangle>* mandatory_rectangles,
     *optional_rectangles = std::move(new_rectangles);
   }
   return changed_mandatory;
+}
+
+Neighbours BuildNeighboursGraph(absl::Span<const Rectangle> rectangles) {
+  // To build a graph of neighbours, we build a sorted vector for each one of
+  // the edges (top, bottom, etc) of the rectangles. Then we merge the bottom
+  // and top vectors and iterate on it. Due to the sorting order, segments where
+  // the bottom of a rectangle touches the top of another one must consecutive.
+  std::vector<std::pair<Edge, int>> edges_to_rectangle[4];
+  std::vector<std::tuple<int, EdgePosition, int>> neighbours;
+  neighbours.reserve(2 * rectangles.size());
+  for (int edge_int = 0; edge_int < 4; ++edge_int) {
+    const EdgePosition edge_position = static_cast<EdgePosition>(edge_int);
+    edges_to_rectangle[edge_position].reserve(rectangles.size());
+  }
+
+  for (int i = 0; i < rectangles.size(); ++i) {
+    const Rectangle& rectangle = rectangles[i];
+    for (int edge_int = 0; edge_int < 4; ++edge_int) {
+      const EdgePosition edge_position = static_cast<EdgePosition>(edge_int);
+      const Edge edge = Edge::GetEdge(rectangle, edge_position);
+      edges_to_rectangle[edge_position].push_back({edge, i});
+    }
+  }
+  for (int edge_int = 0; edge_int < 4; ++edge_int) {
+    const EdgePosition edge_position = static_cast<EdgePosition>(edge_int);
+    const bool sort_x_then_y = edge_position == EdgePosition::LEFT ||
+                               edge_position == EdgePosition::RIGHT;
+    const auto cmp =
+        sort_x_then_y
+            ? [](const std::pair<Edge, int>& a,
+                 const std::pair<Edge, int>&
+                     b) { return Edge::CompareXThenY(a.first, b.first); }
+            : [](const std::pair<Edge, int>& a, const std::pair<Edge, int>& b) {
+                return Edge::CompareYThenX(a.first, b.first);
+              };
+    absl::c_sort(edges_to_rectangle[edge_position], cmp);
+  }
+
+  constexpr struct EdgeData {
+    EdgePosition edge;
+    EdgePosition opposite_edge;
+    bool (*cmp)(const Edge&, const Edge&);
+  } edge_data[4] = {{.edge = EdgePosition::BOTTOM,
+                     .opposite_edge = EdgePosition::TOP,
+                     .cmp = &Edge::CompareYThenX},
+                    {.edge = EdgePosition::TOP,
+                     .opposite_edge = EdgePosition::BOTTOM,
+                     .cmp = &Edge::CompareYThenX},
+                    {.edge = EdgePosition::LEFT,
+                     .opposite_edge = EdgePosition::RIGHT,
+                     .cmp = &Edge::CompareXThenY},
+                    {.edge = EdgePosition::RIGHT,
+                     .opposite_edge = EdgePosition::LEFT,
+                     .cmp = &Edge::CompareXThenY}};
+
+  for (int edge_int = 0; edge_int < 4; ++edge_int) {
+    const EdgePosition edge_position = edge_data[edge_int].edge;
+    const EdgePosition opposite_edge_position =
+        edge_data[edge_int].opposite_edge;
+    auto it = edges_to_rectangle[edge_position].begin();
+    for (const auto& [edge, index] :
+         edges_to_rectangle[opposite_edge_position]) {
+      while (it != edges_to_rectangle[edge_position].end() &&
+             edge_data[edge_int].cmp(it->first, edge)) {
+        ++it;
+      }
+      if (it == edges_to_rectangle[edge_position].end()) {
+        break;
+      }
+      if (edge_position == EdgePosition::BOTTOM ||
+          edge_position == EdgePosition::TOP) {
+        while (it != edges_to_rectangle[edge_position].end() &&
+               it->first.y_start == edge.y_start &&
+               it->first.x_start < edge.x_start + edge.size) {
+          neighbours.push_back({index, opposite_edge_position, it->second});
+          neighbours.push_back({it->second, edge_position, index});
+          ++it;
+        }
+      } else {
+        while (it != edges_to_rectangle[edge_position].end() &&
+               it->first.x_start == edge.x_start &&
+               it->first.y_start < edge.y_start + edge.size) {
+          neighbours.push_back({index, opposite_edge_position, it->second});
+          neighbours.push_back({it->second, edge_position, index});
+          ++it;
+        }
+      }
+    }
+  }
+
+  gtl::STLSortAndRemoveDuplicates(&neighbours);
+  return Neighbours(rectangles, neighbours);
+}
+
+std::vector<std::vector<int>> SplitInConnectedComponents(
+    const Neighbours& neighbours) {
+  class GraphView {
+   public:
+    explicit GraphView(const Neighbours& neighbours)
+        : neighbours_(neighbours) {}
+    absl::Span<const int> operator[](int node) const {
+      temp_.clear();
+      for (int edge = 0; edge < 4; ++edge) {
+        const auto edge_neighbors = neighbours_.GetSortedNeighbors(
+            node, static_cast<EdgePosition>(edge));
+        for (int neighbor : edge_neighbors) {
+          temp_.push_back(neighbor);
+        }
+      }
+      return temp_;
+    }
+
+   private:
+    const Neighbours& neighbours_;
+    mutable std::vector<int> temp_;
+  };
+
+  std::vector<std::vector<int>> components;
+  FindStronglyConnectedComponents(neighbours.NumRectangles(),
+                                  GraphView(neighbours), &components);
+  return components;
+}
+
+struct ContourPoint {
+  IntegerValue x;
+  IntegerValue y;
+  int next_box_index;
+  EdgePosition next_direction;
+
+  bool operator!=(const ContourPoint& other) const {
+    return x != other.x || y != other.y ||
+           next_box_index != other.next_box_index ||
+           next_direction != other.next_direction;
+  }
+};
+
+// This function runs in O(log N).
+ContourPoint NextByClockwiseOrder(const ContourPoint& point,
+                                  absl::Span<const Rectangle> rectangles,
+                                  const Neighbours& neighbours) {
+  // This algorithm is very verbose, but it is about handling four cases. In the
+  // schema below,  "-->" is the current direction, "X" the next point and
+  // the dashed arrow the next direction.
+  //
+  // Case 1:
+  //              ++++++++
+  //            ^ ++++++++
+  //            : ++++++++
+  //            : ++++++++
+  //              ++++++++
+  //     --->   X ++++++++
+  // ******************
+  // ******************
+  // ******************
+  // ******************
+  //
+  // Case 2:
+  //            ^ ++++++++
+  //            : ++++++++
+  //            : ++++++++
+  //              ++++++++
+  //    --->    X ++++++++
+  // *************++++++++
+  // *************++++++++
+  // *************
+  // *************
+  //
+  // Case 3:
+  //    --->    X   ...>
+  // *************++++++++
+  // *************++++++++
+  // *************++++++++
+  // *************++++++++
+  //
+  // Case 4:
+  //     --->      X
+  // ************* :
+  // ************* :
+  // ************* :
+  // ************* \/
+  ContourPoint result;
+  const Rectangle& cur_rectangle = rectangles[point.next_box_index];
+
+  EdgePosition cur_edge;
+  bool clockwise;
+  // Much of the code below need to know two things: in which direction we are
+  // going and what edge of which rectangle we are touching. For example, in the
+  // "Case 4" drawing above we are going RIGHT and touching the TOP edge of the
+  // current rectangle. This switch statement finds this `cur_edge`.
+  switch (point.next_direction) {
+    case EdgePosition::TOP:
+      if (cur_rectangle.x_max == point.x) {
+        cur_edge = EdgePosition::RIGHT;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::LEFT;
+        clockwise = true;
+      }
+      break;
+    case EdgePosition::BOTTOM:
+      if (cur_rectangle.x_min == point.x) {
+        cur_edge = EdgePosition::LEFT;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::RIGHT;
+        clockwise = true;
+      }
+      break;
+    case EdgePosition::LEFT:
+      if (cur_rectangle.y_max == point.y) {
+        cur_edge = EdgePosition::TOP;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::BOTTOM;
+        clockwise = true;
+      }
+      break;
+    case EdgePosition::RIGHT:
+      if (cur_rectangle.y_min == point.y) {
+        cur_edge = EdgePosition::BOTTOM;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::TOP;
+        clockwise = true;
+      }
+      break;
+  }
+
+  // Test case 1. We need to find the next box after the current point in the
+  // edge we are following in the current direction.
+  const auto cur_edge_neighbors =
+      neighbours.GetSortedNeighbors(point.next_box_index, cur_edge);
+
+  const Rectangle fake_box_for_lower_bound = {
+      .x_min = point.x, .x_max = point.x, .y_min = point.y, .y_max = point.y};
+  const auto clockwise_cmp = Neighbours::CompareClockwise(cur_edge);
+  auto it = absl::c_lower_bound(
+      cur_edge_neighbors, -1,
+      [&fake_box_for_lower_bound, rectangles, clockwise_cmp, clockwise](int a,
+                                                                        int b) {
+        const Rectangle& rectangle_a =
+            (a == -1 ? fake_box_for_lower_bound : rectangles[a]);
+        const Rectangle& rectangle_b =
+            (b == -1 ? fake_box_for_lower_bound : rectangles[b]);
+        if (clockwise) {
+          return clockwise_cmp(rectangle_a, rectangle_b);
+        } else {
+          return clockwise_cmp(rectangle_b, rectangle_a);
+        }
+      });
+
+  if (it != cur_edge_neighbors.end()) {
+    // We found box in the current edge. We are in case 1.
+    result.next_box_index = *it;
+    const Rectangle& next_rectangle = rectangles[*it];
+    switch (point.next_direction) {
+      case EdgePosition::TOP:
+        result.x = point.x;
+        result.y = next_rectangle.y_min;
+        if (cur_edge == EdgePosition::LEFT) {
+          result.next_direction = EdgePosition::LEFT;
+        } else {
+          result.next_direction = EdgePosition::RIGHT;
+        }
+        break;
+      case EdgePosition::BOTTOM:
+        result.x = point.x;
+        result.y = next_rectangle.y_max;
+        if (cur_edge == EdgePosition::LEFT) {
+          result.next_direction = EdgePosition::LEFT;
+        } else {
+          result.next_direction = EdgePosition::RIGHT;
+        }
+        break;
+      case EdgePosition::LEFT:
+        result.y = point.y;
+        result.x = next_rectangle.x_max;
+        if (cur_edge == EdgePosition::TOP) {
+          result.next_direction = EdgePosition::TOP;
+        } else {
+          result.next_direction = EdgePosition::BOTTOM;
+        }
+        break;
+      case EdgePosition::RIGHT:
+        result.y = point.y;
+        result.x = next_rectangle.x_min;
+        if (cur_edge == EdgePosition::TOP) {
+          result.next_direction = EdgePosition::TOP;
+        } else {
+          result.next_direction = EdgePosition::BOTTOM;
+        }
+        break;
+    }
+    return result;
+  }
+
+  // We now know we are not in Case 1, so know the next (x, y) position: it is
+  // the corner of the current rectangle in the direction we are going.
+  switch (point.next_direction) {
+    case EdgePosition::TOP:
+      result.x = point.x;
+      result.y = cur_rectangle.y_max;
+      break;
+    case EdgePosition::BOTTOM:
+      result.x = point.x;
+      result.y = cur_rectangle.y_min;
+      break;
+    case EdgePosition::LEFT:
+      result.x = cur_rectangle.x_min;
+      result.y = point.y;
+      break;
+    case EdgePosition::RIGHT:
+      result.x = cur_rectangle.x_max;
+      result.y = point.y;
+      break;
+  }
+
+  // Case 2 and 3.
+  const auto next_edge_neighbors =
+      neighbours.GetSortedNeighbors(point.next_box_index, point.next_direction);
+  if (!next_edge_neighbors.empty()) {
+    // We are looking for the neighbor on the edge of the current box.
+    const int candidate_index =
+        clockwise ? next_edge_neighbors.front() : next_edge_neighbors.back();
+    const Rectangle& next_rectangle = rectangles[candidate_index];
+    switch (point.next_direction) {
+      case EdgePosition::TOP:
+      case EdgePosition::BOTTOM:
+        if (next_rectangle.x_min < point.x && point.x < next_rectangle.x_max) {
+          // Case 2
+          result.next_box_index = candidate_index;
+          if (cur_edge == EdgePosition::LEFT) {
+            result.next_direction = EdgePosition::LEFT;
+          } else {
+            result.next_direction = EdgePosition::RIGHT;
+          }
+          return result;
+        } else if (next_rectangle.x_min == point.x &&
+                   cur_edge == EdgePosition::LEFT) {
+          // Case 3
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        } else if (next_rectangle.x_max == point.x &&
+                   cur_edge == EdgePosition::RIGHT) {
+          // Case 3
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        }
+        break;
+      case EdgePosition::LEFT:
+      case EdgePosition::RIGHT:
+        if (next_rectangle.y_min < point.y && point.y < next_rectangle.y_max) {
+          result.next_box_index = candidate_index;
+          if (cur_edge == EdgePosition::TOP) {
+            result.next_direction = EdgePosition::TOP;
+          } else {
+            result.next_direction = EdgePosition::BOTTOM;
+          }
+          return result;
+        } else if (next_rectangle.y_max == point.y &&
+                   cur_edge == EdgePosition::TOP) {
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        } else if (next_rectangle.y_min == point.y &&
+                   cur_edge == EdgePosition::BOTTOM) {
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        }
+        break;
+    }
+  }
+
+  // Now we must be in the case 4.
+  result.next_box_index = point.next_box_index;
+  switch (point.next_direction) {
+    case EdgePosition::TOP:
+    case EdgePosition::BOTTOM:
+      if (cur_edge == EdgePosition::LEFT) {
+        result.next_direction = EdgePosition::RIGHT;
+      } else {
+        result.next_direction = EdgePosition::LEFT;
+      }
+      break;
+    case EdgePosition::LEFT:
+    case EdgePosition::RIGHT:
+      if (cur_edge == EdgePosition::TOP) {
+        result.next_direction = EdgePosition::BOTTOM;
+      } else {
+        result.next_direction = EdgePosition::TOP;
+      }
+      break;
+  }
+  return result;
+}
+
+ShapePath TraceBoundary(
+    const std::pair<IntegerValue, IntegerValue>& starting_step_point,
+    int starting_box_index, absl::Span<const Rectangle> rectangles,
+    const Neighbours& neighbours) {
+  // First find which direction we need to go to follow the border in the
+  // clockwise order.
+  const Rectangle& initial_rec = rectangles[starting_box_index];
+  bool touching_edge[4];
+  touching_edge[EdgePosition::LEFT] =
+      initial_rec.x_min == starting_step_point.first;
+  touching_edge[EdgePosition::RIGHT] =
+      initial_rec.x_max == starting_step_point.first;
+  touching_edge[EdgePosition::TOP] =
+      initial_rec.y_max == starting_step_point.second;
+  touching_edge[EdgePosition::BOTTOM] =
+      initial_rec.y_min == starting_step_point.second;
+
+  EdgePosition next_direction;
+  if (touching_edge[EdgePosition::LEFT]) {
+    if (touching_edge[EdgePosition::TOP]) {
+      next_direction = EdgePosition::RIGHT;
+    } else {
+      next_direction = EdgePosition::TOP;
+    }
+  } else if (touching_edge[EdgePosition::RIGHT]) {
+    if (touching_edge[EdgePosition::BOTTOM]) {
+      next_direction = EdgePosition::LEFT;
+    } else {
+      next_direction = EdgePosition::BOTTOM;
+    }
+  } else if (touching_edge[EdgePosition::TOP]) {
+    next_direction = EdgePosition::LEFT;
+  } else if (touching_edge[EdgePosition::BOTTOM]) {
+    next_direction = EdgePosition::RIGHT;
+  } else {
+    LOG(FATAL)
+        << "TraceBoundary() got a `starting_step_point` that is not in an edge "
+           "of the rectangle of `starting_box_index`. This is not allowed.";
+  }
+  const ContourPoint starting_point = {.x = starting_step_point.first,
+                                       .y = starting_step_point.second,
+                                       .next_box_index = starting_box_index,
+                                       .next_direction = next_direction};
+
+  ShapePath result;
+  for (ContourPoint point = starting_point;
+       result.step_points.empty() || point != starting_point;
+       point = NextByClockwiseOrder(point, rectangles, neighbours)) {
+    if (!result.step_points.empty() &&
+        point.x == result.step_points.back().first &&
+        point.y == result.step_points.back().second) {
+      // There is a special corner-case of the algorithm using the neighbours.
+      // Consider the following set-up:
+      //
+      // ******** |
+      // ******** |
+      // ******** +---->
+      // ########++++++++
+      // ########++++++++
+      // ########++++++++
+      //
+      // In this case, the only way the algorithm could reach the "+" box is via
+      // the "#" box, but which is doesn't contribute to the path. The algorithm
+      // returns a technically correct zero-size interval, which might be useful
+      // for callers that want to count the "#" box as visited, but this is not
+      // our case.
+      result.touching_box_index.back() = point.next_box_index;
+    } else {
+      result.touching_box_index.push_back(point.next_box_index);
+      result.step_points.push_back({point.x, point.y});
+    }
+  }
+  result.touching_box_index.push_back(result.touching_box_index.front());
+  result.step_points.push_back(result.step_points.front());
+  return result;
 }
 
 }  // namespace sat

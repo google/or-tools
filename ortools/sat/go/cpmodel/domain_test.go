@@ -18,7 +18,7 @@ import (
 	"strings"
 	"testing"
 
-	"golang/cmp/cmp"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestDomain_NewEmptyDomain(t *testing.T) {
@@ -41,8 +41,8 @@ func TestDomain_NewSingleDomain(t *testing.T) {
 
 func TestDomain_NewDomain(t *testing.T) {
 	testCases := []struct {
-		left  int64_t
-		right int64_t
+		left  int64
+		right int64
 		want  Domain
 	}{
 		{
@@ -191,7 +191,7 @@ func TestDomain_FlattenedIntervals(t *testing.T) {
 func TestDomain_Min(t *testing.T) {
 	d := Domain{[]ClosedInterval{{-1, 1}, {3, 3}, {5, 10}}}
 
-	want := int64_t(-1)
+	want := int64(-1)
 	if got, ok := d.Min(); got != want || !ok {
 		t.Errorf("Min() returned with unexpected value (%v, %v), want (%v, %v)", got, ok, want, true)
 	}
@@ -208,7 +208,7 @@ func TestDomain_MinEmptyDomain(t *testing.T) {
 func TestDomain_Max(t *testing.T) {
 	d := Domain{[]ClosedInterval{{-1, 1}, {3, 3}, {5, 10}}}
 
-	want := int64_t(10)
+	want := int64(10)
 	if got, ok := d.Max(); got != want || !ok {
 		t.Errorf("Max() returned with unexpected value (%v, %v), want (%v, %v)", got, ok, want, true)
 	}
@@ -225,7 +225,7 @@ func TestDomain_MaxEmptyDomain(t *testing.T) {
 func TestDomain_Offset(t *testing.T) {
 	testCases := []struct {
 		interval ClosedInterval
-		delta    int64_t
+		delta    int64
 		want     ClosedInterval
 	}{
 		{

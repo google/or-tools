@@ -660,7 +660,6 @@ void RegisterVariableBoundsLevelZeroImport(
     std::vector<int64_t> new_upper_bounds;
     shared_bounds_manager->GetChangedBounds(
         id, &model_variables, &new_lower_bounds, &new_upper_bounds);
-    bool new_bounds_have_been_imported = false;
     for (int i = 0; i < model_variables.size(); ++i) {
       const int model_var = model_variables[i];
 
@@ -675,7 +674,6 @@ void RegisterVariableBoundsLevelZeroImport(
           sat_solver->NotifyThatModelIsUnsat();
           return false;
         }
-        new_bounds_have_been_imported = true;
         trail->EnqueueWithUnitReason(lit);
         continue;
       }
@@ -691,7 +689,6 @@ void RegisterVariableBoundsLevelZeroImport(
       const bool changed_ub = new_ub < old_ub;
       if (!changed_lb && !changed_ub) continue;
 
-      new_bounds_have_been_imported = true;
       if (VLOG_IS_ON(3)) {
         const IntegerVariableProto& var_proto =
             model_proto.variables(model_var);
@@ -715,9 +712,9 @@ void RegisterVariableBoundsLevelZeroImport(
         return false;
       }
     }
-    if (new_bounds_have_been_imported && !sat_solver->FinishPropagation()) {
-      return false;
-    }
+
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -764,7 +761,7 @@ void RegisterObjectiveBoundsImport(
   const auto import_objective_bounds = [name, solver, integer_trail, objective,
                                         shared_response_manager]() {
     if (solver->AssumptionLevel() != 0) return true;
-    bool propagate = false;
+    bool tighter_bounds = false;
 
     const IntegerValue external_lb =
         shared_response_manager->GetInnerObjectiveLowerBound();
@@ -776,7 +773,7 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
     const IntegerValue external_ub =
@@ -789,18 +786,20 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
-    if (!propagate) return true;
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
+    if (tighter_bounds) {
+      VLOG(3) << "'" << name << "' imports objective bounds: external ["
+              << objective->ScaleIntegerObjective(external_lb) << ", "
+              << objective->ScaleIntegerObjective(external_ub) << "], current ["
+              << objective->ScaleIntegerObjective(current_lb) << ", "
+              << objective->ScaleIntegerObjective(current_ub) << "]";
+    }
 
-    VLOG(3) << "'" << name << "' imports objective bounds: external ["
-            << objective->ScaleIntegerObjective(external_lb) << ", "
-            << objective->ScaleIntegerObjective(external_ub) << "], current ["
-            << objective->ScaleIntegerObjective(current_lb) << ", "
-            << objective->ScaleIntegerObjective(current_ub) << "]";
-
-    return solver->FinishPropagation();
+    return true;
   };
 
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(

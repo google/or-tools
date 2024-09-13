@@ -106,6 +106,9 @@ class CpModelPresolver {
   // Runs the probing.
   void Probe();
 
+  // Runs the expansion and fix constraints that became non-canonical.
+  void ExpandCpModelAndCanonicalizeConstraints();
+
   // Presolve functions.
   //
   // They should return false only if the constraint <-> variable graph didn't

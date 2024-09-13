@@ -12625,6 +12625,34 @@ void CpModelPresolver::InitializeMappingModelVariables() {
       context_->working_model->variables());
 }
 
+void CpModelPresolver::ExpandCpModelAndCanonicalizeConstraints() {
+  const int num_constraints_before_expansion =
+      context_->working_model->constraints_size();
+  ExpandCpModel(context_);
+  if (context_->ModelIsUnsat()) return;
+
+  // TODO(user): Make sure we can't have duplicate in these constraint.
+  // These are due to ExpandCpModel() were we create such constraint with
+  // duplicate. The problem is that some code assumes these are presolved
+  // before being called.
+  const int num_constraints = context_->working_model->constraints().size();
+  for (int c = num_constraints_before_expansion; c < num_constraints; ++c) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    const auto type = ct->constraint_case();
+    if (type == ConstraintProto::kAtMostOne ||
+        type == ConstraintProto::kExactlyOne) {
+      if (PresolveOneConstraint(c)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      if (context_->ModelIsUnsat()) return;
+    } else if (type == ConstraintProto::kLinear) {
+      if (CanonicalizeLinear(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+    }
+  }
+}
+
 // The presolve works as follow:
 //
 // First stage:
@@ -12692,7 +12720,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
   // If presolve is false, just run expansion.
   if (!context_->params().cp_model_presolve()) {
-    ExpandCpModel(context_);
+    ExpandCpModelAndCanonicalizeConstraints();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We still write back the canonical objective has we don't deal well
@@ -12746,26 +12774,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // Call expansion.
     if (!context_->ModelIsExpanded()) {
       ExtractEncodingFromLinear();
-      ExpandCpModel(context_);
+      ExpandCpModelAndCanonicalizeConstraints();
       if (context_->ModelIsUnsat()) return InfeasibleStatus();
-
-      // TODO(user): Make sure we can't have duplicate in these constraint.
-      // These are due to ExpandCpModel() were we create such constraint with
-      // duplicate. The problem is that some code assumes these are presolved
-      // before being called.
-      const int num_constraints = context_->working_model->constraints().size();
-      for (int c = 0; c < num_constraints; ++c) {
-        ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-        const auto type = ct->constraint_case();
-        if (type == ConstraintProto::kAtMostOne ||
-            type == ConstraintProto::kExactlyOne) {
-          if (PresolveOneConstraint(c)) {
-            context_->UpdateConstraintVariableUsage(c);
-          }
-          if (context_->ModelIsUnsat()) return InfeasibleStatus();
-        }
-      }
-
       // We need to re-evaluate the degree because some presolve rule only
       // run after expansion.
       const int num_vars = context_->working_model->variables().size();
@@ -12805,7 +12815,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
       }
     }
 
-    // Extract redundant at most one constraint form the linear ones.
+    // Extract redundant at most one constraint from the linear ones.
     //
     // TODO(user): more generally if we do some probing, the same relation will
     // be detected (and more). Also add an option to turn this off?

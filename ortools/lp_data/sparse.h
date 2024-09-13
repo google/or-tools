@@ -381,7 +381,7 @@ class CompactSparseMatrix {
   // Same as AddDenseColumn(), but uses the given non_zeros pattern of input.
   // If non_zeros is empty, this actually calls AddDenseColumn().
   ColIndex AddDenseColumnWithNonZeros(const DenseColumn& dense_column,
-                                      const std::vector<RowIndex>& non_zeros);
+                                      absl::Span<const RowIndex> non_zeros);
 
   // Adds a dense column for which we know the non-zero positions and clears it.
   // Note that this function supports duplicate indices in non_zeros. The

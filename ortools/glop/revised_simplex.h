@@ -195,6 +195,10 @@ class RevisedSimplex {
   double DeterministicTime() const;
   bool objective_limit_reached() const { return objective_limit_reached_; }
 
+  const DenseBitRow& GetNotBasicBitRow() const {
+    return variables_info_.GetNotBasicBitRow();
+  }
+
   // If the problem status is PRIMAL_UNBOUNDED (respectively DUAL_UNBOUNDED),
   // then the solver has a corresponding primal (respectively dual) ray to show
   // the unboundness. From a primal (respectively dual) feasible solution any

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/opb_reader.h
   ${CMAKE_CURRENT_SOURCE_DIR}/sat_cnf_reader.h
@@ -38,6 +39,19 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::sat ALIAS ${NAME})
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(FILE_NAME IN LISTS _TEST_SRCS)
+    ortools_cxx_test(
+      FILE_NAME
+        ${FILE_NAME}
+      DEPS
+        GTest::gmock
+        GTest::gtest_main
+    )
+  endforeach()
+endif()
 
 # Sat Runner
 add_executable(sat_runner)

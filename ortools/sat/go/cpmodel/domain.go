@@ -22,14 +22,14 @@ import (
 // ClosedInterval stores the closed interval `[start,end]`. If the `Start` is greater
 // than the `End`, the interval is considered empty.
 type ClosedInterval struct {
-	Start int64_t
-	End   int64_t
+	Start int64
+	End   int64
 }
 
 // checkOverflowAndAdd first checks if adding `delta` to `i` will cause an integer overflow.
 // It will return the value of the summation if there is no overflow. Otherwise, it will
 // return MaxInt64 or MinInt64 depending on the direction of the overflow.
-func checkOverflowAndAdd(i, delta int64_t) int64_t {
+func checkOverflowAndAdd(i, delta int64) int64 {
 	if i == math.MinInt64 || i == math.MaxInt64 {
 		return i
 	}
@@ -49,7 +49,7 @@ func checkOverflowAndAdd(i, delta int64_t) int64_t {
 // is equal to MinInt or if `End` is equal to MaxInt, the offset does not get added since those
 // values represent an unbounded domain. Both `Start` and `End` are clamped at math.MinInt64 and
 // Math.MaxInt64.
-func (c ClosedInterval) Offset(delta int64_t) ClosedInterval {
+func (c ClosedInterval) Offset(delta int64) ClosedInterval {
 	return ClosedInterval{checkOverflowAndAdd(c.Start, delta), checkOverflowAndAdd(c.End, delta)}
 }
 
@@ -101,13 +101,13 @@ func NewEmptyDomain() Domain {
 }
 
 // NewSingleDomain creates a new singleton domain `[val]`.
-func NewSingleDomain(val int64_t) Domain {
+func NewSingleDomain(val int64) Domain {
 	return Domain{[]ClosedInterval{{val, val}}}
 }
 
 // NewDomain creates a new domain of a single interval `[left,right]`.
 // If `left > right`, an empty domain is returned.
-func NewDomain(left, right int64_t) Domain {
+func NewDomain(left, right int64) Domain {
 	if left > right {
 		return NewEmptyDomain()
 	}
@@ -166,7 +166,7 @@ func (d Domain) FlattenedIntervals() []int64 {
 
 // Min returns the minimum value of the domain, and returns false if no minimum exists,
 // i.e. if the domain is empty.
-func (d Domain) Min() (int64_t, bool) {
+func (d Domain) Min() (int64, bool) {
 	if len(d.intervals) == 0 {
 		return 0, false
 	}
@@ -175,7 +175,7 @@ func (d Domain) Min() (int64_t, bool) {
 
 // Max returns the maximum value of the domain, and returns false if no maximum exists,
 // i.e. if the domain is empty.
-func (d Domain) Max() (int64_t, bool) {
+func (d Domain) Max() (int64, bool) {
 	if len(d.intervals) == 0 {
 		return 0, false
 	}

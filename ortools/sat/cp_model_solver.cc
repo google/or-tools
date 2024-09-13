@@ -1074,7 +1074,13 @@ class LnsSolver : public SubSolver {
 
   ~LnsSolver() override {
     shared_->stat_tables.AddTimingStat(*this);
-    shared_->stat_tables.AddLnsStat(name(), *generator_);
+    shared_->stat_tables.AddLnsStat(
+        name(),
+        /*num_fully_solved_calls=*/generator_->num_fully_solved_calls(),
+        /*num_calls=*/generator_->num_calls(),
+        /*num_improving_calls=*/generator_->num_improving_calls(),
+        /*difficulty=*/generator_->difficulty(),
+        /*deterministic_limit=*/generator_->deterministic_limit());
   }
 
   bool TaskIsAvailable() override {
@@ -1130,7 +1136,7 @@ class LnsSolver : public SubSolver {
       }
 
       Neighborhood neighborhood =
-          generator_->Generate(base_response, data.difficulty, random);
+          generator_->Generate(base_response, data, random);
 
       if (!neighborhood.is_generated) return;
 
@@ -1309,7 +1315,8 @@ class LnsSolver : public SubSolver {
                                                   solution_values.end());
       }
 
-      data.deterministic_time = local_time_limit->GetElapsedDeterministicTime();
+      data.deterministic_time +=
+          local_time_limit->GetElapsedDeterministicTime();
 
       bool new_solution = false;
       bool display_lns_info = VLOG_IS_ON(2);
@@ -1607,14 +1614,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     if (params.use_lb_relax_lns() && name_filter.Keep("lb_relax_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
-              helper, name_filter.LastName(),
-              [](const CpModelProto cp_model, Model* model) {
-                model->GetOrCreate<SharedResponseManager>()
-                    ->InitializeObjective(cp_model);
-                LoadCpModel(cp_model, model);
-                SolveLoadedCpModel(cp_model, model);
-              },
-              shared->time_limit),
+              helper, name_filter.LastName(), shared->time_limit),
           lns_params, helper, shared));
     }
 
@@ -2553,7 +2553,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
     if (params.num_workers() > 1 || params.interleave_search() ||
-        !params.subsolvers().empty() || params.use_ls_only()) {
+        !params.subsolvers().empty() || !params.filter_subsolvers().empty() ||
+        params.use_ls_only()) {
       SolveCpModelParallel(&shared, model);
 #endif  // __PORTABLE_PLATFORM__
     } else {

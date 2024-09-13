@@ -428,10 +428,15 @@ class MaxBoundedSubsetSum {
 template <int n>
 class FirstFewValues {
  public:
-  FirstFewValues() { Reset(); }
+  FirstFewValues()
+      : reachable_(new int64_t[n]), new_reachable_(new int64_t[n]) {
+    Reset();
+  }
 
   void Reset() {
-    reachable_.fill(std::numeric_limits<int64_t>::max());
+    for (int i = 0; i < n; ++i) {
+      reachable_[i] = std::numeric_limits<int64_t>::max();
+    }
     reachable_[0] = 0;
     new_reachable_[0] = 0;
   }
@@ -441,23 +446,25 @@ class FirstFewValues {
   // TODO(user): Implement Add() with an upper bound on the multiplicity.
   void Add(const int64_t positive_value) {
     DCHECK_GT(positive_value, 0);
-    if (positive_value >= reachable_.back()) return;
+    const int64_t* reachable = reachable_.get();
+    if (positive_value >= reachable[n - 1]) return;
 
     // We copy from reachable_[i] to new_reachable_[j].
     // The position zero is already copied.
     int i = 1;
     int j = 1;
+    int64_t* new_reachable = new_reachable_.get();
     for (int base = 0; j < n && base < n; ++base) {
-      const int64_t candidate = CapAdd(new_reachable_[base], positive_value);
-      while (j < n && i < n && reachable_[i] < candidate) {
-        new_reachable_[j++] = reachable_[i++];
+      const int64_t candidate = CapAdd(new_reachable[base], positive_value);
+      while (j < n && i < n && reachable[i] < candidate) {
+        new_reachable[j++] = reachable[i++];
       }
       if (j < n) {
         // Eliminate duplicates.
-        while (i < n && reachable_[i] == candidate) i++;
+        while (i < n && reachable[i] == candidate) i++;
 
         // insert candidate in its final place.
-        new_reachable_[j++] = candidate;
+        new_reachable[j++] = candidate;
       }
     }
     std::swap(reachable_, new_reachable_);
@@ -466,16 +473,19 @@ class FirstFewValues {
   // Returns true iff sum might be expressible as a weighted sum of the added
   // value. Any sum >= LastValue() is always considered potentially reachable.
   bool MightBeReachable(int64_t sum) const {
-    if (sum >= reachable_.back()) return true;
-    return std::binary_search(reachable_.begin(), reachable_.end(), sum);
+    if (sum >= reachable_[n - 1]) return true;
+    return std::binary_search(&reachable_[0], &reachable_[0] + n, sum);
   }
 
-  const std::array<int64_t, n>& reachable() const { return reachable_; }
-  int64_t LastValue() const { return reachable_.back(); }
+  int64_t LastValue() const { return reachable_[n - 1]; }
+
+  absl::Span<const int64_t> reachable() {
+    return absl::MakeSpan(reachable_.get(), n);
+  }
 
  private:
-  std::array<int64_t, n> reachable_;
-  std::array<int64_t, n> new_reachable_;
+  std::unique_ptr<int64_t[]> reachable_;
+  std::unique_ptr<int64_t[]> new_reachable_;
 };
 
 // Use Dynamic programming to solve a single knapsack. This is used by the
@@ -700,37 +710,16 @@ inline bool IsNegatableInt64(absl::int128 x) {
          x > absl::int128(std::numeric_limits<int64_t>::min());
 }
 
-// These functions are copied from MathUtils. However, the original ones are
-// incompatible with absl::int128 as MathLimits<absl::int128>::kIsInteger ==
-// false.
-template <typename IntType, bool ceil>
-IntType CeilOrFloorOfRatio(IntType numerator, IntType denominator) {
-  static_assert(std::numeric_limits<IntType>::is_integer,
-                "CeilOfRatio is only defined for integral types");
-  DCHECK_NE(0, denominator) << "Division by zero is not supported.";
-  DCHECK(numerator != std::numeric_limits<IntType>::min() || denominator != -1)
-      << "Dividing " << numerator << "by -1 is not supported: it would SIGFPE";
-
-  const IntType rounded_toward_zero = numerator / denominator;
-  const bool needs_round = (numerator % denominator) != 0;
-  const bool same_sign = (numerator >= 0) == (denominator >= 0);
-
-  if (ceil) {  // Compile-time condition: not an actual branching
-    return rounded_toward_zero + static_cast<IntType>(same_sign && needs_round);
-  } else {
-    return rounded_toward_zero -
-           static_cast<IntType>(!same_sign && needs_round);
-  }
-}
-
 template <typename IntType>
+ABSL_DEPRECATE_AND_INLINE()
 IntType CeilOfRatio(IntType numerator, IntType denominator) {
-  return CeilOrFloorOfRatio<IntType, true>(numerator, denominator);
+  return MathUtil::CeilOfRatio(numerator, denominator);
 }
 
 template <typename IntType>
+ABSL_DEPRECATE_AND_INLINE()
 IntType FloorOfRatio(IntType numerator, IntType denominator) {
-  return CeilOrFloorOfRatio<IntType, false>(numerator, denominator);
+  return MathUtil::FloorOfRatio(numerator, denominator);
 }
 
 template <typename K, typename V>

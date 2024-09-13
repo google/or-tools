@@ -733,6 +733,18 @@ bool LinearProgrammingConstraint::SolveLp() {
     if (lp_solution_level_ == 0) {
       level_zero_lp_solution_ = lp_solution_;
     }
+  } else {
+    // If this parameter is true, we still copy whatever we have as these
+    // values will be used for the local-branching lns heuristic.
+    if (parameters_.stop_after_root_propagation()) {
+      const int num_vars = integer_variables_.size();
+      for (int i = 0; i < num_vars; i++) {
+        const glop::Fractional value =
+            GetVariableValueAtCpScale(glop::ColIndex(i));
+        expanded_lp_solution_[integer_variables_[i]] = value;
+        expanded_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+      }
+    }
   }
 
   return true;
@@ -2367,15 +2379,12 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
 }
 
 int64_t LinearProgrammingConstraint::CalculateDegeneracy() {
-  const glop::ColIndex num_vars = simplex_.GetProblemNumCols();
   int num_non_basic_with_zero_rc = 0;
-  for (glop::ColIndex i(0); i < num_vars; ++i) {
-    const double rc = simplex_.GetReducedCost(i);
-    if (rc != 0.0) continue;
-    if (simplex_.GetVariableStatus(i) == glop::VariableStatus::BASIC) {
-      continue;
+  const auto reduced_costs = simplex_.GetReducedCosts().const_view();
+  for (const glop::ColIndex i : simplex_.GetNotBasicBitRow()) {
+    if (reduced_costs[i] == 0.0) {
+      num_non_basic_with_zero_rc++;
     }
-    num_non_basic_with_zero_rc++;
   }
   const int64_t num_cols = simplex_.GetProblemNumCols().value();
   is_degenerate_ = num_non_basic_with_zero_rc >= 0.3 * num_cols;

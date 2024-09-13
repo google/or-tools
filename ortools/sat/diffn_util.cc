@@ -25,6 +25,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -1539,7 +1540,8 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
 }
 
 std::string RenderDot(std::optional<Rectangle> bb,
-                      absl::Span<const Rectangle> solution) {
+                      absl::Span<const Rectangle> solution,
+                      std::string_view extra_dot_payload) {
   const std::vector<std::string> colors = {"red",  "green",  "blue",
                                            "cyan", "yellow", "purple"};
   std::stringstream ss;
@@ -1559,6 +1561,7 @@ std::string RenderDot(std::optional<Rectangle> bb,
        << "!\" shape=box width=" << 2 * solution[i].SizeX()
        << " height=" << 2 * solution[i].SizeY() << "]\n";
   }
+  ss << extra_dot_payload;
   ss << "}\n";
   return ss.str();
 }

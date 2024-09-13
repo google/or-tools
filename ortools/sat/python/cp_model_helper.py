@@ -60,26 +60,6 @@ def is_minus_one(x: Any) -> bool:
     return False
 
 
-def assert_is_int64(x: Any) -> int:
-    """Asserts that x is integer and x is in [min_int_64, max_int_64] and returns it casted to an int."""
-    if not isinstance(x, numbers.Integral):
-        raise TypeError(f"Not an integer: {x} of type {type(x)}")
-    x_as_int = int(x)
-    if x_as_int < INT_MIN or x_as_int > INT_MAX:
-        raise OverflowError(f"Does not fit in an int64_t: {x}")
-    return x_as_int
-
-
-def assert_is_int32(x: Any) -> int:
-    """Asserts that x is integer and x is in [min_int_32, max_int_32] and returns it casted to an int."""
-    if not isinstance(x, numbers.Integral):
-        raise TypeError(f"Not an integer: {x} of type {type(x)}")
-    x_as_int = int(x)
-    if x_as_int < INT32_MIN or x_as_int > INT32_MAX:
-        raise OverflowError(f"Does not fit in an int32_t: {x}")
-    return x_as_int
-
-
 def assert_is_zero_or_one(x: Any) -> int:
     """Asserts that x is 0 or 1 and returns it as an int."""
     if not isinstance(x, numbers.Integral):
@@ -110,8 +90,6 @@ def to_capped_int64(v: int) -> int:
 
 def capped_subtraction(x: int, y: int) -> int:
     """Saturated arithmetics. Returns x - y truncated to the int64_t range."""
-    assert_is_int64(x)
-    assert_is_int64(y)
     if y == 0:
         return x
     if x == y:

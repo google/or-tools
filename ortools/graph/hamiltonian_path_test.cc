@@ -339,8 +339,7 @@ void InitEuclideanCosts(int size, std::vector<double> x, std::vector<double> y,
   }
 }
 
-bool ComparePaths(const std::vector<int>& path1,
-                  const std::vector<int>& path2) {
+bool ComparePaths(absl::Span<const int> path1, absl::Span<const int> path2) {
   // Returns true if TSP paths are equal or one is the reverse of the other.
   // TSP paths always start and end with 0 (the start node). For example, paths
   // (0, 1, 2, 3, 0) and (0, 3, 2, 1, 0) are equivalent, but (0, 1, 2, 3, 0) and

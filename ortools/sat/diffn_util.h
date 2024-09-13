@@ -599,7 +599,8 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
 // Render a packing solution as a Graphviz dot file. Only works in the "neato"
 // or "fdp" Graphviz backends.
 std::string RenderDot(std::optional<Rectangle> bb,
-                      absl::Span<const Rectangle> solution);
+                      absl::Span<const Rectangle> solution,
+                      std::string_view extra_dot_payload = "");
 
 // Given a bounding box and a list of rectangles inside that bounding box,
 // returns a list of rectangles partitioning the empty area inside the bounding
