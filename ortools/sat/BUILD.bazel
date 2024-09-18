@@ -62,12 +62,6 @@ cc_proto_library(
     deps = [":sat_parameters_proto"],
 )
 
-go_proto_library(
-    name = "sat_parameters_go_proto",
-    proto = ":sat_parameters_proto",
-    importpath = "github.com/google/or-tools/ortools/sat/proto/satparameters"
-)
-
 py_proto_library(
     name = "sat_parameters_py_pb2",
     deps = [":sat_parameters_proto"],
@@ -76,6 +70,12 @@ py_proto_library(
 java_proto_library(
     name = "sat_parameters_java_proto",
     deps = [":sat_parameters_proto"],
+)
+
+go_proto_library(
+    name = "sat_parameters_go_proto",
+    proto = ":sat_parameters_proto",
+    importpath = "github.com/google/or-tools/ortools/sat/proto/satparameters",
 )
 
 proto_library(
@@ -88,12 +88,6 @@ cc_proto_library(
     deps = [":cp_model_proto"],
 )
 
-go_proto_library(
-    name = "cp_model_go_proto",
-    importpath = "github.com/google/or-tools/ortools/sat/proto/cpmodel",
-    proto = ":cp_model_proto",
-)
-
 py_proto_library(
     name = "cp_model_py_pb2",
     deps = [":cp_model_proto"],
@@ -102,6 +96,12 @@ py_proto_library(
 java_proto_library(
     name = "cp_model_java_proto",
     deps = [":cp_model_proto"],
+)
+
+go_proto_library(
+    name = "cp_model_go_proto",
+    proto = ":cp_model_proto",
+    importpath = "github.com/google/or-tools/ortools/sat/proto/cpmodel",
 )
 
 cc_library(
