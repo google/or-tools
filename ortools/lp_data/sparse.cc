@@ -22,6 +22,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse_column.h"
@@ -592,7 +593,7 @@ ColIndex CompactSparseMatrix::AddDenseColumnPrefix(
 }
 
 ColIndex CompactSparseMatrix::AddDenseColumnWithNonZeros(
-    const DenseColumn& dense_column, const std::vector<RowIndex>& non_zeros) {
+    const DenseColumn& dense_column, absl::Span<const RowIndex> non_zeros) {
   if (non_zeros.empty()) return AddDenseColumn(dense_column);
   for (const RowIndex row : non_zeros) {
     const Fractional value = dense_column[row];
@@ -1459,7 +1460,10 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
   }
 
   stored_.Resize(num_rows_);
-  for (const RowIndex row : *non_zero_rows) stored_.Set(row);
+  Bitset64<RowIndex>::View stored = stored_.view();
+  for (const RowIndex row : *non_zero_rows) {
+    stored.Set(row);
+  }
 
   const auto entry_rows = rows_.view();
   for (int i = 0; i < non_zero_rows->size(); ++i) {
@@ -1467,9 +1471,9 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     for (const EntryIndex index : Column(RowToColIndex(row))) {
       ++num_ops;
       const RowIndex entry_row = entry_rows[index];
-      if (!stored_[entry_row]) {
+      if (!stored[entry_row]) {
         non_zero_rows->push_back(entry_row);
-        stored_.Set(entry_row);
+        stored.Set(entry_row);
       }
     }
     if (num_ops > num_ops_threshold) break;
@@ -1480,7 +1484,9 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     non_zero_rows->clear();
   } else {
     std::sort(non_zero_rows->begin(), non_zero_rows->end());
-    for (const RowIndex row : *non_zero_rows) stored_.ClearBucket(row);
+    for (const RowIndex row : *non_zero_rows) {
+      stored_.ClearBucket(row);
+    }
   }
 }
 
