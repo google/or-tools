@@ -141,6 +141,78 @@ if(MSVC)
   )
 endif()
 
+################
+##  C++ Test  ##
+################
+# ortools_cxx_test()
+# CMake function to generate and build C++ test.
+# Parameters:
+#  FILE_NAME: the C++ filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/
+# e.g.:
+# ortools_cxx_test(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/foo_test.cc
+#   COMPONENT_NAME
+#     foo
+#   DEPS
+#     GTest::gmock
+#     GTest::gtest_main
+# )
+function(ortools_cxx_test)
+  set(options "")
+  set(oneValueArgs "FILE_NAME;COMPONENT_NAME")
+  set(multiValueArgs "DEPS")
+  cmake_parse_arguments(TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+if(NOT TEST_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
+
+  if(NOT TEST_COMPONENT_NAME)
+    # test is located in ortools/<component_name>/
+    get_filename_component(COMPONENT_DIR ${TEST_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
+  endif()
+
+  add_executable(${TEST_NAME} ${TEST_FILE_NAME})
+  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_link_libraries(${TEST_NAME} PRIVATE
+    ${PROJECT_NAMESPACE}::ortools
+    ${TEST_DEPS}
+  )
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${TEST_NAME} PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME cxx_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${TEST_NAME})
+  endif()
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
+endfunction()
+
 ##################
 ##  PROTO FILE  ##
 ##################
@@ -536,72 +608,6 @@ install(DIRECTORY ortools/constraint_solver/docs/
   FILES_MATCHING
   PATTERN "*.md")
 endif()
-
-################
-##  C++ Test  ##
-################
-# add_cxx_test()
-# CMake function to generate and build C++ test.
-# Parameters:
-#  FILE_NAME: the C++ filename
-#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
-#  note: automatically determined if located in ortools/<component>/
-# e.g.:
-# add_cxx_test(
-#   FILE_NAME
-#     ${PROJECT_SOURCE_DIR}/ortools/foo/foo_test.cc
-#   COMPONENT_NAME
-#     foo
-# )
-function(add_cxx_test)
-  set(options "")
-  set(oneValueArgs FILE_NAME COMPONENT_NAME)
-  set(multiValueArgs "")
-  cmake_parse_arguments(TEST
-    "${options}"
-    "${oneValueArgs}"
-    "${multiValueArgs}"
-    ${ARGN}
-  )
-if(NOT TEST_FILE_NAME)
-    message(FATAL_ERROR "no FILE_NAME provided")
-  endif()
-  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
-
-  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
-
-  if(NOT TEST_COMPONENT_NAME)
-    # test is located in ortools/<component_name>/
-    get_filename_component(COMPONENT_DIR ${TEST_FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-  else()
-    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
-  endif()
-
-  add_executable(${TEST_NAME} ${TEST_FILE_NAME})
-  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
-
-  include(GNUInstallDirs)
-  if(APPLE)
-    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-  elseif(UNIX)
-    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-      OUTPUT_VARIABLE libdir_relative_path)
-    set_target_properties(${TEST_NAME} PROPERTIES
-      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
-  endif()
-
-  if(BUILD_TESTING)
-    add_test(
-      NAME cxx_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${TEST_NAME})
-  endif()
-  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
-endfunction()
 
 ##################
 ##  C++ Sample  ##

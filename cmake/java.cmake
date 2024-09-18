@@ -285,6 +285,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   DEPENDS
     ${JAVA_NATIVE_PROJECT_DIR}/pom.xml
+    Java${PROJECT_NAME}_proto
+    jni${JAVA_ARTIFACT}
   BYPRODUCTS
     ${JAVA_NATIVE_PROJECT_DIR}/target
   COMMENT "Generate Java native package ${JAVA_NATIVE_PROJECT} (${JAVA_NATIVE_PROJECT_DIR}/timestamp)"

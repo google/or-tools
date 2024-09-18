@@ -108,9 +108,9 @@ if(BUILD_Protobuf)
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
     GIT_TAG "v26.1"
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v26.1.patch"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v26.1.patch"
   )
   FetchContent_MakeAvailable(Protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
