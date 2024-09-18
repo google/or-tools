@@ -307,7 +307,7 @@ public class LinearSolverTest
                 foreach (Constraint ct in constraints)
                 {
                     output.WriteLine($"{ct.Name()}: dual value = {ct.DualValue()}",
-                                      $" activity = {activities[ct.Index()]}");
+                                     $" activity = {activities[ct.Index()]}");
                 }
             }
         }
