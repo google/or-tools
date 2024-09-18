@@ -588,7 +588,7 @@ CostValue SolveMinCostFlow(GenericMinCostFlow<Graph>* min_cost_flow) {
 
 template <typename Graph>
 CostValue SolveMinCostFlowWithLP(GenericMinCostFlow<Graph>* min_cost_flow) {
-  MPSolver solver("LPSolver", MPSolver::CLP_LINEAR_PROGRAMMING);
+  MPSolver solver("LPSolver", MPSolver::GLOP_LINEAR_PROGRAMMING);
   const Graph* graph = min_cost_flow->graph();
   const NodeIndex num_nodes = graph->num_nodes();
   const ArcIndex num_arcs = graph->num_arcs();
