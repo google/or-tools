@@ -50,7 +50,7 @@ void ComputeAndShow(const std::string& name,
 }
 
 void TestChristofides(const std::string& name, const int size,
-                      const std::vector<int>& cost_data,
+                      absl::Span<const int> cost_data,
                       bool use_minimal_matching, bool use_mip,
                       const int expected_cost,
                       absl::string_view expected_solution) {
