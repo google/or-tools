@@ -28,7 +28,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -84,7 +83,19 @@ class ChristofidesPathSolver {
   bool Solve();
 
  private:
-  int64_t SafeAdd(int64_t a, int64_t b) { return CapAdd(a, b); }
+  // Safe addition operator to avoid overflows when possible.
+  template <typename T, typename DUMMY = void>
+  struct Add {
+    static T apply(T a, T b) { return a + b; }
+  };
+  template <typename DUMMY>
+  struct Add<int64_t, DUMMY> {
+    static int64_t apply(int64_t a, int64_t b) { return CapAdd(a, b); }
+  };
+  template <typename T>
+  T SafeAdd(T a, T b) {
+    return Add<T>::apply(a, b);
+  }
 
   // Matching algorithm to use.
   MatchingAlgorithm matching_;

@@ -207,6 +207,7 @@
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
+#include "gtest/gtest_prod.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/util/permutation.h"
@@ -226,6 +227,13 @@ class LinearSumAssignment {
  public:
   typedef typename GraphType::NodeIndex NodeIndex;
   typedef typename GraphType::ArcIndex ArcIndex;
+
+#ifndef SWIG
+  // Friends don't let friends drive untested. One or more of our
+  // tests are white-box tests, i.e., they look inside the
+  // implementation and check various internal invariants.
+  FRIEND_TEST(LinearSumAssignmentFriendTest, EpsilonOptimal);
+#endif
 
   // Constructor for the case in which we will build the graph
   // incrementally as we discover arc costs, as might be done with any

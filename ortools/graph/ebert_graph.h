@@ -176,6 +176,7 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "gtest/gtest_prod.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
@@ -949,6 +950,8 @@ const ArcIndexType
 template <typename NodeIndexType, typename ArcIndexType, typename DerivedGraph>
 class EbertGraphBase
     : public StarGraphBase<NodeIndexType, ArcIndexType, DerivedGraph> {
+  FRIEND_TEST(ForwardEbertGraphTest, ImpossibleBuildTailArray);
+
   typedef StarGraphBase<NodeIndexType, ArcIndexType, DerivedGraph> Base;
   friend class StarGraphBase<NodeIndexType, ArcIndexType, DerivedGraph>;
 
