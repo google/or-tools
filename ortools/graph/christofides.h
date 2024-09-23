@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -84,17 +85,15 @@ class ChristofidesPathSolver {
 
  private:
   // Safe addition operator to avoid overflows when possible.
-  template <typename T, typename DUMMY = void>
-  struct Add {
-    static T apply(T a, T b) { return a + b; }
-  };
-  template <typename DUMMY>
-  struct Add<int64_t, DUMMY> {
-    static int64_t apply(int64_t a, int64_t b) { return CapAdd(a, b); }
-  };
   template <typename T>
   T SafeAdd(T a, T b) {
-    return Add<T>::apply(a, b);
+    // TODO(user): use std::remove_cvref_t<T> once C++20 is available.
+    if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>,
+                                 int64_t> == true) {
+      return CapAdd(a, b);
+    } else {
+      return a + b;
+    }
   }
 
   // Matching algorithm to use.
