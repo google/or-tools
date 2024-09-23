@@ -40,6 +40,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -610,11 +611,11 @@ bool FeasibilityPump::PropagationRounding() {
     }
 
     const int64_t rounded_value =
-        static_cast<int64_t>(std::round(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::round(lp_solution_[var_index]));
     const int64_t floor_value =
-        static_cast<int64_t>(std::floor(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::floor(lp_solution_[var_index]));
     const int64_t ceil_value =
-        static_cast<int64_t>(std::ceil(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::ceil(lp_solution_[var_index]));
 
     const bool floor_is_in_domain =
         (domain.Contains(floor_value) && lb.value() <= floor_value);

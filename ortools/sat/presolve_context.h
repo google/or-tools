@@ -664,7 +664,8 @@ class PresolveContext {
                                   bool imply_eq);
 
   // Insert fully reified var-value encoding.
-  void InsertVarValueEncodingInternal(int literal, int var, int64_t value,
+  // Returns false if this make the problem infeasible.
+  bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
   SolverLogger* logger_;

@@ -1371,8 +1371,9 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     max_literal = max_it->second.Get(this);
     if (min_literal != NegatedRef(max_literal)) {
       UpdateRuleStats("variables with 2 values: merge encoding literals");
-      StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal));
-      if (is_unsat_) return;
+      if (!StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal))) {
+        return;
+      }
     }
     min_literal = GetLiteralRepresentative(min_literal);
     max_literal = GetLiteralRepresentative(max_literal);
@@ -1419,7 +1420,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   }
 }
 
-void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
+bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
                                                      int64_t value,
                                                      bool add_constraints) {
   DCHECK(RefIsPositive(var));
@@ -1446,10 +1447,12 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
       if (literal != previous_literal) {
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
-        StoreBooleanEqualityRelation(literal, previous_literal);
+        if (!StoreBooleanEqualityRelation(literal, previous_literal)) {
+          return false;
+        }
       }
     }
-    return;
+    return true;
   }
 
   if (DomainOf(var).Size() == 2) {
@@ -1461,6 +1464,9 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
     AddImplyInDomain(literal, var, Domain(value));
     AddImplyInDomain(NegatedRef(literal), var, Domain(value).Complement());
   }
+
+  // The canonicalization might have proven UNSAT.
+  return !ModelIsUnsat();
 }
 
 bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
@@ -1484,8 +1490,10 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   if (other_set.contains({NegatedRef(literal), var, value})) {
     UpdateRuleStats("variables: detect fully reified value encoding");
     const int imply_eq_literal = imply_eq ? literal : NegatedRef(literal);
-    InsertVarValueEncodingInternal(imply_eq_literal, var, value,
-                                   /*add_constraints=*/false);
+    if (!InsertVarValueEncodingInternal(imply_eq_literal, var, value,
+                                        /*add_constraints=*/false)) {
+      return false;
+    }
   }
 
   return true;
@@ -1505,7 +1513,10 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
-  InsertVarValueEncodingInternal(literal, var, value, /*add_constraints=*/true);
+  if (!InsertVarValueEncodingInternal(literal, var, value,
+                                      /*add_constraints=*/true)) {
+    return false;
+  }
   eq_half_encoding_.insert({literal, var, value});
   neq_half_encoding_.insert({NegatedRef(literal), var, value});
 

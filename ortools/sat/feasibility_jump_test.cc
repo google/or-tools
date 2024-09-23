@@ -13,6 +13,7 @@
 
 #include "ortools/sat/feasibility_jump.h"
 
+#include <cstdint>
 #include <utility>
 
 #include "gtest/gtest.h"
