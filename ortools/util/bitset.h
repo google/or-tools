@@ -815,6 +815,10 @@ inline int Bitset64<int64_t>::Value(int64_t input) {
   DCHECK_GE(input, 0);
   return input;
 }
+template <>
+inline int Bitset64<size_t>::Value(size_t input) {
+  return input;
+}
 
 // A simple utility class to set/unset integer in a range [0, size).
 // This is optimized for sparsity.
