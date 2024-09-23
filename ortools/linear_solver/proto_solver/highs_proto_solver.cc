@@ -52,6 +52,10 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
 
   Highs highs;
   // TODO(user): Set model name.
+  if (model.has_name()) {
+    const std::string model_name = model.name();
+    // highs.passModelName(model_name);
+  }
 
   if (request->has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
@@ -111,7 +115,18 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     }
 
     // TODO(user): Support variable names.
+    // Variable names
+    for (int v = 0; v < variable_size; ++v) {
+      const MPVariableProto& variable = model.variable(v);
+      std::string varname_str = "";
+      if (!variable.name().empty()) {
+        varname_str = variable.name().c_str();
+        highs.passColName(v, varname_str);
+      }
+    }
+
     // TODO(user): Support hints.
+
   }
 
   {
@@ -156,7 +171,18 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           return response;
         }
       }
+
       // TODO(user): Support constraint names.
+      // Constraint names
+      for (int c = 0; c < model.constraint_size(); ++c) {
+        const MPConstraintProto& constraint = model.constraint(c);
+        std::string constraint_name_str = "";
+        if (!constraint.name().empty()) {
+          constraint_name_str = constraint.name().c_str();
+          highs.passRowName(c, constraint_name_str);
+        }
+      }
+
     }
 
     if (!model.general_constraint().empty()) {
