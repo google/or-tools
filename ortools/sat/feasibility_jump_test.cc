@@ -27,8 +27,8 @@ TEST(JumpTableTest, TestCachesCalls) {
       [&](int) { return std::make_pair(++num_calls, -1.0); });
   jumps.RecomputeAll(1);
 
-  EXPECT_EQ(jumps.GetJump(0), std::make_pair(1, -1.0));
-  EXPECT_EQ(jumps.GetJump(0), std::make_pair(1, -1.0));
+  EXPECT_EQ(jumps.GetJump(0), std::make_pair(int64_t{1}, -1.0));
+  EXPECT_EQ(jumps.GetJump(0), std::make_pair(int64_t{1}, -1.0));
   EXPECT_EQ(num_calls, 1);
 }
 
@@ -42,7 +42,7 @@ TEST(JumpTableTest, TestNeedsRecomputationOneVar) {
   jumps.GetJump(0);
   jumps.Recompute(0);
 
-  EXPECT_EQ(jumps.GetJump(0), std::make_pair(2, -1.0));
+  EXPECT_EQ(jumps.GetJump(0), std::make_pair(int64_t{2}, -1.0));
   EXPECT_EQ(num_calls, 2);
 }
 
@@ -57,8 +57,8 @@ TEST(JumpTableTest, TestNeedsRecomputationMultiVar) {
   jumps.GetJump(1);
   jumps.Recompute(0);
 
-  EXPECT_EQ(jumps.GetJump(0), std::make_pair(3, 0));
-  EXPECT_EQ(jumps.GetJump(1), std::make_pair(2, 1));
+  EXPECT_EQ(jumps.GetJump(0), std::make_pair(int64_t{3}, 0.0));
+  EXPECT_EQ(jumps.GetJump(1), std::make_pair(int64_t{2}, 1.0));
   EXPECT_EQ(num_calls, 3);
 }
 
@@ -84,7 +84,7 @@ TEST(JumpTableTest, TestSetJump) {
 
   EXPECT_FALSE(jumps.NeedRecomputation(0));
   EXPECT_GE(jumps.Score(0), 0);
-  EXPECT_EQ(jumps.GetJump(0), std::make_pair(1, 1.0));
+  EXPECT_EQ(jumps.GetJump(0), std::make_pair(int64_t{1}, 1.0));
   EXPECT_EQ(num_calls, 0);
 }
 
