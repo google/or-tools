@@ -172,26 +172,27 @@ double ComputeActivity(
   double a1 = 0.0;
   double a2 = 0.0;
   double a3 = 0.0;
+  const double* view = values.data();
   for (; i < shifted_size; i += 4) {
     a0 += static_cast<double>(constraint.coeffs[i].value()) *
-          values[constraint.vars[i]];
+          view[constraint.vars[i].value()];
     a1 += static_cast<double>(constraint.coeffs[i + 1].value()) *
-          values[constraint.vars[i + 1]];
+          view[constraint.vars[i + 1].value()];
     a2 += static_cast<double>(constraint.coeffs[i + 2].value()) *
-          values[constraint.vars[i + 2]];
+          view[constraint.vars[i + 2].value()];
     a3 += static_cast<double>(constraint.coeffs[i + 3].value()) *
-          values[constraint.vars[i + 3]];
+          view[constraint.vars[i + 3].value()];
   }
   double activity = a0 + a1 + a2 + a3;
   if (i < size) {
     activity += static_cast<double>(constraint.coeffs[i].value()) *
-                values[constraint.vars[i]];
+                view[constraint.vars[i].value()];
     if (i + 1 < size) {
       activity += static_cast<double>(constraint.coeffs[i + 1].value()) *
-                  values[constraint.vars[i + 1]];
+                  view[constraint.vars[i + 1].value()];
       if (i + 2 < size) {
         activity += static_cast<double>(constraint.coeffs[i + 2].value()) *
-                    values[constraint.vars[i + 2]];
+                    view[constraint.vars[i + 2].value()];
       }
     }
   }

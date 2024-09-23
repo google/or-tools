@@ -106,21 +106,31 @@ bool ScatteredIntegerVector::Add(glop::ColIndex col, IntegerValue value) {
 template <bool check_overflow>
 bool ScatteredIntegerVector::AddLinearExpressionMultiple(
     const IntegerValue multiplier, absl::Span<const glop::ColIndex> cols,
-    absl::Span<const IntegerValue> coeffs) {
+    absl::Span<const IntegerValue> coeffs, IntegerValue max_coeff_magnitude) {
+  // Since we have the norm, this avoid checking each products below.
+  if (check_overflow) {
+    const IntegerValue prod = CapProdI(max_coeff_magnitude, multiplier);
+    if (AtMinOrMaxInt64(prod.value())) return false;
+  }
+
+  IntegerValue* data = dense_vector_.data();
   const double threshold = 0.1 * static_cast<double>(dense_vector_.size());
   const int num_terms = cols.size();
   if (is_sparse_ && static_cast<double>(num_terms) < threshold) {
     for (int i = 0; i < num_terms; ++i) {
-      if (is_zeros_[cols[i]]) {
-        is_zeros_[cols[i]] = false;
-        non_zeros_.push_back(cols[i]);
+      const glop::ColIndex col = cols[i];
+      if (is_zeros_[col]) {
+        is_zeros_[col] = false;
+        non_zeros_.push_back(col);
       }
+      const IntegerValue product = multiplier * coeffs[i];
       if (check_overflow) {
-        if (!AddProductTo(multiplier, coeffs[i], &dense_vector_[cols[i]])) {
+        if (AddIntoOverflow(product.value(),
+                            data[col.value()].mutable_value())) {
           return false;
         }
       } else {
-        dense_vector_[cols[i]] += multiplier * coeffs[i];
+        data[col.value()] += product;
       }
     }
     if (static_cast<double>(non_zeros_.size()) > threshold) {
@@ -129,12 +139,15 @@ bool ScatteredIntegerVector::AddLinearExpressionMultiple(
   } else {
     is_sparse_ = false;
     for (int i = 0; i < num_terms; ++i) {
+      const glop::ColIndex col = cols[i];
+      const IntegerValue product = multiplier * coeffs[i];
       if (check_overflow) {
-        if (!AddProductTo(multiplier, coeffs[i], &dense_vector_[cols[i]])) {
+        if (AddIntoOverflow(product.value(),
+                            data[col.value()].mutable_value())) {
           return false;
         }
       } else {
-        dense_vector_[cols[i]] += multiplier * coeffs[i];
+        data[col.value()] += product;
       }
     }
   }
@@ -733,6 +746,18 @@ bool LinearProgrammingConstraint::SolveLp() {
     if (lp_solution_level_ == 0) {
       level_zero_lp_solution_ = lp_solution_;
     }
+  } else {
+    // If this parameter is true, we still copy whatever we have as these
+    // values will be used for the local-branching lns heuristic.
+    if (parameters_.stop_after_root_propagation()) {
+      const int num_vars = integer_variables_.size();
+      for (int i = 0; i < num_vars; i++) {
+        const glop::Fractional value =
+            GetVariableValueAtCpScale(glop::ColIndex(i));
+        expanded_lp_solution_[integer_variables_[i]] = value;
+        expanded_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+      }
+    }
   }
 
   return true;
@@ -1220,7 +1245,8 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
         const int slack_index = (var.value() - first_slack.value()) / 2;
         const glop::RowIndex row = tmp_slack_rows_[slack_index];
         if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
-                coeff, IntegerLpRowCols(row), IntegerLpRowCoeffs(row))) {
+                coeff, IntegerLpRowCols(row), IntegerLpRowCoeffs(row),
+                infinity_norms_[row])) {
           VLOG(2) << "Overflow in slack removal";
           ++num_cut_overflows_;
           return false;
@@ -2002,11 +2028,12 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
   for (const std::pair<RowIndex, IntegerValue>& term : integer_multipliers) {
     const RowIndex row = term.first;
     const IntegerValue multiplier = term.second;
-    CHECK_LT(row, integer_lp_.size());
+    DCHECK_LT(row, integer_lp_.size());
 
     // Update the constraint.
     if (!scattered_vector->AddLinearExpressionMultiple<check_overflow>(
-            multiplier, IntegerLpRowCols(row), IntegerLpRowCoeffs(row))) {
+            multiplier, IntegerLpRowCols(row), IntegerLpRowCoeffs(row),
+            infinity_norms_[row])) {
       return false;
     }
 
@@ -2172,13 +2199,11 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     if (to_add != 0) {
       term.second += to_add;
       *upper_bound += to_add * row_bound;
-
-      // TODO(user): we could avoid checking overflow here, but this is likely
-      // not in the hot loop.
       adjusted = true;
       CHECK(scattered_vector
                 ->AddLinearExpressionMultiple</*check_overflow=*/false>(
-                    to_add, IntegerLpRowCols(row), IntegerLpRowCoeffs(row)));
+                    to_add, IntegerLpRowCols(row), IntegerLpRowCoeffs(row),
+                    infinity_norms_[row]));
     }
   }
   if (adjusted) ++num_adjusts_;
@@ -2298,7 +2323,7 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
     }
     CHECK(tmp_scattered_vector_
               .AddLinearExpressionMultiple</*check_overflow=*/false>(
-                  obj_scale, tmp_cols_, tmp_coeffs_));
+                  obj_scale, tmp_cols_, tmp_coeffs_, objective_infinity_norm_));
     CHECK(AddProductTo(-obj_scale, integer_objective_offset_, &rc_ub));
 
     extra_term = {objective_cp_, -obj_scale};
@@ -2367,15 +2392,12 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
 }
 
 int64_t LinearProgrammingConstraint::CalculateDegeneracy() {
-  const glop::ColIndex num_vars = simplex_.GetProblemNumCols();
   int num_non_basic_with_zero_rc = 0;
-  for (glop::ColIndex i(0); i < num_vars; ++i) {
-    const double rc = simplex_.GetReducedCost(i);
-    if (rc != 0.0) continue;
-    if (simplex_.GetVariableStatus(i) == glop::VariableStatus::BASIC) {
-      continue;
+  const auto reduced_costs = simplex_.GetReducedCosts().const_view();
+  for (const glop::ColIndex i : simplex_.GetNotBasicBitRow()) {
+    if (reduced_costs[i] == 0.0) {
+      num_non_basic_with_zero_rc++;
     }
-    num_non_basic_with_zero_rc++;
   }
   const int64_t num_cols = simplex_.GetProblemNumCols().value();
   is_degenerate_ = num_non_basic_with_zero_rc >= 0.3 * num_cols;

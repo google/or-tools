@@ -445,10 +445,11 @@ bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
     IntegerValue new_ub;
     if (use_int128) {
       const IntegerValue ub = shared_->integer_trail->LevelZeroUpperBound(var);
-      const absl::int128 div128 = slack128 / absl::int128(coeff.value());
-      if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
+      if (absl::int128((ub - lb).value()) * absl::int128(coeff.value()) <=
+          slack128) {
         continue;
       }
+      const absl::int128 div128 = slack128 / absl::int128(coeff.value());
       new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
     } else {
       const IntegerValue div = slack / coeff;

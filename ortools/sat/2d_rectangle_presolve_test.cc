@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -178,9 +179,11 @@ TEST(RectanglePresolve, RandomTest) {
 
     // Presolve the fixed items.
     PresolveFixed2dRectangles(input_in_range, &new_fixed_rectangles);
-    LOG(INFO) << "Presolved:\n"
-              << RenderDot(std::nullopt, fixed_rectangles) << "To:\n"
-              << RenderDot(std::nullopt, new_fixed_rectangles);
+    if (run == 0) {
+      LOG(INFO) << "Presolved:\n"
+                << RenderDot(std::nullopt, fixed_rectangles) << "To:\n"
+                << RenderDot(std::nullopt, new_fixed_rectangles);
+    }
 
     CHECK_LE(new_fixed_rectangles.size(), kFixedRectangleSize);
 
@@ -323,160 +326,409 @@ TEST(BuildNeighboursGraphTest, RandomTest) {
   }
 }
 
-ShapePath TraceBoundaryNaive(
-    std::pair<IntegerValue, IntegerValue> starting_corner,
-    absl::Span<const Rectangle> rectangles) {
-  // First build a grid that tells by which box each 1x1 rectangle is occupied
-  // or -1 if empty.
-  constexpr int kBoundingBoxSize = 100;
-  std::vector<std::vector<int>> grid(
-      kBoundingBoxSize + 1, std::vector<int>(kBoundingBoxSize + 1, -1));
+struct ContourPoint {
+  IntegerValue x;
+  IntegerValue y;
+  int next_box_index;
+  EdgePosition next_direction;
 
-  for (int n = 0; n < rectangles.size(); n++) {
-    const Rectangle& r = rectangles[n];
-    CHECK_GE(r.x_min, 0);
-    CHECK_LE(r.x_max, kBoundingBoxSize);
-    CHECK_GE(r.y_min, 0);
-    CHECK_LE(r.y_max, kBoundingBoxSize);
-    for (IntegerValue i = r.x_min; i < r.x_max; i++) {
-      for (IntegerValue j = r.y_min; j < r.y_max; j++) {
-        grid[i.value()][j.value()] = n;
+  bool operator!=(const ContourPoint& other) const {
+    return x != other.x || y != other.y ||
+           next_box_index != other.next_box_index ||
+           next_direction != other.next_direction;
+  }
+};
+
+// This function runs in O(log N).
+ContourPoint NextByClockwiseOrder(const ContourPoint& point,
+                                  absl::Span<const Rectangle> rectangles,
+                                  const Neighbours& neighbours) {
+  // This algorithm is very verbose, but it is about handling four cases. In the
+  // schema below,  "-->" is the current direction, "X" the next point and
+  // the dashed arrow the next direction.
+  //
+  // Case 1:
+  //              ++++++++
+  //            ^ ++++++++
+  //            : ++++++++
+  //            : ++++++++
+  //              ++++++++
+  //     --->   X ++++++++
+  // ******************
+  // ******************
+  // ******************
+  // ******************
+  //
+  // Case 2:
+  //            ^ ++++++++
+  //            : ++++++++
+  //            : ++++++++
+  //              ++++++++
+  //    --->    X ++++++++
+  // *************++++++++
+  // *************++++++++
+  // *************
+  // *************
+  //
+  // Case 3:
+  //    --->    X   ...>
+  // *************++++++++
+  // *************++++++++
+  // *************++++++++
+  // *************++++++++
+  //
+  // Case 4:
+  //     --->      X
+  // ************* :
+  // ************* :
+  // ************* :
+  // ************* \/
+  ContourPoint result;
+  const Rectangle& cur_rectangle = rectangles[point.next_box_index];
+
+  EdgePosition cur_edge;
+  bool clockwise;
+  // Much of the code below need to know two things: in which direction we are
+  // going and what edge of which rectangle we are touching. For example, in the
+  // "Case 4" drawing above we are going RIGHT and touching the TOP edge of the
+  // current rectangle. This switch statement finds this `cur_edge`.
+  switch (point.next_direction) {
+    case EdgePosition::TOP:
+      if (cur_rectangle.x_max == point.x) {
+        cur_edge = EdgePosition::RIGHT;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::LEFT;
+        clockwise = true;
       }
-    }
+      break;
+    case EdgePosition::BOTTOM:
+      if (cur_rectangle.x_min == point.x) {
+        cur_edge = EdgePosition::LEFT;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::RIGHT;
+        clockwise = true;
+      }
+      break;
+    case EdgePosition::LEFT:
+      if (cur_rectangle.y_max == point.y) {
+        cur_edge = EdgePosition::TOP;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::BOTTOM;
+        clockwise = true;
+      }
+      break;
+    case EdgePosition::RIGHT:
+      if (cur_rectangle.y_min == point.y) {
+        cur_edge = EdgePosition::BOTTOM;
+        clockwise = false;
+      } else {
+        cur_edge = EdgePosition::TOP;
+        clockwise = true;
+      }
+      break;
   }
 
-  // Now collect all the boundary edges: an occupied cell that touches an
-  // unoccupied one.
-  absl::flat_hash_map<std::pair<IntegerValue, IntegerValue>, int> x_edges;
-  absl::flat_hash_map<std::pair<IntegerValue, IntegerValue>, int> y_edges;
-  for (int i = -1; i < kBoundingBoxSize; i++) {
-    for (int j = -1; j < kBoundingBoxSize; j++) {
-      if (i != -1) {
-        if ((j == -1 || grid[i][j] == -1) && grid[i][j + 1] != -1) {
-          x_edges[{i, j + 1}] = grid[i][j + 1];
-        }
-        if (j != -1 && grid[i][j + 1] == -1 && grid[i][j] != -1) {
-          x_edges[{i, j + 1}] = grid[i][j];
-        }
-      }
-      if (j != -1) {
-        if ((i == -1 || grid[i][j] == -1) && grid[i + 1][j] != -1) {
-          y_edges[{i + 1, j}] = grid[i + 1][j];
-        }
-        if (i != -1 && grid[i + 1][j] == -1 && grid[i][j] != -1) {
-          y_edges[{i + 1, j}] = grid[i][j];
-        }
-      }
-    }
-  }
+  // Test case 1. We need to find the next box after the current point in the
+  // edge we are following in the current direction.
+  const auto cur_edge_neighbors =
+      neighbours.GetSortedNeighbors(point.next_box_index, cur_edge);
 
-  ShapePath path;
-  std::pair<IntegerValue, IntegerValue> cur = starting_corner;
-  int cur_index;
-  if (x_edges.contains(starting_corner)) {
-    cur_index = x_edges.at(starting_corner);
-  } else if (y_edges.contains(starting_corner)) {
-    cur_index = y_edges.at(starting_corner);
-  } else {
-    LOG(FATAL) << "Should not happen: {" << starting_corner.first << ","
-               << starting_corner.second << "} "
-               << RenderDot(std::nullopt, rectangles);
-  }
-  const int first_index = cur_index;
-
-  auto is_aligned = [](const std::pair<IntegerValue, IntegerValue>& p1,
-                       const std::pair<IntegerValue, IntegerValue>& p2,
-                       const std::pair<IntegerValue, IntegerValue>& p3) {
-    return ((p1.first == p2.first) == (p2.first == p3.first)) &&
-           ((p1.second == p2.second) == (p2.second == p3.second));
-  };
-
-  // Grow the path by a segment of size one.
-  const auto add_segment =
-      [&path, &is_aligned](const std::pair<IntegerValue, IntegerValue>& segment,
-                           int index) {
-        if (path.step_points.size() > 1 &&
-            is_aligned(path.step_points[path.step_points.size() - 1],
-                       path.step_points[path.step_points.size() - 2],
-                       segment) &&
-            path.touching_box_index.back() == index) {
-          path.step_points.back() = segment;
+  const Rectangle fake_box_for_lower_bound = {
+      .x_min = point.x, .x_max = point.x, .y_min = point.y, .y_max = point.y};
+  const auto clockwise_cmp = Neighbours::CompareClockwise(cur_edge);
+  auto it = absl::c_lower_bound(
+      cur_edge_neighbors, -1,
+      [&fake_box_for_lower_bound, rectangles, clockwise_cmp, clockwise](int a,
+                                                                        int b) {
+        const Rectangle& rectangle_a =
+            (a == -1 ? fake_box_for_lower_bound : rectangles[a]);
+        const Rectangle& rectangle_b =
+            (b == -1 ? fake_box_for_lower_bound : rectangles[b]);
+        if (clockwise) {
+          return clockwise_cmp(rectangle_a, rectangle_b);
         } else {
-          if (!path.step_points.empty()) {
-            path.touching_box_index.push_back(index);
-          }
-          path.step_points.push_back(segment);
+          return clockwise_cmp(rectangle_b, rectangle_a);
         }
-      };
+      });
 
-  // Now we navigate from one edge to the next. To avoid going back, we remove
-  // used edges from the hash map.
-  do {
-    add_segment(cur, cur_index);
-
-    // Find the next segment.
-    if (x_edges.contains({cur.first, cur.second}) &&
-        x_edges.contains({cur.first - 1, cur.second}) &&
-        !path.touching_box_index.empty()) {
-      // Corner case (literally):
-      // ********
-      // ********
-      // ********
-      // ********
-      //         +++++++++
-      //         +++++++++
-      //         +++++++++
-      //         +++++++++
-      //
-      // In this case we keep following the same box.
-      auto it_x = x_edges.find({cur.first, cur.second});
-      if (cur_index == it_x->second) {
-        auto extract = x_edges.extract({cur.first, cur.second});
-        cur = {cur.first + 1, cur.second};
-        cur_index = extract.mapped();
-      } else {
-        auto extract = x_edges.extract({cur.first - 1, cur.second});
-        cur = extract.key();
-        cur_index = extract.mapped();
-      }
-    } else if (y_edges.contains({cur.first, cur.second}) &&
-               y_edges.contains({cur.first, cur.second - 1}) &&
-               !path.touching_box_index.empty()) {
-      auto it_y = y_edges.find({cur.first, cur.second});
-      if (cur_index == it_y->second) {
-        auto extract = y_edges.extract({cur.first, cur.second});
-        cur = {cur.first, cur.second + 1};
-        cur_index = extract.mapped();
-      } else {
-        auto extract = y_edges.extract({cur.first, cur.second - 1});
-        cur = extract.key();
-        cur_index = extract.mapped();
-      }
-    } else if (auto extract = y_edges.extract({cur.first, cur.second});
-               !extract.empty()) {
-      cur = {cur.first, cur.second + 1};
-      cur_index = extract.mapped();
-    } else if (auto extract = x_edges.extract({cur.first - 1, cur.second});
-               !extract.empty()) {
-      cur = extract.key();
-      cur_index = extract.mapped();
-    } else if (auto extract = x_edges.extract({cur.first, cur.second});
-               !extract.empty()) {
-      cur = {cur.first + 1, cur.second};
-      cur_index = extract.mapped();
-    } else if (auto extract = y_edges.extract({cur.first, cur.second - 1});
-               !extract.empty()) {
-      cur = extract.key();
-      cur_index = extract.mapped();
-    } else {
-      LOG(FATAL) << "Should not happen: {" << cur.first << "," << cur.second
-                 << "} " << RenderContour(std::nullopt, rectangles, path);
+  if (it != cur_edge_neighbors.end()) {
+    // We found box in the current edge. We are in case 1.
+    result.next_box_index = *it;
+    const Rectangle& next_rectangle = rectangles[*it];
+    switch (point.next_direction) {
+      case EdgePosition::TOP:
+        result.x = point.x;
+        result.y = next_rectangle.y_min;
+        if (cur_edge == EdgePosition::LEFT) {
+          result.next_direction = EdgePosition::LEFT;
+        } else {
+          result.next_direction = EdgePosition::RIGHT;
+        }
+        break;
+      case EdgePosition::BOTTOM:
+        result.x = point.x;
+        result.y = next_rectangle.y_max;
+        if (cur_edge == EdgePosition::LEFT) {
+          result.next_direction = EdgePosition::LEFT;
+        } else {
+          result.next_direction = EdgePosition::RIGHT;
+        }
+        break;
+      case EdgePosition::LEFT:
+        result.y = point.y;
+        result.x = next_rectangle.x_max;
+        if (cur_edge == EdgePosition::TOP) {
+          result.next_direction = EdgePosition::TOP;
+        } else {
+          result.next_direction = EdgePosition::BOTTOM;
+        }
+        break;
+      case EdgePosition::RIGHT:
+        result.y = point.y;
+        result.x = next_rectangle.x_min;
+        if (cur_edge == EdgePosition::TOP) {
+          result.next_direction = EdgePosition::TOP;
+        } else {
+          result.next_direction = EdgePosition::BOTTOM;
+        }
+        break;
     }
-  } while (cur != starting_corner);
+    return result;
+  }
 
-  add_segment(cur, cur_index);
-  path.touching_box_index.push_back(first_index);
-  return path;
+  // We now know we are not in Case 1, so know the next (x, y) position: it is
+  // the corner of the current rectangle in the direction we are going.
+  switch (point.next_direction) {
+    case EdgePosition::TOP:
+      result.x = point.x;
+      result.y = cur_rectangle.y_max;
+      break;
+    case EdgePosition::BOTTOM:
+      result.x = point.x;
+      result.y = cur_rectangle.y_min;
+      break;
+    case EdgePosition::LEFT:
+      result.x = cur_rectangle.x_min;
+      result.y = point.y;
+      break;
+    case EdgePosition::RIGHT:
+      result.x = cur_rectangle.x_max;
+      result.y = point.y;
+      break;
+  }
+
+  // Case 2 and 3.
+  const auto next_edge_neighbors =
+      neighbours.GetSortedNeighbors(point.next_box_index, point.next_direction);
+  if (!next_edge_neighbors.empty()) {
+    // We are looking for the neighbor on the edge of the current box.
+    const int candidate_index =
+        clockwise ? next_edge_neighbors.front() : next_edge_neighbors.back();
+    const Rectangle& next_rectangle = rectangles[candidate_index];
+    switch (point.next_direction) {
+      case EdgePosition::TOP:
+      case EdgePosition::BOTTOM:
+        if (next_rectangle.x_min < point.x && point.x < next_rectangle.x_max) {
+          // Case 2
+          result.next_box_index = candidate_index;
+          if (cur_edge == EdgePosition::LEFT) {
+            result.next_direction = EdgePosition::LEFT;
+          } else {
+            result.next_direction = EdgePosition::RIGHT;
+          }
+          return result;
+        } else if (next_rectangle.x_min == point.x &&
+                   cur_edge == EdgePosition::LEFT) {
+          // Case 3
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        } else if (next_rectangle.x_max == point.x &&
+                   cur_edge == EdgePosition::RIGHT) {
+          // Case 3
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        }
+        break;
+      case EdgePosition::LEFT:
+      case EdgePosition::RIGHT:
+        if (next_rectangle.y_min < point.y && point.y < next_rectangle.y_max) {
+          result.next_box_index = candidate_index;
+          if (cur_edge == EdgePosition::TOP) {
+            result.next_direction = EdgePosition::TOP;
+          } else {
+            result.next_direction = EdgePosition::BOTTOM;
+          }
+          return result;
+        } else if (next_rectangle.y_max == point.y &&
+                   cur_edge == EdgePosition::TOP) {
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        } else if (next_rectangle.y_min == point.y &&
+                   cur_edge == EdgePosition::BOTTOM) {
+          result.next_box_index = candidate_index;
+          result.next_direction = point.next_direction;
+          return result;
+        }
+        break;
+    }
+  }
+
+  // Now we must be in the case 4.
+  result.next_box_index = point.next_box_index;
+  switch (point.next_direction) {
+    case EdgePosition::TOP:
+    case EdgePosition::BOTTOM:
+      if (cur_edge == EdgePosition::LEFT) {
+        result.next_direction = EdgePosition::RIGHT;
+      } else {
+        result.next_direction = EdgePosition::LEFT;
+      }
+      break;
+    case EdgePosition::LEFT:
+    case EdgePosition::RIGHT:
+      if (cur_edge == EdgePosition::TOP) {
+        result.next_direction = EdgePosition::BOTTOM;
+      } else {
+        result.next_direction = EdgePosition::TOP;
+      }
+      break;
+  }
+  return result;
+}
+
+// Returns a path delimiting a boundary of the union of a set of rectangles. It
+// should work for both the exterior boundary and the boundaries of the holes
+// inside the union. The path will start on `starting_point` and follow the
+// boundary on clockwise order.
+//
+// `starting_point` should be a point in the boundary and `starting_box_index`
+// the index of a rectangle with one edge containing `starting_point`.
+//
+// The resulting `path` satisfy:
+// - path.step_points.front() == path.step_points.back() == starting_point
+// - path.touching_box_index.front() == path.touching_box_index.back() ==
+//                                   == starting_box_index
+//
+ShapePath TraceBoundary(
+    const std::pair<IntegerValue, IntegerValue>& starting_step_point,
+    int starting_box_index, absl::Span<const Rectangle> rectangles,
+    const Neighbours& neighbours) {
+  // First find which direction we need to go to follow the border in the
+  // clockwise order.
+  const Rectangle& initial_rec = rectangles[starting_box_index];
+  bool touching_edge[4];
+  touching_edge[EdgePosition::LEFT] =
+      initial_rec.x_min == starting_step_point.first;
+  touching_edge[EdgePosition::RIGHT] =
+      initial_rec.x_max == starting_step_point.first;
+  touching_edge[EdgePosition::TOP] =
+      initial_rec.y_max == starting_step_point.second;
+  touching_edge[EdgePosition::BOTTOM] =
+      initial_rec.y_min == starting_step_point.second;
+
+  EdgePosition next_direction;
+  if (touching_edge[EdgePosition::LEFT]) {
+    if (touching_edge[EdgePosition::TOP]) {
+      next_direction = EdgePosition::RIGHT;
+    } else {
+      next_direction = EdgePosition::TOP;
+    }
+  } else if (touching_edge[EdgePosition::RIGHT]) {
+    if (touching_edge[EdgePosition::BOTTOM]) {
+      next_direction = EdgePosition::LEFT;
+    } else {
+      next_direction = EdgePosition::BOTTOM;
+    }
+  } else if (touching_edge[EdgePosition::TOP]) {
+    next_direction = EdgePosition::LEFT;
+  } else if (touching_edge[EdgePosition::BOTTOM]) {
+    next_direction = EdgePosition::RIGHT;
+  } else {
+    LOG(FATAL)
+        << "TraceBoundary() got a `starting_step_point` that is not in an edge "
+           "of the rectangle of `starting_box_index`. This is not allowed.";
+  }
+  const ContourPoint starting_point = {.x = starting_step_point.first,
+                                       .y = starting_step_point.second,
+                                       .next_box_index = starting_box_index,
+                                       .next_direction = next_direction};
+  ShapePath result;
+  for (ContourPoint point = starting_point; true;
+       point = NextByClockwiseOrder(point, rectangles, neighbours)) {
+    if (result.step_points.size() > 3 &&
+        result.step_points.back() == result.step_points.front() &&
+        point.x == result.step_points[1].first &&
+        point.y == result.step_points[1].second) {
+      break;
+    }
+    if (!result.step_points.empty() &&
+        point.x == result.step_points.back().first &&
+        point.y == result.step_points.back().second) {
+      // There is a special corner-case of the algorithm using the neighbours.
+      // Consider the following set-up:
+      //
+      // ******** |
+      // ******** |
+      // ******** +---->
+      // ########++++++++
+      // ########++++++++
+      // ########++++++++
+      //
+      // In this case, the only way the algorithm could reach the "+" box is via
+      // the "#" box, but which is doesn't contribute to the path. The algorithm
+      // returns a technically correct zero-size interval, which might be useful
+      // for callers that want to count the "#" box as visited, but this is not
+      // our case.
+      result.touching_box_index.back() = point.next_box_index;
+    } else {
+      result.touching_box_index.push_back(point.next_box_index);
+      result.step_points.push_back({point.x, point.y});
+    }
+  }
+  return result;
+}
+
+std::string RenderShapes(std::optional<Rectangle> bb,
+                         absl::Span<const Rectangle> rectangles,
+                         const std::vector<SingleShape>& shapes) {
+  const std::vector<std::string> colors = {"black", "white",  "orange",
+                                           "cyan",  "yellow", "purple"};
+  std::stringstream ss;
+  ss << "  edge[headclip=false, tailclip=false, penwidth=40];\n";
+  int count = 0;
+  for (int i = 0; i < shapes.size(); ++i) {
+    std::string_view shape_color = colors[i % colors.size()];
+    for (int j = 0; j < shapes[i].boundary.step_points.size(); ++j) {
+      std::pair<IntegerValue, IntegerValue> p =
+          shapes[i].boundary.step_points[j];
+      ss << "  p" << count << "[pos=\"" << 2 * p.first << "," << 2 * p.second
+         << "!\" shape=point]\n";
+      if (j != shapes[i].boundary.step_points.size() - 1) {
+        ss << "  p" << count << "->p" << count + 1 << " [color=\""
+           << shape_color << "\"];\n";
+      }
+      ++count;
+    }
+    for (const ShapePath& hole : shapes[i].holes) {
+      for (int j = 0; j < hole.step_points.size(); ++j) {
+        std::pair<IntegerValue, IntegerValue> p = hole.step_points[j];
+        ss << "  p" << count << "[pos=\"" << 2 * p.first << "," << 2 * p.second
+           << "!\" shape=point]\n";
+        if (j != hole.step_points.size() - 1) {
+          ss << "  p" << count << "->p" << count + 1 << " [color=\""
+             << shape_color << "\", penwidth=20];\n";
+        }
+        ++count;
+      }
+    }
+  }
+  return RenderDot(bb, rectangles, ss.str());
 }
 
 TEST(ContourTest, Random) {
@@ -514,29 +766,25 @@ TEST(ContourTest, Random) {
       }
     }
 
-    const ShapePath shape =
-        TraceBoundary(min_coord, min_index, fixed_rectangles, neighbours);
-    absl::flat_hash_set<int> seen;
-    std::vector<Rectangle> component;
-    std::vector<int> index_map(input.size());
-    for (const int box_index : components[0]) {
-      component.push_back(fixed_rectangles[box_index]);
-      index_map[box_index] = component.size() - 1;
+    auto s = BoxesToShapes(fixed_rectangles, neighbours);
+    for (int i = 0; i < s.size(); ++i) {
+      const ShapePath& shape = s[i].boundary;
+      const ShapePath expected_shape =
+          TraceBoundary(shape.step_points[0], shape.touching_box_index[0],
+                        fixed_rectangles, neighbours);
+      if (shape.step_points != expected_shape.step_points) {
+        LOG(ERROR) << "Fast algo:\n"
+                   << RenderContour(bb, fixed_rectangles, shape);
+        LOG(ERROR) << "Naive algo:\n"
+                   << RenderContour(bb, fixed_rectangles, expected_shape);
+        LOG(FATAL) << "Found different solutions between naive and fast algo!";
+      }
+      EXPECT_EQ(shape.step_points, expected_shape.step_points);
+      EXPECT_EQ(shape.touching_box_index, expected_shape.touching_box_index);
     }
 
-    const ShapePath expected_shape =
-        TraceBoundaryNaive(shape.step_points[0], component);
-    if (shape.step_points != expected_shape.step_points) {
-      LOG(ERROR) << "Fast algo:\n"
-                 << RenderContour(bb, fixed_rectangles, shape);
-      LOG(ERROR) << "Naive algo:\n"
-                 << RenderContour(bb, component, expected_shape);
-      LOG(FATAL) << "Found different solutions between naive and fast algo!";
-    }
-    EXPECT_EQ(shape.step_points, expected_shape.step_points);
-    for (int i = 0; i < shape.step_points.size(); ++i) {
-      EXPECT_EQ(index_map[shape.touching_box_index[i]],
-                expected_shape.touching_box_index[i]);
+    if (run == 0) {
+      LOG(INFO) << RenderShapes(bb, fixed_rectangles, s);
     }
   }
 }

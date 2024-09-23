@@ -76,6 +76,8 @@ struct Rectangle {
            std::tie(other.x_min, other.x_max, other.y_min, other.y_max);
   }
 
+  bool operator!=(const Rectangle& other) const { return !(other == *this); }
+
   static Rectangle GetEmpty() {
     return Rectangle{.x_min = IntegerValue(0),
                      .x_max = IntegerValue(0),
@@ -190,8 +192,13 @@ struct IndexedInterval {
       return a.start < b.start;
     }
   };
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const IndexedInterval& interval) {
+    absl::Format(&sink, "[%v..%v] (#%v)", interval.start, interval.end,
+                 interval.index);
+  }
 };
-std::ostream& operator<<(std::ostream& out, const IndexedInterval& interval);
 
 // Given n fixed intervals, returns the subsets of intervals that overlap during
 // at least one time unit. Note that we only return "maximal" subset and filter
@@ -599,7 +606,8 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
 // Render a packing solution as a Graphviz dot file. Only works in the "neato"
 // or "fdp" Graphviz backends.
 std::string RenderDot(std::optional<Rectangle> bb,
-                      absl::Span<const Rectangle> solution);
+                      absl::Span<const Rectangle> solution,
+                      std::string_view extra_dot_payload = "");
 
 // Given a bounding box and a list of rectangles inside that bounding box,
 // returns a list of rectangles partitioning the empty area inside the bounding

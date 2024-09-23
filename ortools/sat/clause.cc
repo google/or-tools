@@ -500,6 +500,7 @@ void ClauseManager::DeleteRemovedClauses() {
 
 void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
+  bfs_stack_.resize(num_variables << 1);
   implications_.resize(num_variables << 1);
   implies_something_.resize(num_variables << 1);
   might_have_dups_.resize(num_variables << 1);
@@ -948,7 +949,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
     // TODO(user): if this is false, then we actually have a conflict of size 2.
     // This can only happen if the binary clause was not propagated properly
-    // if for instance we do chronological bactracking without re-enqueing the
+    // if for instance we do chronological bactracking without re-enqueuing the
     // consequence of a binary clause.
     if (trail.Assignment().LiteralIsTrue(Literal(i))) {
       marked->Set(Literal(i).Variable());
@@ -2053,9 +2054,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
 }
 
 void BinaryImplicationGraph::MarkDescendants(Literal root) {
-  bfs_stack_.resize(implications_.size());
   auto* const stack = bfs_stack_.data();
-  const int amo_size = static_cast<int>(at_most_ones_.size());
   auto is_marked = is_marked_.const_view();
   auto is_redundant = is_redundant_.const_view();
   if (is_redundant[root]) return;
@@ -2063,6 +2062,7 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
   int stack_size = 1;
   stack[0] = root;
   is_marked_.Set(root);
+  const int amo_size = static_cast<int>(at_most_ones_.size());
   for (int j = 0; j < stack_size; ++j) {
     const Literal current = stack[j];
     if (!implies_something_[current]) continue;
@@ -2094,8 +2094,8 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
 
   // Optim.
-  for (int i = 0; i < clique.size(); ++i) {
-    if (implications_[clique[i]].empty() || is_redundant_[clique[i]]) {
+  for (const Literal l : clique) {
+    if (implications_[l].empty() || is_redundant_[l]) {
       return clique;
     }
   }

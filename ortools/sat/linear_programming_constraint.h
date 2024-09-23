@@ -73,7 +73,8 @@ class ScatteredIntegerVector {
   template <bool check_overflow = true>
   bool AddLinearExpressionMultiple(IntegerValue multiplier,
                                    absl::Span<const glop::ColIndex> cols,
-                                   absl::Span<const IntegerValue> coeffs);
+                                   absl::Span<const IntegerValue> coeffs,
+                                   IntegerValue max_coeff_magnitude);
 
   // This is not const only because non_zeros is sorted. Note that sorting the
   // non-zeros make the result deterministic whether or not we were in sparse

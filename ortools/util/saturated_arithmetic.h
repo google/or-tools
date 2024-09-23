@@ -299,6 +299,19 @@ inline int64_t CapAdd(int64_t x, int64_t y) {
 #endif
 }
 
+// This avoid the need to convert to int64_t min/max and is about twice as fast
+// if it corresponds to your use case.
+inline bool AddIntoOverflow(int64_t x, int64_t* y) {
+#if defined(__clang__)
+  return __builtin_add_overflow(x, *y, y);
+#else
+  const int64_t result = TwosComplementAddition(x, *y);
+  if (AddHadOverflow(x, *y, result)) return true;
+  *y = result;
+  return false;
+#endif
+}
+
 inline void CapAddTo(int64_t x, int64_t* y) { *y = CapAdd(*y, x); }
 
 inline int64_t CapSub(int64_t x, int64_t y) {

@@ -235,8 +235,7 @@ bool CutData::AllCoefficientsArePositive() const {
 void CutData::Canonicalize() {
   num_relevant_entries = 0;
   max_magnitude = 0;
-  for (int i = 0; i < terms.size(); ++i) {
-    CutTerm& entry = terms[i];
+  for (CutTerm& entry : terms) {
     max_magnitude = std::max(max_magnitude, IntTypeAbs(entry.coeff));
     if (entry.HasRelevantLpValue()) {
       std::swap(terms[num_relevant_entries], entry);

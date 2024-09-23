@@ -97,10 +97,13 @@ int PresolveContext::NewIntVarWithDefinition(
   return new_var;
 }
 
-int PresolveContext::NewBoolVar() { return NewIntVar(Domain(0, 1)); }
+int PresolveContext::NewBoolVar(absl::string_view source) {
+  UpdateRuleStats(absl::StrCat("new_bool: ", source));
+  return NewIntVar(Domain(0, 1));
+}
 
 int PresolveContext::NewBoolVarWithClause(absl::Span<const int> clause) {
-  const int new_var = NewBoolVar();
+  const int new_var = NewBoolVar("with clause");
   if (hint_is_loaded_) {
     bool all_have_hint = true;
     for (const int literal : clause) {
@@ -124,7 +127,7 @@ int PresolveContext::NewBoolVarWithClause(absl::Span<const int> clause) {
       }
     }
 
-    // If there all literal where hinted and at zero, we set the hint of
+    // If all literals where hinted and at zero, we set the hint of
     // new_var to zero, otherwise we leave it unassigned.
     if (all_have_hint && !hint_has_value_[new_var]) {
       hint_has_value_[new_var] = true;
@@ -522,7 +525,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   if (!domains[var].Contains(hint_[var])) {
     LOG(FATAL) << "Hint with value " << hint_[var]
                << " infeasible when changing domain of " << var << " to "
-               << domain[var];
+               << domains[var];
   }
 #endif
 
@@ -598,7 +601,15 @@ void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   if (!is_todo) num_presolve_operations += num_times;
 
   if (logger_->LoggingIsEnabled()) {
-    VLOG(is_todo ? 3 : 2) << num_presolve_operations << " : " << name;
+    if (VLOG_IS_ON(1)) {
+      int level = is_todo ? 3 : 2;
+      if (std::abs(num_presolve_operations -
+                   params_.debug_max_num_presolve_operations()) <= 100) {
+        level = 1;
+      }
+      VLOG(level) << num_presolve_operations << " : " << name;
+    }
+
     stats_by_rule_name_[name] += num_times;
   }
 }
@@ -1378,7 +1389,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     var_map[var_min] = SavedLiteral(min_literal);
   } else {
     UpdateRuleStats("variables with 2 values: create encoding literal");
-    max_literal = NewBoolVar();
+    max_literal = NewBoolVar("var with 2 values");
     min_literal = NegatedRef(max_literal);
     var_map[var_min] = SavedLiteral(min_literal);
     var_map[var_max] = SavedLiteral(max_literal);
@@ -1411,9 +1422,9 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
 void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
                                                      int64_t value,
                                                      bool add_constraints) {
-  CHECK(RefIsPositive(var));
-  CHECK(!VariableWasRemoved(literal));
-  CHECK(!VariableWasRemoved(var));
+  DCHECK(RefIsPositive(var));
+  DCHECK(!VariableWasRemoved(literal));
+  DCHECK(!VariableWasRemoved(var));
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
 
   // The code below is not 100% correct if this is not the case.
@@ -1445,16 +1456,10 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
     // TODO(user): There is a bug here if the var == value was not in the
     // domain, it will just be ignored.
     CanonicalizeDomainOfSizeTwo(var);
-  } else {
-    VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
-            << ") == " << value;
-    eq_half_encoding_[var][value].insert(literal);
-    neq_half_encoding_[var][value].insert(NegatedRef(literal));
-    if (add_constraints) {
-      UpdateRuleStats("variables: add encoding constraint");
-      AddImplyInDomain(literal, var, Domain(value));
-      AddImplyInDomain(NegatedRef(literal), var, Domain(value).Complement());
-    }
+  } else if (add_constraints) {
+    UpdateRuleStats("variables: add encoding constraint");
+    AddImplyInDomain(literal, var, Domain(value));
+    AddImplyInDomain(NegatedRef(literal), var, Domain(value).Complement());
   }
 }
 
@@ -1462,32 +1467,25 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
                                                  int64_t value, bool imply_eq) {
   if (is_unsat_) return false;
   DCHECK(RefIsPositive(var));
-  if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
-    return SetLiteralToFalse(literal);
-  }
 
   // Creates the linking sets on demand.
   // Insert the enforcement literal in the half encoding map.
-  auto& direct_set =
-      imply_eq ? eq_half_encoding_[var][value] : neq_half_encoding_[var][value];
-  if (!direct_set.insert(literal).second) return false;  // Already there.
-
+  auto& direct_set = imply_eq ? eq_half_encoding_ : neq_half_encoding_;
+  if (!direct_set.insert({literal, var, value}).second) {
+    return false;  // Already there.
+  }
   VLOG(2) << "Collect lit(" << literal << ") implies var(" << var
           << (imply_eq ? ") == " : ") != ") << value;
   UpdateRuleStats("variables: detect half reified value encoding");
 
   // Note(user): We don't expect a lot of literals in these sets, so doing
   // a scan should be okay.
-  auto& other_set =
-      imply_eq ? neq_half_encoding_[var][value] : eq_half_encoding_[var][value];
-  for (const int other : other_set) {
-    if (GetLiteralRepresentative(other) != NegatedRef(literal)) continue;
-
+  auto& other_set = imply_eq ? neq_half_encoding_ : eq_half_encoding_;
+  if (other_set.contains({NegatedRef(literal), var, value})) {
     UpdateRuleStats("variables: detect fully reified value encoding");
     const int imply_eq_literal = imply_eq ? literal : NegatedRef(literal);
     InsertVarValueEncodingInternal(imply_eq_literal, var, value,
                                    /*add_constraints=*/false);
-    break;
   }
 
   return true;
@@ -1508,6 +1506,8 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
   }
   literal = GetLiteralRepresentative(literal);
   InsertVarValueEncodingInternal(literal, var, value, /*add_constraints=*/true);
+  eq_half_encoding_.insert({literal, var, value});
+  neq_half_encoding_.insert({NegatedRef(literal), var, value});
 
   if (hint_is_loaded_) {
     const int bool_var = PositiveRef(literal);
@@ -1524,6 +1524,7 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
                                                     int64_t value) {
   if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
+    // The literal cannot be true.
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
@@ -1532,7 +1533,10 @@ bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
 
 bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
                                                      int64_t value) {
-  if (!CanonicalizeEncoding(&var, &value)) return false;
+  if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
+    // The constraint is trivial.
+    return false;
+  }
   literal = GetLiteralRepresentative(literal);
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
 }
@@ -1541,16 +1545,16 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
   if (!CanonicalizeEncoding(&ref, &value)) return false;
-  const absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[ref];
-  const auto it = var_map.find(value);
-  if (it != var_map.end()) {
-    if (VariableWasRemoved(it->second.Get(this))) return false;
-    if (literal != nullptr) {
-      *literal = it->second.Get(this);
-    }
-    return true;
+  const auto first_it = encoding_.find(ref);
+  if (first_it == encoding_.end()) return false;
+  const auto it = first_it->second.find(value);
+  if (it == first_it->second.end()) return false;
+
+  if (VariableWasRemoved(it->second.Get(this))) return false;
+  if (literal != nullptr) {
+    *literal = it->second.Get(this);
   }
-  return false;
+  return true;
 }
 
 bool PresolveContext::IsFullyEncoded(int ref) const {
@@ -1627,14 +1631,14 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
       var_map[0] = SavedLiteral(NegatedRef(representative));
       return value == 1 ? representative : NegatedRef(representative);
     } else {
-      const int literal = NewBoolVar();
+      const int literal = NewBoolVar("integer encoding");
       InsertVarValueEncoding(literal, var, var_max);
       const int representative = GetLiteralRepresentative(literal);
       return value == var_max ? representative : NegatedRef(representative);
     }
   }
 
-  const int literal = NewBoolVar();
+  const int literal = NewBoolVar("integer encoding");
   InsertVarValueEncoding(literal, var, value);
   return GetLiteralRepresentative(literal);
 }
@@ -2161,7 +2165,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   const auto& it = reified_precedences_cache_.find(key);
   if (it != reified_precedences_cache_.end()) return it->second;
 
-  const int result = NewBoolVar();
+  const int result = NewBoolVar("reified precedence");
   reified_precedences_cache_[key] = result;
 
   // result => (time_i <= time_j) && active_i && active_j.

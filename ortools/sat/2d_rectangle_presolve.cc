@@ -14,17 +14,24 @@
 #include "ortools/sat/2d_rectangle_presolve.h"
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 
@@ -234,8 +241,6 @@ struct Edge {
   IntegerValue y_start;
   IntegerValue size;
 
-  enum class EdgePosition { TOP, BOTTOM, LEFT, RIGHT };
-
   static Edge GetEdge(const Rectangle& rectangle, EdgePosition pos) {
     switch (pos) {
       case EdgePosition::TOP:
@@ -266,6 +271,15 @@ struct Edge {
     return x_start == other.x_start && y_start == other.y_start &&
            size == other.size;
   }
+
+  static bool CompareXThenY(const Edge& a, const Edge& b) {
+    return std::tie(a.x_start, a.y_start, a.size) <
+           std::tie(b.x_start, b.y_start, b.size);
+  }
+  static bool CompareYThenX(const Edge& a, const Edge& b) {
+    return std::tie(a.y_start, a.x_start, a.size) <
+           std::tie(b.y_start, b.x_start, b.size);
+  }
 };
 }  // namespace
 
@@ -289,8 +303,6 @@ bool ReduceNumberofBoxes(std::vector<Rectangle>* mandatory_rectangles,
   absl::flat_hash_map<Edge, int> bottom_edges_to_rectangle;
   absl::flat_hash_map<Edge, int> left_edges_to_rectangle;
   absl::flat_hash_map<Edge, int> right_edges_to_rectangle;
-
-  using EdgePosition = Edge::EdgePosition;
 
   bool changed_optional = false;
   bool changed_mandatory = false;
@@ -401,6 +413,402 @@ bool ReduceNumberofBoxes(std::vector<Rectangle>* mandatory_rectangles,
     *optional_rectangles = std::move(new_rectangles);
   }
   return changed_mandatory;
+}
+
+Neighbours BuildNeighboursGraph(absl::Span<const Rectangle> rectangles) {
+  // To build a graph of neighbours, we build a sorted vector for each one of
+  // the edges (top, bottom, etc) of the rectangles. Then we merge the bottom
+  // and top vectors and iterate on it. Due to the sorting order, segments where
+  // the bottom of a rectangle touches the top of another one must consecutive.
+  std::vector<std::pair<Edge, int>> edges_to_rectangle[4];
+  std::vector<std::tuple<int, EdgePosition, int>> neighbours;
+  neighbours.reserve(2 * rectangles.size());
+  for (int edge_int = 0; edge_int < 4; ++edge_int) {
+    const EdgePosition edge_position = static_cast<EdgePosition>(edge_int);
+    edges_to_rectangle[edge_position].reserve(rectangles.size());
+  }
+
+  for (int i = 0; i < rectangles.size(); ++i) {
+    const Rectangle& rectangle = rectangles[i];
+    for (int edge_int = 0; edge_int < 4; ++edge_int) {
+      const EdgePosition edge_position = static_cast<EdgePosition>(edge_int);
+      const Edge edge = Edge::GetEdge(rectangle, edge_position);
+      edges_to_rectangle[edge_position].push_back({edge, i});
+    }
+  }
+  for (int edge_int = 0; edge_int < 4; ++edge_int) {
+    const EdgePosition edge_position = static_cast<EdgePosition>(edge_int);
+    const bool sort_x_then_y = edge_position == EdgePosition::LEFT ||
+                               edge_position == EdgePosition::RIGHT;
+    const auto cmp =
+        sort_x_then_y
+            ? [](const std::pair<Edge, int>& a,
+                 const std::pair<Edge, int>&
+                     b) { return Edge::CompareXThenY(a.first, b.first); }
+            : [](const std::pair<Edge, int>& a, const std::pair<Edge, int>& b) {
+                return Edge::CompareYThenX(a.first, b.first);
+              };
+    absl::c_sort(edges_to_rectangle[edge_position], cmp);
+  }
+
+  constexpr struct EdgeData {
+    EdgePosition edge;
+    EdgePosition opposite_edge;
+    bool (*cmp)(const Edge&, const Edge&);
+  } edge_data[4] = {{.edge = EdgePosition::BOTTOM,
+                     .opposite_edge = EdgePosition::TOP,
+                     .cmp = &Edge::CompareYThenX},
+                    {.edge = EdgePosition::TOP,
+                     .opposite_edge = EdgePosition::BOTTOM,
+                     .cmp = &Edge::CompareYThenX},
+                    {.edge = EdgePosition::LEFT,
+                     .opposite_edge = EdgePosition::RIGHT,
+                     .cmp = &Edge::CompareXThenY},
+                    {.edge = EdgePosition::RIGHT,
+                     .opposite_edge = EdgePosition::LEFT,
+                     .cmp = &Edge::CompareXThenY}};
+
+  for (int edge_int = 0; edge_int < 4; ++edge_int) {
+    const EdgePosition edge_position = edge_data[edge_int].edge;
+    const EdgePosition opposite_edge_position =
+        edge_data[edge_int].opposite_edge;
+    auto it = edges_to_rectangle[edge_position].begin();
+    for (const auto& [edge, index] :
+         edges_to_rectangle[opposite_edge_position]) {
+      while (it != edges_to_rectangle[edge_position].end() &&
+             edge_data[edge_int].cmp(it->first, edge)) {
+        ++it;
+      }
+      if (it == edges_to_rectangle[edge_position].end()) {
+        break;
+      }
+      if (edge_position == EdgePosition::BOTTOM ||
+          edge_position == EdgePosition::TOP) {
+        while (it != edges_to_rectangle[edge_position].end() &&
+               it->first.y_start == edge.y_start &&
+               it->first.x_start < edge.x_start + edge.size) {
+          neighbours.push_back({index, opposite_edge_position, it->second});
+          neighbours.push_back({it->second, edge_position, index});
+          ++it;
+        }
+      } else {
+        while (it != edges_to_rectangle[edge_position].end() &&
+               it->first.x_start == edge.x_start &&
+               it->first.y_start < edge.y_start + edge.size) {
+          neighbours.push_back({index, opposite_edge_position, it->second});
+          neighbours.push_back({it->second, edge_position, index});
+          ++it;
+        }
+      }
+    }
+  }
+
+  gtl::STLSortAndRemoveDuplicates(&neighbours);
+  return Neighbours(rectangles, neighbours);
+}
+
+std::vector<std::vector<int>> SplitInConnectedComponents(
+    const Neighbours& neighbours) {
+  class GraphView {
+   public:
+    explicit GraphView(const Neighbours& neighbours)
+        : neighbours_(neighbours) {}
+    absl::Span<const int> operator[](int node) const {
+      temp_.clear();
+      for (int edge = 0; edge < 4; ++edge) {
+        const auto edge_neighbors = neighbours_.GetSortedNeighbors(
+            node, static_cast<EdgePosition>(edge));
+        for (int neighbor : edge_neighbors) {
+          temp_.push_back(neighbor);
+        }
+      }
+      return temp_;
+    }
+
+   private:
+    const Neighbours& neighbours_;
+    mutable std::vector<int> temp_;
+  };
+
+  std::vector<std::vector<int>> components;
+  FindStronglyConnectedComponents(neighbours.NumRectangles(),
+                                  GraphView(neighbours), &components);
+  return components;
+}
+
+namespace {
+IntegerValue GetClockwiseStart(EdgePosition edge, const Rectangle& rectangle) {
+  switch (edge) {
+    case EdgePosition::LEFT:
+      return rectangle.y_min;
+    case EdgePosition::RIGHT:
+      return rectangle.y_max;
+    case EdgePosition::BOTTOM:
+      return rectangle.x_max;
+    case EdgePosition::TOP:
+      return rectangle.x_min;
+  }
+}
+
+IntegerValue GetClockwiseEnd(EdgePosition edge, const Rectangle& rectangle) {
+  switch (edge) {
+    case EdgePosition::LEFT:
+      return rectangle.y_max;
+    case EdgePosition::RIGHT:
+      return rectangle.y_min;
+    case EdgePosition::BOTTOM:
+      return rectangle.x_min;
+    case EdgePosition::TOP:
+      return rectangle.x_max;
+  }
+}
+
+// Given a list of rectangles and their neighbours graph, find the list of
+// vertical and horizontal segments that touches a single rectangle edge. Or,
+// view in another way, the pieces of an edge that is touching the empty space.
+// For example, this corresponds to the "0" segments in the example below:
+//
+//   000000
+//   0****0    000000
+//   0****0    0****0
+//   0****0    0****0
+// 00******00000****00000
+// 0********************0
+// 0********************0
+// 0000000000000000000000
+void GetAllSegmentsTouchingVoid(
+    absl::Span<const Rectangle> rectangles, const Neighbours& neighbours,
+    std::vector<std::pair<Edge, int>>& vertical_edges_on_boundary,
+    std::vector<std::pair<Edge, int>>& horizontal_edges_on_boundary) {
+  for (int i = 0; i < rectangles.size(); ++i) {
+    const Rectangle& rectangle = rectangles[i];
+    for (int edge_int = 0; edge_int < 4; ++edge_int) {
+      const EdgePosition edge = static_cast<EdgePosition>(edge_int);
+      const auto box_neighbors = neighbours.GetSortedNeighbors(i, edge);
+      if (box_neighbors.empty()) {
+        if (edge == EdgePosition::LEFT || edge == EdgePosition::RIGHT) {
+          vertical_edges_on_boundary.push_back(
+              {Edge::GetEdge(rectangle, edge), i});
+        } else {
+          horizontal_edges_on_boundary.push_back(
+              {Edge::GetEdge(rectangle, edge), i});
+        }
+        continue;
+      }
+      IntegerValue previous_pos = GetClockwiseStart(edge, rectangle);
+      for (int n = 0; n <= box_neighbors.size(); ++n) {
+        IntegerValue neighbor_start;
+        const Rectangle* neighbor;
+        if (n == box_neighbors.size()) {
+          // On the last iteration we consider instead of the next neighbor the
+          // end of the current box.
+          neighbor_start = GetClockwiseEnd(edge, rectangle);
+        } else {
+          const int neighbor_idx = box_neighbors[n];
+          neighbor = &rectangles[neighbor_idx];
+          neighbor_start = GetClockwiseStart(edge, *neighbor);
+        }
+        switch (edge) {
+          case EdgePosition::LEFT:
+            if (neighbor_start > previous_pos) {
+              vertical_edges_on_boundary.push_back(
+                  {Edge{.x_start = rectangle.x_min,
+                        .y_start = previous_pos,
+                        .size = neighbor_start - previous_pos},
+                   i});
+            }
+            break;
+          case EdgePosition::RIGHT:
+            if (neighbor_start < previous_pos) {
+              vertical_edges_on_boundary.push_back(
+                  {Edge{.x_start = rectangle.x_max,
+                        .y_start = neighbor_start,
+                        .size = previous_pos - neighbor_start},
+                   i});
+            }
+            break;
+          case EdgePosition::BOTTOM:
+            if (neighbor_start < previous_pos) {
+              horizontal_edges_on_boundary.push_back(
+                  {Edge{.x_start = neighbor_start,
+                        .y_start = rectangle.y_min,
+                        .size = previous_pos - neighbor_start},
+                   i});
+            }
+            break;
+          case EdgePosition::TOP:
+            if (neighbor_start > previous_pos) {
+              horizontal_edges_on_boundary.push_back(
+                  {Edge{.x_start = previous_pos,
+                        .y_start = rectangle.y_max,
+                        .size = neighbor_start - previous_pos},
+                   i});
+            }
+            break;
+        }
+        if (n != box_neighbors.size()) {
+          previous_pos = GetClockwiseEnd(edge, *neighbor);
+        }
+      }
+    }
+  }
+}
+
+// Trace a boundary (interior or exterior) that contains the edge described by
+// starting_edge_position and starting_step_point. This method removes the edges
+// that were added to the boundary from `segments_to_follow`.
+ShapePath TraceBoundary(
+    const EdgePosition& starting_edge_position,
+    std::pair<IntegerValue, IntegerValue> starting_step_point,
+    std::array<absl::btree_map<std::pair<IntegerValue, IntegerValue>,
+                               std::pair<IntegerValue, int>>,
+               4>& segments_to_follow) {
+  // The boundary is composed of edges on the `segments_to_follow` map. So all
+  // we need is to find and glue them together on the right order.
+  ShapePath path;
+
+  auto extracted =
+      segments_to_follow[starting_edge_position].extract(starting_step_point);
+  CHECK(!extracted.empty());
+  const int first_index = extracted.mapped().second;
+
+  std::pair<IntegerValue, IntegerValue> cur = starting_step_point;
+  int cur_index = first_index;
+  // Now we navigate from one edge to the next. To avoid going back, we remove
+  // used edges from the hash map.
+  while (true) {
+    path.step_points.push_back(cur);
+
+    bool can_go[4] = {false, false, false, false};
+    EdgePosition direction_to_take = EdgePosition::LEFT;
+    for (int edge_int = 0; edge_int < 4; ++edge_int) {
+      const EdgePosition edge = static_cast<EdgePosition>(edge_int);
+      if (segments_to_follow[edge].contains(cur)) {
+        can_go[edge] = true;
+        direction_to_take = edge;
+      }
+    }
+
+    if (can_go == absl::Span<const bool>{false, false, false, false}) {
+      // Cannot move anywhere, we closed the loop.
+      break;
+    }
+
+    // Handle one pathological case.
+    if (can_go[EdgePosition::LEFT] && can_go[EdgePosition::RIGHT]) {
+      // Corner case (literally):
+      // ********
+      // ********
+      // ********
+      // ********
+      //       ^ +++++++++
+      //       | +++++++++
+      //       | +++++++++
+      //         +++++++++
+      //
+      // In this case we keep following the same box.
+      auto it_x = segments_to_follow[EdgePosition::LEFT].find(cur);
+      if (cur_index == it_x->second.second) {
+        direction_to_take = EdgePosition::LEFT;
+      } else {
+        direction_to_take = EdgePosition::RIGHT;
+      }
+    } else if (can_go[EdgePosition::TOP] && can_go[EdgePosition::BOTTOM]) {
+      auto it_y = segments_to_follow[EdgePosition::TOP].find(cur);
+      if (cur_index == it_y->second.second) {
+        direction_to_take = EdgePosition::TOP;
+      } else {
+        direction_to_take = EdgePosition::BOTTOM;
+      }
+    }
+
+    auto extracted = segments_to_follow[direction_to_take].extract(cur);
+    cur_index = extracted.mapped().second;
+    switch (direction_to_take) {
+      case EdgePosition::LEFT:
+        cur.first -= extracted.mapped().first;
+        segments_to_follow[EdgePosition::RIGHT].erase(
+            cur);  // Forbid going back
+        break;
+      case EdgePosition::RIGHT:
+        cur.first += extracted.mapped().first;
+        segments_to_follow[EdgePosition::LEFT].erase(cur);  // Forbid going back
+        break;
+      case EdgePosition::TOP:
+        cur.second += extracted.mapped().first;
+        segments_to_follow[EdgePosition::BOTTOM].erase(
+            cur);  // Forbid going back
+        break;
+      case EdgePosition::BOTTOM:
+        cur.second -= extracted.mapped().first;
+        segments_to_follow[EdgePosition::TOP].erase(cur);  // Forbid going back
+        break;
+    }
+    path.touching_box_index.push_back(cur_index);
+  }
+  path.touching_box_index.push_back(cur_index);
+
+  return path;
+}
+}  // namespace
+
+std::vector<SingleShape> BoxesToShapes(absl::Span<const Rectangle> rectangles,
+                                       const Neighbours& neighbours) {
+  std::vector<std::pair<Edge, int>> vertical_edges_on_boundary;
+  std::vector<std::pair<Edge, int>> horizontal_edges_on_boundary;
+  GetAllSegmentsTouchingVoid(rectangles, neighbours, vertical_edges_on_boundary,
+                             horizontal_edges_on_boundary);
+
+  std::array<absl::btree_map<std::pair<IntegerValue, IntegerValue>,
+                             std::pair<IntegerValue, int>>,
+             4>
+      segments_to_follow;
+
+  for (const auto& [edge, box_index] : vertical_edges_on_boundary) {
+    segments_to_follow[EdgePosition::TOP][{edge.x_start, edge.y_start}] = {
+        edge.size, box_index};
+    segments_to_follow[EdgePosition::BOTTOM][{
+        edge.x_start, edge.y_start + edge.size}] = {edge.size, box_index};
+  }
+  for (const auto& [edge, box_index] : horizontal_edges_on_boundary) {
+    segments_to_follow[EdgePosition::RIGHT][{edge.x_start, edge.y_start}] = {
+        edge.size, box_index};
+    segments_to_follow[EdgePosition::LEFT][{
+        edge.x_start + edge.size, edge.y_start}] = {edge.size, box_index};
+  }
+
+  const auto components = SplitInConnectedComponents(neighbours);
+  std::vector<SingleShape> result(components.size());
+  std::vector<int> box_to_component(rectangles.size());
+  for (int i = 0; i < components.size(); ++i) {
+    for (const int box_index : components[i]) {
+      box_to_component[box_index] = i;
+    }
+  }
+  while (!segments_to_follow[EdgePosition::LEFT].empty()) {
+    // Get edge most to the bottom left
+    const int box_index =
+        segments_to_follow[EdgePosition::RIGHT].begin()->second.second;
+    const std::pair<IntegerValue, IntegerValue> starting_step_point =
+        segments_to_follow[EdgePosition::RIGHT].begin()->first;
+    const int component_index = box_to_component[box_index];
+
+    // The left-most vertical edge of the connected component must be of its
+    // exterior boundary. So we must always see the exterior boundary before
+    // seeing any holes.
+    const bool is_hole = !result[component_index].boundary.step_points.empty();
+    ShapePath& path = is_hole ? result[component_index].holes.emplace_back()
+                              : result[component_index].boundary;
+    path = TraceBoundary(EdgePosition::RIGHT, starting_step_point,
+                         segments_to_follow);
+    if (is_hole) {
+      // Follow the usual convention that holes are in the inverse orientation
+      // of the external boundary.
+      absl::c_reverse(path.step_points);
+      absl::c_reverse(path.touching_box_index);
+    }
+  }
+  return result;
 }
 
 }  // namespace sat
