@@ -245,8 +245,8 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           break;
         default: {
           // TODO(user): report feasible status.
-          const HighsInfo& info = Highs::getInfo().
-          if (info.primal_solution_status == HighsSolutionStatus::kSolutionStatusFeasible)
+          const HighsInfo& info = highs.getInfo();
+          if (info.primal_solution_status == kSolutionStatusFeasible)
           response.set_status(MPSOLVER_FEASIBLE);
           break;
         }
