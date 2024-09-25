@@ -254,7 +254,7 @@ const T& TopN<T, Cmp>::peek_bottom() {
   return elements_.front();
 }
 template <class T, class Cmp>
-std::vector<T> TopN<T, Cmp>::Take()  {
+std::vector<T> TopN<T, Cmp>::Take() {
   std::vector<T> out = std::move(elements_);
   if (state_ != State::HEAP_SORTED) {
     std::sort(out.begin(), out.end(), cmp_);
