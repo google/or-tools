@@ -501,7 +501,7 @@ class MPSReaderTemplate {
   // Parses a file in MPS format; if successful, returns the type of MPS
   // format detected (one of `kFree` or `kFixed`). If `form` is either `kFixed`
   // or `kFree`, the function will either return `kFixed` (or `kFree`
-  // respectivelly) if the input data satisfies the format, or an
+  // respectively) if the input data satisfies the format, or an
   // `absl::InvalidArgumentError` otherwise.
   absl::StatusOr<MPSReaderFormat> ParseFile(
       absl::string_view file_name, DataWrapper* data,
@@ -510,7 +510,7 @@ class MPSReaderTemplate {
   // Parses a string in MPS format; if successful, returns the type of MPS
   // format detected (one of `kFree` or `kFixed`). If `form` is either `kFixed`
   // or `kFree`, the function will either return `kFixed` (or `kFree`
-  // respectivelly) if the input data satisfies the format, or an
+  // respectively) if the input data satisfies the format, or an
   // `absl::InvalidArgumentError` otherwise.
   absl::StatusOr<MPSReaderFormat> ParseString(
       absl::string_view source, DataWrapper* data,
@@ -720,6 +720,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
     } else {
       return line_info.InvalidArgumentError("Unknown section.");
     }
+
     if (section_ == internal::MPSSectionId::kName) {
       // NOTE(user): The name may differ between fixed and free forms. In
       // fixed form, the name has at most 8 characters, and starts at a specific
@@ -746,6 +747,21 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
         data->SetName(fixed_name);
       }
     }
+
+    // Supports the case where the direction is on the same line as the
+    // OBJSENSE keyword.
+    if (section_ == internal::MPSSectionId::kObjsense &&
+        line_info.GetFieldsSize() == 2 && free_form_) {
+      if (absl::StrContains(line_info.GetField(1), "MIN")) {
+        data->SetObjectiveDirection(/*maximize=*/false);
+      } else if (absl::StrContains(line_info.GetField(1), "MAX")) {
+        data->SetObjectiveDirection(/*maximize=*/true);
+      } else {
+        return line_info.InvalidArgumentError(
+            "Invalid inline objective direction.");
+      }
+    }
+
     return absl::OkStatus();
   }
   switch (section_) {
