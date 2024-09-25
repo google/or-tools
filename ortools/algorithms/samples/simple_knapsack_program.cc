@@ -15,12 +15,14 @@
 // [START import]
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <iterator>
 #include <numeric>
 #include <sstream>
 #include <vector>
 
 #include "ortools/algorithms/knapsack_solver.h"
+#include "ortools/base/logging.h"
 // [END import]
 
 namespace operations_research {
