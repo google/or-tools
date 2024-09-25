@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_ROUTING_FILTERS_H_
 #define OR_TOOLS_ROUTING_FILTERS_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
@@ -22,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
@@ -35,6 +37,84 @@
 #include "ortools/util/range_minimum_query.h"
 
 namespace operations_research::routing {
+
+// A vector that allows to revert back to a previously committed state,
+// get the set of changed indices, and get current and committed values.
+template <typename T>
+class CommittableVector {
+ public:
+  // Makes a vector with initial elements all committed to value.
+  CommittableVector<T>(size_t num_elements, const T& value)
+      : elements_(num_elements, {value, value}), changed_(num_elements) {}
+
+  // Return the size of the vector.
+  size_t Size() const { return elements_.size(); }
+
+  // Returns a copy of the value stored at index in the current state.
+  // Does not return a reference, because the class needs to know when elements
+  // are modified.
+  T Get(size_t index) const {
+    DCHECK_LT(index, elements_.size());
+    return elements_[index].current;
+  }
+
+  // Set the value stored at index in the current state to given value.
+  void Set(size_t index, const T& value) {
+    DCHECK_GE(index, 0);
+    DCHECK_LT(index, elements_.size());
+    changed_.Set(index);
+    elements_[index].current = value;
+  }
+
+  // Changes the values of the vector to those in the last Commit().
+  void Revert() {
+    for (const size_t index : changed_.PositionsSetAtLeastOnce()) {
+      elements_[index].current = elements_[index].committed;
+    }
+    changed_.ClearAll();
+  }
+
+  // Makes the current state committed, clearing all changes.
+  void Commit() {
+    for (const size_t index : changed_.PositionsSetAtLeastOnce()) {
+      elements_[index].committed = elements_[index].current;
+    }
+    changed_.ClearAll();
+  }
+
+  // Sets all elements of this vector to given value, and commits to this state.
+  // Supposes that there are no changes since the last Commit() or Revert().
+  void SetAllAndCommit(const T& value) {
+    DCHECK_EQ(0, changed_.NumberOfSetCallsWithDifferentArguments());
+    elements_.assign(elements_.size(), {value, value});
+  }
+
+  // Returns a copy of the value stored at index in the last committed state.
+  T GetCommitted(size_t index) const {
+    DCHECK_LT(index, elements_.size());
+    return elements_[index].committed;
+  }
+
+  // Return true iff the value at index has been Set() since the last Commit()
+  // or Revert(), even if the current value is the same as the committed value.
+  bool HasChanged(size_t index) const { return changed_[index]; }
+
+  // Returns the set of indices that have been Set() since the last Commit() or
+  // Revert().
+  const std::vector<size_t>& ChangedIndices() const {
+    return changed_.PositionsSetAtLeastOnce();
+  }
+
+ private:
+  struct VersionedElement {
+    T current;
+    T committed;
+  };
+  // Holds current and committed versions of values of this vector.
+  std::vector<VersionedElement> elements_;
+  // Holds indices that were Set() since the last Commit() or Revert().
+  SparseBitset<size_t> changed_;
+};
 
 /// Returns a filter tracking route constraints.
 IntVarLocalSearchFilter* MakeRouteConstraintFilter(
@@ -76,7 +156,7 @@ IntVarLocalSearchFilter* MakeVehicleVarFilter(
 IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
                                              bool propagate_own_objective_value,
                                              bool filter_objective_cost,
-                                             bool can_use_lp);
+                                             bool may_use_optimizers);
 
 /// Returns a filter handling dimension cumul bounds.
 IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
@@ -84,7 +164,7 @@ IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
 
 /// Returns a filter checking global linear constraints and costs.
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    GlobalDimensionCumulOptimizer* optimizer,
+    GlobalDimensionCumulOptimizer* lp_optimizer,
     GlobalDimensionCumulOptimizer* mp_optimizer, bool filter_objective_cost);
 
 /// Returns a filter checking the feasibility and cost of the resource

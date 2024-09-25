@@ -93,6 +93,11 @@ std::unique_ptr<RuinProcedure> MakeRuinProcedure(
       return std::make_unique<RandomWalkRemovalRuinProcedure>(
           model, rnd, ruin.random_walk().num_removed_visits(),
           num_neighbors_for_route_selection);
+    case RuinStrategy::kSisr:
+      return std::make_unique<SISRRuinProcedure>(
+          model, rnd, ruin.sisr().max_removed_sequence_size(),
+          ruin.sisr().avg_num_removed_visits(), ruin.sisr().bypass_factor(),
+          num_neighbors_for_route_selection);
     default:
       LOG(DFATAL) << "Unsupported ruin procedure.";
       return nullptr;
@@ -895,9 +900,14 @@ int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
 }
 
 SISRRuinProcedure::SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd,
-                                     int num_neighbors)
+                                     int max_removed_sequence_size,
+                                     int avg_num_removed_visits,
+                                     double bypass_factor, int num_neighbors)
     : model_(*model),
       rnd_(*rnd),
+      max_removed_sequence_size_(max_removed_sequence_size),
+      avg_num_removed_visits_(avg_num_removed_visits),
+      bypass_factor_(bypass_factor),
       neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
           {num_neighbors,
            /*add_vehicle_starts_to_neighbors=*/false,
@@ -921,23 +931,17 @@ std::function<int64_t(int64_t)> SISRRuinProcedure::Ruin(
   routing_solution_.Reset(assignment);
   ruined_routes_.SparseClearAll();
 
-  // TODO(user): add to proto.
-  const int max_cardinality_removed_sequences = 10;
-
-  // TODO(user): add to proto.
-  const int avg_num_removed_visits = 10;
-
   const double max_sequence_size =
-      std::min<double>(max_cardinality_removed_sequences,
+      std::min<double>(max_removed_sequence_size_,
                        ComputeAverageNonEmptyRouteSize(model_, *assignment));
 
   const double max_num_removed_sequences =
-      (4 * avg_num_removed_visits) / (1 + max_sequence_size) - 1;
+      (4 * avg_num_removed_visits_) / (1 + max_sequence_size) - 1;
   DCHECK_GE(max_num_removed_sequences, 1);
 
   const int num_sequences_to_remove =
       std::floor(std::uniform_real_distribution<double>(
-          1.0, max_num_removed_sequences)(rnd_));
+          1.0, max_num_removed_sequences + 1)(rnd_));
 
   // We start by disrupting the route where the seed visit is served.
   const int seed_route = RuinRoute(*assignment, seed_node, max_sequence_size);
@@ -979,7 +983,7 @@ int SISRRuinProcedure::RuinRoute(const Assignment& assignment,
       routing_solution_.GetRouteSize(route), global_max_sequence_size);
 
   int sequence_size = std::floor(
-      std::uniform_real_distribution<double>(1.0, max_sequence_size)(rnd_));
+      std::uniform_real_distribution<double>(1.0, max_sequence_size + 1)(rnd_));
 
   if (sequence_size == 1 || sequence_size == max_sequence_size ||
       boolean_dist_(rnd_)) {
@@ -1011,14 +1015,11 @@ void SISRRuinProcedure::RuinRouteWithSequenceProcedure(int64_t seed_visit,
 void SISRRuinProcedure::RuinRouteWithSplitSequenceProcedure(int64_t route,
                                                             int64_t seed_visit,
                                                             int sequence_size) {
-  // TODO(user): add to proto.
-  const double alpha = 0.01;
-
   const int max_num_bypassed_visits =
       routing_solution_.GetRouteSize(route) - sequence_size;
   int num_bypassed_visits = 1;
   while (num_bypassed_visits < max_num_bypassed_visits &&
-         probability_dist_(rnd_) >= alpha * probability_dist_(rnd_)) {
+         probability_dist_(rnd_) >= bypass_factor_ * probability_dist_(rnd_)) {
     ++num_bypassed_visits;
   }
 

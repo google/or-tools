@@ -1862,7 +1862,8 @@ class LocalSearchState {
   DEFINE_STRONG_INT_TYPE(ConstraintId, int);
   // Adds a variable domain to this state, returns a handler to the new domain.
   VariableDomainId AddVariableDomain(int64_t relaxed_min, int64_t relaxed_max);
-  void RelaxVariableDomain(VariableDomainId domain_id);
+  // Relaxes the domain, returns false iff the domain was already relaxed.
+  bool RelaxVariableDomain(VariableDomainId domain_id);
   bool TightenVariableDomainMin(VariableDomainId domain_id, int64_t value);
   bool TightenVariableDomainMax(VariableDomainId domain_id, int64_t value);
   int64_t VariableDomainMin(VariableDomainId domain_id) const;
@@ -2105,8 +2106,9 @@ class LocalSearchState::Variable {
   }
   void Relax() const {
     if (state_ == nullptr) return;
-    state_->RelaxVariableDomain(domain_id_);
-    state_->PropagateRelax(domain_id_);
+    if (state_->RelaxVariableDomain(domain_id_)) {
+      state_->PropagateRelax(domain_id_);
+    }
   }
   bool Exists() const { return state_ != nullptr; }
 

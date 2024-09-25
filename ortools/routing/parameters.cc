@@ -122,7 +122,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_make_inactive(BOOL_TRUE);
   o->set_use_make_chain_inactive(BOOL_TRUE);
   o->set_use_swap_active(BOOL_TRUE);
-  o->set_use_swap_active_chain(BOOL_FALSE);
+  o->set_use_swap_active_chain(BOOL_TRUE);
   o->set_use_extended_swap_active(BOOL_FALSE);
   o->set_use_shortest_path_swap_active(BOOL_TRUE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
@@ -143,6 +143,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_use_multi_armed_bandit_concatenate_operators(false);
   p.set_multi_armed_bandit_compound_operator_memory_coefficient(0.04);
   p.set_multi_armed_bandit_compound_operator_exploration_coefficient(1e12);
+  p.set_max_swap_active_chain_size(10);
   p.set_relocate_expensive_chain_num_arcs_to_consider(4);
   p.set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
   p.set_heuristic_close_nodes_lns_num_nodes(5);
@@ -317,6 +318,28 @@ void FindErrorsInIteratedLocalSearchParameters(
                    "ruin_strategy is set to RandomWalkRuinStrategy"
                    " but random_walk.num_removed_visits is 0 (should be "
                    "strictly positive)"));
+      } else if (ruin.strategy_case() == RuinStrategy::kSisr) {
+        if (ruin.sisr().avg_num_removed_visits() == 0) {
+          errors.emplace_back(
+              "iterated_local_search_parameters.ruin_recreate_parameters."
+              "ruin is set to SISRRuinStrategy"
+              " but sisr.avg_num_removed_visits is 0 (should be strictly "
+              "positive)");
+        }
+        if (ruin.sisr().max_removed_sequence_size() == 0) {
+          errors.emplace_back(
+              "iterated_local_search_parameters.ruin_recreate_parameters.ruin "
+              "is set to SISRRuinStrategy but "
+              "sisr.max_removed_sequence_size is 0 (should be strictly "
+              "positive)");
+        }
+        if (ruin.sisr().bypass_factor() < 0 ||
+            ruin.sisr().bypass_factor() > 1) {
+          errors.emplace_back(StrCat(
+              "iterated_local_search_parameters.ruin_recreate_parameters."
+              "ruin is set to SISRRuinStrategy"
+              " but sisr.bypass_factor is not in [0, 1]"));
+        }
       }
     }
 
@@ -685,6 +708,14 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     errors.emplace_back(
         "sat_parameters.enumerate_all_solutions cannot be true in parallel"
         " search");
+  }
+
+  if (search_parameters.max_swap_active_chain_size() < 1 &&
+      search_parameters.local_search_operators().use_swap_active_chain() ==
+          OptionalBoolean::BOOL_TRUE) {
+    errors.emplace_back(
+        "max_swap_active_chain_size must be greater than 1 if "
+        "local_search_operators.use_swap_active_chain is BOOL_TRUE");
   }
 
   FindErrorsInIteratedLocalSearchParameters(search_parameters, errors);

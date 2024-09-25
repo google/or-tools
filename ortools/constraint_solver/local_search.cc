@@ -3282,7 +3282,7 @@ LocalSearchState::Variable LocalSearchState::DummyVariable() {
   return {nullptr, VariableDomainId(-1)};
 }
 
-void LocalSearchState::RelaxVariableDomain(VariableDomainId domain_id) {
+bool LocalSearchState::RelaxVariableDomain(VariableDomainId domain_id) {
   DCHECK(state_domains_are_all_nonempty_);
   if (!state_has_relaxed_domains_) {
     trailed_num_committed_empty_domains_ = num_committed_empty_domains_;
@@ -3297,7 +3297,9 @@ void LocalSearchState::RelaxVariableDomain(VariableDomainId domain_id) {
       --num_committed_empty_domains_;
     }
     current_domains_[domain_id] = relaxed_domains_[domain_id];
+    return true;
   }
+  return false;
 }
 
 int64_t LocalSearchState::VariableDomainMin(VariableDomainId domain_id) const {

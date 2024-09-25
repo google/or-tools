@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <new>
 #include <string>
 #include <utility>
 #include <vector>
@@ -356,10 +357,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       std::vector<int64_t>* break_start_end_values) {
     cumul_values->clear();
     break_start_end_values->clear();
-    const RouteDimensionTravelInfo& dimension_travel_info =
+    const RouteDimensionTravelInfo* const dimension_travel_info =
         dimension_travel_info_per_route_.empty()
-            ? RouteDimensionTravelInfo()
-            : dimension_travel_info_per_route_[vehicle];
+            ? nullptr
+            : &dimension_travel_info_per_route_[vehicle];
     const Resource* resource = nullptr;
     if (rg_index_ >= 0 && model_.ResourceVar(vehicle, rg_index_)->Bound()) {
       const int resource_index =

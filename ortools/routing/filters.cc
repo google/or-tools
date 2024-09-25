@@ -43,7 +43,6 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/small_map.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/routing/lp_scheduling.h"
@@ -230,38 +229,43 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
   explicit ActiveNodeGroupFilter(const RoutingModel& routing_model)
       : IntVarLocalSearchFilter(routing_model.Nexts()),
         routing_model_(routing_model),
-        group_is_active_(routing_model.GetSameActivityGroupsCount(), false) {}
+        active_count_per_group_(routing_model.GetSameActivityGroupsCount(),
+                                {.active = 0, .unknown = 0}),
+        node_is_active_(routing_model.Nexts().size(), false),
+        node_is_unknown_(routing_model.Nexts().size(), false) {}
+
   bool Accept(const Assignment* delta, const Assignment* /*deltadelta*/,
               int64_t /*objective_min*/, int64_t /*objective_max*/) override {
-    absl::flat_hash_map<int, int> active_count_per_group;
-    absl::flat_hash_map<int, int> lns_count_per_group;
+    active_count_per_group_.Revert();
     const Assignment::IntContainer& container = delta->IntVarContainer();
     for (const IntVarElement& new_element : container.elements()) {
       IntVar* const var = new_element.Var();
       int64_t index = -1;
       if (!FindIndex(var, &index)) continue;
+      const int group = routing_model_.GetSameActivityGroupOfIndex(index);
+      ActivityCounts counts = active_count_per_group_.Get(group);
+      // Change contribution to counts: remove old state, add new state.
+      if (node_is_unknown_[index]) --counts.unknown;
+      if (node_is_active_[index]) --counts.active;
       if (new_element.Min() != new_element.Max()) {
-        // LNS detected.
-        lns_count_per_group[routing_model_.GetSameActivityGroupOfIndex(
-            index)]++;
-        continue;
+        ++counts.unknown;
+      } else if (new_element.Min() != index) {
+        ++counts.active;
       }
-      int& active_count = gtl::LookupOrInsert(
-          &active_count_per_group,
-          routing_model_.GetSameActivityGroupOfIndex(index), 0);
-      if (new_element.Min() != index) {
-        if (active_count < 0) return false;
-        ++active_count;
-      } else {
-        if (active_count > 0) return false;
-        --active_count;
-      }
+      active_count_per_group_.Set(group, counts);
     }
-    for (const auto& [group, count] : active_count_per_group) {
+    for (const int group : active_count_per_group_.ChangedIndices()) {
+      const ActivityCounts counts = active_count_per_group_.Get(group);
       const int group_size =
           routing_model_.GetSameActivityIndicesOfGroup(group).size();
-      if (std::abs(count) + lns_count_per_group[group] == group_size) continue;
-      if ((count > 0) != group_is_active_[group]) return false;
+      // The group constraint is respected iff either 0 or group size is inside
+      // interval [num_active, num_active + num_unknown],
+      if (counts.active == 0) continue;
+      if (counts.active <= group_size &&
+          group_size <= counts.active + counts.unknown) {
+        continue;
+      }
+      return false;
     }
     return true;
   }
@@ -269,28 +273,38 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
 
  private:
   void OnSynchronize(const Assignment* /*delta*/) override {
-    for (int group = 0; group < routing_model_.GetSameActivityGroupsCount();
-         ++group) {
-      bool is_group_active = false;
+    const int num_groups = routing_model_.GetSameActivityGroupsCount();
+    for (int group = 0; group < num_groups; ++group) {
+      ActivityCounts counts = {.active = 0, .unknown = 0};
       for (int node : routing_model_.GetSameActivityIndicesOfGroup(group)) {
         if (IsVarSynced(node)) {
-          is_group_active = (Value(node) != node);
-          break;
+          const bool is_active = (Value(node) != node);
+          node_is_active_[node] = is_active;
+          node_is_unknown_[node] = false;
+          counts.active += is_active ? 1 : 0;
+        } else {
+          ++counts.unknown;
+          node_is_unknown_[node] = true;
+          node_is_active_[node] = false;
         }
       }
-#ifndef NDEBUG
-      for (int node : routing_model_.GetSameActivityIndicesOfGroup(group)) {
-        if (IsVarSynced(node)) {
-          DCHECK_EQ((Value(node) != node), is_group_active);
-        }
-      }
-#endif  // NDEBUG
-      group_is_active_[group] = is_group_active;
+      active_count_per_group_.Set(group, counts);
     }
+    active_count_per_group_.Commit();
   }
 
   const RoutingModel& routing_model_;
-  std::vector<bool> group_is_active_;
+  struct ActivityCounts {
+    int active;
+    int unknown;
+  };
+  CommittableVector<ActivityCounts> active_count_per_group_;
+  // node_is_active_[node] is true iff node was synced and active at last
+  // Synchronize().
+  std::vector<bool> node_is_active_;
+  // node_is_unknown_[node] is true iff node was not synced at last
+  // Synchronize().
+  std::vector<bool> node_is_unknown_;
 };
 
 }  // namespace
@@ -310,54 +324,53 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
                                  bool filter_cost)
       : IntVarLocalSearchFilter(routing_model.Nexts()),
         routing_model_(routing_model),
-        active_per_disjunction_(routing_model.GetNumberOfDisjunctions(), 0),
-        inactive_per_disjunction_(routing_model.GetNumberOfDisjunctions(), 0),
+        count_per_disjunction_(routing_model.GetNumberOfDisjunctions(),
+                               {.active = 0, .inactive = 0}),
         synchronized_objective_value_(std::numeric_limits<int64_t>::min()),
         accepted_objective_value_(std::numeric_limits<int64_t>::min()),
         filter_cost_(filter_cost),
         has_mandatory_disjunctions_(routing_model.HasMandatoryDisjunctions()) {}
 
+  using Disjunction = RoutingModel::DisjunctionIndex;
+
   bool Accept(const Assignment* delta, const Assignment* /*deltadelta*/,
               int64_t /*objective_min*/, int64_t objective_max) override {
-    const int64_t kUnassigned = -1;
-    const Assignment::IntContainer& container = delta->IntVarContainer();
-    gtl::small_map<absl::flat_hash_map<RoutingModel::DisjunctionIndex, int>>
-        disjunction_active_deltas;
-    gtl::small_map<absl::flat_hash_map<RoutingModel::DisjunctionIndex, int>>
-        disjunction_inactive_deltas;
+    count_per_disjunction_.Revert();
     bool lns_detected = false;
-    // Update active/inactive count per disjunction for each element of delta.
-    for (const IntVarElement& new_element : container.elements()) {
-      IntVar* const var = new_element.Var();
-      int64_t index = kUnassigned;
-      if (FindIndex(var, &index)) {
-        const bool is_inactive =
-            (new_element.Min() <= index && new_element.Max() >= index);
-        if (new_element.Min() != new_element.Max()) {
-          lns_detected = true;
-        }
-        for (const RoutingModel::DisjunctionIndex disjunction_index :
-             routing_model_.GetDisjunctionIndices(index)) {
-          const bool is_var_synced = IsVarSynced(index);
-          if (!is_var_synced || (Value(index) == index) != is_inactive) {
-            ++gtl::LookupOrInsert(is_inactive ? &disjunction_inactive_deltas
-                                              : &disjunction_active_deltas,
-                                  disjunction_index, 0);
-            if (is_var_synced) {
-              --gtl::LookupOrInsert(is_inactive ? &disjunction_active_deltas
-                                                : &disjunction_inactive_deltas,
-                                    disjunction_index, 0);
-            }
-          }
-        }
+    // Update the active/inactive counts of each modified disjunction.
+    for (const IntVarElement& element : delta->IntVarContainer().elements()) {
+      int64_t node = -1;
+      if (!FindIndex(element.Var(), &node)) continue;
+      lns_detected |= element.Min() != element.Max();
+      // Compute difference in how this node contributes to activity counts.
+      const bool is_var_synced = IsVarSynced(node);
+      const bool was_active = is_var_synced && Value(node) != node;
+      const bool is_active = node < element.Min() || element.Max() < node;
+      ActivityCount contribution_delta = {.active = 0, .inactive = 0};
+      if (is_var_synced) {
+        contribution_delta.active -= was_active;
+        contribution_delta.inactive -= !was_active;
+      }
+      contribution_delta.active += is_active;
+      contribution_delta.inactive += !is_active;
+      // Common shortcut: if the change is neutral, counts stay the same.
+      if (contribution_delta.active == 0 && contribution_delta.inactive == 0) {
+        continue;
+      }
+      // Change counts of all disjunctions affected by this node.
+      for (const Disjunction disjunction :
+           routing_model_.GetDisjunctionIndices(node)) {
+        ActivityCount new_count =
+            count_per_disjunction_.Get(disjunction.value());
+        new_count.active += contribution_delta.active;
+        new_count.inactive += contribution_delta.inactive;
+        count_per_disjunction_.Set(disjunction.value(), new_count);
       }
     }
     // Check if any disjunction has too many active nodes.
-    for (const auto [disjunction_index, active_nodes_delta] :
-         disjunction_active_deltas) {
-      // Too many active nodes.
-      if (active_per_disjunction_[disjunction_index] + active_nodes_delta >
-          routing_model_.GetDisjunctionMaxCardinality(disjunction_index)) {
+    for (const int index : count_per_disjunction_.ChangedIndices()) {
+      if (count_per_disjunction_.Get(index).active >
+          routing_model_.GetDisjunctionMaxCardinality(Disjunction(index))) {
         return false;
       }
     }
@@ -367,70 +380,32 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
     }
     // Update penalty costs for disjunctions.
     accepted_objective_value_ = synchronized_objective_value_;
-    for (const auto [disjunction_index, inactive_nodes_delta] :
-         disjunction_inactive_deltas) {
-      const int64_t penalty =
-          routing_model_.GetDisjunctionPenalty(disjunction_index);
+    for (const int index : count_per_disjunction_.ChangedIndices()) {
+      // If num inactives did not change, skip. Common shortcut.
+      const int old_inactives =
+          count_per_disjunction_.GetCommitted(index).inactive;
+      const int new_inactives = count_per_disjunction_.Get(index).inactive;
+      if (old_inactives == new_inactives) continue;
+      // If this disjunction has no penalty for inactive nodes, skip.
+      const Disjunction disjunction(index);
+      const int64_t penalty = routing_model_.GetDisjunctionPenalty(disjunction);
       if (penalty == 0) continue;
-      const int current_inactive_nodes =
-          inactive_per_disjunction_[disjunction_index];
-      const int max_inactive_cardinality =
-          routing_model_.GetDisjunctionNodeIndices(disjunction_index).size() -
-          routing_model_.GetDisjunctionMaxCardinality(disjunction_index);
-      // Too many inactive nodes.
-      const int inactive_nodes_above_limit =
-          (current_inactive_nodes + inactive_nodes_delta) -
-          max_inactive_cardinality;
-      if (inactive_nodes_above_limit > 0 && penalty < 0) {
-        // Nodes are mandatory, i.e. exactly max_cardinality nodes must be
-        // performed, so the move is not acceptable.
-        return false;
-      }
 
-      const RoutingModel::PenaltyCostBehavior penalty_cost_behavior =
-          routing_model_.GetDisjunctionPenaltyCostBehavior(disjunction_index);
-      switch (penalty_cost_behavior) {
-        case RoutingModel::PenaltyCostBehavior::PENALIZE_ONCE:
-          if (inactive_nodes_above_limit > 0) {  // penalty cost to update
-            if (current_inactive_nodes <= max_inactive_cardinality) {
-              // Add penalty if there were not too many inactive nodes before
-              // the move.
-              CapAddTo(penalty, &accepted_objective_value_);
-            }
-          } else {  // no more penalty cost
-            if (current_inactive_nodes > max_inactive_cardinality) {
-              // Remove penalty if there were too many inactive nodes before the
-              // move.
-              accepted_objective_value_ =
-                  CapSub(accepted_objective_value_, penalty);
-            }
-          }
-          break;
-        case RoutingModel::PenaltyCostBehavior::PENALIZE_PER_INACTIVE:
-          if (inactive_nodes_above_limit > 0) {  // penalty cost to update
-            if (current_inactive_nodes <= max_inactive_cardinality) {
-              // Add penalty if there were not too many inactive nodes before
-              // the move.
-              CapAddTo(penalty * inactive_nodes_above_limit,
-                       &accepted_objective_value_);
-            } else if (inactive_nodes_delta != 0) {
-              // Update penalty cost if there are new or fewer inactive nodes.
-              CapAddTo(penalty * inactive_nodes_delta,
-                       &accepted_objective_value_);
-            }
-          } else {  // no more penalty cost
-            if (current_inactive_nodes > max_inactive_cardinality) {
-              // Remove penalty if there were too many inactive nodes before the
-              // move.
-              const int current_inactive_nodes_above_limit =
-                  current_inactive_nodes - max_inactive_cardinality;
-              accepted_objective_value_ =
-                  CapSub(accepted_objective_value_,
-                         penalty * current_inactive_nodes_above_limit);
-            }
-          }
-          break;
+      // Compute the new cost of activity bound violations.
+      const int max_inactives =
+          routing_model_.GetDisjunctionNodeIndices(disjunction).size() -
+          routing_model_.GetDisjunctionMaxCardinality(disjunction);
+      int new_violation = std::max(0, new_inactives - max_inactives);
+      int old_violation = std::max(0, old_inactives - max_inactives);
+      // If nodes are mandatory, there can be no violation.
+      if (penalty < 0 && new_violation > 0) return false;
+      if (routing_model_.GetDisjunctionPenaltyCostBehavior(disjunction) ==
+          RoutingModel::PenaltyCostBehavior::PENALIZE_ONCE) {
+        new_violation = std::min(1, new_violation);
+        old_violation = std::min(1, old_violation);
       }
+      CapAddTo(CapProd(penalty, (new_violation - old_violation)),
+               &accepted_objective_value_);
     }
     // Only compare to max as a cost lower bound is computed.
     return accepted_objective_value_ <= objective_max;
@@ -446,51 +421,44 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
  private:
   void OnSynchronize(const Assignment* /*delta*/) override {
     synchronized_objective_value_ = 0;
-    for (RoutingModel::DisjunctionIndex i(0);
-         i < active_per_disjunction_.size(); ++i) {
-      active_per_disjunction_[i] = 0;
-      inactive_per_disjunction_[i] = 0;
-      const std::vector<int64_t>& disjunction_indices =
-          routing_model_.GetDisjunctionNodeIndices(i);
-      for (const int64_t index : disjunction_indices) {
-        if (IsVarSynced(index)) {
-          if (Value(index) != index) {
-            ++active_per_disjunction_[i];
-          } else {
-            ++inactive_per_disjunction_[i];
-          }
-        }
+    count_per_disjunction_.Revert();
+    const int num_disjunctions = routing_model_.GetNumberOfDisjunctions();
+    for (Disjunction disjunction(0); disjunction < num_disjunctions;
+         ++disjunction) {
+      // Count number of active/inactive nodes of this disjunction.
+      ActivityCount count = {.active = 0, .inactive = 0};
+      const auto& nodes = routing_model_.GetDisjunctionNodeIndices(disjunction);
+      for (const int64_t node : nodes) {
+        if (!IsVarSynced(node)) continue;
+        const int is_active = Value(node) != node;
+        count.active += is_active;
+        count.inactive += !is_active;
       }
+      count_per_disjunction_.Set(disjunction.value(), count);
+      // Add penalty of this disjunction to total cost.
       if (!filter_cost_) continue;
-      const int64_t penalty = routing_model_.GetDisjunctionPenalty(i);
-      const int max_cardinality =
-          routing_model_.GetDisjunctionMaxCardinality(i);
-      const RoutingModel::PenaltyCostBehavior penalty_cost_behavior =
-          routing_model_.GetDisjunctionPenaltyCostBehavior(i);
-
-      const int inactive_nodes_above_limit =
-          inactive_per_disjunction_[i] -
-          (disjunction_indices.size() - max_cardinality);
-      if (inactive_nodes_above_limit > 0 && penalty > 0) {
-        switch (penalty_cost_behavior) {
-          case RoutingModel::PenaltyCostBehavior::PENALIZE_ONCE:
-            CapAddTo(penalty, &synchronized_objective_value_);
-            break;
-          case RoutingModel::PenaltyCostBehavior::PENALIZE_PER_INACTIVE:
-            CapAddTo(penalty * inactive_nodes_above_limit,
-                     &synchronized_objective_value_);
-            break;
+      const int64_t penalty = routing_model_.GetDisjunctionPenalty(disjunction);
+      const int max_actives =
+          routing_model_.GetDisjunctionMaxCardinality(disjunction);
+      int violation = count.inactive - (nodes.size() - max_actives);
+      if (violation > 0 && penalty > 0) {
+        if (routing_model_.GetDisjunctionPenaltyCostBehavior(disjunction) ==
+            RoutingModel::PenaltyCostBehavior::PENALIZE_ONCE) {
+          violation = std::min(1, violation);
         }
+        CapAddTo(CapProd(penalty, violation), &synchronized_objective_value_);
       }
     }
+    count_per_disjunction_.Commit();
+    accepted_objective_value_ = synchronized_objective_value_;
   }
 
   const RoutingModel& routing_model_;
-
-  util_intops::StrongVector<RoutingModel::DisjunctionIndex, int>
-      active_per_disjunction_;
-  util_intops::StrongVector<RoutingModel::DisjunctionIndex, int>
-      inactive_per_disjunction_;
+  struct ActivityCount {
+    int active = 0;
+    int inactive = 0;
+  };
+  CommittableVector<ActivityCount> count_per_disjunction_;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
   const bool filter_cost_;
@@ -1149,7 +1117,7 @@ class PathCumulFilter : public BasePathFilter {
   PathCumulFilter(const RoutingModel& routing_model,
                   const RoutingDimension& dimension,
                   bool propagate_own_objective_value,
-                  bool filter_objective_cost, bool can_use_lp);
+                  bool filter_objective_cost, bool may_use_optimizers);
   ~PathCumulFilter() override {}
   std::string DebugString() const override {
     return "PathCumulFilter(" + name_ + ")";
@@ -1163,7 +1131,7 @@ class PathCumulFilter : public BasePathFilter {
                : accepted_objective_value_;
   }
   bool UsesDimensionOptimizers() {
-    if (!can_use_lp_) return false;
+    if (!may_use_optimizers_) return false;
     for (int vehicle = 0; vehicle < routing_model_.vehicles(); ++vehicle) {
       if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) return true;
     }
@@ -1271,7 +1239,7 @@ class PathCumulFilter : public BasePathFilter {
   }
 
   bool FilterWithDimensionCumulOptimizerForVehicle(int vehicle) const {
-    if (!can_use_lp_ || FilterCumulPiecewiseLinearCosts()) {
+    if (!may_use_optimizers_ || FilterCumulPiecewiseLinearCosts()) {
       return false;
     }
 
@@ -1414,13 +1382,13 @@ class PathCumulFilter : public BasePathFilter {
   absl::btree_set<int> delta_paths_;
   const std::string name_;
 
-  LocalDimensionCumulOptimizer* optimizer_;
+  LocalDimensionCumulOptimizer* lp_optimizer_;
   LocalDimensionCumulOptimizer* mp_optimizer_;
   const std::function<int64_t(int64_t)> path_accessor_;
   const bool filter_objective_cost_;
   // This boolean indicates if the LP optimizer can be used if necessary to
   // optimize the dimension cumuls.
-  const bool can_use_lp_;
+  const bool may_use_optimizers_;
   const bool propagate_own_objective_value_;
 
   std::vector<int64_t> min_path_cumuls_;
@@ -1440,7 +1408,8 @@ std::vector<T> SumOfVectors(const std::vector<T>& v1,
 PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
                                  const RoutingDimension& dimension,
                                  bool propagate_own_objective_value,
-                                 bool filter_objective_cost, bool can_use_lp)
+                                 bool filter_objective_cost,
+                                 bool may_use_optimizers)
     : BasePathFilter(routing_model.Nexts(), dimension.cumuls().size(),
                      routing_model.GetPathsMetadata()),
       routing_model_(routing_model),
@@ -1472,11 +1441,11 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       delta_max_end_cumul_(0),
       delta_nodes_with_precedences_and_changed_cumul_(routing_model.Size()),
       name_(dimension.name()),
-      optimizer_(routing_model.GetMutableLocalCumulLPOptimizer(dimension)),
+      lp_optimizer_(routing_model.GetMutableLocalCumulLPOptimizer(dimension)),
       mp_optimizer_(routing_model.GetMutableLocalCumulMPOptimizer(dimension)),
       path_accessor_([this](int64_t node) { return GetNext(node); }),
       filter_objective_cost_(filter_objective_cost),
-      can_use_lp_(can_use_lp),
+      may_use_optimizers_(may_use_optimizers),
       propagate_own_objective_value_(propagate_own_objective_value) {
   cumul_soft_bounds_.resize(cumuls_.size());
   cumul_soft_lower_bounds_.resize(cumuls_.size());
@@ -1555,7 +1524,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
 #ifndef NDEBUG
   for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
     if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
-      DCHECK_NE(optimizer_, nullptr);
+      DCHECK_NE(lp_optimizer_, nullptr);
       DCHECK_NE(mp_optimizer_, nullptr);
     }
   }
@@ -1723,7 +1692,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         LocalDimensionCumulOptimizer* const optimizer =
             (FilterSoftSpanQuadraticCost(vehicle) || FilterBreakCost(vehicle))
                 ? mp_optimizer_
-                : optimizer_;
+                : lp_optimizer_;
         DCHECK(optimizer != nullptr);
         const DimensionSchedulingStatus status =
             optimizer->ComputeRouteCumulCostWithoutFixedTransits(
@@ -2053,7 +2022,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       CapAdd(cumul_cost_delta_, CapProd(global_span_cost_coefficient_,
                                         CapSub(new_max_end, new_min_start)));
 
-  if (can_use_lp_ && optimizer_ != nullptr &&
+  if (may_use_optimizers_ && lp_optimizer_ != nullptr &&
       accepted_objective_value_ <= objective_max) {
     const size_t num_touched_paths = GetTouchedPathStarts().size();
     std::vector<int64_t> path_delta_cost_values(num_touched_paths, 0);
@@ -2066,7 +2035,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       }
       int64_t path_delta_cost_with_lp = 0;
       const DimensionSchedulingStatus status =
-          optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+          lp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
               vehicle, path_accessor_, /*resource=*/nullptr,
               filter_objective_cost_ ? &path_delta_cost_with_lp : nullptr);
       if (status == DimensionSchedulingStatus::INFEASIBLE) {
@@ -2242,11 +2211,11 @@ int64_t PathCumulFilter::ComputePathMaxStartFromEndCumul(
 IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
                                              bool propagate_own_objective_value,
                                              bool filter_objective_cost,
-                                             bool can_use_lp) {
+                                             bool may_use_optimizers) {
   RoutingModel& model = *dimension.model();
   return model.solver()->RevAlloc(
       new PathCumulFilter(model, dimension, propagate_own_objective_value,
-                          filter_objective_cost, can_use_lp));
+                          filter_objective_cost, may_use_optimizers));
 }
 
 namespace {
@@ -2812,11 +2781,11 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
   void OnSynchronize(const Assignment* delta) override;
   int64_t GetSynchronizedObjectiveValue() const override;
   std::string DebugString() const override {
-    return "LPCumulFilter(" + optimizer_.dimension()->name() + ")";
+    return "LPCumulFilter(" + lp_optimizer_.dimension()->name() + ")";
   }
 
  private:
-  GlobalDimensionCumulOptimizer& optimizer_;
+  GlobalDimensionCumulOptimizer& lp_optimizer_;
   GlobalDimensionCumulOptimizer& mp_optimizer_;
   const bool filter_objective_cost_;
   int64_t synchronized_cost_without_transit_;
@@ -2826,11 +2795,11 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
 };
 
 LPCumulFilter::LPCumulFilter(const std::vector<IntVar*>& nexts,
-                             GlobalDimensionCumulOptimizer* optimizer,
+                             GlobalDimensionCumulOptimizer* lp_optimizer,
                              GlobalDimensionCumulOptimizer* mp_optimizer,
                              bool filter_objective_cost)
     : IntVarLocalSearchFilter(nexts),
-      optimizer_(*optimizer),
+      lp_optimizer_(*lp_optimizer),
       mp_optimizer_(*mp_optimizer),
       filter_objective_cost_(filter_objective_cost),
       synchronized_cost_without_transit_(-1),
@@ -2861,8 +2830,8 @@ bool LPCumulFilter::Accept(const Assignment* delta,
   if (!filter_objective_cost_) {
     // No need to compute the cost of the LP, only verify its feasibility.
     delta_cost_without_transit_ = 0;
-    const DimensionSchedulingStatus status =
-        optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr, nullptr);
+    const DimensionSchedulingStatus status = lp_optimizer_.ComputeCumuls(
+        next_accessor, {}, nullptr, nullptr, nullptr);
     if (status == DimensionSchedulingStatus::OPTIMAL) return true;
     if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
         mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
@@ -2874,7 +2843,7 @@ bool LPCumulFilter::Accept(const Assignment* delta,
   }
 
   const DimensionSchedulingStatus status =
-      optimizer_.ComputeCumulCostWithoutFixedTransits(
+      lp_optimizer_.ComputeCumulCostWithoutFixedTransits(
           next_accessor, &delta_cost_without_transit_);
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
     delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
@@ -2899,7 +2868,7 @@ int64_t LPCumulFilter::GetAcceptedObjectiveValue() const {
 void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
   // TODO(user): Try to optimize this so the LP is not called when the last
   // computed delta cost corresponds to the solution being synchronized.
-  const RoutingModel& model = *optimizer_.dimension()->model();
+  const RoutingModel& model = *lp_optimizer_.dimension()->model();
   const auto& next_accessor = [this, &model](int64_t index) {
     return IsVarSynced(index)     ? Value(index)
            : model.IsStart(index) ? model.End(model.VehicleIndex(index))
@@ -2911,10 +2880,10 @@ void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
   }
   DimensionSchedulingStatus status =
       filter_objective_cost_
-          ? optimizer_.ComputeCumulCostWithoutFixedTransits(
+          ? lp_optimizer_.ComputeCumulCostWithoutFixedTransits(
                 next_accessor, &synchronized_cost_without_transit_)
-          : optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
-                                     nullptr);
+          : lp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
+                                        nullptr);
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
     // TODO(user): This should only happen if the LP solver times out.
     // DCHECK the fail wasn't due to an infeasible model.
@@ -2941,13 +2910,13 @@ int64_t LPCumulFilter::GetSynchronizedObjectiveValue() const {
 }  // namespace
 
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    GlobalDimensionCumulOptimizer* optimizer,
+    GlobalDimensionCumulOptimizer* lp_optimizer,
     GlobalDimensionCumulOptimizer* mp_optimizer, bool filter_objective_cost) {
-  DCHECK_NE(optimizer, nullptr);
+  DCHECK_NE(lp_optimizer, nullptr);
   DCHECK_NE(mp_optimizer, nullptr);
-  const RoutingModel& model = *optimizer->dimension()->model();
+  const RoutingModel& model = *lp_optimizer->dimension()->model();
   return model.solver()->RevAlloc(new LPCumulFilter(
-      model.Nexts(), optimizer, mp_optimizer, filter_objective_cost));
+      model.Nexts(), lp_optimizer, mp_optimizer, filter_objective_cost));
 }
 
 namespace {
@@ -3175,11 +3144,11 @@ void ResourceGroupAssignmentFilter::OnSynchronizePathFromStart(int64_t start) {
     vehicle_to_resource_class_assignment_costs_[v] = {route_cost};
     return;
   }
-  // NOTE(user): Even if filter_objective_cost_ is false, we still need to
-  // call ComputeVehicleToResourceClassAssignmentCosts() for every vehicle
-  // requiring resource assignment to keep track of whether or not a given
-  // vehicle-to-resource-class assignment is possible by storing 0 or -1 in
-  // vehicle_to_resource_class_assignment_costs_.
+  // NOTE(user): Even if filter_objective_cost_ is false, we
+  // still need to call ComputeVehicleToResourceClassAssignmentCosts() for every
+  // vehicle requiring resource assignment to keep track of whether or not a
+  // given vehicle-to-resource-class assignment is possible by storing 0 or -1
+  // in vehicle_to_resource_class_assignment_costs_.
   if (!ComputeVehicleToResourceClassAssignmentCosts(
           v, resource_group_, ignored_resources_per_class_, next_accessor,
           dimension_.transit_evaluator(v), filter_objective_cost_,
@@ -3315,16 +3284,17 @@ class ResourceAssignmentFilter : public LocalSearchFilter {
 };
 
 ResourceAssignmentFilter::ResourceAssignmentFilter(
-    const std::vector<IntVar*>& nexts, LocalDimensionCumulOptimizer* optimizer,
+    const std::vector<IntVar*>& nexts,
+    LocalDimensionCumulOptimizer* lp_optimizer,
     LocalDimensionCumulOptimizer* mp_optimizer,
     bool propagate_own_objective_value, bool filter_objective_cost)
     : propagate_own_objective_value_(propagate_own_objective_value),
-      dimension_name_(optimizer->dimension()->name()) {
-  const RoutingModel& model = *optimizer->dimension()->model();
+      dimension_name_(lp_optimizer->dimension()->name()) {
+  const RoutingModel& model = *lp_optimizer->dimension()->model();
   for (const auto& resource_group : model.GetResourceGroups()) {
     resource_group_assignment_filters_.push_back(
         model.solver()->RevAlloc(new ResourceGroupAssignmentFilter(
-            nexts, resource_group.get(), optimizer, mp_optimizer,
+            nexts, resource_group.get(), lp_optimizer, mp_optimizer,
             filter_objective_cost)));
   }
 }
@@ -3361,14 +3331,14 @@ void ResourceAssignmentFilter::Synchronize(const Assignment* assignment,
 }  // namespace
 
 LocalSearchFilter* MakeResourceAssignmentFilter(
-    LocalDimensionCumulOptimizer* optimizer,
+    LocalDimensionCumulOptimizer* lp_optimizer,
     LocalDimensionCumulOptimizer* mp_optimizer,
     bool propagate_own_objective_value, bool filter_objective_cost) {
-  const RoutingModel& model = *optimizer->dimension()->model();
-  DCHECK_NE(optimizer, nullptr);
+  const RoutingModel& model = *lp_optimizer->dimension()->model();
+  DCHECK_NE(lp_optimizer, nullptr);
   DCHECK_NE(mp_optimizer, nullptr);
   return model.solver()->RevAlloc(new ResourceAssignmentFilter(
-      model.Nexts(), optimizer, mp_optimizer, propagate_own_objective_value,
+      model.Nexts(), lp_optimizer, mp_optimizer, propagate_own_objective_value,
       filter_objective_cost));
 }
 
@@ -4243,16 +4213,23 @@ bool LightVehicleBreaksChecker::Check() const {
     if (!path_data_[path].span.Exists()) continue;
     const int64_t total_transit = path_data_[path].total_transit.Min();
     // Compute lower bound of path span from break and path time windows.
+    const PathData& data = path_data_[path];
     int64_t lb_span_tw = total_transit;
-    const int64_t start_max = path_data_[path].start_cumul.Max();
-    const int64_t end_min = path_data_[path].end_cumul.Min();
-    for (const auto& br : path_data_[path].vehicle_breaks) {
+    const int64_t start_max = data.start_cumul.Max();
+    const int64_t end_min = data.end_cumul.Min();
+    for (const auto& br : data.vehicle_breaks) {
       if (!br.is_performed_min) continue;
       if (br.start_max < end_min && start_max < br.end_min) {
         CapAddTo(br.duration_min, &lb_span_tw);
       }
     }
-    if (!path_data_[path].span.SetMin(lb_span_tw)) return false;
+    if (!data.span.SetMin(lb_span_tw)) return false;
+    if (!data.start_cumul.SetMax(CapSub(data.end_cumul.Max(), lb_span_tw))) {
+      return false;
+    }
+    if (!data.end_cumul.SetMin(CapAdd(data.start_cumul.Min(), lb_span_tw))) {
+      return false;
+    }
   }
   return true;
 }
