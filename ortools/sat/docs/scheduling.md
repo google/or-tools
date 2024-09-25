@@ -195,7 +195,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	log "github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -231,7 +231,7 @@ func intervalSampleSat() error {
 
 func main() {
 	if err := intervalSampleSat(); err != nil {
-		glog.Exitf("intervalSampleSat returned with error: %v", err)
+		log.Exitf("intervalSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -421,7 +421,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	log "github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -454,7 +454,7 @@ func optionalIntervalSampleSat() error {
 
 func main() {
 	if err := optionalIntervalSampleSat(); err != nil {
-		glog.Exitf("optionalIntervalSampleSat returned with error: %v", err)
+		log.Exitf("optionalIntervalSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -841,8 +841,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
+	log "github.com/golang/glog"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -909,7 +909,7 @@ func noOverlapSampleSat() error {
 
 func main() {
 	if err := noOverlapSampleSat(); err != nil {
-		glog.Exitf("noOverlapSampleSat returned with error: %v", err)
+		log.Exitf("noOverlapSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -1865,8 +1865,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
+	log "github.com/golang/glog"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -1937,7 +1937,7 @@ func rankingSampleSat() error {
 
 	for t := 0; t < numTasks; t++ {
 		start := model.NewIntVarFromDomain(horizon)
-		duration := cpmodel.NewConstant(int64_t(t + 1))
+		duration := cpmodel.NewConstant(int64(t + 1))
 		end := model.NewIntVarFromDomain(horizon)
 		var presence cpmodel.BoolVar
 		if t < numTasks/2 {
@@ -2008,7 +2008,7 @@ func rankingSampleSat() error {
 
 func main() {
 	if err := rankingSampleSat(); err != nil {
-		glog.Exitf("rankingSampleSat returned with error: %v", err)
+		log.Exitf("rankingSampleSat returned with error: %v", err)
 	}
 }
 ```

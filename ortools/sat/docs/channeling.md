@@ -308,11 +308,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
-	cmpb "ortools/sat/cp_model_go_proto"
+	log "github.com/golang/glog"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
 )
 
 func channelingSampleSat() error {
@@ -367,7 +367,7 @@ func channelingSampleSat() error {
 
 func main() {
 	if err := channelingSampleSat(); err != nil {
-		glog.Exitf("channelingSampleSat returned with error: %v", err)
+		log.Exitf("channelingSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -895,7 +895,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	log "github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -907,7 +907,7 @@ const (
 )
 
 type item struct {
-	Cost, Copies int64_t
+	Cost, Copies int64
 }
 
 func binpackingProblemSat() error {
@@ -993,7 +993,7 @@ func binpackingProblemSat() error {
 
 func main() {
 	if err := binpackingProblemSat(); err != nil {
-		glog.Exitf("binpackingProblemSat returned with error: %v", err)
+		log.Exitf("binpackingProblemSat returned with error: %v", err)
 	}
 }
 ```

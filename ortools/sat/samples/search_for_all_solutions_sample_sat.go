@@ -18,10 +18,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
+	log "github.com/golang/glog"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
 )
 
 func searchForAllSolutionsSampleSat() error {
@@ -63,6 +63,6 @@ func searchForAllSolutionsSampleSat() error {
 
 func main() {
 	if err := searchForAllSolutionsSampleSat(); err != nil {
-		glog.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
+		log.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
 	}
 }

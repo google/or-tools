@@ -17,11 +17,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
-	cmpb "ortools/sat/cp_model_go_proto"
+	log "github.com/golang/glog"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
 )
 
 func stepFunctionSampleSat() error {
@@ -94,6 +94,6 @@ func stepFunctionSampleSat() error {
 
 func main() {
 	if err := stepFunctionSampleSat(); err != nil {
-		glog.Exitf("stepFunctionSampleSat returned with error: %v", err)
+		log.Exitf("stepFunctionSampleSat returned with error: %v", err)
 	}
 }

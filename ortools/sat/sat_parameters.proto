@@ -15,15 +15,15 @@ syntax = "proto2";
 
 package operations_research.sat;
 
+option csharp_namespace = "Google.OrTools.Sat";
+option go_package = "github.com/google/or-tools/ortools/sat/proto/satparameters";
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
-
-option csharp_namespace = "Google.OrTools.Sat";
 
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 299
+// NEXT TAG: 300
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.

@@ -17,10 +17,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
+	log "github.com/golang/glog"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
 )
 
 func solveAndPrintIntermediateSolutionsSampleSat() error {
@@ -65,6 +65,6 @@ func solveAndPrintIntermediateSolutionsSampleSat() error {
 
 func main() {
 	if err := solveAndPrintIntermediateSolutionsSampleSat(); err != nil {
-		glog.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
+		log.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
 	}
 }

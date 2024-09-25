@@ -113,7 +113,7 @@ public class LiteralSampleSat
 package main
 
 import (
-	"github.com/golang/glog"
+	log "github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -123,7 +123,7 @@ func literalSampleSat() {
 	x := model.NewBoolVar().WithName("x")
 	notX := x.Not()
 
-	glog.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
+	log.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
 }
 
 func main() {
@@ -525,10 +525,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
+	log "github.com/golang/glog"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
 )
 
 func booleanProductSample() error {
@@ -576,7 +576,7 @@ func booleanProductSample() error {
 func main() {
 	err := booleanProductSample()
 	if err != nil {
-		glog.Exitf("booleanProductSample returned with error: %v", err)
+		log.Exitf("booleanProductSample returned with error: %v", err)
 	}
 }
 ```

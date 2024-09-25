@@ -18,8 +18,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
+	log "github.com/golang/glog"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -58,6 +58,6 @@ func rabbitsAndPheasants() error {
 
 func main() {
 	if err := rabbitsAndPheasants(); err != nil {
-		glog.Exitf("rabbitsAndPheasants returned with error: %v", err)
+		log.Exitf("rabbitsAndPheasants returned with error: %v", err)
 	}
 }

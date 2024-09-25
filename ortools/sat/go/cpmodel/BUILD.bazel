@@ -18,8 +18,8 @@ go_library(
     srcs = [
         "cp_model.go",
         "cp_solver.go",
-        "cp_solver_c.cc",
-        "cp_solver_c.h",
+        #"cp_solver_c.cc",
+        #"cp_solver_c.h",
         "domain.go",
     ],
     cdeps = [":cp_solver_c"],
@@ -57,12 +57,12 @@ cc_library(
     srcs = ["cp_solver_c.cc"],
     hdrs = ["cp_solver_c.h"],
     deps = [
+        "//ortools/base:memutil",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
+        "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/log:check",
     ],
 )

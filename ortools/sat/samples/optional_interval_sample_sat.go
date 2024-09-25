@@ -18,7 +18,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	log "github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -51,6 +51,6 @@ func optionalIntervalSampleSat() error {
 
 func main() {
 	if err := optionalIntervalSampleSat(); err != nil {
-		glog.Exitf("optionalIntervalSampleSat returned with error: %v", err)
+		log.Exitf("optionalIntervalSampleSat returned with error: %v", err)
 	}
 }

@@ -18,7 +18,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	log "github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -30,7 +30,7 @@ const (
 )
 
 type item struct {
-	Cost, Copies int64_t
+	Cost, Copies int64
 }
 
 func binpackingProblemSat() error {
@@ -116,6 +116,6 @@ func binpackingProblemSat() error {
 
 func main() {
 	if err := binpackingProblemSat(); err != nil {
-		glog.Exitf("binpackingProblemSat returned with error: %v", err)
+		log.Exitf("binpackingProblemSat returned with error: %v", err)
 	}
 }

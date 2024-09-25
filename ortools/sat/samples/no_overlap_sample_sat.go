@@ -17,8 +17,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
+	log "github.com/golang/glog"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -85,6 +85,6 @@ func noOverlapSampleSat() error {
 
 func main() {
 	if err := noOverlapSampleSat(); err != nil {
-		glog.Exitf("noOverlapSampleSat returned with error: %v", err)
+		log.Exitf("noOverlapSampleSat returned with error: %v", err)
 	}
 }
