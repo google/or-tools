@@ -679,6 +679,18 @@ extern template class GenericMaxFlow<::util::ReverseArcListGraph<>>;
 extern template class GenericMaxFlow<::util::ReverseArcStaticGraph<>>;
 extern template class GenericMaxFlow<::util::ReverseArcMixedGraph<>>;
 
+// This method computes a minimum vertex cover for the bipartite graph.
+//
+// If we define num_left=left_to_right_arcs.size(), the "left" nodes are
+// integers in [0, num_left), and the "right" nodes are integers in [num_left,
+// num_left + num_right).
+//
+// Returns a vector of size num_left+num_right, such that element #l is true if
+// it is part of the minimum vertex cover and false if it is part of the maximum
+// independent set (one is the complement of the other).
+std::vector<bool> BipartiteMinimumVertexCover(
+    const std::vector<std::vector<int>>& left_to_right_arcs, int num_right);
+
 // Default instance MaxFlow that uses StarGraph. Note that we cannot just use a
 // typedef because of dependent code expecting MaxFlow to be a real class.
 // TODO(user): Modify this code and remove it.
