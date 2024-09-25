@@ -20,6 +20,7 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -232,7 +233,7 @@ bool CutData::AllCoefficientsArePositive() const {
   return true;
 }
 
-void CutData::Canonicalize() {
+void CutData::SortRelevantEntries() {
   num_relevant_entries = 0;
   max_magnitude = 0;
   for (CutTerm& entry : terms) {
@@ -269,92 +270,78 @@ double CutData::ComputeEfficacy() const {
   return violation / std::sqrt(norm);
 }
 
-void CutDataBuilder::ClearIndices() {
-  num_merges_ = 0;
-  constraint_is_indexed_ = false;
-  bool_index_.clear();
-  secondary_bool_index_.clear();
+// We can only merge the term if term.coeff + old_coeff do not overflow and
+// if t * new_coeff do not overflow.
+//
+// If we cannot merge the term, we will keep them separate. The produced cut
+// will be less strong, but can still be used.
+bool CutDataBuilder::MergeIfPossible(IntegerValue t, CutTerm& to_add,
+                                     CutTerm& target) {
+  DCHECK_EQ(to_add.expr_vars[0], target.expr_vars[0]);
+  DCHECK_EQ(to_add.expr_coeffs[0], target.expr_coeffs[0]);
+
+  const IntegerValue new_coeff = CapAddI(to_add.coeff, target.coeff);
+  if (AtMinOrMaxInt64I(new_coeff) || ProdOverflow(t, new_coeff)) {
+    return false;
+  }
+
+  to_add.coeff = 0;  // Clear since we merge it.
+  target.coeff = new_coeff;
+  return true;
 }
 
-void CutDataBuilder::RegisterAllBooleanTerms(const CutData& cut) {
-  constraint_is_indexed_ = true;
-  const int size = cut.terms.size();
-  for (int i = 0; i < size; ++i) {
-    const CutTerm& term = cut.terms[i];
+// We only deal with coeff * Bool or coeff * (1 - Bool)
+//
+// TODO(user): Because of merges, we might have entry with a coefficient of
+// zero than are not useful. Remove them?
+int CutDataBuilder::AddOrMergeBooleanTerms(absl::Span<CutTerm> new_terms,
+                                           IntegerValue t, CutData* cut) {
+  if (new_terms.empty()) return 0;
+
+  bool_index_.clear();
+  secondary_bool_index_.clear();
+  int num_merges = 0;
+
+  // Fill the maps.
+  int i = 0;
+  for (CutTerm& term : new_terms) {
+    const IntegerVariable var = term.expr_vars[0];
+    auto& map = term.expr_coeffs[0] > 0 ? bool_index_ : secondary_bool_index_;
+    const auto [it, inserted] = map.insert({var, i});
+    if (!inserted) {
+      if (MergeIfPossible(t, term, new_terms[it->second])) {
+        ++num_merges;
+      }
+    }
+    ++i;
+  }
+
+  // Loop over the cut now. Note that we loop with indices as we might add new
+  // terms in the middle of the loop.
+  for (CutTerm& term : cut->terms) {
     if (term.bound_diff != 1) continue;
     if (!term.IsSimple()) continue;
 
-    // Initially we shouldn't have duplicate bools and (1 - bools).
-    // So we just fill bool_index_.
-    bool_index_[term.expr_vars[0]] = i;
-  }
-}
+    const IntegerVariable var = term.expr_vars[0];
+    auto& map = term.expr_coeffs[0] > 0 ? bool_index_ : secondary_bool_index_;
+    auto it = map.find(var);
+    if (it == map.end()) continue;
 
-void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
-                                    CutData* cut) {
-  if (!constraint_is_indexed_) {
-    RegisterAllBooleanTerms(*cut);
-  }
-
-  DCHECK(term.IsSimple());
-  const IntegerVariable var = term.expr_vars[0];
-  const bool is_positive = (term.expr_coeffs[0] > 0);
-  const int new_index = cut->terms.size();
-  const auto [it, inserted] = bool_index_.insert({var, new_index});
-  if (inserted) {
-    cut->terms.push_back(term);
-    return;
-  }
-
-  // If the referred var is not right, replace the entry.
-  int entry_index = it->second;
-  if (entry_index >= new_index || cut->terms[entry_index].expr_vars[0] != var) {
-    it->second = new_index;
-    cut->terms.push_back(term);
-    return;
-  }
-
-  // If the sign is not right, look into secondary hash_map for opposite sign.
-  if ((cut->terms[entry_index].expr_coeffs[0] > 0) != is_positive) {
-    const auto [it, inserted] = secondary_bool_index_.insert({var, new_index});
-    if (inserted) {
-      cut->terms.push_back(term);
-      return;
-    }
-
-    // If the referred var is not right, replace the entry.
-    entry_index = it->second;
-    if (entry_index >= new_index ||
-        cut->terms[entry_index].expr_vars[0] != var) {
-      it->second = new_index;
-      cut->terms.push_back(term);
-      return;
-    }
-
-    // If the sign is not right, replace the entry.
-    if ((cut->terms[entry_index].expr_coeffs[0] > 0) != is_positive) {
-      it->second = new_index;
-      cut->terms.push_back(term);
-      return;
+    // We found a match, try to merge the map entry into the cut.
+    // Note that we don't waste time erasing this entry from the map since
+    // we should have no duplicates in the original cut.
+    if (MergeIfPossible(t, new_terms[it->second], term)) {
+      ++num_merges;
     }
   }
-  DCHECK_EQ(cut->terms[entry_index].expr_vars[0], var);
-  DCHECK_EQ((cut->terms[entry_index].expr_coeffs[0] > 0), is_positive);
 
-  // We can only merge the term if term.coeff + old_coeff do not overflow and
-  // if t * new_coeff do not overflow.
-  //
-  // If we cannot merge the term, we will keep them separate. The produced cut
-  // will be less strong, but can still be used.
-  const IntegerValue new_coeff =
-      CapAddI(cut->terms[entry_index].coeff, term.coeff);
-  if (AtMinOrMaxInt64I(new_coeff) || ProdOverflow(t, new_coeff)) {
-    // If we cannot merge the term, we keep them separate.
+  // Finally add the terms we couldn't merge.
+  for (const CutTerm& term : new_terms) {
+    if (term.coeff == 0) continue;
     cut->terms.push_back(term);
-  } else {
-    ++num_merges_;
-    cut->terms[entry_index].coeff = new_coeff;
   }
+
+  return num_merges;
 }
 
 // TODO(user): Divide by gcd first to avoid possible overflow in the
@@ -788,40 +775,38 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should be better except it can mess up the norm and the divisors.
   cut_ = base_ct;
   if (options.use_ib_before_heuristic && ib_processor != nullptr) {
-    ib_processor->BaseCutBuilder()->ClearNumMerges();
-    const int old_size = static_cast<int>(cut_.terms.size());
-    bool abort = true;
-    for (int i = 0; i < old_size; ++i) {
-      if (cut_.terms[i].bound_diff <= 1) continue;
-      if (!cut_.terms[i].HasRelevantLpValue()) continue;
+    std::vector<CutTerm>* new_bool_terms =
+        ib_processor->ClearedMutableTempTerms();
+    for (CutTerm& term : cut_.terms) {
+      if (term.bound_diff <= 1) continue;
+      if (!term.HasRelevantLpValue()) continue;
 
-      if (options.prefer_positive_ib && cut_.terms[i].coeff < 0) {
+      if (options.prefer_positive_ib && term.coeff < 0) {
         // We complement the term before trying the implied bound.
-        cut_.terms[i].Complement(&cut_.rhs);
+        term.Complement(&cut_.rhs);
         if (ib_processor->TryToExpandWithLowerImpliedbound(
-                IntegerValue(1), i,
-                /*complement=*/true, &cut_, ib_processor->BaseCutBuilder())) {
+                IntegerValue(1),
+                /*complement=*/true, &term, &cut_.rhs, new_bool_terms)) {
           ++total_num_initial_ibs_;
-          abort = false;
           continue;
         }
-        cut_.terms[i].Complement(&cut_.rhs);
+        term.Complement(&cut_.rhs);
       }
 
       if (ib_processor->TryToExpandWithLowerImpliedbound(
-              IntegerValue(1), i,
-              /*complement=*/true, &cut_, ib_processor->BaseCutBuilder())) {
-        abort = false;
+              IntegerValue(1),
+              /*complement=*/true, &term, &cut_.rhs, new_bool_terms)) {
         ++total_num_initial_ibs_;
       }
     }
-    total_num_initial_merges_ +=
-        ib_processor->BaseCutBuilder()->NumMergesSinceLastClear();
 
     // TODO(user): We assume that this is called with and without the option
     // use_ib_before_heuristic, so that we can abort if no IB has been applied
     // since then we will redo the computation. This is not really clean.
-    if (abort) return false;
+    if (new_bool_terms->empty()) return false;
+    total_num_initial_merges_ +=
+        ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
+            absl::MakeSpan(*new_bool_terms), IntegerValue(1), &cut_);
   }
 
   // Our heuristic will try to generate a few different cuts, and we will keep
@@ -841,7 +826,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
   //
   // TODO(user): If the rhs is small and close to zero, we might want to
   // consider different way of complementing the variables.
-  cut_.Canonicalize();
+  cut_.SortRelevantEntries();
   const IntegerValue remainder_threshold(
       std::max(IntegerValue(1), cut_.max_magnitude / 1000));
   if (cut_.rhs >= 0 && cut_.rhs < remainder_threshold.value()) {
@@ -996,11 +981,11 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should lead to stronger cuts even if the norms might be worse.
   num_ib_used_ = 0;
   if (ib_processor != nullptr) {
-    const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
-        f, factor_t, &cut_, &cut_builder_);
+    const auto [num_lb, num_ub, num_merges] =
+        ib_processor->PostprocessWithImpliedBound(f, factor_t, &cut_);
     total_num_pos_lifts_ += num_lb;
     total_num_neg_lifts_ += num_ub;
-    total_num_merges_ += cut_builder_.NumMergesSinceLastClear();
+    total_num_merges_ += num_merges;
     num_ib_used_ = num_lb + num_ub;
   }
 
@@ -1296,21 +1281,23 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
   // Tricky: This only work because the cut absl128 rhs is not changed by these
   // operations.
   if (ib_processor != nullptr) {
-    ib_processor->BaseCutBuilder()->ClearNumMerges();
-    const int old_size = static_cast<int>(cut_.terms.size());
-    for (int i = 0; i < old_size; ++i) {
+    std::vector<CutTerm>* new_bool_terms =
+        ib_processor->ClearedMutableTempTerms();
+    for (CutTerm& term : cut_.terms) {
       // We only look at non-Boolean with an lp value not close to the upper
       // bound.
-      const CutTerm& term = cut_.terms[i];
       if (term.bound_diff <= 1) continue;
       if (term.lp_value + 1e-4 > AsDouble(term.bound_diff)) continue;
 
       if (ib_processor->TryToExpandWithLowerImpliedbound(
-              IntegerValue(1), i,
-              /*complement=*/false, &cut_, ib_processor->BaseCutBuilder())) {
+              IntegerValue(1),
+              /*complement=*/false, &term, &cut_.rhs, new_bool_terms)) {
         ++cover_stats_.num_initial_ibs;
       }
     }
+
+    ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
+        absl::MakeSpan(*new_bool_terms), IntegerValue(1), &cut_);
   }
 
   bool has_relevant_int = false;
@@ -1386,11 +1373,11 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
   }
 
   if (ib_processor != nullptr) {
-    const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
-        f, /*factor_t=*/1, &cut_, &cut_builder_);
+    const auto [num_lb, num_ub, num_merges] =
+        ib_processor->PostprocessWithImpliedBound(f, /*factor_t=*/1, &cut_);
     cover_stats_.num_lb_ibs += num_lb;
     cover_stats_.num_ub_ibs += num_ub;
-    cover_stats_.num_merges += cut_builder_.NumMergesSinceLastClear();
+    cover_stats_.num_merges += num_merges;
   }
 
   cover_stats_.num_bumps += ApplyWithPotentialBump(f, best_coeff, &cut_);
@@ -1466,11 +1453,11 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
                                                                min_magnitude);
 
   if (ib_processor != nullptr) {
-    const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
-        f, /*factor_t=*/1, &cut_, &cut_builder_);
+    const auto [num_lb, num_ub, num_merges] =
+        ib_processor->PostprocessWithImpliedBound(f, /*factor_t=*/1, &cut_);
     flow_stats_.num_lb_ibs += num_lb;
     flow_stats_.num_ub_ibs += num_ub;
-    flow_stats_.num_merges += cut_builder_.NumMergesSinceLastClear();
+    flow_stats_.num_merges += num_merges;
   }
 
   // Lifting.
@@ -1525,16 +1512,19 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
     //
     // TODO(user): Merge Boolean terms that are complement of each other.
     if (ib_processor != nullptr) {
-      ib_processor->BaseCutBuilder()->ClearNumMerges();
-      const int old_size = static_cast<int>(cut_.terms.size());
-      for (int i = 0; i < old_size; ++i) {
-        if (cut_.terms[i].bound_diff <= 1) continue;
+      std::vector<CutTerm>* new_bool_terms =
+          ib_processor->ClearedMutableTempTerms();
+      for (CutTerm& term : cut_.terms) {
+        if (term.bound_diff <= 1) continue;
         if (ib_processor->TryToExpandWithLowerImpliedbound(
-                IntegerValue(1), i,
-                /*complement=*/false, &cut_, ib_processor->BaseCutBuilder())) {
+                IntegerValue(1),
+                /*complement=*/false, &term, &cut_.rhs, new_bool_terms)) {
           ++ls_stats_.num_initial_ibs;
         }
       }
+
+      ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
+          absl::MakeSpan(*new_bool_terms), IntegerValue(1), &cut_);
     }
 
     // TODO(user): we currently only deal with Boolean in the cover. Fix.
@@ -2191,9 +2181,9 @@ bool ImpliedBoundsProcessor::DecomposeWithImpliedUpperBound(
   return true;
 }
 
-std::pair<int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
+std::tuple<int, int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
     const std::function<IntegerValue(IntegerValue)>& f, IntegerValue factor_t,
-    CutData* cut, CutDataBuilder* builder) {
+    CutData* cut) {
   int num_applied_lb = 0;
   int num_applied_ub = 0;
 
@@ -2201,10 +2191,9 @@ std::pair<int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
   CutTerm slack_term;
   CutTerm ub_bool_term;
   CutTerm ub_slack_term;
-  builder->ClearIndices();
-  const int initial_size = cut->terms.size();
-  for (int i = 0; i < initial_size; ++i) {
-    CutTerm& term = cut->terms[i];
+
+  tmp_terms_.clear();
+  for (CutTerm& term : cut->terms) {
     if (term.bound_diff <= 1) continue;
     if (!term.IsSimple()) continue;
 
@@ -2254,30 +2243,31 @@ std::pair<int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
       // loose more, so we prefer to be a bit defensive.
       if (score > base_score + 1e-2) {
         ++num_applied_ub;
-        term = ub_slack_term;  // Override first before push_back() !
-        builder->AddOrMergeTerm(ub_bool_term, factor_t, cut);
+        term = ub_slack_term;
+        tmp_terms_.push_back(ub_bool_term);
         continue;
       }
     }
 
     if (expand) {
       ++num_applied_lb;
-      term = slack_term;  // Override first before push_back() !
-      builder->AddOrMergeTerm(bool_term, factor_t, cut);
+      term = slack_term;
+      tmp_terms_.push_back(bool_term);
     }
   }
-  return {num_applied_lb, num_applied_ub};
+
+  const int num_merges = cut_builder_.AddOrMergeBooleanTerms(
+      absl::MakeSpan(tmp_terms_), factor_t, cut);
+
+  return {num_applied_lb, num_applied_ub, num_merges};
 }
 
-// Important: The cut_builder_ must have been reset.
 bool ImpliedBoundsProcessor::TryToExpandWithLowerImpliedbound(
-    IntegerValue factor_t, int i, bool complement, CutData* cut,
-    CutDataBuilder* builder) {
-  CutTerm& term = cut->terms[i];
-
+    IntegerValue factor_t, bool complement, CutTerm* term, absl::int128* rhs,
+    std::vector<CutTerm>* new_bool_terms) {
   CutTerm bool_term;
   CutTerm slack_term;
-  if (!DecomposeWithImpliedLowerBound(term, factor_t, bool_term, slack_term)) {
+  if (!DecomposeWithImpliedLowerBound(*term, factor_t, bool_term, slack_term)) {
     return false;
   }
 
@@ -2286,26 +2276,22 @@ bool ImpliedBoundsProcessor::TryToExpandWithLowerImpliedbound(
   // It is always good to complement such variable.
   //
   // Note that here we do more and just complement anything closer to UB.
-  //
-  // TODO(user): Because of merges, we might have entry with a coefficient of
-  // zero than are not useful. Remove them.
   if (complement) {
     if (bool_term.lp_value > 0.5) {
-      bool_term.Complement(&cut->rhs);
+      bool_term.Complement(rhs);
     }
     if (slack_term.lp_value > 0.5 * AsDouble(slack_term.bound_diff)) {
-      slack_term.Complement(&cut->rhs);
+      slack_term.Complement(rhs);
     }
   }
 
-  term = slack_term;
-  builder->AddOrMergeTerm(bool_term, factor_t, cut);
+  *term = slack_term;
+  new_bool_terms->push_back(bool_term);
   return true;
 }
 
 bool ImpliedBoundsProcessor::CacheDataForCut(IntegerVariable first_slack,
                                              CutData* cut) {
-  base_cut_builder_.ClearIndices();
   cached_data_.clear();
 
   const int size = cut->terms.size();

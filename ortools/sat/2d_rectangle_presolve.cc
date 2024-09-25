@@ -31,6 +31,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/graph/max_flow.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
@@ -149,7 +150,7 @@ bool PresolveFixed2dRectangles(
         if (!new_box.IsDisjoint(existing_box)) {
           is_disjoint = false;
           for (const Rectangle& disjoint_box :
-               new_box.SetDifference(existing_box)) {
+               new_box.RegionDifference(existing_box)) {
             to_add.push_back(disjoint_box);
           }
           break;
@@ -209,7 +210,30 @@ bool PresolveFixed2dRectangles(
   optional_boxes.erase(optional_boxes.begin(),
                        optional_boxes.begin() + num_optional_boxes_to_remove);
 
-  if (ReduceNumberofBoxes(fixed_boxes, &optional_boxes)) {
+  // TODO(user): instead of doing the greedy algorithm first with optional
+  // boxes, and then the one that is exact for mandatory boxes but weak for
+  // optional ones, refactor the second algorithm. One possible way of doing
+  // that would be to follow the shape boundary of optional+mandatory boxes and
+  // look whether we can shave off some turns. For example, if we have a shape
+  // like below, with the "+" representing area covered by optional boxes, we
+  // can replace the turns by a straight line.
+  //
+  //          -->
+  //       ^ ++++
+  //       . ++++ .
+  //       . ++++ .       =>
+  //         ++++ \/
+  //     --> ++++                   -->  -->
+  //  ***********                ***********
+  //  ***********                ***********
+  //
+  // Since less turns means less edges, this should be a good way to reduce the
+  // number of boxes.
+  if (ReduceNumberofBoxesGreedy(fixed_boxes, &optional_boxes)) {
+    changed = true;
+  }
+  const int num_after_first_pass = fixed_boxes->size();
+  if (ReduceNumberOfBoxesExactMandatory(fixed_boxes, &optional_boxes)) {
     changed = true;
   }
   if (changed && VLOG_IS_ON(1)) {
@@ -219,8 +243,8 @@ bool PresolveFixed2dRectangles(
     }
     VLOG_EVERY_N_SEC(1, 1) << "Presolved " << original_num_boxes
                            << " fixed rectangles (area=" << original_area
-                           << ") into " << fixed_boxes->size()
-                           << " (area=" << area << ")";
+                           << ") into " << num_after_first_pass << " then "
+                           << fixed_boxes->size() << " (area=" << area << ")";
 
     VLOG_EVERY_N_SEC(2, 2) << "Presolved rectangles:\n"
                            << RenderDot(bounding_box, fixed_boxes_copy)
@@ -283,18 +307,10 @@ struct Edge {
 };
 }  // namespace
 
-bool ReduceNumberofBoxes(std::vector<Rectangle>* mandatory_rectangles,
-                         std::vector<Rectangle>* optional_rectangles) {
+bool ReduceNumberofBoxesGreedy(std::vector<Rectangle>* mandatory_rectangles,
+                               std::vector<Rectangle>* optional_rectangles) {
   // The current implementation just greedly merge rectangles that shares an
-  // edge. This is far from optimal, and it exists a polynomial optimal
-  // algorithm (see page 3 of [1]) for this problem at least for the case where
-  // optional_rectangles is empty.
-  //
-  // TODO(user): improve
-  //
-  // [1] Eppstein, David. "Graph-theoretic solutions to computational geometry
-  // problems." International Workshop on Graph-Theoretic Concepts in Computer
-  // Science. Berlin, Heidelberg: Springer Berlin Heidelberg, 2009.
+  // edge.
   std::vector<std::unique_ptr<Rectangle>> rectangle_storage;
   enum class OptionalEnum { OPTIONAL, MANDATORY };
   // bool for is_optional
@@ -809,6 +825,616 @@ std::vector<SingleShape> BoxesToShapes(absl::Span<const Rectangle> rectangles,
     }
   }
   return result;
+}
+
+namespace {
+struct PolygonCut {
+  std::pair<IntegerValue, IntegerValue> start;
+  std::pair<IntegerValue, IntegerValue> end;
+  int start_index;
+  int end_index;
+
+  struct CmpByStartY {
+    bool operator()(const PolygonCut& a, const PolygonCut& b) const {
+      return std::tie(a.start.second, a.start.first) <
+             std::tie(b.start.second, b.start.first);
+    }
+  };
+
+  struct CmpByEndY {
+    bool operator()(const PolygonCut& a, const PolygonCut& b) const {
+      return std::tie(a.end.second, a.end.first) <
+             std::tie(b.end.second, b.end.first);
+    }
+  };
+
+  struct CmpByStartX {
+    bool operator()(const PolygonCut& a, const PolygonCut& b) const {
+      return a.start < b.start;
+    }
+  };
+
+  struct CmpByEndX {
+    bool operator()(const PolygonCut& a, const PolygonCut& b) const {
+      return a.end < b.end;
+    }
+  };
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const PolygonCut& diagonal) {
+    absl::Format(&sink, "(%v,%v)-(%v,%v)", diagonal.start.first,
+                 diagonal.start.second, diagonal.end.first,
+                 diagonal.end.second);
+  }
+};
+
+// A different representation of a shape. The two vectors must have the same
+// size. The first one contains the points of the shape and the second one
+// contains the index of the next point in the shape.
+//
+// Note that we code in this file is only correct for shapes with points
+// connected only by horizontal or vertical lines.
+struct FlatShape {
+  std::vector<std::pair<IntegerValue, IntegerValue>> points;
+  std::vector<int> next;
+};
+
+EdgePosition GetSegmentDirection(
+    const std::pair<IntegerValue, IntegerValue>& curr_segment,
+    const std::pair<IntegerValue, IntegerValue>& next_segment) {
+  if (curr_segment.first == next_segment.first) {
+    return next_segment.second > curr_segment.second ? EdgePosition::TOP
+                                                     : EdgePosition::BOTTOM;
+  } else {
+    return next_segment.first > curr_segment.first ? EdgePosition::RIGHT
+                                                   : EdgePosition::LEFT;
+  }
+}
+
+// Given a polygon, this function returns all line segments that start on a
+// concave vertex and follow horizontally or vertically until it reaches the
+// border of the polygon. This function returns all such segments grouped on the
+// direction the line takes after starting in the concave vertex. Some of those
+// segments start and end on a convex vertex, so they will appear twice in the
+// output. This function modifies the shape by splitting some of the path
+// segments in two. This is needed to make sure that `PolygonCut.start_index`
+// and `PolygonCut.end_index` always corresponds to points in the FlatShape,
+// even if they are not edges.
+std::array<std::vector<PolygonCut>, 4> GetPotentialPolygonCuts(
+    FlatShape& shape) {
+  std::array<std::vector<PolygonCut>, 4> cuts;
+
+  // First, for each concave vertex we create a cut that starts at it and
+  // crosses the polygon until infinite (in practice, int_max/int_min).
+  for (int i = 0; i < shape.points.size(); i++) {
+    const auto& it = &shape.points[shape.next[i]];
+    const auto& previous = &shape.points[i];
+    const auto& next_segment = &shape.points[shape.next[shape.next[i]]];
+    const EdgePosition previous_dir = GetSegmentDirection(*previous, *it);
+    const EdgePosition next_dir = GetSegmentDirection(*it, *next_segment);
+
+    if ((previous_dir == EdgePosition::TOP && next_dir == EdgePosition::LEFT) ||
+        (previous_dir == EdgePosition::RIGHT &&
+         next_dir == EdgePosition::TOP)) {
+      cuts[EdgePosition::RIGHT].push_back(
+          {.start = *it,
+           .end = {std::numeric_limits<IntegerValue>::max(), it->second},
+           .start_index = shape.next[i]});
+    }
+    if ((previous_dir == EdgePosition::BOTTOM &&
+         next_dir == EdgePosition::RIGHT) ||
+        (previous_dir == EdgePosition::LEFT &&
+         next_dir == EdgePosition::BOTTOM)) {
+      cuts[EdgePosition::LEFT].push_back(
+          {.start = {std::numeric_limits<IntegerValue>::min(), it->second},
+           .end = *it,
+           .end_index = shape.next[i]});
+    }
+    if ((previous_dir == EdgePosition::RIGHT &&
+         next_dir == EdgePosition::TOP) ||
+        (previous_dir == EdgePosition::BOTTOM &&
+         next_dir == EdgePosition::RIGHT)) {
+      cuts[EdgePosition::BOTTOM].push_back(
+          {.start = {it->first, std::numeric_limits<IntegerValue>::min()},
+           .end = *it,
+           .end_index = shape.next[i]});
+    }
+    if ((previous_dir == EdgePosition::TOP && next_dir == EdgePosition::LEFT) ||
+        (previous_dir == EdgePosition::LEFT &&
+         next_dir == EdgePosition::BOTTOM)) {
+      cuts[EdgePosition::TOP].push_back(
+          {.start = *it,
+           .end = {it->first, std::numeric_limits<IntegerValue>::max()},
+           .start_index = shape.next[i]});
+    }
+  }
+
+  // Now that we have one of the points of the segment (the one starting on a
+  // vertex), we need to find the other point. This is basically finding the
+  // first path segment that crosses each cut connecting edge->infinity we
+  // collected above. We do a rather naive implementation of that below and its
+  // complexity is O(N^2) even if it should be fast in most cases. If it
+  // turns out to be costly on profiling we can use a more sophisticated
+  // algorithm for finding the first intersection.
+
+  // We need to sort the cuts so we can use binary search to quickly find cuts
+  // that cross a segment.
+  std::sort(cuts[EdgePosition::RIGHT].begin(), cuts[EdgePosition::RIGHT].end(),
+            PolygonCut::CmpByStartY());
+  std::sort(cuts[EdgePosition::LEFT].begin(), cuts[EdgePosition::LEFT].end(),
+            PolygonCut::CmpByEndY());
+  std::sort(cuts[EdgePosition::BOTTOM].begin(),
+            cuts[EdgePosition::BOTTOM].end(), PolygonCut::CmpByEndX());
+  std::sort(cuts[EdgePosition::TOP].begin(), cuts[EdgePosition::TOP].end(),
+            PolygonCut::CmpByStartX());
+
+  // This function cuts a segment in two if it crosses a cut. In any case, it
+  // returns the index of a point `point_idx` so that `shape.points[point_idx]
+  // == point_to_cut`.
+  const auto cut_segment_if_necessary =
+      [&shape](int segment_idx,
+               std::pair<IntegerValue, IntegerValue> point_to_cut) {
+        const auto& cur = shape.points[segment_idx];
+        const auto& next = shape.points[shape.next[segment_idx]];
+        if (cur.second == next.second) {
+          DCHECK_EQ(point_to_cut.second, cur.second);
+          // We have a horizontal segment
+          const IntegerValue edge_start = std::min(cur.first, next.first);
+          const IntegerValue edge_end = std::max(cur.first, next.first);
+
+          if (edge_start < point_to_cut.first &&
+              point_to_cut.first < edge_end) {
+            shape.points.push_back(point_to_cut);
+            const int next_idx = shape.next[segment_idx];
+            shape.next[segment_idx] = shape.points.size() - 1;
+            shape.next.push_back(next_idx);
+            return static_cast<int>(shape.points.size() - 1);
+          }
+          return (shape.points[segment_idx] == point_to_cut)
+                     ? segment_idx
+                     : shape.next[segment_idx];
+        } else {
+          DCHECK_EQ(cur.first, next.first);
+          DCHECK_EQ(point_to_cut.first, cur.first);
+          // We have a vertical segment
+          const IntegerValue edge_start = std::min(cur.second, next.second);
+          const IntegerValue edge_end = std::max(cur.second, next.second);
+
+          if (edge_start < point_to_cut.second &&
+              point_to_cut.second < edge_end) {
+            shape.points.push_back(point_to_cut);
+            const int next_idx = shape.next[segment_idx];
+            shape.next[segment_idx] = shape.points.size() - 1;
+            shape.next.push_back(next_idx);
+            return static_cast<int>(shape.points.size() - 1);
+          }
+          return (shape.points[segment_idx] == point_to_cut)
+                     ? segment_idx
+                     : shape.next[segment_idx];
+        }
+      };
+
+  for (int i = 0; i < shape.points.size(); i++) {
+    const auto* cur_point_ptr = &shape.points[shape.next[i]];
+    const auto* previous = &shape.points[i];
+    DCHECK(cur_point_ptr->first == previous->first ||
+           cur_point_ptr->second == previous->second)
+        << "found a segment that is neither horizontal nor vertical";
+    const EdgePosition direction =
+        GetSegmentDirection(*previous, *cur_point_ptr);
+
+    if (direction == EdgePosition::BOTTOM) {
+      const auto cut_start = absl::c_lower_bound(
+          cuts[EdgePosition::RIGHT],
+          PolygonCut{.start = {std::numeric_limits<IntegerValue>::min(),
+                               cur_point_ptr->second}},
+          PolygonCut::CmpByStartY());
+      auto cut_end = absl::c_upper_bound(
+          cuts[EdgePosition::RIGHT],
+          PolygonCut{.start = {std::numeric_limits<IntegerValue>::max(),
+                               previous->second}},
+          PolygonCut::CmpByStartY());
+
+      for (auto cut_it = cut_start; cut_it < cut_end; ++cut_it) {
+        PolygonCut& diagonal = *cut_it;
+        const IntegerValue diagonal_start_x = diagonal.start.first;
+        const IntegerValue diagonal_cur_end_x = diagonal.end.first;
+        // Our binary search guarantees those two conditions.
+        DCHECK_LE(cur_point_ptr->second, diagonal.start.second);
+        DCHECK_LE(diagonal.start.second, previous->second);
+
+        // Let's test if the diagonal crosses the current boundary segment
+        if (diagonal_start_x <= previous->first &&
+            diagonal_cur_end_x > cur_point_ptr->first) {
+          DCHECK_LT(diagonal_start_x, cur_point_ptr->first);
+          DCHECK_LE(previous->first, diagonal_cur_end_x);
+
+          diagonal.end.first = cur_point_ptr->first;
+
+          diagonal.end_index = cut_segment_if_necessary(i, diagonal.end);
+          DCHECK(shape.points[diagonal.end_index] == diagonal.end);
+
+          // Subtle: cut_segment_if_necessary might add new points to the vector
+          // of the shape, so the pointers computed from it might become
+          // invalid. Moreover, the current segment now is shorter, so we need
+          // to update our upper bound.
+          cur_point_ptr = &shape.points[shape.next[i]];
+          previous = &shape.points[i];
+          cut_end = absl::c_upper_bound(
+              cuts[EdgePosition::RIGHT],
+              PolygonCut{.start = {std::numeric_limits<IntegerValue>::max(),
+                                   previous->second}},
+              PolygonCut::CmpByStartY());
+        }
+      }
+    }
+
+    if (direction == EdgePosition::TOP) {
+      const auto cut_start = absl::c_lower_bound(
+          cuts[EdgePosition::LEFT],
+          PolygonCut{.end = {std::numeric_limits<IntegerValue>::min(),
+                             previous->second}},
+          PolygonCut::CmpByEndY());
+      auto cut_end = absl::c_upper_bound(
+          cuts[EdgePosition::LEFT],
+          PolygonCut{.end = {std::numeric_limits<IntegerValue>::max(),
+                             cur_point_ptr->second}},
+          PolygonCut::CmpByEndY());
+      for (auto cut_it = cut_start; cut_it < cut_end; ++cut_it) {
+        PolygonCut& diagonal = *cut_it;
+        const IntegerValue diagonal_start_x = diagonal.start.first;
+        const IntegerValue diagonal_cur_end_x = diagonal.end.first;
+        // Our binary search guarantees those two conditions.
+        DCHECK_LE(diagonal.end.second, cur_point_ptr->second);
+        DCHECK_LE(previous->second, diagonal.end.second);
+
+        // Let's test if the diagonal crosses the current boundary segment
+        if (diagonal_start_x < cur_point_ptr->first &&
+            previous->first <= diagonal_cur_end_x) {
+          DCHECK_LT(cur_point_ptr->first, diagonal_cur_end_x);
+          DCHECK_LE(diagonal_start_x, previous->first);
+
+          diagonal.start.first = cur_point_ptr->first;
+          diagonal.start_index = cut_segment_if_necessary(i, diagonal.start);
+          DCHECK(shape.points[diagonal.start_index] == diagonal.start);
+          cur_point_ptr = &shape.points[shape.next[i]];
+          previous = &shape.points[i];
+          cut_end = absl::c_upper_bound(
+              cuts[EdgePosition::LEFT],
+              PolygonCut{.end = {std::numeric_limits<IntegerValue>::max(),
+                                 cur_point_ptr->second}},
+              PolygonCut::CmpByEndY());
+        }
+      }
+    }
+
+    if (direction == EdgePosition::LEFT) {
+      const auto cut_start = absl::c_lower_bound(
+          cuts[EdgePosition::BOTTOM],
+          PolygonCut{.end = {cur_point_ptr->first,
+                             std::numeric_limits<IntegerValue>::min()}},
+          PolygonCut::CmpByEndX());
+      auto cut_end = absl::c_upper_bound(
+          cuts[EdgePosition::BOTTOM],
+          PolygonCut{.end = {previous->first,
+                             std::numeric_limits<IntegerValue>::max()}},
+          PolygonCut::CmpByEndX());
+      for (auto cut_it = cut_start; cut_it < cut_end; ++cut_it) {
+        PolygonCut& diagonal = *cut_it;
+        const IntegerValue diagonal_start_y = diagonal.start.second;
+        const IntegerValue diagonal_cur_end_y = diagonal.end.second;
+
+        // Our binary search guarantees those two conditions.
+        DCHECK_LE(cur_point_ptr->first, diagonal.end.first);
+        DCHECK_LE(diagonal.end.first, previous->first);
+
+        // Let's test if the diagonal crosses the current boundary segment
+        if (diagonal_start_y < cur_point_ptr->second &&
+            cur_point_ptr->second <= diagonal_cur_end_y) {
+          DCHECK_LE(diagonal_start_y, previous->second);
+          DCHECK_LT(cur_point_ptr->second, diagonal_cur_end_y);
+
+          diagonal.start.second = cur_point_ptr->second;
+          diagonal.start_index = cut_segment_if_necessary(i, diagonal.start);
+          DCHECK(shape.points[diagonal.start_index] == diagonal.start);
+          cur_point_ptr = &shape.points[shape.next[i]];
+          previous = &shape.points[i];
+          cut_end = absl::c_upper_bound(
+              cuts[EdgePosition::BOTTOM],
+              PolygonCut{.end = {previous->first,
+                                 std::numeric_limits<IntegerValue>::max()}},
+              PolygonCut::CmpByEndX());
+        }
+      }
+    }
+
+    if (direction == EdgePosition::RIGHT) {
+      const auto cut_start = absl::c_lower_bound(
+          cuts[EdgePosition::TOP],
+          PolygonCut{.start = {previous->first,
+                               std::numeric_limits<IntegerValue>::min()}},
+          PolygonCut::CmpByStartX());
+      auto cut_end = absl::c_upper_bound(
+          cuts[EdgePosition::TOP],
+          PolygonCut{.start = {cur_point_ptr->first,
+                               std::numeric_limits<IntegerValue>::max()}},
+          PolygonCut::CmpByStartX());
+      for (auto cut_it = cut_start; cut_it < cut_end; ++cut_it) {
+        PolygonCut& diagonal = *cut_it;
+        const IntegerValue diagonal_start_y = diagonal.start.second;
+        const IntegerValue diagonal_cur_end_y = diagonal.end.second;
+
+        // Our binary search guarantees those two conditions.
+        DCHECK_LE(previous->first, diagonal.start.first);
+        DCHECK_LE(diagonal.start.first, cur_point_ptr->first);
+
+        // Let's test if the diagonal crosses the current boundary segment
+        if (diagonal_start_y <= cur_point_ptr->second &&
+            cur_point_ptr->second < diagonal_cur_end_y) {
+          DCHECK_LT(diagonal_start_y, previous->second);
+          DCHECK_LE(cur_point_ptr->second, diagonal_cur_end_y);
+
+          diagonal.end.second = cur_point_ptr->second;
+          diagonal.end_index = cut_segment_if_necessary(i, diagonal.end);
+          DCHECK(shape.points[diagonal.end_index] == diagonal.end);
+          cur_point_ptr = &shape.points[shape.next[i]];
+          cut_end = absl::c_upper_bound(
+              cuts[EdgePosition::TOP],
+              PolygonCut{.start = {cur_point_ptr->first,
+                                   std::numeric_limits<IntegerValue>::max()}},
+              PolygonCut::CmpByStartX());
+          previous = &shape.points[i];
+        }
+      }
+    }
+  }
+  return cuts;
+}
+
+void CutShapeWithPolygonCuts(FlatShape& shape,
+                             absl::Span<const PolygonCut> cuts) {
+  std::vector<int> previous(shape.points.size(), -1);
+  for (int i = 0; i < shape.points.size(); i++) {
+    previous[shape.next[i]] = i;
+  }
+
+  std::vector<std::pair<int, int>> cut_previous_index(cuts.size(), {-1, -1});
+  for (int i = 0; i < cuts.size(); i++) {
+    DCHECK(cuts[i].start == shape.points[cuts[i].start_index]);
+    DCHECK(cuts[i].end == shape.points[cuts[i].end_index]);
+
+    cut_previous_index[i].first = previous[cuts[i].start_index];
+    cut_previous_index[i].second = previous[cuts[i].end_index];
+  }
+
+  for (const auto& [i, j] : cut_previous_index) {
+    const int prev_start_next = shape.next[i];
+    const int prev_end_next = shape.next[j];
+    const std::pair<IntegerValue, IntegerValue> start =
+        shape.points[prev_start_next];
+    const std::pair<IntegerValue, IntegerValue> end =
+        shape.points[prev_end_next];
+
+    shape.points.push_back(start);
+    shape.next[i] = shape.points.size() - 1;
+    shape.next.push_back(prev_end_next);
+
+    shape.points.push_back(end);
+    shape.next[j] = shape.points.size() - 1;
+    shape.next.push_back(prev_start_next);
+  }
+}
+}  // namespace
+
+// This function applies the method described in page 3 of [1].
+//
+// [1] Eppstein, David. "Graph-theoretic solutions to computational geometry
+// problems." International Workshop on Graph-Theoretic Concepts in Computer
+// Science. Berlin, Heidelberg: Springer Berlin Heidelberg, 2009.
+std::vector<Rectangle> CutShapeIntoRectangles(SingleShape shape) {
+  auto is_aligned = [](const std::pair<IntegerValue, IntegerValue>& p1,
+                       const std::pair<IntegerValue, IntegerValue>& p2,
+                       const std::pair<IntegerValue, IntegerValue>& p3) {
+    return ((p1.first == p2.first) == (p2.first == p3.first)) &&
+           ((p1.second == p2.second) == (p2.second == p3.second));
+  };
+  const auto add_segment =
+      [&is_aligned](const std::pair<IntegerValue, IntegerValue>& segment,
+                    const int start_index,
+                    std::vector<std::pair<IntegerValue, IntegerValue>>& points,
+                    std::vector<int>& next) {
+        if (points.size() > 1 + start_index &&
+            is_aligned(points[points.size() - 1], points[points.size() - 2],
+                       segment)) {
+          points.back() = segment;
+        } else {
+          points.push_back(segment);
+          next.push_back(points.size());
+        }
+      };
+
+  // To cut our polygon into rectangles, we first put it into a data structure
+  // that is easier to manipulate.
+  FlatShape flat_shape;
+  for (int i = 0; 1 + i < shape.boundary.step_points.size(); ++i) {
+    const std::pair<IntegerValue, IntegerValue>& segment =
+        shape.boundary.step_points[i];
+    add_segment(segment, 0, flat_shape.points, flat_shape.next);
+  }
+  flat_shape.next.back() = 0;
+  for (const ShapePath& hole : shape.holes) {
+    const int start = flat_shape.next.size();
+    if (hole.step_points.size() < 2) continue;
+    for (int i = 0; i + 1 < hole.step_points.size(); ++i) {
+      const std::pair<IntegerValue, IntegerValue>& segment =
+          hole.step_points[i];
+      add_segment(segment, start, flat_shape.points, flat_shape.next);
+    }
+    flat_shape.next.back() = start;
+  }
+
+  std::array<std::vector<PolygonCut>, 4> all_cuts =
+      GetPotentialPolygonCuts(flat_shape);
+
+  // Some cuts connect two concave edges and will be duplicated in all_cuts.
+  // Those are important: since they "fix" two concavities with a single cut,
+  // they are called "good diagonals" in the literature. Note that in
+  // computational geometry jargon, a diagonal of a polygon is a line segment
+  // that connects two non-adjacent vertices of a polygon, even in cases like
+  // ours that we are only talking of diagonals that are not "diagonal" in the
+  // usual meaning of the word: ie., horizontal or vertical segments connecting
+  // two vertices of the polygon).
+  std::array<std::vector<PolygonCut>, 2> good_diagonals;
+  for (const auto& d : all_cuts[EdgePosition::BOTTOM]) {
+    if (absl::c_binary_search(all_cuts[EdgePosition::TOP], d,
+                              PolygonCut::CmpByStartX())) {
+      good_diagonals[0].push_back(d);
+    }
+  }
+  for (const auto& d : all_cuts[EdgePosition::LEFT]) {
+    if (absl::c_binary_search(all_cuts[EdgePosition::RIGHT], d,
+                              PolygonCut::CmpByStartY())) {
+      good_diagonals[1].push_back(d);
+    }
+  }
+
+  // The "good diagonals" are only more optimal that any cut if they are not
+  // crossed by other cuts. To maximize their usefulness, we build a graph where
+  // the good diagonals are the vertices and we add an edge every time a
+  // vertical and horizontal diagonal cross. The minimum vertex cover of this
+  // graph is the minimal set of good diagonals that are not crossed by other
+  // cuts.
+  std::vector<std::vector<int>> arcs(good_diagonals[0].size());
+  for (int i = 0; i < good_diagonals[0].size(); ++i) {
+    for (int j = 0; j < good_diagonals[1].size(); ++j) {
+      const PolygonCut& vertical = good_diagonals[0][i];
+      const PolygonCut& horizontal = good_diagonals[1][j];
+      const IntegerValue vertical_x = vertical.start.first;
+      const IntegerValue horizontal_y = horizontal.start.second;
+      if (horizontal.start.first <= vertical_x &&
+          vertical_x <= horizontal.end.first &&
+          vertical.start.second <= horizontal_y &&
+          horizontal_y <= vertical.end.second) {
+        arcs[i].push_back(good_diagonals[0].size() + j);
+      }
+    }
+  }
+
+  const std::vector<bool> minimum_cover =
+      BipartiteMinimumVertexCover(arcs, good_diagonals[1].size());
+
+  std::vector<PolygonCut> minimum_cover_horizontal_diagonals;
+  for (int i = good_diagonals[0].size();
+       i < good_diagonals[0].size() + good_diagonals[1].size(); ++i) {
+    if (minimum_cover[i]) continue;
+    minimum_cover_horizontal_diagonals.push_back(
+        good_diagonals[1][i - good_diagonals[0].size()]);
+  }
+
+  // Since our data structure only allow to cut the shape according to a list
+  // of vertical or horizontal cuts, but not a list mixing both, we cut first
+  // on the chosen horizontal good diagonals.
+  CutShapeWithPolygonCuts(flat_shape, minimum_cover_horizontal_diagonals);
+
+  // We need to recompute the cuts after we applied the good diagonals, since
+  // the geometry has changed.
+  all_cuts = GetPotentialPolygonCuts(flat_shape);
+
+  // Now that we did all horizontal good diagonals, we need to cut on all
+  // vertical good diagonals and then cut arbitrarily to remove all concave
+  // edges. To make things simple, just apply all vertical cuts, since they
+  // include all the vertical good diagonals and also fully slice the shape into
+  // rectangles.
+
+  // Remove duplicates coming from good diagonals first.
+  std::vector<PolygonCut> cuts = all_cuts[EdgePosition::TOP];
+  for (const auto& cut : all_cuts[EdgePosition::BOTTOM]) {
+    if (!absl::c_binary_search(all_cuts[EdgePosition::TOP], cut,
+                               PolygonCut::CmpByStartX())) {
+      cuts.push_back(cut);
+    }
+  }
+
+  CutShapeWithPolygonCuts(flat_shape, cuts);
+
+  // Now every connected component of the shape is a rectangle. Build the final
+  // result.
+  std::vector<Rectangle> result;
+  std::vector<bool> seen(flat_shape.points.size(), false);
+  for (int i = 0; i < flat_shape.points.size(); ++i) {
+    if (seen[i]) continue;
+    Rectangle& rectangle = result.emplace_back(Rectangle{
+        .x_min = std::numeric_limits<IntegerValue>::max(),
+        .x_max = std::numeric_limits<IntegerValue>::min(),
+        .y_min = std::numeric_limits<IntegerValue>::max(),
+        .y_max = std::numeric_limits<IntegerValue>::min(),
+    });
+    int cur = i;
+    do {
+      seen[cur] = true;
+      rectangle.GrowToInclude({.x_min = flat_shape.points[cur].first,
+                               .x_max = flat_shape.points[cur].first,
+                               .y_min = flat_shape.points[cur].second,
+                               .y_max = flat_shape.points[cur].second});
+      cur = flat_shape.next[cur];
+      DCHECK_LT(cur, flat_shape.next.size());
+    } while (cur != i);
+  }
+
+  return result;
+}
+
+bool ReduceNumberOfBoxesExactMandatory(
+    std::vector<Rectangle>* mandatory_rectangles,
+    std::vector<Rectangle>* optional_rectangles) {
+  if (mandatory_rectangles->empty()) return false;
+  std::vector<Rectangle> result = *mandatory_rectangles;
+  std::vector<Rectangle> new_optional_rectangles = *optional_rectangles;
+
+  Rectangle mandatory_bounding_box = (*mandatory_rectangles)[0];
+  for (const Rectangle& box : *mandatory_rectangles) {
+    mandatory_bounding_box.GrowToInclude(box);
+  }
+  const std::vector<Rectangle> mandatory_empty_holes =
+      FindEmptySpaces(mandatory_bounding_box, *mandatory_rectangles);
+  const std::vector<std::vector<int>> mandatory_holes_components =
+      SplitInConnectedComponents(BuildNeighboursGraph(mandatory_empty_holes));
+
+  // Now for every connected component of the holes in the mandatory area, see
+  // if we can fill them with optional boxes.
+  std::vector<Rectangle> holes_in_component;
+  for (const std::vector<int>& component : mandatory_holes_components) {
+    holes_in_component.clear();
+    holes_in_component.reserve(component.size());
+    for (const int index : component) {
+      holes_in_component.push_back(mandatory_empty_holes[index]);
+    }
+    if (RegionIncludesOther(new_optional_rectangles, holes_in_component)) {
+      // Fill the hole.
+      result.insert(result.end(), holes_in_component.begin(),
+                    holes_in_component.end());
+      // We can modify `optional_rectangles` here since we know that if we
+      // remove a hole this function will return true.
+      new_optional_rectangles = PavedRegionDifference(
+          new_optional_rectangles, std::move(holes_in_component));
+    }
+  }
+  const Neighbours neighbours = BuildNeighboursGraph(result);
+  std::vector<SingleShape> shapes = BoxesToShapes(result, neighbours);
+
+  result.clear();
+  for (SingleShape& shape : shapes) {
+    // This is the function that applies the algorithm described in [1].
+    const std::vector<Rectangle> cut_rectangles =
+        CutShapeIntoRectangles(std::move(shape));
+    result.insert(result.end(), cut_rectangles.begin(), cut_rectangles.end());
+  }
+  // It is possible that the algorithm actually increases the number of boxes.
+  // See the "Problematic2" test.
+  if (result.size() >= mandatory_rectangles->size()) return false;
+  mandatory_rectangles->swap(result);
+  optional_rectangles->swap(new_optional_rectangles);
+  return true;
 }
 
 }  // namespace sat

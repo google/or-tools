@@ -483,7 +483,7 @@ TEST(RectangleTest, BasicTest) {
             Rectangle({.x_min = 1, .x_max = 2, .y_min = 1, .y_max = 2}));
 }
 
-TEST(RectangleTest, RandomSetDifferenceTest) {
+TEST(RectangleTest, RandomRegionDifferenceTest) {
   absl::BitGen random;
   const int64_t size = 20;
   constexpr int num_runs = 400;
@@ -497,7 +497,7 @@ TEST(RectangleTest, RandomSetDifferenceTest) {
       ret[i].y_max =
           ret[i].y_min + IntegerValue(absl::Uniform(random, 1, size - 1));
     }
-    auto set_diff = ret[0].SetDifference(ret[1]);
+    auto set_diff = ret[0].RegionDifference(ret[1]);
     EXPECT_EQ(set_diff.empty(), ret[0].Intersect(ret[1]) == ret[0]);
     IntegerValue diff_area = 0;
     for (int i = 0; i < set_diff.size(); ++i) {
@@ -511,6 +511,34 @@ TEST(RectangleTest, RandomSetDifferenceTest) {
       diff_area += area;
     }
     EXPECT_EQ(ret[0].IntersectArea(ret[1]) + diff_area, ret[0].Area());
+  }
+}
+
+TEST(RectangleTest, RandomPavedRegionDifferenceTest) {
+  absl::BitGen random;
+  constexpr int num_runs = 100;
+  for (int k = 0; k < num_runs; k++) {
+    const std::vector<Rectangle> set1 =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, random);
+    const std::vector<Rectangle> set2 =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, random);
+
+    const std::vector<Rectangle> diff = PavedRegionDifference(set1, set2);
+    for (int i = 0; i < diff.size(); ++i) {
+      for (int j = i + 1; j < diff.size(); ++j) {
+        EXPECT_TRUE(diff[i].IsDisjoint(diff[j]));
+      }
+    }
+    for (const auto& r_diff : diff) {
+      for (const auto& r2 : set2) {
+        EXPECT_TRUE(r_diff.IsDisjoint(r2));
+      }
+      IntegerValue area = 0;
+      for (const auto& r1 : set1) {
+        area += r_diff.IntersectArea(r1);
+      }
+      EXPECT_EQ(area, r_diff.Area());
+    }
   }
 }
 

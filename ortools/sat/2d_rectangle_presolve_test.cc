@@ -51,13 +51,15 @@ std::vector<Rectangle> BuildFromAsciiArt(std::string_view input) {
   for (int i = 0; i < lines.size(); i++) {
     for (int j = 0; j < lines[i].size(); j++) {
       if (lines[i][j] != ' ') {
-        rectangles.push_back(
-            {.x_min = j, .x_max = j + 1, .y_min = i, .y_max = i + 1});
+        rectangles.push_back({.x_min = j,
+                              .x_max = j + 1,
+                              .y_min = 2 * lines.size() - 2 * i,
+                              .y_max = 2 * lines.size() - 2 * i + 2});
       }
     }
   }
   std::vector<Rectangle> empty;
-  ReduceNumberofBoxes(&rectangles, &empty);
+  ReduceNumberofBoxesGreedy(&rectangles, &empty);
   return rectangles;
 }
 
@@ -156,8 +158,7 @@ TEST(RectanglePresolve, RemoveOutsideBB) {
 }
 
 TEST(RectanglePresolve, RandomTest) {
-  constexpr int kTotalRectangles = 100;
-  constexpr int kFixedRectangleSize = 60;
+  constexpr int kFixedRectangleSize = 10;
   constexpr int kNumRuns = 1000;
   absl::BitGen bit_gen;
 
@@ -165,9 +166,8 @@ TEST(RectanglePresolve, RandomTest) {
     // Start by generating a feasible problem that we know the solution with
     // some items fixed.
     std::vector<Rectangle> input =
-        GenerateNonConflictingRectangles(kTotalRectangles, bit_gen);
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 40, bit_gen);
     std::shuffle(input.begin(), input.end(), bit_gen);
-    CHECK_EQ(input.size(), kTotalRectangles);
     absl::Span<const Rectangle> fixed_rectangles =
         absl::MakeConstSpan(input).subspan(0, kFixedRectangleSize);
     absl::Span<const Rectangle> other_rectangles =
@@ -185,7 +185,12 @@ TEST(RectanglePresolve, RandomTest) {
                 << RenderDot(std::nullopt, new_fixed_rectangles);
     }
 
-    CHECK_LE(new_fixed_rectangles.size(), kFixedRectangleSize);
+    if (new_fixed_rectangles.size() > fixed_rectangles.size()) {
+      LOG(FATAL) << "Presolved:\n"
+                 << RenderDot(std::nullopt, fixed_rectangles) << "To:\n"
+                 << RenderDot(std::nullopt, new_fixed_rectangles);
+    }
+    CHECK_LE(new_fixed_rectangles.size(), fixed_rectangles.size());
 
     // Check if the original solution is still a solution.
     std::vector<Rectangle> all_rectangles(new_fixed_rectangles.begin(),
@@ -742,16 +747,14 @@ TEST(ContourTest, Random) {
         GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, bit_gen);
     std::shuffle(input.begin(), input.end(), bit_gen);
     const int num_fixed_rectangles = input.size() * 2 / 3;
-    absl::Span<const Rectangle> fixed_rectangles =
+    const absl::Span<const Rectangle> fixed_rectangles =
         absl::MakeConstSpan(input).subspan(0, num_fixed_rectangles);
-    absl::Span<const Rectangle> other_rectangles =
+    const absl::Span<const Rectangle> other_rectangles =
         absl::MakeSpan(input).subspan(num_fixed_rectangles);
-    std::vector<Rectangle> new_fixed_rectangles(fixed_rectangles.begin(),
-                                                fixed_rectangles.end());
     const std::vector<RectangleInRange> input_in_range =
         MakeItemsFromRectangles(other_rectangles, 0.6, bit_gen);
 
-    auto neighbours = BuildNeighboursGraph(fixed_rectangles);
+    const Neighbours neighbours = BuildNeighboursGraph(fixed_rectangles);
     const auto components = SplitInConnectedComponents(neighbours);
     const Rectangle bb = {.x_min = 0, .x_max = 100, .y_min = 0, .y_max = 100};
     int min_index = -1;
@@ -766,25 +769,26 @@ TEST(ContourTest, Random) {
       }
     }
 
-    auto s = BoxesToShapes(fixed_rectangles, neighbours);
-    for (int i = 0; i < s.size(); ++i) {
-      const ShapePath& shape = s[i].boundary;
+    const std::vector<SingleShape> shapes =
+        BoxesToShapes(fixed_rectangles, neighbours);
+    for (const SingleShape& shape : shapes) {
+      const ShapePath& boundary = shape.boundary;
       const ShapePath expected_shape =
-          TraceBoundary(shape.step_points[0], shape.touching_box_index[0],
+          TraceBoundary(boundary.step_points[0], boundary.touching_box_index[0],
                         fixed_rectangles, neighbours);
-      if (shape.step_points != expected_shape.step_points) {
+      if (boundary.step_points != expected_shape.step_points) {
         LOG(ERROR) << "Fast algo:\n"
-                   << RenderContour(bb, fixed_rectangles, shape);
+                   << RenderContour(bb, fixed_rectangles, boundary);
         LOG(ERROR) << "Naive algo:\n"
                    << RenderContour(bb, fixed_rectangles, expected_shape);
         LOG(FATAL) << "Found different solutions between naive and fast algo!";
       }
-      EXPECT_EQ(shape.step_points, expected_shape.step_points);
-      EXPECT_EQ(shape.touching_box_index, expected_shape.touching_box_index);
+      EXPECT_EQ(boundary.step_points, expected_shape.step_points);
+      EXPECT_EQ(boundary.touching_box_index, expected_shape.touching_box_index);
     }
 
     if (run == 0) {
-      LOG(INFO) << RenderShapes(bb, fixed_rectangles, s);
+      LOG(INFO) << RenderShapes(bb, fixed_rectangles, shapes);
     }
   }
 }
@@ -837,6 +841,143 @@ TEST(ContourTest, SimpleShapes) {
                           std::make_pair(20, 0), std::make_pair(10, 0),
                           std::make_pair(0, 0), std::make_pair(0, 10),
                           std::make_pair(0, 20)));
+}
+
+TEST(ContourTest, ExampleFromPaper) {
+  const std::vector<Rectangle> input = BuildFromAsciiArt(R"(
+                        *******************              
+                        *******************              
+    **********          *******************              
+    **********          *******************              
+    ***************************************              
+    ***************************************              
+    ***************************************              
+    ***************************************              
+    ***********     **************     ****              
+    ***********     **************     ****              
+    ***********     *******    ***     ****              
+    ***********     *******    ***     ****              
+    ***********     **************     ****              
+    ***********     **************     ****              
+    ***********     **************     ****              
+    ***************************************              
+    ***************************************              
+    ***************************************              
+        **************************************           
+        **************************************           
+        **************************************           
+        *******************************                  
+        ***************************************          
+        ***************************************          
+        ****************    ****************             
+        ****************    ****************             
+        ******              ***                          
+        ******              ***                          
+        ******              ***                          
+        ******                                           
+    )");
+  const Neighbours neighbours = BuildNeighboursGraph(input);
+  auto s = BoxesToShapes(input, neighbours);
+  LOG(INFO) << RenderDot(std::nullopt, input);
+  const std::vector<Rectangle> output = CutShapeIntoRectangles(s[0]);
+  LOG(INFO) << RenderDot(std::nullopt, output);
+  EXPECT_THAT(output.size(), 16);
+}
+
+bool RectanglesCoverSameArea(absl::Span<const Rectangle> a,
+                             absl::Span<const Rectangle> b) {
+  return RegionIncludesOther(a, b) && RegionIncludesOther(b, a);
+}
+
+TEST(ReduceNumberOfBoxes, RandomTestNoOptional) {
+  constexpr int kNumRuns = 1000;
+  absl::BitGen bit_gen;
+
+  for (int run = 0; run < kNumRuns; ++run) {
+    // Start by generating a feasible problem that we know the solution with
+    // some items fixed.
+    std::vector<Rectangle> input =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, bit_gen);
+    std::shuffle(input.begin(), input.end(), bit_gen);
+
+    std::vector<Rectangle> output = input;
+    std::vector<Rectangle> optional_rectangles_empty;
+    ReduceNumberOfBoxesExactMandatory(&output, &optional_rectangles_empty);
+    if (run == 0) {
+      LOG(INFO) << "Presolved:\n" << RenderDot(std::nullopt, input);
+      LOG(INFO) << "To:\n" << RenderDot(std::nullopt, output);
+    }
+
+    if (output.size() > input.size()) {
+      LOG(INFO) << "Presolved:\n" << RenderDot(std::nullopt, input);
+      LOG(INFO) << "To:\n" << RenderDot(std::nullopt, output);
+      ADD_FAILURE() << "ReduceNumberofBoxes() increased the number of boxes, "
+                       "but it should be optimal in reducing them!";
+    }
+    CHECK(RectanglesCoverSameArea(output, input));
+  }
+}
+
+TEST(ReduceNumberOfBoxes, Problematic) {
+  // This example shows that we must consider diagonals that touches only on its
+  // extremities as "intersecting" for the bipartite graph.
+  const std::vector<Rectangle> input = {
+      {.x_min = 26, .x_max = 51, .y_min = 54, .y_max = 81},
+      {.x_min = 51, .x_max = 78, .y_min = 44, .y_max = 67},
+      {.x_min = 51, .x_max = 62, .y_min = 67, .y_max = 92},
+      {.x_min = 78, .x_max = 98, .y_min = 24, .y_max = 54},
+  };
+  std::vector<Rectangle> output = input;
+  std::vector<Rectangle> optional_rectangles_empty;
+  ReduceNumberOfBoxesExactMandatory(&output, &optional_rectangles_empty);
+  LOG(INFO) << "Presolved:\n" << RenderDot(std::nullopt, input);
+  LOG(INFO) << "To:\n" << RenderDot(std::nullopt, output);
+}
+
+// This example shows that sometimes the best solution with respect to minimum
+// number of boxes requires *not* filling a hole. Actually this follows from the
+// formula that the minimum number of rectangles in a partition of a polygon
+// with n vertices and h holes is n/2 + h − g − 1, where g is the number of
+// non-intersecting good diagonals. This test-case shows a polygon with 4
+// internal vertices, 1 hole and 4 non-intersecting good diagonals that includes
+// the hole. Removing the hole reduces the n/2 term by 2, decrease the h term by
+// 1, but decrease the g term by 4.
+//
+//          ***********************
+//          ***********************
+//          ***********************.....................
+//          ***********************.....................
+//          ***********************.....................
+//          ***********************.....................
+//          ***********************.....................
+// ++++++++++++++++++++++          .....................
+// ++++++++++++++++++++++          .....................
+// ++++++++++++++++++++++          .....................
+// ++++++++++++++++++++++000000000000000000000000
+// ++++++++++++++++++++++000000000000000000000000
+// ++++++++++++++++++++++000000000000000000000000
+//                       000000000000000000000000
+//                       000000000000000000000000
+//                       000000000000000000000000
+//                       000000000000000000000000
+//
+TEST(ReduceNumberOfBoxes, Problematic2) {
+  const std::vector<Rectangle> input = {
+      {.x_min = 64, .x_max = 82, .y_min = 76, .y_max = 98},
+      {.x_min = 39, .x_max = 59, .y_min = 63, .y_max = 82},
+      {.x_min = 59, .x_max = 78, .y_min = 61, .y_max = 76},
+      {.x_min = 44, .x_max = 64, .y_min = 82, .y_max = 100},
+  };
+  std::vector<Rectangle> output = input;
+  std::vector<Rectangle> optional_rectangles = {
+      {.x_min = 59, .x_max = 64, .y_min = 76, .y_max = 82},
+  };
+  ReduceNumberOfBoxesExactMandatory(&output, &optional_rectangles);
+  LOG(INFO) << "Presolving:\n" << RenderDot(std::nullopt, input);
+
+  // Presolve will refuse to do anything since removing the hole will increase
+  // the number of boxes.
+  CHECK(input == output);
 }
 
 }  // namespace

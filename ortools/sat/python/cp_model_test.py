@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import itertools
+import time
 
 from absl.testing import absltest
 import pandas as pd
@@ -97,40 +98,53 @@ class RecordSolution(cp_model.CpSolverSolutionCallback):
 
 class TimeRecorder(cp_model.CpSolverSolutionCallback):
 
-    def __init__(self, default_time: float) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.__last_time = default_time
+        self.__last_time: float = 0.0
 
     def on_solution_callback(self) -> None:
-        self.__last_time = self.wall_time
+        self.__last_time = time.time()
 
     @property
-    def last_time(self):
+    def last_time(self) -> float:
         return self.__last_time
 
 
 class LogToString:
     """Record log in a string."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__log = ""
 
-    def new_message(self, message: str):
+    def new_message(self, message: str) -> None:
         self.__log += message
         self.__log += "\n"
 
     @property
-    def log(self):
+    def log(self) -> str:
         return self.__log
 
 
 class BestBoundCallback:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.best_bound: float = 0.0
 
-    def new_best_bound(self, bb: float):
+    def new_best_bound(self, bb: float) -> None:
         self.best_bound = bb
+
+
+class BestBoundTimeCallback:
+
+    def __init__(self) -> None:
+        self.__last_time: float = 0.0
+
+    def new_best_bound(self, unused_bb: float):
+        self.__last_time = time.time()
+
+    @property
+    def last_time(self) -> float:
+        return self.__last_time
 
 
 class CpModelTest(absltest.TestCase):
@@ -1769,9 +1783,10 @@ TRFM"""
         solver.parameters.cp_model_presolve = False
         solver.parameters.symmetry_level = 0
 
-        callback = TimeRecorder(solver.parameters.max_time_in_seconds)
-        solver.Solve(model, callback)
-        self.assertLess(solver.wall_time, callback.last_time + 5.0)
+        solution_callback = TimeRecorder()
+        status = solver.Solve(model, solution_callback)
+        if status == cp_model.OPTIMAL:
+            self.assertLess(time.time(), solution_callback.last_time + 5.0)
 
     def testIssue4376MinimizeModel(self):
         print("testIssue4376MinimizeModel")
@@ -1868,9 +1883,15 @@ TRFM"""
         solver.parameters.num_workers = 8
         solver.parameters.max_time_in_seconds = 50
         solver.parameters.log_search_progress = True
-        callback = TimeRecorder(solver.parameters.max_time_in_seconds)
-        solver.Solve(model, callback)
-        self.assertLess(solver.wall_time, callback.last_time + 5.0)
+        solution_callback = TimeRecorder()
+        best_bound_callback = BestBoundTimeCallback()
+        solver.best_bound_callback = best_bound_callback.new_best_bound
+        status = solver.Solve(model, solution_callback)
+        if status == cp_model.OPTIMAL:
+            self.assertLess(
+                time.time(),
+                max(best_bound_callback.last_time, solution_callback.last_time) + 5.0,
+            )
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ namespace operations_research {
 namespace sat {
 
 std::vector<IntegerVariable> NegationOf(
-    const std::vector<IntegerVariable>& vars) {
+    absl::Span<const IntegerVariable> vars) {
   std::vector<IntegerVariable> result(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
     result[i] = NegationOf(vars[i]);

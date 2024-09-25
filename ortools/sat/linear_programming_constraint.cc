@@ -219,10 +219,11 @@ void ScatteredIntegerVector::ConvertToCutData(
     CutData* result) {
   result->terms.clear();
   result->rhs = rhs;
+  absl::Span<const IntegerValue> dense_vector = dense_vector_;
   if (is_sparse_) {
     std::sort(non_zeros_.begin(), non_zeros_.end());
     for (const glop::ColIndex col : non_zeros_) {
-      const IntegerValue coeff = dense_vector_[col];
+      const IntegerValue coeff = dense_vector[col.value()];
       if (coeff == 0) continue;
       const IntegerVariable var = integer_variables[col.value()];
       CHECK(result->AppendOneTerm(var, coeff, lp_solution[col.value()],
@@ -230,12 +231,11 @@ void ScatteredIntegerVector::ConvertToCutData(
                                   integer_trail->LevelZeroUpperBound(var)));
     }
   } else {
-    const int size = dense_vector_.size();
-    for (glop::ColIndex col(0); col < size; ++col) {
-      const IntegerValue coeff = dense_vector_[col];
+    for (int col(0); col < dense_vector.size(); ++col) {
+      const IntegerValue coeff = dense_vector[col];
       if (coeff == 0) continue;
-      const IntegerVariable var = integer_variables[col.value()];
-      CHECK(result->AppendOneTerm(var, coeff, lp_solution[col.value()],
+      const IntegerVariable var = integer_variables[col];
+      CHECK(result->AppendOneTerm(var, coeff, lp_solution[col],
                                   integer_trail->LevelZeroLowerBound(var),
                                   integer_trail->LevelZeroUpperBound(var)));
     }
@@ -1466,8 +1466,6 @@ void LinearProgrammingConstraint::AddMirCuts() {
   const int num_rows = lp_data_.num_constraints().value();
   std::vector<std::pair<RowIndex, IntegerValue>> base_rows;
   util_intops::StrongVector<RowIndex, double> row_weights(num_rows, 0.0);
-  util_intops::StrongVector<RowIndex, bool> at_ub(num_rows, false);
-  util_intops::StrongVector<RowIndex, bool> at_lb(num_rows, false);
   for (RowIndex row(0); row < num_rows; ++row) {
     // We only consider tight rows.
     // We use both the status and activity to have as much options as possible.
@@ -1480,13 +1478,11 @@ void LinearProgrammingConstraint::AddMirCuts() {
     if (activity > lp_data_.constraint_upper_bounds()[row] - 1e-4 ||
         status == glop::ConstraintStatus::AT_UPPER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      at_ub[row] = true;
       base_rows.push_back({row, IntegerValue(1)});
     }
     if (activity < lp_data_.constraint_lower_bounds()[row] + 1e-4 ||
         status == glop::ConstraintStatus::AT_LOWER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      at_lb[row] = true;
       base_rows.push_back({row, IntegerValue(-1)});
     }
 
@@ -1604,16 +1600,20 @@ void LinearProgrammingConstraint::AddMirCuts() {
         if (used_rows[row]) continue;
         used_rows[row] = true;
 
-        // We only consider "tight" rows, as defined above.
+        // Note that we consider all rows here, not only tight one. This makes a
+        // big difference on problem like blp-ic98.pb.gz. We can also use the
+        // integrality of the slack when adding a non-tight row to derive good
+        // cuts. Also, non-tight row will have a low weight, so they should
+        // still be chosen after the tight-one in most situation.
         bool add_row = false;
-        if (at_ub[row]) {
+        if (!integer_lp_[row].ub_is_trivial) {
           if (entry.coefficient() > 0.0) {
             if (dense_cut[var_to_eliminate] < 0) add_row = true;
           } else {
             if (dense_cut[var_to_eliminate] > 0) add_row = true;
           }
         }
-        if (at_lb[row]) {
+        if (!integer_lp_[row].lb_is_trivial) {
           if (entry.coefficient() > 0.0) {
             if (dense_cut[var_to_eliminate] > 0) add_row = true;
           } else {
@@ -1933,7 +1933,7 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
 std::vector<std::pair<RowIndex, IntegerValue>>
 LinearProgrammingConstraint::ScaleLpMultiplier(
     bool take_objective_into_account, bool ignore_trivial_constraints,
-    const std::vector<std::pair<RowIndex, double>>& lp_multipliers,
+    absl::Span<const std::pair<RowIndex, double>> lp_multipliers,
     IntegerValue* scaling, int64_t overflow_cap) const {
   *scaling = 0;
 

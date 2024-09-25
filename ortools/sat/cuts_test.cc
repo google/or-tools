@@ -885,7 +885,6 @@ TEST(ImpliedBoundsProcessorTest, PositiveBasicTest) {
 
   // Lets look at the term X.
   CutData data;
-  CutDataBuilder builder;
 
   CutTerm X;
   X.coeff = 1;
@@ -898,9 +897,14 @@ TEST(ImpliedBoundsProcessorTest, PositiveBasicTest) {
   data.terms.push_back(X);
 
   processor.CacheDataForCut(IntegerVariable(100), &data);
-  EXPECT_TRUE(processor.TryToExpandWithLowerImpliedbound(IntegerValue(1), 0,
-                                                         /*complement=*/false,
-                                                         &data, &builder));
+  const IntegerValue t(1);
+  std::vector<CutTerm> new_terms;
+  EXPECT_TRUE(processor.TryToExpandWithLowerImpliedbound(
+      t, /*complement=*/false, &data.terms[0], &data.rhs, &new_terms));
+
+  EXPECT_EQ(0, processor.MutableCutBuilder()->AddOrMergeBooleanTerms(
+                   absl::MakeSpan(new_terms), t, &data));
+
   EXPECT_EQ(data.terms.size(), 2);
   EXPECT_THAT(data.terms[0].DebugString(),
               ::testing::StartsWith("coeff=1 lp=0 range=7"));
@@ -937,7 +941,6 @@ TEST(ImpliedBoundsProcessorTest, NegativeBasicTest) {
 
   // Lets look at the term X.
   CutData data;
-  CutDataBuilder builder;
 
   CutTerm X;
   X.coeff = 1;
@@ -950,9 +953,14 @@ TEST(ImpliedBoundsProcessorTest, NegativeBasicTest) {
   data.terms.push_back(X);
 
   processor.CacheDataForCut(IntegerVariable(100), &data);
-  EXPECT_TRUE(processor.TryToExpandWithLowerImpliedbound(IntegerValue(1), 0,
-                                                         /*complement=*/false,
-                                                         &data, &builder));
+
+  const IntegerValue t(1);
+  std::vector<CutTerm> new_terms;
+  EXPECT_TRUE(processor.TryToExpandWithLowerImpliedbound(
+      t, /*complement=*/false, &data.terms[0], &data.rhs, &new_terms));
+  EXPECT_EQ(0, processor.MutableCutBuilder()->AddOrMergeBooleanTerms(
+                   absl::MakeSpan(new_terms), t, &data));
+
   EXPECT_EQ(data.terms.size(), 2);
   EXPECT_THAT(data.terms[0].DebugString(),
               ::testing::StartsWith("coeff=1 lp=0 range=7"));

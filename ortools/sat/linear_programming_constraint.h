@@ -330,7 +330,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
       bool take_objective_into_account, bool ignore_trivial_constraints,
-      const std::vector<std::pair<glop::RowIndex, double>>& lp_multipliers,
+      absl::Span<const std::pair<glop::RowIndex, double>> lp_multipliers,
       IntegerValue* scaling,
       int64_t overflow_cap = std::numeric_limits<int64_t>::max()) const;
 
