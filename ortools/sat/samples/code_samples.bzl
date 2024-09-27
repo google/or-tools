@@ -49,11 +49,11 @@ def code_sample_go(name):
         size = "small",
         srcs = [name + ".go"],
         deps = [
-          "//ortools/sat:cp_model_go_proto",
-          "//ortools/sat:sat_parameters_go_proto",
-          "//ortools/sat/go/cpmodel",
-          "@com_github_golang_glog//:glog",
-          "@org_golang_google_protobuf//proto",
+            "//ortools/sat:cp_model_go_proto",
+            "//ortools/sat:sat_parameters_go_proto",
+            "//ortools/sat/go/cpmodel",
+            "@com_github_golang_glog//:glog",
+            "@org_golang_google_protobuf//proto",
         ],
     )
 

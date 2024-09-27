@@ -11,9 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl",
-     "code_sample_cc_go_py", "code_sample_cc_py",
-     "code_sample_go", "code_sample_java", "code_sample_py")
+load(
+    ":code_samples.bzl",
+    "code_sample_cc_go_py",
+    "code_sample_cc_py",
+    "code_sample_go",
+    "code_sample_java",
+    "code_sample_py",
+)
 
 code_sample_py(name = "all_different_except_zero_sample_sat")
 
@@ -36,6 +41,7 @@ code_sample_py(name = "bool_and_int_var_product_sample_sat")
 code_sample_cc_go_py(name = "bool_or_sample_sat")
 
 code_sample_go(name = "boolean_product_sample_sat")
+
 code_sample_py(name = "boolean_product_sample_sat")
 
 code_sample_cc_go_py(name = "channeling_sample_sat")
