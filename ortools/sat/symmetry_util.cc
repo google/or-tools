@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
@@ -192,6 +193,43 @@ std::vector<int> GetOrbitopeOrbits(
     }
   }
   return orbits;
+}
+
+void GetSchreierVectorAndOrbit(
+    int point, absl::Span<const std::unique_ptr<SparsePermutation>> generators,
+    std::vector<int>* schrier_vector, std::vector<int>* orbit) {
+  schrier_vector->clear();
+  *orbit = {point};
+  if (generators.empty()) return;
+  schrier_vector->resize(generators[0]->Size(), -1);
+  absl::flat_hash_set<int> orbit_set = {point};
+  for (int i = 0; i < orbit->size(); ++i) {
+    const int orbit_element = (*orbit)[i];
+    for (int i = 0; i < generators.size(); ++i) {
+      DCHECK_EQ(schrier_vector->size(), generators[i]->Size());
+      const int image = generators[i]->Image(orbit_element);
+      if (image == orbit_element) continue;
+      const auto [it, inserted] = orbit_set.insert(image);
+      if (inserted) {
+        (*schrier_vector)[image] = i;
+        orbit->push_back(image);
+      }
+    }
+  }
+}
+
+std::vector<int> TracePoint(
+    int point, absl::Span<const int> schrier_vector,
+    absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
+  std::vector<int> result;
+  while (schrier_vector[point] != -1) {
+    const SparsePermutation& perm = *generators[schrier_vector[point]];
+    result.push_back(schrier_vector[point]);
+    const int next = perm.InverseImage(point);
+    DCHECK_NE(next, point);
+    point = next;
+  }
+  return result;
 }
 
 }  // namespace sat

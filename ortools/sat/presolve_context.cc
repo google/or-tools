@@ -33,6 +33,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
@@ -725,6 +726,7 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
 }
 
 bool PresolveContext::ConstraintVariableGraphIsUpToDate() const {
+  if (is_unsat_) return true;  // We do not care in this case.
   return constraint_to_vars_.size() == working_model->constraints_size();
 }
 
@@ -1014,6 +1016,12 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   UpdateRuleStats("variables: canonicalize affine domain");
   UpdateNewConstraintsVariableUsage();
   return true;
+}
+
+void PresolveContext::PermuteHintValues(const SparsePermutation& perm) {
+  CHECK(hint_is_loaded_);
+  perm.ApplyToDenseCollection(hint_);
+  perm.ApplyToDenseCollection(hint_has_value_);
 }
 
 bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,

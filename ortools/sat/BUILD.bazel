@@ -657,7 +657,6 @@ cc_library(
     hdrs = ["presolve_context.h"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_checker",
         ":cp_model_loader",
         ":cp_model_mapping",
         ":cp_model_utils",
@@ -668,6 +667,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":util",
+        "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/port:proto_utils",
@@ -1163,6 +1163,7 @@ cc_library(
         "//ortools/algorithms:dynamic_partition",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
@@ -1176,6 +1177,7 @@ cc_test(
         ":symmetry_util",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

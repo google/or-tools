@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -573,6 +574,8 @@ class PresolveContext {
   // This should be called only once after InitializeNewDomains() to load
   // the hint, in order to maintain it as best as possible during presolve.
   void LoadSolutionHint();
+
+  void PermuteHintValues(const SparsePermutation& perm);
 
   // Solution hint accessor.
   bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }

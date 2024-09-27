@@ -355,24 +355,6 @@ cc_library(
     ],
 )
 
-# need C++20
-#cc_test(
-#    name = "k_shortest_paths_test",
-#    srcs = ["k_shortest_paths_test.cc"],
-#    deps = [
-#        ":graph",
-#        ":io",
-#        ":k_shortest_paths",
-#        ":shortest_paths",
-#        "//ortools/base:gmock_main",
-#        "@com_google_absl//absl/algorithm:container",
-#        "@com_google_absl//absl/log:check",
-#        "@com_google_absl//absl/random:distributions",
-#        "@com_google_absl//absl/strings",
-#        "@com_google_benchmark//:benchmark",
-#    ],
-#)
-
 # Flow problem protobuf representation
 proto_library(
     name = "flow_problem_proto",
