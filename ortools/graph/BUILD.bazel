@@ -144,8 +144,10 @@ cc_library(
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:strong_vector",
+        "//ortools/util:bitset",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )

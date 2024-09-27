@@ -36,6 +36,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -356,6 +357,87 @@ class BronKerboschAlgorithm {
   // The current time limit used by the solver. The time limit is assigned by
   // the Run methods and it can be different for each call to run.
   TimeLimit* time_limit_;
+};
+
+// More specialized version used to separate clique-cuts in MIP solver.
+// This finds all maximal clique with a weight greater than a given threshold.
+// It also has computation limit.
+//
+// This implementation assumes small graph since we use a dense bitmask
+// representation to encode the graph adjacency. So it shouldn't really be used
+// with more than a few thousands nodes.
+class WeightedBronKerboschBitsetAlgorithm {
+ public:
+  // Resets the class to an empty graph will all weights of zero.
+  // This also reset the work done.
+  void Initialize(int num_nodes);
+
+  // Set the weight of a given node, must be in [0, num_nodes).
+  // Weights are assumed to be non-negative.
+  void SetWeight(int i, double weight) { weights_[i] = weight; }
+
+  // Add an edge in the graph.
+  void AddEdge(int a, int b) {
+    graph_[a].Set(b);
+    graph_[b].Set(a);
+  }
+
+  // We count the number of basic operations, and stop when we reach this limit.
+  void SetWorkLimit(int64_t limit) { work_limit_ = limit; }
+
+  // Set the minimum weight of the maximal cliques we are looking for.
+  void SetMinimumWeight(double min_weight) { weight_threshold_ = min_weight; }
+
+  // This function is quite specific. It interprets node i as the negated
+  // literal of node i ^ 1. And all j in graph[i] as literal that are in at most
+  // two relation. So i implies all not(j) for all j in graph[i].
+  //
+  // The transitive close runs in O(num_nodes ^ 3) in the worst case, but since
+  // we process 64 bits at the time, it is okay to run it for graph up to 1k
+  // nodes.
+  void TakeTransitiveClosureOfImplicationGraph();
+
+  // Runs the algo and returns all maximal clique with a weight above the
+  // configured thrheshold via SetMinimumWeight(). It is possible we reach the
+  // work limit before that.
+  std::vector<std::vector<int>> Run();
+
+  // Specific API where the index refer in the last result of Run().
+  // This allows to select cliques when they are many.
+  std::vector<std::pair<int, double>>& GetMutableIndexAndWeight() {
+    return clique_index_and_weight_;
+  }
+
+  int64_t WorkDone() const { return work_; }
+
+  bool HasEdge(int i, int j) const { return graph_[i][j]; }
+
+ private:
+  int64_t work_ = 0;
+  int64_t work_limit_ = std::numeric_limits<int64_t>::max();
+  double weight_threshold_ = 0.0;
+
+  std::vector<double> weights_;
+  std::vector<Bitset64<int>> graph_;
+
+  // Iterative DFS queue.
+  std::vector<int> queue_;
+
+  // Current clique we are constructing.
+  // Note this is always of size num_nodes, the clique is in [0, depth)
+  Bitset64<int> in_clique_;
+  std::vector<int> clique_;
+
+  // We maintain the weight of the clique. We use a stack to avoid floating
+  // point issue with +/- weights many times. So clique_weight_[i] is the sum of
+  // weight from [0, i) of element of the cliques.
+  std::vector<double> clique_weight_;
+
+  // Correspond to P and X in BronKerbosch description.
+  std::vector<Bitset64<int>> left_to_process_;
+  std::vector<Bitset64<int>> x_;
+
+  std::vector<std::pair<int, double>> clique_index_and_weight_;
 };
 
 template <typename NodeIndex>

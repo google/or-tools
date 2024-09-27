@@ -158,10 +158,12 @@ std::vector<RectangleInRange> MakeItemsFromRectangles(
   ranges.reserve(rectangles.size());
   const int max_slack_x = slack_factor * size_max_x.value();
   const int max_slack_y = slack_factor * size_max_y.value();
+  int count = 0;
   for (const Rectangle& rec : rectangles) {
     RectangleInRange range;
     range.x_size = rec.x_max - rec.x_min;
     range.y_size = rec.y_max - rec.y_min;
+    range.box_index = count++;
     range.bounding_area = {
         .x_min =
             rec.x_min - IntegerValue(absl::Uniform(random, 0, max_slack_x)),

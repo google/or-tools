@@ -2731,17 +2731,21 @@ CutGenerator CreateCliqueCutGenerator(
   CutGenerator result;
   result.vars = variables;
   auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  result.only_run_at_level_zero = true;
   result.generate_cuts = [variables, literals, implication_graph, positive_map,
                           negative_map,
                           model](LinearConstraintManager* manager) {
     std::vector<double> packed_values;
+    std::vector<double> packed_reduced_costs;
     const auto& lp_values = manager->LpValues();
+    const auto& reduced_costs = manager->ReducedCosts();
     for (int i = 0; i < literals.size(); ++i) {
       packed_values.push_back(lp_values[variables[i]]);
+      packed_reduced_costs.push_back(reduced_costs[variables[i]]);
     }
     const std::vector<std::vector<Literal>> at_most_ones =
-        implication_graph->GenerateAtMostOnesWithLargeWeight(literals,
-                                                             packed_values);
+        implication_graph->GenerateAtMostOnesWithLargeWeight(
+            literals, packed_values, packed_reduced_costs);
 
     for (const std::vector<Literal>& at_most_one : at_most_ones) {
       // We need to express such "at most one" in term of the initial

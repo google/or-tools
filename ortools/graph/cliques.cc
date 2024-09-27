@@ -20,6 +20,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace {
@@ -260,6 +262,131 @@ void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
   bool stop = false;
   Search(std::move(cached_graph), std::move(cached_callback),
          initial_candidates.get(), 0, node_count, &actual, &stop);
+}
+
+void WeightedBronKerboschBitsetAlgorithm::Initialize(int num_nodes) {
+  work_ = 0;
+  weights_.assign(num_nodes, 0.0);
+
+  // We need +1 in case the graph is complete and form a clique.
+  clique_.resize(num_nodes + 1);
+  clique_weight_.resize(num_nodes + 1);
+  left_to_process_.resize(num_nodes + 1);
+  x_.resize(num_nodes + 1);
+
+  // Initialize to empty graph.
+  graph_.resize(num_nodes);
+  for (Bitset64<int>& bitset : graph_) {
+    bitset.ClearAndResize(num_nodes);
+  }
+}
+
+void WeightedBronKerboschBitsetAlgorithm::
+    TakeTransitiveClosureOfImplicationGraph() {
+  // We use Floyd-Warshall algorithm.
+  const int num_nodes = weights_.size();
+  for (int k = 0; k < num_nodes; ++k) {
+    // Loop over all the i => k, we can do that by looking at the not(k) =>
+    // not(i).
+    for (const int i : graph_[k ^ 1]) {
+      // Now i also implies all the literals implied by k.
+      graph_[i].Union(graph_[k]);
+    }
+  }
+}
+
+std::vector<std::vector<int>> WeightedBronKerboschBitsetAlgorithm::Run() {
+  clique_index_and_weight_.clear();
+  std::vector<std::vector<int>> cliques;
+
+  const int num_nodes = weights_.size();
+  in_clique_.ClearAndResize(num_nodes);
+
+  queue_.clear();
+
+  int depth = 0;
+  left_to_process_[0].ClearAndResize(num_nodes);
+  x_[0].ClearAndResize(num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    left_to_process_[0].Set(i);
+    queue_.push_back(i);
+  }
+
+  // We run an iterative DFS where we push all possible next node to
+  // queue_. We just abort brutally if we hit the work limit.
+  while (!queue_.empty() && work_ <= work_limit_) {
+    const int node = queue_.back();
+    if (!in_clique_[node]) {
+      // We add this node to the clique.
+      in_clique_.Set(node);
+      clique_[depth] = node;
+      left_to_process_[depth].Clear(node);
+      x_[depth].Set(node);
+
+      // Note that it might seems we don't need to keep both set since we
+      // only process nodes in order, but because of the pivot optim, while
+      // both set are sorted, they can be "interleaved".
+      ++depth;
+      work_ += num_nodes;
+      const double current_weight = weights_[node] + clique_weight_[depth - 1];
+      clique_weight_[depth] = current_weight;
+      left_to_process_[depth].SetToIntersectionOf(left_to_process_[depth - 1],
+                                                  graph_[node]);
+      x_[depth].SetToIntersectionOf(x_[depth - 1], graph_[node]);
+
+      // Choose a pivot. We use the vertex with highest weight according to:
+      // Samuel Souza Britoa, Haroldo Gambini Santosa, "Preprocessing and
+      // Cutting Planes with Conflict Graphs",
+      // https://arxiv.org/pdf/1909.07780
+      // but maybe random is more robust?
+      int pivot = -1;
+      double pivot_weight = -1.0;
+      for (const int candidate : x_[depth]) {
+        const double candidate_weight = weights_[candidate];
+        if (candidate_weight > pivot_weight) {
+          pivot = candidate;
+          pivot_weight = candidate_weight;
+        }
+      }
+      double total_weight_left = 0.0;
+      for (const int candidate : left_to_process_[depth]) {
+        const double candidate_weight = weights_[candidate];
+        if (candidate_weight > pivot_weight) {
+          pivot = candidate;
+          pivot_weight = candidate_weight;
+        }
+        total_weight_left += candidate_weight;
+      }
+
+      // Heuristic: We can abort early if there is no way to reach the
+      // threshold here.
+      if (current_weight + total_weight_left < weight_threshold_) {
+        continue;
+      }
+
+      if (pivot == -1 && current_weight >= weight_threshold_) {
+        // This clique is maximal.
+        clique_index_and_weight_.push_back({cliques.size(), current_weight});
+        cliques.emplace_back(clique_.begin(), clique_.begin() + depth);
+        continue;
+      }
+
+      for (const int next : left_to_process_[depth]) {
+        if (graph_[pivot][next]) continue;  // skip.
+        queue_.push_back(next);
+      }
+    } else {
+      // We finished exploring node.
+      // backtrack.
+      --depth;
+      DCHECK_GE(depth, 0);
+      DCHECK_EQ(clique_[depth], node);
+      in_clique_.Clear(node);
+      queue_.pop_back();
+    }
+  }
+
+  return cliques;
 }
 
 }  // namespace operations_research

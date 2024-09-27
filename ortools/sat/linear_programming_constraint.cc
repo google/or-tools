@@ -282,7 +282,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
-      expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()) {
+      expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
+      expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()) {
   // Tweak the default parameters to make the solve incremental.
   simplex_params_.set_use_dual_simplex(true);
   simplex_params_.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
@@ -326,6 +327,9 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
     const int max_index = NegationOf(vars.back()).value();
     if (max_index >= expanded_lp_solution_.size()) {
       expanded_lp_solution_.assign(max_index + 1, 0.0);
+    }
+    if (max_index >= expanded_reduced_costs_.size()) {
+      expanded_reduced_costs_.assign(max_index + 1, 0.0);
     }
   }
 }
@@ -731,32 +735,29 @@ bool LinearProgrammingConstraint::SolveLp() {
   }
   lp_at_optimal_ = simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL;
 
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+  // If stop_after_root_propagation() is true, we still copy whatever we have as
+  // these values will be used for the local-branching lns heuristic.
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
+      parameters_.stop_after_root_propagation()) {
     lp_solution_is_set_ = true;
     lp_solution_level_ = trail_->CurrentDecisionLevel();
     const int num_vars = integer_variables_.size();
+    const auto reduced_costs = simplex_.GetReducedCosts().const_view();
     for (int i = 0; i < num_vars; i++) {
-      const glop::Fractional value =
-          GetVariableValueAtCpScale(glop::ColIndex(i));
+      const glop::ColIndex col(i);
+      const glop::Fractional value = GetVariableValueAtCpScale(col);
       lp_solution_[i] = value;
       expanded_lp_solution_[integer_variables_[i]] = value;
       expanded_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+
+      const glop::Fractional rc =
+          scaler_.UnscaleReducedCost(col, reduced_costs[col]);
+      expanded_reduced_costs_[integer_variables_[i]] = rc;
+      expanded_reduced_costs_[NegationOf(integer_variables_[i])] = -rc;
     }
 
     if (lp_solution_level_ == 0) {
       level_zero_lp_solution_ = lp_solution_;
-    }
-  } else {
-    // If this parameter is true, we still copy whatever we have as these
-    // values will be used for the local-branching lns heuristic.
-    if (parameters_.stop_after_root_propagation()) {
-      const int num_vars = integer_variables_.size();
-      for (int i = 0; i < num_vars; i++) {
-        const glop::Fractional value =
-            GetVariableValueAtCpScale(glop::ColIndex(i));
-        expanded_lp_solution_[integer_variables_[i]] = value;
-        expanded_lp_solution_[NegationOf(integer_variables_[i])] = -value;
-      }
     }
   }
 

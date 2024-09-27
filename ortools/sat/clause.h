@@ -33,6 +33,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/graph/cliques.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -652,8 +653,8 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): Refine the heuristic and unit test!
   const std::vector<std::vector<Literal>>& GenerateAtMostOnesWithLargeWeight(
-      const std::vector<Literal>& literals,
-      const std::vector<double>& lp_values);
+      absl::Span<const Literal> literals, absl::Span<const double> lp_values,
+      absl::Span<const double> reduced_costs);
 
   // Heuristically identify "at most one" between the given literals, swap
   // them around and return these amo as span inside the literals vector.
@@ -919,6 +920,10 @@ class BinaryImplicationGraph : public SatPropagator {
   // TransformIntoMaxCliques().
   int64_t work_done_in_mark_descendants_ = 0;
   std::vector<Literal> bfs_stack_;
+
+  // For clique cuts.
+  util_intops::StrongVector<LiteralIndex, int> tmp_mapping_;
+  WeightedBronKerboschBitsetAlgorithm bron_kerbosch_;
 
   // Used by ComputeTransitiveReduction() in case we abort early to maintain
   // the invariant checked by InvariantsAreOk(). Some of our algo

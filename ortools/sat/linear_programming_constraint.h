@@ -569,6 +569,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Same as lp_solution_ but this vector is indexed by IntegerVariable.
   ModelLpValues& expanded_lp_solution_;
+  ModelReducedCosts& expanded_reduced_costs_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;

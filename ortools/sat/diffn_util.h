@@ -444,6 +444,18 @@ struct RectangleInRange {
                                   containing_area.y_max);
   }
 
+  Rectangle GetMandatoryRegion() const {
+    // Weird math to avoid overflow.
+    if (bounding_area.SizeX() - x_size >= x_size ||
+        bounding_area.SizeY() - y_size >= y_size) {
+      return Rectangle::GetEmpty();
+    }
+    return Rectangle{.x_min = bounding_area.x_max - x_size,
+                     .x_max = bounding_area.x_min + x_size,
+                     .y_min = bounding_area.y_max - y_size,
+                     .y_max = bounding_area.y_min + y_size};
+  }
+
   static RectangleInRange BiggestWithMinIntersection(
       const Rectangle& containing_area, const RectangleInRange& original,
       const IntegerValue& min_intersect_x,

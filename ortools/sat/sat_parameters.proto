@@ -875,6 +875,8 @@ message SatParameters {
   optional bool use_area_energetic_reasoning_in_no_overlap_2d = 271
       [default = false];
 
+  optional bool use_try_edge_reasoning_in_no_overlap_2d = 299 [default = false];
+
   // If the number of pairs to look is below this threshold, do an extra step of
   // propagation in the no_overlap_2d constraint by looking at all pairs of
   // intervals.
