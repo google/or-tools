@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 const (

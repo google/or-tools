@@ -19,10 +19,10 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
-	"ortools/sat/go/cpmodel"
 )
 
 const (
@@ -62,12 +62,12 @@ func earlinessTardinessCostSampleSat() error {
 	if err != nil {
 		return fmt.Errorf("failed to instantiate the CP model: %w", err)
 	}
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(21),
 		SearchBranching:                   sppb.SatParameters_FIXED_SEARCH.Enum(),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)

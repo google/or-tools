@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
-	"ortools/sat/go/cpmodel"
 )
 
 func searchForAllSolutionsSampleSat() error {
@@ -41,11 +41,11 @@ func searchForAllSolutionsSampleSat() error {
 	// Currently, the CpModelBuilder does not allow for callbacks, so each feasible solution cannot
 	// be printed while solving. However, the CP Solver can return all of the enumerated solutions
 	// in the response by setting the following parameters.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		EnumerateAllSolutions:             proto.Bool(true),
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(27),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)

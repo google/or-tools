@@ -13,11 +13,13 @@
 
 """Helper macro to compile and test code samples."""
 
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_test")
 load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
 load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 
 def code_sample_cc(name):
-    native.cc_binary(
+    cc_binary(
         name = name + "_cc",
         srcs = [name + ".cc"],
         deps = [
@@ -28,7 +30,7 @@ def code_sample_cc(name):
         ],
     )
 
-    native.cc_test(
+    cc_test(
         name = name + "_cc_test",
         size = "small",
         srcs = [name + ".cc"],
@@ -38,6 +40,20 @@ def code_sample_cc(name):
             "//ortools/sat:cp_model_solver",
             "//ortools/util:sorted_interval_list",
             "@com_google_absl//absl/types:span",
+        ],
+    )
+
+def code_sample_go(name):
+    go_test(
+        name = name + "_go_test",
+        size = "small",
+        srcs = [name + ".go"],
+        deps = [
+          "//ortools/sat:cp_model_go_proto",
+          "//ortools/sat:sat_parameters_go_proto",
+          "//ortools/sat/go/cpmodel",
+          "@com_github_golang_glog//:glog",
+          "@org_golang_google_protobuf//proto",
         ],
     )
 
@@ -73,6 +89,11 @@ def code_sample_py(name):
         python_version = "PY3",
         srcs_version = "PY3",
     )
+
+def code_sample_cc_go_py(name):
+    code_sample_cc(name = name)
+    code_sample_go(name = name)
+    code_sample_py(name = name)
 
 def code_sample_cc_py(name):
     code_sample_cc(name = name)

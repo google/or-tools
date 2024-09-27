@@ -18,8 +18,6 @@ go_library(
     srcs = [
         "cp_model.go",
         "cp_solver.go",
-        #"cp_solver_c.cc",
-        #"cp_solver_c.h",
         "domain.go",
     ],
     cdeps = [":cp_solver_c"],

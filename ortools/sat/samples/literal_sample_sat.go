@@ -16,7 +16,7 @@ package main
 
 import (
 	log "github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func literalSampleSat() {
