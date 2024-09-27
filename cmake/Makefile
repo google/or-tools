@@ -145,6 +145,7 @@ help:
 	@echo -e "\tWith ${BOLD}<vm>${RESET}:"
 	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD 14)"
 	@echo -e "\t\t${BOLD}netbsd${RESET} (NetBSD 9)"
+	@echo -e "\t\t${BOLD}openbsd${RESET} (OpenBSD 7)"
 	@echo -e "\te.g. 'make freebsd_cpp'"
 	@echo
 	@echo -e "\t${BOLD}glop_<stage>${RESET}: Build Glop <stage> using an Ubuntu:rolling docker image."
@@ -721,6 +722,7 @@ clean_web: $(addprefix clean_web_, $(WEB_STAGES))
 VAGRANT_VMS := \
  freebsd \
  netbsd \
+ openbsd
 
 define make-vagrant-target =
 #$$(info VMS: $1)
