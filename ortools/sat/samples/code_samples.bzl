@@ -13,9 +13,10 @@
 
 """Helper macro to compile and test code samples."""
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+load("@rules_java//java:defs.bzl", "java_test")
 load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 
 def code_sample_cc(name):
@@ -100,7 +101,7 @@ def code_sample_cc_py(name):
     code_sample_py(name = name)
 
 def code_sample_java(name):
-    native.java_test(
+    java_test(
         name = name + "_java_test",
         size = "small",
         srcs = [name + ".java"],
