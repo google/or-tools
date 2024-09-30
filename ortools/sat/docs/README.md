@@ -227,8 +227,8 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
-	"ortools/sat/go/cpmodel"
 )
 
 func simpleSatProgram() error {

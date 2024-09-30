@@ -196,7 +196,7 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 const horizon = 100
@@ -422,7 +422,7 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 const horizon = 100
@@ -842,8 +842,8 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
-	"ortools/sat/go/cpmodel"
 )
 
 const horizon = 21 // 3 weeks
@@ -1866,8 +1866,8 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
-	"ortools/sat/go/cpmodel"
 )
 
 const (

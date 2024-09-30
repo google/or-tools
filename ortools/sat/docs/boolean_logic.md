@@ -114,7 +114,7 @@ package main
 
 import (
 	log "github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func literalSampleSat() {
@@ -248,7 +248,7 @@ public class BoolOrSampleSat
 package main
 
 import (
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func boolOrSampleSat() {
@@ -434,7 +434,7 @@ public class ReifiedSampleSat
 package main
 
 import (
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func reifiedSampleSat() {
@@ -526,9 +526,9 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
-	"ortools/sat/go/cpmodel"
 )
 
 func booleanProductSample() error {
@@ -552,11 +552,11 @@ func booleanProductSample() error {
 	}
 	// Set `fill_additional_solutions_in_response` and `enumerate_all_solutions` to true so
 	// the solver returns all solutions found.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(4),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)

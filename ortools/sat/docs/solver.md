@@ -195,10 +195,10 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
-	"ortools/sat/go/cpmodel"
 )
 
 func solveWithTimeLimitSampleSat() error {
@@ -217,9 +217,9 @@ func solveWithTimeLimitSampleSat() error {
 	}
 
 	// Sets a time limit of 10 seconds.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		MaxTimeInSeconds: proto.Float64(10.0),
-	}.Build()
+	}
 
 	// Solve.
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
@@ -536,9 +536,9 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
-	"ortools/sat/go/cpmodel"
 )
 
 func solveAndPrintIntermediateSolutionsSampleSat() error {
@@ -562,10 +562,10 @@ func solveAndPrintIntermediateSolutionsSampleSat() error {
 	// Currently, the CpModelBuilder does not allow for callbacks, so intermediate solutions
 	// cannot be printed while solving. However, the CP-SAT solver does allow for returning
 	// the intermediate solutions found while solving in the response.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(10),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)
@@ -873,9 +873,9 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
-	"ortools/sat/go/cpmodel"
 )
 
 func searchForAllSolutionsSampleSat() error {
@@ -895,11 +895,11 @@ func searchForAllSolutionsSampleSat() error {
 	// Currently, the CpModelBuilder does not allow for callbacks, so each feasible solution cannot
 	// be printed while solving. However, the CP Solver can return all of the enumerated solutions
 	// in the response by setting the following parameters.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		EnumerateAllSolutions:             proto.Bool(true),
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(27),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)
