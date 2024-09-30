@@ -43,6 +43,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/small_map.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/routing/lp_scheduling.h"
@@ -1150,10 +1151,20 @@ class PathCumulFilter : public BasePathFilter {
   };
 
   struct SoftBound {
-    SoftBound() : bound(-1), coefficient(0) {}
-    int64_t bound;
-    int64_t coefficient;
+    int64_t bound = -1;
+    int64_t coefficient = 0;
   };
+  struct Interval {
+    int64_t min;
+    int64_t max;
+  };
+  std::vector<std::vector<RoutingDimension::NodePrecedence>>
+  ExtractNodeIndexToPrecedences() const;
+  std::vector<SoftBound> ExtractCumulSoftUpperBounds() const;
+  std::vector<SoftBound> ExtractCumulSoftLowerBounds() const;
+  std::vector<const PiecewiseLinearFunction*> ExtractCumulPiecewiseLinearCosts()
+      const;
+  std::vector<const RoutingModel::TransitCallback2*> ExtractEvaluators() const;
 
   // This class caches transit values between nodes of paths. Transit and path
   // nodes are to be added in the order in which they appear on a path.
@@ -1230,7 +1241,9 @@ class PathCumulFilter : public BasePathFilter {
            !dimension_.GetBreakIntervalsOfVehicle(vehicle).empty();
   }
 
-  bool FilterCumulSoftBounds() const { return !cumul_soft_bounds_.empty(); }
+  bool FilterCumulSoftBounds() const {
+    return !cumul_soft_upper_bounds_.empty();
+  }
 
   int64_t GetCumulSoftCost(int64_t node, int64_t cumul_value) const;
 
@@ -1341,8 +1354,8 @@ class PathCumulFilter : public BasePathFilter {
   const std::vector<IntVar*> cumuls_;
   const std::vector<IntVar*> slacks_;
   std::vector<int64_t> start_to_vehicle_;
-  std::vector<const RoutingModel::TransitCallback2*> evaluators_;
-  std::vector<int64_t> vehicle_span_upper_bounds_;
+  const std::vector<const RoutingModel::TransitCallback2*> evaluators_;
+  const std::vector<int64_t> vehicle_span_upper_bounds_;
   const bool has_vehicle_span_upper_bounds_;
   int64_t total_current_cumul_cost_value_;
   int64_t synchronized_objective_value_;
@@ -1354,16 +1367,17 @@ class PathCumulFilter : public BasePathFilter {
   // Cumul cost values for paths in delta, indexed by vehicle.
   std::vector<int64_t> delta_path_cumul_cost_values_;
   const int64_t global_span_cost_coefficient_;
-  std::vector<SoftBound> cumul_soft_bounds_;
-  std::vector<SoftBound> cumul_soft_lower_bounds_;
-  std::vector<const PiecewiseLinearFunction*> cumul_piecewise_linear_costs_;
+  const std::vector<SoftBound> cumul_soft_upper_bounds_;
+  const std::vector<SoftBound> cumul_soft_lower_bounds_;
+  const std::vector<const PiecewiseLinearFunction*>
+      cumul_piecewise_linear_costs_;
   std::vector<int64_t> vehicle_total_slack_cost_coefficients_;
   bool has_nonzero_vehicle_total_slack_cost_coefficients_;
   const std::vector<int64_t> vehicle_capacities_;
   // node_index_to_precedences_[node_index] contains all NodePrecedence elements
   // with node_index as either "first_node" or "second_node".
   // This vector is empty if there are no precedences on the dimension_.
-  std::vector<std::vector<RoutingDimension::NodePrecedence>>
+  const std::vector<std::vector<RoutingDimension::NodePrecedence>>
       node_index_to_precedences_;
   // Data reflecting information on paths and cumul variables for the solution
   // to which the filter was synchronized.
@@ -1405,6 +1419,84 @@ std::vector<T> SumOfVectors(const std::vector<T>& v1,
 }
 }  // namespace
 
+std::vector<PathCumulFilter::SoftBound>
+PathCumulFilter::ExtractCumulSoftUpperBounds() const {
+  const int num_cumuls = dimension_.cumuls().size();
+  std::vector<SoftBound> bounds(num_cumuls,
+                                {.bound = kint64max, .coefficient = 0});
+  bool has_some_bound = false;
+  for (int i = 0; i < num_cumuls; ++i) {
+    if (!dimension_.HasCumulVarSoftUpperBound(i)) continue;
+    const int64_t bound = dimension_.GetCumulVarSoftUpperBound(i);
+    const int64_t coeff = dimension_.GetCumulVarSoftUpperBoundCoefficient(i);
+    bounds[i] = {.bound = bound, .coefficient = coeff};
+    has_some_bound |= bound < kint64max && coeff != 0;
+  }
+  if (!has_some_bound) bounds.clear();
+  return bounds;
+}
+
+std::vector<PathCumulFilter::SoftBound>
+PathCumulFilter::ExtractCumulSoftLowerBounds() const {
+  const int num_cumuls = dimension_.cumuls().size();
+  std::vector<SoftBound> bounds(num_cumuls, {.bound = 0, .coefficient = 0});
+  bool has_some_bound = false;
+  for (int i = 0; i < num_cumuls; ++i) {
+    if (!dimension_.HasCumulVarSoftLowerBound(i)) continue;
+    const int64_t bound = dimension_.GetCumulVarSoftLowerBound(i);
+    const int64_t coeff = dimension_.GetCumulVarSoftLowerBoundCoefficient(i);
+    bounds[i] = {.bound = bound, .coefficient = coeff};
+    has_some_bound |= bound > 0 && coeff != 0;
+  }
+  if (!has_some_bound) bounds.clear();
+  return bounds;
+}
+
+std::vector<const PiecewiseLinearFunction*>
+PathCumulFilter::ExtractCumulPiecewiseLinearCosts() const {
+  const int num_cumuls = dimension_.cumuls().size();
+  std::vector<const PiecewiseLinearFunction*> costs(num_cumuls, nullptr);
+  bool has_some_cost = false;
+  for (int i = 0; i < dimension_.cumuls().size(); ++i) {
+    if (!dimension_.HasCumulVarPiecewiseLinearCost(i)) continue;
+    const PiecewiseLinearFunction* const cost =
+        dimension_.GetCumulVarPiecewiseLinearCost(i);
+    if (cost == nullptr) continue;
+    has_some_cost = true;
+    costs[i] = cost;
+  }
+  if (!has_some_cost) costs.clear();
+  return costs;
+}
+
+std::vector<const RoutingModel::TransitCallback2*>
+PathCumulFilter::ExtractEvaluators() const {
+  const int num_paths = NumPaths();
+  std::vector<const RoutingModel::TransitCallback2*> evaluators(num_paths);
+  for (int i = 0; i < num_paths; ++i) {
+    evaluators[i] = &dimension_.transit_evaluator(i);
+  }
+  return evaluators;
+}
+
+std::vector<std::vector<RoutingDimension::NodePrecedence>>
+PathCumulFilter::ExtractNodeIndexToPrecedences() const {
+  std::vector<std::vector<RoutingDimension::NodePrecedence>>
+      node_index_to_precedences;
+  const std::vector<RoutingDimension::NodePrecedence>& node_precedences =
+      dimension_.GetNodePrecedences();
+  if (!node_precedences.empty()) {
+    node_index_to_precedences.resize(dimension_.cumuls().size());
+    for (const auto& node_precedence : node_precedences) {
+      node_index_to_precedences[node_precedence.first_node].push_back(
+          node_precedence);
+      node_index_to_precedences[node_precedence.second_node].push_back(
+          node_precedence);
+    }
+  }
+  return node_index_to_precedences;
+}
+
 PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
                                  const RoutingDimension& dimension,
                                  bool propagate_own_objective_value,
@@ -1416,7 +1508,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       dimension_(dimension),
       cumuls_(dimension.cumuls()),
       slacks_(dimension.slacks()),
-      evaluators_(routing_model.vehicles(), nullptr),
+      evaluators_(ExtractEvaluators()),
       vehicle_span_upper_bounds_(dimension.vehicle_span_upper_bounds()),
       has_vehicle_span_upper_bounds_(absl::c_any_of(
           vehicle_span_upper_bounds_,
@@ -1431,6 +1523,9 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       delta_path_cumul_cost_values_(routing_model.vehicles(),
                                     std::numeric_limits<int64_t>::min()),
       global_span_cost_coefficient_(dimension.global_span_cost_coefficient()),
+      cumul_soft_upper_bounds_(ExtractCumulSoftUpperBounds()),
+      cumul_soft_lower_bounds_(ExtractCumulSoftLowerBounds()),
+      cumul_piecewise_linear_costs_(ExtractCumulPiecewiseLinearCosts()),
       vehicle_total_slack_cost_coefficients_(
           SumOfVectors(dimension.vehicle_span_cost_coefficients(),
                        dimension.vehicle_slack_cost_coefficients())),
@@ -1438,6 +1533,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
           absl::c_any_of(vehicle_total_slack_cost_coefficients_,
                          [](int64_t coefficient) { return coefficient != 0; })),
       vehicle_capacities_(dimension.vehicle_capacities()),
+      node_index_to_precedences_(ExtractNodeIndexToPrecedences()),
       delta_max_end_cumul_(0),
       delta_nodes_with_precedences_and_changed_cumul_(routing_model.Size()),
       name_(dimension.name()),
@@ -1447,12 +1543,6 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       filter_objective_cost_(filter_objective_cost),
       may_use_optimizers_(may_use_optimizers),
       propagate_own_objective_value_(propagate_own_objective_value) {
-  cumul_soft_bounds_.resize(cumuls_.size());
-  cumul_soft_lower_bounds_.resize(cumuls_.size());
-  cumul_piecewise_linear_costs_.resize(cumuls_.size());
-  bool has_cumul_soft_bounds = false;
-  bool has_cumul_soft_lower_bounds = false;
-  bool has_cumul_piecewise_linear_costs = false;
   bool has_cumul_hard_bounds = false;
   for (const IntVar* const slack : slacks_) {
     if (slack->Min() > 0) {
@@ -1461,38 +1551,11 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
     }
   }
   for (int i = 0; i < cumuls_.size(); ++i) {
-    if (dimension.HasCumulVarSoftUpperBound(i)) {
-      has_cumul_soft_bounds = true;
-      cumul_soft_bounds_[i].bound = dimension.GetCumulVarSoftUpperBound(i);
-      cumul_soft_bounds_[i].coefficient =
-          dimension.GetCumulVarSoftUpperBoundCoefficient(i);
-    }
-    if (dimension.HasCumulVarSoftLowerBound(i)) {
-      has_cumul_soft_lower_bounds = true;
-      cumul_soft_lower_bounds_[i].bound =
-          dimension.GetCumulVarSoftLowerBound(i);
-      cumul_soft_lower_bounds_[i].coefficient =
-          dimension.GetCumulVarSoftLowerBoundCoefficient(i);
-    }
-    if (dimension.HasCumulVarPiecewiseLinearCost(i)) {
-      has_cumul_piecewise_linear_costs = true;
-      cumul_piecewise_linear_costs_[i] =
-          dimension.GetCumulVarPiecewiseLinearCost(i);
-    }
     IntVar* const cumul_var = cumuls_[i];
     if (cumul_var->Min() > 0 ||
         cumul_var->Max() < std::numeric_limits<int64_t>::max()) {
       has_cumul_hard_bounds = true;
     }
-  }
-  if (!has_cumul_soft_bounds) {
-    cumul_soft_bounds_.clear();
-  }
-  if (!has_cumul_soft_lower_bounds) {
-    cumul_soft_lower_bounds_.clear();
-  }
-  if (!has_cumul_piecewise_linear_costs) {
-    cumul_piecewise_linear_costs_.clear();
   }
   if (!has_cumul_hard_bounds) {
     // Slacks don't need to be constrained if the cumuls don't have hard bounds;
@@ -1505,20 +1568,12 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   start_to_vehicle_.resize(Size(), -1);
   for (int i = 0; i < routing_model.vehicles(); ++i) {
     start_to_vehicle_[routing_model.Start(i)] = i;
-    evaluators_[i] = &dimension.transit_evaluator(i);
   }
 
   const std::vector<RoutingDimension::NodePrecedence>& node_precedences =
       dimension.GetNodePrecedences();
   if (!node_precedences.empty()) {
     current_min_max_node_cumuls_.resize(cumuls_.size(), {-1, -1});
-    node_index_to_precedences_.resize(cumuls_.size());
-    for (const auto& node_precedence : node_precedences) {
-      node_index_to_precedences_[node_precedence.first_node].push_back(
-          node_precedence);
-      node_index_to_precedences_[node_precedence.second_node].push_back(
-          node_precedence);
-    }
   }
 
 #ifndef NDEBUG
@@ -1533,9 +1588,9 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
 
 int64_t PathCumulFilter::GetCumulSoftCost(int64_t node,
                                           int64_t cumul_value) const {
-  if (node < cumul_soft_bounds_.size()) {
-    const int64_t bound = cumul_soft_bounds_[node].bound;
-    const int64_t coefficient = cumul_soft_bounds_[node].coefficient;
+  if (node < cumul_soft_upper_bounds_.size()) {
+    const int64_t bound = cumul_soft_upper_bounds_[node].bound;
+    const int64_t coefficient = cumul_soft_upper_bounds_[node].coefficient;
     if (coefficient > 0 && bound < cumul_value) {
       return CapProd(CapSub(cumul_value, bound), coefficient);
     }
@@ -4223,11 +4278,27 @@ bool LightVehicleBreaksChecker::Check() const {
         CapAddTo(br.duration_min, &lb_span_tw);
       }
     }
-    if (!data.span.SetMin(lb_span_tw)) return false;
-    if (!data.start_cumul.SetMax(CapSub(data.end_cumul.Max(), lb_span_tw))) {
+    int64_t lb_span_interbreak = 0;
+    for (const auto& [max_interbreak, min_break_duration] :
+         data.interbreak_limits) {
+      // Minimal number of breaks depends on total transit:
+      // 0 breaks for 0 <= total transit <= limit,
+      // 1 break for limit + 1 <= total transit <= 2 * limit,
+      // i breaks for i * limit + 1 <= total transit <= (i+1) * limit, ...
+      if (total_transit == 0) continue;
+      if (max_interbreak == 0) return false;
+      const int min_num_breaks = (total_transit - 1) / max_interbreak;
+      if (min_num_breaks > data.vehicle_breaks.size()) return false;
+      lb_span_interbreak = std::max(
+          lb_span_interbreak, CapProd(min_num_breaks, min_break_duration));
+    }
+    lb_span_interbreak = CapAdd(lb_span_interbreak, total_transit);
+    const int64_t lb_span = std::max(lb_span_tw, lb_span_interbreak);
+    if (!data.span.SetMin(lb_span)) return false;
+    if (!data.start_cumul.SetMax(CapSub(data.end_cumul.Max(), lb_span))) {
       return false;
     }
-    if (!data.end_cumul.SetMin(CapAdd(data.start_cumul.Min(), lb_span_tw))) {
+    if (!data.end_cumul.SetMin(CapAdd(data.start_cumul.Min(), lb_span))) {
       return false;
     }
   }

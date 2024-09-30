@@ -27,6 +27,7 @@
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
@@ -168,7 +169,7 @@ class SingleRandomCompositionStrategy
 // Returns a composition strategy based on the input parameters.
 std::unique_ptr<CompositeRuinProcedure::CompositionStrategy>
 MakeRuinCompositionStrategy(
-    const std::vector<std::unique_ptr<RuinProcedure>>& ruins,
+    absl::Span<const std::unique_ptr<RuinProcedure>> ruins,
     RuinCompositionStrategy::Value composition_strategy, std::mt19937* rnd) {
   std::vector<RuinProcedure*> ruin_ptrs;
   ruin_ptrs.reserve(ruins.size());
