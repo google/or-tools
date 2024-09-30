@@ -20,11 +20,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/testing/protocmp"
-
 	log "github.com/golang/glog"
+	"github.com/google/go-cmp/cmp"
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func Example() {
@@ -735,19 +734,17 @@ func TestIntervalVar(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(trueVar.Index())},
-				Constraint: &cmpb.ConstraintProto_Interval{
-					&cmpb.IntervalConstraintProto{
-						Start: &cmpb.LinearExpressionProto{Offset: 1},
-						Size: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
-							Coeffs: []int64{1},
-						},
-						End: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv2.Index())},
-							Coeffs: []int64{1},
-						},
+				Constraint: &cmpb.ConstraintProto_Interval{&cmpb.IntervalConstraintProto{
+					Start: &cmpb.LinearExpressionProto{Offset: 1},
+					Size: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
 					},
-				},
+					End: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv2.Index())},
+						Coeffs: []int64{1},
+					},
+				}},
 			},
 		},
 		{
@@ -759,20 +756,18 @@ func TestIntervalVar(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(trueVar.Index())},
-				Constraint: &cmpb.ConstraintProto_Interval{
-					&cmpb.IntervalConstraintProto{
-						Start: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
-							Coeffs: []int64{1},
-						},
-						Size: &cmpb.LinearExpressionProto{Offset: 5},
-						End: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
-							Coeffs: []int64{1},
-							Offset: 5,
-						},
+				Constraint: &cmpb.ConstraintProto_Interval{&cmpb.IntervalConstraintProto{
+					Start: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
 					},
-				},
+					Size: &cmpb.LinearExpressionProto{Offset: 5},
+					End: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+						Offset: 5,
+					},
+				}},
 			},
 		},
 		{
@@ -784,19 +779,17 @@ func TestIntervalVar(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv1.Index())},
-				Constraint: &cmpb.ConstraintProto_Interval{
-					&cmpb.IntervalConstraintProto{
-						Start: &cmpb.LinearExpressionProto{Offset: 1},
-						Size: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
-							Coeffs: []int64{1},
-						},
-						End: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv2.Index())},
-							Coeffs: []int64{1},
-						},
+				Constraint: &cmpb.ConstraintProto_Interval{&cmpb.IntervalConstraintProto{
+					Start: &cmpb.LinearExpressionProto{Offset: 1},
+					Size: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
 					},
-				},
+					End: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv2.Index())},
+						Coeffs: []int64{1},
+					},
+				}},
 			},
 		},
 		{
@@ -808,20 +801,18 @@ func TestIntervalVar(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv1.Index())},
-				Constraint: &cmpb.ConstraintProto_Interval{
-					&cmpb.IntervalConstraintProto{
-						Start: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
-							Coeffs: []int64{1},
-						},
-						Size: &cmpb.LinearExpressionProto{Offset: 5},
-						End: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
-							Coeffs: []int64{1},
-							Offset: 5,
-						},
+				Constraint: &cmpb.ConstraintProto_Interval{&cmpb.IntervalConstraintProto{
+					Start: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
 					},
-				},
+					Size: &cmpb.LinearExpressionProto{Offset: 5},
+					End: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+						Offset: 5,
+					},
+				}},
 			},
 		},
 	}
@@ -880,11 +871,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv3.Index())},
-				Constraint: &cmpb.ConstraintProto_BoolOr{
-					&cmpb.BoolArgumentProto{
-						Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_BoolOr{&cmpb.BoolArgumentProto{
+					Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
+				}},
 			},
 		},
 		{
@@ -896,11 +885,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv3.Index())},
-				Constraint: &cmpb.ConstraintProto_BoolAnd{
-					&cmpb.BoolArgumentProto{
-						Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_BoolAnd{&cmpb.BoolArgumentProto{
+					Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
+				}},
 			},
 		},
 		{
@@ -912,11 +899,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv3.Index())},
-				Constraint: &cmpb.ConstraintProto_BoolXor{
-					&cmpb.BoolArgumentProto{
-						Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_BoolXor{&cmpb.BoolArgumentProto{
+					Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
+				}},
 			},
 		},
 		{
@@ -928,11 +913,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv3.Index())},
-				Constraint: &cmpb.ConstraintProto_BoolOr{
-					&cmpb.BoolArgumentProto{
-						Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_BoolOr{&cmpb.BoolArgumentProto{
+					Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
+				}},
 			},
 		},
 		{
@@ -944,11 +927,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv3.Index())},
-				Constraint: &cmpb.ConstraintProto_AtMostOne{
-					&cmpb.BoolArgumentProto{
-						Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_AtMostOne{&cmpb.BoolArgumentProto{
+					Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
+				}},
 			},
 		},
 		{
@@ -960,11 +941,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			},
 			want: &cmpb.ConstraintProto{
 				EnforcementLiteral: []int32{int32(bv3.Index())},
-				Constraint: &cmpb.ConstraintProto_ExactlyOne{
-					&cmpb.BoolArgumentProto{
-						Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_ExactlyOne{&cmpb.BoolArgumentProto{
+					Literals: []int32{int32(bv1.Index()), int32(bv2.Not().Index())},
+				}},
 			},
 		},
 		{
@@ -975,11 +954,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_BoolOr{
-					&cmpb.BoolArgumentProto{
-						Literals: []int32{int32(bv1.Not().Index()), int32(bv2.Not().Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_BoolOr{&cmpb.BoolArgumentProto{
+					Literals: []int32{int32(bv1.Not().Index()), int32(bv2.Not().Index())},
+				}},
 			},
 		},
 		{
@@ -991,13 +968,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index()), int32(bv1.Index())},
-						Coeffs: []int64{1, 1},
-						Domain: []int64{-5, -4, -2, -1, 6, 15},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index()), int32(bv1.Index())},
+					Coeffs: []int64{1, 1},
+					Domain: []int64{-5, -4, -2, -1, 6, 15},
+				}},
 			},
 		},
 		{
@@ -1008,13 +983,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index()), int32(bv1.Index())},
-						Coeffs: []int64{1, 1},
-						Domain: []int64{2, 6},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index()), int32(bv1.Index())},
+					Coeffs: []int64{1, 1},
+					Domain: []int64{2, 6},
+				}},
 			},
 		},
 		{
@@ -1025,13 +998,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index())},
-						Coeffs: []int64{1},
-						Domain: []int64{10, 10},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index())},
+					Coeffs: []int64{1},
+					Domain: []int64{10, 10},
+				}},
 			},
 		},
 		{
@@ -1042,13 +1013,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index())},
-						Coeffs: []int64{1},
-						Domain: []int64{math.MinInt64, 10},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index())},
+					Coeffs: []int64{1},
+					Domain: []int64{math.MinInt64, 10},
+				}},
 			},
 		},
 		{
@@ -1059,13 +1028,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index())},
-						Coeffs: []int64{1},
-						Domain: []int64{math.MinInt64, 9},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index())},
+					Coeffs: []int64{1},
+					Domain: []int64{math.MinInt64, 9},
+				}},
 			},
 		},
 		{
@@ -1076,13 +1043,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index())},
-						Coeffs: []int64{1},
-						Domain: []int64{10, math.MaxInt64},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index())},
+					Coeffs: []int64{1},
+					Domain: []int64{10, math.MaxInt64},
+				}},
 			},
 		},
 		{
@@ -1093,13 +1058,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index())},
-						Coeffs: []int64{1},
-						Domain: []int64{11, math.MaxInt64},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index())},
+					Coeffs: []int64{1},
+					Domain: []int64{11, math.MaxInt64},
+				}},
 			},
 		},
 		{
@@ -1110,13 +1073,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Linear{
-					&cmpb.LinearConstraintProto{
-						Vars:   []int32{int32(iv1.Index())},
-						Coeffs: []int64{1},
-						Domain: []int64{math.MinInt64, 9, 11, math.MaxInt64},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Linear{&cmpb.LinearConstraintProto{
+					Vars:   []int32{int32(iv1.Index())},
+					Coeffs: []int64{1},
+					Domain: []int64{math.MinInt64, 9, 11, math.MaxInt64},
+				}},
 			},
 		},
 		{
@@ -1127,30 +1088,28 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_AllDiff{
-					&cmpb.AllDifferentConstraintProto{
-						Exprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv1.Index())},
-								Coeffs: []int64{1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(bv1.Index())},
-								Coeffs: []int64{1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(bv2.Index())},
-								Coeffs: []int64{-1},
-								Offset: 1,
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{},
-								Coeffs: []int64{},
-								Offset: 10,
-							},
+				Constraint: &cmpb.ConstraintProto_AllDiff{&cmpb.AllDifferentConstraintProto{
+					Exprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv1.Index())},
+							Coeffs: []int64{1},
+						},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(bv1.Index())},
+							Coeffs: []int64{1},
+						},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(bv2.Index())},
+							Coeffs: []int64{-1},
+							Offset: 1,
+						},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{},
+							Coeffs: []int64{},
+							Offset: 10,
 						},
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1161,13 +1120,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Element{
-					&cmpb.ElementConstraintProto{
-						Index:  int32(iv1.Index()),
-						Target: int32(iv4.Index()),
-						Vars:   []int32{int32(iv2.Index()), int32(iv3.Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Element{&cmpb.ElementConstraintProto{
+					Index:  int32(iv1.Index()),
+					Target: int32(iv4.Index()),
+					Vars:   []int32{int32(iv2.Index()), int32(iv3.Index())},
+				}},
 			},
 		},
 		{
@@ -1178,16 +1135,14 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Element{
-					&cmpb.ElementConstraintProto{
-						Index:  int32(iv1.Index()),
-						Target: int32(iv4.Index()),
-						Vars: []int32{
-							int32(model.NewConstant(10).Index()),
-							int32(model.NewConstant(20).Index()),
-						},
+				Constraint: &cmpb.ConstraintProto_Element{&cmpb.ElementConstraintProto{
+					Index:  int32(iv1.Index()),
+					Target: int32(iv4.Index()),
+					Vars: []int32{
+						int32(model.NewConstant(10).Index()),
+						int32(model.NewConstant(20).Index()),
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1198,12 +1153,10 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Inverse{
-					&cmpb.InverseConstraintProto{
-						FDirect:  []int32{int32(iv1.Index()), int32(iv2.Index())},
-						FInverse: []int32{int32(iv3.Index()), int32(iv4.Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Inverse{&cmpb.InverseConstraintProto{
+					FDirect:  []int32{int32(iv1.Index()), int32(iv2.Index())},
+					FInverse: []int32{int32(iv3.Index()), int32(iv4.Index())},
+				}},
 			},
 		},
 		{
@@ -1214,24 +1167,22 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_LinMax{
-					&cmpb.LinearArgumentProto{
-						Target: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
+				Constraint: &cmpb.ConstraintProto_LinMax{&cmpb.LinearArgumentProto{
+					Target: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{-1},
+					},
+					Exprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
 							Coeffs: []int64{-1},
 						},
-						Exprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{-1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv3.Index())},
-								Coeffs: []int64{-1},
-							},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv3.Index())},
+							Coeffs: []int64{-1},
 						},
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1242,24 +1193,22 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_LinMax{
-					&cmpb.LinearArgumentProto{
-						Target: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
+				Constraint: &cmpb.ConstraintProto_LinMax{&cmpb.LinearArgumentProto{
+					Target: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+					},
+					Exprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
 							Coeffs: []int64{1},
 						},
-						Exprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv3.Index())},
-								Coeffs: []int64{1},
-							},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv3.Index())},
+							Coeffs: []int64{1},
 						},
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1270,24 +1219,22 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_IntProd{
-					&cmpb.LinearArgumentProto{
-						Target: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
+				Constraint: &cmpb.ConstraintProto_IntProd{&cmpb.LinearArgumentProto{
+					Target: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+					},
+					Exprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
 							Coeffs: []int64{1},
 						},
-						Exprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv3.Index())},
-								Coeffs: []int64{1},
-							},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv3.Index())},
+							Coeffs: []int64{1},
 						},
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1298,24 +1245,22 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_IntDiv{
-					&cmpb.LinearArgumentProto{
-						Target: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
+				Constraint: &cmpb.ConstraintProto_IntDiv{&cmpb.LinearArgumentProto{
+					Target: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+					},
+					Exprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
 							Coeffs: []int64{1},
 						},
-						Exprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv3.Index())},
-								Coeffs: []int64{1},
-							},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv3.Index())},
+							Coeffs: []int64{1},
 						},
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1326,24 +1271,22 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_LinMax{
-					&cmpb.LinearArgumentProto{
-						Target: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
+				Constraint: &cmpb.ConstraintProto_LinMax{&cmpb.LinearArgumentProto{
+					Target: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+					},
+					Exprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
 							Coeffs: []int64{1},
 						},
-						Exprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{-1},
-							},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
+							Coeffs: []int64{-1},
 						},
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1354,24 +1297,22 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_IntMod{
-					&cmpb.LinearArgumentProto{
-						Target: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
+				Constraint: &cmpb.ConstraintProto_IntMod{&cmpb.LinearArgumentProto{
+					Target: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+					},
+					Exprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
 							Coeffs: []int64{1},
 						},
-						Exprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{1},
-							},
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv3.Index())},
-								Coeffs: []int64{1},
-							},
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv3.Index())},
+							Coeffs: []int64{1},
 						},
 					},
-				},
+				}},
 			},
 		},
 		{
@@ -1382,11 +1323,9 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_NoOverlap{
-					&cmpb.NoOverlapConstraintProto{
-						Intervals: []int32{int32(interval1.Index()), int32(interval2.Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_NoOverlap{&cmpb.NoOverlapConstraintProto{
+					Intervals: []int32{int32(interval1.Index()), int32(interval2.Index())},
+				}},
 			},
 		},
 		{
@@ -1399,12 +1338,10 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_NoOverlap_2D{
-					&cmpb.NoOverlap2DConstraintProto{
-						XIntervals: []int32{int32(interval1.Index()), int32(interval3.Index())},
-						YIntervals: []int32{int32(interval2.Index()), int32(interval4.Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_NoOverlap_2D{&cmpb.NoOverlap2DConstraintProto{
+					XIntervals: []int32{int32(interval1.Index()), int32(interval3.Index())},
+					YIntervals: []int32{int32(interval2.Index()), int32(interval4.Index())},
+				}},
 			},
 		},
 		{
@@ -1416,13 +1353,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Circuit{
-					&cmpb.CircuitConstraintProto{
-						Tails:    []int32{0},
-						Heads:    []int32{1},
-						Literals: []int32{int32(bv1.Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Circuit{&cmpb.CircuitConstraintProto{
+					Tails:    []int32{0},
+					Heads:    []int32{1},
+					Literals: []int32{int32(bv1.Index())},
+				}},
 			},
 		},
 		{
@@ -1434,13 +1369,11 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Routes{
-					&cmpb.RoutesConstraintProto{
-						Tails:    []int32{0},
-						Heads:    []int32{1},
-						Literals: []int32{int32(bv1.Index())},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Routes{&cmpb.RoutesConstraintProto{
+					Tails:    []int32{0},
+					Heads:    []int32{1},
+					Literals: []int32{int32(bv1.Index())},
+				}},
 			},
 		},
 		{
@@ -1453,12 +1386,10 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Table{
-					&cmpb.TableConstraintProto{
-						Vars:   []int32{int32(iv1.Index()), int32(iv2.Index())},
-						Values: []int64{0, 2, 1, 3},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Table{&cmpb.TableConstraintProto{
+					Vars:   []int32{int32(iv1.Index()), int32(iv2.Index())},
+					Values: []int64{0, 2, 1, 3},
+				}},
 			},
 		},
 		{
@@ -1470,24 +1401,22 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Reservoir{
-					&cmpb.ReservoirConstraintProto{
-						MinLevel: 10,
-						MaxLevel: 20,
-						TimeExprs: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv1.Index())},
-								Coeffs: []int64{2},
-							},
+				Constraint: &cmpb.ConstraintProto_Reservoir{&cmpb.ReservoirConstraintProto{
+					MinLevel: 10,
+					MaxLevel: 20,
+					TimeExprs: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv1.Index())},
+							Coeffs: []int64{2},
 						},
-						LevelChanges: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Offset: 15,
-							},
-						},
-						ActiveLiterals: []int32{int32(one.Index())},
 					},
-				},
+					LevelChanges: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Offset: 15,
+						},
+					},
+					ActiveLiterals: []int32{int32(one.Index())},
+				}},
 			},
 		},
 		{
@@ -1500,16 +1429,14 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Automaton{
-					&cmpb.AutomatonConstraintProto{
-						Vars:            []int32{int32(iv1.Index()), int32(iv2.Index())},
-						StartingState:   0,
-						FinalStates:     []int64{5, 10},
-						TransitionTail:  []int64{0, 2},
-						TransitionHead:  []int64{1, 3},
-						TransitionLabel: []int64{10, 15},
-					},
-				},
+				Constraint: &cmpb.ConstraintProto_Automaton{&cmpb.AutomatonConstraintProto{
+					Vars:            []int32{int32(iv1.Index()), int32(iv2.Index())},
+					StartingState:   0,
+					FinalStates:     []int64{5, 10},
+					TransitionTail:  []int64{0, 2},
+					TransitionHead:  []int64{1, 3},
+					TransitionLabel: []int64{10, 15},
+				}},
 			},
 		},
 		{
@@ -1521,21 +1448,19 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				return m.GetConstraints()[c.Index()]
 			},
 			want: &cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Cumulative{
-					&cmpb.CumulativeConstraintProto{
-						Capacity: &cmpb.LinearExpressionProto{
-							Vars:   []int32{int32(iv1.Index())},
+				Constraint: &cmpb.ConstraintProto_Cumulative{&cmpb.CumulativeConstraintProto{
+					Capacity: &cmpb.LinearExpressionProto{
+						Vars:   []int32{int32(iv1.Index())},
+						Coeffs: []int64{1},
+					},
+					Intervals: []int32{int32(interval1.Index())},
+					Demands: []*cmpb.LinearExpressionProto{
+						&cmpb.LinearExpressionProto{
+							Vars:   []int32{int32(iv2.Index())},
 							Coeffs: []int64{1},
 						},
-						Intervals: []int32{int32(interval1.Index())},
-						Demands: []*cmpb.LinearExpressionProto{
-							&cmpb.LinearExpressionProto{
-								Vars:   []int32{int32(iv2.Index())},
-								Coeffs: []int64{1},
-							},
-						},
 					},
-				},
+				}},
 			},
 		},
 	}

@@ -61,10 +61,10 @@ IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail) {
   return IntegerLiteral::LowerOrEqual(var, lb);
 }
 
-IntegerLiteral ChooseBestObjectiveValue(IntegerVariable var, Model* model) {
-  const auto& variables =
-      model->GetOrCreate<ObjectiveDefinition>()->objective_impacting_variables;
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+IntegerLiteral ChooseBestObjectiveValue(
+    IntegerVariable var, IntegerTrail* integer_trail,
+    ObjectiveDefinition* objective_definition) {
+  const auto& variables = objective_definition->objective_impacting_variables;
   if (variables.contains(var)) {
     return AtMinValue(var, integer_trail);
   } else if (variables.contains(NegationOf(var))) {
@@ -394,8 +394,11 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
 
   // Objective based value.
   if (parameters.exploit_objective()) {
-    value_selection_heuristics.push_back([model](IntegerVariable var) {
-      return ChooseBestObjectiveValue(var, model);
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
+    value_selection_heuristics.push_back([integer_trail, objective_definition](
+                                             IntegerVariable var) {
+      return ChooseBestObjectiveValue(var, integer_trail, objective_definition);
     });
   }
 

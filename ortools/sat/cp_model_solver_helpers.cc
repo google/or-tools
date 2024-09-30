@@ -108,10 +108,6 @@ ABSL_FLAG(
     "we will interpret this as an internal solution which can be used for "
     "debugging. For instance we use it to identify wrong cuts/reasons.");
 
-ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
-          "When true, all intermediate solutions found by the solver will be "
-          "checked. This can be expensive, therefore it is off by default.");
-
 namespace operations_research {
 namespace sat {
 
@@ -306,12 +302,6 @@ std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
         solution.push_back(0);
       }
     }
-  }
-
-  if (DEBUG_MODE ||
-      absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
-    // TODO(user): Checks against initial model.
-    CHECK(SolutionIsFeasible(model_proto, solution));
   }
   return solution;
 }
@@ -1006,15 +996,21 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     VLOG(3) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
-    VLOG(1) << "There is unsupported constraints types in this model: ";
+    auto* logger = model->GetOrCreate<SolverLogger>();
+    SOLVER_LOG(logger,
+               "There is unsupported constraints types in this model: ");
     std::vector<absl::string_view> names;
     for (const ConstraintProto::ConstraintCase type : unsupported_types) {
       names.push_back(ConstraintCaseName(type));
     }
     std::sort(names.begin(), names.end());
     for (const absl::string_view name : names) {
-      VLOG(1) << " - " << name;
+      SOLVER_LOG(logger, " - ", name);
     }
+
+    // TODO(user): This is wrong. We should support a MODEL_INVALID end of solve
+    // in the SharedResponseManager.
+    SOLVER_LOG(logger, "BUG: We will wrongly report INFEASIBLE now.");
     return unsat();
   }
 

@@ -451,7 +451,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
                    "PRIMAL_UNBOUNDED was reported, but the tolerance are good "
                    "and the unbounded ray is not great.");
         SOLVER_LOG(logger_,
-                   "The difference between unbounded and optimal can depends "
+                   "The difference between unbounded and optimal can depend "
                    "on a slight change of tolerance, trying to see if we are "
                    "at OPTIMAL after postsolve.");
         problem_status_ = ProblemStatus::OPTIMAL;
@@ -1087,7 +1087,9 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
   // This function work whether the lp is in equation form (with slack) or
   // without, since the objective of the slacks are always zero.
   DCHECK_GE(num_cols_, lp.num_variables());
-  for (ColIndex col(lp.num_variables()); col < num_cols_; ++col) {
+
+  const auto obj_coeffs = lp.objective_coefficients().const_view();
+  for (ColIndex col(obj_coeffs.size()); col < num_cols_; ++col) {
     if (objective_[col] != 0.0) {
       objective_is_unchanged = false;
       objective_[col] = 0.0;
@@ -1096,8 +1098,8 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
 
   if (lp.IsMaximizationProblem()) {
     // Note that we use the minimization version of the objective internally.
-    for (ColIndex col(0); col < lp.num_variables(); ++col) {
-      const Fractional coeff = -lp.objective_coefficients()[col];
+    for (ColIndex col(0); col < obj_coeffs.size(); ++col) {
+      const Fractional coeff = -obj_coeffs[col];
       if (objective_[col] != coeff) {
         objective_is_unchanged = false;
         objective_[col] = coeff;
@@ -1106,8 +1108,8 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
     objective_offset_ = -lp.objective_offset();
     objective_scaling_factor_ = -lp.objective_scaling_factor();
   } else {
-    for (ColIndex col(0); col < lp.num_variables(); ++col) {
-      const Fractional coeff = lp.objective_coefficients()[col];
+    for (ColIndex col(0); col < obj_coeffs.size(); ++col) {
+      const Fractional coeff = obj_coeffs[col];
       if (objective_[col] != coeff) {
         objective_is_unchanged = false;
         objective_[col] = coeff;
@@ -1120,7 +1122,7 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
   return objective_is_unchanged;
 }
 
-void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
+void RevisedSimplex::InitializeObjectiveLimit() {
   objective_limit_reached_ = false;
   DCHECK(std::isfinite(objective_offset_));
   DCHECK(std::isfinite(objective_scaling_factor_));
@@ -1418,7 +1420,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     }
   }
 
-  InitializeObjectiveLimit(lp);
+  InitializeObjectiveLimit();
 
   // Computes the variable name as soon as possible for logging.
   // TODO(user): do we really need to store them? we could just compute them

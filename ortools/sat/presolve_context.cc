@@ -33,11 +33,11 @@
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -98,10 +98,13 @@ int PresolveContext::NewIntVarWithDefinition(
   return new_var;
 }
 
-int PresolveContext::NewBoolVar() { return NewIntVar(Domain(0, 1)); }
+int PresolveContext::NewBoolVar(absl::string_view source) {
+  UpdateRuleStats(absl::StrCat("new_bool: ", source));
+  return NewIntVar(Domain(0, 1));
+}
 
 int PresolveContext::NewBoolVarWithClause(absl::Span<const int> clause) {
-  const int new_var = NewBoolVar();
+  const int new_var = NewBoolVar("with clause");
   if (hint_is_loaded_) {
     bool all_have_hint = true;
     for (const int literal : clause) {
@@ -125,7 +128,7 @@ int PresolveContext::NewBoolVarWithClause(absl::Span<const int> clause) {
       }
     }
 
-    // If there all literal where hinted and at zero, we set the hint of
+    // If all literals where hinted and at zero, we set the hint of
     // new_var to zero, otherwise we leave it unassigned.
     if (all_have_hint && !hint_has_value_[new_var]) {
       hint_has_value_[new_var] = true;
@@ -599,7 +602,15 @@ void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   if (!is_todo) num_presolve_operations += num_times;
 
   if (logger_->LoggingIsEnabled()) {
-    VLOG(is_todo ? 3 : 2) << num_presolve_operations << " : " << name;
+    if (VLOG_IS_ON(1)) {
+      int level = is_todo ? 3 : 2;
+      if (std::abs(num_presolve_operations -
+                   params_.debug_max_num_presolve_operations()) <= 100) {
+        level = 1;
+      }
+      VLOG(level) << num_presolve_operations << " : " << name;
+    }
+
     stats_by_rule_name_[name] += num_times;
   }
 }
@@ -715,6 +726,7 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
 }
 
 bool PresolveContext::ConstraintVariableGraphIsUpToDate() const {
+  if (is_unsat_) return true;  // We do not care in this case.
   return constraint_to_vars_.size() == working_model->constraints_size();
 }
 
@@ -1004,6 +1016,12 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   UpdateRuleStats("variables: canonicalize affine domain");
   UpdateNewConstraintsVariableUsage();
   return true;
+}
+
+void PresolveContext::PermuteHintValues(const SparsePermutation& perm) {
+  CHECK(hint_is_loaded_);
+  perm.ApplyToDenseCollection(hint_);
+  perm.ApplyToDenseCollection(hint_has_value_);
 }
 
 bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
@@ -1361,8 +1379,9 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     max_literal = max_it->second.Get(this);
     if (min_literal != NegatedRef(max_literal)) {
       UpdateRuleStats("variables with 2 values: merge encoding literals");
-      StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal));
-      if (is_unsat_) return;
+      if (!StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal))) {
+        return;
+      }
     }
     min_literal = GetLiteralRepresentative(min_literal);
     max_literal = GetLiteralRepresentative(max_literal);
@@ -1379,7 +1398,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     var_map[var_min] = SavedLiteral(min_literal);
   } else {
     UpdateRuleStats("variables with 2 values: create encoding literal");
-    max_literal = NewBoolVar();
+    max_literal = NewBoolVar("var with 2 values");
     min_literal = NegatedRef(max_literal);
     var_map[var_min] = SavedLiteral(min_literal);
     var_map[var_max] = SavedLiteral(max_literal);
@@ -1409,7 +1428,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   }
 }
 
-void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
+bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
                                                      int64_t value,
                                                      bool add_constraints) {
   DCHECK(RefIsPositive(var));
@@ -1436,10 +1455,12 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
       if (literal != previous_literal) {
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
-        StoreBooleanEqualityRelation(literal, previous_literal);
+        if (!StoreBooleanEqualityRelation(literal, previous_literal)) {
+          return false;
+        }
       }
     }
-    return;
+    return true;
   }
 
   if (DomainOf(var).Size() == 2) {
@@ -1451,6 +1472,9 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
     AddImplyInDomain(literal, var, Domain(value));
     AddImplyInDomain(NegatedRef(literal), var, Domain(value).Complement());
   }
+
+  // The canonicalization might have proven UNSAT.
+  return !ModelIsUnsat();
 }
 
 bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
@@ -1474,8 +1498,10 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   if (other_set.contains({NegatedRef(literal), var, value})) {
     UpdateRuleStats("variables: detect fully reified value encoding");
     const int imply_eq_literal = imply_eq ? literal : NegatedRef(literal);
-    InsertVarValueEncodingInternal(imply_eq_literal, var, value,
-                                   /*add_constraints=*/false);
+    if (!InsertVarValueEncodingInternal(imply_eq_literal, var, value,
+                                        /*add_constraints=*/false)) {
+      return false;
+    }
   }
 
   return true;
@@ -1495,7 +1521,10 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
-  InsertVarValueEncodingInternal(literal, var, value, /*add_constraints=*/true);
+  if (!InsertVarValueEncodingInternal(literal, var, value,
+                                      /*add_constraints=*/true)) {
+    return false;
+  }
   eq_half_encoding_.insert({literal, var, value});
   neq_half_encoding_.insert({NegatedRef(literal), var, value});
 
@@ -1621,14 +1650,14 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
       var_map[0] = SavedLiteral(NegatedRef(representative));
       return value == 1 ? representative : NegatedRef(representative);
     } else {
-      const int literal = NewBoolVar();
+      const int literal = NewBoolVar("integer encoding");
       InsertVarValueEncoding(literal, var, var_max);
       const int representative = GetLiteralRepresentative(literal);
       return value == var_max ? representative : NegatedRef(representative);
     }
   }
 
-  const int literal = NewBoolVar();
+  const int literal = NewBoolVar("integer encoding");
   InsertVarValueEncoding(literal, var, value);
   return GetLiteralRepresentative(literal);
 }
@@ -2155,7 +2184,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   const auto& it = reified_precedences_cache_.find(key);
   if (it != reified_precedences_cache_.end()) return it->second;
 
-  const int result = NewBoolVar();
+  const int result = NewBoolVar("reified precedence");
   reified_precedences_cache_[key] = result;
 
   // result => (time_i <= time_j) && active_i && active_j.

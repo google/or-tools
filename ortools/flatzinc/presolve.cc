@@ -183,7 +183,7 @@ bool IsIncreasingAndContiguous(absl::Span<const int64_t> values) {
   return true;
 }
 
-bool AreOnesFollowedByMinusOne(const std::vector<int64_t>& coeffs) {
+bool AreOnesFollowedByMinusOne(absl::Span<const int64_t> coeffs) {
   CHECK(!coeffs.empty());
   for (int i = 0; i < coeffs.size() - 1; ++i) {
     if (coeffs[i] != 1) {

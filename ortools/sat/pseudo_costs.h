@@ -100,8 +100,9 @@ class PseudoCosts {
     IntegerValue lower_bound_change = IntegerValue(0);
     double lp_increase = 0.0;
   };
-  std::vector<VariableBoundChange> GetBoundChanges(
-      Literal decision, absl::Span<const double> lp_values);
+  const std::vector<VariableBoundChange>& BoundChanges() {
+    return bound_changes_;
+  }
 
  private:
   // Returns the current objective info.

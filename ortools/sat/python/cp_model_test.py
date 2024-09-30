@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ortools.sat.python.cp_model."""
+import itertools
+import time
 
 from absl.testing import absltest
 import pandas as pd
@@ -95,28 +96,55 @@ class RecordSolution(cp_model.CpSolverSolutionCallback):
         return self.__bool_var_values
 
 
+class TimeRecorder(cp_model.CpSolverSolutionCallback):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.__last_time: float = 0.0
+
+    def on_solution_callback(self) -> None:
+        self.__last_time = time.time()
+
+    @property
+    def last_time(self) -> float:
+        return self.__last_time
+
+
 class LogToString:
     """Record log in a string."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__log = ""
 
-    def new_message(self, message: str):
+    def new_message(self, message: str) -> None:
         self.__log += message
         self.__log += "\n"
 
     @property
-    def log(self):
+    def log(self) -> str:
         return self.__log
 
 
 class BestBoundCallback:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.best_bound: float = 0.0
 
-    def new_best_bound(self, bb: float):
+    def new_best_bound(self, bb: float) -> None:
         self.best_bound = bb
+
+
+class BestBoundTimeCallback:
+
+    def __init__(self) -> None:
+        self.__last_time: float = 0.0
+
+    def new_best_bound(self, unused_bb: float):
+        self.__last_time = time.time()
+
+    @property
+    def last_time(self) -> float:
+        return self.__last_time
 
 
 class CpModelTest(absltest.TestCase):
@@ -1648,6 +1676,222 @@ class CpModelTest(absltest.TestCase):
             + absent_fixed_intervals.to_list()
         )
         self.assertLen(model.proto.constraints, 13)
+
+    def testIssue4376SatModel(self):
+        print("testIssue4376SatModel")
+        letters: str = "BCFLMRT"
+
+        def symbols_from_string(text: str) -> list[int]:
+            return [letters.index(char) for char in text]
+
+        def rotate_symbols(symbols: list[int], turns: int) -> list[int]:
+            return symbols[turns:] + symbols[:turns]
+
+        data = """FMRC
+FTLB
+MCBR
+FRTM
+FBTM
+BRFM
+BTRM
+BCRM
+RTCF
+TFRC
+CTRM
+CBTM
+TFBM
+TCBM
+CFTM
+BLTR
+RLFM
+CFLM
+CRML
+FCLR
+FBTR
+TBRF
+RBCF
+RBCT
+BCTF
+TFCR
+CBRT
+FCBT
+FRTB
+RBCM
+MTFC
+MFTC
+MBFC
+RTBM
+RBFM
+TRFM"""
+
+        tiles = [symbols_from_string(line) for line in data.splitlines()]
+
+        model = cp_model.CpModel()
+
+        # choices[i, x, y, r] is true iff we put tile i in cell (x,y) with
+        # rotation r.
+        choices = {}
+        for i in range(len(tiles)):
+            for x in range(6):
+                for y in range(6):
+                    for r in range(4):
+                        choices[(i, x, y, r)] = model.new_bool_var(
+                            f"tile_{i}_{x}_{y}_{r}"
+                        )
+
+        # corners[x, y, s] is true iff the corner at (x,y) contains symbol s.
+        corners = {}
+        for x in range(7):
+            for y in range(7):
+                for s in range(7):
+                    corners[(x, y, s)] = model.new_bool_var(f"corner_{x}_{y}_{s}")
+
+        # Placing a tile puts a symbol in each corner.
+        for (i, x, y, r), choice in choices.items():
+            symbols = rotate_symbols(tiles[i], r)
+            model.add_implication(choice, corners[x, y, symbols[0]])
+            model.add_implication(choice, corners[x, y + 1, symbols[1]])
+            model.add_implication(choice, corners[x + 1, y + 1, symbols[2]])
+            model.add_implication(choice, corners[x + 1, y, symbols[3]])
+
+        # We must make exactly one choice for each tile.
+        for i in range(len(tiles)):
+            tmp_literals = []
+            for x in range(6):
+                for y in range(6):
+                    for r in range(4):
+                        tmp_literals.append(choices[(i, x, y, r)])
+            model.add_exactly_one(tmp_literals)
+
+        # We must make exactly one choice for each square.
+        for x, y in itertools.product(range(6), range(6)):
+            tmp_literals = []
+            for i in range(len(tiles)):
+                for r in range(4):
+                    tmp_literals.append(choices[(i, x, y, r)])
+            model.add_exactly_one(tmp_literals)
+
+        # Each corner contains exactly one symbol.
+        for x, y in itertools.product(range(7), range(7)):
+            model.add_exactly_one(corners[x, y, s] for s in range(7))
+
+        # Solve.
+        solver = cp_model.CpSolver()
+        solver.parameters.num_workers = 8
+        solver.parameters.max_time_in_seconds = 20
+        solver.parameters.log_search_progress = True
+        solver.parameters.cp_model_presolve = False
+        solver.parameters.symmetry_level = 0
+
+        solution_callback = TimeRecorder()
+        status = solver.Solve(model, solution_callback)
+        if status == cp_model.OPTIMAL:
+            self.assertLess(time.time(), solution_callback.last_time + 5.0)
+
+    def testIssue4376MinimizeModel(self):
+        print("testIssue4376MinimizeModel")
+
+        model = cp_model.CpModel()
+
+        jobs = [
+            [3, 3],  # [duration, width]
+            [2, 5],
+            [1, 3],
+            [3, 7],
+            [7, 3],
+            [2, 2],
+            [2, 2],
+            [5, 5],
+            [10, 2],
+            [4, 3],
+            [2, 6],
+            [1, 2],
+            [6, 8],
+            [4, 5],
+            [3, 7],
+        ]
+
+        max_width = 10
+
+        horizon = sum(t[0] for t in jobs)
+        num_jobs = len(jobs)
+        all_jobs = range(num_jobs)
+
+        intervals = []
+        intervals0 = []
+        intervals1 = []
+        performed = []
+        starts = []
+        ends = []
+        demands = []
+
+        for i in all_jobs:
+            # Create main interval.
+            start = model.new_int_var(0, horizon, f"start_{i}")
+            duration = jobs[i][0]
+            end = model.new_int_var(0, horizon, f"end_{i}")
+            interval = model.new_interval_var(start, duration, end, f"interval_{i}")
+            starts.append(start)
+            intervals.append(interval)
+            ends.append(end)
+            demands.append(jobs[i][1])
+
+            # Create an optional copy of interval to be executed on machine 0.
+            performed_on_m0 = model.new_bool_var(f"perform_{i}_on_m0")
+            performed.append(performed_on_m0)
+            start0 = model.new_int_var(0, horizon, f"start_{i}_on_m0")
+            end0 = model.new_int_var(0, horizon, f"end_{i}_on_m0")
+            interval0 = model.new_optional_interval_var(
+                start0, duration, end0, performed_on_m0, f"interval_{i}_on_m0"
+            )
+            intervals0.append(interval0)
+
+            # Create an optional copy of interval to be executed on machine 1.
+            start1 = model.new_int_var(0, horizon, f"start_{i}_on_m1")
+            end1 = model.new_int_var(0, horizon, f"end_{i}_on_m1")
+            interval1 = model.new_optional_interval_var(
+                start1,
+                duration,
+                end1,
+                ~performed_on_m0,
+                f"interval_{i}_on_m1",
+            )
+            intervals1.append(interval1)
+
+            # We only propagate the constraint if the tasks is performed on the
+            # machine.
+            model.add(start0 == start).only_enforce_if(performed_on_m0)
+            model.add(start1 == start).only_enforce_if(~performed_on_m0)
+
+        # Width constraint (modeled as a cumulative)
+        model.add_cumulative(intervals, demands, max_width)
+
+        # Choose which machine to perform the jobs on.
+        model.add_no_overlap(intervals0)
+        model.add_no_overlap(intervals1)
+
+        # Objective variable.
+        makespan = model.new_int_var(0, horizon, "makespan")
+        model.add_max_equality(makespan, ends)
+        model.minimize(makespan)
+
+        # Symmetry breaking.
+        model.add(performed[0] == 0)
+
+        # Solve.
+        solver = cp_model.CpSolver()
+        solver.parameters.num_workers = 8
+        solver.parameters.max_time_in_seconds = 50
+        solver.parameters.log_search_progress = True
+        solution_callback = TimeRecorder()
+        best_bound_callback = BestBoundTimeCallback()
+        solver.best_bound_callback = best_bound_callback.new_best_bound
+        status = solver.Solve(model, solution_callback)
+        if status == cp_model.OPTIMAL:
+            self.assertLess(
+                time.time(),
+                max(best_bound_callback.last_time, solution_callback.last_time) + 5.0,
+            )
 
 
 if __name__ == "__main__":

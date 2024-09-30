@@ -120,13 +120,13 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
 
   // Compute the status for all the columns (note that the slack variables are
   // already added at the end of the matrix at this stage).
+  const int state_size = state.statuses.size().value();
   for (ColIndex col(0); col < num_cols; ++col) {
     // Start with the given "warm" status from the BasisState if it exists.
     VariableStatus status;
-    if (col < first_new_col && col < state.statuses.size()) {
+    if (col < first_new_col && col < state_size) {
       status = state.statuses[col];
-    } else if (col >= first_slack_col &&
-               col - num_new_cols < state.statuses.size()) {
+    } else if (col >= first_slack_col && col - num_new_cols < state_size) {
       status = state.statuses[col - num_new_cols];
     } else {
       UpdateToNonBasicStatus(col, DefaultVariableStatus(col));

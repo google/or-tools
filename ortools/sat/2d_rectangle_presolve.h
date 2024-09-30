@@ -38,17 +38,29 @@ bool PresolveFixed2dRectangles(
     absl::Span<const RectangleInRange> non_fixed_boxes,
     std::vector<Rectangle>* fixed_boxes);
 
-// Given a set of non-overlapping rectangles split in two groups, mandatory and
-// optional, try to build a set of as few non-overlapping rectangles as
-// possible defining a region R that satisfy:
+// Given two vectors of non-overlapping rectangles defining two regions of the
+// space: one mandatory region that must be occupied and one optional region
+// that can be occupied, try to build a vector of as few non-overlapping
+// rectangles as possible defining a region R that satisfy:
 //   - R \subset (mandatory \union optional);
 //   - mandatory \subset R.
 //
-// The function updates the set of `mandatory_rectangles` with `R` and
+// The function updates the vector of `mandatory_rectangles` with `R` and
 // `optional_rectangles` with  `optional_rectangles \setdiff R`. It returns
 // true if the `mandatory_rectangles` was updated.
-bool ReduceNumberofBoxes(std::vector<Rectangle>* mandatory_rectangles,
-                         std::vector<Rectangle>* optional_rectangles);
+//
+// This function uses a greedy algorithm that merge rectangles that share an
+// edge.
+bool ReduceNumberofBoxesGreedy(std::vector<Rectangle>* mandatory_rectangles,
+                               std::vector<Rectangle>* optional_rectangles);
+
+// Same as above, but this implementation returns the optimal solution in
+// minimizing the number of boxes if `optional_rectangles` is empty. On the
+// other hand, its handling of optional boxes is rather limited. It simply fills
+// the holes in the mandatory boxes with optional boxes, if possible.
+bool ReduceNumberOfBoxesExactMandatory(
+    std::vector<Rectangle>* mandatory_rectangles,
+    std::vector<Rectangle>* optional_rectangles);
 
 enum EdgePosition { TOP = 0, RIGHT = 1, BOTTOM = 2, LEFT = 3 };
 
@@ -162,23 +174,17 @@ struct ShapePath {
   std::vector<int> touching_box_index;
 };
 
-// Returns a path delimiting a boundary of the union of a set of rectangles. It
-// should work for both the exterior boundary and the boundaries of the holes
-// inside the union. The path will start on `starting_point` and follow the
-// boundary on clockwise order.
-//
-// `starting_point` should be a point in the boundary and `starting_box_index`
-// the index of a rectangle with one edge containing `starting_point`.
-//
-// The resulting `path` satisfy:
-// - path.step_points.front() == path.step_points.back() == starting_point
-// - path.touching_box_index.front() == path.touching_box_index.back() ==
-//                                   == starting_box_index
-//
-ShapePath TraceBoundary(
-    const std::pair<IntegerValue, IntegerValue>& starting_step_point,
-    int starting_box_index, absl::Span<const Rectangle> rectangles,
-    const Neighbours& neighbours);
+struct SingleShape {
+  ShapePath boundary;
+  std::vector<ShapePath> holes;
+};
+
+// Given a set of rectangles, split it into connected components and transform
+// each individual set into a shape described by its boundary and holes paths.
+std::vector<SingleShape> BoxesToShapes(absl::Span<const Rectangle> rectangles,
+                                       const Neighbours& neighbours);
+
+std::vector<Rectangle> CutShapeIntoRectangles(SingleShape shapes);
 
 }  // namespace sat
 }  // namespace operations_research

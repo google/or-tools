@@ -17,11 +17,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
-	cmpb "ortools/sat/cp_model_go_proto"
-	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func channelingSampleSat() error {
@@ -53,12 +53,12 @@ func channelingSampleSat() error {
 	if err != nil {
 		return fmt.Errorf("failed to instantiate the CP model: %w", err)
 	}
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(11),
 		SearchBranching:                   sppb.SatParameters_FIXED_SEARCH.Enum(),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)
@@ -76,6 +76,6 @@ func channelingSampleSat() error {
 
 func main() {
 	if err := channelingSampleSat(); err != nil {
-		glog.Exitf("channelingSampleSat returned with error: %v", err)
+		log.Exitf("channelingSampleSat returned with error: %v", err)
 	}
 }

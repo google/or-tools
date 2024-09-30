@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -1212,6 +1211,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
 
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+
   if (ct.linear().vars().empty()) {
     const Domain rhs = ReadDomainFromProto(ct.linear());
     if (rhs.Contains(0)) return;
@@ -1429,21 +1429,26 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
   // We have a linear with a complex Domain, we need to create extra Booleans.
 
-  // In this case, we can create just one Boolean instead of two since one
-  // is the negation of the other.
-  const bool special_case =
-      ct.enforcement_literal().empty() && ct.linear().domain_size() == 4;
-
   // For enforcement => var \in domain, we can potentially reuse the encoding
   // literal directly rather than creating new ones.
-  const bool is_linear1 = !special_case && vars.size() == 1 && coeffs[0] == 1;
+  const bool is_linear1 = vars.size() == 1 && coeffs[0] == 1;
 
+  bool special_case = false;
   std::vector<Literal> clause;
   std::vector<Literal> for_enumeration;
   auto* encoding = m->GetOrCreate<IntegerEncoder>();
-  for (int i = 0; i < ct.linear().domain_size(); i += 2) {
+  const int domain_size = ct.linear().domain_size();
+  for (int i = 0; i < domain_size; i += 2) {
     const int64_t lb = ct.linear().domain(i);
     const int64_t ub = ct.linear().domain(i + 1);
+
+    // Skip non-reachable intervals.
+    if (min_sum > ub) continue;
+    if (max_sum < lb) continue;
+
+    // Skip trivial constraint. Note that when this happens, all the intervals
+    // before where non-reachable.
+    if (min_sum >= lb && max_sum <= ub) return;
 
     if (is_linear1) {
       if (lb == ub) {
@@ -1461,9 +1466,17 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       }
     }
 
+    // If there is just two terms and no enforcement, we don't need to create an
+    // extra boolean as the second case can be controlled by the negation of the
+    // first.
+    if (ct.enforcement_literal().empty() && clause.size() == 1 &&
+        i + 1 == domain_size) {
+      special_case = true;
+    }
+
     const Literal subdomain_literal(
-        special_case && i > 0 ? clause.back().Negated()
-                              : Literal(m->Add(NewBooleanVariable()), true));
+        special_case ? clause.back().Negated()
+                     : Literal(m->Add(NewBooleanVariable()), true));
     clause.push_back(subdomain_literal);
     for_enumeration.push_back(subdomain_literal);
 

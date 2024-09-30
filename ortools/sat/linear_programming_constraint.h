@@ -73,7 +73,8 @@ class ScatteredIntegerVector {
   template <bool check_overflow = true>
   bool AddLinearExpressionMultiple(IntegerValue multiplier,
                                    absl::Span<const glop::ColIndex> cols,
-                                   absl::Span<const IntegerValue> coeffs);
+                                   absl::Span<const IntegerValue> coeffs,
+                                   IntegerValue max_coeff_magnitude);
 
   // This is not const only because non_zeros is sorted. Note that sorting the
   // non-zeros make the result deterministic whether or not we were in sparse
@@ -329,7 +330,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
       bool take_objective_into_account, bool ignore_trivial_constraints,
-      const std::vector<std::pair<glop::RowIndex, double>>& lp_multipliers,
+      absl::Span<const std::pair<glop::RowIndex, double>> lp_multipliers,
       IntegerValue* scaling,
       int64_t overflow_cap = std::numeric_limits<int64_t>::max()) const;
 
@@ -568,6 +569,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Same as lp_solution_ but this vector is indexed by IntegerVariable.
   ModelLpValues& expanded_lp_solution_;
+  ModelReducedCosts& expanded_reduced_costs_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;

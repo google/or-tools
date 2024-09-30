@@ -48,6 +48,12 @@ struct ModelLpValues
   ModelLpValues() = default;
 };
 
+// Same as ModelLpValues for reduced costs.
+struct ModelReducedCosts
+    : public util_intops::StrongVector<IntegerVariable, double> {
+  ModelReducedCosts() = default;
+};
+
 // This class holds a list of globally valid linear constraints and has some
 // logic to decide which one should be part of the LP relaxation. We want more
 // for a better relaxation, but for efficiency we do not want to have too much
@@ -98,6 +104,7 @@ class LinearConstraintManager {
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
+        expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()),
         model_(model),
         logger_(model->GetOrCreate<SolverLogger>()) {}
   ~LinearConstraintManager();
@@ -160,6 +167,9 @@ class LinearConstraintManager {
   // To simplify CutGenerator api.
   const util_intops::StrongVector<IntegerVariable, double>& LpValues() {
     return expanded_lp_solution_;
+  }
+  const util_intops::StrongVector<IntegerVariable, double>& ReducedCosts() {
+    return expanded_reduced_costs_;
   }
 
   // Stats.
@@ -267,6 +277,7 @@ class LinearConstraintManager {
 
   TimeLimit* time_limit_;
   ModelLpValues& expanded_lp_solution_;
+  ModelReducedCosts& expanded_reduced_costs_;
   Model* model_;
   SolverLogger* logger_;
 

@@ -40,6 +40,16 @@ enum OptimalityNorm {
   OPTIMALITY_NORM_L_INF_COMPONENTWISE = 3;
 }
 
+// The type of system used to schedule CPU threads to do work in parallel.
+enum SchedulerType {
+  SCHEDULER_TYPE_UNSPECIFIED = 0;
+  // Google ThreadPool with barrier synchronization.
+  SCHEDULER_TYPE_GOOGLE_THREADPOOL = 1;
+  // Eigen non-blocking ThreadPool with barrier synchronization (see
+  // <Eigen/ThreadPool>).
+  SCHEDULER_TYPE_EIGEN_THREADPOOL = 3;
+}
+
 // A description of solver termination criteria. The criteria are defined in
 // terms of the quantities recorded in IterationStats in solve_log.proto.
 
@@ -284,6 +294,11 @@ message PrimalDualHybridGradientParams {
   // num_shards is positive, the computation will use that many shards.
   // Otherwise a default that depends on num_threads will be used.
   optional int32 num_shards = 27 [default = 0];
+
+  // The type of scheduler used for CPU multi-threading. See the documentation
+  // of the corresponding enum for more details.
+  optional SchedulerType scheduler_type = 32
+      [default = SCHEDULER_TYPE_GOOGLE_THREADPOOL];
 
   // If true, the iteration_stats field of the SolveLog output will be populated
   // at every iteration. Note that we only compute solution statistics at

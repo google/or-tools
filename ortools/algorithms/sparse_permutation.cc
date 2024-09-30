@@ -81,4 +81,30 @@ std::string SparsePermutation::DebugString() const {
   return out;
 }
 
+int SparsePermutation::Image(int element) const {
+  for (int c = 0; c < NumCycles(); ++c) {
+    int cur_element = LastElementInCycle(c);
+    for (int image : Cycle(c)) {
+      if (cur_element == element) {
+        return image;
+      }
+      cur_element = image;
+    }
+  }
+  return element;
+}
+
+int SparsePermutation::InverseImage(int element) const {
+  for (int c = 0; c < NumCycles(); ++c) {
+    int cur_element = LastElementInCycle(c);
+    for (int image : Cycle(c)) {
+      if (image == element) {
+        return cur_element;
+      }
+      cur_element = image;
+    }
+  }
+  return element;
+}
+
 }  // namespace operations_research

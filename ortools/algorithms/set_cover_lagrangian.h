@@ -15,6 +15,7 @@
 #define OR_TOOLS_ALGORITHMS_SET_COVER_LAGRANGIAN_H_
 
 #include <memory>
+#include <new>
 #include <tuple>
 #include <vector>
 
@@ -44,7 +45,12 @@ namespace operations_research {
 class SetCoverLagrangian {
  public:
   explicit SetCoverLagrangian(SetCoverInvariant* inv, int num_threads = 1)
-      : inv_(inv), model_(*inv->model()), num_threads_(num_threads) {}
+      : inv_(inv),
+        model_(*inv->model()),
+        num_threads_(num_threads),
+        thread_pool_(new ThreadPool(num_threads)) {
+    thread_pool_->StartWorkers();
+  }
 
   // Returns true if a solution was found.
   // TODO(user): Add time-outs and exit with a partial solution. This seems
@@ -136,6 +142,9 @@ class SetCoverLagrangian {
 
   // The number of threads to use for parallelization.
   int num_threads_;
+
+  // The thread pool used for parallelization.
+  std::unique_ptr<ThreadPool> thread_pool_;
 
   // Total (scalar) Lagrangian cost.
   Cost lagrangian_;

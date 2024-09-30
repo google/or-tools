@@ -172,6 +172,13 @@ class CpModelMapping {
     return reverse_integer_map_[var];
   }
 
+  // This one should only be used when we have a mapping.
+  int GetProtoLiteralFromLiteral(sat::Literal lit) const {
+    const int proto_var = GetProtoVariableFromBooleanVariable(lit.Variable());
+    DCHECK_NE(proto_var, -1);
+    return lit.IsPositive() ? proto_var : NegatedRef(proto_var);
+  }
+
   const std::vector<IntegerVariable>& GetVariableMapping() const {
     return integers_;
   }

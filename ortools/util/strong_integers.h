@@ -216,6 +216,7 @@ class StrongInt64 {
   }
 
   constexpr int64_t value() const { return value_; }
+  int64_t* mutable_value() { return &value_; }
 
   template <typename ValType>  // Needed for StrongVector.
   constexpr ValType value() const {

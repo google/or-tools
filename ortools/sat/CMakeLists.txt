@@ -47,6 +47,7 @@ if(BUILD_TESTING)
       FILE_NAME
         ${FILE_NAME}
       DEPS
+        benchmark::benchmark
         GTest::gmock
         GTest::gtest_main
     )

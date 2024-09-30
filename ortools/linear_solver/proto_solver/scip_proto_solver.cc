@@ -21,6 +21,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -692,7 +693,7 @@ std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
 absl::StatusOr<MPSolutionResponse> ScipSolveProto(
     LazyMutableCopy<MPModelRequest> request) {
   MPSolutionResponse response;
-  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+  const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
   const MPModelProto& model = **optional_model;

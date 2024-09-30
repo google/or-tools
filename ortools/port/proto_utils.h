@@ -58,7 +58,7 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
         "Invalid enum value of: ", enum_value, " for enum type: ",
         google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
   }
-  return enum_value_descriptor->name();
+  return std::string(enum_value_descriptor->name());
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
