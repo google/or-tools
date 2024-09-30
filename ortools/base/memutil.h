@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_BASE_MEMUTIL_H_
 #define OR_TOOLS_BASE_MEMUTIL_H_
 
+#include <cstdlib>
+#include <cstring>
+
 #include "absl/strings/internal/memutil.h"
 
 namespace strings {
