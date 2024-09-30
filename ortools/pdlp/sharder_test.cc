@@ -27,7 +27,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/threadpool.h"
+#include "ortools/pdlp/scheduler.h"
 
 namespace operations_research::pdlp {
 namespace {
@@ -434,9 +434,8 @@ TEST_P(VariousSizesTest, LargeMatVec) {
       LargeSparseMatrix(size);
   const int num_threads = 5;
   const int shards_per_thread = 3;
-  ThreadPool pool("MatrixVectorProductTest", num_threads);
-  pool.StartWorkers();
-  Sharder sharder(mat, shards_per_thread * num_threads, &pool);
+  GoogleThreadPoolScheduler scheduler(num_threads);
+  Sharder sharder(mat, shards_per_thread * num_threads, &scheduler);
   VectorXd rhs = VectorXd::Random(size);
   VectorXd direct = mat.transpose() * rhs;
   VectorXd threaded = TransposedMatrixVectorProduct(mat, rhs, sharder);
@@ -446,9 +445,8 @@ TEST_P(VariousSizesTest, LargeMatVec) {
 TEST_P(VariousSizesTest, LargeVectors) {
   const int64_t size = GetParam();
   const int num_threads = 5;
-  ThreadPool pool("SquaredNormTest", num_threads);
-  pool.StartWorkers();
-  Sharder sharder(size, num_threads, &pool);
+  GoogleThreadPoolScheduler scheduler(num_threads);
+  Sharder sharder(size, num_threads, &scheduler);
   VectorXd vec = VectorXd::Random(size);
   const double direct = vec.squaredNorm();
   const double threaded = SquaredNorm(vec, sharder);
