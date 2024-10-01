@@ -465,7 +465,7 @@ void CompressTuples(absl::Span<const int64_t> domain_sizes,
   for (int i = 0; i < num_vars; ++i) {
     const int domain_size = domain_sizes[i];
     if (domain_size == 1) continue;
-    absl::flat_hash_map<const std::vector<int64_t>, std::vector<int>>
+    absl::flat_hash_map<std::vector<int64_t>, std::vector<int>>
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
       int out = 0;

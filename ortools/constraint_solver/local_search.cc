@@ -1473,11 +1473,16 @@ class SwapActiveChainOperator : public BaseInactiveNodeToPathOperator {
  public:
   SwapActiveChainOperator(const std::vector<IntVar*>& vars,
                           const std::vector<IntVar*>& secondary_vars,
-                          std::function<int(int64_t)> start_empty_path_class)
+                          std::function<int(int64_t)> start_empty_path_class,
+                          int max_chain_size)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
                                        std::move(start_empty_path_class)),
         last_before_chain_(-1),
-        last_chain_end_(-1) {}
+        last_chain_end_(-1),
+        current_chain_size_(0),
+        max_chain_size_(max_chain_size) {
+    DCHECK_GE(max_chain_size_, 1);
+  }
   ~SwapActiveChainOperator() override {}
   bool MakeNeighbor() override;
   bool IsIncremental() const override { return true; }
@@ -1488,6 +1493,7 @@ class SwapActiveChainOperator : public BaseInactiveNodeToPathOperator {
     // potentially be out of sync with the last incremental moves. This requires
     // resetting incrementalism.
     last_chain_end_ = -1;
+    current_chain_size_ = 0;
   }
 
  protected:
@@ -1507,10 +1513,15 @@ class SwapActiveChainOperator : public BaseInactiveNodeToPathOperator {
   std::string DebugString() const override { return "SwapActiveChainOperator"; }
 
  private:
-  void OnNodeInitialization() override { last_chain_end_ = -1; }
+  void OnNodeInitialization() override {
+    last_chain_end_ = -1;
+    current_chain_size_ = 0;
+  }
 
   int64_t last_before_chain_;
   int64_t last_chain_end_;
+  int current_chain_size_;
+  const int max_chain_size_;
 };
 
 bool SwapActiveChainOperator::MakeNeighbor() {
@@ -1523,17 +1534,27 @@ bool SwapActiveChainOperator::MakeNeighbor() {
     if (!IsPathEnd(chain_end) && before_chain != chain_end &&
         MakeChainInactive(before_chain, chain_end) &&
         MakeActive(GetInactiveNode(), before_chain)) {
+      ++current_chain_size_;
       return true;
     } else {
       last_chain_end_ = -1;
+      current_chain_size_ = 0;
       return false;
     }
   }
+  if (current_chain_size_ >= max_chain_size_) {
+    // Move to the next before_chain.
+    SetNextBaseToIncrement(0);
+    current_chain_size_ = 0;
+    return false;
+  }
   if (!IsPathEnd(last_chain_end_) &&
       MakeChainInactive(last_chain_end_, Next(last_chain_end_))) {
+    ++current_chain_size_;
     return true;
   }
   last_chain_end_ = -1;
+  current_chain_size_ = 0;
   return false;
 }
 
@@ -2529,6 +2550,15 @@ LocalSearchOperator* MakeLocalSearchOperator(
       new T(vars, secondary_vars, std::move(start_empty_path_class), nullptr));
 }
 
+template <class T, typename ArgType>
+LocalSearchOperator* MakeLocalSearchOperatorWithArg(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class, ArgType arg) {
+  return solver->RevAlloc(new T(
+      vars, secondary_vars, std::move(start_empty_path_class), std::move(arg)));
+}
+
 template <class T>
 LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
@@ -2548,6 +2578,17 @@ LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
       std::function<int(int64_t)> start_empty_path_class) {        \
     return solver->RevAlloc(new OperatorClass(                     \
         vars, secondary_vars, std::move(start_empty_path_class))); \
+  }
+
+#define MAKE_LOCAL_SEARCH_OPERATOR_WITH_ARG(OperatorClass, ArgType)            \
+  template <>                                                                  \
+  LocalSearchOperator* MakeLocalSearchOperatorWithArg<OperatorClass, ArgType>( \
+      Solver * solver, const std::vector<IntVar*>& vars,                       \
+      const std::vector<IntVar*>& secondary_vars,                              \
+      std::function<int(int64_t)> start_empty_path_class, ArgType arg) {       \
+    return solver->RevAlloc(                                                   \
+        new OperatorClass(vars, secondary_vars,                                \
+                          std::move(start_empty_path_class), std::move(arg))); \
   }
 
 #define MAKE_LOCAL_SEARCH_OPERATOR_WITH_NEIGHBORS(OperatorClass)            \
@@ -2574,7 +2615,7 @@ MAKE_LOCAL_SEARCH_OPERATOR(MakeActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeInactiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeChainInactiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(SwapActiveOperator)
-MAKE_LOCAL_SEARCH_OPERATOR(SwapActiveChainOperator)
+MAKE_LOCAL_SEARCH_OPERATOR_WITH_ARG(SwapActiveChainOperator, int)
 MAKE_LOCAL_SEARCH_OPERATOR(ExtendedSwapActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeActiveAndRelocate)
 MAKE_LOCAL_SEARCH_OPERATOR(RelocateAndMakeActiveOperator)
@@ -2642,8 +2683,8 @@ LocalSearchOperator* Solver::MakeOperator(
           this, vars, secondary_vars, nullptr);
     }
     case Solver::SWAPACTIVECHAIN: {
-      return MakeLocalSearchOperator<SwapActiveChainOperator>(
-          this, vars, secondary_vars, nullptr);
+      return MakeLocalSearchOperatorWithArg<SwapActiveChainOperator, int>(
+          this, vars, secondary_vars, nullptr, kint32max);
     }
     case Solver::EXTENDEDSWAPACTIVE: {
       return MakeLocalSearchOperator<ExtendedSwapActiveOperator>(
@@ -3241,7 +3282,7 @@ LocalSearchState::Variable LocalSearchState::DummyVariable() {
   return {nullptr, VariableDomainId(-1)};
 }
 
-void LocalSearchState::RelaxVariableDomain(VariableDomainId domain_id) {
+bool LocalSearchState::RelaxVariableDomain(VariableDomainId domain_id) {
   DCHECK(state_domains_are_all_nonempty_);
   if (!state_has_relaxed_domains_) {
     trailed_num_committed_empty_domains_ = num_committed_empty_domains_;
@@ -3256,7 +3297,9 @@ void LocalSearchState::RelaxVariableDomain(VariableDomainId domain_id) {
       --num_committed_empty_domains_;
     }
     current_domains_[domain_id] = relaxed_domains_[domain_id];
+    return true;
   }
+  return false;
 }
 
 int64_t LocalSearchState::VariableDomainMin(VariableDomainId domain_id) const {

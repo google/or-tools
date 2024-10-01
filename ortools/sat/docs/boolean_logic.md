@@ -113,8 +113,8 @@ public class LiteralSampleSat
 package main
 
 import (
-	"github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func literalSampleSat() {
@@ -123,7 +123,7 @@ func literalSampleSat() {
 	x := model.NewBoolVar().WithName("x")
 	notX := x.Not()
 
-	glog.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
+	log.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
 }
 
 func main() {
@@ -248,7 +248,7 @@ public class BoolOrSampleSat
 package main
 
 import (
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func boolOrSampleSat() {
@@ -434,7 +434,7 @@ public class ReifiedSampleSat
 package main
 
 import (
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func reifiedSampleSat() {
@@ -525,10 +525,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
-	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func booleanProductSample() error {
@@ -552,11 +552,11 @@ func booleanProductSample() error {
 	}
 	// Set `fill_additional_solutions_in_response` and `enumerate_all_solutions` to true so
 	// the solver returns all solutions found.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(4),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)
@@ -576,7 +576,7 @@ func booleanProductSample() error {
 func main() {
 	err := booleanProductSample()
 	if err != nil {
-		glog.Exitf("booleanProductSample returned with error: %v", err)
+		log.Exitf("booleanProductSample returned with error: %v", err)
 	}
 }
 ```

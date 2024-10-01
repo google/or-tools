@@ -17,11 +17,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <deque>
 #include <functional>
-#include <iterator>
 #include <limits>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -29,8 +26,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -40,7 +35,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -52,6 +46,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/util/flat_matrix.h"
+#include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -219,7 +214,7 @@ DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumulCost(
   const DimensionSchedulingStatus status =
       optimizer_core_.OptimizeSingleRouteWithResource(
           vehicle, next_accessor,
-          /*dimension_travel_info=*/{},
+          /*dimension_travel_info=*/nullptr,
           /*resource=*/nullptr,
           /*optimize_vehicle_costs=*/optimal_cost != nullptr,
           solver_[vehicle].get(), /*cumul_values=*/nullptr,
@@ -238,7 +233,7 @@ LocalDimensionCumulOptimizer::ComputeRouteCumulCostWithoutFixedTransits(
     const RoutingModel::ResourceGroup::Resource* resource,
     int64_t* optimal_cost_without_transits) {
   return optimizer_core_.OptimizeSingleRouteWithResource(
-      vehicle, next_accessor, /*dimension_travel_info=*/{}, resource,
+      vehicle, next_accessor, /*dimension_travel_info=*/nullptr, resource,
       /*optimize_vehicle_costs=*/optimal_cost_without_transits != nullptr,
       solver_[vehicle].get(), /*cumul_values=*/nullptr,
       /*break_values=*/nullptr, optimal_cost_without_transits, nullptr);
@@ -254,14 +249,14 @@ std::vector<DimensionSchedulingStatus> LocalDimensionCumulOptimizer::
         std::vector<std::vector<int64_t>>* optimal_cumuls,
         std::vector<std::vector<int64_t>>* optimal_breaks) {
   return optimizer_core_.OptimizeSingleRouteWithResources(
-      vehicle, next_accessor, transit_accessor, {}, resources, resource_indices,
-      optimize_vehicle_costs, solver_[vehicle].get(), optimal_cumuls,
-      optimal_breaks, optimal_costs_without_transits, nullptr);
+      vehicle, next_accessor, transit_accessor, nullptr, resources,
+      resource_indices, optimize_vehicle_costs, solver_[vehicle].get(),
+      optimal_cumuls, optimal_breaks, optimal_costs_without_transits, nullptr);
 }
 
 DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumuls(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-    const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+    const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
     const RoutingModel::ResourceGroup::Resource* resource,
     std::vector<int64_t>* optimal_cumuls,
     std::vector<int64_t>* optimal_breaks) {
@@ -275,7 +270,7 @@ DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumuls(
 DimensionSchedulingStatus
 LocalDimensionCumulOptimizer::ComputeRouteCumulsAndCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-    const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+    const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
     std::vector<int64_t>* optimal_cumuls, std::vector<int64_t>* optimal_breaks,
     int64_t* optimal_cost_without_transits) {
   return optimizer_core_.OptimizeSingleRouteWithResource(
@@ -287,7 +282,7 @@ LocalDimensionCumulOptimizer::ComputeRouteCumulsAndCostWithoutFixedTransits(
 DimensionSchedulingStatus
 LocalDimensionCumulOptimizer::ComputeRouteSolutionCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-    const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+    const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
     absl::Span<const int64_t> solution_cumul_values,
     absl::Span<const int64_t> solution_break_values, int64_t* solution_cost,
     int64_t* cost_offset, bool reuse_previous_model_if_possible, bool clear_lp,
@@ -303,7 +298,7 @@ LocalDimensionCumulOptimizer::ComputeRouteSolutionCostWithoutFixedTransits(
 DimensionSchedulingStatus
 LocalDimensionCumulOptimizer::ComputePackedRouteCumuls(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-    const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+    const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
     const RoutingModel::ResourceGroup::Resource* resource,
     std::vector<int64_t>* packed_cumuls, std::vector<int64_t>* packed_breaks) {
   return optimizer_core_.OptimizeAndPackSingleRoute(
@@ -580,7 +575,7 @@ DimensionCumulOptimizerCore::DimensionCumulOptimizerCore(
 DimensionSchedulingStatus
 DimensionCumulOptimizerCore::ComputeSingleRouteSolutionCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-    const RouteDimensionTravelInfo& dimension_travel_info,
+    const RouteDimensionTravelInfo* dimension_travel_info,
     RoutingLinearSolverWrapper* solver,
     absl::Span<const int64_t> solution_cumul_values,
     absl::Span<const int64_t> solution_break_values,
@@ -691,7 +686,7 @@ void ClearIfNonNull(std::vector<T>* v) {
 DimensionSchedulingStatus
 DimensionCumulOptimizerCore::OptimizeSingleRouteWithResource(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-    const RouteDimensionTravelInfo& dimension_travel_info,
+    const RouteDimensionTravelInfo* dimension_travel_info,
     const RoutingModel::ResourceGroup::Resource* resource,
     bool optimize_vehicle_costs, RoutingLinearSolverWrapper* solver,
     std::vector<int64_t>* cumul_values, std::vector<int64_t>* break_values,
@@ -830,7 +825,7 @@ std::vector<DimensionSchedulingStatus>
 DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-    const RouteDimensionTravelInfo& dimension_travel_info,
+    const RouteDimensionTravelInfo* dimension_travel_info,
     absl::Span<const RoutingModel::ResourceGroup::Resource> resources,
     absl::Span<const int> resource_indices, bool optimize_vehicle_costs,
     RoutingLinearSolverWrapper* solver,
@@ -969,10 +964,10 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::Optimize(
         !model->IsEnd(next_accessor(model->Start(vehicle))) ||
         model->IsVehicleUsedWhenEmpty(vehicle);
     const bool optimize_vehicle_costs = optimize_costs && vehicle_is_used;
-    const RouteDimensionTravelInfo& dimension_travel_info =
+    const RouteDimensionTravelInfo* const dimension_travel_info =
         dimension_travel_info_per_route.empty()
-            ? RouteDimensionTravelInfo()
-            : dimension_travel_info_per_route[vehicle];
+            ? nullptr
+            : &dimension_travel_info_per_route[vehicle];
     if (!SetRouteCumulConstraints(
             vehicle, next_accessor, dimension_->transit_evaluator(vehicle),
             dimension_travel_info, cumul_offset, optimize_vehicle_costs, solver,
@@ -1078,7 +1073,7 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::OptimizeAndPack(
 DimensionSchedulingStatus
 DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-    const RouteDimensionTravelInfo& dimension_travel_info,
+    const RouteDimensionTravelInfo* dimension_travel_info,
     const RoutingModel::ResourceGroup::Resource* resource,
     RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
     std::vector<int64_t>* break_values) {
@@ -1271,6 +1266,24 @@ bool DimensionCumulOptimizerCore::TightenRouteCumulBounds(
   return true;
 }
 
+std::vector<SlopeAndYIntercept> PiecewiseLinearFunctionToSlopeAndYIntercept(
+    const FloatSlopePiecewiseLinearFunction& pwl_function, int index_start,
+    int index_end) {
+  const auto& x_anchors = pwl_function.x_anchors();
+  const auto& y_anchors = pwl_function.y_anchors();
+  if (index_end < 0) index_end = x_anchors.size() - 1;
+  const int num_segments = index_end - index_start;
+  DCHECK_GE(num_segments, 1);
+  std::vector<SlopeAndYIntercept> slope_and_y_intercept(num_segments);
+  for (int seg = index_start; seg < index_end; ++seg) {
+    auto& [slope, y_intercept] = slope_and_y_intercept[seg - index_start];
+    slope = (y_anchors[seg + 1] - y_anchors[seg]) /
+            static_cast<double>(x_anchors[seg + 1] - x_anchors[seg]);
+    y_intercept = y_anchors[seg] - slope * x_anchors[seg];
+  }
+  return slope_and_y_intercept;
+}
+
 std::vector<bool> SlopeAndYInterceptToConvexityRegions(
     absl::Span<const SlopeAndYIntercept> slope_and_y_intercept) {
   CHECK(!slope_and_y_intercept.empty());
@@ -1286,27 +1299,7 @@ std::vector<bool> SlopeAndYInterceptToConvexityRegions(
   return convex;
 }
 
-std::vector<SlopeAndYIntercept> PiecewiseLinearFormulationToSlopeAndYIntercept(
-    const RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-        PiecewiseLinearFormulation& pwl_function,
-    int index_start, int index_end) {
-  if (index_end < 0) index_end = pwl_function.x_anchors.size() - 1;
-  const int num_segments = index_end - index_start;
-  DCHECK_GE(num_segments, 1);
-  std::vector<SlopeAndYIntercept> slope_and_y_intercept(num_segments);
-  for (int seg = index_start; seg < index_end; ++seg) {
-    auto& [slope, y_intercept] = slope_and_y_intercept[seg - index_start];
-    slope = (pwl_function.y_anchors[seg + 1] - pwl_function.y_anchors[seg]) /
-            static_cast<double>(pwl_function.x_anchors[seg + 1] -
-                                pwl_function.x_anchors[seg]);
-    y_intercept =
-        pwl_function.y_anchors[seg] - slope * pwl_function.x_anchors[seg];
-  }
-  return slope_and_y_intercept;
-}
-
 namespace {
-
 // Find a "good" scaling factor for constraints with non-integers coefficients.
 // See sat::FindBestScalingAndComputeErrors() for more infos.
 double FindBestScaling(const std::vector<double>& coefficients,
@@ -1321,88 +1314,17 @@ double FindBestScaling(const std::vector<double>& coefficients,
       wanted_absolute_activity_precision, &unused_relative_coeff_error,
       &unused_scaled_sum_error);
 }
-
-// Returns the value of pwl(x) with pwl a PiecewiseLinearFormulation, knowing
-// that x ∈ [pwl.x[upper_segment_index-1], pwl.x[upper_segment_index]].
-int64_t PieceWiseLinearFormulationValueKnownSegment(
-    const RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-        PiecewiseLinearFormulation& pwl,
-    int64_t x, int upper_segment_index, double delta = 0) {
-  DCHECK_GE(upper_segment_index, 1);
-  DCHECK_LE(upper_segment_index, pwl.x_anchors.size() - 1);
-  const double alpha =
-      static_cast<double>(pwl.y_anchors[upper_segment_index] -
-                          pwl.y_anchors[upper_segment_index - 1]) /
-      (pwl.x_anchors[upper_segment_index] -
-       pwl.x_anchors[upper_segment_index - 1]);
-  const double beta = pwl.y_anchors[upper_segment_index] -
-                      pwl.x_anchors[upper_segment_index] * alpha;
-  return std::ceil(alpha * x + beta + delta);
-}
-
 }  // namespace
 
-PiecewiseEvaluationStatus ComputePiecewiseLinearFormulationValue(
-    const RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-        PiecewiseLinearFormulation& pwl,
-    int64_t x, int64_t* value, double delta) {
-  // Search for first element xi such that xi < x.
-  const auto upper_segment =
-      std::upper_bound(pwl.x_anchors.begin(), pwl.x_anchors.end(), x);
-  const int upper_segment_index =
-      std::distance(pwl.x_anchors.begin(), upper_segment);
-
-  // Checking bounds
-  if (upper_segment_index == 0) {
-    return PiecewiseEvaluationStatus::SMALLER_THAN_LOWER_BOUND;
-  } else if (upper_segment == pwl.x_anchors.end()) {
-    if (x == pwl.x_anchors.back()) {
-      *value = std::ceil(pwl.y_anchors.back() + delta);
-      return PiecewiseEvaluationStatus::WITHIN_BOUNDS;
-    }
-    return PiecewiseEvaluationStatus::LARGER_THAN_UPPER_BOUND;
-  }
-
-  *value = PieceWiseLinearFormulationValueKnownSegment(
-      pwl, x, upper_segment_index, delta);
-  return PiecewiseEvaluationStatus::WITHIN_BOUNDS;
-}
-
-int64_t ComputeConvexPiecewiseLinearFormulationValue(
-    const RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-        PiecewiseLinearFormulation& pwl,
-    int64_t x, double delta) {
-  int64_t y_value;
-  const PiecewiseEvaluationStatus status =
-      ComputePiecewiseLinearFormulationValue(pwl, x, &y_value, delta);
-  switch (status) {
-    case PiecewiseEvaluationStatus::UNSPECIFIED:
-      // The status should be specified.
-      LOG(FATAL) << "Unspecified PiecewiseEvaluationStatus.";
-      break;
-    case PiecewiseEvaluationStatus::WITHIN_BOUNDS:
-      // x is in the bounds, therefore, simply return the computed value.
-      return y_value;
-    case PiecewiseEvaluationStatus::SMALLER_THAN_LOWER_BOUND:
-      // In the convex case, if x <= lower_bound, the most restrictive
-      // constraint will be the first one.
-      return PieceWiseLinearFormulationValueKnownSegment(pwl, x, 1, delta);
-    case PiecewiseEvaluationStatus::LARGER_THAN_UPPER_BOUND:
-      // In the convex case, if x >= upper_bound, the most restrictive
-      // constraint will be the last one.
-      return PieceWiseLinearFormulationValueKnownSegment(
-          pwl, x, pwl.x_anchors.size() - 1, delta);
-  }
-}
-
 bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
-    const RouteDimensionTravelInfo& dimension_travel_info,
+    const RouteDimensionTravelInfo* dimension_travel_info,
     absl::Span<const int> lp_slacks, absl::Span<const int64_t> fixed_transit,
     RoutingLinearSolverWrapper* solver) {
   const std::vector<int>& lp_cumuls = current_route_cumul_variables_;
   const int path_size = lp_cumuls.size();
 
-  if (dimension_travel_info.transition_info.empty()) {
+  if (dimension_travel_info == nullptr ||
+      dimension_travel_info->transition_info.empty()) {
     // Travel is not travel-start dependent.
     // Add all path constraints to LP:
     // cumul[i] + fixed_transit[i] + slack[i] == cumul[i+1]
@@ -1438,14 +1360,10 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
         absl::StrFormat("relative_compression_cost(%ld)", pos));
 
     const RoutingModel::RouteDimensionTravelInfo::TransitionInfo&
-        transition_info = dimension_travel_info.transition_info[pos];
-    const RouteDimensionTravelInfo::TransitionInfo::PiecewiseLinearFormulation&
-        travel_function = transition_info.travel_start_dependent_travel;
-    const int num_pwl_anchors = travel_function.x_anchors.size();
-    DCHECK_GE(num_pwl_anchors, 2)
-        << "Travel value PWL must have at least 2 points";
-    DCHECK_EQ(num_pwl_anchors, travel_function.y_anchors.size())
-        << "Travel value PWL must have as many x anchors than y.";
+        transition_info = dimension_travel_info->transition_info[pos];
+    const FloatSlopePiecewiseLinearFunction& travel_function =
+        transition_info.travel_start_dependent_travel;
+    const auto& travel_x_anchors = travel_function.x_anchors();
 
     // 1. Create the travel value variable and set its constraints.
     // 1.a. Create Variables for the start and value of a travel
@@ -1455,7 +1373,7 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
     const int64_t compressed_travel_value_lower_bound =
         transition_info.compressed_travel_value_lower_bound;
     const int64_t travel_value_upper_bound =
-        dimension_travel_info.transition_info[pos].travel_value_upper_bound;
+        transition_info.travel_value_upper_bound;
     // The lower bound of travel_value is already implemented by constraints as
     // travel_value >= compressed_travel_value (defined below) and
     // compressed_travel_value has compressed_travel_value_lower_bound as a
@@ -1479,15 +1397,16 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
     // Find segments that are in bounds
     // Only the segments in [index_anchor_start, index_anchor_end[ are in
     // bounds, the others can therefore be discarded.
+    const int num_pwl_anchors = travel_x_anchors.size();
     int index_anchor_start = 0;
     while (index_anchor_start < num_pwl_anchors - 1 &&
-           travel_function.x_anchors[index_anchor_start + 1] <=
+           travel_x_anchors[index_anchor_start + 1] <=
                current_route_min_cumuls_[pos] + pre_travel_transit) {
       ++index_anchor_start;
     }
     int index_anchor_end = num_pwl_anchors - 1;
     while (index_anchor_end > 0 &&
-           travel_function.x_anchors[index_anchor_end - 1] >=
+           travel_x_anchors[index_anchor_end - 1] >=
                current_route_max_cumuls_[pos] + pre_travel_transit) {
       --index_anchor_end;
     }
@@ -1497,7 +1416,7 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
     // Precompute the slopes and y-intercept as they will be used to detect
     // convexities and in the constraints.
     const std::vector<SlopeAndYIntercept> slope_and_y_intercept =
-        PiecewiseLinearFormulationToSlopeAndYIntercept(
+        PiecewiseLinearFunctionToSlopeAndYIntercept(
             travel_function, index_anchor_start, index_anchor_end);
 
     // Optimize binary variables by detecting convexities
@@ -1531,7 +1450,7 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
         // If the travel_start value is outside the PWL, the closest segment
         // will be used. This is why some bounds are infinite.
         const int64_t lower_bound_interval =
-            seg > 0 ? travel_function.x_anchors[index_anchor_start + seg]
+            seg > 0 ? travel_x_anchors[index_anchor_start + seg]
                     : current_route_min_cumuls_[pos] + pre_travel_transit;
         int64_t end_of_seg = seg + 1;
         while (end_of_seg < num_pwl_anchors - 1 && !convexities[end_of_seg]) {
@@ -1539,7 +1458,7 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
         }
         const int64_t higher_bound_interval =
             end_of_seg < num_pwl_anchors - 1
-                ? travel_function.x_anchors[index_anchor_start + end_of_seg]
+                ? travel_x_anchors[index_anchor_start + end_of_seg]
                 : current_route_max_cumuls_[pos] + pre_travel_transit;
         const int travel_start_in_segment_ct = solver->AddLinearConstraint(
             lower_bound_interval, higher_bound_interval, {{travel_start, 1}});
@@ -1640,25 +1559,25 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
     // compressed_travel_value to not give the incentive to compress a little
     // bit in order to same some cost per travel.
     solver->SetObjectiveCoefficient(
-        travel_value, dimension_travel_info.travel_cost_coefficient);
+        travel_value, dimension_travel_info->travel_cost_coefficient);
 
     // 4. Adds a convex cost in epsilon
     // Here we DCHECK that the cost function is indeed convex
-    const RouteDimensionTravelInfo::TransitionInfo::PiecewiseLinearFormulation&
-        cost_function =
-            dimension_travel_info.transition_info[pos].travel_compression_cost;
+    const FloatSlopePiecewiseLinearFunction& cost_function =
+        transition_info.travel_compression_cost;
+    const auto& cost_x_anchors = cost_function.x_anchors();
+
     const std::vector<SlopeAndYIntercept> cost_slope_and_y_intercept =
-        PiecewiseLinearFormulationToSlopeAndYIntercept(cost_function);
-    const double cost_max = ComputeConvexPiecewiseLinearFormulationValue(
-        cost_function,
+        PiecewiseLinearFunctionToSlopeAndYIntercept(cost_function);
+    const double cost_max = cost_function.ComputeConvexValue(
         travel_value_upper_bound - compressed_travel_value_lower_bound);
     double previous_slope = 0;
-    for (int seg = 0; seg < cost_function.x_anchors.size() - 1; ++seg) {
+    for (int seg = 0; seg < cost_x_anchors.size() - 1; ++seg) {
       const auto [slope, y_intercept] = cost_slope_and_y_intercept[seg];
       // Check convexity
       DCHECK_GE(slope, previous_slope)
           << "Compression error is not convex. Segment " << (1 + seg)
-          << " out of " << (cost_function.x_anchors.size() - 1);
+          << " out of " << (cost_x_anchors.size() - 1);
       previous_slope = slope;
       const double factor = FindBestScaling(
           {1.0, -slope, y_intercept}, /*lower_bounds=*/
@@ -1723,7 +1642,7 @@ bool RouteIsValid(const RoutingModel& model, int vehicle,
 bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-    const RouteDimensionTravelInfo& dimension_travel_info, int64_t cumul_offset,
+    const RouteDimensionTravelInfo* dimension_travel_info, int64_t cumul_offset,
     bool optimize_costs, RoutingLinearSolverWrapper* solver,
     int64_t* route_transit_cost, int64_t* route_cost_offset) {
   RoutingModel* const model = dimension_->model();
@@ -1753,7 +1672,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   if (!ExtractRouteCumulBounds(path, cumul_offset)) {
     return false;
   }
-  if (dimension_travel_info.transition_info.empty()) {
+  if (dimension_travel_info == nullptr ||
+      dimension_travel_info->transition_info.empty()) {
     if (!TightenRouteCumulBounds(path, fixed_transit, cumul_offset)) {
       return false;
     }
@@ -1762,7 +1682,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     std::vector<int64_t> min_transit(path_size - 1);
     for (int pos = 0; pos < path_size - 1; ++pos) {
       const RouteDimensionTravelInfo::TransitionInfo& transition =
-          dimension_travel_info.transition_info[pos];
+          dimension_travel_info->transition_info[pos];
       min_transit[pos] = transition.pre_travel_transit_value +
                          transition.compressed_travel_value_lower_bound +
                          transition.post_travel_transit_value;

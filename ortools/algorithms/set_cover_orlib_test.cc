@@ -149,7 +149,7 @@ void ComputeLagrangianLowerBound(std::string name, SetCoverInvariant* inv) {
   const SetCoverModel* model = inv->model();
   WallTimer timer;
   timer.Start();
-  SetCoverLagrangian lagrangian(inv, /*num_threads=*/4);
+  SetCoverLagrangian lagrangian(inv, /*num_threads=*/8);
   const auto [lower_bound, reduced_costs, multipliers] =
       lagrangian.ComputeLowerBound(model->subset_costs(), inv->cost());
   LogCostAndTiming(name, "LagrangianLowerBound", lower_bound,
@@ -197,11 +197,11 @@ double RunSolver(std::string name, SetCoverModel* model) {
   global_timer.Start();
   RunChvatalAndSteepest(name, model);
   // SetCoverInvariant inv = ComputeLPLowerBound(name, model);
-  RunMip(name, model);
+  // RunMip(name, model);
   RunChvatalAndGLS(name, model);
   SetCoverInvariant inv = RunElementDegreeGreedyAndSteepest(name, model);
   ComputeLagrangianLowerBound(name, &inv);
-  //  IterateClearAndMip(name, inv);
+  // IterateClearAndMip(name, inv);
   IterateClearElementDegreeAndSteepest(name, &inv);
   return inv.cost();
 }
@@ -406,5 +406,23 @@ RAIL_TEST("rail4872.txt", 1527, 1861, MANYSECONDS);  // [2]
 #undef APPEND_AND_EVAL
 #undef SCP_TEST
 #undef RAIL_TEST
+
+TEST(SetCoverHugeTest, GenerateProblem) {
+  SetCoverModel seed_model =
+      ReadRailSetCoverProblem(file::JoinPathRespectAbsolute(
+          ::testing::SrcDir(), data_dir, "rail4284.txt"));
+  seed_model.CreateSparseRowView();
+  const BaseInt num_wanted_subsets(100'000'000);
+  const BaseInt num_wanted_elements(40'000);
+  const double row_scale = 1.1;
+  const double column_scale = 1.1;
+  const double cost_scale = 10.0;
+  SetCoverModel model = SetCoverModel::GenerateRandomModelFrom(
+      seed_model, num_wanted_elements, num_wanted_subsets, row_scale,
+      column_scale, cost_scale);
+  SetCoverInvariant inv =
+      RunElementDegreeGreedyAndSteepest("rail4284_huge.txt", &model);
+  LOG(INFO) << "Cost: " << inv.cost();
+}
 
 }  // namespace operations_research

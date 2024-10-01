@@ -20,6 +20,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -63,7 +64,8 @@ struct Rectangle {
 
   // Returns `this \ other` as a set of disjoint rectangles of non-empty area.
   // The resulting vector will have at most four elements.
-  absl::InlinedVector<Rectangle, 4> SetDifference(const Rectangle& other) const;
+  absl::InlinedVector<Rectangle, 4> RegionDifference(
+      const Rectangle& other) const;
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const Rectangle& r) {
@@ -75,6 +77,8 @@ struct Rectangle {
     return std::tie(x_min, x_max, y_min, y_max) ==
            std::tie(other.x_min, other.x_max, other.y_min, other.y_max);
   }
+
+  bool operator!=(const Rectangle& other) const { return !(other == *this); }
 
   static Rectangle GetEmpty() {
     return Rectangle{.x_min = IntegerValue(0),
@@ -123,8 +127,8 @@ std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
 
 // Visible for testing. The algo is in O(n^4) so shouldn't be used directly.
 // Returns true if there exist a bounding box with too much energy.
-bool BoxesAreInEnergyConflict(const std::vector<Rectangle>& rectangles,
-                              const std::vector<IntegerValue>& energies,
+bool BoxesAreInEnergyConflict(absl::Span<const Rectangle> rectangles,
+                              absl::Span<const IntegerValue> energies,
                               absl::Span<const int> boxes,
                               Rectangle* conflict = nullptr);
 
@@ -190,8 +194,13 @@ struct IndexedInterval {
       return a.start < b.start;
     }
   };
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const IndexedInterval& interval) {
+    absl::Format(&sink, "[%v..%v] (#%v)", interval.start, interval.end,
+                 interval.index);
+  }
 };
-std::ostream& operator<<(std::ostream& out, const IndexedInterval& interval);
 
 // Given n fixed intervals, returns the subsets of intervals that overlap during
 // at least one time unit. Note that we only return "maximal" subset and filter
@@ -435,6 +444,18 @@ struct RectangleInRange {
                                   containing_area.y_max);
   }
 
+  Rectangle GetMandatoryRegion() const {
+    // Weird math to avoid overflow.
+    if (bounding_area.SizeX() - x_size >= x_size ||
+        bounding_area.SizeY() - y_size >= y_size) {
+      return Rectangle::GetEmpty();
+    }
+    return Rectangle{.x_min = bounding_area.x_max - x_size,
+                     .x_max = bounding_area.x_min + x_size,
+                     .y_min = bounding_area.y_max - y_size,
+                     .y_max = bounding_area.y_min + y_size};
+  }
+
   static RectangleInRange BiggestWithMinIntersection(
       const Rectangle& containing_area, const RectangleInRange& original,
       const IntegerValue& min_intersect_x,
@@ -599,13 +620,28 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
 // Render a packing solution as a Graphviz dot file. Only works in the "neato"
 // or "fdp" Graphviz backends.
 std::string RenderDot(std::optional<Rectangle> bb,
-                      absl::Span<const Rectangle> solution);
+                      absl::Span<const Rectangle> solution,
+                      std::string_view extra_dot_payload = "");
 
 // Given a bounding box and a list of rectangles inside that bounding box,
 // returns a list of rectangles partitioning the empty area inside the bounding
 // box.
 std::vector<Rectangle> FindEmptySpaces(
     const Rectangle& bounding_box, std::vector<Rectangle> ocupied_rectangles);
+
+// Given two regions, each one of them defined by a vector of non-overlapping
+// rectangles paving them, returns a vector of non-overlapping rectangles that
+// paves the points that were part of the first region but not of the second.
+// This can also be seen as the set difference of the points of the regions.
+std::vector<Rectangle> PavedRegionDifference(
+    std::vector<Rectangle> original_region,
+    absl::Span<const Rectangle> area_to_remove);
+
+// The two regions must be defined by non-overlapping rectangles.
+inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
+                                absl::Span<const Rectangle> other) {
+  return PavedRegionDifference({other.begin(), other.end()}, region).empty();
+}
 
 }  // namespace sat
 }  // namespace operations_research

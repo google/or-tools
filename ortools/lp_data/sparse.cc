@@ -463,15 +463,16 @@ void CompactSparseMatrix::PopulateFromMatrixView(const MatrixView& input) {
 
 void CompactSparseMatrix::PopulateFromSparseMatrixAndAddSlacks(
     const SparseMatrix& input) {
-  num_cols_ = input.num_cols() + RowToColIndex(input.num_rows());
+  const int input_num_cols = input.num_cols().value();
+  num_cols_ = input_num_cols + RowToColIndex(input.num_rows());
   num_rows_ = input.num_rows();
   const EntryIndex num_entries =
       input.num_entries() + EntryIndex(num_rows_.value());
   starts_.assign(num_cols_ + 1, EntryIndex(0));
-  coefficients_.assign(num_entries, 0.0);
-  rows_.assign(num_entries, RowIndex(0));
+  coefficients_.resize(num_entries, 0.0);
+  rows_.resize(num_entries, RowIndex(0));
   EntryIndex index(0);
-  for (ColIndex col(0); col < input.num_cols(); ++col) {
+  for (ColIndex col(0); col < input_num_cols; ++col) {
     starts_[col] = index;
     for (const SparseColumn::Entry e : input.column(col)) {
       coefficients_[index] = e.coefficient();
@@ -480,11 +481,12 @@ void CompactSparseMatrix::PopulateFromSparseMatrixAndAddSlacks(
     }
   }
   for (RowIndex row(0); row < num_rows_; ++row) {
-    starts_[input.num_cols() + RowToColIndex(row)] = index;
+    starts_[input_num_cols + RowToColIndex(row)] = index;
     coefficients_[index] = 1.0;
     rows_[index] = row;
     ++index;
   }
+  DCHECK_EQ(index, num_entries);
   starts_[num_cols_] = index;
 }
 
@@ -496,11 +498,12 @@ void CompactSparseMatrix::PopulateFromTranspose(
   // Fill the starts_ vector by computing the number of entries of each rows and
   // then doing a cumulative sum. After this step starts_[col + 1] will be the
   // actual start of the column col when we are done.
-  starts_.assign(num_cols_ + 2, EntryIndex(0));
+  const ColIndex start_size = num_cols_ + 2;
+  starts_.assign(start_size, EntryIndex(0));
   for (const RowIndex row : input.rows_) {
     ++starts_[RowToColIndex(row) + 2];
   }
-  for (ColIndex col(2); col < starts_.size(); ++col) {
+  for (ColIndex col(2); col < start_size; ++col) {
     starts_[col] += starts_[col - 1];
   }
   coefficients_.resize(starts_.back(), 0.0);
@@ -662,12 +665,13 @@ void TriangularMatrix::CloseCurrentColumn(Fractional diagonal_value) {
   // TODO(user): This is currently not used by all matrices. It will be good
   // to fill it only when needed.
   DCHECK_LT(num_cols_, pruned_ends_.size());
-  pruned_ends_[num_cols_] = coefficients_.size();
+  const EntryIndex num_entries = coefficients_.size();
+  pruned_ends_[num_cols_] = num_entries;
   ++num_cols_;
   DCHECK_LT(num_cols_, starts_.size());
-  starts_[num_cols_] = coefficients_.size();
-  if (first_non_identity_column_ == num_cols_ - 1 && coefficients_.empty() &&
-      diagonal_value == 1.0) {
+  starts_[num_cols_] = num_entries;
+  if (first_non_identity_column_ == num_cols_ - 1 && diagonal_value == 1.0 &&
+      num_entries == 0) {
     first_non_identity_column_ = num_cols_;
   }
   all_diagonal_coefficients_are_one_ =

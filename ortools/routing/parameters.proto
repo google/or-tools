@@ -36,7 +36,7 @@ package operations_research.routing;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 66
+// Next ID: 67
 message RoutingSearchParameters {
   reserved 19;
 
@@ -458,6 +458,9 @@ message RoutingSearchParameters {
   // bandit compound operator. Sets how often we explore rarely used and
   // unsuccessful in the past operators
   double multi_armed_bandit_compound_operator_exploration_coefficient = 43;
+
+  // Maximum size of the chain to make inactive in SwapActiveChainOperator.
+  int32 max_swap_active_chain_size = 66;
 
   // Number of expensive arcs to consider cutting in the RelocateExpensiveChain
   // neighborhood operator (see

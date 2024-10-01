@@ -172,7 +172,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
@@ -1521,36 +1520,21 @@ class RoutingModel {
   const Assignment* PackCumulsOfOptimizerDimensionsFromAssignment(
       const Assignment* original_assignment, absl::Duration duration_limit,
       bool* time_limit_was_reached = nullptr);
+
+#ifndef SWIG
   /// Contains the information needed by the solver to optimize a dimension's
   /// cumuls with travel-start dependent transit values.
   struct RouteDimensionTravelInfo {
     /// Contains the information for a single transition on the route.
     struct TransitionInfo {
-      /// The following struct defines a piecewise linear formulation, with
-      /// int64_t values for the "anchor" x and y values, and potential double
-      /// values for the slope of each linear function.
-      // TODO(user): Adjust the inlined vector sizes based on experiments.
-      struct PiecewiseLinearFormulation {
-        /// The set of *increasing* anchor cumul values for the interpolation.
-        absl::InlinedVector<int64_t, 8> x_anchors;
-        /// The y values used for the interpolation:
-        /// For any x anchor value, let i be an index such that
-        /// x_anchors[i] ≤ x < x_anchors[i+1], then the y value for x is
-        /// y_anchors[i] * (1-λ) + y_anchors[i+1] * λ, with
-        /// λ = (x - x_anchors[i]) / (x_anchors[i+1] - x_anchors[i]).
-        absl::InlinedVector<int64_t, 8> y_anchors;
-
-        std::string DebugString(std::string line_prefix = "") const;
-      };
-
       /// Models the (real) travel value Tᵣ, for this transition based on the
       /// departure value of the travel.
-      PiecewiseLinearFormulation travel_start_dependent_travel;
+      FloatSlopePiecewiseLinearFunction travel_start_dependent_travel;
 
       /// travel_compression_cost models the cost of the difference between the
       /// (real) travel value Tᵣ given by travel_start_dependent_travel and the
       /// compressed travel value considered in the scheduling.
-      PiecewiseLinearFormulation travel_compression_cost;
+      FloatSlopePiecewiseLinearFunction travel_compression_cost;
 
       /// The parts of the transit which occur pre/post travel between the
       /// nodes. The total transit between the two nodes i and j is
@@ -1579,6 +1563,8 @@ class RoutingModel {
 
     std::string DebugString(std::string line_prefix = "") const;
   };
+
+#endif  // SWIG
 
 #ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
@@ -2345,6 +2331,11 @@ class RoutingModel {
   LocalSearchOperator* CreateCPOperator() {
     return CreateCPOperator(MakeLocalSearchOperator<T>);
   }
+  template <class T, typename ArgType>
+  LocalSearchOperator* CreateCPOperatorWithArg(ArgType arg) {
+    return CreateCPOperatorWithArg(MakeLocalSearchOperatorWithArg<T, ArgType>,
+                                   std::move(arg));
+  }
   using NeighborAccessor = std::function<const std::vector<int>&(int, int)>;
   template <class T>
   LocalSearchOperator* CreateCPOperatorWithNeighbors(
@@ -2367,6 +2358,15 @@ class RoutingModel {
         CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
                                             : vehicle_vars_,
         vehicle_start_class_callback_, std::move(get_neighbors));
+  }
+  template <class T, typename ArgType>
+  LocalSearchOperator* CreateCPOperatorWithArg(const T& operator_factory,
+                                               ArgType arg) {
+    return operator_factory(solver_.get(), nexts_,
+                            CostsAreHomogeneousAcrossVehicles()
+                                ? std::vector<IntVar*>()
+                                : vehicle_vars_,
+                            vehicle_start_class_callback_, std::move(arg));
   }
   template <class T, class Arg>
   LocalSearchOperator* CreateOperator(const Arg& arg) {

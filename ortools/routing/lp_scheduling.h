@@ -45,6 +45,7 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research::routing {
@@ -648,7 +649,7 @@ class DimensionCumulOptimizerCore {
   // resource. If the resource is null, it is simply ignored.
   DimensionSchedulingStatus OptimizeSingleRouteWithResource(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-      const RouteDimensionTravelInfo& dimension_travel_info,
+      const RouteDimensionTravelInfo* dimension_travel_info,
       const Resource* resource, bool optimize_vehicle_costs,
       RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
       std::vector<int64_t>* break_values, int64_t* cost_without_transit,
@@ -659,7 +660,7 @@ class DimensionCumulOptimizerCore {
   // constraints for cumuls and breaks.
   DimensionSchedulingStatus ComputeSingleRouteSolutionCostWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-      const RouteDimensionTravelInfo& dimension_travel_info,
+      const RouteDimensionTravelInfo* dimension_travel_info,
       RoutingLinearSolverWrapper* solver,
       absl::Span<const int64_t> solution_cumul_values,
       absl::Span<const int64_t> solution_break_values,
@@ -675,7 +676,7 @@ class DimensionCumulOptimizerCore {
   std::vector<DimensionSchedulingStatus> OptimizeSingleRouteWithResources(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
       const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-      const RouteDimensionTravelInfo& dimension_travel_info,
+      const RouteDimensionTravelInfo* dimension_travel_info,
       absl::Span<const Resource> resources,
       absl::Span<const int> resource_indices, bool optimize_vehicle_costs,
       RoutingLinearSolverWrapper* solver,
@@ -708,7 +709,7 @@ class DimensionCumulOptimizerCore {
 
   DimensionSchedulingStatus OptimizeAndPackSingleRoute(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-      const RouteDimensionTravelInfo& dimension_travel_info,
+      const RouteDimensionTravelInfo* dimension_travel_info,
       const Resource* resource, RoutingLinearSolverWrapper* solver,
       std::vector<int64_t>* cumul_values, std::vector<int64_t>* break_values);
 
@@ -738,7 +739,7 @@ class DimensionCumulOptimizerCore {
   bool SetRouteCumulConstraints(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
       const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-      const RouteDimensionTravelInfo& dimension_travel_info,
+      const RouteDimensionTravelInfo* dimension_travel_info,
       int64_t cumul_offset, bool optimize_costs,
       RoutingLinearSolverWrapper* solver, int64_t* route_transit_cost,
       int64_t* route_cost_offset);
@@ -747,7 +748,7 @@ class DimensionCumulOptimizerCore {
   // static or time-dependent travel values.
   // Returns false if some infeasibility was detected, true otherwise.
   bool SetRouteTravelConstraints(
-      const RouteDimensionTravelInfo& dimension_travel_info,
+      const RouteDimensionTravelInfo* dimension_travel_info,
       absl::Span<const int> lp_slacks, absl::Span<const int64_t> fixed_transit,
       RoutingLinearSolverWrapper* solver);
 
@@ -865,7 +866,7 @@ class LocalDimensionCumulOptimizer {
   // Returns false if the route is not feasible.
   DimensionSchedulingStatus ComputeRouteCumuls(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-      const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+      const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       const RoutingModel::ResourceGroup::Resource* resource,
       std::vector<int64_t>* optimal_cumuls,
       std::vector<int64_t>* optimal_breaks);
@@ -874,7 +875,7 @@ class LocalDimensionCumulOptimizer {
   // ComputeRouteCumuls().
   DimensionSchedulingStatus ComputeRouteCumulsAndCostWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-      const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+      const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       std::vector<int64_t>* optimal_cumuls,
       std::vector<int64_t>* optimal_breaks,
       int64_t* optimal_cost_without_transits);
@@ -883,7 +884,7 @@ class LocalDimensionCumulOptimizer {
   // defined by its cumuls and breaks.
   DimensionSchedulingStatus ComputeRouteSolutionCostWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-      const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+      const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       absl::Span<const int64_t> solution_cumul_values,
       absl::Span<const int64_t> solution_break_values, int64_t* solution_cost,
       int64_t* cost_offset = nullptr,
@@ -897,7 +898,7 @@ class LocalDimensionCumulOptimizer {
   // time window.
   DimensionSchedulingStatus ComputePackedRouteCumuls(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
-      const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
+      const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       const RoutingModel::ResourceGroup::Resource* resource,
       std::vector<int64_t>* packed_cumuls, std::vector<int64_t>* packed_breaks);
 
@@ -1009,35 +1010,8 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
     std::vector<std::vector<int64_t>>* cumul_values,
     std::vector<std::vector<int64_t>>* break_values);
 
-// Simple struct returned by ComputePiecewiseLinearFormulationValue() to
-// indicate if the value could be computed and if not, on what side the value
-// was from the definition interval.
-enum class PiecewiseEvaluationStatus {
-  UNSPECIFIED = 0,
-  WITHIN_BOUNDS,
-  SMALLER_THAN_LOWER_BOUND,
-  LARGER_THAN_UPPER_BOUND
-};
-
-// Computes pwl(x) for pwl a PieceWiseLinearFormulation.
-// Returns a PieceWiseEvaluationStatus to indicate if the value could be
-// computed (filled in value) and if not, why.
-PiecewiseEvaluationStatus ComputePiecewiseLinearFormulationValue(
-    const RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-        PiecewiseLinearFormulation& pwl,
-    int64_t x, int64_t* value, double delta = 0);
-
-// Like ComputePiecewiseLinearFormulationValue(), computes pwl(x) for pwl a
-// PiecewiseLinearFormulation. For convex PiecewiseLinearFormulations, if x is
-// outside the bounds of the function, instead of returning an error like in
-// PiecewiseLinearFormulation, the function will still be defined by its outer
-// segments.
-int64_t ComputeConvexPiecewiseLinearFormulationValue(
-    const RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-        PiecewiseLinearFormulation& pwl,
-    int64_t x, double delta = 0);
-
-// Structure to store the slope and y_intercept of a segment.
+// Structure to store the slope and y_intercept of a segment of a piecewise
+// linear function.
 struct SlopeAndYIntercept {
   double slope;
   double y_intercept;
@@ -1048,6 +1022,16 @@ struct SlopeAndYIntercept {
   }
 };
 
+// Given a FloatSlopePiecewiseLinearFunction, returns a vector of slope and
+// y-intercept corresponding to each segment. Only the segments in
+// [index_start, index_end[ will be considered.
+// TODO(user): Consider making the following two functions methods of
+// FloatSlopePiecewiseLinearFunction. They're only called in lp_scheduling.cc
+// and ../tour_optimization/model_test.cc, but they might come in handy.
+std::vector<SlopeAndYIntercept> PiecewiseLinearFunctionToSlopeAndYIntercept(
+    const FloatSlopePiecewiseLinearFunction& pwl_function, int index_start = 0,
+    int index_end = -1);
+
 // Converts a vector of SlopeAndYIntercept to a vector of convexity regions.
 // Convexity regions are defined such that, all segment in a convexity region
 // form a convex function. The boolean in the vector is set to true if the
@@ -1056,14 +1040,6 @@ struct SlopeAndYIntercept {
 // yield {true, true, true, ...}.
 std::vector<bool> SlopeAndYInterceptToConvexityRegions(
     absl::Span<const SlopeAndYIntercept> slope_and_y_intercept);
-
-// Given a PiecewiseLinearFormulation, returns a vector of slope and y-intercept
-// corresponding to each segment. Only the segments in [index_start, index_end[
-// will be considered.
-std::vector<SlopeAndYIntercept> PiecewiseLinearFormulationToSlopeAndYIntercept(
-    const RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-        PiecewiseLinearFormulation& pwl_function,
-    int index_start = 0, int index_end = -1);
 
 }  // namespace operations_research::routing
 

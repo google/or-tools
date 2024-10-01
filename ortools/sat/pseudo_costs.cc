@@ -100,7 +100,36 @@ bool PseudoCosts::SaveLpInfo() {
 
 void PseudoCosts::SaveBoundChanges(Literal decision,
                                    absl::Span<const double> lp_values) {
-  bound_changes_ = GetBoundChanges(decision, lp_values);
+  bound_changes_.clear();
+  for (const IntegerLiteral l : encoder_->GetIntegerLiterals(decision)) {
+    PseudoCosts::VariableBoundChange entry;
+    entry.var = l.var;
+    entry.lower_bound_change = l.bound - integer_trail_->LowerBound(l.var);
+    if (l.var < lp_values.size()) {
+      entry.lp_increase =
+          std::max(0.0, ToDouble(l.bound) - lp_values[l.var.value()]);
+    }
+    bound_changes_.push_back(entry);
+  }
+
+  // NOTE: We ignore literal associated to var != value.
+  for (const auto [var, value] : encoder_->GetEqualityLiterals(decision)) {
+    {
+      PseudoCosts::VariableBoundChange entry;
+      entry.var = var;
+      entry.lower_bound_change = value - integer_trail_->LowerBound(var);
+      bound_changes_.push_back(entry);
+    }
+
+    // Also do the negation.
+    {
+      PseudoCosts::VariableBoundChange entry;
+      entry.var = NegationOf(var);
+      entry.lower_bound_change =
+          (-value) - integer_trail_->LowerBound(NegationOf(var));
+      bound_changes_.push_back(entry);
+    }
+  }
 }
 
 void PseudoCosts::BeforeTakingDecision(Literal decision) {
@@ -279,43 +308,6 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
     chosen_var = NegationOf(chosen_var);
   }
   return chosen_var;
-}
-
-std::vector<PseudoCosts::VariableBoundChange> PseudoCosts::GetBoundChanges(
-    Literal decision, absl::Span<const double> lp_values) {
-  std::vector<PseudoCosts::VariableBoundChange> bound_changes;
-
-  for (const IntegerLiteral l : encoder_->GetIntegerLiterals(decision)) {
-    PseudoCosts::VariableBoundChange entry;
-    entry.var = l.var;
-    entry.lower_bound_change = l.bound - integer_trail_->LowerBound(l.var);
-    if (l.var < lp_values.size()) {
-      entry.lp_increase =
-          std::max(0.0, ToDouble(l.bound) - lp_values[l.var.value()]);
-    }
-    bound_changes.push_back(entry);
-  }
-
-  // NOTE: We ignore literal associated to var != value.
-  for (const auto [var, value] : encoder_->GetEqualityLiterals(decision)) {
-    {
-      PseudoCosts::VariableBoundChange entry;
-      entry.var = var;
-      entry.lower_bound_change = value - integer_trail_->LowerBound(var);
-      bound_changes.push_back(entry);
-    }
-
-    // Also do the negation.
-    {
-      PseudoCosts::VariableBoundChange entry;
-      entry.var = NegationOf(var);
-      entry.lower_bound_change =
-          (-value) - integer_trail_->LowerBound(NegationOf(var));
-      bound_changes.push_back(entry);
-    }
-  }
-
-  return bound_changes;
 }
 
 }  // namespace sat

@@ -891,8 +891,64 @@ class LightIntIntFunctionElementCt : public Constraint {
   IntVar* const var_;
   IntVar* const index1_;
   IntVar* const index2_;
-  Solver::IndexEvaluator2 values_;
+  F values_;
   std::function<bool()> deep_serialize_;
+};
+
+// ----- LightIntIntIntFunctionElementCt -----
+
+template <typename F>
+class LightIntIntIntFunctionElementCt : public Constraint {
+ public:
+  LightIntIntIntFunctionElementCt(Solver* const solver, IntVar* const var,
+                                  IntVar* const index1, IntVar* const index2,
+                                  IntVar* const index3, F values)
+      : Constraint(solver),
+        var_(var),
+        index1_(index1),
+        index2_(index2),
+        index3_(index3),
+        values_(std::move(values)) {}
+  ~LightIntIntIntFunctionElementCt() override {}
+  void Post() override {
+    Demon* demon = MakeConstraintDemon0(
+        solver(), this, &LightIntIntIntFunctionElementCt::IndexBound,
+        "IndexBound");
+    index1_->WhenBound(demon);
+    index2_->WhenBound(demon);
+    index3_->WhenBound(demon);
+  }
+  void InitialPropagate() override { IndexBound(); }
+
+  std::string DebugString() const override {
+    return "LightIntIntFunctionElementCt";
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kLightElementEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index1_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
+                                            index2_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex3Argument,
+                                            index3_);
+    visitor->EndVisitConstraint(ModelVisitor::kLightElementEqual, this);
+  }
+
+ private:
+  void IndexBound() {
+    if (index1_->Bound() && index2_->Bound() && index3_->Bound()) {
+      var_->SetValue(values_(index1_->Min(), index2_->Min(), index3_->Min()));
+    }
+  }
+
+  IntVar* const var_;
+  IntVar* const index1_;
+  IntVar* const index2_;
+  IntVar* const index3_;
+  F values_;
 };
 
 /// The base class for all local search operators.
@@ -1691,6 +1747,12 @@ LocalSearchOperator* MakeLocalSearchOperator(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class);
 
+template <class T, typename ArgType>
+LocalSearchOperator* MakeLocalSearchOperatorWithArg(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class, ArgType arg);
+
 template <class T>
 LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
@@ -1800,7 +1862,8 @@ class LocalSearchState {
   DEFINE_STRONG_INT_TYPE(ConstraintId, int);
   // Adds a variable domain to this state, returns a handler to the new domain.
   VariableDomainId AddVariableDomain(int64_t relaxed_min, int64_t relaxed_max);
-  void RelaxVariableDomain(VariableDomainId domain_id);
+  // Relaxes the domain, returns false iff the domain was already relaxed.
+  bool RelaxVariableDomain(VariableDomainId domain_id);
   bool TightenVariableDomainMin(VariableDomainId domain_id, int64_t value);
   bool TightenVariableDomainMax(VariableDomainId domain_id, int64_t value);
   int64_t VariableDomainMin(VariableDomainId domain_id) const;
@@ -2043,8 +2106,9 @@ class LocalSearchState::Variable {
   }
   void Relax() const {
     if (state_ == nullptr) return;
-    state_->RelaxVariableDomain(domain_id_);
-    state_->PropagateRelax(domain_id_);
+    if (state_->RelaxVariableDomain(domain_id_)) {
+      state_->PropagateRelax(domain_id_);
+    }
   }
   bool Exists() const { return state_ != nullptr; }
 

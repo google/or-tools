@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -45,7 +46,7 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     LazyMutableCopy<MPModelRequest> request) {
   MPSolutionResponse response;
-  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+  const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
   const MPModelProto& model = **optional_model;

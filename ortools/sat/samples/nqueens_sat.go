@@ -17,8 +17,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 const boardSize = 8
@@ -30,7 +30,7 @@ func nQueensSat() error {
 	// of the board. The value of each variable is the row that the queen is in.
 	var queenRows []cpmodel.LinearArgument
 	for i := 0; i < boardSize; i++ {
-		queenRows = append(queenRows, model.NewIntVar(0, int64_t(boardSize-1)))
+		queenRows = append(queenRows, model.NewIntVar(0, int64(boardSize-1)))
 	}
 
 	// The following sets the constraint that all queens are in different rows.
@@ -40,8 +40,8 @@ func nQueensSat() error {
 	var diag1 []cpmodel.LinearArgument
 	var diag2 []cpmodel.LinearArgument
 	for i := 0; i < boardSize; i++ {
-		diag1 = append(diag1, cpmodel.NewConstant(int64_t(i)).Add(queenRows[i]))
-		diag2 = append(diag2, cpmodel.NewConstant(int64_t(-i)).Add(queenRows[i]))
+		diag1 = append(diag1, cpmodel.NewConstant(int64(i)).Add(queenRows[i]))
+		diag2 = append(diag2, cpmodel.NewConstant(int64(-i)).Add(queenRows[i]))
 	}
 	model.AddAllDifferent(diag1...)
 	model.AddAllDifferent(diag2...)
@@ -59,7 +59,7 @@ func nQueensSat() error {
 	fmt.Printf("Objective: %v\n", response.GetObjectiveValue())
 
 	fmt.Printf("Solution:\n")
-	for i := int64_t(0); i < boardSize; i++ {
+	for i := int64(0); i < boardSize; i++ {
 		for j := 0; j < boardSize; j++ {
 			if cpmodel.SolutionIntegerValue(response, queenRows[j]) == i {
 				fmt.Print("Q")
@@ -76,6 +76,6 @@ func nQueensSat() error {
 func main() {
 	err := nQueensSat()
 	if err != nil {
-		glog.Exitf("nQueensSat returned with error: %v", err)
+		log.Exitf("nQueensSat returned with error: %v", err)
 	}
 }

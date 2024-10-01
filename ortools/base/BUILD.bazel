@@ -368,6 +368,14 @@ cc_library(
 )
 
 cc_library(
+    name = "memutil",
+    hdrs = ["memutil.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "murmur",
     hdrs = ["murmur.h"],
     deps = [

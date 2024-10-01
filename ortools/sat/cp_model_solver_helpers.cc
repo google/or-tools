@@ -108,10 +108,6 @@ ABSL_FLAG(
     "we will interpret this as an internal solution which can be used for "
     "debugging. For instance we use it to identify wrong cuts/reasons.");
 
-ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
-          "When true, all intermediate solutions found by the solver will be "
-          "checked. This can be expensive, therefore it is off by default.");
-
 namespace operations_research {
 namespace sat {
 
@@ -306,12 +302,6 @@ std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
         solution.push_back(0);
       }
     }
-  }
-
-  if (DEBUG_MODE ||
-      absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
-    // TODO(user): Checks against initial model.
-    CHECK(SolutionIsFeasible(model_proto, solution));
   }
   return solution;
 }
@@ -660,7 +650,6 @@ void RegisterVariableBoundsLevelZeroImport(
     std::vector<int64_t> new_upper_bounds;
     shared_bounds_manager->GetChangedBounds(
         id, &model_variables, &new_lower_bounds, &new_upper_bounds);
-    bool new_bounds_have_been_imported = false;
     for (int i = 0; i < model_variables.size(); ++i) {
       const int model_var = model_variables[i];
 
@@ -675,7 +664,6 @@ void RegisterVariableBoundsLevelZeroImport(
           sat_solver->NotifyThatModelIsUnsat();
           return false;
         }
-        new_bounds_have_been_imported = true;
         trail->EnqueueWithUnitReason(lit);
         continue;
       }
@@ -691,7 +679,6 @@ void RegisterVariableBoundsLevelZeroImport(
       const bool changed_ub = new_ub < old_ub;
       if (!changed_lb && !changed_ub) continue;
 
-      new_bounds_have_been_imported = true;
       if (VLOG_IS_ON(3)) {
         const IntegerVariableProto& var_proto =
             model_proto.variables(model_var);
@@ -715,9 +702,9 @@ void RegisterVariableBoundsLevelZeroImport(
         return false;
       }
     }
-    if (new_bounds_have_been_imported && !sat_solver->FinishPropagation()) {
-      return false;
-    }
+
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -764,7 +751,7 @@ void RegisterObjectiveBoundsImport(
   const auto import_objective_bounds = [name, solver, integer_trail, objective,
                                         shared_response_manager]() {
     if (solver->AssumptionLevel() != 0) return true;
-    bool propagate = false;
+    bool tighter_bounds = false;
 
     const IntegerValue external_lb =
         shared_response_manager->GetInnerObjectiveLowerBound();
@@ -776,7 +763,7 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
     const IntegerValue external_ub =
@@ -789,18 +776,20 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
-    if (!propagate) return true;
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
+    if (tighter_bounds) {
+      VLOG(3) << "'" << name << "' imports objective bounds: external ["
+              << objective->ScaleIntegerObjective(external_lb) << ", "
+              << objective->ScaleIntegerObjective(external_ub) << "], current ["
+              << objective->ScaleIntegerObjective(current_lb) << ", "
+              << objective->ScaleIntegerObjective(current_ub) << "]";
+    }
 
-    VLOG(3) << "'" << name << "' imports objective bounds: external ["
-            << objective->ScaleIntegerObjective(external_lb) << ", "
-            << objective->ScaleIntegerObjective(external_ub) << "], current ["
-            << objective->ScaleIntegerObjective(current_lb) << ", "
-            << objective->ScaleIntegerObjective(current_ub) << "]";
-
-    return solver->FinishPropagation();
+    return true;
   };
 
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -1007,15 +996,21 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     VLOG(3) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
-    VLOG(1) << "There is unsupported constraints types in this model: ";
+    auto* logger = model->GetOrCreate<SolverLogger>();
+    SOLVER_LOG(logger,
+               "There is unsupported constraints types in this model: ");
     std::vector<absl::string_view> names;
     for (const ConstraintProto::ConstraintCase type : unsupported_types) {
       names.push_back(ConstraintCaseName(type));
     }
     std::sort(names.begin(), names.end());
     for (const absl::string_view name : names) {
-      VLOG(1) << " - " << name;
+      SOLVER_LOG(logger, " - ", name);
     }
+
+    // TODO(user): This is wrong. We should support a MODEL_INVALID end of solve
+    // in the SharedResponseManager.
+    SOLVER_LOG(logger, "BUG: We will wrongly report INFEASIBLE now.");
     return unsat();
   }
 

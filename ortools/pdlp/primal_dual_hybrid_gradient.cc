@@ -718,7 +718,8 @@ PreprocessSolver::PreprocessSolver(QuadraticProgram qp,
     : num_threads_(
           NumThreads(params.num_threads(), params.num_shards(), qp, *logger)),
       num_shards_(NumShards(num_threads_, params.num_shards())),
-      sharded_qp_(std::move(qp), num_threads_, num_shards_),
+      sharded_qp_(std::move(qp), num_threads_, num_shards_,
+                  params.scheduler_type(), nullptr),
       logger_(*logger) {}
 
 SolverResult ErrorSolverResult(const TerminationReason reason,

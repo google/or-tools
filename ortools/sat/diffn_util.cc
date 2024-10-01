@@ -25,6 +25,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -50,7 +51,7 @@ bool Rectangle::IsDisjoint(const Rectangle& other) const {
          other.y_min >= y_max;
 }
 
-absl::InlinedVector<Rectangle, 4> Rectangle::SetDifference(
+absl::InlinedVector<Rectangle, 4> Rectangle::RegionDifference(
     const Rectangle& other) const {
   const Rectangle intersect = Intersect(other);
   if (intersect.SizeX() == 0) {
@@ -154,8 +155,8 @@ bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
   return x->ReportConflict();
 }
 
-bool BoxesAreInEnergyConflict(const std::vector<Rectangle>& rectangles,
-                              const std::vector<IntegerValue>& energies,
+bool BoxesAreInEnergyConflict(absl::Span<const Rectangle> rectangles,
+                              absl::Span<const IntegerValue> energies,
                               absl::Span<const int> boxes,
                               Rectangle* conflict) {
   // First consider all relevant intervals along the x axis.
@@ -409,11 +410,6 @@ absl::Span<int> FilterBoxesThatAreTooLarge(
     total_energy -= energies[boxes[new_size]];
   }
   return boxes.subspan(0, new_size);
-}
-
-std::ostream& operator<<(std::ostream& out, const IndexedInterval& interval) {
-  return out << "[" << interval.start << ".." << interval.end << " (#"
-             << interval.index << ")]";
 }
 
 void ConstructOverlappingSets(bool already_sorted,
@@ -1539,53 +1535,57 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
 }
 
 std::string RenderDot(std::optional<Rectangle> bb,
-                      absl::Span<const Rectangle> solution) {
+                      absl::Span<const Rectangle> solution,
+                      std::string_view extra_dot_payload) {
   const std::vector<std::string> colors = {"red",  "green",  "blue",
                                            "cyan", "yellow", "purple"};
   std::stringstream ss;
   ss << "digraph {\n";
   ss << "  graph [ bgcolor=lightgray ]\n";
-  ss << "  node [style=filled]\n";
+  ss << "  node [style=filled shape=box]\n";
   if (bb.has_value()) {
     ss << "  bb [fillcolor=\"grey\" pos=\"" << 2 * bb->x_min + bb->SizeX()
-       << "," << 2 * bb->y_min + bb->SizeY()
-       << "!\" shape=box width=" << 2 * bb->SizeX()
+       << "," << 2 * bb->y_min + bb->SizeY() << "!\" width=" << 2 * bb->SizeX()
        << " height=" << 2 * bb->SizeY() << "]\n";
   }
   for (int i = 0; i < solution.size(); ++i) {
     ss << "  " << i << " [fillcolor=\"" << colors[i % colors.size()]
        << "\" pos=\"" << 2 * solution[i].x_min + solution[i].SizeX() << ","
        << 2 * solution[i].y_min + solution[i].SizeY()
-       << "!\" shape=box width=" << 2 * solution[i].SizeX()
+       << "!\" width=" << 2 * solution[i].SizeX()
        << " height=" << 2 * solution[i].SizeY() << "]\n";
   }
+  ss << extra_dot_payload;
   ss << "}\n";
   return ss.str();
 }
 
 std::vector<Rectangle> FindEmptySpaces(
     const Rectangle& bounding_box, std::vector<Rectangle> ocupied_rectangles) {
-  std::vector<Rectangle> empty_spaces = {bounding_box};
-  std::vector<Rectangle> new_empty_spaces;
   // Sorting is not necessary for correctness but makes it faster.
   std::sort(ocupied_rectangles.begin(), ocupied_rectangles.end(),
             [](const Rectangle& a, const Rectangle& b) {
               return std::tuple(a.x_min, -a.x_max, a.y_min) <
                      std::tuple(b.x_min, -b.x_max, b.y_min);
             });
-  for (const Rectangle& ocupied_rectangle : ocupied_rectangles) {
-    new_empty_spaces.clear();
-    for (const auto& empty_space : empty_spaces) {
-      for (Rectangle& r : empty_space.SetDifference(ocupied_rectangle)) {
-        new_empty_spaces.push_back(std::move(r));
-      }
+  return PavedRegionDifference({bounding_box}, ocupied_rectangles);
+}
+
+std::vector<Rectangle> PavedRegionDifference(
+    std::vector<Rectangle> original_region,
+    absl::Span<const Rectangle> area_to_remove) {
+  std::vector<Rectangle> new_area_to_cover;
+  for (const Rectangle& rectangle : area_to_remove) {
+    new_area_to_cover.clear();
+    for (const Rectangle& r : original_region) {
+      const auto& new_rectangles = r.RegionDifference(rectangle);
+      new_area_to_cover.insert(new_area_to_cover.end(), new_rectangles.begin(),
+                               new_rectangles.end());
     }
-    empty_spaces.swap(new_empty_spaces);
-    if (empty_spaces.empty()) {
-      break;
-    }
+    original_region.swap(new_area_to_cover);
+    if (original_region.empty()) break;
   }
-  return empty_spaces;
+  return original_region;
 }
 
 }  // namespace sat

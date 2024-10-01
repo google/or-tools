@@ -17,13 +17,13 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <utility>
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
-#include "ortools/base/threadpool.h"
 #include "ortools/pdlp/quadratic_program.h"
+#include "ortools/pdlp/scheduler.h"
 #include "ortools/pdlp/sharder.h"
+#include "ortools/pdlp/solvers.pb.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research::pdlp {
@@ -31,7 +31,7 @@ namespace operations_research::pdlp {
 // This class stores:
 //  - A `QuadraticProgram` (QP)
 //  - A transposed version of the QP's constraint matrix
-//  - A thread pool
+//  - A thread scheduler
 //  - Various `Sharder` objects for doing sharded matrix and vector
 //    computations.
 class ShardedQuadraticProgram {
@@ -40,8 +40,10 @@ class ShardedQuadraticProgram {
   // Note that the `qp` is intentionally passed by value.
   // If `logger` is not nullptr, warns about unbalanced matrices using it;
   // otherwise warns via Google standard logging.
-  ShardedQuadraticProgram(QuadraticProgram qp, int num_threads, int num_shards,
-                          operations_research::SolverLogger* logger = nullptr);
+  ShardedQuadraticProgram(
+      QuadraticProgram qp, int num_threads, int num_shards,
+      SchedulerType scheduler_type = SCHEDULER_TYPE_GOOGLE_THREADPOOL,
+      operations_research::SolverLogger* logger = nullptr);
 
   // Movable but not copyable.
   ShardedQuadraticProgram(const ShardedQuadraticProgram&) = delete;
@@ -114,7 +116,7 @@ class ShardedQuadraticProgram {
   QuadraticProgram qp_;
   Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>
       transposed_constraint_matrix_;
-  std::unique_ptr<ThreadPool> thread_pool_;
+  std::unique_ptr<Scheduler> scheduler_;
   Sharder constraint_matrix_sharder_;
   Sharder transposed_constraint_matrix_sharder_;
   Sharder primal_sharder_;

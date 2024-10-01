@@ -129,6 +129,8 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base",
+        "//ortools/base:dump_vars",
+        "//ortools/base:mathutil",
         "//ortools/base:types",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",

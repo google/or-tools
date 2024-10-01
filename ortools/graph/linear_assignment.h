@@ -378,6 +378,12 @@ class LinearSumAssignment {
     typename GraphType::NodeIndex node_iterator_;
   };
 
+  // Returns true if and only if the current pseudoflow is
+  // epsilon-optimal. To be used in a DCHECK.
+  //
+  // Visible for testing.
+  bool EpsilonOptimal() const;
+
  private:
   struct Stats {
     Stats() : pushes_(0), double_pushes_(0), relabelings_(0), refinements_(0) {}
@@ -462,10 +468,6 @@ class LinearSumAssignment {
   // right-side nodes during DoublePush operations.
   typedef std::pair<ArcIndex, CostValue> ImplicitPriceSummary;
 
-  // Returns true if and only if the current pseudoflow is
-  // epsilon-optimal. To be used in a DCHECK.
-  bool EpsilonOptimal() const;
-
   // Checks that all nodes are matched.
   // To be used in a DCHECK.
   bool AllMatched() const;
@@ -515,7 +517,7 @@ class LinearSumAssignment {
   // definition of admissibility, this action is different from
   // saturating all admissible arcs (which we never do). All negative
   // arcs are admissible, but not all admissible arcs are negative. It
-  // is alwsys enough to saturate only the negative ones.
+  // is always enough to saturate only the negative ones.
   void SaturateNegativeArcs();
 
   // Performs an optimized sequence of pushing a unit of excess out of

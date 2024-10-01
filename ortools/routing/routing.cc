@@ -50,7 +50,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/util/message_differencer.h"
-#include "ortools/base/dump_vars.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -136,16 +135,6 @@ std::string RoutingModel::RouteDimensionTravelInfo::TransitionInfo::DebugString(
       travel_value_upper_bound, line_prefix,
       travel_start_dependent_travel.DebugString(line_prefix + "\t"),
       line_prefix, travel_compression_cost.DebugString(line_prefix + "\t"));
-}
-
-std::string RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-    PiecewiseLinearFormulation::DebugString(std::string line_prefix) const {
-  if (x_anchors.size() <= 10) {
-    return "{ " + DUMP_VARS(x_anchors, y_anchors).str() + "}";
-  }
-  return absl::StrFormat("{\n%s%s\n%s%s\n}", line_prefix,
-                         DUMP_VARS(x_anchors).str(), line_prefix,
-                         DUMP_VARS(y_anchors).str());
 }
 
 const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
@@ -4707,7 +4696,8 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreateCPOperator<MakeChainInactiveOperator>();
   local_search_operators_[SWAP_ACTIVE] = CreateCPOperator<SwapActiveOperator>();
   local_search_operators_[SWAP_ACTIVE_CHAIN] =
-      CreateCPOperator<SwapActiveChainOperator>();
+      CreateCPOperatorWithArg<SwapActiveChainOperator, int>(
+          parameters.max_swap_active_chain_size());
   local_search_operators_[EXTENDED_SWAP_ACTIVE] =
       CreateCPOperator<ExtendedSwapActiveOperator>();
   std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());

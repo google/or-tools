@@ -118,6 +118,10 @@ ABSL_FLAG(bool, cp_model_ignore_hints, false,
           "If true, ignore any supplied hints.");
 ABSL_FLAG(bool, cp_model_fingerprint_model, true, "Fingerprint the model.");
 
+ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
+          "When true, all intermediate solutions found by the solver will be "
+          "checked. This can be expensive, therefore it is off by default.");
+
 namespace operations_research {
 namespace sat {
 
@@ -1074,7 +1078,13 @@ class LnsSolver : public SubSolver {
 
   ~LnsSolver() override {
     shared_->stat_tables.AddTimingStat(*this);
-    shared_->stat_tables.AddLnsStat(name(), *generator_);
+    shared_->stat_tables.AddLnsStat(
+        name(),
+        /*num_fully_solved_calls=*/generator_->num_fully_solved_calls(),
+        /*num_calls=*/generator_->num_calls(),
+        /*num_improving_calls=*/generator_->num_improving_calls(),
+        /*difficulty=*/generator_->difficulty(),
+        /*deterministic_limit=*/generator_->deterministic_limit());
   }
 
   bool TaskIsAvailable() override {
@@ -1130,7 +1140,7 @@ class LnsSolver : public SubSolver {
       }
 
       Neighborhood neighborhood =
-          generator_->Generate(base_response, data.difficulty, random);
+          generator_->Generate(base_response, data, random);
 
       if (!neighborhood.is_generated) return;
 
@@ -1309,7 +1319,8 @@ class LnsSolver : public SubSolver {
                                                   solution_values.end());
       }
 
-      data.deterministic_time = local_time_limit->GetElapsedDeterministicTime();
+      data.deterministic_time +=
+          local_time_limit->GetElapsedDeterministicTime();
 
       bool new_solution = false;
       bool display_lns_info = VLOG_IS_ON(2);
@@ -1604,17 +1615,12 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
               helper, name_filter.LastName()),
           lns_params, helper, shared));
     }
-    if (params.use_lb_relax_lns() && name_filter.Keep("lb_relax_lns")) {
+    if (params.use_lb_relax_lns() &&
+        params.num_workers() >= params.lb_relax_num_workers_threshold() &&
+        name_filter.Keep("lb_relax_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
-              helper, name_filter.LastName(),
-              [](const CpModelProto cp_model, Model* model) {
-                model->GetOrCreate<SharedResponseManager>()
-                    ->InitializeObjective(cp_model);
-                LoadCpModel(cp_model, model);
-                SolveLoadedCpModel(cp_model, model);
-              },
-              shared->time_limit),
+              helper, name_filter.LastName(), shared->time_limit),
           lns_params, helper, shared));
     }
 
@@ -1727,14 +1733,14 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   // Compared to LNS, these are not re-entrant, so we need to schedule the
   // correct number for parallelism.
   if (shared->model_proto.has_objective()) {
-    // If not forced by the parameters, we want one LS every two threads that
+    // If not forced by the parameters, we want one LS every 3 threads that
     // work on interleaved stuff. Note that by default they are many LNS, so
     // that shouldn't be too many.
     const int num_thread_for_interleaved_workers =
         params.num_workers() - full_worker_subsolvers.size();
     int num_violation_ls = params.has_num_violation_ls()
                                ? params.num_violation_ls()
-                               : (num_thread_for_interleaved_workers + 1) / 2;
+                               : (num_thread_for_interleaved_workers + 2) / 3;
 
     // If there is no rentrant solver, maybe increase the number to reach max
     // parallelism.
@@ -1749,7 +1755,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const absl::string_view lin_ls_name = "ls_lin";
 
     const int num_ls_lin =
-        name_filter.Keep(lin_ls_name) ? num_violation_ls / 3 : 0;
+        name_filter.Keep(lin_ls_name) ? (num_violation_ls + 1) / 3 : 0;
     const int num_ls_default =
         name_filter.Keep(ls_name) ? num_violation_ls - num_ls_lin : 0;
 
@@ -2405,24 +2411,41 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // We either check all solutions, or only the last one.
   // Checking all solution might be expensive if we creates many.
   auto check_solution = [&model_proto, &params, mapping_proto,
-                         &postsolve_mapping](CpSolverResponse* response) {
-    if (response->solution().empty()) return;
+                         &postsolve_mapping](const CpSolverResponse& response) {
+    if (response.solution().empty()) return;
+
+    bool solution_is_feasible = true;
     if (params.cp_model_presolve()) {
       // We pass presolve data for more informative message in case the solution
       // is not feasible.
-      CHECK(SolutionIsFeasible(model_proto, response->solution(), mapping_proto,
-                               &postsolve_mapping));
+      solution_is_feasible = SolutionIsFeasible(
+          model_proto, response.solution(), mapping_proto, &postsolve_mapping);
     } else {
-      CHECK(SolutionIsFeasible(model_proto, response->solution()));
+      solution_is_feasible =
+          SolutionIsFeasible(model_proto, response.solution());
+    }
+
+    // We dump the response when infeasible, this might help debugging.
+    if (!solution_is_feasible) {
+      const std::string file = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "wrong_response.pb.txt");
+      LOG(INFO) << "Dumping infeasible response proto to '" << file << "'.";
+      CHECK(WriteModelProtoToFile(response, file));
+
+      // Crash.
+      LOG(FATAL) << "Infeasible solution!"
+                 << " source': " << response.solution_info() << "'"
+                 << " dumped CpSolverResponse to '" << file << "'.";
     }
   };
   if (DEBUG_MODE ||
       absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
-    shared_response_manager->AddResponsePostprocessor(
-        std::move(check_solution));
+    shared_response_manager->AddSolutionCallback(std::move(check_solution));
   } else {
     shared_response_manager->AddFinalResponsePostprocessor(
-        std::move(check_solution));
+        [checker = std::move(check_solution)](CpSolverResponse* response) {
+          checker(*response);
+        });
   }
 
   // Solution postsolving.
@@ -2553,7 +2576,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
     if (params.num_workers() > 1 || params.interleave_search() ||
-        !params.subsolvers().empty() || params.use_ls_only()) {
+        !params.subsolvers().empty() || !params.filter_subsolvers().empty() ||
+        params.use_ls_only()) {
       SolveCpModelParallel(&shared, model);
 #endif  // __PORTABLE_PLATFORM__
     } else {

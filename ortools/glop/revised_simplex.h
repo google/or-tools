@@ -414,7 +414,7 @@ class RevisedSimplex {
   bool InitializeObjectiveAndTestIfUnchanged(const LinearProgram& lp);
 
   // Computes the stopping criterion on the problem objective value.
-  void InitializeObjectiveLimit(const LinearProgram& lp);
+  void InitializeObjectiveLimit();
 
   // Initializes the starting basis. In most cases it starts by the all slack
   // basis and tries to apply some heuristics to replace fixed variables.

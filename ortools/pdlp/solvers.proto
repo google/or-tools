@@ -295,6 +295,11 @@ message PrimalDualHybridGradientParams {
   // Otherwise a default that depends on num_threads will be used.
   optional int32 num_shards = 27 [default = 0];
 
+  // The type of scheduler used for CPU multi-threading. See the documentation
+  // of the corresponding enum for more details.
+  optional SchedulerType scheduler_type = 32
+      [default = SCHEDULER_TYPE_GOOGLE_THREADPOOL];
+
   // If true, the iteration_stats field of the SolveLog output will be populated
   // at every iteration. Note that we only compute solution statistics at
   // termination checks. Setting this parameter to true may substantially

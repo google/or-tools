@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <random>
+#include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -71,6 +72,20 @@ TEST(SparsePermutationTest, Identity) {
   EXPECT_EQ("", permutation.DebugString());
   EXPECT_EQ(0, permutation.Support().size());
   EXPECT_EQ(0, permutation.NumCycles());
+}
+
+TEST(SparsePermutationTest, ApplyToVector) {
+  std::vector<std::string> v = {"0", "1", "2", "3", "4", "5", "6", "7", "8"};
+  SparsePermutation permutation(v.size());
+  permutation.AddToCurrentCycle(4);
+  permutation.AddToCurrentCycle(2);
+  permutation.AddToCurrentCycle(7);
+  permutation.CloseCurrentCycle();
+  permutation.AddToCurrentCycle(6);
+  permutation.AddToCurrentCycle(1);
+  permutation.CloseCurrentCycle();
+  permutation.ApplyToDenseCollection(v);
+  EXPECT_THAT(v, ElementsAre("0", "6", "7", "3", "2", "5", "1", "4", "8"));
 }
 
 // Generate a bunch of permutation on a 'huge' space, but that have very few

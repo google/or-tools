@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -97,7 +98,7 @@ class PresolveContext {
   // TODO(user): We should control more how this is called so we can update
   // a solution hint accordingly.
   int NewIntVar(const Domain& domain);
-  int NewBoolVar();
+  int NewBoolVar(absl::string_view source);
 
   // This should replace NewIntVar() eventually in order to be able to crush
   // primal solution or just update the hint.
@@ -574,9 +575,21 @@ class PresolveContext {
   // the hint, in order to maintain it as best as possible during presolve.
   void LoadSolutionHint();
 
+  void PermuteHintValues(const SparsePermutation& perm);
+
   // Solution hint accessor.
   bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }
   int64_t SolutionHint(int var) const { return hint_[var]; }
+  bool HintIsLoaded() const { return hint_is_loaded_; }
+  absl::Span<const int64_t> SolutionHint() const { return hint_; }
+
+  // Allows to set the hint of a newly created variable.
+  void SetNewVariableHint(int var, int64_t value) {
+    CHECK(hint_is_loaded_);
+    CHECK(!hint_has_value_[var]);
+    hint_has_value_[var] = true;
+    hint_[var] = value;
+  }
 
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
@@ -654,7 +667,8 @@ class PresolveContext {
                                   bool imply_eq);
 
   // Insert fully reified var-value encoding.
-  void InsertVarValueEncodingInternal(int literal, int var, int64_t value,
+  // Returns false if this make the problem infeasible.
+  bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
   SolverLogger* logger_;
@@ -714,15 +728,11 @@ class PresolveContext {
       encoding_;
 
   // Contains the currently collected half value encodings:
-  //   i.e.: literal => var ==/!= value
+  // (literal, var, value),  i.e.: literal => var ==/!= value
   // The state is accumulated (adding x => var == value then !x => var != value)
   // will deduce that x equivalent to var == value.
-  absl::flat_hash_map<int,
-                      absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>>
-      eq_half_encoding_;
-  absl::flat_hash_map<int,
-                      absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>>
-      neq_half_encoding_;
+  absl::flat_hash_set<std::tuple<int, int, int64_t>> eq_half_encoding_;
+  absl::flat_hash_set<std::tuple<int, int, int64_t>> neq_half_encoding_;
 
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will be removed from the model at

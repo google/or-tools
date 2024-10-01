@@ -17,8 +17,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 const (
@@ -121,6 +121,6 @@ func nursesSat() error {
 
 func main() {
 	if err := nursesSat(); err != nil {
-		glog.Exitf("nursesSat returned with error: %v", err)
+		log.Exitf("nursesSat returned with error: %v", err)
 	}
 }

@@ -1109,6 +1109,16 @@ class EbertGraphBase
   };
 #endif  // SWIG
 
+  // Using the SetHead() method implies that the BuildRepresentation()
+  // method must be called to restore consistency before the graph is
+  // used.
+  //
+  // Visible for testing.
+  void SetHead(const ArcIndexType arc, const NodeIndexType head) {
+    representation_clean_ = false;
+    head_.Set(arc, head);
+  }
+
  protected:
   EbertGraphBase() : next_adjacent_arc_(), representation_clean_(true) {}
 
@@ -1175,14 +1185,6 @@ class EbertGraphBase
   }
 
   bool RepresentationClean() const { return representation_clean_; }
-
-  // Using the SetHead() method implies that the BuildRepresentation()
-  // method must be called to restore consistency before the graph is
-  // used.
-  void SetHead(const ArcIndexType arc, const NodeIndexType head) {
-    representation_clean_ = false;
-    head_.Set(arc, head);
-  }
 };
 
 // Most users should only use StarGraph, which is EbertGraph<int32_t, int32_t>,

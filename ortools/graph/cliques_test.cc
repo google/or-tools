@@ -14,6 +14,7 @@
 #include "ortools/graph/cliques.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -24,6 +25,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/bind_front.h"
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -412,6 +414,44 @@ TEST(BronKerbosch, CompleteGraphCover) {
   EXPECT_EQ(10, all_cliques[0].size());
 }
 
+TEST(WeightedBronKerboschBitsetAlgorithmTest, CompleteGraph) {
+  const int num_nodes = 1000;
+  WeightedBronKerboschBitsetAlgorithm algo;
+  algo.Initialize(num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    for (int j = i + 1; j < num_nodes; ++j) {
+      algo.AddEdge(i, j);
+    }
+  }
+  std::vector<std::vector<int>> cliques = algo.Run();
+  EXPECT_EQ(cliques.size(), 1);
+  for (const std::vector<int>& clique : cliques) {
+    EXPECT_EQ(num_nodes, clique.size());
+  }
+}
+
+TEST(WeightedBronKerboschBitsetAlgorithmTest, ImplicationGraphClosure) {
+  const int num_nodes = 10;
+  WeightedBronKerboschBitsetAlgorithm algo;
+  algo.Initialize(num_nodes);
+  for (int i = 0; i + 2 < num_nodes; i += 2) {
+    const int j = i + 2;
+    algo.AddEdge(i, j ^ 1);  // i => j
+  }
+  algo.TakeTransitiveClosureOfImplicationGraph();
+  for (int i = 0; i < num_nodes; ++i) {
+    for (int j = 0; j < num_nodes; ++j) {
+      if (i % 2 == 0 && j % 2 == 0) {
+        if (j > i) {
+          EXPECT_TRUE(algo.HasEdge(i, j ^ 1));
+        } else {
+          EXPECT_FALSE(algo.HasEdge(i, j ^ 1));
+        }
+      }
+    }
+  }
+}
+
 TEST(BronKerbosch, EmptyGraphCover) {
   auto graph = EmptyGraph;
   CliqueReporter<int> reporter;
@@ -474,6 +514,50 @@ TEST(BronKerboschAlgorithmTest, FullKPartiteGraph) {
     for (const std::vector<int>& clique : reporter.all_cliques()) {
       EXPECT_EQ(num_partitions, clique.size());
     }
+  }
+}
+
+TEST(WeightedBronKerboschBitsetAlgorithmTest, FullKPartiteGraph) {
+  const int kNumPartitions[] = {2, 3, 4, 5, 6, 7};
+  for (const int num_partitions : kNumPartitions) {
+    SCOPED_TRACE(absl::StrCat("num_partitions = ", num_partitions));
+    WeightedBronKerboschBitsetAlgorithm algo;
+
+    const int num_nodes = num_partitions * num_partitions;
+    algo.Initialize(num_nodes);
+
+    for (int i = 0; i < num_nodes; ++i) {
+      for (int j = i + 1; j < num_nodes; ++j) {
+        if (FullKPartiteGraph(num_partitions, i, j)) algo.AddEdge(i, j);
+      }
+    }
+
+    std::vector<std::vector<int>> cliques = algo.Run();
+    EXPECT_EQ(cliques.size(), pow(num_partitions, num_partitions));
+    for (const std::vector<int>& clique : cliques) {
+      EXPECT_EQ(num_partitions, clique.size());
+    }
+  }
+}
+
+TEST(WeightedBronKerboschBitsetAlgorithmTest, ModuloGraph) {
+  int num_partitions = 50;
+  int partition_size = 100;
+  WeightedBronKerboschBitsetAlgorithm algo;
+
+  const int num_nodes = num_partitions * partition_size;
+  algo.Initialize(num_nodes);
+
+  for (int i = 0; i < num_nodes; ++i) {
+    for (int j = i + 1; j < num_nodes; ++j) {
+      if (ModuloGraph(num_partitions, i, j)) algo.AddEdge(i, j);
+    }
+  }
+
+  std::vector<std::vector<int>> cliques = algo.Run();
+  EXPECT_EQ(cliques.size(), num_partitions);
+  for (const std::vector<int>& clique : cliques) {
+    EXPECT_EQ(partition_size, clique.size());
   }
 }
 
@@ -583,6 +667,37 @@ void BM_FindCliquesInModuloGraphWithBronKerboschAlgorithm(
 }
 
 BENCHMARK(BM_FindCliquesInModuloGraphWithBronKerboschAlgorithm)
+    ->ArgPair(5, 1000)
+    ->ArgPair(10, 500)
+    ->ArgPair(50, 100)
+    ->ArgPair(100, 50)
+    ->ArgPair(500, 10)
+    ->ArgPair(1000, 5);
+
+void BM_FindCliquesInModuloGraphWithBitsetBK(benchmark::State& state) {
+  int num_partitions = state.range(0);
+  int partition_size = state.range(1);
+  const int kExpectedNumCliques = num_partitions;
+  const int kExpectedCliqueSize = partition_size;
+  const int num_nodes = num_partitions * partition_size;
+  for (auto _ : state) {
+    WeightedBronKerboschBitsetAlgorithm algo;
+    algo.Initialize(num_nodes);
+    for (int i = 0; i < num_nodes; ++i) {
+      for (int j = i + 1; j < num_nodes; ++j) {
+        if (ModuloGraph(num_partitions, i, j)) algo.AddEdge(i, j);
+      }
+    }
+
+    std::vector<std::vector<int>> cliques = algo.Run();
+    EXPECT_EQ(cliques.size(), kExpectedNumCliques);
+    for (const std::vector<int>& clique : cliques) {
+      EXPECT_EQ(kExpectedCliqueSize, clique.size());
+    }
+  }
+}
+
+BENCHMARK(BM_FindCliquesInModuloGraphWithBitsetBK)
     ->ArgPair(5, 1000)
     ->ArgPair(10, 500)
     ->ArgPair(50, 100)

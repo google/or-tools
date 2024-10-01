@@ -106,21 +106,31 @@ bool ScatteredIntegerVector::Add(glop::ColIndex col, IntegerValue value) {
 template <bool check_overflow>
 bool ScatteredIntegerVector::AddLinearExpressionMultiple(
     const IntegerValue multiplier, absl::Span<const glop::ColIndex> cols,
-    absl::Span<const IntegerValue> coeffs) {
+    absl::Span<const IntegerValue> coeffs, IntegerValue max_coeff_magnitude) {
+  // Since we have the norm, this avoid checking each products below.
+  if (check_overflow) {
+    const IntegerValue prod = CapProdI(max_coeff_magnitude, multiplier);
+    if (AtMinOrMaxInt64(prod.value())) return false;
+  }
+
+  IntegerValue* data = dense_vector_.data();
   const double threshold = 0.1 * static_cast<double>(dense_vector_.size());
   const int num_terms = cols.size();
   if (is_sparse_ && static_cast<double>(num_terms) < threshold) {
     for (int i = 0; i < num_terms; ++i) {
-      if (is_zeros_[cols[i]]) {
-        is_zeros_[cols[i]] = false;
-        non_zeros_.push_back(cols[i]);
+      const glop::ColIndex col = cols[i];
+      if (is_zeros_[col]) {
+        is_zeros_[col] = false;
+        non_zeros_.push_back(col);
       }
+      const IntegerValue product = multiplier * coeffs[i];
       if (check_overflow) {
-        if (!AddProductTo(multiplier, coeffs[i], &dense_vector_[cols[i]])) {
+        if (AddIntoOverflow(product.value(),
+                            data[col.value()].mutable_value())) {
           return false;
         }
       } else {
-        dense_vector_[cols[i]] += multiplier * coeffs[i];
+        data[col.value()] += product;
       }
     }
     if (static_cast<double>(non_zeros_.size()) > threshold) {
@@ -129,12 +139,15 @@ bool ScatteredIntegerVector::AddLinearExpressionMultiple(
   } else {
     is_sparse_ = false;
     for (int i = 0; i < num_terms; ++i) {
+      const glop::ColIndex col = cols[i];
+      const IntegerValue product = multiplier * coeffs[i];
       if (check_overflow) {
-        if (!AddProductTo(multiplier, coeffs[i], &dense_vector_[cols[i]])) {
+        if (AddIntoOverflow(product.value(),
+                            data[col.value()].mutable_value())) {
           return false;
         }
       } else {
-        dense_vector_[cols[i]] += multiplier * coeffs[i];
+        data[col.value()] += product;
       }
     }
   }
@@ -206,10 +219,11 @@ void ScatteredIntegerVector::ConvertToCutData(
     CutData* result) {
   result->terms.clear();
   result->rhs = rhs;
+  absl::Span<const IntegerValue> dense_vector = dense_vector_;
   if (is_sparse_) {
     std::sort(non_zeros_.begin(), non_zeros_.end());
     for (const glop::ColIndex col : non_zeros_) {
-      const IntegerValue coeff = dense_vector_[col];
+      const IntegerValue coeff = dense_vector[col.value()];
       if (coeff == 0) continue;
       const IntegerVariable var = integer_variables[col.value()];
       CHECK(result->AppendOneTerm(var, coeff, lp_solution[col.value()],
@@ -217,12 +231,11 @@ void ScatteredIntegerVector::ConvertToCutData(
                                   integer_trail->LevelZeroUpperBound(var)));
     }
   } else {
-    const int size = dense_vector_.size();
-    for (glop::ColIndex col(0); col < size; ++col) {
-      const IntegerValue coeff = dense_vector_[col];
+    for (int col(0); col < dense_vector.size(); ++col) {
+      const IntegerValue coeff = dense_vector[col];
       if (coeff == 0) continue;
-      const IntegerVariable var = integer_variables[col.value()];
-      CHECK(result->AppendOneTerm(var, coeff, lp_solution[col.value()],
+      const IntegerVariable var = integer_variables[col];
+      CHECK(result->AppendOneTerm(var, coeff, lp_solution[col],
                                   integer_trail->LevelZeroLowerBound(var),
                                   integer_trail->LevelZeroUpperBound(var)));
     }
@@ -269,7 +282,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
-      expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()) {
+      expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
+      expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()) {
   // Tweak the default parameters to make the solve incremental.
   simplex_params_.set_use_dual_simplex(true);
   simplex_params_.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
@@ -313,6 +327,9 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
     const int max_index = NegationOf(vars.back()).value();
     if (max_index >= expanded_lp_solution_.size()) {
       expanded_lp_solution_.assign(max_index + 1, 0.0);
+    }
+    if (max_index >= expanded_reduced_costs_.size()) {
+      expanded_reduced_costs_.assign(max_index + 1, 0.0);
     }
   }
 }
@@ -718,16 +735,25 @@ bool LinearProgrammingConstraint::SolveLp() {
   }
   lp_at_optimal_ = simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL;
 
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+  // If stop_after_root_propagation() is true, we still copy whatever we have as
+  // these values will be used for the local-branching lns heuristic.
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
+      parameters_.stop_after_root_propagation()) {
     lp_solution_is_set_ = true;
     lp_solution_level_ = trail_->CurrentDecisionLevel();
     const int num_vars = integer_variables_.size();
+    const auto reduced_costs = simplex_.GetReducedCosts().const_view();
     for (int i = 0; i < num_vars; i++) {
-      const glop::Fractional value =
-          GetVariableValueAtCpScale(glop::ColIndex(i));
+      const glop::ColIndex col(i);
+      const glop::Fractional value = GetVariableValueAtCpScale(col);
       lp_solution_[i] = value;
       expanded_lp_solution_[integer_variables_[i]] = value;
       expanded_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+
+      const glop::Fractional rc =
+          scaler_.UnscaleReducedCost(col, reduced_costs[col]);
+      expanded_reduced_costs_[integer_variables_[i]] = rc;
+      expanded_reduced_costs_[NegationOf(integer_variables_[i])] = -rc;
     }
 
     if (lp_solution_level_ == 0) {
@@ -1220,7 +1246,8 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
         const int slack_index = (var.value() - first_slack.value()) / 2;
         const glop::RowIndex row = tmp_slack_rows_[slack_index];
         if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
-                coeff, IntegerLpRowCols(row), IntegerLpRowCoeffs(row))) {
+                coeff, IntegerLpRowCols(row), IntegerLpRowCoeffs(row),
+                infinity_norms_[row])) {
           VLOG(2) << "Overflow in slack removal";
           ++num_cut_overflows_;
           return false;
@@ -1440,8 +1467,6 @@ void LinearProgrammingConstraint::AddMirCuts() {
   const int num_rows = lp_data_.num_constraints().value();
   std::vector<std::pair<RowIndex, IntegerValue>> base_rows;
   util_intops::StrongVector<RowIndex, double> row_weights(num_rows, 0.0);
-  util_intops::StrongVector<RowIndex, bool> at_ub(num_rows, false);
-  util_intops::StrongVector<RowIndex, bool> at_lb(num_rows, false);
   for (RowIndex row(0); row < num_rows; ++row) {
     // We only consider tight rows.
     // We use both the status and activity to have as much options as possible.
@@ -1454,13 +1479,11 @@ void LinearProgrammingConstraint::AddMirCuts() {
     if (activity > lp_data_.constraint_upper_bounds()[row] - 1e-4 ||
         status == glop::ConstraintStatus::AT_UPPER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      at_ub[row] = true;
       base_rows.push_back({row, IntegerValue(1)});
     }
     if (activity < lp_data_.constraint_lower_bounds()[row] + 1e-4 ||
         status == glop::ConstraintStatus::AT_LOWER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      at_lb[row] = true;
       base_rows.push_back({row, IntegerValue(-1)});
     }
 
@@ -1578,16 +1601,20 @@ void LinearProgrammingConstraint::AddMirCuts() {
         if (used_rows[row]) continue;
         used_rows[row] = true;
 
-        // We only consider "tight" rows, as defined above.
+        // Note that we consider all rows here, not only tight one. This makes a
+        // big difference on problem like blp-ic98.pb.gz. We can also use the
+        // integrality of the slack when adding a non-tight row to derive good
+        // cuts. Also, non-tight row will have a low weight, so they should
+        // still be chosen after the tight-one in most situation.
         bool add_row = false;
-        if (at_ub[row]) {
+        if (!integer_lp_[row].ub_is_trivial) {
           if (entry.coefficient() > 0.0) {
             if (dense_cut[var_to_eliminate] < 0) add_row = true;
           } else {
             if (dense_cut[var_to_eliminate] > 0) add_row = true;
           }
         }
-        if (at_lb[row]) {
+        if (!integer_lp_[row].lb_is_trivial) {
           if (entry.coefficient() > 0.0) {
             if (dense_cut[var_to_eliminate] > 0) add_row = true;
           } else {
@@ -1907,7 +1934,7 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
 std::vector<std::pair<RowIndex, IntegerValue>>
 LinearProgrammingConstraint::ScaleLpMultiplier(
     bool take_objective_into_account, bool ignore_trivial_constraints,
-    const std::vector<std::pair<RowIndex, double>>& lp_multipliers,
+    absl::Span<const std::pair<RowIndex, double>> lp_multipliers,
     IntegerValue* scaling, int64_t overflow_cap) const {
   *scaling = 0;
 
@@ -2002,11 +2029,12 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
   for (const std::pair<RowIndex, IntegerValue>& term : integer_multipliers) {
     const RowIndex row = term.first;
     const IntegerValue multiplier = term.second;
-    CHECK_LT(row, integer_lp_.size());
+    DCHECK_LT(row, integer_lp_.size());
 
     // Update the constraint.
     if (!scattered_vector->AddLinearExpressionMultiple<check_overflow>(
-            multiplier, IntegerLpRowCols(row), IntegerLpRowCoeffs(row))) {
+            multiplier, IntegerLpRowCols(row), IntegerLpRowCoeffs(row),
+            infinity_norms_[row])) {
       return false;
     }
 
@@ -2172,13 +2200,11 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     if (to_add != 0) {
       term.second += to_add;
       *upper_bound += to_add * row_bound;
-
-      // TODO(user): we could avoid checking overflow here, but this is likely
-      // not in the hot loop.
       adjusted = true;
       CHECK(scattered_vector
                 ->AddLinearExpressionMultiple</*check_overflow=*/false>(
-                    to_add, IntegerLpRowCols(row), IntegerLpRowCoeffs(row)));
+                    to_add, IntegerLpRowCols(row), IntegerLpRowCoeffs(row),
+                    infinity_norms_[row]));
     }
   }
   if (adjusted) ++num_adjusts_;
@@ -2298,7 +2324,7 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
     }
     CHECK(tmp_scattered_vector_
               .AddLinearExpressionMultiple</*check_overflow=*/false>(
-                  obj_scale, tmp_cols_, tmp_coeffs_));
+                  obj_scale, tmp_cols_, tmp_coeffs_, objective_infinity_norm_));
     CHECK(AddProductTo(-obj_scale, integer_objective_offset_, &rc_ub));
 
     extra_term = {objective_cp_, -obj_scale};
@@ -2367,15 +2393,12 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
 }
 
 int64_t LinearProgrammingConstraint::CalculateDegeneracy() {
-  const glop::ColIndex num_vars = simplex_.GetProblemNumCols();
   int num_non_basic_with_zero_rc = 0;
-  for (glop::ColIndex i(0); i < num_vars; ++i) {
-    const double rc = simplex_.GetReducedCost(i);
-    if (rc != 0.0) continue;
-    if (simplex_.GetVariableStatus(i) == glop::VariableStatus::BASIC) {
-      continue;
+  const auto reduced_costs = simplex_.GetReducedCosts().const_view();
+  for (const glop::ColIndex i : simplex_.GetNotBasicBitRow()) {
+    if (reduced_costs[i] == 0.0) {
+      num_non_basic_with_zero_rc++;
     }
-    num_non_basic_with_zero_rc++;
   }
   const int64_t num_cols = simplex_.GetProblemNumCols().value();
   is_degenerate_ = num_non_basic_with_zero_rc >= 0.3 * num_cols;

@@ -68,6 +68,7 @@ cc_library(
         ":graph",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:threadpool",
+        "//ortools/base:top_n",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/log:check",
@@ -85,6 +86,25 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "multi_dijkstra_test",
+    size = "small",
+    srcs = ["multi_dijkstra_test.cc"],
+    deps = [
+        ":connected_components",
+        ":graph",
+        ":multi_dijkstra",
+        ":random_graph",
+        ":util",
+        "//ortools/base:gmock_main",
+        "//ortools/base:map_util",
+        "//ortools/base:types",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/random:distributions",
+    ],
+)
+
 cc_library(
     name = "bidirectional_dijkstra",
     hdrs = ["bidirectional_dijkstra.h"],
@@ -99,6 +119,23 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "bidirectional_dijkstra_test",
+    size = "small",
+    srcs = ["bidirectional_dijkstra_test.cc"],
+    deps = [
+        ":bidirectional_dijkstra",
+        ":bounded_dijkstra",
+        ":graph",
+        "//ortools/base:gmock_main",
+        "//ortools/base:iterator_adaptors",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "cliques",
     srcs = ["cliques.cc"],
@@ -107,8 +144,10 @@ cc_library(
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:strong_vector",
+        "//ortools/util:bitset",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -122,6 +161,21 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_or_function",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "hamiltonian_path_test",
+    size = "medium",
+    timeout = "long",
+    srcs = ["hamiltonian_path_test.cc"],
+    deps = [
+        ":hamiltonian_path",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -144,11 +198,37 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "christofides_test",
+    srcs = ["christofides_test.cc"],
+    deps = [
+        ":christofides",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
 cc_library(
     name = "eulerian_path",
     hdrs = ["eulerian_path.h"],
     deps = [
         "//ortools/base",
+    ],
+)
+
+cc_test(
+    name = "eulerian_path_test",
+    srcs = ["eulerian_path_test.cc"],
+    deps = [
+        ":eulerian_path",
+        ":graph",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 
@@ -161,6 +241,21 @@ cc_library(
         "//ortools/base:types",
         "//ortools/util:vector_or_function",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "minimum_spanning_tree_test",
+    srcs = ["minimum_spanning_tree_test.cc"],
+    deps = [
+        ":graph",
+        ":minimum_spanning_tree",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/types:span",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 
@@ -185,6 +280,23 @@ cc_library(
         "//ortools/util:permutation",
         "//ortools/util:zvector",
         "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_prod",
+    ],
+)
+
+cc_test(
+    name = "ebert_graph_test",
+    size = "small",
+    srcs = ["ebert_graph_test.cc"],
+    deps = [
+        ":ebert_graph",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/util:permutation",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/strings",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 
@@ -206,6 +318,23 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "shortest_paths_test",
+    size = "medium",
+    srcs = ["shortest_paths_test.cc"],
+    tags = ["noasan"],  # Times out occasionally in ASAN mode.
+    deps = [
+        ":ebert_graph",
+        ":shortest_paths",
+        ":strongly_connected_components",
+        "//ortools/base:gmock_main",
+        "//ortools/util:zvector",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
     ],
 )
 
@@ -248,9 +377,9 @@ cc_library(
         ":graph",
         ":graphs",
         "//ortools/base",
-        "//ortools/base:types",
         "//ortools/util:stats",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -271,6 +400,7 @@ cc_test(
         "//ortools/base:path",
         "//ortools/linear_solver",
         "//ortools/util:file_util",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -343,6 +473,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "assignment_test",
+    size = "small",
+    srcs = ["assignment_test.cc"],
+    deps = [
+        ":assignment",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 # Linear Assignment with full-featured interface and efficient
 # implementation.
 cc_library(
@@ -357,6 +497,23 @@ cc_library(
         "//ortools/util:zvector",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_googletest//:gtest_prod",
+    ],
+)
+
+cc_test(
+    name = "linear_assignment_test",
+    size = "small",
+    srcs = ["linear_assignment_test.cc"],
+    deps = [
+        ":ebert_graph",
+        ":graph",
+        ":linear_assignment",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/types:span",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 
@@ -425,6 +582,76 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "rooted_tree_test",
+    srcs = ["rooted_tree_test.cc"],
+    deps = [
+        ":graph",
+        ":rooted_tree",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "perfect_matching_test",
+    size = "small",
+    srcs = ["perfect_matching_test.cc"],
+    deps = [
+        ":perfect_matching",
+        "//ortools/base:gmock_main",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:solve_mp_model",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "dag_shortest_path_test",
+    size = "small",
+    srcs = ["dag_shortest_path_test.cc"],
+    deps = [
+        ":dag_shortest_path",
+        ":graph",
+        ":io",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "//ortools/util:flat_matrix",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:span",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "dag_constrained_shortest_path_test",
+    srcs = ["dag_constrained_shortest_path_test.cc"],
+    deps = [
+        ":dag_constrained_shortest_path",
+        ":dag_shortest_path",
+        ":graph",
+        ":io",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 

@@ -165,14 +165,14 @@ std::tuple<std::vector<NodeIndex>, PathDistance> ComputeShortestPath(
     // This case only happens when some arcs have an infinite length (i.e.
     // larger than `kMaxDistance`): `BoundedDijkstraWrapper::NodePathTo` fails
     // to return a path, even empty.
-    return {{}, kDisconnectedDistance};
+    return {std::vector<NodeIndex>{}, kDisconnectedDistance};
   }
 
   if (std::vector<NodeIndex> path = std::move(dijkstra.NodePathTo(destination));
       !path.empty()) {
     return {std::move(path), path_length};
   } else {
-    return {{}, kDisconnectedDistance};
+    return {std::vector<NodeIndex>{}, kDisconnectedDistance};
   }
 }
 

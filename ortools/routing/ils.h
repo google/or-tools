@@ -206,9 +206,12 @@ class CompositeRuinProcedure : public RuinProcedure {
 // combination of user-defined parameters and solution and instance properties.
 // Every selected route is then disrupted by removing a contiguous sequence of
 // visits, possibly bypassing a contiguous subsequence.
+// See also SISRRuinStrategy in ils.proto.
 class SISRRuinProcedure : public RuinProcedure {
  public:
-  SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd, int num_neighbors);
+  SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd,
+                    int max_removed_sequence_size, int avg_num_removed_visits,
+                    double bypass_factor, int num_neighbors);
 
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
 
@@ -226,6 +229,9 @@ class SISRRuinProcedure : public RuinProcedure {
 
   const RoutingModel& model_;
   std::mt19937& rnd_;
+  int max_removed_sequence_size_;
+  int avg_num_removed_visits_;
+  double bypass_factor_;
   const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
   std::uniform_int_distribution<int64_t> customer_dist_;
   std::bernoulli_distribution boolean_dist_;
