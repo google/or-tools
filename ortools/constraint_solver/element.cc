@@ -407,18 +407,18 @@ RangeMinimumQueryExprElement::RangeMinimumQueryExprElement(
 }
 
 int64_t RangeMinimumQueryExprElement::Min() const {
-  return min_rmq_.GetMinimumFromRange(IndexMin(), IndexMax() + 1);
+  return min_rmq_.RangeMinimum(IndexMin(), IndexMax() + 1);
 }
 
 int64_t RangeMinimumQueryExprElement::Max() const {
-  return max_rmq_.GetMinimumFromRange(IndexMin(), IndexMax() + 1);
+  return max_rmq_.RangeMinimum(IndexMin(), IndexMax() + 1);
 }
 
 void RangeMinimumQueryExprElement::Range(int64_t* mi, int64_t* ma) {
   const int64_t range_min = IndexMin();
   const int64_t range_max = IndexMax() + 1;
-  *mi = min_rmq_.GetMinimumFromRange(range_min, range_max);
-  *ma = max_rmq_.GetMinimumFromRange(range_min, range_max);
+  *mi = min_rmq_.RangeMinimum(range_min, range_max);
+  *ma = max_rmq_.RangeMinimum(range_min, range_max);
 }
 
 #define UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(test)       \
