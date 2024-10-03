@@ -73,6 +73,7 @@ jobs:
       - name: check build
         run: |
           ls build/bin
+          echo $BUILD_TYPE
       - name: Run Knitro Test
         run: >
-          ./build/bin/test_knitro_interface
+          ./build/bin/"$BUILD_TYPE"/test_knitro_interface
