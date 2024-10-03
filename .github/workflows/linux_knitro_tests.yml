@@ -13,9 +13,9 @@ jobs:
     strategy:
        matrix:
          cmake: [
-           {generator: "Unix Makefiles", config: "Release", installDir: ""},
-           {generator: "Ninja", config: "Release", installDir: ""},
-           {generator: "Ninja Multi-Config", config: "Release", installDir: "Release"},
+           {generator: "Unix Makefiles", config: "Release", binDir: ""},
+           {generator: "Ninja", config: "Release", binDir: ""},
+           {generator: "Ninja Multi-Config", config: "Release", binDir: "RELEASE"},
          ]
        fail-fast: false
     name: Linux • Knitro Test • C++
@@ -72,7 +72,7 @@ jobs:
           -v -j2
       - name: check build
         run: |
-          ls -l build/*
+          ls -l build/${{ matrix.cmake.binDir }}/bin
       - name: Run Knitro Test
         run: >
-          ./build/bin/${{ matrix.cmake.installDir }}/test_knitro_interface
+          ./build/${{ matrix.cmake.binDir }}/bin/test_knitro_interface
