@@ -411,6 +411,16 @@ cc_library(
 )
 
 cc_library(
+    name = "parse_test_proto",
+    hdrs = ["parse_test_proto.h"],
+    deps = [
+        ":gmock",
+        "@com_google_absl//absl/log:check",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
     name = "path",
     srcs = ["path.cc"],
     hdrs = ["path.h"],

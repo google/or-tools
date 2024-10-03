@@ -46,6 +46,7 @@
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -806,33 +807,31 @@ void InsertCumulativePrecedences(
   }
 }
 
-struct Rectangle {
+struct IndexedRectangle {
   int interval_index;
-  int64_t x_start;
-  int64_t x_end;
-  int64_t y_start;
-  int64_t y_end;
+  Rectangle r;
 
-  bool operator<(const Rectangle& other) const {
-    return std::tie(x_start, x_end) < std::tie(other.x_start, other.x_end);
+  bool operator<(const IndexedRectangle& other) const {
+    return std::tie(r.x_min, r.x_max) < std::tie(other.r.x_min, other.r.x_max);
   }
 };
 
 void InsertRectanglePredecences(
-    const std::vector<Rectangle>& rectangles,
+    const std::vector<IndexedRectangle>& rectangles,
     absl::flat_hash_set<std::pair<int, int>>* precedences) {
   // TODO(user): Refine set of interesting points.
-  std::vector<int64_t> interesting_points;
-  for (const Rectangle& r : rectangles) {
-    interesting_points.push_back(r.y_end - 1);
+  std::vector<IntegerValue> interesting_points;
+  for (const IndexedRectangle& idx_r : rectangles) {
+    interesting_points.push_back(idx_r.r.y_max - 1);
   }
   gtl::STLSortAndRemoveDuplicates(&interesting_points);
   std::vector<Demand> demands;
-  for (const int64_t t : interesting_points) {
+  for (const IntegerValue t : interesting_points) {
     demands.clear();
-    for (const Rectangle& r : rectangles) {
-      if (r.y_start > t || r.y_end <= t) continue;
-      demands.push_back({r.interval_index, r.x_start, r.x_end, 1});
+    for (const IndexedRectangle& idx_r : rectangles) {
+      if (idx_r.r.y_min > t || idx_r.r.y_max <= t) continue;
+      demands.push_back({idx_r.interval_index, idx_r.r.x_min.value(),
+                         idx_r.r.x_max.value(), 1});
     }
     std::sort(demands.begin(), demands.end());
     InsertPrecedencesFromSortedListOfNonOverlapingIntervals(demands,
@@ -848,8 +847,8 @@ void InsertNoOverlap2dPrecedences(
   std::vector<Demand> demands;
   const NoOverlap2DConstraintProto& no_overlap_2d =
       model_proto.constraints(no_overlap_2d_index).no_overlap_2d();
-  std::vector<Rectangle> x_main;
-  std::vector<Rectangle> y_main;
+  std::vector<IndexedRectangle> x_main;
+  std::vector<IndexedRectangle> y_main;
   for (int i = 0; i < no_overlap_2d.x_intervals_size(); ++i) {
     // Ignore unperformed rectangles.
     const int x_interval_index = no_overlap_2d.x_intervals(i);
@@ -876,10 +875,16 @@ void InsertNoOverlap2dPrecedences(
     // Ignore rectangles with zero area.
     if (x_start_value == x_end_value || y_start_value == y_end_value) continue;
 
-    x_main.push_back({x_interval_index, x_start_value, x_end_value,
-                      y_start_value, y_end_value});
-    y_main.push_back({y_interval_index, y_start_value, y_end_value,
-                      x_start_value, x_end_value});
+    x_main.push_back({.interval_index = x_interval_index,
+                      .r = {.x_min = x_start_value,
+                            .x_max = x_end_value,
+                            .y_min = y_start_value,
+                            .y_max = y_end_value}});
+    y_main.push_back({.interval_index = y_interval_index,
+                      .r = {.x_min = y_start_value,
+                            .x_max = y_end_value,
+                            .y_min = x_start_value,
+                            .y_max = x_end_value}});
   }
 
   if (x_main.empty() || y_main.empty()) return;
