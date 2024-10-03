@@ -59,9 +59,14 @@ jobs:
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.build_target }}
           -v -j2
-      - name: CHeck Build dir
+      - name: Check Build dir
         run: |
-          ls -l build
+          ls -l .
+          ls -l ${{ env.ARTELYS_LICENSE }}
+          ls -l ${{ env.KNITRODIR }}
+          ls -l ${{ env.KNITRODIR }}/knitroampl/
+          ls -l ${{ env.KNITRODIR }}/knitromatlab/
+          ls -l ${{ env.KNITRODIR }}/lib/
       - name: Run Knitro Test
         run: >
           ./build/RELEASE/bin/test_knitro_interface
