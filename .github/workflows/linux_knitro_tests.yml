@@ -72,7 +72,7 @@ jobs:
           -v -j2
       - name: check build
         run: |
-          ls -l build/bin/${{ matrix.cmake.installDir }}
+          ls -l build/bin/*
       - name: Run Knitro Test
         run: >
           ./build/bin/${{ matrix.cmake.installDir }}/test_knitro_interface
