@@ -25,7 +25,7 @@ jobs:
       - name: Checkout Knitro Linux
         uses: actions/checkout@v4
         with:
-          repository: loicli/knitro1400-Linux64
+          repository: yojvr/knitro1400-Linux64
           path: knitro_distrib
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Untar large files
