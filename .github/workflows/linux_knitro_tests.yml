@@ -73,7 +73,7 @@ jobs:
       - name: check build
         run: |
           ls build/bin
-          echo $BUILD_TYPE
+          ls ./build/bin/"${{ matrix.cmake.config }}"
       - name: Run Knitro Test
         run: >
-          ./build/bin/"$BUILD_TYPE"/test_knitro_interface
+          ./build/bin/"${{ matrix.cmake.config }}"/test_knitro_interface
