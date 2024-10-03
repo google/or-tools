@@ -44,13 +44,6 @@ jobs:
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
-      - name: Check Knitro install
-        run: |
-          ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l ${{ env.KNITRODIR }}
-          ls -l ${{ env.KNITRODIR }}/lib
-          ls -l ${{ env.KNITRODIR }}/knitroampl
-          ls -l ${{ env.KNITRODIR }}/knitromatlab
       - name: Install Ninja
         run: |
           sudo apt-get update
@@ -70,9 +63,6 @@ jobs:
           --config ${{ matrix.cmake.config }}
           --target all
           -v -j2
-      - name: check build
-        run: |
-          ls -l build/${{ matrix.cmake.binDir }}/bin
       - name: Run Knitro Test
         run: >
           ./build/${{ matrix.cmake.binDir }}/bin/test_knitro_interface

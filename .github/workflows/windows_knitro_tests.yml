@@ -41,14 +41,6 @@ jobs:
       - name: Grant access to knitro distrib
         run: |
           icacls ${{ env.KNITRODIR }} /grant Everyone:RX /t
-      - name: Check what I have
-        run: |
-          ls -l .
-          ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l ${{ env.KNITRODIR }}
-          ls -l ${{ env.KNITRODIR }}/knitroampl/
-          ls -l ${{ env.KNITRODIR }}/knitromatlab/
-          ls -l ${{ env.KNITRODIR }}/lib/
       - name: Check cmake
         run: |
           cmake --version
@@ -67,6 +59,9 @@ jobs:
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.build_target }}
           -v -j2
+      - name: CHeck Build dir
+        run: |
+          ls -l build
       - name: Run Knitro Test
         run: >
           ./build/RELEASE/bin/test_knitro_interface
