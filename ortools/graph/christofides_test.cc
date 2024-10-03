@@ -13,8 +13,8 @@
 
 #include "ortools/graph/christofides.h"
 
+#include <cmath>
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <limits>
 #include <string>
@@ -26,7 +26,6 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 
@@ -210,28 +209,27 @@ TEST(HamiltonianPathTest, Ulysses) {
 }
 
 TEST(ChristofidesTest, EmptyModel) {
-  ChristofidesPathSolver<int> chris_solver(0, [](int i, int j) { return 0; });
+  ChristofidesPathSolver<int> chris_solver(0, [](int, int) { return 0; });
   EXPECT_EQ(0, chris_solver.TravelingSalesmanCost());
   EXPECT_TRUE(chris_solver.TravelingSalesmanPath().empty());
 }
 
 TEST(ChristofidesTest, SingleNodeModel) {
-  ChristofidesPathSolver<int> chris_solver(1, [](int i, int j) { return 0; });
+  ChristofidesPathSolver<int> chris_solver(1, [](int, int) { return 0; });
   EXPECT_EQ(0, chris_solver.TravelingSalesmanCost());
   EXPECT_EQ("0 0 ", PathToString(chris_solver.TravelingSalesmanPath()));
 }
 
 TEST(ChristofidesTest, Int64Overflow) {
   ChristofidesPathSolver<int64_t> chris_solver(
-      10, [](int i, int j) { return std::numeric_limits<int64_t>::max() / 2; });
+      10, [](int, int) { return std::numeric_limits<int64_t>::max() / 2; });
   EXPECT_EQ(std::numeric_limits<int64_t>::max(),
             chris_solver.TravelingSalesmanCost());
 }
 
 TEST(ChristofidesTest, SaturatedDouble) {
-  ChristofidesPathSolver<double> chris_solver(10, [](int i, int j) {
-    return std::numeric_limits<double>::max() / 2.0;
-  });
+  ChristofidesPathSolver<double> chris_solver(
+      10, [](int, int) { return std::numeric_limits<double>::max() / 2.0; });
   EXPECT_EQ(std::numeric_limits<double>::infinity(),
             chris_solver.TravelingSalesmanCost());
 }
