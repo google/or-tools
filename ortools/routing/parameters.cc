@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
@@ -25,6 +26,7 @@
 #include "google/protobuf/duration.pb.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/proto_enum_utils.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -522,6 +524,26 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     errors.emplace_back(StrCat(
         "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
         ". Must be greater or equal to 1."));
+  }
+  {
+    absl::flat_hash_map<RoutingSearchParameters::InsertionSortingProperty, int>
+        sorting_properties_map;
+    for (const RoutingSearchParameters::InsertionSortingProperty property :
+         REPEATED_ENUM_ADAPTER(search_parameters,
+                               local_cheapest_insertion_sorting_properties)) {
+      if (property == RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED) {
+        errors.emplace_back(
+            StrCat("Invalid local cheapest insertion sorting property: ",
+                   RoutingSearchParameters::InsertionSortingProperty_Name(
+                       RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED)));
+      }
+      const int occurrences = sorting_properties_map[property]++;
+      if (occurrences == 2) {
+        errors.emplace_back(StrCat(
+            "Duplicate local cheapest insertion sorting property: ",
+            RoutingSearchParameters::InsertionSortingProperty_Name(property)));
+      }
+    }
   }
   if (const double ratio = search_parameters.ls_operator_neighbors_ratio();
       std::isnan(ratio) || ratio <= 0 || ratio > 1) {

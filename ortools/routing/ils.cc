@@ -34,6 +34,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/ils.pb.h"
 #include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/parameters_utils.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"
@@ -233,15 +234,17 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
           parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
-          parameters.local_cheapest_insertion_sorting_mode(), filter_manager,
-          model->GetBinCapacities());
+          GetLocalCheapestInsertionSortingProperties(
+              parameters.local_cheapest_insertion_sorting_properties()),
+          filter_manager, model->GetBinCapacities());
     case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION:
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           /*evaluator=*/nullptr,
           parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
-          parameters.local_cheapest_insertion_sorting_mode(), filter_manager,
-          model->GetBinCapacities());
+          GetLocalCheapestInsertionSortingProperties(
+              parameters.local_cheapest_insertion_sorting_properties()),
+          filter_manager, model->GetBinCapacities());
     case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION: {
       GlobalCheapestInsertionFilteredHeuristic::
           GlobalCheapestInsertionParameters gci_parameters =
