@@ -29,9 +29,9 @@ jobs:
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Unzip
         run: |
-          7z x "${{ env.KNITRODIR }}/knitroampl/knitroampl.zip" -o"${{ env.KNITRODIR }}/knitroampl"
-          7z x "${{ env.KNITRODIR }}/knitromatlab/knitromatlab_mex.zip" -o"${{ env.KNITRODIR }}/knitromatlab"
-          7z x "${{ env.KNITRODIR }}/lib/knitro.zip" -o"${{ env.KNITRODIR }}/lib"
+          unzip "${{ env.KNITRODIR }}/knitroampl/knitroampl.zip" -d "${{ env.KNITRODIR }}/knitroampl"
+          unzip "${{ env.KNITRODIR }}/knitromatlab/knitromatlab_mex.zip" -d "${{ env.KNITRODIR }}/knitromatlab"
+          unzip "${{ env.KNITRODIR }}/lib/knitro.zip" -d "${{ env.KNITRODIR }}/lib"
           rm ${{ env.KNITRODIR }}/knitroampl/knitroampl.zip
           rm ${{ env.KNITRODIR }}/knitromatlab/knitromatlab_mex.zip
           rm ${{ env.KNITRODIR }}/lib/knitro.zip
