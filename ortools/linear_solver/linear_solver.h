@@ -669,7 +669,10 @@ class MPSolver {
   bool ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const;
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
                               std::string* model_str) const;
-
+  bool ExportModelToMpsFile(const std::string& filename,
+                            bool fixed_format,
+                            bool obfuscate,
+                            bool use_gzip_compression) const;
   /**
    *  Sets the number of threads to use by the underlying solver.
    *

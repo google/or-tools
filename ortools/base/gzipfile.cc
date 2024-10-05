@@ -28,3 +28,51 @@ File* GZipFileReader(const absl::string_view name, File* file,
   LOG(INFO) << "not implemented";
   return nullptr;
 }
+
+absl::Status WriteToGzipFile(const absl::string_view filename,
+                             const absl::string_view contents) {
+  // 1 for fastest compression.
+  gzFile gz_file = gzopen(filename.data(), "w1");
+  if (gz_file == Z_NULL) {
+    return {absl::StatusCode::kInternal, "Unable to open file"};
+  }
+
+  // have to write in chunks, otherwise fails to compress big files.
+  constexpr size_t chunk = 1024 * 1024; // 1 MB chunk size.
+  size_t remaining = contents.size();
+  const char* chunk_start_point = contents.data();
+
+  while (remaining > 0) {
+    size_t current_chunk = std::min(chunk, remaining);
+    size_t written = gzwrite(gz_file, chunk_start_point, current_chunk);
+    if (written != current_chunk) {
+      int err_no = 0;
+      absl::string_view error_message = gzerror(gz_file, &err_no);
+      gzclose(gz_file);
+      return {
+        absl::StatusCode::kInternal,
+        absl::StrCat(
+          "Error while writing chunk to compressed file:",
+          error_message
+          )
+      };
+    }
+
+    chunk_start_point += current_chunk;
+    remaining -= current_chunk;
+  }
+
+  if (const int status = gzclose(gz_file); status != Z_OK) {
+    int err_no;
+    absl::string_view error_message = gzerror(gz_file, &err_no);
+    return {
+      absl::StatusCode::kInternal,
+      absl::StrCat(
+        "Error while writing chunk to compressed file:",
+        error_message
+        )
+    };
+  }
+
+  return absl::OkStatus();
+}
