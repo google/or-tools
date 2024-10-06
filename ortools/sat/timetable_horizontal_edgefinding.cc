@@ -63,10 +63,10 @@ bool HorizontallyElasticOverloadChecker::Propagate() {
 bool HorizontallyElasticOverloadChecker::OverloadCheckerPass() {
   // Prepate the profile events which will be used during ScheduleTasks to
   // dynamically compute the profile. The events are valid for the entire
-  // function and do not need to be recomputed. 
+  // function and do not need to be recomputed.
   //
-  // TODO: This datastructure contains everything we need to compute the 
-  // "classic" profile used in Time-Tabling. 
+  // TODO: This datastructure contains everything we need to compute the
+  // "classic" profile used in Time-Tabling.
   profile_events_.clear();
   for (int i = 0; i < num_tasks_; i++) {
     if (helper_->IsPresent(i) && demands_->DemandMin(i) > 0) {
@@ -108,10 +108,10 @@ bool HorizontallyElasticOverloadChecker::OverloadCheckerPass() {
   return true;
 }
 
-// ScheduleTasks returns a lower bound of the earliest time at which a group 
-// of tasks will complete. The group of tasks is all the tasks finishing before 
-// the end of the window + the fixed part of the tasks having a mandatory part 
-// that overlaps with the window. 
+// ScheduleTasks returns a lower bound of the earliest time at which a group
+// of tasks will complete. The group of tasks is all the tasks finishing before
+// the end of the window + the fixed part of the tasks having a mandatory part
+// that overlaps with the window.
 IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
     IntegerValue window_end, IntegerValue capacity) {
   // TODO: If we apply this only by increasing window_end, then there is no
@@ -233,8 +233,8 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
       } else {
         // Adjust next_time to indicate that the true "next event" in terms of
         // a change in resource consumption is happening before the next event
-        // in the profile. This is important to gurantee that new_window_end 
-        // is properly adjusted below.  
+        // in the profile. This is important to guarantee that new_window_end
+        // is properly adjusted below.
         next_time = time + (overload + used - 1) / used;  // ceil(overload/used)
         overload = 0;
       }
@@ -265,6 +265,10 @@ void HorizontallyElasticOverloadChecker::AddScheduleTaskReason(
         integer_trail_->UpperBoundAsLiteral(capacity_.var));
   }
 
+  // TODO: There's an opportunity to further generalize the reason if
+  // demand_max and overload are set to 0 before the end of the window.
+  // This can happen if the resources consumption has "humps" though it
+  // is unclear whether this pattern is likely in practice or not.
   for (int t = 0; t < num_tasks_; ++t) {
     switch (task_types_[t]) {
       case TaskType::kFull:
@@ -272,9 +276,8 @@ void HorizontallyElasticOverloadChecker::AddScheduleTaskReason(
         helper_->AddEndMaxReason(t, helper_->EndMax(t));
         break;
       case TaskType::kFixedPart:
-        // TODO: improve.
-        helper_->AddStartMinReason(t, helper_->StartMin(t));
-        helper_->AddEndMaxReason(t, helper_->EndMax(t));
+        helper_->AddEndMinReason(t, std::min(helper_->EndMin(t), window_end));
+        helper_->AddStartMaxReason(t, helper_->StartMax(t));
         break;
       case TaskType::kIgnore:
         continue;
