@@ -4266,41 +4266,78 @@ void LightVehicleBreaksChecker::Relax() const {
 bool LightVehicleBreaksChecker::Check() const {
   for (const int path : path_state_->ChangedPaths()) {
     if (!path_data_[path].span.Exists()) continue;
-    const int64_t total_transit = path_data_[path].total_transit.Min();
-    // Compute lower bound of path span from break and path time windows.
     const PathData& data = path_data_[path];
+    const int64_t total_transit = data.total_transit.Min();
+    int64_t lb_span = data.span.Min();
+    // Improve bounds on span/start max/end min using time windows: breaks that
+    // must occur inside the path have their duration accumulated into
+    // lb_span_tw, they also widen [start_max, end_min).
     int64_t lb_span_tw = total_transit;
-    const int64_t start_max = data.start_cumul.Max();
-    const int64_t end_min = data.end_cumul.Min();
+    int64_t start_max = data.start_cumul.Max();
+    int64_t end_min = data.end_cumul.Min();
     for (const auto& br : data.vehicle_breaks) {
       if (!br.is_performed_min) continue;
       if (br.start_max < end_min && start_max < br.end_min) {
         CapAddTo(br.duration_min, &lb_span_tw);
+        start_max = std::min(start_max, br.start_max);
+        end_min = std::max(end_min, br.end_min);
       }
     }
-    int64_t lb_span_interbreak = 0;
+    lb_span = std::max({lb_span, lb_span_tw, CapSub(end_min, start_max)});
+    // Compute num_feasible_breaks = number of breaks that may fit into route,
+    // and [breaks_start_min, breaks_end_max) = max coverage of breaks.
+    int64_t break_start_min = kint64max;
+    int64_t break_end_max = kint64min;
+    int64_t start_min = data.start_cumul.Min();
+    start_min = std::max(start_min, CapSub(end_min, data.span.Max()));
+    int64_t end_max = data.end_cumul.Max();
+    end_max = std::min(end_max, CapAdd(start_max, data.span.Max()));
+    int num_feasible_breaks = 0;
+    for (const auto& br : data.vehicle_breaks) {
+      if (start_min <= br.start_max && br.end_min <= end_max) {
+        break_start_min = std::min(break_start_min, br.start_min);
+        break_end_max = std::max(break_end_max, br.end_max);
+        ++num_feasible_breaks;
+      }
+    }
+    // Improve span/start min/end max using interbreak limits: there must be
+    // enough breaks inside the path, so that for each limit, the union of
+    // [br.start - max_interbreak, br.end + max_interbreak) covers [start, end),
+    // or [start, end) is shorter than max_interbreak.
     for (const auto& [max_interbreak, min_break_duration] :
          data.interbreak_limits) {
       // Minimal number of breaks depends on total transit:
       // 0 breaks for 0 <= total transit <= limit,
       // 1 break for limit + 1 <= total transit <= 2 * limit,
       // i breaks for i * limit + 1 <= total transit <= (i+1) * limit, ...
-      if (total_transit == 0) continue;
-      if (max_interbreak == 0) return false;
-      const int min_num_breaks = (total_transit - 1) / max_interbreak;
-      if (min_num_breaks > data.vehicle_breaks.size()) return false;
-      lb_span_interbreak = std::max(
-          lb_span_interbreak, CapProd(min_num_breaks, min_break_duration));
+      if (max_interbreak == 0) {
+        if (total_transit > 0) return false;
+        continue;
+      }
+      int64_t min_num_breaks =
+          std::max<int64_t>(0, (total_transit - 1) / max_interbreak);
+      if (lb_span > max_interbreak) {
+        min_num_breaks = std::max<int64_t>(min_num_breaks, 1);
+      }
+      if (min_num_breaks > num_feasible_breaks) return false;
+      lb_span = std::max(
+          lb_span,
+          CapAdd(total_transit, CapProd(min_num_breaks, min_break_duration)));
+      if (min_num_breaks > 0) {
+        if (!data.start_cumul.SetMin(CapSub(break_start_min, max_interbreak))) {
+          return false;
+        }
+        if (!data.end_cumul.SetMax(CapAdd(break_end_max, max_interbreak))) {
+          return false;
+        }
+      }
     }
-    lb_span_interbreak = CapAdd(lb_span_interbreak, total_transit);
-    const int64_t lb_span = std::max(lb_span_tw, lb_span_interbreak);
     if (!data.span.SetMin(lb_span)) return false;
-    if (!data.start_cumul.SetMax(CapSub(data.end_cumul.Max(), lb_span))) {
-      return false;
-    }
-    if (!data.end_cumul.SetMin(CapAdd(data.start_cumul.Min(), lb_span))) {
-      return false;
-    }
+    // Merge span lb information directly in start/end variables.
+    start_max = std::min(start_max, CapSub(end_max, lb_span));
+    if (!data.start_cumul.SetMax(start_max)) return false;
+    end_min = std::max(end_min, CapAdd(start_min, lb_span));
+    if (!data.end_cumul.SetMin(end_min)) return false;
   }
   return true;
 }

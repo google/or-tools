@@ -68,7 +68,8 @@ def main():
     costs = solution_flows * unit_costs
     for arc, flow, cost in zip(all_arcs, solution_flows, costs):
         print(
-            f"{smcf.tail(arc):1} -> {smcf.head(arc)}  {flow:3}  / {smcf.capacity(arc):3}       {cost}"
+            f"{smcf.tail(arc):1} -> "
+            f"{smcf.head(arc)}  {flow:3}  / {smcf.capacity(arc):3}       {cost}"
         )
     # [END print_solution]
 

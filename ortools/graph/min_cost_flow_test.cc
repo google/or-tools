@@ -20,12 +20,15 @@
 #include <random>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -588,7 +591,7 @@ CostValue SolveMinCostFlow(GenericMinCostFlow<Graph>* min_cost_flow) {
 
 template <typename Graph>
 CostValue SolveMinCostFlowWithLP(GenericMinCostFlow<Graph>* min_cost_flow) {
-  MPSolver solver("LPSolver", MPSolver::CLP_LINEAR_PROGRAMMING);
+  MPSolver solver("LPSolver", MPSolver::GLOP_LINEAR_PROGRAMMING);
   const Graph* graph = min_cost_flow->graph();
   const NodeIndex num_nodes = graph->num_nodes();
   const ArcIndex num_arcs = graph->num_arcs();
@@ -631,7 +634,8 @@ struct MinCostFlowSolver {
 template <typename Graph>
 void FullRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
                           NodeIndex num_sources, NodeIndex num_targets,
-                          CostValue expected_cost1, CostValue expected_cost2) {
+                          CostValue expected_cost1,
+                          CostValue /*expected_cost2*/) {
   const CostValue kCostRange = 1000;
   Graph graph;
   GenerateCompleteGraph(num_sources, num_targets, &graph);
@@ -656,7 +660,7 @@ template <typename Graph>
 void PartialRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
                              NodeIndex num_sources, NodeIndex num_targets,
                              CostValue expected_cost1,
-                             CostValue expected_cost2) {
+                             CostValue /*expected_cost2*/) {
   const NodeIndex kDegree = 10;
   const CostValue kCostRange = 1000;
   Graph graph;

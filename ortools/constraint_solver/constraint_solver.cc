@@ -3280,6 +3280,7 @@ Decision* ProfiledDecisionBuilder::Next(Solver* const solver) {
   Decision* const decision = db_->Next(solver);
   timer_.Stop();
   seconds_ += timer_.Get();
+  solver->set_context("");
   return decision;
 }
 

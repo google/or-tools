@@ -331,6 +331,23 @@ void PostsolveIntMod(const ConstraintProto& ct, std::vector<Domain>* domains) {
   (*domains)[target.vars(0)] = Domain(value);
 }
 
+// We only support assigning to an affine target.
+void PostsolveIntProd(const ConstraintProto& ct, std::vector<Domain>* domains) {
+  int64_t target_value = 1;
+  for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+    target_value *= EvaluateLinearExpression(expr, *domains);
+  }
+
+  const LinearExpressionProto& target = ct.int_prod().target();
+  CHECK_EQ(target.vars().size(), 1);
+  CHECK(RefIsPositive(target.vars(0)));
+
+  target_value -= target.offset();
+  CHECK_EQ(target_value % target.coeffs(0), 0);
+  target_value /= target.coeffs(0);
+  (*domains)[target.vars(0)] = Domain(target_value);
+}
+
 void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
@@ -389,6 +406,9 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         break;
       case ConstraintProto::kIntMod:
         PostsolveIntMod(ct, &domains);
+        break;
+      case ConstraintProto::kIntProd:
+        PostsolveIntProd(ct, &domains);
         break;
       default:
         // This should never happen as we control what kind of constraint we

@@ -411,6 +411,16 @@ cc_library(
 )
 
 cc_library(
+    name = "parse_test_proto",
+    hdrs = ["parse_test_proto.h"],
+    deps = [
+        ":gmock",
+        "@com_google_absl//absl/log:check",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
     name = "path",
     srcs = ["path.cc"],
     hdrs = ["path.h"],
@@ -446,6 +456,15 @@ cc_library(
         ":timer",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "proto_enum_utils",
+    hdrs = ["proto_enum_utils.h"],
+    deps = [
+        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
 )

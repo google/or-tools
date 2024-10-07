@@ -85,6 +85,11 @@ class SortedIntervalListTest(absltest.TestCase):
         self.assertEqual([-9223372036854775808, 5], d1.flattened_intervals())
         self.assertEqual([6, 9223372036854775807], d2.flattened_intervals())
 
+    def testStr(self):
+        d1 = sorted_interval_list.Domain(0, 5)
+        self.assertEqual(str(d1), "[0,5]")
+        self.assertEqual(repr(d1), "Domain([0,5])")
+
 
 if __name__ == "__main__":
     absltest.main()

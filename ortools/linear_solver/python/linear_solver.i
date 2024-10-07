@@ -143,6 +143,15 @@ from ortools.linear_solver.python.linear_solver_natural_api import VariableExpr
     return ExportModelAsMpsFormat(model, options).value_or("");
   }
 
+   bool WriteModelToMpsFile(const std::string& filename, bool fixed_format,
+                            bool obfuscated) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscated;
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return WriteModelToMpsFile(filename, model, options).ok();
+  }
+
   /// Set a hint for solution.
   ///
   /// If a feasible or almost-feasible solution to the problem is already known,

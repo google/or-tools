@@ -1085,6 +1085,17 @@ struct LargeContribFirst {
   }
 };
 
+struct LargeLpValueFirst {
+  bool operator()(const CutTerm& a, const CutTerm& b) const {
+    if (a.lp_value == b.lp_value) {
+      // Prefer high coefficients if the distance is the same.
+      // We have more chance to get a cover this way.
+      return a.coeff > b.coeff;
+    }
+    return a.lp_value > b.lp_value;
+  }
+};
+
 // When minimizing a cover we want to remove bad score (large dist) divided by
 // item size. Note that here we assume item are "boolean" fully taken or not.
 // for general int we use (lp_dist / bound_diff) / (coeff * bound_diff) which
@@ -1117,14 +1128,15 @@ struct KnapsackRemove {
 template <class Compare>
 int CoverCutHelper::MinimizeCover(int cover_size, absl::int128 slack) {
   CHECK_GT(slack, 0);
-  std::sort(cut_.terms.begin(), cut_.terms.begin() + cover_size, Compare());
+  absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
+  std::sort(terms.begin(), terms.begin() + cover_size, Compare());
   for (int i = 0; i < cover_size;) {
-    const CutTerm& t = cut_.terms[i];
+    const CutTerm& t = terms[i];
     const absl::int128 contrib =
         absl::int128(t.bound_diff.value()) * absl::int128(t.coeff.value());
     if (contrib < slack) {
       slack -= contrib;
-      std::swap(cut_.terms[i], cut_.terms[--cover_size]);
+      std::swap(terms[i], terms[--cover_size]);
     } else {
       ++i;
     }
@@ -1136,16 +1148,17 @@ int CoverCutHelper::MinimizeCover(int cover_size, absl::int128 slack) {
 template <class CompareAdd, class CompareRemove>
 int CoverCutHelper::GetCoverSize(int relevant_size) {
   if (relevant_size == 0) return 0;
+  absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
 
   // Take first all at variable at upper bound, and ignore the one at lower
   // bound.
   int part1 = 0;
   for (int i = 0; i < relevant_size;) {
-    CutTerm& term = cut_.terms[i];
+    CutTerm& term = terms[i];
     const double dist = term.LpDistToMaxValue();
     if (dist < 1e-6) {
       // Move to part 1.
-      std::swap(term, cut_.terms[part1]);
+      std::swap(term, terms[part1]);
       ++i;
       ++part1;
     } else if (term.lp_value > 1e-6) {
@@ -1154,30 +1167,27 @@ int CoverCutHelper::GetCoverSize(int relevant_size) {
     } else {
       // Exclude entirely (part 3).
       --relevant_size;
-      std::swap(term, cut_.terms[relevant_size]);
+      std::swap(term, terms[relevant_size]);
     }
   }
-  std::sort(cut_.terms.begin() + part1, cut_.terms.begin() + relevant_size,
-            CompareAdd());
+  std::sort(terms.begin() + part1, terms.begin() + relevant_size, CompareAdd());
 
   // We substract the initial rhs to avoid overflow.
-  CHECK_GE(cut_.rhs, 0);
+  DCHECK_GE(cut_.rhs, 0);
   absl::int128 max_shifted_activity = -cut_.rhs;
   absl::int128 shifted_round_up = -cut_.rhs;
   int cover_size = 0;
-  double dist = 0.0;
   for (; cover_size < relevant_size; ++cover_size) {
     if (max_shifted_activity > 0) break;
-    const CutTerm& term = cut_.terms[cover_size];
+    const CutTerm& term = terms[cover_size];
     max_shifted_activity += absl::int128(term.coeff.value()) *
                             absl::int128(term.bound_diff.value());
     shifted_round_up += absl::int128(term.coeff.value()) *
                         std::min(absl::int128(term.bound_diff.value()),
                                  absl::int128(std::ceil(term.lp_value - 1e-6)));
-    dist += term.LpDistToMaxValue();
   }
 
-  CHECK_GE(cover_size, 0);
+  DCHECK_GE(cover_size, 0);
   if (shifted_round_up <= 0) {
     return 0;
   }
@@ -1187,51 +1197,60 @@ int CoverCutHelper::GetCoverSize(int relevant_size) {
 // Try a simple cover heuristic.
 // Look for violated CUT of the form: sum (UB - X) or (X - LB) >= 1.
 int CoverCutHelper::GetCoverSizeForBooleans() {
+  absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
+
   // Sorting can be slow, so we start by splitting the vector in 3 parts
-  // [can always be in cover, candidates, can never be in cover].
+  // - Can always be in cover
+  // - Candidates that needs sorting
+  // - At most one can be in cover (we keep the max).
   int part1 = 0;
-  int relevant_size = cut_.terms.size();
-  const double threshold = 1.0 - 1.0 / static_cast<double>(relevant_size);
+  int relevant_size = terms.size();
+  int best_in_part3 = -1;
+  const double threshold = 1.0 - 1.0 / static_cast<double>(terms.size());
   for (int i = 0; i < relevant_size;) {
-    const double lp_value = cut_.terms[i].lp_value;
+    const double lp_value = terms[i].lp_value;
 
     // Exclude non-Boolean.
-    if (cut_.terms[i].bound_diff > 1) {
+    if (terms[i].bound_diff > 1) {
       --relevant_size;
-      std::swap(cut_.terms[i], cut_.terms[relevant_size]);
+      std::swap(terms[i], terms[relevant_size]);
       continue;
     }
 
     if (lp_value >= threshold) {
       // Move to part 1.
-      std::swap(cut_.terms[i], cut_.terms[part1]);
+      std::swap(terms[i], terms[part1]);
       ++i;
       ++part1;
-    } else if (lp_value >= 0.001) {
+    } else if (lp_value > 0.5) {
       // Keep in part 2.
       ++i;
     } else {
-      // Exclude entirely (part 3).
+      // Only keep the max (part 3).
       --relevant_size;
-      std::swap(cut_.terms[i], cut_.terms[relevant_size]);
+      std::swap(terms[i], terms[relevant_size]);
+
+      if (best_in_part3 == -1 ||
+          LargeLpValueFirst()(terms[relevant_size], terms[best_in_part3])) {
+        best_in_part3 = relevant_size;
+      }
     }
   }
 
+  if (best_in_part3 != -1) {
+    std::swap(terms[relevant_size], terms[best_in_part3]);
+    ++relevant_size;
+  }
+
   // Sort by decreasing Lp value.
-  std::sort(cut_.terms.begin() + part1, cut_.terms.begin() + relevant_size,
-            [](const CutTerm& a, const CutTerm& b) {
-              if (a.lp_value == b.lp_value) {
-                // Prefer low coefficients if the distance is the same.
-                return a.coeff < b.coeff;
-              }
-              return a.lp_value > b.lp_value;
-            });
+  std::sort(terms.begin() + part1, terms.begin() + relevant_size,
+            LargeLpValueFirst());
 
   double activity = 0.0;
   int cover_size = relevant_size;
   absl::int128 slack = -cut_.rhs;
   for (int i = 0; i < relevant_size; ++i) {
-    const CutTerm& term = cut_.terms[i];
+    const CutTerm& term = terms[i];
     activity += term.LpDistToMaxValue();
 
     // As an heuristic we select all the term so that the sum of distance
@@ -1259,7 +1278,9 @@ int CoverCutHelper::GetCoverSizeForBooleans() {
   // possible violation. Note also that we lift as much as possible, so we don't
   // necessarily optimize for the cut efficacity though. But we do get a
   // stronger cut.
-  if (slack <= 0) return 0;
+  if (slack <= 0) {
+    return 0;
+  }
   if (cover_size == 0) return 0;
   return MinimizeCover<LargeCoeffFirst>(cover_size, slack);
 }
@@ -1315,11 +1336,12 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
           : GetCoverSizeForBooleans();
   if (!has_relevant_int && ib_processor == nullptr) {
     // If some implied bound substitution are possible, we do not cache anything
-    // currently because the logic is currently sighlty different betweent the
+    // currently because the logic is currently sighlty different between the
     // two code. Fix?
     has_bool_base_ct_ = true;
-    bool_base_ct_ = cut_;
     bool_cover_size_ = cover_size;
+    if (cover_size == 0) return false;
+    bool_base_ct_ = cut_;
   }
   if (cover_size == 0) return false;
 
@@ -1502,8 +1524,9 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
     // We already called GetCoverSizeForBooleans() and ib_processor was nullptr,
     // so reuse that info.
     CHECK(ib_processor == nullptr);
-    InitializeCut(bool_base_ct_);
     cover_size = bool_cover_size_;
+    if (cover_size == 0) return false;
+    InitializeCut(bool_base_ct_);
   } else {
     InitializeCut(input_ct);
 

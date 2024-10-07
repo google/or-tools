@@ -74,8 +74,10 @@ bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
   if (next_accessor == nullptr) {
     return false;
   }
+  model_->solver()->set_context(DebugString());
   const Assignment* const result_assignment =
       heuristic_->BuildSolutionFromRoutes(next_accessor);
+  model_->solver()->set_context("");
 
   if (result_assignment == nullptr) {
     return false;

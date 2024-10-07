@@ -147,70 +147,73 @@ endif()
 # ortools_cxx_test()
 # CMake function to generate and build C++ test.
 # Parameters:
-#  FILE_NAME: the C++ filename
-#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
-#  note: automatically determined if located in ortools/<component>/
+# NAME: CMake target name
+# SOURCES: List of source files
+# [COMPILE_DEFINITIONS]: List of private compile definitions
+# [COMPILE_OPTIONS]: List of private compile options
+# [LINK_LIBRARIES]: List of private libraries to use when linking
+# note: ortools::ortools is always linked to the target
+# [LINK_OPTIONS]: List of private link options
 # e.g.:
 # ortools_cxx_test(
-#   FILE_NAME
-#     ${PROJECT_SOURCE_DIR}/ortools/foo/foo_test.cc
-#   COMPONENT_NAME
-#     foo
-#   DEPS
+#   NAME
+#     foo_bar_test
+#   SOURCES
+#     bar_test.cc
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar_test.cc
+#   LINK_LIBRARIES
 #     GTest::gmock
 #     GTest::gtest_main
 # )
 function(ortools_cxx_test)
   set(options "")
-  set(oneValueArgs "FILE_NAME;COMPONENT_NAME")
-  set(multiValueArgs "DEPS")
+  set(oneValueArgs "NAME")
+  set(multiValueArgs
+    "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
   cmake_parse_arguments(TEST
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
-if(NOT TEST_FILE_NAME)
-    message(FATAL_ERROR "no FILE_NAME provided")
+  if(NOT TEST_NAME)
+    message(FATAL_ERROR "no NAME provided")
   endif()
-  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
-
-  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
-
-  if(NOT TEST_COMPONENT_NAME)
-    # test is located in ortools/<component_name>/
-    get_filename_component(COMPONENT_DIR ${TEST_FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-  else()
-    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
+  if(NOT TEST_SOURCES)
+    message(FATAL_ERROR "no SOURCES provided")
   endif()
+  message(STATUS "Configuring test ${TEST_NAME} ...")
 
-  add_executable(${TEST_NAME} ${TEST_FILE_NAME})
+  add_executable(${TEST_NAME} "")
+  target_sources(${TEST_NAME} PRIVATE ${TEST_SOURCES})
   target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_definitions(${TEST_NAME} PRIVATE ${TEST_COMPILE_DEFINITIONS})
   target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_compile_options(${TEST_NAME} PRIVATE ${TEST_COMPILE_OPTIONS})
   target_link_libraries(${TEST_NAME} PRIVATE
     ${PROJECT_NAMESPACE}::ortools
-    ${TEST_DEPS}
+    ${TEST_LINK_LIBRARIES}
   )
+  target_link_options(${TEST_NAME} PRIVATE ${TEST_LINK_OPTIONS})
 
   include(GNUInstallDirs)
   if(APPLE)
-    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+    set_target_properties(${TEST_NAME} PROPERTIES
+      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
       BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
       OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${TEST_NAME} PROPERTIES
-      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
   endif()
 
   if(BUILD_TESTING)
     add_test(
-      NAME cxx_${COMPONENT_NAME}_${TEST_NAME}
+      NAME cxx_${TEST_NAME}
       COMMAND ${TEST_NAME})
   endif()
-  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
+  message(STATUS "Configuring test ${TEST_NAME} ...DONE")
 endfunction()
 
 ##################

@@ -1455,21 +1455,66 @@ bool CpModelPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
   return false;
 }
 
+Domain EvaluateImpliedIntProdDomain(const LinearArgumentProto& expr,
+                                    const PresolveContext& context) {
+  if (expr.exprs().size() == 2) {
+    const LinearExpressionProto& expr0 = expr.exprs(0);
+    const LinearExpressionProto& expr1 = expr.exprs(1);
+    if (LinearExpressionProtosAreEqual(expr0, expr1)) {
+      return context.DomainSuperSetOf(expr0).SquareSuperset();
+    }
+    if (expr0.vars().size() == 1 && expr1.vars().size() == 1 &&
+        expr0.vars(0) == expr1.vars(0)) {
+      return context.DomainOf(expr0.vars(0))
+          .QuadraticSuperset(expr0.coeffs(0), expr0.offset(), expr1.coeffs(0),
+                             expr1.offset());
+    }
+  }
+
+  Domain implied(1);
+  for (const LinearExpressionProto& expr : expr.exprs()) {
+    implied =
+        implied.ContinuousMultiplicationBy(context.DomainSuperSetOf(expr));
+  }
+  return implied;
+}
+
 bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
   // Start by restricting the domain of target. We will be more precise later.
   bool domain_modified = false;
-  {
-    Domain implied(1);
-    for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
-      implied =
-          implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
-    }
-    if (!context_->IntersectDomainWith(ct->int_prod().target(), implied,
-                                       &domain_modified)) {
-      return false;
+  Domain implied_domain =
+      EvaluateImpliedIntProdDomain(ct->int_prod(), *context_);
+  if (!context_->IntersectDomainWith(ct->int_prod().target(), implied_domain,
+                                     &domain_modified)) {
+    return false;
+  }
+
+  // Remove a constraint if the target only appears in the constraint. For this
+  // to be correct some conditions must be met:
+  // - The target is an affine linear with coefficient -1 or 1.
+  // - The target does not appear in the rhs (no x = (a*x + b) * ...).
+  // - The target domain covers all the possible range of the rhs.
+  if (ExpressionContainsSingleRef(ct->int_prod().target()) &&
+      context_->VariableIsUniqueAndRemovable(ct->int_prod().target().vars(0)) &&
+      std::abs(ct->int_prod().target().coeffs(0)) == 1) {
+    const LinearExpressionProto& target = ct->int_prod().target();
+    if (!absl::c_any_of(ct->int_prod().exprs(),
+                        [&target](const LinearExpressionProto& expr) {
+                          return absl::c_linear_search(expr.vars(),
+                                                       target.vars(0));
+                        })) {
+      const Domain target_domain =
+          Domain(target.offset())
+              .AdditionWith(context_->DomainOf(target.vars(0)));
+      if (implied_domain.IsIncludedIn(target_domain)) {
+        context_->MarkVariableAsRemoved(ct->int_prod().target().vars(0));
+        context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
+        context_->UpdateRuleStats("int_prod: unused affine target");
+        return RemoveConstraint(ct);
+      }
     }
   }
 
@@ -1651,21 +1696,11 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   }
 
   // Restrict the target domain if possible.
-  Domain implied(1);
-  bool is_square = false;
-  if (ct->int_prod().exprs_size() == 2 &&
-      LinearExpressionProtosAreEqual(ct->int_prod().exprs(0),
-                                     ct->int_prod().exprs(1))) {
-    is_square = true;
-    implied =
-        context_->DomainSuperSetOf(ct->int_prod().exprs(0)).SquareSuperset();
-  } else {
-    for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
-      implied =
-          implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
-    }
-  }
-  if (!context_->IntersectDomainWith(ct->int_prod().target(), implied,
+  implied_domain = EvaluateImpliedIntProdDomain(ct->int_prod(), *context_);
+  const bool is_square = ct->int_prod().exprs_size() == 2 &&
+                         LinearExpressionProtosAreEqual(
+                             ct->int_prod().exprs(0), ct->int_prod().exprs(1));
+  if (!context_->IntersectDomainWith(ct->int_prod().target(), implied_domain,
                                      &domain_modified)) {
     return false;
   }
@@ -1700,6 +1735,60 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         return false;
       }
       context_->UpdateRuleStats("int_square: fix variable to zero or one.");
+      return RemoveConstraint(ct);
+    }
+  }
+
+  if (ct->int_prod().exprs().size() == 2) {
+    const auto is_boolean_affine =
+        [context = context_](const LinearExpressionProto& expr) {
+          return expr.vars().size() == 1 && context->MinOf(expr.vars(0)) == 0 &&
+                 context->MaxOf(expr.vars(0)) == 1;
+        };
+    const LinearExpressionProto* boolean_linear = nullptr;
+    const LinearExpressionProto* other_linear = nullptr;
+    if (is_boolean_affine(ct->int_prod().exprs(0))) {
+      boolean_linear = &ct->int_prod().exprs(0);
+      other_linear = &ct->int_prod().exprs(1);
+    } else if (is_boolean_affine(ct->int_prod().exprs(1))) {
+      boolean_linear = &ct->int_prod().exprs(1);
+      other_linear = &ct->int_prod().exprs(0);
+    }
+    if (boolean_linear) {
+      // We have:
+      // (u + b * v) * other_expr = B, where `b` is a boolean variable.
+      //
+      // We can rewrite this as:
+      //   u * other_expr = B, if b = false;
+      //   (u + v) * other_expr = B, if b = true
+      ConstraintProto* constraint_for_false =
+          context_->working_model->add_constraints();
+      ConstraintProto* constraint_for_true =
+          context_->working_model->add_constraints();
+      constraint_for_true->add_enforcement_literal(boolean_linear->vars(0));
+      constraint_for_false->add_enforcement_literal(
+          NegatedRef(boolean_linear->vars(0)));
+      LinearConstraintProto* linear_for_false =
+          constraint_for_false->mutable_linear();
+      LinearConstraintProto* linear_for_true =
+          constraint_for_true->mutable_linear();
+
+      linear_for_false->add_domain(0);
+      linear_for_false->add_domain(0);
+      AddLinearExpressionToLinearConstraint(
+          *other_linear, boolean_linear->offset(), linear_for_false);
+      AddLinearExpressionToLinearConstraint(ct->int_prod().target(), -1,
+                                            linear_for_false);
+
+      linear_for_true->add_domain(0);
+      linear_for_true->add_domain(0);
+      AddLinearExpressionToLinearConstraint(
+          *other_linear, boolean_linear->offset() + boolean_linear->coeffs(0),
+          linear_for_true);
+      AddLinearExpressionToLinearConstraint(ct->int_prod().target(), -1,
+                                            linear_for_true);
+      context_->UpdateRuleStats("int_prod: boolean affine term");
+      context_->UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
     }
   }
@@ -12472,6 +12561,27 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
   }
   if (in_model.has_solution_hint()) {
     *context->working_model->mutable_solution_hint() = in_model.solution_hint();
+
+    // We make sure the hint is within the variables domain.
+    //
+    // This allows to avoid overflow because we know evaluating constraints on
+    // the variables domains should be safe thanks to the initial validation.
+    const int num_terms = in_model.solution_hint().vars().size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = in_model.solution_hint().vars(i);
+      const int64_t value = in_model.solution_hint().values(i);
+      const auto& domain = in_model.variables(var).domain();
+      if (domain.empty()) continue;  // UNSAT.
+      const int64_t min = domain[0];
+      const int64_t max = domain[domain.size() - 1];
+      if (value < min) {
+        context->UpdateRuleStats("hint: moved var hint within its domain.");
+        context->working_model->mutable_solution_hint()->set_values(i, min);
+      } else if (value > max) {
+        context->working_model->mutable_solution_hint()->set_values(i, max);
+        context->UpdateRuleStats("hint: moved var hint within its domain.");
+      }
+    }
   }
 }
 

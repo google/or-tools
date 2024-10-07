@@ -174,6 +174,12 @@ class VariablesInfo {
   void EndDualPhaseI(Fractional dual_feasibility_tolerance,
                      DenseRow::ConstView reduced_costs);
 
+  // Advanced incremental API to reuse directly the internal storage.
+  // This saves two copy per solves, and only matter on large easy problems.
+  void InitializeFromMutatedState();
+  DenseRow* MutableLowerBounds() { return &lower_bounds_; }
+  DenseRow* MutableUpperBounds() { return &upper_bounds_; }
+
  private:
   // Computes the initial/default variable status from its type. A constrained
   // variable is set to the lowest of its 2 bounds in absolute value.

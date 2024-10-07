@@ -315,6 +315,9 @@ ref: [Mono `pinvoke#libraryname`](https://www.mono-project.com/docs/advanced/pin
 
 ### Issues
 
+`dotnet` seems to use a previous package version ?<br>
+You can clear your local cache using: `dotnet nuget locals all --clear`
+
 Some issue related to this process
 * [`PackageReference` only support `TargetFramework` condition](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#adding-a-packagereference-condition)
 * [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)

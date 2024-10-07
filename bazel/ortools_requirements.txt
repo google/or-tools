@@ -6,7 +6,7 @@
 #
 absl-py==2.0.0
     # via -r bazel/ortools_requirements.in
-black==24.3.0
+black==24.8.0
     # via -r bazel/ortools_requirements.in
 certifi==2024.7.4
     # via requests
@@ -30,14 +30,14 @@ mypy-extensions==1.0.0
     #   mypy
 mypy-protobuf==3.5.0
     # via -r bazel/ortools_requirements.in
-numpy==1.26.4
+numpy==2.1.0
     # via
     #   -r bazel/ortools_requirements.in
     #   pandas
     #   scipy
 packaging==23.1
     # via black
-pandas==2.1.2
+pandas==2.2.3
     # via -r bazel/ortools_requirements.in
 pathspec==0.11.1
     # via black
@@ -53,9 +53,9 @@ python-dateutil==2.8.2
     # via pandas
 pytz==2022.7.1
     # via pandas
-requests==2.32.0
+requests==2.32.3
     # via -r bazel/ortools_requirements.in
-scipy==1.11.3
+scipy==1.14.1
     # via -r bazel/ortools_requirements.in
 six==1.16.0
     # via python-dateutil

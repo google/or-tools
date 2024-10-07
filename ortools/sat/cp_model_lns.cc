@@ -46,6 +46,7 @@
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -447,7 +448,7 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
                              initial_solution);
 }
 
-std::vector<std::pair<int, int>>
+std::vector<NeighborhoodGeneratorHelper::ActiveRectangle>
 NeighborhoodGeneratorHelper::GetActiveRectangles(
     const CpSolverResponse& initial_solution) const {
   const std::vector<int> active_intervals =
@@ -455,7 +456,7 @@ NeighborhoodGeneratorHelper::GetActiveRectangles(
   const absl::flat_hash_set<int> active_intervals_set(active_intervals.begin(),
                                                       active_intervals.end());
 
-  std::vector<std::pair<int, int>> active_rectangles;
+  absl::flat_hash_map<std::pair<int, int>, std::vector<int>> active_rectangles;
   for (const int ct_index : TypeToConstraints(ConstraintProto::kNoOverlap2D)) {
     const NoOverlap2DConstraintProto& ct =
         model_proto_.constraints(ct_index).no_overlap_2d();
@@ -464,12 +465,20 @@ NeighborhoodGeneratorHelper::GetActiveRectangles(
       const int y_i = ct.y_intervals(i);
       if (active_intervals_set.contains(x_i) ||
           active_intervals_set.contains(y_i)) {
-        active_rectangles.push_back({x_i, y_i});
+        active_rectangles[{x_i, y_i}].push_back(ct_index);
       }
     }
   }
 
-  return active_rectangles;
+  std::vector<ActiveRectangle> results;
+  for (const auto& [rectangle, no_overlap_2d_constraints] : active_rectangles) {
+    ActiveRectangle& result = results.emplace_back();
+    result.x_interval = rectangle.first;
+    result.y_interval = rectangle.second;
+    result.no_overlap_2d_constraints = {no_overlap_2d_constraints.begin(),
+                                        no_overlap_2d_constraints.end()};
+  }
+  return results;
 }
 
 std::vector<std::vector<int>>
@@ -806,33 +815,31 @@ void InsertCumulativePrecedences(
   }
 }
 
-struct Rectangle {
+struct IndexedRectangle {
   int interval_index;
-  int64_t x_start;
-  int64_t x_end;
-  int64_t y_start;
-  int64_t y_end;
+  Rectangle r;
 
-  bool operator<(const Rectangle& other) const {
-    return std::tie(x_start, x_end) < std::tie(other.x_start, other.x_end);
+  bool operator<(const IndexedRectangle& other) const {
+    return std::tie(r.x_min, r.x_max) < std::tie(other.r.x_min, other.r.x_max);
   }
 };
 
 void InsertRectanglePredecences(
-    const std::vector<Rectangle>& rectangles,
+    const std::vector<IndexedRectangle>& rectangles,
     absl::flat_hash_set<std::pair<int, int>>* precedences) {
   // TODO(user): Refine set of interesting points.
-  std::vector<int64_t> interesting_points;
-  for (const Rectangle& r : rectangles) {
-    interesting_points.push_back(r.y_end - 1);
+  std::vector<IntegerValue> interesting_points;
+  for (const IndexedRectangle& idx_r : rectangles) {
+    interesting_points.push_back(idx_r.r.y_max - 1);
   }
   gtl::STLSortAndRemoveDuplicates(&interesting_points);
   std::vector<Demand> demands;
-  for (const int64_t t : interesting_points) {
+  for (const IntegerValue t : interesting_points) {
     demands.clear();
-    for (const Rectangle& r : rectangles) {
-      if (r.y_start > t || r.y_end <= t) continue;
-      demands.push_back({r.interval_index, r.x_start, r.x_end, 1});
+    for (const IndexedRectangle& idx_r : rectangles) {
+      if (idx_r.r.y_min > t || idx_r.r.y_max <= t) continue;
+      demands.push_back({idx_r.interval_index, idx_r.r.x_min.value(),
+                         idx_r.r.x_max.value(), 1});
     }
     std::sort(demands.begin(), demands.end());
     InsertPrecedencesFromSortedListOfNonOverlapingIntervals(demands,
@@ -848,8 +855,8 @@ void InsertNoOverlap2dPrecedences(
   std::vector<Demand> demands;
   const NoOverlap2DConstraintProto& no_overlap_2d =
       model_proto.constraints(no_overlap_2d_index).no_overlap_2d();
-  std::vector<Rectangle> x_main;
-  std::vector<Rectangle> y_main;
+  std::vector<IndexedRectangle> x_main;
+  std::vector<IndexedRectangle> y_main;
   for (int i = 0; i < no_overlap_2d.x_intervals_size(); ++i) {
     // Ignore unperformed rectangles.
     const int x_interval_index = no_overlap_2d.x_intervals(i);
@@ -876,10 +883,16 @@ void InsertNoOverlap2dPrecedences(
     // Ignore rectangles with zero area.
     if (x_start_value == x_end_value || y_start_value == y_end_value) continue;
 
-    x_main.push_back({x_interval_index, x_start_value, x_end_value,
-                      y_start_value, y_end_value});
-    y_main.push_back({y_interval_index, y_start_value, y_end_value,
-                      x_start_value, x_end_value});
+    x_main.push_back({.interval_index = x_interval_index,
+                      .r = {.x_min = x_start_value,
+                            .x_max = x_end_value,
+                            .y_min = y_start_value,
+                            .y_max = y_end_value}});
+    y_main.push_back({.interval_index = y_interval_index,
+                      .r = {.x_min = y_start_value,
+                            .x_max = y_end_value,
+                            .y_min = x_start_value,
+                            .y_max = x_end_value}});
   }
 
   if (x_main.empty() || y_main.empty()) return;
@@ -1713,8 +1726,8 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
     VLOG(2) << "#relaxed " << relaxed_variables.size() << " #zero_score "
             << num_zero_score << " max_width " << max_width
             << " (size,min_width)_after_100 (" << size_at_min_width_after_100
-            << "," << min_width_after_100 << ") " << " final_width "
-            << pq.Size();
+            << "," << min_width_after_100 << ") "
+            << " final_width " << pq.Size();
   }
 
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
@@ -2251,14 +2264,125 @@ Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
 Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
-  std::vector<std::pair<int, int>> rectangles_to_freeze =
+  std::vector<ActiveRectangle> rectangles_to_freeze =
       helper_.GetActiveRectangles(initial_solution);
   GetRandomSubset(1.0 - data.difficulty, &rectangles_to_freeze, random);
 
   absl::flat_hash_set<int> variables_to_freeze;
-  for (const auto& [x, y] : rectangles_to_freeze) {
-    InsertVariablesFromConstraint(helper_.ModelProto(), x, variables_to_freeze);
-    InsertVariablesFromConstraint(helper_.ModelProto(), y, variables_to_freeze);
+  for (const ActiveRectangle& rectangle : rectangles_to_freeze) {
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
+                                  variables_to_freeze);
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
+                                  variables_to_freeze);
+  }
+
+  return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
+}
+
+Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
+    const CpSolverResponse& initial_solution, SolveData& data,
+    absl::BitGenRef random) {
+  // First pick a pair of rectangles.
+  std::vector<ActiveRectangle> all_active_rectangles =
+      helper_.GetActiveRectangles(initial_solution);
+  if (all_active_rectangles.size() <= 2) return helper_.FullNeighborhood();
+
+  const int first_idx =
+      absl::Uniform<int>(random, 0, all_active_rectangles.size());
+  int second_idx =
+      absl::Uniform<int>(random, 0, all_active_rectangles.size() - 1);
+  if (second_idx >= first_idx) {
+    second_idx++;
+  }
+
+  const ActiveRectangle& chosen_rectangle_1 = all_active_rectangles[first_idx];
+  const ActiveRectangle& chosen_rectangle_2 = all_active_rectangles[second_idx];
+
+  const auto get_rectangle = [&initial_solution, helper = &helper_](
+                                 const ActiveRectangle& rectangle) {
+    const int x_interval_idx = rectangle.x_interval;
+    const int y_interval_idx = rectangle.y_interval;
+    const ConstraintProto& x_interval_ct =
+        helper->ModelProto().constraints(x_interval_idx);
+    const ConstraintProto& y_interval_ct =
+        helper->ModelProto().constraints(y_interval_idx);
+    return Rectangle{.x_min = GetLinearExpressionValue(
+                         x_interval_ct.interval().start(), initial_solution),
+                     .x_max = GetLinearExpressionValue(
+                         x_interval_ct.interval().end(), initial_solution),
+                     .y_min = GetLinearExpressionValue(
+                         y_interval_ct.interval().start(), initial_solution),
+                     .y_max = GetLinearExpressionValue(
+                         y_interval_ct.interval().end(), initial_solution)};
+  };
+
+  // TODO(user): This computes the distance between the center of the
+  // rectangles. We could use the real distance between the closest points, but
+  // not sure it is worth the extra complexity.
+  const auto compute_rectangle_distance = [](const Rectangle& rect1,
+                                             const Rectangle& rect2) {
+    return (static_cast<double>(rect1.x_min.value()) + rect1.x_max.value() -
+            rect2.x_min.value() - rect2.x_max.value()) *
+           (static_cast<double>(rect1.y_min.value()) + rect1.y_max.value() -
+            rect2.y_min.value() - rect2.y_max.value());
+  };
+  const Rectangle rect1 = get_rectangle(chosen_rectangle_1);
+  const Rectangle rect2 = get_rectangle(chosen_rectangle_2);
+
+  // Now compute a neighborhood around each rectangle. Note that we only
+  // consider two rectangles as potential neighbors if they are part of the same
+  // no_overlap_2d constraint.
+  absl::flat_hash_set<int> variables_to_freeze;
+  std::vector<std::pair<int, double>> distances1;
+  std::vector<std::pair<int, double>> distances2;
+  distances1.reserve(all_active_rectangles.size());
+  distances2.reserve(all_active_rectangles.size());
+  for (int i = 0; i < all_active_rectangles.size(); ++i) {
+    const ActiveRectangle& rectangle = all_active_rectangles[i];
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
+                                  variables_to_freeze);
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
+                                  variables_to_freeze);
+
+    const Rectangle rect = get_rectangle(rectangle);
+    const bool same_no_overlap_as_rect1 =
+        absl::c_any_of(chosen_rectangle_1.no_overlap_2d_constraints,
+                       [&rectangle](const int c) {
+                         return rectangle.no_overlap_2d_constraints.contains(c);
+                       });
+    const bool same_no_overlap_as_rect2 =
+        absl::c_any_of(chosen_rectangle_2.no_overlap_2d_constraints,
+                       [&rectangle](const int c) {
+                         return rectangle.no_overlap_2d_constraints.contains(c);
+                       });
+    if (same_no_overlap_as_rect1) {
+      distances1.push_back({i, compute_rectangle_distance(rect1, rect)});
+    }
+    if (same_no_overlap_as_rect2) {
+      distances2.push_back({i, compute_rectangle_distance(rect2, rect)});
+    }
+  }
+  const int num_to_sample_each =
+      data.difficulty * all_active_rectangles.size() / 2;
+  std::sort(distances1.begin(), distances1.end(),
+            [](const auto& a, const auto& b) { return a.second < b.second; });
+  std::sort(distances2.begin(), distances2.end(),
+            [](const auto& a, const auto& b) { return a.second < b.second; });
+  absl::flat_hash_set<int> variables_to_relax;
+  for (auto& samples : {distances1, distances2}) {
+    const int num_potential_samples = samples.size();
+    for (int i = 0; i < std::min(num_potential_samples, num_to_sample_each);
+         ++i) {
+      const int rectangle_idx = samples[i].first;
+      const ActiveRectangle& rectangle = all_active_rectangles[rectangle_idx];
+      InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
+                                    variables_to_relax);
+      InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
+                                    variables_to_relax);
+    }
+  }
+  for (const int v : variables_to_relax) {
+    variables_to_freeze.erase(v);
   }
 
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
@@ -2267,13 +2391,13 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
 Neighborhood RandomPrecedencesPackingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
-  std::vector<std::pair<int, int>> rectangles_to_relax =
+  std::vector<ActiveRectangle> rectangles_to_relax =
       helper_.GetActiveRectangles(initial_solution);
   GetRandomSubset(data.difficulty, &rectangles_to_relax, random);
   std::vector<int> intervals_to_relax;
-  for (const auto& [x, y] : rectangles_to_relax) {
-    intervals_to_relax.push_back(x);
-    intervals_to_relax.push_back(y);
+  for (const ActiveRectangle& rect : rectangles_to_relax) {
+    intervals_to_relax.push_back(rect.x_interval);
+    intervals_to_relax.push_back(rect.y_interval);
   }
   gtl::STLSortAndRemoveDuplicates(&intervals_to_relax);
 
@@ -2284,13 +2408,14 @@ Neighborhood RandomPrecedencesPackingNeighborhoodGenerator::Generate(
 Neighborhood SlicePackingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
-  const std::vector<std::pair<int, int>> active_rectangles =
+  const std::vector<ActiveRectangle> active_rectangles =
       helper_.GetActiveRectangles(initial_solution);
   const bool use_first_dimension = absl::Bernoulli(random, 0.5);
   std::vector<int> projected_intervals;
   projected_intervals.reserve(active_rectangles.size());
-  for (const auto& [x, y] : active_rectangles) {
-    projected_intervals.push_back(use_first_dimension ? x : y);
+  for (const ActiveRectangle& rect : active_rectangles) {
+    projected_intervals.push_back(use_first_dimension ? rect.x_interval
+                                                      : rect.y_interval);
   }
 
   const TimePartition partition = PartitionIndicesAroundRandomTimeWindow(
@@ -2305,10 +2430,10 @@ Neighborhood SlicePackingNeighborhoodGenerator::Generate(
   for (int index = 0; index < active_rectangles.size(); ++index) {
     if (indices_to_fix[index]) {
       InsertVariablesFromConstraint(helper_.ModelProto(),
-                                    active_rectangles[index].first,
+                                    active_rectangles[index].x_interval,
                                     variables_to_freeze);
       InsertVariablesFromConstraint(helper_.ModelProto(),
-                                    active_rectangles[index].second,
+                                    active_rectangles[index].y_interval,
                                     variables_to_freeze);
     }
   }

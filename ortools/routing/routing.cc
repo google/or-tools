@@ -76,6 +76,7 @@
 #include "ortools/routing/neighborhoods.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/parameters_utils.h"
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
@@ -4802,7 +4803,8 @@ void RoutingModel::CreateNeighborhoodOperators(
             this, [this]() { return CheckLimit(time_buffer_); },
             GetLocalSearchArcCostCallback(parameters),
             parameters.local_cheapest_insertion_pickup_delivery_strategy(),
-            parameters.local_cheapest_insertion_sorting_mode(),
+            GetLocalCheapestInsertionSortingProperties(
+                parameters.local_cheapest_insertion_sorting_properties()),
             GetOrCreateLocalSearchFilterManager(
                 parameters,
                 {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}),
@@ -5756,27 +5758,29 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   }
   const RoutingSearchParameters::PairInsertionStrategy lci_pair_strategy =
       search_parameters.local_cheapest_insertion_pickup_delivery_strategy();
-  const RoutingSearchParameters::InsertionSortingMode sorting_mode =
-      search_parameters.local_cheapest_insertion_sorting_mode();
-  first_solution_filtered_decision_builders_
-      [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] =
-          CreateIntVarFilteredDecisionBuilder<
-              LocalCheapestInsertionFilteredHeuristic>(
-              [this](int64_t i, int64_t j, int64_t vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              lci_pair_strategy, sorting_mode,
-              GetOrCreateLocalSearchFilterManager(
-                  search_parameters, {/*filter_objective=*/false,
-                                      /*filter_with_cp_solver=*/false}),
-              bin_capacities_.get(), optimize_on_insertion);
+  first_solution_filtered_decision_builders_[FirstSolutionStrategy::
+                                                 LOCAL_CHEAPEST_INSERTION] =
+      CreateIntVarFilteredDecisionBuilder<
+          LocalCheapestInsertionFilteredHeuristic>(
+          [this](int64_t i, int64_t j, int64_t vehicle) {
+            return GetArcCostForVehicle(i, j, vehicle);
+          },
+          lci_pair_strategy,
+          GetLocalCheapestInsertionSortingProperties(
+              search_parameters.local_cheapest_insertion_sorting_properties()),
+          GetOrCreateLocalSearchFilterManager(
+              search_parameters, {/*filter_objective=*/false,
+                                  /*filter_with_cp_solver=*/false}),
+          bin_capacities_.get(), optimize_on_insertion);
   IntVarFilteredDecisionBuilder* const strong_lci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
           [this](int64_t i, int64_t j, int64_t vehicle) {
             return GetArcCostForVehicle(i, j, vehicle);
           },
-          lci_pair_strategy, sorting_mode,
+          lci_pair_strategy,
+          GetLocalCheapestInsertionSortingProperties(
+              search_parameters.local_cheapest_insertion_sorting_properties()),
           GetOrCreateLocalSearchFilterManager(search_parameters,
                                               {/*filter_objective=*/false,
                                                /*filter_with_cp_solver=*/true}),
@@ -5797,7 +5801,10 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
       [FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION] =
           CreateIntVarFilteredDecisionBuilder<
               LocalCheapestInsertionFilteredHeuristic>(
-              /*evaluator=*/nullptr, lcci_pair_strategy, sorting_mode,
+              /*evaluator=*/nullptr, lcci_pair_strategy,
+              GetLocalCheapestInsertionSortingProperties(
+                  search_parameters
+                      .local_cheapest_insertion_sorting_properties()),
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/true,
                                       /*filter_with_cp_solver=*/false}),
@@ -5805,7 +5812,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   IntVarFilteredDecisionBuilder* const strong_lcci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
-          /*evaluator=*/nullptr, lcci_pair_strategy, sorting_mode,
+          /*evaluator=*/nullptr, lcci_pair_strategy,
+          GetLocalCheapestInsertionSortingProperties(
+              search_parameters.local_cheapest_insertion_sorting_properties()),
           GetOrCreateLocalSearchFilterManager(search_parameters,
                                               {/*filter_objective=*/true,
                                                /*filter_with_cp_solver=*/true}),
