@@ -1428,6 +1428,21 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(2, solver.value(x))
         self.assertEqual(4, solver.value(y))
 
+    def testSolutionHintingWithBooleans(self):
+        print("testSolutionHintingWithBooleans")
+        model = cp_model.CpModel()
+        x = model.new_bool_var("x")
+        y = model.new_bool_var("y")
+        model.add_linear_constraint(x + y, 1, 1)
+        model.add_hint(x, True)
+        model.add_hint(~y, True)
+        solver = cp_model.CpSolver()
+        solver.parameters.cp_model_presolve = False
+        status = solver.solve(model)
+        self.assertEqual(cp_model.OPTIMAL, status)
+        self.assertTrue(solver.boolean_value(x))
+        self.assertFalse(solver.boolean_value(y))
+
     def testStats(self):
         print("testStats")
         model = cp_model.CpModel()
