@@ -647,8 +647,9 @@ void PrecedencesPropagator::AddArc(
     // A self-arc is either plain SAT or plain UNSAT or it forces something on
     // the given offset_var or presence_literal_index. In any case it could be
     // presolved in something more efficient.
-    VLOG(1) << "Self arc! This could be presolved. " << "var:" << tail
-            << " offset:" << offset << " offset_var:" << offset_var
+    VLOG(1) << "Self arc! This could be presolved. "
+            << "var:" << tail << " offset:" << offset
+            << " offset_var:" << offset_var
             << " conditioned_by:" << presence_literals;
   }
 

@@ -1768,7 +1768,8 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
     }
   }
 
-  VLOG(2) << "Table compression" << " var=" << vars.size()
+  VLOG(2) << "Table compression"
+          << " var=" << vars.size()
           << " cost=" << domain_sizes.size() - vars.size()
           << " tuples= " << num_tuples_before_compression << " -> "
           << num_tuples_after_first_compression << " -> "

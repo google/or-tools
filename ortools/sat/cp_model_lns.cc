@@ -1726,8 +1726,8 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
     VLOG(2) << "#relaxed " << relaxed_variables.size() << " #zero_score "
             << num_zero_score << " max_width " << max_width
             << " (size,min_width)_after_100 (" << size_at_min_width_after_100
-            << "," << min_width_after_100 << ") " << " final_width "
-            << pq.Size();
+            << "," << min_width_after_100 << ") "
+            << " final_width " << pq.Size();
   }
 
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);

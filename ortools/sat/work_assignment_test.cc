@@ -17,8 +17,8 @@
 
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
-#include "net/proto2/contrib/parse_proto/parse_text_proto.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/parse_text_proto.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"

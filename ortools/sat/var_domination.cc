@@ -1304,8 +1304,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
     }
   }
   if (num_unconstrained_refs == 0 && num_dominated_refs == 0) return;
-  VLOG(1) << "Dominance:" << " num_unconstrained_refs="
-          << num_unconstrained_refs
+  VLOG(1) << "Dominance:"
+          << " num_unconstrained_refs=" << num_unconstrained_refs
           << " num_dominated_refs=" << num_dominated_refs
           << " num_dominance_relations=" << num_dominance_relations;
 }

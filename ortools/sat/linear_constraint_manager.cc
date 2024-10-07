@@ -254,7 +254,8 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
 
   // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-4) {
-    VLOG(3) << "BAD Cut '" << type_name << "'" << " size=" << ct.num_terms
+    VLOG(3) << "BAD Cut '" << type_name << "'"
+            << " size=" << ct.num_terms
             << " max_magnitude=" << ComputeInfinityNorm(ct)
             << " norm=" << l2_norm << " violation=" << violation
             << " eff=" << violation / l2_norm << " " << extra_info;
