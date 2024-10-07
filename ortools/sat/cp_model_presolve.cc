@@ -1455,21 +1455,66 @@ bool CpModelPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
   return false;
 }
 
+Domain EvaluateImpliedIntProdDomain(const LinearArgumentProto& expr,
+                                    const PresolveContext& context) {
+  if (expr.exprs().size() == 2) {
+    const LinearExpressionProto& expr0 = expr.exprs(0);
+    const LinearExpressionProto& expr1 = expr.exprs(1);
+    if (LinearExpressionProtosAreEqual(expr0, expr1)) {
+      return context.DomainSuperSetOf(expr0).SquareSuperset();
+    }
+    if (expr0.vars().size() == 1 && expr1.vars().size() == 1 &&
+        expr0.vars(0) == expr1.vars(0)) {
+      return context.DomainOf(expr0.vars(0))
+          .QuadraticSuperset(expr0.coeffs(0), expr0.offset(), expr1.coeffs(0),
+                             expr1.offset());
+    }
+  }
+
+  Domain implied(1);
+  for (const LinearExpressionProto& expr : expr.exprs()) {
+    implied =
+        implied.ContinuousMultiplicationBy(context.DomainSuperSetOf(expr));
+  }
+  return implied;
+}
+
 bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
   // Start by restricting the domain of target. We will be more precise later.
   bool domain_modified = false;
-  {
-    Domain implied(1);
-    for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
-      implied =
-          implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
-    }
-    if (!context_->IntersectDomainWith(ct->int_prod().target(), implied,
-                                       &domain_modified)) {
-      return false;
+  Domain implied_domain =
+      EvaluateImpliedIntProdDomain(ct->int_prod(), *context_);
+  if (!context_->IntersectDomainWith(ct->int_prod().target(), implied_domain,
+                                     &domain_modified)) {
+    return false;
+  }
+
+  // Remove a constraint if the target only appears in the constraint. For this
+  // to be correct some conditions must be met:
+  // - The target is an affine linear with coefficient -1 or 1.
+  // - The target does not appear in the rhs (no x = (a*x + b) * ...).
+  // - The target domain covers all the possible range of the rhs.
+  if (ExpressionContainsSingleRef(ct->int_prod().target()) &&
+      context_->VariableIsUniqueAndRemovable(ct->int_prod().target().vars(0)) &&
+      std::abs(ct->int_prod().target().coeffs(0)) == 1) {
+    const LinearExpressionProto& target = ct->int_prod().target();
+    if (!absl::c_any_of(ct->int_prod().exprs(),
+                        [&target](const LinearExpressionProto& expr) {
+                          return absl::c_linear_search(expr.vars(),
+                                                       target.vars(0));
+                        })) {
+      const Domain target_domain =
+          Domain(target.offset())
+              .AdditionWith(context_->DomainOf(target.vars(0)));
+      if (implied_domain.IsIncludedIn(target_domain)) {
+        context_->MarkVariableAsRemoved(ct->int_prod().target().vars(0));
+        context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
+        context_->UpdateRuleStats("int_prod: unused affine target");
+        return RemoveConstraint(ct);
+      }
     }
   }
 
@@ -1651,21 +1696,11 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   }
 
   // Restrict the target domain if possible.
-  Domain implied(1);
-  bool is_square = false;
-  if (ct->int_prod().exprs_size() == 2 &&
-      LinearExpressionProtosAreEqual(ct->int_prod().exprs(0),
-                                     ct->int_prod().exprs(1))) {
-    is_square = true;
-    implied =
-        context_->DomainSuperSetOf(ct->int_prod().exprs(0)).SquareSuperset();
-  } else {
-    for (const LinearExpressionProto& expr : ct->int_prod().exprs()) {
-      implied =
-          implied.ContinuousMultiplicationBy(context_->DomainSuperSetOf(expr));
-    }
-  }
-  if (!context_->IntersectDomainWith(ct->int_prod().target(), implied,
+  implied_domain = EvaluateImpliedIntProdDomain(ct->int_prod(), *context_);
+  const bool is_square = ct->int_prod().exprs_size() == 2 &&
+                         LinearExpressionProtosAreEqual(
+                             ct->int_prod().exprs(0), ct->int_prod().exprs(1));
+  if (!context_->IntersectDomainWith(ct->int_prod().target(), implied_domain,
                                      &domain_modified)) {
     return false;
   }
