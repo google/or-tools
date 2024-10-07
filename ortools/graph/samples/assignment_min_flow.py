@@ -51,10 +51,10 @@ def main():
 
     # [START constraints]
     # Add each arc.
-    for idx, _ in enumerate(start_nodes):
-        smcf.add_arc_with_capacity_and_unit_cost(
-            start_nodes[idx], end_nodes[idx], capacities[idx], costs[idx]
-        )
+    for start_node, end_node, capacity, cost in zip(
+        start_nodes, end_nodes, capacities, costs
+    ):
+        smcf.add_arc_with_capacity_and_unit_cost(start_node, end_node, capacity, cost)
     # Add node supplies.
     for idx, supply in enumerate(supplies):
         smcf.set_node_supply(idx, supply)
