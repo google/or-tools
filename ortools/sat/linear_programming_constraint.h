@@ -190,7 +190,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   const std::vector<IntegerVariable>& integer_variables() const {
     return integer_variables_;
   }
-  std::string DimensionString() const { return lp_data_.GetDimensionString(); }
+  std::string DimensionString() const;
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
@@ -408,6 +408,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   absl::Span<const glop::ColIndex> IntegerLpRowCols(glop::RowIndex row) const;
   absl::Span<const IntegerValue> IntegerLpRowCoeffs(glop::RowIndex row) const;
 
+  void ComputeIntegerLpScalingFactors();
+  void FillLpData();
+
+  // For ComputeIntegerLpScalingFactors().
+  std::vector<double> row_factors_;
+  std::vector<double> col_factors_;
+  std::vector<double> col_max_;
+  std::vector<double> col_min_;
+
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
@@ -456,8 +465,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Underlying LP solver API.
   glop::GlopParameters simplex_params_;
   glop::BasisState state_;
-  glop::LinearProgram lp_data_;
+  glop::DenseRow obj_with_slack_;
   glop::RevisedSimplex simplex_;
+
   int64_t next_simplex_iter_ = 500;
 
   // For the scaling.

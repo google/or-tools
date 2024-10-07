@@ -11,30 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_PARSE_TEXT_PROTO_H_
-#define OR_TOOLS_BASE_PARSE_TEXT_PROTO_H_
+#ifndef OR_TOOLS_BASE_PARSE_TEST_PROTO_H_
+#define OR_TOOLS_BASE_PARSE_TEST_PROTO_H_
 
-#include <string_view>
+#include <memory>
+#include <ostream>
+#include <string>
 
-#include "absl/log/absl_check.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "gtest/gtest.h"
 
 namespace google::protobuf::contrib::parse_proto {
 
-template <typename T>
-bool ParseTextProto(const std::string& input, T* proto) {
-  return ::google::protobuf::TextFormat::ParseFromString(input, proto);
-}
-
-template <typename T>
-T ParseTextOrDie(const std::string& input) {
-  T result;
-  ABSL_CHECK(ParseTextProto(input, &result));
-  return result;
-}
-
-namespace text_proto_internal {
+namespace parse_proto_internal {
 
 class ParseProtoHelper {
  public:
@@ -44,7 +34,7 @@ class ParseProtoHelper {
     T result;
     const bool ok = ::google::protobuf::TextFormat::TextFormat::ParseFromString(
         asciipb_, &result);
-    CHECK(ok) << "Failed to parse text proto: " << asciipb_;
+    EXPECT_TRUE(ok) << "Failed to parse text proto: " << asciipb_;
     return result;
   }
 
@@ -52,13 +42,12 @@ class ParseProtoHelper {
   const std::string asciipb_;
 };
 
-}  // namespace text_proto_internal
+}  // namespace parse_proto_internal
 
-text_proto_internal::ParseProtoHelper ParseTextProtoOrDie(
-    std::string_view input) {
-  return text_proto_internal::ParseProtoHelper(input);
+parse_proto_internal::ParseProtoHelper ParseTestProto(std::string_view input) {
+  return parse_proto_internal::ParseProtoHelper(input);
 }
 
 }  // namespace google::protobuf::contrib::parse_proto
 
-#endif  // OR_TOOLS_BASE_PARSE_TEXT_PROTO_H_
+#endif  // OR_TOOLS_BASE_PARSE_TEST_PROTO_H_

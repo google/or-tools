@@ -1507,8 +1507,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
     // Abort if the variable is not binary.
     if (!is_binary) {
       LOG(WARNING) << "The variable #" << var_id << " with name "
-                   << mp_var.name() << " is not binary. " << "lb: " << lb
-                   << " ub: " << ub;
+                   << mp_var.name() << " is not binary. "
+                   << "lb: " << lb << " ub: " << ub;
       return false;
     }
   }

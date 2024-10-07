@@ -51,13 +51,13 @@ def main():
 
     # [START constraints]
     # Add each arc.
-    for i in range(len(start_nodes)):
-        smcf.add_arc_with_capacity_and_unit_cost(
-            start_nodes[i], end_nodes[i], capacities[i], costs[i]
-        )
+    for start_node, end_node, capacity, cost in zip(
+        start_nodes, end_nodes, capacities, costs
+    ):
+        smcf.add_arc_with_capacity_and_unit_cost(start_node, end_node, capacity, cost)
     # Add node supplies.
-    for i in range(len(supplies)):
-        smcf.set_node_supply(i, supplies[i])
+    for idx, supply in enumerate(supplies):
+        smcf.set_node_supply(idx, supply)
     # [END constraints]
 
     # [START solve]
@@ -67,8 +67,7 @@ def main():
 
     # [START print_solution]
     if status == smcf.OPTIMAL:
-        print("Total cost = ", smcf.optimal_cost())
-        print()
+        print(f"Total cost = {smcf.optimal_cost()}")
         for arc in range(smcf.num_arcs()):
             # Can ignore arcs leading out of source or into sink.
             if smcf.tail(arc) != source and smcf.head(arc) != sink:
@@ -77,8 +76,8 @@ def main():
                 # give an assignment of worker to task.
                 if smcf.flow(arc) > 0:
                     print(
-                        "Worker %d assigned to task %d.  Cost = %d"
-                        % (smcf.tail(arc), smcf.head(arc), smcf.unit_cost(arc))
+                        f"Worker {smcf.tail(arc)} assigned to task {smcf.head(arc)}. "
+                        f"Cost = {smcf.unit_cost(arc)}"
                     )
     else:
         print("There was an issue with the min cost flow input.")

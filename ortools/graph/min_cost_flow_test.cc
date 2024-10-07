@@ -20,12 +20,15 @@
 #include <random>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -631,7 +634,8 @@ struct MinCostFlowSolver {
 template <typename Graph>
 void FullRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
                           NodeIndex num_sources, NodeIndex num_targets,
-                          CostValue expected_cost1, CostValue expected_cost2) {
+                          CostValue expected_cost1,
+                          CostValue /*expected_cost2*/) {
   const CostValue kCostRange = 1000;
   Graph graph;
   GenerateCompleteGraph(num_sources, num_targets, &graph);
@@ -656,7 +660,7 @@ template <typename Graph>
 void PartialRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
                              NodeIndex num_sources, NodeIndex num_targets,
                              CostValue expected_cost1,
-                             CostValue expected_cost2) {
+                             CostValue /*expected_cost2*/) {
   const NodeIndex kDegree = 10;
   const CostValue kCostRange = 1000;
   Graph graph;

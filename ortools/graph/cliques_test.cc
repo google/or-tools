@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
@@ -31,7 +32,7 @@
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/base/mathutil.h"
+#include "ortools/base/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -98,7 +99,7 @@ class CliqueSizeVerifier {
   int64_t num_cliques_;
 };
 
-inline bool FullGraph(int index1, int index2) { return true; }
+inline bool FullGraph(int /*index1*/, int /*index2*/) { return true; }
 
 inline bool EmptyGraph(int index1, int index2) { return (index1 == index2); }
 
@@ -562,7 +563,7 @@ TEST(BronKerboschAlgorithmTest, WallTimeLimit) {
   absl::SetFlag(&FLAGS_time_limit_use_usertime, true);
 
   TimeLimit time_limit(kTimeLimitSeconds);
-  const auto graph = [kNumPartitions](int index1, int index2) {
+  const auto graph = [](int index1, int index2) {
     return FullKPartiteGraph(kNumPartitions, index1, index2);
   };
   CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);
@@ -583,7 +584,7 @@ TEST(BronKerboschAlgorithmTest, DeterministicTimeLimit) {
 
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromDeterministicTime(kDeterministicLimit);
-  const auto graph = [kNumPartitions](int index1, int index2) {
+  const auto graph = [](int index1, int index2) {
     return FullKPartiteGraph(kNumPartitions, index1, index2);
   };
   CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);

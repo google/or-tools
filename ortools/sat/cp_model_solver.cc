@@ -1172,7 +1172,7 @@ class LnsSolver : public SubSolver {
           static_cast<double>(generator_->num_fully_solved_calls()) /
           static_cast<double>(num_calls);
       const std::string lns_info = absl::StrFormat(
-          "%s (d=%0.2f s=%i t=%0.2f p=%0.2f stall=%d h=%s)", source_info,
+          "%s (d=%0.3f s=%i t=%0.2f p=%0.2f stall=%d h=%s)", source_info,
           data.difficulty, task_id, data.deterministic_limit,
           fully_solved_proportion, stall, search_info);
 
@@ -1660,6 +1660,12 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       if (name_filter.Keep("packing_rectangles_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
+      if (name_filter.Keep("packing_swap_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RectanglesPackingRelaxTwoNeighborhoodsGenerator>(
                 helper, name_filter.LastName()),
             lns_params, helper, shared));
       }
