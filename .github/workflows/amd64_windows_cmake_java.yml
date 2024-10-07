@@ -1,0 +1,55 @@
+# ref: https://github.com/actions/runner-images
+name: amd64 Windows CMake Java
+
+on: [push, pull_request, workflow_dispatch]
+
+# Building using the github runner environement directly.
+jobs:
+  native:
+    strategy:
+      matrix:
+        cmake: [
+          {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
+        ]
+      fail-fast: false
+    name: Windows • ${{ matrix.cmake.generator }} • Java
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SWIG 4.1.1
+        run: |
+          (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.1.1.zip","swigwin-4.1.1.zip");
+          Expand-Archive .\swigwin-4.1.1.zip .;
+          echo "$((Get-Item .).FullName)/swigwin-4.1.1" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Check swig
+        run: swig -version
+      - name: Check java
+        run: java -version
+      - name: Check cmake
+        run: cmake --version
+      - name: Configure
+        run: >
+          cmake -S. -Bbuild
+          -G "${{ matrix.cmake.generator }}"
+          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+          -DBUILD_JAVA=ON
+      - name: Build
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.build_target }}
+          -v -j2
+      - name: Test
+        run: >
+          CTEST_OUTPUT_ON_FAILURE=1
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.test_target }}
+          -v
+      - name: Install
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.install_target }}
+          -v
