@@ -422,6 +422,11 @@ class Domain {
   Domain SquareSuperset() const;
 
   /**
+   * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = (a*y + b)*(c*y + d) }.
+   */
+  Domain QuadraticSuperset(int64_t a, int64_t b, int64_t c, int64_t d) const;
+
+  /**
    * Advanced usage. Given some \e implied information on this domain that is
    * assumed to be always true (i.e. only values in the intersection with
    * implied domain matter), this function will simplify the current domain
