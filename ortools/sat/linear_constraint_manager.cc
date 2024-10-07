@@ -92,6 +92,15 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
   int new_size = 0;
   for (int i = 0; i < num_rows; ++i) {
     const ConstraintIndex constraint_index = lp_constraints_[i];
+    if (constraint_infos_[constraint_index].constraint.num_terms == 0) {
+      // Remove empty constraint.
+      //
+      // TODO(user): If the constraint is infeasible we could detect unsat
+      // right away, but hopefully this is a case where the propagation part
+      // of the solver can detect that too.
+      constraint_infos_[constraint_index].is_in_lp = false;
+      continue;
+    }
 
     // Constraints that are not tight in the current solution have a basic
     // status. We remove the ones that have been inactive in the last recent
@@ -764,6 +773,8 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
 void LinearConstraintManager::AddAllConstraintsToLp() {
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
     if (constraint_infos_[i].is_in_lp) continue;
+    if (constraint_infos_[i].constraint.num_terms == 0) continue;
+
     constraint_infos_[i].is_in_lp = true;
     lp_constraints_.push_back(i);
   }

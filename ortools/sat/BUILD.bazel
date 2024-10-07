@@ -2146,6 +2146,7 @@ cc_library(
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_data_utils",
         "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
         "//ortools/util:bitset",
         "//ortools/util:rev",
@@ -2156,6 +2157,7 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -3401,6 +3403,26 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "work_assignment_test",
+    srcs = ["work_assignment_test.cc"],
+    deps = [
+        ":cp_model",
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_loader",
+        ":cp_model_solver",
+        ":integer",
+        ":model",
+        ":sat_parameters_cc_proto",
+        ":synchronization",
+        ":work_assignment",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 

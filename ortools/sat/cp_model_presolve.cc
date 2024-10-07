@@ -1704,6 +1704,60 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     }
   }
 
+  if (ct->int_prod().exprs().size() == 2) {
+    const auto is_boolean_affine =
+        [context = context_](const LinearExpressionProto& expr) {
+          return expr.vars().size() == 1 && context->MinOf(expr.vars(0)) == 0 &&
+                 context->MaxOf(expr.vars(0)) == 1;
+        };
+    const LinearExpressionProto* boolean_linear = nullptr;
+    const LinearExpressionProto* other_linear = nullptr;
+    if (is_boolean_affine(ct->int_prod().exprs(0))) {
+      boolean_linear = &ct->int_prod().exprs(0);
+      other_linear = &ct->int_prod().exprs(1);
+    } else if (is_boolean_affine(ct->int_prod().exprs(1))) {
+      boolean_linear = &ct->int_prod().exprs(1);
+      other_linear = &ct->int_prod().exprs(0);
+    }
+    if (boolean_linear) {
+      // We have:
+      // (u + b * v) * other_expr = B, where `b` is a boolean variable.
+      //
+      // We can rewrite this as:
+      //   u * other_expr = B, if b = false;
+      //   (u + v) * other_expr = B, if b = true
+      ConstraintProto* constraint_for_false =
+          context_->working_model->add_constraints();
+      ConstraintProto* constraint_for_true =
+          context_->working_model->add_constraints();
+      constraint_for_true->add_enforcement_literal(boolean_linear->vars(0));
+      constraint_for_false->add_enforcement_literal(
+          NegatedRef(boolean_linear->vars(0)));
+      LinearConstraintProto* linear_for_false =
+          constraint_for_false->mutable_linear();
+      LinearConstraintProto* linear_for_true =
+          constraint_for_true->mutable_linear();
+
+      linear_for_false->add_domain(0);
+      linear_for_false->add_domain(0);
+      AddLinearExpressionToLinearConstraint(
+          *other_linear, boolean_linear->offset(), linear_for_false);
+      AddLinearExpressionToLinearConstraint(ct->int_prod().target(), -1,
+                                            linear_for_false);
+
+      linear_for_true->add_domain(0);
+      linear_for_true->add_domain(0);
+      AddLinearExpressionToLinearConstraint(
+          *other_linear, boolean_linear->offset() + boolean_linear->coeffs(0),
+          linear_for_true);
+      AddLinearExpressionToLinearConstraint(ct->int_prod().target(), -1,
+                                            linear_for_true);
+      context_->UpdateRuleStats("int_prod: boolean affine term");
+      context_->UpdateNewConstraintsVariableUsage();
+      return RemoveConstraint(ct);
+    }
+  }
+
   // For now, we only presolve the case where all variables are Booleans.
   const LinearExpressionProto target_expr = ct->int_prod().target();
   int target;
@@ -12472,6 +12526,27 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
   }
   if (in_model.has_solution_hint()) {
     *context->working_model->mutable_solution_hint() = in_model.solution_hint();
+
+    // We make sure the hint is within the variables domain.
+    //
+    // This allows to avoid overflow because we know evaluating constraints on
+    // the variables domains should be safe thanks to the initial validation.
+    const int num_terms = in_model.solution_hint().vars().size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = in_model.solution_hint().vars(i);
+      const int64_t value = in_model.solution_hint().values(i);
+      const auto& domain = in_model.variables(var).domain();
+      if (domain.empty()) continue;  // UNSAT.
+      const int64_t min = domain[0];
+      const int64_t max = domain[domain.size() - 1];
+      if (value < min) {
+        context->UpdateRuleStats("hint: moved var hint within its domain.");
+        context->working_model->mutable_solution_hint()->set_values(i, min);
+      } else if (value > max) {
+        context->working_model->mutable_solution_hint()->set_values(i, max);
+        context->UpdateRuleStats("hint: moved var hint within its domain.");
+      }
+    }
   }
 }
 
