@@ -208,6 +208,18 @@ PROTO2_RETURN(
   }
 
   /**
+   * Write the model to file in MPS format.
+   */
+   bool writeModelToMpsFile(const std::string& filename, bool fixed_format,
+                            bool obfuscated) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscated;
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return WriteModelToMpsFile(filename, model, options).ok();
+  }
+
+  /**
    * Sets a hint for solution.
    *
    * If a feasible or almost-feasible solution to the problem is already known,
