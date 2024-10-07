@@ -279,10 +279,6 @@ class KnitroInterface : public MPSolverInterface {
 
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
 
-  // TODO : A voir si on override
-  // std::optional<MPSolutionResponse> DirectlySolveProto(
-  //     const MPModelRequest& request, std::atomic<bool>* interrupt) override;
-
   void Write(const std::string& filename) override;
   void Reset() override;
 
@@ -505,7 +501,6 @@ KnitroInterface::~KnitroInterface() { CHECK_STATUS(KN_free(&kc_)); }
 void KnitroInterface::Reset() {
   // Instead of explicitly clearing all model objects we
   // just delete the problem object and allocate a new one.
-  // std::cout << "Reset Called" << std::endl;
   CHECK_STATUS(KN_free(&kc_));
   no_obj_ = true;
   int status;
@@ -532,8 +527,6 @@ void KnitroInterface::SetOptimizationDirection(bool maximize) {
 
 void KnitroInterface::SetVariableBounds(int var_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  // the "extracted" check is done upstream for now
-  // but it should be done here
   if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted.
     DCHECK_LT(var_index, last_variable_index_);
@@ -549,8 +542,6 @@ void KnitroInterface::SetVariableBounds(int var_index, double lb, double ub) {
 void KnitroInterface::SetVariableInteger(int var_index, bool integer) {
   InvalidateSolutionSynchronization();
   if (mip_) {
-    // the "extracted" check is done upstream for now
-    // but it should be done here
     if (variable_is_extracted(var_index)) {
       DCHECK_LT(var_index, last_variable_index_);
       CHECK_STATUS(KN_set_var_type(
@@ -566,8 +557,6 @@ void KnitroInterface::SetVariableInteger(int var_index, bool integer) {
 
 void KnitroInterface::SetConstraintBounds(int row_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  // the "extracted" check is done upstream for now
-  // but it should be done here
   if (constraint_is_extracted(row_index)) {
     DCHECK_LT(row_index, last_constraint_index_);
     CHECK_STATUS(
@@ -607,8 +596,7 @@ void KnitroInterface::ClearConstraint(MPConstraint* constraint) {
   const auto& coeffs = constraint->coefficients_;
   for (auto coeff : coeffs) {
     int const col = coeff.first->index();
-    // if the variable has been extracted,
-    // then its linear coefficient exists
+    // if the variable has been extracted then its linear coefficient exists
     if (variable_is_extracted(col)) {
       var_ind[j] = col;
       ++j;
@@ -700,16 +688,6 @@ void KnitroInterface::ExtractNewVariables() {
       MPVariable* const var = solver_->variables_[var_index];
       DCHECK(!variable_is_extracted(var_index));
       set_variable_as_extracted(var_index, true);
-
-      // // Defines the bounds and type of var
-      // CHECK_STATUS(KN_set_var_lobnd(kc_, var_index,
-      //                               redefine_infinity_double(var->lb())));
-      // CHECK_STATUS(KN_set_var_upbnd(kc_, var_index,
-      //                               redefine_infinity_double(var->ub())));
-      // CHECK_STATUS(KN_set_var_type(kc_, var_index,
-      //                              (mip_ && var->integer())
-      //                                  ? KN_VARTYPE_INTEGER
-      //                                  : KN_VARTYPE_CONTINUOUS));
 
       // Define the bounds and type of var
       idx_vars[var_index - last_variable_index_] = var_index;
@@ -994,7 +972,6 @@ absl::Status KnitroInterface::SetNumThreads(int num_threads) {
 // ------ Solve  -----
 
 MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
-  // std::cout << "Solve Called " << std::endl;
   WallTimer timer;
   timer.Start();
 
@@ -1005,11 +982,6 @@ MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
 
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
-
-  // std::cout << "Number of variables : " << solver_->variables_.size()
-  // << std::endl;
-  // std::cout << "Number of constraints : " << solver_->constraints_.size()
-  // << std::endl;
 
   if (quiet_) {
     // Silent the screen output
@@ -1054,8 +1026,6 @@ MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
     if (mip_) best_objective_bound_ = 0;
     result_status_ = MPSolver::OPTIMAL;
     sync_status_ = SOLUTION_SYNCHRONIZED;
-    // std::cout << "Solution Status (empty problem): " << result_status_
-    // << std::endl;
     return result_status_;
   }
 
@@ -1099,9 +1069,6 @@ MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
     VLOG(1) << "No feasible solution found.";
   }
 
-  // int algorithm;
-  // KN_get_int_param(kc_, KN_PARAM_ALG, &algorithm);
-  // // std::cout << "Algorithm setting param " << algorithm << std::endl;
   sync_status_ = SOLUTION_SYNCHRONIZED;
 
   return result_status_;
@@ -1181,9 +1148,9 @@ int64_t KnitroInterface::nodes() const {
 // ----- Misc -----
 
 std::string KnitroInterface::SolverVersion() const {
-  int const length = 15;     // should contain the string termination character
-  char release[length + 1];  // checked but there are trouble if not allocated
-                             // with a additional char
+  int const length = 15;     // should contain the string termination character,
+  char release[length + 1];  // checked but there is trouble if not allocated
+                             // with an additional char
 
   CHECK_STATUS(KN_get_release(length, release));
 
