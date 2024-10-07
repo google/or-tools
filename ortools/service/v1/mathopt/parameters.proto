@@ -99,6 +99,11 @@ enum SolverTypeProto {
   // Slow/not recommended for production. Not an LP solver (no dual information
   // returned).
   SOLVER_TYPE_SANTORINI = 11;
+
+  // Moske solver (third party).
+  //
+  // Supports LP, MIP, and conic quadratic. Requires a license.
+  SOLVER_TYPE_MOSEK = 12;
 }
 
 // Selects an algorithm for solving linear programs.

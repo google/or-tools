@@ -31,7 +31,8 @@ set_target_properties(${NAME} PROPERTIES
   )
 target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  $<$<BOOL:${USE_MOSEK}>:${MOSEK_PLATFORM_DIR}/h>)
 target_link_libraries(${NAME} PRIVATE
   absl::memory
   absl::strings
@@ -41,6 +42,7 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   $<$<BOOL:${USE_COINOR}>:Coin::Clp>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
+  $<$<BOOL:${USE_MOSEK}>:mosek::mosek>
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_HIGHS}>:highs::highs>
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>

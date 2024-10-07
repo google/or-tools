@@ -118,6 +118,7 @@ void RunAllExamples() {
   RunLinearProgrammingExample("XPRESS_LP");
   RunLinearProgrammingExample("PDLP");
   RunLinearProgrammingExample("HIGHS");
+  RunLinearProgrammingExample("MOSEK_LP");
 }
 }  // namespace operations_research
 
