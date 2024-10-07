@@ -46,6 +46,16 @@ bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
   return false;
 }
 
+void VariablesInfo::InitializeFromMutatedState() {
+  const ColIndex num_cols = matrix_.num_cols();
+  DCHECK_EQ(num_cols, lower_bounds_.size());
+  DCHECK_EQ(num_cols, upper_bounds_.size());
+  variable_type_.resize(num_cols, VariableType::UNCONSTRAINED);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    variable_type_[col] = ComputeVariableType(col);
+  }
+}
+
 bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
     const DenseRow& variable_lower_bounds,
     const DenseRow& variable_upper_bounds,

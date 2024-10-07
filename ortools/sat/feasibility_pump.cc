@@ -360,14 +360,14 @@ void FeasibilityPump::L1DistanceMinimize() {
       const ColIndex norm_lhs_slack_variable =
           lp_data_.GetSlackVariable(norm_lhs_constraints_[col]);
       const double lhs_scaling_factor =
-          scaler_.VariableScalingFactor(norm_lhs_slack_variable);
+          scaler_.VariableScalingFactorWithSlack(norm_lhs_slack_variable);
       lp_data_.SetVariableBounds(
           norm_lhs_slack_variable, -glop::kInfinity,
           lhs_scaling_factor * integer_solution_[col.value()]);
       const ColIndex norm_rhs_slack_variable =
           lp_data_.GetSlackVariable(norm_rhs_constraints_[col]);
       const double rhs_scaling_factor =
-          scaler_.VariableScalingFactor(norm_rhs_slack_variable);
+          scaler_.VariableScalingFactorWithSlack(norm_rhs_slack_variable);
       lp_data_.SetVariableBounds(
           norm_rhs_slack_variable, -glop::kInfinity,
           -rhs_scaling_factor * integer_solution_[col.value()]);

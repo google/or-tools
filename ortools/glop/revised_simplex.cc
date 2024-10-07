@@ -154,29 +154,72 @@ void RevisedSimplex::SetStartingVariableValuesForNextSolve(
   variable_starting_values_ = values;
 }
 
-void RevisedSimplex::NotifyThatMatrixIsUnchangedForNextSolve() {
-  notify_that_matrix_is_unchanged_ = true;
-}
+Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
+    const DenseRow& objective, Fractional objective_scaling_factor,
+    Fractional objective_offset, TimeLimit* time_limit) {
+  const double start_time = time_limit->GetElapsedTime();
+  default_logger_.EnableLogging(parameters_.log_search_progress());
+  default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
+  parameters_ = initial_parameters_;
+  PropagateParameters();
 
-void RevisedSimplex::NotifyThatMatrixIsChangedForNextSolve() {
-  notify_that_matrix_is_unchanged_ = false;
+  // The source of truth is the transposed matrix.
+  if (transpose_was_changed_) {
+    compact_matrix_.PopulateFromTranspose(transposed_matrix_);
+    num_rows_ = compact_matrix_.num_rows();
+    num_cols_ = compact_matrix_.num_cols();
+    first_slack_col_ = num_cols_ - RowToColIndex(num_rows_);
+  }
+
+  DCHECK_EQ(num_cols_, objective.size());
+
+  // Copy objective
+  objective_scaling_factor_ = objective_scaling_factor;
+  objective_offset_ = objective_offset;
+  const bool objective_is_unchanged = objective_ == objective;
+  objective_ = objective;
+  InitializeObjectiveLimit();
+
+  // Initialize variable infos from the mutated bounds.
+  variables_info_.InitializeFromMutatedState();
+
+  if (objective_is_unchanged && parameters_.use_dual_simplex() &&
+      !transpose_was_changed_ && !solution_state_has_been_set_externally_ &&
+      !solution_state_.IsEmpty()) {
+    // Fast track if we just changed variable bounds.
+    primal_edge_norms_.Clear();
+    variables_info_.InitializeFromBasisState(first_slack_col_, ColIndex(0),
+                                             solution_state_);
+    variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
+    variable_values_.RecomputeBasicVariableValues();
+    return SolveInternal(start_time, false, objective, time_limit);
+  } else {
+    GLOP_RETURN_IF_ERROR(FinishInitialization(true));
+  }
+
+  return SolveInternal(start_time, false, objective, time_limit);
 }
 
 Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
-  SCOPED_TIME_STAT(&function_stats_);
+  const double start_time = time_limit->GetElapsedTime();
+  default_logger_.EnableLogging(parameters_.log_search_progress());
+  default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
+
   DCHECK(lp.IsCleanedUp());
+  GLOP_RETURN_IF_ERROR(Initialize(lp));
+  return SolveInternal(start_time, lp.IsMaximizationProblem(),
+                       lp.objective_coefficients(), time_limit);
+}
+
+ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
+    double start_time, bool is_maximization_problem,
+    const DenseRow& objective_coefficients, TimeLimit* time_limit) {
+  SCOPED_TIME_STAT(&function_stats_);
   GLOP_RETURN_ERROR_IF_NULL(time_limit);
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
 
-  default_logger_.EnableLogging(parameters_.log_search_progress());
-  default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
   SOLVER_LOG(logger_, "");
-
-  // Initialization. Note That Initialize() must be called first since it
-  // analyzes the current solver state.
-  const double start_time = time_limit->GetElapsedTime();
-  GLOP_RETURN_IF_ERROR(Initialize(lp));
   if (logger_->LoggingIsEnabled()) {
     DisplayBasicVariableStatistics();
   }
@@ -310,7 +353,13 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
 
     // After the primal phase I, we need to restore the objective.
     if (problem_status_ != ProblemStatus::PRIMAL_INFEASIBLE) {
-      InitializeObjectiveAndTestIfUnchanged(lp);
+      objective_ = objective_coefficients;
+      if (is_maximization_problem) {
+        for (Fractional& value : objective_) {
+          value = -value;
+        }
+      }
+      objective_.resize(num_cols_, 0.0);  // For the slack.
       reduced_costs_.ResetForNewObjective();
     }
   }
@@ -639,7 +688,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   solution_reduced_costs_ = reduced_costs_.GetReducedCosts();
   SaveState();
 
-  if (lp.IsMaximizationProblem()) {
+  if (is_maximization_problem) {
     ChangeSign(&solution_dual_values_);
     ChangeSign(&solution_reduced_costs_);
   }
@@ -650,7 +699,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     solution_objective_value_ =
         (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) ? kInfinity
                                                            : -kInfinity;
-    if (lp.IsMaximizationProblem()) {
+    if (is_maximization_problem) {
       solution_objective_value_ = -solution_objective_value_;
     }
   }
@@ -1379,21 +1428,13 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   ColIndex num_new_cols(0);
   bool only_change_is_new_rows = false;
   bool only_change_is_new_cols = false;
-  bool matrix_is_unchanged = true;
-  bool only_new_bounds = false;
-  if (solution_state_.IsEmpty() || !notify_that_matrix_is_unchanged_) {
-    matrix_is_unchanged = InitializeMatrixAndTestIfUnchanged(
-        lp, lp_is_in_equation_form, &only_change_is_new_rows,
-        &only_change_is_new_cols, &num_new_cols);
-    only_new_bounds = only_change_is_new_cols && num_new_cols > 0 &&
-                      OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
-                          lp, lp_is_in_equation_form, num_new_cols);
-  } else if (DEBUG_MODE) {
-    CHECK(InitializeMatrixAndTestIfUnchanged(
-        lp, lp_is_in_equation_form, &only_change_is_new_rows,
-        &only_change_is_new_cols, &num_new_cols));
-  }
-  notify_that_matrix_is_unchanged_ = false;
+  const bool matrix_is_unchanged = InitializeMatrixAndTestIfUnchanged(
+      lp, lp_is_in_equation_form, &only_change_is_new_rows,
+      &only_change_is_new_cols, &num_new_cols);
+  const bool only_new_bounds =
+      only_change_is_new_cols && num_new_cols > 0 &&
+      OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
+          lp, lp_is_in_equation_form, num_new_cols);
 
   // TODO(user): move objective with ReducedCosts class.
   const bool objective_is_unchanged = InitializeObjectiveAndTestIfUnchanged(lp);
@@ -1509,6 +1550,10 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     }
   }
 
+  return FinishInitialization(solve_from_scratch);
+}
+
+Status RevisedSimplex::FinishInitialization(bool solve_from_scratch) {
   // If we couldn't perform a "quick" warm start above, we can at least try to
   // reuse the variable statuses.
   if (solve_from_scratch && !solution_state_.IsEmpty()) {
@@ -1589,6 +1634,8 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     SOLVER_LOG(logger_, "Starting basis: incremental solve.");
   }
   DCHECK(BasisIsConsistent());
+
+  transpose_was_changed_ = false;
   return Status::OK();
 }
 

@@ -1663,6 +1663,12 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
                 helper, name_filter.LastName()),
             lns_params, helper, shared));
       }
+      if (name_filter.Keep("packing_swap_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RectanglesPackingRelaxTwoNeighborhoodsGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
       if (name_filter.Keep("packing_precedences_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
