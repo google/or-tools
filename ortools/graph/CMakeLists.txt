@@ -39,3 +39,21 @@ target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::ortools_proto
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
 #add_library(${PROJECT_NAMESPACE}::graph ALIAS ${NAME})
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        graph_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        GTest::gmock
+        GTest::gtest_main
+    )
+  endforeach()
+endif()
