@@ -589,7 +589,7 @@ class SharedBoundsManager {
 class UniqueClauseStream {
  public:
   static constexpr int kMinClauseSize = 3;
-  static constexpr int kMaxClauseSize = 8;
+  static constexpr int kMaxClauseSize = 32;
   // Export 4KiB of clauses per batch.
   static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
   // Bound the total literals we buffer, approximately enforced so shorter

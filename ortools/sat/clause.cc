@@ -483,6 +483,7 @@ void ClauseManager::DeleteRemovedClauses() {
   const int old_size = clauses_.size();
   for (int i = 0; i < old_size; ++i) {
     if (i == to_minimize_index_) to_minimize_index_ = new_size;
+    if (i == to_first_minimize_index_) to_first_minimize_index_ = new_size;
     if (i == to_probe_index_) to_probe_index_ = new_size;
     if (clauses_[i]->IsRemoved()) {
       delete clauses_[i];
@@ -493,7 +494,43 @@ void ClauseManager::DeleteRemovedClauses() {
   clauses_.resize(new_size);
 
   if (to_minimize_index_ > new_size) to_minimize_index_ = new_size;
+  if (to_first_minimize_index_ > new_size) to_first_minimize_index_ = new_size;
   if (to_probe_index_ > new_size) to_probe_index_ = new_size;
+}
+
+SatClause* ClauseManager::NextNewClauseToMinimize() {
+  for (; to_first_minimize_index_ < clauses_.size();
+       ++to_first_minimize_index_) {
+    if (clauses_[to_first_minimize_index_]->IsRemoved()) continue;
+    if (!IsRemovable(clauses_[to_first_minimize_index_])) {
+      // If the round-robin is in-sync with the new clauses, we may as well
+      // count this minimization as part of the round-robin and advance both
+      // indexes.
+      if (to_minimize_index_ == to_first_minimize_index_) {
+        ++to_minimize_index_;
+      }
+      return clauses_[to_first_minimize_index_++];
+    }
+  }
+  return nullptr;
+}
+
+SatClause* ClauseManager::NextClauseToMinimize() {
+  for (; to_minimize_index_ < clauses_.size(); ++to_minimize_index_) {
+    if (clauses_[to_minimize_index_]->IsRemoved()) continue;
+    if (!IsRemovable(clauses_[to_minimize_index_])) {
+      return clauses_[to_minimize_index_++];
+    }
+  }
+  return nullptr;
+}
+
+SatClause* ClauseManager::NextClauseToProbe() {
+  for (; to_probe_index_ < clauses_.size(); ++to_probe_index_) {
+    if (clauses_[to_probe_index_]->IsRemoved()) continue;
+    return clauses_[to_probe_index_++];
+  }
+  return nullptr;
 }
 
 // ----- BinaryImplicationGraph -----

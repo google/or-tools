@@ -742,6 +742,19 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
   }
 }
 
+bool PresolveContext::HasUnusedAffineVariable() const {
+  for (int var = 0; var < working_model->variables_size(); ++var) {
+    if (VariableIsNotUsedAnymore(var)) continue;
+    const auto& constraints = VarToConstraints(var);
+    if (constraints.size() == 1 &&
+        constraints.contains(kAffineRelationConstraint) &&
+        GetAffineRelation(var).representative != var) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // TODO(user): Also test var_to_constraints_ !!
 bool PresolveContext::ConstraintVariableUsageIsConsistent() {
   if (is_unsat_) return true;  // We do not care in this case.
@@ -891,6 +904,28 @@ void PresolveContext::RemoveAllVariablesFromAffineRelationConstraint() {
   for (auto& ref_map : var_to_constraints_) {
     ref_map.erase(kAffineRelationConstraint);
   }
+}
+
+void PresolveContext::RemoveNonRepresentativeAffineVariableIfUnused(int var) {
+  if (!VariableIsUnique(var)) {
+    return;
+  }
+  const AffineRelation::Relation r = GetAffineRelation(var);
+  if (var == r.representative) {
+    return;
+  }
+  DCHECK(VarToConstraints(var).contains(kAffineRelationConstraint));
+  DCHECK(!VariableIsNotUsedAnymore(r.representative));
+  // Add relation with current representative to the mapping model.
+  ConstraintProto* ct = NewMappingConstraint(__FILE__, __LINE__);
+  auto* arg = ct->mutable_linear();
+  arg->add_vars(var);
+  arg->add_coeffs(1);
+  arg->add_vars(r.representative);
+  arg->add_coeffs(-r.coeff);
+  arg->add_domain(r.offset);
+  arg->add_domain(r.offset);
+  RemoveVariableFromAffineRelation(var);
 }
 
 // We only call that for a non representative variable that is only used in

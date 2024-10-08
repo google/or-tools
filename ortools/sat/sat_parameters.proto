@@ -685,6 +685,10 @@ message SatParameters {
   // Implicitly disabled if share_binary_clauses is false.
   optional bool share_glue_clauses = 285 [default = false];
 
+  // Minimize and detect subsumption of shared clauses immediately after they
+  // are imported.
+  optional bool minimize_shared_clauses = 300 [default = true];
+
   // ==========================================================================
   // Debugging parameters
   // ==========================================================================
