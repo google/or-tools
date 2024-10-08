@@ -211,7 +211,9 @@ function(ortools_cxx_test)
   if(BUILD_TESTING)
     add_test(
       NAME cxx_${TEST_NAME}
-      COMMAND ${TEST_NAME})
+      COMMAND ${TEST_NAME}
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
   endif()
   message(STATUS "Configuring test ${TEST_NAME} ...DONE")
 endfunction()
