@@ -30,7 +30,7 @@ backcall==0.2.0
     # via ipython
 beautifulsoup4==4.12.2
     # via nbconvert
-black==24.3.0
+black==24.8.0
     # via -r bazel/notebook_requirements.in
 bleach==6.0.0
     # via nbconvert
@@ -176,7 +176,7 @@ notebook-shim==0.2.3
     # via
     #   jupyterlab
     #   notebook
-numpy==1.26.4
+numpy==2.1.0
     # via
     #   -r bazel/notebook_requirements.in
     #   pandas
@@ -192,7 +192,7 @@ packaging==23.1
     #   jupyterlab-server
     #   nbconvert
     #   plotly
-pandas==2.1.2
+pandas==2.2.3
     # via -r bazel/notebook_requirements.in
 pandocfilters==1.5.0
     # via nbconvert
@@ -215,7 +215,7 @@ prometheus-client==0.17.1
     # via jupyter-server
 prompt-toolkit==3.0.39
     # via ipython
-protobuf==5.26.1
+protobuf==5.27.3
     # via
     #   -r bazel/notebook_requirements.in
     #   mypy-protobuf
@@ -271,7 +271,7 @@ rpds-py==0.10.2
     # via
     #   jsonschema
     #   referencing
-scipy==1.11.3
+scipy==1.14.1
     # via -r bazel/notebook_requirements.in
 send2trash==1.8.2
     # via jupyter-server
