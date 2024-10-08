@@ -127,26 +127,26 @@ from ortools.linear_solver.python.linear_solver_natural_api import VariableExpr
     return status.ok();
   }
 
-  std::string ExportModelAsLpFormat(bool obfuscated) {
+  std::string ExportModelAsLpFormat(bool obfuscate) {
     operations_research::MPModelExportOptions options;
-    options.obfuscate = obfuscated;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsLpFormat(model, options).value_or("");
   }
 
-  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscate) {
     operations_research::MPModelExportOptions options;
-    options.obfuscate = obfuscated;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsMpsFormat(model, options).value_or("");
   }
 
-   bool WriteModelToMpsFile(const std::string& filename, bool fixed_format,
-                            bool obfuscated) {
+  bool WriteModelToMpsFile(const std::string& filename, bool fixed_format,
+                          bool obfuscate) {
     operations_research::MPModelExportOptions options;
-    options.obfuscate = obfuscated;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return WriteModelToMpsFile(filename, model, options).ok();
@@ -374,8 +374,9 @@ PY_CONVERT(MPVariable);
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
-// ExportModelAsLpFormat() is also visible: it's overridden by an %extend, above.
-// ExportModelAsMpsFormat() is also visible: it's overridden by an %extend, above.
+%unignore  operations_research::MPSolver::ExportModelAsLpFormat;
+%unignore  operations_research::MPSolver::ExportModelAsMpsFormat;
+%unignore  operations_research::MPSolver::WriteModelToMpsFile;
 %unignore operations_research::MPSolver::Write;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.

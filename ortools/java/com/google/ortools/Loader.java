@@ -119,9 +119,9 @@ public class Loader {
         Path tempPath = unpackNativeResources(resourceURI);
         // Load the native library
         System.load(tempPath.resolve(RESOURCE_PATH)
-                        .resolve(System.mapLibraryName("jniortools"))
-                        .toAbsolutePath()
-                        .toString());
+                .resolve(System.mapLibraryName("jniortools"))
+                .toAbsolutePath()
+                .toString());
         loaded = true;
       } catch (IOException e) {
         throw new RuntimeException(e);
