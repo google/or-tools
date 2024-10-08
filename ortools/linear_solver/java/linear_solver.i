@@ -188,9 +188,9 @@ PROTO2_RETURN(
   /**
    * Export the loaded model in LP format.
    */
-  std::string exportModelAsLpFormat(
-      const operations_research::MPModelExportOptions& options =
-          operations_research::MPModelExportOptions()) {
+  std::string exportModelAsLpFormat(bool obfuscate) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsLpFormat(model, options).value_or("");
@@ -199,21 +199,21 @@ PROTO2_RETURN(
   /**
    * Export the loaded model in MPS format.
    */
-  std::string exportModelAsMpsFormat(
-      const operations_research::MPModelExportOptions& options =
-          operations_research::MPModelExportOptions()) {
+  std::string exportModelAsMpsFormat(bool fixed_format, bool obfuscate) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsMpsFormat(model, options).value_or("");
   }
 
   /**
-   * Write the model to file in MPS format.
+   * Write the loaded model to file in MPS format.
    */
    bool writeModelToMpsFile(const std::string& filename, bool fixed_format,
-                            bool obfuscated) {
+                            bool obfuscate) {
     operations_research::MPModelExportOptions options;
-    options.obfuscate = obfuscated;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return WriteModelToMpsFile(filename, model, options).ok();
