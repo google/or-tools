@@ -2806,8 +2806,7 @@ bool CpModelPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
       }
 
       context_->UpdateNewConstraintsVariableUsage();
-      ct->Clear();
-      return true;
+      return RemoveConstraint(ct);
     }
 
     // Code below require equality.
@@ -11623,18 +11622,7 @@ bool CpModelPresolver::PresolveAffineRelationIfAny(int var) {
   // If var is no longer used, remove. Note that we can always do that since we
   // propagated the domain above and so we can find a feasible value for a for
   // any value of the representative.
-  if (context_->VariableIsUnique(var)) {
-    // Add relation with current representative to the mapping model.
-    ConstraintProto* ct = context_->NewMappingConstraint(__FILE__, __LINE__);
-    auto* arg = ct->mutable_linear();
-    arg->add_vars(var);
-    arg->add_coeffs(1);
-    arg->add_vars(r.representative);
-    arg->add_coeffs(-r.coeff);
-    arg->add_domain(r.offset);
-    arg->add_domain(r.offset);
-    context_->RemoveVariableFromAffineRelation(var);
-  }
+  context_->RemoveNonRepresentativeAffineVariableIfUnused(var);
   return true;
 }
 
@@ -11649,6 +11637,7 @@ bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
       context_->modified_domains.PositionsSetAtLeastOnce();
   for (int i = 0; i < vector_that_can_grow_during_iter.size(); ++i) {
     const int v = vector_that_can_grow_during_iter[i];
+    context_->modified_domains.Clear(v);
     if (context_->VariableIsNotUsedAnymore(v)) continue;
     if (context_->ModelIsUnsat()) return false;
     if (!PresolveAffineRelationIfAny(v)) return false;
@@ -11779,6 +11768,11 @@ void CpModelPresolver::PresolveToFixPoint() {
       const int v = vector_that_can_grow_during_iter[i];
       if (context_->VariableIsNotUsedAnymore(v)) continue;
 
+      // Remove the variable from the set to allow it to be pushed again.
+      // This is necessary since a few affine logic needs to add the same
+      // variable back to a second pass of processing.
+      context_->var_with_reduced_small_degree.Clear(v);
+
       // Make sure all affine relations are propagated.
       // This also remove the relation if the degree is now one.
       if (context_->ModelIsUnsat()) return;
@@ -11818,6 +11812,9 @@ void CpModelPresolver::PresolveToFixPoint() {
     context_->var_with_reduced_small_degree.SparseClearAll();
 
     if (ProcessChangedVariables(&in_queue, &queue)) continue;
+
+    // TODO(user): Uncomment this line once the tests pass.
+    // DCHECK(!context_->HasUnusedAffineVariable());
 
     // Deal with integer variable only appearing in an encoding.
     for (int v = 0; v < context_->working_model->variables().size(); ++v) {
