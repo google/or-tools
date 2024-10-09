@@ -298,6 +298,11 @@ class PresolveContext {
   // This is meant to be used in DEBUG mode only.
   bool ConstraintVariableUsageIsConsistent();
 
+  // Loop over all variable and return true if one of them is only used in
+  // affine relation and is not a representative. This is in O(num_vars) and
+  // only meant to be used in DCHECKs.
+  bool HasUnusedAffineVariable() const;
+
   // A "canonical domain" always have a MinOf() equal to zero.
   // If needed we introduce a new variable with such canonical domain and
   // add the relation X = Y + offset.
@@ -501,6 +506,11 @@ class PresolveContext {
   bool ObjectiveDomainIsConstraining() const {
     return objective_domain_is_constraining_;
   }
+
+  // If var is an unused variable in an affine relation and is not a
+  // representative, we can remove it from the model. Note that this requires
+  // the variable usage graph to be up to date.
+  void RemoveNonRepresentativeAffineVariableIfUnused(int var);
 
   // Advanced usage. This should be called when a variable can be removed from
   // the problem, so we don't count it as part of an affine relation anymore.

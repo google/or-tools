@@ -472,7 +472,8 @@ class SatSolver {
   // Mainly visible for testing.
   ABSL_MUST_USE_RESULT bool Propagate();
 
-  bool MinimizeByPropagation(double dtime);
+  bool MinimizeByPropagation(double dtime,
+                             bool minimize_new_clauses_only = false);
 
   // Advance the given time limit with all the deterministic time that was
   // elapsed since last call.
@@ -502,6 +503,10 @@ class SatSolver {
   // false without backtracking in case of ASSUMPTIONS_UNSAT. This is only
   // exposed to allow processing a conflict detected outside normal propagation.
   void ProcessCurrentConflict();
+
+  void EnsureNewClauseIndexInitialized() {
+    clauses_propagator_->EnsureNewClauseIndexInitialized();
+  }
 
  private:
   // All Solve() functions end up calling this one.

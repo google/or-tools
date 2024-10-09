@@ -42,6 +42,7 @@ target_link_libraries(${NAME} PRIVATE
 
 if(BUILD_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
+  list(FILTER _TEST_SRCS EXCLUDE REGEX "max_flow_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
     get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
@@ -56,4 +57,16 @@ if(BUILD_TESTING)
         GTest::gtest_main
     )
   endforeach()
+  ortools_cxx_test(
+    NAME
+      graph_max_flow_test
+    SOURCES
+      "max_flow_test.cc"
+    LINK_LIBRARIES
+      benchmark::benchmark
+      GTest::gmock
+      GTest::gtest_main
+    COMPILE_DEFINITIONS
+      -DROOT_DIR="../../"
+  )
 endif()

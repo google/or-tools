@@ -517,7 +517,7 @@ class CallMethod0 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)();
+  void (T::* const method_)();
   const std::string name_;
 };
 
@@ -557,7 +557,7 @@ class CallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P);
+  void (T::* const method_)(P);
   const std::string name_;
   P param1_;
 };
@@ -594,7 +594,7 @@ class CallMethod2 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q);
+  void (T::* const method_)(P, Q);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -636,7 +636,7 @@ class CallMethod3 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q, R);
+  void (T::* const method_)(P, Q, R);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -679,7 +679,7 @@ class DelayedCallMethod0 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)();
+  void (T::* const method_)();
   const std::string name_;
 };
 
@@ -714,7 +714,7 @@ class DelayedCallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P);
+  void (T::* const method_)(P);
   const std::string name_;
   P param1_;
 };
@@ -757,7 +757,7 @@ class DelayedCallMethod2 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q);
+  void (T::* const method_)(P, Q);
   const std::string name_;
   P param1_;
   Q param2_;

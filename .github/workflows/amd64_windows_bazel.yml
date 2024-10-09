@@ -10,7 +10,6 @@ jobs:
       matrix:
         runner: [windows-2022]
         python: [
-          {version: '3.9'},
           {version: '3.10'},
           {version: '3.11'},
           {version: '3.12'},

@@ -520,15 +520,9 @@ public final class LinearSolverTest {
     final MPConstraint c0 = solver.makeConstraint(-infinity, 100.0);
     c0.setCoefficient(x1, 5);
 
-    final MPModelExportOptions obfuscate = new MPModelExportOptions();
-    obfuscate.setObfuscate(true);
-    String out = solver.exportModelAsLpFormat();
+    String out = solver.exportModelAsLpFormat(/* obfuscate= */ true);
     assertThat(out).isNotEmpty();
-    out = solver.exportModelAsLpFormat(obfuscate);
-    assertThat(out).isNotEmpty();
-    out = solver.exportModelAsMpsFormat();
-    assertThat(out).isNotEmpty();
-    out = solver.exportModelAsMpsFormat(obfuscate);
+    out = solver.exportModelAsMpsFormat(/* fixed_format= */ true, /* obfuscate= */ true);
     assertThat(out).isNotEmpty();
   }
 
@@ -543,9 +537,9 @@ public final class LinearSolverTest {
     assertNotNull(solver);
     // Test that forbidden names are renamed.
     solver.makeBoolVar("<-%$#!&~-+ ⌂"); // Some illegal name.
-    String out = solver.exportModelAsLpFormat();
+    String out = solver.exportModelAsLpFormat(/* obfuscate= */ false);
     assertThat(out).isNotEmpty();
-    out = solver.exportModelAsMpsFormat();
+    out = solver.exportModelAsMpsFormat(/* fixed_format= */ true, /* obfuscate= */ true);
     assertThat(out).isNotEmpty();
   }
 
@@ -611,7 +605,7 @@ public final class LinearSolverTest {
     System.out.println("Number of constraints = " + solver.numConstraints());
 
     solver.enableOutput();
-    System.out.println(solver.exportModelAsLpFormat());
+    System.out.println(solver.exportModelAsLpFormat(/* obfuscate= */ false));
     System.out.println(solver.solve());
   }
 

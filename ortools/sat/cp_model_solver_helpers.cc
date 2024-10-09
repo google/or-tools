@@ -856,14 +856,17 @@ int RegisterClausesLevelZeroImport(int id,
   CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
-  bool share_glue_clauses =
+  const bool share_glue_clauses =
       model->GetOrCreate<SatParameters>()->share_glue_clauses();
+  const bool minimize_shared_clauses =
+      model->GetOrCreate<SatParameters>()->minimize_shared_clauses();
   auto* clause_stream = share_glue_clauses
                             ? shared_clauses_manager->GetClauseStream(id)
                             : nullptr;
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
                                            sat_solver, implications,
-                                           clause_stream]() {
+                                           clause_stream,
+                                           minimize_shared_clauses]() {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
     implications->EnableSharing(false);
@@ -877,7 +880,9 @@ int RegisterClausesLevelZeroImport(int id,
     implications->EnableSharing(true);
     if (clause_stream == nullptr) return true;
 
+    int new_clauses = 0;
     std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
+    sat_solver->EnsureNewClauseIndexInitialized();
     for (const absl::Span<const int> shared_clause :
          shared_clauses_manager->GetUnseenClauses(id)) {
       // Check this clause was not already learned by this worker.
@@ -893,8 +898,18 @@ int RegisterClausesLevelZeroImport(int id,
               absl::MakeSpan(local_clause).subspan(0, shared_clause.size()))) {
         return false;
       }
+      ++new_clauses;
     }
     clause_stream->RemoveWorstClauses();
+    if (minimize_shared_clauses && new_clauses > 0) {
+      // The new clauses may be subsumed, so try to minimize them to reduce
+      // overhead of sharing.
+      // We only share up to 1024 literals worth of new clauses per second, so
+      // at most 1024 decisions to vivify all new clauses, so this should be
+      // relatively cheap.
+      return sat_solver->MinimizeByPropagation(
+          /*dtime=*/0.5, /*minimize_new_clauses_only=*/true);
+    }
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
