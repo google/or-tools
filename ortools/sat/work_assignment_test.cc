@@ -146,9 +146,9 @@ class SharedTreeSolveTest : public testing::TestWithParam<absl::string_view> {
     params.set_num_workers(4);
     params.set_shared_tree_num_workers(4);
     params.set_cp_model_presolve(false);
-    params.MergeFrom(SatParameters{
-        google::protobuf::contrib::parse_proto::ParseTextProtoOrDie(
-            GetParam())});
+    const SatParameters to_merge =
+        google::protobuf::contrib::parse_proto::ParseTextProtoOrDie(GetParam());
+    params.MergeFrom(to_merge);
     return params;
   }
 };
