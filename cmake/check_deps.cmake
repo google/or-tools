@@ -79,12 +79,36 @@ if(USE_COINOR)
   set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
 endif()
 
+if(USE_CPLEX)
+  if(NOT TARGET CPLEX::CPLEX)
+    message(FATAL_ERROR "Target CPLEX::CPLEX not available.")
+  endif()
+  set(CPLEX_DEPS CPLEX::CPLEX)
+endif()
+
+if(USE_GLPK)
+  if(NOT TARGET GLPK::GLPK)
+    message(FATAL_ERROR "Target GLPK::GLPK not available.")
+  endif()
+  set(GLPK_DEPS GLPK::GLPK)
+endif()
+
+if(USE_HIGHS)
+  if(NOT TARGET highs::highs)
+    message(FATAL_ERROR "Target highs::highs not available.")
+  endif()
+  set(HIGHS_DEPS highs::highs)
+endif()
+
 if(USE_PDLP AND BUILD_PDLP)
   set(PDLP_DEPS Eigen3::Eigen)
 endif()
 
-if(USE_SCIP AND NOT TARGET libscip)
-  message(FATAL_ERROR "Target libscip not available.")
+if(USE_SCIP)
+  if(NOT TARGET libscip)
+    message(FATAL_ERROR "Target libscip not available.")
+  endif()
+  set(SCIP_DEPS libscip)
 endif()
 
 # Check optional Dependencies
