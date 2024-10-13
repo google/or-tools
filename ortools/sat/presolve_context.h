@@ -324,7 +324,7 @@ class PresolveContext {
   bool CanonicalizeAffineVariable(int ref, int64_t coeff, int64_t mod,
                                   int64_t rhs);
 
-  // Adds the relation (ref_x = coeff * ref_y + offset) to the repository.
+  // Adds the relation (var_x = coeff * var_y + offset) to the repository.
   // Returns false if we detect infeasability because of this.
   //
   // Once the relation is added, it doesn't need to be enforced by a constraint
@@ -332,7 +332,7 @@ class PresolveContext {
   // them to the proto at the end of the presolve.
   //
   // Note that this should always add a relation, even though it might need to
-  // create a new representative for both ref_x and ref_y in some cases. Like if
+  // create a new representative for both var_x and var_y in some cases. Like if
   // x = 3z and y = 5t are already added, if we add x = 2y, we have 3z = 10t and
   // can only resolve this by creating a new variable r such that z = 10r and t
   // = 3r.
@@ -340,7 +340,7 @@ class PresolveContext {
   // All involved variables will be marked to appear in the special
   // kAffineRelationConstraint. This will allow to identify when a variable is
   // no longer needed (only appear there and is not a representative).
-  bool StoreAffineRelation(int ref_x, int ref_y, int64_t coeff, int64_t offset,
+  bool StoreAffineRelation(int var_x, int var_y, int64_t coeff, int64_t offset,
                            bool debug_no_recursion = false);
 
   // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
@@ -362,8 +362,8 @@ class PresolveContext {
 
   // Makes sure the domain of ref and of its representative (ref = coeff * rep +
   // offset) are in sync. Returns false on unsat.
-  bool PropagateAffineRelation(int ref);
-  bool PropagateAffineRelation(int ref, int rep, int64_t coeff, int64_t offset);
+  bool PropagateAffineRelation(int var);
+  bool PropagateAffineRelation(int var, int rep, int64_t coeff, int64_t offset);
 
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();

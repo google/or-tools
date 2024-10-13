@@ -328,11 +328,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Note that this will loose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multiplier.
-  std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
-      bool take_objective_into_account, bool ignore_trivial_constraints,
+  void IgnoreTrivialConstraintMultipliers(
+      std::vector<std::pair<glop::RowIndex, double>>* lp_multipliers);
+  std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleMultipliers(
       absl::Span<const std::pair<glop::RowIndex, double>> lp_multipliers,
-      IntegerValue* scaling,
-      int64_t overflow_cap = std::numeric_limits<int64_t>::max()) const;
+      bool take_objective_into_account, IntegerValue* scaling) const;
 
   // Can we have an overflow if we scale each coefficients with
   // std::round(std::ldexp(coeff, power)) ?
@@ -489,12 +489,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<glop::RowIndex> tmp_slack_rows_;
   std::vector<std::pair<glop::ColIndex, IntegerValue>> tmp_terms_;
 
-  // Used by AddCGCuts().
+  // Used by ScaleMultipliers().
   std::vector<std::pair<glop::RowIndex, double>> tmp_lp_multipliers_;
+  std::vector<std::pair<glop::RowIndex, double>> tmp_cg_multipliers_;
   std::vector<std::pair<glop::RowIndex, IntegerValue>> tmp_integer_multipliers_;
-
-  // Used by ScaleLpMultiplier().
-  mutable std::vector<std::pair<glop::RowIndex, double>> tmp_cp_multipliers_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].

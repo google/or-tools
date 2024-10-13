@@ -70,6 +70,7 @@ class LpScalingHelper {
   Fractional UnscaleVariableValue(ColIndex col, Fractional value) const;
   Fractional UnscaleReducedCost(ColIndex col, Fractional value) const;
   Fractional UnscaleDualValue(RowIndex row, Fractional value) const;
+  Fractional UnscaleLeftSolveValue(RowIndex row, Fractional value) const;
   Fractional UnscaleConstraintActivity(RowIndex row, Fractional value) const;
 
   // Unscale a row vector v such that v.B = unit_row. When basis_col is the

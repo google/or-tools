@@ -184,6 +184,14 @@ Fractional LpScalingHelper::UnscaleDualValue(RowIndex row,
   return value / (RowUnscalingFactor(row) * objective_scaling_factor_);
 }
 
+Fractional LpScalingHelper::UnscaleLeftSolveValue(RowIndex row,
+                                                  Fractional value) const {
+  // In the scaled domain, we are takeing a sum coeff * scaling * row,
+  // so to get the same effect in the unscaled domain, we want to multiply by
+  // (coeff * scaling).
+  return value / RowUnscalingFactor(row);
+}
+
 Fractional LpScalingHelper::UnscaleConstraintActivity(RowIndex row,
                                                       Fractional value) const {
   // The activity move with the row_scale and the bound_scaling_factor.

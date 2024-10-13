@@ -188,7 +188,7 @@ PROTO2_RETURN(
   /**
    * Export the loaded model in LP format.
    */
-  std::string exportModelAsLpFormat(bool obfuscate) {
+  std::string exportModelAsLpFormat(bool obfuscate = false) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscate;
     operations_research::MPModelProto model;

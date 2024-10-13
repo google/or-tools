@@ -374,8 +374,8 @@ PY_CONVERT(MPVariable);
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
-%unignore  operations_research::MPSolver::ExportModelAsLpFormat;
-%unignore  operations_research::MPSolver::ExportModelAsMpsFormat;
+%unignore  operations_research::MPSolver::ExportModelAsLpFormat(bool);
+%unignore  operations_research::MPSolver::ExportModelAsMpsFormat(bool, bool);
 %unignore  operations_research::MPSolver::WriteModelToMpsFile;
 %unignore operations_research::MPSolver::Write;
 

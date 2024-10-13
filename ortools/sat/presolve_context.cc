@@ -863,36 +863,29 @@ bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
   return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
 }
 
-bool PresolveContext::PropagateAffineRelation(int ref) {
-  const int var = PositiveRef(ref);
+bool PresolveContext::PropagateAffineRelation(int var) {
+  DCHECK(RefIsPositive(var));
   const AffineRelation::Relation r = GetAffineRelation(var);
   if (r.representative == var) return true;
   return PropagateAffineRelation(var, r.representative, r.coeff, r.offset);
 }
 
-bool PresolveContext::PropagateAffineRelation(int ref, int rep, int64_t coeff,
+bool PresolveContext::PropagateAffineRelation(int var, int rep, int64_t coeff,
                                               int64_t offset) {
-  DCHECK(!DomainIsEmpty(ref));
+  DCHECK(RefIsPositive(var));
+  DCHECK(RefIsPositive(rep));
+  DCHECK(!DomainIsEmpty(var));
   DCHECK(!DomainIsEmpty(rep));
-  if (!RefIsPositive(rep)) {
-    rep = NegatedRef(rep);
-    coeff = -coeff;
-  }
-  if (!RefIsPositive(ref)) {
-    ref = NegatedRef(ref);
-    offset = -offset;
-    coeff = -coeff;
-  }
 
   // Propagate domains both ways.
   // var = coeff * rep + offset
-  if (!IntersectDomainWith(rep, DomainOf(ref)
+  if (!IntersectDomainWith(rep, DomainOf(var)
                                     .AdditionWith(Domain(-offset))
                                     .InverseMultiplicationBy(coeff))) {
     return false;
   }
   if (!IntersectDomainWith(
-          ref,
+          var,
           DomainOf(rep).MultiplicationBy(coeff).AdditionWith(Domain(offset)))) {
     return false;
   }
@@ -1059,21 +1052,19 @@ void PresolveContext::PermuteHintValues(const SparsePermutation& perm) {
   perm.ApplyToDenseCollection(hint_has_value_);
 }
 
-bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
+bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
                                           int64_t offset,
                                           bool debug_no_recursion) {
-  CHECK_NE(coeff, 0);
+  DCHECK(RefIsPositive(var_x));
+  DCHECK(RefIsPositive(var_y));
+  DCHECK_NE(coeff, 0);
   if (is_unsat_) return false;
 
   if (hint_is_loaded_) {
-    const int var_x = PositiveRef(ref_x);
-    const int var_y = PositiveRef(ref_y);
     if (!hint_has_value_[var_y] && hint_has_value_[var_x]) {
       hint_has_value_[var_y] = true;
-      const int64_t x_mult = RefIsPositive(ref_x) ? 1 : -1;
-      const int64_t y_mult = RefIsPositive(ref_y) ? 1 : -1;
-      hint_[var_y] = (hint_[var_x] * x_mult - offset) / coeff * y_mult;
-      if (hint_[var_y] * coeff * y_mult + offset != hint_[var_x] * x_mult) {
+      hint_[var_y] = (hint_[var_x] - offset) / coeff;
+      if (hint_[var_y] * coeff + offset != hint_[var_x]) {
         // TODO(user): Do we implement a rounding to closest instead of
         // routing towards 0.
         UpdateRuleStats(
@@ -1083,10 +1074,8 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   }
 
 #ifdef CHECK_HINT
-  const int64_t vx =
-      RefIsPositive(ref_x) ? hint_[ref_x] : -hint_[NegatedRef(ref_x)];
-  const int64_t vy =
-      RefIsPositive(ref_y) ? hint_[ref_y] : -hint_[NegatedRef(ref_y)];
+  const int64_t vx = hint_[var_x];
+  const int64_t vy = hint_[var_y];
   if (vx != vy * coeff + offset) {
     LOG(FATAL) << "Affine relation incompatible with hint: " << vx
                << " != " << vy << " * " << coeff << " + " << offset;
@@ -1094,30 +1083,30 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
 #endif
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
-  // fixed but that is not propagated to ref_x or ref_y and this causes issues.
-  if (!PropagateAffineRelation(ref_x)) return false;
-  if (!PropagateAffineRelation(ref_y)) return false;
-  if (!PropagateAffineRelation(ref_x, ref_y, coeff, offset)) return false;
+  // fixed but that is not propagated to var_x or var_y and this causes issues.
+  if (!PropagateAffineRelation(var_x)) return false;
+  if (!PropagateAffineRelation(var_y)) return false;
+  if (!PropagateAffineRelation(var_x, var_y, coeff, offset)) return false;
 
-  if (IsFixed(ref_x)) {
-    const int64_t lhs = DomainOf(ref_x).FixedValue() - offset;
+  if (IsFixed(var_x)) {
+    const int64_t lhs = DomainOf(var_x).FixedValue() - offset;
     if (lhs % std::abs(coeff) != 0) {
       return NotifyThatModelIsUnsat();
     }
     UpdateRuleStats("affine: fixed");
-    return IntersectDomainWith(ref_y, Domain(lhs / coeff));
+    return IntersectDomainWith(var_y, Domain(lhs / coeff));
   }
 
-  if (IsFixed(ref_y)) {
-    const int64_t value_x = DomainOf(ref_y).FixedValue() * coeff + offset;
+  if (IsFixed(var_y)) {
+    const int64_t value_x = DomainOf(var_y).FixedValue() * coeff + offset;
     UpdateRuleStats("affine: fixed");
-    return IntersectDomainWith(ref_x, Domain(value_x));
+    return IntersectDomainWith(var_x, Domain(value_x));
   }
 
   // If both are already in the same class, we need to make sure the relations
   // are compatible.
-  const AffineRelation::Relation rx = GetAffineRelation(ref_x);
-  const AffineRelation::Relation ry = GetAffineRelation(ref_y);
+  const AffineRelation::Relation rx = GetAffineRelation(var_x);
+  const AffineRelation::Relation ry = GetAffineRelation(var_y);
   if (rx.representative == ry.representative) {
     // x = rx.coeff * rep + rx.offset;
     // y = ry.coeff * rep + ry.offset;
@@ -1138,18 +1127,18 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
     if (!IntersectDomainWith(rx.representative, Domain(unique_value))) {
       return false;
     }
-    if (!IntersectDomainWith(ref_x,
+    if (!IntersectDomainWith(var_x,
                              Domain(unique_value * rx.coeff + rx.offset))) {
       return false;
     }
-    if (!IntersectDomainWith(ref_y,
+    if (!IntersectDomainWith(var_y,
                              Domain(unique_value * ry.coeff + ry.offset))) {
       return false;
     }
     return true;
   }
 
-  // ref_x = coeff * ref_y + offset;
+  // var_x = coeff * var_y + offset;
   // rx.coeff * rep_x + rx.offset =
   //    coeff * (ry.coeff * rep_y + ry.offset) + offset
   //
@@ -1179,7 +1168,7 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
     }
 
     // Re-add the relation now that a will resolve to a multiple of b.
-    return StoreAffineRelation(ref_x, ref_y, coeff, offset,
+    return StoreAffineRelation(var_x, var_y, coeff, offset,
                                /*debug_no_recursion=*/true);
   }
 
@@ -1239,8 +1228,8 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   // as possible and not all call site do it.
   //
   // TODO(user): I am not sure this is needed given the propagation above.
-  if (!PropagateAffineRelation(ref_x)) return false;
-  if (!PropagateAffineRelation(ref_y)) return false;
+  if (!PropagateAffineRelation(var_x)) return false;
+  if (!PropagateAffineRelation(var_y)) return false;
 
   // These maps should only contains representative, so only need to remap
   // either x or y.

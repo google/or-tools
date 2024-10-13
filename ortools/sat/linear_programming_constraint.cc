@@ -288,7 +288,6 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()) {
   // Tweak the default parameters to make the solve incremental.
   simplex_params_.set_use_dual_simplex(true);
-  simplex_params_.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
   simplex_params_.set_primal_feasibility_tolerance(
       parameters_.lp_primal_tolerance());
   simplex_params_.set_dual_feasibility_tolerance(
@@ -1060,7 +1059,7 @@ bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
   }
 
   bool some_fixed_terms = false;
-  bool some_relevant_positions = false;
+  bool some_fractional_positions = false;
   for (CutTerm& term : cut->terms) {
     const absl::int128 magnitude128 = term.coeff.value();
     const absl::int128 range =
@@ -1138,8 +1137,8 @@ bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
     if (term.bound_diff == 0) {
       some_fixed_terms = true;
     } else {
-      if (term.HasRelevantLpValue()) {
-        some_relevant_positions = true;
+      if (term.IsFractional()) {
+        some_fractional_positions = true;
       }
     }
   }
@@ -1153,7 +1152,7 @@ bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
     }
     cut->terms.resize(new_size);
   }
-  return some_relevant_positions;
+  return some_fractional_positions;
 }
 
 bool LinearProgrammingConstraint::AddCutFromConstraints(
@@ -1192,14 +1191,16 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   ImpliedBoundsProcessor* ib_processor = nullptr;
   {
     bool some_ints = false;
-    bool some_relevant_positions = false;
+    bool some_fractional_positions = false;
     for (const CutTerm& term : base_ct_.terms) {
       if (term.bound_diff > 1) some_ints = true;
-      if (term.HasRelevantLpValue()) some_relevant_positions = true;
+      if (term.IsFractional()) {
+        some_fractional_positions = true;
+      }
     }
 
     // If all value are integer, we will not be able to cut anything.
-    if (!some_relevant_positions) return false;
+    if (!some_fractional_positions) return false;
     if (some_ints) ib_processor = &implied_bounds_processor_;
   }
 
@@ -1356,7 +1357,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
   // TODO(user): Ideally we should detect this even earlier during the cut
   // generation.
   if (cut.ComputeViolation() < 1e-4) {
-    VLOG(2) << "Bad cut " << name << " " << info;
+    VLOG(3) << "Bad cut " << name << " " << info;
     ++num_bad_cuts_;
     return false;
   }
@@ -1428,13 +1429,6 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
 // it triggers. We should add heuristics to abort earlier if a cut is not
 // promising. Or only test a few positions and not all rows.
 void LinearProgrammingConstraint::AddCGCuts() {
-  // We used not to do "classical" gomory and instead used this heuristic.
-  // It is usually faster but on some problem like neos*creuse, this do not find
-  // good cut though.
-  //
-  // TODO(user): Make the cut generation lighter and try this at false.
-  const bool old_gomory = true;
-
   // Note that the index is permuted and do not correspond to a row.
   const RowIndex num_rows(integer_lp_.size());
   for (RowIndex index(0); index < num_rows; ++index) {
@@ -1442,12 +1436,18 @@ void LinearProgrammingConstraint::AddCGCuts() {
 
     const ColIndex basis_col = simplex_.GetBasis(index);
 
-    // If this variable is a slack, we ignore it. This is because the
-    // corresponding row is not tight under the given lp values.
-    if (old_gomory && basis_col >= integer_variables_.size()) continue;
+    // We used to skip slack and also not to do "classical" gomory and instead
+    // call IgnoreTrivialConstraintMultipliers() heuristic. It is usually faster
+    // but on some problem like neos*creuse, this do not find good cut though.
+    //
+    // TODO(user): Tune this.
+    if (basis_col >= integer_variables_.size()) continue;
 
-    // TODO(user): If the variable is a slack, the unscaling is wrong!
-    const Fractional lp_value = GetVariableValueAtCpScale(basis_col);
+    // Get he variable value at cp-scale. Similar to GetVariableValueAtCpScale()
+    // but this works for slack variable too.
+    const Fractional lp_value =
+        simplex_.GetVariableValue(basis_col) /
+        scaler_.VariableScalingFactorWithSlack(basis_col);
 
     // Only consider fractional basis element. We ignore element that are close
     // to an integer to reduce the amount of positions we try.
@@ -1457,6 +1457,9 @@ void LinearProgrammingConstraint::AddCGCuts() {
     // also be just under it.
     if (std::abs(lp_value - std::round(lp_value)) < 0.01) continue;
 
+    // We multiply by row_factors_ directly, which might be slighly more precise
+    // than dividing by 1/factor like UnscaleLeftSolveValue() does.
+    //
     // TODO(user): Avoid code duplication between the sparse/dense path.
     tmp_lp_multipliers_.clear();
     const glop::ScatteredRow& lambda = simplex_.GetUnitRowLeftInverse(index);
@@ -1464,14 +1467,14 @@ void LinearProgrammingConstraint::AddCGCuts() {
       for (RowIndex row(0); row < num_rows; ++row) {
         const double value = lambda.values[glop::RowToColIndex(row)];
         if (std::abs(value) < kZeroTolerance) continue;
-        tmp_lp_multipliers_.push_back({row, value});
+        tmp_lp_multipliers_.push_back({row, row_factors_[row.value()] * value});
       }
     } else {
       for (const ColIndex col : lambda.non_zeros) {
         const RowIndex row = glop::ColToRowIndex(col);
         const double value = lambda.values[col];
         if (std::abs(value) < kZeroTolerance) continue;
-        tmp_lp_multipliers_.push_back({row, value});
+        tmp_lp_multipliers_.push_back({row, row_factors_[row.value()] * value});
       }
     }
 
@@ -1480,22 +1483,30 @@ void LinearProgrammingConstraint::AddCGCuts() {
 
     IntegerValue scaling;
     for (int i = 0; i < 2; ++i) {
+      tmp_cg_multipliers_ = tmp_lp_multipliers_;
       if (i == 1) {
         // Try other sign.
         //
         // TODO(user): Maybe add an heuristic to know beforehand which sign to
         // use?
-        for (std::pair<RowIndex, double>& p : tmp_lp_multipliers_) {
+        for (std::pair<RowIndex, double>& p : tmp_cg_multipliers_) {
           p.second = -p.second;
         }
       }
 
-      // TODO(user): We use a lower value here otherwise we might run into
-      // overflow while computing the cut. This should be fixable.
-      tmp_integer_multipliers_ = ScaleLpMultiplier(
-          /*take_objective_into_account=*/false,
-          /*ignore_trivial_constraints=*/old_gomory, tmp_lp_multipliers_,
-          &scaling);
+      // Remove constraints that shouldn't be helpful.
+      //
+      // In practice, because we can complement the slack, it might still be
+      // useful to have some constraint with a trivial upper bound. That said,
+      // this does looks weird, maybe we miss something in our one-constraint
+      // cut generation if it is useful to add such a term. Investigate on
+      // neos-555884.
+      if (true) {
+        IgnoreTrivialConstraintMultipliers(&tmp_cg_multipliers_);
+        if (tmp_cg_multipliers_.size() <= 1) continue;
+      }
+      tmp_integer_multipliers_ = ScaleMultipliers(
+          tmp_cg_multipliers_, /*take_objective_into_account=*/false, &scaling);
       if (scaling != 0) {
         AddCutFromConstraints("CG", tmp_integer_multipliers_);
       }
@@ -2090,50 +2101,36 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
   return bound >= overflow_cap;
 }
 
-std::vector<std::pair<RowIndex, IntegerValue>>
-LinearProgrammingConstraint::ScaleLpMultiplier(
-    bool take_objective_into_account, bool ignore_trivial_constraints,
-    absl::Span<const std::pair<RowIndex, double>> lp_multipliers,
-    IntegerValue* scaling, int64_t overflow_cap) const {
-  *scaling = 0;
-
-  // First unscale the values with the LP scaling and remove bad cases.
-  tmp_cp_multipliers_.clear();
-  for (const std::pair<RowIndex, double>& p : lp_multipliers) {
+void LinearProgrammingConstraint::IgnoreTrivialConstraintMultipliers(
+    std::vector<std::pair<RowIndex, double>>* lp_multipliers) {
+  int new_size = 0;
+  for (const std::pair<RowIndex, double>& p : *lp_multipliers) {
     const RowIndex row = p.first;
     const Fractional lp_multi = p.second;
-
-    // We ignore small values since these are likely errors and will not
-    // contribute much to the new lp constraint anyway.
-    if (std::abs(lp_multi) < kZeroTolerance) continue;
-
-    // Remove constraints that shouldn't be helpful.
-    //
-    // In practice, because we can complement the slack, it might still be
-    // useful to have some constraint with a trivial upper bound.
-    if (ignore_trivial_constraints) {
-      if (lp_multi > 0.0 && integer_lp_[row].ub_is_trivial) {
-        continue;
-      }
-      if (lp_multi < 0.0 && integer_lp_[row].lb_is_trivial) {
-        continue;
-      }
-    }
-
-    tmp_cp_multipliers_.push_back(
-        {row, scaler_.UnscaleDualValue(row, lp_multi)});
+    if (lp_multi > 0.0 && integer_lp_[row].ub_is_trivial) continue;
+    if (lp_multi < 0.0 && integer_lp_[row].lb_is_trivial) continue;
+    (*lp_multipliers)[new_size++] = p;
   }
+  lp_multipliers->resize(new_size);
+}
+
+std::vector<std::pair<RowIndex, IntegerValue>>
+LinearProgrammingConstraint::ScaleMultipliers(
+    absl::Span<const std::pair<RowIndex, double>> lp_multipliers,
+    bool take_objective_into_account, IntegerValue* scaling) const {
+  *scaling = 0;
 
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
-  if (tmp_cp_multipliers_.empty()) {
+  if (lp_multipliers.empty()) {
     // Empty linear combinaison.
     return integer_multipliers;
   }
 
   // TODO(user): we currently do not support scaling down, so we just abort
   // if with a scaling of 1, we reach the overflow_cap.
+  const int64_t overflow_cap = std::numeric_limits<int64_t>::max();
   if (ScalingCanOverflow(/*power=*/0, take_objective_into_account,
-                         tmp_cp_multipliers_, overflow_cap)) {
+                         lp_multipliers, overflow_cap)) {
     ++num_scaling_issues_;
     return integer_multipliers;
   }
@@ -2151,7 +2148,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     if (candidate >= 63) return false;
 
     return !ScalingCanOverflow(candidate, take_objective_into_account,
-                               tmp_cp_multipliers_, overflow_cap);
+                               lp_multipliers, overflow_cap);
   });
   *scaling = int64_t{1} << power;
 
@@ -2159,7 +2156,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
   // Note that we use the exact same formula as in ScalingCanOverflow().
   int64_t gcd = scaling->value();
   const double scaling_as_double = static_cast<double>(scaling->value());
-  for (const auto [row, double_coeff] : tmp_cp_multipliers_) {
+  for (const auto [row, double_coeff] : lp_multipliers) {
     const IntegerValue coeff(std::round(double_coeff * scaling_as_double));
     if (coeff != 0) {
       gcd = std::gcd(gcd, std::abs(coeff.value()));
@@ -2431,7 +2428,7 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
   for (RowIndex row(0); row < num_rows; ++row) {
     const double value = -simplex_.GetDualValue(row);
     if (std::abs(value) < kZeroTolerance) continue;
-    tmp_lp_multipliers_.push_back({row, value});
+    tmp_lp_multipliers_.push_back({row, scaler_.UnscaleDualValue(row, value)});
   }
 
   // In this case, the LP lower bound match the basic objective "constraint"
@@ -2454,9 +2451,9 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
   }
 
   IntegerValue scaling = 0;
-  tmp_integer_multipliers_ = ScaleLpMultiplier(
-      take_objective_into_account,
-      /*ignore_trivial_constraints=*/true, tmp_lp_multipliers_, &scaling);
+  IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
+  tmp_integer_multipliers_ = ScaleMultipliers(
+      tmp_lp_multipliers_, take_objective_into_account, &scaling);
   if (scaling == 0) {
     VLOG(1) << simplex_.GetProblemStatus();
     VLOG(1) << "Issue while computing the exact LP reason. Aborting.";
@@ -2514,11 +2511,14 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
   for (RowIndex row(0); row < ray.size(); ++row) {
     const double value = ray[row];
     if (std::abs(value) < kZeroTolerance) continue;
-    tmp_lp_multipliers_.push_back({row, value});
+
+    // This is the same as UnscaleLeftSolveValue(). Note that we don't need to
+    // scale by the objective factor here like we do in UnscaleDualValue().
+    tmp_lp_multipliers_.push_back({row, row_factors_[row.value()] * value});
   }
-  tmp_integer_multipliers_ = ScaleLpMultiplier(
-      /*take_objective_into_account=*/false,
-      /*ignore_trivial_constraints=*/true, tmp_lp_multipliers_, &scaling);
+  IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
+  tmp_integer_multipliers_ = ScaleMultipliers(
+      tmp_lp_multipliers_, /*take_objective_into_account=*/false, &scaling);
   if (scaling == 0) {
     VLOG(1) << "Isse while computing the exact dual ray reason. Aborting.";
     return true;

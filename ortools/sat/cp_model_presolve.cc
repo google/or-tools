@@ -1787,6 +1787,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
           linear_for_true);
       AddLinearExpressionToLinearConstraint(ct->int_prod().target(), -1,
                                             linear_for_true);
+      context_->CanonicalizeLinearConstraint(constraint_for_false);
+      context_->CanonicalizeLinearConstraint(constraint_for_true);
       context_->UpdateRuleStats("int_prod: boolean affine term");
       context_->UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
