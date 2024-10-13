@@ -19,6 +19,7 @@
 #include <limits>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -75,6 +76,9 @@ struct CpModelProtoWithMapping {
                                      bool negate = false);
   std::vector<int> LookupVars(const fz::Argument& argument);
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
+
+  // Encoding literals.
+  int GetOrCreateVarEqValueLiteral(int var, int64_t value);
 
   // Create and return the indices of the IntervalConstraint corresponding
   // to the flatzinc "interval" specified by a start var and a size var.
@@ -134,6 +138,7 @@ struct CpModelProtoWithMapping {
   absl::flat_hash_map<std::tuple<int, int64_t, int, int64_t, int>, int>
       interval_key_to_index;
   absl::flat_hash_map<int, int> var_to_lit_implies_greater_than_zero;
+  absl::flat_hash_map<std::pair<int, int64_t>, int> value_encoding_literals;
 };
 
 int CpModelProtoWithMapping::LookupConstant(int64_t value) {
@@ -224,6 +229,34 @@ std::vector<VarOrValue> CpModelProtoWithMapping::LookupVarsOrValues(
       }
     }
   }
+  return result;
+}
+
+int CpModelProtoWithMapping::GetOrCreateVarEqValueLiteral(int var,
+                                                          int64_t value) {
+  const std::pair<int, int64_t> key = {var, value};
+  const auto it = value_encoding_literals.find(key);
+  if (it != value_encoding_literals.end()) {
+    return it->second;
+  }
+  const int result = proto.variables_size();
+  IntegerVariableProto* var_proto = proto.add_variables();
+  var_proto->add_domain(0);
+  var_proto->add_domain(1);
+  value_encoding_literals[key] = result;
+
+  ConstraintProto* pos_enforcement = AddEnforcedConstraint(result);
+  pos_enforcement->mutable_linear()->add_vars(var);
+  pos_enforcement->mutable_linear()->add_coeffs(1);
+  pos_enforcement->mutable_linear()->add_domain(value);
+  pos_enforcement->mutable_linear()->add_domain(value);
+
+  ConstraintProto* neg_enforcement = AddEnforcedConstraint(NegatedRef(result));
+  neg_enforcement->mutable_linear()->add_vars(var);
+  neg_enforcement->mutable_linear()->add_coeffs(1);
+  const Domain complement = Domain(value).Complement().IntersectionWith(
+      ReadDomainFromProto(proto.variables(var)));
+  FillDomainInProto(complement, neg_enforcement->mutable_linear());
   return result;
 }
 
@@ -634,46 +667,87 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
              fz_ct.type == "array_var_int_element" ||
              fz_ct.type == "array_var_bool_element" ||
              fz_ct.type == "array_int_element_nonshifted") {
+    // Compatibility with the old format.
+    CHECK(fz_ct.arguments[0].type == fz::Argument::VAR_REF ||
+          fz_ct.arguments[0].type == fz::Argument::INT_VALUE);
+    auto* arg = ct->mutable_element();
+    arg->set_index(LookupVar(fz_ct.arguments[0]));
+    arg->set_target(LookupVar(fz_ct.arguments[2]));
+
+    if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
+      // Add a dummy variable at position zero because flatzinc index start
+      // at 1.
+      // TODO(user): Make sure that zero is not in the index domain...
+      arg->add_vars(LookupConstant(0));
+    }
+    for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
+  } else if (fz_ct.type == "ortools_array_int_element" ||
+             fz_ct.type == "ortools_array_bool_element" ||
+             fz_ct.type == "ortools_array_var_int_element" ||
+             fz_ct.type == "ortools_array_var_bool_element") {
     if (fz_ct.arguments[0].type == fz::Argument::VAR_REF ||
         fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
       auto* arg = ct->mutable_element();
       arg->set_index(LookupVar(fz_ct.arguments[0]));
-      arg->set_target(LookupVar(fz_ct.arguments[2]));
-
-      if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
-        // Add a dummy variable at position zero because flatzinc index start
-        // at 1.
-        // TODO(user): Make sure that zero is not in the index domain...
-        arg->add_vars(LookupConstant(0));
-      }
-      for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
-    } else {
-      // Special case added by the presolve or in flatzinc. We encode this
-      // as a table constraint.
-      CHECK(!absl::EndsWith(fz_ct.type, "_nonshifted"));
-      auto* arg = ct->mutable_table();
-
-      // the constraint is:
-      //   values[coeff1 * vars[0] + coeff2 * vars[1] + offset] == target.
-      for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
-      arg->add_vars(LookupVar(fz_ct.arguments[2]));  // the target
-
-      const std::vector<int64_t>& values = fz_ct.arguments[1].values;
-      const int64_t coeff1 = fz_ct.arguments[3].values[0];
-      const int64_t coeff2 = fz_ct.arguments[3].values[1];
-      const int64_t offset = fz_ct.arguments[4].values[0] - 1;
-
-      for (const int64_t a : AllValuesInDomain(proto.variables(arg->vars(0)))) {
-        for (const int64_t b :
-             AllValuesInDomain(proto.variables(arg->vars(1)))) {
-          const int index = coeff1 * a + coeff2 * b + offset;
-          CHECK_GE(index, 0);
-          CHECK_LT(index, values.size());
-          arg->add_values(a);
-          arg->add_values(b);
-          arg->add_values(values[index]);
+      arg->set_target(LookupVar(fz_ct.arguments[3]));
+      CHECK_EQ(fz_ct.arguments[1].type, fz::Argument::INT_INTERVAL);
+      const int64_t min_index = fz_ct.arguments[1].values.front();
+      if (min_index > 0) {
+        const int zero_cst = LookupConstant(0);
+        for (int i = 0; i < min_index; ++i) {
+          arg->add_vars(zero_cst);
         }
       }
+      for (const int var : LookupVars(fz_ct.arguments[2])) arg->add_vars(var);
+    }
+  } else if (fz_ct.type == "ortools_array_var_int_element2d" ||
+             fz_ct.type == "ortools_array_var_bool_element2d") {
+    const int index1 = LookupVar(fz_ct.arguments[0]);
+    const int index2 = LookupVar(fz_ct.arguments[1]);
+    const int target = LookupVar(fz_ct.arguments[5]);
+
+    CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_INTERVAL);
+    CHECK_EQ(fz_ct.arguments[3].type, fz::Argument::INT_INTERVAL);
+    const int64_t min_1 = fz_ct.arguments[2].values[0];
+    const int64_t max_1 = fz_ct.arguments[2].values[1];
+    const int64_t min_2 = fz_ct.arguments[3].values[0];
+    const int64_t max_2 = fz_ct.arguments[3].values[1];
+
+    if (fz_ct.arguments[4].type == fz::Argument::INT_LIST) {
+      // If the array is constant, we encode this as a table constraint.
+      auto* arg = ct->mutable_table();
+      arg->add_vars(index1);
+      arg->add_vars(index2);
+      arg->add_vars(target);
+
+      int i = 0;
+      for (int64_t val_1 = min_1; val_1 <= max_1; ++val_1) {
+        for (int64_t val_2 = min_2; val_2 <= max_2; ++val_2) {
+          arg->add_values(val_1);
+          arg->add_values(val_2);
+          arg->add_values(fz_ct.arguments[4].ValueAt(i++));
+        }
+      }
+      CHECK_EQ(i, fz_ct.arguments[4].Size());
+    } else {
+      std::vector<int> elems = LookupVars(fz_ct.arguments[4]);
+      int i = 0;
+      for (int64_t val_1 = min_1; val_1 <= max_1; ++val_1) {
+        const int lit1 = GetOrCreateVarEqValueLiteral(index1, val_1);
+        for (int64_t val_2 = min_2; val_2 <= max_2; ++val_2) {
+          const int lit2 = GetOrCreateVarEqValueLiteral(index2, val_2);
+          if (i != 0) ct = proto.add_constraints();  // new constraint.
+          ct->add_enforcement_literal(lit1);
+          ct->add_enforcement_literal(lit2);
+          ct->mutable_linear()->add_vars(target);
+          ct->mutable_linear()->add_coeffs(1);
+          ct->mutable_linear()->add_vars(elems[i++]);
+          ct->mutable_linear()->add_coeffs(-1);
+          ct->mutable_linear()->add_domain(0);
+          ct->mutable_linear()->add_domain(0);
+        }
+      }
+      CHECK_EQ(i, fz_ct.arguments[4].Size());
     }
   } else if (fz_ct.type == "ortools_table_int") {
     auto* arg = ct->mutable_table();
