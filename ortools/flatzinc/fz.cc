@@ -39,6 +39,7 @@
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
+#include "ortools/flatzinc/presolve.h"
 #include "ortools/util/logging.h"
 
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
@@ -49,6 +50,7 @@ ABSL_FLAG(bool, free_search, false,
           "If false, the solver must follow the defined search."
           "If true, other search are allowed.");
 ABSL_FLAG(int, threads, 0, "Number of threads the solver will use.");
+ABSL_FLAG(bool, presolve, true, "Presolve the model to simplify it.");
 ABSL_FLAG(bool, statistics, false, "Print solver statistics after search.");
 ABSL_FLAG(bool, read_from_stdin, false,
           "Read the FlatZinc from stdin, not from a file.");
@@ -150,6 +152,15 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
   SOLVER_LOG(logger, "File ", (input_is_filename ? input : "stdin"),
              " parsed in ", timer.GetInMs(), " ms");
   SOLVER_LOG(logger, "");
+
+  // Presolve the model.
+  Presolver presolve(logger);
+  SOLVER_LOG(logger, "Presolve model");
+  timer.Reset();
+  timer.Start();
+  presolve.Run(&model);
+  SOLVER_LOG(logger, "  - done in ", timer.GetInMs(), " ms");
+  SOLVER_LOG(logger);
 
   // Print statistics.
   ModelStatistics stats(model, logger);
