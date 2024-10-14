@@ -513,12 +513,12 @@ add_custom_command(
    $<TARGET_SONAME_FILE:absl::vlog_config_internal>
    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
-   $<TARGET_SONAME_FILE:protobuf::libprotobuf>
-   ${PYTHON_PROJECT}/.libs
-  COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
    $<TARGET_SONAME_FILE:re2::re2>
+   ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
+   $<TARGET_SONAME_FILE:protobuf::libprotobuf>
    ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
@@ -532,8 +532,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<BOOL:${BUILD_Clp}>,copy,true>
    $<TARGET_SONAME_FILE:Coin::Clp>
-   #$<TARGET_SONAME_FILE:Coin::OsiClp>
-   #$<TARGET_SONAME_FILE:Coin::ClpSolver>
+   $<TARGET_SONAME_FILE:Coin::OsiClp>
+   $<TARGET_SONAME_FILE:Coin::ClpSolver>
    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<BOOL:${BUILD_Cgl}>,copy,true>
@@ -542,7 +542,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<BOOL:${BUILD_Cbc}>,copy,true>
    $<TARGET_SONAME_FILE:Coin::Cbc>
-   #$<TARGET_SONAME_FILE:Coin::OsiCbc>
+   $<TARGET_SONAME_FILE:Coin::OsiCbc>
    $<TARGET_SONAME_FILE:Coin::CbcSolver>
    ${PYTHON_PROJECT}/.libs
 
