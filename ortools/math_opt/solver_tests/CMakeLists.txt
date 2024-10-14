@@ -110,15 +110,16 @@ ortools_cxx_library(
   TESTING
 )
 
-ortools_cxx_test(
-  NAME
-    ${_PREFIX}_unregistered_solver_test
-  SOURCES
-    "unregistered_solver_test.cc"
-  LINK_LIBRARIES
-    GTest::gmock
-    GTest::gmock_main
-)
+# In CMake or-tools is linked with all enable solvers so this test won't work.
+#ortools_cxx_test(
+#  NAME
+#    ${_PREFIX}_unregistered_solver_test
+#  SOURCES
+#    "unregistered_solver_test.cc"
+#  LINK_LIBRARIES
+#    GTest::gmock
+#    GTest::gmock_main
+#)
 
 ortools_cxx_library(
   NAME
