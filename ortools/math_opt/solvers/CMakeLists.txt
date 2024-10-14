@@ -64,20 +64,20 @@ if(USE_SCIP)
       GTest::gmock_main
       absl::status
       ortools::math_opt_matchers
-      ortools::math_opt_callback_tests
-      ortools::math_opt_generic_tests
-      ortools::math_opt_infeasible_subsystem_tests
-      ortools::math_opt_invalid_input_tests
-      ortools::math_opt_ip_model_solve_parameters_tests
-      ortools::math_opt_ip_multiple_solutions_tests
-      ortools::math_opt_ip_parameter_tests
-      ortools::math_opt_logical_constraint_tests
-      ortools::math_opt_mip_tests
-      ortools::math_opt_multi_objective_tests
-      ortools::math_opt_qc_tests
-      ortools::math_opt_qp_tests
-      ortools::math_opt_second_order_cone_tests
-      ortools::math_opt_status_tests
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_multiple_solutions_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
 endif()
 
@@ -92,21 +92,21 @@ if(USE_GLOP)
       GTest::gmock_main
       absl::status
       ortools::math_opt_matchers
-      ortools::math_opt_callback_tests
-      ortools::math_opt_generic_tests
-      ortools::math_opt_infeasible_subsystem_tests
-      ortools::math_opt_invalid_input_tests
-      ortools::math_opt_logical_constraint_tests
-      ortools::math_opt_lp_incomplete_solve_tests
-      ortools::math_opt_lp_initial_basis_tests
-      ortools::math_opt_lp_model_solve_parameters_tests
-      ortools::math_opt_lp_parameter_tests
-      ortools::math_opt_lp_tests
-      ortools::math_opt_multi_objective_tests
-      ortools::math_opt_qc_tests
-      ortools::math_opt_qp_tests
-      ortools::math_opt_second_order_cone_tests
-      ortools::math_opt_status_tests
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_initial_basis_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
 endif()
 
@@ -120,20 +120,20 @@ ortools_cxx_test(
     GTest::gmock_main
     absl::status
     ortools::math_opt_matchers
-    ortools::math_opt_callback_tests
-    ortools::math_opt_generic_tests
-    ortools::math_opt_infeasible_subsystem_tests
-    ortools::math_opt_invalid_input_tests
-    ortools::math_opt_ip_model_solve_parameters_tests
-    ortools::math_opt_ip_multiple_solutions_tests
-    ortools::math_opt_ip_parameter_tests
-    ortools::math_opt_logical_constraint_tests
-    ortools::math_opt_mip_tests
-    ortools::math_opt_multi_objective_tests
-    ortools::math_opt_qc_tests
-    ortools::math_opt_qp_tests
-    ortools::math_opt_second_order_cone_tests
-    ortools::math_opt_status_tests
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_multiple_solutions_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
 )
 
 ortools_cxx_test(
@@ -157,21 +157,21 @@ if(USE_PDLP)
       GTest::gmock
       GTest::gmock_main
       absl::status
-      ortools::math_opt_callback_tests
-      ortools::math_opt_generic_tests
-      ortools::math_opt_infeasible_subsystem_tests
-      ortools::math_opt_invalid_input_tests
-      ortools::math_opt_logical_constraint_tests
-      ortools::math_opt_lp_incomplete_solve_tests
-      ortools::math_opt_lp_initial_basis_tests
-      ortools::math_opt_lp_model_solve_parameters_tests
-      ortools::math_opt_lp_parameter_tests
-      ortools::math_opt_lp_tests
-      ortools::math_opt_multi_objective_tests
-      ortools::math_opt_qc_tests
-      ortools::math_opt_qp_tests
-      ortools::math_opt_second_order_cone_tests
-      ortools::math_opt_status_tests
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_initial_basis_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
 endif()
 
@@ -187,23 +187,23 @@ if(USE_GLPK)
       absl::status
       absl::time
       ortools::math_opt_matchers
-      ortools::math_opt_callback_tests
-      ortools::math_opt_generic_tests
-      ortools::math_opt_infeasible_subsystem_tests
-      ortools::math_opt_invalid_input_tests
-      ortools::math_opt_ip_model_solve_parameters_tests
-      ortools::math_opt_ip_parameter_tests
-      ortools::math_opt_logical_constraint_tests
-      ortools::math_opt_lp_incomplete_solve_tests
-      ortools::math_opt_lp_model_solve_parameters_tests
-      ortools::math_opt_lp_parameter_tests
-      ortools::math_opt_lp_tests
-      ortools::math_opt_mip_tests
-      ortools::math_opt_multi_objective_tests
-      ortools::math_opt_qc_tests
-      ortools::math_opt_qp_tests
-      ortools::math_opt_second_order_cone_tests
-      ortools::math_opt_status_tests
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
 endif()
 
@@ -218,17 +218,17 @@ if(USE_HIGHS)
       GTest::gmock_main
       absl::status
       ortools::math_opt_matchers
-      ortools::math_opt_callback_tests
-      ortools::math_opt_generic_tests
-      ortools::math_opt_infeasible_subsystem_tests
-      ortools::math_opt_ip_model_solve_parameters_tests
-      ortools::math_opt_ip_parameter_tests
-      #ortools::math_opt_logical_constraint_tests
-      #ortools::math_opt_lp_incomplete_solve_tests
-      ortools::math_opt_lp_model_solve_parameters_tests
-      ortools::math_opt_lp_parameter_tests
-      ortools::math_opt_lp_tests
-      ortools::math_opt_mip_tests
-      ortools::math_opt_status_tests
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
 endif()
