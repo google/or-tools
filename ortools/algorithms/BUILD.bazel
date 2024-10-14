@@ -385,6 +385,15 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "dense_doubly_linked_list_test",
+    srcs = ["dense_doubly_linked_list_test.cc"],
+    deps = [
+        ":dense_doubly_linked_list",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "dynamic_partition",
     srcs = ["dynamic_partition.cc"],

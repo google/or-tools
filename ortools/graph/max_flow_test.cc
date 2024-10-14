@@ -36,7 +36,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/file_util.h"
 
+#if not defined(ROOT_DIR)
 #define ROOT_DIR "com_google_ortools/"
+#endif
 
 namespace operations_research {
 namespace {

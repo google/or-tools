@@ -15,6 +15,9 @@
 cmake_minimum_required(VERSION 3.20)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Enable output of compile commands during generation.
+option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
+
 include(utils)
 set_version(VERSION)
 
