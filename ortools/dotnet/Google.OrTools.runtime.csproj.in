@@ -27,6 +27,7 @@
     <Content Include="
       $<TARGET_FILE:google-ortools-native>
       $<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:;$<TARGET_SONAME_FILE:@PROJECT_NAME@>>
+      $<$<BOOL:${BUILD_ZLIB}>:;$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::base>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::bad_optional_access>>

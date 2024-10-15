@@ -436,8 +436,11 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
   # Don't need to copy static lib on Windows.
   COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
+    $<TARGET_SONAME_FILE:ZLIB::ZLIB>
+    ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
-    # ortools direct deps
     $<TARGET_SONAME_FILE:absl::base>
     $<TARGET_SONAME_FILE:absl::bad_any_cast_impl>
     $<TARGET_SONAME_FILE:absl::bad_optional_access>

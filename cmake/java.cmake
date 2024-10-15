@@ -282,6 +282,10 @@ add_custom_command(
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
+    $<TARGET_SONAME_FILE:ZLIB::ZLIB>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<TARGET_SONAME_FILE:absl::base>
     $<TARGET_SONAME_FILE:absl::bad_any_cast_impl>
