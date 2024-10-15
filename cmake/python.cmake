@@ -439,7 +439,11 @@ add_custom_command(
    $<IF:$<BOOL:${BUILD_absl}>,copy,true>
    # ortools direct deps
    $<TARGET_SONAME_FILE:absl::base>
+   $<TARGET_SONAME_FILE:absl::bad_any_cast_impl>
+   $<TARGET_SONAME_FILE:absl::bad_optional_access>
+   $<TARGET_SONAME_FILE:absl::bad_variant_access>
    $<TARGET_SONAME_FILE:absl::city>
+   $<TARGET_SONAME_FILE:absl::civil_time>
    $<TARGET_SONAME_FILE:absl::cord>
    $<TARGET_SONAME_FILE:absl::cord_internal>
    $<TARGET_SONAME_FILE:absl::cordz_functions>
@@ -447,6 +451,7 @@ add_custom_command(
    $<TARGET_SONAME_FILE:absl::cordz_info>
    $<TARGET_SONAME_FILE:absl::crc32c>
    $<TARGET_SONAME_FILE:absl::crc_cord_state>
+   $<TARGET_SONAME_FILE:absl::crc_cpu_detect>
    $<TARGET_SONAME_FILE:absl::crc_internal>
    $<TARGET_SONAME_FILE:absl::debugging_internal>
    $<TARGET_SONAME_FILE:absl::decode_rust_punycode>
@@ -466,10 +471,13 @@ add_custom_command(
    $<TARGET_SONAME_FILE:absl::flags_reflection>
    $<TARGET_SONAME_FILE:absl::flags_usage>
    $<TARGET_SONAME_FILE:absl::flags_usage_internal>
+   $<TARGET_SONAME_FILE:absl::graphcycles_internal>
    $<TARGET_SONAME_FILE:absl::hash>
+   $<TARGET_SONAME_FILE:absl::hashtablez_sampler>
    $<TARGET_SONAME_FILE:absl::int128>
    $<TARGET_SONAME_FILE:absl::kernel_timeout_internal>
    $<TARGET_SONAME_FILE:absl::leak_check>
+   $<TARGET_SONAME_FILE:absl::log_entry>
    $<TARGET_SONAME_FILE:absl::log_flags>
    $<TARGET_SONAME_FILE:absl::log_globals>
    $<TARGET_SONAME_FILE:absl::log_initialize>
@@ -482,6 +490,7 @@ add_custom_command(
    $<TARGET_SONAME_FILE:absl::log_internal_message>
    $<TARGET_SONAME_FILE:absl::log_internal_nullguard>
    $<TARGET_SONAME_FILE:absl::log_internal_proto>
+   $<TARGET_SONAME_FILE:absl::log_severity>
    $<TARGET_SONAME_FILE:absl::log_sink>
    $<TARGET_SONAME_FILE:absl::low_level_hash>
    $<TARGET_SONAME_FILE:absl::malloc_internal>
@@ -494,6 +503,7 @@ add_custom_command(
    $<TARGET_SONAME_FILE:absl::random_internal_randen_slow>
    $<TARGET_SONAME_FILE:absl::random_internal_seed_material>
    $<TARGET_SONAME_FILE:absl::random_seed_gen_exception>
+   $<TARGET_SONAME_FILE:absl::random_seed_sequences>
    $<TARGET_SONAME_FILE:absl::raw_hash_set>
    $<TARGET_SONAME_FILE:absl::raw_logging_internal>
    $<TARGET_SONAME_FILE:absl::spinlock_wait>
@@ -502,6 +512,7 @@ add_custom_command(
    $<TARGET_SONAME_FILE:absl::statusor>
    $<TARGET_SONAME_FILE:absl::str_format_internal>
    $<TARGET_SONAME_FILE:absl::strerror>
+   $<TARGET_SONAME_FILE:absl::string_view>
    $<TARGET_SONAME_FILE:absl::strings>
    $<TARGET_SONAME_FILE:absl::strings_internal>
    $<TARGET_SONAME_FILE:absl::symbolize>
