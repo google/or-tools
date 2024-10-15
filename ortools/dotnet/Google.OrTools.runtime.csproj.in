@@ -101,7 +101,7 @@
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::statusor>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::str_format_internal>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::strerror>>
-      $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::string_view>
+      $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::string_view>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::strings>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::strings_internal>>
       $<$<BOOL:${BUILD_absl}>:;$<TARGET_SONAME_FILE:absl::symbolize>>
