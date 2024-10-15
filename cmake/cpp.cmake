@@ -639,8 +639,7 @@ configure_package_config_file(cmake/${PROJECT_NAME}Config.cmake.in
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-  COMPATIBILITY SameMajorVersion
-  )
+  COMPATIBILITY SameMajorVersion)
 install(
   FILES
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
