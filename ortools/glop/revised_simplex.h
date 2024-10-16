@@ -187,6 +187,10 @@ class RevisedSimplex {
   double DeterministicTime() const;
   bool objective_limit_reached() const { return objective_limit_reached_; }
 
+  DenseColumn::ConstView GetDualSquaredNorms() {
+    return dual_edge_norms_.GetEdgeSquaredNorms();
+  }
+
   const DenseBitRow& GetNotBasicBitRow() const {
     return variables_info_.GetNotBasicBitRow();
   }
