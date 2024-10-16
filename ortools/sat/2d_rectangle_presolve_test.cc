@@ -207,7 +207,7 @@ TEST(RectanglePresolve, RandomTest) {
   }
 }
 
-Neighbours NaiveBuildNeighboursGraph(const std::vector<Rectangle>& rectangles) {
+Neighbours NaiveBuildNeighboursGraph(absl::Span<const Rectangle> rectangles) {
   auto interval_intersect = [](IntegerValue begin1, IntegerValue end1,
                                IntegerValue begin2, IntegerValue end2) {
     return std::max(begin1, begin2) < std::min(end1, end2);

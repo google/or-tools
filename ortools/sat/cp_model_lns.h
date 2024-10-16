@@ -238,7 +238,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
   // tail index, and going in sequence up to the last arc before the circuit is
   // closed. Each entry correspond to the arc literal on the circuit.
-  std::vector<std::vector<int>> GetRoutingPaths(
+  std::vector<std::vector<int>> GetRoutingPathVariables(
       const CpSolverResponse& initial_solution) const;
 
   // Returns all precedences extracted from the scheduling constraint and the
@@ -391,6 +391,9 @@ class NeighborhoodGenerator {
     IntegerValue initial_best_objective = IntegerValue(0);
     IntegerValue base_objective = IntegerValue(0);
     IntegerValue new_objective = IntegerValue(0);
+
+    // For debugging.
+    int task_id = 0;
 
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
@@ -782,7 +785,7 @@ class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// This routing based LNS generator aims are relaxing one full path, and make
+// This routing based LNS generator aims at relaxing one full path, and make
 // some room on the other paths to absorb the nodes of the relaxed path.
 //
 // In order to do so, it will relax the first and the last arc of each path in
@@ -795,6 +798,19 @@ class RoutingFullPathNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
+};
+
+// This routing based LNS generator performs like the
+// RoutingRandomNeighborhoodGenerator, but always relax the arcs going in and
+// out of the depot for routes constraints, and of the node with the minimal
+// index for circuit constraints.
+class RoutingStartsNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  RoutingStartsNeighborhoodGenerator(NeighborhoodGeneratorHelper const* helper,
+                                     absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         SolveData& data, absl::BitGenRef random) final;
 };

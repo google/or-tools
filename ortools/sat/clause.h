@@ -332,6 +332,13 @@ class ClauseManager : public SatPropagator {
     add_clause_callback_ = std::move(add_clause_callback);
   }
 
+  // Removes the add clause callback and returns it. This can be used to
+  // temporarily disable the callback.
+  absl::AnyInvocable<void(int lbd, absl::Span<const Literal>)>
+  TakeAddClauseCallback() {
+    return std::move(add_clause_callback_);
+  }
+
  private:
   // Attaches the given clause. This eventually propagates a literal which is
   // enqueued on the trail. Returns false if a contradiction was encountered.

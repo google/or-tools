@@ -156,12 +156,15 @@ std::vector<int> GetOrbits(
   MergingPartition union_find;
   union_find.Reset(n);
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {
+    DCHECK(perm != nullptr);
     const int num_cycles = perm->NumCycles();
     for (int i = 0; i < num_cycles; ++i) {
       // Note that there is currently no random access api like cycle[j].
       int first;
       bool is_first = true;
       for (const int x : perm->Cycle(i)) {
+        DCHECK_GE(x, 0);
+        DCHECK_LT(x, n);
         if (is_first) {
           first = x;
           is_first = false;
@@ -230,6 +233,22 @@ std::vector<int> TracePoint(
     point = next;
   }
   return result;
+}
+
+std::unique_ptr<SparsePermutation> CreateSparsePermutationFromProto(
+    int n, const SparsePermutationProto& proto) {
+  auto perm = std::make_unique<SparsePermutation>(n);
+  int support_index = 0;
+  const int num_cycle = proto.cycle_sizes().size();
+  for (int i = 0; i < num_cycle; ++i) {
+    const int size = proto.cycle_sizes(i);
+    for (int j = 0; j < size; ++j) {
+      DCHECK_LT(proto.support(support_index), n);
+      perm->AddToCurrentCycle(proto.support(support_index++));
+    }
+    perm->CloseCurrentCycle();
+  }
+  return perm;
 }
 
 }  // namespace sat

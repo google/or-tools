@@ -155,6 +155,13 @@ LinearConstraint LinearConstraintBuilder::BuildConstraint(IntegerValue lb,
   return result;
 }
 
+bool LinearConstraintBuilder::BuildIntoConstraintAndCheckOverflow(
+    IntegerValue lb, IntegerValue ub, LinearConstraint* ct) {
+  ct->lb = lb > kMinIntegerValue ? lb - offset_ : lb;
+  ct->ub = ub < kMaxIntegerValue ? ub - offset_ : ub;
+  return MergePositiveVariableTermsAndCheckForOverflow(&terms_, ct);
+}
+
 LinearExpression LinearConstraintBuilder::BuildExpression() {
   LinearExpression result;
   CleanTermsAndFillConstraint(&terms_, &result);
