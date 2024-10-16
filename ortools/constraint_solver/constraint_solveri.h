@@ -509,7 +509,7 @@ class CallMethod0 : public Demon {
 
   ~CallMethod0() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(); }
+  void Run(Solver* const) override { (constraint_->*method_)(); }
 
   std::string DebugString() const override {
     return "CallMethod_" + name_ + "(" + constraint_->DebugString() + ")";
@@ -517,7 +517,7 @@ class CallMethod0 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)();
+  void (T::* const method_)();
   const std::string name_;
 };
 
@@ -548,7 +548,7 @@ class CallMethod1 : public Demon {
 
   ~CallMethod1() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
+  void Run(Solver* const) override { (constraint_->*method_)(param1_); }
 
   std::string DebugString() const override {
     return absl::StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
@@ -557,7 +557,7 @@ class CallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P);
+  void (T::* const method_)(P);
   const std::string name_;
   P param1_;
 };
@@ -582,7 +582,7 @@ class CallMethod2 : public Demon {
 
   ~CallMethod2() override {}
 
-  void Run(Solver* const s) override {
+  void Run(Solver* const) override {
     (constraint_->*method_)(param1_, param2_);
   }
 
@@ -594,7 +594,7 @@ class CallMethod2 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q);
+  void (T::* const method_)(P, Q);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -622,7 +622,7 @@ class CallMethod3 : public Demon {
 
   ~CallMethod3() override {}
 
-  void Run(Solver* const s) override {
+  void Run(Solver* const) override {
     (constraint_->*method_)(param1_, param2_, param3_);
   }
 
@@ -636,7 +636,7 @@ class CallMethod3 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q, R);
+  void (T::* const method_)(P, Q, R);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -666,7 +666,7 @@ class DelayedCallMethod0 : public Demon {
 
   ~DelayedCallMethod0() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(); }
+  void Run(Solver* const) override { (constraint_->*method_)(); }
 
   Solver::DemonPriority priority() const override {
     return Solver::DELAYED_PRIORITY;
@@ -679,7 +679,7 @@ class DelayedCallMethod0 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)();
+  void (T::* const method_)();
   const std::string name_;
 };
 
@@ -700,7 +700,7 @@ class DelayedCallMethod1 : public Demon {
 
   ~DelayedCallMethod1() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
+  void Run(Solver* const) override { (constraint_->*method_)(param1_); }
 
   Solver::DemonPriority priority() const override {
     return Solver::DELAYED_PRIORITY;
@@ -714,7 +714,7 @@ class DelayedCallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P);
+  void (T::* const method_)(P);
   const std::string name_;
   P param1_;
 };
@@ -740,7 +740,7 @@ class DelayedCallMethod2 : public Demon {
 
   ~DelayedCallMethod2() override {}
 
-  void Run(Solver* const s) override {
+  void Run(Solver* const) override {
     (constraint_->*method_)(param1_, param2_);
   }
 
@@ -757,7 +757,7 @@ class DelayedCallMethod2 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q);
+  void (T::* const method_)(P, Q);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -891,8 +891,64 @@ class LightIntIntFunctionElementCt : public Constraint {
   IntVar* const var_;
   IntVar* const index1_;
   IntVar* const index2_;
-  Solver::IndexEvaluator2 values_;
+  F values_;
   std::function<bool()> deep_serialize_;
+};
+
+// ----- LightIntIntIntFunctionElementCt -----
+
+template <typename F>
+class LightIntIntIntFunctionElementCt : public Constraint {
+ public:
+  LightIntIntIntFunctionElementCt(Solver* const solver, IntVar* const var,
+                                  IntVar* const index1, IntVar* const index2,
+                                  IntVar* const index3, F values)
+      : Constraint(solver),
+        var_(var),
+        index1_(index1),
+        index2_(index2),
+        index3_(index3),
+        values_(std::move(values)) {}
+  ~LightIntIntIntFunctionElementCt() override {}
+  void Post() override {
+    Demon* demon = MakeConstraintDemon0(
+        solver(), this, &LightIntIntIntFunctionElementCt::IndexBound,
+        "IndexBound");
+    index1_->WhenBound(demon);
+    index2_->WhenBound(demon);
+    index3_->WhenBound(demon);
+  }
+  void InitialPropagate() override { IndexBound(); }
+
+  std::string DebugString() const override {
+    return "LightIntIntFunctionElementCt";
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kLightElementEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index1_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
+                                            index2_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex3Argument,
+                                            index3_);
+    visitor->EndVisitConstraint(ModelVisitor::kLightElementEqual, this);
+  }
+
+ private:
+  void IndexBound() {
+    if (index1_->Bound() && index2_->Bound() && index3_->Bound()) {
+      var_->SetValue(values_(index1_->Min(), index2_->Min(), index3_->Min()));
+    }
+  }
+
+  IntVar* const var_;
+  IntVar* const index1_;
+  IntVar* const index2_;
+  IntVar* const index3_;
+  F values_;
 };
 
 /// The base class for all local search operators.
@@ -1102,7 +1158,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   }
   /// Returns the variable of given index.
   IntVar* Var(int64_t index) const { return vars_[index]; }
-  virtual bool SkipUnchanged(int index) const { return false; }
+  virtual bool SkipUnchanged(int) const { return false; }
   int64_t OldValue(int64_t index) const { return state_.CommittedValue(index); }
   int64_t PrevValue(int64_t index) const {
     return state_.CheckPointValue(index);
@@ -1324,23 +1380,31 @@ class PathOperator : public IntVarLocalSearchOperator {
     /// 'start_empty_path_class' can be nullptr in which case no symmetries will
     /// be removed.
     std::function<int(int64_t)> start_empty_path_class;
-    /// Callback returning neighbors of a node on a path starting at start_node.
-    std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>
-        get_neighbors;
+    /// Callbacks returning incoming/outgoing neighbors of a node on a path
+    /// starting at start_node.
+    std::function<const std::vector<int>&(
+        /*node=*/int, /*start_node=*/int)>
+        get_incoming_neighbors;
+    std::function<const std::vector<int>&(
+        /*node=*/int, /*start_node=*/int)>
+        get_outgoing_neighbors;
   };
   /// Builds an instance of PathOperator from next and path variables.
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars,
                IterationParameters iteration_parameters);
-  PathOperator(const std::vector<IntVar*>& next_vars,
-               const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
-               bool skip_locally_optimal_paths, bool accept_path_end_base,
-               std::function<int(int64_t)> start_empty_path_class,
-               std::function<const std::vector<int>&(int, int)> get_neighbors)
+  PathOperator(
+      const std::vector<IntVar*>& next_vars,
+      const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
+      bool skip_locally_optimal_paths, bool accept_path_end_base,
+      std::function<int(int64_t)> start_empty_path_class,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors)
       : PathOperator(next_vars, path_vars,
                      {number_of_base_nodes, skip_locally_optimal_paths,
                       accept_path_end_base, std::move(start_empty_path_class),
-                      std::move(get_neighbors)}) {}
+                      std::move(get_incoming_neighbors),
+                      std::move(get_outgoing_neighbors)}) {}
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
   void Reset() override;
@@ -1432,7 +1496,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   // TODO(user): ideally this should be OnSamePath(int64_t node1, int64_t
   // node2);
   /// it's currently way more complicated to implement.
-  virtual bool OnSamePathAsPreviousBase(int64_t base_index) { return false; }
+  virtual bool OnSamePathAsPreviousBase(int64_t) { return false; }
   /// Returns the index of the node to which the base node of index base_index
   /// must be set to when it reaches the end of a path.
   /// By default, it is set to the start of the current path.
@@ -1448,7 +1512,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   }
   /// Indicates if alternatives should be considered when iterating over base
   /// nodes.
-  virtual bool ConsiderAlternatives(int64_t base_index) const { return false; }
+  virtual bool ConsiderAlternatives(int64_t) const { return false; }
 
   int64_t OldNext(int64_t node) const {
     DCHECK(!IsPathEnd(node));
@@ -1524,7 +1588,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   /// Handling node alternatives.
   /// Adds a set of node alternatives to the neighborhood. No node can be in
-  /// two altrnatives.
+  /// two alternatives.
   int AddAlternativeSet(const std::vector<int64_t>& alternative_set) {
     const int alternative = alternative_sets_.size();
     for (int64_t node : alternative_set) {
@@ -1579,14 +1643,48 @@ class PathOperator : public IntVarLocalSearchOperator {
                           int64_t exclude) const;
 
   bool HasNeighbors() const {
-    return iteration_parameters_.get_neighbors != nullptr;
+    return iteration_parameters_.get_incoming_neighbors != nullptr ||
+           iteration_parameters_.get_outgoing_neighbors != nullptr;
   }
 
-  int GetNeighborForBaseNode(int64_t base_index) const {
+  struct Neighbor {
+    // Index of the neighbor node.
+    int neighbor;
+    // True if 'neighbor' is an outgoing neighbor (i.e. arc main_node->neighbor)
+    // and false if it's an incoming one (arc neighbor->main_node).
+    bool outgoing;
+  };
+  Neighbor GetNeighborForBaseNode(int64_t base_index) const {
     DCHECK(HasNeighbors());
-    return iteration_parameters_.get_neighbors(
-        BaseNode(base_index),
-        StartNode(base_index))[calls_per_base_node_[base_index]];
+    const int64_t node = BaseNode(base_index);
+    const int64_t start = StartNode(base_index);
+
+    const int num_calls = calls_per_base_node_[base_index];
+    const auto& get_incoming_neighbors =
+        iteration_parameters_.get_incoming_neighbors;
+    const std::vector<int>& incoming_neighbors =
+        IsPathStart(node) || get_incoming_neighbors == nullptr
+            ? std::vector<int>()
+            : get_incoming_neighbors(node, start);
+
+    if (num_calls < incoming_neighbors.size()) {
+      // Incoming neighbor.
+      DCHECK(!IsPathStart(node));
+      return {.neighbor = incoming_neighbors[num_calls], .outgoing = false};
+    }
+
+    // Outgoing neighbor.
+    if (IsPathEnd(node)) return {.neighbor = -1, .outgoing = true};
+    const auto& get_outgoing_neighbors =
+        iteration_parameters_.get_outgoing_neighbors;
+    if (get_outgoing_neighbors == nullptr) {
+      DCHECK(IsPathStart(node));
+      return {.neighbor = -1, .outgoing = true};
+    }
+    const int index = num_calls - incoming_neighbors.size();
+    DCHECK_LT(index, get_outgoing_neighbors(node, start).size());
+    return {.neighbor = get_outgoing_neighbors(node, start)[index],
+            .outgoing = true};
   }
 
   const int number_of_nexts_;
@@ -1691,12 +1789,19 @@ LocalSearchOperator* MakeLocalSearchOperator(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class);
 
+template <class T, typename ArgType>
+LocalSearchOperator* MakeLocalSearchOperatorWithArg(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class, ArgType arg);
+
 template <class T>
 LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors);
+    std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+    std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors);
 
 /// Classes to which this template function can be applied to as of 04/2014.
 /// Usage: LocalSearchOperator* op = MakeLocalSearchOperator<Relocate>(...);
@@ -1800,7 +1905,8 @@ class LocalSearchState {
   DEFINE_STRONG_INT_TYPE(ConstraintId, int);
   // Adds a variable domain to this state, returns a handler to the new domain.
   VariableDomainId AddVariableDomain(int64_t relaxed_min, int64_t relaxed_max);
-  void RelaxVariableDomain(VariableDomainId domain_id);
+  // Relaxes the domain, returns false iff the domain was already relaxed.
+  bool RelaxVariableDomain(VariableDomainId domain_id);
   bool TightenVariableDomainMin(VariableDomainId domain_id, int64_t value);
   bool TightenVariableDomainMax(VariableDomainId domain_id, int64_t value);
   int64_t VariableDomainMin(VariableDomainId domain_id) const;
@@ -2043,8 +2149,9 @@ class LocalSearchState::Variable {
   }
   void Relax() const {
     if (state_ == nullptr) return;
-    state_->RelaxVariableDomain(domain_id_);
-    state_->PropagateRelax(domain_id_);
+    if (state_->RelaxVariableDomain(domain_id_)) {
+      state_->PropagateRelax(domain_id_);
+    }
   }
   bool Exists() const { return state_ != nullptr; }
 
@@ -2080,9 +2187,9 @@ class LocalSearchFilter : public BaseObject {
  public:
   /// Lets the filter know what delta and deltadelta will be passed in the next
   /// Accept().
-  virtual void Relax(const Assignment* delta, const Assignment* deltadelta) {}
+  virtual void Relax(const Assignment*, const Assignment*) {}
   /// Dual of Relax(), lets the filter know that the delta was accepted.
-  virtual void Commit(const Assignment* delta, const Assignment* deltadelta) {}
+  virtual void Commit(const Assignment*, const Assignment*) {}
 
   /// Accepts a "delta" given the assignment with which the filter has been
   /// synchronized; the delta holds the variables which have been modified and
@@ -2200,7 +2307,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   bool IsVarSynced(int index) const { return var_synced_[index]; }
 
  protected:
-  virtual void OnSynchronize(const Assignment* delta) {}
+  virtual void OnSynchronize(const Assignment*) {}
   void SynchronizeOnAssignment(const Assignment* assignment);
 
  private:

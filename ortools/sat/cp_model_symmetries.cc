@@ -739,6 +739,31 @@ void FindCpModelSymmetries(
   }
 }
 
+namespace {
+
+void LogOrbitInformation(absl::Span<const int> var_to_orbit_index,
+                         SolverLogger* logger) {
+  if (logger == nullptr || !logger->LoggingIsEnabled()) return;
+
+  int num_touched_vars = 0;
+  std::vector<int> orbit_sizes;
+  for (int var = 0; var < var_to_orbit_index.size(); ++var) {
+    const int rep = var_to_orbit_index[var];
+    if (rep == -1) continue;
+    if (rep >= orbit_sizes.size()) orbit_sizes.resize(rep + 1, 0);
+    ++num_touched_vars;
+    orbit_sizes[rep]++;
+  }
+  std::sort(orbit_sizes.begin(), orbit_sizes.end(), std::greater<int>());
+  const int num_orbits = orbit_sizes.size();
+  if (num_orbits > 10) orbit_sizes.resize(10);
+  SOLVER_LOG(logger, "[Symmetry] ", num_orbits, " orbits on ", num_touched_vars,
+             " variables with sizes: ", absl::StrJoin(orbit_sizes, ","),
+             (num_orbits > orbit_sizes.size() ? ",..." : ""));
+}
+
+}  // namespace
+
 void DetectAndAddSymmetryToProto(const SatParameters& params,
                                  CpModelProto* proto, SolverLogger* logger) {
   SymmetryProto* symmetry = proto->mutable_symmetry();
@@ -751,6 +776,14 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
     proto->clear_symmetry();
     return;
   }
+
+  // Log orbit information.
+  //
+  // TODO(user): It might be nice to just add this to the proto rather than
+  // re-reading the generators and recomputing this in a few places.
+  const int num_vars = proto->variables().size();
+  const std::vector<int> orbits = GetOrbits(num_vars, generators);
+  LogOrbitInformation(orbits, logger);
 
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {
     SparsePermutationProto* perm_proto = symmetry->add_permutations();
@@ -895,6 +928,47 @@ std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
   return out;
 }
 
+void UpdateHintAfterFixingBoolToBreakSymmetry(
+    PresolveContext* context, int var, bool fixed_value,
+    absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
+  if (!context->VarHasSolutionHint(var)) {
+    return;
+  }
+  const int64_t hinted_value = context->SolutionHint(var);
+  if (hinted_value == static_cast<int64_t>(fixed_value)) {
+    return;
+  }
+
+  std::vector<int> schrier_vector;
+  std::vector<int> orbit;
+  GetSchreierVectorAndOrbit(var, generators, &schrier_vector, &orbit);
+
+  bool found_target = false;
+  int target_var;
+  for (int v : orbit) {
+    if (context->VarHasSolutionHint(v) &&
+        context->SolutionHint(v) == static_cast<int64_t>(fixed_value)) {
+      found_target = true;
+      target_var = v;
+      break;
+    }
+  }
+  if (!found_target) {
+    context->UpdateRuleStats(
+        "hint: couldn't transform infeasible hint properly");
+    return;
+  }
+
+  const std::vector<int> generator_idx =
+      TracePoint(target_var, schrier_vector, generators);
+  for (const int i : generator_idx) {
+    context->PermuteHintValues(*generators[i]);
+  }
+
+  DCHECK(context->VarHasSolutionHint(var));
+  DCHECK_EQ(context->SolutionHint(var), fixed_value);
+}
+
 }  // namespace
 
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
@@ -980,18 +1054,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
 
   // Log orbit info.
-  if (context->logger()->LoggingIsEnabled()) {
-    std::vector<int> sorted_sizes;
-    for (const int s : orbit_sizes) {
-      if (s != 0) sorted_sizes.push_back(s);
-    }
-    std::sort(sorted_sizes.begin(), sorted_sizes.end(), std::greater<int>());
-    const int num_orbits = sorted_sizes.size();
-    if (num_orbits > 10) sorted_sizes.resize(10);
-    SOLVER_LOG(context->logger(), "[Symmetry] ", num_orbits,
-               " orbits with sizes: ", absl::StrJoin(sorted_sizes, ","),
-               (num_orbits > sorted_sizes.size() ? ",..." : ""));
-  }
+  LogOrbitInformation(orbits, context->logger());
 
   // First heuristic based on propagation, see the function comment.
   if (max_orbit_size > 2) {
@@ -1010,6 +1073,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // fixing do not exploit the full structure of these symmeteries. Note
   // however that the fixing via propagation above close cod105 even more
   // efficiently.
+  std::vector<int> var_can_be_true_per_orbit(num_vars, -1);
   {
     std::vector<int> tmp_to_clear;
     std::vector<int> tmp_sizes(num_vars, 0);
@@ -1050,7 +1114,11 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
           }
 
           // We push all but the first one in each orbit.
-          if (tmp_sizes[rep] == 0) can_be_fixed_to_false.push_back(var);
+          if (tmp_sizes[rep] == 0) {
+            can_be_fixed_to_false.push_back(var);
+          } else {
+            var_can_be_true_per_orbit[rep] = var;
+          }
           tmp_sizes[rep] = 0;
         }
       } else {
@@ -1131,7 +1199,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
-  // Supper simple heuristic to use the orbitope or not.
+  // Super simple heuristic to use the orbitope or not.
   //
   // In an orbitope with an at most one on each row, we can fix the upper right
   // triangle. We could use a formula, but the loop is fast enough.
@@ -1153,6 +1221,19 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       const int var = can_be_fixed_to_false[i];
       if (orbits[var] == orbit_index) ++num_in_orbit;
       context->UpdateRuleStats("symmetry: fixed to false in general orbit");
+      if (context->VarHasSolutionHint(var) && context->SolutionHint(var) == 1 &&
+          var_can_be_true_per_orbit[orbits[var]] != -1) {
+        // We are breaking the symmetry in a way that makes the hint invalid.
+        // We want `var` to be false, so we would naively pick a symmetry to
+        // enforce that. But that will be wrong if we do this twice: after we
+        // permute the hint to fix the first one we would look for a symmetry
+        // group element that fixes the second one to false. But there are many
+        // of those, and picking the wrong one would risk making the first one
+        // true again. Since this is a AMO, fixing the one that is true doesn't
+        // have this problem.
+        UpdateHintAfterFixingBoolToBreakSymmetry(
+            context, var_can_be_true_per_orbit[orbits[var]], true, generators);
+      }
       if (!context->SetLiteralToFalse(var)) return false;
     }
 

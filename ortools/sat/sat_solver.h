@@ -234,6 +234,10 @@ class SatSolver {
   // the problem UNSAT.
   std::vector<Literal> GetLastIncompatibleDecisions();
 
+  // Returns a subset of decisions that are sufficient to ensure all literals in
+  // `literals` are fixed to their current value.
+  std::vector<Literal> GetDecisionsFixing(absl::Span<const Literal> literals);
+
   // Advanced usage. The next 3 functions allow to drive the search from outside
   // the solver.
 
@@ -468,7 +472,8 @@ class SatSolver {
   // Mainly visible for testing.
   ABSL_MUST_USE_RESULT bool Propagate();
 
-  bool MinimizeByPropagation(double dtime);
+  bool MinimizeByPropagation(double dtime,
+                             bool minimize_new_clauses_only = false);
 
   // Advance the given time limit with all the deterministic time that was
   // elapsed since last call.
@@ -498,6 +503,10 @@ class SatSolver {
   // false without backtracking in case of ASSUMPTIONS_UNSAT. This is only
   // exposed to allow processing a conflict detected outside normal propagation.
   void ProcessCurrentConflict();
+
+  void EnsureNewClauseIndexInitialized() {
+    clauses_propagator_->EnsureNewClauseIndexInitialized();
+  }
 
  private:
   // All Solve() functions end up calling this one.
@@ -717,15 +726,16 @@ class SatSolver {
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
-  // Marks as "non-deletable" all clauses that were used to infer the given
-  // variable. The variable must be currently assigned.
-  void KeepAllClauseUsedToInfer(BooleanVariable variable);
-  bool SubsumptionIsInteresting(BooleanVariable variable);
+  // Returns true if variable is fixed in the current assignment due to
+  // non-removable clauses, plus at most one removable clause with size <=
+  // max_size.
+  bool SubsumptionIsInteresting(BooleanVariable variable, int max_size);
+  void KeepAllClausesUsedToInfer(BooleanVariable variable);
 
   // Use propagation to try to minimize the given clause. This is really similar
-  // to MinimizeCoreWithPropagation(). It must be called when the current
-  // decision level is zero. Note that because this do a small tree search, it
-  // will impact the variable/clauses activities and may add new conflicts.
+  // to MinimizeCoreWithPropagation(). Note that because this does a small tree
+  // search, it will impact the variable/clause activities and may add new
+  // conflicts.
   void TryToMinimizeClause(SatClause* clause);
 
   // This is used by the old non-model constructor.

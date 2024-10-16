@@ -63,6 +63,9 @@ struct CutTerm {
   bool IsBoolean() const { return bound_diff == 1; }
   bool IsSimple() const { return expr_coeffs[1] == 0; }
   bool HasRelevantLpValue() const { return lp_value > 1e-2; }
+  bool IsFractional() const {
+    return std::abs(lp_value - std::round(lp_value)) > 1e-4;
+  }
   double LpDistToMaxValue() const {
     return static_cast<double>(bound_diff.value()) - lp_value;
   }
@@ -134,6 +137,10 @@ struct CutData {
   double ComputeViolation() const;
   double ComputeEfficacy() const;
 
+  // This sorts terms by decreasing lp values and fills both
+  // num_relevant_entries and max_magnitude.
+  void SortRelevantEntries();
+
   std::string DebugString() const;
 
   // Note that we use a 128 bit rhs so we can freely complement variable without
@@ -141,8 +148,7 @@ struct CutData {
   absl::int128 rhs;
   std::vector<CutTerm> terms;
 
-  // This sorts terms and fill both num_relevant_entries and max_magnitude.
-  void Canonicalize();
+  // Only filled after SortRelevantEntries().
   IntegerValue max_magnitude;
   int num_relevant_entries;
 };
@@ -150,24 +156,21 @@ struct CutData {
 // Stores temporaries used to build or manipulate a CutData.
 class CutDataBuilder {
  public:
+  // Returns false if we encounter an integer overflow.
+  bool ConvertToLinearConstraint(const CutData& cut, LinearConstraint* output);
+
   // These function allow to merges entries corresponding to the same variable
   // and complementation. That is (X - lb) and (ub - X) are NOT merged and kept
   // as separate terms. Note that we currently only merge Booleans since this
   // is the only case we need.
-  void ClearIndices();
-  void AddOrMergeTerm(const CutTerm& term, IntegerValue t, CutData* cut);
-
-  void ClearNumMerges() { num_merges_ = 0; }
-  int NumMergesSinceLastClear() const { return num_merges_; }
-
-  // Returns false if we encounter an integer overflow.
-  bool ConvertToLinearConstraint(const CutData& cut, LinearConstraint* output);
+  //
+  // Return num_merges.
+  int AddOrMergeBooleanTerms(absl::Span<CutTerm> terms, IntegerValue t,
+                             CutData* cut);
 
  private:
-  void RegisterAllBooleanTerms(const CutData& cut);
+  bool MergeIfPossible(IntegerValue t, CutTerm& to_add, CutTerm& target);
 
-  int num_merges_ = 0;
-  bool constraint_is_indexed_ = false;
   absl::flat_hash_map<IntegerVariable, int> bool_index_;
   absl::flat_hash_map<IntegerVariable, int> secondary_bool_index_;
   absl::btree_map<IntegerVariable, IntegerValue> tmp_map_;
@@ -219,27 +222,31 @@ class ImpliedBoundsProcessor {
 
   // We are about to apply the super-additive function f() to the CutData. Use
   // implied bound information to eventually substitute and make the cut
-  // stronger. Returns the number of {lb_ib, ub_ib} applied.
+  // stronger. Returns the number of {lb_ib, ub_ib, merges} applied.
   //
   // This should lead to stronger cuts even if the norms migth be worse.
-  std::pair<int, int> PostprocessWithImpliedBound(
+  std::tuple<int, int, int> PostprocessWithImpliedBound(
       const std::function<IntegerValue(IntegerValue)>& f, IntegerValue factor_t,
-      CutData* cut, CutDataBuilder* builder);
+      CutData* cut);
 
   // Precomputes quantities used by all cut generation.
   // This allows to do that once rather than 6 times.
   // Return false if there are no exploitable implied bounds.
   bool CacheDataForCut(IntegerVariable first_slack, CutData* cut);
 
-  // All our cut code use the same base cut (modulo complement), so we reuse the
-  // hash-map of where boolean are in the cut. Note that even if we add new
-  // entry that are no longer there for another cut algo, we can still reuse the
-  // same hash-map.
-  CutDataBuilder* BaseCutBuilder() { return &base_cut_builder_; }
+  bool TryToExpandWithLowerImpliedbound(IntegerValue factor_t, bool complement,
+                                        CutTerm* term, absl::int128* rhs,
+                                        std::vector<CutTerm>* new_bool_terms);
 
-  bool TryToExpandWithLowerImpliedbound(IntegerValue factor_t, int i,
-                                        bool complement, CutData* cut,
-                                        CutDataBuilder* builder);
+  // This can be used to share the hash-map memory.
+  CutDataBuilder* MutableCutBuilder() { return &cut_builder_; }
+
+  // This can be used as a temporary storage for
+  // TryToExpandWithLowerImpliedbound().
+  std::vector<CutTerm>* ClearedMutableTempTerms() {
+    tmp_terms_.clear();
+    return &tmp_terms_;
+  }
 
   // Add a new variable that could be used in the new cuts.
   // Note that the cache must be computed to take this into account.
@@ -283,7 +290,8 @@ class ImpliedBoundsProcessor {
   mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
 
   // Temporary data used by CacheDataForCut().
-  CutDataBuilder base_cut_builder_;
+  std::vector<CutTerm> tmp_terms_;
+  CutDataBuilder cut_builder_;
   std::vector<BestImpliedBoundInfo> cached_data_;
 
   TopNCuts ib_cut_pool_ = TopNCuts(50);
@@ -431,7 +439,6 @@ class IntegerRoundingCutHelper {
   std::vector<IntegerValue> best_rs_;
 
   int64_t num_ib_used_ = 0;
-  CutDataBuilder cut_builder_;
   CutData cut_;
 
   std::vector<std::pair<int, IntegerValue>> adjusted_coeffs_;
@@ -531,7 +538,6 @@ class CoverCutHelper {
   // Here to reuse memory, cut_ is both the input and the output.
   CutData cut_;
   CutData temp_cut_;
-  CutDataBuilder cut_builder_;
 
   // Hack to not sort twice.
   bool has_bool_base_ct_ = false;

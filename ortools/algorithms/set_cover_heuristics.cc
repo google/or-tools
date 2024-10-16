@@ -122,8 +122,8 @@ bool GreedySolutionGenerator::NextSolution(
   return NextSolution(focus, inv_->model()->subset_costs());
 }
 
-bool GreedySolutionGenerator::NextSolution(
-    const std::vector<SubsetIndex>& focus, const SubsetCostVector& costs) {
+bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
+                                           const SubsetCostVector& costs) {
   DCHECK(inv_->CheckConsistency());
   inv_->ClearTrace();
   SubsetCostVector elements_per_cost(costs.size(), 0.0);
@@ -544,23 +544,23 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 }
 
 namespace {
-void SampleSubsets(std::vector<SubsetIndex>* list, std::size_t num_subsets) {
-  num_subsets = std::min(num_subsets, list->size());
+void SampleSubsets(std::vector<SubsetIndex>* list, BaseInt num_subsets) {
+  num_subsets = std::min(num_subsets, static_cast<BaseInt>(list->size()));
   CHECK_GE(num_subsets, 0);
   std::shuffle(list->begin(), list->end(), absl::BitGen());
   list->resize(num_subsets);
 }
 }  // namespace
 
-std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
+std::vector<SubsetIndex> ClearRandomSubsets(BaseInt num_subsets,
                                             SetCoverInvariant* inv) {
   return ClearRandomSubsets(inv->model()->all_subsets(), num_subsets, inv);
 }
 
 std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
-                                            std::size_t num_subsets,
+                                            BaseInt num_subsets,
                                             SetCoverInvariant* inv) {
-  num_subsets = std::min(num_subsets, focus.size());
+  num_subsets = std::min(num_subsets, static_cast<BaseInt>(focus.size()));
   CHECK_GE(num_subsets, 0);
   std::vector<SubsetIndex> chosen_indices;
   for (const SubsetIndex subset : focus) {
@@ -569,7 +569,7 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
     }
   }
   SampleSubsets(&chosen_indices, num_subsets);
-  std::size_t num_deselected = 0;
+  BaseInt num_deselected = 0;
   for (const SubsetIndex subset : chosen_indices) {
     inv->Deselect(subset);
     ++num_deselected;
@@ -585,14 +585,14 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
   return chosen_indices;
 }
 
-std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t max_num_subsets,
+std::vector<SubsetIndex> ClearMostCoveredElements(BaseInt max_num_subsets,
                                                   SetCoverInvariant* inv) {
   return ClearMostCoveredElements(inv->model()->all_subsets(), max_num_subsets,
                                   inv);
 }
 
 std::vector<SubsetIndex> ClearMostCoveredElements(
-    absl::Span<const SubsetIndex> focus, std::size_t max_num_subsets,
+    absl::Span<const SubsetIndex> focus, BaseInt max_num_subsets,
     SetCoverInvariant* inv) {
   // This is the vector we will return.
   std::vector<SubsetIndex> sampled_subsets;
@@ -625,7 +625,8 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
   // Actually *sample* sampled_subset.
   // TODO(user): find another algorithm if necessary.
   std::shuffle(sampled_subsets.begin(), sampled_subsets.end(), absl::BitGen());
-  sampled_subsets.resize(std::min(sampled_subsets.size(), max_num_subsets));
+  sampled_subsets.resize(
+      std::min(static_cast<BaseInt>(sampled_subsets.size()), max_num_subsets));
 
   // Testing has shown that sorting sampled_subsets is not necessary.
   // Now, un-select the subset in sampled_subsets.

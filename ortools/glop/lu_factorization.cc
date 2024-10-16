@@ -133,7 +133,7 @@ namespace {
 // norm of the given column, otherwise do the same with a sparse version. In
 // both cases column is cleared.
 Fractional ComputeSquaredNormAndResetToZero(
-    const std::vector<RowIndex>& non_zeros, absl::Span<Fractional> column) {
+    absl::Span<const RowIndex> non_zeros, absl::Span<Fractional> column) {
   Fractional sum = 0.0;
   if (non_zeros.empty()) {
     sum = SquaredNormAndResetToZero(column);
@@ -405,7 +405,8 @@ bool LuFactorization::LeftSolveLWithNonZeros(
   ClearAndResizeVectorWithNonZeros(x->size(), result_before_permutation);
   x->swap(result_before_permutation->values);
   if (nz->empty()) {
-    for (RowIndex row(0); row < inverse_row_perm_.size(); ++row) {
+    const RowIndex num_rows = inverse_row_perm_.size();
+    for (RowIndex row(0); row < num_rows; ++row) {
       const Fractional value = (*result_before_permutation)[row];
       if (value != 0.0) {
         const RowIndex permuted_row = inverse_row_perm_[row];

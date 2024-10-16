@@ -26,7 +26,6 @@
 #include "absl/synchronization/mutex.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_solver.h"
@@ -228,18 +227,20 @@ void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
 }
 
 void SharedStatTables::AddLnsStat(absl::string_view name,
-                                  const NeighborhoodGenerator& generator) {
+                                  int64_t num_fully_solved_calls,
+                                  int64_t num_calls,
+                                  int64_t num_improving_calls,
+                                  double difficulty,
+                                  double deterministic_limit) {
   absl::MutexLock mutex_lock(&mutex_);
   const double fully_solved_proportion =
-      static_cast<double>(generator.num_fully_solved_calls()) /
-      static_cast<double>(std::max(int64_t{1}, generator.num_calls()));
+      static_cast<double>(num_fully_solved_calls) /
+      static_cast<double>(std::max(int64_t{1}, num_calls));
   lns_table_.push_back(
-      {FormatName(name),
-       absl::StrCat(generator.num_improving_calls(), "/",
-                    generator.num_calls()),
+      {FormatName(name), absl::StrCat(num_improving_calls, "/", num_calls),
        absl::StrFormat("%2.0f%%", 100 * fully_solved_proportion),
-       absl::StrFormat("%0.2f", generator.difficulty()),
-       absl::StrFormat("%0.2f", generator.deterministic_limit())});
+       absl::StrFormat("%0.2f", difficulty),
+       absl::StrFormat("%0.2f", deterministic_limit)});
 }
 
 void SharedStatTables::AddLsStat(absl::string_view name, int64_t num_batches,

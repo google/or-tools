@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
@@ -345,7 +346,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     }
   };
   struct Seed {
-    std::tuple<int64_t, int64_t> key;
+    absl::InlinedVector<int64_t, 8> properties;
     StartEndValue start_end_value;
     /// Indicates whether this Seed corresponds to a pair or a single node.
     /// If false, the 'index' is the pair_index, otherwise it's the node index.
@@ -353,9 +354,12 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     int index;
 
     bool operator>(const Seed& other) const {
-      return std::tie(key, start_end_value, is_node_index, index) >
-             std::tie(other.key, other.start_end_value, other.is_node_index,
-                      other.index);
+      for (size_t i = 0; i < properties.size(); ++i) {
+        if (properties[i] == other.properties[i]) continue;
+        return properties[i] > other.properties[i];
+      }
+      return std::tie(start_end_value, is_node_index, index) >
+             std::tie(other.start_end_value, other.is_node_index, other.index);
     }
   };
   // clang-format off
@@ -1067,7 +1071,8 @@ class LocalCheapestInsertionFilteredHeuristic
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-      RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode,
+      std::vector<RoutingSearchParameters::InsertionSortingProperty>
+          insertion_sorting_properties,
       LocalSearchFilterManager* filter_manager,
       BinCapacities* bin_capacities = nullptr,
       std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
@@ -1130,7 +1135,8 @@ class LocalCheapestInsertionFilteredHeuristic
 
   std::vector<Seed> insertion_order_;
   const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
-  const RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode_;
+  std::vector<RoutingSearchParameters::InsertionSortingProperty>
+      insertion_sorting_properties_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
 

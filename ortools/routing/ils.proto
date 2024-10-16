@@ -50,11 +50,99 @@ message RandomWalkRuinStrategy {
   optional uint32 num_removed_visits = 7;
 }
 
+// Ruin strategy based on the "Slack Induction by String Removals for Vehicle
+// Routing Problems" by Jan Christiaens and Greet Vanden Berghe, Transportation
+// Science 2020.
+// Link to paper:
+// https://kuleuven.limo.libis.be/discovery/fulldisplay?docid=lirias1988666&context=SearchWebhook&vid=32KUL_KUL:Lirias&lang=en&search_scope=lirias_profile&adaptor=SearchWebhook&tab=LIRIAS&query=any,contains,LIRIAS1988666&offset=0
+//
+// Note that, in this implementation, the notion of "string" is replaced by
+// "sequence".
+//
+// The main idea of this ruin is to remove a number of geographically close
+// sequences of nodes. In particular, at every ruin application, a maximum
+// number max_ruined_routes of routes are disrupted. The value for
+// max_ruined_routes is defined as
+//       (4 * avg_num_removed_visits) / (1 + max_sequence_size) + 1
+// with
+// - avg_num_removed_visits: user-defined parameter ruling the average number of
+//   visits that are removed in face of several ruin applications (see also the
+//   proto message below)
+// - max_sequence_size is defined as
+//        min{max_removed_sequence_size, average_route_size}
+//   with
+//   - max_removed_sequence_size: user-defined parameter that specifies
+//     the maximum number of visits removed from a single route (see also the
+//     proto message below)
+//   - average_route_size: the average size of a non-empty route in the current
+//     solution
+//
+// The actual number of ruined routes is then obtained as
+//                  floor(U(1, max_ruined_routes + 1))
+// where U is a continuous uniform distribution of real values in the given
+// interval.
+//
+// The routes affected by the ruin procedure are selected as follows.
+// First, a non start/end seed node is randomly selected. The route serving this
+// node is the first ruined route. Then, until the required number of routes has
+// been ruined, neighbor nodes of the initial seed node are scanned and the
+// associated not yet ruined routes are disrupted. Nodes defining the selected
+// routes are designated as seed nodes for the "sequence" and "split sequence"
+// removal procedures described below.
+//
+// For every selected route, a maximum number route_max_sequence_size of nodes
+// are removed. In particular, route_max_sequence_size is defined as
+//                min{route_size, max_sequence_size}
+// with route_size being the size of the current route.
+//
+// Then, the actual number of removed nodes num_removed_nodes is defined as
+//              floor(U(1, route_max_sequence_size + 1))
+// where U is a continuous uniform distribution of real values in the given
+// interval.
+//
+// As mentioned above, the selected num_removed_nodes number of nodes is removed
+// either via the "sequence" removal or "split sequence" removal procedures. The
+// two removal procedures are executed with equal probabilities.
+//
+// The "sequence" removal procedure removes a randomly selected sequence of size
+// num_removed_nodes that includes the seed node.
+//
+// The "split sequence" removal procedure also removes a randomly selected
+// sequence of size num_removed_nodes that includes the seed node, but it can
+// possibly preserve a subsequence of contiguous nodes.
+// In particular, the procedure first selects a sequence of size
+// num_removed_nodes + num_bypassed, then num_bypassed contiguous nodes in the
+// selected sequence are preserved while the others removed.
+//
+// The definition of num_bypassed is as follows. First num_bypassed = 1. The
+// current value of num_bypassed is maintaned if
+//          U(0, 1) < bypass_factor * U(0, 1)
+// or the maximum value for num_bypassed, equal to
+//           route_size - num_removed_nodes
+// is reached. The value is incremented of a unit otherwise,
+// and the process is repeated. The value assigned to bypass_factor affects the
+// number of preserved visits (see also the proto message below).
+message SISRRuinStrategy {
+  // Maximum number of removed visits per sequence. The parameter name in the
+  // paper is L^{max} and the suggested value is 10.
+  optional uint32 max_removed_sequence_size = 1;
+
+  // Number of visits that are removed on average. The parameter name in the
+  // paper is \bar{c} and the suggested value is 10.
+  optional uint32 avg_num_removed_visits = 2;
+
+  // Value in [0, 1] ruling the number of preserved customers in the split
+  // sequence removal. The parameter name in the paper is \alpha and the
+  // suggested value is 0.01.
+  optional double bypass_factor = 3;
+}
+
 // Ruin strategies, used in perturbation based on ruin and recreate approaches.
 message RuinStrategy {
   oneof strategy {
     SpatiallyCloseRoutesRuinStrategy spatially_close_routes = 1;
     RandomWalkRuinStrategy random_walk = 2;
+    SISRRuinStrategy sisr = 3;
   }
 }
 

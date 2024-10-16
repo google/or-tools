@@ -61,10 +61,10 @@ IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail) {
   return IntegerLiteral::LowerOrEqual(var, lb);
 }
 
-IntegerLiteral ChooseBestObjectiveValue(IntegerVariable var, Model* model) {
-  const auto& variables =
-      model->GetOrCreate<ObjectiveDefinition>()->objective_impacting_variables;
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+IntegerLiteral ChooseBestObjectiveValue(
+    IntegerVariable var, IntegerTrail* integer_trail,
+    ObjectiveDefinition* objective_definition) {
+  const auto& variables = objective_definition->objective_impacting_variables;
   if (variables.contains(var)) {
     return AtMinValue(var, integer_trail);
   } else if (variables.contains(NegationOf(var))) {
@@ -394,8 +394,11 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
 
   // Objective based value.
   if (parameters.exploit_objective()) {
-    value_selection_heuristics.push_back([model](IntegerVariable var) {
-      return ChooseBestObjectiveValue(var, model);
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
+    value_selection_heuristics.push_back([integer_trail, objective_definition](
+                                             IntegerVariable var) {
+      return ChooseBestObjectiveValue(var, integer_trail, objective_definition);
     });
   }
 
@@ -1336,11 +1339,16 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   // the level zero first ! otherwise, the new deductions will not be
   // incorporated and the solver will loop forever.
   if (integer_trail_->HasPendingRootLevelDeduction()) {
-    if (!sat_solver_->ResetToLevelZero()) return false;
+    sat_solver_->Backtrack(0);
   }
 
   // The rest only trigger at level zero.
   if (sat_solver_->CurrentDecisionLevel() != 0) return true;
+
+  // Rather than doing it in each callback, we detect newly fixed variables or
+  // tighter bounds, and propagate just once when everything was added.
+  const int saved_bool_index = sat_solver_->LiteralTrail().Index();
+  const int saved_integer_index = integer_trail_->num_enqueues();
 
   auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
   for (const auto& cb : level_zero_callbacks->callbacks) {
@@ -1348,6 +1356,13 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
+  }
+
+  // We propagate if needed.
+  if (sat_solver_->LiteralTrail().Index() > saved_bool_index ||
+      integer_trail_->num_enqueues() > saved_integer_index ||
+      integer_trail_->HasPendingRootLevelDeduction()) {
+    if (!sat_solver_->ResetToLevelZero()) return false;
   }
 
   if (parameters_.use_sat_inprocessing() &&

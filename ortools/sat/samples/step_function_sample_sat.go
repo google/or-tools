@@ -17,11 +17,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
-	cmpb "ortools/sat/cp_model_go_proto"
-	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func stepFunctionSampleSat() error {
@@ -71,12 +71,12 @@ func stepFunctionSampleSat() error {
 	if err != nil {
 		return fmt.Errorf("failed to instantiate the CP model: %w", err)
 	}
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(21),
 		SearchBranching:                   sppb.SatParameters_FIXED_SEARCH.Enum(),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)
@@ -94,6 +94,6 @@ func stepFunctionSampleSat() error {
 
 func main() {
 	if err := stepFunctionSampleSat(); err != nil {
-		glog.Exitf("stepFunctionSampleSat returned with error: %v", err)
+		log.Exitf("stepFunctionSampleSat returned with error: %v", err)
 	}
 }

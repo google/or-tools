@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
@@ -35,7 +36,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/file_util.h"
 
+#if not defined(ROOT_DIR)
 #define ROOT_DIR "com_google_ortools/"
+#endif
 
 namespace operations_research {
 namespace {
@@ -264,7 +267,7 @@ class GenericMaxFlowTest : public ::testing::Test {};
 
 typedef ::testing::Types<StarGraph, util::ReverseArcListGraph<>,
                          util::ReverseArcStaticGraph<>,
-                         util::ReverseArcMixedGraph<> >
+                         util::ReverseArcMixedGraph<>>
     GraphTypes;
 
 TYPED_TEST_SUITE(GenericMaxFlowTest, GraphTypes);
@@ -559,7 +562,7 @@ void FullRandomAssignment(typename MaxFlowSolver<Graph>::Solver f,
   GenerateCompleteGraph(num_tails, num_heads, &graph);
   Graphs<Graph>::Build(&graph);
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
   FlowQuantity flow = f(max_flow.get());
@@ -578,7 +581,7 @@ void PartialRandomAssignment(typename MaxFlowSolver<Graph>::Solver f,
   Graphs<Graph>::Build(&graph);
   CHECK_EQ(graph.num_arcs(), num_tails * kDegree + num_tails + num_heads);
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
   FlowQuantity flow = f(max_flow.get());
@@ -613,7 +616,7 @@ void PartialRandomFlow(typename MaxFlowSolver<Graph>::Solver f,
   Graphs<Graph>::Build(&graph, &permutation);
   util::Permute(permutation, &arc_capacity);
 
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
   FlowQuantity flow = f(max_flow.get());
@@ -642,7 +645,7 @@ void FullRandomFlow(typename MaxFlowSolver<Graph>::Solver f,
   Graphs<Graph>::Build(&graph, &permutation);
   util::Permute(permutation, &arc_capacity);
 
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
   FlowQuantity flow = f(max_flow.get());
@@ -672,10 +675,10 @@ void FullRandomFlow(typename MaxFlowSolver<Graph>::Solver f,
                          expected_flow2);                               \
   }
 
-#define FLOW_ONLY_TEST_SG(test_name, size, expected_flow1, expected_flow2)     \
-  TEST(MaxFlowTestStaticGraph, test_name##size) {                              \
-    test_name<util::ReverseArcStaticGraph<> >(SolveMaxFlow, size, size,        \
-                                              expected_flow1, expected_flow2); \
+#define FLOW_ONLY_TEST_SG(test_name, size, expected_flow1, expected_flow2)    \
+  TEST(MaxFlowTestStaticGraph, test_name##size) {                             \
+    test_name<util::ReverseArcStaticGraph<>>(SolveMaxFlow, size, size,        \
+                                             expected_flow1, expected_flow2); \
   }
 
 LP_AND_FLOW_TEST(FullRandomAssignment, 300, 300, 300);
@@ -836,6 +839,26 @@ TEST(PriorityQueueWithRestrictedPushTest, RandomPushPop) {
       EXPECT_EQ(pairs[current].element, queue.Pop());
     }
   }
+}
+
+TEST(BipartiteMinimumVertexCoverTest, BasicBehavior) {
+  const int num_right = 4;
+  const std::vector<std::vector<int>> left_to_right = {
+      {5}, {4, 5, 6}, {5}, {5, 6, 7}};
+  EXPECT_EQ(absl::c_count(BipartiteMinimumVertexCover(left_to_right, num_right),
+                          true),
+            3);
+  EXPECT_EQ(absl::c_count(BipartiteMinimumVertexCover(left_to_right, num_right),
+                          false),
+            5);
+}
+
+TEST(BipartiteMinimumVertexCoverTest, Empty) {
+  const int num_right = 4;
+  const std::vector<std::vector<int>> left_to_right = {{}, {}};
+  EXPECT_EQ(absl::c_count(BipartiteMinimumVertexCover(left_to_right, num_right),
+                          false),
+            6);
 }
 
 TEST(PriorityQueueWithRestrictedPushDeathTest, DCHECK) {

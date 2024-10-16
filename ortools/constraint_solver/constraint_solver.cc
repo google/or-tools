@@ -2673,6 +2673,7 @@ const char ModelVisitor::kFailuresLimitArgument[] = "failures_limit";
 const char ModelVisitor::kFinalStatesArgument[] = "final_states";
 const char ModelVisitor::kFixedChargeArgument[] = "fixed_charge";
 const char ModelVisitor::kIndex2Argument[] = "index2";
+const char ModelVisitor::kIndex3Argument[] = "index3";
 const char ModelVisitor::kIndexArgument[] = "index";
 const char ModelVisitor::kInitialState[] = "initial_state";
 const char ModelVisitor::kIntervalArgument[] = "interval";
@@ -3279,6 +3280,7 @@ Decision* ProfiledDecisionBuilder::Next(Solver* const solver) {
   Decision* const decision = db_->Next(solver);
   timer_.Stop();
   seconds_ += timer_.Get();
+  solver->set_context("");
   return decision;
 }
 

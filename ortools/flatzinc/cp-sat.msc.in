@@ -6,7 +6,7 @@
   "mznlib": "../cp-sat",
   "executable": "@FZ_REL_INSTALL_BINARY@",
   "tags": ["cp-sat", "cp", "lcg", "int"],
-  "stdFlags": ["-a", "-f", "-p", "-r", "-s", "-v"],
+  "stdFlags": ["-a", "-i", "-f", "-p", "-r", "-s", "-v"],
   "extraFlags": [
     ["--params", "Provide parameters interpreted as a text SatParameters proto", "string", ""]
   ],

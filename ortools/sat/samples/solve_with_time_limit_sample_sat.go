@@ -17,11 +17,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
-	cmpb "ortools/sat/cp_model_go_proto"
-	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func solveWithTimeLimitSampleSat() error {
@@ -40,9 +40,9 @@ func solveWithTimeLimitSampleSat() error {
 	}
 
 	// Sets a time limit of 10 seconds.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		MaxTimeInSeconds: proto.Float64(10.0),
-	}.Build()
+	}
 
 	// Solve.
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
@@ -63,6 +63,6 @@ func solveWithTimeLimitSampleSat() error {
 
 func main() {
 	if err := solveWithTimeLimitSampleSat(); err != nil {
-		glog.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
+		log.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
 	}
 }

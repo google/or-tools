@@ -121,27 +121,6 @@ void Presolver::PresolveInt2Float(Constraint* ct) {
   ct->MarkAsInactive();
 }
 
-// Minizinc flattens 2d element constraints (x = A[y][z]) into 1d element
-// constraint with an affine mapping between y, z and the new index.
-// This rule stores the mapping to reconstruct the 2d element constraint.
-// This mapping can involve 1 or 2 variables depending if y or z in A[y][z]
-// is a constant in the model).
-void Presolver::PresolveStoreAffineMapping(Constraint* ct) {
-  CHECK_EQ(2, ct->arguments[1].variables.size());
-  Variable* const var0 = ct->arguments[1].variables[0];
-  Variable* const var1 = ct->arguments[1].variables[1];
-  const int64_t coeff0 = ct->arguments[0].values[0];
-  const int64_t coeff1 = ct->arguments[0].values[1];
-  const int64_t rhs = ct->arguments[2].Value();
-  if (coeff0 == -1 && !affine_map_.contains(var0)) {
-    affine_map_[var0] = AffineMapping(var1, coeff0, -rhs, ct);
-    UpdateRuleStats("int_lin_eq: store affine mapping");
-  } else if (coeff1 == -1 && !affine_map_.contains(var1)) {
-    affine_map_[var1] = AffineMapping(var0, coeff0, -rhs, ct);
-    UpdateRuleStats("int_lin_eq: store affine mapping");
-  }
-}
-
 void Presolver::PresolveStoreFlatteningMapping(Constraint* ct) {
   CHECK_EQ(3, ct->arguments[1].variables.size());
   Variable* const var0 = ct->arguments[1].variables[0];
@@ -183,7 +162,7 @@ bool IsIncreasingAndContiguous(absl::Span<const int64_t> values) {
   return true;
 }
 
-bool AreOnesFollowedByMinusOne(const std::vector<int64_t>& coeffs) {
+bool AreOnesFollowedByMinusOne(absl::Span<const int64_t> coeffs) {
   CHECK(!coeffs.empty());
   for (int i = 0; i < coeffs.size() - 1; ++i) {
     if (coeffs[i] != 1) {
@@ -210,19 +189,11 @@ bool IsStrictPrefix(const std::vector<T>& v1, const std::vector<T>& v2) {
 // Rewrite array element: array_int_element:
 //
 // Rule 1:
-// Input : array_int_element(x0, [c1, .., cn], y) with x0 = a * x + b
-// Output: array_int_element(x, [c_a1, .., c_am], b) with a * i = b = ai
-//
-// Rule 2:
 // Input : array_int_element(x, [c1, .., cn], y) with x = a * x1 + x2 + b
 // Output: array_int_element([x1, x2], [c_a1, .., c_am], b, [a, b])
 //         to be interpreted by the extraction process.
 //
-// Rule 3:
-// Input: array_int_element(x, [c1, .., cn], y)
-// Output array_int_element(x, [c1, .., c{max(x)}], y)
-//
-// Rule 4:
+// Rule 2:
 // Input : array_int_element(x, [c1, .., cn], y) with x0 ci = c0 + i
 // Output: int_lin_eq([-1, 1], [y, x], 1 - c)  (e.g. y = x + c - 1)
 void Presolver::PresolveSimplifyElement(Constraint* ct) {
@@ -230,62 +201,6 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
   Variable* const index_var = ct->arguments[0].Var();
 
   // Rule 1.
-  if (affine_map_.contains(index_var)) {
-    const AffineMapping& mapping = affine_map_[index_var];
-    const Domain& domain = mapping.variable->domain;
-    if (domain.is_interval && domain.values.empty()) {
-      // Invalid case. Ignore it.
-      return;
-    }
-    if (domain.values[0] == 0 && mapping.coefficient == 1 &&
-        mapping.offset > 1 && index_var->domain.is_interval) {
-      // Simple translation
-      const int offset = mapping.offset - 1;
-      const int size = ct->arguments[1].values.size();
-      for (int i = 0; i < size - offset; ++i) {
-        ct->arguments[1].values[i] = ct->arguments[1].values[i + offset];
-      }
-      ct->arguments[1].values.resize(size - offset);
-      affine_map_[index_var].constraint->arguments[2].values[0] = -1;
-      affine_map_[index_var].offset = 1;
-      index_var->domain.values[0] -= offset;
-      index_var->domain.values[1] -= offset;
-      UpdateRuleStats("array_int_element: simplify using affine mapping.");
-      return;
-    } else if (mapping.offset + mapping.coefficient > 0 &&
-               domain.values[0] > 0) {
-      const std::vector<int64_t>& values = ct->arguments[1].values;
-      std::vector<int64_t> new_values;
-      for (int64_t i = 1; i <= domain.values.back(); ++i) {
-        const int64_t index = i * mapping.coefficient + mapping.offset - 1;
-        if (index < 0) {
-          return;
-        }
-        if (index > values.size()) {
-          break;
-        }
-        new_values.push_back(values[index]);
-      }
-      // Rewrite constraint.
-      UpdateRuleStats("array_int_element: simplify using affine mapping.");
-      ct->arguments[0].variables[0] = mapping.variable;
-      ct->arguments[0].variables[0]->domain.IntersectWithInterval(
-          1, new_values.size());
-      // TODO(user): Encapsulate argument setters.
-      ct->arguments[1].values.swap(new_values);
-      if (ct->arguments[1].values.size() == 1) {
-        ct->arguments[1].type = Argument::INT_VALUE;
-      }
-      // Reset propagate flag.
-      ct->presolve_propagation_done = false;
-      // Mark old index var and affine constraint as presolved out.
-      mapping.constraint->MarkAsInactive();
-      index_var->active = false;
-      return;
-    }
-  }
-
-  // Rule 2.
   if (array2d_index_map_.contains(index_var)) {
     UpdateRuleStats("array_int_element: rewrite as a 2d element");
     const Array2DIndexMapping& mapping = array2d_index_map_[index_var];
@@ -302,16 +217,7 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
     return;
   }
 
-  // Rule 3.
-  if (index_var->domain.Max() < ct->arguments[1].values.size()) {
-    // Reduce array of values.
-    ct->arguments[1].values.resize(index_var->domain.Max());
-    ct->presolve_propagation_done = false;
-    UpdateRuleStats("array_int_element: reduce array");
-    return;
-  }
-
-  // Rule 4.
+  // Rule 2.
   if (IsIncreasingAndContiguous(ct->arguments[1].values) &&
       ct->arguments[2].type == Argument::VAR_REF) {
     const int64_t start = ct->arguments[1].values.front();
@@ -329,51 +235,6 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
       ct->arguments[1] = Argument::VarRefArray({target, index});
       ct->arguments[2] = Argument::IntegerValue(1 - start);
     }
-  }
-}
-
-// Simplifies array_var_int_element
-//
-// Input : array_var_int_element(x0, [x1, .., xn], y) with x0 = a * x + b
-// Output: array_var_int_element(x, [x_a1, .., x_an], b) with a * i = b = ai
-void Presolver::PresolveSimplifyExprElement(Constraint* ct) {
-  if (ct->arguments[0].variables.size() != 1) return;
-
-  Variable* const index_var = ct->arguments[0].Var();
-  if (affine_map_.contains(index_var)) {
-    const AffineMapping& mapping = affine_map_[index_var];
-    const Domain& domain = mapping.variable->domain;
-    if ((domain.is_interval && domain.values.empty()) ||
-        domain.values[0] != 1 || mapping.offset + mapping.coefficient <= 0) {
-      // Invalid case. Ignore it.
-      return;
-    }
-    const std::vector<Variable*>& vars = ct->arguments[1].variables;
-    std::vector<Variable*> new_vars;
-    for (int64_t i = domain.values.front(); i <= domain.values.back(); ++i) {
-      const int64_t index = i * mapping.coefficient + mapping.offset - 1;
-      if (index < 0) {
-        return;
-      }
-      if (index >= vars.size()) {
-        break;
-      }
-      new_vars.push_back(vars[index]);
-    }
-    // Rewrite constraint.
-    UpdateRuleStats("array_var_int_element: simplify using affine mapping.");
-    ct->arguments[0].variables[0] = mapping.variable;
-    // TODO(user): Encapsulate argument setters.
-    ct->arguments[1].variables.swap(new_vars);
-    // Mark old index var and affine constraint as presolved out.
-    mapping.constraint->MarkAsInactive();
-    index_var->active = false;
-  } else if (index_var->domain.is_interval &&
-             index_var->domain.values.size() == 2 &&
-             index_var->domain.Max() < ct->arguments[1].variables.size()) {
-    // Reduce array of variables.
-    ct->arguments[1].variables.resize(index_var->domain.Max());
-    UpdateRuleStats("array_var_int_element: reduce array");
   }
 }
 
@@ -442,10 +303,6 @@ void Presolver::Run(Model* model) {
     } else if (ct->active && ct->type == "int2float") {
       PresolveInt2Float(ct);
     } else if (ct->active && ct->type == "int_lin_eq" &&
-               ct->arguments[1].variables.size() == 2 &&
-               ct->strong_propagation) {
-      PresolveStoreAffineMapping(ct);
-    } else if (ct->active && ct->type == "int_lin_eq" &&
                ct->arguments[1].variables.size() == 3 &&
                ct->strong_propagation) {
       PresolveStoreFlatteningMapping(ct);
@@ -462,10 +319,6 @@ void Presolver::Run(Model* model) {
   for (Constraint* const ct : model->constraints()) {
     if (ct->type == "array_int_element" || ct->type == "array_bool_element") {
       PresolveSimplifyElement(ct);
-    }
-    if (ct->type == "array_var_int_element" ||
-        ct->type == "array_var_bool_element") {
-      PresolveSimplifyExprElement(ct);
     }
   }
 

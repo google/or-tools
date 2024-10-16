@@ -36,9 +36,9 @@ package operations_research.routing;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 66
+// Next ID: 68
 message RoutingSearchParameters {
-  reserved 19;
+  reserved 19, 65;
 
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -132,24 +132,28 @@ message RoutingSearchParameters {
   PairInsertionStrategy local_cheapest_cost_insertion_pickup_delivery_strategy =
       55;
 
-  // A mode to select in which order nodes or node pairs are considered in
-  // insertion heuristics.
-  enum InsertionSortingMode {
-    // Default mode, equivalent to SORT_BY_ALLOWED_VEHICLES_THEN_PENALTY.
-    SORTING_MODE_UNSET = 0;
-    // Selects nodes with the least number of allowed vehicles first, then the
-    // ones with the highest penalty.
-    SORT_BY_ALLOWED_VEHICLES_THEN_PENALTY = 1;
-    // Selects nodes with the highest penalty first, then the ones with the
-    // least number of allowed vehicles.
-    SORT_BY_PENALTY_THEN_ALLOWED_VEHICLES = 2;
+  // Properties used to select in which order nodes or node pairs are considered
+  // in insertion heuristics.
+  enum InsertionSortingProperty {
+    // Invalid property.
+    SORTING_PROPERTY_UNSPECIFIED = 0;
+    // Selects nodes with the least number of allowed vehicles.
+    SORTING_PROPERTY_ALLOWED_VEHICLES = 1;
+    // Selects nodes with the highest penalty.
+    SORTING_PROPERTY_PENALTY = 2;
     // Selects nodes with the highest penalty / number of allowed vehicles
-    // ratio first, then the ones with the highest penalty.
-    SORT_BY_PENALTY_ALLOWED_VEHICLES_RATIO_THEN_PENALTY = 3;
+    // ratio.
+    SORTING_PROPERTY_PENALTY_OVER_ALLOWED_VEHICLES_RATIO = 3;
   }
-  // The node insertion sorting mode used in local cheapest insertion
-  // heuristics.
-  InsertionSortingMode local_cheapest_insertion_sorting_mode = 65;
+
+  // The properties used to sort insertion entries in the local cheapest
+  // insertion heuristic, in *decreasing* order of priority. The properties
+  // listed here are applied hierarchically, from highest to lowest priority.
+  // When no properties are provided
+  //        (SORTING_PROPERTY_ALLOWED_VEHICLES, SORTING_PROPERTY_PENALTY)
+  // is used by default.
+  repeated InsertionSortingProperty
+      local_cheapest_insertion_sorting_properties = 67;
 
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.
@@ -458,6 +462,9 @@ message RoutingSearchParameters {
   // bandit compound operator. Sets how often we explore rarely used and
   // unsuccessful in the past operators
   double multi_armed_bandit_compound_operator_exploration_coefficient = 43;
+
+  // Maximum size of the chain to make inactive in SwapActiveChainOperator.
+  int32 max_swap_active_chain_size = 66;
 
   // Number of expensive arcs to consider cutting in the RelocateExpensiveChain
   // neighborhood operator (see

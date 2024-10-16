@@ -16,6 +16,7 @@
 #include <limits>
 
 #include "gtest/gtest.h"
+#include "ortools/graph/ebert_graph.h"
 
 namespace operations_research {
 

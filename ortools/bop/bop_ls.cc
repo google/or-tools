@@ -829,7 +829,8 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
   // All nodes have been explored.
   if (search_nodes_.empty()) {
     VLOG(1) << std::string(27, ' ') + "LS " << max_num_decisions_
-            << " finished." << " #explored:" << num_nodes_
+            << " finished."
+            << " #explored:" << num_nodes_
             << " #stored:" << transposition_table_.size()
             << " #skipped:" << num_skipped_nodes_;
     return false;

@@ -763,9 +763,8 @@ void CpModelBuilder::FixVariable(BoolVar var, bool value) {
 
 Constraint CpModelBuilder::AddBoolOr(absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  for (const BoolVar& lit : literals) {
-    proto->mutable_bool_or()->add_literals(lit.index_);
-  }
+  BoolArgumentProto* const bool_or = proto->mutable_bool_or();
+  for (const BoolVar& lit : literals) bool_or->add_literals(lit.index_);
   return Constraint(proto);
 }
 
@@ -783,9 +782,8 @@ Constraint CpModelBuilder::AddAtMostOne(absl::Span<const BoolVar> literals) {
 
 Constraint CpModelBuilder::AddExactlyOne(absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  for (const BoolVar& lit : literals) {
-    proto->mutable_exactly_one()->add_literals(lit.index_);
-  }
+  BoolArgumentProto* const exactly_one = proto->mutable_exactly_one();
+  for (const BoolVar& lit : literals) exactly_one->add_literals(lit.index_);
   return Constraint(proto);
 }
 

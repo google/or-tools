@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <new>
 #include <string>
 #include <utility>
 #include <vector>
@@ -356,10 +357,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       std::vector<int64_t>* break_start_end_values) {
     cumul_values->clear();
     break_start_end_values->clear();
-    const RouteDimensionTravelInfo& dimension_travel_info =
+    const RouteDimensionTravelInfo* const dimension_travel_info =
         dimension_travel_info_per_route_.empty()
-            ? RouteDimensionTravelInfo()
-            : dimension_travel_info_per_route_[vehicle];
+            ? nullptr
+            : &dimension_travel_info_per_route_[vehicle];
     const Resource* resource = nullptr;
     if (rg_index_ >= 0 && model_.ResourceVar(vehicle, rg_index_)->Bound()) {
       const int resource_index =
@@ -676,6 +677,7 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
   explicit RestoreDimensionValuesForUnchangedRoutes(RoutingModel* model)
       : model_(model) {
     model_->AddAtSolutionCallback([this]() { AtSolution(); });
+    model_->AddRestoreDimensionValuesResetCallback([this]() { Reset(); });
     next_last_value_.resize(model_->Nexts().size(), -1);
   }
 
@@ -686,6 +688,8 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
     s->SaveAndSetValue(&must_return_decision_, false);
     return MakeDecision(s);
   }
+
+  void Reset() { next_last_value_.assign(model_->Nexts().size(), -1); }
 
  private:
   // Initialize() is lazy to make sure all dimensions have been instantiated

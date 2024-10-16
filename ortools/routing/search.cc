@@ -38,6 +38,7 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
@@ -620,7 +621,7 @@ void CheapestInsertionFilteredHeuristic::AddSeedNodeToQueue(
   }
   const int64_t num_allowed_vehicles = model()->VehicleVar(node)->Size();
   const int64_t neg_penalty = CapOpp(model()->UnperformedPenalty(node));
-  sq->priority_queue.push({.key = {num_allowed_vehicles, neg_penalty},
+  sq->priority_queue.push({.properties = {num_allowed_vehicles, neg_penalty},
                            .start_end_value = start_end_value,
                            .is_node_index = true,
                            .index = node});
@@ -2277,7 +2278,8 @@ LocalCheapestInsertionFilteredHeuristic::
         RoutingModel* model, std::function<bool()> stop_search,
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
         RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-        RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode,
+        std::vector<RoutingSearchParameters::InsertionSortingProperty>
+            insertion_sorting_properties,
         LocalSearchFilterManager* filter_manager, BinCapacities* bin_capacities,
         std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
                            std::vector<RoutingModel::VariableValuePair>*)>
@@ -2286,9 +2288,11 @@ LocalCheapestInsertionFilteredHeuristic::
                                          std::move(evaluator), nullptr,
                                          filter_manager),
       pair_insertion_strategy_(pair_insertion_strategy),
-      insertion_sorting_mode_(insertion_sorting_mode),
+      insertion_sorting_properties_(std::move(insertion_sorting_properties)),
       bin_capacities_(bin_capacities),
-      optimize_on_insertion_(std::move(optimize_on_insertion)) {}
+      optimize_on_insertion_(std::move(optimize_on_insertion)) {
+  DCHECK(!insertion_sorting_properties_.empty());
+}
 
 void LocalCheapestInsertionFilteredHeuristic::Initialize() {
   // NOTE(user): Keeping the code in a separate function as opposed to
@@ -2396,22 +2400,34 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
   insertion_order_.reserve(model.Size() +
                            model.GetPickupAndDeliveryPairs().size());
 
-  auto get_insertion_key =
-      [this](int64_t penalty,
-             int64_t num_allowed_vehicles) -> std::tuple<int64_t, int64_t> {
+  auto get_insertion_properties = [this](int64_t penalty,
+                                         int64_t num_allowed_vehicles) {
     DCHECK_NE(0, num_allowed_vehicles);
-    switch (insertion_sorting_mode_) {
-      case RoutingSearchParameters::SORT_BY_PENALTY_THEN_ALLOWED_VEHICLES:
-        return {CapOpp(penalty), num_allowed_vehicles};
-      case RoutingSearchParameters::
-          SORT_BY_PENALTY_ALLOWED_VEHICLES_RATIO_THEN_PENALTY:
-        return {CapOpp(penalty / num_allowed_vehicles), CapOpp(penalty)};
-      default:
-        return {num_allowed_vehicles, CapOpp(penalty)};
+    absl::InlinedVector<int64_t, 8> properties;
+    properties.reserve(insertion_sorting_properties_.size());
+    for (const int property : insertion_sorting_properties_) {
+      switch (property) {
+        case RoutingSearchParameters::SORTING_PROPERTY_ALLOWED_VEHICLES:
+          properties.push_back(num_allowed_vehicles);
+          break;
+        case RoutingSearchParameters::SORTING_PROPERTY_PENALTY:
+          properties.push_back(CapOpp(penalty));
+          break;
+        case RoutingSearchParameters::
+            SORTING_PROPERTY_PENALTY_OVER_ALLOWED_VEHICLES_RATIO:
+          properties.push_back(CapOpp(penalty / num_allowed_vehicles));
+          break;
+        default:
+          LOG(DFATAL)
+              << "Unknown RoutingSearchParameter::InsertionSortingProperty "
+                 "used!";
+          break;
+      }
     }
+    return properties;
   };
 
-  // Iterating on pickup and delivery pairs
+  // Iterating on pickup and delivery pairs.
   const std::vector<PickupDeliveryPair>& pairs =
       model.GetPickupAndDeliveryPairs();
 
@@ -2435,8 +2451,8 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
           std::max(delivery_penalty, model.UnperformedPenalty(delivery));
     }
     insertion_order_.push_back(
-        {.key = get_insertion_key(CapAdd(pickup_penalty, delivery_penalty),
-                                  num_allowed_vehicles),
+        {.properties = get_insertion_properties(
+             CapAdd(pickup_penalty, delivery_penalty), num_allowed_vehicles),
          .start_end_value = {GetNegMaxDistanceFromVehicles(model, pair_index),
                              0},
          .is_node_index = false,
@@ -2457,8 +2473,8 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
         },
         vehicle_set);
     insertion_order_.push_back(
-        {.key = get_insertion_key(model.UnperformedPenalty(node),
-                                  model.VehicleVar(node)->Size()),
+        {.properties = get_insertion_properties(model.UnperformedPenalty(node),
+                                                model.VehicleVar(node)->Size()),
          .start_end_value = {CapOpp(min_distance), 0},
          .is_node_index = true,
          .index = node});

@@ -16,24 +16,17 @@
 #include <atomic>
 #include <string>
 
-#include "absl/status/status.h"
-#include "absl/strings/internal/memutil.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
+#include "ortools/base/memutil.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
 namespace {
-
-char* memdup(const char* s, size_t slen) {
-  void* copy;
-  if ((copy = malloc(slen)) == nullptr) return nullptr;
-  memcpy(copy, s, slen);
-  return reinterpret_cast<char*>(copy);
-}
 
 CpSolverResponse solveWithParameters(std::atomic<bool>* const limit_reached,
                                      const CpModelProto& proto,
@@ -81,7 +74,7 @@ void SolveCpInterruptible(void* const limit_reached, const void* creq,
   CHECK(res.SerializeToString(&res_str));
 
   *cres_len = static_cast<int>(res_str.size());
-  *cres = memdup(res_str.data(), *cres_len);
+  *cres = strings::memdup(res_str.data(), *cres_len);
   CHECK(*cres != nullptr);
 }
 

@@ -497,6 +497,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_linearization_level(2);
     new_params.set_add_lp_constraints_lazily(false);
     strategies["max_lp"] = new_params;
+    new_params.set_use_symmetry_in_lp(true);
+    strategies["max_lp_sym"] = new_params;
   }
 
   // Core. Note that we disable the lp here because it is faster on the minizinc

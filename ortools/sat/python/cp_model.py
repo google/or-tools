@@ -2939,10 +2939,20 @@ class CpModel:
         """
         return swig_helper.CpSatHelper.write_model_to_file(self.__model, file)
 
-    def add_hint(self, var: IntVar, value: int) -> None:
+    @overload
+    def add_hint(self, var: IntVar, value: int) -> None: ...
+
+    @overload
+    def add_hint(self, literal: BoolVarT, value: bool) -> None: ...
+
+    def add_hint(self, var, value) -> None:
         """Adds 'var == value' as a hint to the solver."""
-        self.__model.solution_hint.vars.append(self.get_or_make_index(var))
-        self.__model.solution_hint.values.append(value)
+        if var.index >= 0:
+            self.__model.solution_hint.vars.append(self.get_or_make_index(var))
+            self.__model.solution_hint.values.append(int(value))
+        else:
+            self.__model.solution_hint.vars.append(self.negated(var.index))
+            self.__model.solution_hint.values.append(int(not value))
 
     def clear_hints(self):
         """Removes any solution hint from the model."""

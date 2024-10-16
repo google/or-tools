@@ -219,7 +219,14 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // lns_focus_on_performed_intervals. If true, this method returns the list of
   // performed rectangles in the solution. If false, it returns all rectangles
   // of the model.
-  std::vector<std::pair<int, int>> GetActiveRectangles(
+  struct ActiveRectangle {
+    int x_interval;
+    int y_interval;
+    // The set of no_overlap_2d constraints that both x_interval and y_interval
+    // are participating in.
+    absl::flat_hash_set<int> no_overlap_2d_constraints;
+  };
+  std::vector<ActiveRectangle> GetActiveRectangles(
       const CpSolverResponse& initial_solution) const;
 
   // Returns the set of unique intervals list appearing in a no_overlap,
@@ -231,7 +238,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
   // tail index, and going in sequence up to the last arc before the circuit is
   // closed. Each entry correspond to the arc literal on the circuit.
-  std::vector<std::vector<int>> GetRoutingPaths(
+  std::vector<std::vector<int>> GetRoutingPathVariables(
       const CpSolverResponse& initial_solution) const;
 
   // Returns all precedences extracted from the scheduling constraint and the
@@ -356,35 +363,7 @@ class NeighborhoodGenerator {
       : name_(name), helper_(*helper), difficulty_(0.5) {}
   virtual ~NeighborhoodGenerator() = default;
 
-  // Generates a "local" subproblem for the given seed.
-  //
-  // The difficulty will be in [0, 1] and is related to the asked neighborhood
-  // size (and thus local problem difficulty). A difficulty of 0.0 means empty
-  // neighborhood and a difficulty of 1.0 means the full problem. The algorithm
-  // should try to generate a neighborhood according to this difficulty which
-  // will be dynamically adjusted depending on whether or not we can solve the
-  // subproblem in a given time limit.
-  //
-  // The given initial_solution should contain a feasible solution to the
-  // initial CpModelProto given to this class. Any solution to the returned
-  // CPModelProto should also be valid solution to the same initial model.
-  //
-  // This function should be thread-safe.
-  virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
-                                double difficulty, absl::BitGenRef random) = 0;
-
-  // Returns true if the neighborhood generator can generate a neighborhood.
-  virtual bool ReadyToGenerate() const;
-
-  // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
-  // Details are at
-  // https://lilianweng.github.io/lil-log/2018/01/23/the-multi-armed-bandit-problem-and-its-solutions.html.
-  // 'total_num_calls' should be the sum of calls across all generators part of
-  // the multi armed bandit problem.
-  // If the generator is called less than 10 times then the method returns
-  // infinity as score in order to get more data about the generator
-  // performance.
-  double GetUCBScore(int64_t total_num_calls) const;
+  using ActiveRectangle = NeighborhoodGeneratorHelper::ActiveRectangle;
 
   // Adds solve data about one "solved" neighborhood.
   struct SolveData {
@@ -413,6 +392,9 @@ class NeighborhoodGenerator {
     IntegerValue base_objective = IntegerValue(0);
     IntegerValue new_objective = IntegerValue(0);
 
+    // For debugging.
+    int task_id = 0;
+
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
       return std::tie(status, difficulty, deterministic_limit,
@@ -423,6 +405,37 @@ class NeighborhoodGenerator {
                       o.base_objective, o.new_objective);
     }
   };
+
+  // Generates a "local" subproblem for the given seed.
+  //
+  // The data,difficulty will be in [0, 1] and is related to the asked
+  // neighborhood size (and thus local problem difficulty). A difficulty of 0.0
+  // means empty neighborhood and a difficulty of 1.0 means the full problem.
+  // The algorithm should try to generate a neighborhood according to this
+  // difficulty which will be dynamically adjusted depending on whether or not
+  // we can solve the subproblem in a given time limit.
+  //
+  // The given initial_solution should contain a feasible solution to the
+  // initial CpModelProto given to this class. Any solution to the returned
+  // CPModelProto should also be valid solution to the same initial model.
+  //
+  // This function should be thread-safe.
+  virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
+                                SolveData& data, absl::BitGenRef random) = 0;
+
+  // Returns true if the neighborhood generator can generate a neighborhood.
+  virtual bool ReadyToGenerate() const;
+
+  // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
+  // Details are at
+  // https://lilianweng.github.io/lil-log/2018/01/23/the-multi-armed-bandit-problem-and-its-solutions.html.
+  // 'total_num_calls' should be the sum of calls across all generators part of
+  // the multi armed bandit problem.
+  // If the generator is called less than 10 times then the method returns
+  // infinity as score in order to get more data about the generator
+  // performance.
+  double GetUCBScore(int64_t total_num_calls) const;
+
   void AddSolveData(SolveData data) {
     absl::MutexLock mutex_lock(&generator_mutex_);
     solve_data_.push_back(data);
@@ -478,6 +491,7 @@ class NeighborhoodGenerator {
   const std::string name_;
   const NeighborhoodGeneratorHelper& helper_;
   mutable absl::Mutex generator_mutex_;
+  double deterministic_limit_ = 0.1;
 
  private:
   std::vector<SolveData> solve_data_;
@@ -485,7 +499,6 @@ class NeighborhoodGenerator {
   // Current parameters to be used when generating/solving a neighborhood with
   // this generator. Only updated on Synchronize().
   AdaptiveParameterValue difficulty_;
-  double deterministic_limit_ = 0.1;
 
   // Current statistics of the last solved neighborhood.
   // Only updated on Synchronize().
@@ -507,7 +520,7 @@ class RelaxRandomVariablesGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Pick a random subset of constraints and relax all the variables of these
@@ -522,7 +535,7 @@ class RelaxRandomConstraintsGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Pick a random subset of variables that are constructed by a BFS in the
@@ -538,7 +551,7 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // This randomly extend a working set of variable by one variable directly
@@ -549,7 +562,7 @@ class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
@@ -562,7 +575,7 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // The idea here is to try to generate a random neighborhood incrementally in
@@ -582,7 +595,7 @@ class DecompositionGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Solves a local branching LP and greedily picks a set of variables with the
@@ -594,20 +607,20 @@ class DecompositionGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 class LocalBranchingLpBasedNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
-  // TODO(user): Restructure code so that we avoid circular dependency with
-  // solving functions. For now, we use solve_callback.
-  explicit LocalBranchingLpBasedNeighborhoodGenerator(
+  LocalBranchingLpBasedNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, absl::string_view name,
-      std::function<void(CpModelProto, Model*)> solve_callback,
       ModelSharedTimeLimit* const global_time_limit)
       : NeighborhoodGenerator(name, helper),
-        solve_callback_(std::move(solve_callback)),
-        global_time_limit_(global_time_limit) {}
+        global_time_limit_(global_time_limit) {
+    // Given that we spend time generating a good neighborhood it sounds
+    // reasonable to spend a bit more time solving it too.
+    deterministic_limit_ = 0.5;
+  }
+
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 
  private:
-  const std::function<void(CpModelProto, Model*)> solve_callback_;
   ModelSharedTimeLimit* const global_time_limit_;
 };
 
@@ -640,7 +653,7 @@ class RandomIntervalSchedulingNeighborhoodGenerator
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Only make sense for scheduling problem. This select a random set of
@@ -656,7 +669,7 @@ class RandomPrecedenceSchedulingNeighborhoodGenerator
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Similar to SchedulingNeighborhoodGenerator except the set of intervals that
@@ -668,7 +681,7 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Similar to SchedulingTimeWindowNeighborhoodGenerator except that it relaxes
@@ -685,7 +698,7 @@ class SchedulingResourceWindowsNeighborhoodGenerator
         intervals_in_constraints_(intervals_in_constraints) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 
  private:
   const std::vector<std::vector<int>> intervals_in_constraints_;
@@ -702,7 +715,22 @@ class RandomRectanglesPackingNeighborhoodGenerator
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
+};
+
+// Only make sense for problems with no_overlap_2d constraints. This selects two
+// random rectangles and relax them alongside the closest rectangles to each one
+// of them. The idea is that this will find a better solution when there is a
+// cost function that would be improved by swapping the two rectangles.
+class RectanglesPackingRelaxTwoNeighborhoodsGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RectanglesPackingRelaxTwoNeighborhoodsGenerator(
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Only make sense for problems with no_overlap_2d constraints. This select a
@@ -717,7 +745,7 @@ class RandomPrecedencesPackingNeighborhoodGenerator
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Only make sense for problems with no_overlap_2d constraints. This select a
@@ -730,7 +758,7 @@ class SlicePackingNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // This routing based LNS generator will relax random arcs in all the paths of
@@ -742,7 +770,7 @@ class RoutingRandomNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // This routing based LNS generator will relax small sequences of arcs randomly
@@ -754,10 +782,10 @@ class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
-// This routing based LNS generator aims are relaxing one full path, and make
+// This routing based LNS generator aims at relaxing one full path, and make
 // some room on the other paths to absorb the nodes of the relaxed path.
 //
 // In order to do so, it will relax the first and the last arc of each path in
@@ -771,7 +799,20 @@ class RoutingFullPathNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
+};
+
+// This routing based LNS generator performs like the
+// RoutingRandomNeighborhoodGenerator, but always relax the arcs going in and
+// out of the depot for routes constraints, and of the node with the minimal
+// index for circuit constraints.
+class RoutingStartsNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  RoutingStartsNeighborhoodGenerator(NeighborhoodGeneratorHelper const* helper,
+                                     absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
 };
 
 // Generates a neighborhood by fixing the variables to solutions reported in
@@ -806,7 +847,7 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
 
   // Both initial solution and difficulty values are ignored.
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
+                        SolveData& data, absl::BitGenRef random) final;
 
   // Returns true if the required solutions are available.
   bool ReadyToGenerate() const override;

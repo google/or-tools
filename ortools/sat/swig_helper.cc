@@ -15,7 +15,6 @@
 
 #include <stdint.h>
 
-#include <atomic>
 #include <functional>
 #include <string>
 
@@ -27,9 +26,9 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -90,18 +89,15 @@ bool SolutionCallback::SolutionBooleanValue(int index) {
 }
 
 void SolutionCallback::StopSearch() {
-  if (stopped_ptr_ != nullptr) {
-    (*stopped_ptr_) = true;
-  }
+  if (wrapper_ != nullptr) wrapper_->StopSearch();
 }
 
 operations_research::sat::CpSolverResponse SolutionCallback::Response() const {
   return response_;
 }
 
-void SolutionCallback::SetAtomicBooleanToStopTheSearch(
-    std::atomic<bool>* stopped_ptr) const {
-  stopped_ptr_ = stopped_ptr;
+void SolutionCallback::SetWrapperClass(SolveWrapper* wrapper) const {
+  wrapper_ = wrapper;
 }
 
 bool SolutionCallback::HasResponse() const { return has_response_; }
@@ -116,15 +112,13 @@ void SolveWrapper::SetStringParameters(const std::string& string_parameters) {
 }
 
 void SolveWrapper::AddSolutionCallback(const SolutionCallback& callback) {
-  // Overwrite the atomic bool.
-  callback.SetAtomicBooleanToStopTheSearch(&stopped_);
+  callback.SetWrapperClass(this);
   model_.Add(NewFeasibleSolutionObserver(
       [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
 }
 
 void SolveWrapper::ClearSolutionCallback(const SolutionCallback& callback) {
-  // cleanup the atomic bool.
-  callback.SetAtomicBooleanToStopTheSearch(nullptr);
+  callback.SetWrapperClass(nullptr);  // Detach the wrapper class.
 }
 
 void SolveWrapper::AddLogCallback(
@@ -157,11 +151,13 @@ void SolveWrapper::AddBestBoundCallbackFromClass(BestBoundCallback* callback) {
 operations_research::sat::CpSolverResponse SolveWrapper::Solve(
     const operations_research::sat::CpModelProto& model_proto) {
   FixFlagsAndEnvironmentForSwig();
-  model_.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped_);
   return operations_research::sat::SolveCpModel(model_proto, &model_);
 }
 
-void SolveWrapper::StopSearch() { stopped_ = true; }
+void SolveWrapper::StopSearch() {
+  model_.GetOrCreate<ModelSharedTimeLimit>()->Stop();
+}
+
 std::string CpSatHelper::ModelStats(
     const operations_research::sat::CpModelProto& model_proto) {
   return CpModelStats(model_proto);

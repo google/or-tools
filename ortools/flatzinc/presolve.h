@@ -47,21 +47,6 @@ class Presolver {
   void Run(Model* model);
 
  private:
-  // This struct stores the affine mapping of one variable:
-  // it represents new_var = var * coefficient + offset. It also stores the
-  // constraint that defines this mapping.
-  struct AffineMapping {
-    Variable* variable;
-    int64_t coefficient;
-    int64_t offset;
-    Constraint* constraint;
-
-    AffineMapping()
-        : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
-    AffineMapping(Variable* v, int64_t c, int64_t o, Constraint* ct)
-        : variable(v), coefficient(c), offset(o), constraint(ct) {}
-  };
-
   // This struct stores the mapping of two index variables (of a 2D array; not
   // included here) onto a single index variable (of the flattened 1D array).
   // The original 2D array could be trimmed in the process; so we also need an
@@ -96,10 +81,8 @@ class Presolver {
   // Presolve rules.
   void PresolveBool2Int(Constraint* ct);
   void PresolveInt2Float(Constraint* ct);
-  void PresolveStoreAffineMapping(Constraint* ct);
   void PresolveStoreFlatteningMapping(Constraint* ct);
   void PresolveSimplifyElement(Constraint* ct);
-  void PresolveSimplifyExprElement(Constraint* ct);
 
   // Helpers.
   void UpdateRuleStats(const std::string& rule_name) {
@@ -116,9 +99,6 @@ class Presolver {
   Variable* FindRepresentativeOfVar(Variable* var);
   absl::flat_hash_map<const Variable*, Variable*> var_representative_map_;
   std::vector<Variable*> var_representative_vector_;
-
-  // Stores affine_map_[x] = a * y + b.
-  absl::flat_hash_map<const Variable*, AffineMapping> affine_map_;
 
   // Stores array2d_index_map_[z] = a * x + y + b.
   absl::flat_hash_map<const Variable*, Array2DIndexMapping> array2d_index_map_;

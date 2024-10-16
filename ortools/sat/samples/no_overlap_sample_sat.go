@@ -17,9 +17,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
 const horizon = 21 // 3 weeks
@@ -85,6 +85,6 @@ func noOverlapSampleSat() error {
 
 func main() {
 	if err := noOverlapSampleSat(); err != nil {
-		glog.Exitf("noOverlapSampleSat returned with error: %v", err)
+		log.Exitf("noOverlapSampleSat returned with error: %v", err)
 	}
 }

@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -97,7 +98,7 @@ class PresolveContext {
   // TODO(user): We should control more how this is called so we can update
   // a solution hint accordingly.
   int NewIntVar(const Domain& domain);
-  int NewBoolVar();
+  int NewBoolVar(absl::string_view source);
 
   // This should replace NewIntVar() eventually in order to be able to crush
   // primal solution or just update the hint.
@@ -297,6 +298,11 @@ class PresolveContext {
   // This is meant to be used in DEBUG mode only.
   bool ConstraintVariableUsageIsConsistent();
 
+  // Loop over all variable and return true if one of them is only used in
+  // affine relation and is not a representative. This is in O(num_vars) and
+  // only meant to be used in DCHECKs.
+  bool HasUnusedAffineVariable() const;
+
   // A "canonical domain" always have a MinOf() equal to zero.
   // If needed we introduce a new variable with such canonical domain and
   // add the relation X = Y + offset.
@@ -318,7 +324,7 @@ class PresolveContext {
   bool CanonicalizeAffineVariable(int ref, int64_t coeff, int64_t mod,
                                   int64_t rhs);
 
-  // Adds the relation (ref_x = coeff * ref_y + offset) to the repository.
+  // Adds the relation (var_x = coeff * var_y + offset) to the repository.
   // Returns false if we detect infeasability because of this.
   //
   // Once the relation is added, it doesn't need to be enforced by a constraint
@@ -326,7 +332,7 @@ class PresolveContext {
   // them to the proto at the end of the presolve.
   //
   // Note that this should always add a relation, even though it might need to
-  // create a new representative for both ref_x and ref_y in some cases. Like if
+  // create a new representative for both var_x and var_y in some cases. Like if
   // x = 3z and y = 5t are already added, if we add x = 2y, we have 3z = 10t and
   // can only resolve this by creating a new variable r such that z = 10r and t
   // = 3r.
@@ -334,7 +340,7 @@ class PresolveContext {
   // All involved variables will be marked to appear in the special
   // kAffineRelationConstraint. This will allow to identify when a variable is
   // no longer needed (only appear there and is not a representative).
-  bool StoreAffineRelation(int ref_x, int ref_y, int64_t coeff, int64_t offset,
+  bool StoreAffineRelation(int var_x, int var_y, int64_t coeff, int64_t offset,
                            bool debug_no_recursion = false);
 
   // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
@@ -356,8 +362,8 @@ class PresolveContext {
 
   // Makes sure the domain of ref and of its representative (ref = coeff * rep +
   // offset) are in sync. Returns false on unsat.
-  bool PropagateAffineRelation(int ref);
-  bool PropagateAffineRelation(int ref, int rep, int64_t coeff, int64_t offset);
+  bool PropagateAffineRelation(int var);
+  bool PropagateAffineRelation(int var, int rep, int64_t coeff, int64_t offset);
 
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();
@@ -501,6 +507,11 @@ class PresolveContext {
     return objective_domain_is_constraining_;
   }
 
+  // If var is an unused variable in an affine relation and is not a
+  // representative, we can remove it from the model. Note that this requires
+  // the variable usage graph to be up to date.
+  void RemoveNonRepresentativeAffineVariableIfUnused(int var);
+
   // Advanced usage. This should be called when a variable can be removed from
   // the problem, so we don't count it as part of an affine relation anymore.
   void RemoveVariableFromAffineRelation(int var);
@@ -574,9 +585,21 @@ class PresolveContext {
   // the hint, in order to maintain it as best as possible during presolve.
   void LoadSolutionHint();
 
+  void PermuteHintValues(const SparsePermutation& perm);
+
   // Solution hint accessor.
   bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }
   int64_t SolutionHint(int var) const { return hint_[var]; }
+  bool HintIsLoaded() const { return hint_is_loaded_; }
+  absl::Span<const int64_t> SolutionHint() const { return hint_; }
+
+  // Allows to set the hint of a newly created variable.
+  void SetNewVariableHint(int var, int64_t value) {
+    CHECK(hint_is_loaded_);
+    CHECK(!hint_has_value_[var]);
+    hint_has_value_[var] = true;
+    hint_[var] = value;
+  }
 
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
@@ -654,7 +677,8 @@ class PresolveContext {
                                   bool imply_eq);
 
   // Insert fully reified var-value encoding.
-  void InsertVarValueEncodingInternal(int literal, int var, int64_t value,
+  // Returns false if this make the problem infeasible.
+  bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
   SolverLogger* logger_;
@@ -714,15 +738,11 @@ class PresolveContext {
       encoding_;
 
   // Contains the currently collected half value encodings:
-  //   i.e.: literal => var ==/!= value
+  // (literal, var, value),  i.e.: literal => var ==/!= value
   // The state is accumulated (adding x => var == value then !x => var != value)
   // will deduce that x equivalent to var == value.
-  absl::flat_hash_map<int,
-                      absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>>
-      eq_half_encoding_;
-  absl::flat_hash_map<int,
-                      absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>>
-      neq_half_encoding_;
+  absl::flat_hash_map<std::tuple<int, int>, int64_t> eq_half_encoding_;
+  absl::flat_hash_map<std::tuple<int, int>, int64_t> neq_half_encoding_;
 
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will be removed from the model at

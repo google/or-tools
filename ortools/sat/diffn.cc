@@ -31,6 +31,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
+#include "ortools/sat/2d_try_edge_propagator.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
@@ -232,6 +233,10 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
         model->GetOrCreate<GenericLiteralWatcher>();
     watcher->SetPropagatorPriority(energy_constraint->RegisterWith(watcher), 5);
     model->TakeOwnership(energy_constraint);
+  }
+
+  if (params.use_try_edge_reasoning_in_no_overlap_2d()) {
+    CreateAndRegisterTryEdgePropagator(x_helper, y_helper, model, watcher);
   }
 }
 

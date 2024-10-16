@@ -346,8 +346,8 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   const std::vector<std::string> kGurobiVersions = {
-      "1103", "1102", "1101", "1100", "1003", "1002", "1001", "1000", "952", "951",
-      "950",  "911",  "910",  "903",  "902",  "811",  "801",  "752"};
+      "1103", "1102", "1101", "1100", "1003", "1002", "1001", "1000", "952",
+      "951",  "950",  "911",  "910",  "903",  "902",  "811",  "801",  "752"};
   potential_paths.reserve(kGurobiVersions.size() * 3);
 
   // Look for libraries pointed by GUROBI_HOME first.
@@ -406,8 +406,8 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 
 #if defined(__GNUC__)  // path in linux64 gurobi/optimizer docker image.
   for (const std::string& version :
-       {"11.0.3", "11.0.2", "11.0.1", "11.0.0", "10.0.3", "10.0.2", "10.0.1", "10.0.0",
-        "9.5.2", "9.5.1", "9.5.0"}) {
+       {"11.0.3", "11.0.2", "11.0.1", "11.0.0", "10.0.3", "10.0.2", "10.0.1",
+        "10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
     potential_paths.push_back(
         absl::StrCat("/opt/gurobi/linux64/lib/libgurobi.so.", version));
   }

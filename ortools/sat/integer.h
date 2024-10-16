@@ -207,8 +207,7 @@ inline std::string IntegerTermDebugString(IntegerVariable var,
 }
 
 // Returns the vector of the negated variables.
-std::vector<IntegerVariable> NegationOf(
-    const std::vector<IntegerVariable>& vars);
+std::vector<IntegerVariable> NegationOf(absl::Span<const IntegerVariable> vars);
 
 // The integer equivalent of a literal.
 // It represents an IntegerVariable and an upper/lower bound on it.

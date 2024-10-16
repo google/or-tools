@@ -29,6 +29,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -126,7 +127,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
   {
     circuit->add_tails(num_events);
     circuit->add_heads(num_events);
-    circuit->add_literals(context->NewBoolVar());
+    circuit->add_literals(context->NewBoolVar("reservoir expansion"));
   }
 
   for (int i = 0; i < num_events; ++i) {
@@ -141,7 +142,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
     // We use the available index 'num_events'.
     {
       // Circuit starts at i, level_vars[i] == demand_expr[i].
-      const int start_var = context->NewBoolVar();
+      const int start_var = context->NewBoolVar("reservoir expansion");
       circuit->add_tails(num_events);
       circuit->add_heads(i);
       circuit->add_literals(start_var);
@@ -163,7 +164,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       // Circuit ends at i, no extra constraint there.
       circuit->add_tails(i);
       circuit->add_heads(num_events);
-      circuit->add_literals(context->NewBoolVar());
+      circuit->add_literals(context->NewBoolVar("reservoir expansion"));
     }
 
     for (int j = 0; j < num_events; ++j) {
@@ -179,7 +180,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       // reservoir except if the set of time point is exactly the same!
       // otherwise if we miss one, then A "after" B in one circuit do not
       // implies that there is no C in between in another!
-      const int arc_i_j = context->NewBoolVar();
+      const int arc_i_j = context->NewBoolVar("reservoir expansion");
       circuit->add_tails(i);
       circuit->add_heads(j);
       circuit->add_literals(arc_i_j);
@@ -755,13 +756,13 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
   std::vector<int> enforcement_literals;
   enforcement_literals.reserve(num_exprs);
   if (num_exprs == 2) {
-    const int new_bool = context->NewBoolVar();
+    const int new_bool = context->NewBoolVar("lin max expansion");
     enforcement_literals.push_back(new_bool);
     enforcement_literals.push_back(NegatedRef(new_bool));
   } else {
     ConstraintProto* exactly_one = context->working_model->add_constraints();
     for (int i = 0; i < num_exprs; ++i) {
-      const int new_bool = context->NewBoolVar();
+      const int new_bool = context->NewBoolVar("lin max expansion");
       exactly_one->mutable_exactly_one()->add_literals(new_bool);
       enforcement_literals.push_back(new_bool);
     }
@@ -1194,7 +1195,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 
       out_encoding.clear();
       if (states.size() == 2) {
-        const int var = context->NewBoolVar();
+        const int var = context->NewBoolVar("automaton expansion");
         out_encoding[states[0]] = var;
         out_encoding[states[1]] = NegatedRef(var);
       } else if (states.size() > 2) {
@@ -1243,7 +1244,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
             }
           }
 
-          out_encoding[state] = context->NewBoolVar();
+          out_encoding[state] = context->NewBoolVar("automaton expansion");
         }
       }
     }
@@ -1302,7 +1303,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     // expand this small table with 3 columns (i.e. compress, negate, etc...).
     std::vector<int> tuple_literals;
     if (num_tuples == 2) {
-      const int bool_var = context->NewBoolVar();
+      const int bool_var = context->NewBoolVar("automaton expansion");
       tuple_literals.push_back(bool_var);
       tuple_literals.push_back(NegatedRef(bool_var));
     } else {
@@ -1320,7 +1321,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
         } else if (out_count[out_states[i]] == 1 && !out_encoding.empty()) {
           tuple_literal = out_encoding[out_states[i]];
         } else {
-          tuple_literal = context->NewBoolVar();
+          tuple_literal = context->NewBoolVar("automaton expansion");
         }
 
         tuple_literals.push_back(tuple_literal);
@@ -1767,7 +1768,8 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
     }
   }
 
-  VLOG(2) << "Table compression" << " var=" << vars.size()
+  VLOG(2) << "Table compression"
+          << " var=" << vars.size()
           << " cost=" << domain_sizes.size() - vars.size()
           << " tuples= " << num_tuples_before_compression << " -> "
           << num_tuples_after_first_compression << " -> "
@@ -1818,7 +1820,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
   if (ct->enforcement_literal().size() == 1) {
     table_is_active_literal = ct->enforcement_literal(0);
   } else if (ct->enforcement_literal().size() > 1) {
-    table_is_active_literal = context->NewBoolVar();
+    table_is_active_literal = context->NewBoolVar("table expansion");
 
     // Adds table_is_active <=> and(enforcement_literals).
     BoolArgumentProto* bool_or =
@@ -1850,7 +1852,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       break;
     }
     if (create_new_var) {
-      tuple_literals[i] = context->NewBoolVar();
+      tuple_literals[i] = context->NewBoolVar("table expansion");
     }
     exactly_one->add_literals(tuple_literals[i]);
   }
@@ -2134,6 +2136,36 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
   if (ct->linear().domain().size() <= 2) return;
   if (ct->linear().vars().size() == 1) return;
 
+  // If we have a hint for all variables of this linear constraint, finds in
+  // which bucket it fall.
+  int hint_bucket = -1;
+  bool set_hint_of_bucket_variables = false;
+  if (context->HintIsLoaded()) {
+    set_hint_of_bucket_variables = true;
+    int64_t hint_activity = 0;
+    const int num_terms = ct->linear().vars().size();
+    const absl::Span<const int64_t> hint = context->SolutionHint();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = ct->linear().vars(i);
+      DCHECK_LT(var, hint.size());
+      if (!context->VarHasSolutionHint(var)) {
+        set_hint_of_bucket_variables = false;
+        break;
+      }
+      hint_activity += ct->linear().coeffs(i) * hint[var];
+    }
+    if (set_hint_of_bucket_variables) {
+      for (int i = 0; i < ct->linear().domain_size(); i += 2) {
+        const int64_t lb = ct->linear().domain(i);
+        const int64_t ub = ct->linear().domain(i + 1);
+        if (hint_activity >= lb && hint_activity <= ub) {
+          hint_bucket = i;
+          break;
+        }
+      }
+    }
+  }
+
   const SatParameters& params = context->params();
   if (params.encode_complex_linear_constraint_with_integer()) {
     // Integer encoding.
@@ -2155,7 +2187,10 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     if (ct->enforcement_literal().empty() && ct->linear().domain_size() == 4) {
       // We cover the special case of no enforcement and two choices by creating
       // a single Boolean.
-      single_bool = context->NewBoolVar();
+      single_bool = context->NewBoolVar("complex linear expansion");
+      if (set_hint_of_bucket_variables) {
+        context->SetNewVariableHint(single_bool, hint_bucket == 0);
+      }
     } else {
       clause = context->working_model->add_constraints()->mutable_bool_or();
       for (const int ref : ct->enforcement_literal()) {
@@ -2173,7 +2208,10 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
 
       int subdomain_literal;
       if (clause != nullptr) {
-        subdomain_literal = context->NewBoolVar();
+        subdomain_literal = context->NewBoolVar("complex linear expansion");
+        if (set_hint_of_bucket_variables) {
+          context->SetNewVariableHint(subdomain_literal, hint_bucket == i);
+        }
         clause->add_literals(subdomain_literal);
         domain_literals.push_back(subdomain_literal);
       } else {
@@ -2196,7 +2234,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       if (enforcement_literals.size() == 1) {
         linear_is_enforced = enforcement_literals[0];
       } else {
-        linear_is_enforced = context->NewBoolVar();
+        linear_is_enforced = context->NewBoolVar("complex linear expansion");
         BoolArgumentProto* maintain_linear_is_enforced =
             context->working_model->add_constraints()->mutable_bool_or();
         for (const int e_lit : enforcement_literals) {

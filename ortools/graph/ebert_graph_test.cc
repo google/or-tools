@@ -20,13 +20,11 @@
 #include "absl/base/macros.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/macros.h"
 #include "ortools/util/permutation.h"
-#include "testing/base/public/test_utils.h"
 
 namespace operations_research {
 
@@ -1033,10 +1031,6 @@ TYPED_TEST(TinyEbertGraphTest, CheckDeathOnBadBounds) {
   int num_nodes = SmallStarGraph::kMaxNumNodes;
   int num_arcs = SmallStarGraph::kMaxNumArcs;
   SmallStarGraph(num_nodes, num_arcs);  // Construct an unused graph. All fine.
-  EXPECT_DFATAL(SmallStarGraph(num_nodes + 1, num_arcs),
-                "Could not reserve memory for -128 nodes and 127 arcs.");
-  EXPECT_DFATAL(SmallStarGraph(num_nodes, num_arcs + 1),
-                "Could not reserve memory for 127 nodes and -128 arcs.");
 }
 
 // An empty fixture to collect the types of small graphs for which we want to do

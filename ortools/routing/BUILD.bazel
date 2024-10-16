@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -32,17 +34,6 @@ config_setting(
 )
 
 proto_library(
-    name = "ils_proto",
-    srcs = ["ils.proto"],
-    deps = [":enums_proto"],
-)
-
-cc_proto_library(
-    name = "ils_cc_proto",
-    deps = ["ils_proto"],
-)
-
-proto_library(
     name = "enums_proto",
     srcs = ["enums.proto"],
 )
@@ -52,10 +43,31 @@ cc_proto_library(
     deps = [":enums_proto"],
 )
 
-# java_proto_library(
-#     name = "enums_java_proto",
-#     deps = [":enums_proto"],
-# )
+java_proto_library(
+    name = "enums_java_proto",
+    deps = [":enums_proto"],
+)
+
+proto_library(
+    name = "ils_proto",
+    srcs = ["ils.proto"],
+    deps = [":enums_proto"],
+)
+
+cc_proto_library(
+    name = "ils_cc_proto",
+    deps = [":ils_proto"],
+)
+
+py_proto_library(
+    name = "ils_py_pb2",
+    deps = [":ils_proto"],
+)
+
+java_proto_library(
+    name = "ils_java_proto",
+    deps = [":ils_proto"],
+)
 
 proto_library(
     name = "parameters_proto",
@@ -75,34 +87,54 @@ cc_proto_library(
     deps = [":parameters_proto"],
 )
 
-# java_proto_library(
-#     name = "parameters_java_proto",
-#     deps = [":parameters_proto"],
-# )
+java_proto_library(
+    name = "parameters_java_proto",
+    deps = [":parameters_proto"],
+)
 
-#py_proto_library(
-#    name = "parameters_py_pb2",
-#    deps = [":parameters_proto"],
-#)
+py_proto_library(
+    name = "parameters_py_pb2",
+    deps = [":parameters_proto"],
+)
+
+py_proto_library(
+    name = "enums_py_pb2",
+    deps = [":enums_proto"],
+)
 
 cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
     deps = [
+        ":enums_cc_proto",
+        ":ils_cc_proto",
+        ":parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:proto_enum_utils",
         "//ortools/base:protoutil",
+        "//ortools/base:types",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
         "//ortools/port:proto_utils",
-        "//ortools/routing:enums_cc_proto",
-        "//ortools/routing:parameters_cc_proto",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:testing_utils",
-        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "parameters_utils",
+    srcs = ["parameters_utils.cc"],
+    hdrs = ["parameters_utils.h"],
+    deps = [
+        ":parameters_cc_proto",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -110,8 +142,8 @@ cc_library(
     name = "types",
     hdrs = ["types.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:intops",
+        "//ortools/base:int_type",
+        "//ortools/util:piecewise_linear_function",
     ],
 )
 
@@ -119,10 +151,10 @@ cc_library(
     name = "utils",
     srcs = ["utils.cc"],
     hdrs = ["utils.h"],
-    visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base",
         "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -130,12 +162,15 @@ cc_library(
     name = "neighborhoods",
     srcs = ["neighborhoods.cc"],
     hdrs = ["neighborhoods.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":types",
         ":utils",
-        "//ortools/base",
+        "//ortools/base:types",
         "//ortools/constraint_solver:cp",
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -146,9 +181,11 @@ cc_library(
     deps = [
         ":types",
         "//ortools/base",
-        "//ortools/base:map_util",
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -184,58 +221,67 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":enums_cc_proto",
+        ":ils_cc_proto",
         ":index_manager",
         ":neighborhoods",
         ":parameters",
+        ":parameters_cc_proto",
+        ":parameters_utils",
         ":types",
         ":utils",
         "//ortools/base",
-        "//ortools/base:adjustable_priority_queue",
         "//ortools/base:dump_vars",
-        "//ortools/base:hash",
+        "//ortools/base:int_type",
         "//ortools/base:map_util",
-        "//ortools/base:murmur",
+        "//ortools/base:mathutil",
         "//ortools/base:protoutil",
-        "//ortools/base:small_map",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
         "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/graph",
         "//ortools/graph:christofides",
         "//ortools/graph:connected_components",
+        "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
         "//ortools/graph:min_cost_flow",
-        "//ortools/graph:topologicalsorter",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
-        "//ortools/routing:enums_cc_proto",
-        "//ortools/routing:parameters_cc_proto",
-        "//ortools/sat:boolean_problem",
-        "//ortools/sat:cp_constraints",
-        "//ortools/sat:cp_model",
+        "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
-        "//ortools/sat:cp_model_checker",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:cp_model_utils",
         "//ortools/sat:integer",
-        "//ortools/sat:integer_expr",
+        "//ortools/sat:lp_utils",
         "//ortools/sat:model",
-        "//ortools/sat:optimization",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:theta_tree",
         "//ortools/util:bitset",
         "//ortools/util:flat_matrix",
         "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:range_minimum_query",
         "//ortools/util:range_query_function",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/functional:bind_front",
         "@com_google_absl//absl/hash",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:die_if_null",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",

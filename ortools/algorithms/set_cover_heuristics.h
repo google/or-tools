@@ -174,7 +174,7 @@ class GreedySolutionGenerator {
   bool NextSolution(const std::vector<SubsetIndex>& focus);
 
   // Same with a different set of costs.
-  bool NextSolution(const std::vector<SubsetIndex>& focus,
+  bool NextSolution(absl::Span<const SubsetIndex> focus,
                     const SubsetCostVector& costs);
 
  private:
@@ -477,12 +477,12 @@ class GuidedLocalSearch {
 // solution. There can be more than num_subsets variables cleared because the
 // intersecting subsets are also removed from the solution. Returns a list of
 // subset indices that can be reused as a focus.
-std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
+std::vector<SubsetIndex> ClearRandomSubsets(BaseInt num_subsets,
                                             SetCoverInvariant* inv);
 
 // Same as above, but clears the subset indices in focus.
 std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
-                                            std::size_t num_subsets,
+                                            BaseInt num_subsets,
                                             SetCoverInvariant* inv);
 
 // Clears the variables (subsets) that cover the most covered elements. This is
@@ -490,12 +490,12 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
 // randomly.
 // Returns the list of the chosen subset indices.
 // This indices can then be used ax a focus.
-std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
+std::vector<SubsetIndex> ClearMostCoveredElements(BaseInt num_subsets,
                                                   SetCoverInvariant* inv);
 
 // Same as above, but clears the subset indices in focus.
 std::vector<SubsetIndex> ClearMostCoveredElements(
-    absl::Span<const SubsetIndex> focus, std::size_t num_subsets,
+    absl::Span<const SubsetIndex> focus, BaseInt num_subsets,
     SetCoverInvariant* inv);
 }  // namespace operations_research
 

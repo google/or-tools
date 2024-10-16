@@ -275,6 +275,7 @@ cc_library(
         ":set_cover_model",
         "//ortools/base:threadpool",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/synchronization",
     ],
 )
 
@@ -286,9 +287,10 @@ cc_library(
         ":set_cover_cc_proto",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
-        "//ortools/util:aligned_memory",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -380,6 +382,15 @@ cc_library(
     hdrs = ["dense_doubly_linked_list.h"],
     deps = [
         "//ortools/base",
+    ],
+)
+
+cc_test(
+    name = "dense_doubly_linked_list_test",
+    srcs = ["dense_doubly_linked_list_test.cc"],
+    deps = [
+        ":dense_doubly_linked_list",
+        "//ortools/base:gmock_main",
     ],
 )
 

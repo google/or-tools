@@ -509,8 +509,7 @@ void ComputeManyToManyShortestPathsWithMultipleThreadsInternal(
     container->Initialize(unique_sources, unique_destinations,
                           graph.num_nodes());
     {
-      std::unique_ptr<ThreadPool> pool(
-          new ThreadPool("OR_Dijkstra", num_threads));
+      std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
       pool->StartWorkers();
       for (int i = 0; i < unique_sources.size(); ++i) {
         pool->Schedule(absl::bind_front(

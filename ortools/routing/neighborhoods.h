@@ -56,16 +56,17 @@ class MakeRelocateNeighborsOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       RoutingTransitCallback2 arc_evaluator);
   MakeRelocateNeighborsOperator(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
       RoutingTransitCallback2 arc_evaluator)
-      : MakeRelocateNeighborsOperator(vars, secondary_vars,
-                                      std::move(start_empty_path_class),
-                                      nullptr, std::move(arc_evaluator)) {}
+      : MakeRelocateNeighborsOperator(
+            vars, secondary_vars, std::move(start_empty_path_class), nullptr,
+            nullptr, std::move(arc_evaluator)) {}
   ~MakeRelocateNeighborsOperator() override {}
 
   bool MakeNeighbor() override;
@@ -253,7 +254,8 @@ class GroupPairAndRelocateOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       const std::vector<PickupDeliveryPair>& pairs);
   GroupPairAndRelocateOperator(
       const std::vector<IntVar*>& vars,
@@ -262,7 +264,7 @@ class GroupPairAndRelocateOperator : public PathOperator {
       const std::vector<PickupDeliveryPair>& pairs)
       : GroupPairAndRelocateOperator(vars, secondary_vars,
                                      std::move(start_empty_path_class), nullptr,
-                                     pairs) {}
+                                     nullptr, pairs) {}
   ~GroupPairAndRelocateOperator() override {}
 
   bool MakeNeighbor() override;
@@ -286,7 +288,8 @@ class LightPairRelocateOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       const std::vector<PickupDeliveryPair>& pairs,
       std::function<bool(int64_t)> force_lifo = nullptr);
   LightPairRelocateOperator(const std::vector<IntVar*>& vars,
@@ -317,7 +320,8 @@ class PairExchangeOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       const std::vector<PickupDeliveryPair>& pairs);
   PairExchangeOperator(const std::vector<IntVar*>& vars,
                        const std::vector<IntVar*>& secondary_vars,
@@ -325,7 +329,7 @@ class PairExchangeOperator : public PathOperator {
                        const std::vector<PickupDeliveryPair>& pairs)
       : PairExchangeOperator(vars, secondary_vars,
                              std::move(start_empty_path_class), nullptr,
-                             pairs) {}
+                             nullptr, pairs) {}
   ~PairExchangeOperator() override {}
 
   bool MakeNeighbor() override;
@@ -555,7 +559,7 @@ PairNodeSwapActiveOperator<swap_first>::PairNodeSwapActiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator(vars, secondary_vars, 2, false, false,
-                   std::move(start_empty_path_class), nullptr),
+                   std::move(start_empty_path_class), nullptr, nullptr),
       inactive_pair_(0),
       pairs_(pairs) {}
 
@@ -658,14 +662,15 @@ class RelocateSubtrip : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       absl::Span<const PickupDeliveryPair> pairs);
   RelocateSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
                   std::function<int(int64_t)> start_empty_path_class,
                   absl::Span<const PickupDeliveryPair> pairs)
       : RelocateSubtrip(vars, secondary_vars, std::move(start_empty_path_class),
-                        nullptr, pairs) {}
+                        nullptr, nullptr, pairs) {}
 
   std::string DebugString() const override { return "RelocateSubtrip"; }
   bool MakeNeighbor() override;
@@ -695,14 +700,15 @@ class ExchangeSubtrip : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       absl::Span<const PickupDeliveryPair> pairs);
   ExchangeSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
                   std::function<int(int64_t)> start_empty_path_class,
                   absl::Span<const PickupDeliveryPair> pairs)
       : ExchangeSubtrip(vars, secondary_vars, std::move(start_empty_path_class),
-                        nullptr, pairs) {}
+                        nullptr, nullptr, pairs) {}
 
   std::string DebugString() const override { return "ExchangeSubtrip"; }
   bool MakeNeighbor() override;

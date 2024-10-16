@@ -15,7 +15,7 @@
 package main
 
 import (
-	"ortools/sat/go/cpmodel"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 func reifiedSampleSat() {

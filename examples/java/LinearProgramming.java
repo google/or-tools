@@ -65,7 +65,7 @@ public class LinearProgramming {
     System.out.println("Number of constraints = " + solver.numConstraints());
 
     if (printModel) {
-      String model = solver.exportModelAsLpFormat();
+      String model = solver.exportModelAsLpFormat(/* obfuscate = */false);
       System.out.println(model);
     }
 

@@ -41,13 +41,13 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
@@ -62,6 +62,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/lb_tree_search.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/max_hs.h"
@@ -72,6 +73,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/work_assignment.h"
@@ -107,10 +109,6 @@ ABSL_FLAG(
     "DEBUG ONLY. When this is set to a non-empty file name, "
     "we will interpret this as an internal solution which can be used for "
     "debugging. For instance we use it to identify wrong cuts/reasons.");
-
-ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
-          "When true, all intermediate solutions found by the solver will be "
-          "checked. This can be expensive, therefore it is off by default.");
 
 namespace operations_research {
 namespace sat {
@@ -307,12 +305,6 @@ std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
       }
     }
   }
-
-  if (DEBUG_MODE ||
-      absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
-    // TODO(user): Checks against initial model.
-    CHECK(SolutionIsFeasible(model_proto, solution));
-  }
   return solution;
 }
 
@@ -393,6 +385,53 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
   if (m->GetOrCreate<SatSolver>()->ModelIsUnsat()) return kNoIntegerVariable;
 
+  // In the presence of symmetry, will will create an extra integer variable per
+  // orbit.
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* params = m->GetOrCreate<SatParameters>();
+  auto* symmetrizer = m->GetOrCreate<LinearConstraintSymmetrizer>();
+  if (model_proto.has_symmetry() && params->linearization_level() > 1 &&
+      params->use_symmetry_in_lp()) {
+    // Convert to SparsePermutation.
+    const int num_vars = model_proto.variables().size();
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    for (const SparsePermutationProto& perm :
+         model_proto.symmetry().permutations()) {
+      generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+    }
+
+    // Get orbits in term of IntegerVariable.
+    const std::vector<int> var_to_orbit_index = GetOrbits(num_vars, generators);
+    std::vector<bool> orbit_is_ok;
+    std::vector<std::vector<IntegerVariable>> orbits;
+    for (int proto_var = 0; proto_var < num_vars; ++proto_var) {
+      const int orbit_index = var_to_orbit_index[proto_var];
+      if (orbit_index == -1) continue;
+      if (orbit_index >= orbits.size()) {
+        orbits.resize(orbit_index + 1);
+        orbit_is_ok.resize(orbit_index + 1, true);
+      }
+
+      // In linerization level >=2, all variables should have a view.
+      // Otherwise revisit and skip orbit without a full view.
+      const IntegerVariable var = mapping->Integer(proto_var);
+      CHECK_NE(var, kNoIntegerVariable);
+      orbits[orbit_index].push_back(var);
+    }
+
+    // Lets create the orbit sum vars and register each orbit.
+    std::vector<std::pair<IntegerVariable, int64_t>> terms;
+    for (const std::vector<IntegerVariable>& orbit : orbits) {
+      terms.clear();
+      for (const IntegerVariable var : orbit) {
+        terms.push_back({var, 1});
+      }
+      const IntegerVariable sum_var =
+          GetOrCreateVariableLinkedToSumOf(terms, true, true, m);
+      symmetrizer->AddSymmetryOrbit(sum_var, orbit);
+    }
+  }
+
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
   // Constraint nodes are indexed by [0..num_lp_constraints),
@@ -430,6 +469,14 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
     }
   }
 
+  // Make sure variables from the same orbit end up in same components.
+  for (int i = 0; i < symmetrizer->NumOrbits(); ++i) {
+    const int representative = get_var_index(symmetrizer->OrbitSumVar(i));
+    for (const IntegerVariable var : symmetrizer->Orbit(i)) {
+      components.AddEdge(representative, get_var_index(var));
+    }
+  }
+
   const int num_components = components.GetNumberOfComponents();
   std::vector<int> component_sizes(num_components, 0);
   const std::vector<int> index_to_component = components.GetComponentIds();
@@ -452,7 +499,6 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   // as much as possible the objective bound by using any bounds the LP give
   // us on one of its components. This is critical on the zephyrus problems for
   // instance.
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
   for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
     const IntegerVariable var =
         mapping->Integer(model_proto.objective().vars(i));
@@ -492,12 +538,45 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   std::vector<std::pair<IntegerVariable, int64_t>> top_level_cp_terms;
   int num_components_containing_objective = 0;
   if (model_proto.has_objective()) {
+    // First convert the proto objective to an IntegerVariable one. In case of
+    // "use_symmetry_in_lp", we also rewrite it in terms of the sum of the
+    // variables in the orbits.
+    std::vector<std::pair<IntegerVariable, int64_t>> objective;
+    const int num_orbits = symmetrizer->NumOrbits();
+    if (num_orbits > 0) {
+      // We use the orbit_sum var instead.
+      std::vector<int64_t> orbit_obj_coeff(num_orbits, 0);
+      for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+        const IntegerVariable var =
+            mapping->Integer(model_proto.objective().vars(i));
+        const int64_t coeff = model_proto.objective().coeffs(i);
+        const int orbit_index = symmetrizer->OrbitIndex(var);
+        if (orbit_index != -1) {
+          if (orbit_obj_coeff[orbit_index] == 0) {
+            orbit_obj_coeff[orbit_index] = coeff;
+          } else {
+            CHECK_EQ(orbit_obj_coeff[orbit_index], coeff);
+          }
+          continue;
+        }
+        objective.push_back({var, coeff});
+      }
+      for (int i = 0; i < num_orbits; ++i) {
+        if (orbit_obj_coeff[i] == 0) continue;
+        objective.push_back({symmetrizer->OrbitSumVar(i), orbit_obj_coeff[i]});
+      }
+    } else {
+      for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+        const IntegerVariable var =
+            mapping->Integer(model_proto.objective().vars(i));
+        const int64_t coeff = model_proto.objective().coeffs(i);
+        objective.push_back({var, coeff});
+      }
+    }
+
     // First pass: set objective coefficients on the lp constraints, and store
     // the cp terms in one vector per component.
-    for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
-      const IntegerVariable var =
-          mapping->Integer(model_proto.objective().vars(i));
-      const int64_t coeff = model_proto.objective().coeffs(i);
+    for (const auto [var, coeff] : objective) {
       const int c = index_to_component[get_var_index(var)];
       if (lp_constraints[c] != nullptr) {
         lp_constraints[c]->SetObjectiveCoefficient(var, IntegerValue(coeff));
@@ -660,7 +739,6 @@ void RegisterVariableBoundsLevelZeroImport(
     std::vector<int64_t> new_upper_bounds;
     shared_bounds_manager->GetChangedBounds(
         id, &model_variables, &new_lower_bounds, &new_upper_bounds);
-    bool new_bounds_have_been_imported = false;
     for (int i = 0; i < model_variables.size(); ++i) {
       const int model_var = model_variables[i];
 
@@ -675,7 +753,6 @@ void RegisterVariableBoundsLevelZeroImport(
           sat_solver->NotifyThatModelIsUnsat();
           return false;
         }
-        new_bounds_have_been_imported = true;
         trail->EnqueueWithUnitReason(lit);
         continue;
       }
@@ -691,7 +768,6 @@ void RegisterVariableBoundsLevelZeroImport(
       const bool changed_ub = new_ub < old_ub;
       if (!changed_lb && !changed_ub) continue;
 
-      new_bounds_have_been_imported = true;
       if (VLOG_IS_ON(3)) {
         const IntegerVariableProto& var_proto =
             model_proto.variables(model_var);
@@ -715,9 +791,9 @@ void RegisterVariableBoundsLevelZeroImport(
         return false;
       }
     }
-    if (new_bounds_have_been_imported && !sat_solver->FinishPropagation()) {
-      return false;
-    }
+
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -764,7 +840,7 @@ void RegisterObjectiveBoundsImport(
   const auto import_objective_bounds = [name, solver, integer_trail, objective,
                                         shared_response_manager]() {
     if (solver->AssumptionLevel() != 0) return true;
-    bool propagate = false;
+    bool tighter_bounds = false;
 
     const IntegerValue external_lb =
         shared_response_manager->GetInnerObjectiveLowerBound();
@@ -776,7 +852,7 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
     const IntegerValue external_ub =
@@ -789,18 +865,20 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
-    if (!propagate) return true;
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
+    if (tighter_bounds) {
+      VLOG(3) << "'" << name << "' imports objective bounds: external ["
+              << objective->ScaleIntegerObjective(external_lb) << ", "
+              << objective->ScaleIntegerObjective(external_ub) << "], current ["
+              << objective->ScaleIntegerObjective(current_lb) << ", "
+              << objective->ScaleIntegerObjective(current_ub) << "]";
+    }
 
-    VLOG(3) << "'" << name << "' imports objective bounds: external ["
-            << objective->ScaleIntegerObjective(external_lb) << ", "
-            << objective->ScaleIntegerObjective(external_ub) << "], current ["
-            << objective->ScaleIntegerObjective(current_lb) << ", "
-            << objective->ScaleIntegerObjective(current_ub) << "]";
-
-    return solver->FinishPropagation();
+    return true;
   };
 
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -867,14 +945,18 @@ int RegisterClausesLevelZeroImport(int id,
   CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
-  bool share_glue_clauses =
+  const bool share_glue_clauses =
       model->GetOrCreate<SatParameters>()->share_glue_clauses();
+  const bool minimize_shared_clauses =
+      model->GetOrCreate<SatParameters>()->minimize_shared_clauses();
   auto* clause_stream = share_glue_clauses
                             ? shared_clauses_manager->GetClauseStream(id)
                             : nullptr;
+  auto* clause_manager = model->GetOrCreate<ClauseManager>();
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
                                            sat_solver, implications,
-                                           clause_stream]() {
+                                           clause_stream, clause_manager,
+                                           minimize_shared_clauses]() {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
     implications->EnableSharing(false);
@@ -888,7 +970,12 @@ int RegisterClausesLevelZeroImport(int id,
     implications->EnableSharing(true);
     if (clause_stream == nullptr) return true;
 
+    int new_clauses = 0;
     std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
+    sat_solver->EnsureNewClauseIndexInitialized();
+    // Temporarily disable clause sharing so we don't immediately re-export the
+    // clauses we just imported.
+    auto callback = clause_manager->TakeAddClauseCallback();
     for (const absl::Span<const int> shared_clause :
          shared_clauses_manager->GetUnseenClauses(id)) {
       // Check this clause was not already learned by this worker.
@@ -904,8 +991,19 @@ int RegisterClausesLevelZeroImport(int id,
               absl::MakeSpan(local_clause).subspan(0, shared_clause.size()))) {
         return false;
       }
+      ++new_clauses;
     }
+    clause_manager->SetAddClauseCallback(std::move(callback));
     clause_stream->RemoveWorstClauses();
+    if (minimize_shared_clauses && new_clauses > 0) {
+      // The new clauses may be subsumed, so try to minimize them to reduce
+      // overhead of sharing.
+      // We only share up to 1024 literals worth of new clauses per second, so
+      // at most 1024 decisions to vivify all new clauses, so this should be
+      // relatively cheap.
+      return sat_solver->MinimizeByPropagation(
+          /*dtime=*/0.5, /*minimize_new_clauses_only=*/true);
+    }
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -1007,15 +1105,21 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     VLOG(3) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
-    VLOG(1) << "There is unsupported constraints types in this model: ";
+    auto* logger = model->GetOrCreate<SolverLogger>();
+    SOLVER_LOG(logger,
+               "There is unsupported constraints types in this model: ");
     std::vector<absl::string_view> names;
     for (const ConstraintProto::ConstraintCase type : unsupported_types) {
       names.push_back(ConstraintCaseName(type));
     }
     std::sort(names.begin(), names.end());
     for (const absl::string_view name : names) {
-      VLOG(1) << " - " << name;
+      SOLVER_LOG(logger, " - ", name);
     }
+
+    // TODO(user): This is wrong. We should support a MODEL_INVALID end of solve
+    // in the SharedResponseManager.
+    SOLVER_LOG(logger, "BUG: We will wrongly report INFEASIBLE now.");
     return unsat();
   }
 

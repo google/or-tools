@@ -149,7 +149,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   IntegerValue ub_min = kMaxIntegerValue;
   new_integer_bounds_.push_back(IntegerLiteral());  // Sentinel.
 
-  for (int i = 0; i < new_integer_bounds_.size(); ++i) {
+  const int limit = new_integer_bounds_.size();
+  for (int i = 0; i < limit; ++i) {
     const IntegerVariable var = new_integer_bounds_[i].var;
 
     // Hole detection.
@@ -889,8 +890,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   const bool limit_reached = time_limit->LimitReached() ||
                              time_limit->GetElapsedDeterministicTime() > limit;
   LOG_IF(INFO, options.log_info)
-      << "Probing. " << " num_probed: " << num_probed << " num_fixed: +"
-      << num_newly_fixed << " (" << num_fixed << "/" << num_variables << ")"
+      << "Probing. "
+      << " num_probed: " << num_probed << " num_fixed: +" << num_newly_fixed
+      << " (" << num_fixed << "/" << num_variables << ")"
       << " explicit_fix:" << num_explicit_fix
       << " num_conflicts:" << num_conflicts
       << " new_binary_clauses: " << num_new_binary

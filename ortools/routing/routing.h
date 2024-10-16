@@ -172,7 +172,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
@@ -270,6 +269,7 @@ class RoutingModel {
   typedef RoutingResourceClassIndex ResourceClassIndex;
   typedef RoutingTransitCallback1 TransitCallback1;
   typedef RoutingTransitCallback2 TransitCallback2;
+  typedef RoutingCumulDependentTransitCallback2 CumulDependentTransitCallback2;
 
 #if !defined(SWIG)
   /// What follows is relevant for models with time/state dependent transits.
@@ -641,8 +641,10 @@ class RoutingModel {
   int RegisterTransitCallback(
       TransitCallback2 callback,
       TransitEvaluatorSign sign = kTransitEvaluatorSignUnknown);
-
+  int RegisterCumulDependentTransitCallback(
+      CumulDependentTransitCallback2 callback);
   int RegisterStateDependentTransitCallback(VariableIndexEvaluator2 callback);
+
   const TransitCallback2& TransitCallback(int callback_index) const {
     CHECK_LT(callback_index, transit_evaluators_.size());
     return transit_evaluators_[callback_index];
@@ -650,6 +652,11 @@ class RoutingModel {
   const TransitCallback1& UnaryTransitCallbackOrNull(int callback_index) const {
     CHECK_LT(callback_index, unary_transit_evaluators_.size());
     return unary_transit_evaluators_[callback_index];
+  }
+  const CumulDependentTransitCallback2& CumulDependentTransitCallback(
+      int callback_index) const {
+    CHECK_LT(callback_index, cumul_dependent_transit_evaluators_.size());
+    return cumul_dependent_transit_evaluators_[callback_index];
   }
   const VariableIndexEvaluator2& StateDependentTransitCallback(
       int callback_index) const {
@@ -692,6 +699,18 @@ class RoutingModel {
       const std::vector<int>& evaluator_indices, int64_t slack_max,
       std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
       const std::string& name);
+  /// Creates a dimension where the transit variable on arc i->j is the sum of:
+  /// - A "fixed" transit value, obtained from the fixed_evaluator_index for
+  ///   this vehicle, referencing evaluators in transit_evaluators_, and
+  /// - A FloatSlopePiecewiseLinearFunction of the cumul of node i, obtained
+  ///   from the cumul_dependent_evaluator_index of this vehicle, pointing to
+  ///   an evaluator in cumul_dependent_transit_evaluators_.
+  bool AddDimensionWithCumulDependentVehicleTransitAndCapacity(
+      const std::vector<int>& fixed_evaluator_indices,
+      const std::vector<int>& cumul_dependent_evaluator_indices,
+      int64_t slack_max, std::vector<int64_t> vehicle_capacities,
+      bool fix_start_cumul_to_zero, const std::string& name);
+
   /// Creates a dimension where the transit variable is constrained to be
   /// equal to 'value'; 'capacity' is the upper bound of the cumul variables.
   /// 'name' is the name used to reference the dimension; this name is used to
@@ -1303,6 +1322,8 @@ class RoutingModel {
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
   /// Adds a search monitor to the search used to solve the routing model.
   void AddSearchMonitor(SearchMonitor* monitor);
+  // Adds a callback called at the beginning of the search.
+  void AddEnterSearchCallback(std::function<void()> callback);
   /// Adds a callback called each time a solution is found during the search.
   /// This is a shortcut to creating a monitor to call the callback on
   /// AtSolution() and adding it with AddSearchMonitor.
@@ -1311,6 +1332,9 @@ class RoutingModel {
   /// obtained when solver_parameters.check_solution_period > 1 (aka fastLS).
   void AddAtSolutionCallback(std::function<void()> callback,
                              bool track_unchecked_neighbors = false);
+  // Internal-only: Adds a callback to reset
+  // RestoreDimensionValuesForUnchangedRoutes at the beginning of the search.
+  void AddRestoreDimensionValuesResetCallback(std::function<void()> callback);
   /// Adds a variable to minimize in the solution finalizer. The solution
   /// finalizer is called each time a solution is found during the search and
   /// allows to instantiate secondary variables (such as dimension cumul
@@ -1521,36 +1545,21 @@ class RoutingModel {
   const Assignment* PackCumulsOfOptimizerDimensionsFromAssignment(
       const Assignment* original_assignment, absl::Duration duration_limit,
       bool* time_limit_was_reached = nullptr);
+
+#ifndef SWIG
   /// Contains the information needed by the solver to optimize a dimension's
   /// cumuls with travel-start dependent transit values.
   struct RouteDimensionTravelInfo {
     /// Contains the information for a single transition on the route.
     struct TransitionInfo {
-      /// The following struct defines a piecewise linear formulation, with
-      /// int64_t values for the "anchor" x and y values, and potential double
-      /// values for the slope of each linear function.
-      // TODO(user): Adjust the inlined vector sizes based on experiments.
-      struct PiecewiseLinearFormulation {
-        /// The set of *increasing* anchor cumul values for the interpolation.
-        absl::InlinedVector<int64_t, 8> x_anchors;
-        /// The y values used for the interpolation:
-        /// For any x anchor value, let i be an index such that
-        /// x_anchors[i] ≤ x < x_anchors[i+1], then the y value for x is
-        /// y_anchors[i] * (1-λ) + y_anchors[i+1] * λ, with
-        /// λ = (x - x_anchors[i]) / (x_anchors[i+1] - x_anchors[i]).
-        absl::InlinedVector<int64_t, 8> y_anchors;
-
-        std::string DebugString(std::string line_prefix = "") const;
-      };
-
       /// Models the (real) travel value Tᵣ, for this transition based on the
       /// departure value of the travel.
-      PiecewiseLinearFormulation travel_start_dependent_travel;
+      FloatSlopePiecewiseLinearFunction travel_start_dependent_travel;
 
       /// travel_compression_cost models the cost of the difference between the
       /// (real) travel value Tᵣ given by travel_start_dependent_travel and the
       /// compressed travel value considered in the scheduling.
-      PiecewiseLinearFormulation travel_compression_cost;
+      FloatSlopePiecewiseLinearFunction travel_compression_cost;
 
       /// The parts of the transit which occur pre/post travel between the
       /// nodes. The total transit between the two nodes i and j is
@@ -1579,6 +1588,8 @@ class RoutingModel {
 
     std::string DebugString(std::string line_prefix = "") const;
   };
+
+#endif  // SWIG
 
 #ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
@@ -2149,9 +2160,10 @@ class RoutingModel {
   void Initialize();
   void AddNoCycleConstraintInternal();
   bool AddDimensionWithCapacityInternal(
-      const std::vector<int>& evaluator_indices, int64_t slack_max,
-      std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-      const std::string& name);
+      const std::vector<int>& evaluator_indices,
+      const std::vector<int>& cumul_dependent_evaluator_indices,
+      int64_t slack_max, std::vector<int64_t> vehicle_capacities,
+      bool fix_start_cumul_to_zero, const std::string& name);
   bool AddDimensionDependentDimensionWithVehicleCapacityInternal(
       const std::vector<int>& pure_transits,
       const std::vector<int>& dependent_transits,
@@ -2160,6 +2172,7 @@ class RoutingModel {
       const std::string& name);
   bool InitializeDimensionInternal(
       const std::vector<int>& evaluator_indices,
+      const std::vector<int>& cumul_dependent_evaluator_indices,
       const std::vector<int>& state_dependent_evaluator_indices,
       int64_t slack_max, bool fix_start_cumul_to_zero,
       RoutingDimension* dimension);
@@ -2345,28 +2358,50 @@ class RoutingModel {
   LocalSearchOperator* CreateCPOperator() {
     return CreateCPOperator(MakeLocalSearchOperator<T>);
   }
-  using NeighborAccessor = std::function<const std::vector<int>&(int, int)>;
+  template <class T, typename ArgType>
+  LocalSearchOperator* CreateCPOperatorWithArg(ArgType arg) {
+    return CreateCPOperatorWithArg(MakeLocalSearchOperatorWithArg<T, ArgType>,
+                                   std::move(arg));
+  }
+
+  using NeighborAccessor =
+      std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>;
   template <class T>
   LocalSearchOperator* CreateCPOperatorWithNeighbors(
-      NeighborAccessor get_neighbors) {
+      NeighborAccessor get_incoming_neighbors,
+      NeighborAccessor get_outgoing_neighbors) {
     return CreateCPOperatorWithNeighbors(
-        MakeLocalSearchOperatorWithNeighbors<T>, std::move(get_neighbors));
+        MakeLocalSearchOperatorWithNeighbors<T>,
+        std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors));
   }
   template <class T>
   LocalSearchOperator* CreateOperatorWithNeighborsRatio(
-      int neighbors_ratio_used, NeighborAccessor get_neighbors) {
-    return neighbors_ratio_used == 1
-               ? CreateCPOperator<T>()
-               : CreateCPOperatorWithNeighbors<T>(std::move(get_neighbors));
+      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
+      NeighborAccessor get_outgoing_neighbors) {
+    return neighbors_ratio_used == 1 ? CreateCPOperator<T>()
+                                     : CreateCPOperatorWithNeighbors<T>(
+                                           std::move(get_incoming_neighbors),
+                                           std::move(get_outgoing_neighbors));
   }
   template <class T>
   LocalSearchOperator* CreateCPOperatorWithNeighbors(
-      const T& operator_factory, NeighborAccessor get_neighbors) {
+      const T& operator_factory, NeighborAccessor get_incoming_neighbors,
+      NeighborAccessor get_outgoing_neighbors) {
     return operator_factory(
         solver_.get(), nexts_,
         CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
                                             : vehicle_vars_,
-        vehicle_start_class_callback_, std::move(get_neighbors));
+        vehicle_start_class_callback_, std::move(get_incoming_neighbors),
+        std::move(get_outgoing_neighbors));
+  }
+  template <class T, typename ArgType>
+  LocalSearchOperator* CreateCPOperatorWithArg(const T& operator_factory,
+                                               ArgType arg) {
+    return operator_factory(solver_.get(), nexts_,
+                            CostsAreHomogeneousAcrossVehicles()
+                                ? std::vector<IntVar*>()
+                                : vehicle_vars_,
+                            vehicle_start_class_callback_, std::move(arg));
   }
   template <class T, class Arg>
   LocalSearchOperator* CreateOperator(const Arg& arg) {
@@ -2378,20 +2413,24 @@ class RoutingModel {
   }
   template <class T, class Arg>
   LocalSearchOperator* CreateOperatorWithNeighbors(
-      NeighborAccessor get_neighbors, const Arg& arg) {
+      NeighborAccessor get_incoming_neighbors,
+      NeighborAccessor get_outgoing_neighbors, const Arg& arg) {
     return solver_->RevAlloc(
         new T(nexts_,
               CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
                                                   : vehicle_vars_,
-              vehicle_start_class_callback_, std::move(get_neighbors), arg));
+              vehicle_start_class_callback_, std::move(get_incoming_neighbors),
+              std::move(get_outgoing_neighbors), arg));
   }
   template <class T, class Arg>
   LocalSearchOperator* CreateOperatorWithNeighborsRatio(
-      int neighbors_ratio_used, NeighborAccessor get_neighbors,
-      const Arg& arg) {
+      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
+      NeighborAccessor get_outgoing_neighbors, const Arg& arg) {
     return neighbors_ratio_used == 1
                ? CreateOperator<T>(arg)
-               : CreateOperatorWithNeighbors<T>(std::move(get_neighbors), arg);
+               : CreateOperatorWithNeighbors<T>(
+                     std::move(get_incoming_neighbors),
+                     std::move(get_outgoing_neighbors), arg);
   }
   template <class T, class Arg1, class MoveableArg2>
   LocalSearchOperator* CreateOperator(const Arg1& arg1, MoveableArg2 arg2) {
@@ -2403,8 +2442,9 @@ class RoutingModel {
   }
   template <class T, class Arg1, class MoveableArg2>
   LocalSearchOperator* CreateOperatorWithNeighborsRatio(
-      int neighbors_ratio_used, NeighborAccessor get_neighbors,
-      const Arg1& arg1, MoveableArg2 arg2) {
+      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
+      NeighborAccessor get_outgoing_neighbors, const Arg1& arg1,
+      MoveableArg2 arg2) {
     return neighbors_ratio_used == 1
                ? CreateOperator<T>(arg1, std::move(arg2))
                : solver_->RevAlloc(new T(nexts_,
@@ -2412,20 +2452,23 @@ class RoutingModel {
                                              ? std::vector<IntVar*>()
                                              : vehicle_vars_,
                                          vehicle_start_class_callback_,
-                                         std::move(get_neighbors), arg1,
-                                         std::move(arg2)));
+                                         std::move(get_incoming_neighbors),
+                                         std::move(get_outgoing_neighbors),
+                                         arg1, std::move(arg2)));
   }
   template <class T>
   LocalSearchOperator* CreatePairOperator() {
     return CreateOperator<T>(pickup_delivery_pairs_);
   }
   template <class T>
-  LocalSearchOperator* CreatePairOperator(int neighbors_ratio_used,
-                                          NeighborAccessor get_neighbors) {
+  LocalSearchOperator* CreatePairOperator(
+      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
+      NeighborAccessor get_outgoing_neighbors) {
     return neighbors_ratio_used == 1
                ? CreateOperator<T>(pickup_delivery_pairs_)
-               : CreateOperatorWithNeighbors<T>(std::move(get_neighbors),
-                                                pickup_delivery_pairs_);
+               : CreateOperatorWithNeighbors<T>(
+                     std::move(get_incoming_neighbors),
+                     std::move(get_outgoing_neighbors), pickup_delivery_pairs_);
   }
 #endif  // SWIG
   void CreateNeighborhoodOperators(const RoutingSearchParameters& parameters);
@@ -2712,6 +2755,7 @@ class RoutingModel {
   std::vector<SearchMonitor*> monitors_;
   std::vector<SearchMonitor*> secondary_ls_monitors_;
   std::vector<SearchMonitor*> at_solution_monitors_;
+  std::vector<std::function<void()>> restore_dimension_values_reset_callbacks_;
   int monitors_before_setup_ = 0;
   int monitors_after_setup_ = 0;
   SearchMonitor* metaheuristic_ = nullptr;
@@ -2778,6 +2822,9 @@ class RoutingModel {
   std::vector<VariableIndexEvaluator2> state_dependent_transit_evaluators_;
   std::vector<std::unique_ptr<StateDependentTransitCallbackCache>>
       state_dependent_transit_evaluators_cache_;
+
+  std::vector<CumulDependentTransitCallback2>
+      cumul_dependent_transit_evaluators_;
 
   // Returns global BinCapacities state, may be nullptr.
   std::unique_ptr<BinCapacities> bin_capacities_;
@@ -3367,6 +3414,13 @@ class RoutingDimension {
     return model()->transit_evaluator_sign_[evaluator_index];
   }
   int vehicle_to_class(int vehicle) const { return vehicle_to_class_[vehicle]; }
+  int vehicle_to_cumul_dependent_class(int vehicle) const {
+    if (vehicle_to_cumul_dependent_class_.empty()) {
+      return -1;
+    }
+    DCHECK_LT(vehicle, vehicle_to_cumul_dependent_class_.size());
+    return vehicle_to_cumul_dependent_class_[vehicle];
+  }
 #endif  /// !defined(SWIGCSHARP) && !defined(SWIGJAVA)
 #endif  /// !defined(SWIGPYTHON)
   /// Sets an upper bound on the dimension span on a given vehicle. This is the
@@ -3688,11 +3742,13 @@ class RoutingDimension {
   RoutingDimension(RoutingModel* model, std::vector<int64_t> vehicle_capacities,
                    const std::string& name, SelfBased);
   void Initialize(const std::vector<int>& transit_evaluators,
+                  const std::vector<int>& cumul_dependent_transit_evaluators,
                   const std::vector<int>& state_dependent_transit_evaluators,
                   int64_t slack_max);
   void InitializeCumuls();
   void InitializeTransits(
       absl::Span<const int> transit_evaluators,
+      absl::Span<const int> cumul_dependent_transit_evaluators,
       absl::Span<const int> state_dependent_transit_evaluators,
       int64_t slack_max);
   void InitializeTransitVariables(int64_t slack_max);
@@ -3730,8 +3786,16 @@ class RoutingDimension {
   std::vector<IntVar*> fixed_transits_;
   /// Values in class_evaluators_ correspond to the evaluators in
   /// RoutingModel::transit_evaluators_ for each vehicle class.
+  // TODO(user): Make the *vehicle_to*_class_* members vector<int> instead
+  // of vector<int64_t>.
   std::vector<int> class_evaluators_;
   std::vector<int64_t> vehicle_to_class_;
+
+  /// Values in cumul_dependent_class_evaluators_ correspond to the evaluators
+  /// in RoutingModel::cumul_dependent_transit_evaluators_ for each vehicle
+  /// class.
+  std::vector<int> cumul_dependent_class_evaluators_;
+  std::vector<int64_t> vehicle_to_cumul_dependent_class_;
 #ifndef SWIG
   ReverseArcListGraph<int, int> path_precedence_graph_;
 #endif
@@ -3745,7 +3809,6 @@ class RoutingDimension {
   // another dimension. There can be no cycles, except for self loops, a
   // typical example for this is a time dimension.
   const RoutingDimension* const base_dimension_;
-
   // Values in state_dependent_class_evaluators_ correspond to the evaluators
   // in RoutingModel::state_dependent_transit_evaluators_ for each vehicle
   // class.

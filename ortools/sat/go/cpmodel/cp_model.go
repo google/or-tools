@@ -578,8 +578,8 @@ func (cp *Builder) NewOptionalIntervalVar(start, size, end LinearArgument, prese
 			Start: start.asLinearExpressionProto(),
 			Size:  size.asLinearExpressionProto(),
 			End:   end.asLinearExpressionProto(),
-		},
-		}})
+		}},
+	})
 
 	return IntervalVar{cpb: cp, ind: ind}
 }
@@ -803,11 +803,10 @@ func (cp *Builder) AddMinEquality(target LinearArgument, exprs ...LinearArgument
 	}
 
 	return cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_LinMax{
-			&cmpb.LinearArgumentProto{
-				Target: asNegatedLinearExpressionProto(target),
-				Exprs:  protos,
-			}},
+		Constraint: &cmpb.ConstraintProto_LinMax{&cmpb.LinearArgumentProto{
+			Target: asNegatedLinearExpressionProto(target),
+			Exprs:  protos,
+		}},
 	})
 }
 
@@ -819,11 +818,10 @@ func (cp *Builder) AddMaxEquality(target LinearArgument, exprs ...LinearArgument
 	}
 
 	return cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_LinMax{
-			&cmpb.LinearArgumentProto{
-				Target: target.asLinearExpressionProto(),
-				Exprs:  protos,
-			}},
+		Constraint: &cmpb.ConstraintProto_LinMax{&cmpb.LinearArgumentProto{
+			Target: target.asLinearExpressionProto(),
+			Exprs:  protos,
+		}},
 	})
 }
 
@@ -835,53 +833,49 @@ func (cp *Builder) AddMultiplicationEquality(target LinearArgument, exprs ...Lin
 	}
 
 	return cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_IntProd{
-			&cmpb.LinearArgumentProto{
-				Target: target.asLinearExpressionProto(),
-				Exprs:  protos,
-			}},
+		Constraint: &cmpb.ConstraintProto_IntProd{&cmpb.LinearArgumentProto{
+			Target: target.asLinearExpressionProto(),
+			Exprs:  protos,
+		}},
 	})
 }
 
 // AddDivisionEquality adds the constraint: target == num / denom.
 func (cp *Builder) AddDivisionEquality(target, num, denom LinearArgument) Constraint {
 	return cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_IntDiv{
-			&cmpb.LinearArgumentProto{
-				Target: target.asLinearExpressionProto(),
-				Exprs: []*cmpb.LinearExpressionProto{
-					num.asLinearExpressionProto(),
-					denom.asLinearExpressionProto(),
-				},
-			}},
+		Constraint: &cmpb.ConstraintProto_IntDiv{&cmpb.LinearArgumentProto{
+			Target: target.asLinearExpressionProto(),
+			Exprs: []*cmpb.LinearExpressionProto{
+				num.asLinearExpressionProto(),
+				denom.asLinearExpressionProto(),
+			},
+		}},
 	})
 }
 
 // AddAbsEquality adds the constraint: target == Abs(expr).
 func (cp *Builder) AddAbsEquality(target, expr LinearArgument) Constraint {
 	return cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_LinMax{
-			&cmpb.LinearArgumentProto{
-				Target: target.asLinearExpressionProto(),
-				Exprs: []*cmpb.LinearExpressionProto{
-					expr.asLinearExpressionProto(),
-					asNegatedLinearExpressionProto(expr),
-				},
-			}},
+		Constraint: &cmpb.ConstraintProto_LinMax{&cmpb.LinearArgumentProto{
+			Target: target.asLinearExpressionProto(),
+			Exprs: []*cmpb.LinearExpressionProto{
+				expr.asLinearExpressionProto(),
+				asNegatedLinearExpressionProto(expr),
+			},
+		}},
 	})
 }
 
 // AddModuloEquality adds the constraint: target == v % mod.
 func (cp *Builder) AddModuloEquality(target, v, mod LinearArgument) Constraint {
 	return cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_IntMod{
-			&cmpb.LinearArgumentProto{
-				Target: target.asLinearExpressionProto(),
-				Exprs: []*cmpb.LinearExpressionProto{
-					v.asLinearExpressionProto(),
-					mod.asLinearExpressionProto(),
-				},
-			}},
+		Constraint: &cmpb.ConstraintProto_IntMod{&cmpb.LinearArgumentProto{
+			Target: target.asLinearExpressionProto(),
+			Exprs: []*cmpb.LinearExpressionProto{
+				v.asLinearExpressionProto(),
+				mod.asLinearExpressionProto(),
+			},
+		}},
 	})
 }
 
@@ -894,37 +888,33 @@ func (cp *Builder) AddNoOverlap(vars ...IntervalVar) Constraint {
 	}
 
 	return cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_NoOverlap{
-			&cmpb.NoOverlapConstraintProto{
-				Intervals: intervals,
-			}},
+		Constraint: &cmpb.ConstraintProto_NoOverlap{&cmpb.NoOverlapConstraintProto{
+			Intervals: intervals,
+		}},
 	})
 }
 
 // AddNoOverlap2D adds a no_overlap2D constraint that prevents a set of boxes from overlapping.
 func (cp *Builder) AddNoOverlap2D() NoOverlap2DConstraint {
 	return NoOverlap2DConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_NoOverlap_2D{
-			&cmpb.NoOverlap2DConstraintProto{},
-		}})}
+		Constraint: &cmpb.ConstraintProto_NoOverlap_2D{&cmpb.NoOverlap2DConstraintProto{}},
+	})}
 }
 
 // AddCircuitConstraint adds a circuit constraint to the model. The circuit constraint is
 // defined on a graph where the arcs are present if the corresponding literals are set to true.
 func (cp *Builder) AddCircuitConstraint() CircuitConstraint {
 	return CircuitConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_Circuit{
-			&cmpb.CircuitConstraintProto{},
-		}})}
+		Constraint: &cmpb.ConstraintProto_Circuit{&cmpb.CircuitConstraintProto{}},
+	})}
 }
 
 // AddMultipleCircuitConstraint adds a multiple circuit constraint to the model, aka the "VRP"
 // (Vehicle Routing Problem) constraint.
 func (cp *Builder) AddMultipleCircuitConstraint() MultipleCircuitConstraint {
 	return MultipleCircuitConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_Routes{
-			&cmpb.RoutesConstraintProto{},
-		}})}
+		Constraint: &cmpb.ConstraintProto_Routes{&cmpb.RoutesConstraintProto{}},
+	})}
 }
 
 // AddAllowedAssignments adds an allowed assignments constraint to the model. When all variables
@@ -937,9 +927,8 @@ func (cp *Builder) AddAllowedAssignments(vars ...IntVar) TableConstraint {
 	}
 
 	return TableConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_Table{
-			&cmpb.TableConstraintProto{Vars: varsInd},
-		}})}
+		Constraint: &cmpb.ConstraintProto_Table{&cmpb.TableConstraintProto{Vars: varsInd}},
+	})}
 }
 
 // AddReservoirConstraint adds a reservoir constraint with optional refill/emptying events.
@@ -951,8 +940,7 @@ func (cp *Builder) AddAllowedAssignments(vars ...IntVar) TableConstraint {
 // is assigned a value t, then the level of the reservoir changes by
 // level_change (which is constant) at time t. Therefore, at any time t:
 //
-//	sum(level_changes[i] * actives[i] if times[i] <= t)
-//	    in [min_level, max_level]
+// sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level, max_level]
 //
 // Note that min level must be <= 0, and the max level must be >= 0.
 // Please use fixed level_changes to simulate an initial state.
@@ -963,10 +951,9 @@ func (cp *Builder) AddReservoirConstraint(min, max int64) ReservoirConstraint {
 	return ReservoirConstraint{
 		cp.appendConstraint(
 			&cmpb.ConstraintProto{
-				Constraint: &cmpb.ConstraintProto_Reservoir{
-					&cmpb.ReservoirConstraintProto{
-						MinLevel: min, MaxLevel: max,
-					}}},
+				Constraint: &cmpb.ConstraintProto_Reservoir{&cmpb.ReservoirConstraintProto{
+					MinLevel: min, MaxLevel: max,
+				}}},
 		), cp.NewConstant(1).Index()}
 }
 
@@ -1001,12 +988,11 @@ func (cp *Builder) AddAutomaton(transitionVars []IntVar, startState int64, final
 		transitions = append(transitions, int32(v.Index()))
 	}
 	return AutomatonConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_Automaton{
-			&cmpb.AutomatonConstraintProto{
-				Vars:          transitions,
-				StartingState: startState,
-				FinalStates:   finalStates,
-			}},
+		Constraint: &cmpb.ConstraintProto_Automaton{&cmpb.AutomatonConstraintProto{
+			Vars:          transitions,
+			StartingState: startState,
+			FinalStates:   finalStates,
+		}},
 	})}
 }
 
@@ -1015,11 +1001,10 @@ func (cp *Builder) AddAutomaton(transitionVars []IntVar, startState int64, final
 // capacity.
 func (cp *Builder) AddCumulative(capacity LinearArgument) CumulativeConstraint {
 	return CumulativeConstraint{cp.appendConstraint(&cmpb.ConstraintProto{
-		Constraint: &cmpb.ConstraintProto_Cumulative{
-			&cmpb.CumulativeConstraintProto{
-				Capacity: capacity.asLinearExpressionProto(),
-			},
-		}})}
+		Constraint: &cmpb.ConstraintProto_Cumulative{&cmpb.CumulativeConstraintProto{
+			Capacity: capacity.asLinearExpressionProto(),
+		}},
+	})}
 }
 
 // Minimize adds a linear minimization objective.

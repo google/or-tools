@@ -1154,7 +1154,7 @@ void MPSolver::SolveLazyMutableRequest(LazyMutableCopy<MPModelRequest> request,
       // not arbitrary, as we want to maintain any custom thread options set by
       // the user. They shouldn't matter for polling, but for solving we might
       // e.g. use a larger stack.
-      ThreadPool thread_pool("SolverThread", /*num_threads=*/1);
+      ThreadPool thread_pool(/*num_threads=*/1);
       thread_pool.StartWorkers();
       thread_pool.Schedule(polling_func);
 

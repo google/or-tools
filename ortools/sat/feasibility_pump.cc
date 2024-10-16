@@ -40,6 +40,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -359,14 +360,14 @@ void FeasibilityPump::L1DistanceMinimize() {
       const ColIndex norm_lhs_slack_variable =
           lp_data_.GetSlackVariable(norm_lhs_constraints_[col]);
       const double lhs_scaling_factor =
-          scaler_.VariableScalingFactor(norm_lhs_slack_variable);
+          scaler_.VariableScalingFactorWithSlack(norm_lhs_slack_variable);
       lp_data_.SetVariableBounds(
           norm_lhs_slack_variable, -glop::kInfinity,
           lhs_scaling_factor * integer_solution_[col.value()]);
       const ColIndex norm_rhs_slack_variable =
           lp_data_.GetSlackVariable(norm_rhs_constraints_[col]);
       const double rhs_scaling_factor =
-          scaler_.VariableScalingFactor(norm_rhs_slack_variable);
+          scaler_.VariableScalingFactorWithSlack(norm_rhs_slack_variable);
       lp_data_.SetVariableBounds(
           norm_rhs_slack_variable, -glop::kInfinity,
           -rhs_scaling_factor * integer_solution_[col.value()]);
@@ -610,11 +611,11 @@ bool FeasibilityPump::PropagationRounding() {
     }
 
     const int64_t rounded_value =
-        static_cast<int64_t>(std::round(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::round(lp_solution_[var_index]));
     const int64_t floor_value =
-        static_cast<int64_t>(std::floor(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::floor(lp_solution_[var_index]));
     const int64_t ceil_value =
-        static_cast<int64_t>(std::ceil(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::ceil(lp_solution_[var_index]));
 
     const bool floor_is_in_domain =
         (domain.Contains(floor_value) && lb.value() <= floor_value);

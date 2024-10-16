@@ -12,28 +12,9 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(REMOVE_ITEM _SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/assignment_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/bidirectional_dijkstra_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/bounded_dijkstra_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/christofides_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/cliques_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/dag_constrained_shortest_path_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/dag_shortest_path_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/ebert_graph_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_path_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/hamiltonian_path_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/k_shortest_paths_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/linear_assignment_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/max_flow_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/min_cost_flow_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/minimum_spanning_tree_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/multi_dijkstra_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/one_tree_lower_bound_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/perfect_matching_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/rooted_tree_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_benchmarks.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/solve_flow_model.cc
 )
 
@@ -58,3 +39,34 @@ target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::ortools_proto
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
 #add_library(${PROJECT_NAMESPACE}::graph ALIAS ${NAME})
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  list(FILTER _TEST_SRCS EXCLUDE REGEX "max_flow_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        graph_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        GTest::gmock
+        GTest::gtest_main
+    )
+  endforeach()
+  ortools_cxx_test(
+    NAME
+      graph_max_flow_test
+    SOURCES
+      "max_flow_test.cc"
+    LINK_LIBRARIES
+      benchmark::benchmark
+      GTest::gmock
+      GTest::gtest_main
+    COMPILE_DEFINITIONS
+      -DROOT_DIR="../../"
+  )
+endif()
