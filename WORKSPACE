@@ -75,7 +75,7 @@ git_repository(
 
 git_repository(
     name = "rules_python",
-    tag = "0.34.0",
+    tag = "0.36.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
@@ -104,6 +104,43 @@ git_repository(
     remote = "https://github.com/google/re2.git",
     repo_mapping = {"@abseil-cpp": "@com_google_absl"},
 )
+
+## Python
+load("@rules_python//python:repositories.bzl", "py_repositories")
+py_repositories()
+
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+DEFAULT_PYTHON = "3.11"
+python_register_toolchains(
+    name = "python3_11",
+    python_version = DEFAULT_PYTHON,
+    ignore_root_user_error=True,
+)
+load("@python3_11//:defs.bzl", "interpreter")
+
+# Create a central external repo, @pip_deps, that contains Bazel targets for all the
+# third-party packages specified in the bazel/requirements.txt file.
+load("@rules_python//python:pip.bzl", "pip_parse")
+pip_parse(
+   name = "pip_deps",
+   python_interpreter_target = interpreter,
+   requirements_lock = "//bazel:ortools_requirements.txt",
+)
+
+load("@pip_deps//:requirements.bzl",
+     install_pip_deps="install_deps")
+install_pip_deps()
+
+# Add a second repo @ortools_notebook_deps for jupyter notebooks.
+pip_parse(
+   name = "ortools_notebook_deps",
+   python_interpreter_target = interpreter,
+   requirements_lock = "//bazel:notebook_requirements.txt",
+)
+
+load("@ortools_notebook_deps//:requirements.bzl",
+     install_notebook_deps="install_deps")
+install_notebook_deps()
 
 ## Protobuf
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
@@ -205,40 +242,6 @@ new_git_repository(
     remote = "https://github.com/swig/swig.git",
 )
 
-## Python
-load("@rules_python//python:repositories.bzl", "py_repositories")
-py_repositories()
-
-load("@rules_python//python:repositories.bzl", "python_register_toolchains")
-DEFAULT_PYTHON = "3.12"
-python_register_toolchains(
-    name = "python3_12",
-    python_version = DEFAULT_PYTHON,
-    ignore_root_user_error=True,
-)
-
-# Create a central external repo, @pip_deps, that contains Bazel targets for all the
-# third-party packages specified in the bazel/requirements.txt file.
-load("@rules_python//python:pip.bzl", "pip_parse")
-pip_parse(
-   name = "pip_deps",
-   requirements_lock = "//bazel:ortools_requirements.txt",
-)
-
-load("@pip_deps//:requirements.bzl",
-     install_pip_deps="install_deps")
-install_pip_deps()
-
-# Add a second repo @ortools_notebook_deps for jupyter notebooks.
-pip_parse(
-   name = "ortools_notebook_deps",
-   requirements_lock = "//bazel:notebook_requirements.txt",
-)
-
-load("@ortools_notebook_deps//:requirements.bzl",
-     install_notebook_deps="install_deps")
-install_notebook_deps()
-
 # Protobuf
 load("@com_google_protobuf//bazel:system_python.bzl", "system_python")
 system_python(
@@ -283,7 +286,7 @@ new_git_repository(
 
 new_git_repository(
     name = "pybind11_protobuf",
-    commit = "84653a591aea5df482dc2bde42c19efafbd53a57", # 2024/06/28
+    commit = "ed430af1814a97e4017f2f808d3ba28cc10802f1", # 2024/10/02
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
