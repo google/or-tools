@@ -39,6 +39,64 @@ using ::testing::StartsWith;
 using ::testing::UnorderedElementsAre;
 using ConstraintIndex = LinearConstraintManager::ConstraintIndex;
 
+TEST(LinearConstraintSymmetrizerTest, BasicFolding) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable z = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable a = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable b = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable c = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable sum_xy = model.Add(NewIntegerVariable(-20, 20));
+  const IntegerVariable sum_abc = model.Add(NewIntegerVariable(-30, 30));
+  auto* symmetrizer = model.GetOrCreate<LinearConstraintSymmetrizer>();
+  symmetrizer->AddSymmetryOrbit(sum_xy, {x, y});
+  symmetrizer->AddSymmetryOrbit(sum_abc, {a, b, c});
+
+  LinearConstraintBuilder builder(0, 10);
+  builder.AddTerm(x, IntegerValue(2));
+  builder.AddTerm(y, IntegerValue(1));
+  builder.AddTerm(z, IntegerValue(3));
+  builder.AddTerm(a, IntegerValue(2));
+  builder.AddTerm(c, IntegerValue(5));
+  LinearConstraint ct = builder.Build();
+  symmetrizer->FoldLinearConstraint(&ct);
+
+  // We will scale by 6 (one orbit of size 2 and one of size 3).
+  builder.Clear();
+  builder.AddTerm(z, IntegerValue(6 * 3));
+  builder.AddTerm(sum_xy, IntegerValue(6 / 2 * (2 + 1)));
+  builder.AddTerm(sum_abc, IntegerValue(6 / 3 * (2 + 5)));
+  LinearConstraint expected = builder.BuildConstraint(0, 6 * 10);
+  EXPECT_EQ(ct.DebugString(), expected.DebugString());
+}
+
+TEST(LinearConstraintSymmetrizerTest, FoldingWithSumVariableOriginallyPresent) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable z = model.Add(NewIntegerVariable(-10, 10));
+  const IntegerVariable sum_xy = model.Add(NewIntegerVariable(-20, 20));
+  auto* symmetrizer = model.GetOrCreate<LinearConstraintSymmetrizer>();
+  symmetrizer->AddSymmetryOrbit(sum_xy, {x, y});
+
+  LinearConstraintBuilder builder(0, 10);
+  builder.AddTerm(x, IntegerValue(2));
+  builder.AddTerm(y, IntegerValue(1));
+  builder.AddTerm(z, IntegerValue(3));
+  builder.AddTerm(sum_xy, IntegerValue(7));
+  LinearConstraint ct = builder.Build();
+  symmetrizer->FoldLinearConstraint(&ct);
+
+  // We will scale by 2 the original sum_xy, and by 1 the one coming from the
+  // orbit with coeff (2 + 1) from x and y.
+  builder.Clear();
+  builder.AddTerm(z, IntegerValue(2 * 3));
+  builder.AddTerm(sum_xy, IntegerValue(2 * 7 + 2 / 2 * (2 + 1)));
+  LinearConstraint expected = builder.BuildConstraint(0, 2 * 10);
+  EXPECT_EQ(ct.DebugString(), expected.DebugString());
+}
+
 TEST(LinearConstraintManagerTest, DuplicateDetection) {
   Model model;
   LinearConstraintManager manager(&model);

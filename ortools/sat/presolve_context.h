@@ -741,8 +741,8 @@ class PresolveContext {
   // (literal, var, value),  i.e.: literal => var ==/!= value
   // The state is accumulated (adding x => var == value then !x => var != value)
   // will deduce that x equivalent to var == value.
-  absl::flat_hash_set<std::tuple<int, int, int64_t>> eq_half_encoding_;
-  absl::flat_hash_set<std::tuple<int, int, int64_t>> neq_half_encoding_;
+  absl::flat_hash_map<std::tuple<int, int>, int64_t> eq_half_encoding_;
+  absl::flat_hash_map<std::tuple<int, int>, int64_t> neq_half_encoding_;
 
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will be removed from the model at

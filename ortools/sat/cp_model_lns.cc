@@ -29,6 +29,7 @@
 #include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/random/bit_gen_ref.h"
@@ -49,7 +50,6 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint_manager.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/rins.h"
@@ -933,7 +933,8 @@ NeighborhoodGeneratorHelper::GetSchedulingPrecedences(
   return result;
 }
 
-std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
+std::vector<std::vector<int>>
+NeighborhoodGeneratorHelper::GetRoutingPathVariables(
     const CpSolverResponse& initial_solution) const {
   struct HeadAndArcLiteral {
     int head;
@@ -1901,6 +1902,15 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
     local_cp_model.mutable_objective()->set_integer_scaling_factor(0);
   }
 
+  // Dump?
+  if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
+    const std::string dump_name =
+        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                     "lb_relax_lns_lp_", data.task_id, ".pb.txt");
+    LOG(INFO) << "Dumping linear relaxed model to '" << dump_name << "'.";
+    CHECK(WriteModelProtoToFile(local_cp_model, dump_name));
+  }
+
   // Solve.
   //
   // TODO(user): Shall we pass the objective upper bound so we have more
@@ -2445,26 +2455,24 @@ Neighborhood RoutingRandomNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   const std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPaths(initial_solution);
+      helper_.GetRoutingPathVariables(initial_solution);
 
   // Collect all unique variables.
-  absl::flat_hash_set<int> all_path_variables;
-  for (auto& path : all_paths) {
-    all_path_variables.insert(path.begin(), path.end());
+  std::vector<int> variables_to_fix;
+  for (const auto& path : all_paths) {
+    variables_to_fix.insert(variables_to_fix.end(), path.begin(), path.end());
   }
-  std::vector<int> fixed_variables(all_path_variables.begin(),
-                                   all_path_variables.end());
-  std::sort(fixed_variables.begin(), fixed_variables.end());
-  GetRandomSubset(1.0 - data.difficulty, &fixed_variables, random);
+  gtl::STLSortAndRemoveDuplicates(&variables_to_fix);
+  GetRandomSubset(1.0 - data.difficulty, &variables_to_fix, random);
   return helper_.FixGivenVariables(
-      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
+      initial_solution, {variables_to_fix.begin(), variables_to_fix.end()});
 }
 
 Neighborhood RoutingPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPaths(initial_solution);
+      helper_.GetRoutingPathVariables(initial_solution);
 
   // Collect all unique variables.
   absl::flat_hash_set<int> all_path_variables;
@@ -2510,7 +2518,7 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPaths(initial_solution);
+      helper_.GetRoutingPathVariables(initial_solution);
   // Remove a corner case where all paths are empty.
   if (all_paths.empty()) {
     return helper_.NoNeighborhood();
@@ -2570,6 +2578,32 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
     if (!relaxed_variables.contains(var)) fixed_variables.insert(var);
   }
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
+}
+
+Neighborhood RoutingStartsNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, SolveData& data,
+    absl::BitGenRef random) {
+  std::vector<std::vector<int>> all_paths =
+      helper_.GetRoutingPathVariables(initial_solution);
+  // TODO(user): Maybe enable some routes to be non empty?
+  if (all_paths.empty()) return helper_.NoNeighborhood();
+
+  // Collect all unique path variables, except the start and end of the paths.
+  // For circuit constraints, we approximate this with the arc going in and out
+  // of the smallest node. This works well for model where the zero node is an
+  // artificial node.
+  std::vector<int> variables_to_fix;
+  for (const auto& path : all_paths) {
+    for (const int ref : path) {
+      if (ref == path.front() || ref == path.back()) continue;
+      variables_to_fix.push_back(PositiveRef(ref));
+    }
+  }
+  gtl::STLSortAndRemoveDuplicates(&variables_to_fix);
+  GetRandomSubset(1.0 - data.difficulty, &variables_to_fix, random);
+
+  return helper_.FixGivenVariables(
+      initial_solution, {variables_to_fix.begin(), variables_to_fix.end()});
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {

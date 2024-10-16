@@ -1475,17 +1475,20 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 // using the binary implication graph only.
 //
 // TODO(user): Track which literal have new implications, and only process
-// the antecedants of these.
+// the antecedents of these.
 bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (time_limit_->LimitReached()) return true;
   if (!DetectEquivalences()) return false;
 
   // TODO(user): the situation with fixed variable is not really "clean".
   // Simplify the code so we are sure we don't run into issue or have to deal
   // with any of that here.
+  if (time_limit_->LimitReached()) return true;
   if (!Propagate(trail_)) return false;
   RemoveFixedVariables();
   DCHECK(InvariantsAreOk());
+  if (time_limit_->LimitReached()) return true;
 
   log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;
@@ -1708,7 +1711,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   // Data to detect inclusion of base amo into extend amo.
   std::vector<int> detector_clique_index;
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  InclusionDetector detector(storage, time_limit_);
   detector.SetWorkLimit(1e9);
 
   std::vector<int> dense_index_to_index;
@@ -2503,6 +2506,7 @@ void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
 }
 
 bool BinaryImplicationGraph::InvariantsAreOk() {
+  if (time_limit_->LimitReached()) return true;
   // We check that if a => b then not(b) => not(a).
   absl::flat_hash_set<std::pair<LiteralIndex, LiteralIndex>> seen;
   int num_redundant = 0;

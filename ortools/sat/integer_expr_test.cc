@@ -73,8 +73,8 @@ void AddWeightedSumGreaterOrEqualReif(Literal is_ge,
 // Weighted sum == constant reified.
 // TODO(user): Simplify if the constant is at the edge of the possible values.
 void AddFixedWeightedSumReif(Literal is_eq,
-                             const std::vector<IntegerVariable>& vars,
-                             const std::vector<int64_t>& coefficients,
+                             absl::Span<const IntegerVariable> vars,
+                             absl::Span<const int64_t> coefficients,
                              int64_t value, Model* model) {
   // We creates two extra Boolean variables in this case. The alternative is
   // to code a custom propagator for the direction equality => reified.

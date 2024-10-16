@@ -41,13 +41,13 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
@@ -62,6 +62,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/lb_tree_search.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/max_hs.h"
@@ -72,6 +73,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/work_assignment.h"
@@ -383,6 +385,53 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
   if (m->GetOrCreate<SatSolver>()->ModelIsUnsat()) return kNoIntegerVariable;
 
+  // In the presence of symmetry, will will create an extra integer variable per
+  // orbit.
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* params = m->GetOrCreate<SatParameters>();
+  auto* symmetrizer = m->GetOrCreate<LinearConstraintSymmetrizer>();
+  if (model_proto.has_symmetry() && params->linearization_level() > 1 &&
+      params->use_symmetry_in_lp()) {
+    // Convert to SparsePermutation.
+    const int num_vars = model_proto.variables().size();
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    for (const SparsePermutationProto& perm :
+         model_proto.symmetry().permutations()) {
+      generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+    }
+
+    // Get orbits in term of IntegerVariable.
+    const std::vector<int> var_to_orbit_index = GetOrbits(num_vars, generators);
+    std::vector<bool> orbit_is_ok;
+    std::vector<std::vector<IntegerVariable>> orbits;
+    for (int proto_var = 0; proto_var < num_vars; ++proto_var) {
+      const int orbit_index = var_to_orbit_index[proto_var];
+      if (orbit_index == -1) continue;
+      if (orbit_index >= orbits.size()) {
+        orbits.resize(orbit_index + 1);
+        orbit_is_ok.resize(orbit_index + 1, true);
+      }
+
+      // In linerization level >=2, all variables should have a view.
+      // Otherwise revisit and skip orbit without a full view.
+      const IntegerVariable var = mapping->Integer(proto_var);
+      CHECK_NE(var, kNoIntegerVariable);
+      orbits[orbit_index].push_back(var);
+    }
+
+    // Lets create the orbit sum vars and register each orbit.
+    std::vector<std::pair<IntegerVariable, int64_t>> terms;
+    for (const std::vector<IntegerVariable>& orbit : orbits) {
+      terms.clear();
+      for (const IntegerVariable var : orbit) {
+        terms.push_back({var, 1});
+      }
+      const IntegerVariable sum_var =
+          GetOrCreateVariableLinkedToSumOf(terms, true, true, m);
+      symmetrizer->AddSymmetryOrbit(sum_var, orbit);
+    }
+  }
+
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
   // Constraint nodes are indexed by [0..num_lp_constraints),
@@ -420,6 +469,14 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
     }
   }
 
+  // Make sure variables from the same orbit end up in same components.
+  for (int i = 0; i < symmetrizer->NumOrbits(); ++i) {
+    const int representative = get_var_index(symmetrizer->OrbitSumVar(i));
+    for (const IntegerVariable var : symmetrizer->Orbit(i)) {
+      components.AddEdge(representative, get_var_index(var));
+    }
+  }
+
   const int num_components = components.GetNumberOfComponents();
   std::vector<int> component_sizes(num_components, 0);
   const std::vector<int> index_to_component = components.GetComponentIds();
@@ -442,7 +499,6 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   // as much as possible the objective bound by using any bounds the LP give
   // us on one of its components. This is critical on the zephyrus problems for
   // instance.
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
   for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
     const IntegerVariable var =
         mapping->Integer(model_proto.objective().vars(i));
@@ -482,12 +538,45 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   std::vector<std::pair<IntegerVariable, int64_t>> top_level_cp_terms;
   int num_components_containing_objective = 0;
   if (model_proto.has_objective()) {
+    // First convert the proto objective to an IntegerVariable one. In case of
+    // "use_symmetry_in_lp", we also rewrite it in terms of the sum of the
+    // variables in the orbits.
+    std::vector<std::pair<IntegerVariable, int64_t>> objective;
+    const int num_orbits = symmetrizer->NumOrbits();
+    if (num_orbits > 0) {
+      // We use the orbit_sum var instead.
+      std::vector<int64_t> orbit_obj_coeff(num_orbits, 0);
+      for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+        const IntegerVariable var =
+            mapping->Integer(model_proto.objective().vars(i));
+        const int64_t coeff = model_proto.objective().coeffs(i);
+        const int orbit_index = symmetrizer->OrbitIndex(var);
+        if (orbit_index != -1) {
+          if (orbit_obj_coeff[orbit_index] == 0) {
+            orbit_obj_coeff[orbit_index] = coeff;
+          } else {
+            CHECK_EQ(orbit_obj_coeff[orbit_index], coeff);
+          }
+          continue;
+        }
+        objective.push_back({var, coeff});
+      }
+      for (int i = 0; i < num_orbits; ++i) {
+        if (orbit_obj_coeff[i] == 0) continue;
+        objective.push_back({symmetrizer->OrbitSumVar(i), orbit_obj_coeff[i]});
+      }
+    } else {
+      for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+        const IntegerVariable var =
+            mapping->Integer(model_proto.objective().vars(i));
+        const int64_t coeff = model_proto.objective().coeffs(i);
+        objective.push_back({var, coeff});
+      }
+    }
+
     // First pass: set objective coefficients on the lp constraints, and store
     // the cp terms in one vector per component.
-    for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
-      const IntegerVariable var =
-          mapping->Integer(model_proto.objective().vars(i));
-      const int64_t coeff = model_proto.objective().coeffs(i);
+    for (const auto [var, coeff] : objective) {
       const int c = index_to_component[get_var_index(var)];
       if (lp_constraints[c] != nullptr) {
         lp_constraints[c]->SetObjectiveCoefficient(var, IntegerValue(coeff));
@@ -863,9 +952,10 @@ int RegisterClausesLevelZeroImport(int id,
   auto* clause_stream = share_glue_clauses
                             ? shared_clauses_manager->GetClauseStream(id)
                             : nullptr;
+  auto* clause_manager = model->GetOrCreate<ClauseManager>();
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
                                            sat_solver, implications,
-                                           clause_stream,
+                                           clause_stream, clause_manager,
                                            minimize_shared_clauses]() {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
@@ -883,6 +973,9 @@ int RegisterClausesLevelZeroImport(int id,
     int new_clauses = 0;
     std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
     sat_solver->EnsureNewClauseIndexInitialized();
+    // Temporarily disable clause sharing so we don't immediately re-export the
+    // clauses we just imported.
+    auto callback = clause_manager->TakeAddClauseCallback();
     for (const absl::Span<const int> shared_clause :
          shared_clauses_manager->GetUnseenClauses(id)) {
       // Check this clause was not already learned by this worker.
@@ -900,6 +993,7 @@ int RegisterClausesLevelZeroImport(int id,
       }
       ++new_clauses;
     }
+    clause_manager->SetAddClauseCallback(std::move(callback));
     clause_stream->RemoveWorstClauses();
     if (minimize_shared_clauses && new_clauses > 0) {
       // The new clauses may be subsumed, so try to minimize them to reduce

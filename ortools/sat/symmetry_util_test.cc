@@ -22,11 +22,13 @@
 #include "gtest/gtest.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/parse_test_proto.h"
 
 namespace operations_research {
 namespace sat {
 namespace {
 
+using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 
@@ -153,6 +155,16 @@ TEST(GetSchreierVectorTest, ProjectivePlaneOrderTwo) {
 
   GetSchreierVectorAndOrbit(1, stabilizer, &schrier_vector, &orbit);
   EXPECT_THAT(schrier_vector, ElementsAre(-1, -1, 0, 0, 1, 2, 2));
+}
+
+TEST(CreateSparsePermutationFromProtoTest, BasicReading) {
+  const SparsePermutationProto input = ParseTestProto(R"pb(
+    support: [ 1, 0, 3, 2, 7, 8, 9 ]
+    cycle_sizes: [ 2, 2, 3 ]
+  )pb");
+  std::unique_ptr<SparsePermutation> sp =
+      CreateSparsePermutationFromProto(10, input);
+  EXPECT_EQ(sp->DebugString(), "(0 1) (2 3) (7 8 9)");
 }
 
 }  // namespace

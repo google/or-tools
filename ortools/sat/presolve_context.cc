@@ -743,8 +743,11 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
 }
 
 bool PresolveContext::HasUnusedAffineVariable() const {
+  if (is_unsat_) return false;  // We do not care in this case.
+  if (keep_all_feasible_solutions) return false;
   for (int var = 0; var < working_model->variables_size(); ++var) {
     if (VariableIsNotUsedAnymore(var)) continue;
+    if (IsFixed(var)) continue;
     const auto& constraints = VarToConstraints(var);
     if (constraints.size() == 1 &&
         constraints.contains(kAffineRelationConstraint) &&
@@ -1509,8 +1512,39 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   // Creates the linking sets on demand.
   // Insert the enforcement literal in the half encoding map.
   auto& direct_set = imply_eq ? eq_half_encoding_ : neq_half_encoding_;
-  if (!direct_set.insert({literal, var, value}).second) {
+  auto insert_result = direct_set.insert({{literal, var}, value});
+  if (!insert_result.second) {
+    if (insert_result.first->second != value && imply_eq) {
+      UpdateRuleStats("variables: detect half reified incompatible value");
+      return SetLiteralToFalse(literal);
+    }
     return false;  // Already there.
+  }
+  if (imply_eq) {
+    // We are adding b => x=v. Check if we already have ~b => x=u.
+    auto negated_encoding = direct_set.find({NegatedRef(literal), var});
+    if (negated_encoding != direct_set.end()) {
+      if (negated_encoding->second == value) {
+        UpdateRuleStats(
+            "variables: both boolean and its negation imply same equality");
+        if (!IntersectDomainWith(var, Domain(value))) {
+          return false;
+        }
+      } else {
+        const int64_t other_value = negated_encoding->second;
+        // b => var == value
+        // !b => var == other_value
+        // var = (value - other_value) * b + other_value
+        UpdateRuleStats(
+            "variables: both boolean and its negation fix the same variable");
+        if (RefIsPositive(literal)) {
+          StoreAffineRelation(var, literal, value - other_value, other_value);
+        } else {
+          StoreAffineRelation(var, NegatedRef(literal), other_value - value,
+                              value);
+        }
+      }
+    }
   }
   VLOG(2) << "Collect lit(" << literal << ") implies var(" << var
           << (imply_eq ? ") == " : ") != ") << value;
@@ -1519,7 +1553,8 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   // Note(user): We don't expect a lot of literals in these sets, so doing
   // a scan should be okay.
   auto& other_set = imply_eq ? neq_half_encoding_ : eq_half_encoding_;
-  if (other_set.contains({NegatedRef(literal), var, value})) {
+  auto it = other_set.find({NegatedRef(literal), var});
+  if (it != other_set.end() && it->second == value) {
     UpdateRuleStats("variables: detect fully reified value encoding");
     const int imply_eq_literal = imply_eq ? literal : NegatedRef(literal);
     if (!InsertVarValueEncodingInternal(imply_eq_literal, var, value,
@@ -1549,8 +1584,12 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
                                       /*add_constraints=*/true)) {
     return false;
   }
-  eq_half_encoding_.insert({literal, var, value});
-  neq_half_encoding_.insert({NegatedRef(literal), var, value});
+  if (!StoreLiteralImpliesVarEqValue(literal, var, value)) {
+    return false;
+  }
+  if (!StoreLiteralImpliesVarNEqValue(NegatedRef(literal), var, value)) {
+    return false;
+  }
 
   if (hint_is_loaded_) {
     const int bool_var = PositiveRef(literal);
@@ -1796,6 +1835,10 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   if (r.representative == var) return true;
 
   RemoveVariableFromObjective(var);
+
+  // After we removed the variable from the objective it might have become a
+  // unused affine. Add it to the list of variables to check so we reprocess it.
+  modified_domains.Set(var);
 
   // Do the substitution.
   AddToObjectiveOffset(coeff * r.offset);

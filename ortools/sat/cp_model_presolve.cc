@@ -8507,7 +8507,7 @@ void CpModelPresolver::ProcessSetPPC() {
 
   // TODO(user): compute on the fly instead of temporary storing variables?
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  InclusionDetector detector(storage, time_limit_);
   detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
   // We use an encoding of literal that allows to index arrays.
@@ -8618,7 +8618,7 @@ void CpModelPresolver::DetectIncludedEnforcement() {
   // TODO(user): compute on the fly instead of temporary storing variables?
   std::vector<int> relevant_constraints;
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  InclusionDetector detector(storage, time_limit_);
   detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
   std::vector<int> temp_literals;
@@ -9021,6 +9021,20 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
       continue;
     }
 
+    const int a = rep_ct->enforcement_literal(0);
+    const int b = dup_ct->enforcement_literal(0);
+
+    if (a == NegatedRef(b) && rep_ct->enforcement_literal().size() == 1 &&
+        dup_ct->enforcement_literal().size() == 1) {
+      context_->UpdateRuleStats(
+          "duplicate: both with enforcement and its negation");
+      rep_ct->mutable_enforcement_literal()->Clear();
+      context_->UpdateConstraintVariableUsage(rep);
+      dup_ct->Clear();
+      context_->UpdateConstraintVariableUsage(dup);
+      continue;
+    }
+
     // Special case. This looks specific but users might reify with a cost
     // a duplicate constraint. In this case, no need to have two variables,
     // we can make them equal by duality argument.
@@ -9034,8 +9048,6 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     // we can also add the equality. Alternatively, we can just introduce a new
     // variable and merge all duplicate constraint into 1 + bunch of boolean
     // constraints liking enforcements.
-    const int a = rep_ct->enforcement_literal(0);
-    const int b = dup_ct->enforcement_literal(0);
     if (context_->VariableWithCostIsUniqueAndRemovable(a) &&
         context_->VariableWithCostIsUniqueAndRemovable(b)) {
       // Both these case should be presolved before, but it is easy to deal with
@@ -9580,7 +9592,7 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     const CpModelProto& proto_;
   };
   Storage storage(context_->working_model);
-  InclusionDetector detector(storage);
+  InclusionDetector detector(storage, time_limit_);
   detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
   // Because we use the constraint <-> variable graph, we cannot modify it
@@ -10759,7 +10771,7 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
   // TODO(user): compute on the fly instead of temporary storing variables?
   std::vector<int> relevant_constraints;
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  InclusionDetector detector(storage, time_limit_);
   detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
   // Loop over the constraints and fill the structures above.
@@ -11815,8 +11827,7 @@ void CpModelPresolver::PresolveToFixPoint() {
 
     if (ProcessChangedVariables(&in_queue, &queue)) continue;
 
-    // TODO(user): Uncomment this line once the tests pass.
-    // DCHECK(!context_->HasUnusedAffineVariable());
+    DCHECK(!context_->HasUnusedAffineVariable());
 
     // Deal with integer variable only appearing in an encoding.
     for (int v = 0; v < context_->working_model->variables().size(); ++v) {
@@ -11998,6 +12009,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         break;
       case ConstraintProto::kLinear:
         if (!CopyLinear(ct)) return CreateUnsatModel(c, ct);
+        break;
+      case ConstraintProto::kIntProd:
+        if (!CopyIntProd(ct, ignore_names)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
@@ -12258,6 +12272,38 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   return true;
 }
 
+bool ModelCopy::CopyLinearExpression(const LinearExpressionProto& expr,
+                                     LinearExpressionProto* dst) {
+  non_fixed_variables_.clear();
+  non_fixed_coefficients_.clear();
+  int64_t offset = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int ref = expr.vars(i);
+    const int64_t coeff = expr.coeffs(i);
+    if (coeff == 0) continue;
+    if (context_->IsFixed(ref)) {
+      offset += coeff * context_->MinOf(ref);
+      continue;
+    }
+
+    // Make sure we never have negative ref in a linear constraint.
+    if (RefIsPositive(ref)) {
+      non_fixed_variables_.push_back(ref);
+      non_fixed_coefficients_.push_back(coeff);
+    } else {
+      non_fixed_variables_.push_back(NegatedRef(ref));
+      non_fixed_coefficients_.push_back(-coeff);
+    }
+  }
+
+  dst->set_offset(offset);
+  dst->mutable_vars()->Add(non_fixed_variables_.begin(),
+                           non_fixed_variables_.end());
+  dst->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
+                             non_fixed_coefficients_.end());
+  return true;
+}
+
 bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
   non_fixed_variables_.clear();
   non_fixed_coefficients_.clear();
@@ -12375,13 +12421,29 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
          "supported.";
   interval_mapping_[c] = context_->working_model->constraints_size();
   ConstraintProto* new_ct = context_->working_model->add_constraints();
-  if (ignore_names) {
-    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
-    *new_ct->mutable_interval() = ct.interval();
-  } else {
-    *new_ct = ct;
+  if (!ignore_names) {
+    new_ct->set_name(ct.name());
   }
+  *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+  CopyLinearExpression(ct.interval().start(),
+                       new_ct->mutable_interval()->mutable_start());
+  CopyLinearExpression(ct.interval().size(),
+                       new_ct->mutable_interval()->mutable_size());
+  CopyLinearExpression(ct.interval().end(),
+                       new_ct->mutable_interval()->mutable_end());
+  return true;
+}
 
+bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (!ignore_names) {
+    new_ct->set_name(ct.name());
+  }
+  for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_int_prod()->add_exprs());
+  }
+  CopyLinearExpression(ct.int_prod().target(),
+                       new_ct->mutable_int_prod()->mutable_target());
   return true;
 }
 
@@ -12399,26 +12461,29 @@ void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
           absl::Span<const int64_t>(itv.end().coeffs())) {
     // Trivial constraint, nothing to do.
   } else {
-    ConstraintProto* new_ct = context_->working_model->add_constraints();
-    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+    tmp_constraint_.Clear();
+    *tmp_constraint_.mutable_enforcement_literal() = ct.enforcement_literal();
+    LinearConstraintProto* mutable_linear = tmp_constraint_.mutable_linear();
 
-    LinearConstraintProto* mutable_linear = new_ct->mutable_linear();
     mutable_linear->add_domain(0);
     mutable_linear->add_domain(0);
     AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
+    CopyLinear(tmp_constraint_);
   }
 
   // An enforced interval must have is size non-negative.
   const LinearExpressionProto& size_expr = itv.size();
   if (context_->MinOf(size_expr) < 0) {
-    ConstraintProto* new_ct = context_->working_model->add_constraints();
-    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
-    *new_ct->mutable_linear()->mutable_vars() = size_expr.vars();
-    *new_ct->mutable_linear()->mutable_coeffs() = size_expr.coeffs();
-    new_ct->mutable_linear()->add_domain(-size_expr.offset());
-    new_ct->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+    tmp_constraint_.Clear();
+    *tmp_constraint_.mutable_enforcement_literal() = ct.enforcement_literal();
+    *tmp_constraint_.mutable_linear()->mutable_vars() = size_expr.vars();
+    *tmp_constraint_.mutable_linear()->mutable_coeffs() = size_expr.coeffs();
+    tmp_constraint_.mutable_linear()->add_domain(-size_expr.offset());
+    tmp_constraint_.mutable_linear()->add_domain(
+        std::numeric_limits<int64_t>::max());
+    CopyLinear(tmp_constraint_);
   }
 }
 

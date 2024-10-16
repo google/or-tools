@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -49,7 +50,7 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
     SchedulingDemandHelper* x_demands_helper,
     SchedulingDemandHelper* y_demands_helper,
-    const std::vector<std::vector<LiteralValueValue>>& energies, Model* model);
+    absl::Span<const std::vector<LiteralValueValue>> energies, Model* model);
 
 // Internal methods and data structures, useful for testing.
 

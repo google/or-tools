@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
@@ -280,6 +281,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
+      symmetrizer_(model->GetOrCreate<LinearConstraintSymmetrizer>()),
       rlt_cut_helper_(model),
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
@@ -311,18 +313,22 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   // Initialize the IntegerVariable -> ColIndex mapping.
   CHECK(std::is_sorted(vars.begin(), vars.end()));
 
-  integer_variables_.assign(vars.begin(), vars.end());
+  // TODO(user): We shouldn't need to add variable from the orbit here in the
+  // presence of symmetry. However they can still appear in cut, so it is a
+  // bit tricky and require some refactoring to be tried.
   ColIndex col{0};
+  integer_variables_.assign(vars.begin(), vars.end());
   for (const IntegerVariable positive_variable : vars) {
     CHECK(VariableIsPositive(positive_variable));
     implied_bounds_processor_.AddLpVariable(positive_variable);
     (*dispatcher_)[positive_variable] = this;
     mirror_lp_variable_[positive_variable] = col;
-
     ++col;
   }
-  lp_solution_.assign(vars.size(), std::numeric_limits<double>::infinity());
-  lp_reduced_cost_.assign(vars.size(), 0.0);
+
+  lp_solution_.assign(integer_variables_.size(),
+                      std::numeric_limits<double>::infinity());
+  lp_reduced_cost_.assign(integer_variables_.size(), 0.0);
 
   if (!vars.empty()) {
     const int max_index = NegationOf(vars.back()).value();
@@ -340,6 +346,63 @@ void LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
   constraint_manager_.Add(std::move(ct));
 }
 
+void LinearProgrammingConstraint::RegisterWith(Model* model) {
+  DCHECK(!lp_constraint_is_registered_);
+  lp_constraint_is_registered_ = true;
+  model->GetOrCreate<LinearProgrammingConstraintCollection>()->push_back(this);
+
+  // Copy objective data to the constraint_manager_.
+  //
+  // Note(user): the sort is not really needed but should lead to better cache
+  // locality.
+  std::sort(integer_objective_.begin(), integer_objective_.end());
+  objective_infinity_norm_ = 0;
+  for (const auto [col, coeff] : integer_objective_) {
+    constraint_manager_.SetObjectiveCoefficient(integer_variables_[col.value()],
+                                                coeff);
+    objective_infinity_norm_ =
+        std::max(objective_infinity_norm_, IntTypeAbs(coeff));
+  }
+
+  // Set the LP to its initial content.
+  //
+  // Note that we always add LP constraint lazily if we have A LOT of them.
+  // This is because currently on large problem with millions of constraints,
+  // our LP is usually not fast enough anyway.
+  if (!parameters_.add_lp_constraints_lazily() &&
+      constraint_manager_.num_constraints() < 1e6) {
+    constraint_manager_.AddAllConstraintsToLp();
+  }
+  if (!CreateLpFromConstraintManager()) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
+
+  watcher_id_ = watcher_->Register(this);
+  const int num_vars = integer_variables_.size();
+  orbit_indices_.clear();
+  for (int i = 0; i < num_vars; i++) {
+    const IntegerVariable pos_var = integer_variables_[i];
+    if (symmetrizer_->AppearInFoldedProblem(pos_var)) {
+      watcher_->WatchIntegerVariable(pos_var, watcher_id_, i);
+    }
+
+    if (symmetrizer_->IsOrbitSumVar(pos_var)) {
+      orbit_indices_.push_back(symmetrizer_->OrbitIndex(pos_var));
+    }
+  }
+  if (objective_is_defined_) {
+    watcher_->WatchUpperBound(objective_cp_, watcher_id_);
+  }
+  watcher_->SetPropagatorPriority(watcher_id_, 2);
+  watcher_->AlwaysCallAtLevelZero(watcher_id_);
+
+  // Registering it with the trail make sure this class is always in sync when
+  // it is used in the decision heuristics.
+  integer_trail_->RegisterReversibleClass(this);
+  watcher_->RegisterReversibleInt(watcher_id_, &rev_optimal_constraints_size_);
+}
+
 glop::ColIndex LinearProgrammingConstraint::GetMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
@@ -352,12 +415,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
   objective_is_defined_ = true;
   IntegerVariable pos_var = VariableIsPositive(ivar) ? ivar : NegationOf(ivar);
   if (ivar != pos_var) coeff = -coeff;
-
-  constraint_manager_.SetObjectiveCoefficient(pos_var, coeff);
-  const glop::ColIndex col = GetMirrorVariable(pos_var);
-  integer_objective_.push_back({col, coeff});
-  objective_infinity_norm_ =
-      std::max(objective_infinity_norm_, IntTypeAbs(coeff));
+  integer_objective_.push_back({GetMirrorVariable(pos_var), coeff});
 }
 
 // TODO(user): As the search progress, some variables might get fixed. Exploit
@@ -670,46 +728,6 @@ void LinearProgrammingConstraint::FillReducedCostReasonIn(
   integer_trail_->RemoveLevelZeroBounds(integer_reason);
 }
 
-void LinearProgrammingConstraint::RegisterWith(Model* model) {
-  DCHECK(!lp_constraint_is_registered_);
-  lp_constraint_is_registered_ = true;
-  model->GetOrCreate<LinearProgrammingConstraintCollection>()->push_back(this);
-
-  // Note fdid, this is not really needed by should lead to better cache
-  // locality.
-  std::sort(integer_objective_.begin(), integer_objective_.end());
-
-  // Set the LP to its initial content.
-  //
-  // Note that we always add LP constraint lazily if we have A LOT of them.
-  // This is because currently on large problem with millions of constraints,
-  // our LP is usually not fast enough anyway.
-  if (!parameters_.add_lp_constraints_lazily() &&
-      constraint_manager_.num_constraints() < 1e6) {
-    constraint_manager_.AddAllConstraintsToLp();
-  }
-  if (!CreateLpFromConstraintManager()) {
-    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-    return;
-  }
-
-  watcher_id_ = watcher_->Register(this);
-  const int num_vars = integer_variables_.size();
-  for (int i = 0; i < num_vars; i++) {
-    watcher_->WatchIntegerVariable(integer_variables_[i], watcher_id_, i);
-  }
-  if (objective_is_defined_) {
-    watcher_->WatchUpperBound(objective_cp_, watcher_id_);
-  }
-  watcher_->SetPropagatorPriority(watcher_id_, 2);
-  watcher_->AlwaysCallAtLevelZero(watcher_id_);
-
-  // Registering it with the trail make sure this class is always in sync when
-  // it is used in the decision heuristics.
-  integer_trail_->RegisterReversibleClass(this);
-  watcher_->RegisterReversibleInt(watcher_id_, &rev_optimal_constraints_size_);
-}
-
 void LinearProgrammingConstraint::SetLevel(int level) {
   // Get rid of all optimal constraint each time we go back to level zero.
   if (level == 0) rev_optimal_constraints_size_ = 0;
@@ -820,11 +838,6 @@ double LinearProgrammingConstraint::GetSolutionValue(
   return lp_solution_[mirror_lp_variable_.at(variable).value()];
 }
 
-double LinearProgrammingConstraint::GetSolutionReducedCost(
-    IntegerVariable variable) const {
-  return lp_reduced_cost_[mirror_lp_variable_.at(variable).value()];
-}
-
 void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
   const int num_vars = integer_variables_.size();
   Fractional* lb_with_slack = simplex_.MutableLowerBounds()->data();
@@ -853,10 +866,19 @@ bool LinearProgrammingConstraint::SolveLp() {
   const auto status = simplex_.MinimizeFromTransposedMatrixWithSlack(
       obj_with_slack_, unscaling_factor, offset_before_unscaling, time_limit_);
 
+  // Lets resolve from scratch if we encounter this status.
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::ABNORMAL) {
+    VLOG(2) << "The LP solver returned abnormal, resolving from scratch";
+    simplex_.ClearStateForNextSolve();
+    const auto status = simplex_.MinimizeFromTransposedMatrixWithSlack(
+        obj_with_slack_, unscaling_factor, offset_before_unscaling,
+        time_limit_);
+  }
+
   state_ = simplex_.GetState();
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
   if (!status.ok()) {
-    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
+    VLOG(2) << "The LP solver encountered an error: " << status.error_message();
     simplex_.ClearStateForNextSolve();
     return false;
   }
@@ -895,15 +917,67 @@ bool LinearProgrammingConstraint::SolveLp() {
     const auto reduced_costs = simplex_.GetReducedCosts().const_view();
     for (int i = 0; i < num_vars; i++) {
       const glop::ColIndex col(i);
+      const IntegerVariable var = integer_variables_[i];
+
       const glop::Fractional value = GetVariableValueAtCpScale(col);
       lp_solution_[i] = value;
-      expanded_lp_solution_[integer_variables_[i]] = value;
-      expanded_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+      expanded_lp_solution_[var] = value;
+      expanded_lp_solution_[NegationOf(var)] = -value;
 
       const glop::Fractional rc =
           scaler_.UnscaleReducedCost(col, reduced_costs[col]);
-      expanded_reduced_costs_[integer_variables_[i]] = rc;
-      expanded_reduced_costs_[NegationOf(integer_variables_[i])] = -rc;
+      lp_reduced_cost_[i] = rc;
+      expanded_reduced_costs_[var] = rc;
+      expanded_reduced_costs_[NegationOf(var)] = -rc;
+    }
+
+    // Lets fix the result in case of symmetry since the variable in symmetry
+    // are actually not part of the LP, they will just be at their bounds.
+    for (const int orbit_index : orbit_indices_) {
+      const IntegerVariable sum_var = symmetrizer_->OrbitSumVar(orbit_index);
+      const absl::Span<const IntegerVariable> orbit =
+          symmetrizer_->Orbit(orbit_index);
+
+      // We assign sum / orbit_size to each variables.
+      // This is still an LP optimal, but not necessarily a good heuristic.
+      //
+      // TODO(user): using sum / orbit_size is good for the cut generation that
+      // might still use these variables, any violated cuts on the original
+      // problem where all variables in the orbit have the same value will
+      // result in a violated cut for the folded problem. However it is probably
+      // not so good for the heuristics that uses the LP values. In particular
+      // it might result in LP value not even within the bounds of the
+      // individual variable since as we branch, we don't have an identical
+      // domain for all variables in an orbit. Maybe we can generate two
+      // solutions vectors, one for the cuts and one for the heuristics, or we
+      // can add custom code to the cuts so that they don't depend on this.
+      const double new_value =
+          expanded_lp_solution_[sum_var] / static_cast<double>(orbit.size());
+
+      // For the reduced costs, they are the same. There should be no
+      // complication there.
+      const double new_rc = expanded_reduced_costs_[sum_var];
+
+      for (const IntegerVariable var : orbit) {
+        const glop::ColIndex col = GetMirrorVariable(var);
+        lp_solution_[col.value()] = new_value;
+        expanded_lp_solution_[var] = new_value;
+        expanded_lp_solution_[NegationOf(var)] = -new_value;
+
+        lp_reduced_cost_[col.value()] = new_rc;
+        expanded_reduced_costs_[var] = new_rc;
+        expanded_reduced_costs_[NegationOf(var)] = -new_rc;
+      }
+    }
+
+    // Compute integrality.
+    lp_solution_is_integer_ = true;
+    for (int i = 0; i < num_vars; i++) {
+      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) >
+          kCpEpsilon) {
+        lp_solution_is_integer_ = false;
+        break;
+      }
     }
 
     if (lp_solution_level_ == 0) {
@@ -994,22 +1068,10 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
   }
 
   // Copy more info about the current solution.
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+  if (compute_reduced_cost_averages_ &&
+      simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     CHECK(lp_solution_is_set_);
-    lp_solution_is_integer_ = true;
-    const int num_vars = integer_variables_.size();
-    for (int i = 0; i < num_vars; i++) {
-      lp_reduced_cost_[i] = scaler_.UnscaleReducedCost(
-          glop::ColIndex(i), simplex_.GetReducedCost(glop::ColIndex(i)));
-      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) >
-          kCpEpsilon) {
-        lp_solution_is_integer_ = false;
-      }
-    }
-
-    if (compute_reduced_cost_averages_) {
-      UpdateAverageReducedCosts();
-    }
+    UpdateAverageReducedCosts();
   }
 
   // On some problem, LP solves and cut rounds can be slow, so we report
@@ -1429,18 +1491,19 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
 // it triggers. We should add heuristics to abort earlier if a cut is not
 // promising. Or only test a few positions and not all rows.
 void LinearProgrammingConstraint::AddCGCuts() {
-  // Note that the index is permuted and do not correspond to a row.
+  std::vector<std::pair<RowIndex, double>> sorted_columns;
   const RowIndex num_rows(integer_lp_.size());
+  glop::DenseColumn::ConstView norms = simplex_.GetDualSquaredNorms();
   for (RowIndex index(0); index < num_rows; ++index) {
-    if (time_limit_->LimitReached()) break;
-
     const ColIndex basis_col = simplex_.GetBasis(index);
 
     // We used to skip slack and also not to do "classical" gomory and instead
     // call IgnoreTrivialConstraintMultipliers() heuristic. It is usually faster
-    // but on some problem like neos*creuse, this do not find good cut though.
+    // but on some problem like neos*creuse or neos-888544, this do not find
+    // good cut though.
     //
-    // TODO(user): Tune this.
+    // TODO(user): Tune this. It seems better but we need to handle nicely the
+    // extra amount of cuts this produces.
     if (basis_col >= integer_variables_.size()) continue;
 
     // Get he variable value at cp-scale. Similar to GetVariableValueAtCpScale()
@@ -1455,10 +1518,22 @@ void LinearProgrammingConstraint::AddCGCuts() {
     // TODO(user): We could just look at the diff with std::floor() in the hope
     // that when we are just under an integer, the exact computation below will
     // also be just under it.
-    if (std::abs(lp_value - std::round(lp_value)) < 0.01) continue;
+    const double fractionality = std::abs(lp_value - std::round(lp_value));
+    if (fractionality < 0.01) continue;
 
-    // We multiply by row_factors_ directly, which might be slighly more precise
-    // than dividing by 1/factor like UnscaleLeftSolveValue() does.
+    const double score = fractionality * (1.0 - fractionality) / norms[index];
+    sorted_columns.push_back({index, score});
+  }
+  absl::c_sort(sorted_columns, [](const std::pair<RowIndex, double>& a,
+                                  const std::pair<RowIndex, double>& b) {
+    return a.second > b.second;
+  });
+
+  int num_added = 0;
+  for (const auto [index, _] : sorted_columns) {
+    if (time_limit_->LimitReached()) return;
+    // We multiply by row_factors_ directly, which might be slightly more
+    // precise than dividing by 1/factor like UnscaleLeftSolveValue() does.
     //
     // TODO(user): Avoid code duplication between the sparse/dense path.
     tmp_lp_multipliers_.clear();
@@ -1497,10 +1572,9 @@ void LinearProgrammingConstraint::AddCGCuts() {
       // Remove constraints that shouldn't be helpful.
       //
       // In practice, because we can complement the slack, it might still be
-      // useful to have some constraint with a trivial upper bound. That said,
-      // this does looks weird, maybe we miss something in our one-constraint
-      // cut generation if it is useful to add such a term. Investigate on
-      // neos-555884.
+      // useful to have some constraint with a trivial upper bound. Also
+      // removing this seem to generate a lot more cuts, so we need to be more
+      // efficient in dealing with them.
       if (true) {
         IgnoreTrivialConstraintMultipliers(&tmp_cg_multipliers_);
         if (tmp_cg_multipliers_.size() <= 1) continue;
@@ -1508,9 +1582,14 @@ void LinearProgrammingConstraint::AddCGCuts() {
       tmp_integer_multipliers_ = ScaleMultipliers(
           tmp_cg_multipliers_, /*take_objective_into_account=*/false, &scaling);
       if (scaling != 0) {
-        AddCutFromConstraints("CG", tmp_integer_multipliers_);
+        if (AddCutFromConstraints("CG", tmp_integer_multipliers_)) {
+          ++num_added;
+        }
       }
     }
+
+    // Stop if we already added more than 10 cuts this round.
+    if (num_added > 10) break;
   }
 }
 
