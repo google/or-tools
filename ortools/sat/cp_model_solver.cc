@@ -1370,9 +1370,11 @@ class LnsSolver : public SubSolver {
             !neighborhood.variables_that_can_be_fixed_to_local_optimum
                  .empty()) {
           display_lns_info = true;
-          shared_->bounds->FixVariablesFromPartialSolution(
-              solution_values,
-              neighborhood.variables_that_can_be_fixed_to_local_optimum);
+          if (shared_->bounds != nullptr) {
+            shared_->bounds->FixVariablesFromPartialSolution(
+                solution_values,
+                neighborhood.variables_that_can_be_fixed_to_local_optimum);
+          }
         }
 
         // Finish to fill the SolveData now that the local solve is done.
