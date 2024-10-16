@@ -127,7 +127,18 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     }
 
     // TODO(user): Support hints.
-
+    int num_hints = model.solution_hint().var_index_size();
+    if (num_hints > 0) {
+      std::vector<HighsInt> hint_index(0, num_hints);
+      std::vector<double> hint_value(0, num_hints);
+      for (int i = 0; i < num_hints; ++i) {
+        hint_index[i] = model.solution_hint().var_index(i);
+        hint_value[i] = model.solution_hint().var_value(i);
+      }
+      const int* hint_indices = &hint_index[0];
+      const double* hint_values = &hint_value[0];
+      highs.setSolution((HighsInt)num_hints, hint_indices, hint_values);
+    }
   }
 
   {
@@ -183,7 +194,6 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           highs.passRowName(c, constraint_name_str);
         }
       }
-
     }
 
     if (!model.general_constraint().empty()) {
@@ -248,7 +258,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           // TODO(user): report feasible status.
           const HighsInfo& info = highs.getInfo();
           if (info.primal_solution_status == kSolutionStatusFeasible)
-          response.set_status(MPSOLVER_FEASIBLE);
+            response.set_status(MPSOLVER_FEASIBLE);
           break;
         }
       }
