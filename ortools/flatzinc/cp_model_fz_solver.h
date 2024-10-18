@@ -38,6 +38,16 @@ struct FlatzincSatParameters {
 
 namespace sat {
 
+// Scan the model to replace all int2float to int_eq, and all floating point
+// variables used in these int2float constraint to be integral.
+//
+// Scan the model to find a floating point objective (defined by a single
+// floating point variable and a single float_lin_eq constraint defining it),
+// and replace them by a single objective with integer variables and floating
+// point weights.
+void ProcessFloatingPointOVariablesAndObjective(fz::Model* fz_model);
+
+// Solves the given flatzinc model using the CP-SAT solver.
 void SolveFzWithCpModelProto(const fz::Model& model,
                              const fz::FlatzincSatParameters& p,
                              const std::string& sat_params,

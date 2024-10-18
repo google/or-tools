@@ -8,7 +8,8 @@
   "tags": ["cp-sat", "cp", "lcg", "int"],
   "stdFlags": ["-a", "-i", "-f", "-p", "-r", "-s", "-v"],
   "extraFlags": [
-    ["--params", "Provide parameters interpreted as a text SatParameters proto", "string", ""]
+    ["--params", "Provide parameters interpreted as a text SatParameters proto", "string", ""],
+    ["--fz_int_max", "Provide the maximum value for integer variables", "int", "1125899906842624"]
   ],
   "supportsMzn": false,
   "supportsFzn": true,
