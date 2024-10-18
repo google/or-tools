@@ -977,8 +977,29 @@ bool LinearProgrammingConstraint::SolveLp() {
     // are actually not part of the LP, they will just be at their bounds.
     for (const int orbit_index : orbit_indices_) {
       const IntegerVariable sum_var = symmetrizer_->OrbitSumVar(orbit_index);
+      const double lp_value = expanded_lp_solution_[sum_var];
       const absl::Span<const IntegerVariable> orbit =
           symmetrizer_->Orbit(orbit_index);
+
+      // At level zero, we want to focus on the cuts, and we split the value
+      // evently across all the orbit. however at positive level we don't do
+      // cuts and we want values that make more sense to follow heuristically.
+      // In particular, if the sum_var is at its lower/upper bounds, we want
+      // the same for all variable from the orbit. This partially address the
+      // TODO below.
+      bool to_lower = false;
+      bool to_upper = false;
+      if (trail_->CurrentDecisionLevel() > 0) {
+        const double lb =
+            static_cast<double>(integer_trail_->LowerBound(sum_var).value());
+        const double ub =
+            static_cast<double>(integer_trail_->UpperBound(sum_var).value());
+        if (std::abs(lp_value - lb) < 1e-2) {
+          to_lower = true;
+        } else if (std::abs(lp_value - ub) < 1e-2) {
+          to_upper = true;
+        }
+      }
 
       // We assign sum / orbit_size to each variables.
       // This is still an LP optimal, but not necessarily a good heuristic.
@@ -993,8 +1014,7 @@ bool LinearProgrammingConstraint::SolveLp() {
       // domain for all variables in an orbit. Maybe we can generate two
       // solutions vectors, one for the cuts and one for the heuristics, or we
       // can add custom code to the cuts so that they don't depend on this.
-      const double new_value =
-          expanded_lp_solution_[sum_var] / static_cast<double>(orbit.size());
+      const double even_split = lp_value / static_cast<double>(orbit.size());
 
       // For the reduced costs, they are the same. There should be no
       // complication there.
@@ -1002,6 +1022,16 @@ bool LinearProgrammingConstraint::SolveLp() {
 
       for (const IntegerVariable var : orbit) {
         const glop::ColIndex col = GetMirrorVariable(var);
+
+        double new_value = even_split;
+        if (to_lower) {
+          new_value =
+              static_cast<double>(integer_trail_->LowerBound(var).value());
+        } else if (to_upper) {
+          new_value =
+              static_cast<double>(integer_trail_->UpperBound(var).value());
+        }
+
         lp_solution_[col.value()] = new_value;
         expanded_lp_solution_[var] = new_value;
         expanded_lp_solution_[NegationOf(var)] = -new_value;

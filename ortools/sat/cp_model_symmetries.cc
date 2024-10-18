@@ -1070,7 +1070,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // TODO(user): Doing that is not always good, on cod105.mps, fixing variables
   // instead of letting the inner solver handle Boolean symmetries make the
   // problem unsolvable instead of easily solved. This is probably because this
-  // fixing do not exploit the full structure of these symmeteries. Note
+  // fixing do not exploit the full structure of these symmetries. Note
   // however that the fixing via propagation above close cod105 even more
   // efficiently.
   std::vector<int> var_can_be_true_per_orbit(num_vars, -1);
@@ -1133,6 +1133,17 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
           "[Symmetry] Num fixable by intersecting at_most_one with orbits: ",
           can_be_fixed_to_false.size(), " largest_orbit: ", max_orbit_size);
     }
+  }
+
+  // Fixing just a few variables to break large symmetry can be really bad.
+  // See for example cdc7-4-3-2.pb.gz where we don't find solution if we do
+  // that. Especially with max_lp_sym worker.
+  //
+  // TODO(user): investigate/tune more. This is worse on
+  // neos-3083784-nive.pb.gz. It must depends on how much we fix compared to how
+  // much symmetry we break.
+  if (10 * can_be_fixed_to_false.size() < max_orbit_size) {
+    can_be_fixed_to_false.clear();
   }
 
   // Orbitope approach.
@@ -1498,6 +1509,11 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
+  // The transformations below seems to hurt more than what they help.
+  // Especially when we handle symmetry during the search like with max_lp_sym
+  // worker. See for instance neos-948346.pb or map06.pb.gz.
+  if (params.symmetry_level() <= 3) return true;
+
   // If we are left with a set of variable than can all be permuted, lets
   // break the symmetry by ordering them.
   if (orbitope.size() == 1) {
@@ -1522,7 +1538,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
     context->UpdateNewConstraintsVariableUsage();
-  } else if (orbitope.size() > 1 && params.symmetry_level() > 3) {
+  } else if (orbitope.size() > 1) {
     std::vector<int64_t> max_values(orbitope.size());
     for (int i = 0; i < orbitope.size(); ++i) {
       const int var = orbitope[i][0];
