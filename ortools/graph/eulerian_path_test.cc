@@ -60,9 +60,7 @@ void TestPath(const int arcs[][2], int num_nodes, int num_arcs, bool eulerian,
 }
 
 TEST(EulerianTourTest, EmptyGraph) {
-  const int kArcs[][2] = {};
-  const int kExpectedTour[] = {};
-  TestTour(kArcs, 0, 0, -1, true, kExpectedTour);
+  TestTour(nullptr, 0, 0, -1, true, nullptr);
 }
 
 // Builds a tour on the following graph:
@@ -103,14 +101,11 @@ TEST(EulerianTourTest, MultiCycle) {
 TEST(EulerianTourTest, NonEulerian) {
   const int kArcs[][2] = {{0, 1}, {1, 4}, {1, 5}, {2, 3},
                           {2, 4}, {2, 5}, {3, 0}};
-  const int kExpectedTour[] = {};
-  TestTour(kArcs, 6, ABSL_ARRAYSIZE(kArcs), 1, false, kExpectedTour);
+  TestTour(kArcs, 6, ABSL_ARRAYSIZE(kArcs), 1, false, nullptr);
 }
 
 TEST(EulerianPathTest, EmptyGraph) {
-  const int kArcs[][2] = {};
-  const int kExpectedPath[] = {};
-  TestPath(kArcs, 0, 0, true, kExpectedPath);
+  TestPath(nullptr, 0, 0, true, nullptr);
 }
 
 // Builds a path on the following graph:
