@@ -70,8 +70,6 @@ add_library(flatzinc
   ortools/flatzinc/parser.yy.cc
   #ortools/flatzinc/parser_util.cc # Already #include in parser.tab.cc
   ortools/flatzinc/parser_util.h
-  ortools/flatzinc/presolve.cc
-  ortools/flatzinc/presolve.h
   )
 ## Includes
 target_include_directories(flatzinc PUBLIC
