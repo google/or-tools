@@ -59,6 +59,7 @@ help:
 	@echo -e "\t\t${BOLD}310${RESET} Python3.10"
 	@echo -e "\t\t${BOLD}311${RESET} Python3.11"
 	@echo -e "\t\t${BOLD}312${RESET} Python3.12"
+	@echo -e "\t\t${BOLD}313${RESET} Python3.13"
 	@echo
 	@echo -e "\t${BOLD}<step>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
