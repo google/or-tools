@@ -273,7 +273,7 @@ TEST(KnitroInterface, KnitroTuner) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, 1);
+  absl::SetFlag(&FLAGS_stderrthreshold, 1);
   testing::InitGoogleTest(&argc, argv);
   if (!operations_research::KnitroIsCorrectlyInstalled()) {
     LOG(ERROR) << "Knitro solver is not available";
