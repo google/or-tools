@@ -233,19 +233,19 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <c>variables[index] == target</c>.
+     * Adds the element constraint: <c>exprs[index] == target</c>.
      * </summary>
      */
-    public Constraint AddElement(IntVar index, IEnumerable<IntVar> vars, IntVar target)
+    public Constraint AddElement(LinearExpr index, IEnumerable<LinearExpr> exprs, LinearExpr target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
-        element.Index = index.Index;
-        element.Vars.TrySetCapacity(vars);
-        foreach (IntVar var in vars)
+        element.LinearIndex = GetLinearExpressionProto(index);
+        element.Exprs.TrySetCapacity(exprs);
+        foreach (LinearExpr expr in exprs)
         {
-            element.Vars.Add(var.Index);
+            element.Exprs.Add(GetLinearExpressionProto(expr));
         }
-        element.Target = target.Index;
+        element.LinearTarget = GetLinearExpressionProto(target);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Element = element;
@@ -257,16 +257,16 @@ public class CpModel
      * Adds the element constraint: <c> values[index] == target</c>.
      * </summary>
      */
-    public Constraint AddElement(IntVar index, IEnumerable<long> values, IntVar target)
+    public Constraint AddElement(LinearExpr index, IEnumerable<long> values, LinearExpr target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
-        element.Index = index.Index;
-        element.Vars.TrySetCapacity(values);
+        element.LinearIndex = GetLinearExpressionProto(index);
+        element.Exprs.TrySetCapacity(values);
         foreach (long value in values)
         {
-            element.Vars.Add(ConvertConstant(value));
+            element.Exprs.Add(GetLinearExpressionProto(value));
         }
-        element.Target = target.Index;
+        element.LinearTarget = GetLinearExpressionProto(target);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Element = element;
@@ -278,16 +278,16 @@ public class CpModel
      * Adds the element constraint: <c> values[index] == target</c>.
      * </summary>
      */
-    public Constraint AddElement(IntVar index, IEnumerable<int> values, IntVar target)
+    public Constraint AddElement(LinearExpr index, IEnumerable<int> values, LinearExpr target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
-        element.Index = index.Index;
-        element.Vars.TrySetCapacity(values);
+        element.LinearIndex = GetLinearExpressionProto(index);
+        element.Exprs.TrySetCapacity(values);
         foreach (int value in values)
         {
-            element.Vars.Add(ConvertConstant(value));
+            element.Exprs.Add(GetLinearExpressionProto(value));
         }
-        element.Target = target.Index;
+        element.LinearTarget = GetLinearExpressionProto(target);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Element = element;
@@ -1255,6 +1255,13 @@ public class CpModel
             linear.Offset = constant;
         }
 
+        return linear;
+    }
+
+    internal LinearExpressionProto GetLinearExpressionProto(long value)
+    {
+        LinearExpressionProto linear = new LinearExpressionProto();
+        linear.Offset = value;
         return linear;
     }
 
