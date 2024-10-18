@@ -539,6 +539,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   int watcher_id_;
 
+  int watcher_id_;
+
   BoolRLTCutHelper rlt_cut_helper_;
 
   // Used while deriving cuts.

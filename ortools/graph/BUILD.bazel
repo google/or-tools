@@ -447,6 +447,7 @@ cc_library(
         ":graph",
         ":graphs",
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/util:stats",
         "//ortools/util:zvector",
         "@com_google_absl//absl/log:check",

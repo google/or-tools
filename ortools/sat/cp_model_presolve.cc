@@ -7187,6 +7187,9 @@ void CpModelPresolver::Probe() {
   }
   probing_timer->AddCounter("fixed_bools", num_fixed);
 
+  DetectDuplicateConstraintsWithDifferentEnforcements(
+      mapping, implication_graph, model.GetOrCreate<Trail>());
+
   int num_equiv = 0;
   int num_changed_bounds = 0;
   const int num_variables = context_->working_model->variables().size();
@@ -8982,6 +8985,35 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     if (rep_ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET ||
         dup_ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
       continue;
+    }
+
+    // If we have a trail, we can check if any variable of the enforcement is
+    // fixed to false. This is useful for what follows since calling
+    // implication_graph->DirectImplications() is invalid for fixed variables.
+    if (trail != nullptr) {
+      bool found_false_enforcement = false;
+      for (const int c : {dup, rep}) {
+        for (const int l :
+             context_->working_model->constraints(c).enforcement_literal()) {
+          if (trail->Assignment().LiteralIsFalse(mapping->Literal(l))) {
+            found_false_enforcement = true;
+            break;
+          }
+        }
+        if (found_false_enforcement) {
+          context_->UpdateRuleStats("enforcement: false literal");
+          if (c == rep) {
+            rep_ct->Swap(dup_ct);
+            context_->UpdateConstraintVariableUsage(rep);
+          }
+          dup_ct->Clear();
+          context_->UpdateConstraintVariableUsage(dup);
+          break;
+        }
+      }
+      if (found_false_enforcement) {
+        continue;
+      }
     }
 
     // If one of them has no enforcement, then the other can be ignored.
@@ -12527,6 +12559,43 @@ void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     tmp_constraint_.mutable_linear()->add_domain(
         std::numeric_limits<int64_t>::max());
     CopyLinear(tmp_constraint_);
+  }
+}
+
+void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
+  // Add the linear constraint enforcement => (start + size == end).
+  //
+  // We rely on the presolve for simplification, but deal with the trivial
+  // case of (start, offset, start + offset) here.
+  const IntervalConstraintProto& itv = ct.interval();
+  if (itv.size().vars().empty() &&
+      itv.start().offset() + itv.size().offset() == itv.end().offset() &&
+      absl::Span<const int>(itv.start().vars()) ==
+          absl::Span<const int>(itv.end().vars()) &&
+      absl::Span<const int64_t>(itv.start().coeffs()) ==
+          absl::Span<const int64_t>(itv.end().coeffs())) {
+    // Trivial constraint, nothing to do.
+  } else {
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+
+    LinearConstraintProto* mutable_linear = new_ct->mutable_linear();
+    mutable_linear->add_domain(0);
+    mutable_linear->add_domain(0);
+    AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
+    AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
+    AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
+  }
+
+  // An enforced interval must have is size non-negative.
+  const LinearExpressionProto& size_expr = itv.size();
+  if (context_->MinOf(size_expr) < 0) {
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+    *new_ct->mutable_linear()->mutable_vars() = size_expr.vars();
+    *new_ct->mutable_linear()->mutable_coeffs() = size_expr.coeffs();
+    new_ct->mutable_linear()->add_domain(-size_expr.offset());
+    new_ct->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
   }
 }
 

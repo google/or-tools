@@ -237,6 +237,8 @@ class MPSolver {
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
     COPT_LINEAR_PROGRAMMING = 103,
     COPT_MIXED_INTEGER_PROGRAMMING = 104,
+    KNITRO_LINEAR_PROGRAMMING = 105,
+    KNITRO_MIXED_INTEGER_PROGRAMMING = 106,
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -891,6 +893,7 @@ class MPSolver {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class KnitroInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
@@ -1123,6 +1126,7 @@ class MPObjective {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class KnitroInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
@@ -1237,6 +1241,7 @@ class MPVariable {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class KnitroInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
@@ -1386,6 +1391,7 @@ class MPConstraint {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class KnitroInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
