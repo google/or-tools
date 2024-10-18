@@ -23,9 +23,9 @@ command -v make | xargs echo "make: " | tee -a test.log
 command -v swig | xargs echo "swig: " | tee -a test.log
 # python
 if [[ ${PLATFORM} == "arm64" ]]; then
-  local -r PY=(3.8 3.9 3.10 3.11 3.12)
+  local -r PY=(3.8 3.9 3.10 3.11 3.12 3.13)
 else
-  local -r PY=(3.8 3.9 3.10 3.11 3.12)
+  local -r PY=(3.8 3.9 3.10 3.11 3.12 3.13)
 fi
 
 for i in "${PY[@]}"; do
