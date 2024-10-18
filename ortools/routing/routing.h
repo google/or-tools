@@ -2939,7 +2939,7 @@ void AppendTasksFromIntervals(const std::vector<IntervalVar*>& intervals,
 void FillPathEvaluation(absl::Span<const int64_t> path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values);
-void FillTravelBoundsOfVehicle(int vehicle, const std::vector<int64_t>& path,
+void FillTravelBoundsOfVehicle(int vehicle, absl::Span<const int64_t> path,
                                const RoutingDimension& dimension,
                                TravelBounds* travel_bounds);
 #endif  // !defined(SWIG)

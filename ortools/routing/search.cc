@@ -44,6 +44,7 @@
 #include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -574,7 +575,7 @@ void ProcessVehicleStartEndCosts(
 
 std::vector<std::vector<CheapestInsertionFilteredHeuristic::StartEndValue>>
 CheapestInsertionFilteredHeuristic::ComputeStartEndDistanceForVehicles(
-    const std::vector<int>& vehicles) {
+    absl::Span<const int> vehicles) {
   // TODO(user): consider checking search limits.
   const RoutingModel& model = *this->model();
   std::vector<std::vector<StartEndValue>> start_end_distances_per_node(
@@ -4252,7 +4253,7 @@ struct SweepIndexSortDistance {
 }  // namespace
 
 SweepArranger::SweepArranger(
-    const std::vector<std::pair<int64_t, int64_t>>& points)
+    absl::Span<const std::pair<int64_t, int64_t>> points)
     : coordinates_(2 * points.size(), 0), sectors_(1) {
   for (int64_t i = 0; i < points.size(); ++i) {
     coordinates_[2 * i] = points[i].first;
@@ -4542,7 +4543,7 @@ class RouteConstructor {
     return true;
   }
 
-  bool CheckRouteConnection(const std::vector<int>& route1,
+  bool CheckRouteConnection(absl::Span<const int> route1,
                             const std::vector<int>& route2, int dimension_index,
                             int64_t /*start_depot*/, int64_t end_depot) {
     const int tail1 = route1.back();
@@ -4659,8 +4660,8 @@ class RouteConstructor {
     return solver_->Solve(solver_->MakeRestoreAssignment(temp_assignment));
   }
 
-  bool UpdateAssignment(const std::vector<int>& route1,
-                        const std::vector<int>& route2) {
+  bool UpdateAssignment(absl::Span<const int> route1,
+                        absl::Span<const int> route2) {
     bool feasible = true;
     const int head1 = route1.front();
     const int tail1 = route1.back();
