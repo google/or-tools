@@ -101,7 +101,8 @@ void LinearConstraintSymmetrizer::AddSymmetryOrbit(
 //
 // We will remap & scale the constraint.
 // If not possible, we will drop it for now.
-bool LinearConstraintSymmetrizer::FoldLinearConstraint(LinearConstraint* ct) {
+bool LinearConstraintSymmetrizer::FoldLinearConstraint(LinearConstraint* ct,
+                                                       bool* folded) {
   if (!has_symmetry_) return true;
 
   // We assume the constraint had basic preprocessing with tight lb/ub for
@@ -132,6 +133,8 @@ bool LinearConstraintSymmetrizer::FoldLinearConstraint(LinearConstraint* ct) {
     // No symmetric variables.
     return true;
   }
+
+  if (folded != nullptr) *folded = true;
 
   // We need to multiply each term by scaling_factor / orbit_size.
   //
@@ -302,7 +305,7 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
 // to detect duplicate constraints and merge bounds. This is also relevant if
 // we regenerate identical cuts for some reason.
 LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
-    LinearConstraint ct, bool* added) {
+    LinearConstraint ct, bool* added, bool* folded) {
   DCHECK_GT(ct.num_terms, 0);
   DCHECK(!PossibleOverflow(integer_trail_, ct)) << ct.DebugString();
   DCHECK(NoDuplicateVariable(ct));
@@ -313,7 +316,8 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
 
   // If configured, store instead the folded version of this constraint.
   // TODO(user): Shall we simplify again?
-  if (symmetrizer_->HasSymmetry() && !symmetrizer_->FoldLinearConstraint(&ct)) {
+  if (symmetrizer_->HasSymmetry() &&
+      !symmetrizer_->FoldLinearConstraint(&ct, folded)) {
     return kInvalidConstraintIndex;
   }
   CHECK(std::is_sorted(ct.VarsAsSpan().begin(), ct.VarsAsSpan().end()));

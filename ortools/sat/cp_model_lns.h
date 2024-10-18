@@ -31,6 +31,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -238,7 +239,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
   // tail index, and going in sequence up to the last arc before the circuit is
   // closed. Each entry correspond to the arc literal on the circuit.
-  std::vector<std::vector<int>> GetRoutingPathVariables(
+  std::vector<std::vector<int>> GetRoutingPaths(
       const CpSolverResponse& initial_solution) const;
 
   // Returns all precedences extracted from the scheduling constraint and the
@@ -609,9 +610,10 @@ class LocalBranchingLpBasedNeighborhoodGenerator
  public:
   LocalBranchingLpBasedNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, absl::string_view name,
-      ModelSharedTimeLimit* const global_time_limit)
+      ModelSharedTimeLimit* const global_time_limit, SharedClasses* shared)
       : NeighborhoodGenerator(name, helper),
-        global_time_limit_(global_time_limit) {
+        global_time_limit_(global_time_limit),
+        shared_(shared) {
     // Given that we spend time generating a good neighborhood it sounds
     // reasonable to spend a bit more time solving it too.
     deterministic_limit_ = 0.5;
@@ -622,6 +624,7 @@ class LocalBranchingLpBasedNeighborhoodGenerator
 
  private:
   ModelSharedTimeLimit* const global_time_limit_;
+  SharedClasses* const shared_;
 };
 
 // Helper method for the scheduling neighborhood generators. Returns a
@@ -785,7 +788,7 @@ class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// This routing based LNS generator aims at relaxing one full path, and make
+// This routing based LNS generator aims are relaxing one full path, and make
 // some room on the other paths to absorb the nodes of the relaxed path.
 //
 // In order to do so, it will relax the first and the last arc of each path in
@@ -798,19 +801,6 @@ class RoutingFullPathNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
-  Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        SolveData& data, absl::BitGenRef random) final;
-};
-
-// This routing based LNS generator performs like the
-// RoutingRandomNeighborhoodGenerator, but always relax the arcs going in and
-// out of the depot for routes constraints, and of the node with the minimal
-// index for circuit constraints.
-class RoutingStartsNeighborhoodGenerator : public NeighborhoodGenerator {
- public:
-  RoutingStartsNeighborhoodGenerator(NeighborhoodGeneratorHelper const* helper,
-                                     absl::string_view name)
-      : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         SolveData& data, absl::BitGenRef random) final;
 };

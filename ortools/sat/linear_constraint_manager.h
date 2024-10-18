@@ -66,11 +66,14 @@ struct ModelReducedCosts
 // constraint and summing them, we can derive a new constraint using the sum
 // of the variable on each orbit instead of the individual variables.
 //
-// For the integration in a MIP solver, I couldn't find any reference. The way
+// For the integration in a MIP solver, I couldn't find many reference. The way
 // I did it here is to introduce for each orbit a variable representing the
 // sum of the orbit variable. This allows to represent the folded LP in terms
 // of these variables (that are connected to the rest of the solver) and just
 // reuse the full machinery.
+//
+// There are related info in "Orbital Shrinking", Matteo Fischetti & Leo
+// Liberti, https://link.springer.com/chapter/10.1007/978-3-642-32147-4_6
 class LinearConstraintSymmetrizer {
  public:
   explicit LinearConstraintSymmetrizer(Model* model)
@@ -113,7 +116,7 @@ class LinearConstraintSymmetrizer {
   //
   // Preconditions: All IntegerVariable must be positive. And the constraint
   // lb/ub must be tight and not +/- int64_t max.
-  bool FoldLinearConstraint(LinearConstraint* ct);
+  bool FoldLinearConstraint(LinearConstraint* ct, bool* folded = nullptr);
 
  private:
   SharedStatistics* shared_stats_;
@@ -192,7 +195,8 @@ class LinearConstraintManager {
   // constraint was actually a new one and to false if it was dominated by an
   // already existing one.
   DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
-  ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
+  ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr,
+                      bool* folded = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
   // Cuts are also handled slightly differently than normal constraints.

@@ -745,6 +745,10 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
 bool PresolveContext::HasUnusedAffineVariable() const {
   if (is_unsat_) return false;  // We do not care in this case.
   if (keep_all_feasible_solutions) return false;
+
+  // We can leave non-optimal stuff around if we reach the time limit.
+  if (time_limit_->LimitReached()) return false;
+
   for (int var = 0; var < working_model->variables_size(); ++var) {
     if (VariableIsNotUsedAnymore(var)) continue;
     if (IsFixed(var)) continue;
@@ -1584,12 +1588,9 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
                                       /*add_constraints=*/true)) {
     return false;
   }
-  if (!StoreLiteralImpliesVarEqValue(literal, var, value)) {
-    return false;
-  }
-  if (!StoreLiteralImpliesVarNEqValue(NegatedRef(literal), var, value)) {
-    return false;
-  }
+
+  eq_half_encoding_.insert({{literal, var}, value});
+  neq_half_encoding_.insert({{NegatedRef(literal), var}, value});
 
   if (hint_is_loaded_) {
     const int bool_var = PositiveRef(literal);
