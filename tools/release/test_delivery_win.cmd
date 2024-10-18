@@ -186,3 +186,36 @@ echo Testing ortools Python3.12... | tee.exe -a test.log
 echo Testing ortools Python3.12...DONE | tee.exe -a test.log
 
 FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
+
+REM ###################
+REM ##  PYTHON 3.13  ##
+REM ###################
+echo Cleaning Python... | tee.exe -a test.log
+make.exe clean_python WINDOWS_PATH_TO_PYTHON=c:\python313-64
+echo Cleaning Python...DONE | tee.exe -a test.log
+
+REM make.exe python WINDOWS_PATH_TO_PYTHON=c:\python313-64 || exit 1
+REM echo make python3.13: DONE | tee.exe -a build.log
+REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python313-64 || exit 1
+REM echo make test_python3.13: DONE | tee.exe -a build.log
+echo Rebuild Python3.13 pypi archive... | tee.exe -a test.log
+make.exe package_python WINDOWS_PATH_TO_PYTHON=c:\python313-64 || exit 1
+echo Rebuild Python3.13 pypi archive...DONE | tee.exe -a test.log
+
+echo Creating Python3.13 venv... | tee.exe -a test.log
+set PATH=c:\python313-64;c:\python313-64\Scripts;%PATH%
+python -m pip install virtualenv
+set TEMP_DIR=temp_python313
+python -m virtualenv %TEMP_DIR%\venv
+set PATH=%LOCAL_PATH%
+echo Creating Python3.13 venv...DONE | tee.exe -a test.log
+
+echo Installing ortools Python3.13 venv... | tee.exe -a test.log
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO %TEMP_DIR%\venv\Scripts\python -m pip install %%i
+echo Installing ortools Python3.13 venv...DONE | tee.exe -a test.log
+
+echo Testing ortools Python3.13... | tee.exe -a test.log
+%TEMP_DIR%\venv\Scripts\python cmake\samples\python\sample.py 2>&1 | tee.exe -a test.log
+echo Testing ortools Python3.13...DONE | tee.exe -a test.log
+
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
