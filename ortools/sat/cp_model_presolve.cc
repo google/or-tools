@@ -1143,7 +1143,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   }
 
   // Checks if the affine target domain is constraining.
-  bool affine_target_domain_contains_max_domain = false;
+  bool linear_target_domain_contains_max_domain = false;
   if (ExpressionContainsSingleRef(target)) {  // target = +/- var.
     int64_t infered_min = std::numeric_limits<int64_t>::min();
     int64_t infered_max = std::numeric_limits<int64_t>::min();
@@ -1165,7 +1165,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
     const Domain target_domain =
         target.coeffs(0) == 1 ? context_->DomainOf(target.vars(0))
                               : context_->DomainOf(target.vars(0)).Negation();
-    affine_target_domain_contains_max_domain =
+    linear_target_domain_contains_max_domain =
         rhs_domain.IsIncludedIn(target_domain);
   }
 
@@ -1181,7 +1181,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   // Actually, I think for the expr=affine' case, it reduces to:
   // affine(x) >= affine'(x)
   // affine(x) = max(...);
-  if (affine_target_domain_contains_max_domain) {
+  if (linear_target_domain_contains_max_domain) {
     const int target_var = target.vars(0);
     bool abort = false;
     for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
@@ -1199,12 +1199,12 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
       // We only know that the target is affine here.
       context_->UpdateRuleStats(
           "TODO lin_max: affine(x) = max(affine'(x), ...) !!");
-      affine_target_domain_contains_max_domain = false;
+      linear_target_domain_contains_max_domain = false;
     }
   }
 
   // If the target is not used, and safe, we can remove the constraint.
-  if (affine_target_domain_contains_max_domain &&
+  if (linear_target_domain_contains_max_domain &&
       context_->VariableIsUniqueAndRemovable(target.vars(0))) {
     context_->UpdateRuleStats("lin_max: unused affine target");
     context_->MarkVariableAsRemoved(target.vars(0));
@@ -1214,7 +1214,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
 
   // If the target is only used in the objective, and safe, we can simplify the
   // constraint.
-  if (affine_target_domain_contains_max_domain &&
+  if (linear_target_domain_contains_max_domain &&
       context_->VariableWithCostIsUniqueAndRemovable(target.vars(0)) &&
       (target.coeffs(0) > 0) ==
           (context_->ObjectiveCoeff(target.vars(0)) > 0)) {
@@ -4124,7 +4124,7 @@ void CpModelPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
     for (int i = 0; i < num_vars; ++i) {
       const int64_t magnitude = std::abs(arg.coeffs(i));
       if (magnitude <= second_threshold) {
-        gcd = MathUtil::GCD64(gcd, magnitude);
+        gcd = std::gcd(gcd, magnitude);
         max_magnitude_left = std::max(max_magnitude_left, magnitude);
         const int64_t bound_diff =
             context_->MaxOf(arg.vars(i)) - context_->MinOf(arg.vars(i));
@@ -4856,193 +4856,221 @@ bool CpModelPresolver::PresolveInverse(ConstraintProto* ct) {
   return false;
 }
 
-bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
+bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
-  if (ct->element().vars().empty()) {
+  if (ct->element().exprs().empty()) {
     context_->UpdateRuleStats("element: empty array");
     return context_->NotifyThatModelIsUnsat();
   }
 
-  const int index_ref = ct->element().index();
-  const int target_ref = ct->element().target();
+  bool changed = false;
+  changed |= CanonicalizeLinearExpression(
+      *ct, ct->mutable_element()->mutable_linear_index());
+  changed |= CanonicalizeLinearExpression(
+      *ct, ct->mutable_element()->mutable_linear_target());
+  for (int i = 0; i < ct->element().exprs_size(); ++i) {
+    changed |= CanonicalizeLinearExpression(
+        *ct, ct->mutable_element()->mutable_exprs(i));
+  }
+
+  const LinearExpressionProto& index = ct->element().linear_index();
+  const LinearExpressionProto& target = ct->element().linear_target();
 
   // TODO(user): think about this once we do have such constraint.
   if (HasEnforcementLiteral(*ct)) return false;
 
-  bool all_constants = true;
-  std::vector<int64_t> constants;
-  bool all_included_in_target_domain = true;
-
+  // Reduce index domain from the array size.
   {
+    bool index_modified = false;
     if (!context_->IntersectDomainWith(
-            index_ref, Domain(0, ct->element().vars_size() - 1))) {
+            index, Domain(0, ct->element().exprs_size() - 1),
+            &index_modified)) {
       return false;
     }
+    if (index_modified) {
+      context_->UpdateRuleStats(
+          "element: reduced index domain from array size");
+    }
+  }
 
-    // Filter impossible index values if index == +/- target
-    //
-    // Note that this must be done before the unique_index/target rule.
-    if (PositiveRef(target_ref) == PositiveRef(index_ref)) {
-      std::vector<int64_t> possible_indices;
-      const Domain& index_domain = context_->DomainOf(index_ref);
-      for (const int64_t index_value : index_domain.Values()) {
-        const int ref = ct->element().vars(index_value);
-        const int64_t target_value =
-            target_ref == index_ref ? index_value : -index_value;
-        if (context_->DomainContains(ref, target_value)) {
-          possible_indices.push_back(target_value);
-        }
-      }
-      if (possible_indices.size() < index_domain.Size()) {
-        if (!context_->IntersectDomainWith(
-                index_ref, Domain::FromValues(possible_indices))) {
-          return true;
-        }
+  // Special case if the index is fixed.
+  if (context_->IsFixed(index)) {
+    const int64_t index_value = context_->FixedValue(index);
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    new_ct->mutable_linear()->add_domain(0);
+    new_ct->mutable_linear()->add_domain(0);
+    AddLinearExpressionToLinearConstraint(target, 1, new_ct->mutable_linear());
+    AddLinearExpressionToLinearConstraint(ct->element().exprs(index_value), -1,
+                                          new_ct->mutable_linear());
+    context_->CanonicalizeLinearConstraint(new_ct);
+    context_->UpdateNewConstraintsVariableUsage();
+    context_->UpdateRuleStats("element: fixed index");
+    return RemoveConstraint(ct);
+  }
+
+  // We know index is not fixed.
+  const int index_var = index.vars(0);
+
+  {
+    // Cleanup the array: if exprs[i] contains index_var, fix its value.
+    const Domain& index_var_domain = context_->DomainOf(index_var);
+    std::vector<int64_t> reached_indices(ct->element().exprs_size(), false);
+    for (const int64_t index_var_value : index_var_domain.Values()) {
+      const int64_t index_value =
+          AffineExpressionValueAt(index, index_var_value);
+      reached_indices[index_value] = true;
+      const LinearExpressionProto& expr = ct->element().exprs(index_value);
+      if (expr.vars_size() == 1 && expr.vars(0) == index_var) {
+        const int64_t expr_value =
+            AffineExpressionValueAt(expr, index_var_value);
+        ct->mutable_element()->mutable_exprs(index_value)->clear_vars();
+        ct->mutable_element()->mutable_exprs(index_value)->clear_coeffs();
+        ct->mutable_element()
+            ->mutable_exprs(index_value)
+            ->set_offset(expr_value);
+        changed = true;
         context_->UpdateRuleStats(
-            "element: reduced index domain when target equals index");
+            "element: fix expression depending on the index");
       }
     }
 
-    // Filter possible index values. Accumulate variable domains to build
-    // a possible target domain.
-    Domain infered_domain;
-    const Domain& initial_index_domain = context_->DomainOf(index_ref);
-    const Domain& target_domain = context_->DomainOf(target_ref);
-    std::vector<int64_t> possible_indices;
-    for (const int64_t value : initial_index_domain.Values()) {
-      CHECK_GE(value, 0);
-      CHECK_LT(value, ct->element().vars_size());
-      const int ref = ct->element().vars(value);
+    // Cleanup the array: clear unreached expressions.
+    for (int i = 0; i < ct->element().exprs_size(); ++i) {
+      if (!reached_indices[i]) {
+        ct->mutable_element()->mutable_exprs(i)->Clear();
+        changed = true;
+      }
+    }
+  }
 
-      // We cover the corner cases where the possible domain is actually fixed.
-      Domain domain = context_->DomainOf(ref);
-      if (ref == index_ref) {
-        domain = Domain(value);
-      } else if (ref == NegatedRef(index_ref)) {
-        domain = Domain(-value);
-      } else if (ref == NegatedRef(target_ref)) {
-        domain = Domain(0);
+  // Canonicalization and cleanups of the expressions could have messed up the
+  // var-constraint graph.
+  if (changed) context_->UpdateConstraintVariableUsage(c);
+
+  // Reduces the domain of the index.
+  {
+    const Domain& index_var_domain = context_->DomainOf(index_var);
+    const Domain& target_domain = context_->DomainSuperSetOf(target);
+    std::vector<int64_t> possible_index_var_values;
+    for (const int64_t index_var_value : index_var_domain.Values()) {
+      const int64_t index_value =
+          AffineExpressionValueAt(index, index_var_value);
+      const LinearExpressionProto& expr = ct->element().exprs(index_value);
+
+      // The target domain can be reduced if it shares its variable with the
+      // index.
+      Domain reduced_target_domain = target_domain;
+      if (target.vars_size() == 1 && target.vars(0) == index_var) {
+        reduced_target_domain =
+            Domain(AffineExpressionValueAt(target, index_var_value));
       }
 
-      if (domain.IntersectionWith(target_domain).IsEmpty()) continue;
-      possible_indices.push_back(value);
-      if (domain.IsFixed()) {
-        constants.push_back(domain.Min());
+      // TODO(user): Implement a more precise test here.
+      if (reduced_target_domain
+              .IntersectionWith(context_->DomainSuperSetOf(expr))
+              .IsEmpty()) {
+        ct->mutable_element()->mutable_exprs(index_value)->Clear();
+        changed = true;
       } else {
-        all_constants = false;
+        possible_index_var_values.push_back(index_var_value);
       }
-      if (!domain.IsIncludedIn(target_domain)) {
-        all_included_in_target_domain = false;
-      }
-      infered_domain = infered_domain.UnionWith(domain);
     }
-    if (possible_indices.size() < initial_index_domain.Size()) {
+    if (possible_index_var_values.size() < index_var_domain.Size()) {
       if (!context_->IntersectDomainWith(
-              index_ref, Domain::FromValues(possible_indices))) {
+              index_var, Domain::FromValues(possible_index_var_values))) {
         return true;
       }
-      context_->UpdateRuleStats("element: reduced index domain");
+      context_->UpdateRuleStats("element: reduced index domain ");
+      // If the index is fixed, this is a equality constraint.
+      if (context_->IsFixed(index)) {
+        ConstraintProto* const eq = context_->working_model->add_constraints();
+        eq->mutable_linear()->add_domain(0);
+        eq->mutable_linear()->add_domain(0);
+        AddLinearExpressionToLinearConstraint(target, 1, eq->mutable_linear());
+        AddLinearExpressionToLinearConstraint(
+            ct->element().exprs(context_->FixedValue(index)), -1,
+            eq->mutable_linear());
+        context_->CanonicalizeLinearConstraint(eq);
+        context_->UpdateNewConstraintsVariableUsage();
+        context_->UpdateRuleStats("element: fixed index");
+        return RemoveConstraint(ct);
+      }
     }
+  }
+
+  bool all_included_in_target_domain = true;
+  {
+    // Accumulate expressions domains to build a superset of the target domain.
+    Domain infered_domain;
+    const Domain& index_var_domain = context_->DomainOf(index_var);
+    const Domain& target_domain = context_->DomainSuperSetOf(target);
+    for (const int64_t index_var_value : index_var_domain.Values()) {
+      const int64_t index_value =
+          AffineExpressionValueAt(index, index_var_value);
+      CHECK_GE(index_value, 0);
+      CHECK_LT(index_value, ct->element().exprs_size());
+      const LinearExpressionProto& expr = ct->element().exprs(index_value);
+      const Domain expr_domain = context_->DomainSuperSetOf(expr);
+      if (!expr_domain.IsIncludedIn(target_domain)) {
+        all_included_in_target_domain = false;
+      }
+      infered_domain = infered_domain.UnionWith(expr_domain);
+    }
+
     bool domain_modified = false;
-    if (!context_->IntersectDomainWith(target_ref, infered_domain,
+    if (!context_->IntersectDomainWith(target, infered_domain,
                                        &domain_modified)) {
       return true;
     }
     if (domain_modified) {
-      context_->UpdateRuleStats("element: reduced target domain");
+      context_->UpdateRuleStats("element: reduce target domain");
     }
   }
 
-  // If the index is fixed, this is a equality constraint.
-  if (context_->IsFixed(index_ref)) {
-    const int var = ct->element().vars(context_->MinOf(index_ref));
-    if (var != target_ref) {
-      LinearConstraintProto* const lin =
-          context_->working_model->add_constraints()->mutable_linear();
-      lin->add_vars(var);
-      lin->add_coeffs(-1);
-      lin->add_vars(target_ref);
-      lin->add_coeffs(1);
-      lin->add_domain(0);
-      lin->add_domain(0);
-      context_->UpdateNewConstraintsVariableUsage();
+  bool all_constants = true;
+  {
+    const Domain& index_var_domain = context_->DomainOf(index_var);
+    std::vector<int64_t> expr_constants;
+
+    for (const int64_t index_var_value : index_var_domain.Values()) {
+      const int64_t index_value =
+          AffineExpressionValueAt(index, index_var_value);
+      const LinearExpressionProto& expr = ct->element().exprs(index_value);
+      if (context_->IsFixed(expr)) {
+        expr_constants.push_back(context_->FixedValue(expr));
+      } else {
+        all_constants = false;
+        break;
+      }
     }
-    context_->UpdateRuleStats("element: fixed index");
-    return RemoveConstraint(ct);
   }
 
   // If the accessible part of the array is made of a single constant value,
   // then we do not care about the index. And, because of the previous target
   // domain reduction, the target is also fixed.
-  if (all_constants && context_->IsFixed(target_ref)) {
+  if (all_constants && context_->IsFixed(target)) {
     context_->UpdateRuleStats("element: one value array");
     return RemoveConstraint(ct);
   }
 
   // Special case when the index is boolean, and the array does not contain
   // variables.
-  if (context_->MinOf(index_ref) == 0 && context_->MaxOf(index_ref) == 1 &&
+  if (context_->MinOf(index) == 0 && context_->MaxOf(index) == 1 &&
       all_constants) {
-    const int64_t v0 = constants[0];
-    const int64_t v1 = constants[1];
+    const int64_t v0 = context_->FixedValue(ct->element().exprs(0));
+    const int64_t v1 = context_->FixedValue(ct->element().exprs(1));
 
-    LinearConstraintProto* const lin =
-        context_->working_model->add_constraints()->mutable_linear();
-    lin->add_vars(target_ref);
-    lin->add_coeffs(1);
-    lin->add_vars(index_ref);
-    lin->add_coeffs(v0 - v1);
-    lin->add_domain(v0);
-    lin->add_domain(v0);
+    ConstraintProto* const eq = context_->working_model->add_constraints();
+    eq->mutable_linear()->add_domain(v0);
+    eq->mutable_linear()->add_domain(v0);
+    AddLinearExpressionToLinearConstraint(target, 1, eq->mutable_linear());
+    AddLinearExpressionToLinearConstraint(index, v0 - v1, eq->mutable_linear());
+    context_->CanonicalizeLinearConstraint(eq);
     context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("element: linearize constant element of size 2");
     return RemoveConstraint(ct);
   }
-
-  // If the index has a canonical affine representative, rewrite the element.
-  const AffineRelation::Relation r_index =
-      context_->GetAffineRelation(index_ref);
-  if (r_index.representative != index_ref) {
-    // Checks the domains are synchronized.
-    if (context_->DomainOf(r_index.representative).Size() >
-        context_->DomainOf(index_ref).Size()) {
-      // Postpone, we will come back later when domains are synchronized.
-      return true;
-    }
-    const int r_ref = r_index.representative;
-    const int64_t r_min = context_->MinOf(r_ref);
-    const int64_t r_max = context_->MaxOf(r_ref);
-    const int array_size = ct->element().vars_size();
-    if (r_min != 0) {
-      context_->UpdateRuleStats("TODO element: representative has bad domain");
-    } else if (r_index.offset >= 0 && r_index.offset < array_size &&
-               r_index.offset + r_max * r_index.coeff >= 0 &&
-               r_index.offset + r_max * r_index.coeff < array_size) {
-      // This will happen eventually when domains are synchronized.
-      ElementConstraintProto* const element =
-          context_->working_model->add_constraints()->mutable_element();
-      for (int64_t v = 0; v <= r_max; ++v) {
-        const int64_t scaled_index = v * r_index.coeff + r_index.offset;
-        CHECK_GE(scaled_index, 0);
-        CHECK_LT(scaled_index, array_size);
-        element->add_vars(ct->element().vars(scaled_index));
-      }
-      element->set_index(r_ref);
-      element->set_target(target_ref);
-
-      if (r_index.coeff == 1) {
-        context_->UpdateRuleStats("element: shifed index ");
-      } else {
-        context_->UpdateRuleStats("element: scaled index");
-      }
-      context_->UpdateNewConstraintsVariableUsage();
-      return RemoveConstraint(ct);
-    }
-  }
-
-  // Should have been taken care of earlier.
-  DCHECK(!context_->IsFixed(index_ref));
 
   // If a variable (target or index) appears only in this constraint, it does
   // not necessarily mean that we can remove the constraint, as the variable
@@ -5052,26 +5080,31 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   // TODO(user): now that we used fixed values for these case, this is no longer
   // needed I think.
   absl::flat_hash_map<int, int> local_var_occurrence_counter;
-  local_var_occurrence_counter[PositiveRef(index_ref)]++;
-  local_var_occurrence_counter[PositiveRef(target_ref)]++;
-
-  for (const ClosedInterval interval : context_->DomainOf(index_ref)) {
-    for (int64_t value = interval.start; value <= interval.end; ++value) {
-      DCHECK_GE(value, 0);
-      DCHECK_LT(value, ct->element().vars_size());
-      const int ref = ct->element().vars(value);
-      local_var_occurrence_counter[PositiveRef(ref)]++;
+  {
+    auto count = [&local_var_occurrence_counter](
+                     const LinearExpressionProto& expr) mutable {
+      for (const int var : expr.vars()) {
+        local_var_occurrence_counter[var]++;
+      }
+    };
+    count(index);
+    count(target);
+    for (const int64_t index_var_value :
+         context_->DomainOf(index_var).Values()) {
+      count(
+          ct->element().exprs(AffineExpressionValueAt(index, index_var_value)));
     }
   }
 
-  if (context_->VariableIsUniqueAndRemovable(index_ref) &&
-      local_var_occurrence_counter.at(PositiveRef(index_ref)) == 1) {
+  if (context_->VariableIsUniqueAndRemovable(index_var) &&
+      local_var_occurrence_counter.at(index_var) == 1) {
     if (all_constants) {
       // This constraint is just here to reduce the domain of the target! We can
       // add it to the mapping_model to reconstruct the index value during
       // postsolve and get rid of it now.
-      context_->UpdateRuleStats("element: trivial target domain reduction");
-      context_->MarkVariableAsRemoved(index_ref);
+      context_->UpdateRuleStats(
+          "element: removed  as the index is not used elsewhere");
+      context_->MarkVariableAsRemoved(index_var);
       context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
       return RemoveConstraint(ct);
     } else {
@@ -5079,12 +5112,13 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     }
   }
 
-  if (!context_->IsFixed(target_ref) &&
-      context_->VariableIsUniqueAndRemovable(target_ref) &&
-      local_var_occurrence_counter.at(PositiveRef(target_ref)) == 1) {
-    if (all_included_in_target_domain) {
-      context_->UpdateRuleStats("element: trivial index domain reduction");
-      context_->MarkVariableAsRemoved(target_ref);
+  if (target.vars_size() == 1 && !context_->IsFixed(target.vars(0)) &&
+      context_->VariableIsUniqueAndRemovable(target.vars(0)) &&
+      local_var_occurrence_counter.at(target.vars(0)) == 1) {
+    if (all_included_in_target_domain && std::abs(target.coeffs(0)) == 1) {
+      context_->UpdateRuleStats(
+          "element: removed as the target is not used elsewhere");
+      context_->MarkVariableAsRemoved(target.vars(0));
       context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
       return RemoveConstraint(ct);
     } else {
@@ -5092,7 +5126,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     }
   }
 
-  return false;
+  return changed;
 }
 
 bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
@@ -8271,7 +8305,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::kInverse:
       return PresolveInverse(ct);
     case ConstraintProto::kElement:
-      return PresolveElement(ct);
+      return PresolveElement(c, ct);
     case ConstraintProto::kTable:
       return PresolveTable(ct);
     case ConstraintProto::kAllDiff:
@@ -12013,6 +12047,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kIntProd:
         if (!CopyIntProd(ct, ignore_names)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kElement:
+        if (!CopyElement(ct)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
         break;
@@ -12363,6 +12400,8 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
     return !temp_literals_.empty();
   }
 
+  DCHECK(!non_fixed_variables_.empty());
+
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   FinishEnforcementCopy(new_ct);
   LinearConstraintProto* linear = new_ct->mutable_linear();
@@ -12371,6 +12410,36 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
   linear->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
                                 non_fixed_coefficients_.end());
   FillDomainInProto(new_rhs, linear);
+  return true;
+}
+
+bool ModelCopy::CopyElement(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (ct.element().vars().empty() && !ct.element().exprs().empty()) {
+    // New format, just copy.
+    *new_ct = ct;
+    return true;
+  }
+
+  auto fill_expr = [this](int var, LinearExpressionProto* expr) mutable {
+    if (context_->IsFixed(var)) {
+      expr->set_offset(context_->FixedValue(var));
+    } else {
+      DCHECK(RefIsPositive(var));
+      expr->mutable_vars()->Reserve(1);
+      expr->mutable_coeffs()->Reserve(1);
+      expr->add_vars(var);
+      expr->add_coeffs(1);
+    }
+  };
+
+  fill_expr(ct.element().index(),
+            new_ct->mutable_element()->mutable_linear_index());
+  fill_expr(ct.element().target(),
+            new_ct->mutable_element()->mutable_linear_target());
+  for (const int var : ct.element().vars()) {
+    fill_expr(var, new_ct->mutable_element()->add_exprs());
+  }
   return true;
 }
 

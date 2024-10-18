@@ -205,6 +205,29 @@ bool ExpressionIsAffine(const LinearExpressionProto& expr);
 // ExpressionContainsSingleRef(expr) is true.
 int GetSingleRefFromExpression(const LinearExpressionProto& expr);
 
+// Evaluates an affine expression at the given value.
+inline int64_t AffineExpressionValueAt(const LinearExpressionProto& expr,
+                                       int64_t value) {
+  CHECK_EQ(1, expr.vars_size());
+  return expr.offset() + value * expr.coeffs(0);
+}
+
+// Returns the value of the inner variable of an affine expression from the
+// value of the expression. It will DCHECK that the result is valid.
+inline int64_t GetInnerVarValue(const LinearExpressionProto& expr,
+                                int64_t value) {
+  DCHECK_EQ(expr.vars_size(), 1);
+  const int64_t var_value = (value - expr.offset()) / expr.coeffs(0);
+  DCHECK_EQ(value, var_value * expr.coeffs(0) + expr.offset());
+  return var_value;
+}
+
+// Returns true if the expression is a * var + b.
+inline bool AffineExpressionContainsVar(const LinearExpressionProto& expr,
+                                        int var) {
+  return expr.vars_size() == 1 && expr.vars(0) == var;
+}
+
 // Adds a linear expression proto to a linear constraint in place.
 //
 // Important: The domain must already be set, otherwise the offset will be lost.

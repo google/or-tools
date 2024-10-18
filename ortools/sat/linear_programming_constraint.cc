@@ -48,7 +48,6 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
-#include "ortools/lp_data/sparse_column.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
@@ -56,6 +55,7 @@
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -282,6 +282,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       symmetrizer_(model->GetOrCreate<LinearConstraintSymmetrizer>()),
+      linear_propagator_(model->GetOrCreate<LinearPropagator>()),
       rlt_cut_helper_(model),
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
@@ -317,18 +318,36 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   // presence of symmetry. However they can still appear in cut, so it is a
   // bit tricky and require some refactoring to be tried.
   ColIndex col{0};
-  integer_variables_.assign(vars.begin(), vars.end());
   for (const IntegerVariable positive_variable : vars) {
     CHECK(VariableIsPositive(positive_variable));
     implied_bounds_processor_.AddLpVariable(positive_variable);
     (*dispatcher_)[positive_variable] = this;
+
+    if (!symmetrizer_->AppearInFoldedProblem(positive_variable)) continue;
+
+    integer_variables_.push_back(positive_variable);
+    extended_integer_variables_.push_back(positive_variable);
     mirror_lp_variable_[positive_variable] = col;
     ++col;
   }
 
-  lp_solution_.assign(integer_variables_.size(),
-                      std::numeric_limits<double>::infinity());
-  lp_reduced_cost_.assign(integer_variables_.size(), 0.0);
+  // Complete the extended variables with the orbit afterwards.
+  if (symmetrizer_->HasSymmetry()) {
+    for (const IntegerVariable var : integer_variables_) {
+      if (!symmetrizer_->IsOrbitSumVar(var)) continue;
+      const int orbit_index = symmetrizer_->OrbitIndex(var);
+      for (const IntegerVariable var : symmetrizer_->Orbit(orbit_index)) {
+        extended_integer_variables_.push_back(var);
+        mirror_lp_variable_[var] = col;
+        ++col;
+      }
+    }
+  }
+
+  // We use the "extended" vector for lp_solution_/lp_reduced_cost_.
+  CHECK_EQ(vars.size(), extended_integer_variables_.size());
+  lp_solution_.assign(vars.size(), std::numeric_limits<double>::infinity());
+  lp_reduced_cost_.assign(vars.size(), 0.0);
 
   if (!vars.empty()) {
     const int max_index = NegationOf(vars.back()).value();
@@ -341,9 +360,34 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   }
 }
 
-void LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
+bool LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
   DCHECK(!lp_constraint_is_registered_);
-  constraint_manager_.Add(std::move(ct));
+  bool added = false;
+  bool folded = false;
+  const auto index = constraint_manager_.Add(std::move(ct), &added, &folded);
+
+  // If we added a folded constraints, lets add it to the CP propagators.
+  // This is important as this should tighten the bounds of the orbit sum vars.
+  if (added && folded) {
+    const auto& info = constraint_manager_.AllConstraints()[index];
+    const LinearConstraint& new_ct = info.constraint;
+    const absl::Span<const IntegerVariable> vars = new_ct.VarsAsSpan();
+    if (!info.ub_is_trivial) {
+      if (!linear_propagator_->AddConstraint({}, vars, new_ct.CoeffsAsSpan(),
+                                             new_ct.ub)) {
+        return false;
+      }
+    }
+    if (!info.lb_is_trivial) {
+      tmp_vars_.assign(vars.begin(), vars.end());
+      for (IntegerVariable& var : tmp_vars_) var = NegationOf(var);
+      if (!linear_propagator_->AddConstraint(
+              {}, tmp_vars_, new_ct.CoeffsAsSpan(), -new_ct.lb)) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 void LinearProgrammingConstraint::RegisterWith(Model* model) {
@@ -383,10 +427,8 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   orbit_indices_.clear();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable pos_var = integer_variables_[i];
-    if (symmetrizer_->AppearInFoldedProblem(pos_var)) {
-      watcher_->WatchIntegerVariable(pos_var, watcher_id_, i);
-    }
-
+    DCHECK(symmetrizer_->AppearInFoldedProblem(pos_var));
+    watcher_->WatchIntegerVariable(pos_var, watcher_id_, i);
     if (symmetrizer_->IsOrbitSumVar(pos_var)) {
       orbit_indices_.push_back(symmetrizer_->OrbitIndex(pos_var));
     }
@@ -755,9 +797,9 @@ void LinearProgrammingConstraint::SetLevel(int level) {
     lp_solution_ = level_zero_lp_solution_;
     lp_solution_level_ = 0;
     for (int i = 0; i < lp_solution_.size(); i++) {
-      expanded_lp_solution_[integer_variables_[i]] = lp_solution_[i];
-      expanded_lp_solution_[NegationOf(integer_variables_[i])] =
-          -lp_solution_[i];
+      const IntegerVariable var = extended_integer_variables_[i];
+      expanded_lp_solution_[var] = lp_solution_[i];
+      expanded_lp_solution_[NegationOf(var)] = -lp_solution_[i];
     }
   }
 }
@@ -972,9 +1014,8 @@ bool LinearProgrammingConstraint::SolveLp() {
 
     // Compute integrality.
     lp_solution_is_integer_ = true;
-    for (int i = 0; i < num_vars; i++) {
-      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) >
-          kCpEpsilon) {
+    for (const double value : lp_solution_) {
+      if (std::abs(value - std::round(value)) > kCpEpsilon) {
         lp_solution_is_integer_ = false;
         break;
       }
@@ -1244,9 +1285,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // in principle be removed. Easy for cuts, but not so much for
   // implied_bounds_processor_. Note that in theory this could allow us to
   // use Literal directly without the need to have an IntegerVariable for them.
-  tmp_scattered_vector_.ConvertToCutData(cut_ub.value(), integer_variables_,
-                                         lp_solution_, integer_trail_,
-                                         &base_ct_);
+  tmp_scattered_vector_.ConvertToCutData(
+      cut_ub.value(), extended_integer_variables_, lp_solution_, integer_trail_,
+      &base_ct_);
 
   // If there are no integer (all Booleans), no need to try implied bounds
   // heurititics. By setting this to nullptr, we are a bit faster.
@@ -1425,7 +1466,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
   }
 
   // Substitute any slack left.
-  tmp_scattered_vector_.ClearAndResize(integer_variables_.size());
+  tmp_scattered_vector_.ClearAndResize(extended_integer_variables_.size());
   IntegerValue cut_ub = static_cast<int64_t>(cut.rhs);
   for (const CutTerm& term : cut.terms) {
     if (term.coeff == 0) continue;
@@ -1474,8 +1515,8 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
   // something we already added. This tends to happen if the duplicate was
   // already a generated cut which is currently not part of the LP.
   LinearConstraint converted_cut =
-      tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_,
-                                                      cut_ub);
+      tmp_scattered_vector_.ConvertToLinearConstraint(
+          extended_integer_variables_, cut_ub);
 
   // TODO(user): We probably generate too many cuts, keep best one only?
   // Note that we do need duplicate removal and maybe some orthogonality here?
@@ -2257,7 +2298,7 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
     ScatteredIntegerVector* scattered_vector, IntegerValue* upper_bound) const {
   // Initialize the new constraint.
   *upper_bound = 0;
-  scattered_vector->ClearAndResize(integer_variables_.size());
+  scattered_vector->ClearAndResize(extended_integer_variables_.size());
 
   // Compute the new constraint by taking the linear combination given by
   // integer_multipliers of the integer constraints in integer_lp_.
@@ -2565,14 +2606,19 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
     extra_term = {objective_cp_, -obj_scale};
   }
 
-  AdjustNewLinearConstraint(&tmp_integer_multipliers_, &tmp_scattered_vector_,
-                            &rc_ub);
+  // TODO(user): It seems when the LP as a single variable and the equation is
+  // obj >= lower_bound, this removes it ? For now we disable this if the
+  // objective variable is part of the LP (i.e. single objective).
+  if (take_objective_into_account) {
+    AdjustNewLinearConstraint(&tmp_integer_multipliers_, &tmp_scattered_vector_,
+                              &rc_ub);
+  }
 
   // Create the IntegerSumLE that will allow to propagate the objective and more
   // generally do the reduced cost fixing.
   LinearConstraint explanation =
-      tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, rc_ub,
-                                                      extra_term);
+      tmp_scattered_vector_.ConvertToLinearConstraint(
+          extended_integer_variables_, rc_ub, extra_term);
 
   // Corner case where prevent overflow removed all terms.
   if (explanation.num_terms == 0) {
@@ -2612,8 +2658,8 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
                             &new_constraint_ub);
 
   LinearConstraint explanation =
-      tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_,
-                                                      new_constraint_ub);
+      tmp_scattered_vector_.ConvertToLinearConstraint(
+          extended_integer_variables_, new_constraint_ub);
 
   std::string message;
   if (VLOG_IS_ON(1)) {

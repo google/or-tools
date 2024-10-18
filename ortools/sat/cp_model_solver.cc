@@ -1628,7 +1628,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         name_filter.Keep("lb_relax_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
-              helper, name_filter.LastName(), shared->time_limit),
+              helper, name_filter.LastName(), shared->time_limit, shared),
           lns_params, helper, shared));
     }
 
@@ -1715,12 +1715,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       if (name_filter.Keep("routing_path_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingPathNeighborhoodGenerator>(
-                helper, name_filter.LastName()),
-            lns_params, helper, shared));
-      }
-      if (name_filter.Keep("routing_starts_lns")) {
-        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-            std::make_unique<RoutingStartsNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params, helper, shared));
       }
@@ -2399,6 +2393,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Presolved ", CpModelStats(*new_cp_model_proto));
 
+  // Detect the symmetry of the presolved model.
+  // Note that this needs to be done before SharedClasses are created.
+  //
+  // TODO(user): We could actually report a complete feasible hint before this
+  // point. But the proper fix is to report it even before the presolve.
+  if (params.symmetry_level() > 1 && !params.stop_after_presolve() &&
+      !shared_time_limit->LimitReached()) {
+    DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
+  }
+
   // TODO(user): reduce this function size and find a better place for this?
   SharedClasses shared(new_cp_model_proto, model);
 
@@ -2582,10 +2586,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                    shared_response_manager);
   } else {
     TestSolutionHintForFeasibility(*new_cp_model_proto, logger, nullptr);
-  }
-
-  if (params.symmetry_level() > 1) {
-    DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
   }
 
   LoadDebugSolution(*new_cp_model_proto, model);

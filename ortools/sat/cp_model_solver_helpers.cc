@@ -517,8 +517,11 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
       m->TakeOwnership(lp_constraints[c]);
     }
     // Load the constraint.
-    lp_constraints[c]->AddLinearConstraint(
-        std::move(relaxation.linear_constraints[i]));
+    if (!lp_constraints[c]->AddLinearConstraint(
+            std::move(relaxation.linear_constraints[i]))) {
+      m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+      return kNoIntegerVariable;
+    }
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
@@ -530,6 +533,16 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
       m->TakeOwnership(lp_constraints[c]);
     }
     lp_constraints[c]->AddCutGenerator(std::move(relaxation.cut_generators[i]));
+  }
+
+  // We deal with the clique cut generator here now that the component have
+  // been computed. As we don't want to merge independent component with it.
+  if (params->linearization_level() > 1 && params->add_clique_cuts() &&
+      params->cut_level() > 0) {
+    for (LinearProgrammingConstraint* lp : lp_constraints) {
+      if (lp == nullptr) continue;
+      lp->AddCutGenerator(CreateCliqueCutGenerator(lp->integer_variables(), m));
+    }
   }
 
   // Add the objective.
