@@ -207,7 +207,7 @@ cache/python: | cache
 	-mkdir $@
 
 ## MANYLINUX ##
-PYTHON_VERSIONS := 38 39 310 311 312
+PYTHON_VERSIONS := 38 39 310 311 312 313
 
 export/python/manylinux: | export/python
 	-mkdir -p $@
