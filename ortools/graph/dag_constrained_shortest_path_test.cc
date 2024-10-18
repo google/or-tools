@@ -30,7 +30,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/graph/dag_shortest_path.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/io.h"
+#include "ortools/graph/graph_io.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research {

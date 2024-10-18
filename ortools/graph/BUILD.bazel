@@ -769,7 +769,7 @@ cc_library(
 
 cc_library(
     name = "io",
-    hdrs = ["io.h"],
+    hdrs = ["graph_io.h"],
     deps = [
         ":graph",
         "//ortools/base:numbers",
