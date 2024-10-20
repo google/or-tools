@@ -180,10 +180,8 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
   IntegerValue demand_max = 0;
 
   while (time < window_end) {
-    // Aggregate the changes of all events happening at time. How to process
-    // an event depends on its type ("full" vs "fixed-part").
-    IntegerValue delta_max = 0;
-    IntegerValue delta_req = 0;
+    // Update the two profile lines demand_req and demand_max by processing 
+    // all the events at time. How to process an event depends on its type.
     while (profile_events_[next_event].time == time) {
       const ProfileEvent event = profile_events_[next_event];
       switch (task_types_[event.task_id]) {
@@ -192,14 +190,14 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
         case TaskType::kFull:
           switch (event.event_type) {
             case ProfileEventType::kStartMin:
-              delta_max += event.height;
-              delta_req += event.height;
+              demand_max += event.height;
+              demand_req += event.height;
               break;
             case ProfileEventType::kEndMin:
-              delta_req -= event.height;
+              demand_req -= event.height;
               break;
             case ProfileEventType::kEndMax:
-              delta_max -= event.height;
+              demand_max -= event.height;
               break;
             default:
               break;
@@ -208,12 +206,12 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
         case TaskType::kFixedPart:
           switch (event.event_type) {
             case ProfileEventType::kStartMax:
-              delta_max += event.height;
-              delta_req += event.height;
+              demand_max += event.height;
+              demand_req += event.height;
               break;
             case ProfileEventType::kEndMin:
-              delta_req -= event.height;
-              delta_max -= event.height;
+              demand_max -= event.height;
+              demand_req -= event.height;
               break;
             default:
               break;
@@ -223,17 +221,14 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
       next_event++;
     }
 
+    DCHECK_LE(demand_req, demand_max);
+    DCHECK_GE(overload, 0);
+
     // Should always be safe thanks to the sentinel.
     DCHECK_LT(next_event, profile_events_.size());
 
     IntegerValue next_time = profile_events_[next_event].time;
     const IntegerValue length = next_time - time;
-
-    demand_max += delta_max;
-    demand_req += delta_req;
-
-    DCHECK_LE(demand_req, demand_max);
-    DCHECK_GE(overload, 0);
 
     // The maximum amount of resource that could be consumed if all non-ignored
     // tasks that could be scheduled at the current time were.
