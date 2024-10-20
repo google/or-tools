@@ -23,7 +23,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 301
+// NEXT TAG: 303
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -685,6 +685,10 @@ message SatParameters {
   // Implicitly disabled if share_binary_clauses is false.
   optional bool share_glue_clauses = 285 [default = false];
 
+  // Minimize and detect subsumption of shared clauses immediately after they
+  // are imported.
+  optional bool minimize_shared_clauses = 300 [default = true];
+
   // ==========================================================================
   // Debugging parameters
   // ==========================================================================
@@ -818,7 +822,7 @@ message SatParameters {
   // default level of reasoning as well as timetable edge finding.
   //
   // This propagator is experimental.
-  optional bool use_horizontal_overload_checking_in_cumulative = 300 [default = false];
+  optional bool use_horizontal_overload_checking_in_cumulative = 302 [default = false];
 
   // Enable a heuristic to solve cumulative constraints using a modified energy
   // constraint. We modify the usual energy definition by applying a
@@ -1330,6 +1334,13 @@ message SatParameters {
   // large models, which can be slow. At level 4, we try to break as much
   // symmetry as possible in presolve.
   optional int32 symmetry_level = 183 [default = 2];
+
+  // When we have symmetry, it is possible to "fold" all variables from the same
+  // orbit into a single variable, while having the same power of LP relaxation.
+  // This can help significantly on symmetric problem. However there is
+  // currently a bit of overhead as the rest of the solver need to do some
+  // translation between the folded LP and the rest of the problem.
+  optional bool use_symmetry_in_lp = 301 [default = false];
 
   // The new linear propagation code treat all constraints at once and use
   // an adaptation of Bellman-Ford-Tarjan to propagate constraint in a smarter

@@ -2782,11 +2782,17 @@ class Solver {
   /// Local Search Operators.
   LocalSearchOperator* MakeOperator(
       const std::vector<IntVar*>& vars, LocalSearchOperators op,
-      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+          nullptr,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+          nullptr);
   LocalSearchOperator* MakeOperator(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, LocalSearchOperators op,
-      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+          nullptr,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+          nullptr);
   // TODO(user): Make the callback an IndexEvaluator2 when there are no
   // secondary variables.
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,

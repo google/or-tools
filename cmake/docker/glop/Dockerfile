@@ -22,7 +22,7 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=ON -DBUILD_CXX=OFF -DBUILD_GLOP=ON
-RUN cmake --build build --target all -v
+RUN cmake --build build --target all -j 4 -v
 RUN cmake --build build --target install
 
 FROM build AS test

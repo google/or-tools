@@ -29,6 +29,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
@@ -52,6 +53,85 @@ struct ModelLpValues
 struct ModelReducedCosts
     : public util_intops::StrongVector<IntegerVariable, double> {
   ModelReducedCosts() = default;
+};
+
+// Knowing the symmetry of the IP problem should allow us to
+// solve the LP faster via "folding" techniques.
+//
+// You can read this for the LP part: "Dimension Reduction via Colour
+// Refinement", Martin Grohe, Kristian Kersting, Martin Mladenov, Erkal
+// Selman, https://arxiv.org/abs/1307.5697
+//
+// In the presence of symmetry, by considering all symmetric version of a
+// constraint and summing them, we can derive a new constraint using the sum
+// of the variable on each orbit instead of the individual variables.
+//
+// For the integration in a MIP solver, I couldn't find many reference. The way
+// I did it here is to introduce for each orbit a variable representing the
+// sum of the orbit variable. This allows to represent the folded LP in terms
+// of these variables (that are connected to the rest of the solver) and just
+// reuse the full machinery.
+//
+// There are related info in "Orbital Shrinking", Matteo Fischetti & Leo
+// Liberti, https://link.springer.com/chapter/10.1007/978-3-642-32147-4_6
+class LinearConstraintSymmetrizer {
+ public:
+  explicit LinearConstraintSymmetrizer(Model* model)
+      : shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
+  ~LinearConstraintSymmetrizer();
+
+  // This must be called with all orbits before we call FoldLinearConstraint().
+  // Note that sum_var MUST not be in any of the orbits. All orbits must also be
+  // disjoint.
+  //
+  // Precondition: All IntegerVariable must be positive.
+  void AddSymmetryOrbit(IntegerVariable sum_var,
+                        absl::Span<const IntegerVariable> orbit);
+
+  // If there are no symmetry, we shouldn't bother calling the functions below.
+  // Note that they will still work, but be no-op.
+  bool HasSymmetry() const { return has_symmetry_; }
+
+  // Accessors by orbit index in [0, num_orbits).
+  int NumOrbits() const { return orbits_.size(); }
+  IntegerVariable OrbitSumVar(int i) const { return orbit_sum_vars_[i]; }
+  absl::Span<const IntegerVariable> Orbit(int i) const { return orbits_[i]; }
+
+  // Returns the orbit number in [0, num_orbits) if var belong to a non-trivial
+  // orbit or if it is a "orbit_sum_var". Returns -1 otherwise.
+  int OrbitIndex(IntegerVariable var) const;
+
+  // Returns true iff var is one of the sum_var passed to AddSymmetryOrbit().
+  bool IsOrbitSumVar(IntegerVariable var) const;
+
+  // This will be only true for variable not appearing in any orbit and for
+  // the orbit sum variables.
+  bool AppearInFoldedProblem(IntegerVariable var) const;
+
+  // Given a constraint on the "original" model variables, try to construct a
+  // symmetric version of it using the orbit sum variables. This might fail if
+  // we encounter integer overflow. Returns true on success. On failure, the
+  // original constraints will not be usable.
+  //
+  // Preconditions: All IntegerVariable must be positive. And the constraint
+  // lb/ub must be tight and not +/- int64_t max.
+  bool FoldLinearConstraint(LinearConstraint* ct, bool* folded = nullptr);
+
+ private:
+  SharedStatistics* shared_stats_;
+  IntegerTrail* integer_trail_;
+
+  bool has_symmetry_ = false;
+  int64_t num_overflows_ = 0;
+  LinearConstraintBuilder builder_;
+
+  // We index our vector by positive variable only.
+  util_intops::StrongVector<PositiveOnlyIndex, int> var_to_orbit_index_;
+
+  // Orbit info index by number in [0, num_orbits);
+  std::vector<IntegerVariable> orbit_sum_vars_;
+  CompactVectorVector<int, IntegerVariable> orbits_;
 };
 
 // This class holds a list of globally valid linear constraints and has some
@@ -106,7 +186,7 @@ class LinearConstraintManager {
         expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
         expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()),
         model_(model),
-        logger_(model->GetOrCreate<SolverLogger>()) {}
+        symmetrizer_(model->GetOrCreate<LinearConstraintSymmetrizer>()) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -115,7 +195,8 @@ class LinearConstraintManager {
   // constraint was actually a new one and to false if it was dominated by an
   // already existing one.
   DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
-  ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
+  ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr,
+                      bool* folded = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
   // Cuts are also handled slightly differently than normal constraints.
@@ -279,7 +360,7 @@ class LinearConstraintManager {
   ModelLpValues& expanded_lp_solution_;
   ModelReducedCosts& expanded_reduced_costs_;
   Model* model_;
-  SolverLogger* logger_;
+  LinearConstraintSymmetrizer* symmetrizer_;
 
   // We want to decay the active counts of all constraints at each call and
   // increase the active counts of active/violated constraints. However this can

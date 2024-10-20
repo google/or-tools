@@ -110,13 +110,13 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
 
 load("@rules_python//python:repositories.bzl", "python_register_toolchains")
-DEFAULT_PYTHON = "3.12"
+DEFAULT_PYTHON = "3.11"
 python_register_toolchains(
-    name = "python3_12",
+    name = "python3_11",
     python_version = DEFAULT_PYTHON,
     ignore_root_user_error=True,
 )
-load("@python3_12//:defs.bzl", "interpreter")
+load("@python3_11//:defs.bzl", "interpreter")
 
 # Create a central external repo, @pip_deps, that contains Bazel targets for all the
 # third-party packages specified in the bazel/requirements.txt file.

@@ -625,8 +625,9 @@ inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
   if (propagation_trail_index_ < trail.Index() &&
       trail.Info(trail[propagation_trail_index_].Variable()).level !=
           trail.CurrentDecisionLevel()) {
-    LOG(INFO) << "Issue in '" << name_ << "':" << " propagation_trail_index_="
-              << propagation_trail_index_ << " trail_.Index()=" << trail.Index()
+    LOG(INFO) << "Issue in '" << name_ << "':"
+              << " propagation_trail_index_=" << propagation_trail_index_
+              << " trail_.Index()=" << trail.Index()
               << " level_at_propagation_index="
               << trail.Info(trail[propagation_trail_index_].Variable()).level
               << " current_decision_level=" << trail.CurrentDecisionLevel();

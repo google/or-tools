@@ -784,94 +784,81 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
 }
 
 // A[V] == V means for all i, V == i => A_i == i
-void ExpandElementWithTargetEqualIndex(ConstraintProto* ct,
-                                       PresolveContext* context) {
+void ExpandElementWhenTargetShareVarWithIndex(ConstraintProto* ct,
+                                              PresolveContext* context) {
   const ElementConstraintProto& element = ct->element();
-  DCHECK_EQ(element.index(), element.target());
 
-  const int index_ref = element.index();
-  std::vector<int64_t> valid_indices;
-  for (const int64_t v : context->DomainOf(index_ref).Values()) {
-    if (!context->DomainContains(element.vars(v), v)) continue;
-    valid_indices.push_back(v);
-  }
-  if (valid_indices.size() < context->DomainOf(index_ref).Size()) {
-    if (!context->IntersectDomainWith(index_ref,
-                                      Domain::FromValues(valid_indices))) {
-      VLOG(1) << "No compatible variable domains in "
-                 "ExpandElementWithTargetEqualIndex()";
-      return;
-    }
-    context->UpdateRuleStats("element: reduced index domain");
+  const LinearExpressionProto& index = element.linear_index();
+  DCHECK_EQ(index.vars_size(), 1);
+  const int index_var = index.vars(0);
+  const LinearExpressionProto& target = element.linear_target();
+  DCHECK_EQ(target.vars_size(), 1);
+  DCHECK_EQ(target.vars(0), index_var);
+
+  for (const int64_t v : context->DomainOf(index_var).Values()) {
+    const int64_t index_value = AffineExpressionValueAt(index, v);
+    const int64_t target_value = AffineExpressionValueAt(target, v);
+    const LinearExpressionProto& expr = element.exprs(index_value);
+    ConstraintProto* imply = context->working_model->add_constraints();
+    imply->add_enforcement_literal(
+        context->GetOrCreateVarValueEncoding(index_var, v));
+    imply->mutable_linear()->add_domain(target_value);
+    imply->mutable_linear()->add_domain(target_value);
+    AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
+    context->CanonicalizeLinearConstraint(imply);
   }
 
-  for (const int64_t v : context->DomainOf(index_ref).Values()) {
-    const int var = element.vars(v);
-    if (context->MinOf(var) == v && context->MaxOf(var) == v) continue;
-    context->AddImplyInDomain(
-        context->GetOrCreateVarValueEncoding(index_ref, v), var, Domain(v));
-  }
   context->UpdateRuleStats(
-      "element: expanded with special case target = index");
+      "element: expanded when the index and the target share the same var");
   ct->Clear();
 }
 
 // Special case if the array of the element is filled with constant values.
 void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context) {
   const ElementConstraintProto& element = ct->element();
-  const int index_ref = element.index();
-  const int target_ref = element.target();
+  const LinearExpressionProto& index = element.linear_index();
+  DCHECK_EQ(index.vars_size(), 1);
+  const int index_var = index.vars(0);
+  const LinearExpressionProto& target = element.linear_target();
 
   // Index and target domain have been reduced before calling this function.
-  const Domain index_domain = context->DomainOf(index_ref);
-  const Domain target_domain = context->DomainOf(target_ref);
+  const Domain index_var_domain = context->DomainOf(index_var);
+  const Domain target_domain = context->DomainSuperSetOf(target);
 
   // This BoolOrs implements the deduction that if all index literals pointing
   // to the same value in the constant array are false, then this value is no
   // no longer valid for the target variable. They are created only for values
   // that have multiples literals supporting them.
-  // Order is not important.
-  absl::flat_hash_map<int64_t, BoolArgumentProto*> supports;
-  {
-    absl::flat_hash_map<int64_t, int> constant_var_values_usage;
-    for (const int64_t v : index_domain.Values()) {
-      DCHECK(context->IsFixed(element.vars(v)));
-      const int64_t value = context->MinOf(element.vars(v));
-      if (++constant_var_values_usage[value] == 2) {
-        // First time we cross > 1.
-        BoolArgumentProto* const support =
-            context->working_model->add_constraints()->mutable_bool_or();
-        const int target_literal =
-            context->GetOrCreateVarValueEncoding(target_ref, value);
-        support->add_literals(NegatedRef(target_literal));
-        supports[value] = support;
-      }
-    }
+  absl::btree_map<int64_t, std::vector<int>> supports;
+  for (const int64_t v : index_var_domain.Values()) {
+    const int64_t index_value = AffineExpressionValueAt(index, v);
+    const int64_t expr_value = context->FixedValue(element.exprs(index_value));
+    supports[expr_value].push_back(v);
   }
 
-  {
-    // While this is not strictly needed since all value in the index will be
-    // covered, it allows to easily detect this fact in the presolve.
-    auto* exactly_one =
-        context->working_model->add_constraints()->mutable_exactly_one();
-    for (const int64_t v : index_domain.Values()) {
+  // While this is not strictly needed since all value in the index will be
+  // covered, it allows to easily detect this fact in the presolve.
+  //
+  // TODO(user): Do we need the support part ? Is this discovered by probing?
+  auto* exactly_one =
+      context->working_model->add_constraints()->mutable_exactly_one();
+  for (const auto& [expr_value, support] : supports) {
+    const int target_literal =
+        context->GetOrCreateAffineValueEncoding(target, expr_value);
+    // not(indices supporting value) -> target != value
+    BoolArgumentProto* bool_or =
+        context->working_model->add_constraints()->mutable_bool_or();
+    bool_or->add_literals(NegatedRef(target_literal));
+    for (const int64_t v : support) {
       const int index_literal =
-          context->GetOrCreateVarValueEncoding(index_ref, v);
-      exactly_one->add_literals(index_literal);
+          context->GetOrCreateVarValueEncoding(index_var, v);
+      bool_or->add_literals(index_literal);
 
-      const int64_t value = context->MinOf(element.vars(v));
-      const auto& it = supports.find(value);
-      if (it != supports.end()) {
-        // The encoding literal for 'value' of the target_ref has been
-        // created before.
-        const int target_literal =
-            context->GetOrCreateVarValueEncoding(target_ref, value);
-        context->AddImplication(index_literal, target_literal);
-        it->second->add_literals(index_literal);
-      } else {
-        // Try to reuse the literal of the index.
-        context->InsertVarValueEncoding(index_literal, target_ref, value);
-      }
+      // index == v => target == value
+      context->AddImplication(index_literal, target_literal);
+
+      // Helps presolve.
+      exactly_one->add_literals(index_literal);
     }
   }
 
@@ -882,51 +869,36 @@ void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context) {
 // General element when the array contains non fixed variables.
 void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context) {
   const ElementConstraintProto& element = ct->element();
-  const int index_ref = element.index();
-  const int target_ref = element.target();
-  const Domain index_domain = context->DomainOf(index_ref);
+  const LinearExpressionProto& index = element.linear_index();
+  DCHECK_EQ(index.vars_size(), 1);
+  const int index_var = index.vars(0);
+  const Domain index_var_domain = context->DomainOf(index_var);
+  const LinearExpressionProto& target = element.linear_target();
 
   BoolArgumentProto* exactly_one =
       context->working_model->add_constraints()->mutable_exactly_one();
 
-  for (const int64_t v : index_domain.Values()) {
-    const int var = element.vars(v);
-    const Domain var_domain = context->DomainOf(var);
-    const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
+  for (const int64_t v : index_var_domain.Values()) {
+    const int64_t index_value = AffineExpressionValueAt(index, v);
+    DCHECK_GE(index_value, 0);
+    DCHECK_LT(index_value, element.exprs_size());
+    const int index_lit = context->GetOrCreateVarValueEncoding(index_var, v);
     exactly_one->add_literals(index_lit);
 
-    if (var_domain.IsFixed()) {
-      context->AddImplyInDomain(index_lit, target_ref, var_domain);
-    } else {
-      // We make sure we only use positive ref.
-      //
-      // TODO(user): Get rid of this code once we accept affine in element
-      // constraint.
-      ConstraintProto* const ct = context->working_model->add_constraints();
-      ct->add_enforcement_literal(index_lit);
-      if (RefIsPositive(var)) {
-        ct->mutable_linear()->add_vars(var);
-        ct->mutable_linear()->add_coeffs(1);
-      } else {
-        ct->mutable_linear()->add_vars(NegatedRef(var));
-        ct->mutable_linear()->add_coeffs(-1);
-      }
-      if (RefIsPositive(target_ref)) {
-        ct->mutable_linear()->add_vars(target_ref);
-        ct->mutable_linear()->add_coeffs(-1);
-      } else {
-        ct->mutable_linear()->add_vars(NegatedRef(target_ref));
-        ct->mutable_linear()->add_coeffs(1);
-      }
-      ct->mutable_linear()->add_domain(0);
-      ct->mutable_linear()->add_domain(0);
+    ConstraintProto* const imply = context->working_model->add_constraints();
+    imply->add_enforcement_literal(index_lit);
+    imply->mutable_linear()->add_domain(0);
+    imply->mutable_linear()->add_domain(0);
+    AddLinearExpressionToLinearConstraint(target, -1, imply->mutable_linear());
+    AddLinearExpressionToLinearConstraint(ct->element().exprs(index_value), 1,
+                                          imply->mutable_linear());
+    context->CanonicalizeLinearConstraint(imply);
 
-      // Note that this should have been checked at model validation.
-      DCHECK(!PossibleIntegerOverflow(*context->working_model,
-                                      ct->mutable_linear()->vars(),
-                                      ct->mutable_linear()->coeffs()))
-          << google::protobuf::ShortFormat(*ct);
-    }
+    // Note that this should have been checked at model validation.
+    DCHECK(!PossibleIntegerOverflow(*context->working_model,
+                                    imply->mutable_linear()->vars(),
+                                    imply->mutable_linear()->coeffs()))
+        << google::protobuf::ShortFormat(*imply);
   }
 
   context->UpdateRuleStats("element: expanded");
@@ -936,68 +908,53 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context) {
 void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   const ElementConstraintProto& element = ct->element();
 
-  const int index_ref = element.index();
-  const int target_ref = element.target();
-  const int size = element.vars_size();
+  const LinearExpressionProto& index = element.linear_index();
+  const LinearExpressionProto& target = element.linear_target();
+  const int size = element.exprs_size();
 
   // Reduce the domain of the index to be compatible with the array of
   // variables. Note that the element constraint is 0 based.
-  if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
+  if (!context->IntersectDomainWith(index, Domain(0, size - 1))) {
     VLOG(1) << "Empty domain for the index variable in ExpandElement()";
     return;
   }
 
-  // Special case when index = target.
-  if (index_ref == target_ref) {
-    ExpandElementWithTargetEqualIndex(ct, context);
+  if (context->IsFixed(index)) {
+    ConstraintProto* const eq = context->working_model->add_constraints();
+    eq->mutable_linear()->add_domain(0);
+    eq->mutable_linear()->add_domain(0);
+    AddLinearExpressionToLinearConstraint(target, 1, eq->mutable_linear());
+    AddLinearExpressionToLinearConstraint(
+        ct->element().exprs(context->FixedValue(index)), -1,
+        eq->mutable_linear());
+    context->CanonicalizeLinearConstraint(eq);
+    context->UpdateRuleStats("element: expanded with fixed index");
+    ct->Clear();
     return;
   }
 
-  // Reduces the domain of the index and the target.
+  // Special case when index.var = target.var.
+  if (index.vars_size() == 1 && target.vars_size() == 1 &&
+      index.vars(0) == target.vars(0)) {
+    ExpandElementWhenTargetShareVarWithIndex(ct, context);
+    return;
+  }
+
+  // Checks if all elements are constant.
   bool all_constants = true;
-  std::vector<int64_t> valid_indices;
-  const Domain index_domain = context->DomainOf(index_ref);
-  const Domain target_domain = context->DomainOf(target_ref);
-  Domain reached_domain;
-  for (const int64_t v : index_domain.Values()) {
-    const Domain var_domain = context->DomainOf(element.vars(v));
-    if (var_domain.IntersectionWith(target_domain).IsEmpty()) continue;
-
-    valid_indices.push_back(v);
-    reached_domain = reached_domain.UnionWith(var_domain);
-    if (var_domain.Min() != var_domain.Max()) {
+  for (const int64_t v : context->DomainOf(index.vars(0)).Values()) {
+    const int64_t index_value = AffineExpressionValueAt(index, v);
+    if (!context->IsFixed(element.exprs(index_value))) {
       all_constants = false;
+      break;
     }
-  }
-
-  if (valid_indices.size() < index_domain.Size()) {
-    if (!context->IntersectDomainWith(index_ref,
-                                      Domain::FromValues(valid_indices))) {
-      VLOG(1) << "No compatible variable domains in ExpandElement()";
-      return;
-    }
-
-    context->UpdateRuleStats("element: reduced index domain");
-  }
-
-  // We know the target_domain is not empty as this would have triggered the
-  // above check.
-  bool target_domain_changed = false;
-  if (!context->IntersectDomainWith(target_ref, reached_domain,
-                                    &target_domain_changed)) {
-    return;
-  }
-
-  if (target_domain_changed) {
-    context->UpdateRuleStats("element: reduced target domain");
   }
 
   if (all_constants) {
     ExpandConstantArrayElement(ct, context);
-    return;
+  } else {
+    ExpandVariableElement(ct, context);
   }
-
-  ExpandVariableElement(ct, context);
 }
 
 // Adds clauses so that literals[i] true <=> encoding[values[i]] true.
@@ -1768,7 +1725,8 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
     }
   }
 
-  VLOG(2) << "Table compression" << " var=" << vars.size()
+  VLOG(2) << "Table compression"
+          << " var=" << vars.size()
           << " cost=" << domain_sizes.size() - vars.size()
           << " tuples= " << num_tuples_before_compression << " -> "
           << num_tuples_after_first_compression << " -> "

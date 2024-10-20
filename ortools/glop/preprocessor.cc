@@ -422,8 +422,8 @@ bool EmptyColumnPreprocessor::Run(LinearProgram* lp) {
         if (!IsFinite(value)) {
           VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, empty column " << col
                   << " has a minimization cost of " << objective_coefficient
-                  << " and bounds" << " [" << lower_bound << "," << upper_bound
-                  << "]";
+                  << " and bounds"
+                  << " [" << lower_bound << "," << upper_bound << "]";
           status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
           return false;
         }

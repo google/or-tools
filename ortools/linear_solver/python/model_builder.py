@@ -1599,11 +1599,31 @@ class Model:
         return self.__helper.import_from_mps_file(mps_file)
 
     def import_from_lp_string(self, lp_string: str) -> bool:
-        """Reads a model from a LP string."""
+        """Reads a model from a LP string.
+
+        Note that this code is very limited, and will not support any real lp.
+        It is only intented to be use to parse test lp problems.
+
+        Args:
+          lp_string: The LP string to import.
+
+        Returns:
+          True if the import was successful.
+        """
         return self.__helper.import_from_lp_string(lp_string)
 
     def import_from_lp_file(self, lp_file: str) -> bool:
-        """Reads a model from a .lp file."""
+        """Reads a model from a .lp file.
+
+        Note that this code is very limited, and will not support any real lp.
+        It is only intented to be use to parse test lp problems.
+
+        Args:
+          lp_file: The LP file to import.
+
+        Returns:
+          True if the import was successful.
+        """
         return self.__helper.import_from_lp_file(lp_file)
 
     def import_from_proto_file(self, proto_file: str) -> bool:

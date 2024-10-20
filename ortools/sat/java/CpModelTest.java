@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.util.Domain;
 import java.util.ArrayList;
@@ -221,6 +222,125 @@ public final class CpModelTest {
     final Literal y = model.newBoolVar("y").not();
 
     model.addEquality(x, y);
+  }
+
+  @Test
+  public void testCpModelAddElement() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newIntVar(0, 10, "x");
+    final IntVar y = model.newIntVar(0, 10, "y");
+    final IntVar z = model.newIntVar(0, 10, "z");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(z, new IntVar[] {x, y}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprsCount()).isEqualTo(2);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(0).getVars(0)).isEqualTo(0);
+    assertThat(ct.getExprs(0).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVars(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(3);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+  }
+
+  @Test
+  public void testCpModelAddLinearArgumentElement() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newIntVar(0, 10, "x");
+    final IntVar y = model.newIntVar(0, 10, "y");
+    final IntVar z = model.newIntVar(0, 10, "z");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(z, new LinearArgument[] {x, y}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprsCount()).isEqualTo(2);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(0).getVars(0)).isEqualTo(0);
+    assertThat(ct.getExprs(0).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVars(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(3);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+  }
+
+  @Test
+  public void testCpModelAddExprElement() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newIntVar(0, 10, "x");
+    final IntVar y = model.newIntVar(0, 10, "y");
+    final IntVar z = model.newIntVar(0, 10, "z");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(LinearExpr.newBuilder().addTerm(z, 2).add(-1),
+        new LinearArgument[] {LinearExpr.constant(3), x, LinearExpr.affine(y, -1, 5)}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getOffset()).isEqualTo(-1);
+    assertThat(ct.getExprsCount()).isEqualTo(3);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(0).getOffset()).isEqualTo(3);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVars(0)).isEqualTo(0);
+    assertThat(ct.getExprs(1).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprs(2).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(2).getVars(0)).isEqualTo(1);
+    assertThat(ct.getExprs(2).getCoeffs(0)).isEqualTo(-1);
+    assertThat(ct.getExprs(2).getOffset()).isEqualTo(5);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(3);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+  }
+
+  @Test
+  public void testCpModelAddConstantElement() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar z = model.newIntVar(0, 10, "x");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(LinearExpr.newBuilder().addTerm(z, 2).add(-1), new long[] {3, 5, -7, 2}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(0);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getOffset()).isEqualTo(-1);
+    assertThat(ct.getExprsCount()).isEqualTo(4);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(0).getOffset()).isEqualTo(3);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(1).getOffset()).isEqualTo(5);
+    assertThat(ct.getExprs(2).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(2).getOffset()).isEqualTo(-7);
+    assertThat(ct.getExprs(3).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(3).getOffset()).isEqualTo(2);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getOffset()).isEqualTo(0);
   }
 
   @Test

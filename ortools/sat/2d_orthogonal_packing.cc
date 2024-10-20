@@ -70,8 +70,8 @@ std::optional<std::pair<int, int>> FindPairwiseConflict(
     absl::Span<const IntegerValue> sizes_x,
     absl::Span<const IntegerValue> sizes_y,
     std::pair<IntegerValue, IntegerValue> bounding_box_size,
-    const std::vector<int>& index_by_decreasing_x_size,
-    const std::vector<int>& index_by_decreasing_y_size) {
+    absl::Span<const int> index_by_decreasing_x_size,
+    absl::Span<const int> index_by_decreasing_y_size) {
   // Look for pairwise incompatible pairs by using the logic such conflict can
   // only happen between a "tall" item a "wide" item.
   int x_idx = 0;

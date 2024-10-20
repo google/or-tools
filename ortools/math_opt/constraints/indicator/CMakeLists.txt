@@ -26,3 +26,21 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   ${PROJECT_NAMESPACE}::math_opt_proto)
 #install(TARGETS ${NAME} EXPORT ${PROJECT_NAME}Targets)
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        math_opt_constraints_indicator_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        #benchmark::benchmark
+        GTest::gmock
+        GTest::gtest_main
+    )
+  endforeach()
+endif()

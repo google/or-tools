@@ -14,7 +14,10 @@
 # Home of constraint solver constraint_solver
 
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -53,10 +56,10 @@ cc_proto_library(
     deps = [":search_limit_proto"],
 )
 
-# java_proto_library(
-#     name = "search_limit_java_proto",
-#     deps = [":search_limit_proto"],
-# )
+java_proto_library(
+    name = "search_limit_java_proto",
+    deps = [":search_limit_proto"],
+)
 
 proto_library(
     name = "demon_profiler_proto",
@@ -78,10 +81,10 @@ cc_proto_library(
     deps = [":search_stats_proto"],
 )
 
-# java_proto_library(
-#     name = "search_stats_java_proto",
-#     deps = [":search_stats_proto"],
-# )
+java_proto_library(
+    name = "search_stats_java_proto",
+    deps = [":search_stats_proto"],
+)
 
 proto_library(
     name = "solver_parameters_proto",
@@ -90,37 +93,55 @@ proto_library(
 
 cc_proto_library(
     name = "solver_parameters_cc_proto",
-    deps = ["solver_parameters_proto"],
+    deps = [":solver_parameters_proto"],
 )
 
-# java_proto_library(
-#     name = "solver_parameters_java_proto",
-#     deps = [":solver_parameters_proto"],
-# )
+java_proto_library(
+    name = "solver_parameters_java_proto",
+    deps = [":solver_parameters_proto"],
+)
 
-#py_proto_library(
-#    name = "assignment_py_pb2",
-#    deps = [":assignment_proto"],
-#)
+py_proto_library(
+    name = "assignment_py_pb2",
+    deps = [":assignment_proto"],
+)
 
-#py_proto_library(
-#    name = "search_limit_py_pb2",
-#    deps = [":search_limit_proto"],
-#)
+py_proto_library(
+    name = "search_limit_py_pb2",
+    deps = [":search_limit_proto"],
+)
 
-#py_proto_library(
-#    name = "demon_profiler_py_pb2",
-#    deps = [":demon_profiler_proto"],
-#)
+py_proto_library(
+    name = "demon_profiler_py_pb2",
+    deps = [":demon_profiler_proto"],
+)
 
-#py_proto_library(
-#    name = "solver_parameters_py_pb2",
-#    deps = [":solver_parameters_proto"],
-#)
+py_proto_library(
+    name = "search_stats_py_pb2",
+    deps = [":search_stats_proto"],
+)
+
+py_proto_library(
+    name = "solver_parameters_py_pb2",
+    deps = [":solver_parameters_proto"],
+)
+
+py_library(
+    name = "constraint_solver_py_pb2",
+    deps = [
+        ":assignment_py_pb2",
+        ":demon_profiler_py_pb2",
+        ":search_limit_py_pb2",
+        ":search_stats_py_pb2",
+        ":solver_parameters_py_pb2",
+    ],
+)
 
 # ----- Constraint Programming core engine -----
 
 # This is the main library.
+# TODO(user): split this monolithic library into independent components.
+# Do the same for others.
 cc_library(
     name = "cp",
     srcs = [
@@ -165,28 +186,19 @@ cc_library(
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
         "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:recordio",
-        "//ortools/base:sysinfo",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
-        #        "//zlib:zlibonly",
         "//ortools/base:bitmap",
+        "//ortools/base:file",
+        "//ortools/base:int_type",
         "//ortools/base:intops",
-        "//ortools/base:strong_vector",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
-        "//ortools/base:stl_util",
-        #        "//util/gzip:gzipstring",
-        "//ortools/base:hash",
-        #        "//util/hash:jenkins",
-        #        "//util/math:fastmath",
         "//ortools/base:mathutil",
+        "//ortools/base:recordio",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/base:sysinfo",
+        "//ortools/base:timer",
+        "//ortools/base:types",
         "//ortools/graph:hamiltonian_path",
         "//ortools/util:bitset",
         "//ortools/util:cached_log",
@@ -197,11 +209,19 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "//ortools/util:string_array",
         "//ortools/util:tuple_set",
-        #        "@com_google_re2//:re2",
-        "@com_google_absl//absl/status",
-        #        "//util/textprogressbar",
-        "//ortools/base:timer",
-        #        "//util/zippy",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
     ],
 )

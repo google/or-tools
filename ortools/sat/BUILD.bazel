@@ -18,6 +18,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -148,7 +149,9 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":symmetry_util",
         ":util",
+        "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/base:stl_util",
@@ -410,6 +413,7 @@ cc_library(
         ":intervals",
         ":lb_tree_search",
         ":linear_constraint",
+        ":linear_constraint_manager",
         ":linear_model",
         ":linear_programming_constraint",
         ":linear_relaxation",
@@ -429,9 +433,11 @@ cc_library(
         ":simplification",
         ":stat_tables",
         ":subsolver",
+        ":symmetry_util",
         ":synchronization",
         ":util",
         ":work_assignment",
+        "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
@@ -1284,6 +1290,7 @@ cc_library(
     srcs = ["symmetry_util.cc"],
     hdrs = ["symmetry_util.h"],
     deps = [
+        ":cp_model_cc_proto",
         "//ortools/algorithms:dynamic_partition",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
@@ -1301,6 +1308,7 @@ cc_test(
         ":symmetry_util",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -2143,6 +2151,7 @@ cc_library(
         ":integer_expr",
         ":linear_constraint",
         ":linear_constraint_manager",
+        ":linear_propagation",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -2162,16 +2171,19 @@ cc_library(
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_data_utils",
         "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse_column",
+        "//ortools/lp_data:sparse",
         "//ortools/util:bitset",
         "//ortools/util:rev",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -2190,7 +2202,6 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:strong_vector",
-        "//ortools/glop:revised_simplex",
         "//ortools/glop:variables_info",
         "//ortools/lp_data:base",
         "//ortools/util:logging",
@@ -2199,10 +2210,11 @@ cc_library(
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -3025,7 +3037,6 @@ cc_library(
         ":diffn_util",
         ":integer",
         ":linear_constraint_manager",
-        ":linear_programming_constraint",
         ":model",
         ":presolve_context",
         ":rins",
@@ -3046,6 +3057,7 @@ cc_library(
         "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",
@@ -3371,8 +3383,8 @@ cc_library(
     hdrs = ["inclusion.h"],
     deps = [
         "//ortools/base",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -3421,6 +3433,26 @@ cc_library(
 )
 
 cc_test(
+    name = "work_assignment_test",
+    srcs = ["work_assignment_test.cc"],
+    deps = [
+        ":cp_model",
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_loader",
+        ":cp_model_solver",
+        ":integer",
+        ":model",
+        ":sat_parameters_cc_proto",
+        ":synchronization",
+        ":work_assignment",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_test(
     name = "inclusion_test",
     size = "small",
     srcs = ["inclusion_test.cc"],
@@ -3428,6 +3460,7 @@ cc_test(
         ":inclusion",
         ":util",
         "//ortools/base:gmock_main",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/types:span",
     ],

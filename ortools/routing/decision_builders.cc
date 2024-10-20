@@ -677,6 +677,7 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
   explicit RestoreDimensionValuesForUnchangedRoutes(RoutingModel* model)
       : model_(model) {
     model_->AddAtSolutionCallback([this]() { AtSolution(); });
+    model_->AddRestoreDimensionValuesResetCallback([this]() { Reset(); });
     next_last_value_.resize(model_->Nexts().size(), -1);
   }
 
@@ -687,6 +688,8 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
     s->SaveAndSetValue(&must_return_decision_, false);
     return MakeDecision(s);
   }
+
+  void Reset() { next_last_value_.assign(model_->Nexts().size(), -1); }
 
  private:
   // Initialize() is lazy to make sure all dimensions have been instantiated

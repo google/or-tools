@@ -89,6 +89,7 @@ TEST(RandomSearchTest, CheckSeed) {
       params.set_search_branching(SatParameters::FIXED_SEARCH);
       params.set_use_absl_random(false);  // Otherwise, each solve changes.
       params.set_random_seed(0);
+      params.set_num_workers(1);
       const CpSolverResponse response =
           SolveWithParameters(model_proto, params);
       for (int i = 0; i < kSize; ++i) {
@@ -122,7 +123,7 @@ TEST(BasicFixedSearchBehaviorTest, Default) {
   )pb");
   Model model;
   model.Add(NewSatParameters(
-      "cp_model_presolve:false,search_branching:FIXED_SEARCH"));
+      "cp_model_presolve:false,search_branching:FIXED_SEARCH,num_workers:1"));
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_THAT(response.solution(), testing::ElementsAre(4, 3, 0, 5, 6));
@@ -154,7 +155,7 @@ TEST(BasicFixedSearchBehaviorTest, ReverseOrder) {
   )pb");
   Model model;
   model.Add(NewSatParameters(
-      "cp_model_presolve:false,search_branching:FIXED_SEARCH"));
+      "cp_model_presolve:false,search_branching:FIXED_SEARCH,num_workers:1"));
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_THAT(response.solution(), testing::ElementsAre(6, 5, 0, 4, 3));
@@ -186,7 +187,7 @@ TEST(BasicFixedSearchBehaviorTest, MinDomainSize) {
   )pb");
   Model model;
   model.Add(NewSatParameters(
-      "cp_model_presolve:false,search_branching:FIXED_SEARCH"));
+      "cp_model_presolve:false,search_branching:FIXED_SEARCH,num_workers:1"));
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_THAT(response.solution(), testing::ElementsAre(10, 7, 6, 5, 9));
@@ -211,7 +212,7 @@ TEST(BasicFixedSearchBehaviorTest, WithTransformation1) {
   )pb");
   Model model;
   model.Add(NewSatParameters(
-      "cp_model_presolve:false,search_branching:FIXED_SEARCH"));
+      "cp_model_presolve:false,search_branching:FIXED_SEARCH,num_workers:1"));
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_THAT(response.solution(), testing::ElementsAre(3, 4));
@@ -236,7 +237,7 @@ TEST(BasicFixedSearchBehaviorTest, WithTransformation2) {
   )pb");
   Model model;
   model.Add(NewSatParameters(
-      "cp_model_presolve:false,search_branching:FIXED_SEARCH"));
+      "cp_model_presolve:false,search_branching:FIXED_SEARCH,num_workers:1"));
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_THAT(response.solution(), testing::ElementsAre(6, 7));
@@ -262,6 +263,7 @@ TEST(BasicFixedSearchBehaviorTest, MedianTest) {
   SatParameters params;
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_search_branching(SatParameters::FIXED_SEARCH);
+  params.set_num_workers(1);
   const CpSolverResponse response = SolveWithParameters(model_proto, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_THAT(response.solution(), testing::ElementsAre(4, 6));
@@ -286,6 +288,7 @@ TEST(BasicFixedSearchBehaviorTest, MedianTest2) {
   SatParameters params;
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_search_branching(SatParameters::FIXED_SEARCH);
+  params.set_num_workers(1);
   const CpSolverResponse response = SolveWithParameters(model_proto, params);
 
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);

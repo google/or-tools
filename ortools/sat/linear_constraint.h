@@ -274,6 +274,11 @@ class LinearConstraintBuilder {
   LinearConstraint Build();
   LinearConstraint BuildConstraint(IntegerValue lb, IntegerValue ub);
 
+  // Similar to BuildConstraint() but make sure we don't overflow while we merge
+  // terms referring to the same variables.
+  bool BuildIntoConstraintAndCheckOverflow(IntegerValue lb, IntegerValue ub,
+                                           LinearConstraint* ct);
+
   // Returns the linear expression part of the constraint only, without the
   // bounds.
   LinearExpression BuildExpression();
@@ -396,6 +401,41 @@ inline void CleanTermsAndFillConstraint(
     ++new_size;
   }
   output->resize(new_size);
+}
+
+inline bool MergePositiveVariableTermsAndCheckForOverflow(
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    LinearConstraint* output) {
+  // Sort and add coeff of duplicate variables. Note that a variable and
+  // its negation will appear one after another in the natural order.
+  int new_size = 0;
+  output->resize(terms->size());
+  std::sort(terms->begin(), terms->end());
+  IntegerVariable previous_var = kNoIntegerVariable;
+  int64_t current_coeff = 0;
+  for (const std::pair<IntegerVariable, IntegerValue>& entry : *terms) {
+    DCHECK(VariableIsPositive(entry.first));
+    if (previous_var == entry.first) {
+      if (AddIntoOverflow(entry.second.value(), &current_coeff)) {
+        return false;
+      }
+    } else {
+      if (current_coeff != 0) {
+        output->vars[new_size] = previous_var;
+        output->coeffs[new_size] = current_coeff;
+        ++new_size;
+      }
+      previous_var = entry.first;
+      current_coeff = entry.second.value();
+    }
+  }
+  if (current_coeff != 0) {
+    output->vars[new_size] = previous_var;
+    output->coeffs[new_size] = current_coeff;
+    ++new_size;
+  }
+  output->resize(new_size);
+  return true;
 }
 
 }  // namespace sat

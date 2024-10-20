@@ -136,7 +136,7 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   std::vector<int> indices;
   std::vector<double> timing;
   to_run.reserve(batch_size);
-  ThreadPool pool("DeterministicLoop", num_threads);
+  ThreadPool pool(num_threads);
   pool.StartWorkers();
   for (int batch_index = 0;; ++batch_index) {
     VLOG(2) << "Starting deterministic batch of size " << batch_size;
@@ -207,7 +207,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     return num_in_flight < num_threads;
   };
 
-  ThreadPool pool("NonDeterministicLoop", num_threads);
+  ThreadPool pool(num_threads);
   pool.StartWorkers();
 
   // The lambda below are using little space, but there is no reason

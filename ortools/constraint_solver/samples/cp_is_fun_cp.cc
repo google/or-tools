@@ -119,11 +119,16 @@ void CPIsFunCp() {
       letters, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
   while (solver.NextSolution()) {
-    LOG(INFO) << "C=" << c->Value() << " " << "P=" << p->Value() << " "
-              << "I=" << i->Value() << " " << "S=" << s->Value() << " "
-              << "F=" << f->Value() << " " << "U=" << u->Value() << " "
-              << "N=" << n->Value() << " " << "T=" << t->Value() << " "
-              << "R=" << r->Value() << " " << "E=" << e->Value();
+    LOG(INFO) << "C=" << c->Value() << " "
+              << "P=" << p->Value() << " "
+              << "I=" << i->Value() << " "
+              << "S=" << s->Value() << " "
+              << "F=" << f->Value() << " "
+              << "U=" << u->Value() << " "
+              << "N=" << n->Value() << " "
+              << "T=" << t->Value() << " "
+              << "R=" << r->Value() << " "
+              << "E=" << e->Value();
 
     // Is CP + IS + FUN = TRUE?
     CHECK_EQ(p->Value() + s->Value() + n->Value() +

@@ -51,12 +51,14 @@ void Scale(LinearProgram* lp, SparseMatrixScaler* scaler);
 // sense to have a single place where all the scaling formulas are kept.
 class LpScalingHelper {
  public:
+  // Clear all scaling coefficients.
+  void Clear();
+
   // Scale the given LP.
   void Scale(LinearProgram* lp);
   void Scale(const GlopParameters& params, LinearProgram* lp);
-
-  // Clear all scaling coefficients.
-  void Clear();
+  void ConfigureFromFactors(absl::Span<const double> row_factors,
+                            absl::Span<const double> col_factors);
 
   // Transforms value from unscaled domain to the scaled one.
   Fractional ScaleVariableValue(ColIndex col, Fractional value) const;
@@ -68,6 +70,7 @@ class LpScalingHelper {
   Fractional UnscaleVariableValue(ColIndex col, Fractional value) const;
   Fractional UnscaleReducedCost(ColIndex col, Fractional value) const;
   Fractional UnscaleDualValue(RowIndex row, Fractional value) const;
+  Fractional UnscaleLeftSolveValue(RowIndex row, Fractional value) const;
   Fractional UnscaleConstraintActivity(RowIndex row, Fractional value) const;
 
   // Unscale a row vector v such that v.B = unit_row. When basis_col is the
@@ -83,18 +86,37 @@ class LpScalingHelper {
   // to be in the scaled domain.
   Fractional VariableScalingFactor(ColIndex col) const;
 
-  // Visible for testing. All objective coefficients of the original LP where
-  // multiplied by this factor. Nothing else changed.
-  Fractional BoundsScalingFactor() const { return bound_scaling_factor_; }
+  // Same as VariableScalingFactor() except that ColIndex greater than the
+  // number of columns will be interpreted as "slack" variable whose scaling
+  // factor depends on the row.
+  Fractional VariableScalingFactorWithSlack(ColIndex col) const;
+
+  // Extra scaling function, to scale objective/bounds.
+  void AverageCostScaling(DenseRow* objective);
+  void ContainOneBoundScaling(DenseRow* upper_bounds, DenseRow* lower_bounds);
 
   // Visible for testing. All variable/constraint bounds of the original LP
   // where multiplied by this factor. Nothing else changed.
+  Fractional BoundsScalingFactor() const { return bound_scaling_factor_; }
+
+  // Visible for testing. All objective coefficients of the original LP where
+  // multiplied by this factor. Nothing else changed.
   Fractional ObjectiveScalingFactor() const {
     return objective_scaling_factor_;
   }
 
  private:
-  SparseMatrixScaler scaler_;
+  Fractional RowUnscalingFactor(RowIndex row) const {
+    return matrix_is_scaled_ ? row_unscaling_factors_[row] : 1.0;
+  }
+  Fractional ColUnscalingFactor(ColIndex col) const {
+    return matrix_is_scaled_ ? col_unscaling_factors_[col] : 1.0;
+  }
+
+  bool matrix_is_scaled_ = false;
+  DenseColumn row_unscaling_factors_;
+  DenseRow col_unscaling_factors_;
+
   Fractional bound_scaling_factor_ = 1.0;
   Fractional objective_scaling_factor_ = 1.0;
 };

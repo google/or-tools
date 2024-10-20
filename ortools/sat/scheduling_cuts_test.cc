@@ -500,7 +500,7 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
       kMinIntegerValue, kMinIntegerValue));
 }
 
-int64_t ExactMakespan(const std::vector<int>& sizes, std::vector<int>& demands,
+int64_t ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
                       int capacity) {
   const int64_t kHorizon = 1000;
   CpModelBuilder builder;

@@ -63,6 +63,9 @@ struct CutTerm {
   bool IsBoolean() const { return bound_diff == 1; }
   bool IsSimple() const { return expr_coeffs[1] == 0; }
   bool HasRelevantLpValue() const { return lp_value > 1e-2; }
+  bool IsFractional() const {
+    return std::abs(lp_value - std::round(lp_value)) > 1e-4;
+  }
   double LpDistToMaxValue() const {
     return static_cast<double>(bound_diff.value()) - lp_value;
   }

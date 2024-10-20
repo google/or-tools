@@ -26,6 +26,7 @@
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/index_manager.h"
@@ -216,7 +217,7 @@ void DisplayPlan(const RoutingIndexManager& manager,
 
   // Display actual output for each vehicle.
   const auto str_append_variable =
-      [&plan, &plan_output](const IntVar* var, const std::string& name) {
+      [&plan, &plan_output](const IntVar* var, absl::string_view name) {
         if (var == nullptr || !plan.Contains(var)) return;
         const int64_t var_min = plan.Min(var);
         const int64_t var_max = plan.Max(var);

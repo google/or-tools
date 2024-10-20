@@ -19,6 +19,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -74,6 +75,10 @@ void GetSchreierVectorAndOrbit(
 std::vector<int> TracePoint(
     int point, absl::Span<const int> schrier_vector,
     absl::Span<const std::unique_ptr<SparsePermutation>> generators);
+
+// Creates a SparsePermutation on [0, n) from its proto representation.
+std::unique_ptr<SparsePermutation> CreateSparsePermutationFromProto(
+    int n, const SparsePermutationProto& proto);
 
 // Given the generators for a permutation group of [0, n-1], update it to
 // a set of generators of the group stabilizing the given element.

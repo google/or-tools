@@ -663,7 +663,7 @@ void AppendTasksFromPath(absl::Span<const int64_t> path,
   }
 }
 
-void FillTravelBoundsOfVehicle(int vehicle, const std::vector<int64_t>& path,
+void FillTravelBoundsOfVehicle(int vehicle, absl::Span<const int64_t> path,
                                const RoutingDimension& dimension,
                                TravelBounds* travel_bounds) {
   // Fill path and min/max/pre/post travel bounds.
