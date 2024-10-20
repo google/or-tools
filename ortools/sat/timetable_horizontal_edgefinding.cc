@@ -37,7 +37,23 @@ HorizontallyElasticOverloadChecker::HorizontallyElasticOverloadChecker(
       demands_(demands),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {
   task_types_.resize(num_tasks_);
-  profile_events_.reserve(4 * num_tasks_ + 1);
+
+  // Initialize the profile with dummy events for each task/event + a sentinel
+  // to simplify the propagator's logic. The events are updated each time 
+  // OverloadCheckerPass is called.
+  //
+  // TODO: This datastructure contains everything we need to compute the
+  // "classic" profile used in Time-Tabling.
+  for (int i = 0; i < num_tasks_; i++) {
+    if (helper_->IsPresent(i) && demands_->DemandMin(i) > 0) {
+      profile_events_.push_back({i, 0, 0, ProfileEventType::kStartMin});
+      profile_events_.push_back({i, 0, 0, ProfileEventType::kStartMax});
+      profile_events_.push_back({i, 0, 0, ProfileEventType::kEndMin});
+      profile_events_.push_back({i, 0, 0, ProfileEventType::kEndMax});
+    }
+  }
+  profile_events_.push_back(
+      {-1, kMaxIntegerValue, 0, ProfileEventType::kSentinel});
 }
 
 void HorizontallyElasticOverloadChecker::RegisterWith(
@@ -61,32 +77,40 @@ bool HorizontallyElasticOverloadChecker::Propagate() {
 }
 
 bool HorizontallyElasticOverloadChecker::OverloadCheckerPass() {
-  // Prepate the profile events which will be used during ScheduleTasks to
-  // dynamically compute the profile. The events are valid for the entire
-  // function and do not need to be recomputed.
+  // Update the events and re-sort them incrementally. The updated events are
+  // used in all subsequent calls of ScheduleTasks to dynamically compute the 
+  // profile. The events are valid for the entire function and do not need to 
+  // be recomputed.
   //
-  // TODO: This datastructure contains everything we need to compute the
-  // "classic" profile used in Time-Tabling.
-  profile_events_.clear();
-  for (int i = 0; i < num_tasks_; i++) {
-    if (helper_->IsPresent(i) && demands_->DemandMin(i) > 0) {
-      profile_events_.emplace_back(i, helper_->StartMin(i),
-                                   demands_->DemandMin(i),
-                                   ProfileEventType::kStartMin);
-      profile_events_.emplace_back(i, helper_->StartMax(i),
-                                   demands_->DemandMin(i),
-                                   ProfileEventType::kStartMax);
-      profile_events_.emplace_back(i, helper_->EndMin(i),
-                                   demands_->DemandMin(i),
-                                   ProfileEventType::kEndMin);
-      profile_events_.emplace_back(i, helper_->EndMax(i),
-                                   demands_->DemandMin(i),
-                                   ProfileEventType::kEndMax);
+  // Note that we do not iterate over the last event which should ALWAYS
+  // be the sentinel.
+  for (int i = 0; i < profile_events_.size() - 1; ++i) { 
+    int t = profile_events_[i].task_id;
+    if (!helper_->IsPresent(t)) {
+      profile_events_[i].height = 0;  // effectively ignore the event
+      profile_events_[i].time = kMaxIntegerValue;  // reduce sorting effort
+      continue;
+    }
+
+    profile_events_[i].height = demands_->DemandMin(t);
+    switch (profile_events_[i].event_type) {
+      case ProfileEventType::kStartMin:
+        profile_events_[i].time = helper_->StartMin(t);
+        break;
+      case ProfileEventType::kStartMax:
+        profile_events_[i].time = helper_->StartMin(t);
+        break;
+      case ProfileEventType::kEndMin:
+        profile_events_[i].time = helper_->StartMin(t);
+        break;
+      case ProfileEventType::kEndMax:
+        profile_events_[i].time = helper_->StartMin(t);
+        break;
+      default:
+        break;
     }
   }
-  profile_events_.emplace_back(-1, kMaxIntegerValue, IntegerValue(0),
-                               ProfileEventType::kSentinel);
-  IncrementalSort(profile_events_.begin(), profile_events_.end());
+  IncrementalSort(profile_events_.begin(), profile_events_.end() - 1);
 
   // Iterate on all the windows [-inf, window_end] where window_end is the end
   // max of a task.
