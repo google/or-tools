@@ -62,12 +62,12 @@ class HorizontallyElasticOverloadChecker : public PropagatorInterface {
   // profile.
   struct ProfileEvent {
     /* const */ int task_id;
-    /* const */ IntegerValue time;
-    /* const */ IntegerValue height;
     /* const */ ProfileEventType event_type;
+    IntegerValue time;
+    IntegerValue height;
 
-    ProfileEvent(int task_id, IntegerValue time, IntegerValue height, ProfileEventType event_type)
-        : task_id(task_id), time(time), height(height), event_type(event_type) {}
+    ProfileEvent(int task_id, ProfileEventType event_type, IntegerValue time, IntegerValue height)
+        : task_id(task_id), event_type(event_type), time(time), height(height) {}
 
     bool operator<(const ProfileEvent& other) const {
       return time < other.time;
