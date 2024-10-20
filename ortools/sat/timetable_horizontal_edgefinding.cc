@@ -39,7 +39,7 @@ HorizontallyElasticOverloadChecker::HorizontallyElasticOverloadChecker(
   task_types_.resize(num_tasks_);
 
   // Initialize the profile with dummy events for each task/event + a sentinel
-  // to simplify the propagator's logic. The events are updated each time 
+  // to simplify the propagator's logic. The events are updated each time
   // OverloadCheckerPass is called.
   //
   // TODO: This datastructure contains everything we need to compute the
@@ -78,13 +78,13 @@ bool HorizontallyElasticOverloadChecker::Propagate() {
 
 bool HorizontallyElasticOverloadChecker::OverloadCheckerPass() {
   // Update the events and re-sort them incrementally. The updated events are
-  // used in all subsequent calls of ScheduleTasks to dynamically compute the 
-  // profile. The events are valid for the entire function and do not need to 
+  // used in all subsequent calls of ScheduleTasks to dynamically compute the
+  // profile. The events are valid for the entire function and do not need to
   // be recomputed.
   //
   // Note that we do not iterate over the last event which should ALWAYS
   // be the sentinel.
-  for (int i = 0; i < profile_events_.size() - 1; ++i) { 
+  for (int i = 0; i < profile_events_.size() - 1; ++i) {
     int t = profile_events_[i].task_id;
     if (!helper_->IsPresent(t)) {
       profile_events_[i].height = 0;  // effectively ignore the event
@@ -180,7 +180,7 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
   IntegerValue demand_max = 0;
 
   while (time < window_end) {
-    // Update the two profile lines demand_req and demand_max by processing 
+    // Update the two profile lines demand_req and demand_max by processing
     // all the events at time. How to process an event depends on its type.
     while (profile_events_[next_event].time == time) {
       const ProfileEvent event = profile_events_[next_event];
@@ -239,21 +239,29 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
 
     // Amount of resource available to potentially place some overload from
     // previous time points.
-    const IntegerValue overload_delta = demand_req - true_capa;
+    const IntegerValue space_for_overload = demand_req - true_capa;
 
-    if (overload_delta > 0) {  // adding overload
-      overload += overload_delta * (next_time - time);
-    } else if (overload_delta < 0 && overload > 0) {  // remove overload
-      const IntegerValue used = std::min(-overload_delta, overload);
-      const IntegerValue removable = used * (next_time - time);
-      if (removable < overload) {
-        overload -= removable;
+    // Update overload by either accumulating new overload (if the space for
+    // overload is negative) or by potentially freeing some of the previously
+    // accumulated overload (if the space is positive).
+    if (space_for_overload < 0) {  // accumulate overload
+      overload -= space_for_overload * (next_time - time);
+    } else if (space_for_overload > 0 && overload > 0) {  // free overload
+      // Maximum amount of overload that could be freed until the next event  
+      const IntegerValue freed_overload =
+          (next_time - time) * std::min(space_for_overload, overload);
+
+      if (freed_overload < overload) {
+        overload -= freed_overload;
       } else {
         // Adjust next_time to indicate that the true "next event" in terms of
         // a change in resource consumption is happening before the next event
         // in the profile. This is important to guarantee that new_window_end
         // is properly adjusted below.
-        next_time = time + (overload + used - 1) / used;  // ceil(overload/used)
+        //
+        // This operation corresponds to:
+        // next_time = time + ceil(overload/freed_overload)
+        next_time = time + (overload + freed_overload - 1) / freed_overload;
         overload = 0;
       }
     }
