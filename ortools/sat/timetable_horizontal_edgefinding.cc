@@ -237,22 +237,22 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
     // used to decide later on how to update new_window_end.
     const IntegerValue capa_used = std::min(demand_req + overload, true_capa);
 
-    // Amount of resource available to potentially place some overload from
-    // previous time points.
-    const IntegerValue space_for_overload = demand_req - true_capa;
+    // Amount of resource available ("space") at each time point until the next
+    // event to potentially place some of the accunulated overload.
+    const IntegerValue space_per_time_unit = demand_req - true_capa;
 
-    // Update overload by either accumulating new overload (if the space for
-    // overload is negative) or by potentially freeing some of the previously
-    // accumulated overload (if the space is positive).
-    if (space_for_overload < 0) {  // accumulate overload
-      overload -= space_for_overload * (next_time - time);
-    } else if (space_for_overload > 0 && overload > 0) {  // free overload
-      // Maximum amount of overload that could be freed until the next event  
-      const IntegerValue freed_overload =
-          (next_time - time) * std::min(space_for_overload, overload);
+    // Update overload by either accumulating new overload (if the space is 
+    // negative) or by potentially freeing some of the previously accumulated
+    // overload (if the space is positive).
+    if (space_per_time_unit < 0) {  // accumulate overload
+      overload -= space_per_time_unit * (next_time - time);
+    } else if (space_per_time_unit > 0 && overload > 0) {  // free overload
+      // Maximum amount of overload that could be freed until the next event.
+      const IntegerValue max_freeable_overload =
+          (next_time - time) * space_per_time_unit;
 
-      if (freed_overload < overload) {
-        overload -= freed_overload;
+      if (max_freeable_overload < overload) {
+        overload -= max_freeable_overload;
       } else {
         // Adjust next_time to indicate that the true "next event" in terms of
         // a change in resource consumption is happening before the next event
@@ -260,8 +260,9 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
         // is properly adjusted below.
         //
         // This operation corresponds to:
-        // next_time = time + ceil(overload/freed_overload)
-        next_time = time + (overload + freed_overload - 1) / freed_overload;
+        // next_time = time + ceil(overload/max_freeable_overload)
+        next_time = time + (overload + max_freeable_overload - 1) /
+                               max_freeable_overload;
         overload = 0;
       }
     }
