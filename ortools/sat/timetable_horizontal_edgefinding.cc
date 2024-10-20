@@ -228,7 +228,6 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
     DCHECK_LT(next_event, profile_events_.size());
 
     IntegerValue next_time = profile_events_[next_event].time;
-    const IntegerValue length = next_time - time;
 
     // The maximum amount of resource that could be consumed if all non-ignored
     // tasks that could be scheduled at the current time were.
@@ -243,10 +242,10 @@ IntegerValue HorizontallyElasticOverloadChecker::ScheduleTasks(
     const IntegerValue overload_delta = demand_req - true_capa;
 
     if (overload_delta > 0) {  // adding overload
-      overload += length * overload_delta;
+      overload += overload_delta * (next_time - time);
     } else if (overload_delta < 0 && overload > 0) {  // remove overload
       const IntegerValue used = std::min(-overload_delta, overload);
-      const IntegerValue removable = used * length;
+      const IntegerValue removable = used * (next_time - time);
       if (removable < overload) {
         overload -= removable;
       } else {
