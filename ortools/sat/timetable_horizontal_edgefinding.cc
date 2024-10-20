@@ -46,14 +46,14 @@ HorizontallyElasticOverloadChecker::HorizontallyElasticOverloadChecker(
   // "classic" profile used in Time-Tabling.
   for (int i = 0; i < num_tasks_; i++) {
     if (helper_->IsPresent(i) && demands_->DemandMin(i) > 0) {
-      profile_events_.push_back({i, 0, 0, ProfileEventType::kStartMin});
-      profile_events_.push_back({i, 0, 0, ProfileEventType::kStartMax});
-      profile_events_.push_back({i, 0, 0, ProfileEventType::kEndMin});
-      profile_events_.push_back({i, 0, 0, ProfileEventType::kEndMax});
+      profile_events_.push_back({i, ProfileEventType::kStartMin, 0, 0});
+      profile_events_.push_back({i, ProfileEventType::kStartMax, 0, 0});
+      profile_events_.push_back({i, ProfileEventType::kEndMin, 0, 0});
+      profile_events_.push_back({i, ProfileEventType::kEndMax, 0, 0});
     }
   }
   profile_events_.push_back(
-      {-1, kMaxIntegerValue, 0, ProfileEventType::kSentinel});
+      {-1, ProfileEventType::kSentinel, kMaxIntegerValue, 0});
 }
 
 void HorizontallyElasticOverloadChecker::RegisterWith(
