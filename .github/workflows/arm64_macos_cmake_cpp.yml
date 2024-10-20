@@ -14,7 +14,7 @@ jobs:
         ]
       fail-fast: false
     name: MacOS • ${{ matrix.cmake.generator }} • C++
-    runs-on: macos-latest # macos arm64 based runner
+    runs-on: macos-latest # macos M1 based runner
     steps:
       - uses: actions/checkout@v4
       - name: Check cmake

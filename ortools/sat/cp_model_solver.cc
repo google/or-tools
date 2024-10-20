@@ -1105,6 +1105,7 @@ class LnsSolver : public SubSolver {
       random_engine_t random(seed);
 
       NeighborhoodGenerator::SolveData data;
+      data.task_id = task_id;
       data.difficulty = generator_->difficulty();
       data.deterministic_limit = generator_->deterministic_limit();
 
@@ -1212,6 +1213,13 @@ class LnsSolver : public SubSolver {
       CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
           helper_->ModelProto(), context.get());
       lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
+
+      // Tricky: we don't want to use the symmetry of the main problem in the
+      // LNS presolved problem ! And currently no code clears/update it.
+      //
+      // TODO(user): Find a cleaner way like clear it as part of the presolve.
+      // Also, do not copy that in the first place.
+      lns_fragment.clear_symmetry();
 
       // Overwrite solution hinting.
       if (neighborhood.delta.has_solution_hint()) {
@@ -1366,7 +1374,7 @@ class LnsSolver : public SubSolver {
         // TODO(user): We could however fix it in the LNS Helper!
         if (data.status == CpSolverStatus::OPTIMAL &&
             !shared_->model_proto.has_symmetry() && !solution_values.empty() &&
-            neighborhood.is_simple &&
+            neighborhood.is_simple && shared_->bounds != nullptr &&
             !neighborhood.variables_that_can_be_fixed_to_local_optimum
                  .empty()) {
           display_lns_info = true;
@@ -1620,7 +1628,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         name_filter.Keep("lb_relax_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
-              helper, name_filter.LastName(), shared->time_limit),
+              helper, name_filter.LastName(), shared->time_limit, shared),
           lns_params, helper, shared));
     }
 
@@ -1660,6 +1668,12 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       if (name_filter.Keep("packing_rectangles_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
+      if (name_filter.Keep("packing_swap_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RectanglesPackingRelaxTwoNeighborhoodsGenerator>(
                 helper, name_filter.LastName()),
             lns_params, helper, shared));
       }
@@ -2379,6 +2393,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Presolved ", CpModelStats(*new_cp_model_proto));
 
+  // Detect the symmetry of the presolved model.
+  // Note that this needs to be done before SharedClasses are created.
+  //
+  // TODO(user): We could actually report a complete feasible hint before this
+  // point. But the proper fix is to report it even before the presolve.
+  if (params.symmetry_level() > 1 && !params.stop_after_presolve() &&
+      !shared_time_limit->LimitReached()) {
+    DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
+  }
+
   // TODO(user): reduce this function size and find a better place for this?
   SharedClasses shared(new_cp_model_proto, model);
 
@@ -2562,10 +2586,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                    shared_response_manager);
   } else {
     TestSolutionHintForFeasibility(*new_cp_model_proto, logger, nullptr);
-  }
-
-  if (params.symmetry_level() > 1) {
-    DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
   }
 
   LoadDebugSolution(*new_cp_model_proto, model);

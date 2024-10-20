@@ -145,7 +145,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
                               absl::Span<const IntegerVariable> vars);
 
   // Add a new linear constraint to this LP.
-  void AddLinearConstraint(LinearConstraint ct);
+  // Return false if we prove infeasibility of the global model.
+  bool AddLinearConstraint(LinearConstraint ct);
 
   // Set the coefficient of the variable in the objective. Calling it twice will
   // overwrite the previous value.
@@ -166,7 +167,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // at the current decision level. We "erase" it when we backtrack over it.
   bool HasSolution() const { return lp_solution_is_set_; }
   double GetSolutionValue(IntegerVariable variable) const;
-  double GetSolutionReducedCost(IntegerVariable variable) const;
   bool SolutionIsInteger() const { return lp_solution_is_integer_; }
 
   // Returns a valid lp lower bound for the current branch, and indicates if
@@ -184,13 +184,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // ReversibleInterface API.
   void SetLevel(int level) override;
 
+  // From outside, the lp should be seen as containing all extended variables.
   int NumVariables() const {
-    return static_cast<int>(integer_variables_.size());
+    return static_cast<int>(extended_integer_variables_.size());
   }
   const std::vector<IntegerVariable>& integer_variables() const {
-    return integer_variables_;
+    return extended_integer_variables_;
   }
-  std::string DimensionString() const { return lp_data_.GetDimensionString(); }
+
+  std::string DimensionString() const;
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
@@ -328,11 +330,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Note that this will loose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multiplier.
-  std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
-      bool take_objective_into_account, bool ignore_trivial_constraints,
+  void IgnoreTrivialConstraintMultipliers(
+      std::vector<std::pair<glop::RowIndex, double>>* lp_multipliers);
+  std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleMultipliers(
       absl::Span<const std::pair<glop::RowIndex, double>> lp_multipliers,
-      IntegerValue* scaling,
-      int64_t overflow_cap = std::numeric_limits<int64_t>::max()) const;
+      bool take_objective_into_account, IntegerValue* scaling) const;
 
   // Can we have an overflow if we scale each coefficients with
   // std::round(std::ldexp(coeff, power)) ?
@@ -408,6 +410,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   absl::Span<const glop::ColIndex> IntegerLpRowCols(glop::RowIndex row) const;
   absl::Span<const IntegerValue> IntegerLpRowCoeffs(glop::RowIndex row) const;
 
+  void ComputeIntegerLpScalingFactors();
+  void FillLpData();
+
+  // For ComputeIntegerLpScalingFactors().
+  std::vector<double> row_factors_;
+  std::vector<double> col_factors_;
+  std::vector<double> col_max_;
+  std::vector<double> col_min_;
+
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
@@ -445,6 +456,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   std::vector<glop::ColIndex> tmp_cols_;
   std::vector<IntegerValue> tmp_coeffs_;
+  std::vector<IntegerVariable> tmp_vars_;
 
   LinearExpression integer_objective_;
   IntegerValue integer_objective_offset_ = IntegerValue(0);
@@ -456,8 +468,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Underlying LP solver API.
   glop::GlopParameters simplex_params_;
   glop::BasisState state_;
-  glop::LinearProgram lp_data_;
+  glop::DenseRow obj_with_slack_;
   glop::RevisedSimplex simplex_;
+
   int64_t next_simplex_iter_ = 500;
 
   // For the scaling.
@@ -479,12 +492,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<glop::RowIndex> tmp_slack_rows_;
   std::vector<std::pair<glop::ColIndex, IntegerValue>> tmp_terms_;
 
-  // Used by AddCGCuts().
+  // Used by ScaleMultipliers().
   std::vector<std::pair<glop::RowIndex, double>> tmp_lp_multipliers_;
+  std::vector<std::pair<glop::RowIndex, double>> tmp_cg_multipliers_;
   std::vector<std::pair<glop::RowIndex, IntegerValue>> tmp_integer_multipliers_;
-
-  // Used by ScaleLpMultiplier().
-  mutable std::vector<std::pair<glop::RowIndex, double>> tmp_cp_multipliers_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
@@ -492,9 +503,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // they can be used as vector indices.
   //
   // TODO(user): This should be util_intops::StrongVector<glop::ColIndex,
-  // IntegerVariable> Except if we have too many LinearProgrammingConstraint.
+  // IntegerVariable>.
   std::vector<IntegerVariable> integer_variables_;
+  std::vector<IntegerVariable> extended_integer_variables_;
   absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
+
+  // This is only used if we use symmetry folding.
+  // Refer to relevant orbit in the LinearConstraintSymmetrizer.
+  std::vector<int> orbit_indices_;
 
   // We need to remember what to optimize if an objective is given, because
   // then we will switch the objective between feasibility and optimization.
@@ -518,6 +534,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   SharedStatistics* shared_stats_;
   SharedResponseManager* shared_response_manager_;
   ModelRandomGenerator* random_;
+  LinearConstraintSymmetrizer* symmetrizer_;
+  LinearPropagator* linear_propagator_;
 
   int watcher_id_;
 

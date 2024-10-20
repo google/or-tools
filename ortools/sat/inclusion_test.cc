@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -28,7 +29,8 @@ namespace {
 
 TEST(InclusionDetectorTest, SymmetricExample) {
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  TimeLimit time_limit;
+  InclusionDetector detector(storage, &time_limit);
   detector.AddPotentialSet(storage.Add({1, 2}));
   detector.AddPotentialSet(storage.Add({1, 3}));
   detector.AddPotentialSet(storage.Add({1, 2, 3}));
@@ -47,7 +49,8 @@ TEST(InclusionDetectorTest, SymmetricExample) {
 // If sets are duplicates, we do not detect both inclusions, but just one.
 TEST(InclusionDetectorTest, DuplicateBehavior) {
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  TimeLimit time_limit;
+  InclusionDetector detector(storage, &time_limit);
   detector.AddPotentialSet(storage.Add({1, 2}));
   detector.AddPotentialSet(storage.Add({1, 2}));
   detector.AddPotentialSet(storage.Add({1, 2}));
@@ -65,7 +68,8 @@ TEST(InclusionDetectorTest, DuplicateBehavior) {
 
 TEST(InclusionDetectorTest, NonSymmetricExample) {
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  TimeLimit time_limit;
+  InclusionDetector detector(storage, &time_limit);
 
   // Index 0, 1, 2
   detector.AddPotentialSubset(storage.Add({1, 2}));
@@ -119,7 +123,8 @@ TEST(InclusionDetectorTest, NonSymmetricExample) {
 
 TEST(InclusionDetectorTest, InclusionChain) {
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  TimeLimit time_limit;
+  InclusionDetector detector(storage, &time_limit);
   detector.AddPotentialSet(storage.Add({1}));
   detector.AddPotentialSet(storage.Add({1, 2}));
   detector.AddPotentialSet(storage.Add({1, 2, 3}));
@@ -147,7 +152,8 @@ TEST(InclusionDetectorTest, InclusionChain) {
 TEST(InclusionDetectorTest, RandomTest) {
   absl::BitGen random;
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage);
+  TimeLimit time_limit;
+  InclusionDetector detector(storage, &time_limit);
 
   std::vector<int> temp;
   for (int i = 0; i < 1000; ++i) {

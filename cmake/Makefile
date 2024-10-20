@@ -632,7 +632,7 @@ TOOLCHAIN_STAGES := env devel toolchain build test
 define toolchain-stage-target =
 #$$(info STAGE: $1)
 #$$(info Create targets: toolchain_$1 $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))).)
-targets_toolchain_$1 = $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
+targets_toolchain_$1 := $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: toolchain_$1 $$(targets_toolchain_$1)
 toolchain_$1: $$(targets_toolchain_$1)
 $$(targets_toolchain_$1): toolchain_%_$1: docker/toolchain/Dockerfile
@@ -645,7 +645,7 @@ $$(targets_toolchain_$1): toolchain_%_$1: docker/toolchain/Dockerfile
  ..
 
 #$$(info Create targets: save_toolchain_$1 $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))) (debug).)
-save_targets_toolchain_$1 = $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
+save_targets_toolchain_$1 := $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: save_toolchain_$1 $$(save_targets_toolchain_$1)
 save_toolchain_$1: $$(save_targets_toolchain_$1)
 $$(save_targets_toolchain_$1): save_toolchain_%_$1: cache/%/docker_$1.tar
@@ -727,7 +727,7 @@ VAGRANT_VMS := \
 define make-vagrant-target =
 #$$(info VMS: $1)
 #$$(info Create target: $1_<LANG>.)
-$1_targets = $(addprefix $1_, $(LANGUAGES))
+$1_targets := $(addprefix $1_, $(LANGUAGES))
 .PHONY: $1 $$($1_targets)
 $1: $$($1_targets)
 $$($1_targets): $1_%: vagrant/$1/%/Vagrantfile
@@ -736,14 +736,14 @@ $$($1_targets): $1_%: vagrant/$1/%/Vagrantfile
 	cd vagrant/$1/$$* && vagrant up
 
 #$$(info Create targets: sh_$1_<lang> vagrant machine (debug).)
-sh_$1_targets = $(addprefix sh_$1_, $(LANGUAGES))
+sh_$1_targets := $(addprefix sh_$1_, $(LANGUAGES))
 .PHONY: $$(sh_$1_targets)
 $$(sh_$1_targets): sh_$1_%:
 	cd vagrant/$1/$$* && vagrant up
 	cd vagrant/$1/$$* && vagrant ssh
 
 #$$(info Create targets: clean_$1)
-clean_$1_targets = $(addprefix clean_$1_, $(LANGUAGES))
+clean_$1_targets := $(addprefix clean_$1_, $(LANGUAGES))
 .PHONY: clean_$1 $(clean_$1_targets)
 clean_$1: $$(clean_$1_targets)
 $$(clean_$1_targets): clean_$1_%:

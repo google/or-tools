@@ -245,30 +245,29 @@ class ClauseManager : public SatPropagator {
     drat_proof_handler_ = drat_proof_handler;
   }
 
-  // Round-robbing selection of the next clause to minimize/probe.
-  // Note that for minimization we only look at clause kept forever.
-  //
-  // TODO(user): If more indices are needed, switch to a generic API.
-  SatClause* NextClauseToMinimize() {
-    for (; to_minimize_index_ < clauses_.size(); ++to_minimize_index_) {
-      if (clauses_[to_minimize_index_]->IsRemoved()) continue;
-      if (!IsRemovable(clauses_[to_minimize_index_])) {
-        return clauses_[to_minimize_index_++];
-      }
-    }
-    return nullptr;
-  }
-  SatClause* NextClauseToProbe() {
-    for (; to_probe_index_ < clauses_.size(); ++to_probe_index_) {
-      if (clauses_[to_probe_index_]->IsRemoved()) continue;
-      return clauses_[to_probe_index_++];
-    }
-    return nullptr;
-  }
+  // Methods implementing pseudo-iterators over the clause database that are
+  // stable across cleanups. They all return nullptr if there are no more
+  // clauses.
+
+  // Returns the next clause to minimize that has never been minimized before.
+  // Note that we only minimize clauses kept forever.
+  SatClause* NextNewClauseToMinimize();
+  // Returns the next clause to minimize, this iterator will be reset to the
+  // start so the clauses will be returned in round-robin order.
+  // Note that we only minimize clauses kept forever.
+  SatClause* NextClauseToMinimize();
+  // Returns the next clause to probe in round-robin order.
+  SatClause* NextClauseToProbe();
 
   // Restart the scans.
   void ResetToProbeIndex() { to_probe_index_ = 0; }
   void ResetToMinimizeIndex() { to_minimize_index_ = 0; }
+  // Ensures that NextNewClauseToMinimize() returns only learned clauses.
+  // This is a noop after the first call.
+  void EnsureNewClauseIndexInitialized() {
+    if (to_first_minimize_index_ > 0) return;
+    to_first_minimize_index_ = clauses_.size();
+  }
 
   // During an inprocessing phase, it is easier to detach all clause first,
   // then simplify and then reattach them. Note however that during these
@@ -333,6 +332,13 @@ class ClauseManager : public SatPropagator {
     add_clause_callback_ = std::move(add_clause_callback);
   }
 
+  // Removes the add clause callback and returns it. This can be used to
+  // temporarily disable the callback.
+  absl::AnyInvocable<void(int lbd, absl::Span<const Literal>)>
+  TakeAddClauseCallback() {
+    return std::move(add_clause_callback_);
+  }
+
  private:
   // Attaches the given clause. This eventually propagates a literal which is
   // enqueued on the trail. Returns false if a contradiction was encountered.
@@ -380,7 +386,9 @@ class ClauseManager : public SatPropagator {
   // Note that the unit clauses and binary clause are not kept here.
   std::vector<SatClause*> clauses_;
 
+  // TODO(user): If more indices are needed, switch to a generic API.
   int to_minimize_index_ = 0;
+  int to_first_minimize_index_ = 0;
   int to_probe_index_ = 0;
 
   // Only contains removable clause.

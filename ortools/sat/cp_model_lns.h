@@ -31,6 +31,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -219,7 +220,14 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // lns_focus_on_performed_intervals. If true, this method returns the list of
   // performed rectangles in the solution. If false, it returns all rectangles
   // of the model.
-  std::vector<std::pair<int, int>> GetActiveRectangles(
+  struct ActiveRectangle {
+    int x_interval;
+    int y_interval;
+    // The set of no_overlap_2d constraints that both x_interval and y_interval
+    // are participating in.
+    absl::flat_hash_set<int> no_overlap_2d_constraints;
+  };
+  std::vector<ActiveRectangle> GetActiveRectangles(
       const CpSolverResponse& initial_solution) const;
 
   // Returns the set of unique intervals list appearing in a no_overlap,
@@ -356,6 +364,8 @@ class NeighborhoodGenerator {
       : name_(name), helper_(*helper), difficulty_(0.5) {}
   virtual ~NeighborhoodGenerator() = default;
 
+  using ActiveRectangle = NeighborhoodGeneratorHelper::ActiveRectangle;
+
   // Adds solve data about one "solved" neighborhood.
   struct SolveData {
     // The status of the sub-solve.
@@ -382,6 +392,9 @@ class NeighborhoodGenerator {
     IntegerValue initial_best_objective = IntegerValue(0);
     IntegerValue base_objective = IntegerValue(0);
     IntegerValue new_objective = IntegerValue(0);
+
+    // For debugging.
+    int task_id = 0;
 
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
@@ -597,9 +610,10 @@ class LocalBranchingLpBasedNeighborhoodGenerator
  public:
   LocalBranchingLpBasedNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, absl::string_view name,
-      ModelSharedTimeLimit* const global_time_limit)
+      ModelSharedTimeLimit* const global_time_limit, SharedClasses* shared)
       : NeighborhoodGenerator(name, helper),
-        global_time_limit_(global_time_limit) {
+        global_time_limit_(global_time_limit),
+        shared_(shared) {
     // Given that we spend time generating a good neighborhood it sounds
     // reasonable to spend a bit more time solving it too.
     deterministic_limit_ = 0.5;
@@ -610,6 +624,7 @@ class LocalBranchingLpBasedNeighborhoodGenerator
 
  private:
   ModelSharedTimeLimit* const global_time_limit_;
+  SharedClasses* const shared_;
 };
 
 // Helper method for the scheduling neighborhood generators. Returns a
@@ -699,6 +714,21 @@ class RandomRectanglesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomRectanglesPackingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
+};
+
+// Only make sense for problems with no_overlap_2d constraints. This selects two
+// random rectangles and relax them alongside the closest rectangles to each one
+// of them. The idea is that this will find a better solution when there is a
+// cost function that would be improved by swapping the two rectangles.
+class RectanglesPackingRelaxTwoNeighborhoodsGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RectanglesPackingRelaxTwoNeighborhoodsGenerator(
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 

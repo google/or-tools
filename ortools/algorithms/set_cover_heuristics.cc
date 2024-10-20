@@ -122,8 +122,8 @@ bool GreedySolutionGenerator::NextSolution(
   return NextSolution(focus, inv_->model()->subset_costs());
 }
 
-bool GreedySolutionGenerator::NextSolution(
-    const std::vector<SubsetIndex>& focus, const SubsetCostVector& costs) {
+bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
+                                           const SubsetCostVector& costs) {
   DCHECK(inv_->CheckConsistency());
   inv_->ClearTrace();
   SubsetCostVector elements_per_cost(costs.size(), 0.0);

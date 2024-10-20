@@ -122,7 +122,7 @@ class CpModelPresolver {
   // TODO(user): Make these public and unit test.
   bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveAutomaton(ConstraintProto* ct);
-  bool PresolveElement(ConstraintProto* ct);
+  bool PresolveElement(int c, ConstraintProto* ct);
   bool PresolveIntDiv(int c, ConstraintProto* ct);
   bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
@@ -428,7 +428,11 @@ class ModelCopy {
   bool CopyBoolAnd(const ConstraintProto& ct);
   bool CopyBoolAndWithDupSupport(const ConstraintProto& ct);
 
+  bool CopyLinearExpression(const LinearExpressionProto& expr,
+                            LinearExpressionProto* dst);
+  bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
   bool CopyLinear(const ConstraintProto& ct);
+  bool CopyElement(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
 
@@ -458,6 +462,8 @@ class ModelCopy {
 
   std::vector<int> temp_literals_;
   absl::flat_hash_set<int> temp_literals_set_;
+
+  ConstraintProto tmp_constraint_;
 };
 
 // Copy in_model to the model in the presolve context.

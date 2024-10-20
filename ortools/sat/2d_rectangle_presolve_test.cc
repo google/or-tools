@@ -48,13 +48,14 @@ using ::testing::IsEmpty;
 std::vector<Rectangle> BuildFromAsciiArt(std::string_view input) {
   std::vector<Rectangle> rectangles;
   std::vector<std::string_view> lines = absl::StrSplit(input, '\n');
+  const int num_lines = lines.size();
   for (int i = 0; i < lines.size(); i++) {
     for (int j = 0; j < lines[i].size(); j++) {
       if (lines[i][j] != ' ') {
         rectangles.push_back({.x_min = j,
                               .x_max = j + 1,
-                              .y_min = 2 * lines.size() - 2 * i,
-                              .y_max = 2 * lines.size() - 2 * i + 2});
+                              .y_min = 2 * num_lines - 2 * i,
+                              .y_max = 2 * num_lines - 2 * i + 2});
       }
     }
   }
@@ -206,7 +207,7 @@ TEST(RectanglePresolve, RandomTest) {
   }
 }
 
-Neighbours NaiveBuildNeighboursGraph(const std::vector<Rectangle>& rectangles) {
+Neighbours NaiveBuildNeighboursGraph(absl::Span<const Rectangle> rectangles) {
   auto interval_intersect = [](IntegerValue begin1, IntegerValue end1,
                                IntegerValue begin2, IntegerValue end2) {
     return std::max(begin1, begin2) < std::min(end1, end2);

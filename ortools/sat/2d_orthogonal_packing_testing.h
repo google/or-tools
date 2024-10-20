@@ -40,7 +40,7 @@ std::vector<RectangleInRange> MakeItemsFromRectangles(
 
 std::vector<ItemForPairwiseRestriction>
 GenerateItemsRectanglesWithNoPairwiseConflict(
-    const std::vector<Rectangle>& rectangles, double slack_factor,
+    absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random);
 
 std::vector<ItemForPairwiseRestriction>

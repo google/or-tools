@@ -105,9 +105,13 @@ message LinearConstraintProto {
 // The constraint target = vars[index].
 // This enforces that index takes one of the value in [0, vars_size()).
 message ElementConstraintProto {
-  int32 index = 1;
-  int32 target = 2;
-  repeated int32 vars = 3;
+  int32 index = 1;          // Legacy field.
+  int32 target = 2;         // Legacy field.
+  repeated int32 vars = 3;  // Legacy field.
+  // All expressions below must be affine function with at most one variable.
+  LinearExpressionProto linear_index = 4;
+  LinearExpressionProto linear_target = 5;
+  repeated LinearExpressionProto exprs = 6;
 }
 
 // This is not really a constraint. It is there so it can be referred by other

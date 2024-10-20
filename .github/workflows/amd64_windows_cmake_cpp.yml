@@ -27,7 +27,7 @@ jobs:
         run: >
           cmake -S. -Bbuild
           -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -DCMAKE_CONFIGURATION_TYPES=${{ matrix.cmake.config }}
           -DBUILD_DEPS=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build

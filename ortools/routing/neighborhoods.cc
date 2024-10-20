@@ -29,18 +29,25 @@
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research::routing {
+using NeighborAccessor =
+    std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>;
 
 MakeRelocateNeighborsOperator::MakeRelocateNeighborsOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors,
+    NeighborAccessor get_incoming_neighbors,
+    NeighborAccessor get_outgoing_neighbors,
     RoutingTransitCallback2 arc_evaluator)
-    : PathOperator(vars, secondary_vars,
-                   /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
-                   /*skip_locally_optimal_paths=*/true,
-                   /*accept_path_end_base=*/false,
-                   std::move(start_empty_path_class), std::move(get_neighbors)),
+    : PathOperator(
+          vars, secondary_vars,
+          /*number_of_base_nodes=*/
+          get_incoming_neighbors == nullptr && get_outgoing_neighbors == nullptr
+              ? 2
+              : 1,
+          /*skip_locally_optimal_paths=*/true,
+          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
+          std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)),
       arc_evaluator_(std::move(arc_evaluator)) {}
 
 bool MakeRelocateNeighborsOperator::MakeNeighbor() {
@@ -65,9 +72,14 @@ bool MakeRelocateNeighborsOperator::MakeNeighbor() {
     return MoveChainAndRepair(before_chain, chain_end, destination);
   };
   if (HasNeighbors()) {
-    const int64_t node = GetNeighborForBaseNode(0);
-    if (IsInactive(node)) return false;
-    return do_move(/*before_chain=*/Prev(node),
+    const auto [neighbor, outgoing] = GetNeighborForBaseNode(0);
+    if (neighbor < 0 || IsInactive(neighbor)) return false;
+    if (!outgoing) {
+      // TODO(user): Handle incoming neighbors by going backwards on the
+      // chain.
+      return false;
+    }
+    return do_move(/*before_chain=*/Prev(neighbor),
                    /*destination=*/BaseNode(0));
   } else {
     return do_move(/*before_chain=*/BaseNode(0),
@@ -127,7 +139,7 @@ SwapActiveToShortestPathOperator::SwapActiveToShortestPathOperator(
     std::vector<std::vector<int64_t>> alternative_sets,
     RoutingTransitCallback2 arc_evaluator)
     : PathOperator(vars, secondary_vars, 1, true, false,
-                   std::move(start_empty_path_class), nullptr),
+                   std::move(start_empty_path_class), nullptr, nullptr),
       arc_evaluator_(std::move(arc_evaluator)),
       alternative_sets_(std::move(alternative_sets)),
       to_alternative_set_(vars.size(), -1),
@@ -243,7 +255,7 @@ MakePairActiveOperator::MakePairActiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator(vars, secondary_vars, 2, false, true,
-                   std::move(start_empty_path_class), nullptr),
+                   std::move(start_empty_path_class), nullptr, nullptr),
       inactive_pair_(0),
       inactive_pair_first_index_(0),
       inactive_pair_second_index_(0),
@@ -323,7 +335,7 @@ MakePairInactiveOperator::MakePairInactiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator(vars, secondary_vars, 1, true, false,
-                   std::move(start_empty_path_class), nullptr) {
+                   std::move(start_empty_path_class), nullptr, nullptr) {
   AddPairAlternativeSets(pairs);
 }
 
@@ -344,7 +356,12 @@ PairRelocateOperator::PairRelocateOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator(vars, secondary_vars, 3, true, false,
-                   std::move(start_empty_path_class), nullptr) {
+                   std::move(start_empty_path_class), nullptr, nullptr) {
+  // TODO(user): Add a version where a (first_node, second_node) pair are
+  // added respectively after first_node_neighbor and second_node_neighbor.
+  // This requires a complete restructuring of the code, since we would require
+  // scanning neighbors for a non-base node (second_node is an active sibling
+  // of first_node).
   AddPairAlternativeSets(pairs);
 }
 
@@ -410,15 +427,17 @@ int64_t PairRelocateOperator::GetBaseNodeRestartPosition(int base_index) {
 GroupPairAndRelocateOperator::GroupPairAndRelocateOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors,
+    std::function<int(int64_t)> start_empty_path_class, NeighborAccessor,
+    NeighborAccessor get_outgoing_neighbors,
     const std::vector<PickupDeliveryPair>& pairs)
-    : PathOperator(vars, secondary_vars,
-                   /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
-                   /*skip_locally_optimal_paths=*/true,
-                   /*accept_path_end_base=*/false,
-                   std::move(start_empty_path_class),
-                   std::move(get_neighbors)) {
+    : PathOperator(
+          vars, secondary_vars,
+          /*number_of_base_nodes=*/
+          get_outgoing_neighbors == nullptr ? 2 : 1,
+          /*skip_locally_optimal_paths=*/true,
+          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
+          nullptr,  // We don't use incoming neighbors for this operator.
+          std::move(get_outgoing_neighbors)) {
   AddPairAlternativeSets(pairs);
 }
 
@@ -432,24 +451,30 @@ bool GroupPairAndRelocateOperator::MakeNeighbor() {
     const bool ok = MoveChain(Prev(node), node, destination);
     return MoveChain(Prev(sibling), sibling, node) || ok;
   };
-  return HasNeighbors()
-             ? do_move(/*node=*/GetNeighborForBaseNode(0),
-                       /*destination=*/BaseNode(0))
-             : do_move(/*node=*/Next(BaseNode(0)), /*destination=*/BaseNode(1));
+  if (HasNeighbors()) {
+    const auto [neighbor, outgoing] = GetNeighborForBaseNode(0);
+    if (neighbor < 0) return false;
+    DCHECK(outgoing);
+    return do_move(/*node=*/neighbor, /*destination=*/BaseNode(0));
+  }
+  return do_move(/*node=*/Next(BaseNode(0)), /*destination=*/BaseNode(1));
 }
 
 LightPairRelocateOperator::LightPairRelocateOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors,
+    std::function<int(int64_t)> start_empty_path_class, NeighborAccessor,
+    NeighborAccessor get_outgoing_neighbors,
     const std::vector<PickupDeliveryPair>& pairs,
     std::function<bool(int64_t)> force_lifo)
     : PathOperator(vars, secondary_vars,
-                   /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
+                   /*number_of_base_nodes=*/
+                   get_outgoing_neighbors == nullptr ? 2 : 1,
                    /*skip_locally_optimal_paths=*/true,
                    /*accept_path_end_base=*/false,
-                   std::move(start_empty_path_class), std::move(get_neighbors)),
+                   std::move(start_empty_path_class),
+                   nullptr,  // Incoming neighbors not used as of 09/2024.
+                   std::move(get_outgoing_neighbors)),
       force_lifo_(std::move(force_lifo)) {
   AddPairAlternativeSets(pairs);
 }
@@ -462,7 +487,7 @@ LightPairRelocateOperator::LightPairRelocateOperator(
     std::function<bool(int64_t)> force_lifo)
     : LightPairRelocateOperator(vars, secondary_vars,
                                 std::move(start_empty_path_class), nullptr,
-                                pairs, std::move(force_lifo)) {}
+                                nullptr, pairs, std::move(force_lifo)) {}
 
 bool LightPairRelocateOperator::MakeNeighbor() {
   const auto do_move = [this](int64_t node, int64_t destination,
@@ -517,27 +542,36 @@ bool LightPairRelocateOperator::MakeNeighbor() {
       return MoveChain(Prev(sibling), sibling, Prev(destination_sibling)) || ok;
     }
   };
-  // TODO(user): Add support for lifo for neighbor-based move.
-  return HasNeighbors()
-             ? do_move(/*node=*/GetNeighborForBaseNode(0),
-                       /*destination=*/BaseNode(0),
-                       /*destination_is_lifo=*/false)
-             : do_move(/*node=*/Next(BaseNode(0)), /*destination=*/BaseNode(1),
-                       force_lifo_ != nullptr && force_lifo_(StartNode(1)));
+  if (HasNeighbors()) {
+    const auto [neighbor, outgoing] = GetNeighborForBaseNode(0);
+    if (neighbor < 0) return false;
+    // TODO(user): Add support for incoming neighbors.
+    DCHECK(outgoing);
+    // TODO(user): Add support for lifo for neighbor-based move.
+    return do_move(/*node=*/neighbor, /*destination=*/BaseNode(0),
+                   /*destination_is_lifo=*/false);
+  }
+  return do_move(/*node=*/Next(BaseNode(0)), /*destination=*/BaseNode(1),
+                 force_lifo_ != nullptr && force_lifo_(StartNode(1)));
 }
 
 PairExchangeOperator::PairExchangeOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors,
+    NeighborAccessor get_incoming_neighbors,
+    NeighborAccessor get_outgoing_neighbors,
     const std::vector<PickupDeliveryPair>& pairs)
-    : PathOperator(vars, secondary_vars,
-                   /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
-                   /*skip_locally_optimal_paths=*/true,
-                   /*accept_path_end_base=*/true,
-                   std::move(start_empty_path_class),
-                   std::move(get_neighbors)) {
+    : PathOperator(
+          vars, secondary_vars,
+          /*number_of_base_nodes=*/
+          get_incoming_neighbors == nullptr && get_outgoing_neighbors == nullptr
+              ? 2
+              : 1,
+          /*skip_locally_optimal_paths=*/true,
+          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
+          std::move(get_incoming_neighbors),
+          std::move(get_outgoing_neighbors)) {
   AddPairAlternativeSets(pairs);
 }
 
@@ -551,9 +585,15 @@ bool PairExchangeOperator::MakeNeighbor() {
   if (!HasNeighbors()) {
     node2 = BaseNode(1);
   } else {
-    const int64_t neighbor = GetNeighborForBaseNode(0);
-    if (IsInactive(neighbor) || IsPathStart(neighbor)) return false;
-    node2 = Prev(neighbor);
+    const auto [neighbor, outgoing] = GetNeighborForBaseNode(0);
+    if (neighbor < 0 || IsInactive(neighbor)) return false;
+    if (outgoing) {
+      if (IsPathStart(neighbor)) return false;
+    } else if (IsPathEnd(neighbor)) {
+      return false;
+    }
+    node2 = outgoing ? Prev(neighbor) : Next(neighbor);
+    if (IsPathEnd(node2)) return false;
   }
   int64_t prev2, sibling2, sibling_prev2 = -1;
   if (!GetPreviousAndSibling(node2, &prev2, &sibling2, &sibling_prev2)) {
@@ -619,7 +659,7 @@ PairExchangeRelocateOperator::PairExchangeRelocateOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator(vars, secondary_vars, 6, true, false,
-                   std::move(start_empty_path_class), nullptr) {
+                   std::move(start_empty_path_class), nullptr, nullptr) {
   AddPairAlternativeSets(pairs);
 }
 
@@ -877,7 +917,7 @@ IndexPairSwapActiveOperator::IndexPairSwapActiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator(vars, secondary_vars, 1, true, false,
-                   std::move(start_empty_path_class), nullptr),
+                   std::move(start_empty_path_class), nullptr, nullptr),
       inactive_node_(0) {
   AddPairAlternativeSets(pairs);
 }
@@ -925,7 +965,7 @@ RelocateExpensiveChain::RelocateExpensiveChain(
     int num_arcs_to_consider,
     std::function<int64_t(int64_t, int64_t, int64_t)> arc_cost_for_path_start)
     : PathOperator(vars, secondary_vars, 1, false, false,
-                   std::move(start_empty_path_class), nullptr),
+                   std::move(start_empty_path_class), nullptr, nullptr),
       num_arcs_to_consider_(num_arcs_to_consider),
       current_path_(0),
       current_expensive_arc_indices_({-1, -1}),
@@ -936,6 +976,8 @@ RelocateExpensiveChain::RelocateExpensiveChain(
 }
 
 bool RelocateExpensiveChain::MakeNeighbor() {
+  // TODO(user): Consider node neighbors? The operator would no longer be
+  // a path operator though, because we would no longer have any base nodes.
   const int first_arc_index = current_expensive_arc_indices_.first;
   const int second_arc_index = current_expensive_arc_indices_.second;
   DCHECK_LE(0, first_arc_index);
@@ -1043,14 +1085,17 @@ PickupAndDeliveryData::PickupAndDeliveryData(
 RelocateSubtrip::RelocateSubtrip(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors,
+    std::function<int(int64_t)> start_empty_path_class, NeighborAccessor,
+    NeighborAccessor get_outgoing_neighbors,
     absl::Span<const PickupDeliveryPair> pairs)
-    : PathOperator(vars, secondary_vars,
-                   /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
-                   /*skip_locally_optimal_paths=*/true,
-                   /*accept_path_end_base=*/false,
-                   std::move(start_empty_path_class), std::move(get_neighbors)),
+    : PathOperator(
+          vars, secondary_vars,
+          /*number_of_base_nodes=*/
+          get_outgoing_neighbors == nullptr ? 2 : 1,
+          /*skip_locally_optimal_paths=*/true,
+          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
+          nullptr,  // Incoming neighbors aren't supported as of 09/2024.
+          std::move(get_outgoing_neighbors)),
       pd_data_(number_of_nexts_, pairs) {
   opened_pairs_set_.resize(pairs.size(), false);
 }
@@ -1162,23 +1207,30 @@ bool RelocateSubtrip::MakeNeighbor() {
       return false;
     }
   };
-  return HasNeighbors()
-             ? do_move(/*node=*/GetNeighborForBaseNode(0),
-                       /*insertion_node=*/BaseNode(0))
-             : do_move(/*node=*/BaseNode(0), /*insertion_node=*/BaseNode(1));
+  if (HasNeighbors()) {
+    const auto [neighbor, outgoing] = GetNeighborForBaseNode(0);
+    if (neighbor < 0) return false;
+    DCHECK(outgoing);
+    if (IsInactive(neighbor)) return false;
+    return do_move(/*node=*/neighbor, /*insertion_node=*/BaseNode(0));
+  }
+  return do_move(/*node=*/BaseNode(0), /*insertion_node=*/BaseNode(1));
 }
 
 ExchangeSubtrip::ExchangeSubtrip(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors,
+    std::function<int(int64_t)> start_empty_path_class, NeighborAccessor,
+    NeighborAccessor get_outgoing_neighbors,
     absl::Span<const PickupDeliveryPair> pairs)
-    : PathOperator(vars, secondary_vars,
-                   /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
-                   /*skip_locally_optimal_paths=*/true,
-                   /*accept_path_end_base=*/false,
-                   std::move(start_empty_path_class), std::move(get_neighbors)),
+    : PathOperator(
+          vars, secondary_vars,
+          /*number_of_base_nodes=*/
+          get_outgoing_neighbors == nullptr ? 2 : 1,
+          /*skip_locally_optimal_paths=*/true,
+          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
+          nullptr,  // Incoming neighbors aren't supported as of 09/2024.
+          std::move(get_outgoing_neighbors)),
       pd_data_(number_of_nexts_, pairs) {
   opened_pairs_set_.resize(pairs.size(), false);
 }
@@ -1200,7 +1252,9 @@ bool ExchangeSubtrip::MakeNeighbor() {
   int64_t node1 = -1;
   if (HasNeighbors()) {
     const int64_t node = BaseNode(0);
-    const int64_t neighbor = GetNeighborForBaseNode(0);
+    const auto [neighbor, outgoing] = GetNeighborForBaseNode(0);
+    if (neighbor < 0) return false;
+    DCHECK(outgoing);
     if (IsInactive(neighbor)) return false;
     if (pd_data_.IsDeliveryNode(node) &&
         pd_data_.IsDeliveryNode(Prev(neighbor))) {

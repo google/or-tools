@@ -577,6 +577,17 @@ void TriangularMatrix::Reset(RowIndex num_rows, ColIndex col_capacity) {
   starts_[ColIndex(0)] = 0;
 }
 
+void CompactSparseMatrix::AddEntryToCurrentColumn(RowIndex row,
+                                                  Fractional coeff) {
+  rows_.push_back(row);
+  coefficients_.push_back(coeff);
+}
+
+void CompactSparseMatrix::CloseCurrentColumn() {
+  starts_.push_back(rows_.size());
+  ++num_cols_;
+}
+
 ColIndex CompactSparseMatrix::AddDenseColumn(const DenseColumn& dense_column) {
   return AddDenseColumnPrefix(dense_column.const_view(), RowIndex(0));
 }
@@ -832,6 +843,7 @@ void TriangularMatrix::UpperSolveInternal(DenseColumn::View rhs) const {
   const auto entry_rows = rows_.view();
   const auto entry_coefficients = coefficients_.view();
   const auto diagonal_coefficients = diagonal_coefficients_.view();
+  const auto starts = starts_.view();
   for (ColIndex col(diagonal_coefficients.size() - 1); col >= end; --col) {
     const Fractional value = rhs[ColToRowIndex(col)];
     if (value == 0.0) continue;
@@ -844,8 +856,8 @@ void TriangularMatrix::UpperSolveInternal(DenseColumn::View rhs) const {
     // It is faster to iterate this way (instead of i : Column(col)) because of
     // cache locality. Note that the floating-point computations are exactly the
     // same in both cases.
-    const EntryIndex i_end = starts_[col];
-    for (EntryIndex i(starts_[col + 1] - 1); i >= i_end; --i) {
+    const EntryIndex i_end = starts[col];
+    for (EntryIndex i(starts[col + 1] - 1); i >= i_end; --i) {
       rhs[entry_rows[i]] -= coeff * entry_coefficients[i];
     }
   }

@@ -281,6 +281,136 @@ add_custom_command(
     $<TARGET_FILE:jni${JAVA_ARTIFACT}>
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
+    $<TARGET_SONAME_FILE:ZLIB::ZLIB>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_absl}>,copy,true>
+    $<TARGET_SONAME_FILE:absl::base>
+    $<TARGET_SONAME_FILE:absl::bad_any_cast_impl>
+    $<TARGET_SONAME_FILE:absl::bad_optional_access>
+    $<TARGET_SONAME_FILE:absl::bad_variant_access>
+    $<TARGET_SONAME_FILE:absl::city>
+    $<TARGET_SONAME_FILE:absl::civil_time>
+    $<TARGET_SONAME_FILE:absl::cord>
+    $<TARGET_SONAME_FILE:absl::cord_internal>
+    $<TARGET_SONAME_FILE:absl::cordz_functions>
+    $<TARGET_SONAME_FILE:absl::cordz_handle>
+    $<TARGET_SONAME_FILE:absl::cordz_info>
+    $<TARGET_SONAME_FILE:absl::crc32c>
+    $<TARGET_SONAME_FILE:absl::crc_cord_state>
+    $<TARGET_SONAME_FILE:absl::crc_cpu_detect>
+    $<TARGET_SONAME_FILE:absl::crc_internal>
+    $<TARGET_SONAME_FILE:absl::debugging_internal>
+    $<TARGET_SONAME_FILE:absl::decode_rust_punycode>
+    $<TARGET_SONAME_FILE:absl::demangle_internal>
+    $<TARGET_SONAME_FILE:absl::demangle_rust>
+    $<TARGET_SONAME_FILE:absl::die_if_null>
+    $<TARGET_SONAME_FILE:absl::examine_stack>
+    $<TARGET_SONAME_FILE:absl::exponential_biased>
+    $<TARGET_SONAME_FILE:absl::flags_commandlineflag>
+    $<TARGET_SONAME_FILE:absl::flags_commandlineflag_internal>
+    $<TARGET_SONAME_FILE:absl::flags_config>
+    $<TARGET_SONAME_FILE:absl::flags_internal>
+    $<TARGET_SONAME_FILE:absl::flags_marshalling>
+    $<TARGET_SONAME_FILE:absl::flags_parse>
+    $<TARGET_SONAME_FILE:absl::flags_private_handle_accessor>
+    $<TARGET_SONAME_FILE:absl::flags_program_name>
+    $<TARGET_SONAME_FILE:absl::flags_reflection>
+    $<TARGET_SONAME_FILE:absl::flags_usage>
+    $<TARGET_SONAME_FILE:absl::flags_usage_internal>
+    $<TARGET_SONAME_FILE:absl::graphcycles_internal>
+    $<TARGET_SONAME_FILE:absl::hash>
+    $<TARGET_SONAME_FILE:absl::hashtablez_sampler>
+    $<TARGET_SONAME_FILE:absl::int128>
+    $<TARGET_SONAME_FILE:absl::kernel_timeout_internal>
+    $<TARGET_SONAME_FILE:absl::leak_check>
+    $<TARGET_SONAME_FILE:absl::log_entry>
+    $<TARGET_SONAME_FILE:absl::log_flags>
+    $<TARGET_SONAME_FILE:absl::log_globals>
+    $<TARGET_SONAME_FILE:absl::log_initialize>
+    $<TARGET_SONAME_FILE:absl::log_internal_check_op>
+    $<TARGET_SONAME_FILE:absl::log_internal_conditions>
+    $<TARGET_SONAME_FILE:absl::log_internal_fnmatch>
+    $<TARGET_SONAME_FILE:absl::log_internal_format>
+    $<TARGET_SONAME_FILE:absl::log_internal_globals>
+    $<TARGET_SONAME_FILE:absl::log_internal_log_sink_set>
+    $<TARGET_SONAME_FILE:absl::log_internal_message>
+    $<TARGET_SONAME_FILE:absl::log_internal_nullguard>
+    $<TARGET_SONAME_FILE:absl::log_internal_proto>
+    $<TARGET_SONAME_FILE:absl::log_severity>
+    $<TARGET_SONAME_FILE:absl::log_sink>
+    $<TARGET_SONAME_FILE:absl::low_level_hash>
+    $<TARGET_SONAME_FILE:absl::malloc_internal>
+    $<TARGET_SONAME_FILE:absl::random_distributions>
+    $<TARGET_SONAME_FILE:absl::random_internal_platform>
+    $<TARGET_SONAME_FILE:absl::random_internal_pool_urbg>
+    $<TARGET_SONAME_FILE:absl::random_internal_randen>
+    $<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes>
+    $<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes_impl>
+    $<TARGET_SONAME_FILE:absl::random_internal_randen_slow>
+    $<TARGET_SONAME_FILE:absl::random_internal_seed_material>
+    $<TARGET_SONAME_FILE:absl::random_seed_gen_exception>
+    $<TARGET_SONAME_FILE:absl::random_seed_sequences>
+    $<TARGET_SONAME_FILE:absl::raw_hash_set>
+    $<TARGET_SONAME_FILE:absl::raw_logging_internal>
+    $<TARGET_SONAME_FILE:absl::spinlock_wait>
+    $<TARGET_SONAME_FILE:absl::stacktrace>
+    $<TARGET_SONAME_FILE:absl::status>
+    $<TARGET_SONAME_FILE:absl::statusor>
+    $<TARGET_SONAME_FILE:absl::str_format_internal>
+    $<TARGET_SONAME_FILE:absl::strerror>
+    $<TARGET_SONAME_FILE:absl::string_view>
+    $<TARGET_SONAME_FILE:absl::strings>
+    $<TARGET_SONAME_FILE:absl::strings_internal>
+    $<TARGET_SONAME_FILE:absl::symbolize>
+    $<TARGET_SONAME_FILE:absl::synchronization>
+    $<TARGET_SONAME_FILE:absl::throw_delegate>
+    $<TARGET_SONAME_FILE:absl::time>
+    $<TARGET_SONAME_FILE:absl::time_zone>
+    $<TARGET_SONAME_FILE:absl::utf8_for_code_point>
+    $<TARGET_SONAME_FILE:absl::vlog_config_internal>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
+    $<$<BOOL:${BUILD_re2}>:$<TARGET_SONAME_FILE:re2::re2>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
+    $<$<BOOL:${BUILD_Protobuf}>:$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_CoinUtils}>,copy,true>
+    $<$<BOOL:${BUILD_CoinUtils}>:$<TARGET_SONAME_FILE:Coin::CoinUtils>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_Osi}>,copy,true>
+    $<$<BOOL:${BUILD_Osi}>:$<TARGET_SONAME_FILE:Coin::Osi>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_Clp}>,copy,true>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::Clp>>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::OsiClp>>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::ClpSolver>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_Cgl}>,copy,true>
+    $<$<BOOL:${BUILD_Cgl}>:$<TARGET_SONAME_FILE:Coin::Cgl>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_Cbc}>,copy,true>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::Cbc>>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::OsiCbc>>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::CbcSolver>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
+    $<$<BOOL:${BUILD_HIGHS}>:$<TARGET_SONAME_FILE:highs>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
   COMMAND ${MAVEN_EXECUTABLE} compile -B
   COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>

@@ -1501,7 +1501,8 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   }
 }
 
-bool SatSolver::MinimizeByPropagation(double dtime) {
+bool SatSolver::MinimizeByPropagation(double dtime,
+                                      bool minimize_new_clauses_only) {
   CHECK(time_limit_ != nullptr);
   AdvanceDeterministicTime(time_limit_);
   const double threshold = time_limit_->GetElapsedDeterministicTime() + dtime;
@@ -1513,16 +1514,20 @@ bool SatSolver::MinimizeByPropagation(double dtime) {
   int num_resets = 0;
   while (!time_limit_->LimitReached() &&
          time_limit_->GetElapsedDeterministicTime() < threshold) {
-    SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();
+    SatClause* to_minimize = clauses_propagator_->NextNewClauseToMinimize();
+    if (!minimize_new_clauses_only && to_minimize == nullptr) {
+      to_minimize = clauses_propagator_->NextClauseToMinimize();
+    }
+
     if (to_minimize != nullptr) {
       TryToMinimizeClause(to_minimize);
       if (model_is_unsat_) return false;
+    } else if (minimize_new_clauses_only) {
+      break;
     } else {
-      if (to_minimize == nullptr) {
-        ++num_resets;
-        VLOG(1) << "Minimized all clauses, restarting from first one.";
-        clauses_propagator_->ResetToMinimizeIndex();
-      }
+      ++num_resets;
+      VLOG(1) << "Minimized all clauses, restarting from first one.";
+      clauses_propagator_->ResetToMinimizeIndex();
       if (num_resets > 1) break;
     }
 

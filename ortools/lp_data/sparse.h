@@ -369,6 +369,10 @@ class CompactSparseMatrix {
   // Add*() functions below.
   void Reset(RowIndex num_rows);
 
+  // Api to add columns one at the time.
+  void AddEntryToCurrentColumn(RowIndex row, Fractional coeff);
+  void CloseCurrentColumn();
+
   // Adds a dense column to the CompactSparseMatrix (only the non-zero will be
   // actually stored). This work in O(input.size()) and returns the index of the
   // added column.
