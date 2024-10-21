@@ -99,9 +99,6 @@ TEST_P(StatusTest, PrimalAndDualInfeasible) {
         << "Ignoring this test as GLPK gets stuck in presolve for IP's "
            "with a primal-dual infeasible LP relaxation.";
   }
-  if (GetParam().solver_type == SolverType::kHighs) {
-    TEST_SKIP() << "Ignoring this test as Highs 1.7+ returns error.";
-  }
 
   Model model;
   const Variable x1 =
