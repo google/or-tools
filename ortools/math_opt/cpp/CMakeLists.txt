@@ -33,7 +33,7 @@ ortools_cxx_library(
     "matchers.cc"
     "matchers.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     absl::log
     absl::status

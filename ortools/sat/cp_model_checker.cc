@@ -418,23 +418,60 @@ std::string ValidateElementConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
   const ElementConstraintProto& element = ct.element();
 
+  if ((element.has_linear_index() || element.has_linear_target() ||
+       !element.exprs().empty()) &&
+      (!element.vars().empty() || element.index() != 0 ||
+       element.target() != 0)) {
+    return absl::StrCat(
+        "Inconsistent element with both legacy and new format defined",
+        ProtobufShortDebugString(ct));
+  }
+
   // We need to be able to manipulate expression like "target - var" without
   // integer overflow.
-  LinearExpressionProto overflow_detection;
-  overflow_detection.add_vars(element.target());
-  overflow_detection.add_coeffs(1);
-  overflow_detection.add_vars(/*dummy*/ 0);
-  overflow_detection.add_coeffs(-1);
-  for (const int ref : element.vars()) {
-    overflow_detection.set_vars(1, ref);
-    if (PossibleIntegerOverflow(model, overflow_detection.vars(),
-                                overflow_detection.coeffs())) {
-      return absl::StrCat(
-          "Domain of the variables involved in element constraint may cause "
-          "overflow",
-          ProtobufShortDebugString(ct));
+  if (!element.vars().empty()) {
+    LinearExpressionProto overflow_detection;
+    overflow_detection.add_vars(element.target());
+    overflow_detection.add_coeffs(1);
+    overflow_detection.add_vars(/*dummy*/ 0);
+    overflow_detection.add_coeffs(-1);
+    for (const int ref : element.vars()) {
+      overflow_detection.set_vars(1, ref);
+      if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+                                  overflow_detection.coeffs())) {
+        return absl::StrCat(
+            "Domain of the variables involved in element constraint may cause "
+            "overflow",
+            ProtobufShortDebugString(ct));
+      }
     }
   }
+
+  if (!element.exprs().empty() || element.has_linear_index() ||
+      element.has_linear_target()) {
+    RETURN_IF_NOT_EMPTY(
+        ValidateAffineExpression(model, element.linear_index()));
+    RETURN_IF_NOT_EMPTY(
+        ValidateAffineExpression(model, element.linear_target()));
+    for (const LinearExpressionProto& expr : element.exprs()) {
+      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+      LinearExpressionProto overflow_detection = ct.element().linear_target();
+      for (int i = 0; i < expr.vars_size(); ++i) {
+        overflow_detection.add_vars(expr.vars(i));
+        overflow_detection.add_coeffs(-expr.coeffs(i));
+      }
+      overflow_detection.set_offset(overflow_detection.offset() -
+                                    expr.offset());
+      if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+                                  overflow_detection.coeffs(),
+                                  overflow_detection.offset())) {
+        return absl::StrCat(
+            "Domain of the variables involved in element constraint may cause "
+            "overflow");
+      }
+    }
+  }
+
   return "";
 }
 
@@ -1397,10 +1434,20 @@ class ConstraintChecker {
   }
 
   bool ElementConstraintIsFeasible(const ConstraintProto& ct) {
-    if (ct.element().vars().empty()) return false;
-    const int index = Value(ct.element().index());
-    if (index < 0 || index >= ct.element().vars_size()) return false;
-    return Value(ct.element().vars(index)) == Value(ct.element().target());
+    if (!ct.element().vars().empty()) {
+      const int index = Value(ct.element().index());
+      if (index < 0 || index >= ct.element().vars_size()) return false;
+      return Value(ct.element().vars(index)) == Value(ct.element().target());
+    }
+
+    if (!ct.element().exprs().empty()) {
+      const int index = LinearExpressionValue(ct.element().linear_index());
+      if (index < 0 || index >= ct.element().exprs_size()) return false;
+      return LinearExpressionValue(ct.element().exprs(index)) ==
+             LinearExpressionValue(ct.element().linear_target());
+    }
+
+    return false;
   }
 
   bool TableConstraintIsFeasible(const ConstraintProto& ct) {

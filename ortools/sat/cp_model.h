@@ -845,13 +845,23 @@ class CpModelBuilder {
   Constraint AddAllDifferent(std::initializer_list<LinearExpr> exprs);
 
   /// Adds the element constraint: variables[index] == target
-  Constraint AddVariableElement(IntVar index,
+  Constraint AddVariableElement(LinearExpr index,
                                 absl::Span<const IntVar> variables,
-                                IntVar target);
+                                LinearExpr target);
+
+  /// Adds the element constraint: expressions[index] == target.
+  Constraint AddElement(LinearExpr index,
+                        absl::Span<const LinearExpr> expressions,
+                        LinearExpr target);
+
+  /// Adds the element constraint: expressions[index] == target.
+  Constraint AddElement(LinearExpr index,
+                        std::initializer_list<LinearExpr> expressions,
+                        LinearExpr target);
 
   /// Adds the element constraint: values[index] == target
-  Constraint AddElement(IntVar index, absl::Span<const int64_t> values,
-                        IntVar target);
+  Constraint AddElement(LinearExpr index, absl::Span<const int64_t> values,
+                        LinearExpr target);
 
   /**
    * Adds a circuit constraint.

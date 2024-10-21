@@ -237,6 +237,12 @@ if(USE_COINOR)
   CMAKE_DEPENDENT_OPTION(BUILD_Cbc "Build the Cbc dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build Cbc: ${BUILD_Cbc}")
+else()
+  set(BUILD_CoinUtils OFF)
+  set(BUILD_Osi OFF)
+  set(BUILD_Clp OFF)
+  set(BUILD_Cgl OFF)
+  set(BUILD_Cbc OFF)
 endif()
 
 ## GLOP
@@ -253,6 +259,8 @@ if(USE_GLPK)
   CMAKE_DEPENDENT_OPTION(BUILD_GLPK "Build the GLPK dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build GLPK: ${BUILD_GLPK}")
+else()
+  set(BUILD_GLPK OFF)
 endif()
 
 ## GUROBI
@@ -268,6 +276,8 @@ if(USE_HIGHS)
   CMAKE_DEPENDENT_OPTION(BUILD_HIGHS "Build the HiGHS dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build HiGHS: ${BUILD_HIGHS}")
+else()
+  set(BUILD_HIGHS OFF)
 endif()
 
 ## PDLP
@@ -277,6 +287,8 @@ if(USE_PDLP)
   CMAKE_DEPENDENT_OPTION(BUILD_PDLP "Build the PDLP dependency Library" ON
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build PDLP: ${BUILD_PDLP}")
+else()
+  set(BUILD_PDLP OFF)
 endif()
 
 ## SCIP
@@ -287,6 +299,8 @@ if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build SCIP: ${BUILD_SCIP}")
+else()
+  set(BUILD_SCIP OFF)
 endif()
 
 # Optional third party solvers (disabled by default)

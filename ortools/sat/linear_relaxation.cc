@@ -1968,30 +1968,6 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
           [](const LinearConstraint& lc) { return lc.num_terms <= 1; }),
       relaxation.linear_constraints.end());
 
-  // We add a clique cut generation over all Booleans of the problem.
-  // Note that in practice this might regroup independent LP together.
-  //
-  // TODO(user): compute connected components of the original problem and
-  // split these cuts accordingly.
-  if (params.linearization_level() > 1 && params.add_clique_cuts()) {
-    LinearConstraintBuilder builder(m);
-    for (int i = 0; i < model_proto.variables_size(); ++i) {
-      if (!mapping->IsBoolean(i)) continue;
-
-      // Note that it is okay to simply ignore the literal if it has no
-      // integer view.
-      const bool unused ABSL_ATTRIBUTE_UNUSED =
-          builder.AddLiteralTerm(mapping->Literal(i), IntegerValue(1));
-    }
-
-    // We add a generator touching all the variable in the builder.
-    const LinearExpression& expr = builder.BuildExpression();
-    if (!expr.vars.empty()) {
-      relaxation.cut_generators.push_back(
-          CreateCliqueCutGenerator(expr.vars, m));
-    }
-  }
-
   if (!relaxation.linear_constraints.empty() ||
       !relaxation.cut_generators.empty()) {
     SOLVER_LOG(logger,

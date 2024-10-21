@@ -67,6 +67,6 @@ if(BUILD_TESTING)
       GTest::gmock
       GTest::gtest_main
     COMPILE_DEFINITIONS
-      -DROOT_DIR="../../"
+    -DROOT_DIR="$<$<BOOL:${isMultiConfig}>:../>../../"
   )
 endif()

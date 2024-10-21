@@ -527,48 +527,48 @@ add_custom_command(
     $<TARGET_SONAME_FILE:absl::vlog_config_internal>
     ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_re2}>,copy,true>
-   $<TARGET_SONAME_FILE:re2::re2>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
+    $<$<BOOL:${BUILD_re2}>:$<TARGET_SONAME_FILE:re2::re2>>
+    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
-   $<TARGET_SONAME_FILE:protobuf::libprotobuf>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
+    $<$<BOOL:${BUILD_Protobuf}>:$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
+    ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_CoinUtils}>,copy,true>
-   $<TARGET_SONAME_FILE:Coin::CoinUtils>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_CoinUtils}>,copy,true>
+    $<$<BOOL:${BUILD_CoinUtils}>:$<TARGET_SONAME_FILE:Coin::CoinUtils>>
+    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_Osi}>,copy,true>
-   $<TARGET_SONAME_FILE:Coin::Osi>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_Osi}>,copy,true>
+    $<$<BOOL:${BUILD_Osi}>:$<TARGET_SONAME_FILE:Coin::Osi>>
+    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_Clp}>,copy,true>
-   $<TARGET_SONAME_FILE:Coin::Clp>
-   $<TARGET_SONAME_FILE:Coin::OsiClp>
-   $<TARGET_SONAME_FILE:Coin::ClpSolver>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_Clp}>,copy,true>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::Clp>>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::OsiClp>>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::ClpSolver>>
+    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_Cgl}>,copy,true>
-   $<TARGET_SONAME_FILE:Coin::Cgl>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_Cgl}>,copy,true>
+    $<$<BOOL:${BUILD_Cgl}>:$<TARGET_SONAME_FILE:Coin::Cgl>>
+    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_Cbc}>,copy,true>
-   $<TARGET_SONAME_FILE:Coin::Cbc>
-   $<TARGET_SONAME_FILE:Coin::OsiCbc>
-   $<TARGET_SONAME_FILE:Coin::CbcSolver>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_Cbc}>,copy,true>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::Cbc>>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::OsiCbc>>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::CbcSolver>>
+    ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
-   $<TARGET_SONAME_FILE:highs>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
+    $<$<BOOL:${BUILD_HIGHS}>:$<TARGET_SONAME_FILE:highs>>
+    ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
-   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
+    $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
+    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/ortools_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in

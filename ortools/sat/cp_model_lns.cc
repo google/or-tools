@@ -933,8 +933,7 @@ NeighborhoodGeneratorHelper::GetSchedulingPrecedences(
   return result;
 }
 
-std::vector<std::vector<int>>
-NeighborhoodGeneratorHelper::GetRoutingPathVariables(
+std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
     const CpSolverResponse& initial_solution) const {
   struct HeadAndArcLiteral {
     int head;
@@ -1919,9 +1918,11 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   // TODO(user): Does the current solution can provide a warm-start for the
   // LP?
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();
-  response_manager->InitializeObjective(local_cp_model);
-  LoadCpModel(local_cp_model, &model);
-  SolveLoadedCpModel(local_cp_model, &model);
+  {
+    response_manager->InitializeObjective(local_cp_model);
+    LoadCpModel(local_cp_model, &model);
+    SolveLoadedCpModel(local_cp_model, &model);
+  }
 
   // Update dtime.
   data.deterministic_time +=
@@ -2455,24 +2456,26 @@ Neighborhood RoutingRandomNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   const std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPathVariables(initial_solution);
+      helper_.GetRoutingPaths(initial_solution);
 
   // Collect all unique variables.
-  std::vector<int> variables_to_fix;
-  for (const auto& path : all_paths) {
-    variables_to_fix.insert(variables_to_fix.end(), path.begin(), path.end());
+  absl::flat_hash_set<int> all_path_variables;
+  for (auto& path : all_paths) {
+    all_path_variables.insert(path.begin(), path.end());
   }
-  gtl::STLSortAndRemoveDuplicates(&variables_to_fix);
-  GetRandomSubset(1.0 - data.difficulty, &variables_to_fix, random);
+  std::vector<int> fixed_variables(all_path_variables.begin(),
+                                   all_path_variables.end());
+  std::sort(fixed_variables.begin(), fixed_variables.end());
+  GetRandomSubset(1.0 - data.difficulty, &fixed_variables, random);
   return helper_.FixGivenVariables(
-      initial_solution, {variables_to_fix.begin(), variables_to_fix.end()});
+      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
 }
 
 Neighborhood RoutingPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPathVariables(initial_solution);
+      helper_.GetRoutingPaths(initial_solution);
 
   // Collect all unique variables.
   absl::flat_hash_set<int> all_path_variables;
@@ -2518,7 +2521,7 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPathVariables(initial_solution);
+      helper_.GetRoutingPaths(initial_solution);
   // Remove a corner case where all paths are empty.
   if (all_paths.empty()) {
     return helper_.NoNeighborhood();
@@ -2578,32 +2581,6 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
     if (!relaxed_variables.contains(var)) fixed_variables.insert(var);
   }
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
-}
-
-Neighborhood RoutingStartsNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, SolveData& data,
-    absl::BitGenRef random) {
-  std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPathVariables(initial_solution);
-  // TODO(user): Maybe enable some routes to be non empty?
-  if (all_paths.empty()) return helper_.NoNeighborhood();
-
-  // Collect all unique path variables, except the start and end of the paths.
-  // For circuit constraints, we approximate this with the arc going in and out
-  // of the smallest node. This works well for model where the zero node is an
-  // artificial node.
-  std::vector<int> variables_to_fix;
-  for (const auto& path : all_paths) {
-    for (const int ref : path) {
-      if (ref == path.front() || ref == path.back()) continue;
-      variables_to_fix.push_back(PositiveRef(ref));
-    }
-  }
-  gtl::STLSortAndRemoveDuplicates(&variables_to_fix);
-  GetRandomSubset(1.0 - data.difficulty, &variables_to_fix, random);
-
-  return helper_.FixGivenVariables(
-      initial_solution, {variables_to_fix.begin(), variables_to_fix.end()});
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {

@@ -2333,20 +2333,30 @@ void CompoundOperator::Start(const Assignment* assignment) {
 
 bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
                                         Assignment* deltadelta) {
+  const auto is_leaf = [](const LocalSearchOperator* op) {
+    return op == op->Self();
+  };
   if (!operators_.empty()) {
+    Solver* solver = delta->solver();
     do {
       // TODO(user): keep copy of delta in case MakeNextNeighbor
       // pollutes delta on a fail.
       const int64_t operator_index = operator_indices_[index_];
+      LocalSearchOperator* op = operators_[operator_index];
       if (!started_[operator_index]) {
-        operators_[operator_index]->Start(start_assignment_);
+        op->Start(start_assignment_);
         started_.Set(operator_index);
       }
-      if (!operators_[operator_index]->HoldsDelta()) {
+      if (!op->HoldsDelta()) {
         delta->Clear();
       }
-      if (operators_[operator_index]->MakeNextNeighbor(delta, deltadelta)) {
-        return true;
+      if (is_leaf(op)) {
+        solver->GetLocalSearchMonitor()->BeginMakeNextNeighbor(op);
+      }
+      if (op->MakeNextNeighbor(delta, deltadelta)) return true;
+      if (is_leaf(op)) {
+        solver->GetLocalSearchMonitor()->EndMakeNextNeighbor(
+            op, /*has_neighbor*/ false, delta, deltadelta);
       }
       ++index_;
       delta->Clear();
@@ -3811,7 +3821,13 @@ class LocalSearchProfiler : public LocalSearchMonitor {
         });
     for (const LocalSearchOperator* const op : operators) {
       const OperatorStats& stats = gtl::FindOrDie(operator_stats_, op);
-      callback(op->DebugString(), stats.neighbors, stats.filtered_neighbors,
+      const std::string& label = op->DebugString();
+      // Skip operators with no name: these come from empty compound operators.
+      if (label.empty() &&
+          dynamic_cast<const CompoundOperator*>(op) != nullptr) {
+        continue;
+      }
+      callback(label, stats.neighbors, stats.filtered_neighbors,
                stats.accepted_neighbors, stats.seconds,
                stats.make_next_neighbor_seconds, stats.accept_neighbor_seconds);
     }
@@ -4006,6 +4022,9 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   }
   void EndMakeNextNeighbor(const LocalSearchOperator* op, bool neighbor_found,
                            const Assignment*, const Assignment*) override {
+    // To be robust to multiple calls to EndMakeNextNeighbor, we only collect
+    // data if the timer was not stopped.
+    if (!make_next_neighbor_timer_.IsRunning()) return;
     make_next_neighbor_timer_.Stop();
     operator_stats_[op->Self()].make_next_neighbor_seconds +=
         make_next_neighbor_timer_.Get();

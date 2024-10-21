@@ -421,6 +421,7 @@ class DimensionValues {
   // Returns the span interval of the path, in the current state.
   Interval Span(int path) const { return span_.Get(path); }
   // Sets the span interval of the path, in the current state.
+  // TODO(user): replace this with a MutableSpan() method.
   void SetSpan(int path, Interval interval) { span_.Set(path, interval); }
 
   // Returns the number of nodes of the path, in the current state.

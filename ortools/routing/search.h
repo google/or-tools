@@ -382,7 +382,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   /// For each node, start_end_distances_per_node[node] is sorted in decreasing
   /// order.
   std::vector<std::vector<StartEndValue> >
-      ComputeStartEndDistanceForVehicles(const std::vector<int>& vehicles);
+      ComputeStartEndDistanceForVehicles(absl::Span<const int>  vehicles);
 
   /// Initializes sq->priority_queue by inserting the best entry corresponding
   /// to each node, i.e. the last element of start_end_distances_per_node[node],
@@ -1435,8 +1435,7 @@ class ChristofidesFilteredHeuristic : public RoutingFilteredHeuristic {
 /// Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
-  explicit SweepArranger(
-      const std::vector<std::pair<int64_t, int64_t>>& points);
+  explicit SweepArranger(absl::Span<const std::pair<int64_t, int64_t>> points);
 
   // This type is neither copyable nor movable.
   SweepArranger(const SweepArranger&) = delete;

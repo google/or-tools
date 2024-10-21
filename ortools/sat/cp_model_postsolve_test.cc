@@ -96,7 +96,7 @@ TEST(PostsolveResponseTest, ExactlyOneExample2) {
   EXPECT_THAT(solution, ::testing::ElementsAre(0, 1, 0));
 }
 
-TEST(PostsolveResponseTest, Element) {
+TEST(PostsolveResponseTest, FixedTarget) {
   // Fixing z will allow the postsolve code to reconstruct all values.
   const CpModelProto mapping_proto = ParseTestProto(R"pb(
     variables {
@@ -105,21 +105,22 @@ TEST(PostsolveResponseTest, Element) {
     }
     variables {
       name: 'a'
-      domain: [ 1, 10 ]
+      domain: [ 5, 5 ]
     }
     variables {
       name: 'b'
-      domain: [ 0, 10 ]
+      domain: [ 7, 7 ]
     }
     variables {
       name: 'target'
-      domain: [ 0, 10 ]
+      domain: [ 7, 7 ]
     }
     constraints {
       element {
-        index: 0
-        vars: [ 1, 2 ]
-        target: 3
+        linear_index { vars: 0 coeffs: 1 }
+        linear_target { vars: 3 coeffs: 1 }
+        exprs { vars: 1, coeffs: 1 }
+        exprs { vars: 2, coeffs: 1 }
       }
     }
   )pb");
@@ -128,23 +129,31 @@ TEST(PostsolveResponseTest, Element) {
   std::vector<int> postsolve_mapping = {};
   PostsolveResponse(/*num_variables_in_original_model=*/4, mapping_proto,
                     postsolve_mapping, &solution);
-  EXPECT_THAT(solution, ::testing::ElementsAre(0, 1, 0, 1));
+  EXPECT_THAT(solution, ::testing::ElementsAre(1, 5, 7, 7));
 }
 
-TEST(PostsolveResponseTest, VariableElement) {
+TEST(PostsolveResponseTest, FixedIndex) {
   const CpModelProto mapping_proto = ParseTestProto(R"pb(
-    variables { domain: [ 0, 129 ] }
-    variables { domain: [ 1, 5 ] }
+    variables { domain: [ 7, 7 ] }
+    variables { domain: [ 3, 3 ] }
     variables { domain: [ 0, 129 ] }
     variables { domain: [ 2, 2 ] }
-    constraints { element { index: 3 target: 2 vars: 0 vars: 1 vars: 0 } }
+    constraints {
+      element {
+        linear_index { vars: 3 coeffs: 1 }
+        linear_target { vars: 2 coeffs: 1 }
+        exprs { vars: 0, coeffs: 1 }
+        exprs { vars: 1, coeffs: 1 }
+        exprs { vars: 0, coeffs: 1 }
+      }
+    }
   )pb");
 
   std::vector<int64_t> solution;
   std::vector<int> postsolve_mapping = {};
   PostsolveResponse(/*num_variables_in_original_model=*/4, mapping_proto,
                     postsolve_mapping, &solution);
-  EXPECT_THAT(solution, ::testing::ElementsAre(0, 1, 0, 2));
+  EXPECT_THAT(solution, ::testing::ElementsAre(7, 3, 7, 2));
 }
 
 // Note that our postolve code is "limited" when it come to solving a single
@@ -158,7 +167,7 @@ TEST(PostsolveResponseTest, TrickyLinearCase) {
   // there is a possible z, but the reverse is not true, since y = 1, z = 0 is
   // not feasible.
   //
-  // The preosolve should deal with that by putting z first so that the
+  // The presolve should deal with that by putting z first so that the
   // postsolve code do not fail.
   const CpModelProto mapping_proto = ParseTestProto(R"pb(
     variables {

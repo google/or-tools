@@ -927,24 +927,52 @@ Constraint CpModelBuilder::AddAllDifferent(
 }
 
 Constraint CpModelBuilder::AddVariableElement(
-    IntVar index, absl::Span<const IntVar> variables, IntVar target) {
+    LinearExpr index, absl::Span<const IntVar> variables, LinearExpr target) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_element()->set_index(index.index_);
-  proto->mutable_element()->set_target(target.index_);
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
   for (const IntVar& var : variables) {
-    proto->mutable_element()->add_vars(var.index_);
+    *proto->mutable_element()->add_exprs() = LinearExprToProto(var);
   }
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddElement(IntVar index,
+Constraint CpModelBuilder::AddElement(LinearExpr index,
                                       absl::Span<const int64_t> values,
-                                      IntVar target) {
+                                      LinearExpr target) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_element()->set_index(index.index_);
-  proto->mutable_element()->set_target(target.index_);
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
   for (int64_t value : values) {
-    proto->mutable_element()->add_vars(IndexFromConstant(value));
+    proto->mutable_element()->add_exprs()->set_offset(value);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddElement(LinearExpr index,
+                                      absl::Span<const LinearExpr> expressions,
+                                      LinearExpr target) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_element()->add_exprs() = LinearExprToProto(expr);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddElement(
+    LinearExpr index, std::initializer_list<LinearExpr> expressions,
+    LinearExpr target) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_element()->add_exprs() = LinearExprToProto(expr);
   }
   return Constraint(proto);
 }

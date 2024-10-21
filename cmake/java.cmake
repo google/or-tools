@@ -373,42 +373,42 @@ add_custom_command(
     $<TARGET_SONAME_FILE:absl::vlog_config_internal>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
-    $<TARGET_SONAME_FILE:protobuf::libprotobuf>
+    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
+    $<$<BOOL:${BUILD_re2}>:$<TARGET_SONAME_FILE:re2::re2>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
-    $<TARGET_SONAME_FILE:re2::re2>
+    $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
+    $<$<BOOL:${BUILD_Protobuf}>:$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_CoinUtils}>,copy,true>
-    $<TARGET_SONAME_FILE:Coin::CoinUtils>
+    $<$<BOOL:${BUILD_CoinUtils}>:$<TARGET_SONAME_FILE:Coin::CoinUtils>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_Osi}>,copy,true>
-    $<TARGET_SONAME_FILE:Coin::Osi>
+    $<$<BOOL:${BUILD_Osi}>:$<TARGET_SONAME_FILE:Coin::Osi>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_Clp}>,copy,true>
-    $<TARGET_SONAME_FILE:Coin::Clp>
-    $<TARGET_SONAME_FILE:Coin::OsiClp>
-    $<TARGET_SONAME_FILE:Coin::ClpSolver>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::Clp>>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::OsiClp>>
+    $<$<BOOL:${BUILD_Clp}>:$<TARGET_SONAME_FILE:Coin::ClpSolver>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_Cgl}>,copy,true>
-    $<TARGET_SONAME_FILE:Coin::Cgl>
+    $<$<BOOL:${BUILD_Cgl}>:$<TARGET_SONAME_FILE:Coin::Cgl>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_Cbc}>,copy,true>
-    $<TARGET_SONAME_FILE:Coin::Cbc>
-    $<TARGET_SONAME_FILE:Coin::OsiCbc>
-    $<TARGET_SONAME_FILE:Coin::CbcSolver>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::Cbc>>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::OsiCbc>>
+    $<$<BOOL:${BUILD_Cbc}>:$<TARGET_SONAME_FILE:Coin::CbcSolver>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
-    $<TARGET_SONAME_FILE:highs>
+    $<$<BOOL:${BUILD_HIGHS}>:$<TARGET_SONAME_FILE:highs>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${MAVEN_EXECUTABLE} compile -B
