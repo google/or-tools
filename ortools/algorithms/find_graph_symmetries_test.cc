@@ -47,7 +47,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/path.h"
-#include "ortools/graph/io.h"
+#include "ortools/graph/graph_io.h"
 #include "ortools/graph/util.h"
 
 namespace operations_research {
