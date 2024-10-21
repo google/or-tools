@@ -110,13 +110,13 @@ void RunLinearProgrammingExample(absl::string_view solver_id) {
 }
 
 void RunAllExamples() {
-  // RunLinearProgrammingExample("GLOP");
-  // RunLinearProgrammingExample("CLP");
-  // RunLinearProgrammingExample("GUROBI_LP");
-  // RunLinearProgrammingExample("CPLEX_LP");
-  // RunLinearProgrammingExample("GLPK_LP");
-  // RunLinearProgrammingExample("XPRESS_LP");
-  // RunLinearProgrammingExample("PDLP");
+  RunLinearProgrammingExample("GLOP");
+  RunLinearProgrammingExample("CLP");
+  RunLinearProgrammingExample("GUROBI_LP");
+  RunLinearProgrammingExample("CPLEX_LP");
+  RunLinearProgrammingExample("GLPK_LP");
+  RunLinearProgrammingExample("XPRESS_LP");
+  RunLinearProgrammingExample("PDLP");
   RunLinearProgrammingExample("HIGHS");
 }
 }  // namespace operations_research
