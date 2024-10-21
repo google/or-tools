@@ -252,7 +252,7 @@ if(BUILD_HIGHS)
     GIT_TAG        "v1.8.0"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.7.2.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.8.0.patch"
   )
   FetchContent_MakeAvailable(highs)
   list(POP_BACK CMAKE_MESSAGE_INDENT)

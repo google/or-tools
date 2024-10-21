@@ -52,7 +52,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   const MPModelProto& model = **optional_model;
 
   Highs highs;
-  // TODO(user): Set model name.
+  // Set model name.
   if (model.has_name()) {
     const std::string model_name = model.name();
     highs.passModelName(model_name);
@@ -115,8 +115,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       highs.changeColCost(column, obj_coeffs[column]);
     }
 
-    // TODO(user): Support variable names.
-    // Variable names
+    // Variable names.
     for (int v = 0; v < variable_size; ++v) {
       const MPVariableProto& variable = model.variable(v);
       std::string varname_str = "";
@@ -126,7 +125,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       }
     }
 
-    // TODO(user): Support hints.
+    // Hints.
     int num_hints = model.solution_hint().var_index_size();
     if (num_hints > 0) {
       std::vector<HighsInt> hint_index(0, num_hints);
@@ -184,8 +183,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
         }
       }
 
-      // TODO(user): Support constraint names.
-      // Constraint names
+      // Constraint names.
       for (int c = 0; c < model.constraint_size(); ++c) {
         const MPConstraintProto& constraint = model.constraint(c);
         std::string constraint_name_str = "";
