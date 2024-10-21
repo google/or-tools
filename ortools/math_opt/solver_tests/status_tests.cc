@@ -100,7 +100,7 @@ TEST_P(StatusTest, PrimalAndDualInfeasible) {
            "with a primal-dual infeasible LP relaxation.";
   }
   if (GetParam().solver_type == SolverType::kHighs) {
-    GTEST_SKIP() << "Ignoring this test as Highs 1.7+ returns error.";
+    TEST_SKIP() << "Ignoring this test as Highs 1.7+ returns error.";
   }
 
   Model model;
