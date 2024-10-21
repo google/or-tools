@@ -52,7 +52,11 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   const MPModelProto& model = **optional_model;
 
   Highs highs;
-  // TODO(user): Set model name.
+  // Set model name.
+  if (model.has_name()) {
+    const std::string model_name = model.name();
+    highs.passModelName(model_name);
+  }
 
   if (request->has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
@@ -111,8 +115,29 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       highs.changeColCost(column, obj_coeffs[column]);
     }
 
-    // TODO(user): Support variable names.
-    // TODO(user): Support hints.
+    // Variable names.
+    for (int v = 0; v < variable_size; ++v) {
+      const MPVariableProto& variable = model.variable(v);
+      std::string varname_str = "";
+      if (!variable.name().empty()) {
+        varname_str = variable.name().c_str();
+        highs.passColName(v, varname_str);
+      }
+    }
+
+    // Hints.
+    int num_hints = model.solution_hint().var_index_size();
+    if (num_hints > 0) {
+      std::vector<HighsInt> hint_index(0, num_hints);
+      std::vector<double> hint_value(0, num_hints);
+      for (int i = 0; i < num_hints; ++i) {
+        hint_index[i] = model.solution_hint().var_index(i);
+        hint_value[i] = model.solution_hint().var_value(i);
+      }
+      const int* hint_indices = &hint_index[0];
+      const double* hint_values = &hint_value[0];
+      highs.setSolution((HighsInt)num_hints, hint_indices, hint_values);
+    }
   }
 
   {
@@ -157,7 +182,16 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           return response;
         }
       }
-      // TODO(user): Support constraint names.
+
+      // Constraint names.
+      for (int c = 0; c < model.constraint_size(); ++c) {
+        const MPConstraintProto& constraint = model.constraint(c);
+        std::string constraint_name_str = "";
+        if (!constraint.name().empty()) {
+          constraint_name_str = constraint.name().c_str();
+          highs.passRowName(c, constraint_name_str);
+        }
+      }
     }
 
     if (!model.general_constraint().empty()) {
@@ -220,6 +254,9 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           break;
         default: {
           // TODO(user): report feasible status.
+          const HighsInfo& info = highs.getInfo();
+          if (info.primal_solution_status == kSolutionStatusFeasible)
+            response.set_status(MPSOLVER_FEASIBLE);
           break;
         }
       }
