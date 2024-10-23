@@ -143,7 +143,7 @@ void QuotientAndRemainder(int64_t a, int64_t b, int64_t& q, int64_t& r) {
 
 }  // namespace
 
-// Using the extended Euclidian algo, we find a and b such that
+// Using the extended Euclidean algo, we find a and b such that
 //     a x + b m = gcd(x, m)
 // https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 int64_t ModularInverse(int64_t x, int64_t m) {
@@ -451,44 +451,6 @@ double Percentile::GetPercentile(double percent) {
   return *lower_it + (percentile_rank - lower_rank) * (*upper_it - *lower_it);
 }
 
-void CompressTuples(absl::Span<const int64_t> domain_sizes,
-                    std::vector<std::vector<int64_t>>* tuples) {
-  if (tuples->empty()) return;
-
-  // Remove duplicates if any.
-  gtl::STLSortAndRemoveDuplicates(tuples);
-
-  const int num_vars = (*tuples)[0].size();
-
-  std::vector<int> to_remove;
-  std::vector<int64_t> tuple_minus_var_i(num_vars - 1);
-  for (int i = 0; i < num_vars; ++i) {
-    const int domain_size = domain_sizes[i];
-    if (domain_size == 1) continue;
-    absl::flat_hash_map<std::vector<int64_t>, std::vector<int>>
-        masked_tuples_to_indices;
-    for (int t = 0; t < tuples->size(); ++t) {
-      int out = 0;
-      for (int j = 0; j < num_vars; ++j) {
-        if (i == j) continue;
-        tuple_minus_var_i[out++] = (*tuples)[t][j];
-      }
-      masked_tuples_to_indices[tuple_minus_var_i].push_back(t);
-    }
-    to_remove.clear();
-    for (const auto& it : masked_tuples_to_indices) {
-      if (it.second.size() != domain_size) continue;
-      (*tuples)[it.second.front()][i] = kTableAnyValue;
-      to_remove.insert(to_remove.end(), it.second.begin() + 1, it.second.end());
-    }
-    std::sort(to_remove.begin(), to_remove.end(), std::greater<int>());
-    for (const int t : to_remove) {
-      (*tuples)[t] = tuples->back();
-      tuples->pop_back();
-    }
-  }
-}
-
 void MaxBoundedSubsetSum::Reset(int64_t bound) {
   DCHECK_GE(bound, 0);
   gcd_ = 0;
@@ -772,117 +734,6 @@ BasicKnapsackSolver::Result BasicKnapsackSolver::InternalSolve(
   }
 
   return result;
-}
-
-namespace {
-
-// We will call FullyCompressTuplesRecursive() for a set of prefixes of the
-// original tuples, each having the same suffix (in reversed_suffix).
-//
-// For such set, we will compress it on the last variable of the prefixes. We
-// will then for each unique compressed set of value of that variable, call
-// a new FullyCompressTuplesRecursive() on the corresponding subset.
-void FullyCompressTuplesRecursive(
-    absl::Span<const int64_t> domain_sizes,
-    absl::Span<std::vector<int64_t>> tuples,
-    std::vector<absl::InlinedVector<int64_t, 2>>* reversed_suffix,
-    std::vector<std::vector<absl::InlinedVector<int64_t, 2>>>* output) {
-  struct TempData {
-    absl::InlinedVector<int64_t, 2> values;
-    int index;
-
-    bool operator<(const TempData& other) const {
-      return values < other.values;
-    }
-  };
-  std::vector<TempData> temp_data;
-
-  CHECK(!tuples.empty());
-  CHECK(!tuples[0].empty());
-  const int64_t domain_size = domain_sizes[tuples[0].size() - 1];
-
-  // Sort tuples and regroup common prefix in temp_data.
-  std::sort(tuples.begin(), tuples.end());
-  for (int i = 0; i < tuples.size();) {
-    const int start = i;
-    temp_data.push_back({{tuples[start].back()}, start});
-    tuples[start].pop_back();
-    for (++i; i < tuples.size(); ++i) {
-      const int64_t v = tuples[i].back();
-      tuples[i].pop_back();
-      if (tuples[i] == tuples[start]) {
-        temp_data.back().values.push_back(v);
-      } else {
-        tuples[i].push_back(v);
-        break;
-      }
-    }
-
-    // If one of the value is the special value kTableAnyValue, we convert
-    // it to the "empty means any" format.
-    for (const int64_t v : temp_data.back().values) {
-      if (v == kTableAnyValue) {
-        temp_data.back().values.clear();
-        break;
-      }
-    }
-    gtl::STLSortAndRemoveDuplicates(&temp_data.back().values);
-
-    // If values cover the whole domain, we clear the vector. This allows to
-    // use less space and avoid creating uneeded clauses.
-    if (temp_data.back().values.size() == domain_size) {
-      temp_data.back().values.clear();
-    }
-  }
-
-  if (temp_data.size() == 1) {
-    output->push_back({});
-    for (const int64_t v : tuples[temp_data[0].index]) {
-      if (v == kTableAnyValue) {
-        output->back().push_back({});
-      } else {
-        output->back().push_back({v});
-      }
-    }
-    output->back().push_back(temp_data[0].values);
-    for (int i = reversed_suffix->size(); --i >= 0;) {
-      output->back().push_back((*reversed_suffix)[i]);
-    }
-    return;
-  }
-
-  // Sort temp_data and make recursive call for all tuples that share the
-  // same suffix.
-  std::sort(temp_data.begin(), temp_data.end());
-  std::vector<std::vector<int64_t>> temp_tuples;
-  for (int i = 0; i < temp_data.size();) {
-    reversed_suffix->push_back(temp_data[i].values);
-    const int start = i;
-    temp_tuples.clear();
-    for (; i < temp_data.size(); i++) {
-      if (temp_data[start].values != temp_data[i].values) break;
-      temp_tuples.push_back(tuples[temp_data[i].index]);
-    }
-    FullyCompressTuplesRecursive(domain_sizes, absl::MakeSpan(temp_tuples),
-                                 reversed_suffix, output);
-    reversed_suffix->pop_back();
-  }
-}
-
-}  // namespace
-
-// TODO(user): We can probably reuse the tuples memory always and never create
-// new one. We should also be able to code an iterative version of this. Note
-// however that the recursion level is bounded by the number of coluns which
-// should be small.
-std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
-    absl::Span<const int64_t> domain_sizes,
-    std::vector<std::vector<int64_t>>* tuples) {
-  std::vector<absl::InlinedVector<int64_t, 2>> reversed_suffix;
-  std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> output;
-  FullyCompressTuplesRecursive(domain_sizes, absl::MakeSpan(*tuples),
-                               &reversed_suffix, &output);
-  return output;
 }
 
 namespace {

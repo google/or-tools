@@ -329,23 +329,23 @@ public class CpModel
         return ct;
     }
 
-        /**
-         * <summary>
-         * Adds <c> AllowedAssignments(expressions)</c>.
-         * </summary>
-         *
-         * <remarks>An AllowedAssignments constraint is a constraint on an array of affine
-         * expressions (a * var + b) that forces, when all expressions are fixed to a single
-         * value, that the corresponding list of values is equal to one of the tuples of the
-         * tupleList.
-         * </remarks>
-         *
-         * <param name="exprs"> a list of affine expressions (a * var + b)</param>
-         * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
-         * directly to the table constraint
-         * </returns>
-         */
-        public TableConstraint AddAllowedAssignments(IEnumerable<LinearExpr> exprs)
+    /**
+     * <summary>
+     * Adds <c> AllowedAssignments(expressions)</c>.
+     * </summary>
+     *
+     * <remarks>An AllowedAssignments constraint is a constraint on an array of affine
+     * expressions (a * var + b) that forces, when all expressions are fixed to a single
+     * value, that the corresponding list of values is equal to one of the tuples of the
+     * tupleList.
+     * </remarks>
+     *
+     * <param name="exprs"> a list of affine expressions (a * var + b)</param>
+     * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
+     * directly to the table constraint
+     * </returns>
+     */
+    public TableConstraint AddAllowedAssignments(IEnumerable<LinearExpr> exprs)
     {
         TableConstraintProto table = new TableConstraintProto();
         table.Vars.TrySetCapacity(exprs);

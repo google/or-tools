@@ -398,7 +398,7 @@ public class SatSolverTest
         CpModel model = new CpModel();
         IntVar v1 = model.NewIntVar(1, 10, "v1");
         IntVar v2 = model.NewIntVar(1, 10, "v2");
-        model.AddElement(v1 + 2, new int[] {1, 3, 5}, 5 - v2);
+        model.AddElement(v1 + 2, new int[] { 1, 3, 5 }, 5 - v2);
         Assert.Equal(3, model.Model.Constraints[0].Element.Exprs.Count);
     }
 
@@ -410,7 +410,7 @@ public class SatSolverTest
         IntVar x = model.NewIntVar(0, 5, "x");
         IntVar y = model.NewIntVar(0, 5, "y");
         IntVar z = model.NewIntVar(0, 5, "z");
-        model.AddElement(v1, new LinearExpr[] {x + 2, -y, LinearExpr.Constant(5), 2 * z}, 5 - v2);
+        model.AddElement(v1, new LinearExpr[] { x + 2, -y, LinearExpr.Constant(5), 2 * z }, 5 - v2);
         Assert.Equal(4, model.Model.Constraints[0].Element.Exprs.Count);
     }
 
