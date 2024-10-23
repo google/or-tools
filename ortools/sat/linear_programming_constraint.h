@@ -74,53 +74,7 @@ class ScatteredIntegerVector {
   bool AddLinearExpressionMultiple(IntegerValue multiplier,
                                    absl::Span<const glop::ColIndex> cols,
                                    absl::Span<const IntegerValue> coeffs,
-                                   IntegerValue max_coeff_magnitude) {
-  // Since we have the norm, this avoid checking each products below.
-  if (check_overflow) {
-    const IntegerValue prod = CapProdI(max_coeff_magnitude, multiplier);
-    if (AtMinOrMaxInt64(prod.value())) return false;
-  }
-
-  IntegerValue* data = dense_vector_.data();
-  const double threshold = 0.1 * static_cast<double>(dense_vector_.size());
-  const int num_terms = cols.size();
-  if (is_sparse_ && static_cast<double>(num_terms) < threshold) {
-    for (int i = 0; i < num_terms; ++i) {
-      const glop::ColIndex col = cols[i];
-      if (is_zeros_[col]) {
-        is_zeros_[col] = false;
-        non_zeros_.push_back(col);
-      }
-      const IntegerValue product = multiplier * coeffs[i];
-      if (check_overflow) {
-        if (AddIntoOverflow(product.value(),
-                            data[col.value()].mutable_value())) {
-          return false;
-        }
-      } else {
-        data[col.value()] += product;
-      }
-    }
-    if (static_cast<double>(non_zeros_.size()) > threshold) {
-      is_sparse_ = false;
-    }
-  } else {
-    is_sparse_ = false;
-    for (int i = 0; i < num_terms; ++i) {
-      const glop::ColIndex col = cols[i];
-      const IntegerValue product = multiplier * coeffs[i];
-      if (check_overflow) {
-        if (AddIntoOverflow(product.value(),
-                            data[col.value()].mutable_value())) {
-          return false;
-        }
-      } else {
-        data[col.value()] += product;
-      }
-    }
-  }
-  return true;
-}
+                                   IntegerValue max_coeff_magnitude);
 
   // This is not const only because non_zeros is sorted. Note that sorting the
   // non-zeros make the result deterministic whether or not we were in sparse
@@ -160,6 +114,7 @@ class ScatteredIntegerVector {
   // The dense representation of the vector.
   util_intops::StrongVector<glop::ColIndex, IntegerValue> dense_vector_;
 };
+
 
 // A SAT constraint that enforces a set of linear inequality constraints on
 // integer variables using an LP solver.
