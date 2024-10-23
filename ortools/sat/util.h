@@ -15,7 +15,6 @@
 #define OR_TOOLS_SAT_UTIL_H_
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdint>
 #include <deque>
@@ -27,7 +26,6 @@
 
 #include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/log/log_streamer.h"
 #include "absl/numeric/int128.h"
@@ -600,38 +598,6 @@ class Percentile {
   std::deque<double> records_;
   const int record_limit_;
 };
-
-// This method tries to compress a list of tuples by merging complementary
-// tuples, that is a set of tuples that only differ on one variable, and that
-// cover the domain of the variable. In that case, it will keep only one tuple,
-// and replace the value for variable by any_value, the equivalent of '*' in
-// regexps.
-//
-// This method is exposed for testing purposes.
-constexpr int64_t kTableAnyValue = std::numeric_limits<int64_t>::min();
-void CompressTuples(absl::Span<const int64_t> domain_sizes,
-                    std::vector<std::vector<int64_t>>* tuples);
-
-// Similar to CompressTuples() but produces a final table where each cell is
-// a set of value. This should result in a table that can still be encoded
-// efficiently in SAT but with less tuples and thus less extra Booleans. Note
-// that if a set of value is empty, it is interpreted at "any" so we can gain
-// some space.
-//
-// The passed tuples vector is used as temporary memory and is detroyed.
-// We interpret kTableAnyValue as an "any" tuple.
-//
-// TODO(user): To reduce memory, we could return some absl::Span in the last
-// layer instead of vector.
-//
-// TODO(user): The final compression is depend on the order of the variables.
-// For instance the table (1,1)(1,2)(1,3),(1,4),(2,3) can either be compressed
-// as (1,*)(2,3) or (1,{1,2,4})({1,3},3). More experiment are needed to devise
-// a better heuristic. It might for example be good to call CompressTuples()
-// first.
-std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
-    absl::Span<const int64_t> domain_sizes,
-    std::vector<std::vector<int64_t>>* tuples);
 
 // Keep the top n elements from a stream of elements.
 //

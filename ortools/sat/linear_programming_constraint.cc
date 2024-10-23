@@ -106,57 +106,6 @@ bool ScatteredIntegerVector::Add(glop::ColIndex col, IntegerValue value) {
   return true;
 }
 
-template <bool check_overflow>
-bool ScatteredIntegerVector::AddLinearExpressionMultiple(
-    const IntegerValue multiplier, absl::Span<const glop::ColIndex> cols,
-    absl::Span<const IntegerValue> coeffs, IntegerValue max_coeff_magnitude) {
-  // Since we have the norm, this avoid checking each products below.
-  if (check_overflow) {
-    const IntegerValue prod = CapProdI(max_coeff_magnitude, multiplier);
-    if (AtMinOrMaxInt64(prod.value())) return false;
-  }
-
-  IntegerValue* data = dense_vector_.data();
-  const double threshold = 0.1 * static_cast<double>(dense_vector_.size());
-  const int num_terms = cols.size();
-  if (is_sparse_ && static_cast<double>(num_terms) < threshold) {
-    for (int i = 0; i < num_terms; ++i) {
-      const glop::ColIndex col = cols[i];
-      if (is_zeros_[col]) {
-        is_zeros_[col] = false;
-        non_zeros_.push_back(col);
-      }
-      const IntegerValue product = multiplier * coeffs[i];
-      if (check_overflow) {
-        if (AddIntoOverflow(product.value(),
-                            data[col.value()].mutable_value())) {
-          return false;
-        }
-      } else {
-        data[col.value()] += product;
-      }
-    }
-    if (static_cast<double>(non_zeros_.size()) > threshold) {
-      is_sparse_ = false;
-    }
-  } else {
-    is_sparse_ = false;
-    for (int i = 0; i < num_terms; ++i) {
-      const glop::ColIndex col = cols[i];
-      const IntegerValue product = multiplier * coeffs[i];
-      if (check_overflow) {
-        if (AddIntoOverflow(product.value(),
-                            data[col.value()].mutable_value())) {
-          return false;
-        }
-      } else {
-        data[col.value()] += product;
-      }
-    }
-  }
-  return true;
-}
-
 LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
     absl::Span<const IntegerVariable> integer_variables,
     IntegerValue upper_bound,

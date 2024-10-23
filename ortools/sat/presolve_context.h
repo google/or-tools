@@ -15,7 +15,6 @@
 #define OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
-#include <deque>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -288,7 +287,7 @@ class PresolveContext {
 
   // At the beginning of the presolve, we delay the costly creation of this
   // "graph" until we at least ran some basic presolve. This is because during
-  // a LNS neighbhorhood, many constraints will be reduced significantly by
+  // a LNS neighborhood, many constraints will be reduced significantly by
   // this "simple" presolve.
   bool ConstraintVariableGraphIsUpToDate() const;
 
@@ -461,7 +460,7 @@ class PresolveContext {
   bool RecomputeSingletonObjectiveDomain();
 
   // Some function need the domain to be up to date in the proto.
-  // This make sures our in-memory domain are writted back to the proto.
+  // This make sures our in-memory domain are written back to the proto.
   void WriteVariableDomainsToProto() const;
 
   // Checks if the given exactly_one is included in the objective, and simplify
@@ -773,15 +772,6 @@ class PresolveContext {
 // Utility function to load the current problem into a in-memory representation
 // that will be used for probing. Returns false if UNSAT.
 bool LoadModelForProbing(PresolveContext* context, Model* local_model);
-
-// Canonicalizes the table constraint by removing all unreachable tuples, and
-// all columns which have the same variable of a previous column.
-//
-// This also sort all the tuples.
-void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct);
-
-// Removed all fixed columns from the table.
-void RemoveFixedColumnsFromTable(PresolveContext* context, ConstraintProto* ct);
 
 }  // namespace sat
 }  // namespace operations_research

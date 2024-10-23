@@ -244,6 +244,23 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "constraint_violation_test",
+    size = "small",
+    srcs = ["constraint_violation_test.cc"],
+    deps = [
+        ":constraint_violation",
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "feasibility_jump",
     srcs = ["feasibility_jump.cc"],
@@ -664,6 +681,17 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "cp_model_test_utils",
+    srcs = ["cp_model_test_utils.cc"],
+    hdrs = ["cp_model_test_utils.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "@com_google_absl//absl/random",
+    ],
+)
+
 proto_library(
     name = "boolean_problem_proto",
     srcs = ["boolean_problem.proto"],
@@ -682,9 +710,8 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":util",
-        "//ortools/base",
         "//ortools/base:strong_vector",
-        "//ortools/base:types",
+        "//ortools/base:timer",
         "//ortools/util:bitset",
         "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
@@ -695,7 +722,6 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",
-        "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
@@ -785,6 +811,36 @@ cc_test(
 )
 
 cc_library(
+    name = "cp_model_table",
+    srcs = ["cp_model_table.cc"],
+    hdrs = ["cp_model_table.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":presolve_context",
+        "//ortools/base:stl_util",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "cp_model_table_test",
+    size = "small",
+    srcs = ["cp_model_table_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_table",
+        ":sat_parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "cp_model_presolve",
     srcs = [
         "cp_model_presolve.cc",
@@ -799,6 +855,7 @@ cc_library(
         ":cp_model_expand",
         ":cp_model_mapping",
         ":cp_model_symmetries",
+        ":cp_model_table",
         ":cp_model_utils",
         ":diffn_util",
         ":diophantine",
@@ -849,6 +906,28 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "cp_model_presolve_random_test",
+    size = "medium",
+    srcs = ["cp_model_presolve_random_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_solver",
+        ":cp_model_utils",
+        ":sat_parameters_cc_proto",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 cc_library(
     name = "cp_model_postsolve",
     srcs = [
@@ -888,6 +967,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
+        ":cp_model_table",
         ":cp_model_utils",
         ":presolve_context",
         ":sat_parameters_cc_proto",
@@ -1154,6 +1234,22 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sat_decision_test",
+    size = "small",
+    srcs = ["sat_decision_test.cc"],
+    deps = [
+        ":model",
+        ":sat_base",
+        ":sat_decision",
+        ":sat_parameters_cc_proto",
+        ":sat_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/random",
+    ],
+)
+
 cc_library(
     name = "clause",
     srcs = ["clause.cc"],
@@ -1183,6 +1279,23 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "clause_test",
+    size = "small",
+    srcs = ["clause_test.cc"],
+    deps = [
+        ":clause",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/random",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -1451,6 +1564,20 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lb_tree_search_test",
+    size = "small",
+    srcs = ["lb_tree_search_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_solver",
+        ":cp_model_test_utils",
+        ":lb_tree_search",
+        ":sat_parameters_cc_proto",
+        "//ortools/base:gmock_main",
     ],
 )
 
@@ -2022,6 +2149,28 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "boolean_problem_test",
+    size = "small",
+    srcs = [
+        "boolean_problem_test.cc",
+        "opb_reader.h",
+    ],
+    deps = [
+        ":boolean_problem",
+        ":boolean_problem_cc_proto",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_library(
     name = "linear_relaxation",
     srcs = ["linear_relaxation.cc"],
@@ -2168,6 +2317,29 @@ cc_library(
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "linear_programming_constraint_test",
+    srcs = ["linear_programming_constraint_test.cc"],
+    deps = [
+        ":cp_model_solver",
+        ":integer",
+        ":integer_search",
+        ":linear_constraint",
+        ":linear_constraint_manager",
+        ":linear_programming_constraint",
+        ":model",
+        ":sat_parameters_cc_proto",
+        ":sat_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/base:mathutil",
+        "//ortools/lp_data:base",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -2601,6 +2773,31 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "util_test",
+    srcs = ["util_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_solver",
+        ":cp_model_utils",
+        ":sat_base",
+        ":sat_parameters_cc_proto",
+        ":util",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/base:mathutil",
+        "//ortools/util:random_engine",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 
@@ -3086,6 +3283,25 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "feasibility_pump_test",
+    size = "small",
+    srcs = ["feasibility_pump_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_loader",
+        ":cp_model_mapping",
+        ":feasibility_pump",
+        ":integer",
+        ":linear_constraint",
+        ":model",
+        ":sat_base",
+        ":sat_parameters_cc_proto",
+        ":sat_solver",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "rins",
     srcs = ["rins.cc"],
@@ -3249,6 +3465,25 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sat_cnf_reader_test",
+    size = "small",
+    srcs = [
+        "sat_cnf_reader_test.cc",
+    ],
+    deps = [
+        ":boolean_problem",
+        ":boolean_problem_cc_proto",
+        ":sat_cnf_reader",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
 cc_library(
     name = "cp_model_symmetries",
     srcs = ["cp_model_symmetries.cc"],
@@ -3285,6 +3520,24 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "cp_model_symmetries_test",
+    srcs = ["cp_model_symmetries_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_symmetries",
+        ":model",
+        ":presolve_context",
+        ":sat_parameters_cc_proto",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:logging",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -3433,6 +3686,21 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:parse_text_proto",
         "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "diophantine_test",
+    srcs = ["diophantine_test.cc"],
+    deps = [
+        ":diophantine",
+        ":util",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
