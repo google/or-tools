@@ -1594,8 +1594,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
     // Reduce coefficients.
     const int64_t gcd =
-        MathUtil::GCD64(static_cast<uint64_t>(std::abs(constant_factor)),
-                        static_cast<uint64_t>(std::abs(target_divisor)));
+        std::gcd(static_cast<uint64_t>(std::abs(constant_factor)),
+                 static_cast<uint64_t>(std::abs(target_divisor)));
     if (gcd != 1) {
       constant_factor /= gcd;
       DivideLinearExpression(gcd, target);
@@ -2133,7 +2133,7 @@ bool CpModelPresolver::DivideLinearByGcd(ConstraintProto* ct) {
   const int num_vars = ct->linear().vars().size();
   for (int i = 0; i < num_vars; ++i) {
     const int64_t magnitude = std::abs(ct->linear().coeffs(i));
-    gcd = MathUtil::GCD64(gcd, magnitude);
+    gcd = std::gcd(gcd, magnitude);
     if (gcd == 1) break;
   }
   if (gcd > 1) {
@@ -2470,7 +2470,7 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
   for (int i = 0; i < num_variables; ++i) {
     if (i == target_index) continue;
     const int64_t magnitude = std::abs(ct->linear().coeffs(i));
-    gcd = MathUtil::GCD64(gcd, magnitude);
+    gcd = std::gcd(gcd, magnitude);
     if (gcd == 1) return false;
   }
 
@@ -3173,7 +3173,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
   rd_divisors_.clear();
   for (int i = 0; i < rd_entries_.size(); ++i) {
     const RdEntry& e = rd_entries_[i];
-    gcd = MathUtil::GCD64(gcd, e.magnitude);
+    gcd = std::gcd(gcd, e.magnitude);
     max_error -= e.max_variation;
 
     // We regroup all term with the same coefficient into one.
@@ -4366,8 +4366,9 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // TODO(user): If 2 * min_coeff_magnitude >= bound, then the constraint can
   // be completely rewriten to 2 * (enforcement_part) + sum var >= 2 which is
   // what happen eventually when bound is even, but not if it is odd currently.
-  int64_t second_threshold = std::max(CeilOfRatio(threshold, int64_t{2}),
-                                      threshold - min_coeff_magnitude);
+  int64_t second_threshold =
+      std::max(MathUtil::CeilOfRatio(threshold, int64_t{2}),
+               threshold - min_coeff_magnitude);
 
   // Tricky: The second threshold only work if the domain is simple. If the
   // domain has holes, changing the coefficient might change whether the
@@ -5131,170 +5132,99 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  if (ct->table().vars().empty()) {
-    context_->UpdateRuleStats("table: empty constraint");
-    return MarkConstraintAsFalse(ct);
+
+  bool changed = false;
+  for (int i = 0; i < ct->table().exprs_size(); ++i) {
+    changed |= CanonicalizeLinearExpression(
+        *ct, ct->mutable_table()->mutable_exprs(i));
   }
 
-  const int initial_num_vars = ct->table().vars_size();
-  bool changed = true;
+  const int initial_num_exprs = ct->table().exprs_size();
+  if (initial_num_exprs > 0) CanonicalizeTable(context_, ct);
+  changed |= (ct->table().exprs_size() != initial_num_exprs);
 
-  // Query existing affine relations.
-  std::vector<AffineRelation::Relation> affine_relations;
-  std::vector<int64_t> old_var_lb;
-  std::vector<int64_t> old_var_ub;
-  {
-    for (int v = 0; v < initial_num_vars; ++v) {
-      const int ref = ct->table().vars(v);
-      AffineRelation::Relation r = context_->GetAffineRelation(ref);
-      affine_relations.push_back(r);
-      old_var_lb.push_back(context_->MinOf(ref));
-      old_var_ub.push_back(context_->MaxOf(ref));
-      if (r.representative != ref) {
-        changed = true;
-        ct->mutable_table()->set_vars(v, r.representative);
-        context_->UpdateRuleStats(
-            "table: replace variable by canonical affine one");
-      }
-    }
+  if (ct->table().exprs().empty()) {
+    context_->UpdateRuleStats("table: no expressions");
+    return RemoveConstraint(ct);
   }
 
-  // Check for duplicate occurrences of variables.
-  // If the ith index is -1, then the variable is not a duplicate of a smaller
-  // index variable. It if is != from -1, then the values stored is the new
-  // index of the first occurrence of the variable.
-  std::vector<int> old_index_of_duplicate_to_new_index_of_first_occurrence(
-      initial_num_vars, -1);
-  // If == -1, then the variable is a duplicate of a smaller index variable.
-  std::vector<int> old_index_to_new_index(initial_num_vars, -1);
-  int num_vars = 0;
-  {
-    absl::flat_hash_map<int, int> first_visit;
-    for (int p = 0; p < initial_num_vars; ++p) {
-      const int ref = ct->table().vars(p);
-      const int var = PositiveRef(ref);
-      const auto& it = first_visit.find(var);
-      if (it != first_visit.end()) {
-        const int previous = it->second;
-        old_index_of_duplicate_to_new_index_of_first_occurrence[p] = previous;
-        context_->UpdateRuleStats("table: duplicate variables");
-        changed = true;
-      } else {
-        ct->mutable_table()->set_vars(num_vars, ref);
-        first_visit[var] = num_vars;
-        old_index_to_new_index[p] = num_vars;
-        num_vars++;
-      }
-    }
-
-    if (num_vars < initial_num_vars) {
-      ct->mutable_table()->mutable_vars()->Truncate(num_vars);
+  if (ct->table().values().empty()) {
+    if (ct->table().negated()) {
+      context_->UpdateRuleStats("table: negative table without tuples");
+      return RemoveConstraint(ct);
+    } else {
+      context_->UpdateRuleStats("table: positive table without tuplest");
+      return MarkConstraintAsFalse(ct);
     }
   }
 
-  // Check each tuple for validity w.r.t. affine relations, variable domains,
-  // and consistency with duplicate variables. Reduce the size of the tuple in
-  // case of duplicate variables.
-  std::vector<std::vector<int64_t>> new_tuples;
-  const int initial_num_tuples = ct->table().values_size() / initial_num_vars;
-  std::vector<absl::flat_hash_set<int64_t>> new_domains(num_vars);
-
-  {
-    std::vector<int64_t> tuple(num_vars);
-    new_tuples.reserve(initial_num_tuples);
-    for (int i = 0; i < initial_num_tuples; ++i) {
-      bool delete_row = false;
-      std::string tmp;
-      for (int j = 0; j < initial_num_vars; ++j) {
-        const int64_t old_value = ct->table().values(i * initial_num_vars + j);
-
-        // Corner case to avoid overflow, assuming the domain where already
-        // propagated between a variable and its affine representative.
-        if (old_value < old_var_lb[j] || old_value > old_var_ub[j]) {
-          delete_row = true;
-          break;
-        }
-
-        // Affine relations are defined on the initial variables.
-        const AffineRelation::Relation& r = affine_relations[j];
-        const int64_t value = (old_value - r.offset) / r.coeff;
-        if (value * r.coeff + r.offset != old_value) {
-          // Value not reachable by affine relation.
-          delete_row = true;
-          break;
-        }
-        const int mapped_position = old_index_to_new_index[j];
-        if (mapped_position == -1) {  // The current variable is duplicate.
-          const int new_index_of_first_occurrence =
-              old_index_of_duplicate_to_new_index_of_first_occurrence[j];
-          if (value != tuple[new_index_of_first_occurrence]) {
-            delete_row = true;
-            break;
-          }
-        } else {
-          const int ref = ct->table().vars(mapped_position);
-          if (!context_->DomainContains(ref, value)) {
-            delete_row = true;
-            break;
-          }
-          tuple[mapped_position] = value;
-        }
-      }
-      if (delete_row) {
-        changed = true;
-        continue;
-      }
-      new_tuples.push_back(tuple);
-      for (int j = 0; j < num_vars; ++j) {
-        new_domains[j].insert(tuple[j]);
-      }
+  int num_fixed_exprs = 0;
+  for (const LinearExpressionProto& expr : ct->table().exprs()) {
+    if (context_->IsFixed(expr)) ++num_fixed_exprs;
+  }
+  if (num_fixed_exprs == ct->table().exprs_size()) {
+    context_->UpdateRuleStats("table: all expressions are fixed");
+    DCHECK_LE(ct->table().values_size(), num_fixed_exprs);
+    if (ct->table().negated() == ct->table().values().empty()) {
+      context_->UpdateRuleStats("table: always true");
+      return RemoveConstraint(ct);
+    } else {
+      context_->UpdateRuleStats("table: always false");
+      return MarkConstraintAsFalse(ct);
     }
-    gtl::STLSortAndRemoveDuplicates(&new_tuples);
-    if (new_tuples.size() < initial_num_tuples) {
-      context_->UpdateRuleStats("table: removed rows");
-    }
+    return RemoveConstraint(ct);
   }
 
-  // Update the list of tuples if needed.
-  if (changed) {
-    ct->mutable_table()->clear_values();
-    for (const std::vector<int64_t>& t : new_tuples) {
-      for (const int64_t v : t) {
-        ct->mutable_table()->add_values(v);
-      }
-    }
+  if (num_fixed_exprs > 0) {
+    RemoveFixedColumnsFromTable(context_, ct);
   }
 
   // Nothing more to do for negated tables.
   if (ct->table().negated()) return changed;
 
   // And for constraints with enforcement literals.
-  if (HasEnforcementLiteral(*ct)) return false;
+  if (HasEnforcementLiteral(*ct)) return changed;
 
-  // Filter the variable domains.
-  for (int j = 0; j < num_vars; ++j) {
-    const int ref = ct->table().vars(j);
-    if (!context_->IntersectDomainWith(
-            PositiveRef(ref),
-            Domain::FromValues(std::vector<int64_t>(new_domains[j].begin(),
-                                                    new_domains[j].end())),
-            &changed)) {
+  // Filter the variables domains.
+  const int num_exprs = ct->table().exprs_size();
+  const int num_tuples = ct->table().values_size() / num_exprs;
+  std::vector<std::vector<int64_t>> new_domains(num_exprs);
+  for (int e = 0; e < num_exprs; ++e) {
+    const LinearExpressionProto& expr = ct->table().exprs(e);
+    if (context_->IsFixed(expr)) {
+      new_domains[e].push_back(context_->FixedValue(expr));
+      continue;
+    }
+
+    for (int t = 0; t < num_tuples; ++t) {
+      new_domains[e].push_back(ct->table().values(t * num_exprs + e));
+    }
+    gtl::STLSortAndRemoveDuplicates(&new_domains[e]);
+    DCHECK_EQ(1, expr.vars_size());
+    DCHECK_EQ(1, expr.coeffs(0));
+    DCHECK_EQ(0, expr.offset());
+    const int var = expr.vars(0);
+    bool domain_modified = false;
+    if (!context_->IntersectDomainWith(var, Domain::FromValues(new_domains[e]),
+                                       &domain_modified)) {
       return true;
     }
+    if (domain_modified) {
+      context_->UpdateRuleStats("table: reduce variable domain");
+    }
   }
-  if (changed) {
-    context_->UpdateRuleStats("table: reduced variable domains");
-  }
-  if (num_vars == 1) {
-    // Now that we properly update the domain, we can remove the constraint.
+
+  if (num_exprs == 1) {
+    // Now that we have properly updated the domain, we can remove the
+    // constraint.
     context_->UpdateRuleStats("table: only one column!");
     return RemoveConstraint(ct);
   }
 
   // Check that the table is not complete or just here to exclude a few tuples.
   double prod = 1.0;
-  for (int j = 0; j < num_vars; ++j) prod *= new_domains[j].size();
-  if (prod == new_tuples.size()) {
+  for (int e = 0; e < num_exprs; ++e) prod *= new_domains[e].size();
+  if (prod == static_cast<double>(num_tuples)) {
     context_->UpdateRuleStats("table: all tuples!");
     return RemoveConstraint(ct);
   }
@@ -5302,17 +5232,25 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   // Convert to the negated table if we gain a lot of entries by doing so.
   // Note however that currently the negated table do not propagate as much as
   // it could.
-  if (new_tuples.size() > 0.7 * prod) {
-    // Enumerate all tuples.
-    std::vector<std::vector<int64_t>> var_to_values(num_vars);
-    for (int j = 0; j < num_vars; ++j) {
-      var_to_values[j].assign(new_domains[j].begin(), new_domains[j].end());
+  if (static_cast<double>(num_tuples) > 0.7 * prod) {
+    std::vector<std::vector<int64_t>> current_tuples(num_tuples);
+    for (int t = 0; t < num_tuples; ++t) {
+      current_tuples[t].resize(num_exprs);
+      for (int e = 0; e < num_exprs; ++e) {
+        current_tuples[t][e] = ct->table().values(t * num_exprs + e);
+      }
+    }
+
+    // Enumerate all possible tuples.
+    std::vector<std::vector<int64_t>> var_to_values(num_exprs);
+    for (int e = 0; e < num_exprs; ++e) {
+      var_to_values[e].assign(new_domains[e].begin(), new_domains[e].end());
     }
     std::vector<std::vector<int64_t>> all_tuples(prod);
     for (int i = 0; i < prod; ++i) {
-      all_tuples[i].resize(num_vars);
+      all_tuples[i].resize(num_exprs);
       int index = i;
-      for (int j = 0; j < num_vars; ++j) {
+      for (int j = 0; j < num_exprs; ++j) {
         all_tuples[i][j] = var_to_values[j][index % var_to_values[j].size()];
         index /= var_to_values[j].size();
       }
@@ -5320,9 +5258,10 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     gtl::STLSortAndRemoveDuplicates(&all_tuples);
 
     // Compute the complement of new_tuples.
-    std::vector<std::vector<int64_t>> diff(prod - new_tuples.size());
+    std::vector<std::vector<int64_t>> diff(prod - num_tuples);
     std::set_difference(all_tuples.begin(), all_tuples.end(),
-                        new_tuples.begin(), new_tuples.end(), diff.begin());
+                        current_tuples.begin(), current_tuples.end(),
+                        diff.begin());
 
     // Negate the constraint.
     ct->mutable_table()->set_negated(!ct->table().negated());
@@ -5332,6 +5271,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     }
     context_->UpdateRuleStats("table: negated");
   }
+
   return changed;
 }
 
@@ -6344,7 +6284,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         gcd = 1;
         break;
       }
-      gcd = MathUtil::GCD64(gcd, context_->MinOf(demand_expr));
+      gcd = std::gcd(gcd, context_->MinOf(demand_expr));
       if (gcd == 1) break;
     }
     if (gcd > 1) {
@@ -6906,7 +6846,7 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
   int64_t min_sum_of_negative_level_changes = 0;
   for (int i = 0; i < num_events; ++i) {
     const int64_t demand = context_->FixedValue(proto.level_changes(i));
-    gcd = MathUtil::GCD64(gcd, std::abs(demand));
+    gcd = std::gcd(gcd, std::abs(demand));
     if (demand > 0) {
       num_positives++;
       max_sum_of_positive_level_changes += demand;
@@ -11200,7 +11140,7 @@ void CpModelPresolver::MaybeTransferLinear1ToAnotherVariable(int var) {
     context_->UpdateRuleStats("linear1: transferred from abs(X) to X");
     const LinearExpressionProto& target = other_ct.lin_max().target();
     const LinearExpressionProto& expr = other_ct.lin_max().exprs(0);
-    transfer_f = [target, expr](const Domain& implied) {
+    transfer_f = [target = target, expr = expr](const Domain& implied) {
       Domain target_domain =
           implied.ContinuousMultiplicationBy(target.coeffs(0))
               .AdditionWith(Domain(target.offset()));
@@ -11604,7 +11544,7 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
     const int64_t shifted_value = i.start - var_min;
     DCHECK_GT(shifted_value, 0);
 
-    gcd = MathUtil::GCD64(gcd, shifted_value);
+    gcd = std::gcd(gcd, shifted_value);
     if (gcd == 1) break;
   }
   if (gcd == 1) return;
@@ -12050,6 +11990,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kElement:
         if (!CopyElement(ct)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kTable:
+        if (!CopyTable(ct)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
         break;
@@ -12440,6 +12383,34 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
   for (const int var : ct.element().vars()) {
     fill_expr(var, new_ct->mutable_element()->add_exprs());
   }
+  return true;
+}
+
+bool ModelCopy::CopyTable(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (ct.table().vars().empty() && !ct.table().exprs().empty()) {
+    // New format, just copy.
+    *new_ct = ct;
+    return true;
+  }
+
+  auto fill_expr = [this](int var, LinearExpressionProto* expr) mutable {
+    if (context_->IsFixed(var)) {
+      expr->set_offset(context_->FixedValue(var));
+    } else {
+      DCHECK(RefIsPositive(var));
+      expr->mutable_vars()->Reserve(1);
+      expr->mutable_coeffs()->Reserve(1);
+      expr->add_vars(var);
+      expr->add_coeffs(1);
+    }
+  };
+
+  for (const int var : ct.table().vars()) {
+    fill_expr(var, new_ct->mutable_table()->add_exprs());
+  }
+  *new_ct->mutable_table()->mutable_values() = ct.table().values();
+
   return true;
 }
 

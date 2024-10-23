@@ -477,11 +477,21 @@ std::string ValidateElementConstraint(const CpModelProto& model,
 
 std::string ValidateTableConstraint(const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
-  if (arg.vars().empty()) return "";
-  if (arg.values().size() % arg.vars().size() != 0) {
+  if (!arg.vars().empty() && !arg.exprs().empty()) {
     return absl::StrCat(
-        "The flat encoding of a table constraint must be a multiple of the "
-        "number of variable: ",
+        "Inconsistent table with both legacy and new format defined: ",
+        ProtobufShortDebugString(ct));
+  }
+  if (arg.vars().empty() && arg.exprs().empty() && !arg.values().empty()) {
+    return absl::StrCat(
+        "Inconsistent table empty expressions and non-empty tuples: ",
+        ProtobufShortDebugString(ct));
+  }
+  const int arity = arg.vars().empty() ? arg.exprs().size() : arg.vars().size();
+  if (arg.values().size() % arity != 0) {
+    return absl::StrCat(
+        "The flat encoding of a table constraint tuples must be a multiple of "
+        "the number of expressions: ",
         ProtobufDebugString(ct));
   }
   return "";
@@ -1451,12 +1461,25 @@ class ConstraintChecker {
   }
 
   bool TableConstraintIsFeasible(const ConstraintProto& ct) {
-    const int size = ct.table().vars_size();
-    if (size == 0) return true;
+    std::vector<int64_t> solution;
+    if (ct.table().exprs().empty()) {
+      for (int i = 0; i < ct.table().vars_size(); ++i) {
+        solution.push_back(Value(ct.table().vars(i)));
+      }
+    } else {
+      for (int i = 0; i < ct.table().exprs_size(); ++i) {
+        solution.push_back(LinearExpressionValue(ct.table().exprs(i)));
+      }
+    }
+
+    // No expression -> always feasible.
+    if (solution.empty()) return true;
+    const int size = solution.size();
+
     for (int row_start = 0; row_start < ct.table().values_size();
          row_start += size) {
       int i = 0;
-      while (Value(ct.table().vars(i)) == ct.table().values(row_start + i)) {
+      while (solution[i] == ct.table().values(row_start + i)) {
         ++i;
         if (i == size) return !ct.table().negated();
       }

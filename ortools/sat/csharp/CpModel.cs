@@ -329,28 +329,29 @@ public class CpModel
         return ct;
     }
 
-    /**
-     * <summary>
-     * Adds <c> AllowedAssignments(variables)</c>.
-     * </summary>
-     *
-     * <remarks>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
-     * all variables are fixed to a single value, that the corresponding list of values is equal to
-     * one of the tuples of the tupleList.
-     * </remarks>
-     *
-     * <param name="vars"> a list of variables</param>
-     * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
-     * directly to the table constraint
-     * </returns>
-     */
-    public TableConstraint AddAllowedAssignments(IEnumerable<IntVar> vars)
+        /**
+         * <summary>
+         * Adds <c> AllowedAssignments(expressions)</c>.
+         * </summary>
+         *
+         * <remarks>An AllowedAssignments constraint is a constraint on an array of affine
+         * expressions (a * var + b) that forces, when all expressions are fixed to a single
+         * value, that the corresponding list of values is equal to one of the tuples of the
+         * tupleList.
+         * </remarks>
+         *
+         * <param name="exprs"> a list of affine expressions (a * var + b)</param>
+         * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
+         * directly to the table constraint
+         * </returns>
+         */
+        public TableConstraint AddAllowedAssignments(IEnumerable<LinearExpr> exprs)
     {
         TableConstraintProto table = new TableConstraintProto();
-        table.Vars.TrySetCapacity(vars);
-        foreach (IntVar var in vars)
+        table.Vars.TrySetCapacity(exprs);
+        foreach (LinearExpr expr in exprs)
         {
-            table.Vars.Add(var.Index);
+            table.Exprs.Add(GetLinearExpressionProto(expr));
         }
 
         TableConstraint ct = new TableConstraint(model_);
@@ -363,18 +364,19 @@ public class CpModel
      * Adds <c> ForbiddenAssignments(variables)</c>.
      * </summary>
      *
-     * <remarks>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
-     * impossible combinations is provided in the tuples list.
+     * <remarks>A ForbiddenAssignments constraint is a constraint on an array of affine
+     * expressions (a * var + b) where the list of impossible combinations is provided
+     * in the tuples list.
      * </remarks>
      *
-     * <param name="vars"> a list of variables</param>
+     * <param name="exprs"> a list of affine expressions (a * var + b)</param>
      * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
      * directly to the table constraint
      * </returns>
      */
-    public TableConstraint AddForbiddenAssignments(IEnumerable<IntVar> vars)
+    public TableConstraint AddForbiddenAssignments(IEnumerable<LinearExpr> exprs)
     {
-        TableConstraint ct = AddAllowedAssignments(vars);
+        TableConstraint ct = AddAllowedAssignments(exprs);
         ct.Proto.Table.Negated = true;
         return ct;
     }

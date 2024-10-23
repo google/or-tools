@@ -524,7 +524,7 @@ void MultipleCircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
 }
 
 void TableConstraint::AddTuple(absl::Span<const int64_t> tuple) {
-  CHECK_EQ(tuple.size(), proto_->table().vars_size());
+  CHECK_EQ(tuple.size(), proto_->table().exprs_size());
   for (const int64_t t : tuple) {
     proto_->mutable_table()->add_values(t);
   }
@@ -986,22 +986,53 @@ MultipleCircuitConstraint CpModelBuilder::AddMultipleCircuitConstraint() {
 }
 
 TableConstraint CpModelBuilder::AddAllowedAssignments(
-    absl::Span<const IntVar> vars) {
+    absl::Span<const LinearExpr> expressions) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  for (const IntVar& var : vars) {
-    proto->mutable_table()->add_vars(var.index_);
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_table()->add_exprs() = LinearExprToProto(expr);
+  }
+  return TableConstraint(proto);
+}
+
+TableConstraint CpModelBuilder::AddAllowedAssignments(
+    absl::Span<const IntVar> variables) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const IntVar var : variables) {
+    LinearExpressionProto* expr = proto->mutable_table()->add_exprs();
+    expr->add_vars(var.index_);
+    expr->add_coeffs(1);
+  }
+  return TableConstraint(proto);
+}
+
+TableConstraint CpModelBuilder::AddAllowedAssignments(
+    std::initializer_list<LinearExpr> expressions) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_table()->add_exprs() = LinearExprToProto(expr);
   }
   return TableConstraint(proto);
 }
 
 TableConstraint CpModelBuilder::AddForbiddenAssignments(
-    absl::Span<const IntVar> vars) {
-  ConstraintProto* const proto = cp_model_.add_constraints();
-  for (const IntVar& var : vars) {
-    proto->mutable_table()->add_vars(var.index_);
-  }
-  proto->mutable_table()->set_negated(true);
-  return TableConstraint(proto);
+    absl::Span<const LinearExpr> expressions) {
+  TableConstraint ct = AddAllowedAssignments(expressions);
+  ct.MutableProto()->mutable_table()->set_negated(true);
+  return ct;
+}
+
+TableConstraint CpModelBuilder::AddForbiddenAssignments(
+    absl::Span<const IntVar> variables) {
+  TableConstraint ct = AddAllowedAssignments(variables);
+  ct.MutableProto()->mutable_table()->set_negated(true);
+  return ct;
+}
+
+TableConstraint CpModelBuilder::AddForbiddenAssignments(
+    std::initializer_list<LinearExpr> expressions) {
+  TableConstraint ct = AddAllowedAssignments(expressions);
+  ct.MutableProto()->mutable_table()->set_negated(true);
+  return ct;
 }
 
 Constraint CpModelBuilder::AddInverseConstraint(

@@ -428,13 +428,15 @@ class ModelCopy {
   bool CopyBoolAnd(const ConstraintProto& ct);
   bool CopyBoolAndWithDupSupport(const ConstraintProto& ct);
 
-  bool CopyLinearExpression(const LinearExpressionProto& expr,
-                            LinearExpressionProto* dst);
-  bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
-  bool CopyLinear(const ConstraintProto& ct);
-  bool CopyElement(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
+
+  bool CopyElement(const ConstraintProto& ct);
+  bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
+  bool CopyLinear(const ConstraintProto& ct);
+  bool CopyLinearExpression(const LinearExpressionProto& expr,
+                            LinearExpressionProto* dst);
+  bool CopyTable(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify

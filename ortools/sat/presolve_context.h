@@ -39,6 +39,7 @@
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -611,7 +612,7 @@ class PresolveContext {
 
   // Indicate if we are allowed to remove irrelevant feasible solution from the
   // set of feasible solution. For example, if a variable is unused, can we fix
-  // it to an arbitrary value (or its mimimum objective one)? This must be true
+  // it to an arbitrary value (or its minimum objective one)? This must be true
   // if the client wants to enumerate all solutions or wants correct tightened
   // bounds in the response.
   bool keep_all_feasible_solutions = false;
@@ -703,7 +704,7 @@ class PresolveContext {
   // Internal representation of the objective. During presolve, we first load
   // the objective in this format in order to have more efficient substitution
   // on large problems (also because the objective is often dense). At the end
-  // we re-convert it to its proto form.
+  // we convert it back to its proto form.
   mutable bool objective_proto_is_up_to_date_ = false;
   absl::flat_hash_map<int, int64_t> objective_map_;
   int64_t objective_overflow_detection_;
@@ -772,6 +773,15 @@ class PresolveContext {
 // Utility function to load the current problem into a in-memory representation
 // that will be used for probing. Returns false if UNSAT.
 bool LoadModelForProbing(PresolveContext* context, Model* local_model);
+
+// Canonicalizes the table constraint by removing all unreachable tuples, and
+// all columns which have the same variable of a previous column.
+//
+// This also sort all the tuples.
+void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct);
+
+// Removed all fixed columns from the table.
+void RemoveFixedColumnsFromTable(PresolveContext* context, ConstraintProto* ct);
 
 }  // namespace sat
 }  // namespace operations_research

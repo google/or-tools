@@ -655,7 +655,7 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
-        self.assertLen(model.proto.constraints[0].table.vars, 5)
+        self.assertLen(model.proto.constraints[0].table.exprs, 5)
         self.assertLen(model.proto.constraints[0].table.values, 15)
         self.assertRaises(
             TypeError,
@@ -679,7 +679,7 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
-        self.assertLen(model.proto.constraints[0].table.vars, 5)
+        self.assertLen(model.proto.constraints[0].table.exprs, 5)
         self.assertLen(model.proto.constraints[0].table.values, 15)
         self.assertTrue(model.proto.constraints[0].table.negated)
         self.assertRaises(

@@ -247,12 +247,14 @@ message RoutesConstraintProto {
   int64 capacity = 5;
 }
 
-// The values of the n-tuple formed by the given variables can only be one of
+// The values of the n-tuple formed by the given expression can only be one of
 // the listed n-tuples in values. The n-tuples are encoded in a flattened way:
 //     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
+// Expressions must be affine (a * var + b).
 message TableConstraintProto {
-  repeated int32 vars = 1;
+  repeated int32 vars = 1;  // Legacy field.
   repeated int64 values = 2;
+  repeated LinearExpressionProto exprs = 4;
 
   // If true, the meaning is "negated", that is we forbid any of the given
   // tuple from a feasible assignment.

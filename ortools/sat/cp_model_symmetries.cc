@@ -771,7 +771,8 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   FindCpModelSymmetries(params, *proto, &generators,
-                        /*deterministic_limit=*/1.0, logger);
+                        params.symmetry_detection_deterministic_time_limit(),
+                        logger);
   if (generators.empty()) {
     proto->clear_symmetry();
     return;
@@ -1006,8 +1007,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(params, proto, &generators,
-                        /*deterministic_limit=*/1.0, context->logger());
+  FindCpModelSymmetries(
+      params, proto, &generators,
+      context->params().symmetry_detection_deterministic_time_limit(),
+      context->logger());
 
   // Remove temporary affine relation.
   context->working_model->mutable_constraints()->DeleteSubrange(
@@ -1042,10 +1045,12 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   const std::vector<int> orbits = GetOrbits(num_vars, generators);
   std::vector<int> orbit_sizes;
   int max_orbit_size = 0;
+  int sum_of_orbit_sizes = 0;
   for (int var = 0; var < num_vars; ++var) {
     const int rep = orbits[var];
     if (rep == -1) continue;
     if (rep >= orbit_sizes.size()) orbit_sizes.resize(rep + 1, 0);
+    ++sum_of_orbit_sizes;
     orbit_sizes[rep]++;
     if (orbit_sizes[rep] > max_orbit_size) {
       distinguished_var = var;
@@ -1214,6 +1219,29 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       --size_left;
     }
   }
+
+  // Fixing just a few variables to break large symmetry can be really bad. See
+  // for example cdc7-4-3-2.pb.gz where we don't find solution if we do that. On
+  // the other hand, enabling this make it worse on neos-3083784-nive.pb.gz.
+  //
+  // In general, enabling this works better in single thread with max_lp_sym,
+  // but worse in multi-thread, where less workers are using symmetries, and so
+  // it is better to fix more stuff.
+  //
+  // TODO(user): Tune more, especially as we handle symmetry better. Also the
+  // estimate is pretty bad, we should probably compute stabilizer and decide
+  // when we actually know how much we can fix compared to how many symmetry we
+  // lose.
+  const int num_fixable =
+      std::max<int>(max_num_fixed_in_orbitope, can_be_fixed_to_false.size());
+  if (/* DISABLES CODE */ (false) && !can_be_fixed_to_false.empty() &&
+      100 * num_fixable < sum_of_orbit_sizes) {
+    SOLVER_LOG(context->logger(),
+               "[Symmetry] Not fixing anything as gain seems too small.");
+    return true;
+  }
+
+  // Fix "can_be_fixed_to_false" instead of the orbitope if it is larger.
   if (max_num_fixed_in_orbitope < can_be_fixed_to_false.size()) {
     const int orbit_index = orbits[distinguished_var];
     int num_in_orbit = 0;
