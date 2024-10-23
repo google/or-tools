@@ -178,7 +178,13 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       AddIndices(ct.reservoir().active_literals(), literals);
       break;
     case ConstraintProto::ConstraintCase::kTable:
-      AddIndices(ct.table().vars(), variables);
+      if (!ct.table().vars().empty()) {
+        AddIndices(ct.table().vars(), variables);
+      } else {
+        for (const LinearExpressionProto& expr : ct.table().exprs()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kAutomaton:
       AddIndices(ct.automaton().vars(), variables);
@@ -359,7 +365,13 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       }
       break;
     case ConstraintProto::ConstraintCase::kTable:
-      APPLY_TO_REPEATED_FIELD(table, vars);
+      if (!ct->table().vars().empty()) {
+        APPLY_TO_REPEATED_FIELD(table, vars);
+      } else {
+        for (int i = 0; i < ct->table().exprs_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(table, exprs(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kAutomaton:
       APPLY_TO_REPEATED_FIELD(automaton, vars);
@@ -764,7 +776,13 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         }
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        fp = FingerprintRepeatedField(ct.table().vars(), fp);
+        if (!ct.table().vars().empty()) {
+          fp = FingerprintRepeatedField(ct.table().vars(), fp);
+        } else {
+          for (const LinearExpressionProto& expr : ct.table().exprs()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+        }
         fp = FingerprintRepeatedField(ct.table().values(), fp);
         fp = FingerprintSingleField(ct.table().negated(), fp);
         break;

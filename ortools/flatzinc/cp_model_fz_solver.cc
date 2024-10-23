@@ -424,7 +424,11 @@ void CpModelProtoWithMapping::BuildTableFromDomainIntLinEq(
   const std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
   const int rhs = fz_ct.arguments[2].Value();
   CHECK_EQ(coeffs.back(), -1);
-  for (const int var : vars) ct->mutable_table()->add_vars(var);
+  for (const int var : vars) {
+    LinearExpressionProto* expr = ct->mutable_table()->add_exprs();
+    expr->add_vars(var);
+    expr->add_coeffs(1);
+  }
 
   switch (vars.size()) {
     case 3: {
@@ -732,7 +736,15 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
   } else if (fz_ct.type == "ortools_table_int") {
     auto* arg = ct->mutable_table();
-    for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
+    for (const VarOrValue v : LookupVarsOrValues(fz_ct.arguments[0])) {
+      LinearExpressionProto* expr = arg->add_exprs();
+      if (v.var != kNoVar) {
+        expr->add_vars(v.var);
+        expr->add_coeffs(1);
+      } else {
+        expr->set_offset(v.value);
+      }
+    }
     for (const int64_t value : fz_ct.arguments[1].values)
       arg->add_values(value);
   } else if (fz_ct.type == "ortools_regular") {

@@ -32,6 +32,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
@@ -127,7 +128,7 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
 }
 
 Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
-                         SolverLogger* logger) {
+                         SolverLogger* logger, absl::Duration* parse_duration) {
   WallTimer timer;
   timer.Start();
 
@@ -147,8 +148,9 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
     CHECK(ParseFlatzincString(input, &model));
   }
 
+  *parse_duration = timer.GetDuration();
   SOLVER_LOG(logger, "File ", (input_is_filename ? input : "stdin"),
-             " parsed in ", timer.GetInMs(), " ms");
+             " parsed in ", absl::ToInt64Milliseconds(*parse_duration), " ms");
   SOLVER_LOG(logger, "");
 
   // Print statistics.
@@ -205,9 +207,11 @@ int main(int argc, char** argv) {
     logger.SetLogToStdOut(true);
   }
 
+  absl::Duration parse_duration;
   operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(
-          input, !absl::GetFlag(FLAGS_read_from_stdin), &logger);
+          input, !absl::GetFlag(FLAGS_read_from_stdin), &logger,
+          &parse_duration);
   operations_research::sat::ProcessFloatingPointOVariablesAndObjective(&model);
 
   operations_research::fz::FlatzincSatParameters parameters;
@@ -219,7 +223,8 @@ int main(int argc, char** argv) {
   parameters.random_seed = absl::GetFlag(FLAGS_fz_seed);
   parameters.display_statistics = absl::GetFlag(FLAGS_statistics);
   parameters.number_of_threads = absl::GetFlag(FLAGS_threads);
-  parameters.max_time_in_seconds = absl::GetFlag(FLAGS_time_limit);
+  parameters.max_time_in_seconds =
+      absl::GetFlag(FLAGS_time_limit) - absl::ToInt64Seconds(parse_duration);
   parameters.ortools_mode = absl::GetFlag(FLAGS_ortools_mode);
 
   operations_research::SolverLogger solution_logger;

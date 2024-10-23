@@ -448,59 +448,59 @@ public final class CpModel {
   }
 
   /**
-   * Adds {@code AllowedAssignments(variables)}.
+   * Adds {@code AllowedAssignments(expressions)}.
    *
-   * <p>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
-   * all variables are fixed to a single value, that the corresponding list of values is equal to
-   * one of the tuples of the tupleList.
+   * <p>An AllowedAssignments constraint is a constraint on an array of affine expressions that
+   * forces, when all expressions are fixed to a single value, that the corresponding list of values
+   * is equal to one of the tuples of the tupleList.
    *
-   * @param variables a list of variables
+   * @param expressions a list of affine expressions (a * var + b)
    * @return an instance of the TableConstraint class without any tuples. Tuples can be added
    *     directly to the table constraint.
    */
-  public TableConstraint addAllowedAssignments(IntVar[] variables) {
-    return addAllowedAssignments(Arrays.asList(variables));
+  public TableConstraint addAllowedAssignments(LinearArgument[] expressions) {
+    return addAllowedAssignments(Arrays.asList(expressions));
   }
 
   /**
-   * Adds {@code AllowedAssignments(variables)}.
+   * Adds {@code AllowedAssignments(expressions)}.
    *
-   * @see addAllowedAssignments(IntVar[])
+   * @see addAllowedAssignments(LinearArgument[] expressions)
    */
-  public TableConstraint addAllowedAssignments(Iterable<IntVar> variables) {
+  public TableConstraint addAllowedAssignments(Iterable<? extends LinearArgument> expressions) {
     TableConstraint ct = new TableConstraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
-    for (IntVar var : variables) {
-      table.addVars(var.getIndex());
+    for (LinearArgument expr : expressions) {
+      table.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
     }
     table.setNegated(false);
     return ct;
   }
 
   /**
-   * Adds {@code ForbiddenAssignments(variables)}.
+   * Adds {@code ForbiddenAssignments(expressions)}.
    *
-   * <p>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
-   * impossible combinations is provided in the tuples list.
+   * <p>A ForbiddenAssignments constraint is a constraint on an array of affine expressions where
+   * the list of impossible combinations is provided in the tuples list.
    *
-   * @param variables a list of variables
+   * @param expressions a list of affine expressions (a * var + b)
    * @return an instance of the TableConstraint class without any tuples. Tuples can be added
    *     directly to the table constraint.
    */
-  public TableConstraint addForbiddenAssignments(IntVar[] variables) {
-    return addForbiddenAssignments(Arrays.asList(variables));
+  public TableConstraint addForbiddenAssignments(LinearArgument[] expressions) {
+    return addForbiddenAssignments(Arrays.asList(expressions));
   }
 
   /**
-   * Adds {@code ForbiddenAssignments(variables)}.
+   * Adds {@code ForbiddenAssignments(expressions)}.
    *
-   * @see addForbiddenAssignments(IntVar[])
+   * @see addForbiddenAssignments(LinearArgument[] expressions)
    */
-  public TableConstraint addForbiddenAssignments(Iterable<IntVar> variables) {
+  public TableConstraint addForbiddenAssignments(Iterable<? extends LinearArgument> expressions) {
     TableConstraint ct = new TableConstraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
-    for (IntVar var : variables) {
-      table.addVars(var.getIndex());
+    for (LinearArgument expr : expressions) {
+      table.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
     }
     table.setNegated(true);
     return ct;

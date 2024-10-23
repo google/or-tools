@@ -393,7 +393,7 @@ public class SatSolverTest
     }
 
     [Fact]
-    public void ValueElement() 
+    public void ValueElement()
     {
         CpModel model = new CpModel();
         IntVar v1 = model.NewIntVar(1, 10, "v1");
@@ -402,7 +402,7 @@ public class SatSolverTest
         Assert.Equal(3, model.Model.Constraints[0].Element.Exprs.Count);
     }
 
-    public void ExprElement() 
+    public void ExprElement()
     {
         CpModel model = new CpModel();
         IntVar v1 = model.NewIntVar(1, 10, "v1");
@@ -412,7 +412,7 @@ public class SatSolverTest
         IntVar z = model.NewIntVar(0, 5, "z");
         model.AddElement(v1, new LinearExpr[] {x + 2, -y, LinearExpr.Constant(5), 2 * z}, 5 - v2);
         Assert.Equal(4, model.Model.Constraints[0].Element.Exprs.Count);
-    }    
+    }
 
     [Fact]
     public void LargeWeightedSumLong()

@@ -55,6 +55,15 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 //
 // Currently this just try to fix variables by detecting symmetries between
 // Booleans in bool_and, at_most_one or exactly_one constraints.
+//
+// TODO(user): A bunch of other presolve transformations break the symmetry even
+// though they probably shouldn't. Like the find big liner overlap for instance.
+// Or when we fix variable but don't propagate to the full orbit. It might not
+// be too much work to:
+//   1/ Compute the symmetry early
+//   2/ Only do transformation that preserve them
+// To investigate. It seems disabling find_big_linear_overlap helps on
+// mas74.pb.gz, or the square??.mps for instance. But it is less good overall.
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context);
 
 }  // namespace sat

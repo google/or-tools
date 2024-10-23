@@ -1307,14 +1307,35 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
-void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
+bool TableIsInCanonicalForm(ConstraintProto* ct) {
   TableConstraintProto& table = *ct->mutable_table();
-  const int num_vars = table.vars_size();
-  const int num_original_tuples = table.values_size() / num_vars;
+  if (!table.vars().empty()) {
+    LOG(ERROR) << "Table is in the legacy format.";
+    return false;
+  }
+  for (const LinearExpressionProto& expr : table.exprs()) {
+    if (expr.offset() != 0) {
+      LOG(ERROR) << "Expression contains an non-zero offset.";
+      return false;
+    }
+    if (expr.coeffs().size() == 1 && expr.coeffs(0) != 1) {
+      LOG(ERROR) << "Expression contains a single variable with a coefficient "
+                    "different from 1.";
+      return false;
+    }
+  }
+  return true;
+}
+
+void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
+  DCHECK(TableIsInCanonicalForm(ct));
+  TableConstraintProto& table = *ct->mutable_table();
+  const int num_exprs = table.exprs_size();
+  const int num_original_tuples = table.values_size() / num_exprs;
   std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;
   for (int i = 0; i < num_original_tuples; ++i) {
-    for (int j = 0; j < num_vars; ++j) {
+    for (int j = 0; j < num_exprs; ++j) {
       tuples[i].push_back(table.values(count++));
     }
   }
@@ -1327,8 +1348,8 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
 
   // Compress tuples.
   std::vector<int64_t> domain_sizes;
-  for (int i = 0; i < num_vars; ++i) {
-    domain_sizes.push_back(context->DomainOf(table.vars(i)).Size());
+  for (int i = 0; i < num_exprs; ++i) {
+    domain_sizes.push_back(context->DomainOf(table.exprs(i).vars(0)).Size());
   }
   CompressTuples(domain_sizes, &tuples);
 
@@ -1336,12 +1357,12 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   std::vector<int> clause;
   for (const std::vector<int64_t>& tuple : tuples) {
     clause.clear();
-    for (int i = 0; i < num_vars; ++i) {
+    for (int i = 0; i < num_exprs; ++i) {
       const int64_t value = tuple[i];
       if (value == kTableAnyValue) continue;
 
       const int literal =
-          context->GetOrCreateVarValueEncoding(table.vars(i), value);
+          context->GetOrCreateVarValueEncoding(table.exprs(i).vars(0), value);
       clause.push_back(NegatedRef(literal));
     }
 
@@ -1853,27 +1874,32 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
 // TODO(user): investigate different encoding for prefix tables. Maybe
 // we can remove the need to create tuple literals.
 void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
+  DCHECK(TableIsInCanonicalForm(ct));
   const TableConstraintProto& table = ct->table();
-  const int num_vars = table.vars_size();
-  const int num_original_tuples = table.values_size() / num_vars;
+  const int num_exprs = table.exprs_size();
+  const int num_original_tuples = table.values_size() / num_exprs;
 
   // Read tuples flat array and recreate the vector of tuples.
-  std::vector<int> vars(table.vars().begin(), table.vars().end());
+  std::vector<int> vars;
+  vars.reserve(table.exprs_size());
+  for (const LinearExpressionProto& expr : table.exprs()) {
+    vars.push_back(expr.vars(0));
+  }
   std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;
   for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
-    for (int var_index = 0; var_index < num_vars; ++var_index) {
+    for (int var_index = 0; var_index < num_exprs; ++var_index) {
       tuples[tuple_index].push_back(table.values(count++));
     }
   }
 
   // Compute the set of possible values for each variable (from the table).
   // Remove invalid tuples along the way.
-  std::vector<absl::flat_hash_set<int64_t>> values_per_var(num_vars);
+  std::vector<absl::flat_hash_set<int64_t>> values_per_var(num_exprs);
   int new_size = 0;
   for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
     bool keep = true;
-    for (int var_index = 0; var_index < num_vars; ++var_index) {
+    for (int var_index = 0; var_index < num_exprs; ++var_index) {
       const int64_t value = tuples[tuple_index][var_index];
       if (!context->DomainContains(vars[var_index], value)) {
         keep = false;
@@ -1881,7 +1907,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
       }
     }
     if (keep) {
-      for (int var_index = 0; var_index < num_vars; ++var_index) {
+      for (int var_index = 0; var_index < num_exprs; ++var_index) {
         values_per_var[var_index].insert(tuples[tuple_index][var_index]);
       }
       std::swap(tuples[tuple_index], tuples[new_size]);
@@ -1911,7 +1937,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   // Also counts the number of fixed variables.
   if (ct->enforcement_literal().empty()) {
     int num_fixed_variables = 0;
-    for (int var_index = 0; var_index < num_vars; ++var_index) {
+    for (int var_index = 0; var_index < num_exprs; ++var_index) {
       CHECK(context->IntersectDomainWith(
           vars[var_index],
           Domain::FromValues({values_per_var[var_index].begin(),
@@ -1921,11 +1947,11 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
       }
     }
 
-    if (num_fixed_variables == num_vars - 1) {
+    if (num_fixed_variables == num_exprs - 1) {
       context->UpdateRuleStats("table: one variable not fixed");
       ct->Clear();
       return;
-    } else if (num_fixed_variables == num_vars) {
+    } else if (num_fixed_variables == num_exprs) {
       context->UpdateRuleStats("table: all variables fixed");
       ct->Clear();
       return;
@@ -1937,7 +1963,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   // TODO(user): If there is an unique variable with cost, it is better to
   // detect it. But if the detection fail, we should still call
   // AddSizeTwoTable() unlike what happen here.
-  if (num_vars == 2 && !context->params().detect_table_with_cost() &&
+  if (num_exprs == 2 && !context->params().detect_table_with_cost() &&
       ct->enforcement_literal().empty()) {
     AddSizeTwoTable(vars, tuples, values_per_var, context);
     context->UpdateRuleStats(
@@ -2531,6 +2557,9 @@ void ExpandCpModel(PresolveContext* context) {
         ExpandAutomaton(ct, context);
         break;
       case ConstraintProto::kTable:
+        if (!context->params().cp_model_presolve()) {
+          CanonicalizeTable(context, ct);
+        }
         if (ct->table().negated()) {
           ExpandNegativeTable(ct, context);
         } else {

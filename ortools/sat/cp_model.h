@@ -899,27 +899,51 @@ class CpModelBuilder {
   /**
    * Adds an allowed assignments constraint.
    *
-   * An AllowedAssignments constraint is a constraint on an array of variables
-   * that forces, when all variables are fixed to a single value, that the
-   * corresponding list of values is equal to one of the tuples added to the
-   * constraint.
+   * An AllowedAssignments constraint is a constraint on an array of affine
+   * expressions (a * var + b) that forces, when all expressions are fixed to a
+   * single value, that the corresponding list of values is equal to one of the
+   * tuples added to the constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
    * construction.
    */
-  TableConstraint AddAllowedAssignments(absl::Span<const IntVar> vars);
+  TableConstraint AddAllowedAssignments(
+      absl::Span<const LinearExpr> expressions);
+
+  /**
+   * Adds an allowed assignments constraint.
+   */
+  TableConstraint AddAllowedAssignments(absl::Span<const IntVar> variables);
+
+  /**
+   * Adds an allowed assignments constraint.
+   */
+  TableConstraint AddAllowedAssignments(
+      std::initializer_list<LinearExpr> expressions);
 
   /**
    * Adds an forbidden assignments constraint.
    *
-   * A ForbiddenAssignments constraint is a constraint on an array of variables
-   * where the list of impossible combinations is provided in the tuples added
-   * to the constraint.
+   * A ForbiddenAssignments constraint is a constraint on an array of affine
+   * expressions (a * var + b) where the list of impossible combinations is
+   * provided in the tuples added to the constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
    * construction.
    */
-  TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> vars);
+  TableConstraint AddForbiddenAssignments(
+      absl::Span<const LinearExpr> expression);
+
+  /**
+   * Adds an forbidden assignments constraint.
+   */
+  TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> variables);
+
+  /**
+   * Adds an forbidden assignments constraint.
+   */
+  TableConstraint AddForbiddenAssignments(
+      std::initializer_list<LinearExpr> expressions);
 
   /** An inverse constraint.
    *

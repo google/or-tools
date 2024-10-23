@@ -743,7 +743,7 @@ cc_library(
         ":util",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
-        "//ortools/base:mathutil",
+        "//ortools/base:stl_util",
         "//ortools/port:proto_utils",
         "//ortools/util:affine_relation",
         "//ortools/util:bitset",

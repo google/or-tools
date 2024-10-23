@@ -1587,10 +1587,10 @@ class CpModel:
 
         Args:
           index: The index of the selected expression in the array. It must be an
-            affine variable (a * var + b).
+            affine expression (a * var + b).
           expressions: A list of affine expressions.
           target: The expression constrained to be equal to the selected expression.
-            It must be an affine variable (a * var + b).
+            It must be an affine expression (a * var + b).
 
         Returns:
           An instance of the `Constraint` class.
@@ -1680,39 +1680,42 @@ class CpModel:
 
     def add_allowed_assignments(
         self,
-        variables: Sequence[VariableT],
+        expressions: Sequence[LinearExprT],
         tuples_list: Iterable[Sequence[IntegralT]],
     ) -> Constraint:
-        """Adds AllowedAssignments(variables, tuples_list).
+        """Adds AllowedAssignments(expressions, tuples_list).
 
-        An AllowedAssignments constraint is a constraint on an array of variables,
-        which requires that when all variables are assigned values, the resulting
-        array equals one of the  tuples in `tuple_list`.
+        An AllowedAssignments constraint is a constraint on an array of affine
+        expressions, which requires that when all expressions are assigned values,
+        the
+        resulting array equals one of the  tuples in `tuple_list`.
 
         Args:
-          variables: A list of variables.
+          expressions: A list of affine expressions (a * var + b).
           tuples_list: A list of admissible tuples. Each tuple must have the same
-            length as the variables, and the ith value of a tuple corresponds to the
-            ith variable.
+            length as the expressions, and the ith value of a tuple corresponds to
+            the ith expression.
 
         Returns:
           An instance of the `Constraint` class.
 
         Raises:
           TypeError: If a tuple does not have the same size as the list of
-              variables.
-          ValueError: If the array of variables is empty.
+              expressions.
+          ValueError: If the array of expressions is empty.
         """
 
-        if not variables:
+        if not expressions:
             raise ValueError(
-                "add_allowed_assignments expects a non-empty variables array"
+                "add_allowed_assignments expects a non-empty expressions array"
             )
 
         ct: Constraint = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.table.vars.extend([self.get_or_make_index(x) for x in variables])
-        arity: int = len(variables)
+        model_ct.table.exprs.extend(
+            [self.parse_linear_expression(e) for e in expressions]
+        )
+        arity: int = len(expressions)
         for one_tuple in tuples_list:
             if len(one_tuple) != arity:
                 raise TypeError("Tuple " + str(one_tuple) + " has the wrong arity")
@@ -1731,36 +1734,37 @@ class CpModel:
 
     def add_forbidden_assignments(
         self,
-        variables: Sequence[VariableT],
+        expressions: Sequence[LinearExprT],
         tuples_list: Iterable[Sequence[IntegralT]],
     ) -> Constraint:
-        """Adds add_forbidden_assignments(variables, [tuples_list]).
+        """Adds add_forbidden_assignments(expressions, [tuples_list]).
 
-        A ForbiddenAssignments constraint is a constraint on an array of variables
-        where the list of impossible combinations is provided in the tuples list.
+        A ForbiddenAssignments constraint is a constraint on an array of affine
+        expressions where the list of impossible combinations is provided in the
+        tuples list.
 
         Args:
-          variables: A list of variables.
+          expressions: A list of affine expressions (a * var + b).
           tuples_list: A list of forbidden tuples. Each tuple must have the same
-            length as the variables, and the *i*th value of a tuple corresponds to
-            the *i*th variable.
+            length as the expressions, and the *i*th value of a tuple corresponds to
+            the *i*th expression.
 
         Returns:
           An instance of the `Constraint` class.
 
         Raises:
           TypeError: If a tuple does not have the same size as the list of
-                     variables.
-          ValueError: If the array of variables is empty.
+                     expressions.
+          ValueError: If the array of expressions is empty.
         """
 
-        if not variables:
+        if not expressions:
             raise ValueError(
-                "add_forbidden_assignments expects a non-empty variables array"
+                "add_forbidden_assignments expects a non-empty expressions array"
             )
 
         index: int = len(self.__model.constraints)
-        ct: Constraint = self.add_allowed_assignments(variables, tuples_list)
+        ct: Constraint = self.add_allowed_assignments(expressions, tuples_list)
         self.__model.constraints[index].table.negated = True
         return ct
 
