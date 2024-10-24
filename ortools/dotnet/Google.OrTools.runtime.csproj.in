@@ -116,6 +116,7 @@
       $<$<BOOL:@BUILD_re2@>:;$<TARGET_SONAME_FILE:re2::re2>>
 
       $<$<BOOL:@BUILD_Protobuf@>:;$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
+      $<$<BOOL:@BUILD_Protobuf@>:;$<TARGET_SONAME_FILE:utf8_validity>>
 
       $<$<BOOL:@BUILD_CoinUtils@>:;$<TARGET_SONAME_FILE:Coin::CoinUtils>>
       $<$<BOOL:@BUILD_Osi@>:;$<TARGET_SONAME_FILE:Coin::Osi>>

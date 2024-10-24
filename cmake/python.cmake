@@ -533,6 +533,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
     $<$<BOOL:${BUILD_Protobuf}>:$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
+    $<$<BOOL:${BUILD_Protobuf}>:$<TARGET_SONAME_FILE:utf8_validity>>
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
