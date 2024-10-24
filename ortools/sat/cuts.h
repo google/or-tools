@@ -544,6 +544,11 @@ class CoverCutHelper {
   CutData bool_base_ct_;
   int bool_cover_size_ = 0;
 
+  // Hack to not sort twice.
+  bool has_bool_base_ct_ = false;
+  CutData bool_base_ct_;
+  int bool_cover_size_ = 0;
+
   // Stats.
   SharedStatistics* shared_stats_ = nullptr;
   int64_t num_lifting_ = 0;

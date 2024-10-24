@@ -1,5 +1,5 @@
 # ref: https://github.com/actions/runner-images
-name: amd64 Windows CMake C++
+name: Windows knitro tests
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -14,13 +14,10 @@ jobs:
       matrix:
         cmake: [
           {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
-          {generator: "Visual Studio 17 2022", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} (${{ matrix.cmake.config }}) • C++
+    name: Windows • Knitro Test • C++
     runs-on: windows-latest
-    env:
-      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
       - name: Checkout or-tools
         uses: actions/checkout@v4
@@ -32,9 +29,9 @@ jobs:
           token: ${{ secrets.KNITRO_DISTRIB }}
       - name: Unzip
         run: |
-          7z x "${{ env.KNITRODIR }}/knitroampl/knitroampl.zip" -o"${{ env.KNITRODIR }}/knitroampl"
-          7z x "${{ env.KNITRODIR }}/knitromatlab/knitromatlab_mex.zip" -o"${{ env.KNITRODIR }}/knitromatlab"
-          7z x "${{ env.KNITRODIR }}/lib/knitro.zip" -o"${{ env.KNITRODIR }}/lib"
+          unzip "${{ env.KNITRODIR }}/knitroampl/knitroampl.zip" -d "${{ env.KNITRODIR }}/knitroampl"
+          unzip "${{ env.KNITRODIR }}/knitromatlab/knitromatlab_mex.zip" -d "${{ env.KNITRODIR }}/knitromatlab"
+          unzip "${{ env.KNITRODIR }}/lib/knitro.zip" -d "${{ env.KNITRODIR }}/lib"
           rm ${{ env.KNITRODIR }}/knitroampl/knitroampl.zip
           rm ${{ env.KNITRODIR }}/knitromatlab/knitromatlab_mex.zip
           rm ${{ env.KNITRODIR }}/lib/knitro.zip
@@ -44,14 +41,6 @@ jobs:
       - name: Grant access to knitro distrib
         run: |
           icacls ${{ env.KNITRODIR }} /grant Everyone:RX /t
-      - name: Check what I have
-        run: |
-          ls -l .
-          ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l ${{ env.KNITRODIR }}
-          ls -l ${{ env.KNITRODIR }}/knitroampl/
-          ls -l ${{ env.KNITRODIR }}/knitromatlab/
-          ls -l ${{ env.KNITRODIR }}/lib/      
       - name: Check cmake
         run: |
           cmake --version
@@ -60,26 +49,24 @@ jobs:
         run: >
           cmake -S. -Bbuild
           -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_CONFIGURATION_TYPES=${{ matrix.cmake.config }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
           -DBUILD_DEPS=ON
           -DUSE_KNITRO=ON
           -DBUILD_TESTING=ON
-          -DCMAKE_INSTALL_PREFIX=install
       - name: Build
         run: >
           cmake --build build
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.build_target }}
           -v -j2
-      - name: Test
+      - name: Check Build dir
+        run: |
+          ls -l .
+          ls -l ${{ env.ARTELYS_LICENSE }}
+          ls -l ${{ env.KNITRODIR }}
+          ls -l ${{ env.KNITRODIR }}/knitroampl/
+          ls -l ${{ env.KNITRODIR }}/knitromatlab/
+          ls -l ${{ env.KNITRODIR }}/lib/
+      - name: Run Knitro Test
         run: >
-          cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.test_target }}
-          -v
-      - name: Install
-        run: >
-          cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.install_target }}
-          -v
+          ./build/RELEASE/bin/test_knitro_interface

@@ -423,6 +423,7 @@ message MPModelRequest {
     GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
     XPRESS_LINEAR_PROGRAMMING =
         101;                        // Commercial, needs a valid license. NOLINT
+    KNITRO_LINEAR_PROGRAMMING = 105;
     CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid license. NOLINT
     HIGHS_LINEAR_PROGRAMMING = 15;
 
@@ -432,6 +433,7 @@ message MPModelRequest {
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
     XPRESS_MIXED_INTEGER_PROGRAMMING =
         102;  // Commercial, needs a valid license. NOLINT
+    KNITRO_MIXED_INTEGER_PROGRAMMING = 106;
     CPLEX_MIXED_INTEGER_PROGRAMMING =
         11;  // Commercial, needs a valid license. NOLINT
     HIGHS_MIXED_INTEGER_PROGRAMMING = 16;

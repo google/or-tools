@@ -1,0 +1,67 @@
+# ref: https://github.com/actions/runner-images
+name: arm64 MacOS CMake Python
+
+on: [push, pull_request, workflow_dispatch]
+
+# Building using the github runner environement directly.
+jobs:
+  native:
+    strategy:
+      matrix:
+        cmake: [
+          {generator: "Xcode", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: install},
+          {generator: "Unix Makefiles", config: Release, build_target: all, test_target: test, install_target: install},
+        ]
+        python: [
+          {version: "3.9"},
+          {version: "3.10"},
+          {version: "3.11"},
+          {version: "3.12"},
+          {version: "3.13"},
+        ]
+      fail-fast: false
+    name: MacOS • ${{ matrix.cmake.generator }} • Python-${{ matrix.python.version }}
+    runs-on: macos-latest # macos arm64 based runner
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swig install
+        run: |
+          brew install swig
+          swig -version
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python.version }}
+      - name: Update Path
+        run: |
+          echo "$HOME/Library/Python/${{ matrix.python.version }}/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Check cmake
+        run: cmake --version
+      - name: Configure
+        run: >
+          cmake -S. -Bbuild
+          -G "${{ matrix.cmake.generator }}"
+          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+          -DBUILD_PYTHON=ON
+          -DCMAKE_INSTALL_PREFIX=install
+      - name: Build
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.build_target }}
+          -v -j2
+      - name: Test
+        run: >
+          CTEST_OUTPUT_ON_FAILURE=1
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.test_target }}
+          -v
+      - name: Install
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.install_target }}
+          -v

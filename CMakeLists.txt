@@ -313,6 +313,10 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 CMAKE_DEPENDENT_OPTION(USE_XPRESS "Use the Xpress solver" ON "BUILD_CXX" OFF)
 message(STATUS "Xpress support: ${USE_XPRESS}")
 
+## KNITRO
+CMAKE_DEPENDENT_OPTION(USE_KNITRO "Use the Knitro solver" ON "BUILD_CXX" OFF)
+message(STATUS "Knitro support: ${USE_KNITRO}")
+
 # Language specific options
 if(BUILD_CXX)
   CMAKE_DEPENDENT_OPTION(BUILD_CXX_DOC "Build the C++ doc" OFF "NOT BUILD_DOC" ON)
