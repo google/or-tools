@@ -32,11 +32,13 @@
 #include "absl/types/optional.h"
 #include "google/protobuf/repeated_field.h"
 #include "lp_data/HConst.h"
+#include "lp_data/HighsInfo.h"
 #include "lp_data/HighsStatus.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "util/HighsInt.h"
 
 namespace operations_research {
 
@@ -120,7 +122,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       const MPVariableProto& variable = model.variable(v);
       std::string varname_str = "";
       if (!variable.name().empty()) {
-        varname_str = variable.name().c_str();
+        varname_str = variable.name();
         highs.passColName(v, varname_str);
       }
     }
@@ -188,7 +190,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
         const MPConstraintProto& constraint = model.constraint(c);
         std::string constraint_name_str = "";
         if (!constraint.name().empty()) {
-          constraint_name_str = constraint.name().c_str();
+          constraint_name_str = constraint.name();
           highs.passRowName(c, constraint_name_str);
         }
       }

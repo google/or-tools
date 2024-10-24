@@ -11360,12 +11360,14 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     const int encoding_lit = context_->GetOrCreateVarValueEncoding(var, v);
     const auto eq_it = value_to_equal_literals.find(v);
     if (eq_it != value_to_equal_literals.end()) {
+      absl::c_sort(eq_it->second);
       for (const int lit : eq_it->second) {
         context_->AddImplication(lit, encoding_lit);
       }
     }
     const auto neq_it = value_to_not_equal_literals.find(v);
     if (neq_it != value_to_not_equal_literals.end()) {
+      absl::c_sort(neq_it->second);
       for (const int lit : neq_it->second) {
         context_->AddImplication(lit, NegatedRef(encoding_lit));
       }

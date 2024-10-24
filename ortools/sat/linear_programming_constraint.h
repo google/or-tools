@@ -115,7 +115,6 @@ class ScatteredIntegerVector {
   util_intops::StrongVector<glop::ColIndex, IntegerValue> dense_vector_;
 };
 
-
 // A SAT constraint that enforces a set of linear inequality constraints on
 // integer variables using an LP solver.
 //

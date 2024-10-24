@@ -833,8 +833,11 @@ cc_test(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_table",
+        ":model",
+        ":presolve_context",
         ":sat_parameters_cc_proto",
         "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/types:span",
     ],
