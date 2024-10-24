@@ -173,7 +173,7 @@ public class TableConstraint : Constraint
             table.Values.Add(value);
             count++;
         }
-        if (count != table.Vars.Count)
+        if (count != table.Exprs.Count)
         {
             throw new ArgumentException("addTuple", "tuple does not have the same length as the variables");
         }
@@ -199,7 +199,7 @@ public class TableConstraint : Constraint
             table.Values.Add(value);
             count++;
         }
-        if (count != table.Vars.Count)
+        if (count != table.Exprs.Count)
         {
             throw new ArgumentException("addTuple", "tuple does not have the same length as the variables");
         }
@@ -219,7 +219,7 @@ public class TableConstraint : Constraint
     {
         TableConstraintProto table = Proto.Table;
 
-        if (tuples.GetLength(1) != table.Vars.Count)
+        if (tuples.GetLength(1) != table.Exprs.Count)
         {
             throw new ArgumentException("addTuples", "tuples does not have the same length as the variables");
         }
@@ -247,7 +247,7 @@ public class TableConstraint : Constraint
     {
         TableConstraintProto table = Proto.Table;
 
-        if (tuples.GetLength(1) != table.Vars.Count)
+        if (tuples.GetLength(1) != table.Exprs.Count)
         {
             throw new ArgumentException("addTuples", "tuples does not have the same length as the variables");
         }
