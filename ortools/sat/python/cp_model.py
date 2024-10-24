@@ -1578,9 +1578,12 @@ class CpModel:
         return ct
 
     def add_element(
-        self, index: VariableT, variables: Sequence[VariableT], target: VariableT
+        self,
+        index: LinearExprT,
+        expressions: Sequence[LinearExprT],
+        target: LinearExprT,
     ) -> Constraint:
-        """Adds the element constraint: `variables[index] == target`.
+        """Adds the element constraint: `expressions[index] == target`.
 
         Args:
           index: The index of the selected expression in the array. It must be an
@@ -1593,18 +1596,20 @@ class CpModel:
           An instance of the `Constraint` class.
         """
 
-        if not variables:
-            raise ValueError("add_element expects a non-empty variables array")
+        if not expressions:
+            raise ValueError("add_element expects a non-empty expressions array")
 
         if isinstance(index, IntegralTypes):
-            variable: VariableT = list(variables)[int(index)]
-            return self.add(variable == target)
+            expression: LinearExprT = list(expressions)[int(index)]
+            return self.add(expression == target)
 
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.element.index = self.get_or_make_index(index)
-        model_ct.element.vars.extend([self.get_or_make_index(x) for x in variables])
-        model_ct.element.target = self.get_or_make_index(target)
+        model_ct.element.linear_index.CopyFrom(self.parse_linear_expression(index))
+        model_ct.element.exprs.extend(
+            [self.parse_linear_expression(e) for e in expressions]
+        )
+        model_ct.element.linear_target.CopyFrom(self.parse_linear_expression(target))
         return ct
 
     def add_circuit(self, arcs: Sequence[ArcT]) -> Constraint:

@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.util.Domain;
 import java.util.ArrayList;

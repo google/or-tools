@@ -62,11 +62,12 @@ if(BUILD_ZLIB)
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   set(ZLIB_BUILD_EXAMPLES OFF)
   FetchContent_Declare(
-    zlib
+    ZLIB
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
     GIT_TAG "v1.3.1"
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch")
-  FetchContent_MakeAvailable(zlib)
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch")
+  FetchContent_MakeAvailable(ZLIB)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -248,9 +249,10 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.7.2"
+    GIT_TAG        "v1.8.0"
     GIT_SHALLOW TRUE
-    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs.patch"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.8.0.patch"
   )
   FetchContent_MakeAvailable(highs)
   list(POP_BACK CMAKE_MESSAGE_INDENT)

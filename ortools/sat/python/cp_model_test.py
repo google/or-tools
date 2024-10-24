@@ -603,11 +603,11 @@ class CpModelTest(absltest.TestCase):
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, "x%i" % i) for i in range(5)]
         model.add_element(x[0], [x[1], 2, 4, x[2]], x[4])
-        self.assertLen(model.proto.variables, 7)
+        self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
-        self.assertLen(model.proto.constraints[0].element.vars, 4)
-        self.assertEqual(0, model.proto.constraints[0].element.index)
-        self.assertEqual(4, model.proto.constraints[0].element.target)
+        self.assertLen(model.proto.constraints[0].element.exprs, 4)
+        self.assertEqual(0, model.proto.constraints[0].element.linear_index.vars[0])
+        self.assertEqual(4, model.proto.constraints[0].element.linear_target.vars[0])
         self.assertRaises(ValueError, model.add_element, x[0], [], x[4])
 
     def testFixedElement(self) -> None:
@@ -621,6 +621,27 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(x[3].index, model.proto.constraints[0].linear.vars[0])
         self.assertEqual(1, model.proto.constraints[0].linear.coeffs[0])
         self.assertEqual([2, 2], model.proto.constraints[0].linear.domain)
+
+    def testAffineElement(self) -> None:
+        print("testAffineElement")
+        model = cp_model.CpModel()
+        x = [model.new_int_var(0, 4, "x%i" % i) for i in range(5)]
+        model.add_element(x[0] + 1, [2 * x[1] - 2, 2, 4, x[2]], x[4] - 1)
+        self.assertLen(model.proto.variables, 5)
+        self.assertLen(model.proto.constraints, 1)
+        self.assertLen(model.proto.constraints[0].element.exprs, 4)
+        self.assertEqual(0, model.proto.constraints[0].element.linear_index.vars[0])
+        self.assertEqual(1, model.proto.constraints[0].element.linear_index.coeffs[0])
+        self.assertEqual(1, model.proto.constraints[0].element.linear_index.offset)
+
+        self.assertEqual(4, model.proto.constraints[0].element.linear_target.vars[0])
+        self.assertEqual(1, model.proto.constraints[0].element.linear_target.coeffs[0])
+        self.assertEqual(-1, model.proto.constraints[0].element.linear_target.offset)
+        self.assertEqual(4, model.proto.constraints[0].element.linear_target.vars[0])
+        expr0 = model.proto.constraints[0].element.exprs[0]
+        self.assertEqual(1, expr0.vars[0])
+        self.assertEqual(2, expr0.coeffs[0])
+        self.assertEqual(-2, expr0.offset)
 
     def testCircuit(self) -> None:
         print("testCircuit")

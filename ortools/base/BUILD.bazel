@@ -51,7 +51,7 @@ cc_library(
     ],
     copts = [
         "-DOR_TOOLS_MAJOR=9",
-        "-DOR_TOOLS_MINOR=11",
+        "-DOR_TOOLS_MINOR=12",
         "-DOR_TOOLS_PATCH=9999",
     ],
     linkopts = select({
