@@ -32,11 +32,13 @@
 #include "absl/types/optional.h"
 #include "google/protobuf/repeated_field.h"
 #include "lp_data/HConst.h"
+#include "lp_data/HighsInfo.h"
 #include "lp_data/HighsStatus.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "util/HighsInt.h"
 
 namespace operations_research {
 
@@ -111,8 +113,29 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       highs.changeColCost(column, obj_coeffs[column]);
     }
 
-    // TODO(user): Support variable names.
-    // TODO(user): Support hints.
+    // Variable names.
+    for (int v = 0; v < variable_size; ++v) {
+      const MPVariableProto& variable = model.variable(v);
+      std::string varname_str = "";
+      if (!variable.name().empty()) {
+        varname_str = variable.name();
+        highs.passColName(v, varname_str);
+      }
+    }
+
+    // Hints.
+    int num_hints = model.solution_hint().var_index_size();
+    if (num_hints > 0) {
+      std::vector<HighsInt> hint_index(0, num_hints);
+      std::vector<double> hint_value(0, num_hints);
+      for (int i = 0; i < num_hints; ++i) {
+        hint_index[i] = model.solution_hint().var_index(i);
+        hint_value[i] = model.solution_hint().var_value(i);
+      }
+      const int* hint_indices = &hint_index[0];
+      const double* hint_values = &hint_value[0];
+      highs.setSolution((HighsInt)num_hints, hint_indices, hint_values);
+    }
   }
 
   {
@@ -157,7 +180,16 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           return response;
         }
       }
-      // TODO(user): Support constraint names.
+
+      // Constraint names.
+      for (int c = 0; c < model.constraint_size(); ++c) {
+        const MPConstraintProto& constraint = model.constraint(c);
+        std::string constraint_name_str = "";
+        if (!constraint.name().empty()) {
+          constraint_name_str = constraint.name();
+          highs.passRowName(c, constraint_name_str);
+        }
+      }
     }
 
     if (!model.general_constraint().empty()) {

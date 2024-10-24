@@ -546,8 +546,9 @@ bool PathOperator::IncrementPosition() {
       base_sibling_alternatives_[i] = 0;
       base_nodes_[i] = OldNext(base_nodes_[i]);
       if (iteration_parameters_.accept_path_end_base ||
-          !IsPathEnd(base_nodes_[i]))
+          !IsPathEnd(base_nodes_[i])) {
         break;
+      }
     }
     calls_per_base_node_[i] = 0;
     base_alternatives_[i] = 0;
@@ -4768,6 +4769,7 @@ class FindOneNeighbor : public DecisionBuilder {
                   const RegularLimit* limit,
                   LocalSearchFilterManager* filter_manager);
   ~FindOneNeighbor() override {}
+  void EnterSearch();
   Decision* Next(Solver* solver) override;
   std::string DebugString() const override { return "FindOneNeighbor"; }
 
@@ -4848,6 +4850,13 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
   if (!reference_assignment_->HasObjective()) {
     reference_assignment_->AddObjective(objective_);
   }
+}
+
+void FindOneNeighbor::EnterSearch() {
+  // Reset neighbor_found_ to false to ensure everything is properly
+  // synchronized at the beginning of the search.
+  neighbor_found_ = false;
+  last_synchronized_assignment_.reset();
 }
 
 Decision* FindOneNeighbor::Next(Solver* const solver) {
@@ -5307,6 +5316,7 @@ class LocalSearch : public DecisionBuilder {
   LocalSearchOperator* const ls_operator_;
   DecisionBuilder* const first_solution_sub_decision_builder_;
   DecisionBuilder* const sub_decision_builder_;
+  FindOneNeighbor* find_neighbors_db_;
   std::vector<NestedSolveDecision*> nested_decisions_;
   int nested_decision_index_;
   RegularLimit* const limit_;
@@ -5462,6 +5472,7 @@ Decision* LocalSearch::Next(Solver* const solver) {
   if (!has_started_) {
     nested_decision_index_ = 0;
     solver->SaveAndSetValue(&has_started_, true);
+    find_neighbors_db_->EnterSearch();
   } else if (nested_decision_index_ < 0) {
     solver->Fail();
   }
@@ -5526,11 +5537,11 @@ void LocalSearch::PushFirstSolutionDecision(DecisionBuilder* first_solution) {
 
 void LocalSearch::PushLocalSearchDecision() {
   Solver* const solver = assignment_->solver();
-  DecisionBuilder* find_neighbors = solver->RevAlloc(
+  find_neighbors_db_ = solver->RevAlloc(
       new FindOneNeighbor(assignment_, objective_, pool_, ls_operator_,
                           sub_decision_builder_, limit_, filter_manager_));
   nested_decisions_.push_back(
-      solver->RevAlloc(new NestedSolveDecision(find_neighbors, false)));
+      solver->RevAlloc(new NestedSolveDecision(find_neighbors_db_, false)));
 }
 
 class DefaultSolutionPool : public SolutionPool {

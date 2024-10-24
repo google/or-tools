@@ -20,12 +20,150 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
 namespace {
+
+using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+
+TEST(TableTest, DuplicateVariablesInTable) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 0 coeffs: -1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        values: [ 0, 0, 0, 0 ]
+        values: [ 1, -1, 0, 0 ]
+        values: [ 1, 0, 0, 0 ]
+        values: [ 1, -1, 1, 1 ]
+        values: [ 2, -2, 2, 2 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+
+  CanonicalizeTable(&context, model_proto.mutable_constraints(0));
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        values: [ 0, 0 ]
+        values: [ 1, 0 ]
+        values: [ 1, 1 ]
+        values: [ 2, 2 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(expected_presolved_model, testing::EqualsProto(model_proto));
+}
+
+TEST(TableTest, RemoveFixedColumnsFromTable) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 1, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        values: [ 0, 0, 0 ]
+        values: [ 0, 1, 0 ]
+        values: [ 1, 1, 1 ]
+        values: [ 1, 1, 2 ]
+        values: [ 2, 1, 2 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+
+  CanonicalizeTable(&context, model_proto.mutable_constraints(0));
+  RemoveFixedColumnsFromTable(&context, model_proto.mutable_constraints(0));
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 1, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        values: [ 0, 0 ]
+        values: [ 1, 1 ]
+        values: [ 1, 2 ]
+        values: [ 2, 2 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(expected_presolved_model, testing::EqualsProto(model_proto));
+}
+
+TEST(TableTest, NormalizeNoRemove) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        values: [ 0, 0, 0 ]
+        values: [ 0, 1, 0 ]
+        values: [ 1, 1, 1 ]
+        values: [ 1, 1, 2 ]
+        values: [ 2, 1, 2 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+
+  CanonicalizeTable(&context, model_proto.mutable_constraints(0));
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        values: [ 0, 1, 0 ]
+        values: [ 1, 1, 1 ]
+        values: [ 1, 1, 2 ]
+        values: [ 2, 1, 2 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(expected_presolved_model, testing::EqualsProto(model_proto));
+
+  RemoveFixedColumnsFromTable(&context, model_proto.mutable_constraints(0));
+  EXPECT_THAT(expected_presolved_model, testing::EqualsProto(model_proto));
+}
 
 TEST(CompressTuplesTest, OneAny) {
   const std::vector<int64_t> domain_sizes = {2, 2, 2, 4};
@@ -75,7 +213,7 @@ TEST(FullyCompressTuplesTest, BasicTest) {
   EXPECT_EQ(result, expected);
 }
 
-TEST(CompressTuplesTest, BasicTest2) {
+TEST(FullyCompressTuplesTest, BasicTest2) {
   const std::vector<int64_t> domain_sizes = {4, 4, 4, 4};
   std::vector<std::vector<int64_t>> tuples = {
       {0, 0, 0, 0},
@@ -89,7 +227,7 @@ TEST(CompressTuplesTest, BasicTest2) {
   EXPECT_EQ(result, expected);
 }
 
-TEST(CompressTuplesTest, BasicTest3) {
+TEST(FullyCompressTuplesTest, BasicTest3) {
   const std::vector<int64_t> domain_sizes = {4, 4, 4, 4};
   std::vector<std::vector<int64_t>> tuples = {
       {0, 0, 0, 0}, {0, 1, 0, 0}, {1, 0, 0, 0}, {1, 1, 0, 0},
