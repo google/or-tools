@@ -176,6 +176,10 @@ function(ortools_cxx_test)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_TESTING)
+    return()
+  endif()
+
   if(NOT TEST_NAME)
     message(FATAL_ERROR "no NAME provided")
   endif()
