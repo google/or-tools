@@ -54,7 +54,11 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   const MPModelProto& model = **optional_model;
 
   Highs highs;
-  // TODO(user): Set model name.
+  // Set model name.
+  if (model.has_name()) {
+    const std::string model_name = model.name();
+    highs.passModelName(model_name);
+  }
 
   if (request->has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
@@ -252,6 +256,9 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           break;
         default: {
           // TODO(user): report feasible status.
+          const HighsInfo& info = highs.getInfo();
+          if (info.primal_solution_status == kSolutionStatusFeasible)
+            response.set_status(MPSOLVER_FEASIBLE);
           break;
         }
       }

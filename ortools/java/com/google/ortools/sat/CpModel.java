@@ -364,39 +364,59 @@ public final class CpModel {
     return ct;
   }
 
-  /** Adds the element constraint: {@code variables[index] == target}. */
-  public Constraint addElement(IntVar index, IntVar[] variables, IntVar target) {
+  /** Adds the element constraint: {@code expressions[index] == target}. */
+  public Constraint addElement(
+      LinearArgument index, LinearArgument[] expressions, LinearArgument target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element =
-        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
-    for (IntVar var : variables) {
-      element.addVars(var.getIndex());
+    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder().setLinearIndex(
+        getLinearExpressionProtoBuilderFromLinearArgument(index, /* negate= */ false));
+    for (LinearArgument expr : expressions) {
+      element.addExprs(
+          getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
     }
-    element.setTarget(target.getIndex());
+    element.setLinearTarget(
+        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
+    return ct;
+  }
+
+  /** Adds the element constraint: {@code expressions[index] == target}. */
+  public Constraint addElement(
+      LinearArgument index, Iterable<? extends LinearArgument> expressions, LinearArgument target) {
+    Constraint ct = new Constraint(modelBuilder);
+    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder().setLinearIndex(
+        getLinearExpressionProtoBuilderFromLinearArgument(index, /* negate= */ false));
+    for (LinearArgument expr : expressions) {
+      element.addExprs(
+          getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
+    }
+    element.setLinearTarget(
+        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
     return ct;
   }
 
   /** Adds the element constraint: {@code values[index] == target}. */
-  public Constraint addElement(IntVar index, long[] values, IntVar target) {
+  public Constraint addElement(LinearArgument index, long[] values, LinearArgument target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element =
-        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
+    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder().setLinearIndex(
+        getLinearExpressionProtoBuilderFromLinearArgument(index, /* negate= */ false));
     for (long v : values) {
-      element.addVars(newConstant(v).getIndex());
+      element.addExprs(LinearExpressionProto.newBuilder().setOffset(v));
     }
-    element.setTarget(target.getIndex());
+    element.setLinearTarget(
+        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
     return ct;
   }
 
   /** Adds the element constraint: {@code values[index] == target}. */
-  public Constraint addElement(IntVar index, int[] values, IntVar target) {
+  public Constraint addElement(LinearArgument index, int[] values, LinearArgument target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element =
-        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
+    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder().setLinearIndex(
+        getLinearExpressionProtoBuilderFromLinearArgument(index, /* negate= */ false));
     for (long v : values) {
-      element.addVars(newConstant(v).getIndex());
+      element.addExprs(LinearExpressionProto.newBuilder().setOffset(v));
     }
-    element.setTarget(target.getIndex());
+    element.setLinearTarget(
+        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
     return ct;
   }
 
