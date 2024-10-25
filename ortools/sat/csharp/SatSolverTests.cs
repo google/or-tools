@@ -794,5 +794,25 @@ public class SatSolverTest
         Assert.Equal(2, model.Model.SolutionHint.Vars[2]);
         Assert.Equal(1, model.Model.SolutionHint.Values[2]);
     }
+
+    [Fact]
+    public void TestHint()
+    {
+        output_.WriteLine("TestHint test");
+        CpModel model = new CpModel();
+        IntVar v = model.NewIntVar(-10, 10, "v");
+        BoolVar b = model.NewBoolVar("b");
+        BoolVar c = model.NewBoolVar("c");
+        model.AddHint(v, 3);
+        model.AddHint(b, false);
+        model.AddHint(c.Not(), false);
+        Assert.Equal(3, model.Model.SolutionHint.Vars.Count);
+        Assert.Equal(0, model.Model.SolutionHint.Vars[0]);
+        Assert.Equal(3, model.Model.SolutionHint.Values[0]);
+        Assert.Equal(1, model.Model.SolutionHint.Vars[1]);
+        Assert.Equal(0, model.Model.SolutionHint.Values[1]);
+        Assert.Equal(2, model.Model.SolutionHint.Vars[2]);
+        Assert.Equal(1, model.Model.SolutionHint.Values[2]);
+    }    
 }
 } // namespace Google.OrTools.Tests

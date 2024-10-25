@@ -1,5 +1,5 @@
 # ref: https://github.com/actions/runner-images
-name: amd64 Windows Bazel
+name: arm64 MacOS Bazel
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -8,24 +8,22 @@ jobs:
   native:
     strategy:
       matrix:
-        runner: [windows-2022]
         python: [
           {version: '3.10'},
           {version: '3.11'},
           {version: '3.12'},
           {version: '3.13'},
         ]
-      fail-fast: false # Don't cancel all jobs if one fails.
-    name: ${{ matrix.runner }} • Bazel • Python-${{ matrix.python.version }}
-    runs-on: ${{ matrix.runner }}
+      fail-fast: false
+    name: MacOS • Bazel • Python-${{ matrix.python.version }}
+    runs-on: macos-latest # macos arm64 based runner
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v3
+      - name: Set Java to OpenJDK 17 (Temurin)
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Check java
-        run: java -version
       - name: Check mvn
         run: mvn --version
       - name: Setup Python
@@ -34,10 +32,14 @@ jobs:
           python-version: ${{ matrix.python.version }}
       - name: Check Python
         run: python --version
-      - name: Install Bazel
-        run: choco install bazel
       - name: Check Bazel
         run: bazel version
+      - name: Change Python in WORKSPACE
+        run: >
+          sed
+          -i ''
+          -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{ matrix.python.version }}"/g'
+          WORKSPACE
       - name: Build
         run: >
           bazel build

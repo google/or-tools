@@ -522,6 +522,7 @@ foreach(SUBPROJECT IN ITEMS
  ${PDLP_DIR}
  sat
  xpress
+ knitro
  lp_data
  packing
  routing

@@ -1,5 +1,5 @@
 # ref: https://github.com/actions/runner-images
-name: amd64 Linux CMake C++
+name: Linux Knitro Test
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -13,12 +13,12 @@ jobs:
     strategy:
        matrix:
          cmake: [
-           {generator: "Unix Makefiles", config: "Release"},
-           {generator: "Ninja", config: "Release"},
-           {generator: "Ninja Multi-Config", config: "Release"},
+           {generator: "Unix Makefiles", config: "Release", binDir: ""},
+           {generator: "Ninja", config: "Release", binDir: ""},
+           {generator: "Ninja Multi-Config", config: "Release", binDir: "RELEASE"},
          ]
        fail-fast: false
-    name: Linux • ${{ matrix.cmake.generator }} • C++
+    name: Linux • Knitro Test • C++
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,13 +44,6 @@ jobs:
       - name: Copy license
         run: |
           echo "${{ secrets.KNITRO_DISTRIB_LICENSE }}" >> ${{ env.ARTELYS_LICENSE }}/artelys_lic_cicd.txt
-      - name: Check Knitro install
-        run: |
-          ls -l ${{ env.ARTELYS_LICENSE }}
-          ls -l ${{ env.KNITRODIR }}
-          ls -l ${{ env.KNITRODIR }}/lib
-          ls -l ${{ env.KNITRODIR }}/knitroampl
-          ls -l ${{ env.KNITRODIR }}/knitromatlab
       - name: Install Ninja
         run: |
           sudo apt-get update
@@ -70,16 +63,6 @@ jobs:
           --config ${{ matrix.cmake.config }}
           --target all
           -v -j2
-      - name: Test
+      - name: Run Knitro Test
         run: >
-          CTEST_OUTPUT_ON_FAILURE=1
-          cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target test
-          -v
-      - name: Install
-        run: >
-          cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target install
-          -v
+          ./build/${{ matrix.cmake.binDir }}/bin/test_knitro_interface

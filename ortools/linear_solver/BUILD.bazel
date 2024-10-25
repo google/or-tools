@@ -175,6 +175,7 @@ cc_library(
         "linear_solver_callback.cc",
         "sat_interface.cc",
         "xpress_interface.cc",
+        "knitro_interface.cc",
     ] + select({
         ":use_bop": ["bop_interface.cc"],
         "//conditions:default": [],
@@ -277,6 +278,7 @@ cc_library(
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
         "//ortools/xpress:environment",
+        "//ortools/knitro:environment",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",

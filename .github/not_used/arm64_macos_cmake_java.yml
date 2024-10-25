@@ -1,0 +1,55 @@
+# ref: https://github.com/actions/runner-images
+name: arm64 MacOS CMake Java
+
+on: [push, pull_request, workflow_dispatch]
+
+# Building using the github runner environement directly.
+jobs:
+  native:
+    strategy:
+      matrix:
+        cmake: [
+          {generator: "Xcode", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: install},
+          {generator: "Unix Makefiles", config: Release, build_target: all, test_target: test, install_target: install},
+        ]
+      fail-fast: false
+    name: MacOS • ${{ matrix.cmake.generator }} • Java
+    runs-on: macos-latest # macos arm64 based runner
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swig install
+        run: |
+          brew install swig
+          swig -version
+      - name: Check java
+        run: java -version
+      - name: Check cmake
+        run: cmake --version
+      - name: Configure
+        run: >
+          cmake -S. -Bbuild
+          -G "${{ matrix.cmake.generator }}"
+          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+          -DBUILD_JAVA=ON -DSKIP_GPG=ON
+          -DCMAKE_INSTALL_PREFIX=install
+      - name: Build
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.build_target }}
+          -v -j2
+      - name: Test
+        run: >
+          CTEST_OUTPUT_ON_FAILURE=1
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.test_target }}
+          -v
+      - name: Install
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.install_target }}
+          -v
+          
