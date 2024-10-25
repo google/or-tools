@@ -975,6 +975,7 @@ class LocalSearchOperator : public BaseObject {
   LocalSearchOperator() {}
   ~LocalSearchOperator() override {}
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) = 0;
+  virtual void EnterSearch() {}
   virtual void Start(const Assignment* assignment) = 0;
   virtual void Reset() {}
 #ifndef SWIG
@@ -1407,6 +1408,7 @@ class PathOperator : public IntVarLocalSearchOperator {
                       std::move(get_outgoing_neighbors)}) {}
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
+  void EnterSearch() override;
   void Reset() override;
 
   // TODO(user): Make the following methods protected.
@@ -1441,6 +1443,11 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// overridden instead of OnStart() to avoid calling PathOperator::OnStart
   /// explicitly.
   virtual void OnNodeInitialization() {}
+  /// When entering a new search or using metaheuristics, path operators
+  /// reactivate optimal routes and iterating re-starts at route starts, which
+  /// can potentially be out of sync with the last incremental moves.
+  /// This requires resetting incrementalism.
+  virtual void ResetIncrementalism() {}
 
   /// Returns the ith base node of the operator.
   int64_t BaseNode(int i) const { return base_nodes_[i]; }

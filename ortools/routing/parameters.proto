@@ -144,6 +144,10 @@ message RoutingSearchParameters {
     // Selects nodes with the highest penalty / number of allowed vehicles
     // ratio.
     SORTING_PROPERTY_PENALTY_OVER_ALLOWED_VEHICLES_RATIO = 3;
+    // Selects nodes that are on average the farthest from vehicles.
+    SORTING_PROPERTY_HIGHEST_ARC_COST_TO_VEHICLE_START_ENDS = 4;
+    // Selects nodes that are on average the closest to vehicles.
+    SORTING_PROPERTY_LOWEST_ARC_COST_TO_VEHICLE_START_ENDS = 5;
   }
 
   // The properties used to sort insertion entries in the local cheapest

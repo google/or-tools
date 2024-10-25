@@ -1137,20 +1137,15 @@ class PathCumulFilter : public BasePathFilter {
   }
 
  private:
+  using Interval = DimensionValues::Interval;
   struct SoftBound {
     int64_t bound = -1;
     int64_t coefficient = 0;
   };
-  // TODO(user): replace usage of InitialInterval by
-  // DimensionValues::Interval.
-  struct InitialInterval {
-    int64_t min;
-    int64_t max;
-  };
 
   // Data extractors used in constructor.
-  std::vector<InitialInterval> ExtractInitialCumulIntervals();
-  std::vector<InitialInterval> ExtractInitialSlackIntervals();
+  std::vector<Interval> ExtractInitialCumulIntervals();
+  std::vector<Interval> ExtractInitialSlackIntervals();
   std::vector<std::vector<RoutingDimension::NodePrecedence>>
   ExtractNodeIndexToPrecedences() const;
   std::vector<SoftBound> ExtractCumulSoftUpperBounds() const;
@@ -1248,8 +1243,8 @@ class PathCumulFilter : public BasePathFilter {
   // Data about the routing problem, used as read-only input.
   const RoutingModel& routing_model_;
   const RoutingDimension& dimension_;
-  const std::vector<InitialInterval> initial_cumul_;
-  const std::vector<InitialInterval> initial_slack_;
+  const std::vector<Interval> initial_cumul_;
+  const std::vector<Interval> initial_slack_;
   // Maps vehicle/path to their values, values are always present.
   const std::vector<const RoutingModel::TransitCallback2*> evaluators_;
   const std::vector<int64_t> path_capacities_;
@@ -1364,9 +1359,9 @@ std::vector<T> SumOfVectors(const std::vector<T>& v1,
 }
 }  // namespace
 
-std::vector<PathCumulFilter::InitialInterval>
+std::vector<PathCumulFilter::Interval>
 PathCumulFilter::ExtractInitialCumulIntervals() {
-  std::vector<InitialInterval> intervals;
+  std::vector<Interval> intervals;
   intervals.reserve(dimension_.cumuls().size());
   for (const IntVar* cumul : dimension_.cumuls()) {
     intervals.push_back({cumul->Min(), cumul->Max()});
@@ -1374,9 +1369,9 @@ PathCumulFilter::ExtractInitialCumulIntervals() {
   return intervals;
 }
 
-std::vector<PathCumulFilter::InitialInterval>
+std::vector<PathCumulFilter::Interval>
 PathCumulFilter::ExtractInitialSlackIntervals() {
-  std::vector<InitialInterval> intervals;
+  std::vector<Interval> intervals;
   intervals.reserve(dimension_.slacks().size());
   for (const IntVar* slack : dimension_.slacks()) {
     intervals.push_back({slack->Min(), slack->Max()});
@@ -1525,7 +1520,6 @@ bool PathCumulFilter::PropagateTransits(int path) {
 }
 
 bool PathCumulFilter::PropagateTransitsWithForbiddenIntervals(int path) {
-  using Interval = DimensionValues::Interval;
   DCHECK_LT(0, dimension_values_.NumNodes(path));
   absl::Span<Interval> cumuls = dimension_values_.MutableCumuls(path);
   absl::Span<const Interval> transits = dimension_values_.Transits(path);
@@ -1561,7 +1555,6 @@ bool PathCumulFilter::PropagateTransitsWithForbiddenIntervals(int path) {
 }
 
 bool PathCumulFilter::PropagateTransitsWithoutForbiddenIntervals(int path) {
-  using Interval = DimensionValues::Interval;
   DCHECK_LT(0, dimension_values_.NumNodes(path));
   absl::Span<Interval> cumuls = dimension_values_.MutableCumuls(path);
   absl::Span<const Interval> transits = dimension_values_.Transits(path);
@@ -1583,7 +1576,6 @@ bool PathCumulFilter::PropagateTransitsWithoutForbiddenIntervals(int path) {
 }
 
 bool PathCumulFilter::PropagateSpan(int path) {
-  using Interval = DimensionValues::Interval;
   absl::Span<const int64_t> travel_sums = dimension_values_.TravelSums(path);
   absl::Span<Interval> cumul = dimension_values_.MutableCumuls(path);
   // Copy values to make it clear to the compiler we are working on different
@@ -1611,7 +1603,6 @@ bool PathCumulFilter::PropagateSpan(int path) {
 }
 
 bool PathCumulFilter::FillDimensionValues(int path) {
-  using Interval = DimensionValues::Interval;
   // Fill nodes.
   int node = Start(path);
   dimension_values_.PushNode(node);
@@ -1628,8 +1619,7 @@ bool PathCumulFilter::FillDimensionValues(int path) {
   const int64_t capacity = path_capacities_[path];
   for (int r = 0; r < num_nodes; ++r) {
     const int node = nodes[r];
-    Interval cumul = {.min = initial_cumul_[node].min,
-                      .max = initial_cumul_[node].max};
+    Interval cumul = initial_cumul_[node];
     if (!cumul.DecreaseMax(capacity)) return false;
     cumuls[r] = cumul;
   }
@@ -1648,9 +1638,8 @@ bool PathCumulFilter::FillDimensionValues(int path) {
     travels[r - 1] = travel;
     CapAddTo(travel, &total_travel);
     travel_sums[r] = total_travel;
-    Interval transit = {.min = travel, .max = travel};
-    transit.Add(
-        {.min = initial_slack_[node].min, .max = initial_slack_[node].max});
+    Interval transit{.min = travel, .max = travel};
+    transit.Add(initial_slack_[node]);
     transits[r - 1] = transit;
   }
   if (travel_sums.back() > path_span_upper_bounds_[path]) return false;
@@ -1660,7 +1649,6 @@ bool PathCumulFilter::FillDimensionValues(int path) {
 }
 
 bool PathCumulFilter::PropagatePickupToDeliveryLimits(int path) {
-  using Interval = DimensionValues::Interval;
   const int num_nodes = dimension_values_.NumNodes(path);
   absl::Span<const int> nodes = dimension_values_.Nodes(path);
   absl::Span<const int64_t> travel_sums = dimension_values_.TravelSums(path);
@@ -1717,7 +1705,6 @@ bool PathCumulFilter::PropagatePickupToDeliveryLimits(int path) {
 }
 
 bool PathCumulFilter::PropagateVehicleBreaks(int path) {
-  using Interval = DimensionValues::Interval;
   const int64_t total_travel = dimension_values_.TravelSums(path).back();
   const Interval old_span = dimension_values_.Span(path);
   Interval span = old_span;
@@ -1760,7 +1747,6 @@ bool PathCumulFilter::PropagateVehicleBreaks(int path) {
 
 bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
                                  int64_t /*chain_end*/) {
-  using Interval = DimensionValues::Interval;
   const int path = GetPath(path_start);
   if (!FillDimensionValues(path)) return false;
 
@@ -1783,7 +1769,7 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
 
   // Filter costs: span (linear/quadratic/piecewise),
   // soft cumul windows (linear/piecewise).
-  // TODO(user): return early if filter_objective_cost_ is false.
+  if (!filter_objective_cost_) return true;
   CapSubFrom(cost_of_path_.Get(path), &accepted_objective_value_);
   if (routing_model_.IsEnd(GetNext(path_start)) &&
       !routing_model_.IsVehicleUsedWhenEmpty(path)) {
@@ -1891,7 +1877,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       }
     }
   }
-  if (FilterGlobalSpanCost()) {
+  if (filter_objective_cost_ && FilterGlobalSpanCost()) {
     int64_t global_end_min = kint64min;
     int64_t global_start_max = kint64max;
     int64_t global_span_min = 0;
@@ -1952,7 +1938,8 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
         return false;
       }
       // Replace previous path cost with the LP optimizer cost.
-      if (path_cost_with_lp > cost_of_path_.Get(vehicle)) {
+      if (filter_objective_cost_ &&
+          path_cost_with_lp > cost_of_path_.Get(vehicle)) {
         CapSubFrom(cost_of_path_.Get(vehicle), &accepted_objective_value_);
         CapAddTo(path_cost_with_lp, &accepted_objective_value_);
         if (accepted_objective_value_ > objective_max) return false;
@@ -1961,8 +1948,9 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       // Mark whether the cost could be improved by using mp_optimizer.
       DCHECK_NE(mp_optimizer_, nullptr);
       if (FilterVehicleBreaks(vehicle) ||
-          FilterSoftSpanQuadraticCost(vehicle) ||
-          (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY)) {
+          (filter_objective_cost_ &&
+           (FilterSoftSpanQuadraticCost(vehicle) ||
+            status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY))) {
         paths_requiring_mp_optimizer.push_back(vehicle);
       }
     }
@@ -1977,7 +1965,8 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
           DimensionSchedulingStatus::INFEASIBLE) {
         return false;
       }
-      if (path_cost_with_mp > cost_of_path_.Get(vehicle)) {
+      if (filter_objective_cost_ &&
+          path_cost_with_mp > cost_of_path_.Get(vehicle)) {
         CapSubFrom(cost_of_path_.Get(vehicle), &accepted_objective_value_);
         CapAddTo(path_cost_with_mp, &accepted_objective_value_);
         if (accepted_objective_value_ > objective_max) return false;
@@ -2010,7 +1999,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
   }
   // TODO(user): check whether this could go into FinalizeAcceptPath(),
   // with a Commit() on some data structure.
-  if (FilterGlobalSpanCost()) {
+  if (filter_objective_cost_ && FilterGlobalSpanCost()) {
     paths_by_decreasing_span_min_.clear();
     paths_by_decreasing_end_min_.clear();
     paths_by_increasing_start_max_.clear();

@@ -85,7 +85,8 @@ bool IntVarLocalSearchOperator::MakeNextNeighbor(Assignment* delta,
   CHECK(delta != nullptr);
   VLOG(2) << DebugString() << "::MakeNextNeighbor(delta=("
           << delta->DebugString() << "), deltadelta=("
-          << (deltadelta ? deltadelta->DebugString() : std::string("nullptr"));
+          << (deltadelta ? deltadelta->DebugString() : std::string("nullptr"))
+          << "))";
   while (true) {
     RevertChanges(true);
 
@@ -383,7 +384,15 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
   }
 }
 
-void PathOperator::Reset() { active_paths_.Clear(); }
+void PathOperator::EnterSearch() {
+  first_start_ = true;
+  ResetIncrementalism();
+}
+
+void PathOperator::Reset() {
+  active_paths_.Clear();
+  ResetIncrementalism();
+}
 
 void PathOperator::OnStart() {
   optimal_paths_enabled_ = false;
@@ -936,18 +945,11 @@ class TwoOpt : public PathOperator {
   ~TwoOpt() override {}
   bool MakeNeighbor() override;
   bool IsIncremental() const override { return true; }
-  void Reset() override {
-    PathOperator::Reset();
-    // When using metaheuristics, path operators will reactivate optimal
-    // routes and iterating will start at route starts, which can
-    // potentially be out of sync with the last incremental moves. This requires
-    // resetting incrementalism.
-    last_ = -1;
-  }
 
   std::string DebugString() const override { return "TwoOpt"; }
 
  protected:
+  void ResetIncrementalism() override { last_ = -1; }
   bool OnSamePathAsPreviousBase(int64_t /*base_index*/) override {
     // Both base nodes have to be on the same path.
     return true;
@@ -1571,17 +1573,12 @@ class SwapActiveChainOperator : public BaseInactiveNodeToPathOperator {
   ~SwapActiveChainOperator() override {}
   bool MakeNeighbor() override;
   bool IsIncremental() const override { return true; }
-  void Reset() override {
-    PathOperator::Reset();
-    // When using metaheuristics, path operators will reactivate optimal
-    // routes and iterating will start at route starts, which can
-    // potentially be out of sync with the last incremental moves. This requires
-    // resetting incrementalism.
+
+ protected:
+  void ResetIncrementalism() override {
     last_chain_end_ = -1;
     current_chain_size_ = 0;
   }
-
- protected:
   bool OnSamePathAsPreviousBase(int64_t /*base_index*/) override {
     return true;
   }
@@ -2250,6 +2247,7 @@ class CompoundOperator : public LocalSearchOperator {
   CompoundOperator(std::vector<LocalSearchOperator*> operators,
                    std::function<int64_t(int, int)> evaluator);
   ~CompoundOperator() override {}
+  void EnterSearch() override;
   void Reset() override;
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
@@ -2307,12 +2305,20 @@ CompoundOperator::CompoundOperator(std::vector<LocalSearchOperator*> operators,
   operators_.erase(std::remove(operators_.begin(), operators_.end(), nullptr),
                    operators_.end());
   operator_indices_.resize(operators_.size());
-  std::iota(operator_indices_.begin(), operator_indices_.end(), 0);
+  absl::c_iota(operator_indices_, 0);
   for (LocalSearchOperator* const op : operators_) {
     if (op->HasFragments()) {
       has_fragments_ = true;
       break;
     }
+  }
+}
+
+void CompoundOperator::EnterSearch() {
+  absl::c_iota(operator_indices_, 0);
+  index_ = 0;
+  for (LocalSearchOperator* const op : operators_) {
+    op->EnterSearch();
   }
 }
 
@@ -2406,6 +2412,7 @@ class RandomCompoundOperator : public LocalSearchOperator {
   RandomCompoundOperator(std::vector<LocalSearchOperator*> operators,
                          int32_t seed);
   ~RandomCompoundOperator() override {}
+  void EnterSearch() override;
   void Reset() override;
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
@@ -2441,6 +2448,12 @@ RandomCompoundOperator::RandomCompoundOperator(
   }
 }
 
+void RandomCompoundOperator::EnterSearch() {
+  for (LocalSearchOperator* const op : operators_) {
+    op->EnterSearch();
+  }
+}
+
 void RandomCompoundOperator::Reset() {
   for (LocalSearchOperator* const op : operators_) {
     op->Reset();
@@ -2451,7 +2464,7 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
                                               Assignment* deltadelta) {
   const int size = operators_.size();
   std::vector<int> indices(size);
-  std::iota(indices.begin(), indices.end(), 0);
+  absl::c_iota(indices, 0);
   std::shuffle(indices.begin(), indices.end(), rand_);
   for (int index : indices) {
     if (!operators_[index]->HoldsDelta()) {
@@ -2483,6 +2496,7 @@ class MultiArmedBanditCompoundOperator : public LocalSearchOperator {
       std::vector<LocalSearchOperator*> operators, double memory_coefficient,
       double exploration_coefficient, bool maximize);
   ~MultiArmedBanditCompoundOperator() override {}
+  void EnterSearch() override;
   void Reset() override;
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
@@ -2544,7 +2558,7 @@ MultiArmedBanditCompoundOperator::MultiArmedBanditCompoundOperator(
   operators_.erase(std::remove(operators_.begin(), operators_.end(), nullptr),
                    operators_.end());
   operator_indices_.resize(operators_.size());
-  std::iota(operator_indices_.begin(), operator_indices_.end(), 0);
+  absl::c_iota(operator_indices_, 0);
   num_neighbors_per_operator_.resize(operators_.size(), 0);
   avg_improvement_.resize(operators_.size(), 0);
   for (LocalSearchOperator* const op : operators_) {
@@ -2552,6 +2566,18 @@ MultiArmedBanditCompoundOperator::MultiArmedBanditCompoundOperator(
       has_fragments_ = true;
       break;
     }
+  }
+}
+
+void MultiArmedBanditCompoundOperator::EnterSearch() {
+  last_objective_ = std::numeric_limits<int64_t>::max();
+  num_neighbors_ = 0;
+  absl::c_iota(operator_indices_, 0);
+  index_ = 0;
+  num_neighbors_per_operator_.resize(operators_.size(), 0);
+  avg_improvement_.resize(operators_.size(), 0);
+  for (LocalSearchOperator* const op : operators_) {
+    op->EnterSearch();
   }
 }
 
@@ -5019,6 +5045,7 @@ Decision* LocalSearch::Next(Solver* const solver) {
     nested_decision_index_ = 0;
     solver->SaveAndSetValue(&has_started_, true);
     find_neighbors_db_->EnterSearch();
+    ls_operator_->EnterSearch();
   } else if (nested_decision_index_ < 0) {
     solver->Fail();
   }
