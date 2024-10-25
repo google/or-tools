@@ -387,48 +387,49 @@ public class CpModel
      * </summary>
      *
      * <remarks>
-     * <para>An automaton constraint takes a list of variables (of size n), an initial state, a set of
-     * final states, and a set of transitions that will be added incrementally directly on the
-     * returned AutomatonConstraint instance. A transition is a triplet (<c>tail</c>, <c>transition</c>,
-     * <c>head</c>), where <c>tail</c> and <c>head</c> are states, and <c>transition</c> is the label of an arc from
-     * <c>head</c> to <c>tail</c>, corresponding to the value of one variable in the list of variables. </para>
+     * <para>An automaton constraint takes a list of affine expressions (of size n), an initial
+     * state, a set of final states, and a set of transitions that will be added incrementally
+     * directly on the returned AutomatonConstraint instance. A transition is a triplet
+     * (<c>tail</c>, <c>transition</c>, <c>head</c>), where <c>tail</c> and <c>head</c> are states,
+     * and <c>transition</c> is the label of an arc from <c>head</c> to <c>tail</c>, corresponding
+     * to the value of one expression in the list of expressions. </para>
      *
      * <para>This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the
      * possible states of the automaton. The first state contains the initial state. The last phase
      * contains the final states. </para>
      *
-     * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
-     * transition (<c>tail</c>, <c>label</c>, <c>head</c>), it will add an arc from the state <c>tail</c> of phase i and
-     * the state <c>head</c> of phase i + 1. This arc labeled by the value <c>label</c> of the variables
-     * <c>variables[i]</c>. That is, this arc can only be selected <c>variables[i]</c>a is assigned the value
-     * <c>label</c>. </para>
+     * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For
+     * each transition (<c>tail</c>, <c>label</c>, <c>head</c>), it will add an arc from the state
+     * <c>tail</c> of phase i and the state <c>head</c> of phase i + 1. This arc labeled by the
+     * value <c>label</c> of the expression <c>expressions[i]</c>. That is, this arc can only be
+     * selected <c>expressions[i]</c>a is assigned the value <c>label</c>. </para>
      *
-     * <para>A feasible solution of this constraint is an assignment of variables such that, starting
-     * from the initial state in phase 0, there is a path labeled by the values of the variables that
-     * ends in one of the final states in the final phase. </para>
+     * <para>A feasible solution of this constraint is an assignment of expression such that,
+     * starting from the initial state in phase 0, there is a path labeled by the values of the
+     * expressions that ends in one of the final states in the final phase. </para>
      * </remarks>
      *
-     * <param name="vars"> a non empty list of variables whose values correspond to the labels
-     *     of the arcs traversed by the automaton</param>
-     * <param name="starting_state"> the initial state of the automaton</param>
-     * <param name="final_states"> a non empty list of admissible final states </param>
-     * <returns> an instance of the AutomatonConstraint class </returns>
+     * <param name="expressions"> a non empty list of affine expressions (a * var + b) whose values
+     * correspond to the labels of the arcs traversed by the automaton</param> <param
+     * name="starting_state"> the initial state of the automaton</param> <param name="final_states">
+     * a non empty list of admissible final states </param> <returns> an instance of the
+     * AutomatonConstraint class </returns>
      */
-    public AutomatonConstraint AddAutomaton(IEnumerable<IntVar> vars, long starting_state,
+    public AutomatonConstraint AddAutomaton(IEnumerable<LinearExpr> expressions, long starting_state,
                                             IEnumerable<long> final_states)
     {
-        AutomatonConstraintProto aut = new AutomatonConstraintProto();
-        aut.Vars.TrySetCapacity(vars);
-        foreach (IntVar var in vars)
+        AutomatonConstraintProto automaton = new AutomatonConstraintProto();
+        automaton.Vars.TrySetCapacity(expressions);
+        foreach (LinearExpr expr in exprs)
         {
-            aut.Vars.Add(var.Index);
+            automaton.Exprs.Add(GetLinearExpressionProto(expr));
         }
 
-        aut.StartingState = starting_state;
-        aut.FinalStates.AddRange(final_states);
+        automaton.StartingState = starting_state;
+        automaton.FinalStates.AddRange(final_states);
 
         AutomatonConstraint ct = new AutomatonConstraint(model_);
-        ct.Proto.Automaton = aut;
+        ct.Proto.Automaton = automaton;
         return ct;
     }
 

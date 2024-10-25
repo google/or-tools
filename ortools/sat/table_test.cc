@@ -355,10 +355,10 @@ TEST(AutomatonTest, TestAutomaton) {
         transition_label: 1
         transition_label: 1
         transition_label: 0
-        vars: 0
-        vars: 1
-        vars: 2
-        vars: 3
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
       }
     }
   )pb");

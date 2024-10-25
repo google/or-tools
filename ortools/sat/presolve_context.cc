@@ -40,6 +40,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -57,7 +58,7 @@
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, cp_model_debug_postsolve, false,
-          "DEBUG ONLY. When set to true, the mappin_model.proto will contains "
+          "DEBUG ONLY. When set to true, the mapping_model.proto will contains "
           "file:line of the code that created that constraint. This is helpful "
           "for debugging postsolve");
 
@@ -80,9 +81,40 @@ int PresolveContext::NewIntVar(const Domain& domain) {
 }
 
 int PresolveContext::NewIntVarWithDefinition(
-    const Domain& domain,
-    absl::Span<const std::pair<int, int64_t>> definition) {
+    const Domain& domain, absl::Span<const std::pair<int, int64_t>> definition,
+    bool append_constraint_to_mapping_model) {
+  if (domain.Size() == 1) {
+    UpdateRuleStats("TODO new_var_definition : use boolean equation");
+  }
+
   const int new_var = NewIntVar(domain);
+
+  // Create new linear constraint new_var = definition.
+  // TODO(user): When we encounter overflow (rare), we still create a variable.
+  auto* new_linear = append_constraint_to_mapping_model
+                         ? mapping_model->add_constraints()->mutable_linear()
+                         : working_model->add_constraints()->mutable_linear();
+  for (const auto [var, coeff] : definition) {
+    new_linear->add_vars(var);
+    new_linear->add_coeffs(coeff);
+  }
+  new_linear->add_vars(new_var);
+  new_linear->add_coeffs(-1);
+  new_linear->add_domain(0);
+  new_linear->add_domain(0);
+  if (PossibleIntegerOverflow(*working_model, new_linear->vars(),
+                              new_linear->coeffs())) {
+    UpdateRuleStats("TODO new_var_definition : possible overflow.");
+    if (append_constraint_to_mapping_model) {
+      mapping_model->mutable_constraints()->RemoveLast();
+    } else {
+      working_model->mutable_constraints()->RemoveLast();
+    }
+    return -1;
+  }
+  if (!append_constraint_to_mapping_model) {
+    UpdateNewConstraintsVariableUsage();
+  }
 
   // We only fill the hint of the new variable if all the variable involved
   // in its definition have a value.
@@ -2387,12 +2419,17 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   // Update the domain in the current CpModelProto.
   context->WriteVariableDomainsToProto();
   const CpModelProto& model_proto = *(context->working_model);
-
   // Adapt some of the parameters during this probing phase.
-  auto* local_param = local_model->GetOrCreate<SatParameters>();
-  *local_param = context->params();
-  local_param->set_use_implied_bounds(false);
+  SatParameters local_params = context->params();
+  local_params.set_use_implied_bounds(false);
+  return LoadModelForPresolve(model_proto, std::move(local_params), context,
+                              local_model, "probing");
+}
 
+bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
+                          PresolveContext* context, Model* local_model,
+                          absl::string_view name_for_logging) {
+  *local_model->GetOrCreate<SatParameters>() = std::move(params);
   local_model->GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(
       context->time_limit());
   local_model->Register<ModelRandomGenerator>(context->random());
@@ -2408,15 +2445,16 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   ExtractEncoding(model_proto, local_model);
   auto* sat_solver = local_model->GetOrCreate<SatSolver>();
   if (sat_solver->ModelIsUnsat()) {
-    return context->NotifyThatModelIsUnsat("Initial loading for probing");
+    return context->NotifyThatModelIsUnsat(
+        absl::StrCat("Initial loading for ", name_for_logging));
   }
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
     CHECK(LoadConstraint(ct, local_model));
     if (sat_solver->ModelIsUnsat()) {
       return context->NotifyThatModelIsUnsat(
-          absl::StrCat("after loading constraint during probing ",
-                       ProtobufShortDebugString(ct)));
+          absl::StrCat("after loading constraint during ", name_for_logging,
+                       " ", ProtobufShortDebugString(ct)));
     }
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
@@ -2429,11 +2467,11 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   return true;
 }
 
-template <typename ProtoWithVarsAndCoeffs>
+template <typename ProtoWithVarsAndCoeffs, typename PresolveContextT>
 bool CanonicalizeLinearExpressionInternal(
     absl::Span<const int> enforcements, ProtoWithVarsAndCoeffs* proto,
     int64_t* offset, std::vector<std::pair<int, int64_t>>* tmp_terms,
-    PresolveContext* context) {
+    PresolveContextT* context) {
   // First regroup the terms on the same variables and sum the fixed ones.
   //
   // TODO(user): Add a quick pass to skip most of the work below if the
@@ -2526,6 +2564,29 @@ bool CanonicalizeLinearExpressionInternal(
   return remapped || proto->vars().size() < old_size;
 }
 
+namespace {
+bool CanonicalizeLinearExpressionNoContext(absl::Span<const int> enforcements,
+                                           LinearConstraintProto* proto) {
+  struct DummyContext {
+    bool IsFixed(int /*var*/) const { return false; }
+    int64_t FixedValue(int /*var*/) const { return 0; }
+    AffineRelation::Relation GetAffineRelation(int var) const {
+      return {var, 1, 0};
+    }
+    void UpdateRuleStats(absl::string_view /*rule*/) const {}
+  } dummy_context;
+  int64_t offset = 0;
+  std::vector<std::pair<int, int64_t>> tmp_terms;
+  const bool result = CanonicalizeLinearExpressionInternal(
+      enforcements, proto, &offset, &tmp_terms, &dummy_context);
+  if (offset != 0) {
+    FillDomainInProto(ReadDomainFromProto(*proto).AdditionWith(Domain(-offset)),
+                      proto);
+  }
+  return result;
+}
+}  // namespace
+
 bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
   int64_t offset = 0;
   const bool result = CanonicalizeLinearExpressionInternal(
@@ -2567,6 +2628,74 @@ ConstraintProto* PresolveContext::NewMappingConstraint(
     new_ct->set_name(absl::StrCat("#c", c, " ", file, ":", line));
   }
   return new_ct;
+}
+
+void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
+                                          const PresolveContext* context,
+                                          std::vector<int>* variable_mapping,
+                                          CpModelProto* mini_model) {
+  mini_model->Clear();
+
+  *mini_model->add_constraints() = ct;
+
+  absl::flat_hash_map<int, int> inverse_interval_map;
+  for (const int i : UsedIntervals(ct)) {
+    auto [it, inserted] =
+        inverse_interval_map.insert({i, mini_model->constraints_size()});
+    if (inserted) {
+      *mini_model->add_constraints() = context->working_model->constraints(i);
+
+      // Now add end = start + size for the interval. This is not strictly
+      // necessary but it makes the presolve more powerful.
+      ConstraintProto* linear = mini_model->add_constraints();
+      *linear->mutable_enforcement_literal() = ct.enforcement_literal();
+      LinearConstraintProto* mutable_linear = linear->mutable_linear();
+      const IntervalConstraintProto& itv =
+          context->working_model->constraints(i).interval();
+
+      mutable_linear->add_domain(0);
+      mutable_linear->add_domain(0);
+      AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
+      AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
+      AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
+      CanonicalizeLinearExpressionNoContext(ct.enforcement_literal(),
+                                            mutable_linear);
+    }
+  }
+
+  absl::flat_hash_map<int, int> inverse_variable_map;
+  for (const ConstraintProto& cur_ct : mini_model->constraints()) {
+    for (const int v : UsedVariables(cur_ct)) {
+      auto [it, inserted] =
+          inverse_variable_map.insert({v, mini_model->variables_size()});
+      if (inserted) {
+        FillDomainInProto(context->DomainOf(v), mini_model->add_variables());
+      }
+    }
+  }
+
+  variable_mapping->resize(inverse_variable_map.size());
+  for (const auto& [k, v] : inverse_variable_map) {
+    (*variable_mapping)[v] = k;
+  }
+  const auto mapping_function = [&inverse_variable_map](int* i) {
+    const bool is_positive = RefIsPositive(*i);
+    const int positive_ref = is_positive ? *i : NegatedRef(*i);
+
+    const auto it = inverse_variable_map.find(positive_ref);
+    DCHECK(it != inverse_variable_map.end());
+    *i = is_positive ? it->second : NegatedRef(it->second);
+  };
+  const auto interval_mapping_function = [&inverse_interval_map](int* i) {
+    const auto it = inverse_interval_map.find(*i);
+    DCHECK(it != inverse_interval_map.end());
+    *i = it->second;
+  };
+  for (ConstraintProto& ct : *mini_model->mutable_constraints()) {
+    ApplyToAllVariableIndices(mapping_function, &ct);
+    ApplyToAllLiteralIndices(mapping_function, &ct);
+    ApplyToAllIntervalIndices(interval_mapping_function, &ct);
+  }
 }
 
 }  // namespace sat

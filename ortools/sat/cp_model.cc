@@ -1057,11 +1057,41 @@ ReservoirConstraint CpModelBuilder::AddReservoirConstraint(int64_t min_level,
 }
 
 AutomatonConstraint CpModelBuilder::AddAutomaton(
+    absl::Span<const LinearExpr> transition_expressions, int starting_state,
+    absl::Span<const int> final_states) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : transition_expressions) {
+    *proto->mutable_automaton()->add_exprs() = LinearExprToProto(expr);
+  }
+  proto->mutable_automaton()->set_starting_state(starting_state);
+  for (const int final_state : final_states) {
+    proto->mutable_automaton()->add_final_states(final_state);
+  }
+  return AutomatonConstraint(proto);
+}
+
+AutomatonConstraint CpModelBuilder::AddAutomaton(
     absl::Span<const IntVar> transition_variables, int starting_state,
     absl::Span<const int> final_states) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar& var : transition_variables) {
-    proto->mutable_automaton()->add_vars(var.index_);
+    LinearExpressionProto* expr = proto->mutable_automaton()->add_exprs();
+    expr->add_vars(var.index_);
+    expr->add_coeffs(1);
+  }
+  proto->mutable_automaton()->set_starting_state(starting_state);
+  for (const int final_state : final_states) {
+    proto->mutable_automaton()->add_final_states(final_state);
+  }
+  return AutomatonConstraint(proto);
+}
+
+AutomatonConstraint CpModelBuilder::AddAutomaton(
+    std::initializer_list<LinearExpr> transition_expressions,
+    int starting_state, absl::Span<const int> final_states) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : transition_expressions) {
+    *proto->mutable_automaton()->add_exprs() = LinearExprToProto(expr);
   }
   proto->mutable_automaton()->set_starting_state(starting_state);
   for (const int final_state : final_states) {

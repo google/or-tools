@@ -723,7 +723,7 @@ class CpModelTest(absltest.TestCase):
         model.add_automaton(x, 0, [2, 3], [(0, 0, 0), (0, 1, 1), (1, 2, 2), (2, 3, 3)])
         self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
-        self.assertLen(model.proto.constraints[0].automaton.vars, 5)
+        self.assertLen(model.proto.constraints[0].automaton.exprs, 5)
         self.assertLen(model.proto.constraints[0].automaton.transition_tail, 4)
         self.assertLen(model.proto.constraints[0].automaton.transition_head, 4)
         self.assertLen(model.proto.constraints[0].automaton.transition_label, 4)

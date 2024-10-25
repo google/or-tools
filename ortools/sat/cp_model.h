@@ -1002,8 +1002,22 @@ class CpModelBuilder {
    * incrementally after construction.
    */
   AutomatonConstraint AddAutomaton(
+      absl::Span<const LinearExpr> transition_expressions, int starting_state,
+      absl::Span<const int> final_states);
+
+  /**
+   * An automaton constraint.
+   */
+  AutomatonConstraint AddAutomaton(
       absl::Span<const IntVar> transition_variables, int starting_state,
       absl::Span<const int> final_states);
+
+  /**
+   * An automaton constraint.
+   */
+  AutomatonConstraint AddAutomaton(
+      std::initializer_list<LinearExpr> transition_expressions,
+      int starting_state, absl::Span<const int> final_states);
 
   /// Adds target == min(vars).
   Constraint AddMinEquality(const LinearExpr& target,

@@ -1770,18 +1770,20 @@ class CpModel:
 
     def add_automaton(
         self,
-        transition_variables: Sequence[VariableT],
+        transition_expressions: Sequence[LinearExprT],
         starting_state: IntegralT,
         final_states: Sequence[IntegralT],
         transition_triples: Sequence[Tuple[IntegralT, IntegralT, IntegralT]],
     ) -> Constraint:
         """Adds an automaton constraint.
 
-        An automaton constraint takes a list of variables (of size *n*), an initial
-        state, a set of final states, and a set of transitions. A transition is a
-        triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
-        and *transition* is the label of an arc from *head* to *tail*,
-        corresponding to the value of one variable in the list of variables.
+        An automaton constraint takes a list of affine expressions (a * var + b) (of
+        size *n*), an initial state, a set of final states, and a set of
+        transitions. A transition is a triplet (*tail*, *transition*, *head*), where
+        *tail* and *head* are states, and *transition* is the label of an arc from
+        *head* to *tail*, corresponding to the value of one expression in the list
+        of
+        expressions.
 
         This automaton will be unrolled into a flow with *n* + 1 phases. Each phase
         contains the possible states of the automaton. The first state contains the
@@ -1790,18 +1792,19 @@ class CpModel:
         Between two consecutive phases *i* and *i* + 1, the automaton creates a set
         of arcs. For each transition (*tail*, *transition*, *head*), it will add
         an arc from the state *tail* of phase *i* and the state *head* of phase
-        *i* + 1. This arc is labeled by the value *transition* of the variables
-        `variables[i]`. That is, this arc can only be selected if `variables[i]`
+        *i* + 1. This arc is labeled by the value *transition* of the expression
+        `expressions[i]`. That is, this arc can only be selected if `expressions[i]`
         is assigned the value *transition*.
 
-        A feasible solution of this constraint is an assignment of variables such
+        A feasible solution of this constraint is an assignment of expressions such
         that, starting from the initial state in phase 0, there is a path labeled by
-        the values of the variables that ends in one of the final states in the
+        the values of the expressions that ends in one of the final states in the
         final phase.
 
         Args:
-          transition_variables: A non-empty list of variables whose values
-            correspond to the labels of the arcs traversed by the automaton.
+          transition_expressions: A non-empty list of affine expressions (a * var +
+            b) whose values correspond to the labels of the arcs traversed by the
+            automaton.
           starting_state: The initial state of the automaton.
           final_states: A non-empty list of admissible final states.
           transition_triples: A list of transitions for the automaton, in the
@@ -1811,13 +1814,13 @@ class CpModel:
           An instance of the `Constraint` class.
 
         Raises:
-          ValueError: if `transition_variables`, `final_states`, or
+          ValueError: if `transition_expressions`, `final_states`, or
             `transition_triples` are empty.
         """
 
-        if not transition_variables:
+        if not transition_expressions:
             raise ValueError(
-                "add_automaton expects a non-empty transition_variables array"
+                "add_automaton expects a non-empty transition_expressions array"
             )
         if not final_states:
             raise ValueError("add_automaton expects some final states")
@@ -1827,8 +1830,8 @@ class CpModel:
 
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.automaton.vars.extend(
-            [self.get_or_make_index(x) for x in transition_variables]
+        model_ct.automaton.exprs.extend(
+            [self.parse_linear_expression(e) for e in transition_expressions]
         )
         model_ct.automaton.starting_state = starting_state
         for v in final_states:

@@ -136,6 +136,7 @@ LPProblem GeneratePermutationProblem(int size) {
 
 int CountSolutionsOfLPProblemUsingSAT(const LPProblem& problem) {
   Model model;
+  model.GetOrCreate<SatParameters>()->set_add_lp_constraints_lazily(false);
 
   std::vector<IntegerVariable> cp_variables;
   const int num_cp_vars = problem.num_integer_vars();

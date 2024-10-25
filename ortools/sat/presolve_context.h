@@ -102,9 +102,13 @@ class PresolveContext {
 
   // This should replace NewIntVar() eventually in order to be able to crush
   // primal solution or just update the hint.
+  //
+  // By default this also create the linking constraint new_var = definition.
+  // Returns -1 if we couldn't create the definition due to overflow.
   int NewIntVarWithDefinition(
       const Domain& domain,
-      absl::Span<const std::pair<int, int64_t>> definition);
+      absl::Span<const std::pair<int, int64_t>> definition,
+      bool append_constraint_to_mapping_model = false);
 
   // Create a new bool var.
   // Its hint value will be the same as the value of the given clause.
@@ -773,6 +777,14 @@ class PresolveContext {
 // that will be used for probing. Returns false if UNSAT.
 bool LoadModelForProbing(PresolveContext* context, Model* local_model);
 
+bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
+                          PresolveContext* context, Model* local_model,
+                          absl::string_view name_for_logging);
+
+void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
+                                          const PresolveContext* context,
+                                          std::vector<int>* variable_mapping,
+                                          CpModelProto* mini_model);
 }  // namespace sat
 }  // namespace operations_research
 
