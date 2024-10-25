@@ -420,7 +420,7 @@ public class CpModel
     {
         AutomatonConstraintProto automaton = new AutomatonConstraintProto();
         automaton.Vars.TrySetCapacity(expressions);
-        foreach (LinearExpr expr in exprs)
+        foreach (LinearExpr expr in expressions)
         {
             automaton.Exprs.Add(GetLinearExpressionProto(expr));
         }
