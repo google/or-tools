@@ -28,7 +28,7 @@ jobs:
           {distrib: 'microsoft', version: '21'}, # 2028/09
         ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} • ${{ matrix.java.distrib }}-${{ matrix.java.version }}
+    name: Windows • VS 2022 • ${{ matrix.java.distrib }}-${{ matrix.java.version }}
     runs-on: windows-latest
     env:
       CTEST_OUTPUT_ON_FAILURE: 1
