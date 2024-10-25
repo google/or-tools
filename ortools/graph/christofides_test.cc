@@ -275,12 +275,12 @@ void BM_ChristofidesPathSolver(benchmark::State& state) {
       costs[i][j] = std::abs(x_i - x_j) + std::abs(y_i - y_j);
     }
   }
-  auto cost = [&costs](int i, int j) { return costs[i][j]; };
-  using Cost = decltype(cost);
+  std::function<int(int, int)> cost = [&costs](int i, int j) -> int { return costs[i][j]; };
+
   using MatchingAlgorithm =
-      typename ChristofidesPathSolver<int, int, int, Cost>::MatchingAlgorithm;
+      typename ChristofidesPathSolver<int, int, int>::MatchingAlgorithm;
   for (auto _ : state) {
-    ChristofidesPathSolver<int, int, int, Cost> chris_solver(num_nodes, cost);
+    ChristofidesPathSolver<int, int, int> chris_solver(num_nodes, cost);
     if (use_minimal_matching) {
       chris_solver.SetMatchingAlgorithm(
           MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING);

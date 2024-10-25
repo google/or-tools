@@ -19,7 +19,7 @@ jobs:
           {version: "3.13", dir: Python313},
         ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} • Python-${{ matrix.python.version }}
+    name: Windows • VS 2022 • Python-${{ matrix.python.version }}
     runs-on: windows-latest
     env:
       CTEST_OUTPUT_ON_FAILURE: 1

@@ -264,8 +264,8 @@ TYPED_TEST_SUITE(GraphShortestPathsTest, GraphTypesForShortestPathsTesting);
 
 // Test on an empty graph.
 TYPED_TEST(GraphShortestPathsDeathTest, ShortestPathsEmptyGraph) {
-  const int kExpectedPaths[] = {};
-  const PathDistance kExpectedDistances[] = {};
+  const auto kExpectedPaths = nullptr;
+  const auto kExpectedDistances = nullptr;
   TypeParam graph;
   std::vector<PathDistance> lengths;
   TestShortestPathsFromGraph(graph, lengths, kExpectedPaths,

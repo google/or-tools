@@ -3868,10 +3868,10 @@ class LocalSearchProfiler : public LocalSearchMonitor {
         filters.push_back(filter);
       }
       std::sort(filters.begin(), filters.end(),
-                [&filter_stats](const LocalSearchFilter* filter1,
-                                const LocalSearchFilter* filter2) {
-                  return gtl::FindOrDie(filter_stats, filter1).calls >
-                         gtl::FindOrDie(filter_stats, filter2).calls;
+                [filter_stats_ptr = &filter_stats](const LocalSearchFilter* filter1,
+                                                   const LocalSearchFilter* filter2) {
+                  return gtl::FindOrDie(*filter_stats_ptr, filter1).calls >
+                         gtl::FindOrDie(*filter_stats_ptr, filter2).calls;
                 });
       for (const LocalSearchFilter* const filter : filters) {
         const FilterStats& stats = gtl::FindOrDie(filter_stats, filter);

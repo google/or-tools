@@ -873,22 +873,34 @@ class ModelStorageTest(compare_proto.MathOptProtoAssertions, parameterized.TestC
         self.assertCountEqual([c], storage.get_linear_constraints_with_variable(x))
         self.assertCountEqual([c, d], storage.get_linear_constraints_with_variable(y))
 
-        self.assertCountEqual(
-            [
-                _MatEntry(linear_constraint_id=c, variable_id=x, coefficient=nan),
-                _MatEntry(linear_constraint_id=c, variable_id=y, coefficient=1.0),
-                _MatEntry(linear_constraint_id=d, variable_id=y, coefficient=nan),
-            ],
-            storage.get_linear_constraint_matrix_entries(),
-        )
+        mat_entries = {}
+        for e in storage.get_linear_constraint_matrix_entries():
+            key = (e.linear_constraint_id, e.variable_id)
+            self.assertNotIn(
+                key,
+                mat_entries,
+                msg=f"found key:{key} twice, e:{e} mat_entries:{mat_entries}",
+            )
+            mat_entries[key] = e.coefficient
+        self.assertSetEqual(set(mat_entries.keys()), set(((c, x), (c, y), (d, y))))
+        self._assert_nan(mat_entries[(c, x)])
+        self.assertEqual(mat_entries[(c, y)], 1.0)
+        self._assert_nan(mat_entries[(d, y)])
 
-        self.assertCountEqual(
-            [
-                _ObjEntry(variable_id=x, coefficient=1.0),
-                _ObjEntry(variable_id=y, coefficient=nan),
-            ],
-            storage.get_linear_objective_coefficients(),
-        )
+        obj_entries = {}
+        for e in storage.get_linear_objective_coefficients():
+            self.assertNotIn(
+                e.variable_id,
+                obj_entries,
+                msg=(
+                    f"found variable:{e.variable_id} twice,"
+                    f" e:{e} obj_entries:{obj_entries}"
+                ),
+            )
+            obj_entries[e.variable_id] = e.coefficient
+        self.assertSetEqual(set(obj_entries.keys()), set((x, y)))
+        self.assertEqual(obj_entries[x], 1.0)
+        self._assert_nan(obj_entries[y])
 
         # Export to proto
         expected = model_pb2.ModelProto(

@@ -13,7 +13,7 @@ jobs:
           {generator: "Visual Studio 17 2022", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} (${{ matrix.cmake.config }}) • C++
+    name: Windows • VS 2022 (${{ matrix.cmake.config }}) • C++
     runs-on: windows-latest
     env:
       CTEST_OUTPUT_ON_FAILURE: 1
