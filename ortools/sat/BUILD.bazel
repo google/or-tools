@@ -757,6 +757,7 @@ cc_library(
     hdrs = ["presolve_context.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_checker",
         ":cp_model_loader",
         ":cp_model_mapping",
         ":cp_model_utils",
@@ -820,6 +821,7 @@ cc_library(
         ":presolve_context",
         "//ortools/base:stl_util",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
@@ -980,6 +982,7 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",

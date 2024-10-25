@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -46,58 +47,6 @@
 
 namespace operations_research {
 namespace sat {
-
-// TODO(user): Note that if we have duplicate variables controlling different
-// time point, this might not reach the fixed point. Fix? it is not that
-// important as the expansion take care of this case anyway.
-void PropagateAutomaton(const AutomatonConstraintProto& proto,
-                        const PresolveContext& context,
-                        std::vector<absl::flat_hash_set<int64_t>>* states,
-                        std::vector<absl::flat_hash_set<int64_t>>* labels) {
-  const int n = proto.vars_size();
-  const absl::flat_hash_set<int64_t> final_states(
-      {proto.final_states().begin(), proto.final_states().end()});
-
-  labels->clear();
-  labels->resize(n);
-  states->clear();
-  states->resize(n + 1);
-  (*states)[0].insert(proto.starting_state());
-
-  // Forward pass.
-  for (int time = 0; time < n; ++time) {
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64_t tail = proto.transition_tail(t);
-      const int64_t label = proto.transition_label(t);
-      const int64_t head = proto.transition_head(t);
-      if (!(*states)[time].contains(tail)) continue;
-      if (!context.DomainContains(proto.vars(time), label)) continue;
-      if (time == n - 1 && !final_states.contains(head)) continue;
-      (*labels)[time].insert(label);
-      (*states)[time + 1].insert(head);
-    }
-  }
-
-  // Backward pass.
-  for (int time = n - 1; time >= 0; --time) {
-    absl::flat_hash_set<int64_t> new_states;
-    absl::flat_hash_set<int64_t> new_labels;
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64_t tail = proto.transition_tail(t);
-      const int64_t label = proto.transition_label(t);
-      const int64_t head = proto.transition_head(t);
-
-      if (!(*states)[time].contains(tail)) continue;
-      if (!(*labels)[time].contains(label)) continue;
-      if (!(*states)[time + 1].contains(head)) continue;
-      new_labels.insert(label);
-      new_states.insert(tail);
-    }
-    (*labels)[time].swap(new_labels);
-    (*states)[time].swap(new_states);
-  }
-}
-
 namespace {
 
 // Different encoding that support general demands. This is usually a pretty bad
@@ -1030,7 +979,7 @@ void AddImplyInReachableValues(int literal,
 void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   AutomatonConstraintProto& proto = *ct->mutable_automaton();
 
-  if (proto.vars_size() == 0) {
+  if (proto.exprs_size() == 0) {
     const int64_t initial_state = proto.starting_state();
     for (const int64_t final_state : proto.final_states()) {
       if (initial_state == final_state) {
@@ -1060,8 +1009,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   absl::flat_hash_map<int64_t, int> out_encoding;
   bool removed_values = false;
 
-  const int n = proto.vars_size();
-  const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
+  const int n = proto.exprs_size();
   for (int time = 0; time < n; ++time) {
     // All these vector have the same size. We will use them to enforce a
     // local table constraint representing one step of the automaton at the
@@ -1076,7 +1024,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 
       if (!reachable_states[time].contains(tail)) continue;
       if (!reachable_states[time + 1].contains(head)) continue;
-      if (!context->DomainContains(vars[time], label)) continue;
+      if (!context->DomainContains(proto.exprs(time), label)) continue;
 
       // TODO(user): if this transition correspond to just one in-state or
       // one-out state or one variable value, we could reuse the corresponding
@@ -1092,7 +1040,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     // Deal with single tuple.
     const int num_tuples = in_states.size();
     if (num_tuples == 1) {
-      if (!context->IntersectDomainWith(vars[time], Domain(labels.front()))) {
+      if (!context->IntersectDomainWith(proto.exprs(time),
+                                        Domain(labels.front()))) {
         VLOG(1) << "Infeasible automaton.";
         return;
       }
@@ -1115,20 +1064,23 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     // Fully encode vars[time].
     {
       std::vector<int64_t> transitions = labels;
+      const LinearExpressionProto& expr = proto.exprs(time);
       gtl::STLSortAndRemoveDuplicates(&transitions);
 
       encoding.clear();
-      if (!context->IntersectDomainWith(
-              vars[time], Domain::FromValues(transitions), &removed_values)) {
+      if (!context->IntersectDomainWith(expr, Domain::FromValues(transitions),
+                                        &removed_values)) {
         VLOG(1) << "Infeasible automaton.";
         return;
       }
 
       // Fully encode the variable.
       // We can leave the encoding empty for fixed vars.
-      if (!context->IsFixed(vars[time])) {
-        for (const int64_t v : context->DomainOf(vars[time]).Values()) {
-          encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
+      if (!context->IsFixed(expr)) {
+        const int var = expr.vars(0);
+        for (const int64_t v : context->DomainOf(var).Values()) {
+          encoding[AffineExpressionValueAt(expr, v)] =
+              context->GetOrCreateVarValueEncoding(var, v);
         }
       }
     }
@@ -1234,7 +1186,11 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
         in_to_label[in_states[i]].push_back(labels[i]);
         in_to_out[in_states[i]].push_back(out_states[i]);
       }
-      for (const auto [in_value, in_literal] : in_encoding) {
+      // Sort the pairs to make the order deterministic.
+      std::vector<std::pair<int64_t, int>> in_to_label_pairs(
+          in_encoding.begin(), in_encoding.end());
+      absl::c_sort(in_to_label_pairs);
+      for (const auto [in_value, in_literal] : in_to_label_pairs) {
         AddImplyInReachableValues(in_literal, in_to_label[in_value], encoding,
                                   context);
         AddImplyInReachableValues(in_literal, in_to_out[in_value], out_encoding,

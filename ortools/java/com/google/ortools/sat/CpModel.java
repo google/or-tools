@@ -509,11 +509,11 @@ public final class CpModel {
   /**
    * Adds an automaton constraint.
    *
-   * <p>An automaton constraint takes a list of variables (of size n), an initial state, a set of
-   * final states, and a set of transitions that will be added incrementally directly on the
+   * <p>An automaton constraint takes a list of affine expressions (of size n), an initial state, a
+   * set of final states, and a set of transitions that will be added incrementally directly on the
    * returned AutomatonConstraint instance. A transition is a triplet ('tail', 'transition',
    * 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from
-   * 'head' to 'tail', corresponding to the value of one variable in the list of variables.
+   * 'head' to 'tail', corresponding to the value of one expression in the list of expressions.
    *
    * <p>This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the
    * possible states of the automaton. The first state contains the initial state. The last phase
@@ -521,26 +521,48 @@ public final class CpModel {
    *
    * <p>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
    * transition (tail, label, head), it will add an arc from the state 'tail' of phase i and the
-   * state 'head' of phase i + 1. This arc labeled by the value 'label' of the variables
-   * 'variables[i]'. That is, this arc can only be selected if 'variables[i]' is assigned the value
-   * 'label'.
+   * state 'head' of phase i + 1. This arc labeled by the value 'label' of the expression
+   * 'expressions[i]'. That is, this arc can only be selected if 'expressions[i]' is assigned the
+   * value 'label'.
    *
-   * <p>A feasible solution of this constraint is an assignment of variables such that, starting
-   * from the initial state in phase 0, there is a path labeled by the values of the variables that
-   * ends in one of the final states in the final phase.
+   * <p>A feasible solution of this constraint is an assignment of expressions such that, starting
+   * from the initial state in phase 0, there is a path labeled by the values of the expressions
+   * that ends in one of the final states in the final phase.
    *
-   * @param transitionVariables a non empty list of variables whose values correspond to the labels
-   *     of the arcs traversed by the automaton
+   * @param transitionExpressions a non empty list of affine expressions (a * var + b) whose values
+   *     correspond to the labels of the arcs traversed by the automaton
    * @param startingState the initial state of the automaton
    * @param finalStates a non empty list of admissible final states
    * @return an instance of the Constraint class
    */
   public AutomatonConstraint addAutomaton(
-      IntVar[] transitionVariables, long startingState, long[] finalStates) {
+      LinearArgument[] transitionExpressions, long startingState, long[] finalStates) {
     AutomatonConstraint ct = new AutomatonConstraint(modelBuilder);
     AutomatonConstraintProto.Builder automaton = ct.getBuilder().getAutomatonBuilder();
-    for (IntVar var : transitionVariables) {
-      automaton.addVars(var.getIndex());
+    for (LinearArgument expr : transitionExpressions) {
+      automaton.addExprs(
+          getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
+    }
+    automaton.setStartingState(startingState);
+    for (long c : finalStates) {
+      automaton.addFinalStates(c);
+    }
+    return ct;
+  }
+
+  /**
+   * Adds an automaton constraint.
+   *
+   * @see addAutomaton(LinearArgument[] transitionExpressions, long startingState, long[]
+   *     finalStates)
+   */
+  public AutomatonConstraint addAutomaton(Iterable<? extends LinearArgument> transitionExpressions,
+      long startingState, long[] finalStates) {
+    AutomatonConstraint ct = new AutomatonConstraint(modelBuilder);
+    AutomatonConstraintProto.Builder automaton = ct.getBuilder().getAutomatonBuilder();
+    for (LinearArgument expr : transitionExpressions) {
+      automaton.addExprs(
+          getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
     }
     automaton.setStartingState(startingState);
     for (long c : finalStates) {

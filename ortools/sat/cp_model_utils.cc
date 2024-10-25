@@ -187,7 +187,13 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       }
       break;
     case ConstraintProto::ConstraintCase::kAutomaton:
-      AddIndices(ct.automaton().vars(), variables);
+      if (!ct.automaton().vars().empty()) {
+        AddIndices(ct.automaton().vars(), variables);
+      } else {
+        for (const LinearExpressionProto& expr : ct.automaton().exprs()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       AddIndices(ct.interval().start().vars(), variables);
@@ -374,7 +380,13 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       }
       break;
     case ConstraintProto::ConstraintCase::kAutomaton:
-      APPLY_TO_REPEATED_FIELD(automaton, vars);
+      if (!ct->automaton().vars().empty()) {
+        APPLY_TO_REPEATED_FIELD(automaton, vars);
+      } else {
+        for (int i = 0; i < ct->automaton().exprs_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(automaton, exprs(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       APPLY_TO_REPEATED_FIELD(interval, start()->mutable_vars);
@@ -792,7 +804,13 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         fp = FingerprintRepeatedField(ct.automaton().transition_tail(), fp);
         fp = FingerprintRepeatedField(ct.automaton().transition_head(), fp);
         fp = FingerprintRepeatedField(ct.automaton().transition_label(), fp);
-        fp = FingerprintRepeatedField(ct.automaton().vars(), fp);
+        if (!ct.automaton().vars().empty()) {
+          fp = FingerprintRepeatedField(ct.automaton().vars(), fp);
+        } else {
+          for (const LinearExpressionProto& expr : ct.automaton().exprs()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+        }
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         fp = FingerprintExpression(ct.interval().start(), fp);

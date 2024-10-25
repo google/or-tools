@@ -86,8 +86,9 @@ class CpModelPresolver {
   // Executes presolve method for the given constraint. Public for testing only.
   bool PresolveOneConstraint(int c);
 
-  // Public for testing only.
+  // Visible for testing.
   void RemoveEmptyConstraints();
+  void DetectDuplicateColumns();
 
  private:
   // A simple helper that logs the rules applied so far and return INFEASIBLE.
@@ -310,6 +311,8 @@ class CpModelPresolver {
   // efficient than the two watcher literal scheme for clauses. Investigate!
   void MergeClauses();
 
+  void RunPropagatorsForConstraint(const ConstraintProto& ct);
+
   // Boths function are responsible for dealing with affine relations.
   // The second one returns false on UNSAT.
   void EncodeAllAffineRelations();
@@ -337,6 +340,9 @@ class CpModelPresolver {
   absl::flat_hash_map<int, int> temp_map_;
   absl::flat_hash_set<int> temp_set_;
   ConstraintProto temp_ct_;
+
+  // Used by RunPropagatorsForConstraint().
+  CpModelProto tmp_model_;
 
   // Use by TryToReduceCoefficientsOfLinearConstraint().
   struct RdEntry {
@@ -436,6 +442,7 @@ class ModelCopy {
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyLinearExpression(const LinearExpressionProto& expr,
                             LinearExpressionProto* dst);
+  bool CopyAutomaton(const ConstraintProto& ct);
   bool CopyTable(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the

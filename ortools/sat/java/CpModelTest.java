@@ -520,7 +520,37 @@ public final class CpModelTest {
     automaton.addTransition(1, 2, 2);
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(0).hasAutomaton()).isTrue();
+    assertThat(model.model().getConstraints(0).getAutomaton().getExprsCount()).isEqualTo(3);
+    assertThat(model.model().getConstraints(0).getAutomaton().getTransitionTailCount())
+        .isEqualTo(3);
+    assertThat(model.model().getConstraints(0).getAutomaton().getTransitionHeadCount())
+        .isEqualTo(3);
+    assertThat(model.model().getConstraints(0).getAutomaton().getTransitionLabelCount())
+        .isEqualTo(3);
+    assertThat(model.model().getConstraints(0).getAutomaton().getStartingState()).isEqualTo(0);
+
+    assertThat(model.model().getConstraints(0).getAutomaton().getFinalStatesCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void testCpModelAddAutomatonLinearArgument() throws Exception {
+    System.out.println("testCpModelAddAutomaton");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+
+    final IntVar x1 = model.newIntVar(0, 5, "x1");
+    final IntVar x2 = model.newIntVar(0, 5, "x2");
+    final IntVar x3 = model.newIntVar(0, 5, "x3");
+
+    AutomatonConstraint automaton = model.addAutomaton(
+        new LinearArgument[] {x1, x2, LinearExpr.constant(1), LinearExpr.affine(x3, -1, 2)}, 0,
+        new long[] {1, 2});
+    automaton.addTransition(0, 1, 0);
+    automaton.addTransition(1, 1, 1);
+    automaton.addTransition(1, 2, 2);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(0).hasAutomaton()).isTrue();
+    assertThat(model.model().getConstraints(0).getAutomaton().getExprsCount()).isEqualTo(4);
     assertThat(model.model().getConstraints(0).getAutomaton().getTransitionTailCount())
         .isEqualTo(3);
     assertThat(model.model().getConstraints(0).getAutomaton().getTransitionHeadCount())

@@ -268,7 +268,7 @@ message InverseConstraintProto {
   repeated int32 f_inverse = 2;
 }
 
-// This constraint forces a sequence of variables to be accepted by an
+// This constraint forces a sequence of expressions to be accepted by an
 // automaton.
 message AutomatonConstraintProto {
   // A state is identified by a non-negative number. It is preferable to keep
@@ -284,9 +284,12 @@ message AutomatonConstraintProto {
   repeated int64 transition_head = 5;
   repeated int64 transition_label = 6;
 
-  // The sequence of variables. The automaton is ran for vars_size() "steps" and
-  // the value of vars[i] corresponds to the transition label at step i.
+  // Legacy field.
   repeated int32 vars = 7;
+  // The sequence of affine expressions (a * var + b). The automaton is ran for
+  // exprs_size() "steps" and the value of exprs[i] corresponds to the
+  // transition label at step i.
+  repeated LinearExpressionProto exprs = 8;
 }
 
 // A list of variables, without any semantics.

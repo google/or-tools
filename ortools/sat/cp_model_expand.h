@@ -35,14 +35,8 @@ void ExpandCpModel(PresolveContext* context);
 // presolve. We do that at the end, because the presolve is allowed to simplify
 // such constraints by updating the rhs. Also the extra variable we create are
 // only linked by a few constraints to the rest of the model and should not be
-// presolvable.
+// pre-solvable.
 void FinalExpansionForLinearConstraint(PresolveContext* context);
-
-// Fills and propagates the set of reachable states/labels.
-void PropagateAutomaton(const AutomatonConstraintProto& proto,
-                        const PresolveContext& context,
-                        std::vector<absl::flat_hash_set<int64_t>>* states,
-                        std::vector<absl::flat_hash_set<int64_t>>* labels);
 
 }  // namespace sat
 }  // namespace operations_research

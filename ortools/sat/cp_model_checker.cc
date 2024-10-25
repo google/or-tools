@@ -498,18 +498,24 @@ std::string ValidateTableConstraint(const ConstraintProto& ct) {
 }
 
 std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
-  const int num_transistions = ct.automaton().transition_tail().size();
-  if (num_transistions != ct.automaton().transition_head().size() ||
-      num_transistions != ct.automaton().transition_label().size()) {
+  const AutomatonConstraintProto& automaton = ct.automaton();
+  if (!automaton.vars().empty() && !automaton.exprs().empty()) {
+    return absl::StrCat(
+        "Inconsistent automaton with both legacy and new format defined: ",
+        ProtobufShortDebugString(ct));
+  }
+  const int num_transistions = automaton.transition_tail().size();
+  if (num_transistions != automaton.transition_head().size() ||
+      num_transistions != automaton.transition_label().size()) {
     return absl::StrCat(
         "The transitions repeated fields must have the same size: ",
         ProtobufShortDebugString(ct));
   }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
-    const int64_t tail = ct.automaton().transition_tail(i);
-    const int64_t head = ct.automaton().transition_head(i);
-    const int64_t label = ct.automaton().transition_label(i);
+    const int64_t tail = automaton.transition_tail(i);
+    const int64_t head = automaton.transition_head(i);
+    const int64_t label = automaton.transition_label(i);
     if (label <= std::numeric_limits<int64_t>::min() + 1 ||
         label == std::numeric_limits<int64_t>::max()) {
       return absl::StrCat("labels in the automaton constraint are too big: ",
@@ -1489,20 +1495,24 @@ class ConstraintChecker {
 
   bool AutomatonConstraintIsFeasible(const ConstraintProto& ct) {
     // Build the transition table {tail, label} -> head.
+    const AutomatonConstraintProto& automaton = ct.automaton();
     absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transition_map;
-    const int num_transitions = ct.automaton().transition_tail().size();
+    const int num_transitions = automaton.transition_tail().size();
     for (int i = 0; i < num_transitions; ++i) {
-      transition_map[{ct.automaton().transition_tail(i),
-                      ct.automaton().transition_label(i)}] =
-          ct.automaton().transition_head(i);
+      transition_map[{automaton.transition_tail(i),
+                      automaton.transition_label(i)}] =
+          automaton.transition_head(i);
     }
 
     // Walk the automaton.
-    int64_t current_state = ct.automaton().starting_state();
-    const int num_steps = ct.automaton().vars_size();
+    int64_t current_state = automaton.starting_state();
+    const int num_steps =
+        std::max(automaton.vars_size(), automaton.exprs_size());
     for (int i = 0; i < num_steps; ++i) {
-      const std::pair<int64_t, int64_t> key = {current_state,
-                                               Value(ct.automaton().vars(i))};
+      const std::pair<int64_t, int64_t> key = {
+          current_state, automaton.vars().empty()
+                             ? LinearExpressionValue(automaton.exprs(i))
+                             : Value(automaton.vars(i))};
       if (!transition_map.contains(key)) {
         return false;
       }
@@ -1510,7 +1520,7 @@ class ConstraintChecker {
     }
 
     // Check we are now in a final state.
-    for (const int64_t final : ct.automaton().final_states()) {
+    for (const int64_t final : automaton.final_states()) {
       if (current_state == final) return true;
     }
     return false;

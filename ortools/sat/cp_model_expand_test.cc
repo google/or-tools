@@ -686,9 +686,9 @@ TEST(AutomatonExpandTest, Bug1753_1) {
         transition_head: 1
         transition_label: 1
         transition_label: 2
-        vars: 0
-        vars: 1
-        vars: 2
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
       }
     }
   )pb");
@@ -756,7 +756,12 @@ TEST(AutomatonExpandTest, EverythingZero) {
         transition_tail: 1,
         transition_head: 1,
         transition_label: 0,
-        vars: [ 0, 1, 2, 3, 4, 5 ],
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+        exprs { vars: 4 coeffs: 1 }
+        exprs { vars: 5 coeffs: 1 }
       }
     }
   )pb");
@@ -842,7 +847,16 @@ TEST(AutomatonExpandTest, LoopingAutomatonMultipleFinalStatesNegatedVariables) {
         transition_tail: [ 1, 1, 2, 3, 3, 4 ],
         transition_head: [ 1, 2, 3, 2, 4, 4 ],
         transition_label: [ 0, 1, 2, 1, 0, 0 ],
-        vars: [ 0, -2, 2, 3, 4, 5, 6, 7, 8, 9 ],
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: -1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+        exprs { vars: 4 coeffs: 1 }
+        exprs { vars: 5 coeffs: 1 }
+        exprs { vars: 6 coeffs: 1 }
+        exprs { vars: 7 coeffs: 1 }
+        exprs { vars: 8 coeffs: 1 }
+        exprs { vars: 9 coeffs: 1 }
       }
     }
   )pb");

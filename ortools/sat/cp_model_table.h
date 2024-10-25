@@ -67,6 +67,12 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
     absl::Span<const int64_t> domain_sizes,
     std::vector<std::vector<int64_t>>* tuples);
 
+// Fills and propagates the set of reachable states/labels.
+void PropagateAutomaton(const AutomatonConstraintProto& proto,
+                        const PresolveContext& context,
+                        std::vector<absl::flat_hash_set<int64_t>>* states,
+                        std::vector<absl::flat_hash_set<int64_t>>* labels);
+
 }  // namespace sat
 }  // namespace operations_research
 

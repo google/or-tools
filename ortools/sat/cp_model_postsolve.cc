@@ -170,6 +170,7 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
     Domain term = (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i]);
     rhs_domains.push_back(term.AdditionWith(rhs_domains.back()));
   }
+  std::vector<int64_t> values(free_vars.size());
   for (int i = free_vars.size() - 1; i >= 0; --i) {
     // Choose a value for free_vars[i] that fall into rhs_domains[i] -
     // fixed_activity. This will crash if the intersection is empty, but it
@@ -184,12 +185,28 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
     // TODO(user): I am not 100% that the algo here might cover all the presolve
     // case, so if this fail, it might indicate an issue here and not in the
     // presolve/solver code.
+    if (domain.IsEmpty()) {
+      LOG(INFO) << "Empty domain while trying to assign " << var;
+      for (int i = 0; i < size; ++i) {
+        const int var = ct.linear().vars(i);
+        LOG(INFO) << var << " " << (*domains)[var];
+      }
+      LOG(FATAL) << "Couldn't postsolve the constraint: "
+                 << ProtobufShortDebugString(ct);
+    }
+
     CHECK(!domain.IsEmpty()) << ProtobufShortDebugString(ct);
     const int64_t value = domain.SmallestValue();
-    (*domains)[var] = Domain(value);
-
+    values[i] = value;
     fixed_activity += coeff * value;
   }
+
+  // We assign that afterwards for better debugging if we run into the domains
+  // empty above.
+  for (int i = 0; i < free_vars.size(); ++i) {
+    (*domains)[free_vars[i]] = Domain(values[i]);
+  }
+
   DCHECK(initial_rhs.Contains(fixed_activity));
 }
 

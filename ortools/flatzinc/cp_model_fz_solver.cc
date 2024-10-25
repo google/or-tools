@@ -749,7 +749,15 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_values(value);
   } else if (fz_ct.type == "ortools_regular") {
     auto* arg = ct->mutable_automaton();
-    for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
+    for (const VarOrValue v : LookupVarsOrValues(fz_ct.arguments[0])) {
+      LinearExpressionProto* expr = arg->add_exprs();
+      if (v.var != kNoVar) {
+        expr->add_vars(v.var);
+        expr->add_coeffs(1);
+      } else {
+        expr->set_offset(v.value);
+      }
+    }
 
     int count = 0;
     const int num_states = fz_ct.arguments[1].Value();

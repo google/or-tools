@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -317,6 +318,57 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
   FullyCompressTuplesRecursive(domain_sizes, absl::MakeSpan(*tuples),
                                &reversed_suffix, &output);
   return output;
+}
+
+// TODO(user): Note that if we have duplicate variables controlling different
+// time point, this might not reach the fixed point. Fix? it is not that
+// important as the expansion take care of this case anyway.
+void PropagateAutomaton(const AutomatonConstraintProto& proto,
+                        const PresolveContext& context,
+                        std::vector<absl::flat_hash_set<int64_t>>* states,
+                        std::vector<absl::flat_hash_set<int64_t>>* labels) {
+  const int n = proto.exprs_size();
+  const absl::flat_hash_set<int64_t> final_states(
+      {proto.final_states().begin(), proto.final_states().end()});
+
+  labels->clear();
+  labels->resize(n);
+  states->clear();
+  states->resize(n + 1);
+  (*states)[0].insert(proto.starting_state());
+
+  // Forward pass.
+  for (int time = 0; time < n; ++time) {
+    for (int t = 0; t < proto.transition_tail_size(); ++t) {
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
+      if (!(*states)[time].contains(tail)) continue;
+      if (!context.DomainContains(proto.exprs(time), label)) continue;
+      if (time == n - 1 && !final_states.contains(head)) continue;
+      (*labels)[time].insert(label);
+      (*states)[time + 1].insert(head);
+    }
+  }
+
+  // Backward pass.
+  for (int time = n - 1; time >= 0; --time) {
+    absl::flat_hash_set<int64_t> new_states;
+    absl::flat_hash_set<int64_t> new_labels;
+    for (int t = 0; t < proto.transition_tail_size(); ++t) {
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
+
+      if (!(*states)[time].contains(tail)) continue;
+      if (!(*labels)[time].contains(label)) continue;
+      if (!(*states)[time + 1].contains(head)) continue;
+      new_labels.insert(label);
+      new_states.insert(tail);
+    }
+    (*labels)[time].swap(new_labels);
+    (*states)[time].swap(new_states);
+  }
 }
 
 }  // namespace sat
