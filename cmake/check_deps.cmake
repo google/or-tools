@@ -117,8 +117,11 @@ if(USE_CPLEX AND NOT TARGET CPLEX::CPLEX)
 endif()
 
 # Check optional Dependencies
-if(USE_MOSEK AND NOT TARGET mosek::mosek)
-  message(FATAL_ERROR "Target mosek::mosek not available.")
+if(USE_MOSEK)
+  if (NOT TARGET mosek::mosek)
+    message(FATAL_ERROR "Target mosek::mosek not available.")
+  endif()
+  set(MOSEK_DEPS mosek::mosek)
 endif()
 
 # CXX Test
