@@ -25,6 +25,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -56,6 +57,7 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/solvers/mosek.pb.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/util/solve_interrupter.h"
 #include "ortools/util/status_macros.h"
 
@@ -67,6 +69,7 @@ constexpr SupportedProblemStructures kMosekSupportedStructures = {
     .second_order_cone_constraints = SupportType::kSupported,
     .indicator_constraints = SupportType::kSupported,
 };
+
 
 }  // namespace
 
@@ -198,8 +201,116 @@ absl::Status MosekSolver::ReplaceObjective(const ObjectiveProto& obj) {
     c[objcof.ids(i)] = objcof.values(i);
   }
   RETURN_IF_ERROR(msk.PutC(c));
+
+  // quadratic terms 
+  if (obj.quadratic_coefficients().row_ids_size() > 0) {
+    std::vector<int> subk;
+    std::vector<int> subl;
+    std::vector<double> val;
+
+    SparseDoubleMatrixToTril(obj.quadratic_coefficients(),subk,subl,val);
+    RETURN_IF_ERROR(msk.PutQObj(subk,subl,val));
+  }
+
   return absl::OkStatus();
 }  // MosekSolver::ReplaceObjective
+
+void MosekSolver::SparseDoubleMatrixToTril(const SparseDoubleMatrixProto& qdata,
+                                      std::vector<int>& subk,
+                                      std::vector<int>& subl,
+                                      std::vector<double>& val) {
+  if (qdata.row_ids_size() > 0) {
+    // NOTE: this specifies the full Q matrix, and we assume that it is
+    // symmetric and only specifies the lower triangular part.
+    size_t nqnz = qdata.row_ids_size();
+    std::vector<std::tuple<int,int,double>> subklv; subklv.reserve(nqnz);
+    for (auto [kit,lit,cit] = std::make_tuple(
+             qdata.row_ids().begin(),
+             qdata.column_ids().begin(),
+             qdata.coefficients().begin());
+         kit != qdata.row_ids().end() &&
+         lit != qdata.column_ids().end() &&
+         cit != qdata.coefficients().end();
+         ++kit, ++lit, ++cit) {
+      if (variable_map.contains(*kit) &&
+          variable_map.contains(*lit)) {
+        int k = variable_map[*kit];
+        int l = variable_map[*lit];
+        int v = variable_map[*cit];
+
+        if (k < l) {
+          subklv.push_back({l,k,v});
+        }
+        else {
+          subklv.push_back({k,l,v});
+        }
+      }
+    }
+
+    std::sort(subklv.begin(),subklv.end());
+
+    // count 
+    size_t nunique = 0; 
+    {
+      int prevk = -1,prevl = -1;
+      for (auto [k,l,v] : subklv) {
+        if (prevk != k || prevl != l) {
+          ++nunique; prevk = k; prevl = l;
+        }
+      }
+    }
+   
+    subk.clear(); subk.reserve(nunique);
+    subl.clear(); subl.reserve(nunique);
+    val.clear();  val.reserve(nunique);
+
+    int prevk = -1,prevl = -1;
+    for (auto [k,l,v] : subklv) {
+      if (prevk == k && prevl == l) {
+        val.back() += v;
+      }
+      else {
+        subk.push_back(k); prevk = k;
+        subk.push_back(l); prevl = l;
+        val.push_back(v);
+      }
+    }
+  }
+}
+
+absl::Status MosekSolver::AddConstraint(int64_t id, const QuadraticConstraintProto& cons) {
+  int coni = msk.NumCon();
+  double clb = cons.lower_bound();
+  double cub = cons.upper_bound();
+  {
+    auto r = msk.AppendCons(clb, cub);
+    if (!r.ok()) return r.status();
+  }
+
+  size_t nnz = cons.linear_terms().ids_size();
+  std::vector<Mosek::VariableIndex> subj; subj.reserve(nnz);
+  std::vector<double> val; val.reserve(nnz);
+
+  for (const auto id : cons.linear_terms().ids()) subj.push_back(variable_map[id]);
+  for (const auto c : cons.linear_terms().values()) val.push_back(c);
+  RETURN_IF_ERROR(msk.PutARow(coni,subj, val));
+
+  // quadratic terms
+
+  if (cons.quadratic_terms().row_ids_size() > 0) {
+    std::vector<int> subk;
+    std::vector<int> subl;
+    std::vector<double> val;
+
+    SparseDoubleMatrixToTril(cons.quadratic_terms(),subk,subl,val);
+
+    RETURN_IF_ERROR(msk.PutQCon(coni,subk,subl,val));
+  }
+
+  quadconstr_map[id] = coni;
+
+  return absl::OkStatus();
+}
 
 absl::Status MosekSolver::AddConstraints(const LinearConstraintsProto& cons,
                                          const SparseDoubleMatrixProto& adata) {
@@ -370,22 +481,46 @@ absl::Status MosekSolver::AddConicConstraints(
 
 absl::StatusOr<bool> MosekSolver::Update(const ModelUpdateProto& model_update) {
   for (auto id : model_update.deleted_variable_ids()) {
-    variable_map.erase(id);
-    RETURN_IF_ERROR(msk.ClearVariable(variable_map[id]));
+    if (variable_map.contains(id)) {
+      int j = variable_map[id];
+      variable_map.erase(id);
+      RETURN_IF_ERROR(msk.ClearVariable(j));
+    }
   }
   for (auto id : model_update.deleted_linear_constraint_ids()) {
-    linconstr_map.erase(id);
-    RETURN_IF_ERROR(msk.ClearConstraint(linconstr_map[id]));
+    if (linconstr_map.contains(id)) {
+      int i = linconstr_map[id];
+      linconstr_map.erase(id);
+      RETURN_IF_ERROR(msk.ClearConstraint(i));
+    }
   }
   for (auto id : model_update.second_order_cone_constraint_updates()
                      .deleted_constraint_ids()) {
-    coneconstr_map.erase(id);
-    RETURN_IF_ERROR(msk.ClearConeConstraint(coneconstr_map[id]));
+    if (coneconstr_map.contains(id)) {
+      int64_t i = coneconstr_map[id];
+      coneconstr_map.erase(id);
+      RETURN_IF_ERROR(msk.ClearConeConstraint(i));
+    }
   }
   for (auto id :
        model_update.indicator_constraint_updates().deleted_constraint_ids()) {
-    indconstr_map.erase(id);
-    RETURN_IF_ERROR(msk.ClearDisjunctiveConstraint(indconstr_map[id]));
+    if (indconstr_map.contains(id)) {
+      int64_t i = indconstr_map[id];
+      indconstr_map.erase(id);
+      RETURN_IF_ERROR(msk.ClearDisjunctiveConstraint(i));
+    }
+  }
+
+  for (auto id : model_update.quadratic_constraint_updates().deleted_constraint_ids()) {
+    if (quadconstr_map.contains(id)) {
+      int i = quadconstr_map[id];
+      quadconstr_map.erase(id);
+      RETURN_IF_ERROR(msk.ClearConstraint(i));
+    }
+  }
+  
+  for (auto &[id,con] : model_update.quadratic_constraint_updates().new_constraints()) {
+    RETURN_IF_ERROR(AddConstraint(id, con));
   }
 
   RETURN_IF_ERROR(AddVariables(model_update.new_variables()));
@@ -468,6 +603,58 @@ absl::Status MosekSolver::UpdateObjective(
   subj.reserve(cof.size());
   for (auto id : objupds.linear_coefficients().ids())
     subj.push_back(variable_map[id]);
+
+  
+  if (objupds.quadratic_coefficients().column_ids_size() > 0) {
+    // note: this specifies the full q matrix, and we assume that it is
+    // symmetric and only specifies the lower triangular part.
+    auto & qobj = objupds.quadratic_coefficients();
+    size_t nqnz = qobj.row_ids_size();
+    std::vector<std::tuple<int,int,double>> subklv; subklv.reserve(nqnz);
+    for (auto [kit,lit,cit] = std::make_tuple(
+             qobj.row_ids().begin(),
+             qobj.column_ids().begin(),
+             qobj.coefficients().begin());
+         kit != qobj.row_ids().end() &&
+         lit != qobj.column_ids().end() &&
+         cit != qobj.coefficients().end();
+         ++kit, ++lit, ++cit) {
+      int k = variable_map[*kit];
+      int l = variable_map[*lit];
+      int v = variable_map[*cit];
+
+      if (k < l) {
+        subklv.push_back({l,k,v});
+      }
+      else {
+        subklv.push_back({k,l,v});
+      }
+    }
+
+    std::sort(subklv.begin(),subklv.end());
+    
+    std::vector<int> subk; subk.reserve(nqnz);
+    std::vector<int> subl; subl.reserve(nqnz);
+    std::vector<double> val; val.reserve(nqnz);
+
+    int prevk = -1,prevl = -1;
+    for (auto [k,l,v] : subklv) {
+      if (prevk == k && prevl == l) {
+        val.back() += v;
+      }
+      else {
+        subk.push_back(k); prevk = k;
+        subk.push_back(l); prevl = l;
+        val.push_back(v);
+      }
+    }
+
+  }
+
+
+
+
+
 
   RETURN_IF_ERROR(msk.UpdateObjectiveSense(objupds.direction_update()));
   RETURN_IF_ERROR(msk.UpdateObjective(objupds.offset_update(), subj, cof));

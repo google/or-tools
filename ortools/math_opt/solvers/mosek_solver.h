@@ -59,11 +59,13 @@ class MosekSolver : public SolverInterface {
   Mosek msk;
   absl::flat_hash_map<int64_t, Mosek::VariableIndex> variable_map;
   absl::flat_hash_map<int64_t, Mosek::ConstraintIndex> linconstr_map;
+  absl::flat_hash_map<int64_t, Mosek::ConstraintIndex> quadconstr_map;
   absl::flat_hash_map<int64_t, Mosek::ConeConstraintIndex> coneconstr_map;
   absl::flat_hash_map<int64_t, Mosek::DisjunctiveConstraintIndex> indconstr_map;
 
   absl::Status ReplaceObjective(const ObjectiveProto& obj);
   absl::Status AddVariables(const VariablesProto& vars);
+  absl::Status AddConstraint(int64_t id, const QuadraticConstraintProto& cons);
   absl::Status AddConstraints(const LinearConstraintsProto& cons);
   absl::Status AddConstraints(const LinearConstraintsProto& cons,
                               const SparseDoubleMatrixProto& lincofupds);
@@ -101,86 +103,13 @@ class MosekSolver : public SolverInterface {
       bool skip_y_zeros, const std::vector<int64_t>& ordered_yx_ids,
       bool skip_yx_zeros);
 
+  void SparseDoubleMatrixToTril(const SparseDoubleMatrixProto & qdata, 
+                           std::vector<int> & subi,
+                           std::vector<int> & subj,
+                           std::vector<double> & cof);
+
   MosekSolver(Mosek&& msk);
   MosekSolver(MosekSolver&) = delete;
-
-#if 0
-  struct SolutionClaims {
-    bool mosek_returned_primal_feasible_solution = false;
-    bool mosek_returned_dual_feasible_solution = false;
-    bool mosek_returned_primal_ray = false;
-    bool mosek_returned_dual_ray = false;
-  };
-  struct SolutionsAndClaims {
-    std::vector<SolutionProto> solutions;
-    SolutionClaims solution_claims;
-  };
-
-
-  absl::StatusOr<bool> PrimalRayReturned() const;
-  absl::StatusOr<bool> DualRayReturned() const;
-
-  // Will append solutions and rays to result_out. No other modifications are
-  // made to result_out. Requires that mosek_->getInfo is validated.
-  absl::StatusOr<SolutionsAndClaims> ExtractSolutionAndRays(
-      const ModelSolveParametersProto& model_params);
-
-  static absl::StatusOr<FeasibilityStatusProto> PrimalFeasibilityStatus(
-      SolutionClaims solution_claims);
-  static absl::StatusOr<FeasibilityStatusProto> DualFeasibilityStatus(
-      const MosekInfo& mosek_info, bool is_integer,
-      SolutionClaims solution_claims);
-  static absl::StatusOr<TerminationProto> MakeTermination(
-      MosekModelStatus mosek_model_status, const MosekInfo& mosek_info,
-      bool is_integer, bool had_node_limit, bool had_solution_limit,
-      bool is_maximize, SolutionClaims solution_claims);
-
-  // Returns the current basis if it is available and MathOpt can represent it
-  // (all kNonBasic values can be made more precise, see b/272767311).
-  absl::StatusOr<std::optional<BasisProto>> ExtractBasis();
-
-  template <typename T>
-  absl::Status EnsureOneEntryPerVariable(const std::vector<T>& vec) {
-    if (vec.size() != variable_data_.size()) {
-      return util::InvalidArgumentErrorBuilder()
-             << "expected one entry per variable, but model had "
-             << variable_data_.size() << " variables and found " << vec.size()
-             << " elements";
-    }
-    return absl::OkStatus();
-  }
-
-  template <typename T>
-  absl::Status EnsureOneEntryPerLinearConstraint(const std::vector<T>& vec) {
-    if (vec.size() != lin_con_data_.size()) {
-      return util::InvalidArgumentErrorBuilder()
-             << "expected one entry per linear constraint, but model had "
-             << lin_con_data_.size() << " linear constraints and found "
-             << vec.size() << " elements";
-    }
-    return absl::OkStatus();
-  }
-
-  // Returns a SolveResult for when HiGHS returns the model status
-  // MosekModelStatus::kModelEmpty. This happens on models that have no
-  // variables, but may still have (potentially infeasible) linear constraints
-  // and an objective offset.
-  //
-  // Assumes that there are no inverted linear constraint bounds.
-  static SolveResultProto ResultForMosekModelStatusModelEmpty(
-      bool is_maximize, double objective_offset,
-      const absl::flat_hash_map<int64_t, IndexAndBound>& lin_con_data);
-
-  InvertedBounds ListInvertedBounds();
-
-  std::unique_ptr<Mosek> mosek_;
-
-  // Key is the mathopt id, value.index is the variable index in HiGHS.
-  absl::flat_hash_map<int64_t, IndexAndBound> variable_data_;
-
-  // Key is the mathopt id, value.index is the linear constraint index in HiGHS.
-  absl::flat_hash_map<int64_t, IndexAndBound> lin_con_data_;
-#endif
 };
 
 }  // namespace operations_research::math_opt

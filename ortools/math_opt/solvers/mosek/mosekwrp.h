@@ -67,13 +67,25 @@ class Mosek {
 
   absl::StatusOr<VariableIndex> AppendVars(const std::vector<double>& lb,
                                            const std::vector<double>& ub);
+  absl::StatusOr<ConstraintIndex> AppendCons(double lb,
+                                             double ub);
   absl::StatusOr<ConstraintIndex> AppendCons(const std::vector<double>& lb,
                                              const std::vector<double>& ub);
   absl::Status PutVarType(VariableIndex j, bool is_integer);
 
   absl::Status PutC(const std::vector<double>& c);
+  absl::Status PutQObj(const std::vector<int> & subk,
+      const std::vector<int> & subl,
+      const std::vector<double> & valkl);
+  absl::Status UpdateQObjEntries(const std::vector<int> & subk,
+                                 const std::vector<int> & subl,
+                                 const std::vector<double> & valkl);
   void PutCFix(double cfix);
 
+  absl::Status PutQCon(int i, const std::vector<int>& subk,
+                       const std::vector<int>& subl,
+                       const std::vector<double>& cof);
+  absl::Status PutARow(int i, const std::vector<int> & subj, const std::vector<double> & cof);
   absl::Status PutAIJList(const std::vector<ConstraintIndex>& subi,
                           const std::vector<VariableIndex>& subj,
                           const std::vector<double>& valij);
@@ -173,6 +185,9 @@ class Mosek {
   static int info_callback(MSKtask_t task, MSKuserhandle_t h,
                            MSKcallbackcodee code, const double* dinf,
                            const int* iinf, const int64_t* liinf);
+
+  absl::StatusOr<ConstraintIndex> append_cons(int n, const double* lb,
+                                              const double* ub);
 };
 
 }  // namespace operations_research::math_opt
