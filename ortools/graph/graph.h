@@ -1435,6 +1435,8 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
 template <typename NodeIndexType, typename ArcIndexType>
 class StaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
  public:
+  OutgoingArcIterator(const OutgoingArcIterator&) = default;
+  OutgoingArcIterator& operator=(const OutgoingArcIterator&) = default;
   OutgoingArcIterator(const StaticGraph& graph, NodeIndexType node)
       : index_(graph.start_[node]), limit_(graph.DirectArcLimit(node)) {}
   OutgoingArcIterator(const StaticGraph& graph, NodeIndexType node,
@@ -1461,7 +1463,7 @@ class StaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
 
  private:
   ArcIndexType index_;
-  const ArcIndexType limit_;
+  ArcIndexType limit_;
 };
 
 // ReverseArcListGraph implementation ------------------------------------------
