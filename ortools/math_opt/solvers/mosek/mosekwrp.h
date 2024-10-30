@@ -141,6 +141,8 @@ class Mosek {
   double GetParam(MSKdparame dpar) const;
   int GetParam(MSKiparame ipar) const;
 
+  void GetC(std::vector<double> & c, double & cfix); 
+
   bool SolutionDef(MSKsoltypee which) const {
     MSKbooleant soldef;
     MSK_solutiondef(task.get(), which, &soldef);
@@ -156,6 +158,11 @@ class Mosek {
     MSK_getsolsta(task.get(), which, &solsta);
     return (mosek::SolSta)solsta;
   }
+
+
+  int GetIntInfoItem(MSKiinfiteme item);
+  int64_t GetLongInfoItem(MSKliinfiteme item);
+  double GetDoubleInfoItem(MSKdinfiteme item);
 
   std::tuple<std::string, std::string, MSKrescodee> LastError() const;
 
@@ -185,7 +192,7 @@ class Mosek {
   static int info_callback(MSKtask_t task, MSKuserhandle_t h,
                            MSKcallbackcodee code, const double* dinf,
                            const int* iinf, const int64_t* liinf);
-
+  
   absl::StatusOr<ConstraintIndex> append_cons(int n, const double* lb,
                                               const double* ub);
 };

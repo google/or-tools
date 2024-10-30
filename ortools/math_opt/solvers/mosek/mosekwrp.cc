@@ -6,6 +6,7 @@
 #include <limits>
 #include <locale>
 #include <ranges>
+#include <sstream>
 #include <type_traits>
 
 #include "absl/cleanup/cleanup.h"
@@ -54,7 +55,10 @@ absl::StatusOr<Mosek::VariableIndex> Mosek::AppendVars(
   if (n > std::numeric_limits<int>::max())
     return absl::InvalidArgumentError("arguments lb and ub too large");
 
-  MSK_appendvars(task.get(), (int)n);
+  if (MSK_RES_OK != MSK_appendvars(task.get(), (int)n)) {
+    auto [msg,rname,r] = std::move(LastError());
+    return absl::InternalError((std::stringstream() << rname << "(" << r << "): " << msg).str());
+  }
   std::vector<MSKboundkeye> bk(n);
   for (ssize_t i = 0; i < n; ++i) {
     bk[i] = (lb[i] > ub[i]
@@ -89,8 +93,10 @@ absl::StatusOr<Mosek::ConstraintIndex> Mosek::append_cons(
     int n, const double * lb, const double * ub) {
   int firsti = NumCon();
 
-  if (MSK_RES_OK != MSK_appendcons(task.get(), n))
-    return absl::InternalError("Maximum number of internal constraints exceeded");
+  if (MSK_RES_OK != MSK_appendcons(task.get(), n)) {
+    auto [msg,rname,r] = std::move(LastError());
+    return absl::InternalError((std::stringstream() << rname << "(" << r << "): " << msg).str());
+  }
   std::vector<MSKboundkeye> bk(n);
   for (ssize_t i = 0; i < n; ++i) {
     bk[i] = (lb[i] > ub[i]
@@ -109,8 +115,9 @@ absl::StatusOr<Mosek::ConstraintIndex> Mosek::append_cons(
 absl::Status Mosek::PutVarType(VariableIndex j, bool is_integer) {
   if (MSK_RES_OK !=
       MSK_putvartype(task.get(), j,
-                     is_integer ? MSK_VAR_TYPE_INT : MSK_VAR_TYPE_CONT))
+                     is_integer ? MSK_VAR_TYPE_INT : MSK_VAR_TYPE_CONT)) {
     return absl::InvalidArgumentError("Arguments j is invalid");
+  }
   return absl::OkStatus();
 }
 
@@ -125,10 +132,12 @@ absl::Status Mosek::PutQObj(const std::vector<int> & subk,
   int qnnz = (int)subk.size();
   if (qnnz != subk.size())
     return absl::InvalidArgumentError("Number of quadratic objective nonzeros is too large");
-    
+
   if (MSK_RES_OK != 
-      MSK_putqobj(task.get(),qnnz,subk.data(),subl.data(),valkl.data()))
-    return absl::InternalError("Error setting quadratic objective terms");
+      MSK_putqobj(task.get(),qnnz,subk.data(),subl.data(),valkl.data())) {
+    auto [msg,rname,r] = std::move(LastError());
+    return absl::InternalError((std::stringstream() << rname << "(" << r << "): " << msg).str());
+  }
   return absl::OkStatus();
 }
 absl::Status Mosek::UpdateQObjEntries(const std::vector<int> & subk,
@@ -146,8 +155,10 @@ absl::Status Mosek::UpdateQObjEntries(const std::vector<int> & subk,
        ++kit, ++lit, ++cit)
     r = MSK_putqobjij(task.get(),*kit,*lit,*cit);
 
-  if (r != MSK_RES_OK)
-    return absl::InternalError("Failed to input quadratic objective nonzeros");
+  if (r != MSK_RES_OK) {
+    auto [msg,rname,r] = std::move(LastError());
+    return absl::InternalError((std::stringstream() << rname << "(" << r << "): " << msg).str());
+  }
   return absl::OkStatus();
 }
 
@@ -168,8 +179,10 @@ absl::Status Mosek::PutQCon(int i, const std::vector<int>& subk,
       subk.size() != cof.size())
     return absl::InvalidArgumentError("Mismatching argument sizes");
   if (MSK_RES_OK != 
-      MSK_putqconk(task.get(),i,subk.size(),subk.data(),subl.data(),cof.data()))
-    return absl::InternalError("Failed to set quadratic nonzeros in constraint");
+      MSK_putqconk(task.get(),i,subk.size(),subk.data(),subl.data(),cof.data())) {
+    auto [msg,rname,r] = std::move(LastError());
+    return absl::InternalError((std::stringstream() << rname << "(" << r << "): " << msg).str());
+  }
 
   return absl::OkStatus();
 }
@@ -182,10 +195,13 @@ absl::Status Mosek::PutARow(int i, const std::vector<int>& subj,
     return absl::InvalidArgumentError("Number of nonzeros added too large");
   int nnz = (int)subj.size();
 
-  if (MSK_RES_OK != MSK_putarow(task.get(),i,nnz,subj.data(),cof.data()))
-    return absl::InternalError("Failed to add row nonzeros");
+  if (MSK_RES_OK != MSK_putarow(task.get(),i,nnz,subj.data(),cof.data())) {
+    auto [msg,rname,r] = std::move(LastError());
+    return absl::InternalError((std::stringstream() << rname << "(" << r << "): " << msg).str());
+  }
   return absl::OkStatus();
 }
+
 absl::Status Mosek::PutAIJList(const std::vector<ConstraintIndex>& subi,
                                const std::vector<VariableIndex>& subj,
                                const std::vector<double>& valij) {
@@ -198,8 +214,10 @@ absl::Status Mosek::PutAIJList(const std::vector<ConstraintIndex>& subi,
         "Arguments subi, subj, valij are too long");
 
   if (MSK_RES_OK != MSK_putaijlist(task.get(), (int)n, subi.data(), subj.data(),
-                                   valij.data()))
-    return absl::InvalidArgumentError("Invalid index argument subi or subj");
+                                   valij.data())) {
+    auto [msg,rname,r] = std::move(LastError());
+    return absl::InternalError((std::stringstream() << rname << "(" << r << "): " << msg).str());
+  }
   return absl::OkStatus();
 }
 
@@ -462,7 +480,10 @@ void Mosek::WriteData(const char* filename) const {
 absl::StatusOr<MSKrescodee> Mosek::Optimize() {
   MSKrescodee trm;
   MSKrescodee r = MSK_optimizetrm(task.get(), &trm);
-  if (MSK_RES_OK != r) return absl::InternalError("Optimization failed");
+  if (MSK_RES_OK != r) {
+    std::cerr << "MOSEK ERROR: " << r << std::endl;
+    return absl::InternalError("Optimization failedcode");
+  }
 
   return trm;
 }
@@ -501,7 +522,10 @@ absl::StatusOr<MSKrescodee> Mosek::Optimize(MessageCallback msg_cb,
                              message_callback);
 
   MSKrescodee r = MSK_optimizetrm(task.get(), &trm);
-  if (MSK_RES_OK != r) return absl::InternalError("Optimization failed");
+  if (MSK_RES_OK != r) {
+    std::cerr << "MOSEK ERROR: " << r << std::endl;
+    return absl::InternalError("Optimization failed");
+  }
 
   return trm;
 }
@@ -521,6 +545,8 @@ std::tuple<std::string, std::string, MSKrescodee> Mosek::LastError() const {
     return {msg.data(), buf, r};
   }
 }
+
+
 
 double Mosek::GetPrimalObj(MSKsoltypee whichsol) const {
   if (!SolutionDef(whichsol)) return 0.0;
@@ -583,6 +609,22 @@ void Mosek::GetSKC(MSKsoltypee whichsol, std::vector<MSKstakeye>& skc) const {
   MSK_getskc(task.get(), whichsol, skc.data());
 }
 
+int Mosek::GetIntInfoItem(MSKiinfiteme item) {
+  int val = 0;
+  MSK_getintinf(task.get(),item,&val);
+  return val;
+}
+int64_t Mosek::GetLongInfoItem(MSKliinfiteme item) {
+  int64_t val = 0;
+  MSK_getlintinf(task.get(),item,&val);
+  return val;
+}
+double Mosek::GetDoubleInfoItem(MSKdinfiteme item) {
+  double val = 0;
+  MSK_getdouinf(task.get(),item,&val);
+  return val;
+}
+
 void Mosek::PutParam(MSKiparame par, int value) {
   MSK_putintparam(task.get(), par, value);
 }
@@ -600,6 +642,13 @@ int Mosek::NumCon() const {
   MSK_getnumcon(task.get(), &n);
   return n;
 }
+
+void Mosek::GetC(std::vector<double> & c, double & cfix) {
+  c.resize(NumVar());
+  MSK_getc(task.get(),c.data());
+  MSK_getcfix(task.get(),&cfix);
+}
+
 bool Mosek::IsMaximize() const {
   MSKobjsensee sense;
   MSK_getobjsense(task.get(), &sense);
@@ -617,4 +666,6 @@ int Mosek::GetParam(MSKiparame ipar) const {
 }
 
 void Mosek::delete_msk_task_func(MSKtask_t t) { MSK_deletetask(&t); }
+
+
 }  // namespace operations_research::math_opt
