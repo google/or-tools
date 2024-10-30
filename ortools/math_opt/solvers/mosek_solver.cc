@@ -772,7 +772,7 @@ absl::StatusOr<DualSolutionProto> MosekSolver::DualSolution(
     case mosek::SolSta::OPTIMAL:
     case mosek::SolSta::PRIM_AND_DUAL_FEAS:
     case mosek::SolSta::DUAL_FEAS: {
-      sol.set_objective_value(msk.GetPrimalObj(whichsol));
+      sol.set_objective_value(msk.GetDualObj(whichsol));
       sol.set_feasibility_status(SolutionStatusProto::SOLUTION_STATUS_FEASIBLE);
       std::vector<int64_t> keys;
       keys.reserve(std::max(variable_map.size(), linconstr_map.size()));
@@ -1271,9 +1271,8 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
                                      msk.GetDualObj(whichsol), 
                                      "");
       // Hack: 
-      double dx = msk.IsMaximize() ? -1e-9 : 1e-9;
-      trmp.mutable_objective_bounds()->set_primal_bound(trmp.objective_bounds().primal_bound()-dx);
-      trmp.mutable_objective_bounds()->set_dual_bound(trmp.objective_bounds().dual_bound()+dx);
+      trmp.mutable_objective_bounds()->set_primal_bound(trmp.objective_bounds().primal_bound());
+      trmp.mutable_objective_bounds()->set_dual_bound(trmp.objective_bounds().dual_bound());
 
     } else if (solsta == mosek::SolSta::PRIM_INFEAS_CER)
       trmp = InfeasibleTerminationProto(
@@ -1345,8 +1344,8 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
         {
           auto r = Solution(whichsol, ordered_xc_ids, ordered_xx_ids,
                             skip_xx_zeros, ordered_y_ids, skip_y_zeros,
-                            ordered_yx_ids, skip_yx_zeros);
-          if (r.ok()) {
+                            ordered_yx_ids, skip_yx_zeros);          
+          if (r.ok()) { 
             *result.add_solutions() = std::move(*r);
           }
           //if (msk.IsMaximize()) {
