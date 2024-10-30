@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
@@ -496,6 +497,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_linearization_level(2);
     new_params.set_add_lp_constraints_lazily(false);
     strategies["max_lp"] = new_params;
+    new_params.set_use_symmetry_in_lp(true);
+    strategies["max_lp_sym"] = new_params;
   }
 
   // Core. Note that we disable the lp here because it is faster on the minizinc
@@ -784,7 +787,13 @@ std::vector<SatParameters> GetFullWorkerParameters(
     names.push_back("fixed");
     names.push_back("core");
     names.push_back("no_lp");
-    names.push_back("max_lp");
+    if (cp_model.has_symmetry()) {
+      names.push_back("max_lp_sym");
+    } else {
+      // If there is no symmetry, max_lp_sym and max_lp are the same, but
+      // we prefer the less confusing name.
+      names.push_back("max_lp");
+    }
     names.push_back("quick_restart");
     names.push_back("reduced_costs");
     names.push_back("quick_restart_no_lp");
@@ -798,6 +807,9 @@ std::vector<SatParameters> GetFullWorkerParameters(
     names.push_back("probing_no_lp");
     names.push_back("objective_lb_search_no_lp");
     names.push_back("objective_lb_search_max_lp");
+    if (cp_model.has_symmetry()) {
+      names.push_back("max_lp");
+    }
   } else {
     for (const std::string& name : base_params.subsolvers()) {
       // Hack for flatzinc. At the time of parameter setting, the objective is

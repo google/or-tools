@@ -29,6 +29,7 @@
 #include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/random/bit_gen_ref.h"
@@ -49,7 +50,6 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint_manager.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/rins.h"
@@ -1901,6 +1901,15 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
     local_cp_model.mutable_objective()->set_integer_scaling_factor(0);
   }
 
+  // Dump?
+  if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
+    const std::string dump_name =
+        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                     "lb_relax_lns_lp_", data.task_id, ".pb.txt");
+    LOG(INFO) << "Dumping linear relaxed model to '" << dump_name << "'.";
+    CHECK(WriteModelProtoToFile(local_cp_model, dump_name));
+  }
+
   // Solve.
   //
   // TODO(user): Shall we pass the objective upper bound so we have more
@@ -1909,9 +1918,11 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   // TODO(user): Does the current solution can provide a warm-start for the
   // LP?
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();
-  response_manager->InitializeObjective(local_cp_model);
-  LoadCpModel(local_cp_model, &model);
-  SolveLoadedCpModel(local_cp_model, &model);
+  {
+    response_manager->InitializeObjective(local_cp_model);
+    LoadCpModel(local_cp_model, &model);
+    SolveLoadedCpModel(local_cp_model, &model);
+  }
 
   // Update dtime.
   data.deterministic_time +=

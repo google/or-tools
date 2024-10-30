@@ -105,9 +105,13 @@ message LinearConstraintProto {
 // The constraint target = vars[index].
 // This enforces that index takes one of the value in [0, vars_size()).
 message ElementConstraintProto {
-  int32 index = 1;
-  int32 target = 2;
-  repeated int32 vars = 3;
+  int32 index = 1;          // Legacy field.
+  int32 target = 2;         // Legacy field.
+  repeated int32 vars = 3;  // Legacy field.
+  // All expressions below must be affine function with at most one variable.
+  LinearExpressionProto linear_index = 4;
+  LinearExpressionProto linear_target = 5;
+  repeated LinearExpressionProto exprs = 6;
 }
 
 // This is not really a constraint. It is there so it can be referred by other
@@ -243,12 +247,14 @@ message RoutesConstraintProto {
   int64 capacity = 5;
 }
 
-// The values of the n-tuple formed by the given variables can only be one of
+// The values of the n-tuple formed by the given expression can only be one of
 // the listed n-tuples in values. The n-tuples are encoded in a flattened way:
 //     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
+// Expressions must be affine (a * var + b).
 message TableConstraintProto {
-  repeated int32 vars = 1;
+  repeated int32 vars = 1;  // Legacy field.
   repeated int64 values = 2;
+  repeated LinearExpressionProto exprs = 4;
 
   // If true, the meaning is "negated", that is we forbid any of the given
   // tuple from a feasible assignment.
@@ -262,7 +268,7 @@ message InverseConstraintProto {
   repeated int32 f_inverse = 2;
 }
 
-// This constraint forces a sequence of variables to be accepted by an
+// This constraint forces a sequence of expressions to be accepted by an
 // automaton.
 message AutomatonConstraintProto {
   // A state is identified by a non-negative number. It is preferable to keep
@@ -278,9 +284,12 @@ message AutomatonConstraintProto {
   repeated int64 transition_head = 5;
   repeated int64 transition_label = 6;
 
-  // The sequence of variables. The automaton is ran for vars_size() "steps" and
-  // the value of vars[i] corresponds to the transition label at step i.
+  // Legacy field.
   repeated int32 vars = 7;
+  // The sequence of affine expressions (a * var + b). The automaton is ran for
+  // exprs_size() "steps" and the value of exprs[i] corresponds to the
+  // transition label at step i.
+  repeated LinearExpressionProto exprs = 8;
 }
 
 // A list of variables, without any semantics.

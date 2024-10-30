@@ -26,7 +26,105 @@
     <!-- If ortools is built as a STATIC_LIBRARY (e.g. Windows) then we don't have to include it -->
     <Content Include="
       $<TARGET_FILE:google-ortools-native>
-      $<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:;$<TARGET_SONAME_FILE:@PROJECT_NAME@>>
+      $<@is_ortools_shared@:;$<TARGET_SONAME_FILE:ortools>>
+      $<@need_zlib_lib@:;$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::base>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_optional_access>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_variant_access>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::city>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::civil_time>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::cord>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::cord_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::cordz_functions>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::cordz_handle>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::cordz_info>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::crc32c>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::crc_cord_state>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::crc_cpu_detect>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::crc_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::debugging_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::decode_rust_punycode>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::demangle_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::demangle_rust>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::die_if_null>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::examine_stack>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::exponential_biased>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_commandlineflag>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_commandlineflag_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_config>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_marshalling>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_parse>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_private_handle_accessor>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_program_name>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_reflection>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_usage>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::flags_usage_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::graphcycles_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::hash>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::hashtablez_sampler>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::int128>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::kernel_timeout_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::leak_check>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_entry>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_flags>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_globals>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_initialize>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_check_op>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_conditions>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_fnmatch>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_format>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_globals>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_log_sink_set>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_message>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_nullguard>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_proto>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_severity>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_sink>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::low_level_hash>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::malloc_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_distributions>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_platform>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_pool_urbg>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_randen>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes_impl>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_randen_slow>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_seed_material>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_seed_gen_exception>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_seed_sequences>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::raw_hash_set>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::raw_logging_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::spinlock_wait>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::stacktrace>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::status>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::statusor>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::str_format_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::strerror>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::string_view>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::strings>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::strings_internal>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::symbolize>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::synchronization>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::throw_delegate>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::time>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::time_zone>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::utf8_for_code_point>>
+      $<@need_absl_lib@:;$<TARGET_SONAME_FILE:absl::vlog_config_internal>>
+
+      $<@need_re2_lib@:;$<TARGET_SONAME_FILE:re2::re2>>
+
+      $<@need_protobuf_lib@:;$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
+      $<@need_protobuf_lib@:;$<TARGET_SONAME_FILE:utf8_validity>>
+
+      $<@need_coinutils_lib@:;$<TARGET_SONAME_FILE:Coin::CoinUtils>>
+      $<@need_osi_lib@:;$<TARGET_SONAME_FILE:Coin::Osi>>
+      $<@need_clp_lib@:;$<TARGET_SONAME_FILE:Coin::Clp>;$<TARGET_SONAME_FILE:Coin::OsiClp>;$<TARGET_SONAME_FILE:Coin::ClpSolver>>
+      $<@need_cgl_lib@:;$<TARGET_SONAME_FILE:Coin::Cgl>>
+      $<@need_cbc_lib@:;$<TARGET_SONAME_FILE:Coin::Cbc>;$<TARGET_SONAME_FILE:Coin::OsiCbc>;$<TARGET_SONAME_FILE:Coin::CbcSolver>>
+
+      $<@need_highs_lib@:;$<TARGET_SONAME_FILE:highs>>
     ">
       <PackagePath>runtimes/@DOTNET_RID@/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>

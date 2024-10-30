@@ -527,6 +527,7 @@ SatSolver::Status LbTreeSearch::Search(
       // - when we go to a new branch.
       lp_constraint_->EnablePropagation(false);
     }
+    if (sat_solver_->ModelIsUnsat()) return sat_solver_->UnsatStatus();
 
     // This will import other workers bound if we are back to level zero.
     // It might also decide to restart.

@@ -15,7 +15,6 @@
 #define OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
-#include <deque>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -39,6 +38,7 @@
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -102,9 +102,13 @@ class PresolveContext {
 
   // This should replace NewIntVar() eventually in order to be able to crush
   // primal solution or just update the hint.
+  //
+  // By default this also create the linking constraint new_var = definition.
+  // Returns -1 if we couldn't create the definition due to overflow.
   int NewIntVarWithDefinition(
       const Domain& domain,
-      absl::Span<const std::pair<int, int64_t>> definition);
+      absl::Span<const std::pair<int, int64_t>> definition,
+      bool append_constraint_to_mapping_model = false);
 
   // Create a new bool var.
   // Its hint value will be the same as the value of the given clause.
@@ -287,7 +291,7 @@ class PresolveContext {
 
   // At the beginning of the presolve, we delay the costly creation of this
   // "graph" until we at least ran some basic presolve. This is because during
-  // a LNS neighbhorhood, many constraints will be reduced significantly by
+  // a LNS neighborhood, many constraints will be reduced significantly by
   // this "simple" presolve.
   bool ConstraintVariableGraphIsUpToDate() const;
 
@@ -324,7 +328,7 @@ class PresolveContext {
   bool CanonicalizeAffineVariable(int ref, int64_t coeff, int64_t mod,
                                   int64_t rhs);
 
-  // Adds the relation (ref_x = coeff * ref_y + offset) to the repository.
+  // Adds the relation (var_x = coeff * var_y + offset) to the repository.
   // Returns false if we detect infeasability because of this.
   //
   // Once the relation is added, it doesn't need to be enforced by a constraint
@@ -332,7 +336,7 @@ class PresolveContext {
   // them to the proto at the end of the presolve.
   //
   // Note that this should always add a relation, even though it might need to
-  // create a new representative for both ref_x and ref_y in some cases. Like if
+  // create a new representative for both var_x and var_y in some cases. Like if
   // x = 3z and y = 5t are already added, if we add x = 2y, we have 3z = 10t and
   // can only resolve this by creating a new variable r such that z = 10r and t
   // = 3r.
@@ -340,7 +344,7 @@ class PresolveContext {
   // All involved variables will be marked to appear in the special
   // kAffineRelationConstraint. This will allow to identify when a variable is
   // no longer needed (only appear there and is not a representative).
-  bool StoreAffineRelation(int ref_x, int ref_y, int64_t coeff, int64_t offset,
+  bool StoreAffineRelation(int var_x, int var_y, int64_t coeff, int64_t offset,
                            bool debug_no_recursion = false);
 
   // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
@@ -362,8 +366,8 @@ class PresolveContext {
 
   // Makes sure the domain of ref and of its representative (ref = coeff * rep +
   // offset) are in sync. Returns false on unsat.
-  bool PropagateAffineRelation(int ref);
-  bool PropagateAffineRelation(int ref, int rep, int64_t coeff, int64_t offset);
+  bool PropagateAffineRelation(int var);
+  bool PropagateAffineRelation(int var, int rep, int64_t coeff, int64_t offset);
 
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();
@@ -460,7 +464,7 @@ class PresolveContext {
   bool RecomputeSingletonObjectiveDomain();
 
   // Some function need the domain to be up to date in the proto.
-  // This make sures our in-memory domain are writted back to the proto.
+  // This make sures our in-memory domain are written back to the proto.
   void WriteVariableDomainsToProto() const;
 
   // Checks if the given exactly_one is included in the objective, and simplify
@@ -611,7 +615,7 @@ class PresolveContext {
 
   // Indicate if we are allowed to remove irrelevant feasible solution from the
   // set of feasible solution. For example, if a variable is unused, can we fix
-  // it to an arbitrary value (or its mimimum objective one)? This must be true
+  // it to an arbitrary value (or its minimum objective one)? This must be true
   // if the client wants to enumerate all solutions or wants correct tightened
   // bounds in the response.
   bool keep_all_feasible_solutions = false;
@@ -703,7 +707,7 @@ class PresolveContext {
   // Internal representation of the objective. During presolve, we first load
   // the objective in this format in order to have more efficient substitution
   // on large problems (also because the objective is often dense). At the end
-  // we re-convert it to its proto form.
+  // we convert it back to its proto form.
   mutable bool objective_proto_is_up_to_date_ = false;
   absl::flat_hash_map<int, int64_t> objective_map_;
   int64_t objective_overflow_detection_;
@@ -741,8 +745,8 @@ class PresolveContext {
   // (literal, var, value),  i.e.: literal => var ==/!= value
   // The state is accumulated (adding x => var == value then !x => var != value)
   // will deduce that x equivalent to var == value.
-  absl::flat_hash_set<std::tuple<int, int, int64_t>> eq_half_encoding_;
-  absl::flat_hash_set<std::tuple<int, int, int64_t>> neq_half_encoding_;
+  absl::flat_hash_map<std::tuple<int, int>, int64_t> eq_half_encoding_;
+  absl::flat_hash_map<std::tuple<int, int>, int64_t> neq_half_encoding_;
 
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will be removed from the model at
@@ -773,6 +777,14 @@ class PresolveContext {
 // that will be used for probing. Returns false if UNSAT.
 bool LoadModelForProbing(PresolveContext* context, Model* local_model);
 
+bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
+                          PresolveContext* context, Model* local_model,
+                          absl::string_view name_for_logging);
+
+void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
+                                          const PresolveContext* context,
+                                          std::vector<int>* variable_mapping,
+                                          CpModelProto* mini_model);
 }  // namespace sat
 }  // namespace operations_research
 

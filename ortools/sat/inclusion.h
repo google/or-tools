@@ -27,6 +27,7 @@
 
 #include "absl/log/check.h"
 #include "ortools/base/logging.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -53,7 +54,8 @@ namespace sat {
 template <class Storage>
 class InclusionDetector {
  public:
-  explicit InclusionDetector(const Storage& storage) : storage_(storage) {}
+  explicit InclusionDetector(const Storage& storage, TimeLimit* time_limit)
+      : storage_(storage), time_limit_(time_limit) {}
 
   // Resets the class to an empty state.
   void Reset() {
@@ -97,7 +99,7 @@ class InclusionDetector {
       const std::function<void(int subset, int superset)>& process);
 
   // Function that should only be used from within "process()".
-  // Returns the bitset corresponsing to the elements of the current superset
+  // Returns the bitset corresponding to the elements of the current superset
   // passed to the process() function.
   std::vector<bool> IsInSuperset() const { return is_in_superset_; }
 
@@ -127,6 +129,8 @@ class InclusionDetector {
  private:
   // Allows to access the elements of each candidates via storage_[index];
   const Storage& storage_;
+
+  TimeLimit* time_limit_;
 
   // List of candidates, this will be sorted.
   struct Candidate {
@@ -216,6 +220,10 @@ inline void InclusionDetector<Storage>::DetectInclusions(
   DCHECK(signatures_.empty());
   DCHECK(one_watcher_.empty());
 
+  // We check each time our work_done_ has increased by more than this.
+  constexpr int64_t kCheckTimeLimitInterval = 1000;
+  int64_t next_time_limit_check = kCheckTimeLimitInterval;
+
   // Main algo.
   work_done_ = 0;
   std::stable_sort(candidates_.begin(), candidates_.end());
@@ -250,6 +258,10 @@ inline void InclusionDetector<Storage>::DetectInclusions(
       // Find any subset included in current superset.
       work_done_ += 2 * superset.size;
       if (work_done_ > work_limit_) return Stop();
+      if (work_done_ > next_time_limit_check) {
+        if (time_limit_->LimitReached()) return Stop();
+        next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
+      }
 
       // We make a copy because process() might alter the content of the
       // storage when it returns "stop_with_current_superset_" and we need
@@ -278,6 +290,10 @@ inline void InclusionDetector<Storage>::DetectInclusions(
           bool is_included = true;
           work_done_ += subset.size;
           if (work_done_ > work_limit_) return Stop();
+          if (work_done_ > next_time_limit_check) {
+            if (time_limit_->LimitReached()) return Stop();
+            next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
+          }
           for (const int subset_e : storage_[subset.index]) {
             if (!is_in_superset_[subset_e]) {
               is_included = false;
@@ -291,6 +307,10 @@ inline void InclusionDetector<Storage>::DetectInclusions(
 
           if (stop_) return;
           if (work_done_ > work_limit_) return Stop();
+          if (work_done_ > next_time_limit_check) {
+            if (time_limit_->LimitReached()) return Stop();
+            next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
+          }
 
           if (stop_with_current_subset_) {
             // Remove from the watcher list.

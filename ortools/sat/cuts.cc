@@ -888,6 +888,9 @@ bool IntegerRoundingCutHelper::ComputeCut(
   }
 
   // Re try complementation on the transformed cut.
+  // TODO(user): This can be quadratic! we don't want to try too much of them.
+  // Or optimize the algo, we should be able to be more incremental here.
+  // see on g200x740.pb.gz for instance.
   for (CutTerm& entry : cut_.terms) {
     if (!entry.HasRelevantLpValue()) break;
     if (entry.coeff % best_divisor == 0) continue;

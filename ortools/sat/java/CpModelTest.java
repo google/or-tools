@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.util.Domain;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelNewIntVar() throws Exception {
+    System.out.println("testCpModelNewIntVar");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 10, "x");
@@ -63,6 +65,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelNewIntervalVar() throws Exception {
+    System.out.println("testCpModelNewIntervalVar");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -90,6 +93,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddBoolOr() throws Exception {
+    System.out.println("testCpModelAddBoolOr");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -104,6 +108,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddAtLeastOne() throws Exception {
+    System.out.println("testCpModelAddAtLeastOne");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -118,6 +123,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddAtMostOne() throws Exception {
+    System.out.println("testCpModelAddAtMostOne");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -132,6 +138,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddExactlyOne() throws Exception {
+    System.out.println("testCpModelAddExactlyOne");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -146,6 +153,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddBoolAnd() throws Exception {
+    System.out.println("testCpModelAddBoolAnd");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -160,6 +168,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddBoolXor() throws Exception {
+    System.out.println("testCpModelAddBoolXor");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -174,6 +183,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddImplication() throws Exception {
+    System.out.println("testCpModelAddImplication");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -187,6 +197,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddLinear() throws Exception {
+    System.out.println("testCpModelAddLinear");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -215,6 +226,7 @@ public final class CpModelTest {
 
   @Test
   public void testLinearExprAddEqualityLiteral() {
+    System.out.println("testLinearExprAddEqualityLiteral");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Literal x = model.newBoolVar("x");
@@ -224,7 +236,131 @@ public final class CpModelTest {
   }
 
   @Test
+  public void testCpModelAddElement() throws Exception {
+    System.out.println("testCpModelAddElement");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newIntVar(0, 10, "x");
+    final IntVar y = model.newIntVar(0, 10, "y");
+    final IntVar z = model.newIntVar(0, 10, "z");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(z, new IntVar[] {x, y}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprsCount()).isEqualTo(2);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(0).getVars(0)).isEqualTo(0);
+    assertThat(ct.getExprs(0).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVars(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(3);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+  }
+
+  @Test
+  public void testCpModelAddLinearArgumentElement() throws Exception {
+    System.out.println("testCpModelAddLinearArgumentElement");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newIntVar(0, 10, "x");
+    final IntVar y = model.newIntVar(0, 10, "y");
+    final IntVar z = model.newIntVar(0, 10, "z");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(z, new LinearArgument[] {x, y}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprsCount()).isEqualTo(2);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(0).getVars(0)).isEqualTo(0);
+    assertThat(ct.getExprs(0).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVars(0)).isEqualTo(1);
+    assertThat(ct.getExprs(1).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(3);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+  }
+
+  @Test
+  public void testCpModelAddExprElement() throws Exception {
+    System.out.println("testCpModelExceptionVisibility");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar x = model.newIntVar(0, 10, "x");
+    final IntVar y = model.newIntVar(0, 10, "y");
+    final IntVar z = model.newIntVar(0, 10, "z");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(LinearExpr.newBuilder().addTerm(z, 2).add(-1),
+        new LinearArgument[] {LinearExpr.constant(3), x, LinearExpr.affine(y, -1, 5)}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getOffset()).isEqualTo(-1);
+    assertThat(ct.getExprsCount()).isEqualTo(3);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(0).getOffset()).isEqualTo(3);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(1).getVars(0)).isEqualTo(0);
+    assertThat(ct.getExprs(1).getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getExprs(2).getVarsCount()).isEqualTo(1);
+    assertThat(ct.getExprs(2).getVars(0)).isEqualTo(1);
+    assertThat(ct.getExprs(2).getCoeffs(0)).isEqualTo(-1);
+    assertThat(ct.getExprs(2).getOffset()).isEqualTo(5);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(3);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+  }
+
+  @Test
+  public void testCpModelAddConstantElement() throws Exception {
+    System.out.println("testCpModelAddConstantElement");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    final IntVar z = model.newIntVar(0, 10, "x");
+    final IntVar t = model.newIntVar(0, 10, "t");
+
+    model.addElement(LinearExpr.newBuilder().addTerm(z, 2).add(-1), new long[] {3, 5, -7, 2}, t);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasElement()).isTrue();
+    ElementConstraintProto ct = model.model().getConstraints(0).getElement();
+    assertThat(ct.getLinearIndex().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearIndex().getVars(0)).isEqualTo(0);
+    assertThat(ct.getLinearIndex().getCoeffs(0)).isEqualTo(2);
+    assertThat(ct.getLinearIndex().getOffset()).isEqualTo(-1);
+    assertThat(ct.getExprsCount()).isEqualTo(4);
+    assertThat(ct.getExprs(0).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(0).getOffset()).isEqualTo(3);
+    assertThat(ct.getExprs(1).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(1).getOffset()).isEqualTo(5);
+    assertThat(ct.getExprs(2).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(2).getOffset()).isEqualTo(-7);
+    assertThat(ct.getExprs(3).getVarsCount()).isEqualTo(0);
+    assertThat(ct.getExprs(3).getOffset()).isEqualTo(2);
+    assertThat(ct.getLinearTarget().getVarsCount()).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getVars(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getCoeffs(0)).isEqualTo(1);
+    assertThat(ct.getLinearTarget().getOffset()).isEqualTo(0);
+  }
+
+  @Test
   public void testCpModelAddMinEquality() throws Exception {
+    System.out.println("testCpModelAddMinEquality");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -249,6 +385,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddMaxEquality() throws Exception {
+    System.out.println("testCpModelAddMaxEquality");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -273,6 +410,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddMinExprEquality() throws Exception {
+    System.out.println("testCpModelAddMinExprEquality");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newBoolVar("x");
@@ -298,6 +436,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddAbsEquality() throws Exception {
+    System.out.println("testCpModelAddAbsEquality");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newBoolVar("x");
@@ -324,6 +463,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddCircuit() throws Exception {
+    System.out.println("testCpModelAddCircuit");
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -344,6 +484,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddMultipleCircuit() throws Exception {
+    System.out.println("testCpModelAddMultipleCircuit");
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -364,6 +505,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddAutomaton() throws Exception {
+    System.out.println("testCpModelAddAutomaton");
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -378,7 +520,7 @@ public final class CpModelTest {
     automaton.addTransition(1, 2, 2);
     assertThat(model.model().getConstraintsCount()).isEqualTo(1);
     assertThat(model.model().getConstraints(0).hasAutomaton()).isTrue();
-    assertThat(model.model().getConstraints(0).hasAutomaton()).isTrue();
+    assertThat(model.model().getConstraints(0).getAutomaton().getExprsCount()).isEqualTo(3);
     assertThat(model.model().getConstraints(0).getAutomaton().getTransitionTailCount())
         .isEqualTo(3);
     assertThat(model.model().getConstraints(0).getAutomaton().getTransitionHeadCount())
@@ -386,11 +528,43 @@ public final class CpModelTest {
     assertThat(model.model().getConstraints(0).getAutomaton().getTransitionLabelCount())
         .isEqualTo(3);
     assertThat(model.model().getConstraints(0).getAutomaton().getStartingState()).isEqualTo(0);
+
+    assertThat(model.model().getConstraints(0).getAutomaton().getFinalStatesCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void testCpModelAddAutomatonLinearArgument() throws Exception {
+    System.out.println("testCpModelAddAutomaton");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+
+    final IntVar x1 = model.newIntVar(0, 5, "x1");
+    final IntVar x2 = model.newIntVar(0, 5, "x2");
+    final IntVar x3 = model.newIntVar(0, 5, "x3");
+
+    AutomatonConstraint automaton = model.addAutomaton(
+        new LinearArgument[] {x1, x2, LinearExpr.constant(1), LinearExpr.affine(x3, -1, 2)}, 0,
+        new long[] {1, 2});
+    automaton.addTransition(0, 1, 0);
+    automaton.addTransition(1, 1, 1);
+    automaton.addTransition(1, 2, 2);
+    assertThat(model.model().getConstraintsCount()).isEqualTo(1);
+    assertThat(model.model().getConstraints(0).hasAutomaton()).isTrue();
+    assertThat(model.model().getConstraints(0).getAutomaton().getExprsCount()).isEqualTo(4);
+    assertThat(model.model().getConstraints(0).getAutomaton().getTransitionTailCount())
+        .isEqualTo(3);
+    assertThat(model.model().getConstraints(0).getAutomaton().getTransitionHeadCount())
+        .isEqualTo(3);
+    assertThat(model.model().getConstraints(0).getAutomaton().getTransitionLabelCount())
+        .isEqualTo(3);
+    assertThat(model.model().getConstraints(0).getAutomaton().getStartingState()).isEqualTo(0);
+
     assertThat(model.model().getConstraints(0).getAutomaton().getFinalStatesCount()).isEqualTo(2);
   }
 
   @Test
   public void testCpModelAddNoOverlap() throws Exception {
+    System.out.println("testCpModelAddNoOverlap");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -413,6 +587,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddCumulative() throws Exception {
+    System.out.println("testCpModelAddCumulative");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -448,6 +623,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelAddNoOverlap2D() throws Exception {
+    System.out.println("testCpModelAddNoOverlap2D");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -467,12 +643,15 @@ public final class CpModelTest {
     assertThat(model.model().getConstraints(0).hasInterval()).isTrue();
     assertThat(model.model().getConstraints(1).hasInterval()).isTrue();
     assertThat(model.model().getConstraints(2).hasNoOverlap2D()).isTrue();
+
     assertThat(model.model().getConstraints(2).getNoOverlap2D().getXIntervalsCount()).isEqualTo(2);
+
     assertThat(model.model().getConstraints(2).getNoOverlap2D().getYIntervalsCount()).isEqualTo(2);
   }
 
   @Test
   public void testCpModelAddDecisionStrategy() throws Exception {
+    System.out.println("testCpModelAddDecisionStrategy");
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -488,18 +667,21 @@ public final class CpModelTest {
     assertThat(model.model().getSearchStrategy(0).getExprsCount()).isEqualTo(3);
     assertThat(model.model().getSearchStrategy(0).getExprs(0).getVarsCount()).isEqualTo(1);
     assertThat(model.model().getSearchStrategy(0).getExprs(0).getCoeffsCount()).isEqualTo(1);
+
     assertThat(model.model().getSearchStrategy(0).getExprs(0).getVars(0)).isEqualTo(x1.getIndex());
     assertThat(model.model().getSearchStrategy(0).getExprs(0).getCoeffs(0)).isEqualTo(1);
     assertThat(model.model().getSearchStrategy(0).getExprs(0).getOffset()).isEqualTo(0);
 
     assertThat(model.model().getSearchStrategy(0).getExprs(1).getVarsCount()).isEqualTo(1);
     assertThat(model.model().getSearchStrategy(0).getExprs(1).getCoeffsCount()).isEqualTo(1);
+
     assertThat(model.model().getSearchStrategy(0).getExprs(1).getVars(0)).isEqualTo(x2.getIndex());
     assertThat(model.model().getSearchStrategy(0).getExprs(1).getCoeffs(0)).isEqualTo(-1);
     assertThat(model.model().getSearchStrategy(0).getExprs(1).getOffset()).isEqualTo(1);
 
     assertThat(model.model().getSearchStrategy(0).getExprs(2).getVarsCount()).isEqualTo(1);
     assertThat(model.model().getSearchStrategy(0).getExprs(2).getCoeffsCount()).isEqualTo(1);
+
     assertThat(model.model().getSearchStrategy(0).getExprs(2).getVars(0)).isEqualTo(x3.getIndex());
     assertThat(model.model().getSearchStrategy(0).getExprs(2).getCoeffs(0)).isEqualTo(1);
     assertThat(model.model().getSearchStrategy(0).getExprs(2).getOffset()).isEqualTo(0);
@@ -507,6 +689,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelModelStats() throws Exception {
+    System.out.println("testCpModelModelStats");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -519,6 +702,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelValidateOk() throws Exception {
+    System.out.println("testCpModelValidateOk");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -531,6 +715,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelValidateNotOk() throws Exception {
+    System.out.println("testCpModelValidateNotOk");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 9223372036854775807L, "x");
@@ -544,6 +729,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelExceptionVisibility() throws Exception {
+    System.out.println("testCpModelExceptionVisibility");
     CpModel.MismatchedArrayLengths ex1 = new CpModel.MismatchedArrayLengths("test1", "ar1", "ar2");
     CpModel.WrongLength ex2 = new CpModel.WrongLength("test2", "ar");
     assertThat(ex1).hasMessageThat().isEqualTo("test1: ar1 and ar2 have mismatched lengths");
@@ -552,6 +738,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelClearConstraint() throws Exception {
+    System.out.println("testCpModelClearConstraint");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 92, "x");
@@ -587,6 +774,7 @@ public final class CpModelTest {
 
   @Test
   public void testCpModelMinimize() throws Exception {
+    System.out.println("testCpModelMinimize");
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -607,10 +795,12 @@ public final class CpModelTest {
     assertThat(model.getBuilder().hasFloatingPointObjective()).isFalse();
 
     model.minimize(DoubleLinearExpr.weightedSum(new IntVar[] {x1, x2}, new double[] {2.5, 3.5}));
+
     assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(2);
     assertThat(model.getBuilder().hasObjective()).isFalse();
 
     model.minimize(DoubleLinearExpr.affine(x3, 1.4, 1.2));
+
     assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(1);
     assertThat(model.getBuilder().hasObjective()).isFalse();
 
@@ -623,10 +813,12 @@ public final class CpModelTest {
     assertThat(model.getBuilder().hasFloatingPointObjective()).isFalse();
 
     model.maximize(DoubleLinearExpr.weightedSum(new IntVar[] {x1, x2}, new double[] {2.5, 3.5}));
+
     assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(2);
     assertThat(model.getBuilder().hasObjective()).isFalse();
 
     model.maximize(DoubleLinearExpr.affine(x3, 1.4, 1.2));
+
     assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(1);
     assertThat(model.getBuilder().hasObjective()).isFalse();
   }
@@ -714,7 +906,7 @@ public final class CpModelTest {
 
   @Test
   public void testCrashEquality() {
-    System.out.println("testCrashInSolveWithAllowedAssignment");
+    System.out.println("testCrashEquality");
     final CpModel model = new CpModel();
 
     final IntVar[] entities = new IntVar[20];
@@ -757,7 +949,9 @@ public final class CpModelTest {
     }
 
     final CpSolver solver = new CpSolver();
+    solver.getParameters().setLogToStdout(true);
     CpSolverStatus unused = solver.solve(model);
+    System.out.println(unused);
   }
 
   @Test

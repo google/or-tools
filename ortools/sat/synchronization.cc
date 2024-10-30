@@ -25,6 +25,7 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,6 +49,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
@@ -55,6 +57,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -842,6 +845,45 @@ SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
     synchronized_lower_bounds_[i] = lower_bounds_[i];
     synchronized_upper_bounds_[i] = upper_bounds_[i];
   }
+
+  // Fill symmetry data.
+  if (model_proto.has_symmetry()) {
+    const int num_vars = model_proto.variables().size();
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    for (const SparsePermutationProto& perm :
+         model_proto.symmetry().permutations()) {
+      generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+    }
+    if (generators.empty()) return;
+
+    // Get orbits in term of IntegerVariable.
+    var_to_orbit_index_ = GetOrbits(num_vars, generators);
+
+    // Fill orbits_.
+    std::vector<int> keys;
+    std::vector<int> values;
+    for (int var = 0; var < num_vars; ++var) {
+      const int orbit_index = var_to_orbit_index_[var];
+      if (orbit_index == -1) continue;
+      keys.push_back(orbit_index);
+      values.push_back(var);
+    }
+    if (keys.empty()) return;
+
+    has_symmetry_ = true;
+    orbits_.ResetFromFlatMapping(keys, values);
+
+    // Fill representative.
+    var_to_representative_.resize(num_vars);
+    for (int var = 0; var < num_vars; ++var) {
+      const int orbit_index = var_to_orbit_index_[var];
+      if (orbit_index == -1) {
+        var_to_representative_[var] = var;
+      } else {
+        var_to_representative_[var] = orbits_[orbit_index][0];
+      }
+    }
+  }
 }
 
 void SharedBoundsManager::ReportPotentialNewBounds(
@@ -851,11 +893,17 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
   int num_improvements = 0;
+  int num_symmetric_improvements = 0;
 
   absl::MutexLock mutex_lock(&mutex_);
   for (int i = 0; i < variables.size(); ++i) {
-    const int var = variables[i];
+    int var = variables[i];
     if (var >= num_variables_) continue;
+
+    // In the presence of symmetry we only update the representative.
+    if (has_symmetry_) {
+      var = var_to_representative_[var];
+    }
     const int64_t old_lb = lower_bounds_[var];
     const int64_t old_ub = upper_bounds_[var];
     const int64_t new_lb = new_lower_bounds[i];
@@ -881,18 +929,29 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     }
     changed_variables_since_last_synchronize_.Set(var);
     num_improvements++;
+
+    if (has_symmetry_ && variables[i] != var) {
+      // We count -1 so that num_improvements + num_symmetric_improvements
+      // corresponds to the number of actual bound improvement.
+      num_symmetric_improvements +=
+          orbits_[var_to_orbit_index_[var]].size() - 1;
+    }
   }
   if (num_improvements > 0) {
     total_num_improvements_ += num_improvements;
     VLOG(3) << total_num_improvements_ << "/" << num_variables_;
-    bounds_exported_[worker_name] += num_improvements;
+    bounds_exported_[worker_name].num_exported += num_improvements;
+    bounds_exported_[worker_name].num_symmetric += num_symmetric_improvements;
     if (absl::GetFlag(FLAGS_cp_model_dump_tightened_models)) {
       CpModelProto tight_model = model_proto_;
       for (int i = 0; i < num_variables_; ++i) {
         IntegerVariableProto* var_proto = tight_model.mutable_variables(i);
-        const Domain domain =
-            ReadDomainFromProto(*var_proto)
-                .IntersectionWith(Domain(lower_bounds_[i], upper_bounds_[i]));
+
+        int rep = i;
+        if (has_symmetry_) rep = var_to_representative_[i];
+        const Domain domain = ReadDomainFromProto(*var_proto)
+                                  .IntersectionWith(Domain(lower_bounds_[rep],
+                                                           upper_bounds_[rep]));
         FillDomainInProto(domain, var_proto);
       }
       const std::string filename = absl::StrCat(dump_prefix_, "tighened_model_",
@@ -910,6 +969,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
 void SharedBoundsManager::FixVariablesFromPartialSolution(
     const std::vector<int64_t>& solution,
     const std::vector<int>& variables_to_fix) {
+  // This function shouldn't be called if we has symmetry.
+  CHECK(!has_symmetry_);
   absl::MutexLock mutex_lock(&mutex_);
 
   // Abort if incompatible. Note that we only check the position that we are
@@ -957,6 +1018,7 @@ void SharedBoundsManager::Synchronize() {
   absl::MutexLock mutex_lock(&mutex_);
   for (const int var :
        changed_variables_since_last_synchronize_.PositionsSetAtLeastOnce()) {
+    DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
     synchronized_lower_bounds_[var] = lower_bounds_[var];
     synchronized_upper_bounds_[var] = upper_bounds_[var];
     for (int j = 0; j < id_to_changed_variables_.size(); ++j) {
@@ -977,6 +1039,7 @@ int SharedBoundsManager::RegisterNewId() {
     const int64_t ub = model_proto_.variables(var).domain(domain_size - 1);
     if (lb != synchronized_lower_bounds_[var] ||
         ub != synchronized_upper_bounds_[var]) {
+      DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
       id_to_changed_variables_[id].Set(var);
     }
   }
@@ -990,19 +1053,46 @@ void SharedBoundsManager::GetChangedBounds(
   new_lower_bounds->clear();
   new_upper_bounds->clear();
 
-  absl::MutexLock mutex_lock(&mutex_);
-  for (const int var : id_to_changed_variables_[id].PositionsSetAtLeastOnce()) {
-    variables->push_back(var);
-  }
-  id_to_changed_variables_[id].ClearAll();
+  {
+    absl::MutexLock mutex_lock(&mutex_);
+    for (const int var :
+         id_to_changed_variables_[id].PositionsSetAtLeastOnce()) {
+      DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
+      variables->push_back(var);
+    }
+    id_to_changed_variables_[id].ClearAll();
 
-  // We need to report the bounds in a deterministic order as it is difficult to
-  // guarantee that nothing depend on the order in which the new bounds are
-  // processed.
-  absl::c_sort(*variables);
-  for (const int var : *variables) {
-    new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
-    new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
+    // We need to report the bounds in a deterministic order as it is difficult
+    // to guarantee that nothing depend on the order in which the new bounds are
+    // processed.
+    absl::c_sort(*variables);
+    for (const int var : *variables) {
+      new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
+      new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
+    }
+  }
+
+  // Now that the mutex is released, we can add all symmetric version if any.
+  // Note that alternatively we could do that in the client side, but the
+  // complexity will be the same, we will just save some memory that is usually
+  // just reused.
+  if (has_symmetry_) {
+    const int old_size = variables->size();
+    for (int i = 0; i < old_size; ++i) {
+      const int var = (*variables)[i];
+      const int orbit_index = var_to_orbit_index_[var];
+      if (orbit_index == -1) continue;
+
+      const int64_t lb = (*new_lower_bounds)[i];
+      const int64_t ub = (*new_upper_bounds)[i];
+      const auto orbit = orbits_[orbit_index];
+      CHECK_EQ(var, orbit[0]);
+      for (const int other : orbit.subspan(1)) {
+        variables->push_back(other);
+        new_lower_bounds->push_back(lb);
+        new_upper_bounds->push_back(ub);
+      }
+    }
   }
 }
 
@@ -1019,9 +1109,11 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (!bounds_exported_.empty()) {
     std::vector<std::vector<std::string>> table;
-    table.push_back({"Improving bounds shared", "Num"});
+    table.push_back({"Improving bounds shared", "Num", "Sym"});
     for (const auto& entry : bounds_exported_) {
-      table.push_back({FormatName(entry.first), FormatCounter(entry.second)});
+      table.push_back({FormatName(entry.first),
+                       FormatCounter(entry.second.num_exported),
+                       FormatCounter(entry.second.num_symmetric)});
     }
     SOLVER_LOG(logger, FormatTable(table));
   }
@@ -1031,7 +1123,7 @@ int SharedBoundsManager::NumBoundsExported(const std::string& worker_name) {
   absl::MutexLock mutex_lock(&mutex_);
   const auto it = bounds_exported_.find(worker_name);
   if (it == bounds_exported_.end()) return 0;
-  return it->second;
+  return it->second.num_exported;
 }
 
 UniqueClauseStream::UniqueClauseStream() {

@@ -618,6 +618,7 @@ cc_test(
         "//ortools/math_opt/solver_tests:lp_parameter_tests",
         "//ortools/math_opt/solver_tests:lp_tests",
         "//ortools/math_opt/solver_tests:mip_tests",
+        "//ortools/math_opt/solver_tests:multi_objective_tests",
         "//ortools/math_opt/solver_tests:status_tests",
         "//ortools/math_opt/testing:param_name",
         "@com_google_absl//absl/status",

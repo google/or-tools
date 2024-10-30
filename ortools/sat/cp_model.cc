@@ -524,7 +524,7 @@ void MultipleCircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
 }
 
 void TableConstraint::AddTuple(absl::Span<const int64_t> tuple) {
-  CHECK_EQ(tuple.size(), proto_->table().vars_size());
+  CHECK_EQ(tuple.size(), proto_->table().exprs_size());
   for (const int64_t t : tuple) {
     proto_->mutable_table()->add_values(t);
   }
@@ -927,24 +927,52 @@ Constraint CpModelBuilder::AddAllDifferent(
 }
 
 Constraint CpModelBuilder::AddVariableElement(
-    IntVar index, absl::Span<const IntVar> variables, IntVar target) {
+    LinearExpr index, absl::Span<const IntVar> variables, LinearExpr target) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_element()->set_index(index.index_);
-  proto->mutable_element()->set_target(target.index_);
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
   for (const IntVar& var : variables) {
-    proto->mutable_element()->add_vars(var.index_);
+    *proto->mutable_element()->add_exprs() = LinearExprToProto(var);
   }
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddElement(IntVar index,
+Constraint CpModelBuilder::AddElement(LinearExpr index,
                                       absl::Span<const int64_t> values,
-                                      IntVar target) {
+                                      LinearExpr target) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  proto->mutable_element()->set_index(index.index_);
-  proto->mutable_element()->set_target(target.index_);
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
   for (int64_t value : values) {
-    proto->mutable_element()->add_vars(IndexFromConstant(value));
+    proto->mutable_element()->add_exprs()->set_offset(value);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddElement(LinearExpr index,
+                                      absl::Span<const LinearExpr> expressions,
+                                      LinearExpr target) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_element()->add_exprs() = LinearExprToProto(expr);
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddElement(
+    LinearExpr index, std::initializer_list<LinearExpr> expressions,
+    LinearExpr target) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  *proto->mutable_element()->mutable_linear_index() = LinearExprToProto(index);
+  *proto->mutable_element()->mutable_linear_target() =
+      LinearExprToProto(target);
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_element()->add_exprs() = LinearExprToProto(expr);
   }
   return Constraint(proto);
 }
@@ -958,22 +986,53 @@ MultipleCircuitConstraint CpModelBuilder::AddMultipleCircuitConstraint() {
 }
 
 TableConstraint CpModelBuilder::AddAllowedAssignments(
-    absl::Span<const IntVar> vars) {
+    absl::Span<const LinearExpr> expressions) {
   ConstraintProto* const proto = cp_model_.add_constraints();
-  for (const IntVar& var : vars) {
-    proto->mutable_table()->add_vars(var.index_);
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_table()->add_exprs() = LinearExprToProto(expr);
+  }
+  return TableConstraint(proto);
+}
+
+TableConstraint CpModelBuilder::AddAllowedAssignments(
+    absl::Span<const IntVar> variables) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const IntVar var : variables) {
+    LinearExpressionProto* expr = proto->mutable_table()->add_exprs();
+    expr->add_vars(var.index_);
+    expr->add_coeffs(1);
+  }
+  return TableConstraint(proto);
+}
+
+TableConstraint CpModelBuilder::AddAllowedAssignments(
+    std::initializer_list<LinearExpr> expressions) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : expressions) {
+    *proto->mutable_table()->add_exprs() = LinearExprToProto(expr);
   }
   return TableConstraint(proto);
 }
 
 TableConstraint CpModelBuilder::AddForbiddenAssignments(
-    absl::Span<const IntVar> vars) {
-  ConstraintProto* const proto = cp_model_.add_constraints();
-  for (const IntVar& var : vars) {
-    proto->mutable_table()->add_vars(var.index_);
-  }
-  proto->mutable_table()->set_negated(true);
-  return TableConstraint(proto);
+    absl::Span<const LinearExpr> expressions) {
+  TableConstraint ct = AddAllowedAssignments(expressions);
+  ct.MutableProto()->mutable_table()->set_negated(true);
+  return ct;
+}
+
+TableConstraint CpModelBuilder::AddForbiddenAssignments(
+    absl::Span<const IntVar> variables) {
+  TableConstraint ct = AddAllowedAssignments(variables);
+  ct.MutableProto()->mutable_table()->set_negated(true);
+  return ct;
+}
+
+TableConstraint CpModelBuilder::AddForbiddenAssignments(
+    std::initializer_list<LinearExpr> expressions) {
+  TableConstraint ct = AddAllowedAssignments(expressions);
+  ct.MutableProto()->mutable_table()->set_negated(true);
+  return ct;
 }
 
 Constraint CpModelBuilder::AddInverseConstraint(
@@ -998,11 +1057,41 @@ ReservoirConstraint CpModelBuilder::AddReservoirConstraint(int64_t min_level,
 }
 
 AutomatonConstraint CpModelBuilder::AddAutomaton(
+    absl::Span<const LinearExpr> transition_expressions, int starting_state,
+    absl::Span<const int> final_states) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : transition_expressions) {
+    *proto->mutable_automaton()->add_exprs() = LinearExprToProto(expr);
+  }
+  proto->mutable_automaton()->set_starting_state(starting_state);
+  for (const int final_state : final_states) {
+    proto->mutable_automaton()->add_final_states(final_state);
+  }
+  return AutomatonConstraint(proto);
+}
+
+AutomatonConstraint CpModelBuilder::AddAutomaton(
     absl::Span<const IntVar> transition_variables, int starting_state,
     absl::Span<const int> final_states) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar& var : transition_variables) {
-    proto->mutable_automaton()->add_vars(var.index_);
+    LinearExpressionProto* expr = proto->mutable_automaton()->add_exprs();
+    expr->add_vars(var.index_);
+    expr->add_coeffs(1);
+  }
+  proto->mutable_automaton()->set_starting_state(starting_state);
+  for (const int final_state : final_states) {
+    proto->mutable_automaton()->add_final_states(final_state);
+  }
+  return AutomatonConstraint(proto);
+}
+
+AutomatonConstraint CpModelBuilder::AddAutomaton(
+    std::initializer_list<LinearExpr> transition_expressions,
+    int starting_state, absl::Span<const int> final_states) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  for (const LinearExpr& expr : transition_expressions) {
+    *proto->mutable_automaton()->add_exprs() = LinearExprToProto(expr);
   }
   proto->mutable_automaton()->set_starting_state(starting_state);
   for (const int final_state : final_states) {

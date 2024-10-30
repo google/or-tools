@@ -110,13 +110,13 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
 
 load("@rules_python//python:repositories.bzl", "python_register_toolchains")
-DEFAULT_PYTHON = "3.12"
+DEFAULT_PYTHON = "3.11"
 python_register_toolchains(
-    name = "python3_12",
+    name = "python3_11",
     python_version = DEFAULT_PYTHON,
     ignore_root_user_error=True,
 )
-load("@python3_12//:defs.bzl", "interpreter")
+load("@python3_11//:defs.bzl", "interpreter")
 
 # Create a central external repo, @pip_deps, that contains Bazel targets for all the
 # third-party packages specified in the bazel/requirements.txt file.
@@ -148,9 +148,9 @@ install_notebook_deps()
 # This statement defines the @com_google_protobuf repo.
 git_repository(
     name = "com_google_protobuf",
-    patches = ["//patches:protobuf-v27.3.patch"],
+    patches = ["//patches:protobuf-v28.2.patch"],
     patch_args = ["-p1"],
-    tag = "v27.3",
+    tag = "v28.2",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
@@ -209,7 +209,7 @@ cc_library(
 
 git_repository(
     name = "highs",
-    branch = "v1.7.2",
+    branch = "v1.8.0",
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 

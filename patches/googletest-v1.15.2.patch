@@ -1,0 +1,43 @@
+diff --git a/googletest/cmake/internal_utils.cmake b/googletest/cmake/internal_utils.cmake
+index 580ac1c..96fe3ac 100644
+--- a/googletest/cmake/internal_utils.cmake
++++ b/googletest/cmake/internal_utils.cmake
+@@ -11,6 +11,7 @@
+ # - The functions/macros defined in this file may depend on Google
+ #   Test and Google Mock's option() definitions, and thus must be
+ #   called *after* the options have been defined.
++include(GNUInstallDirs)
+ 
+ # Tweaks CMake's default compiler/linker settings to suit Google Test's needs.
+ #
+@@ -170,11 +171,11 @@ function(cxx_library_with_type name type cxx_flags)
+   # Set the output directory for build artifacts.
+   set_target_properties(${name}
+     PROPERTIES
+-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+-    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+-    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
++    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}"
++    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}"
++    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}"
++    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}"
++    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+   # Make PDBs match library name.
+   get_target_property(pdb_debug_postfix ${name} DEBUG_POSTFIX)
+   set_target_properties(${name}
+@@ -190,6 +191,13 @@ function(cxx_library_with_type name type cxx_flags)
+       COMPILE_DEFINITIONS "GTEST_CREATE_SHARED_LIBRARY=1")
+     target_compile_definitions(${name} INTERFACE
+       $<INSTALL_INTERFACE:GTEST_LINKED_AS_SHARED_LIBRARY=1>)
++    if(APPLE)
++      set_target_properties(${name} PROPERTIES
++        INSTALL_RPATH "@loader_path")
++    elseif(UNIX)
++      set_target_properties(${name} PROPERTIES
++        INSTALL_RPATH "$ORIGIN")
++    endif()
+   endif()
+   if (DEFINED GTEST_HAS_PTHREAD)
+     target_link_libraries(${name} PUBLIC Threads::Threads)

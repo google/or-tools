@@ -52,8 +52,9 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        GTest::gmock
+        GTest::gtest
         GTest::gtest_main
+        GTest::gmock
     )
   endforeach()
 endif()

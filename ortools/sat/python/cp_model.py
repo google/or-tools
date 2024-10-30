@@ -1578,31 +1578,38 @@ class CpModel:
         return ct
 
     def add_element(
-        self, index: VariableT, variables: Sequence[VariableT], target: VariableT
+        self,
+        index: LinearExprT,
+        expressions: Sequence[LinearExprT],
+        target: LinearExprT,
     ) -> Constraint:
-        """Adds the element constraint: `variables[index] == target`.
+        """Adds the element constraint: `expressions[index] == target`.
 
         Args:
-          index: The index of the variable that's being constrained.
-          variables: A list of variables.
-          target: The value that the variable must be equal to.
+          index: The index of the selected expression in the array. It must be an
+            affine expression (a * var + b).
+          expressions: A list of affine expressions.
+          target: The expression constrained to be equal to the selected expression.
+            It must be an affine expression (a * var + b).
 
         Returns:
           An instance of the `Constraint` class.
         """
 
-        if not variables:
-            raise ValueError("add_element expects a non-empty variables array")
+        if not expressions:
+            raise ValueError("add_element expects a non-empty expressions array")
 
         if isinstance(index, IntegralTypes):
-            variable: VariableT = list(variables)[int(index)]
-            return self.add(variable == target)
+            expression: LinearExprT = list(expressions)[int(index)]
+            return self.add(expression == target)
 
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.element.index = self.get_or_make_index(index)
-        model_ct.element.vars.extend([self.get_or_make_index(x) for x in variables])
-        model_ct.element.target = self.get_or_make_index(target)
+        model_ct.element.linear_index.CopyFrom(self.parse_linear_expression(index))
+        model_ct.element.exprs.extend(
+            [self.parse_linear_expression(e) for e in expressions]
+        )
+        model_ct.element.linear_target.CopyFrom(self.parse_linear_expression(target))
         return ct
 
     def add_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
@@ -1673,39 +1680,42 @@ class CpModel:
 
     def add_allowed_assignments(
         self,
-        variables: Sequence[VariableT],
+        expressions: Sequence[LinearExprT],
         tuples_list: Iterable[Sequence[IntegralT]],
     ) -> Constraint:
-        """Adds AllowedAssignments(variables, tuples_list).
+        """Adds AllowedAssignments(expressions, tuples_list).
 
-        An AllowedAssignments constraint is a constraint on an array of variables,
-        which requires that when all variables are assigned values, the resulting
-        array equals one of the  tuples in `tuple_list`.
+        An AllowedAssignments constraint is a constraint on an array of affine
+        expressions, which requires that when all expressions are assigned values,
+        the
+        resulting array equals one of the  tuples in `tuple_list`.
 
         Args:
-          variables: A list of variables.
+          expressions: A list of affine expressions (a * var + b).
           tuples_list: A list of admissible tuples. Each tuple must have the same
-            length as the variables, and the ith value of a tuple corresponds to the
-            ith variable.
+            length as the expressions, and the ith value of a tuple corresponds to
+            the ith expression.
 
         Returns:
           An instance of the `Constraint` class.
 
         Raises:
           TypeError: If a tuple does not have the same size as the list of
-              variables.
-          ValueError: If the array of variables is empty.
+              expressions.
+          ValueError: If the array of expressions is empty.
         """
 
-        if not variables:
+        if not expressions:
             raise ValueError(
-                "add_allowed_assignments expects a non-empty variables array"
+                "add_allowed_assignments expects a non-empty expressions array"
             )
 
         ct: Constraint = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.table.vars.extend([self.get_or_make_index(x) for x in variables])
-        arity: int = len(variables)
+        model_ct.table.exprs.extend(
+            [self.parse_linear_expression(e) for e in expressions]
+        )
+        arity: int = len(expressions)
         for one_tuple in tuples_list:
             if len(one_tuple) != arity:
                 raise TypeError("Tuple " + str(one_tuple) + " has the wrong arity")
@@ -1724,53 +1734,56 @@ class CpModel:
 
     def add_forbidden_assignments(
         self,
-        variables: Sequence[VariableT],
+        expressions: Sequence[LinearExprT],
         tuples_list: Iterable[Sequence[IntegralT]],
     ) -> Constraint:
-        """Adds add_forbidden_assignments(variables, [tuples_list]).
+        """Adds add_forbidden_assignments(expressions, [tuples_list]).
 
-        A ForbiddenAssignments constraint is a constraint on an array of variables
-        where the list of impossible combinations is provided in the tuples list.
+        A ForbiddenAssignments constraint is a constraint on an array of affine
+        expressions where the list of impossible combinations is provided in the
+        tuples list.
 
         Args:
-          variables: A list of variables.
+          expressions: A list of affine expressions (a * var + b).
           tuples_list: A list of forbidden tuples. Each tuple must have the same
-            length as the variables, and the *i*th value of a tuple corresponds to
-            the *i*th variable.
+            length as the expressions, and the *i*th value of a tuple corresponds to
+            the *i*th expression.
 
         Returns:
           An instance of the `Constraint` class.
 
         Raises:
           TypeError: If a tuple does not have the same size as the list of
-                     variables.
-          ValueError: If the array of variables is empty.
+                     expressions.
+          ValueError: If the array of expressions is empty.
         """
 
-        if not variables:
+        if not expressions:
             raise ValueError(
-                "add_forbidden_assignments expects a non-empty variables array"
+                "add_forbidden_assignments expects a non-empty expressions array"
             )
 
         index: int = len(self.__model.constraints)
-        ct: Constraint = self.add_allowed_assignments(variables, tuples_list)
+        ct: Constraint = self.add_allowed_assignments(expressions, tuples_list)
         self.__model.constraints[index].table.negated = True
         return ct
 
     def add_automaton(
         self,
-        transition_variables: Sequence[VariableT],
+        transition_expressions: Sequence[LinearExprT],
         starting_state: IntegralT,
         final_states: Sequence[IntegralT],
         transition_triples: Sequence[Tuple[IntegralT, IntegralT, IntegralT]],
     ) -> Constraint:
         """Adds an automaton constraint.
 
-        An automaton constraint takes a list of variables (of size *n*), an initial
-        state, a set of final states, and a set of transitions. A transition is a
-        triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
-        and *transition* is the label of an arc from *head* to *tail*,
-        corresponding to the value of one variable in the list of variables.
+        An automaton constraint takes a list of affine expressions (a * var + b) (of
+        size *n*), an initial state, a set of final states, and a set of
+        transitions. A transition is a triplet (*tail*, *transition*, *head*), where
+        *tail* and *head* are states, and *transition* is the label of an arc from
+        *head* to *tail*, corresponding to the value of one expression in the list
+        of
+        expressions.
 
         This automaton will be unrolled into a flow with *n* + 1 phases. Each phase
         contains the possible states of the automaton. The first state contains the
@@ -1779,18 +1792,19 @@ class CpModel:
         Between two consecutive phases *i* and *i* + 1, the automaton creates a set
         of arcs. For each transition (*tail*, *transition*, *head*), it will add
         an arc from the state *tail* of phase *i* and the state *head* of phase
-        *i* + 1. This arc is labeled by the value *transition* of the variables
-        `variables[i]`. That is, this arc can only be selected if `variables[i]`
+        *i* + 1. This arc is labeled by the value *transition* of the expression
+        `expressions[i]`. That is, this arc can only be selected if `expressions[i]`
         is assigned the value *transition*.
 
-        A feasible solution of this constraint is an assignment of variables such
+        A feasible solution of this constraint is an assignment of expressions such
         that, starting from the initial state in phase 0, there is a path labeled by
-        the values of the variables that ends in one of the final states in the
+        the values of the expressions that ends in one of the final states in the
         final phase.
 
         Args:
-          transition_variables: A non-empty list of variables whose values
-            correspond to the labels of the arcs traversed by the automaton.
+          transition_expressions: A non-empty list of affine expressions (a * var +
+            b) whose values correspond to the labels of the arcs traversed by the
+            automaton.
           starting_state: The initial state of the automaton.
           final_states: A non-empty list of admissible final states.
           transition_triples: A list of transitions for the automaton, in the
@@ -1800,13 +1814,13 @@ class CpModel:
           An instance of the `Constraint` class.
 
         Raises:
-          ValueError: if `transition_variables`, `final_states`, or
+          ValueError: if `transition_expressions`, `final_states`, or
             `transition_triples` are empty.
         """
 
-        if not transition_variables:
+        if not transition_expressions:
             raise ValueError(
-                "add_automaton expects a non-empty transition_variables array"
+                "add_automaton expects a non-empty transition_expressions array"
             )
         if not final_states:
             raise ValueError("add_automaton expects some final states")
@@ -1816,8 +1830,8 @@ class CpModel:
 
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.automaton.vars.extend(
-            [self.get_or_make_index(x) for x in transition_variables]
+        model_ct.automaton.exprs.extend(
+            [self.parse_linear_expression(e) for e in transition_expressions]
         )
         model_ct.automaton.starting_state = starting_state
         for v in final_states:

@@ -46,7 +46,7 @@ setup(
         'absl-py >= 2.0.0',
         'numpy >= 1.13.3',
         'pandas >= 2.0.0',
-        'protobuf >= 5.27.3,<5.28',
+        'protobuf >= 5.28.2,<5.29',
         'immutabledict >= 3.0.0',
     ],
     package_data={
@@ -162,6 +162,7 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Programming Language :: C++',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Office/Business :: Scheduling',

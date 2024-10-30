@@ -35,7 +35,7 @@
 namespace operations_research {
 
 // Correctly picking the midpoint of two integers in all cases isn't trivial!
-template <>
+template <> inline
 int BinarySearchMidpoint(int x, int y) {
   if (x > y) std::swap(x, y);
   if (x >= 0 || y < 0) return x + (y - x) / 2;
@@ -181,7 +181,7 @@ TEST(BinarySearchDeathTest, DiesIfEitherBoundaryConditionViolatedInFastbuild) {
 // Note that template specializations must be exactly in the same namespace,
 // hence the presence of these tests outside the unnamed namespace.
 
-template <>
+template <> inline
 absl::Time BinarySearchMidpoint(absl::Time x, absl::Time y) {
   return x + (y - x) / 2;
 }

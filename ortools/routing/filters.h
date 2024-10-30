@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_ROUTING_FILTERS_H_
 #define OR_TOOLS_ROUTING_FILTERS_H_
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -34,6 +35,7 @@
 #include "ortools/routing/types.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/range_minimum_query.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research::routing {
 
@@ -181,16 +183,69 @@ class DimensionValues {
   DimensionValues(int num_paths, int num_nodes)
       : range_of_path_(num_paths, {.begin = 0, .end = 0}),
         committed_range_of_path_(num_paths, {.begin = 0, .end = 0}),
-        span_min_(num_paths, 0),
-        span_max_(num_paths, kint64max),
+        span_(num_paths, {kint64min, kint64max}),
         changed_paths_(num_paths),
         max_num_committed_elements_(16 * num_nodes) {
     nodes_.reserve(max_num_committed_elements_);
     transit_.reserve(max_num_committed_elements_);
-    transit_sum_.reserve(max_num_committed_elements_);
-    cumul_min_.reserve(max_num_committed_elements_);
-    cumul_max_.reserve(max_num_committed_elements_);
+    travel_.reserve(max_num_committed_elements_);
+    travel_sum_.reserve(max_num_committed_elements_);
+    cumul_.reserve(max_num_committed_elements_);
   }
+
+  struct Interval {
+    int64_t min;
+    int64_t max;
+    // Tests inequality between intervals.
+    bool operator!=(const Interval& other) const {
+      return min != other.min || max != other.max;
+    }
+    // Tests equality between intervals.
+    bool operator==(const Interval& other) const {
+      return min == other.min && max == other.max;
+    }
+    // Returns true iff the interval is empty.
+    bool IsEmpty() const { return min > max; }
+    // Increases the min to be at least lower_bound,
+    // returns true iff the interval is nonempty.
+    bool IncreaseMin(int64_t lower_bound) {
+      min = std::max(min, lower_bound);
+      return min <= max;
+    }
+    // Decreases the max to be at most upper_bound,
+    // returns true iff the interval is nonempty.
+    bool DecreaseMax(int64_t upper_bound) {
+      max = std::min(max, upper_bound);
+      return min <= max;
+    }
+    // Intersects this interval with the other, returns true iff the interval
+    // is nonempty.
+    bool IntersectWith(const Interval& other) {
+      min = std::max(min, other.min);
+      max = std::min(max, other.max);
+      return min <= max;
+    }
+    // A set addition, with intervals: adds other.min to the min, other.max to
+    // the max, with CapAdd().
+    void Add(const Interval& other) {
+      DCHECK(!IsEmpty());
+      DCHECK(!other.IsEmpty());
+      min = CapAdd(min, other.min);
+      max = CapAdd(max, other.max);
+    }
+    // A set subtraction, with intervals: subtracts other.max from the min,
+    // other.min from the max, with CapSub().
+    void Subtract(const Interval& other) {
+      DCHECK(!IsEmpty());
+      DCHECK(!other.IsEmpty());
+      min = CapSub(min, other.max);
+      max = CapSub(max, other.min);
+    }
+    // Returns an interval containing all integers: {kint64min, kint64max}.
+    static Interval AllIntegers() {
+      return {.min = kint64min, .max = kint64max};
+    }
+  };
 
   // Adds a node to new nodes.
   void PushNode(int node) { nodes_.push_back(node); }
@@ -205,13 +260,12 @@ class DimensionValues {
     changed_paths_.Set(path);
     // Allocate dimension values. We allocate n cells for all dimension values,
     // even transits, so they can all be indexed by the same range_of_path.
-    transit_.resize(nodes_.size(), 0);
-    transit_sum_.resize(nodes_.size(), 0);
-    cumul_min_.resize(nodes_.size(), kint64min);
-    cumul_max_.resize(nodes_.size(), kint64max);
+    transit_.resize(nodes_.size(), Interval::AllIntegers());
+    travel_.resize(nodes_.size(), 0);
+    travel_sum_.resize(nodes_.size(), 0);
+    cumul_.resize(nodes_.size(), Interval::AllIntegers());
     num_current_elements_ = nodes_.size();
-    span_min_.Set(path, 0);
-    span_max_.Set(path, kint64max);
+    span_.Set(path, Interval::AllIntegers());
   }
 
   // Resets all path to empty, in both committed and current state.
@@ -224,13 +278,11 @@ class DimensionValues {
     num_committed_elements_ = 0;
     nodes_.clear();
     transit_.clear();
-    transit_sum_.clear();
-    cumul_min_.clear();
-    cumul_max_.clear();
-    span_min_.Revert();
-    span_min_.SetAllAndCommit(0);
-    span_max_.Revert();
-    span_max_.SetAllAndCommit(kint64max);
+    travel_.clear();
+    travel_sum_.clear();
+    cumul_.clear();
+    span_.Revert();
+    span_.SetAllAndCommit(Interval::AllIntegers());
   }
 
   // Clears the changed state, make it point to the committed state.
@@ -242,11 +294,10 @@ class DimensionValues {
     num_current_elements_ = num_committed_elements_;
     nodes_.resize(num_current_elements_);
     transit_.resize(num_current_elements_);
-    transit_sum_.resize(num_current_elements_);
-    cumul_min_.resize(num_current_elements_);
-    cumul_max_.resize(num_current_elements_);
-    span_min_.Revert();
-    span_max_.Revert();
+    travel_.resize(num_current_elements_);
+    travel_sum_.resize(num_current_elements_);
+    cumul_.resize(num_current_elements_);
+    span_.Revert();
   }
 
   // Makes the committed state point to the current state.
@@ -258,17 +309,16 @@ class DimensionValues {
     }
     changed_paths_.SparseClearAll();
     num_committed_elements_ = num_current_elements_;
-    span_min_.Commit();
-    span_max_.Commit();
+    span_.Commit();
     // If the committed data would take too much space, compact the data:
     // copy committed data to the end of vectors, erase old data, refresh
     // indexing (range_of_path_).
     if (num_current_elements_ <= max_num_committed_elements_) return;
     temp_nodes_.clear();
     temp_transit_.clear();
-    temp_transit_sum_.clear();
-    temp_cumul_min_.clear();
-    temp_cumul_max_.clear();
+    temp_travel_.clear();
+    temp_travel_sum_.clear();
+    temp_cumul_.clear();
     for (int path = 0; path < range_of_path_.size(); ++path) {
       if (committed_range_of_path_[path].Size() == 0) continue;
       const size_t new_begin = temp_nodes_.size();
@@ -277,21 +327,21 @@ class DimensionValues {
                          nodes_.begin() + end);
       temp_transit_.insert(temp_transit_.end(), transit_.begin() + begin,
                            transit_.begin() + end);
-      temp_transit_sum_.insert(temp_transit_sum_.end(),
-                               transit_sum_.begin() + begin,
-                               transit_sum_.begin() + end);
-      temp_cumul_min_.insert(temp_cumul_min_.end(), cumul_min_.begin() + begin,
-                             cumul_min_.begin() + end);
-      temp_cumul_max_.insert(temp_cumul_max_.end(), cumul_max_.begin() + begin,
-                             cumul_max_.begin() + end);
+      temp_travel_.insert(temp_travel_.end(), travel_.begin() + begin,
+                          travel_.begin() + end);
+      temp_travel_sum_.insert(temp_travel_sum_.end(),
+                              travel_sum_.begin() + begin,
+                              travel_sum_.begin() + end);
+      temp_cumul_.insert(temp_cumul_.end(), cumul_.begin() + begin,
+                         cumul_.begin() + end);
       committed_range_of_path_[path] = {.begin = new_begin,
                                         .end = temp_nodes_.size()};
     }
     std::swap(nodes_, temp_nodes_);
     std::swap(transit_, temp_transit_);
-    std::swap(transit_sum_, temp_transit_sum_);
-    std::swap(cumul_min_, temp_cumul_min_);
-    std::swap(cumul_max_, temp_cumul_max_);
+    std::swap(travel_, temp_travel_);
+    std::swap(travel_sum_, temp_travel_sum_);
+    std::swap(cumul_, temp_cumul_);
     range_of_path_ = committed_range_of_path_;
     num_committed_elements_ = nodes_.size();
     num_current_elements_ = nodes_.size();
@@ -310,7 +360,7 @@ class DimensionValues {
   }
 
   // Returns a const view of the transits of the path, in the current state.
-  absl::Span<const int64_t> Transits(int path) const {
+  absl::Span<const Interval> Transits(int path) const {
     auto [begin, end] = range_of_path_[path];
     // When the path is not empty, #transits = #nodes - 1.
     // When the path is empty, begin = end, return empty span.
@@ -319,7 +369,7 @@ class DimensionValues {
   }
 
   // Returns a mutable view of the transits of the path, in the current state.
-  absl::Span<int64_t> MutableTransits(int path) {
+  absl::Span<Interval> MutableTransits(int path) {
     auto [begin, end] = range_of_path_[path];
     // When the path is not empty, #transits = #nodes - 1.
     // When the path is empty, begin = end, return empty span.
@@ -327,56 +377,52 @@ class DimensionValues {
     return absl::MakeSpan(transit_.data() + begin, transit_.data() + end);
   }
 
-  // Returns a const view of the transits sums of the path, in the current
+  // Returns a const view of the travels of the path, in the current
   // state.
-  absl::Span<const int64_t> TransitSums(int path) const {
-    const auto [begin, end] = range_of_path_[path];
-    return absl::MakeConstSpan(transit_sum_.data() + begin,
-                               transit_sum_.data() + end);
+  absl::Span<const int64_t> Travels(int path) const {
+    auto [begin, end] = range_of_path_[path];
+    if (begin < end) --end;
+    return absl::MakeConstSpan(travel_.data() + begin, travel_.data() + end);
   }
 
-  // Returns a mutable view of the transits sums of the path, in the current
+  // Returns a mutable view of the travels of the path, in the current
   // state.
-  absl::Span<int64_t> MutableTransitSums(int path) {
+  absl::Span<int64_t> MutableTravels(int path) {
+    auto [begin, end] = range_of_path_[path];
+    if (begin < end) --end;
+    return absl::MakeSpan(travel_.data() + begin, travel_.data() + end);
+  }
+
+  // Returns a const view of the travel sums of the path, in the current state.
+  absl::Span<const int64_t> TravelSums(int path) const {
     const auto [begin, end] = range_of_path_[path];
-    return absl::MakeSpan(transit_sum_.data() + begin,
-                          transit_sum_.data() + end);
+    return absl::MakeConstSpan(travel_sum_.data() + begin,
+                               travel_sum_.data() + end);
+  }
+
+  // Returns a mutable view of the travel sums of the path in the current state.
+  absl::Span<int64_t> MutableTravelSums(int path) {
+    const auto [begin, end] = range_of_path_[path];
+    return absl::MakeSpan(travel_sum_.data() + begin, travel_sum_.data() + end);
   }
 
   // Returns a const view of the cumul mins of the path, in the current state.
-  absl::Span<const int64_t> CumulMins(int path) const {
+  absl::Span<const Interval> Cumuls(int path) const {
     const auto [begin, end] = range_of_path_[path];
-    return absl::MakeConstSpan(cumul_min_.data() + begin,
-                               cumul_min_.data() + end);
+    return absl::MakeConstSpan(cumul_.data() + begin, cumul_.data() + end);
   }
 
   // Returns a mutable view of the cumul mins of the path, in the current state.
-  absl::Span<int64_t> MutableCumulMins(int path) {
+  absl::Span<Interval> MutableCumuls(int path) {
     const auto [begin, end] = range_of_path_[path];
-    return absl::MakeSpan(cumul_min_.data() + begin, cumul_min_.data() + end);
+    return absl::MakeSpan(cumul_.data() + begin, cumul_.data() + end);
   }
 
-  // Returns a const view of the cumul maxs of the path, in the current state.
-  absl::Span<const int64_t> CumulMaxs(int path) const {
-    const auto [begin, end] = range_of_path_[path];
-    return absl::MakeConstSpan(cumul_max_.data() + begin,
-                               cumul_max_.data() + end);
-  }
-
-  // Returns a mutable view of the cumul maxs of the path, in the current state.
-  absl::Span<int64_t> MutableCumulMaxs(int path) {
-    const auto [begin, end] = range_of_path_[path];
-    return absl::MakeSpan(cumul_max_.data() + begin, cumul_max_.data() + end);
-  }
-
-  // Returns the min span of the path, in the current state.
-  int64_t SpanMin(int path) const { return span_min_.Get(path); }
-  // Returns the max span of the path in the current state.
-  int64_t SpanMax(int path) const { return span_max_.Get(path); }
-  // Sets the min span of the path, in the current state.
-  void SetSpanMin(int path, int64_t value) { span_min_.Set(path, value); }
-  // Sets the max span of the path, in the current state.
-  void SetSpanMax(int path, int64_t value) { span_max_.Set(path, value); }
+  // Returns the span interval of the path, in the current state.
+  Interval Span(int path) const { return span_.Get(path); }
+  // Sets the span interval of the path, in the current state.
+  // TODO(user): replace this with a MutableSpan() method.
+  void SetSpan(int path, Interval interval) { span_.Set(path, interval); }
 
   // Returns the number of nodes of the path, in the current state.
   int NumNodes(int path) const { return range_of_path_[path].Size(); }
@@ -390,17 +436,28 @@ class DimensionValues {
  private:
   // These vectors hold the data of both committed and current states.
   // The ranges below determine which indices are associated to each path and
-  // each state.
+  // each state. It is up to the user to maintain the following invariants:
+  // If range_of_path_[p] == {.begin = b, .end = e}, then, in the current
+  // state:
+  // - nodes_[i] for i in [b, e) are the nodes of the path p.
+  // - cumul_[r] + transit_[r] == cumul_[r+1] for r in [b, e-1).
+  // - travel_[r] <= transit_[r].min for r in [b, e-1).
+  // - travel_sum_[r] == sum_{r' in [0, r')} travel_[r'], for r in [b+1, e)
+  // - cumul[b] + span_[p] == cumul[e-1].
+  //
+  // The same invariants should hold for committed_range_of_path_ and the
+  // committed state.
   std::vector<int> nodes_;
-  std::vector<int64_t> transit_;
-  std::vector<int64_t> transit_sum_;
-  std::vector<int64_t> cumul_min_;
-  std::vector<int64_t> cumul_max_;
+  std::vector<Interval> transit_;
+  std::vector<int64_t> travel_;
+  std::vector<int64_t> travel_sum_;
+  std::vector<Interval> cumul_;
+  // Temporary vectors used in Commit() during compaction.
   std::vector<int> temp_nodes_;
-  std::vector<int64_t> temp_transit_;
-  std::vector<int64_t> temp_transit_sum_;
-  std::vector<int64_t> temp_cumul_min_;
-  std::vector<int64_t> temp_cumul_max_;
+  std::vector<Interval> temp_transit_;
+  std::vector<int64_t> temp_travel_;
+  std::vector<int64_t> temp_travel_sum_;
+  std::vector<Interval> temp_cumul_;
   // A path has a range of indices in the committed state and another one in the
   // current state.
   struct Range {
@@ -411,8 +468,7 @@ class DimensionValues {
   std::vector<Range> range_of_path_;
   std::vector<Range> committed_range_of_path_;
   // Associates span to each path.
-  CommittableVector<int64_t> span_min_;
-  CommittableVector<int64_t> span_max_;
+  CommittableVector<Interval> span_;
   // Stores whether each path has been changed since last committed state.
   SparseBitset<int> changed_paths_;
   // Threshold for the size of the committed vector. This is purely heuristic:
@@ -538,7 +594,7 @@ class PathState {
   class NodeRange;
 
   struct ChainBounds {
-    ChainBounds() {}
+    ChainBounds() = default;
     ChainBounds(int begin_index, int end_index)
         : begin_index(begin_index), end_index(end_index) {}
     int begin_index;
@@ -1074,7 +1130,7 @@ LocalSearchFilter* MakeLightVehicleBreaksFilter(
 // nodes, and does not store them.
 class WeightedWaveletTree {
  public:
-  WeightedWaveletTree() {}
+  WeightedWaveletTree() = default;
 
   // Clears all trees, which invalidates all further range queries on currently
   // existing trees. This does *not* release memory held by this object.
@@ -1302,7 +1358,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
  public:
   BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
                  const PathsMetadata& paths_metadata);
-  ~BasePathFilter() override {}
+  ~BasePathFilter() override = default;
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64_t objective_min, int64_t objective_max) override;
   void OnSynchronize(const Assignment* delta) override;

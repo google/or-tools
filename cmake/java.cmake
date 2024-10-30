@@ -275,12 +275,165 @@ configure_file(
   ${JAVA_NATIVE_PROJECT_DIR}/pom.xml
   @ONLY)
 
+set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
+
+set(need_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
+
+set(need_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
+
+set(need_re2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_re2}>>")
+
+set(need_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
+
+set(need_coinutils_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_CoinUtils}>>")
+set(need_osi_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Osi}>>")
+set(need_clp_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Clp}>>")
+set(need_cgl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cgl}>>")
+set(need_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
+
+set(need_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
+
+set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
+
 add_custom_command(
   OUTPUT ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:jni${JAVA_ARTIFACT}>
-    $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
+    $<${is_ortools_shared}:$<TARGET_SONAME_FILE:ortools>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_zlib_lib},copy,true>
+    $<${need_zlib_lib}:$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_absl_lib},copy,true>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_optional_access>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_variant_access>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::cord_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_functions>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_handle>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_info>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::crc32c>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_cord_state>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_cpu_detect>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::debugging_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::decode_rust_punycode>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::demangle_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::demangle_rust>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::die_if_null>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::examine_stack>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::exponential_biased>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_commandlineflag>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_commandlineflag_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_config>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_marshalling>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_parse>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_private_handle_accessor>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_program_name>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_reflection>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_usage>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_usage_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::graphcycles_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::hash>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::hashtablez_sampler>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::int128>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::kernel_timeout_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::leak_check>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_entry>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_flags>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_globals>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_initialize>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_check_op>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_conditions>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_fnmatch>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_format>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_globals>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_log_sink_set>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_message>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_nullguard>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_proto>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_severity>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::log_sink>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::low_level_hash>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::malloc_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_distributions>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_platform>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_pool_urbg>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes_impl>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_slow>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_seed_material>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_seed_gen_exception>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::random_seed_sequences>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_hash_set>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_logging_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::spinlock_wait>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::stacktrace>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::status>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::statusor>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::str_format_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::strerror>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::string_view>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::strings>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::strings_internal>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::symbolize>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::synchronization>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::throw_delegate>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::time>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::time_zone>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::utf8_for_code_point>>
+    $<${need_absl_lib}:$<TARGET_SONAME_FILE:absl::vlog_config_internal>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_re2_lib},copy,true>
+    $<${need_re2_lib}:$<TARGET_SONAME_FILE:re2::re2>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_protobuf_lib},copy,true>
+    $<${need_protobuf_lib}:$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
+    $<${need_protobuf_lib}:$<TARGET_SONAME_FILE:utf8_validity>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_coinutils_lib},copy,true>
+    $<${need_coinutils_lib}:$<TARGET_SONAME_FILE:Coin::CoinUtils>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_osi_lib},copy,true>
+    $<${need_osi_lib}:$<TARGET_SONAME_FILE:Coin::Osi>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_clp_lib},copy,true>
+    $<${need_clp_lib}:$<TARGET_SONAME_FILE:Coin::Clp>>
+    $<${need_clp_lib}:$<TARGET_SONAME_FILE:Coin::OsiClp>>
+    $<${need_clp_lib}:$<TARGET_SONAME_FILE:Coin::ClpSolver>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_cgl_lib},copy,true>
+    $<${need_cgl_lib}:$<TARGET_SONAME_FILE:Coin::Cgl>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_cbc_lib},copy,true>
+    $<${need_cbc_lib}:$<TARGET_SONAME_FILE:Coin::Cbc>>
+    $<${need_cbc_lib}:$<TARGET_SONAME_FILE:Coin::OsiCbc>>
+    $<${need_cbc_lib}:$<TARGET_SONAME_FILE:Coin::CbcSolver>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_highs_lib},copy,true>
+    $<${need_highs_lib}:$<TARGET_SONAME_FILE:highs>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
   COMMAND ${MAVEN_EXECUTABLE} compile -B
   COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>

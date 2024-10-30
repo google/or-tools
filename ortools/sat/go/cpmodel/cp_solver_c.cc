@@ -14,6 +14,7 @@
 #include "ortools/sat/go/cpmodel/cp_solver_c.h"
 
 #include <atomic>
+#include <string>
 
 #include "absl/log/check.h"
 #include "ortools/base/memutil.h"

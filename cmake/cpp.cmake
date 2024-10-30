@@ -176,6 +176,10 @@ function(ortools_cxx_test)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_TESTING)
+    return()
+  endif()
+
   if(NOT TEST_NAME)
     message(FATAL_ERROR "no NAME provided")
   endif()
@@ -558,11 +562,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   protobuf::libprotobuf
   ${RE2_DEPS}
   ${COINOR_DEPS}
-  $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
-  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
-  $<$<BOOL:${USE_HIGHS}>:highs::highs>
+  ${CPLEX_DEPS}
+  ${GLPK_DEPS}
+  ${HIGHS_DEPS}
   ${PDLP_DEPS}
-  $<$<BOOL:${USE_SCIP}>:libscip>
+  ${SCIP_DEPS}
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
@@ -639,8 +643,7 @@ configure_package_config_file(cmake/${PROJECT_NAME}Config.cmake.in
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-  COMPATIBILITY SameMajorVersion
-  )
+  COMPATIBILITY SameMajorVersion)
 install(
   FILES
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"

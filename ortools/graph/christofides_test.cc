@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
@@ -73,8 +74,12 @@ void TestChristofides(const std::string& name, const int size,
       size, [&cost_mat](int i, int j) { return cost_mat[i][j]; });
   if (!use_minimal_matching) {
     if (use_mip) {
+#if defined(USE_CBC) || defined(USE_SCIP)
       chris_solver.SetMatchingAlgorithm(
           MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING_WITH_MIP);
+#else
+      GTEST_SKIP() << "Test requires CBC or SCIP support.";
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
     } else {
       chris_solver.SetMatchingAlgorithm(
           MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
@@ -108,11 +113,11 @@ TEST(HamiltonianPathTest, Gr17) {
       165, 383, 240, 140, 448, 202, 57,  0,   246, 745, 472, 237, 528, 364,
       332, 349, 202, 685, 542, 157, 289, 426, 483, 0,   121, 518, 142, 84,
       297, 35,  29,  36,  236, 390, 238, 301, 55,  96,  153, 336, 0};
-  TestChristofides("Gr17", kGr17Size, gr17_data, false, true, 2190,
+  TestChristofides("Gr17", kGr17Size, gr17_data, false, /*use_mip=*/true, 2190,
                    "0 12 6 7 5 10 4 1 9 2 14 13 16 3 8 11 15 0 ");
-  TestChristofides("Gr17", kGr17Size, gr17_data, false, false, 2190,
+  TestChristofides("Gr17", kGr17Size, gr17_data, false, /*use_mip=*/false, 2190,
                    "0 12 6 7 5 10 4 1 9 2 14 13 16 3 8 11 15 0 ");
-  TestChristofides("Gr17", kGr17Size, gr17_data, true, false, 2421,
+  TestChristofides("Gr17", kGr17Size, gr17_data, true, /*use_mip=*/false, 2421,
                    "0 12 3 8 11 15 1 4 10 9 2 14 13 16 6 7 5 0 ");
 }
 
@@ -145,13 +150,13 @@ TEST(HamiltonianPathTest, Gr24) {
       261, 239, 165, 151, 221, 0,   121, 142, 99,  84,  35,  29,  42,  36,  220,
       70,  126, 55,  249, 104, 178, 60,  96,  175, 153, 146, 47,  135, 169, 0};
   TestChristofides(
-      "Gr24", kGr24Size, gr24_data, false, true, 1407,
+      "Gr24", kGr24Size, gr24_data, false, /*use_mip=*/true, 1407,
       "0 15 5 6 2 10 7 20 4 9 16 21 17 18 1 14 19 12 8 22 13 23 11 3 0 ");
   TestChristofides(
-      "Gr24", kGr24Size, gr24_data, false, false, 1407,
+      "Gr24", kGr24Size, gr24_data, false, /*use_mip=*/false, 1407,
       "0 15 5 6 2 10 7 20 4 9 16 21 17 18 1 14 19 12 8 22 13 23 11 3 0 ");
   TestChristofides(
-      "Gr24", kGr24Size, gr24_data, true, false, 1607,
+      "Gr24", kGr24Size, gr24_data, true, /*use_mip=*/false, 1607,
       "0 15 5 6 7 20 4 9 16 21 17 18 1 19 14 13 22 8 12 10 2 23 11 3 0 ");
 }
 
@@ -268,7 +273,12 @@ void BM_ChristofidesPathSolver(benchmark::State& state) {
     }
   }
   auto cost = [&costs](int i, int j) { return costs[i][j]; };
+  // TODO: MSVC v19.41 can't convert lambda expression to function.
+#if defined(_MSC_VER)
+  using Cost = std::function<int(int, int)>;
+#else
   using Cost = decltype(cost);
+#endif
   using MatchingAlgorithm =
       typename ChristofidesPathSolver<int, int, int, Cost>::MatchingAlgorithm;
   for (auto _ : state) {

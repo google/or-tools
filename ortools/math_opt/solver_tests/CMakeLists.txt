@@ -20,7 +20,7 @@ ortools_cxx_library(
     "base_solver_test.cc"
     "base_solver_test.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -34,7 +34,7 @@ ortools_cxx_library(
     "callback_tests.cc"
     "callback_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -54,7 +54,7 @@ ortools_cxx_library(
     "status_tests.cc"
     "status_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -70,7 +70,7 @@ ortools_cxx_library(
     "lp_tests.cc"
     "lp_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -86,7 +86,7 @@ ortools_cxx_library(
     "lp_incomplete_solve_tests.cc"
     "lp_incomplete_solve_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -102,7 +102,7 @@ ortools_cxx_library(
     "invalid_input_tests.cc"
     "invalid_input_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -110,15 +110,16 @@ ortools_cxx_library(
   TESTING
 )
 
-ortools_cxx_test(
-  NAME
-    ${_PREFIX}_unregistered_solver_test
-  SOURCES
-    "unregistered_solver_test.cc"
-  LINK_LIBRARIES
-    GTest::gmock
-    GTest::gmock_main
-)
+# In CMake or-tools is linked with all enable solvers so this test won't work.
+#ortools_cxx_test(
+#  NAME
+#    ${_PREFIX}_unregistered_solver_test
+#  SOURCES
+#    "unregistered_solver_test.cc"
+#  LINK_LIBRARIES
+#    GTest::gmock
+#    GTest::gmock_main
+#)
 
 ortools_cxx_library(
   NAME
@@ -127,7 +128,7 @@ ortools_cxx_library(
     "mip_tests.cc"
     "mip_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -144,7 +145,7 @@ ortools_cxx_library(
     "ip_model_solve_parameters_tests.cc"
     "ip_model_solve_parameters_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -160,7 +161,7 @@ ortools_cxx_library(
     "ip_multiple_solutions_tests.cc"
     "ip_multiple_solutions_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::strings
@@ -175,7 +176,7 @@ ortools_cxx_library(
     "lp_model_solve_parameters_tests.cc"
     "lp_model_solve_parameters_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -191,7 +192,7 @@ ortools_cxx_library(
     "lp_parameter_tests.cc"
     "lp_parameter_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -208,9 +209,11 @@ ortools_cxx_library(
     "lp_initial_basis_tests.cc"
     "lp_initial_basis_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
+    GTest::gmock
     absl::log
+    absl::status
     ortools::math_opt_base_solver_test
   TESTING
 )
@@ -222,7 +225,7 @@ ortools_cxx_library(
     "ip_parameter_tests.cc"
     "ip_parameter_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -238,7 +241,7 @@ ortools_cxx_library(
     "multi_objective_tests.cc"
     "multi_objective_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -253,7 +256,7 @@ ortools_cxx_library(
     "qp_tests.cc"
     "qp_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -268,7 +271,7 @@ ortools_cxx_library(
     "qc_tests.cc"
     "qc_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -283,7 +286,7 @@ ortools_cxx_library(
     "second_order_cone_tests.cc"
     "second_order_cone_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -298,7 +301,7 @@ ortools_cxx_library(
     "logical_constraint_tests.cc"
     "logical_constraint_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -313,7 +316,7 @@ ortools_cxx_library(
     "test_models.cc"
     "test_models.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     absl::log
     absl::strings
@@ -341,7 +344,7 @@ ortools_cxx_library(
     "generic_tests.cc"
     "generic_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log
@@ -357,7 +360,7 @@ ortools_cxx_library(
     "infeasible_subsystem_tests.cc"
     "infeasible_subsystem_tests.h"
   TYPE
-    SHARED
+    STATIC
   LINK_LIBRARIES
     GTest::gmock
     absl::log

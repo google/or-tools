@@ -31,6 +31,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -392,6 +393,9 @@ class NeighborhoodGenerator {
     IntegerValue base_objective = IntegerValue(0);
     IntegerValue new_objective = IntegerValue(0);
 
+    // For debugging.
+    int task_id = 0;
+
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
       return std::tie(status, difficulty, deterministic_limit,
@@ -606,9 +610,10 @@ class LocalBranchingLpBasedNeighborhoodGenerator
  public:
   LocalBranchingLpBasedNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, absl::string_view name,
-      ModelSharedTimeLimit* const global_time_limit)
+      ModelSharedTimeLimit* const global_time_limit, SharedClasses* shared)
       : NeighborhoodGenerator(name, helper),
-        global_time_limit_(global_time_limit) {
+        global_time_limit_(global_time_limit),
+        shared_(shared) {
     // Given that we spend time generating a good neighborhood it sounds
     // reasonable to spend a bit more time solving it too.
     deterministic_limit_ = 0.5;
@@ -619,6 +624,7 @@ class LocalBranchingLpBasedNeighborhoodGenerator
 
  private:
   ModelSharedTimeLimit* const global_time_limit_;
+  SharedClasses* const shared_;
 };
 
 // Helper method for the scheduling neighborhood generators. Returns a
