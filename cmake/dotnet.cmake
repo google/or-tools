@@ -362,15 +362,20 @@ file(MAKE_DIRECTORY ${DOTNET_PACKAGES_DIR})
 # *.csproj.in contains:
 # CMake variable(s) (@PROJECT_NAME@) that configure_file() can manage and
 # generator expression ($<TARGET_FILE:...>) that file(GENERATE) can manage.
+set(is_windows "$<PLATFORM_ID:Windows>")
 set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
 
-set(need_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
+set(need_unix_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
+set(need_windows_zlib_lib "$<AND:${is_windows},$<BOOL:${BUILD_ZLIB}>>")
 
-set(need_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
+set(need_unix_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
+set(need_windows_absl_lib "$<AND:${is_windows},$<BOOL:${BUILD_absl}>>")
 
-set(need_re2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_re2}>>")
+set(need_unix_re2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_re2}>>")
+set(need_windows_re2_lib "$<AND:${is_windows},$<BOOL:${BUILD_re2}>>")
 
-set(need_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
+set(need_unix_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
+set(need_windows_protobuf_lib "$<AND:${is_windows},$<BOOL:${BUILD_Protobuf}>>")
 
 set(need_coinutils_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_CoinUtils}>>")
 set(need_osi_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Osi}>>")
@@ -378,7 +383,8 @@ set(need_clp_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Clp}>>")
 set(need_cgl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cgl}>>")
 set(need_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
 
-set(need_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
+set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
+set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
 
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
 
