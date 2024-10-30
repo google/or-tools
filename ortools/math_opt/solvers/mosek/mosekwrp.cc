@@ -4,10 +4,8 @@
 
 #include <cmath>
 #include <limits>
-#include <locale>
 #include <ranges>
 #include <sstream>
-#include <type_traits>
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/status/status.h"
@@ -294,8 +292,10 @@ absl::StatusOr<Mosek::ConeConstraintIndex> Mosek::AppendConeConstraint(
   if (nnz != cof.size() || nnz != subj.size())
     return absl::InvalidArgumentError(
         "Mismatching argument lengths of subj and cof");
-  if (n != b.size())
-    return absl::InvalidArgumentError("Mismatching argument lengths b and ptr");
+  if (n != b.size()) {
+    std::cout << "   -- b.size() = " << b.size() << ", sizes.size() = " << sizes.size() << std::endl;
+    return absl::InvalidArgumentError("Mismatching argument lengths b and sizes");
+  }
 
   switch (ct) {
     case ConeType::SecondOrderCone:

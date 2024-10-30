@@ -30,7 +30,8 @@ absl::StatusOr<std::tuple<double,std::vector<double>>> basic_markowitz(
     const std::vector<double> & GT,
     const std::vector<double> & x0,
     double w,
-    double gamma) {
+    double gamma,
+    math_opt::SolverType st) {
    
   math_opt::Model model("portfolio_1_basic");
   size_t n = mu.size();
@@ -41,7 +42,8 @@ absl::StatusOr<std::tuple<double,std::vector<double>>> basic_markowitz(
 
   model.Maximize(LinearExpression::InnerProduct(x,mu));
 
-  model.AddLinearConstraint(LinearExpression::Sum(x) == 0.0, "Budget");
+  double totalwealth = w; for (double v : x0) w += v;
+  model.AddLinearConstraint(LinearExpression::Sum(x) == totalwealth, "Budget");
 
   std::vector<math_opt::LinearExpression> linear_to_norm;
   for (int i = 0; i < m; ++i) {
@@ -55,7 +57,7 @@ absl::StatusOr<std::tuple<double,std::vector<double>>> basic_markowitz(
 
   // Solve and ensure an optimal solution was found with no errors.
   const absl::StatusOr<math_opt::SolveResult> result =
-      math_opt::Solve(model, math_opt::SolverType::kMosek, args);
+      math_opt::Solve(model, st, args);
   if (! result.ok())
     return result.status();
 
@@ -68,7 +70,6 @@ absl::StatusOr<std::tuple<double,std::vector<double>>> basic_markowitz(
 }
 
 int main(int argc, char ** argv) {
-
     const int        n      = 8;
     const double     w      = 59.0;
     std::vector<double> mu = {0.07197349, 0.15518171, 0.17535435, 0.0898094 , 0.42895777, 0.39291844, 0.32170722, 0.18378628};
@@ -85,10 +86,10 @@ int main(int argc, char ** argv) {
         0.     , 0.     , 0.     , 0.     , 0.     , 0.     , 0.     , 0.2202 };
   
 
-    auto res = basic_markowitz(mu,GT,x0,w,gamma);
+    auto res = basic_markowitz(mu,GT,x0,w,gamma,math_opt::SolverType::kMosek);
 
     if (! res.ok()) {
-      std::cerr << "Failed to solve problem" << std::endl;
+      std::cerr << "Failed to solve problem: " << res.status() << std::endl;
     }
     else {
       auto &[pobj,xx] = *res;

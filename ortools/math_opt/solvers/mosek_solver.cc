@@ -446,6 +446,11 @@ absl::Status MosekSolver::AddConicConstraints(
 
   sizes.reserve(cons.size());
   for (const auto& [idx, con] : cons) {
+    subj.clear();
+    cof.clear();
+    sizes.clear();
+    b.clear();
+
     auto& expr0 = con.upper_bound();
     int64_t totalnnz = expr0.ids_size();
     for (const auto& lexp : con.arguments_to_norm()) {
@@ -454,14 +459,17 @@ absl::Status MosekSolver::AddConicConstraints(
 
     subj.reserve(totalnnz);
     cof.reserve(totalnnz);
-    b.push_back(expr0.offset());
 
-    for (const auto& id : expr0.ids()) {
+    b.push_back(expr0.offset());
+    for (const auto& expri : con.arguments_to_norm()) {
+      b.push_back(expri.offset());
+    }
+
+    sizes.push_back(expr0.ids_size());
+    for (const auto& id : expr0.ids()) 
       subj.push_back(variable_map[id]);
-    }
-    for (auto c : expr0.coefficients()) {
+    for (auto c : expr0.coefficients()) 
       cof.push_back(c);
-    }
 
     for (const auto& expri : con.arguments_to_norm()) {
       sizes.push_back(expri.ids_size());
@@ -471,7 +479,6 @@ absl::Status MosekSolver::AddConicConstraints(
       for (auto c : expri.coefficients()) {
         cof.push_back(c);
       }
-      b.push_back(expri.offset());
     }
 
     auto acci = msk.AppendConeConstraint(Mosek::ConeType::SecondOrderCone,
@@ -696,14 +703,6 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> MosekSolver::New(
   if (!model.auxiliary_objectives().empty())
     return util::InvalidArgumentErrorBuilder()
            << "Mosek does not support multi-objective models";
-  //if (!model.objective().quadratic_coefficients().row_ids().empty()) {
-  //  return util::InvalidArgumentErrorBuilder()
-  //         << "Mosek does not support models with quadratic objectives";
-  //}
-  //if (!model.quadratic_constraints().empty()) {
-  //  return util::InvalidArgumentErrorBuilder()
-  //         << "Mosek does not support models with quadratic constraints";
-  // }
   if (!model.sos1_constraints().empty() || !model.sos2_constraints().empty()) {
     return util::InvalidArgumentErrorBuilder()
            << "Mosek does not support models with SOS constraints";
@@ -717,12 +716,15 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> MosekSolver::New(
   RETURN_IF_ERROR(mskslv->ReplaceObjective(model.objective()));
   RETURN_IF_ERROR(mskslv->AddConstraints(model.linear_constraints(),
                                          model.linear_constraint_matrix()));
+  RETURN_IF_ERROR(mskslv->AddConicConstraints(model.second_order_cone_constraints()));
   for (auto &[k,v] : model.quadratic_constraints())
     RETURN_IF_ERROR(mskslv->AddConstraint(k,v));
   RETURN_IF_ERROR(
       mskslv->AddIndicatorConstraints(model.indicator_constraints()));
 
   std::unique_ptr<SolverInterface> res(std::move(mskslv));
+
+  //std::cout << " ---------- MosekSolver::New" << std::endl;
 
   return res;
 }
@@ -999,7 +1001,6 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
   // - EmphasisProto heuristics
   // - EmphasisProto scaling
   
-
   auto solve_start = absl::Now();
 
   double dpar_optimizer_max_time = msk.GetParam(MSK_DPAR_OPTIMIZER_MAX_TIME);
@@ -1153,7 +1154,7 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
   {
     BufferedMessageCallback bmsg_cb(message_cb);
     // TODO: Use model_parameters
-    msk.WriteData("test.opf");
+    //msk.WriteData("test.ptf");
     auto r = msk.Optimize(
         [&](const std::string& msg) { bmsg_cb.OnMessage(msg); },
         [&](MSKcallbackcodee code, absl::Span<const double> dinf,
@@ -1348,14 +1349,6 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
           if (r.ok()) { 
             *result.add_solutions() = std::move(*r);
           }
-          //if (msk.IsMaximize()) {
-          //  result.mutable_termination()->mutable_objective_bounds()->set_primal_bound(- std::numeric_limits<double>::infinity());
-          //  result.mutable_termination()->mutable_objective_bounds()->set_dual_bound(std::numeric_limits<double>::infinity());
-          //} 
-          //else {
-          //  result.mutable_termination()->mutable_objective_bounds()->set_primal_bound(std::numeric_limits<double>::infinity());
-          //  result.mutable_termination()->mutable_objective_bounds()->set_dual_bound(- std::numeric_limits<double>::infinity());
-          //}
         }
         break;
       case mosek::SolSta::DUAL_INFEAS_CER: {
@@ -1401,4 +1394,4 @@ MosekSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_MOSEK, MosekSolver::New);
 
-}  // namespace operations_research::math_opt
+} // namespace operations_research::math_opt
