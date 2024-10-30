@@ -197,7 +197,7 @@ new_git_repository(
     build_file_content =
 """
 cc_library(
-    name = 'eigen3',
+    name = 'eigen',
     srcs = [],
     includes = ['.'],
     hdrs = glob(['Eigen/**', 'unsupported/**']),
