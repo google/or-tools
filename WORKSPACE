@@ -169,6 +169,7 @@ http_archive(
     build_file = "//bazel:glpk.BUILD.bazel",
     sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
     url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
+    strip_prefix = "glpk-5.0",
 )
 
 http_archive(
