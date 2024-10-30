@@ -290,11 +290,11 @@ set(need_windows_re2_lib "$<AND:${is_windows},$<BOOL:${BUILD_re2}>>")
 set(need_unix_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
 set(need_windows_protobuf_lib "$<AND:${is_windows},$<BOOL:${BUILD_Protobuf}>>")
 
-set(need_coinutils_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_CoinUtils}>>")
-set(need_osi_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Osi}>>")
-set(need_clp_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Clp}>>")
-set(need_cgl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cgl}>>")
-set(need_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
+set(need_unix_coinutils_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_CoinUtils}>>")
+set(need_unix_osi_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Osi}>>")
+set(need_unix_clp_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Clp}>>")
+set(need_unix_cgl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cgl}>>")
+set(need_unix_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
 
 set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
 set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
@@ -417,28 +417,28 @@ add_custom_command(
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:${need_coinutils_lib},copy,true>
-    $<${need_coinutils_lib}:$<TARGET_SONAME_FILE:Coin::CoinUtils>>
+    $<IF:${need_unix_coinutils_lib},copy,true>
+    $<${need_unix_coinutils_lib}:$<TARGET_SONAME_FILE:Coin::CoinUtils>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:${need_osi_lib},copy,true>
-    $<${need_osi_lib}:$<TARGET_SONAME_FILE:Coin::Osi>>
+    $<IF:${need_unix_osi_lib},copy,true>
+    $<${need_unix_osi_lib}:$<TARGET_SONAME_FILE:Coin::Osi>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:${need_clp_lib},copy,true>
-    $<${need_clp_lib}:$<TARGET_SONAME_FILE:Coin::Clp>>
-    $<${need_clp_lib}:$<TARGET_SONAME_FILE:Coin::OsiClp>>
-    $<${need_clp_lib}:$<TARGET_SONAME_FILE:Coin::ClpSolver>>
+    $<IF:${need_unix_clp_lib},copy,true>
+    $<${need_unix_clp_lib}:$<TARGET_SONAME_FILE:Coin::Clp>>
+    $<${need_unix_clp_lib}:$<TARGET_SONAME_FILE:Coin::OsiClp>>
+    $<${need_unix_clp_lib}:$<TARGET_SONAME_FILE:Coin::ClpSolver>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:${need_cgl_lib},copy,true>
-    $<${need_cgl_lib}:$<TARGET_SONAME_FILE:Coin::Cgl>>
+    $<IF:${need_unix_cgl_lib},copy,true>
+    $<${need_unix_cgl_lib}:$<TARGET_SONAME_FILE:Coin::Cgl>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:${need_cbc_lib},copy,true>
-    $<${need_cbc_lib}:$<TARGET_SONAME_FILE:Coin::Cbc>>
-    $<${need_cbc_lib}:$<TARGET_SONAME_FILE:Coin::OsiCbc>>
-    $<${need_cbc_lib}:$<TARGET_SONAME_FILE:Coin::CbcSolver>>
+    $<IF:${need_unix_cbc_lib},copy,true>
+    $<${need_unix_cbc_lib}:$<TARGET_SONAME_FILE:Coin::Cbc>>
+    $<${need_unix_cbc_lib}:$<TARGET_SONAME_FILE:Coin::OsiCbc>>
+    $<${need_unix_cbc_lib}:$<TARGET_SONAME_FILE:Coin::CbcSolver>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${CMAKE_COMMAND} -E
