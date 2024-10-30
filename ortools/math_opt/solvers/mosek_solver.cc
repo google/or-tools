@@ -20,36 +20,29 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cwctype>
-//#include <ios>
-//#include <limits>
 #include <limits>
 #include <memory>
 #include <optional>
-//#include <span>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
 #include "absl/cleanup/cleanup.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "mosek.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
-//#include "ortools/math_opt/core/empty_bounds.h"
-//#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
-//#include "ortools/math_opt/core/sorted.h"
-//#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -70,7 +63,6 @@ constexpr SupportedProblemStructures kMosekSupportedStructures = {
     .second_order_cone_constraints = SupportType::kSupported,
     .indicator_constraints = SupportType::kSupported,
 };
-
 
 }  // namespace
 
@@ -203,88 +195,94 @@ absl::Status MosekSolver::ReplaceObjective(const ObjectiveProto& obj) {
   }
   RETURN_IF_ERROR(msk.PutC(c));
 
-  // quadratic terms 
+  // quadratic terms
   if (obj.quadratic_coefficients().row_ids_size() > 0) {
     std::vector<int> subk;
     std::vector<int> subl;
     std::vector<double> val;
 
-    SparseDoubleMatrixToTril(obj.quadratic_coefficients(),subk,subl,val);
-    //std::cerr << "subk,subl,val: " << subk.size() << "," << subl.size() << "," << val.size() << std::endl;
-    //for (auto [ik,il,iv] = std::make_tuple(subk.begin(),subl.begin(),val.begin());
-    //    ik != subk.end();
-    //    ++ik,++il,++iv)
-    //  std::cerr << "  -- [" << *ik << "," << *il << "]: " << *iv << std::endl;
-    RETURN_IF_ERROR(msk.PutQObj(subk,subl,val));
+    SparseDoubleMatrixToTril(obj.quadratic_coefficients(), subk, subl, val);
+    // std::cerr << "subk,subl,val: " << subk.size() << "," << subl.size() <<
+    // "," << val.size() << std::endl; for (auto [ik,il,iv] =
+    // std::make_tuple(subk.begin(),subl.begin(),val.begin());
+    //     ik != subk.end();
+    //     ++ik,++il,++iv)
+    //   std::cerr << "  -- [" << *ik << "," << *il << "]: " << *iv <<
+    //   std::endl;
+    RETURN_IF_ERROR(msk.PutQObj(subk, subl, val));
   }
 
   return absl::OkStatus();
 }  // MosekSolver::ReplaceObjective
 
 void MosekSolver::SparseDoubleMatrixToTril(const SparseDoubleMatrixProto& qdata,
-                                      std::vector<int>& subk,
-                                      std::vector<int>& subl,
-                                      std::vector<double>& val) {
+                                           std::vector<int>& subk,
+                                           std::vector<int>& subl,
+                                           std::vector<double>& val) {
   if (qdata.row_ids_size() > 0) {
     // NOTE: this specifies the full Q matrix, and we assume that it is
     // symmetric and only specifies the lower triangular part.
     size_t nqnz = qdata.row_ids_size();
-    std::vector<std::tuple<int,int,double>> subklv; subklv.reserve(nqnz);
+    std::vector<std::tuple<int, int, double>> subklv;
+    subklv.reserve(nqnz);
     for (auto [kit, lit, cit] = std::make_tuple(qdata.row_ids().begin(),
                                                 qdata.column_ids().begin(),
                                                 qdata.coefficients().begin());
          kit != qdata.row_ids().end() && lit != qdata.column_ids().end() &&
          cit != qdata.coefficients().end();
          ++kit, ++lit, ++cit) {
-
-      if (variable_map.contains(*kit) &&
-          variable_map.contains(*lit)) {
+      if (variable_map.contains(*kit) && variable_map.contains(*lit)) {
         int k = variable_map[*kit];
         int l = variable_map[*lit];
         double v = *cit;
-      
 
         if (k < l) {
-          subklv.push_back({l,k,v});
-        }
-        else {
-          subklv.push_back({k,l,v});
+          subklv.push_back({l, k, v});
+        } else {
+          subklv.push_back({k, l, v});
         }
       }
     }
 
-    std::sort(subklv.begin(),subklv.end());
+    std::sort(subklv.begin(), subklv.end());
 
-    // count 
-    size_t nunique = 0; 
+    // count
+    size_t nunique = 0;
     {
-      int prevk = -1,prevl = -1;
-      for (auto [k,l,v] : subklv) {
+      int prevk = -1, prevl = -1;
+      for (auto [k, l, v] : subklv) {
         if (prevk != k || prevl != l) {
-          ++nunique; prevk = k; prevl = l;
+          ++nunique;
+          prevk = k;
+          prevl = l;
         }
       }
     }
-   
-    subk.clear(); subk.reserve(nunique);
-    subl.clear(); subl.reserve(nunique);
-    val.clear();  val.reserve(nunique);
 
-    int prevk = -1,prevl = -1;
-    for (auto [k,l,v] : subklv) {
+    subk.clear();
+    subk.reserve(nunique);
+    subl.clear();
+    subl.reserve(nunique);
+    val.clear();
+    val.reserve(nunique);
+
+    int prevk = -1, prevl = -1;
+    for (auto [k, l, v] : subklv) {
       if (prevk == k && prevl == l) {
         val.back() += v;
-      }
-      else {
-        subk.push_back(k); prevk = k;
-        subl.push_back(l); prevl = l;
+      } else {
+        subk.push_back(k);
+        prevk = k;
+        subl.push_back(l);
+        prevl = l;
         val.push_back(v);
       }
     }
   }
 }
 
-absl::Status MosekSolver::AddConstraint(int64_t id, const QuadraticConstraintProto& cons) {
+absl::Status MosekSolver::AddConstraint(int64_t id,
+                                        const QuadraticConstraintProto& cons) {
   int coni = msk.NumCon();
   double clb = cons.lower_bound();
   double cub = cons.upper_bound();
@@ -294,12 +292,15 @@ absl::Status MosekSolver::AddConstraint(int64_t id, const QuadraticConstraintPro
   }
 
   size_t nnz = cons.linear_terms().ids_size();
-  std::vector<Mosek::VariableIndex> subj; subj.reserve(nnz);
-  std::vector<double> val; val.reserve(nnz);
+  std::vector<Mosek::VariableIndex> subj;
+  subj.reserve(nnz);
+  std::vector<double> val;
+  val.reserve(nnz);
 
-  for (const auto id : cons.linear_terms().ids()) subj.push_back(variable_map[id]);
+  for (const auto id : cons.linear_terms().ids())
+    subj.push_back(variable_map[id]);
   for (const auto c : cons.linear_terms().values()) val.push_back(c);
-  RETURN_IF_ERROR(msk.PutARow(coni,subj, val));
+  RETURN_IF_ERROR(msk.PutARow(coni, subj, val));
 
   // quadratic terms
 
@@ -308,9 +309,9 @@ absl::Status MosekSolver::AddConstraint(int64_t id, const QuadraticConstraintPro
     std::vector<int> subl;
     std::vector<double> val;
 
-    SparseDoubleMatrixToTril(cons.quadratic_terms(),subk,subl,val);
+    SparseDoubleMatrixToTril(cons.quadratic_terms(), subk, subl, val);
 
-    RETURN_IF_ERROR(msk.PutQCon(coni,subk,subl,val));
+    RETURN_IF_ERROR(msk.PutQCon(coni, subk, subl, val));
   }
 
   quadconstr_map[id] = coni;
@@ -466,10 +467,8 @@ absl::Status MosekSolver::AddConicConstraints(
     }
 
     sizes.push_back(expr0.ids_size());
-    for (const auto& id : expr0.ids()) 
-      subj.push_back(variable_map[id]);
-    for (auto c : expr0.coefficients()) 
-      cof.push_back(c);
+    for (const auto& id : expr0.ids()) subj.push_back(variable_map[id]);
+    for (auto c : expr0.coefficients()) cof.push_back(c);
 
     for (const auto& expri : con.arguments_to_norm()) {
       sizes.push_back(expri.ids_size());
@@ -524,15 +523,17 @@ absl::StatusOr<bool> MosekSolver::Update(const ModelUpdateProto& model_update) {
     }
   }
 
-  for (auto id : model_update.quadratic_constraint_updates().deleted_constraint_ids()) {
+  for (auto id :
+       model_update.quadratic_constraint_updates().deleted_constraint_ids()) {
     if (quadconstr_map.contains(id)) {
       int i = quadconstr_map[id];
       quadconstr_map.erase(id);
       RETURN_IF_ERROR(msk.ClearConstraint(i));
     }
   }
-  
-  for (auto &[id,con] : model_update.quadratic_constraint_updates().new_constraints()) {
+
+  for (auto& [id, con] :
+       model_update.quadratic_constraint_updates().new_constraints()) {
     RETURN_IF_ERROR(AddConstraint(id, con));
   }
 
@@ -617,19 +618,17 @@ absl::Status MosekSolver::UpdateObjective(
   for (auto id : objupds.linear_coefficients().ids())
     subj.push_back(variable_map[id]);
 
-  
   if (objupds.quadratic_coefficients().column_ids_size() > 0) {
     // note: this specifies the full q matrix, and we assume that it is
     // symmetric and only specifies the lower triangular part.
-    auto & qobj = objupds.quadratic_coefficients();
+    auto& qobj = objupds.quadratic_coefficients();
     size_t nqnz = qobj.row_ids_size();
-    std::vector<std::tuple<int,int,double>> subklv; subklv.reserve(nqnz);
-    for (auto [kit,lit,cit] = std::make_tuple(
-             qobj.row_ids().begin(),
-             qobj.column_ids().begin(),
-             qobj.coefficients().begin());
-         kit != qobj.row_ids().end() &&
-         lit != qobj.column_ids().end() &&
+    std::vector<std::tuple<int, int, double>> subklv;
+    subklv.reserve(nqnz);
+    for (auto [kit, lit, cit] =
+             std::make_tuple(qobj.row_ids().begin(), qobj.column_ids().begin(),
+                             qobj.coefficients().begin());
+         kit != qobj.row_ids().end() && lit != qobj.column_ids().end() &&
          cit != qobj.coefficients().end();
          ++kit, ++lit, ++cit) {
       int k = variable_map[*kit];
@@ -637,37 +636,34 @@ absl::Status MosekSolver::UpdateObjective(
       int v = variable_map[*cit];
 
       if (k < l) {
-        subklv.push_back({l,k,v});
-      }
-      else {
-        subklv.push_back({k,l,v});
+        subklv.push_back({l, k, v});
+      } else {
+        subklv.push_back({k, l, v});
       }
     }
 
-    std::sort(subklv.begin(),subklv.end());
-    
-    std::vector<int> subk; subk.reserve(nqnz);
-    std::vector<int> subl; subl.reserve(nqnz);
-    std::vector<double> val; val.reserve(nqnz);
+    std::sort(subklv.begin(), subklv.end());
 
-    int prevk = -1,prevl = -1;
-    for (auto [k,l,v] : subklv) {
+    std::vector<int> subk;
+    subk.reserve(nqnz);
+    std::vector<int> subl;
+    subl.reserve(nqnz);
+    std::vector<double> val;
+    val.reserve(nqnz);
+
+    int prevk = -1, prevl = -1;
+    for (auto [k, l, v] : subklv) {
       if (prevk == k && prevl == l) {
         val.back() += v;
-      }
-      else {
-        subk.push_back(k); prevk = k;
-        subk.push_back(l); prevl = l;
+      } else {
+        subk.push_back(k);
+        prevk = k;
+        subk.push_back(l);
+        prevl = l;
         val.push_back(v);
       }
     }
-
   }
-
-
-
-
-
 
   RETURN_IF_ERROR(msk.UpdateObjectiveSense(objupds.direction_update()));
   RETURN_IF_ERROR(msk.UpdateObjective(objupds.offset_update(), subj, cof));
@@ -716,15 +712,16 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> MosekSolver::New(
   RETURN_IF_ERROR(mskslv->ReplaceObjective(model.objective()));
   RETURN_IF_ERROR(mskslv->AddConstraints(model.linear_constraints(),
                                          model.linear_constraint_matrix()));
-  RETURN_IF_ERROR(mskslv->AddConicConstraints(model.second_order_cone_constraints()));
-  for (auto &[k,v] : model.quadratic_constraints())
-    RETURN_IF_ERROR(mskslv->AddConstraint(k,v));
+  RETURN_IF_ERROR(
+      mskslv->AddConicConstraints(model.second_order_cone_constraints()));
+  for (auto& [k, v] : model.quadratic_constraints())
+    RETURN_IF_ERROR(mskslv->AddConstraint(k, v));
   RETURN_IF_ERROR(
       mskslv->AddIndicatorConstraints(model.indicator_constraints()));
 
   std::unique_ptr<SolverInterface> res(std::move(mskslv));
 
-  //std::cout << " ---------- MosekSolver::New" << std::endl;
+  // std::cout << " ---------- MosekSolver::New" << std::endl;
 
   return res;
 }
@@ -1000,7 +997,7 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
   // - EmphasisProto cuts
   // - EmphasisProto heuristics
   // - EmphasisProto scaling
-  
+
   auto solve_start = absl::Now();
 
   double dpar_optimizer_max_time = msk.GetParam(MSK_DPAR_OPTIMIZER_MAX_TIME);
@@ -1154,7 +1151,7 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
   {
     BufferedMessageCallback bmsg_cb(message_cb);
     // TODO: Use model_parameters
-    //msk.WriteData("test.ptf");
+    // msk.WriteData("test.ptf");
     auto r = msk.Optimize(
         [&](const std::string& msg) { bmsg_cb.OnMessage(msg); },
         [&](MSKcallbackcodee code, absl::Span<const double> dinf,
@@ -1267,13 +1264,13 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
 
     if (solsta == mosek::SolSta::OPTIMAL ||
         solsta == mosek::SolSta::INTEGER_OPTIMAL) {
-
       trmp = OptimalTerminationProto(msk.GetPrimalObj(whichsol),
-                                     msk.GetDualObj(whichsol), 
-                                     "");
-      // Hack: 
-      trmp.mutable_objective_bounds()->set_primal_bound(trmp.objective_bounds().primal_bound());
-      trmp.mutable_objective_bounds()->set_dual_bound(trmp.objective_bounds().dual_bound());
+                                     msk.GetDualObj(whichsol), "");
+      // Hack:
+      trmp.mutable_objective_bounds()->set_primal_bound(
+          trmp.objective_bounds().primal_bound());
+      trmp.mutable_objective_bounds()->set_dual_bound(
+          trmp.objective_bounds().dual_bound());
 
     } else if (solsta == mosek::SolSta::PRIM_INFEAS_CER)
       trmp = InfeasibleTerminationProto(
@@ -1341,16 +1338,14 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
       case mosek::SolSta::INTEGER_OPTIMAL:
       case mosek::SolSta::PRIM_FEAS:
       case mosek::SolSta::DUAL_FEAS:
-      case mosek::SolSta::PRIM_AND_DUAL_FEAS: 
-        {
-          auto r = Solution(whichsol, ordered_xc_ids, ordered_xx_ids,
-                            skip_xx_zeros, ordered_y_ids, skip_y_zeros,
-                            ordered_yx_ids, skip_yx_zeros);          
-          if (r.ok()) { 
-            *result.add_solutions() = std::move(*r);
-          }
+      case mosek::SolSta::PRIM_AND_DUAL_FEAS: {
+        auto r = Solution(whichsol, ordered_xc_ids, ordered_xx_ids,
+                          skip_xx_zeros, ordered_y_ids, skip_y_zeros,
+                          ordered_yx_ids, skip_yx_zeros);
+        if (r.ok()) {
+          *result.add_solutions() = std::move(*r);
         }
-        break;
+      } break;
       case mosek::SolSta::DUAL_INFEAS_CER: {
         auto r = PrimalRay(whichsol, ordered_xx_ids, skip_xx_zeros);
         if (r.ok()) {
@@ -1371,12 +1366,14 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
     }
   }
 
-  SolveStatsProto * stats = result.mutable_solve_stats();
-  stats->set_simplex_iterations(msk.GetIntInfoItem(MSK_IINF_SIM_PRIMAL_ITER)+msk.GetIntInfoItem(MSK_IINF_SIM_DUAL_ITER));
+  SolveStatsProto* stats = result.mutable_solve_stats();
+  stats->set_simplex_iterations(msk.GetIntInfoItem(MSK_IINF_SIM_PRIMAL_ITER) +
+                                msk.GetIntInfoItem(MSK_IINF_SIM_DUAL_ITER));
   stats->set_barrier_iterations(msk.GetIntInfoItem(MSK_IINF_INTPNT_ITER));
   stats->set_node_count(msk.GetIntInfoItem(MSK_IINF_MIO_NUM_SOLVED_NODES));
 
-  auto solve_time_proto = util_time::EncodeGoogleApiProto(absl::Now() - solve_start);
+  auto solve_time_proto =
+      util_time::EncodeGoogleApiProto(absl::Now() - solve_start);
   if (solve_time_proto.ok()) {
     *stats->mutable_solve_time() = *solve_time_proto;
   }
@@ -1394,4 +1391,4 @@ MosekSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_MOSEK, MosekSolver::New);
 
-} // namespace operations_research::math_opt
+}  // namespace operations_research::math_opt
