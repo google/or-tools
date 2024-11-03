@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ortools/util/optional_boolean.pb.h"
 
 namespace operations_research::routing {
 
@@ -41,6 +42,19 @@ GetLocalCheapestInsertionSortingProperties(
         RoutingSearchParameters::SORTING_PROPERTY_PENALTY);
   }
   return sorting_properties;
+}
+
+void DisableAllLocalSearchOperators(
+    RoutingSearchParameters::LocalSearchNeighborhoodOperators* operators) {
+  const auto* reflection = operators->GetReflection();
+  const auto* descriptor = operators->GetDescriptor();
+  const auto* false_enum =
+      OptionalBoolean_descriptor()->FindValueByName("BOOL_FALSE");
+  for (int /*this is NOT the field's tag number*/ field_index = 0;
+       field_index < descriptor->field_count(); ++field_index) {
+    const auto* field = descriptor->field(field_index);
+    reflection->SetEnum(operators, field, false_enum);
+  }
 }
 
 }  // namespace operations_research::routing

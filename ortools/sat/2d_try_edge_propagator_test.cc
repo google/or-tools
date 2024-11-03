@@ -14,11 +14,13 @@
 #include "ortools/sat/2d_try_edge_propagator.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <optional>
 #include <utility>
 #include <vector>
 
 #include "absl/random/random.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
@@ -40,21 +42,10 @@ using ::testing::UnorderedElementsAre;
 
 class TryEdgeRectanglePropagatorForTest : public TryEdgeRectanglePropagator {
  public:
-  explicit TryEdgeRectanglePropagatorForTest(
-      Model* model, std::vector<RectangleInRange> active_box_ranges)
-      : TryEdgeRectanglePropagator(true, true, GetHelperFromModel(model),
-                                   GetHelperFromModel(model), model) {
-    active_box_ranges_ = std::move(active_box_ranges);
-  }
-
-  void PopulateActiveBoxRanges() override {
-    max_box_index_ = 0;
-    for (const RectangleInRange& range : active_box_ranges_) {
-      if (range.box_index > max_box_index_) {
-        max_box_index_ = range.box_index;
-      }
-    }
-  }
+  TryEdgeRectanglePropagatorForTest(bool x_is_forward, bool y_is_forward,
+                                    SchedulingConstraintHelper* x,
+                                    SchedulingConstraintHelper* y, Model* model)
+      : TryEdgeRectanglePropagator(x_is_forward, y_is_forward, x, y, model) {}
 
   bool ExplainAndPropagate(
       const std::vector<std::pair<int, std::optional<IntegerValue>>>&
@@ -78,6 +69,35 @@ class TryEdgeRectanglePropagatorForTest : public TryEdgeRectanglePropagator {
 
   std::vector<std::pair<int, std::optional<IntegerValue>>> propagations_;
 };
+
+std::pair<SchedulingConstraintHelper*, SchedulingConstraintHelper*>
+CreateHelper(Model* model,
+             absl::Span<const RectangleInRange> active_box_ranges) {
+  std::vector<IntervalVariable> x_intervals;
+  std::vector<IntervalVariable> y_intervals;
+  for (const RectangleInRange& active_box_range : active_box_ranges) {
+    const int64_t x_start_min = active_box_range.bounding_area.x_min.value();
+    const int64_t x_end_max = active_box_range.bounding_area.x_max.value();
+    const int64_t x_size = active_box_range.x_size.value();
+
+    const int64_t y_start_min = active_box_range.bounding_area.y_min.value();
+    const int64_t y_end_max = active_box_range.bounding_area.y_max.value();
+    const int64_t y_size = active_box_range.y_size.value();
+
+    const IntervalVariable x_interval =
+        model->Add(NewInterval(x_start_min, x_end_max, x_size));
+
+    const IntervalVariable y_interval =
+        model->Add(NewInterval(y_start_min, y_end_max, y_size));
+
+    x_intervals.push_back(x_interval);
+    y_intervals.push_back(y_interval);
+  }
+  return {
+      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(x_intervals),
+      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          y_intervals)};
+}
 
 TEST(TryEdgeRectanglePropagatorTest, Simple) {
   //  **********
@@ -105,19 +125,31 @@ TEST(TryEdgeRectanglePropagatorTest, Simple) {
        .x_size = 5,
        .y_size = 5},
   };
-  Model model;
-  TryEdgeRectanglePropagatorForTest propagator(&model, active_box_ranges);
-  propagator.Propagate();
-  EXPECT_THAT(propagator.propagations(),
-              UnorderedElementsAre(Pair(2, IntegerValue(5))));
+
+  {
+    Model model;
+    auto [x_helper, y_helper] = CreateHelper(&model, active_box_ranges);
+
+    TryEdgeRectanglePropagatorForTest propagator(true, true, x_helper, y_helper,
+                                                 &model);
+    propagator.Propagate();
+    EXPECT_THAT(propagator.propagations(),
+                UnorderedElementsAre(Pair(2, IntegerValue(5))));
+  }
 
   // Now the same thing, but makes it a conflict
-  active_box_ranges[2].bounding_area.x_min = 0;
-  active_box_ranges[2].bounding_area.x_max = 5;
-  TryEdgeRectanglePropagatorForTest propagator2(&model, active_box_ranges);
-  propagator2.Propagate();
-  EXPECT_THAT(propagator2.propagations(),
-              UnorderedElementsAre(Pair(2, std::nullopt)));
+  {
+    active_box_ranges[2].bounding_area.x_min = 0;
+    active_box_ranges[2].bounding_area.x_max = 5;
+    Model model;
+    auto [x_helper, y_helper] = CreateHelper(&model, active_box_ranges);
+
+    TryEdgeRectanglePropagatorForTest propagator(true, true, x_helper, y_helper,
+                                                 &model);
+    propagator.Propagate();
+    EXPECT_THAT(propagator.propagations(),
+                UnorderedElementsAre(Pair(2, std::nullopt)));
+  }
 }
 
 TEST(TryEdgeRectanglePropagatorTest, NoConflictForFeasible) {
@@ -133,8 +165,11 @@ TEST(TryEdgeRectanglePropagatorTest, NoConflictForFeasible) {
     std::shuffle(rectangles.begin(), rectangles.end(), bit_gen);
     const std::vector<RectangleInRange> input_in_range =
         MakeItemsFromRectangles(rectangles, 0.6, bit_gen);
+    Model model;
+    auto [x_helper, y_helper] = CreateHelper(&model, input_in_range);
 
-    TryEdgeRectanglePropagatorForTest propagator(&model, input_in_range);
+    TryEdgeRectanglePropagatorForTest propagator(true, true, x_helper, y_helper,
+                                                 &model);
     propagator.Propagate();
     EXPECT_THAT(propagator.propagations(),
                 Each(Pair(_, Not(Eq(std::nullopt)))));

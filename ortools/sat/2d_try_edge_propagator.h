@@ -24,6 +24,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace sat {
@@ -55,17 +56,32 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  protected:
-  std::vector<RectangleInRange> active_box_ranges_;
-  int max_box_index_ = 0;
+  // placed_boxes_ is a list that is only meaningful for indices for which
+  // is_in_cache_[box_index] is true. After applying this condition,
+  // placed_boxes_ contains a list of boxes placed at their current x_min and
+  // that does not overlap with the mandatory region of any other box in
+  // placed_boxes_. In other words, there is no point on looking for any
+  // propagation for this heuristic between boxes that are already in
+  // placed_boxes_.
+  std::vector<Rectangle> placed_boxes_;
+  std::vector<bool> is_in_cache_;
 
-  // Must also populate max_box_index_.
-  virtual void PopulateActiveBoxRanges();
+  std::vector<Rectangle> mandatory_regions_;
+  std::vector<RectangleInRange> active_box_ranges_;
+  std::vector<bool> is_active_;
+  Bitset64<int> has_mandatory_region_;
+
+  std::vector<int> changed_item_;
+  std::vector<int> changed_mandatory_;
 
   virtual bool ExplainAndPropagate(
       const std::vector<std::pair<int, std::optional<IntegerValue>>>&
           found_propagations);
 
  private:
+  // Must also populate max_box_index_.
+  void PopulateActiveBoxRanges();
+
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
   SharedStatistics* shared_stats_;

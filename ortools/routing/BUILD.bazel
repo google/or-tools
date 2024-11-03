@@ -134,6 +134,7 @@ cc_library(
     hdrs = ["parameters_utils.h"],
     deps = [
         ":parameters_cc_proto",
+        "//ortools/util:optional_boolean_cc_proto",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -289,3 +290,4 @@ cc_library(
         "@com_google_protobuf//:protobuf",
     ],
 )
+

@@ -168,6 +168,7 @@ http_archive(
     name = "glpk",
     build_file = "//bazel:glpk.BUILD.bazel",
     sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
+    strip_prefix = "glpk-5.0",
     url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
 )
 
@@ -197,7 +198,7 @@ new_git_repository(
     build_file_content =
 """
 cc_library(
-    name = 'eigen3',
+    name = 'eigen',
     srcs = [],
     includes = ['.'],
     hdrs = glob(['Eigen/**', 'unsupported/**']),

@@ -76,6 +76,12 @@ const Assignment* SolveWithAlternativeSolvers(
     const std::vector<RoutingModel*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
+// Same as above, but taking an initial solution.
+const Assignment* SolveFromAssignmentWithAlternativeSolvers(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations);
 
 class IntVarFilteredHeuristic;
 #ifndef SWIG

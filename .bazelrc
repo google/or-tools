@@ -1,5 +1,3 @@
-common --noenable_bzlmod
-
 # ----CONFIG OPTIONS----
 build --flag_alias=with_bop=//ortools/linear_solver:with_bop
 build --flag_alias=with_cbc=//ortools/linear_solver:with_cbc
