@@ -13,6 +13,7 @@
 
 """Build definitions for SWIG Java."""
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_java//java/common:java_common.bzl", "java_common")
 
@@ -69,10 +70,10 @@ def _java_wrap_cc_impl(ctx):
         generated_c_files.append(outhdr)
 
     # Add swig LIB files.
-    swig_lib = {"SWIG_LIB": "external/swig/Lib"}
+    swig_lib = {"SWIG_LIB": paths.dirname(ctx.files._swig_lib[0].path)}
     ctx.actions.run(
         outputs = generated_c_files + [java_files_dir],
-        inputs = depset([src] + ctx.files.swig_includes, transitive = header_sets),
+        inputs = depset([src] + ctx.files.swig_includes + ctx.files._swig_lib, transitive = header_sets),
         env = swig_lib,
         executable = ctx.executable._swig,
         arguments = [swig_args],
@@ -126,6 +127,9 @@ It's expected that the `swig` binary exists in the host's path.
             default = Label("@swig//:swig"),
             executable = True,
             cfg = "exec",
+        ),
+        "_swig_lib": attr.label(
+            default = Label("@swig//:lib_java"),
         ),
         "swig_includes": attr.label_list(
             doc = "SWIG includes.",
@@ -186,7 +190,7 @@ def ortools_java_wrap_cc(
         deps = deps,
         swig_opt = swig_opt,
         module = module,
-        swig_includes = swig_includes + ["@swig//:lib_java"],
+        swig_includes = swig_includes,
         use_directors = use_directors,
         visibility = ["//visibility:private"],
         **kwargs
@@ -196,7 +200,7 @@ def ortools_java_wrap_cc(
         name = cc_name,
         srcs = [outfile],
         hdrs = [outhdr] if use_directors else [],
-        deps = deps + ["@bazel_tools//tools/jdk:jni"],
+        deps = deps + [Label("@bazel_tools//tools/jdk:jni")],
         alwayslink = True,
         visibility = visibility,
         **kwargs

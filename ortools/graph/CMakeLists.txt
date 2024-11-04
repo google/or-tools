@@ -53,8 +53,9 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        GTest::gmock
+        GTest::gtest
         GTest::gtest_main
+        GTest::gmock
     )
   endforeach()
   ortools_cxx_test(
@@ -64,8 +65,9 @@ if(BUILD_TESTING)
       "max_flow_test.cc"
     LINK_LIBRARIES
       benchmark::benchmark
-      GTest::gmock
+      GTest::gtest
       GTest::gtest_main
+      GTest::gmock
     COMPILE_DEFINITIONS
     -DROOT_DIR="$<$<BOOL:${isMultiConfig}>:../>../../"
   )

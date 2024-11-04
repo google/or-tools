@@ -36,6 +36,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -1914,7 +1915,7 @@ class NearestNeighbors {
   virtual std::string DebugString() const { return "NearestNeighbors"; }
 
  private:
-  void ComputeNearest(int row, const std::vector<int>& path);
+  void ComputeNearest(int row, absl::Span<const int> path);
 
   std::vector<std::vector<int>> neighbors_;
   Solver::IndexEvaluator3 evaluator_;
@@ -1940,7 +1941,7 @@ const std::vector<int>& NearestNeighbors::Neighbors(int index) const {
 }
 
 void NearestNeighbors::ComputeNearest(int row,
-                                      const std::vector<int>& path_nodes) {
+                                      absl::Span<const int> path_nodes) {
   // Find size_ nearest neighbors for row of index 'row'.
   const int path = path_operator_.Path(row);
   const IntVar* var = path_operator_.Var(row);
@@ -3867,12 +3868,13 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       for (const auto& [filter, stats] : filter_stats) {
         filters.push_back(filter);
       }
-      std::sort(filters.begin(), filters.end(),
-                [filter_stats_ptr = &filter_stats](const LocalSearchFilter* filter1,
-                                                   const LocalSearchFilter* filter2) {
-                  return gtl::FindOrDie(*filter_stats_ptr, filter1).calls >
-                         gtl::FindOrDie(*filter_stats_ptr, filter2).calls;
-                });
+      std::sort(
+          filters.begin(), filters.end(),
+          [filter_stats_ptr = &filter_stats](const LocalSearchFilter* filter1,
+                                             const LocalSearchFilter* filter2) {
+            return gtl::FindOrDie(*filter_stats_ptr, filter1).calls >
+                   gtl::FindOrDie(*filter_stats_ptr, filter2).calls;
+          });
       for (const LocalSearchFilter* const filter : filters) {
         const FilterStats& stats = gtl::FindOrDie(filter_stats, filter);
         callback(context, filter->DebugString(), stats.calls, stats.rejects,

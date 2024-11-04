@@ -373,7 +373,7 @@ cc_library(
     srcs = ["lpi_glop.cpp"],
     deps = [
         "//ortools/glop:lp_solver",
-        "@scip//:libscip",
+        "@scip",
     ],
 )
 

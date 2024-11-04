@@ -376,7 +376,97 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
   return new_var;
 }
 
-}  // namespace
+// Currently, the LP will exploit symmetry if we load some in the
+// LinearConstraintSymmetrizer. So not loading them disable the feature.
+//
+// TODO(user): We probably want to separate the two as we could still use orbits
+// in other places while not doing so in the LP.
+void InitializeLinearConstraintSymmetrizerIfRequested(
+    const CpModelProto& model_proto, const LinearRelaxation& linear_relaxation,
+    Model* m) {
+  if (!model_proto.has_symmetry()) return;
+
+  auto* params = m->GetOrCreate<SatParameters>();
+  if (params->linearization_level() < 2) return;
+  if (!params->use_symmetry_in_lp()) return;
+
+  // Tricky: while we load the model, we might create new integer-variables, and
+  // in some rare case, these variable can appear in the LP relaxation. This
+  // might happen when we extend an at most one or when we use an integer
+  // encoding.
+  //
+  // The issue with this and having symmetry is that we didn't extend the
+  // problem symmetries to include these new variables, so we can derive wrong
+  // conclusion. When we use symmetry in the LP we cannot have any variable like
+  // this part of a LinearProgrammingConstraint.
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  int num_constraints_with_non_proto_variables = 0;
+  for (const auto& lp_constraint : linear_relaxation.linear_constraints) {
+    bool has_non_proto_variable = false;
+    for (const IntegerVariable var : lp_constraint.VarsAsSpan()) {
+      if (mapping->GetProtoVariableFromIntegerVariable(var) == -1) {
+        has_non_proto_variable = true;
+        break;
+      }
+    }
+    if (has_non_proto_variable) {
+      ++num_constraints_with_non_proto_variables;
+    }
+  }
+  if (num_constraints_with_non_proto_variables > 0) {
+    // TODO(user): Logging like this is not visible in multi-thread, so we will
+    // not have a lot of warning if this happens a lot.
+    auto* logger = m->GetOrCreate<SolverLogger>();
+    SOLVER_LOG(logger, num_constraints_with_non_proto_variables,
+               " LP constraints uses new variables not appearing in the "
+               "presolved model. ");
+
+    // TODO(user): We currently disable symmetries in LP completely when this
+    // happen, but we could probably be smarter about this. I am not really
+    // sure we want to create such extra variable in the first place :)
+    return;
+  }
+
+  // Convert to SparsePermutation.
+  const int num_vars = model_proto.variables().size();
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  for (const SparsePermutationProto& perm :
+       model_proto.symmetry().permutations()) {
+    generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+  }
+
+  // Get orbits in term of IntegerVariable.
+  const std::vector<int> var_to_orbit_index = GetOrbits(num_vars, generators);
+  std::vector<bool> orbit_is_ok;
+  std::vector<std::vector<IntegerVariable>> orbits;
+  for (int proto_var = 0; proto_var < num_vars; ++proto_var) {
+    const int orbit_index = var_to_orbit_index[proto_var];
+    if (orbit_index == -1) continue;
+    if (orbit_index >= orbits.size()) {
+      orbits.resize(orbit_index + 1);
+      orbit_is_ok.resize(orbit_index + 1, true);
+    }
+
+    // In linerization level >=2, all variables should have a view.
+    // Otherwise revisit and skip orbit without a full view.
+    const IntegerVariable var = mapping->Integer(proto_var);
+    CHECK_NE(var, kNoIntegerVariable);
+    orbits[orbit_index].push_back(var);
+  }
+
+  // Lets create the orbit sum vars and register each orbit.
+  auto* symmetrizer = m->GetOrCreate<LinearConstraintSymmetrizer>();
+  std::vector<std::pair<IntegerVariable, int64_t>> terms;
+  for (const std::vector<IntegerVariable>& orbit : orbits) {
+    terms.clear();
+    for (const IntegerVariable var : orbit) {
+      terms.push_back({var, 1});
+    }
+    const IntegerVariable sum_var =
+        GetOrCreateVariableLinkedToSumOf(terms, true, true, m);
+    symmetrizer->AddSymmetryOrbit(sum_var, orbit);
+  }
+}
 
 // Adds one LinearProgrammingConstraint per connected component of the model.
 IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
@@ -385,52 +475,8 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
   if (m->GetOrCreate<SatSolver>()->ModelIsUnsat()) return kNoIntegerVariable;
 
-  // In the presence of symmetry, will will create an extra integer variable per
-  // orbit.
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  auto* params = m->GetOrCreate<SatParameters>();
-  auto* symmetrizer = m->GetOrCreate<LinearConstraintSymmetrizer>();
-  if (model_proto.has_symmetry() && params->linearization_level() > 1 &&
-      params->use_symmetry_in_lp()) {
-    // Convert to SparsePermutation.
-    const int num_vars = model_proto.variables().size();
-    std::vector<std::unique_ptr<SparsePermutation>> generators;
-    for (const SparsePermutationProto& perm :
-         model_proto.symmetry().permutations()) {
-      generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
-    }
-
-    // Get orbits in term of IntegerVariable.
-    const std::vector<int> var_to_orbit_index = GetOrbits(num_vars, generators);
-    std::vector<bool> orbit_is_ok;
-    std::vector<std::vector<IntegerVariable>> orbits;
-    for (int proto_var = 0; proto_var < num_vars; ++proto_var) {
-      const int orbit_index = var_to_orbit_index[proto_var];
-      if (orbit_index == -1) continue;
-      if (orbit_index >= orbits.size()) {
-        orbits.resize(orbit_index + 1);
-        orbit_is_ok.resize(orbit_index + 1, true);
-      }
-
-      // In linerization level >=2, all variables should have a view.
-      // Otherwise revisit and skip orbit without a full view.
-      const IntegerVariable var = mapping->Integer(proto_var);
-      CHECK_NE(var, kNoIntegerVariable);
-      orbits[orbit_index].push_back(var);
-    }
-
-    // Lets create the orbit sum vars and register each orbit.
-    std::vector<std::pair<IntegerVariable, int64_t>> terms;
-    for (const std::vector<IntegerVariable>& orbit : orbits) {
-      terms.clear();
-      for (const IntegerVariable var : orbit) {
-        terms.push_back({var, 1});
-      }
-      const IntegerVariable sum_var =
-          GetOrCreateVariableLinkedToSumOf(terms, true, true, m);
-      symmetrizer->AddSymmetryOrbit(sum_var, orbit);
-    }
-  }
+  // Load symmetry?
+  InitializeLinearConstraintSymmetrizerIfRequested(model_proto, relaxation, m);
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
@@ -470,6 +516,7 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   }
 
   // Make sure variables from the same orbit end up in same components.
+  auto* symmetrizer = m->GetOrCreate<LinearConstraintSymmetrizer>();
   for (int i = 0; i < symmetrizer->NumOrbits(); ++i) {
     const int representative = get_var_index(symmetrizer->OrbitSumVar(i));
     for (const IntegerVariable var : symmetrizer->Orbit(i)) {
@@ -499,6 +546,7 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   // as much as possible the objective bound by using any bounds the LP give
   // us on one of its components. This is critical on the zephyrus problems for
   // instance.
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
     const IntegerVariable var =
         mapping->Integer(model_proto.objective().vars(i));
@@ -537,6 +585,7 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
 
   // We deal with the clique cut generator here now that the component have
   // been computed. As we don't want to merge independent component with it.
+  auto* params = m->GetOrCreate<SatParameters>();
   if (params->linearization_level() > 1 && params->add_clique_cuts() &&
       params->cut_level() > 0) {
     for (LinearProgrammingConstraint* lp : lp_constraints) {
@@ -629,6 +678,8 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
           << num_components_containing_objective << " from LP constraints).";
   return main_objective_var;
 }
+
+}  // namespace
 
 // Registers a callback that will export variables bounds fixed at level 0 of
 // the search. This should not be registered to a LNS search.

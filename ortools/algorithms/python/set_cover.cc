@@ -127,44 +127,46 @@ PYBIND11_MODULE(set_cover, m) {
           [](SetCoverModel& model) -> const std::vector<double>& {
             return model.subset_costs().get();
           })
-      .def("columns",
-           [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
-             // Due to the inner StrongVector, make a deep copy. Anyway,
-             // columns() returns a const ref, so this keeps the semantics, not
-             // the efficiency.
-             std::vector<std::vector<BaseInt>> columns;
-             std::transform(
-                 model.columns().begin(), model.columns().end(),
-                 columns.begin(),
-                 [](const SparseColumn& column) -> std::vector<BaseInt> {
-                   std::vector<BaseInt> col(column.size());
-                   std::transform(column.begin(), column.end(), col.begin(),
-                                  [](ElementIndex element) -> BaseInt {
-                                    return element.value();
-                                  });
-                   return col;
-                 });
-             return columns;
-           })
-      .def("rows",
-           [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
-             // Due to the inner StrongVector, make a deep copy. Anyway,
-             // rows() returns a const ref, so this keeps the semantics, not
-             // the efficiency.
-             std::vector<std::vector<BaseInt>> rows;
-             std::transform(
-                 model.rows().begin(), model.rows().end(), rows.begin(),
-                 [](const SparseRow& row) -> std::vector<BaseInt> {
-                   std::vector<BaseInt> r(row.size());
-                   std::transform(row.begin(), row.end(), r.begin(),
-                                  [](SubsetIndex element) -> BaseInt {
-                                    return element.value();
-                                  });
-                   return r;
-                 });
-             return rows;
-           })
-      .def("row_view_is_valid", &SetCoverModel::row_view_is_valid)
+      .def_property_readonly(
+          "columns",
+          [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
+            // Due to the inner StrongVector, make a deep copy. Anyway,
+            // columns() returns a const ref, so this keeps the semantics, not
+            // the efficiency.
+            std::vector<std::vector<BaseInt>> columns(model.columns().size());
+            std::transform(
+                model.columns().begin(), model.columns().end(), columns.begin(),
+                [](const SparseColumn& column) -> std::vector<BaseInt> {
+                  std::vector<BaseInt> col(column.size());
+                  std::transform(column.begin(), column.end(), col.begin(),
+                                 [](ElementIndex element) -> BaseInt {
+                                   return element.value();
+                                 });
+                  return col;
+                });
+            return columns;
+          })
+      .def_property_readonly(
+          "rows",
+          [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
+            // Due to the inner StrongVector, make a deep copy. Anyway,
+            // rows() returns a const ref, so this keeps the semantics, not
+            // the efficiency.
+            std::vector<std::vector<BaseInt>> rows(model.rows().size());
+            std::transform(model.rows().begin(), model.rows().end(),
+                           rows.begin(),
+                           [](const SparseRow& row) -> std::vector<BaseInt> {
+                             std::vector<BaseInt> r(row.size());
+                             std::transform(row.begin(), row.end(), r.begin(),
+                                            [](SubsetIndex element) -> BaseInt {
+                                              return element.value();
+                                            });
+                             return r;
+                           });
+            return rows;
+          })
+      .def_property_readonly("row_view_is_valid",
+                             &SetCoverModel::row_view_is_valid)
       .def("SubsetRange",
            [](SetCoverModel& model) {
              return make_iterator<>(IntIterator::begin(model.num_subsets()),

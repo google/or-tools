@@ -258,6 +258,14 @@ class SetCoverModel {
   // Computes deciles on columns and returns a vector of deciles.
   std::vector<BaseInt> ComputeColumnDeciles() const;
 
+  // Computes basic statistics on the deltas of the row and column elements and
+  // returns a Stats structure. The deltas are computed as the difference
+  // between two consecutive indices in rows or columns. The number of bytes
+  // computed is meant using a variable-length base-128 encoding.
+  // TODO(user): actually use this to compress the rows and columns.
+  Stats ComputeRowDeltaSizeStats() const;
+  Stats ComputeColumnDeltaSizeStats() const;
+
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
   // columns.size() - 1

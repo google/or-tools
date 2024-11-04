@@ -33,7 +33,7 @@ if(BUILD_TESTING)
     get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
     ortools_cxx_test(
       NAME
-        math_opt_constraints_second_order_cone_${_NAME}
+        math_opt_constraints_soc_${_NAME}
       SOURCES
         ${_FILE_NAME}
       LINK_LIBRARIES

@@ -30,7 +30,7 @@ public class IntegerProgramming {
       System.out.println("Could not create solver " + solverType);
       return;
     }
-    double infinity = java.lang.Double.POSITIVE_INFINITY;
+    double infinity = Double.POSITIVE_INFINITY;
     // x1 and x2 are integer non-negative variables.
     MPVariable x1 = solver.makeIntVar(0.0, infinity, "x1");
     MPVariable x2 = solver.makeIntVar(0.0, infinity, "x2");

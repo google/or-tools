@@ -386,6 +386,12 @@ struct RectangleInRange {
     TOP_RIGHT = 3,
   };
 
+  bool operator==(const RectangleInRange& other) const {
+    return box_index == other.box_index &&
+           bounding_area == other.bounding_area && x_size == other.x_size &&
+           y_size == other.y_size;
+  }
+
   // Returns the position of the rectangle fixed to one of the corner of its
   // range.
   Rectangle GetAtCorner(Corner p) const {

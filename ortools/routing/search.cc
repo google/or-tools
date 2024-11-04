@@ -133,6 +133,16 @@ const Assignment* SolveWithAlternativeSolvers(
     const std::vector<RoutingModel*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations) {
+  return SolveFromAssignmentWithAlternativeSolvers(
+      /*assignment=*/nullptr, primary_model, alternative_models, parameters,
+      max_non_improving_iterations);
+}
+
+const Assignment* SolveFromAssignmentWithAlternativeSolvers(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations) {
   const int64_t start_time_ms = primary_model->solver()->wall_time();
   if (max_non_improving_iterations < 0) return nullptr;
   RoutingSearchParameters mutable_search_parameters = parameters;
@@ -158,8 +168,10 @@ const Assignment* SolveWithAlternativeSolvers(
   Assignment* primary_first_solution =
       primary_model->solver()->MakeAssignment();
   Assignment* current_solution = primary_model->solver()->MakeAssignment();
-  const Assignment* solution =
-      primary_model->SolveWithParameters(mutable_search_parameters);
+  DCHECK(assignment == nullptr ||
+         assignment->solver() == primary_model->solver());
+  const Assignment* solution = primary_model->SolveFromAssignmentWithParameters(
+      assignment, mutable_search_parameters);
   if (solution == nullptr) return nullptr;
   best_assignment->Copy(solution);
   int iteration = 0;
@@ -193,12 +205,12 @@ const Assignment* SolveWithAlternativeSolvers(
     // No modifications done in this iteration, no need to continue.
     if (AreAssignmentsEquivalent(*primary_model, *solution,
                                  *current_solution)) {
-      return best_assignment;
+      break;
     }
     // We're back to the best assignment which means we will cycle if we
     // continue the search.
     if (AreAssignmentsEquivalent(*primary_model, *solution, *best_assignment)) {
-      return best_assignment;
+      break;
     }
     if (solution->ObjectiveValue() >= best_assignment->ObjectiveValue()) {
       ++iteration;

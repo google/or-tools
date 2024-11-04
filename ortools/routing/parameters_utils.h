@@ -28,6 +28,9 @@ std::vector<RoutingSearchParameters::InsertionSortingProperty>
 GetLocalCheapestInsertionSortingProperties(
     absl::Span<const int> lci_insertion_sorting_properties);
 
+void DisableAllLocalSearchOperators(
+    RoutingSearchParameters::LocalSearchNeighborhoodOperators* operators);
+
 }  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARAMETERS_UTILS_H_

@@ -26,7 +26,7 @@ def code_sample_cc(name):
             "//ortools/pdlp:quadratic_program",
             "//ortools/pdlp:solve_log_cc_proto",
             "//ortools/pdlp:solvers_cc_proto",
-            "@eigen//:eigen3",
+            Label("@eigen"),
         ],
     )
 
@@ -42,6 +42,6 @@ def code_sample_cc(name):
             "//ortools/pdlp:quadratic_program",
             "//ortools/pdlp:solve_log_cc_proto",
             "//ortools/pdlp:solvers_cc_proto",
-            "@eigen//:eigen3",
+            Label("@eigen"),
         ],
     )

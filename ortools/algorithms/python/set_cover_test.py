@@ -62,9 +62,10 @@ class SetCoverTest(absltest.TestCase):
 
         self.assertEqual(model.num_subsets, reloaded.num_subsets)
         self.assertEqual(model.num_elements, reloaded.num_elements)
-        # TODO(user): these methods are not yet wrapped.
-        # self.assertEqual(model.subset_costs, reloaded.subset_costs)
-        # self.assertEqual(model.columns, reloaded.columns)
+        self.assertEqual(model.subset_costs, reloaded.subset_costs)
+        self.assertEqual(model.columns, reloaded.columns)
+        if model.row_view_is_valid and reloaded.row_view_is_valid:
+            self.assertEqual(model.rows, reloaded.rows)
 
     def test_save_reload_twice(self):
         model = create_knights_cover_model(3, 3)

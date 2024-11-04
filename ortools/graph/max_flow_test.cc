@@ -37,7 +37,7 @@
 #include "ortools/util/file_util.h"
 
 #if not defined(ROOT_DIR)
-#define ROOT_DIR "com_google_ortools/"
+#define ROOT_DIR "_main/"
 #endif
 
 namespace operations_research {

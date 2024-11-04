@@ -13,16 +13,16 @@
 
 #include "ortools/sat/2d_try_edge_propagator.h"
 
-#include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -56,22 +56,53 @@ TryEdgeRectanglePropagator::~TryEdgeRectanglePropagator() {
 
 void TryEdgeRectanglePropagator::PopulateActiveBoxRanges() {
   const int num_boxes = x_.NumTasks();
-  active_box_ranges_.clear();
-  active_box_ranges_.reserve(num_boxes);
-  for (int box = 0; box < num_boxes; ++box) {
-    if (x_.SizeMin(box) == 0 || y_.SizeMin(box) == 0) continue;
-    if (!x_.IsPresent(box) || !y_.IsPresent(box)) continue;
+  placed_boxes_.resize(num_boxes);
+  active_box_ranges_.resize(num_boxes);
+  is_active_.resize(num_boxes);
+  has_mandatory_region_.resize(num_boxes);
+  mandatory_regions_.resize(num_boxes);
+  is_in_cache_.resize(num_boxes);
 
-    active_box_ranges_.push_back(RectangleInRange{
+  changed_mandatory_.clear();
+  changed_item_.clear();
+  for (int box = 0; box < num_boxes; ++box) {
+    const bool inactive = (x_.SizeMin(box) == 0 || y_.SizeMin(box) == 0 ||
+                           !x_.IsPresent(box) || !y_.IsPresent(box));
+    is_active_[box] = !inactive;
+    if (inactive) {
+      is_in_cache_[box] = false;
+      has_mandatory_region_.Set(box, false);
+      continue;
+    }
+    const RectangleInRange rec = {
         .box_index = box,
         .bounding_area = {.x_min = x_.StartMin(box),
                           .x_max = x_.StartMax(box) + x_.SizeMin(box),
                           .y_min = y_.StartMin(box),
                           .y_max = y_.StartMax(box) + y_.SizeMin(box)},
         .x_size = x_.SizeMin(box),
-        .y_size = y_.SizeMin(box)});
+        .y_size = y_.SizeMin(box)};
+    if (is_in_cache_[box] && rec == active_box_ranges_[box]) {
+      DCHECK(mandatory_regions_[box] == rec.GetMandatoryRegion());
+      DCHECK(has_mandatory_region_[box] ==
+             (rec.GetMandatoryRegion() != Rectangle::GetEmpty()));
+      continue;
+    }
+    active_box_ranges_[box] = rec;
+    changed_item_.push_back(box);
+    const Rectangle mandatory_region = rec.GetMandatoryRegion();
+    const bool has_mandatory_region =
+        (mandatory_region != Rectangle::GetEmpty());
+    if (has_mandatory_region) {
+      if (!has_mandatory_region_[box] || !is_in_cache_[box] ||
+          mandatory_region != mandatory_regions_[box]) {
+        changed_mandatory_.push_back(box);
+      }
+    }
+    mandatory_regions_[box] = mandatory_region;
+    has_mandatory_region_.Set(box, has_mandatory_region);
+    is_in_cache_[box] = false;
   }
-  max_box_index_ = num_boxes - 1;
 }
 
 bool TryEdgeRectanglePropagator::CanPlace(
@@ -82,12 +113,10 @@ bool TryEdgeRectanglePropagator::CanPlace(
       .x_max = position.first + active_box_ranges_[box_index].x_size,
       .y_min = position.second,
       .y_max = position.second + active_box_ranges_[box_index].y_size};
-  for (int i = 0; i < active_box_ranges_.size(); ++i) {
+  for (const int i : has_mandatory_region_) {
     if (i == box_index) continue;
-    const RectangleInRange& box_reason = active_box_ranges_[i];
-    const Rectangle mandatory_region = box_reason.GetMandatoryRegion();
-    if (mandatory_region != Rectangle::GetEmpty() &&
-        !mandatory_region.IsDisjoint(placed_box)) {
+    const Rectangle& mandatory_region = mandatory_regions_[i];
+    if (!mandatory_region.IsDisjoint(placed_box)) {
       return false;
     }
   }
@@ -102,56 +131,51 @@ bool TryEdgeRectanglePropagator::Propagate() {
 
   PopulateActiveBoxRanges();
 
-  if (cached_y_hint_.size() <= max_box_index_) {
-    cached_y_hint_.resize(max_box_index_ + 1,
-                          std::numeric_limits<IntegerValue>::max());
+  // If a mandatory region is changed, we need to replace any cached box that
+  // now became overlapping with it.
+  for (const int mandatory_idx : changed_mandatory_) {
+    for (int i = 0; i < active_box_ranges_.size(); i++) {
+      if (i == mandatory_idx || !is_in_cache_[i]) continue;
+      if (!placed_boxes_[i].IsDisjoint(mandatory_regions_[mandatory_idx])) {
+        changed_item_.push_back(i);
+        is_in_cache_[i] = false;
+      }
+    }
   }
 
-  if (active_box_ranges_.size() < 2) {
+  if (changed_item_.empty()) {
     return true;
   }
+  gtl::STLSortAndRemoveDuplicates(&changed_item_);
 
   // Our algo is quadratic, so we don't want to run it on really large problems.
-  if (active_box_ranges_.size() > 1000) {
+  if (changed_item_.size() > 1000) {
     return true;
   }
 
   potential_x_positions_.clear();
   potential_y_positions_.clear();
-  std::vector<std::pair<int, std::optional<IntegerValue>>> found_propagations;
-  for (const RectangleInRange& box : active_box_ranges_) {
-    const Rectangle mandatory_region = box.GetMandatoryRegion();
-    if (mandatory_region == Rectangle::GetEmpty()) {
-      continue;
-    }
+  for (const int i : has_mandatory_region_) {
+    const Rectangle& mandatory_region = mandatory_regions_[i];
     potential_x_positions_.push_back(mandatory_region.x_max);
     potential_y_positions_.push_back(mandatory_region.y_max);
   }
-  std::sort(potential_x_positions_.begin(), potential_x_positions_.end());
-  std::sort(potential_y_positions_.begin(), potential_y_positions_.end());
 
-  for (int i = 0; i < active_box_ranges_.size(); ++i) {
+  gtl::STLSortAndRemoveDuplicates(&potential_x_positions_);
+  gtl::STLSortAndRemoveDuplicates(&potential_y_positions_);
+
+  std::vector<std::pair<int, std::optional<IntegerValue>>> found_propagations;
+  for (const int i : changed_item_) {
+    DCHECK(!is_in_cache_[i]);
+    DCHECK(is_active_[i]);
     const RectangleInRange& box = active_box_ranges_[i];
 
-    // For each box, we need to answer whether there exist some y for which
-    // (x_min, y) is not in conflict with any other box. If there is no such y,
-    // we can propagate a larger lower bound on x. Now, for the most majority of
-    // cases there is nothing to propagate, so we want to find the y that makes
-    // (x_min, y) a valid placement as fast as possible. Now, since things don't
-    // change that often we try the last y value that was a valid placement for
-    // this box. This is just a hint: if it is not a valid placement, we will
-    // try all "interesting" y values before concluding that no such y exist.
-    const IntegerValue cached_y_hint = cached_y_hint_[box.box_index];
-    if (cached_y_hint >= box.bounding_area.y_min &&
-        cached_y_hint <= box.bounding_area.y_max - box.y_size) {
-      if (CanPlace(i, {box.bounding_area.x_min, cached_y_hint})) {
-        num_cache_hits_++;
-        continue;
-      }
-    }
-    num_cache_misses_++;
     if (CanPlace(i, {box.bounding_area.x_min, box.bounding_area.y_min})) {
-      cached_y_hint_[box.box_index] = box.bounding_area.y_min;
+      placed_boxes_[i] = {.x_min = box.bounding_area.x_min,
+                          .x_max = box.bounding_area.x_min + box.x_size,
+                          .y_min = box.bounding_area.y_min,
+                          .y_max = box.bounding_area.y_min + box.y_size};
+      is_in_cache_[i] = true;
       continue;
     }
 
@@ -166,7 +190,11 @@ bool TryEdgeRectanglePropagator::Propagate() {
       }
       if (CanPlace(i, {box.bounding_area.x_min, potential_y_positions_[j]})) {
         placed_at_x_min = true;
-        cached_y_hint_[box.box_index] = potential_y_positions_[j];
+        placed_boxes_[i] = {.x_min = box.bounding_area.x_min,
+                            .x_max = box.bounding_area.x_min + box.x_size,
+                            .y_min = potential_y_positions_[j],
+                            .y_max = potential_y_positions_[j] + box.y_size};
+        is_in_cache_[i] = true;
         break;
       }
     }
@@ -207,6 +235,7 @@ bool TryEdgeRectanglePropagator::Propagate() {
     }
     found_propagations.push_back({i, new_x_min});
   }
+
   return ExplainAndPropagate(found_propagations);
 }
 
@@ -218,6 +247,7 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
     x_.ClearReason();
     y_.ClearReason();
     for (int j = 0; j < active_box_ranges_.size(); ++j) {
+      if (!is_active_[j]) continue;
       // Important: we also add to the reason the actual box we are changing the
       // x_min. This is important, since we don't check if there are any
       // feasible placement before its current x_min, so it needs to be part of
