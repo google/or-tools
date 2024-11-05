@@ -475,7 +475,8 @@ std::string ValidateElementConstraint(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateTableConstraint(const ConstraintProto& ct) {
+std::string ValidateTableConstraint(const CpModelProto& model,
+                                    const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
   if (!arg.vars().empty() && !arg.exprs().empty()) {
     return absl::StrCat(
@@ -487,12 +488,19 @@ std::string ValidateTableConstraint(const ConstraintProto& ct) {
         "Inconsistent table empty expressions and non-empty tuples: ",
         ProtobufShortDebugString(ct));
   }
+  if (arg.vars().empty() && arg.exprs().empty() && arg.values().empty()) {
+    return "";
+  }
   const int arity = arg.vars().empty() ? arg.exprs().size() : arg.vars().size();
   if (arg.values().size() % arity != 0) {
     return absl::StrCat(
         "The flat encoding of a table constraint tuples must be a multiple of "
         "the number of expressions: ",
         ProtobufDebugString(ct));
+  }
+
+  for (const LinearExpressionProto& expr : arg.exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }
   return "";
 }
@@ -1051,7 +1059,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateElementConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
         support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:

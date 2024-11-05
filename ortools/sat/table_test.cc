@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/container/btree_set.h"
@@ -38,6 +39,98 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+
+CpSolverStatus SolveTextProto(std::string_view text_proto) {
+  const CpModelProto model_proto = ParseTestProto(text_proto);
+  Model model;
+  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  return SolveCpModel(model_proto, &model).status();
+}
+
+TEST(TableConstraintTest, EmptyOrTrivialSemantics) {
+  EXPECT_EQ(SolveTextProto(R"pb(
+              constraints {
+                table {
+                  values: []
+                  exprs: []
+                }
+              }
+            )pb"),
+            CpSolverStatus::OPTIMAL);
+
+  EXPECT_EQ(SolveTextProto(R"pb(
+              constraints {
+                table {
+                  values: []
+                  exprs: []
+                  negated: true
+                }
+              }
+            )pb"),
+            CpSolverStatus::OPTIMAL);
+
+  EXPECT_EQ(SolveTextProto(R"pb(
+              constraints {
+                table {
+                  values: [ 0 ]
+                  exprs: []
+                }
+              }
+            )pb"),
+            CpSolverStatus::MODEL_INVALID);
+
+  // Invalid linear expression: coeffs without vars
+  EXPECT_EQ(SolveTextProto(R"pb(
+              constraints {
+                table {
+                  values: []
+                  exprs:
+                  [ { coeffs: 1 }]
+                }
+              }
+            )pb"),
+            CpSolverStatus::MODEL_INVALID);
+
+  EXPECT_EQ(SolveTextProto(R"pb(
+              constraints {
+                table {
+                  values: []
+                  exprs:
+                  [ { offset: 1 }]
+                }
+              }
+            )pb"),
+            CpSolverStatus::INFEASIBLE);
+
+  EXPECT_EQ(SolveTextProto(R"pb(
+              constraints {
+                table {
+                  values: []
+                  exprs:
+                  [ { offset: 1 }]
+                  negated: true
+                }
+              }
+            )pb"),
+            CpSolverStatus::OPTIMAL);
+
+  // Invalid: not affine
+  EXPECT_EQ(SolveTextProto(R"pb(
+              variables { domain: [ 0, 0 ] }
+              variables { domain: [ 0, 0 ] }
+              constraints {
+                table {
+                  values: [ 0 ]
+                  exprs:
+                  [ {
+                    vars: [ 0, 1 ]
+                    coeffs: [ 1, 1 ]
+                  }]
+                }
+              }
+            )pb"),
+            CpSolverStatus::MODEL_INVALID);
+}
 
 TEST(TableConstraintTest, EnumerationAndEncoding) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
