@@ -26,7 +26,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /** Load native libraries needed for using ortools-java.*/
@@ -102,29 +104,62 @@ public class Loader {
   private static boolean loaded = false;
 
   public static synchronized void loadNativeLibraries() {
-    if (!loaded) {
-      try {
-        // prints the name of the Operating System
-        // System.out.println("OS: " + System.getProperty("os.name"));
-        // System.out.println("Library: " + System.mapLibraryName("jniortools"));
+    // prints the name of the Operating System
+    //System.out.println("OS: " + System.getProperty("os.name"));
+    if(loaded) {
+      return;
+    }
+    try {
+      //System.out.println("System.loadLibrary(\"jniortools\")");
+      System.loadLibrary("jniortools");
+      loaded = true;
+      return;
+    } catch (UnsatisfiedLinkError e) {
+      // Do nothing.
+      //System.out.println("Can't System.loadLibrary(jniortools)");
+    }
+    try {
+      URI resourceURI = getNativeResourceURI();
+      Path tempPath = unpackNativeResources(resourceURI);
+      // Load the native library
+      //System.out.println("System.load(" + System.mapLibraryName("jniortools") + ")");
+      System.load(tempPath.resolve(RESOURCE_PATH)
+          .resolve(System.mapLibraryName("jniortools"))
+          .toAbsolutePath()
+          .toString());
+      loaded = true;
+      return;
+    } catch (IOException|UnsatisfiedLinkError e) {
+      // Do nothing.
+      //System.out.println("Can't System.load(jniortools)");
+    }
 
-        System.loadLibrary("jniortools");
-        loaded = true;
-        return;
-      } catch (UnsatisfiedLinkError exception) {
-        // Do nothing.
-      }
+    // On windows, try to load each libraries one by one.
+    //System.out.println("Prefix: " + Platform.RESOURCE_PREFIX);
+    if (Platform.RESOURCE_PREFIX.equals("win32-x86-64")) {
       try {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
-        // Load the native library
-        System.load(tempPath.resolve(RESOURCE_PATH)
-                .resolve(System.mapLibraryName("jniortools"))
+        // libraries order does matter !
+        List<String> dlls = Arrays.asList("zlib1", "abseil_dll", "re2", "utf8_validity", "libprotobuf", "highs", "jniortools");
+        for (String dll : dlls) {
+          try {
+            //System.out.println("System.load(" + dll + ")");
+            System.load(tempPath.resolve(RESOURCE_PATH)
+                .resolve(System.mapLibraryName(dll))
                 .toAbsolutePath()
                 .toString());
+          }
+          catch (UnsatisfiedLinkError e) {
+            System.out.println("System.load(" + dll + ") failed!");
+            throw new RuntimeException(e);
+          }
+        }
         loaded = true;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+        return;
+      } catch(IOException e) {
+        // Do nothing.
+        //System.out.println("unpack failed");
       }
     }
   }
