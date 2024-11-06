@@ -311,7 +311,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
     $<${need_unix_zlib_lib}:$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
-	  $<${need_windows_zlib_lib}:$<TARGET_FILE:ZLIB::ZLIB>>
+    $<${need_windows_zlib_lib}:$<TARGET_FILE:ZLIB::ZLIB>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
