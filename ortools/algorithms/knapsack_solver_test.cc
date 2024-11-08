@@ -123,7 +123,7 @@ int64_t SolveKnapsackProblem(
     return kInvalidSolution;
   }
 
-#ifdef USE_SCIP
+#if defined(USE_SCIP)
   const int64_t scip_profit = SolveKnapsackProblemUsingSpecificSolver(
       profit_array, number_of_items, weight_array, capacity_array,
       number_of_dimensions,
@@ -131,9 +131,9 @@ int64_t SolveKnapsackProblem(
   if (scip_profit != generic_profit) {
     return kInvalidSolution;
   }
-#else
+#else  // !defined(USE_SCIP)
 #warning SCIP support disable
-#endif
+#endif  // !defined(USE_SCIP)
 
   const int64_t cpsat_profit = SolveKnapsackProblemUsingSpecificSolver(
       profit_array, number_of_items, weight_array, capacity_array,

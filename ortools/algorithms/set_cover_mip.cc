@@ -110,8 +110,7 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus,
     for (const ElementIndex element : model->columns()[subset]) {
       // The model should only contain elements that are not forcibly covered by
       // subsets outside the focus.
-      if (coverage_outside_focus[element] == 0) continue;
-
+      if (coverage_outside_focus[element] != 0) continue;
       if (constraints[element] == nullptr) {
         constexpr double kInfinity = std::numeric_limits<double>::infinity();
         constraints[element] = solver.MakeRowConstraint(1.0, kInfinity);
@@ -140,10 +139,12 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus,
       return false;
   }
   if (use_integers) {
+    using CL = SetCoverInvariant::ConsistencyLevel;
     for (const SubsetIndex subset : focus) {
-      choices[subset] = (vars[subset]->solution_value() > 0.9);
+      if (vars[subset]->solution_value() > 0.9) {
+        inv_->Select(subset, CL::kCostAndCoverage);
+      }
     }
-    inv_->LoadSolution(choices);
   } else {
     lower_bound_ = solver.Objective().Value();
   }

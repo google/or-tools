@@ -14,13 +14,13 @@
 #include "ortools/algorithms/set_cover_heuristics.h"
 
 #include <algorithm>
-#include <cstddef>
 #include <limits>
 #include <numeric>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
@@ -45,6 +45,8 @@ SubsetBoolVector MakeBoolVector(absl::Span<const SubsetIndex> focus,
 }
 }  // anonymous namespace
 
+using CL = SetCoverInvariant::ConsistencyLevel;
+
 // Preprocessor.
 
 bool Preprocessor::NextSolution() {
@@ -54,7 +56,6 @@ bool Preprocessor::NextSolution() {
 bool Preprocessor::NextSolution(absl::Span<const SubsetIndex> focus) {
   DVLOG(1) << "Entering Preprocessor::NextSolution";
   const SubsetIndex num_subsets(inv_->model()->num_subsets());
-  SubsetBoolVector choices(num_subsets, false);
   const ElementIndex num_elements(inv_->model()->num_elements());
   const SparseRowView& rows = inv_->model()->rows();
   SubsetBoolVector in_focus = MakeBoolVector(focus, num_subsets);
@@ -62,12 +63,13 @@ bool Preprocessor::NextSolution(absl::Span<const SubsetIndex> focus) {
     if (rows[element].size() == 1) {
       const SubsetIndex subset = rows[element][RowEntryIndex(0)];
       if (in_focus[subset] && !inv_->is_selected()[subset]) {
-        inv_->Select(subset);
+        inv_->Select(subset, CL::kCostAndCoverage);
         ++num_columns_fixed_by_singleton_row_;
       }
     }
   }
   inv_->CompressTrace();
+  inv_->Recompute(CL::kCostAndCoverage);
   return true;
 }
 
@@ -85,6 +87,7 @@ bool TrivialSolutionGenerator::NextSolution(
     choices[subset] = true;
   }
   inv_->LoadSolution(choices);
+  inv_->Recompute(CL::kCostAndCoverage);
   return true;
 }
 
@@ -102,11 +105,11 @@ bool RandomSolutionGenerator::NextSolution(
   for (const SubsetIndex subset : shuffled) {
     if (inv_->is_selected()[subset]) continue;
     if (inv_->num_free_elements()[subset] != 0) {
-      inv_->Select(subset);
+      inv_->Select(subset, CL::kFreeAndUncovered);
     }
   }
   inv_->CompressTrace();
-  DCHECK(inv_->CheckConsistency());
+  DCHECK(inv_->CheckConsistency(CL::kFreeAndUncovered));
   return true;
 }
 
@@ -124,9 +127,10 @@ bool GreedySolutionGenerator::NextSolution(
 
 bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
                                            const SubsetCostVector& costs) {
-  DCHECK(inv_->CheckConsistency());
+  DCHECK(inv_->CheckConsistency(CL::kCostAndCoverage));
+  inv_->Recompute(CL::kFreeAndUncovered);
   inv_->ClearTrace();
-  SubsetCostVector elements_per_cost(costs.size(), 0.0);
+  SubsetCostVector elements_per_cost(costs.size(), 0);
   for (const SubsetIndex subset : focus) {
     elements_per_cost[subset] = 1.0 / costs[subset];
   }
@@ -150,7 +154,7 @@ bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
   while (!pq.IsEmpty()) {
     const SubsetIndex best_subset(pq.TopIndex());
     pq.Pop();
-    inv_->Select(best_subset);
+    inv_->Select(best_subset, CL::kFreeAndUncovered);
     // NOMUTANTS -- reason, for C++
     if (inv_->num_uncovered_elements() == 0) break;
     for (IntersectingSubsetsIterator it(*inv_->model(), best_subset);
@@ -170,9 +174,82 @@ bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
   inv_->CompressTrace();
   // Don't expect the queue to be empty, because of the break in the while
   // loop.
-  DCHECK(inv_->CheckConsistency());
+  DCHECK(inv_->CheckConsistency(CL::kFreeAndUncovered));
   return true;
 }
+
+namespace {
+// This class gathers statistics about the usefulness of the ratio computation.
+class ComputationUsefulnessStats {
+ public:
+  // If is_active is true, the stats are gathered, otherwise there is no
+  // overhead, in particular no memory allocation.
+  explicit ComputationUsefulnessStats(const SetCoverInvariant* inv,
+                                      bool is_active)
+      : inv_(inv),
+        is_active_(is_active),
+        num_ratio_computations_(),
+        num_useless_computations_(),
+        num_free_elements_() {
+    if (is_active) {
+      BaseInt num_subsets = inv_->model()->num_subsets();
+      num_ratio_computations_.assign(num_subsets, 0);
+      num_useless_computations_.assign(num_subsets, 0);
+      num_free_elements_.assign(num_subsets, -1);  // -1 means not computed yet.
+    }
+  }
+
+  // To be called each time a num_free_elements is computed.
+  void Update(SubsetIndex subset, BaseInt new_num_free_elements) {
+    if (is_active_) {
+      if (new_num_free_elements == num_free_elements_[subset]) {
+        ++num_useless_computations_[subset];
+      }
+      ++num_ratio_computations_[subset];
+      num_free_elements_[subset] = new_num_free_elements;
+    }
+  }
+
+  // To be called at the end of the algorithm.
+  void PrintStats() {
+    if (is_active_) {
+      BaseInt num_subsets_considered = 0;
+      BaseInt num_ratio_updates = 0;
+      BaseInt num_wasted_ratio_updates = 0;
+      for (const SubsetIndex subset : inv_->model()->SubsetRange()) {
+        if (num_ratio_computations_[subset] > 0) {
+          ++num_subsets_considered;
+          if (num_ratio_computations_[subset] > 1) {
+            num_ratio_updates += num_ratio_computations_[subset] - 1;
+          }
+        }
+        num_wasted_ratio_updates += num_useless_computations_[subset];
+      }
+      LOG(INFO) << "num_subsets_considered = " << num_subsets_considered;
+      LOG(INFO) << "num_ratio_updates = " << num_ratio_updates;
+      LOG(INFO) << "num_wasted_ratio_updates = " << num_wasted_ratio_updates;
+    }
+  }
+
+ private:
+  // The invariant on which the stats are performed.
+  const SetCoverInvariant* inv_;
+
+  // Whether the stats are active or not.
+  bool is_active_;
+
+  // Number of times the ratio was computed for a subset.
+  SubsetToIntVector num_ratio_computations_;
+
+  // Number of times the ratio was computed for a subset and was the same as the
+  // previous one.
+  SubsetToIntVector num_useless_computations_;
+
+  // The value num_free_elements_ for the subset the last time it was computed.
+  // Used to detect useless computations.
+  SubsetToIntVector num_free_elements_;
+};
+}  // namespace
 
 // ElementDegreeSolutionGenerator.
 // There is no need to use a priority queue here, as the ratios are computed
@@ -201,7 +278,7 @@ bool ElementDegreeSolutionGenerator::NextSolution(
 bool ElementDegreeSolutionGenerator::NextSolution(
     const SubsetBoolVector& in_focus, const SubsetCostVector& costs) {
   DVLOG(1) << "Entering ElementDegreeSolutionGenerator::NextSolution";
-  DCHECK(inv_->CheckConsistency());
+  inv_->Recompute(CL::kFreeAndUncovered);
   // Create the list of all the indices in the problem.
   const BaseInt num_elements = inv_->model()->num_elements();
   std::vector<ElementIndex> degree_sorted_elements(num_elements);
@@ -216,6 +293,7 @@ bool ElementDegreeSolutionGenerator::NextSolution(
               if (rows[a].size() == rows[b].size()) return a < b;
               return false;
             });
+  ComputationUsefulnessStats stats(inv_, false);
   for (const ElementIndex element : degree_sorted_elements) {
     // No need to cover an element that is already covered.
     if (inv_->coverage()[element] != 0) continue;
@@ -223,19 +301,114 @@ bool ElementDegreeSolutionGenerator::NextSolution(
     SubsetIndex best_subset(-1);
     for (const SubsetIndex subset : rows[element]) {
       if (!in_focus[subset]) continue;
-      const Cost ratio = costs[subset] / inv_->num_free_elements()[subset];
+      const BaseInt num_free_elements = inv_->ComputeNumFreeElements(subset);
+      const Cost ratio = costs[subset] / num_free_elements;
+      stats.Update(subset, num_free_elements);
       if (ratio < min_ratio) {
         min_ratio = ratio;
         best_subset = subset;
+      } else if (ratio == min_ratio) {
+        // If the ratio is the same, we choose the subset with the most free
+        // elements.
+        // TODO(user): What about adding a tolerance for equality, which could
+        // further favor larger columns?
+        if (inv_->num_free_elements()[subset] >
+            inv_->num_free_elements()[best_subset]) {
+          best_subset = subset;
+        }
       }
     }
-    DCHECK_NE(best_subset, SubsetIndex(-1));
-    inv_->Select(best_subset);
+    if (best_subset.value() == -1) {
+      LOG(WARNING) << "Best subset not found. Algorithmic error or invalid "
+                      "input.";
+      continue;
+    }
+    DCHECK_NE(best_subset.value(), -1);
+    inv_->Select(best_subset, CL::kFreeAndUncovered);
     DVLOG(1) << "Cost = " << inv_->cost()
              << " num_uncovered_elements = " << inv_->num_uncovered_elements();
   }
   inv_->CompressTrace();
-  DCHECK(inv_->CheckConsistency());
+  stats.PrintStats();
+  DCHECK(inv_->CheckConsistency(CL::kFreeAndUncovered));
+  return true;
+}
+
+// LazyElementDegreeSolutionGenerator.
+// There is no need to use a priority queue here, as the ratios are computed
+// on-demand. Also elements are sorted based on degree once and for all and
+// moved past when the elements become already covered.
+bool LazyElementDegreeSolutionGenerator::NextSolution() {
+  const SubsetIndex num_subsets(inv_->model()->num_subsets());
+  const SubsetBoolVector in_focus(num_subsets, true);
+  return NextSolution(in_focus, inv_->model()->subset_costs());
+}
+
+bool LazyElementDegreeSolutionGenerator::NextSolution(
+    absl::Span<const SubsetIndex> focus) {
+  const SubsetIndex num_subsets(inv_->model()->num_subsets());
+  const SubsetBoolVector in_focus = MakeBoolVector(focus, num_subsets);
+  return NextSolution(in_focus, inv_->model()->subset_costs());
+}
+
+bool LazyElementDegreeSolutionGenerator::NextSolution(
+    absl::Span<const SubsetIndex> focus, const SubsetCostVector& costs) {
+  const SubsetIndex num_subsets(inv_->model()->num_subsets());
+  const SubsetBoolVector in_focus = MakeBoolVector(focus, num_subsets);
+  return NextSolution(in_focus, costs);
+}
+
+bool LazyElementDegreeSolutionGenerator::NextSolution(
+    const SubsetBoolVector& in_focus, const SubsetCostVector& costs) {
+  DVLOG(1) << "Entering LazyElementDegreeSolutionGenerator::NextSolution";
+  DCHECK(inv_->CheckConsistency(
+      SetCoverInvariant::ConsistencyLevel::kCostAndCoverage));
+  // Create the list of all the indices in the problem.
+  const BaseInt num_elements = inv_->model()->num_elements();
+  std::vector<ElementIndex> degree_sorted_elements(num_elements);
+  std::iota(degree_sorted_elements.begin(), degree_sorted_elements.end(),
+            ElementIndex(0));
+  const SparseRowView& rows = inv_->model()->rows();
+  // Sort indices by degree i.e. the size of the row corresponding to an
+  // element.
+  std::sort(degree_sorted_elements.begin(), degree_sorted_elements.end(),
+            [&rows](const ElementIndex a, const ElementIndex b) {
+              if (rows[a].size() < rows[b].size()) return true;
+              if (rows[a].size() == rows[b].size()) return a < b;
+              return false;
+            });
+  ComputationUsefulnessStats stats(inv_, false);
+  for (const ElementIndex element : degree_sorted_elements) {
+    // No need to cover an element that is already covered.
+    if (inv_->coverage()[element] != 0) continue;
+    Cost min_ratio = std::numeric_limits<Cost>::max();
+    SubsetIndex best_subset(-1);
+    for (const SubsetIndex subset : rows[element]) {
+      if (!in_focus[subset]) continue;
+      const BaseInt num_free_elements = inv_->ComputeNumFreeElements(subset);
+      const Cost ratio = costs[subset] / num_free_elements;
+      stats.Update(subset, num_free_elements);
+      if (ratio < min_ratio) {
+        min_ratio = ratio;
+        best_subset = subset;
+      } else if (ratio == min_ratio) {
+        // If the ratio is the same, we choose the subset with the most free
+        // elements.
+        // TODO(user): What about adding a tolerance for equality, which could
+        // further favor larger columns?
+        if (num_free_elements > inv_->num_free_elements()[best_subset]) {
+          best_subset = subset;
+        }
+      }
+    }
+    DCHECK_NE(best_subset, SubsetIndex(-1));
+    inv_->Select(best_subset, CL::kCostAndCoverage);
+    DVLOG(1) << "Cost = " << inv_->cost()
+             << " num_uncovered_elements = " << inv_->num_uncovered_elements();
+  }
+  inv_->CompressTrace();
+  DCHECK(inv_->CheckConsistency(CL::kCostAndCoverage));
+  stats.PrintStats();
   return true;
 }
 
@@ -267,7 +440,8 @@ bool SteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus,
                                   const SubsetCostVector& costs,
                                   int num_iterations) {
-  DCHECK(inv_->CheckConsistency());
+  DCHECK(inv_->CheckConsistency(CL::kCostAndCoverage));
+  inv_->Recompute(CL::kFreeAndUncovered);
   DVLOG(1) << "Entering SteepestSearch::NextSolution, num_iterations = "
            << num_iterations;
   // Return false if inv_ contains no solution.
@@ -298,7 +472,7 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus,
     DCHECK(inv_->is_selected()[best_subset]);
     DCHECK(inv_->ComputeIsRedundant(best_subset));
     DCHECK_GT(costs[best_subset], 0.0);
-    inv_->Deselect(best_subset);
+    inv_->Deselect(best_subset, CL::kFreeAndUncovered);
 
     for (IntersectingSubsetsIterator it(*inv_->model(), best_subset);
          !it.at_end(); ++it) {
@@ -312,7 +486,7 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus,
   inv_->CompressTrace();
   // TODO(user): change this to enable working on partial solutions.
   DCHECK_EQ(inv_->num_uncovered_elements(), 0);
-  DCHECK(inv_->CheckConsistency());
+  DCHECK(inv_->CheckConsistency(CL::kFreeAndUncovered));
   return true;
 }
 
@@ -364,7 +538,7 @@ bool GuidedTabuSearch::NextSolution(int num_iterations) {
 
 bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                                     int num_iterations) {
-  DCHECK(inv_->CheckConsistency());
+  DCHECK(inv_->CheckConsistency(CL::kFreeAndUncovered));
   DVLOG(1) << "Entering GuidedTabuSearch::NextSolution, num_iterations = "
            << num_iterations;
   const SubsetCostVector& subset_costs = inv_->model()->subset_costs();
@@ -419,7 +593,7 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 
     UpdatePenalties(focus);
     tabu_list_.Add(best_subset);
-    inv_->Flip(best_subset);
+    inv_->Flip(best_subset, CL::kFreeAndUncovered);
     // TODO(user): make the cost computation incremental.
     augmented_cost =
         std::accumulate(augmented_costs_.begin(), augmented_costs_.end(), 0.0);
@@ -437,7 +611,7 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
   }
   inv_->LoadSolution(best_choices);
   inv_->CompressTrace();
-  DCHECK(inv_->CheckConsistency());
+  DCHECK(inv_->CheckConsistency(CL::kFreeAndUncovered));
   return true;
 }
 
@@ -474,7 +648,7 @@ Cost GuidedLocalSearch::ComputeDelta(SubsetIndex subset) const {
 
 bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                                      int num_iterations) {
-  inv_->MakeFullyUpdated();
+  inv_->Recompute(CL::kRedundancy);
   Cost best_cost = inv_->cost();
   SubsetBoolVector best_choices = inv_->is_selected();
 
@@ -496,7 +670,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                               (1 + penalties_[best_subset])),
            best_subset.value()});
     }
-    inv_->FlipAndFullyUpdate(best_subset);  // Flip the best subset.
+    inv_->Flip(best_subset, CL::kRedundancy);  // Flip the best subset.
 
     // Getting the subset with highest utility.
     const SubsetIndex penalized_subset(utility_heap_.TopIndex());
@@ -508,7 +682,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
          penalized_subset.value()});
 
     // Get removable subsets (Add them to the heap).
-    for (const SubsetIndex subset : inv_->new_removable_subsets()) {
+    for (const SubsetIndex subset : inv_->newly_removable_subsets()) {
       const float delta_selected = (penalization_factor_ * penalties_[subset] +
                                     inv_->model()->subset_costs()[subset]);
       priority_heap_.Insert({delta_selected, subset.value()});
@@ -523,7 +697,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 
     // Get new non removable subsets.
     // (Delete them from the heap)
-    for (const SubsetIndex subset : inv_->new_non_removable_subsets()) {
+    for (const SubsetIndex subset : inv_->newly_non_removable_subsets()) {
       priority_heap_.Remove(subset.value());
     }
 
@@ -537,7 +711,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
   // Improve the solution by removing redundant subsets.
   for (const SubsetIndex& subset : focus) {
     if (inv_->is_selected()[subset] && inv_->ComputeIsRedundant(subset))
-      inv_->DeselectAndFullyUpdate(subset);
+      inv_->Deselect(subset, CL::kRedundancy);
   }
   DCHECK_EQ(inv_->num_uncovered_elements(), 0);
   return true;
@@ -571,12 +745,12 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
   SampleSubsets(&chosen_indices, num_subsets);
   BaseInt num_deselected = 0;
   for (const SubsetIndex subset : chosen_indices) {
-    inv->Deselect(subset);
+    inv->Deselect(subset, CL::kCostAndCoverage);
     ++num_deselected;
     for (IntersectingSubsetsIterator it(*inv->model(), subset); !it.at_end();
          ++it) {
       if (!inv->is_selected()[subset]) continue;
-      inv->Deselect(subset);
+      inv->Deselect(subset, CL::kCostAndCoverage);
       ++num_deselected;
     }
     // Note that num_deselected may exceed num_subsets by more than 1.
@@ -631,7 +805,7 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
   // Testing has shown that sorting sampled_subsets is not necessary.
   // Now, un-select the subset in sampled_subsets.
   for (const SubsetIndex subset : sampled_subsets) {
-    inv->Deselect(subset);
+    inv->Deselect(subset, CL::kCostAndCoverage);
   }
   return sampled_subsets;
 }
