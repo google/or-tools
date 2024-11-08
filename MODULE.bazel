@@ -28,7 +28,7 @@ bazel_dep(name = "scip", version = "8.1.0")
 bazel_dep(name = "swig", version = "4.2.0")
 bazel_dep(name = "zlib", version = "1.3.1.bcr.3")
 
-PYTHON_VERSIONS = [
+SUPPORTED_PYTHON_VERSIONS = [
     "3.8",
     "3.9",
     "3.10",
@@ -37,14 +37,15 @@ PYTHON_VERSIONS = [
     "3.13",
 ]
 
-python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+DEFAULT_PYTHON = "3.11"
 
+python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency=True)
 [
-    python.toolchain(
-        is_default = python_version == PYTHON_VERSIONS[-1],
-        python_version = python_version,
-    )
-    for python_version in PYTHON_VERSIONS
+  python.toolchain(
+    python_version = version,
+    is_default = version == DEFAULT_PYTHON,
+  )
+  for version in SUPPORTED_PYTHON_VERSIONS
 ]
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
@@ -55,7 +56,7 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
         python_version = python_version,
         requirements_lock = "//bazel:ortools_requirements.txt",
     )
-    for python_version in PYTHON_VERSIONS
+    for python_version in SUPPORTED_PYTHON_VERSIONS
 ]
 
 [
@@ -64,7 +65,7 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
         python_version = python_version,
         requirements_lock = "//bazel:notebook_requirements.txt",
     )
-    for python_version in PYTHON_VERSIONS
+    for python_version in SUPPORTED_PYTHON_VERSIONS
 ]
 
 use_repo(pip, pip_deps = "ortools_pip_deps")
