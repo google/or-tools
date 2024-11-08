@@ -2132,6 +2132,7 @@ class LocalSearchState {
 // to ensure that variable users will not misuse the state.
 class LocalSearchState::Variable {
  public:
+  Variable() : state_(nullptr), domain_id_(VariableDomainId(-1)) {}
   int64_t Min() const {
     DCHECK(Exists());
     return state_->VariableDomainMin(domain_id_);

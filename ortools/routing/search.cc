@@ -2557,10 +2557,11 @@ int64_t GetNegMaxDistanceFromVehicles(const RoutingModel& model,
 }
 
 // Returns the average distance between all pickup/delivery nodes of the given
-// pair from all vehicles.
-// For a given pickup/delivery, the distance from a vehicle v is defined as
-// ArcCost(start[v]->pickup) + ArcCost(delivery->end[v]).
-int64_t GetAvgPickupDeliveryPairDistanceFromVehicles(
+// pair from all vehicles where they can be serverd. Returns an empty optional
+// if no vehicle can serve the pair. For a given pickup/delivery, the distance
+// from a vehicle v is defined as ArcCost(start[v]->pickup) +
+// ArcCost(delivery->end[v]).
+std::optional<int64_t> GetAvgPickupDeliveryPairDistanceFromVehicles(
     const RoutingModel& model, int pair_index,
     const Bitset64<int>& vehicle_set) {
   const auto& [pickups, deliveries] =
@@ -2599,9 +2600,9 @@ int64_t GetAvgPickupDeliveryPairDistanceFromVehicles(
       }
     }
   }
-  // TODO(user): When no valid pairs are found, avoid creating entries for
-  // this pair since it cannot be inserted anywhere.
-  return valid_pairs > 0 ? avg_pair_distance_sum / valid_pairs : 0;
+  return valid_pairs > 0
+             ? std::make_optional<int64_t>(avg_pair_distance_sum / valid_pairs)
+             : std::nullopt;
 }
 
 }  // namespace
@@ -2698,16 +2699,22 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
           std::max(delivery_penalty, model.UnperformedPenalty(delivery));
     }
 
-    const int64_t avg_pair_to_vehicle_cost =
+    const std::optional<int64_t> maybe_avg_pair_to_vehicle_cost =
         compute_avg_pickup_delivery_pair_distance_from_vehicles
             ? GetAvgPickupDeliveryPairDistanceFromVehicles(model, pair_index,
                                                            vehicle_set)
-            : 0;
+            : std::make_optional<int64_t>(0);
+
+    if (!maybe_avg_pair_to_vehicle_cost.has_value()) {
+      // There is no vehicle that can serve the pickup/delivery nodes in the
+      // current pair index.
+      continue;
+    }
 
     insertion_order_.push_back(
         {.properties = get_insertion_properties(
              CapAdd(pickup_penalty, delivery_penalty), num_allowed_vehicles,
-             avg_pair_to_vehicle_cost),
+             maybe_avg_pair_to_vehicle_cost.value()),
          .start_end_value = {GetNegMaxDistanceFromVehicles(model, pair_index),
                              0},
          .is_node_index = false,
