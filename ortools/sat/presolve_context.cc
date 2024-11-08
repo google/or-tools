@@ -524,6 +524,11 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   if (IsFixed(expr)) {
     return FixedValue(expr) == value;
   }
+  if (value > MaxOf(expr)) return false;
+  if (value < MinOf(expr)) return false;
+
+  // We assume expression is validated for overflow initially, and the code
+  // below should be overflow safe.
   if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
   return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
 }

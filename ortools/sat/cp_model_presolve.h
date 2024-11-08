@@ -444,6 +444,7 @@ class ModelCopy {
                             LinearExpressionProto* dst);
   bool CopyAutomaton(const ConstraintProto& ct);
   bool CopyTable(const ConstraintProto& ct);
+  bool CopyAllDiff(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify

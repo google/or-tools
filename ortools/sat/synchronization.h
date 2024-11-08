@@ -508,9 +508,8 @@ class SharedBoundsManager {
   //
   // Note that this do not work with symmetries. And for now we don't call it
   // when this is the case.
-  void FixVariablesFromPartialSolution(
-      const std::vector<int64_t>& solution,
-      const std::vector<int>& variables_to_fix);
+  void FixVariablesFromPartialSolution(absl::Span<const int64_t> solution,
+                                       absl::Span<const int> variables_to_fix);
 
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed

@@ -498,7 +498,11 @@ std::string ValidateTableConstraint(const CpModelProto& model,
         "the number of expressions: ",
         ProtobufDebugString(ct));
   }
-
+  for (const int var : arg.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in table constraint: ", var);
+    }
+  }
   for (const LinearExpressionProto& expr : arg.exprs()) {
     RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }

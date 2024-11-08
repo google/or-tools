@@ -13,10 +13,10 @@
 
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -3351,12 +3351,14 @@ cc_library(
     srcs = ["subsolver.cc"],
     hdrs = ["subsolver.h"],
     deps = [
+        ":util",
         "//ortools/base",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
         "//ortools/base:types",
         "//ortools/util:stats",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
@@ -3370,7 +3372,9 @@ cc_test(
     size = "small",
     srcs = ["subsolver_test.cc"],
     deps = [
+        ":model",
         ":subsolver",
+        ":util",
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/synchronization",
     ],

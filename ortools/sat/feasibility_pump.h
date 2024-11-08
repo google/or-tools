@@ -237,6 +237,8 @@ class FeasibilityPump {
 
   // TODO(user): Tune default value. Expose as parameter.
   int max_fp_iterations_ = 20;
+
+  std::vector<double> tmp_solution_;
 };
 
 }  // namespace sat

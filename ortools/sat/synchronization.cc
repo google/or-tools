@@ -967,8 +967,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
 // this break determinism if two solution for the same subpart comes at the same
 // time.
 void SharedBoundsManager::FixVariablesFromPartialSolution(
-    const std::vector<int64_t>& solution,
-    const std::vector<int>& variables_to_fix) {
+    absl::Span<const int64_t> solution,
+    absl::Span<const int> variables_to_fix) {
   // This function shouldn't be called if we has symmetry.
   CHECK(!has_symmetry_);
   absl::MutexLock mutex_lock(&mutex_);

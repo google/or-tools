@@ -530,41 +530,6 @@ TEST(LinMinTest, OnlyOnePossibleExpr) {
   EXPECT_EQ(SatSolver::INFEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
 }
 
-TEST(OneOfTest, BasicPropagation) {
-  Model model;
-
-  IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
-  std::vector<Literal> selectors;
-  for (int i = 0; i < 5; ++i) {
-    selectors.push_back(Literal(model.Add(NewBooleanVariable()), true));
-  }
-  std::vector<IntegerValue> values{5, 0, 3, 3, 9};
-
-  model.Add(IsOneOf(var, selectors, values));
-
-  // We start with nothing fixed and then start fixing variables.
-  SatSolver* solver = model.GetOrCreate<SatSolver>();
-  EXPECT_TRUE(solver->Propagate());
-  EXPECT_BOUNDS_EQ(var, 0, 9);
-  EXPECT_TRUE(solver->EnqueueDecisionIfNotConflicting(selectors[1].Negated()));
-  EXPECT_BOUNDS_EQ(var, 3, 9);
-  EXPECT_TRUE(solver->EnqueueDecisionIfNotConflicting(selectors[4].Negated()));
-  EXPECT_BOUNDS_EQ(var, 3, 5);
-  EXPECT_TRUE(solver->EnqueueDecisionIfNotConflicting(selectors[2].Negated()));
-  EXPECT_BOUNDS_EQ(var, 3, 5);
-  EXPECT_TRUE(solver->EnqueueDecisionIfNotConflicting(selectors[3].Negated()));
-  EXPECT_BOUNDS_EQ(var, 5, 5);
-
-  // Now we restrict the possible values by changing the bound.
-  solver->Backtrack(0);
-  model.Add(LowerOrEqual(var, 3));
-  EXPECT_EQ(
-      SatSolver::FEASIBLE,
-      model.GetOrCreate<SatSolver>()->ResetAndSolveWithGivenAssumptions({}));
-  EXPECT_FALSE(model.Get(Value(selectors[0])));
-  EXPECT_FALSE(model.Get(Value(selectors[4])));
-}
-
 // Propagates a * b = p by hand. Return false if the domains are empty,
 // otherwise returns true and the expected domains value. This is slow and
 // work in O(product of domain(a).size() * domain(b).size())!.

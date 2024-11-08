@@ -570,6 +570,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   }
 
   // Shorten the constraint if needed.
+  IntegerValue fixed_part = 0;
   if (new_size < num_terms) {
     term_changed = true;
     ++num_shortened_constraints_;
@@ -580,9 +581,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
       const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
       const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
       if (lb == ub) {
-        const IntegerValue rhs_adjust = lb * coeff;
-        if (ct->lb > kMinIntegerValue) ct->lb -= rhs_adjust;
-        if (ct->ub < kMaxIntegerValue) ct->ub -= rhs_adjust;
+        fixed_part += coeff * lb;
         continue;
       }
       ct->vars[new_size] = var;
@@ -594,7 +593,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 
   // Clear constraints that are always true.
   // We rely on the deletion code to remove them eventually.
-  if (min_sum >= ct->lb && max_sum <= ct->ub) {
+  if (min_sum + fixed_part >= ct->lb && max_sum + fixed_part <= ct->ub) {
     ct->resize(0);
     ct->lb = 0;
     ct->ub = 0;
@@ -602,8 +601,10 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   }
 
   // Make sure bounds are finite.
-  ct->lb = std::max(ct->lb, min_sum);
-  ct->ub = std::min(ct->ub, max_sum);
+  ct->lb = std::max(ct->lb, min_sum + fixed_part);
+  ct->ub = std::min(ct->ub, max_sum + fixed_part);
+  ct->lb -= fixed_part;
+  ct->ub -= fixed_part;
 
   // The variable can be shifted and complemented so we have constraints of
   // the form:

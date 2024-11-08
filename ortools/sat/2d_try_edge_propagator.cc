@@ -246,6 +246,17 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
     const RectangleInRange& box = active_box_ranges_[box_index];
     x_.ClearReason();
     y_.ClearReason();
+    // The propagator found that this box cannot be placed with x_min in a
+    // position between [x_min, new_x_min] (or between [x_min, x_max-x_size] if
+    // it is a conflict). The conflicting boxes explaining this propagation must
+    // then have a mandatory part that overlaps with the box if it was placed in
+    // any of those x positions.
+    const Rectangle active_area = {.x_min = box.bounding_area.x_min,
+                                   .x_max = new_x_min.has_value()
+                                                ? (*new_x_min + box.x_size)
+                                                : box.bounding_area.x_max,
+                                   .y_min = box.bounding_area.y_min,
+                                   .y_max = box.bounding_area.y_max};
     for (int j = 0; j < active_box_ranges_.size(); ++j) {
       if (!is_active_[j]) continue;
       // Important: we also add to the reason the actual box we are changing the
@@ -255,22 +266,8 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
       const RectangleInRange& box_reason = active_box_ranges_[j];
       if (j != box_index) {
         const Rectangle mandatory_region = box_reason.GetMandatoryRegion();
-        if (mandatory_region == Rectangle::GetEmpty()) {
-          continue;
-        }
-        // Don't add to the reason any box that was not participating in the
-        // placement decision. Ie., anything before the old x_min or after the
-        // new x_max.
-        if (new_x_min.has_value() &&
-            mandatory_region.x_min > *new_x_min + box_reason.x_size) {
-          continue;
-        }
-        if (new_x_min.has_value() &&
-            mandatory_region.x_max < box.bounding_area.x_min) {
-          continue;
-        }
-        if (mandatory_region.y_min > box.bounding_area.y_max ||
-            mandatory_region.y_max < box.bounding_area.y_min) {
+        if (mandatory_region == Rectangle::GetEmpty() ||
+            active_area.IsDisjoint(mandatory_region)) {
           continue;
         }
       }
@@ -280,8 +277,12 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
       x_.AddStartMinReason(b, box_reason.bounding_area.x_min);
       y_.AddStartMinReason(b, box_reason.bounding_area.y_min);
 
-      x_.AddStartMaxReason(b,
-                           box_reason.bounding_area.x_max - box_reason.x_size);
+      if (j != box_index || !new_x_min.has_value()) {
+        // We don't need to add to the reason the x_max for the box we are
+        // pushing the x_min, except if we found a conflict.
+        x_.AddStartMaxReason(
+            b, box_reason.bounding_area.x_max - box_reason.x_size);
+      }
       y_.AddStartMaxReason(b,
                            box_reason.bounding_area.y_max - box_reason.y_size);
 

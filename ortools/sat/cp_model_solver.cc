@@ -741,7 +741,7 @@ void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
     DeterministicLoop(subsolvers, params.num_workers(), batch_size,
                       params.max_num_deterministic_batches());
   } else {
-    NonDeterministicLoop(subsolvers, params.num_workers());
+    NonDeterministicLoop(subsolvers, params.num_workers(), shared->time_limit);
   }
 
   // We need to delete the subsolvers in order to fill the stat tables. Note
@@ -1269,6 +1269,10 @@ class LnsSolver : public SubSolver {
       std::vector<int> postsolve_mapping;
       const CpSolverStatus presolve_status =
           PresolveCpModel(context.get(), &postsolve_mapping);
+
+      // It is important to stop here to avoid using a model for which the
+      // presolve was interrupted in the middle.
+      if (local_time_limit->LimitReached()) return;
 
       // Release the context.
       context.reset(nullptr);
@@ -1977,7 +1981,16 @@ void TestSolutionHintForFeasibility(const CpModelProto& model_proto,
       // case, so we don't log anything more.
       manager->NewSolution(solution, "complete_hint", nullptr);
     } else {
-      SOLVER_LOG(logger, "The solution hint is complete and is feasible.");
+      std::string message = "The solution hint is complete and is feasible.";
+      if (model_proto.has_objective()) {
+        absl::StrAppend(
+            &message, " Its objective value is ",
+            ScaleObjectiveValue(
+                model_proto.objective(),
+                ComputeInnerObjective(model_proto.objective(), solution)),
+            ".");
+      }
+      SOLVER_LOG(logger, message);
     }
   } else {
     // TODO(user): Change the code to make the solution checker more

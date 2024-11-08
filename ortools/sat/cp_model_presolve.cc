@@ -5154,7 +5154,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
       context_->UpdateRuleStats("table: negative table without tuples");
       return RemoveConstraint(ct);
     } else {
-      context_->UpdateRuleStats("table: positive table without tuplest");
+      context_->UpdateRuleStats("table: positive table without tuples");
       return MarkConstraintAsFalse(ct);
     }
   }
@@ -5177,7 +5177,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   }
 
   if (num_fixed_exprs > 0) {
-    RemoveFixedColumnsFromTable(context_, ct);
+    CanonicalizeTable(context_, ct);
   }
 
   // Nothing more to do for negated tables.
@@ -12309,6 +12309,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kAutomaton:
         if (!CopyAutomaton(ct)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kAllDiff:
+        if (!CopyAllDiff(ct)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
         break;
@@ -12752,6 +12755,13 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
   }
   *new_ct->mutable_table()->mutable_values() = ct.table().values();
 
+  return true;
+}
+
+bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
+  if (ct.all_diff().exprs().size() <= 1) return true;
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  *new_ct = ct;
   return true;
 }
 
@@ -13333,6 +13343,13 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
   // If presolve is false, just run expansion.
   if (!context_->params().cp_model_presolve()) {
+    for (ConstraintProto& ct :
+         *context_->working_model->mutable_constraints()) {
+      if (ct.constraint_case() == ConstraintProto::kLinear) {
+        context_->CanonicalizeLinearConstraint(&ct);
+      }
+    }
+
     ExpandCpModelAndCanonicalizeConstraints();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
@@ -13350,6 +13367,17 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // trivial presolving during the initial copy of the model, and expansion
     // might do more.
     InitializeMappingModelVariables();
+
+    // We don't want to run postsolve when the presolve is disabled, but the
+    // expansion might have added some constraints to the mapping model. To
+    // restore correctness, we merge them with the working model.
+    if (!context_->mapping_model->constraints().empty()) {
+      context_->UpdateRuleStats(
+          "TODO: mapping model not empty with presolve disabled");
+      context_->working_model->mutable_constraints()->MergeFrom(
+          context_->mapping_model->constraints());
+      context_->mapping_model->clear_constraints();
+    }
 
     if (logger_->LoggingIsEnabled()) context_->LogInfo();
     return CpSolverStatus::UNKNOWN;
