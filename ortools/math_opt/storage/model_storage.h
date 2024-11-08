@@ -164,7 +164,7 @@ class ModelStorage {
   // considered invalid when solving.
   //
   // See ApplyUpdateProto() for dealing with subsequent updates.
-  static absl::StatusOr<std::unique_ptr<ModelStorage>> FromModelProto(
+  static absl::StatusOr<std::unique_ptr<ModelStorage> > FromModelProto(
       const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
@@ -326,7 +326,7 @@ class ModelStorage {
 
   // The {linear constraint, variable, coefficient} tuples with nonzero linear
   // constraint matrix coefficients.
-  inline std::vector<std::tuple<LinearConstraintId, VariableId, double>>
+  inline std::vector<std::tuple<LinearConstraintId, VariableId, double> >
   linear_constraint_matrix() const;
 
   // Returns the variables with nonzero coefficients in a linear constraint.
@@ -399,7 +399,7 @@ class ModelStorage {
   // are ordered such that .first <= .second. All values are nonempty.
   //
   // TODO(b/233630053) do no allocate the result, expose an iterator API.
-  inline std::vector<std::tuple<VariableId, VariableId, double>>
+  inline std::vector<std::tuple<VariableId, VariableId, double> >
   quadratic_objective_terms(ObjectiveId id) const;
 
   //////////////////////////////////////////////////////////////////////////////

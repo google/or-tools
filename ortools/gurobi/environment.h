@@ -723,6 +723,8 @@ extern std::function<int(GRBenv *envP, const char *paramname, int *valueP, int *
 extern std::function<int(GRBenv *envP, const char *paramname, double *valueP, double *minP, double *maxP, double *defP)> GRBgetdblparaminfo;
 extern std::function<int(GRBenv *envP, const char *paramname, char *valueP, char *defP)> GRBgetstrparaminfo;
 extern std::function<GRBenv *(GRBmodel *model)> GRBgetenv;
+extern std::function<GRBenv*(GRBmodel* model, int num)> GRBgetmultiobjenv;
+extern std::function<GRBenv*(GRBmodel* model)> GRBdiscardmultiobjenvs;
 extern std::function<void(GRBenv *env)> GRBfreeenv;
 extern std::function<const char *(GRBenv *env)> GRBgeterrormsg;
 extern std::function<void(int *majorP, int *minorP, int *technicalP)> GRBversion;

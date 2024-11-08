@@ -21,7 +21,6 @@
 #include <memory>
 #include <optional>
 #include <ostream>
-#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -162,7 +161,7 @@ class Model {
   std::unique_ptr<Model> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
-  inline const std::string& name() const;
+  inline absl::string_view name() const;
 
   //////////////////////////////////////////////////////////////////////////////
   // Variable methods
@@ -217,7 +216,7 @@ class Model {
   inline Variable variable(VariableId id) const;
 
   // Returns the variable name.
-  inline const std::string& name(Variable variable) const;
+  inline absl::string_view name(Variable variable) const;
 
   // Sets a variable lower bound.
   inline void set_lower_bound(Variable variable, double lower_bound);
@@ -318,7 +317,7 @@ class Model {
   inline LinearConstraint linear_constraint(LinearConstraintId id) const;
 
   // Returns the linear constraint name.
-  inline const std::string& name(LinearConstraint constraint) const;
+  inline absl::string_view name(LinearConstraint constraint) const;
 
   // Sets a linear constraint lower bound.
   inline void set_lower_bound(LinearConstraint constraint, double lower_bound);
@@ -750,6 +749,13 @@ class Model {
   // Prefer set_maximize() and set_minimize() above for more readable code.
   inline void set_is_maximize(bool is_maximize);
 
+  // Returns all variables that have a nonzero coefficient in the linear part of
+  // the primary objective. Result is not sorted.
+  inline std::vector<Variable> NonzeroVariablesInLinearObjective() const;
+  // Returns all variables that have a nonzero coefficient in the quadratic part
+  // of the primary objective. Result is not sorted.
+  std::vector<Variable> NonzeroVariablesInQuadraticObjective() const;
+
   //////////////////////////////////////////////////////////////////////////////
   // Auxiliary objective methods
   //
@@ -847,6 +853,11 @@ class Model {
   // Prefer set_maximize() and set_minimize() above for more readable code.
   inline void set_is_maximize(Objective objective, bool is_maximize);
 
+  // Returns all variables that have a nonzero coefficient in the linear part of
+  // the `objective`. Result is not sorted.
+  std::vector<Variable> NonzeroVariablesInLinearObjective(
+      Objective objective) const;
+
   // Returns a proto representation of the optimization model.
   //
   // See FromModelProto() to build a Model from a proto.
@@ -922,7 +933,7 @@ class Model {
 
 // ------------------------------- Variables -----------------------------------
 
-const std::string& Model::name() const { return storage()->name(); }
+absl::string_view Model::name() const { return storage()->name(); }
 
 Variable Model::AddVariable(const absl::string_view name) {
   return Variable(storage(), storage()->AddVariable(name));
@@ -978,7 +989,7 @@ Variable Model::variable(const VariableId id) const {
   return Variable(storage(), id);
 }
 
-const std::string& Model::name(const Variable variable) const {
+absl::string_view Model::name(const Variable variable) const {
   CheckModel(variable.storage());
   return storage()->variable_name(variable.typed_id());
 }
@@ -1080,7 +1091,7 @@ LinearConstraint Model::linear_constraint(const LinearConstraintId id) const {
   return LinearConstraint(storage(), id);
 }
 
-const std::string& Model::name(const LinearConstraint constraint) const {
+absl::string_view Model::name(const LinearConstraint constraint) const {
   CheckModel(constraint.storage());
   return storage()->linear_constraint_name(constraint.typed_id());
 }
@@ -1489,6 +1500,10 @@ void Model::set_minimize() { storage()->set_minimize(kPrimaryObjectiveId); }
 
 void Model::set_is_maximize(const bool is_maximize) {
   storage()->set_is_maximize(kPrimaryObjectiveId, is_maximize);
+}
+
+std::vector<Variable> Model::NonzeroVariablesInLinearObjective() const {
+  return NonzeroVariablesInLinearObjective(primary_objective());
 }
 
 // -------------------------- Auxiliary objectives -----------------------------
