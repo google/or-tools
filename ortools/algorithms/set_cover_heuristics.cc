@@ -659,7 +659,8 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
     }
   }
 
-  for (int iteration = 0; iteration < num_iterations; ++iteration) {
+  for (int iteration = 0;
+       !priority_heap_.IsEmpty() && iteration < num_iterations; ++iteration) {
     // Improve current solution respective to the current penalties.
     const SubsetIndex best_subset(priority_heap_.TopIndex());
     if (inv_->is_selected()[best_subset]) {
@@ -671,8 +672,10 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
            best_subset.value()});
     }
     inv_->Flip(best_subset, CL::kRedundancy);  // Flip the best subset.
+    DCHECK(!utility_heap_.IsEmpty());
 
-    // Getting the subset with highest utility.
+    // Getting the subset with highest utility. utility_heap_ is not empty,
+    // because we just inserted a pair.
     const SubsetIndex penalized_subset(utility_heap_.TopIndex());
     utility_heap_.Pop();
     ++penalties_[penalized_subset];
@@ -680,6 +683,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
         {static_cast<float>(inv_->model()->subset_costs()[penalized_subset] /
                             (1 + penalties_[penalized_subset])),
          penalized_subset.value()});
+    DCHECK(!utility_heap_.IsEmpty());
 
     // Get removable subsets (Add them to the heap).
     for (const SubsetIndex subset : inv_->newly_removable_subsets()) {
@@ -687,6 +691,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                                     inv_->model()->subset_costs()[subset]);
       priority_heap_.Insert({delta_selected, subset.value()});
     }
+    DCHECK(!priority_heap_.IsEmpty());
 
     for (const SubsetIndex subset : {penalized_subset, best_subset}) {
       const float delta = ComputeDelta(subset);
@@ -694,9 +699,11 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
         priority_heap_.Insert({delta, subset.value()});
       }
     }
+    DCHECK(!priority_heap_.IsEmpty());
 
-    // Get new non removable subsets.
-    // (Delete them from the heap)
+    // Get new non removable subsets and remove them from the heap.
+    // This is when the priority_heap_ can become empty and end the outer loop
+    // early.
     for (const SubsetIndex subset : inv_->newly_non_removable_subsets()) {
       priority_heap_.Remove(subset.value());
     }

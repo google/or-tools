@@ -367,6 +367,7 @@ cc_test(
         ":set_cover_invariant",
         ":set_cover_mip",
         ":set_cover_model",
+        "//ortools/base:parse_text_proto",
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",

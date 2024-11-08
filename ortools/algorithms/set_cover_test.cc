@@ -25,11 +25,29 @@
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/parse_text_proto.h"
 
 namespace operations_research {
 namespace {
-
+using google::protobuf::contrib::parse_proto::ParseTextProtoOrDie;
 using CL = SetCoverInvariant::ConsistencyLevel;
+
+TEST(SetCoverTest, GuidedLocalSearchVerySmall) {
+  SetCoverProto proto = ParseTextProtoOrDie(R"pb(
+    subset { cost: 1 element: 1 element: 2 }
+    subset { cost: 1 element: 0 })pb");
+
+  SetCoverModel model;
+  model.ImportModelFromProto(proto);
+  CHECK(model.ComputeFeasibility());
+  SetCoverInvariant inv(&model);
+  GreedySolutionGenerator greedy_search(&inv);
+  CHECK(greedy_search.NextSolution());
+  CHECK(inv.CheckConsistency(CL::kFreeAndUncovered));
+  GuidedLocalSearch search(&inv);
+  CHECK(search.NextSolution(100));
+  CHECK(inv.CheckConsistency(CL::kRedundancy));
+}
 
 SetCoverModel CreateKnightsCoverModel(int num_rows, int num_cols) {
   SetCoverModel model;
@@ -335,7 +353,7 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRandomClear) {
   SetCoverInvariant inv(&model);
   Cost best_cost = std::numeric_limits<Cost>::max();
   SubsetBoolVector best_choices;
-  for (int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < 10000; ++i) {
     LazyElementDegreeSolutionGenerator degree(&inv);
     CHECK(degree.NextSolution());
     CHECK(inv.CheckConsistency(CL::kCostAndCoverage));
