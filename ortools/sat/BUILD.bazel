@@ -2020,6 +2020,21 @@ cc_library(
 )
 
 cc_library(
+    name = "timetable_horizontal_edgefinding",
+    srcs = ["timetable_horizontal_edgefinding.cc"],
+    hdrs = ["timetable_horizontal_edgefinding.h"],
+    deps = [
+        ":integer",
+        ":intervals",
+        ":model",
+        ":sat_base",
+        "//ortools/base:iterator_adaptors",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_library(
     name = "cumulative",
     srcs = ["cumulative.cc"],
     hdrs = ["cumulative.h"],
@@ -2038,6 +2053,7 @@ cc_library(
         ":sat_solver",
         ":timetable",
         ":timetable_edgefinding",
+        ":timetable_horizontal_edgefinding",
         "//ortools/base",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/log:check",

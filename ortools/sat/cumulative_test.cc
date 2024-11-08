@@ -353,9 +353,10 @@ TEST(CumulativeTest, RegressionTest2) {
 // ========================================================================
 
 // Param1: Number of tasks.
-// Param3: Enable overload checking.
-// Param4: Enable timetable edge finding.
-typedef ::testing::tuple<int, bool, bool> CumulativeTestParams;
+// Param2: Enable overload checking.
+// Param3: Enable timetable edge finding.
+// Param4: Enable horizontal elastic overload checking.
+typedef ::testing::tuple<int, bool, bool, bool> CumulativeTestParams;
 
 class RandomCumulativeTest
     : public ::testing::TestWithParam<CumulativeTestParams> {
@@ -369,6 +370,8 @@ class RandomCumulativeTest
         ::testing::get<1>(GetParam()));
     parameters.set_use_timetable_edge_finding_in_cumulative(
         ::testing::get<2>(GetParam()));
+    parameters.set_use_horizontal_overload_checking_in_cumulative(
+        ::testing::get<3>(GetParam()));
     return parameters;
   }
 };
@@ -409,12 +412,14 @@ TEST_P(SlowRandomCumulativeTest, FindAllOptionalTasks) {
 INSTANTIATE_TEST_SUITE_P(
     All, FastRandomCumulativeTest,
     ::testing::Combine(::testing::Range(3, DEBUG_MODE ? 4 : 6),
-                       ::testing::Bool(), ::testing::Bool()));
+                       ::testing::Bool(), ::testing::Bool(),
+                       ::testing::Bool()));
 
 INSTANTIATE_TEST_SUITE_P(
     All, SlowRandomCumulativeTest,
     ::testing::Combine(::testing::Range(3, DEBUG_MODE ? 4 : 5),
-                       ::testing::Bool(), ::testing::Bool()));
+                       ::testing::Bool(), ::testing::Bool(),
+                       ::testing::Bool()));
 
 }  // namespace
 }  // namespace sat

@@ -816,6 +816,14 @@ message SatParameters {
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_overload_checker_in_cumulative = 78 [default = false];
 
+  // When this is true, the cumulative constraint is reinforced with horizontal
+  // elastic overload checking, i.e., an additional level of reasoning based on 
+  // horizontal elasticity and energy. This additional level supplements the 
+  // default level of reasoning as well as timetable edge finding.
+  //
+  // This propagator is experimental.
+  optional bool use_horizontal_overload_checking_in_cumulative = 302 [default = false];
+
   // Enable a heuristic to solve cumulative constraints using a modified energy
   // constraint. We modify the usual energy definition by applying a
   // super-additive function (also called "conservative scale" or "dual-feasible

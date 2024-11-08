@@ -34,6 +34,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/timetable_edgefinding.h"
+#include "ortools/sat/timetable_horizontal_edgefinding.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -243,6 +244,17 @@ std::function<void(Model*)> Cumulative(
         new TimeTablingPerTask(capacity, helper, demands_helper, model);
     time_tabling->RegisterWith(watcher);
     model->TakeOwnership(time_tabling);
+
+    // Propagator responsible for applying the Horizontal Elastic Overload 
+    // Checking rule. The propogator simply takes care of detecting conflicts
+    // without actually modifying the domain of the variables.
+    if (parameters.use_horizontal_overload_checking_in_cumulative()) {
+      HorizontallyElasticOverloadChecker* heoc =
+          new HorizontallyElasticOverloadChecker(capacity, helper,
+                                                 demands_helper, model);
+      heoc->RegisterWith(watcher);
+      model->TakeOwnership(heoc);
+    }
 
     // Propagator responsible for applying the Overload Checking filtering rule.
     // It increases the minimum of the capacity variable.
