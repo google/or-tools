@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/fedora
-FROM fedora:38 AS env
+FROM fedora:41 AS env
 
 #############
 ##  SETUP  ##
@@ -7,7 +7,7 @@ FROM fedora:38 AS env
 RUN dnf -y update \
 && dnf -y install git \
  wget which redhat-lsb-core pkgconfig autoconf libtool zlib-devel \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y group install "Development Tools" \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 ENTRYPOINT ["/usr/bin/bash", "-c"]
@@ -21,7 +21,7 @@ RUN dnf -y update \
 # Install .Net
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-6.0 \
+&& dnf -y install dotnet-sdk-8.0 \
 && dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info

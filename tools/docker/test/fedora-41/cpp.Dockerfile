@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/fedora
-FROM fedora:38
+FROM fedora:40
 
 RUN dnf -y update \
 && dnf -y install git \
@@ -8,13 +8,7 @@ RUN dnf -y update \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 
-# Java Install
-RUN dnf -y update \
-&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
-&& dnf clean all
-ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
-
 WORKDIR /root
-ADD or-tools_amd64_fedora-38_java_v*.tar.gz .
+ADD or-tools_amd64_fedora-40_cpp_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test
