@@ -6,7 +6,7 @@ FROM fedora:latest AS base
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install git wget \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y group install "Development Tools" \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 CMD [ "/usr/bin/bash" ]
