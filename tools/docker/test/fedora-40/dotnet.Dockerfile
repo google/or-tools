@@ -4,7 +4,7 @@ FROM fedora:40
 RUN dnf -y update \
 && dnf -y install git \
  wget which redhat-lsb-core pkgconfig autoconf libtool zlib-devel \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y group install "Development Tools" \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 
