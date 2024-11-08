@@ -9,7 +9,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64:latest AS env
 ##  SETUP  ##
 #############
 RUN dnf -y update \
-&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y group install 'Development Tools' \
 && dnf -y install wget curl \
  pcre2-devel openssl \
  which redhat-lsb-core \
