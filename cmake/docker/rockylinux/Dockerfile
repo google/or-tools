@@ -1,6 +1,7 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/rockylinux
 FROM rockylinux:9 AS base
+
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
