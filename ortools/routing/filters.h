@@ -185,6 +185,8 @@ class DimensionValues {
         committed_range_of_path_(num_paths, {.begin = 0, .end = 0}),
         span_(num_paths, Interval::AllIntegers()),
         committed_span_(num_paths, Interval::AllIntegers()),
+        vehicle_breaks_(num_paths),
+        committed_vehicle_breaks_(num_paths),
         changed_paths_(num_paths),
         max_num_committed_elements_(16 * num_nodes) {
     nodes_.reserve(max_num_committed_elements_);
@@ -248,6 +250,17 @@ class DimensionValues {
     }
   };
 
+  struct VehicleBreak {
+    Interval start;
+    Interval end;
+    Interval duration;
+    Interval is_performed;
+    bool operator==(const VehicleBreak& other) const {
+      return start == other.start && end == other.end &&
+             duration == other.duration && is_performed == other.is_performed;
+    }
+  };
+
   // Adds a node to new nodes.
   void PushNode(int node) { nodes_.push_back(node); }
 
@@ -306,6 +319,7 @@ class DimensionValues {
     for (const int path : changed_paths_.PositionsSetAtLeastOnce()) {
       committed_range_of_path_[path] = range_of_path_[path];
       committed_span_[path] = span_[path];
+      committed_vehicle_breaks_[path] = vehicle_breaks_[path];
     }
     changed_paths_.SparseClearAll();
     num_committed_elements_ = num_current_elements_;
@@ -428,6 +442,21 @@ class DimensionValues {
     return span_[path];
   }
 
+  // Returns a const view of the vehicle breaks of the path, in the current
+  // state.
+  absl::Span<const VehicleBreak> VehicleBreaks(int path) const {
+    return absl::MakeConstSpan(changed_paths_[path]
+                                   ? vehicle_breaks_[path]
+                                   : committed_vehicle_breaks_[path]);
+  }
+
+  // Returns a mutable vector of the vehicle breaks of the path, in the current
+  // state. The path must have been changed since the last commit.
+  std::vector<VehicleBreak>& MutableVehicleBreaks(int path) {
+    DCHECK(changed_paths_[path]);
+    return vehicle_breaks_[path];
+  }
+
   // Returns the number of nodes of the path, in the current state.
   int NumNodes(int path) const { return range_of_path_[path].Size(); }
   // Returns a const view of the set of paths changed, in the current state.
@@ -474,6 +503,9 @@ class DimensionValues {
   // Associates span to each path.
   std::vector<Interval> span_;
   std::vector<Interval> committed_span_;
+  // Associates vehicle breaks with each path.
+  std::vector<std::vector<VehicleBreak>> vehicle_breaks_;
+  std::vector<std::vector<VehicleBreak>> committed_vehicle_breaks_;
   // Stores whether each path has been changed since last committed state.
   SparseBitset<int> changed_paths_;
   // Threshold for the size of the committed vector. This is purely heuristic:
@@ -492,7 +524,6 @@ class DimensionValues {
 // This applies light reasoning, and runs in O(#breaks * #interbreak rules).
 bool PropagateLightweightVehicleBreaks(
     int path, DimensionValues& dimension_values,
-    const std::vector<IntervalVar*>& breaks,
     const std::vector<std::pair<int64_t, int64_t>>& interbreaks);
 
 /// Returns a filter tracking route constraints.

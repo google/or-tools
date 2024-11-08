@@ -1114,9 +1114,9 @@ bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
 
 bool PropagateLightweightVehicleBreaks(
     int path, DimensionValues& dimension_values,
-    const std::vector<IntervalVar*>& breaks,
     const std::vector<std::pair<int64_t, int64_t>>& interbreaks) {
   using Interval = DimensionValues::Interval;
+  using VehicleBreak = DimensionValues::VehicleBreak;
   const int64_t total_travel = dimension_values.TravelSums(path).back();
   // Improve bounds on span/start max/end min using time windows: breaks that
   // must occur inside the path have their duration accumulated into
@@ -1125,13 +1125,16 @@ bool PropagateLightweightVehicleBreaks(
   const absl::Span<Interval> cumuls = dimension_values.MutableCumuls(path);
   Interval& start = cumuls.front();
   Interval& end = cumuls.back();
-  for (const auto& br : breaks) {
-    if (!br->MustBePerformed()) continue;
-    if (br->StartMax() < end.min && start.max < br->EndMin()) {
-      CapAddTo(br->DurationMin(), &lb_span_tw);
-      if (!start.DecreaseMax(br->StartMax())) return false;
-      if (!end.IncreaseMin(br->EndMin())) return false;
-    }
+  // TODO(user): consider adding deductions from the path to the break.
+  for (const VehicleBreak& br : dimension_values.MutableVehicleBreaks(path)) {
+    // If the break may be performed before the path, after the path, or if it
+    // is not performed at all, ignore the break.
+    if (br.is_performed.min == 0) continue;
+    if (br.end.min <= start.max || end.min <= br.start.max) continue;
+    // This break must be performed inside the path: widen the path.
+    CapAddTo(br.duration.min, &lb_span_tw);
+    if (!start.DecreaseMax(br.start.max)) return false;
+    if (!end.IncreaseMin(br.end.min)) return false;
   }
   Interval& span = dimension_values.MutableSpan(path);
   if (!span.IncreaseMin(std::max(lb_span_tw, CapSub(end.min, start.max)))) {
@@ -1146,10 +1149,10 @@ bool PropagateLightweightVehicleBreaks(
   if (!end.DecreaseMax(CapAdd(start.max, span.max))) return false;
 
   int num_feasible_breaks = 0;
-  for (const auto& br : breaks) {
-    if (start.min <= br->StartMax() && br->EndMin() <= end.max) {
-      break_start_min = std::min(break_start_min, br->StartMin());
-      break_end_max = std::max(break_end_max, br->EndMax());
+  for (const VehicleBreak& br : dimension_values.MutableVehicleBreaks(path)) {
+    if (start.min <= br.start.max && br.end.min <= end.max) {
+      break_start_min = std::min(break_start_min, br.start.min);
+      break_end_max = std::max(break_end_max, br.end.max);
       ++num_feasible_breaks;
     }
   }
@@ -1234,6 +1237,8 @@ class PathCumulFilter : public BasePathFilter {
   std::vector<const PiecewiseLinearFunction*> ExtractCumulPiecewiseLinearCosts()
       const;
   std::vector<const RoutingModel::TransitCallback2*> ExtractEvaluators() const;
+  using VehicleBreak = DimensionValues::VehicleBreak;
+  std::vector<std::vector<VehicleBreak>> ExtractInitialVehicleBreaks() const;
 
   bool InitializeAcceptPath() override {
     accepted_objective_value_ = synchronized_objective_value_;
@@ -1326,6 +1331,7 @@ class PathCumulFilter : public BasePathFilter {
   const RoutingDimension& dimension_;
   const std::vector<Interval> initial_cumul_;
   const std::vector<Interval> initial_slack_;
+  const std::vector<std::vector<VehicleBreak>> initial_vehicle_breaks_;
   // Maps vehicle/path to their values, values are always present.
   const std::vector<const RoutingModel::TransitCallback2*> evaluators_;
   const std::vector<int64_t> path_capacities_;
@@ -1538,6 +1544,24 @@ PathCumulFilter::ExtractNodeIndexToPrecedences() const {
   return node_index_to_precedences;
 }
 
+std::vector<std::vector<DimensionValues::VehicleBreak>>
+PathCumulFilter::ExtractInitialVehicleBreaks() const {
+  const int num_vehicles = routing_model_.vehicles();
+  std::vector<std::vector<VehicleBreak>> vehicle_breaks(num_vehicles);
+  if (!dimension_.HasBreakConstraints()) return vehicle_breaks;
+  for (int v = 0; v < num_vehicles; ++v) {
+    for (const IntervalVar* br : dimension_.GetBreakIntervalsOfVehicle(v)) {
+      vehicle_breaks[v].push_back(
+          {.start = {.min = br->StartMin(), .max = br->StartMax()},
+           .end = {.min = br->EndMin(), .max = br->EndMax()},
+           .duration = {.min = br->DurationMin(), .max = br->DurationMax()},
+           .is_performed = {.min = br->MustBePerformed(),
+                            .max = br->MayBePerformed()}});
+    }
+  }
+  return vehicle_breaks;
+}
+
 PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
                                  const RoutingDimension& dimension,
                                  bool propagate_own_objective_value,
@@ -1549,6 +1573,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       dimension_(dimension),
       initial_cumul_(ExtractInitialCumulIntervals()),
       initial_slack_(ExtractInitialSlackIntervals()),
+      initial_vehicle_breaks_(ExtractInitialVehicleBreaks()),
       evaluators_(ExtractEvaluators()),
 
       path_capacities_(dimension.vehicle_capacities()),
@@ -1726,6 +1751,7 @@ bool PathCumulFilter::FillDimensionValues(int path) {
   if (travel_sums.back() > path_span_upper_bounds_[path]) return false;
   dimension_values_.MutableSpan(path) = {.min = travel_sums.back(),
                                          .max = path_span_upper_bounds_[path]};
+  dimension_values_.MutableVehicleBreaks(path) = initial_vehicle_breaks_[path];
   return true;
 }
 
@@ -1787,7 +1813,7 @@ bool PathCumulFilter::PropagatePickupToDeliveryLimits(int path) {
 
 bool PathCumulFilter::PropagateVehicleBreaks(int path) {
   return PropagateLightweightVehicleBreaks(
-      path, dimension_values_, dimension_.GetBreakIntervalsOfVehicle(path),
+      path, dimension_values_,
       dimension_.GetBreakDistanceDurationOfVehicle(path));
 }
 

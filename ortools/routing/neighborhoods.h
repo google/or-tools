@@ -94,6 +94,30 @@ class MakeRelocateNeighborsOperator : public PathOperator {
   RoutingTransitCallback2 arc_evaluator_;
 };
 
+// Class used to compute shortest paths on DAGs formed by chains of alternative
+// node sets.
+class ShortestPathOnAlternatives {
+ public:
+  ShortestPathOnAlternatives(int num_nodes,
+                             std::vector<std::vector<int64_t>> alternative_sets,
+                             RoutingTransitCallback2 arc_evaluator);
+  bool HasAlternatives(int node) const;
+  // Returns the shortest path between source and sink, going through the DAG
+  // formed by the alternative nodes of the chain. The path omits source and
+  // sink.
+  absl::Span<const int64_t> GetShortestPath(int64_t source, int64_t sink,
+                                            absl::Span<const int64_t> chain);
+
+ private:
+  RoutingTransitCallback2 arc_evaluator_;
+  std::vector<std::vector<int64_t>> alternative_sets_;
+  std::vector<int> to_alternative_set_;
+  std::vector<int64_t> path_predecessor_;
+  std::vector<int64_t> path_;
+  std::vector<int64_t> current_values_;
+  SparseBitset<int64_t> touched_;
+};
+
 // Swaps active nodes from node alternatives in sequence. Considers chains of
 // nodes with alternatives, builds a DAG from the chain, each "layer" of the DAG
 // being composed of the set of alternatives of the node at a given rank in the
@@ -127,22 +151,15 @@ class SwapActiveToShortestPathOperator : public PathOperator {
   }
 
  private:
-  const std::vector<int64_t>& GetShortestPath(
-      int source, int sink, const std::vector<int>& alternative_chain);
-
-  RoutingTransitCallback2 arc_evaluator_;
-  const std::vector<std::vector<int64_t>> alternative_sets_;
-  std::vector<int> to_alternative_set_;
-  std::vector<int64_t> path_predecessor_;
-  std::vector<int64_t> path_;
-  SparseBitset<int64_t> touched_;
+  ShortestPathOnAlternatives shortest_path_manager_;
+  std::vector<int64_t> chain_;
 };
 
 /// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
 /// are static and given). These neighborhoods are very useful for Pickup and
 /// Delivery problems where pickup and delivery nodes must remain on the same
 /// route.
-// TODO(user): Add option to prune neighbords where the order of node pairs
+// TODO(user): Add option to prune neighbors where the order of node pairs
 //                is violated (ie precedence between pickup and delivery nodes).
 // TODO(user): Move this to local_search.cc if it's generic enough.
 // TODO(user): Detect pairs automatically by parsing the constraint model;
