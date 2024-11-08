@@ -229,6 +229,7 @@ if(USE_HIGHS)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
 endif()
