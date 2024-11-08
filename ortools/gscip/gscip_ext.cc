@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
@@ -80,7 +81,7 @@ absl::Status GScipCreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
 }
 
 absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
-                                const std::vector<GScipLinearExpr>& terms,
+                                absl::Span<const GScipLinearExpr> terms,
                                 absl::string_view name) {
   // TODO(user): it may be better to write this in terms of the disjuntive
   // constraint, we need to support disjunctions in gscip.h to do this.
@@ -136,7 +137,7 @@ absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
 }
 
 absl::Status GScipCreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
-                                const std::vector<GScipLinearExpr>& terms,
+                                absl::Span<const GScipLinearExpr> terms,
                                 absl::string_view name) {
   std::vector<GScipLinearExpr> negated_terms;
   negated_terms.reserve(terms.size());

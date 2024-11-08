@@ -1001,12 +1001,13 @@ absl::StatusOr<GScipResult> GScip::Solve(
   }
   const SCIP_STAGE stage = SCIPgetStage(scip_);
   if (stage != SCIP_STAGE_PRESOLVING && stage != SCIP_STAGE_SOLVING &&
-      stage != SCIP_STAGE_SOLVED) {
+      stage != SCIP_STAGE_SOLVED && stage != SCIP_STAGE_PRESOLVED) {
     result.gscip_output.set_status(GScipOutput::UNKNOWN);
     result.gscip_output.set_status_detail(
         absl::StrCat("Unexpected SCIP final stage= ", stage,
                      " was expected to be either SCIP_STAGE_PRESOLVING, "
-                     "SCIP_STAGE_SOLVING, or SCIP_STAGE_SOLVED"));
+                     "SCIP_STAGE_SOLVING, SCIP_STAGE_PRESOLVED, or "
+                     "SCIP_STAGE_SOLVED"));
     return result;
   }
   if (params.print_detailed_solving_stats()) {
