@@ -509,7 +509,8 @@ std::string ValidateTableConstraint(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
+std::string ValidateAutomatonConstraint(const CpModelProto& model,
+                                        const ConstraintProto& ct) {
   const AutomatonConstraintProto& automaton = ct.automaton();
   if (!automaton.vars().empty() && !automaton.exprs().empty()) {
     return absl::StrCat(
@@ -522,6 +523,12 @@ std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
     return absl::StrCat(
         "The transitions repeated fields must have the same size: ",
         ProtobufShortDebugString(ct));
+  }
+  for (const int var : automaton.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in automaton constraint: ",
+                          var);
+    }
   }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
@@ -1067,7 +1074,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         RETURN_IF_NOT_EMPTY(

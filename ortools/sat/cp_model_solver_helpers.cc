@@ -1888,6 +1888,16 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
                  "not supported in multi-thread.");
     }
     params->set_num_workers(1);
+
+    // TODO(user): This was the old behavior, but consider switching this to
+    // just a warning? it might be a valid usage to enumerate all solution of
+    // a presolved model.
+    if (!params->keep_all_feasible_solutions_in_presolve()) {
+      SOLVER_LOG(logger,
+                 "Forcing presolve to keep all feasible solution given that "
+                 "enumerate_all_solutions is true");
+    }
+    params->set_keep_all_feasible_solutions_in_presolve(true);
   }
 
   if (!model_proto.assumptions().empty()) {
@@ -1895,6 +1905,12 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
       SOLVER_LOG(logger,
                  "Forcing sequential search as assumptions are not supported "
                  "in multi-thread.");
+    }
+    if (!params->keep_all_feasible_solutions_in_presolve()) {
+      SOLVER_LOG(logger,
+                 "Forcing presolve to keep all feasible solutions in the "
+                 "presence of assumptions.");
+      params->set_keep_all_feasible_solutions_in_presolve(true);
     }
     params->set_num_workers(1);
   }

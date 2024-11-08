@@ -3522,6 +3522,7 @@ cc_library(
         "//ortools/util:affine_relation",
         "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:btree",

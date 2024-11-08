@@ -2413,7 +2413,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // point. But the proper fix is to report it even before the presolve.
   if (params.symmetry_level() > 1 && !params.stop_after_presolve() &&
       !shared_time_limit->LimitReached()) {
-    DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
+    if (params.keep_symmetry_in_presolve() &&
+        new_cp_model_proto->has_symmetry()) {
+      // Symmetry should be already computed and correct, so we don't redo it.
+      // Moreover it is possible we will not find them again as the constraints
+      // might have changed.
+    } else {
+      DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
+    }
   }
 
   // TODO(user): reduce this function size and find a better place for this?

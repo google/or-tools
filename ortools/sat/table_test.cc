@@ -40,10 +40,16 @@ namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 
+void SetEnumerateAllSolutions(Model* model) {
+  SatParameters* params = model->GetOrCreate<SatParameters>();
+  params->set_enumerate_all_solutions(true);
+  params->set_keep_all_feasible_solutions_in_presolve(true);
+}
+
 CpSolverStatus SolveTextProto(std::string_view text_proto) {
   const CpModelProto model_proto = ParseTestProto(text_proto);
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   return SolveCpModel(model_proto, &model).status();
 }
 
@@ -156,7 +162,7 @@ TEST(TableConstraintTest, EnumerationAndEncoding) {
   )pb");
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
@@ -190,7 +196,7 @@ TEST(TableConstraintTest, EnumerationAndEncodingTwoVars) {
   )pb");
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
@@ -219,7 +225,7 @@ TEST(TableConstraintTest, EnumerationAndEncodingFullPrefix) {
   )pb");
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
@@ -248,7 +254,7 @@ TEST(TableConstraintTest, EnumerationAndEncodingPartialPrefix) {
   )pb");
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
@@ -277,7 +283,7 @@ TEST(TableConstraintTest, EnumerationAndEncodingInvalidTuples) {
   )pb");
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
@@ -305,7 +311,7 @@ TEST(TableConstraintTest, EnumerationAndEncodingOneTupleWithAny) {
   )pb");
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
@@ -332,7 +338,7 @@ TEST(TableConstraintTest, EnumerationAndEncodingPrefixWithLargeNegatedPart) {
   )pb");
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SetEnumerateAllSolutions(&model);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
@@ -381,9 +387,7 @@ TEST(NegatedTableConstraintTest, BasicTest) {
   }));
 
   // Tell the solver to enumerate all solutions.
-  SatParameters parameters;
-  parameters.set_enumerate_all_solutions(true);
-  model.Add(NewSatParameters(parameters));
+  SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
   absl::btree_set<std::vector<int64_t>> expected{{1, 1, 1},
@@ -467,10 +471,7 @@ TEST(AutomatonTest, TestAutomaton) {
   }));
 
   // Tell the solver to enumerate all solutions.
-  SatParameters parameters;
-  parameters.set_enumerate_all_solutions(true);
-  model.Add(NewSatParameters(parameters));
-
+  SetEnumerateAllSolutions(&model);
   SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(num_solutions, 2);
 }
@@ -501,10 +502,7 @@ TEST(AutomatonTest, LoopingAutomatonMultipleFinalStates) {
     solutions.insert(solution);
   }));
 
-  // Tell the solver to enumerate all solutions.
-  SatParameters parameters;
-  parameters.set_enumerate_all_solutions(true);
-  model.Add(NewSatParameters(parameters));
+  SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
   absl::btree_set<std::vector<int64_t>> expected{
@@ -557,10 +555,7 @@ TEST(AutomatonTest, NonogramRule) {
     solutions.insert(solution);
   }));
 
-  // Tell the solver to enumerate all solutions.
-  SatParameters parameters;
-  parameters.set_enumerate_all_solutions(true);
-  model.Add(NewSatParameters(parameters));
+  SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
   absl::btree_set<std::vector<int64_t>> expected{
@@ -606,11 +601,7 @@ TEST(AutomatonTest, AnotherAutomaton) {
     solutions.insert(solution);
   }));
 
-  // Tell the solver to enumerate all solutions.
-  SatParameters parameters;
-  parameters.set_enumerate_all_solutions(true);
-  parameters.set_log_search_progress(true);
-  model.Add(NewSatParameters(parameters));
+  SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
   // Out of the 2**7 tuples, the one that contains 4 consecutive 1 are:
