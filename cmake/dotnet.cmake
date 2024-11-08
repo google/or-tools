@@ -98,6 +98,9 @@ endif()
 if(USE_DOTNET_8)
   list(APPEND TFM "net8.0")
 endif()
+if(USE_DOTNET_9)
+  list(APPEND TFM "net9.0")
+endif()
 
 list(LENGTH TFM TFM_LENGTH)
 if(TFM_LENGTH EQUAL "0")
@@ -283,6 +286,13 @@ function(add_dotnet_test)
         NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net80
         COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
           ${DOTNET_EXECUTABLE} test --nologo --framework net8.0 -c Release
+          WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    endif()
+    if(USE_DOTNET_9)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net90
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} test --nologo --framework net9.0 -c Release
           WORKING_DIRECTORY ${DOTNET_TEST_DIR})
     endif()
   endif()
@@ -616,6 +626,13 @@ function(add_dotnet_sample)
           ${DOTNET_EXECUTABLE} run --no-build --framework net8.0 -c Release
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
+    if(USE_DOTNET_9)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_net90
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --no-build --framework net9.0 -c Release
+        WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
+    endif()
   endif()
   message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
 endfunction()
@@ -728,6 +745,13 @@ if(NOT EXAMPLE_FILE_NAME)
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_net80
         COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
           ${DOTNET_EXECUTABLE} run --no-build --framework net8.0 -c Release ${EXAMPLE_NAME}.csproj
+        WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
+    endif()
+    if(USE_DOTNET_9)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_net90
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --no-build --framework net9.0 -c Release ${EXAMPLE_NAME}.csproj
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
   endif()
