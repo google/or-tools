@@ -7,7 +7,7 @@ FROM fedora:41 AS env
 RUN dnf -y update \
 && dnf -y install git \
  wget which redhat-lsb-core pkgconfig autoconf libtool zlib-devel \
-&& dnf -y group install "Development Tools" \
+&& dnf -y install @development-tools \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 ENTRYPOINT ["/usr/bin/bash", "-c"]

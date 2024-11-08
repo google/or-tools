@@ -6,7 +6,7 @@ FROM fedora:latest AS env
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install git wget \
-&& dnf -y group install "Development Tools" \
+&& dnf -y install @development-tools \
 && dnf -y install gcc-c++ zlib-devel \
 && dnf -y install dnf-plugins-core \
 && dnf -y install which \
