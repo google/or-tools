@@ -2092,6 +2092,8 @@ void ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::Build(
 template <typename NodeIndexType, typename ArcIndexType>
 class ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
  public:
+  OutgoingArcIterator(const OutgoingArcIterator&) = default;
+  OutgoingArcIterator& operator=(const OutgoingArcIterator&) = default;
   OutgoingArcIterator(const ReverseArcMixedGraph& graph, NodeIndexType node)
       : index_(graph.start_[node]), limit_(graph.DirectArcLimit(node)) {}
   OutgoingArcIterator(const ReverseArcMixedGraph& graph, NodeIndexType node,
@@ -2113,7 +2115,7 @@ class ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
 
  private:
   ArcIndexType index_;
-  const ArcIndexType limit_;
+  ArcIndexType limit_;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>

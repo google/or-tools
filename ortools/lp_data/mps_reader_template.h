@@ -636,6 +636,8 @@ class MPSReaderTemplate {
 
   // A row of Booleans. is_binary_by_default_[col] is true if col
   // appeared within a scope started by INTORG and ended with INTEND markers.
+  // Its size may be larger than the number of variables encountered in the
+  // model so far.
   std::vector<bool> is_binary_by_default_;
 
   // True if the next variable has to be interpreted as an integer variable.
