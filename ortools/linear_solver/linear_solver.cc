@@ -1868,20 +1868,6 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   return status_or.ok();
 }
 
-bool MPSolver::ExportModelToMpsFile(const std::string& filename,
-                                    bool fixed_format,
-                                    bool obfuscate,
-                                    bool use_gzip_compression) const {
-  MPModelProto proto;
-  ExportModelToProto(&proto);
-  MPModelExportOptions options;
-  options.obfuscate = obfuscate;
-  options.use_gzip_compression = use_gzip_compression;
-  const auto status_or =
-      operations_research::WriteModelToMpsFile(filename, proto, options);
-  return status_or.ok();
-}
-
 void MPSolver::SetHint(std::vector<std::pair<const MPVariable*, double>> hint) {
   for (const auto& var_value_pair : hint) {
     CHECK(OwnsVariable(var_value_pair.first))
