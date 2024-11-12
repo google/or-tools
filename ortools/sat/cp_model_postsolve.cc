@@ -170,6 +170,7 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
     Domain term = (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i]);
     rhs_domains.push_back(term.AdditionWith(rhs_domains.back()));
   }
+  std::vector<int64_t> values(free_vars.size());
   for (int i = free_vars.size() - 1; i >= 0; --i) {
     // Choose a value for free_vars[i] that fall into rhs_domains[i] -
     // fixed_activity. This will crash if the intersection is empty, but it
@@ -184,12 +185,28 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
     // TODO(user): I am not 100% that the algo here might cover all the presolve
     // case, so if this fail, it might indicate an issue here and not in the
     // presolve/solver code.
+    if (domain.IsEmpty()) {
+      LOG(INFO) << "Empty domain while trying to assign " << var;
+      for (int i = 0; i < size; ++i) {
+        const int var = ct.linear().vars(i);
+        LOG(INFO) << var << " " << (*domains)[var];
+      }
+      LOG(FATAL) << "Couldn't postsolve the constraint: "
+                 << ProtobufShortDebugString(ct);
+    }
+
     CHECK(!domain.IsEmpty()) << ProtobufShortDebugString(ct);
     const int64_t value = domain.SmallestValue();
-    (*domains)[var] = Domain(value);
-
+    values[i] = value;
     fixed_activity += coeff * value;
   }
+
+  // We assign that afterwards for better debugging if we run into the domains
+  // empty above.
+  for (int i = 0; i < free_vars.size(); ++i) {
+    (*domains)[free_vars[i]] = Domain(values[i]);
+  }
+
   DCHECK(initial_rhs.Contains(fixed_activity));
 }
 
@@ -206,6 +223,14 @@ int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
     value += RefIsPositive(ref) ? increment : -increment;
   }
   return value;
+}
+
+bool LinearExpressionIsFixed(const LinearExpressionProto& expr,
+                             const std::vector<Domain>& domains) {
+  for (const int var : expr.vars()) {
+    if (!domains[var].IsFixed()) return false;
+  }
+  return true;
 }
 
 }  // namespace
@@ -231,88 +256,48 @@ void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   (*domains)[target.vars(0)] = Domain(max_value);
 }
 
-// We only support 3 cases in the presolve currently.
+// We only support 2 cases:  either the index was removed, of the target, not
+// both.
 void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
-  const int index_ref = ct.element().index();
-  const int index_var = PositiveRef(index_ref);
-  const int target_ref = ct.element().target();
-  const int target_var = PositiveRef(target_ref);
+  const LinearExpressionProto& index = ct.element().linear_index();
+  const LinearExpressionProto& target = ct.element().linear_target();
 
-  // Deal with non-fixed target and non-fixed index. This only happen if
-  // whatever the value of the index and selected variable, we can choose a
-  // valid target, so we just fix the index to its min value in this case.
-  if (!(*domains)[target_var].IsFixed() && !(*domains)[index_var].IsFixed()) {
-    const int64_t index_var_value = (*domains)[index_var].Min();
-    (*domains)[index_var] = Domain(index_var_value);
-
-    // If the selected variable is not fixed, we also need to fix it.
-    const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_var_value : -index_var_value);
-    const int selected_var = PositiveRef(selected_ref);
-    if (!(*domains)[selected_var].IsFixed()) {
-      (*domains)[selected_var] = Domain((*domains)[selected_var].Min());
-    }
-  }
+  DCHECK(LinearExpressionIsFixed(index, *domains) ||
+         LinearExpressionIsFixed(target, *domains));
 
   // Deal with fixed index.
-  if ((*domains)[index_var].IsFixed()) {
-    const int64_t index_var_value = (*domains)[index_var].FixedValue();
-    const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_var_value : -index_var_value);
-    const int selected_var = PositiveRef(selected_ref);
-    if ((*domains)[selected_var].IsFixed()) {
-      const int64_t selected_value = (*domains)[selected_var].FixedValue();
-      (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
-          Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
-                     ? selected_value
-                     : -selected_value));
-      DCHECK(!(*domains)[target_var].IsEmpty());
+  if (LinearExpressionIsFixed(index, *domains)) {
+    const int64_t index_value = EvaluateLinearExpression(index, *domains);
+    const LinearExpressionProto& expr = ct.element().exprs(index_value);
+    DCHECK(LinearExpressionIsFixed(expr, *domains));
+    const int64_t expr_value = EvaluateLinearExpression(expr, *domains);
+    if (target.vars().empty()) {
+      DCHECK_EQ(expr_value, target.offset());
     } else {
-      const bool same_sign =
-          (selected_var == selected_ref) == (target_var == target_ref);
-      const Domain target_domain = (*domains)[target_var];
-      const Domain selected_domain = same_sign
-                                         ? (*domains)[selected_var]
-                                         : (*domains)[selected_var].Negation();
-      const Domain final = target_domain.IntersectionWith(selected_domain);
-      const int64_t value = final.SmallestValue();
-      (*domains)[target_var] =
-          (*domains)[target_var].IntersectionWith(Domain(value));
-      (*domains)[selected_var] = (*domains)[selected_var].IntersectionWith(
-          Domain(same_sign ? value : -value));
-      DCHECK(!(*domains)[target_var].IsEmpty());
-      DCHECK(!(*domains)[selected_var].IsEmpty());
+      (*domains)[target.vars(0)] = Domain(GetInnerVarValue(target, expr_value));
     }
     return;
   }
 
   // Deal with fixed target (and constant vars).
-  const int64_t target_value = (*domains)[target_var].FixedValue();
+  const int64_t target_value = EvaluateLinearExpression(target, *domains);
   int selected_index_value = -1;
-  for (const int64_t v : (*domains)[index_var].Values()) {
-    const int64_t i = index_var == index_ref ? v : -v;
-    if (i < 0 || i >= ct.element().vars_size()) continue;
+  for (const int64_t v : (*domains)[index.vars(0)].Values()) {
+    const int64_t index_value = index.offset() + v * index.coeffs(0);
+    DCHECK_GE(index_value, 0);
+    DCHECK_LT(index_value, ct.element().exprs_size());
 
-    const int ref = ct.element().vars(i);
-    const int var = PositiveRef(ref);
-    const int64_t value = (*domains)[var].FixedValue();
-    if (RefIsPositive(target_ref) == RefIsPositive(ref)) {
-      if (value == target_value) {
-        selected_index_value = i;
-        break;
-      }
-    } else {
-      if (value == -target_value) {
-        selected_index_value = i;
-        break;
-      }
+    const LinearExpressionProto& expr = ct.element().exprs(index_value);
+    const int64_t value = EvaluateLinearExpression(expr, *domains);
+    if (value == target_value) {
+      selected_index_value = index_value;
+      break;
     }
   }
 
   CHECK_NE(selected_index_value, -1);
-  (*domains)[index_var] = (*domains)[index_var].IntersectionWith(Domain(
-      RefIsPositive(index_ref) ? selected_index_value : -selected_index_value));
-  DCHECK(!(*domains)[index_var].IsEmpty());
+  (*domains)[index.vars(0)] =
+      Domain(GetInnerVarValue(index, selected_index_value));
 }
 
 // We only support assigning to an affine target.
@@ -329,6 +314,23 @@ void PostsolveIntMod(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const int64_t value = term_value / target.coeffs(0);
   CHECK((*domains)[target.vars(0)].Contains(value));
   (*domains)[target.vars(0)] = Domain(value);
+}
+
+// We only support assigning to an affine target.
+void PostsolveIntProd(const ConstraintProto& ct, std::vector<Domain>* domains) {
+  int64_t target_value = 1;
+  for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+    target_value *= EvaluateLinearExpression(expr, *domains);
+  }
+
+  const LinearExpressionProto& target = ct.int_prod().target();
+  CHECK_EQ(target.vars().size(), 1);
+  CHECK(RefIsPositive(target.vars(0)));
+
+  target_value -= target.offset();
+  CHECK_EQ(target_value % target.coeffs(0), 0);
+  target_value /= target.coeffs(0);
+  (*domains)[target.vars(0)] = Domain(target_value);
 }
 
 void PostsolveResponse(const int64_t num_variables_in_original_model,
@@ -389,6 +391,9 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         break;
       case ConstraintProto::kIntMod:
         PostsolveIntMod(ct, &domains);
+        break;
+      case ConstraintProto::kIntProd:
+        PostsolveIntProd(ct, &domains);
         break;
       default:
         // This should never happen as we control what kind of constraint we

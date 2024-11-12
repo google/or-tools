@@ -13,6 +13,7 @@
 
 #include "ortools/sat/symmetry.h"
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -152,8 +153,8 @@ void SymmetryPropagator::Untrail(const Trail& trail, int trail_index) {
   }
 }
 
-absl::Span<const Literal> SymmetryPropagator::Reason(const Trail& trail,
-                                                     int trail_index) const {
+absl::Span<const Literal> SymmetryPropagator::Reason(
+    const Trail& trail, int trail_index, int64_t /*conflict_id*/) const {
   SCOPED_TIME_STAT(&stats_);
   const ReasonInfo& reason_info = reasons_[trail_index];
   std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);

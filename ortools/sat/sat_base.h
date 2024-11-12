@@ -365,7 +365,17 @@ class Trail {
   // Note that this shouldn't be called on a variable at level zero, because we
   // don't cleanup the reason data for these variables but the underlying
   // clauses may have been deleted.
-  absl::Span<const Literal> Reason(BooleanVariable var) const;
+  //
+  // If conflict_id >= 0, this indicate that this was called as part of the
+  // first-UIP procedure. It has a few implication:
+  //  - The reason do not need to be cached and can be adapted to the current
+  //    conflict.
+  //  - Some data can be reused between two calls about the same conflict.
+  //  - Note however that if the reason is a simple clause, we shouldn't adapt
+  //    it because we rely on extra fact in the first UIP code where we detect
+  //    subsumed clauses for instance.
+  absl::Span<const Literal> Reason(BooleanVariable var,
+                                   int64_t conflict_id = -1) const;
 
   // Returns the "type" of an assignment (see AssignmentType). Note that this
   // function never returns kSameReasonAs or kCachedReason, it instead returns
@@ -568,8 +578,13 @@ class SatPropagator {
   // The returned Span has to be valid until the literal is untrailed. A client
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
+  //
+  // If conlict id is positive, then this is called during first UIP resolution
+  // and we will backtrack over this literal right away, so we don't need to
+  // have a span that survive more than once.
   virtual absl::Span<const Literal> Reason(const Trail& /*trail*/,
-                                           int /*trail_index*/) const {
+                                           int /*trail_index*/,
+                                           int64_t /*conflict_id*/) const {
     LOG(FATAL) << "Not implemented.";
     return {};
   }
@@ -610,8 +625,9 @@ inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
   if (propagation_trail_index_ < trail.Index() &&
       trail.Info(trail[propagation_trail_index_].Variable()).level !=
           trail.CurrentDecisionLevel()) {
-    LOG(INFO) << "Issue in '" << name_ << "':" << " propagation_trail_index_="
-              << propagation_trail_index_ << " trail_.Index()=" << trail.Index()
+    LOG(INFO) << "Issue in '" << name_ << "':"
+              << " propagation_trail_index_=" << propagation_trail_index_
+              << " trail_.Index()=" << trail.Index()
               << " level_at_propagation_index="
               << trail.Info(trail[propagation_trail_index_].Variable()).level
               << " current_decision_level=" << trail.CurrentDecisionLevel();
@@ -662,7 +678,8 @@ inline int Trail::AssignmentType(BooleanVariable var) const {
   return type != AssignmentType::kCachedReason ? type : old_type_[var];
 }
 
-inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
+inline absl::Span<const Literal> Trail::Reason(BooleanVariable var,
+                                               int64_t conflict_id) const {
   // Special case for AssignmentType::kSameReasonAs to avoid a recursive call.
   var = ReferenceVarWithSameReason(var);
 
@@ -684,7 +701,8 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   } else {
     DCHECK_LT(info.type, propagators_.size());
     DCHECK(propagators_[info.type] != nullptr) << info.type;
-    reasons_[var] = propagators_[info.type]->Reason(*this, info.trail_index);
+    reasons_[var] =
+        propagators_[info.type]->Reason(*this, info.trail_index, conflict_id);
   }
   old_type_[var] = info.type;
   info_[var].type = AssignmentType::kCachedReason;

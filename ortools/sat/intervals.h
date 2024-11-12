@@ -261,8 +261,7 @@ struct CachedTaskBounds {
 // One of the main advantage of this class is that it allows to share the
 // vectors of tasks sorted by various criteria between propagator for a faster
 // code.
-class SchedulingConstraintHelper : public PropagatorInterface,
-                                   ReversibleInterface {
+class SchedulingConstraintHelper : public PropagatorInterface {
  public:
   // All the functions below refer to a task by its index t in the tasks
   // vector given at construction.
@@ -284,7 +283,6 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   bool Propagate() final;
   bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
   void RegisterWith(GenericLiteralWatcher* watcher);
-  void SetLevel(int level) final;
 
   // Resets the class to the same state as if it was constructed with
   // the given subset of tasks from other.
@@ -545,6 +543,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   Model* model_;
   Trail* trail_;
+  SatSolver* sat_solver_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
   PrecedenceRelations* precedence_relations_;
@@ -565,8 +564,8 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   std::vector<AffineExpression> minus_starts_;
   std::vector<AffineExpression> minus_ends_;
 
-  // This is used by SetLevel() to detect untrail.
-  int previous_level_ = 0;
+  // This is used to detect when we need to invalidate the cache.
+  int64_t saved_num_backtracks_ = 0;
 
   // The caches of all relevant interval values.
   // These are initially of size capacity and never resized.

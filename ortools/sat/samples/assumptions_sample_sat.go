@@ -17,9 +17,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
 func assumptionsSampleSat() error {
@@ -62,6 +62,6 @@ func assumptionsSampleSat() error {
 
 func main() {
 	if err := assumptionsSampleSat(); err != nil {
-		glog.Exitf("assumptionsSampleSat returned with error: %v", err)
+		log.Exitf("assumptionsSampleSat returned with error: %v", err)
 	}
 }

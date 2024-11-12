@@ -3,12 +3,13 @@
 #FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
 # Use dnf
 FROM quay.io/pypa/manylinux_2_28_x86_64:latest AS env
+# note: CMake 3.30.5 and SWIG 4.2.1 are already installed
 
 #############
 ##  SETUP  ##
 #############
 RUN dnf -y update \
-&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y group install 'Development Tools' \
 && dnf -y install wget curl \
  pcre2-devel openssl \
  which redhat-lsb-core \
@@ -18,25 +19,6 @@ RUN dnf -y update \
 
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
-
-# Install CMake 3.28.3
-RUN wget -q --no-check-certificate "https://cmake.org/files/v3.28/cmake-3.28.3-linux-x86_64.sh" \
-&& chmod a+x cmake-3.28.3-linux-x86_64.sh \
-&& ./cmake-3.28.3-linux-x86_64.sh --prefix=/usr --skip-license \
-&& rm cmake-3.28.3-linux-x86_64.sh
-
-# Install SWIG 4.2.1
-RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.2.1/swig-4.2.1.tar.gz" \
- -o swig-4.2.1.tar.gz \
-&& tar xvf swig-4.2.1.tar.gz \
-&& rm swig-4.2.1.tar.gz \
-&& cd swig-4.2.1 \
-&& ./configure --prefix=/usr \
-&& make -j 4 \
-&& make install \
-&& cd .. \
-&& rm -rf swig-4.2.1
 
 # Install .Net
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
@@ -54,6 +36,13 @@ RUN dnf -y update \
 && rm -rf /var/cache/dnf
 ENV JAVA_HOME=/usr/lib/jvm/java
 
+# Update maven
+ADD https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz /usr/local
+RUN mkdir -p /usr/local/maven \
+ && tar xzvf /usr/local/apache-maven-3.9.9-bin.tar.gz --strip-components=1 -C /usr/local/maven \
+ && rm /usr/local/apache-maven-3.9.9-bin.tar.gz
+ENV PATH=/usr/local/maven/bin:$PATH
+
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -67,9 +56,9 @@ WORKDIR /root
 # use ORTOOLS_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
 ARG ORTOOLS_GIT_BRANCH
-ENV ORTOOLS_GIT_BRANCH ${ORTOOLS_GIT_BRANCH:-main}
+ENV ORTOOLS_GIT_BRANCH=${ORTOOLS_GIT_BRANCH:-main}
 ARG ORTOOLS_GIT_SHA1
-ENV ORTOOLS_GIT_SHA1 ${ORTOOLS_GIT_SHA1:-unknown}
+ENV ORTOOLS_GIT_SHA1=${ORTOOLS_GIT_SHA1:-unknown}
 RUN git clone -b "${ORTOOLS_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
 && cd or-tools \
 && git reset --hard "${ORTOOLS_GIT_SHA1}"
@@ -79,9 +68,9 @@ FROM devel AS delivery
 WORKDIR /root/or-tools
 
 ARG ORTOOLS_TOKEN
-ENV ORTOOLS_TOKEN ${ORTOOLS_TOKEN}
+ENV ORTOOLS_TOKEN=${ORTOOLS_TOKEN}
 ARG ORTOOLS_DELIVERY
-ENV ORTOOLS_DELIVERY ${ORTOOLS_DELIVERY:-all}
+ENV ORTOOLS_DELIVERY=${ORTOOLS_DELIVERY:-all}
 RUN ./tools/release/build_delivery_linux.sh "${ORTOOLS_DELIVERY}"
 
 # Publish delivery

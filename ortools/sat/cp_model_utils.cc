@@ -142,9 +142,20 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       AddIndices(ct.dummy_constraint().vars(), variables);
       break;
     case ConstraintProto::ConstraintCase::kElement:
-      variables->push_back(ct.element().index());
-      variables->push_back(ct.element().target());
-      AddIndices(ct.element().vars(), variables);
+      if (ct.element().index() != 0 || ct.element().target() != 0 ||
+          !ct.element().vars().empty()) {
+        variables->push_back(ct.element().index());
+        variables->push_back(ct.element().target());
+        AddIndices(ct.element().vars(), variables);
+      } else if (ct.element().has_linear_index() ||
+                 ct.element().has_linear_target() ||
+                 !ct.element().exprs().empty()) {
+        AddIndices(ct.element().linear_index().vars(), variables);
+        AddIndices(ct.element().linear_target().vars(), variables);
+        for (const LinearExpressionProto& expr : ct.element().exprs()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
       AddIndices(ct.circuit().literals(), literals);
@@ -167,10 +178,22 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       AddIndices(ct.reservoir().active_literals(), literals);
       break;
     case ConstraintProto::ConstraintCase::kTable:
-      AddIndices(ct.table().vars(), variables);
+      if (!ct.table().vars().empty()) {
+        AddIndices(ct.table().vars(), variables);
+      } else {
+        for (const LinearExpressionProto& expr : ct.table().exprs()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kAutomaton:
-      AddIndices(ct.automaton().vars(), variables);
+      if (!ct.automaton().vars().empty()) {
+        AddIndices(ct.automaton().vars(), variables);
+      } else {
+        for (const LinearExpressionProto& expr : ct.automaton().exprs()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       AddIndices(ct.interval().start().vars(), variables);
@@ -316,9 +339,20 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(dummy_constraint, vars);
       break;
     case ConstraintProto::ConstraintCase::kElement:
-      APPLY_TO_SINGULAR_FIELD(element, index);
-      APPLY_TO_SINGULAR_FIELD(element, target);
-      APPLY_TO_REPEATED_FIELD(element, vars);
+      if (ct->element().index() != 0 || ct->element().target() != 0 ||
+          !ct->element().vars().empty()) {
+        APPLY_TO_SINGULAR_FIELD(element, index);
+        APPLY_TO_SINGULAR_FIELD(element, target);
+        APPLY_TO_REPEATED_FIELD(element, vars);
+      } else if (ct->element().has_linear_index() ||
+                 ct->element().has_linear_target() ||
+                 !ct->element().exprs().empty()) {
+        APPLY_TO_REPEATED_FIELD(element, linear_index()->mutable_vars);
+        APPLY_TO_REPEATED_FIELD(element, linear_target()->mutable_vars);
+        for (int i = 0; i < ct->element().exprs_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(element, exprs(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
       break;
@@ -337,10 +371,22 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       }
       break;
     case ConstraintProto::ConstraintCase::kTable:
-      APPLY_TO_REPEATED_FIELD(table, vars);
+      if (!ct->table().vars().empty()) {
+        APPLY_TO_REPEATED_FIELD(table, vars);
+      } else {
+        for (int i = 0; i < ct->table().exprs_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(table, exprs(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kAutomaton:
-      APPLY_TO_REPEATED_FIELD(automaton, vars);
+      if (!ct->automaton().vars().empty()) {
+        APPLY_TO_REPEATED_FIELD(automaton, vars);
+      } else {
+        for (int i = 0; i < ct->automaton().exprs_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(automaton, exprs(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       APPLY_TO_REPEATED_FIELD(interval, start()->mutable_vars);
@@ -710,6 +756,11 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         fp = FingerprintSingleField(ct.element().index(), fp);
         fp = FingerprintSingleField(ct.element().target(), fp);
         fp = FingerprintRepeatedField(ct.element().vars(), fp);
+        fp = FingerprintExpression(ct.element().linear_index(), fp);
+        fp = FingerprintExpression(ct.element().linear_target(), fp);
+        for (const LinearExpressionProto& expr : ct.element().exprs()) {
+          fp = FingerprintExpression(expr, fp);
+        }
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         fp = FingerprintRepeatedField(ct.circuit().heads(), fp);
@@ -737,7 +788,13 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         }
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        fp = FingerprintRepeatedField(ct.table().vars(), fp);
+        if (!ct.table().vars().empty()) {
+          fp = FingerprintRepeatedField(ct.table().vars(), fp);
+        } else {
+          for (const LinearExpressionProto& expr : ct.table().exprs()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+        }
         fp = FingerprintRepeatedField(ct.table().values(), fp);
         fp = FingerprintSingleField(ct.table().negated(), fp);
         break;
@@ -747,7 +804,13 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         fp = FingerprintRepeatedField(ct.automaton().transition_tail(), fp);
         fp = FingerprintRepeatedField(ct.automaton().transition_head(), fp);
         fp = FingerprintRepeatedField(ct.automaton().transition_label(), fp);
-        fp = FingerprintRepeatedField(ct.automaton().vars(), fp);
+        if (!ct.automaton().vars().empty()) {
+          fp = FingerprintRepeatedField(ct.automaton().vars(), fp);
+        } else {
+          for (const LinearExpressionProto& expr : ct.automaton().exprs()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+        }
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         fp = FingerprintExpression(ct.interval().start(), fp);

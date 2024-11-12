@@ -30,7 +30,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/io.h"
+#include "ortools/graph/graph_io.h"
 #include "ortools/graph/shortest_paths.h"
 
 namespace operations_research {
@@ -237,8 +237,8 @@ Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
   for (ArcIndexType i = 0; i < std::min(num_edges, max_num_arcs); ++i) {
     NodeIndexType src, dst;
     std::tie(src, dst) = pick_two_distinct_nodes();
-    if (arcs.contains({src, dst})) continue;
-    if (IsDirected && arcs.contains({dst, src})) continue;
+    if (arcs.find({src, dst}) != arcs.end()) continue;
+    if (IsDirected && (arcs.find({dst, src}) != arcs.end())) continue;
 
     arcs.insert({src, dst});
     graph.AddArc(src, dst);

@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
@@ -25,6 +26,7 @@
 #include "google/protobuf/duration.pb.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/proto_enum_utils.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -122,7 +124,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_make_inactive(BOOL_TRUE);
   o->set_use_make_chain_inactive(BOOL_TRUE);
   o->set_use_swap_active(BOOL_TRUE);
-  o->set_use_swap_active_chain(BOOL_FALSE);
+  o->set_use_swap_active_chain(BOOL_TRUE);
   o->set_use_extended_swap_active(BOOL_FALSE);
   o->set_use_shortest_path_swap_active(BOOL_TRUE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
@@ -143,6 +145,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_use_multi_armed_bandit_concatenate_operators(false);
   p.set_multi_armed_bandit_compound_operator_memory_coefficient(0.04);
   p.set_multi_armed_bandit_compound_operator_exploration_coefficient(1e12);
+  p.set_max_swap_active_chain_size(10);
   p.set_relocate_expensive_chain_num_arcs_to_consider(4);
   p.set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
   p.set_heuristic_close_nodes_lns_num_nodes(5);
@@ -317,6 +320,28 @@ void FindErrorsInIteratedLocalSearchParameters(
                    "ruin_strategy is set to RandomWalkRuinStrategy"
                    " but random_walk.num_removed_visits is 0 (should be "
                    "strictly positive)"));
+      } else if (ruin.strategy_case() == RuinStrategy::kSisr) {
+        if (ruin.sisr().avg_num_removed_visits() == 0) {
+          errors.emplace_back(
+              "iterated_local_search_parameters.ruin_recreate_parameters."
+              "ruin is set to SISRRuinStrategy"
+              " but sisr.avg_num_removed_visits is 0 (should be strictly "
+              "positive)");
+        }
+        if (ruin.sisr().max_removed_sequence_size() == 0) {
+          errors.emplace_back(
+              "iterated_local_search_parameters.ruin_recreate_parameters.ruin "
+              "is set to SISRRuinStrategy but "
+              "sisr.max_removed_sequence_size is 0 (should be strictly "
+              "positive)");
+        }
+        if (ruin.sisr().bypass_factor() < 0 ||
+            ruin.sisr().bypass_factor() > 1) {
+          errors.emplace_back(StrCat(
+              "iterated_local_search_parameters.ruin_recreate_parameters."
+              "ruin is set to SISRRuinStrategy"
+              " but sisr.bypass_factor is not in [0, 1]"));
+        }
       }
     }
 
@@ -499,6 +524,26 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     errors.emplace_back(StrCat(
         "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
         ". Must be greater or equal to 1."));
+  }
+  {
+    absl::flat_hash_map<RoutingSearchParameters::InsertionSortingProperty, int>
+        sorting_properties_map;
+    for (const RoutingSearchParameters::InsertionSortingProperty property :
+         REPEATED_ENUM_ADAPTER(search_parameters,
+                               local_cheapest_insertion_sorting_properties)) {
+      if (property == RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED) {
+        errors.emplace_back(
+            StrCat("Invalid local cheapest insertion sorting property: ",
+                   RoutingSearchParameters::InsertionSortingProperty_Name(
+                       RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED)));
+      }
+      const int occurrences = sorting_properties_map[property]++;
+      if (occurrences == 2) {
+        errors.emplace_back(StrCat(
+            "Duplicate local cheapest insertion sorting property: ",
+            RoutingSearchParameters::InsertionSortingProperty_Name(property)));
+      }
+    }
   }
   if (const double ratio = search_parameters.ls_operator_neighbors_ratio();
       std::isnan(ratio) || ratio <= 0 || ratio > 1) {
@@ -685,6 +730,14 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     errors.emplace_back(
         "sat_parameters.enumerate_all_solutions cannot be true in parallel"
         " search");
+  }
+
+  if (search_parameters.max_swap_active_chain_size() < 1 &&
+      search_parameters.local_search_operators().use_swap_active_chain() ==
+          OptionalBoolean::BOOL_TRUE) {
+    errors.emplace_back(
+        "max_swap_active_chain_size must be greater than 1 if "
+        "local_search_operators.use_swap_active_chain is BOOL_TRUE");
   }
 
   FindErrorsInIteratedLocalSearchParameters(search_parameters, errors);

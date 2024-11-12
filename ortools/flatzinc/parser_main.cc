@@ -25,7 +25,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
-#include "ortools/flatzinc/presolve.h"
 #include "ortools/util/logging.h"
 
 ABSL_FLAG(std::string, input, "", "Input file in the flatzinc format.");
@@ -35,7 +34,7 @@ ABSL_FLAG(bool, statistics, false, "Print model statistics");
 
 namespace operations_research {
 namespace fz {
-void ParseFile(const std::string& filename, bool presolve) {
+void ParseFile(const std::string& filename) {
   WallTimer timer;
   timer.Start();
 
@@ -58,14 +57,6 @@ void ParseFile(const std::string& filename, bool presolve) {
 
   Model model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
-  if (presolve) {
-    SOLVER_LOG(&logger, "Presolve model");
-    timer.Reset();
-    timer.Start();
-    Presolver presolve(&logger);
-    presolve.Run(&model);
-    SOLVER_LOG(&logger, "  - done in ", timer.GetInMs(), " ms");
-  }
   if (absl::GetFlag(FLAGS_statistics)) {
     ModelStatistics stats(model, &logger);
     stats.BuildStatistics();
@@ -85,7 +76,6 @@ int main(int argc, char** argv) {
   absl::SetProgramUsageMessage(kUsage);
   absl::ParseCommandLine(argc, argv);
   google::InitGoogleLogging(argv[0]);
-  operations_research::fz::ParseFile(absl::GetFlag(FLAGS_input),
-                                     absl::GetFlag(FLAGS_presolve));
+  operations_research::fz::ParseFile(absl::GetFlag(FLAGS_input));
   return 0;
 }

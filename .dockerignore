@@ -58,6 +58,8 @@ build_cross/
 build_make/
 install_make/
 temp_*/
+export/
+export_meta/
 
 # Editor directories and files
 *.user

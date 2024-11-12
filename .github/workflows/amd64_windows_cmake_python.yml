@@ -16,10 +16,13 @@ jobs:
           {version: "3.10", dir: Python310},
           {version: "3.11", dir: Python311},
           {version: "3.12", dir: Python312},
+          {version: "3.13", dir: Python313},
         ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} • Python-${{ matrix.python.version }}
+    name: Windows • VS 2022 • Python-${{ matrix.python.version }}
     runs-on: windows-latest
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -27,13 +30,6 @@ jobs:
           python-version: ${{ matrix.python.version }}
       - name: Install python3
         run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
-      - name: Install SWIG 4.2.1
-        run: |
-          (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.2.1.zip","swigwin-4.2.1.zip");
-          Expand-Archive .\swigwin-4.2.1.zip .;
-          echo "$((Get-Item .).FullName)/swigwin-4.2.1" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Check swig
-        run: swig -version
       - name: Add Python binaries to path
         run: >
           echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{ matrix.python.dir }}/Scripts" |

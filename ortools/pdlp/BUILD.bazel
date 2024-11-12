@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -25,7 +25,7 @@ cc_library(
         ":solvers_cc_proto",
         "//ortools/base:threadpool",
         "@com_google_absl//absl/functional:any_invocable",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -96,7 +96,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/random:distributions",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -112,7 +112,7 @@ cc_test(
         ":solvers_cc_proto",
         ":test_util",
         "//ortools/base:protobuf_util",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -148,7 +148,7 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
         "@com_google_protobuf//:protobuf",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -176,7 +176,7 @@ cc_test(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -191,7 +191,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -208,7 +208,7 @@ cc_test(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -231,7 +231,7 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -247,7 +247,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/random:distributions",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -263,7 +263,7 @@ cc_test(
         ":sharder",
         ":solve_log_cc_proto",
         ":test_util",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -273,13 +273,14 @@ cc_library(
     hdrs = ["sharded_quadratic_program.h"],
     deps = [
         ":quadratic_program",
+        ":scheduler",
         ":sharder",
+        ":solvers_cc_proto",
         "//ortools/base",
-        "//ortools/base:threadpool",
         "//ortools/util:logging",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -292,7 +293,7 @@ cc_test(
         ":sharded_quadratic_program",
         ":sharder",
         ":test_util",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -301,13 +302,13 @@ cc_library(
     srcs = ["sharder.cc"],
     hdrs = ["sharder.h"],
     deps = [
+        ":scheduler",
         "//ortools/base",
         "//ortools/base:mathutil",
-        "//ortools/base:threadpool",
         "//ortools/base:timer",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -317,12 +318,12 @@ cc_test(
     srcs = ["sharder_test.cc"],
     deps = [
         ":gtest_main",
+        ":scheduler",
         ":sharder",
         "//ortools/base",
         "//ortools/base:mathutil",
-        "//ortools/base:threadpool",
         "@com_google_absl//absl/random:distributions",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -385,7 +386,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:gmock",
         "@com_google_absl//absl/types:span",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -397,7 +398,7 @@ cc_test(
         ":test_util",
         "//ortools/base",
         "@com_google_absl//absl/types:span",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -413,7 +414,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/algorithm:container",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )
 
@@ -429,6 +430,6 @@ cc_test(
         ":test_util",
         ":trust_region",
         "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
+        "@eigen",
     ],
 )

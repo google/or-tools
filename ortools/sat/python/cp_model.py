@@ -465,7 +465,6 @@ class LinearExpr:
         if cmh.is_zero(arg):
             return self
         if isinstance(arg, NumberTypes):
-            arg = cmh.assert_is_a_number(arg)
             return _Sum(self, -arg)
         else:
             return _Sum(self, -arg)
@@ -566,7 +565,6 @@ class LinearExpr:
         if arg is None:
             return False
         if isinstance(arg, IntegralTypes):
-            arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [arg, arg])
         elif isinstance(arg, LinearExpr):
             return BoundedLinearExpression(self - arg, [0, 0])
@@ -575,22 +573,23 @@ class LinearExpr:
 
     def __ge__(self, arg: LinearExprT) -> "BoundedLinearExpression":
         if isinstance(arg, IntegralTypes):
-            arg = cmh.assert_is_int64(arg)
+            if arg >= INT_MAX:
+                raise ArithmeticError(">= INT_MAX is not supported")
             return BoundedLinearExpression(self, [arg, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [0, INT_MAX])
 
     def __le__(self, arg: LinearExprT) -> "BoundedLinearExpression":
         if isinstance(arg, IntegralTypes):
-            arg = cmh.assert_is_int64(arg)
+            if arg <= INT_MIN:
+                raise ArithmeticError("<= INT_MIN is not supported")
             return BoundedLinearExpression(self, [INT_MIN, arg])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, 0])
 
     def __lt__(self, arg: LinearExprT) -> "BoundedLinearExpression":
         if isinstance(arg, IntegralTypes):
-            arg = cmh.assert_is_int64(arg)
-            if arg == INT_MIN:
+            if arg <= INT_MIN:
                 raise ArithmeticError("< INT_MIN is not supported")
             return BoundedLinearExpression(self, [INT_MIN, arg - 1])
         else:
@@ -598,8 +597,7 @@ class LinearExpr:
 
     def __gt__(self, arg: LinearExprT) -> "BoundedLinearExpression":
         if isinstance(arg, IntegralTypes):
-            arg = cmh.assert_is_int64(arg)
-            if arg == INT_MAX:
+            if arg >= INT_MAX:
                 raise ArithmeticError("> INT_MAX is not supported")
             return BoundedLinearExpression(self, [arg + 1, INT_MAX])
         else:
@@ -609,10 +607,9 @@ class LinearExpr:
         if arg is None:
             return True
         if isinstance(arg, IntegralTypes):
-            arg = cmh.assert_is_int64(arg)
-            if arg == INT_MAX:
+            if arg >= INT_MAX:
                 return BoundedLinearExpression(self, [INT_MIN, INT_MAX - 1])
-            elif arg == INT_MIN:
+            elif arg <= INT_MIN:
                 return BoundedLinearExpression(self, [INT_MIN + 1, INT_MAX])
             else:
                 return BoundedLinearExpression(
@@ -702,7 +699,6 @@ class _ProductCst(LinearExpr):
     """Represents the product of a LinearExpr by a constant."""
 
     def __init__(self, expr, coeff) -> None:
-        coeff = cmh.assert_is_a_number(coeff)
         if isinstance(expr, _ProductCst):
             self.__expr = expr.expression()
             self.__coef = expr.coefficient() * coeff
@@ -736,7 +732,6 @@ class _SumArray(LinearExpr):
             if isinstance(x, NumberTypes):
                 if cmh.is_zero(x):
                     continue
-                x = cmh.assert_is_a_number(x)
                 self.__constant += x
             elif isinstance(x, LinearExpr):
                 self.__expressions.append(x)
@@ -776,11 +771,9 @@ class _WeightedSum(LinearExpr):
                 " coefficient array must have the same length."
             )
         for e, c in zip(expressions, coefficients):
-            c = cmh.assert_is_a_number(c)
             if cmh.is_zero(c):
                 continue
             if isinstance(e, NumberTypes):
-                e = cmh.assert_is_a_number(e)
                 self.__constant += e * c
             elif isinstance(e, LinearExpr):
                 self.__expressions.append(e)
@@ -1509,9 +1502,8 @@ class CpModel:
             for t in coeffs_map.items():
                 if not isinstance(t[0], IntVar):
                     raise TypeError("Wrong argument" + str(t))
-                c = cmh.assert_is_int64(t[1])
                 model_ct.linear.vars.append(t[0].index)
-                model_ct.linear.coeffs.append(c)
+                model_ct.linear.coeffs.append(t[1])
             model_ct.linear.domain.extend(
                 [
                     cmh.capped_subtraction(x, constant)
@@ -1586,31 +1578,38 @@ class CpModel:
         return ct
 
     def add_element(
-        self, index: VariableT, variables: Sequence[VariableT], target: VariableT
+        self,
+        index: LinearExprT,
+        expressions: Sequence[LinearExprT],
+        target: LinearExprT,
     ) -> Constraint:
-        """Adds the element constraint: `variables[index] == target`.
+        """Adds the element constraint: `expressions[index] == target`.
 
         Args:
-          index: The index of the variable that's being constrained.
-          variables: A list of variables.
-          target: The value that the variable must be equal to.
+          index: The index of the selected expression in the array. It must be an
+            affine expression (a * var + b).
+          expressions: A list of affine expressions.
+          target: The expression constrained to be equal to the selected expression.
+            It must be an affine expression (a * var + b).
 
         Returns:
           An instance of the `Constraint` class.
         """
 
-        if not variables:
-            raise ValueError("add_element expects a non-empty variables array")
+        if not expressions:
+            raise ValueError("add_element expects a non-empty expressions array")
 
         if isinstance(index, IntegralTypes):
-            variable: VariableT = list(variables)[int(index)]
-            return self.add(variable == target)
+            expression: LinearExprT = list(expressions)[int(index)]
+            return self.add(expression == target)
 
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.element.index = self.get_or_make_index(index)
-        model_ct.element.vars.extend([self.get_or_make_index(x) for x in variables])
-        model_ct.element.target = self.get_or_make_index(target)
+        model_ct.element.linear_index.CopyFrom(self.parse_linear_expression(index))
+        model_ct.element.exprs.extend(
+            [self.parse_linear_expression(e) for e in expressions]
+        )
+        model_ct.element.linear_target.CopyFrom(self.parse_linear_expression(target))
         return ct
 
     def add_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
@@ -1640,12 +1639,9 @@ class CpModel:
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
         for arc in arcs:
-            tail = cmh.assert_is_int32(arc[0])
-            head = cmh.assert_is_int32(arc[1])
-            lit = self.get_or_make_boolean_index(arc[2])
-            model_ct.circuit.tails.append(tail)
-            model_ct.circuit.heads.append(head)
-            model_ct.circuit.literals.append(lit)
+            model_ct.circuit.tails.append(arc[0])
+            model_ct.circuit.heads.append(arc[1])
+            model_ct.circuit.literals.append(self.get_or_make_boolean_index(arc[2]))
         return ct
 
     def add_multiple_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
@@ -1677,107 +1673,117 @@ class CpModel:
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
         for arc in arcs:
-            tail = cmh.assert_is_int32(arc[0])
-            head = cmh.assert_is_int32(arc[1])
-            lit = self.get_or_make_boolean_index(arc[2])
-            model_ct.routes.tails.append(tail)
-            model_ct.routes.heads.append(head)
-            model_ct.routes.literals.append(lit)
+            model_ct.routes.tails.append(arc[0])
+            model_ct.routes.heads.append(arc[1])
+            model_ct.routes.literals.append(self.get_or_make_boolean_index(arc[2]))
         return ct
 
     def add_allowed_assignments(
         self,
-        variables: Sequence[VariableT],
+        expressions: Sequence[LinearExprT],
         tuples_list: Iterable[Sequence[IntegralT]],
     ) -> Constraint:
-        """Adds AllowedAssignments(variables, tuples_list).
+        """Adds AllowedAssignments(expressions, tuples_list).
 
-        An AllowedAssignments constraint is a constraint on an array of variables,
-        which requires that when all variables are assigned values, the resulting
-        array equals one of the  tuples in `tuple_list`.
+        An AllowedAssignments constraint is a constraint on an array of affine
+        expressions, which requires that when all expressions are assigned values,
+        the
+        resulting array equals one of the  tuples in `tuple_list`.
 
         Args:
-          variables: A list of variables.
+          expressions: A list of affine expressions (a * var + b).
           tuples_list: A list of admissible tuples. Each tuple must have the same
-            length as the variables, and the ith value of a tuple corresponds to the
-            ith variable.
+            length as the expressions, and the ith value of a tuple corresponds to
+            the ith expression.
 
         Returns:
           An instance of the `Constraint` class.
 
         Raises:
           TypeError: If a tuple does not have the same size as the list of
-              variables.
-          ValueError: If the array of variables is empty.
+              expressions.
+          ValueError: If the array of expressions is empty.
         """
 
-        if not variables:
+        if not expressions:
             raise ValueError(
-                "add_allowed_assignments expects a non-empty variables array"
+                "add_allowed_assignments expects a non-empty expressions array"
             )
 
-        ct = Constraint(self)
+        ct: Constraint = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.table.vars.extend([self.get_or_make_index(x) for x in variables])
-        arity = len(variables)
-        for t in tuples_list:
-            if len(t) != arity:
-                raise TypeError("Tuple " + str(t) + " has the wrong arity")
-            ar = []
-            for v in t:
-                ar.append(cmh.assert_is_int64(v))
-            model_ct.table.values.extend(ar)
+        model_ct.table.exprs.extend(
+            [self.parse_linear_expression(e) for e in expressions]
+        )
+        arity: int = len(expressions)
+        for one_tuple in tuples_list:
+            if len(one_tuple) != arity:
+                raise TypeError("Tuple " + str(one_tuple) + " has the wrong arity")
+
+        # duck-typing (no explicit type checks here)
+        try:
+            for one_tuple in tuples_list:
+                model_ct.table.values.extend(one_tuple)
+        except ValueError as ex:
+            raise TypeError(
+                "add_xxx_assignment: Not an integer or does not fit in an int64_t:"
+                f" {ex.args}"
+            ) from ex
+
         return ct
 
     def add_forbidden_assignments(
         self,
-        variables: Sequence[VariableT],
+        expressions: Sequence[LinearExprT],
         tuples_list: Iterable[Sequence[IntegralT]],
     ) -> Constraint:
-        """Adds add_forbidden_assignments(variables, [tuples_list]).
+        """Adds add_forbidden_assignments(expressions, [tuples_list]).
 
-        A ForbiddenAssignments constraint is a constraint on an array of variables
-        where the list of impossible combinations is provided in the tuples list.
+        A ForbiddenAssignments constraint is a constraint on an array of affine
+        expressions where the list of impossible combinations is provided in the
+        tuples list.
 
         Args:
-          variables: A list of variables.
+          expressions: A list of affine expressions (a * var + b).
           tuples_list: A list of forbidden tuples. Each tuple must have the same
-            length as the variables, and the *i*th value of a tuple corresponds to
-            the *i*th variable.
+            length as the expressions, and the *i*th value of a tuple corresponds to
+            the *i*th expression.
 
         Returns:
           An instance of the `Constraint` class.
 
         Raises:
           TypeError: If a tuple does not have the same size as the list of
-                     variables.
-          ValueError: If the array of variables is empty.
+                     expressions.
+          ValueError: If the array of expressions is empty.
         """
 
-        if not variables:
+        if not expressions:
             raise ValueError(
-                "add_forbidden_assignments expects a non-empty variables array"
+                "add_forbidden_assignments expects a non-empty expressions array"
             )
 
-        index = len(self.__model.constraints)
-        ct = self.add_allowed_assignments(variables, tuples_list)
+        index: int = len(self.__model.constraints)
+        ct: Constraint = self.add_allowed_assignments(expressions, tuples_list)
         self.__model.constraints[index].table.negated = True
         return ct
 
     def add_automaton(
         self,
-        transition_variables: Sequence[VariableT],
+        transition_expressions: Sequence[LinearExprT],
         starting_state: IntegralT,
         final_states: Sequence[IntegralT],
         transition_triples: Sequence[Tuple[IntegralT, IntegralT, IntegralT]],
     ) -> Constraint:
         """Adds an automaton constraint.
 
-        An automaton constraint takes a list of variables (of size *n*), an initial
-        state, a set of final states, and a set of transitions. A transition is a
-        triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
-        and *transition* is the label of an arc from *head* to *tail*,
-        corresponding to the value of one variable in the list of variables.
+        An automaton constraint takes a list of affine expressions (a * var + b) (of
+        size *n*), an initial state, a set of final states, and a set of
+        transitions. A transition is a triplet (*tail*, *transition*, *head*), where
+        *tail* and *head* are states, and *transition* is the label of an arc from
+        *head* to *tail*, corresponding to the value of one expression in the list
+        of
+        expressions.
 
         This automaton will be unrolled into a flow with *n* + 1 phases. Each phase
         contains the possible states of the automaton. The first state contains the
@@ -1786,18 +1792,19 @@ class CpModel:
         Between two consecutive phases *i* and *i* + 1, the automaton creates a set
         of arcs. For each transition (*tail*, *transition*, *head*), it will add
         an arc from the state *tail* of phase *i* and the state *head* of phase
-        *i* + 1. This arc is labeled by the value *transition* of the variables
-        `variables[i]`. That is, this arc can only be selected if `variables[i]`
+        *i* + 1. This arc is labeled by the value *transition* of the expression
+        `expressions[i]`. That is, this arc can only be selected if `expressions[i]`
         is assigned the value *transition*.
 
-        A feasible solution of this constraint is an assignment of variables such
+        A feasible solution of this constraint is an assignment of expressions such
         that, starting from the initial state in phase 0, there is a path labeled by
-        the values of the variables that ends in one of the final states in the
+        the values of the expressions that ends in one of the final states in the
         final phase.
 
         Args:
-          transition_variables: A non-empty list of variables whose values
-            correspond to the labels of the arcs traversed by the automaton.
+          transition_expressions: A non-empty list of affine expressions (a * var +
+            b) whose values correspond to the labels of the arcs traversed by the
+            automaton.
           starting_state: The initial state of the automaton.
           final_states: A non-empty list of admissible final states.
           transition_triples: A list of transitions for the automaton, in the
@@ -1807,13 +1814,13 @@ class CpModel:
           An instance of the `Constraint` class.
 
         Raises:
-          ValueError: if `transition_variables`, `final_states`, or
+          ValueError: if `transition_expressions`, `final_states`, or
             `transition_triples` are empty.
         """
 
-        if not transition_variables:
+        if not transition_expressions:
             raise ValueError(
-                "add_automaton expects a non-empty transition_variables array"
+                "add_automaton expects a non-empty transition_expressions array"
             )
         if not final_states:
             raise ValueError("add_automaton expects some final states")
@@ -1823,23 +1830,18 @@ class CpModel:
 
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.automaton.vars.extend(
-            [self.get_or_make_index(x) for x in transition_variables]
+        model_ct.automaton.exprs.extend(
+            [self.parse_linear_expression(e) for e in transition_expressions]
         )
-        starting_state = cmh.assert_is_int64(starting_state)
         model_ct.automaton.starting_state = starting_state
         for v in final_states:
-            v = cmh.assert_is_int64(v)
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
                 raise TypeError("Tuple " + str(t) + " has the wrong arity (!= 3)")
-            tail = cmh.assert_is_int64(t[0])
-            label = cmh.assert_is_int64(t[1])
-            head = cmh.assert_is_int64(t[2])
-            model_ct.automaton.transition_tail.append(tail)
-            model_ct.automaton.transition_label.append(label)
-            model_ct.automaton.transition_head.append(head)
+            model_ct.automaton.transition_tail.append(t[0])
+            model_ct.automaton.transition_label.append(t[1])
+            model_ct.automaton.transition_head.append(t[2])
         return ct
 
     def add_inverse(
@@ -2355,7 +2357,6 @@ class CpModel:
         Returns:
           An `IntervalVar` object.
         """
-        size = cmh.assert_is_int64(size)
         start_expr = self.parse_linear_expression(start)
         size_expr = self.parse_linear_expression(size)
         end_expr = self.parse_linear_expression(start + size)
@@ -2542,7 +2543,6 @@ class CpModel:
         Returns:
           An `IntervalVar` object.
         """
-        size = cmh.assert_is_int64(size)
         start_expr = self.parse_linear_expression(start)
         size_expr = self.parse_linear_expression(size)
         end_expr = self.parse_linear_expression(start + size)
@@ -2751,7 +2751,7 @@ class CpModel:
 
     # Helpers.
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.__model)
 
     @property
@@ -2773,7 +2773,6 @@ class CpModel:
         ):
             return -arg.expression().index - 1
         if isinstance(arg, IntegralTypes):
-            arg = cmh.assert_is_int64(arg)
             return self.get_or_make_index_from_constant(arg)
         raise TypeError("NotSupported: model.get_or_make_index(" + str(arg) + ")")
 
@@ -2839,9 +2838,8 @@ class CpModel:
         for t in coeffs_map.items():
             if not isinstance(t[0], IntVar):
                 raise TypeError("Wrong argument" + str(t))
-            c = cmh.assert_is_int64(t[1])
             result.vars.append(t[0].index)
-            result.coeffs.append(c * mult)
+            result.coeffs.append(t[1] * mult)
         return result
 
     def _set_objective(self, obj: ObjLinearExprT, minimize: bool):
@@ -2955,10 +2953,20 @@ class CpModel:
         """
         return swig_helper.CpSatHelper.write_model_to_file(self.__model, file)
 
-    def add_hint(self, var: IntVar, value: int) -> None:
+    @overload
+    def add_hint(self, var: IntVar, value: int) -> None: ...
+
+    @overload
+    def add_hint(self, literal: BoolVarT, value: bool) -> None: ...
+
+    def add_hint(self, var, value) -> None:
         """Adds 'var == value' as a hint to the solver."""
-        self.__model.solution_hint.vars.append(self.get_or_make_index(var))
-        self.__model.solution_hint.values.append(value)
+        if var.index >= 0:
+            self.__model.solution_hint.vars.append(self.get_or_make_index(var))
+            self.__model.solution_hint.values.append(int(value))
+        else:
+            self.__model.solution_hint.vars.append(self.negated(var.index))
+            self.__model.solution_hint.values.append(int(not value))
 
     def clear_hints(self):
         """Removes any solution hint from the model."""

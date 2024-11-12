@@ -166,6 +166,8 @@ template <typename F>
 class LightIntFunctionElementCt;
 template <typename F>
 class LightIntIntFunctionElementCt;
+template <typename F>
+class LightIntIntIntFunctionElementCt;
 
 inline int64_t CpRandomSeed() {
   return absl::GetFlag(FLAGS_cp_random_seed) == -1
@@ -1257,6 +1259,18 @@ class Solver {
     return RevAlloc(new LightIntIntFunctionElementCt<F>(
         this, var, index1, index2, std::move(values),
         std::move(deep_serialize)));
+  }
+
+  /// Light three-dimension function-based element constraint ensuring
+  /// var == values(index1, index2, index3).
+  /// The constraint does not perform bound reduction of the resulting variable
+  /// until the index variables are bound.
+  template <typename F>
+  Constraint* MakeLightElement(F values, IntVar* const var,
+                               IntVar* const index1, IntVar* const index2,
+                               IntVar* const index3) {
+    return RevAlloc(new LightIntIntIntFunctionElementCt<F>(
+        this, var, index1, index2, index3, std::move(values)));
   }
 
   /// Returns the expression expr such that vars[expr] == value.
@@ -2768,11 +2782,17 @@ class Solver {
   /// Local Search Operators.
   LocalSearchOperator* MakeOperator(
       const std::vector<IntVar*>& vars, LocalSearchOperators op,
-      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+          nullptr,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+          nullptr);
   LocalSearchOperator* MakeOperator(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, LocalSearchOperators op,
-      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+          nullptr,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+          nullptr);
   // TODO(user): Make the callback an IndexEvaluator2 when there are no
   // secondary variables.
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
@@ -3710,6 +3730,7 @@ class ModelVisitor : public BaseObject {
   static const char kFinalStatesArgument[];
   static const char kFixedChargeArgument[];
   static const char kIndex2Argument[];
+  static const char kIndex3Argument[];
   static const char kIndexArgument[];
   static const char kInitialState[];
   static const char kIntervalArgument[];

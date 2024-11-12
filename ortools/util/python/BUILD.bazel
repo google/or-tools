@@ -31,6 +31,7 @@ pybind_extension(
     deps = [
         ":sorted_interval_list_doc",
         "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/strings",
     ],
 )
 

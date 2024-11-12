@@ -682,7 +682,12 @@ BruteForceResult BruteForceOrthogonalPacking(
     result[item.index] = item.position;
   }
   VLOG_EVERY_N_SEC(3, 3) << "Found a feasible packing by brute force. Dot:\n "
-                         << RenderDot(bounding_box_size, result);
+                         << RenderDot(
+                                Rectangle{.x_min = 0,
+                                          .x_max = bounding_box_size.first,
+                                          .y_min = 0,
+                                          .y_max = bounding_box_size.second},
+                                result);
   return {.status = BruteForceResult::Status::kFoundSolution,
           .positions_for_solution = result};
 }

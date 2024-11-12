@@ -16,11 +16,12 @@ jobs:
           {version: "3.9"},
           {version: "3.10"},
           {version: "3.11"},
-          {version: "3.12"}
+          {version: "3.12"},
+          {version: "3.13"},
         ]
       fail-fast: false
     name: MacOS • ${{ matrix.cmake.generator }} • Python-${{ matrix.python.version }}
-    runs-on: macos-latest
+    runs-on: macos-13 # last macos intel based runner
     steps:
       - uses: actions/checkout@v4
       - name: Swig install

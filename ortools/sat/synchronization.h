@@ -505,9 +505,11 @@ class SharedBoundsManager {
   // Note that because there can be more than one optimal solution on an
   // independent subproblem, it is important to do that in a locked fashion, and
   // reject future incompatible fixing.
-  void FixVariablesFromPartialSolution(
-      const std::vector<int64_t>& solution,
-      const std::vector<int>& variables_to_fix);
+  //
+  // Note that this do not work with symmetries. And for now we don't call it
+  // when this is the case.
+  void FixVariablesFromPartialSolution(absl::Span<const int64_t> solution,
+                                       absl::Span<const int> variables_to_fix);
 
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed
@@ -561,7 +563,21 @@ class SharedBoundsManager {
   std::vector<int64_t> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
   std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
-  absl::btree_map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
+
+  // We track the number of bounds exported by each solver, and the "extra"
+  // bounds pushed due to symmetries.
+  struct Counters {
+    int64_t num_exported = 0;
+    int64_t num_symmetric = 0;
+  };
+  absl::btree_map<std::string, Counters> bounds_exported_
+      ABSL_GUARDED_BY(mutex_);
+
+  // Symmetry info.
+  bool has_symmetry_ = false;
+  std::vector<int> var_to_representative_;  // Identity if not touched.
+  std::vector<int> var_to_orbit_index_;
+  CompactVectorVector<int, int> orbits_;
 
   std::vector<int64_t> debug_solution_;
   std::string dump_prefix_;
@@ -589,7 +605,7 @@ class SharedBoundsManager {
 class UniqueClauseStream {
  public:
   static constexpr int kMinClauseSize = 3;
-  static constexpr int kMaxClauseSize = 8;
+  static constexpr int kMaxClauseSize = 32;
   // Export 4KiB of clauses per batch.
   static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
   // Bound the total literals we buffer, approximately enforced so shorter

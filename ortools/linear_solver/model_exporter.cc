@@ -150,11 +150,11 @@ class MPModelProtoExporter {
 
   // Appends a pair name, value to "output", formatted to comply with the MPS
   // standard.
-  void AppendMpsPair(const std::string& name, double value,
+  void AppendMpsPair(absl::string_view name, double value,
                      std::string* output) const;
 
   // Appends the head of a line, consisting of an id and a name to output.
-  void AppendMpsLineHeader(const std::string& id, const std::string& name,
+  void AppendMpsLineHeader(absl::string_view id, absl::string_view name,
                            std::string* output) const;
 
   // Same as AppendMpsLineHeader. Appends an extra new-line at the end the
@@ -680,13 +680,13 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
   return true;
 }
 
-void MPModelProtoExporter::AppendMpsPair(const std::string& name, double value,
+void MPModelProtoExporter::AppendMpsPair(absl::string_view name, double value,
                                          std::string* output) const {
   absl::StrAppendFormat(output, *mps_format_, name, DoubleToString(value));
 }
 
-void MPModelProtoExporter::AppendMpsLineHeader(const std::string& id,
-                                               const std::string& name,
+void MPModelProtoExporter::AppendMpsLineHeader(absl::string_view id,
+                                               absl::string_view name,
                                                std::string* output) const {
   absl::StrAppendFormat(output, *mps_header_format_, id, name);
 }

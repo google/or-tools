@@ -26,17 +26,17 @@
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
+#include "ortools/pdlp/scheduler.h"
 
 namespace operations_research::pdlp {
 
 using ::Eigen::VectorXd;
 
 Sharder::Sharder(const int64_t num_elements, const int num_shards,
-                 ThreadPool* const thread_pool,
+                 Scheduler* const scheduler,
                  const std::function<int64_t(int64_t)>& element_mass)
-    : thread_pool_(thread_pool) {
+    : scheduler_(scheduler) {
   CHECK_GE(num_elements, 0);
   if (num_elements == 0) {
     shard_starts_.push_back(0);
@@ -70,8 +70,8 @@ Sharder::Sharder(const int64_t num_elements, const int num_shards,
 }
 
 Sharder::Sharder(const int64_t num_elements, const int num_shards,
-                 ThreadPool* const thread_pool)
-    : thread_pool_(thread_pool) {
+                 Scheduler* const scheduler)
+    : scheduler_(scheduler) {
   CHECK_GE(num_elements, 0);
   if (num_elements == 0) {
     shard_starts_.push_back(0);
@@ -104,34 +104,30 @@ Sharder::Sharder(const Sharder& other_sharder, const int64_t num_elements)
     // The `std::max()` protects against `other_sharder.NumShards() == 0`, which
     // will happen if `other_sharder` had `num_elements == 0`.
     : Sharder(num_elements, std::max(1, other_sharder.NumShards()),
-              other_sharder.thread_pool_) {}
+              other_sharder.scheduler_) {}
 
 void Sharder::ParallelForEachShard(
     const std::function<void(const Shard&)>& func) const {
-  if (thread_pool_) {
+  if (scheduler_) {
     absl::BlockingCounter counter(NumShards());
     VLOG(2) << "Starting ParallelForEachShard()";
-    for (int shard_num = 0; shard_num < NumShards(); ++shard_num) {
-      thread_pool_->Schedule([&, shard_num]() {
-        WallTimer timer;
-        if (VLOG_IS_ON(2)) {
-          timer.Start();
-        }
-        func(Shard(shard_num, this));
-        if (VLOG_IS_ON(2)) {
-          timer.Stop();
-          VLOG(2) << "Shard " << shard_num << " with " << ShardSize(shard_num)
-                  << " elements and " << ShardMass(shard_num)
-                  << " mass finished with "
-                  << ShardMass(shard_num) /
-                         std::max(int64_t{1}, absl::ToInt64Microseconds(
-                                                  timer.GetDuration()))
-                  << " mass/usec.";
-        }
-        counter.DecrementCount();
-      });
-    }
-    counter.Wait();
+    scheduler_->ParallelFor(0, NumShards(), [&](int shard_num) {
+      WallTimer timer;
+      if (VLOG_IS_ON(2)) {
+        timer.Start();
+      }
+      func(Shard(shard_num, this));
+      if (VLOG_IS_ON(2)) {
+        timer.Stop();
+        VLOG(2) << "Shard " << shard_num << " with " << ShardSize(shard_num)
+                << " elements and " << ShardMass(shard_num)
+                << " mass finished with "
+                << ShardMass(shard_num) /
+                       std::max(int64_t{1},
+                                absl::ToInt64Microseconds(timer.GetDuration()))
+                << " mass/usec.";
+      }
+    });
     VLOG(2) << "Done ParallelForEachShard()";
   } else {
     for (int shard_num = 0; shard_num < NumShards(); ++shard_num) {

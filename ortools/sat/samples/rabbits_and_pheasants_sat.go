@@ -18,9 +18,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
 const numAnimals = 20
@@ -58,6 +58,6 @@ func rabbitsAndPheasants() error {
 
 func main() {
 	if err := rabbitsAndPheasants(); err != nil {
-		glog.Exitf("rabbitsAndPheasants returned with error: %v", err)
+		log.Exitf("rabbitsAndPheasants returned with error: %v", err)
 	}
 }

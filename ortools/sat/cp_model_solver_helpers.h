@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/flags/declare.h"
@@ -32,7 +33,6 @@
 #include "ortools/util/logging.h"
 
 ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
-ABSL_DECLARE_FLAG(bool, cp_model_check_intermediate_solutions);
 ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 

@@ -18,9 +18,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/util.h"
@@ -42,13 +42,14 @@ class SharedStatTables {
 
   void AddLpStat(absl::string_view name, Model* model);
 
-  void AddLnsStat(absl::string_view name,
-                  const NeighborhoodGenerator& generator);
+  void AddLnsStat(absl::string_view name, int64_t num_fully_solved_calls,
+                  int64_t num_calls, int64_t num_improving_calls,
+                  double difficulty, double deterministic_limit);
 
   void AddLsStat(absl::string_view name, int64_t num_batches,
                  int64_t num_restarts, int64_t num_linear_moves,
                  int64_t num_general_moves, int64_t num_compound_moves,
-                 int64_t num_bactracks, int64_t num_weight_updates,
+                 int64_t num_backtracks, int64_t num_weight_updates,
                  int64_t num_scores_computed);
 
   // Display the set of table at the end.

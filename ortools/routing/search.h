@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
@@ -46,6 +47,41 @@
 #include "ortools/util/bitset.h"
 
 namespace operations_research::routing {
+
+// Solves a routing model using alternative models. This assumes that the models
+// are equivalent in the sense that a solution to one model is also a solution
+// to the other models. This is true for models that differ only by their arc
+// costs or objective for instance.
+// The primary model is the main model, to which the returned solution will
+// correspond.
+// The method solves the primary model and alternative models alternatively.
+// It works as follows (all solves use 'parameters'):
+// 1) solve the primary model with a greedy descent,
+// 2) let 'alt' be the first alternative model,
+// 3) solve 'alt' starting from the solution to the primary model with a greedy
+//    descent,
+// 4) solve the primary model from the solution to 'alt' with a greedy descent,
+// 5) if the new solution improves the best solution found so far, update it,
+//    otherwise increase the iteration counter,
+// 6) if the iteration counter is less than 'max_non_improving_iterations', let
+// 'alt' be the next "round-robin" alternative model, and go to step 3,
+// 7) if 'parameters' specified a metaheuristic, solve the primary model using
+//    that metaheuristic starting from the best solution found so far,
+// 8) return the best solution found.
+// Note that if the time limit is reached at any stage, the search is
+// interrupted and the best solution found will be returned immediately.
+// TODO(user): Add a version taking search parameters for alternative models.
+const Assignment* SolveWithAlternativeSolvers(
+    RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations);
+// Same as above, but taking an initial solution.
+const Assignment* SolveFromAssignmentWithAlternativeSolvers(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations);
 
 class IntVarFilteredHeuristic;
 #ifndef SWIG
@@ -345,7 +381,10 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     }
   };
   struct Seed {
-    std::tuple<int64_t, int64_t> key;
+    absl::InlinedVector<int64_t, 8> properties;
+    // TODO(user): merge start_end_value into the properties vector above by
+    // adding the corresponding enum to InsertionSortingProperty in
+    // parameters.proto.
     StartEndValue start_end_value;
     /// Indicates whether this Seed corresponds to a pair or a single node.
     /// If false, the 'index' is the pair_index, otherwise it's the node index.
@@ -353,9 +392,12 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     int index;
 
     bool operator>(const Seed& other) const {
-      return std::tie(key, start_end_value, is_node_index, index) >
-             std::tie(other.key, other.start_end_value, other.is_node_index,
-                      other.index);
+      for (size_t i = 0; i < properties.size(); ++i) {
+        if (properties[i] == other.properties[i]) continue;
+        return properties[i] > other.properties[i];
+      }
+      return std::tie(start_end_value, is_node_index, index) >
+             std::tie(other.start_end_value, other.is_node_index, other.index);
     }
   };
   // clang-format off
@@ -378,7 +420,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   /// For each node, start_end_distances_per_node[node] is sorted in decreasing
   /// order.
   std::vector<std::vector<StartEndValue> >
-      ComputeStartEndDistanceForVehicles(const std::vector<int>& vehicles);
+      ComputeStartEndDistanceForVehicles(absl::Span<const int>  vehicles);
 
   /// Initializes sq->priority_queue by inserting the best entry corresponding
   /// to each node, i.e. the last element of start_end_distances_per_node[node],
@@ -1067,7 +1109,8 @@ class LocalCheapestInsertionFilteredHeuristic
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-      RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode,
+      std::vector<RoutingSearchParameters::InsertionSortingProperty>
+          insertion_sorting_properties,
       LocalSearchFilterManager* filter_manager,
       BinCapacities* bin_capacities = nullptr,
       std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
@@ -1130,7 +1173,8 @@ class LocalCheapestInsertionFilteredHeuristic
 
   std::vector<Seed> insertion_order_;
   const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
-  const RoutingSearchParameters::InsertionSortingMode insertion_sorting_mode_;
+  std::vector<RoutingSearchParameters::InsertionSortingProperty>
+      insertion_sorting_properties_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
 
@@ -1429,8 +1473,7 @@ class ChristofidesFilteredHeuristic : public RoutingFilteredHeuristic {
 /// Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
-  explicit SweepArranger(
-      const std::vector<std::pair<int64_t, int64_t>>& points);
+  explicit SweepArranger(absl::Span<const std::pair<int64_t, int64_t>> points);
 
   // This type is neither copyable nor movable.
   SweepArranger(const SweepArranger&) = delete;

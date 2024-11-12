@@ -704,8 +704,8 @@ bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
 
   // TODO(user): compute some dtime, it is always zero currently.
   time_limit_->AdvanceDeterministicTime(dtime_);
-  LOG_IF(INFO, log_info) << "Prestamping." << " num_fixed: " << num_fixed_
-                         << " dtime: " << dtime_
+  LOG_IF(INFO, log_info) << "Prestamping."
+                         << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
                          << " wtime: " << wall_timer.Get();
   return true;
 }
@@ -1259,7 +1259,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   dtime_ += 1e-8 * num_inspected_literals_;
   time_limit_->AdvanceDeterministicTime(dtime_);
   log_info |= VLOG_IS_ON(1);
-  LOG_IF(INFO, log_info) << "BVE." << " num_fixed: "
+  LOG_IF(INFO, log_info) << "BVE."
+                         << " num_fixed: "
                          << trail_->Index() - saved_trail_index
                          << " num_simplified_literals: " << num_simplifications_
                          << " num_blocked_clauses_: " << num_blocked_clauses_

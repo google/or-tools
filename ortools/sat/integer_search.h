@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/implied_bounds.h"
@@ -138,7 +139,9 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail);
 
 // If a variable appear in the objective, branch on its best objective value.
-IntegerLiteral ChooseBestObjectiveValue(IntegerVariable var, Model* model);
+IntegerLiteral ChooseBestObjectiveValue(
+    IntegerVariable var, IntegerTrail* integer_trail,
+    ObjectiveDefinition* objective_definition);
 
 // Returns decision corresponding to var >= lb + max(1, (ub - lb) / 2). It also
 // CHECKs that the variable is not fixed.

@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
@@ -151,17 +152,18 @@ bool ModelHasSchedulingConstraints(const CpModelProto& cp_model_proto) {
   return false;
 }
 
-void AddDualSchedulingHeuristics(SatParameters& new_params) {
+void AddExtraSchedulingPropagators(SatParameters& new_params) {
   new_params.set_exploit_all_precedences(true);
   new_params.set_use_hard_precedences_in_cumulative(true);
   new_params.set_use_overload_checker_in_cumulative(true);
   new_params.set_use_strong_propagation_in_disjunctive(true);
   new_params.set_use_timetable_edge_finding_in_cumulative(true);
+  new_params.set_use_conservative_scale_overload_checker(true);
   new_params.set_max_pairs_pairwise_reasoning_in_no_overlap_2d(5000);
   new_params.set_use_timetabling_in_no_overlap_2d(true);
   new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
   new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
-  new_params.set_use_conservative_scale_overload_checker(true);
+  new_params.set_use_try_edge_reasoning_in_no_overlap_2d(true);
 }
 
 // We want a random tie breaking among variables with equivalent values.
@@ -496,6 +498,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_linearization_level(2);
     new_params.set_add_lp_constraints_lazily(false);
     strategies["max_lp"] = new_params;
+    new_params.set_use_symmetry_in_lp(true);
+    strategies["max_lp_sym"] = new_params;
   }
 
   // Core. Note that we disable the lp here because it is faster on the minizinc
@@ -549,7 +553,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
     new_params.set_linearization_level(2);
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
+      AddExtraSchedulingPropagators(new_params);
     }
     // We want to spend more time on the LP here.
     new_params.set_add_lp_constraints_lazily(false);
@@ -568,7 +572,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["objective_lb_search"] = new_params;
 
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
+      AddExtraSchedulingPropagators(new_params);
     }
     new_params.set_linearization_level(2);
     strategies["objective_lb_search_max_lp"] = new_params;
@@ -581,7 +585,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
+      AddExtraSchedulingPropagators(new_params);
     }
 
     strategies["objective_shaving"] = new_params;
@@ -608,7 +612,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["variables_shaving_no_lp"] = new_params;
 
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
+      AddExtraSchedulingPropagators(new_params);
     }
     new_params.set_linearization_level(2);
     strategies["variables_shaving_max_lp"] = new_params;
@@ -620,7 +624,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_probing_search(true);
     new_params.set_at_most_one_max_expansion_size(2);
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
+      AddExtraSchedulingPropagators(new_params);
     }
     strategies["probing"] = new_params;
 
@@ -644,14 +648,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_dynamic_precedence_in_disjunctive(false);
     new_params.set_use_dynamic_precedence_in_cumulative(false);
     strategies["fixed"] = new_params;
-
-    new_params.set_linearization_level(0);
-    strategies["fixed_no_lp"] = new_params;
-
-    new_params.set_linearization_level(2);
-    new_params.set_add_lp_constraints_lazily(false);
-    new_params.set_root_lp_iterations(100'000);
-    strategies["fixed_max_lp"] = new_params;
   }
 
   // Quick restart.
@@ -674,7 +670,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_linearization_level(2);
     new_params.set_search_branching(SatParameters::LP_SEARCH);
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
+      AddExtraSchedulingPropagators(new_params);
     }
     strategies["reduced_costs"] = new_params;
   }
@@ -792,7 +788,13 @@ std::vector<SatParameters> GetFullWorkerParameters(
     names.push_back("fixed");
     names.push_back("core");
     names.push_back("no_lp");
-    names.push_back("max_lp");
+    if (cp_model.has_symmetry()) {
+      names.push_back("max_lp_sym");
+    } else {
+      // If there is no symmetry, max_lp_sym and max_lp are the same, but
+      // we prefer the less confusing name.
+      names.push_back("max_lp");
+    }
     names.push_back("quick_restart");
     names.push_back("reduced_costs");
     names.push_back("quick_restart_no_lp");
@@ -806,6 +808,9 @@ std::vector<SatParameters> GetFullWorkerParameters(
     names.push_back("probing_no_lp");
     names.push_back("objective_lb_search_no_lp");
     names.push_back("objective_lb_search_max_lp");
+    if (cp_model.has_symmetry()) {
+      names.push_back("max_lp");
+    }
   } else {
     for (const std::string& name : base_params.subsolvers()) {
       // Hack for flatzinc. At the time of parameter setting, the objective is

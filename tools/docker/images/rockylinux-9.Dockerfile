@@ -4,13 +4,14 @@ FROM rockylinux:9 AS env
 #############
 ##  SETUP  ##
 #############
-#ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install git wget openssl-devel cmake \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y group install "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-CMD [ "/usr/bin/bash" ]
+ENTRYPOINT ["/usr/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
 # Install SWIG 4.2.1
 RUN dnf -y update \
@@ -41,7 +42,6 @@ RUN dnf -y update \
 && dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Install Python
 RUN dnf -y update \
@@ -51,13 +51,12 @@ RUN dnf -y update \
 RUN python3 -m pip install \
  absl-py mypy mypy-protobuf pandas
 
-ENV TZ=America/Los_Angeles
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
 ################
 ##  OR-TOOLS  ##
 ################
 FROM env AS devel
+ENV DISTRIBUTION=rockylinux-9
+
 WORKDIR /root
 # Copy the snk key
 COPY or-tools.snk /root/or-tools.snk
@@ -90,6 +89,7 @@ RUN make archive_cpp
 # .Net
 ## build
 FROM cpp_build AS dotnet_build
+RUN sed -i 's/\(<SignAssembly>\).*\(<\/SignAssembly>\)/\1false\2/' ortools/dotnet/Google.OrTools*.csproj.in
 ENV USE_DOTNET_CORE_31=ON
 RUN make detect_dotnet \
 && make dotnet JOBS=8

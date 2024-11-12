@@ -886,8 +886,7 @@ bool LinearPropagator::PropagateInfeasibleConstraint(int id,
 }
 
 void LinearPropagator::Explain(int id, IntegerValue propagation_slack,
-                               IntegerLiteral literal_to_explain,
-                               int trail_index,
+                               IntegerVariable var_to_explain, int trail_index,
                                std::vector<Literal>* literals_reason,
                                std::vector<int>* trail_indices_reason) {
   literals_reason->clear();
@@ -900,7 +899,7 @@ void LinearPropagator::Explain(int id, IntegerValue propagation_slack,
   const auto vars = GetVariables(info);
   for (int i = 0; i < info.initial_size; ++i) {
     const IntegerVariable var = vars[i];
-    if (PositiveVariable(var) == PositiveVariable(literal_to_explain.var)) {
+    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
       continue;
     }
     const int index =

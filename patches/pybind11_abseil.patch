@@ -55,7 +55,7 @@ index ceb65a8..e142837 100644
  include_directories(${TOP_LEVEL_DIR} ${pybind11_INCLUDE_DIRS})
 diff --git a/cmake/dependencies/CMakeLists.txt b/cmake/dependencies/CMakeLists.txt
 new file mode 100644
-index 0000000..b67d564
+index 0000000..cb13e7e
 --- /dev/null
 +++ b/cmake/dependencies/CMakeLists.txt
 @@ -0,0 +1,19 @@
@@ -158,7 +158,7 @@ index 791c245..33e614a 100644
  )
  
 diff --git a/pybind11_abseil/CMakeLists.txt b/pybind11_abseil/CMakeLists.txt
-index d1b7483..ce7fd72 100644
+index d1b7483..74e3443 100644
 --- a/pybind11_abseil/CMakeLists.txt
 +++ b/pybind11_abseil/CMakeLists.txt
 @@ -42,14 +42,19 @@ target_link_libraries(ok_status_singleton_pyinit_google3
@@ -184,7 +184,7 @@ index d1b7483..ce7fd72 100644
  target_link_libraries(ok_status_singleton
                        PUBLIC ok_status_singleton_pyinit_google3)
  
-@@ -150,14 +155,23 @@ target_link_libraries(status_pyinit_google3 PUBLIC register_status_bindings)
+@@ -150,14 +155,30 @@ target_link_libraries(status_pyinit_google3 PUBLIC register_status_bindings)
  
  # status ====================================================================
  
@@ -195,25 +195,32 @@ index d1b7483..ce7fd72 100644
 +set_target_properties(status_py_extension_stub PROPERTIES LIBRARY_OUTPUT_NAME "status")
 +# note: macOS is APPLE and also UNIX !
 +if(APPLE)
-+  set_target_properties(status_py_extension_stub PROPERTIES SUFFIX ".so")
++  set_target_properties(status_py_extension_stub PROPERTIES
++    SUFFIX ".so"
++    INSTALL_RPATH "@loader_path;@loader_path/../ortools/.libs"
++  )
 +  set_property(TARGET status_py_extension_stub APPEND PROPERTY
 +    LINK_FLAGS "-flat_namespace -undefined suppress")
++elseif(UNIX)
++  set_target_properties(status_py_extension_stub PROPERTIES
++    INSTALL_RPATH "$ORIGIN:$ORIGIN/../ortools/.libs"
++    )
 +endif()
-+
-+add_library(pybind11_abseil::status ALIAS status_py_extension_stub)
  
 -target_include_directories(status INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
-+target_include_directories(status_py_extension_stub INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
++add_library(pybind11_abseil::status ALIAS status_py_extension_stub)
  
 -set_target_properties(status PROPERTIES PREFIX "")
-+set_target_properties(status_py_extension_stub PROPERTIES PREFIX "")
++target_include_directories(status_py_extension_stub INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
  
 -target_link_libraries(status PUBLIC status_pyinit_google3 absl::status)
++set_target_properties(status_py_extension_stub PROPERTIES PREFIX "")
++
 +target_link_libraries(status_py_extension_stub PUBLIC status_pyinit_google3 absl::status)
  
  # import_status_module =========================================================
  
-@@ -167,7 +181,7 @@ add_library(pybind11_abseil::import_status_module ALIAS import_status_module)
+@@ -167,7 +188,7 @@ add_library(pybind11_abseil::import_status_module ALIAS import_status_module)
  target_include_directories(import_status_module
                             INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
  
@@ -222,7 +229,7 @@ index d1b7483..ce7fd72 100644
  
  # status_casters ===============================================================
  
-@@ -175,25 +189,27 @@ add_library(status_casters INTERFACE)
+@@ -175,25 +196,27 @@ add_library(status_casters INTERFACE)
  add_library(pybind11_abseil::status_casters ALIAS status_casters)
  
  target_include_directories(status_casters

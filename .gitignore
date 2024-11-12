@@ -41,8 +41,10 @@ temp_cpp/
 temp_cpp_test/
 temp_dotnet/
 temp_dotnet_test/
+temp_meta_dotnet/
 temp_java/
 temp_java_test/
+temp_meta_java/
 temp_python*
 temp_python*_test/
 temp_archive/
@@ -57,6 +59,7 @@ or-tools.snk
 private-key.gpg
 settings.xml
 export
+export_meta
 
 ortools/bazel-*
 examples/bazel-*
@@ -76,6 +79,8 @@ cache/
 **/.vscode/*
 .DS_Store
 **/.vs/*
+/.helix
+/compile_commands.json
 
 ortools/linear_solver/lpi_glop.cc
 
@@ -103,3 +108,6 @@ CMakeFiles
 DartConfiguration.tcl
 *build*/*
 build/
+
+# Ignore Bzlmod lock file until it is more stable
+MODULE.bazel.lock

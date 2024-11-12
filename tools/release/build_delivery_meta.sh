@@ -30,8 +30,8 @@ ${BOLD}DESCRIPTION${RESET}
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
-\tdotnet: build all .Net packages
-\tjava: build all Java packages
+\tdotnet: build the meta .Net package
+\tjava: build the meta Java package
 \tall: build everything (default)
 
 ${BOLD}EXAMPLES${RESET}
@@ -55,7 +55,7 @@ function assert_defined(){
 
 # .Net build
 function build_dotnet() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/dotnet_build" -; then
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export_meta/meta_dotnet_build" -; then
     echo "build .Net up to date!" | tee -a build.log
     return 0
   fi
@@ -75,32 +75,32 @@ function build_dotnet() {
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}"/or-tools.snk.enc \
-    -out "${ROOT_DIR}"/export/or-tools.snk -d
-  DOTNET_SNK=export/or-tools.snk
+    -out "${ROOT_DIR}"/export_meta/or-tools.snk -d
+  DOTNET_SNK=export_meta/or-tools.snk
   echo "DONE" | tee -a build.log
 
   # Clean dotnet
   echo -n "Clean .Net..." | tee -a build.log
   cd "${ROOT_DIR}" || exit 2
-  rm -rf "${ROOT_DIR}/temp_dotnet"
+  rm -rf "${ROOT_DIR}/temp_meta_dotnet"
   echo "DONE" | tee -a build.log
 
   echo -n "Build .Net..." | tee -a build.log
-  cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+  cmake -S. -Btemp_meta_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
   -DBUILD_DOTNET=ON -DUSE_DOTNET_462=ON -DUNIVERSAL_DOTNET_PACKAGE=ON
-  cmake --build temp_dotnet -j8 -v
+  cmake --build temp_meta_dotnet -j8 -v
   echo "DONE" | tee -a build.log
-  #cmake --build temp_dotnet --target test
+  #cmake --build temp_meta_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy nupkg to export
-  cp temp_dotnet/dotnet/packages/Google.OrTools.9.*nupkg export/
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/dotnet_build"
+  cp temp_meta_dotnet/dotnet/packages/Google.OrTools.9.*nupkg export_meta/
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export_meta/meta_dotnet_build"
 }
 
 # Java build
 function build_java() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/java_build" -; then
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export_meta/meta_java_build" -; then
     echo "build Java up to date!" | tee -a build.log
     return 0
   fi
@@ -147,7 +147,7 @@ function build_java() {
   # Clean java
   echo -n "Clean Java..." | tee -a build.log
   cd "${ROOT_DIR}" || exit 2
-  rm -rf "${ROOT_DIR}/temp_java"
+  rm -rf "${ROOT_DIR}/temp_meta_java"
   echo "DONE" | tee -a build.log
 
   echo -n "Build Java..." | tee -a build.log
@@ -159,22 +159,22 @@ function build_java() {
   fi
 
   # shellcheck disable=SC2086: cmake fail to parse empty string ""
-  cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+  cmake -S. -Btemp_meta_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DUNIVERSAL_JAVA_PACKAGE=ON \
  -DSKIP_GPG=OFF ${GPG_EXTRA}
-  cmake --build temp_java -j8 -v
+  cmake --build temp_meta_java -j8 -v
   echo "DONE" | tee -a build.log
-  #cmake --build temp_java --target test
+  #cmake --build temp_meta_java --target test
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy meta jar to export
   #if [ ${PLATFORM} == "aarch64" ]; then
-  #  cp temp_java/java/ortools-linux-aarch64/target/*.jar* export/
+  #  cp temp_meta_java/java/ortools-linux-aarch64/target/*.jar* export_meta/
   #else
-  #  cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
+  #  cp temp_meta_java/java/ortools-linux-x86-64/target/*.jar* export_meta/
   #fi
-  cp temp_java/java/ortools-java/target/*.jar* export/
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
+  cp temp_meta_java/java/ortools-java/target/*.jar* export_meta/
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export_meta/meta_java_build"
 }
 
 # Cleaning everything
@@ -184,9 +184,9 @@ function reset() {
   cd "${ROOT_DIR}" || exit 2
 
   make clean
-  rm -rf temp_dotnet
-  rm -rf temp_java
-  rm -rf export
+  rm -rf temp_meta_dotnet
+  rm -rf temp_meta_java
+  rm -rf export_meta
   rm -f ./*.gpg
   rm -f ./*.log
   rm -f ./*.whl
@@ -217,7 +217,7 @@ function main() {
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
   local -r PLATFORM=$(uname -m)
 
-  mkdir -p "${ROOT_DIR}/export"
+  mkdir -p "${ROOT_DIR}/export_meta"
 
   case ${1} in
     dotnet|java)

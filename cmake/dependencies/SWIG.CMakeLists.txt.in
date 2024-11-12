@@ -11,7 +11,7 @@ ExternalProject_Add(SWIG_project
   SOURCE_DIR "@CMAKE_CURRENT_BINARY_DIR@/${PROJECT_NAME}/source"
   BUILD_IN_SOURCE 1
 
-  URL "http://prdownloads.sourceforge.net/swig/swigwin-4.1.1.zip"
+  URL "http://prdownloads.sourceforge.net/swig/swigwin-4.2.1.zip"
   LOG_DOWNLOAD TRUE
 
   UPDATE_COMMAND ""

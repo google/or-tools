@@ -11,20 +11,41 @@ jobs:
         cmake: [
           {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
+        java: [
+          # see https://endoflife.date/azul-zulu
+          {distrib: 'zulu', version: '8'}, # 2030/12
+          {distrib: 'zulu', version: '11'}, # 2026/09
+          {distrib: 'zulu', version: '17'}, # 2029/09
+          {distrib: 'zulu', version: '21'}, # 2031/09
+          # see https://endoflife.date/eclipse-temurin
+          {distrib: 'temurin', version: '8'}, # 2026/11
+          {distrib: 'temurin', version: '11'}, # 2027/10
+          {distrib: 'temurin', version: '17'}, # 2027/10
+          {distrib: 'temurin', version: '21'}, # 2029/12
+          # see https://endoflife.date/microsoft-build-of-openjdk
+          {distrib: 'microsoft', version: '11'}, # 2027/09
+          {distrib: 'microsoft', version: '17'}, # 2027/09
+          {distrib: 'microsoft', version: '21'}, # 2028/09
+        ]
       fail-fast: false
-    name: Windows • ${{ matrix.cmake.generator }} • Java
+    name: Windows • VS 2022 • ${{ matrix.java.distrib }}-${{ matrix.java.version }}
     runs-on: windows-latest
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
       - uses: actions/checkout@v4
-      - name: Install SWIG 4.2.1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: ${{ matrix.java.distrib }}
+          java-version: ${{ matrix.java.version }}
+      - name: Update maven
         run: |
-          (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.2.1.zip","swigwin-4.2.1.zip");
-          Expand-Archive .\swigwin-4.2.1.zip .;
-          echo "$((Get-Item .).FullName)/swigwin-4.2.1" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Check swig
-        run: swig -version
+          choco upgrade maven
+          echo "C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.9\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Check java
-        run: java -version
+        run: |
+          java -version
+          mvn --version
       - name: Check cmake
         run: cmake --version
       - name: Configure

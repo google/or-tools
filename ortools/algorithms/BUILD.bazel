@@ -12,8 +12,9 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -259,6 +260,25 @@ cc_proto_library(
     deps = [":set_cover_proto"],
 )
 
+py_proto_library(
+    name = "set_cover_py_pb2",
+    deps = [":set_cover_proto"],
+)
+
+cc_library(
+    name = "set_cover_lagrangian",
+    srcs = ["set_cover_lagrangian.cc"],
+    hdrs = ["set_cover_lagrangian.h"],
+    deps = [
+        ":adjustable_k_ary_heap",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/base:threadpool",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
 cc_library(
     name = "set_cover_model",
     srcs = ["set_cover_model.cc"],
@@ -267,9 +287,10 @@ cc_library(
         ":set_cover_cc_proto",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
-        "//ortools/util:aligned_memory",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -284,6 +305,7 @@ cc_library(
         "//ortools/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -299,7 +321,7 @@ cc_library(
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -314,6 +336,7 @@ cc_library(
         "//ortools/linear_solver",
         "//ortools/lp_data:base",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -325,7 +348,6 @@ cc_library(
     deps = [
         ":set_cover_model",
         "//ortools/base:file",
-        "//ortools/base:strong_vector",
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -345,6 +367,7 @@ cc_test(
         ":set_cover_invariant",
         ":set_cover_mip",
         ":set_cover_model",
+        "//ortools/base:parse_text_proto",
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -359,6 +382,15 @@ cc_library(
     hdrs = ["dense_doubly_linked_list.h"],
     deps = [
         "//ortools/base",
+    ],
+)
+
+cc_test(
+    name = "dense_doubly_linked_list_test",
+    srcs = ["dense_doubly_linked_list_test.cc"],
+    deps = [
+        ":dense_doubly_linked_list",
+        "//ortools/base:gmock_main",
     ],
 )
 

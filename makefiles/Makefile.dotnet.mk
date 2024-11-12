@@ -134,7 +134,9 @@ endif
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+	$(SED) -i -e 's/@COMPONENT_NAME@/$1/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@SAMPLE_FILE_NAME@/$$*.cs/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 
 $(TEMP_DOTNET_DIR)/$1/%/%.cs: \
@@ -175,10 +177,10 @@ $(TEMP_DOTNET_DIR)/$1/%: \
 
 $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  $(SRC_DIR)/examples/$1/%.cs \
- ${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
+ ${SRC_DIR}/ortools/dotnet/Example.csproj.in \
  | $(TEMP_DOTNET_DIR)/$1/%
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
- ortools$Sdotnet$SSample.csproj.in \
+ ortools$Sdotnet$SExample.csproj.in \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_SAMPLE_LANG@/9.0/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -196,7 +198,7 @@ else
 endif
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
+	$(SED) -i -e 's/@EXAMPLE_NAME@/$$*/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -206,7 +208,9 @@ endif
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+	$(SED) -i -e 's/@COMPONENT_NAME@/$1/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@EXAMPLE_FILE_NAME@/$$*.cs/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 
 $(TEMP_DOTNET_DIR)/$1/%/%.cs: \
@@ -659,9 +663,11 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@COMPONENT_NAME@/$1/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
-	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+	$(SED) -i -e 's/@SAMPLE_FILE_NAME@/$$*.cs/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 endef
 
@@ -674,7 +680,7 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  | $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
 	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.cs \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet
-	$(COPY) ortools$Sdotnet$SSample.csproj.in \
+	$(COPY) ortools$Sdotnet$SExample.csproj.in \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
@@ -692,9 +698,11 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
-	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
+	$(SED) -i -e 's/@COMPONENT_NAME@/$1/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
-	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+	$(SED) -i -e 's/@EXAMPLE_NAME@/$$*/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@EXAMPLE_FILE_NAME@/$$*.cs/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 endef
 

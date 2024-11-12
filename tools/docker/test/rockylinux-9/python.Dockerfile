@@ -4,16 +4,20 @@ FROM rockylinux:9
 #############
 ##  SETUP  ##
 #############
-RUN yum -y update \
-&& yum -y groupinstall 'Development Tools' \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+#ENV PATH=/usr/local/bin:$PATH
+RUN dnf -y update \
+&& dnf -y group install 'Development Tools' \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
+#CMD ["/usr/bin/bash"]
 
 # Install Python
-RUN yum -y update \
-&& yum -y install python3 python3-devel python3-pip python3-numpy \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install python3 python3-devel python3-pip python3-numpy \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
+RUN python3 -m pip install \
+ absl-py mypy mypy-protobuf pandas
 
 WORKDIR /root
 ADD or-tools_amd64_rockylinux-9_python_v*.tar.gz .

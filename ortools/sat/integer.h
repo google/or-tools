@@ -207,8 +207,7 @@ inline std::string IntegerTermDebugString(IntegerVariable var,
 }
 
 // Returns the vector of the negated variables.
-std::vector<IntegerVariable> NegationOf(
-    const std::vector<IntegerVariable>& vars);
+std::vector<IntegerVariable> NegationOf(absl::Span<const IntegerVariable> vars);
 
 // The integer equivalent of a literal.
 // It represents an IntegerVariable and an upper/lower bound on it.
@@ -752,22 +751,18 @@ class LazyReasonInterface {
   LazyReasonInterface() = default;
   virtual ~LazyReasonInterface() = default;
 
-  // The function is provided with the IntegerLiteral to explain and its index
-  // in the integer trail. It must fill the two vectors so that literals
-  // contains any Literal part of the reason and dependencies contains the trail
-  // index of any IntegerLiteral that is also part of the reason.
+  // When called, this must fill the two vectors so that literals contains any
+  // Literal part of the reason and dependencies contains the trail index of any
+  // IntegerLiteral that is also part of the reason.
   //
-  // Remark: sometimes this is called to fill the conflict while the literal to
-  // explain is propagated. In this case, trail_index will be the current trail
-  // index, and we cannot assume that there is anything filled yet in
-  // integer_literal[trail_index].
+  // Remark: integer_literal[trail_index] might not exist or has nothing to
+  // do with what was propagated.
   //
-  // TODO(user): Right now this is only used by "linear" propagator, if we need
-  // more we could replace {id, propagation_slack} by a generic payload so that
-  // each implementation can cast it to its need. Then the memory will just be
-  // the max size of this payload data (16 bytes should be fine).
+  // TODO(user): {id, propagation_slack, var_to_explain, trail_index} is just a
+  // generic "payload" and we should probably rename it as such so that each
+  // implementation can store different things.
   virtual void Explain(int id, IntegerValue propagation_slack,
-                       IntegerLiteral literal_to_explain, int trail_index,
+                       IntegerVariable var_to_explain, int trail_index,
                        std::vector<Literal>* literals_reason,
                        std::vector<int>* trail_indices_reason) = 0;
 };
@@ -784,6 +779,7 @@ class IntegerTrail final : public SatPropagator {
         encoder_(model->GetOrCreate<IntegerEncoder>()),
         trail_(model->GetOrCreate<Trail>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         parameters_(*model->GetOrCreate<SatParameters>()) {
     model->GetOrCreate<SatSolver>()->AddPropagator(this);
   }
@@ -799,8 +795,8 @@ class IntegerTrail final : public SatPropagator {
   // correct state before calling any of its functions.
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int literal_trail_index) final;
-  absl::Span<const Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail, int trail_index,
+                                   int64_t conflict_id) const final;
 
   // Returns the number of created integer variables.
   //
@@ -1024,10 +1020,8 @@ class IntegerTrail final : public SatPropagator {
       IntegerLiteral i_lit, int id, IntegerValue propagation_slack,
       LazyReasonInterface* explainer) {
     const int trail_index = integer_trail_.size();
-    if (trail_index >= lazy_reasons_.size()) {
-      lazy_reasons_.resize(trail_index + 1);
-    }
-    lazy_reasons_[trail_index] = {explainer, propagation_slack, id};
+    lazy_reasons_.push_back(LazyReasonEntry{explainer, propagation_slack,
+                                            i_lit.var, id, trail_index});
     return EnqueueInternal(i_lit, true, {}, {}, 0);
   }
 
@@ -1153,6 +1147,47 @@ class IntegerTrail final : public SatPropagator {
     debug_checker_ = std::move(checker);
   }
 
+  // This is used by the GreaterThanAtLeastOneOf() lazy reason.
+  //
+  // TODO(user): This might better lives together with the propagation code,
+  // but it does need access to data about the reason/conflict being currently
+  // computed. Also for speed we do need all the code here in on block. Given
+  // than we have just a few "lazy integer reason", we might not really want a
+  // generic code in any case.
+  void AddAllGreaterThanConstantReason(absl::Span<AffineExpression> exprs,
+                                       IntegerValue target_min,
+                                       std::vector<int>* indices) const {
+    for (const AffineExpression& expr : exprs) {
+      if (expr.IsConstant()) {
+        DCHECK_GE(expr.constant, target_min);
+        continue;
+      }
+      DCHECK_NE(expr.var, kNoIntegerVariable);
+
+      // Skip if we already have an explanation for expr >= target_min. Note
+      // that we already do that while processing the returned indices, so this
+      // mainly save a FindLowestTrailIndexThatExplainBound() call per skipped
+      // indices, which can still be costly.
+      {
+        const int index = tmp_var_to_trail_index_in_queue_[expr.var];
+        if (index == std::numeric_limits<int>::max()) continue;
+        if (index > 0 &&
+            expr.ValueAt(integer_trail_[index].bound) >= target_min) {
+          has_dependency_ = true;
+          continue;
+        }
+      }
+
+      // We need to find the index that explain the bound.
+      // Note that this will skip if the condition is true at level zero.
+      const int index =
+          FindLowestTrailIndexThatExplainBound(expr.GreaterOrEqual(target_min));
+      if (index >= 0) {
+        indices->push_back(index);
+      }
+    }
+  }
+
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
@@ -1202,7 +1237,8 @@ class IntegerTrail final : public SatPropagator {
       IntegerLiteral i_lit, Literal literal_reason);
 
   // Does the work of MergeReasonInto() when queue_ is already initialized.
-  void MergeReasonIntoInternal(std::vector<Literal>* output) const;
+  void MergeReasonIntoInternal(std::vector<Literal>* output,
+                               int64_t conflict_id) const;
 
   // Returns the lowest trail index of a TrailEntry that can be used to explain
   // the given IntegerLiteral. The literal must be currently true (CHECKed).
@@ -1212,24 +1248,27 @@ class IntegerTrail final : public SatPropagator {
   // This must be called before Dependencies() or AppendLiteralsReason().
   //
   // TODO(user): Not really robust, try to find a better way.
-  void ComputeLazyReasonIfNeeded(int trail_index) const;
+  void ComputeLazyReasonIfNeeded(int reason_index) const;
 
   // Helper function to return the "dependencies" of a bound assignment.
   // All the TrailEntry at these indices are part of the reason for this
   // assignment.
   //
   // Important: The returned Span is only valid up to the next call.
-  absl::Span<const int> Dependencies(int trail_index) const;
+  absl::Span<const int> Dependencies(int reason_index) const;
 
   // Helper function to append the Literal part of the reason for this bound
   // assignment. We use added_variables_ to not add the same literal twice.
   // Note that looking at literal.Variable() is enough since all the literals
   // of a reason must be false.
-  void AppendLiteralsReason(int trail_index,
+  void AppendLiteralsReason(int reason_index,
                             std::vector<Literal>* output) const;
 
   // Returns some debugging info.
   std::string DebugString();
+
+  // Used internally to return the next conlict number.
+  int64_t NextConflictId();
 
   // Information for each integer variable about its current lower bound and
   // position of the last TrailEntry in the trail referring to this var.
@@ -1257,9 +1296,8 @@ class IntegerTrail final : public SatPropagator {
     IntegerVariable var;
     int32_t prev_trail_index;
 
-    // Index in literals_reason_start_/bounds_reason_starts_ If this is -1, then
-    // this was a propagation with a lazy reason, and the reason can be
-    // re-created by calling the function lazy_reasons_[trail_index].
+    // Index in literals_reason_start_/bounds_reason_starts_ If this is negative
+    // then it is a lazy reason.
     int32_t reason_index;
   };
   std::vector<TrailEntry> integer_trail_;
@@ -1267,15 +1305,18 @@ class IntegerTrail final : public SatPropagator {
   struct LazyReasonEntry {
     LazyReasonInterface* explainer;
     IntegerValue propagation_slack;
+    IntegerVariable var_to_explain;
     int id;
+    int trail_index_at_propagation_time;
 
-    void Explain(IntegerLiteral literal_to_explain, int trail_index_of_literal,
-                 std::vector<Literal>* literals,
+    void Explain(std::vector<Literal>* literals,
                  std::vector<int>* dependencies) const {
-      explainer->Explain(id, propagation_slack, literal_to_explain,
-                         trail_index_of_literal, literals, dependencies);
+      explainer->Explain(id, propagation_slack, var_to_explain,
+                         trail_index_at_propagation_time, literals,
+                         dependencies);
     }
   };
+  std::vector<int> lazy_reason_decision_levels_;
   std::vector<LazyReasonEntry> lazy_reasons_;
 
   // Start of each decision levels in integer_trail_.
@@ -1283,18 +1324,15 @@ class IntegerTrail final : public SatPropagator {
   std::vector<int> integer_search_levels_;
 
   // Buffer to store the reason of each trail entry.
-  // Note that bounds_reason_buffer_ is an "union". It initially contains the
-  // IntegerLiteral, and is lazily replaced by the result of
-  // FindLowestTrailIndexThatExplainBound() applied to these literals. The
-  // encoding is a bit hacky, see Dependencies().
   std::vector<int> reason_decision_levels_;
   std::vector<int> literals_reason_starts_;
-  std::vector<int> bounds_reason_starts_;
   std::vector<Literal> literals_reason_buffer_;
 
-  // These two vectors are in one to one correspondence. Dependencies() will
+  // The last two vectors are in one to one correspondence. Dependencies() will
   // "cache" the result of the conversion from IntegerLiteral to trail indices
   // in trail_index_reason_buffer_.
+  std::vector<int> bounds_reason_starts_;
+  mutable std::vector<int> cached_sizes_;
   std::vector<IntegerLiteral> bounds_reason_buffer_;
   mutable std::vector<int> trail_index_reason_buffer_;
 
@@ -1326,15 +1364,22 @@ class IntegerTrail final : public SatPropagator {
   // Temporary data used by SafeEnqueue();
   std::vector<IntegerLiteral> tmp_cleaned_reason_;
 
-  // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
-  // lazily. This vector indicates the correspondence between a literal that
-  // was pushed by this class at a given trail index, and the index of its
-  // TrailEntry in integer_trail_.
-  std::vector<int> boolean_trail_index_to_integer_one_;
+  // For EnqueueLiteral(), we store the reason index at its Boolean trail index.
+  std::vector<int> boolean_trail_index_to_reason_index_;
 
   // We need to know if we skipped some propagation in the current branch.
   // This is reverted as we backtrack over it.
   int first_level_without_full_propagation_ = -1;
+
+  // This is used to detect when MergeReasonIntoInternal() is called multiple
+  // time while processing the same conflict. It allows to optimize the reason
+  // and the time taken to compute it.
+  mutable int64_t last_conflict_id_ = -1;
+  mutable bool info_is_valid_on_subsequent_last_level_expansion_ = false;
+  mutable util_intops::StrongVector<IntegerVariable, int>
+      var_to_trail_index_at_lower_level_;
+  mutable std::vector<int> tmp_seen_;
+  mutable std::vector<IntegerVariable> to_clear_for_lower_level_;
 
   int64_t num_enqueues_ = 0;
   int64_t num_untrails_ = 0;
@@ -1350,6 +1395,7 @@ class IntegerTrail final : public SatPropagator {
   IntegerEncoder* encoder_;
   Trail* trail_;
   SatSolver* sat_solver_;
+  TimeLimit* time_limit_;
   const SatParameters& parameters_;
 
   // Temporary "hash" to keep track of all the conditional enqueue that were
@@ -1587,10 +1633,12 @@ class GenericLiteralWatcher final : public SatPropagator {
 
   // Data for each propagator.
   DEFINE_STRONG_INDEX_TYPE(IdType);
+  std::vector<bool> id_need_reversible_support_;
   std::vector<int> id_to_level_at_last_call_;
   RevVector<IdType, int> id_to_greatest_common_level_since_last_call_;
   std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
   std::vector<std::vector<int*>> id_to_reversible_ints_;
+
   std::vector<std::vector<int>> id_to_watch_indices_;
   std::vector<int> id_to_priority_;
   std::vector<int> id_to_idempotence_;

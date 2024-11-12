@@ -418,51 +418,123 @@ std::string ValidateElementConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
   const ElementConstraintProto& element = ct.element();
 
+  if ((element.has_linear_index() || element.has_linear_target() ||
+       !element.exprs().empty()) &&
+      (!element.vars().empty() || element.index() != 0 ||
+       element.target() != 0)) {
+    return absl::StrCat(
+        "Inconsistent element with both legacy and new format defined",
+        ProtobufShortDebugString(ct));
+  }
+
   // We need to be able to manipulate expression like "target - var" without
   // integer overflow.
-  LinearExpressionProto overflow_detection;
-  overflow_detection.add_vars(element.target());
-  overflow_detection.add_coeffs(1);
-  overflow_detection.add_vars(/*dummy*/ 0);
-  overflow_detection.add_coeffs(-1);
-  for (const int ref : element.vars()) {
-    overflow_detection.set_vars(1, ref);
-    if (PossibleIntegerOverflow(model, overflow_detection.vars(),
-                                overflow_detection.coeffs())) {
-      return absl::StrCat(
-          "Domain of the variables involved in element constraint may cause "
-          "overflow",
-          ProtobufShortDebugString(ct));
+  if (!element.vars().empty()) {
+    LinearExpressionProto overflow_detection;
+    overflow_detection.add_vars(element.target());
+    overflow_detection.add_coeffs(1);
+    overflow_detection.add_vars(/*dummy*/ 0);
+    overflow_detection.add_coeffs(-1);
+    for (const int ref : element.vars()) {
+      overflow_detection.set_vars(1, ref);
+      if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+                                  overflow_detection.coeffs())) {
+        return absl::StrCat(
+            "Domain of the variables involved in element constraint may cause "
+            "overflow",
+            ProtobufShortDebugString(ct));
+      }
     }
   }
+
+  if (!element.exprs().empty() || element.has_linear_index() ||
+      element.has_linear_target()) {
+    RETURN_IF_NOT_EMPTY(
+        ValidateAffineExpression(model, element.linear_index()));
+    RETURN_IF_NOT_EMPTY(
+        ValidateAffineExpression(model, element.linear_target()));
+    for (const LinearExpressionProto& expr : element.exprs()) {
+      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+      LinearExpressionProto overflow_detection = ct.element().linear_target();
+      for (int i = 0; i < expr.vars_size(); ++i) {
+        overflow_detection.add_vars(expr.vars(i));
+        overflow_detection.add_coeffs(-expr.coeffs(i));
+      }
+      overflow_detection.set_offset(overflow_detection.offset() -
+                                    expr.offset());
+      if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+                                  overflow_detection.coeffs(),
+                                  overflow_detection.offset())) {
+        return absl::StrCat(
+            "Domain of the variables involved in element constraint may cause "
+            "overflow");
+      }
+    }
+  }
+
   return "";
 }
 
-std::string ValidateTableConstraint(const ConstraintProto& ct) {
+std::string ValidateTableConstraint(const CpModelProto& model,
+                                    const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
-  if (arg.vars().empty()) return "";
-  if (arg.values().size() % arg.vars().size() != 0) {
+  if (!arg.vars().empty() && !arg.exprs().empty()) {
     return absl::StrCat(
-        "The flat encoding of a table constraint must be a multiple of the "
-        "number of variable: ",
+        "Inconsistent table with both legacy and new format defined: ",
+        ProtobufShortDebugString(ct));
+  }
+  if (arg.vars().empty() && arg.exprs().empty() && !arg.values().empty()) {
+    return absl::StrCat(
+        "Inconsistent table empty expressions and non-empty tuples: ",
+        ProtobufShortDebugString(ct));
+  }
+  if (arg.vars().empty() && arg.exprs().empty() && arg.values().empty()) {
+    return "";
+  }
+  const int arity = arg.vars().empty() ? arg.exprs().size() : arg.vars().size();
+  if (arg.values().size() % arity != 0) {
+    return absl::StrCat(
+        "The flat encoding of a table constraint tuples must be a multiple of "
+        "the number of expressions: ",
         ProtobufDebugString(ct));
+  }
+  for (const int var : arg.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in table constraint: ", var);
+    }
+  }
+  for (const LinearExpressionProto& expr : arg.exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }
   return "";
 }
 
-std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
-  const int num_transistions = ct.automaton().transition_tail().size();
-  if (num_transistions != ct.automaton().transition_head().size() ||
-      num_transistions != ct.automaton().transition_label().size()) {
+std::string ValidateAutomatonConstraint(const CpModelProto& model,
+                                        const ConstraintProto& ct) {
+  const AutomatonConstraintProto& automaton = ct.automaton();
+  if (!automaton.vars().empty() && !automaton.exprs().empty()) {
+    return absl::StrCat(
+        "Inconsistent automaton with both legacy and new format defined: ",
+        ProtobufShortDebugString(ct));
+  }
+  const int num_transistions = automaton.transition_tail().size();
+  if (num_transistions != automaton.transition_head().size() ||
+      num_transistions != automaton.transition_label().size()) {
     return absl::StrCat(
         "The transitions repeated fields must have the same size: ",
         ProtobufShortDebugString(ct));
   }
+  for (const int var : automaton.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in automaton constraint: ",
+                          var);
+    }
+  }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
-    const int64_t tail = ct.automaton().transition_tail(i);
-    const int64_t head = ct.automaton().transition_head(i);
-    const int64_t label = ct.automaton().transition_label(i);
+    const int64_t tail = automaton.transition_tail(i);
+    const int64_t head = automaton.transition_head(i);
+    const int64_t label = automaton.transition_label(i);
     if (label <= std::numeric_limits<int64_t>::min() + 1 ||
         label == std::numeric_limits<int64_t>::max()) {
       return absl::StrCat("labels in the automaton constraint are too big: ",
@@ -854,9 +926,9 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
   if (hint.vars().size() != hint.values().size()) {
     return "Invalid solution hint: vars and values do not have the same size.";
   }
-  for (const int ref : hint.vars()) {
-    if (!VariableReferenceIsValid(model, ref)) {
-      return absl::StrCat("Invalid variable reference in solution hint: ", ref);
+  for (const int var : hint.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable in solution hint: ", var);
     }
   }
 
@@ -998,11 +1070,11 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateElementConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
         support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         RETURN_IF_NOT_EMPTY(
@@ -1397,19 +1469,42 @@ class ConstraintChecker {
   }
 
   bool ElementConstraintIsFeasible(const ConstraintProto& ct) {
-    if (ct.element().vars().empty()) return false;
-    const int index = Value(ct.element().index());
-    if (index < 0 || index >= ct.element().vars_size()) return false;
-    return Value(ct.element().vars(index)) == Value(ct.element().target());
+    if (!ct.element().vars().empty()) {
+      const int index = Value(ct.element().index());
+      if (index < 0 || index >= ct.element().vars_size()) return false;
+      return Value(ct.element().vars(index)) == Value(ct.element().target());
+    }
+
+    if (!ct.element().exprs().empty()) {
+      const int index = LinearExpressionValue(ct.element().linear_index());
+      if (index < 0 || index >= ct.element().exprs_size()) return false;
+      return LinearExpressionValue(ct.element().exprs(index)) ==
+             LinearExpressionValue(ct.element().linear_target());
+    }
+
+    return false;
   }
 
   bool TableConstraintIsFeasible(const ConstraintProto& ct) {
-    const int size = ct.table().vars_size();
-    if (size == 0) return true;
+    std::vector<int64_t> solution;
+    if (ct.table().exprs().empty()) {
+      for (int i = 0; i < ct.table().vars_size(); ++i) {
+        solution.push_back(Value(ct.table().vars(i)));
+      }
+    } else {
+      for (int i = 0; i < ct.table().exprs_size(); ++i) {
+        solution.push_back(LinearExpressionValue(ct.table().exprs(i)));
+      }
+    }
+
+    // No expression -> always feasible.
+    if (solution.empty()) return true;
+    const int size = solution.size();
+
     for (int row_start = 0; row_start < ct.table().values_size();
          row_start += size) {
       int i = 0;
-      while (Value(ct.table().vars(i)) == ct.table().values(row_start + i)) {
+      while (solution[i] == ct.table().values(row_start + i)) {
         ++i;
         if (i == size) return !ct.table().negated();
       }
@@ -1419,20 +1514,24 @@ class ConstraintChecker {
 
   bool AutomatonConstraintIsFeasible(const ConstraintProto& ct) {
     // Build the transition table {tail, label} -> head.
+    const AutomatonConstraintProto& automaton = ct.automaton();
     absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transition_map;
-    const int num_transitions = ct.automaton().transition_tail().size();
+    const int num_transitions = automaton.transition_tail().size();
     for (int i = 0; i < num_transitions; ++i) {
-      transition_map[{ct.automaton().transition_tail(i),
-                      ct.automaton().transition_label(i)}] =
-          ct.automaton().transition_head(i);
+      transition_map[{automaton.transition_tail(i),
+                      automaton.transition_label(i)}] =
+          automaton.transition_head(i);
     }
 
     // Walk the automaton.
-    int64_t current_state = ct.automaton().starting_state();
-    const int num_steps = ct.automaton().vars_size();
+    int64_t current_state = automaton.starting_state();
+    const int num_steps =
+        std::max(automaton.vars_size(), automaton.exprs_size());
     for (int i = 0; i < num_steps; ++i) {
-      const std::pair<int64_t, int64_t> key = {current_state,
-                                               Value(ct.automaton().vars(i))};
+      const std::pair<int64_t, int64_t> key = {
+          current_state, automaton.vars().empty()
+                             ? LinearExpressionValue(automaton.exprs(i))
+                             : Value(automaton.vars(i))};
       if (!transition_map.contains(key)) {
         return false;
       }
@@ -1440,7 +1539,7 @@ class ConstraintChecker {
     }
 
     // Check we are now in a final state.
-    for (const int64_t final : ct.automaton().final_states()) {
+    for (const int64_t final : automaton.final_states()) {
       if (current_state == final) return true;
     }
     return false;

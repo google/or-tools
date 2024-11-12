@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
@@ -155,12 +156,15 @@ std::vector<int> GetOrbits(
   MergingPartition union_find;
   union_find.Reset(n);
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {
+    DCHECK(perm != nullptr);
     const int num_cycles = perm->NumCycles();
     for (int i = 0; i < num_cycles; ++i) {
       // Note that there is currently no random access api like cycle[j].
       int first;
       bool is_first = true;
       for (const int x : perm->Cycle(i)) {
+        DCHECK_GE(x, 0);
+        DCHECK_LT(x, n);
         if (is_first) {
           first = x;
           is_first = false;
@@ -192,6 +196,59 @@ std::vector<int> GetOrbitopeOrbits(
     }
   }
   return orbits;
+}
+
+void GetSchreierVectorAndOrbit(
+    int point, absl::Span<const std::unique_ptr<SparsePermutation>> generators,
+    std::vector<int>* schrier_vector, std::vector<int>* orbit) {
+  schrier_vector->clear();
+  *orbit = {point};
+  if (generators.empty()) return;
+  schrier_vector->resize(generators[0]->Size(), -1);
+  absl::flat_hash_set<int> orbit_set = {point};
+  for (int i = 0; i < orbit->size(); ++i) {
+    const int orbit_element = (*orbit)[i];
+    for (int i = 0; i < generators.size(); ++i) {
+      DCHECK_EQ(schrier_vector->size(), generators[i]->Size());
+      const int image = generators[i]->Image(orbit_element);
+      if (image == orbit_element) continue;
+      const auto [it, inserted] = orbit_set.insert(image);
+      if (inserted) {
+        (*schrier_vector)[image] = i;
+        orbit->push_back(image);
+      }
+    }
+  }
+}
+
+std::vector<int> TracePoint(
+    int point, absl::Span<const int> schrier_vector,
+    absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
+  std::vector<int> result;
+  while (schrier_vector[point] != -1) {
+    const SparsePermutation& perm = *generators[schrier_vector[point]];
+    result.push_back(schrier_vector[point]);
+    const int next = perm.InverseImage(point);
+    DCHECK_NE(next, point);
+    point = next;
+  }
+  return result;
+}
+
+std::unique_ptr<SparsePermutation> CreateSparsePermutationFromProto(
+    int n, const SparsePermutationProto& proto) {
+  auto perm = std::make_unique<SparsePermutation>(n);
+  int support_index = 0;
+  const int num_cycle = proto.cycle_sizes().size();
+  for (int i = 0; i < num_cycle; ++i) {
+    const int size = proto.cycle_sizes(i);
+    for (int j = 0; j < size; ++j) {
+      DCHECK_LT(proto.support(support_index), n);
+      perm->AddToCurrentCycle(proto.support(support_index++));
+    }
+    perm->CloseCurrentCycle();
+  }
+  return perm;
 }
 
 }  // namespace sat

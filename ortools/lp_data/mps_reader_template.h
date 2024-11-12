@@ -501,7 +501,7 @@ class MPSReaderTemplate {
   // Parses a file in MPS format; if successful, returns the type of MPS
   // format detected (one of `kFree` or `kFixed`). If `form` is either `kFixed`
   // or `kFree`, the function will either return `kFixed` (or `kFree`
-  // respectivelly) if the input data satisfies the format, or an
+  // respectively) if the input data satisfies the format, or an
   // `absl::InvalidArgumentError` otherwise.
   absl::StatusOr<MPSReaderFormat> ParseFile(
       absl::string_view file_name, DataWrapper* data,
@@ -510,7 +510,7 @@ class MPSReaderTemplate {
   // Parses a string in MPS format; if successful, returns the type of MPS
   // format detected (one of `kFree` or `kFixed`). If `form` is either `kFixed`
   // or `kFree`, the function will either return `kFixed` (or `kFree`
-  // respectivelly) if the input data satisfies the format, or an
+  // respectively) if the input data satisfies the format, or an
   // `absl::InvalidArgumentError` otherwise.
   absl::StatusOr<MPSReaderFormat> ParseString(
       absl::string_view source, DataWrapper* data,
@@ -636,6 +636,8 @@ class MPSReaderTemplate {
 
   // A row of Booleans. is_binary_by_default_[col] is true if col
   // appeared within a scope started by INTORG and ended with INTEND markers.
+  // Its size may be larger than the number of variables encountered in the
+  // model so far.
   std::vector<bool> is_binary_by_default_;
 
   // True if the next variable has to be interpreted as an integer variable.
@@ -720,6 +722,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
     } else {
       return line_info.InvalidArgumentError("Unknown section.");
     }
+
     if (section_ == internal::MPSSectionId::kName) {
       // NOTE(user): The name may differ between fixed and free forms. In
       // fixed form, the name has at most 8 characters, and starts at a specific
@@ -746,6 +749,21 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
         data->SetName(fixed_name);
       }
     }
+
+    // Supports the case where the direction is on the same line as the
+    // OBJSENSE keyword.
+    if (section_ == internal::MPSSectionId::kObjsense &&
+        line_info.GetFieldsSize() == 2 && free_form_) {
+      if (absl::StrContains(line_info.GetField(1), "MIN")) {
+        data->SetObjectiveDirection(/*maximize=*/false);
+      } else if (absl::StrContains(line_info.GetField(1), "MAX")) {
+        data->SetObjectiveDirection(/*maximize=*/true);
+      } else {
+        return line_info.InvalidArgumentError(
+            "Invalid inline objective direction.");
+      }
+    }
+
     return absl::OkStatus();
   }
   switch (section_) {
@@ -834,6 +852,21 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessRowsSection(
   return absl::OkStatus();
 }
 
+namespace internal {
+
+// Extends the underlying `container` to have length at least `until`+1. Any
+// newly added value is initialized to `extend_with_value`.
+template <typename T, typename IndexType>
+void ExtendContainerWithValueUntil(const IndexType until,
+                                   const T extend_with_value,
+                                   std::vector<T>& container) {
+  if (container.size() > until) return;
+  std::fill_n(std::back_inserter(container), until + 1 - container.size(),
+              extend_with_value);
+}
+
+}  //  namespace internal
+
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessColumnsSection(
     const internal::MPSLineInfo& line_info, DataWrapper* data) {
@@ -865,7 +898,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessColumnsSection(
   const absl::string_view row1_name = line_info.GetField(start_index + 1);
   const absl::string_view row1_value = line_info.GetField(start_index + 2);
   const IndexType col = data->FindOrCreateVariable(column_name);
-  is_binary_by_default_.resize(col + 1, false);
+  internal::ExtendContainerWithValueUntil(col, false, is_binary_by_default_);
   if (in_integer_section_) {
     data->SetVariableTypeToInteger(col);
     // The default bounds for integer variables are [0, 1].
@@ -1076,10 +1109,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
   if (integer_type_names_set_.count(bound_type_mnemonic) != 0) {
     data->SetVariableTypeToInteger(col);
   }
-  if (is_binary_by_default_.size() <= col) {
-    // This is the first time that this column has been encountered.
-    is_binary_by_default_.resize(col + 1, false);
-  }
+  internal::ExtendContainerWithValueUntil(col, false, is_binary_by_default_);
   double lower_bound = data->VariableLowerBound(col);
   double upper_bound = data->VariableUpperBound(col);
   // If a variable is binary by default, its status is reset if any bound

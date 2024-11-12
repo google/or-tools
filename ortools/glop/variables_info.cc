@@ -46,6 +46,16 @@ bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
   return false;
 }
 
+void VariablesInfo::InitializeFromMutatedState() {
+  const ColIndex num_cols = matrix_.num_cols();
+  DCHECK_EQ(num_cols, lower_bounds_.size());
+  DCHECK_EQ(num_cols, upper_bounds_.size());
+  variable_type_.resize(num_cols, VariableType::UNCONSTRAINED);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    variable_type_[col] = ComputeVariableType(col);
+  }
+}
+
 bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
     const DenseRow& variable_lower_bounds,
     const DenseRow& variable_upper_bounds,
@@ -120,13 +130,13 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
 
   // Compute the status for all the columns (note that the slack variables are
   // already added at the end of the matrix at this stage).
+  const int state_size = state.statuses.size().value();
   for (ColIndex col(0); col < num_cols; ++col) {
     // Start with the given "warm" status from the BasisState if it exists.
     VariableStatus status;
-    if (col < first_new_col && col < state.statuses.size()) {
+    if (col < first_new_col && col < state_size) {
       status = state.statuses[col];
-    } else if (col >= first_slack_col &&
-               col - num_new_cols < state.statuses.size()) {
+    } else if (col >= first_slack_col && col - num_new_cols < state_size) {
       status = state.statuses[col - num_new_cols];
     } else {
       UpdateToNonBasicStatus(col, DefaultVariableStatus(col));

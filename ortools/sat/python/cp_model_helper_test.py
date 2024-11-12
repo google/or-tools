@@ -30,16 +30,6 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertTrue(cp_model_helper.is_boolean(np.bool_(1)))
         self.assertTrue(cp_model_helper.is_boolean(np.bool_(0)))
 
-    def testassert_is_int64(self):
-        print("testassert_is_int64")
-        self.assertRaises(TypeError, cp_model_helper.assert_is_int64, "Hello")
-        self.assertRaises(TypeError, cp_model_helper.assert_is_int64, 1.2)
-        self.assertRaises(OverflowError, cp_model_helper.assert_is_int64, 2**63)
-        self.assertRaises(OverflowError, cp_model_helper.assert_is_int64, -(2**63) - 1)
-        cp_model_helper.assert_is_int64(123)
-        cp_model_helper.assert_is_int64(2**63 - 1)
-        cp_model_helper.assert_is_int64(-(2**63))
-
     def testto_capped_int64(self):
         print("testto_capped_int64")
         self.assertEqual(

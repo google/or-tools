@@ -310,7 +310,7 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
     SchedulingDemandHelper* x_demands_helper,
     SchedulingDemandHelper* y_demands_helper,
-    const std::vector<std::vector<LiteralValueValue>>& energies, Model* model) {
+    absl::Span<const std::vector<LiteralValueValue>> energies, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
   AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
@@ -319,7 +319,10 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 
   result.generate_cuts = [x_helper, y_helper, x_demands_helper,
                           y_demands_helper, model,
-                          energies](LinearConstraintManager* manager) {
+                          energies =
+                              std::vector<std::vector<LiteralValueValue>>(
+                                  energies.begin(), energies.end())](
+                             LinearConstraintManager* manager) {
     if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
     if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
     x_demands_helper->CacheAllEnergyValues();

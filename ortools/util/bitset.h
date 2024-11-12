@@ -457,10 +457,6 @@ class Bitset64 {
       : size_(Value(size) > 0 ? size : IndexType(0)),
         data_(BitLength64(Value(size_))) {}
 
-  // This type is neither copyable nor movable.
-  Bitset64(const Bitset64&) = delete;
-  Bitset64& operator=(const Bitset64&) = delete;
-
   ConstView const_view() const { return ConstView(this); }
   View view() { return View(this); }
 
@@ -548,6 +544,7 @@ class Bitset64 {
   void Set(IndexType i) {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), size_);
+    // The c++ hardening is costly here, so we disable it.
     data_[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
   }
 
@@ -600,6 +597,19 @@ class Bitset64 {
     }
     for (int i = min_size; i < data_.size(); ++i) {
       data_[i] = 0;
+    }
+  }
+
+  // This one assume both given bitset to be of the same size.
+  void SetToIntersectionOf(const Bitset64<IndexType>& a,
+                           const Bitset64<IndexType>& b) {
+    DCHECK_EQ(a.size(), b.size());
+    Resize(a.size());
+
+    // Copy buckets.
+    const int num_buckets = a.data_.size();
+    for (int i = 0; i < num_buckets; ++i) {
+      data_[i] = a.data_[i] & b.data_[i];
     }
   }
 
@@ -815,6 +825,10 @@ inline int Bitset64<int64_t>::Value(int64_t input) {
   DCHECK_GE(input, 0);
   return input;
 }
+template <>
+inline int Bitset64<size_t>::Value(size_t input) {
+  return input;
+}
 
 // A simple utility class to set/unset integer in a range [0, size).
 // This is optimized for sparsity.
@@ -867,10 +881,14 @@ class SparseBitset {
       to_clear_.push_back(index);
     }
   }
-  void SetUnsafe(IntegerType index) {
-    bitset_.Set(index);
+
+  // A bit hacky for really hot loop.
+  typename Bitset64<IntegerType>::View BitsetView() { return bitset_.view(); }
+  void SetUnsafe(typename Bitset64<IntegerType>::View view, IntegerType index) {
+    view.Set(index);
     to_clear_.push_back(index);
   }
+
   void Clear(IntegerType index) { bitset_.Clear(index); }
   int NumberOfSetCallsWithDifferentArguments() const {
     return to_clear_.size();

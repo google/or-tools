@@ -22,7 +22,7 @@
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/log/check.h"
-#include "ortools/base/threadpool.h"
+#include "ortools/pdlp/scheduler.h"
 
 namespace operations_research::pdlp {
 
@@ -141,26 +141,26 @@ class Sharder {
   // Creates a `Sharder` for problems with `num_elements` elements and mass of
   // each element given by `element_mass`. Each shard will have roughly the same
   // mass. The number of shards in the resulting `Sharder` will be approximately
-  // `num_shards` but may differ. The `thread_pool` will be used for parallel
-  // operations executed by e.g. `ParallelForEachShard()`. The `thread_pool` may
+  // `num_shards` but may differ. The `scheduler` will be used for parallel
+  // operations executed by e.g. `ParallelForEachShard()`. The `scheduler` may
   // be nullptr, which means work will be executed in the same thread. If
-  // `thread_pool` is not nullptr, the underlying object is not owned and must
+  // `scheduler` is not nullptr, the underlying object is not owned and must
   // outlive the `Sharder`.
-  Sharder(int64_t num_elements, int num_shards, ThreadPool* thread_pool,
+  Sharder(int64_t num_elements, int num_shards, Scheduler* scheduler,
           const std::function<int64_t(int64_t)>& element_mass);
 
   // Creates a `Sharder` for problems with `num_elements` elements and unit
   // mass. This constructor exploits having all element mass equal to 1 to take
   // time proportional to `num_shards` instead of `num_elements`. Also see the
   // comments above the first constructor.
-  Sharder(int64_t num_elements, int num_shards, ThreadPool* thread_pool);
+  Sharder(int64_t num_elements, int num_shards, Scheduler* scheduler);
 
   // Creates a `Sharder` for processing `matrix`. The elements correspond to
   // columns of `matrix` and have mass linear in the number of non-zeros. Also
   // see the comments above the first constructor.
   Sharder(const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
-          int num_shards, ThreadPool* thread_pool)
-      : Sharder(matrix.cols(), num_shards, thread_pool, [&matrix](int64_t col) {
+          int num_shards, Scheduler* scheduler)
+      : Sharder(matrix.cols(), num_shards, scheduler, [&matrix](int64_t col) {
           return 1 + 1 * matrix.col(col).nonZeros();
         }) {}
 
@@ -227,7 +227,7 @@ class Sharder {
   // Size: `NumShards()`. The mass of each shard.
   std::vector<int64_t> shard_masses_;
   // NOT owned. May be nullptr.
-  ThreadPool* thread_pool_;
+  Scheduler* scheduler_;
 };
 
 // Like `matrix.transpose() * vector` but executed in parallel using `sharder`.

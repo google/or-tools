@@ -215,9 +215,6 @@ class ColumnPriorityQueue {
   ColumnPriorityQueue(const ColumnPriorityQueue&) = delete;
   ColumnPriorityQueue& operator=(const ColumnPriorityQueue&) = delete;
 
-  // Releases the memory used by this class.
-  void Clear();
-
   // Clears the queue and prepares it to store up to num_cols column indices
   // with a degree from 1 to max_degree included.
   void Reset(int32_t max_degree, ColIndex num_cols);
@@ -232,10 +229,19 @@ class ColumnPriorityQueue {
   ColIndex Pop();
 
  private:
-  StrictITIVector<ColIndex, int32_t> col_index_;
-  StrictITIVector<ColIndex, int32_t> col_degree_;
-  std::vector<std::vector<ColIndex>> col_by_degree_;
+  void Remove(ColIndex col, int32_t old_degree);
+  void Insert(ColIndex col, int32_t degree);
+
+  // A degree of zero means not present.
   int32_t min_degree_;
+  StrictITIVector<ColIndex, int32_t> degree_;
+
+  // Pointer in the form of the prev/next column, kInvalidCol means "nil".
+  // We use double linked list for each degree, with col_by_degree_ pointing to
+  // the first element.
+  StrictITIVector<ColIndex, ColIndex> prev_;
+  StrictITIVector<ColIndex, ColIndex> next_;
+  std::vector<ColIndex> col_by_degree_;
 };
 
 // Contains a set of columns indexed by ColIndex. This is like a SparseMatrix
@@ -412,6 +418,18 @@ class Markowitz {
   // residual matrix can be updated more efficiently by calling one of the
   // Remove...() functions above.
   void UpdateResidualMatrix(RowIndex pivot_row, ColIndex pivot_col);
+
+  // Temporary memory.
+  struct MatrixEntry {
+    RowIndex row;
+    ColIndex col;
+    Fractional coefficient;
+    MatrixEntry() = default;
+    MatrixEntry(RowIndex r, ColIndex c, Fractional coeff)
+        : row(r), col(c), coefficient(coeff) {}
+    bool operator<(const MatrixEntry& o) const { return row < o.row; }
+  };
+  std::vector<MatrixEntry> tmp_singleton_entries_;
 
   // Pointer to the matrix to factorize.
   CompactSparseMatrixView const* basis_matrix_;

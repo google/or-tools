@@ -14,7 +14,7 @@ jobs:
         ]
       fail-fast: false
     name: MacOS • ${{ matrix.cmake.generator }} • Java
-    runs-on: macos-latest
+    runs-on: macos-13 # last macos intel based runner
     steps:
       - uses: actions/checkout@v4
       - name: Swig install

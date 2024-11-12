@@ -26,6 +26,16 @@ git_repository(
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 bazel_skylib_workspace()
 
+http_archive(
+    name = "bazel_features",
+    sha256 = "cec7fbc7bce6597cf2e83e01ddd9328a1bb057dc1a3092745238f49d3301ab5a",
+    strip_prefix = "bazel_features-1.12.0",
+    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.12.0/bazel_features-v1.12.0.tar.gz",
+)
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+bazel_features_deps()
+
 ## Bazel rules.
 git_repository(
     name = "platforms",
@@ -41,7 +51,7 @@ git_repository(
 
 git_repository(
     name = "rules_proto",
-    tag = "5.3.0-21.7",
+    tag = "6.0.0",
     remote = "https://github.com/bazelbuild/rules_proto.git",
 )
 
@@ -65,7 +75,7 @@ git_repository(
 
 git_repository(
     name = "rules_python",
-    tag = "0.34.0",
+    tag = "0.36.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
@@ -95,26 +105,70 @@ git_repository(
     repo_mapping = {"@abseil-cpp": "@com_google_absl"},
 )
 
+## Python
+load("@rules_python//python:repositories.bzl", "py_repositories")
+py_repositories()
+
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+DEFAULT_PYTHON = "3.11"
+python_register_toolchains(
+    name = "python3_11",
+    python_version = DEFAULT_PYTHON,
+    ignore_root_user_error=True,
+)
+load("@python3_11//:defs.bzl", "interpreter")
+
+# Create a central external repo, @pip_deps, that contains Bazel targets for all the
+# third-party packages specified in the bazel/requirements.txt file.
+load("@rules_python//python:pip.bzl", "pip_parse")
+pip_parse(
+   name = "pip_deps",
+   python_interpreter_target = interpreter,
+   requirements_lock = "//bazel:ortools_requirements.txt",
+)
+
+load("@pip_deps//:requirements.bzl",
+     install_pip_deps="install_deps")
+install_pip_deps()
+
+# Add a second repo @ortools_notebook_deps for jupyter notebooks.
+pip_parse(
+   name = "ortools_notebook_deps",
+   python_interpreter_target = interpreter,
+   requirements_lock = "//bazel:notebook_requirements.txt",
+)
+
+load("@ortools_notebook_deps//:requirements.bzl",
+     install_notebook_deps="install_deps")
+install_notebook_deps()
+
 ## Protobuf
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
 # depend on @com_google_protobuf for protoc and proto runtimes.
 # This statement defines the @com_google_protobuf repo.
 git_repository(
     name = "com_google_protobuf",
-    patches = ["//patches:protobuf-v27.3.patch"],
+    patches = ["//patches:protobuf-v28.3.patch"],
     patch_args = ["-p1"],
-    tag = "v27.3",
+    tag = "v28.3",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
+rules_proto_dependencies()
+
+load("@rules_proto//proto:toolchains.bzl", "rules_proto_toolchains")
+rules_proto_toolchains()
+
 ## Solvers
 http_archive(
     name = "glpk",
     build_file = "//bazel:glpk.BUILD.bazel",
     sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
+    strip_prefix = "glpk-5.0",
     url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
 )
 
@@ -130,9 +184,9 @@ http_archive(
 new_git_repository(
     name = "scip",
     build_file = "//bazel:scip.BUILD.bazel",
-    patches = ["//bazel:scip-v900.patch"],
+    patches = ["//bazel:scip-v920.patch"],
     patch_args = ["-p1"],
-    tag = "v900",
+    tag = "v920",
     remote = "https://github.com/scipopt/scip.git",
 )
 
@@ -144,10 +198,10 @@ new_git_repository(
     build_file_content =
 """
 cc_library(
-    name = 'eigen3',
+    name = 'eigen',
     srcs = [],
     includes = ['.'],
-    hdrs = glob(['Eigen/**']),
+    hdrs = glob(['Eigen/**', 'unsupported/**']),
     defines = ["EIGEN_MPL2_ONLY",],
     visibility = ['//visibility:public'],
 )
@@ -156,7 +210,7 @@ cc_library(
 
 git_repository(
     name = "highs",
-    branch = "v1.7.2",
+    branch = "v1.8.0",
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 
@@ -188,40 +242,6 @@ new_git_repository(
     tag = "v4.2.0",
     remote = "https://github.com/swig/swig.git",
 )
-
-## Python
-load("@rules_python//python:repositories.bzl", "py_repositories")
-py_repositories()
-
-load("@rules_python//python:repositories.bzl", "python_register_toolchains")
-DEFAULT_PYTHON = "3.12"
-python_register_toolchains(
-    name = "python3_12",
-    python_version = DEFAULT_PYTHON,
-    ignore_root_user_error=True,
-)
-
-# Create a central external repo, @pip_deps, that contains Bazel targets for all the
-# third-party packages specified in the bazel/requirements.txt file.
-load("@rules_python//python:pip.bzl", "pip_parse")
-pip_parse(
-   name = "pip_deps",
-   requirements_lock = "//bazel:ortools_requirements.txt",
-)
-
-load("@pip_deps//:requirements.bzl",
-     install_pip_deps="install_deps")
-install_pip_deps()
-
-# Add a second repo @ortools_notebook_deps for jupyter notebooks.
-pip_parse(
-   name = "ortools_notebook_deps",
-   requirements_lock = "//bazel:notebook_requirements.txt",
-)
-
-load("@ortools_notebook_deps//:requirements.bzl",
-     install_notebook_deps="install_deps")
-install_notebook_deps()
 
 # Protobuf
 load("@com_google_protobuf//bazel:system_python.bzl", "system_python")
@@ -267,7 +287,7 @@ new_git_repository(
 
 new_git_repository(
     name = "pybind11_protobuf",
-    commit = "84653a591aea5df482dc2bde42c19efafbd53a57", # 2024/06/28
+    commit = "ed430af1814a97e4017f2f808d3ba28cc10802f1", # 2024/10/02
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
@@ -317,4 +337,46 @@ git_repository(
     name = "com_google_benchmark",
     tag = "v1.8.5",
     remote = "https://github.com/google/benchmark.git",
+)
+
+# Go
+
+http_archive(
+    name = "io_bazel_rules_go",
+    sha256 = "33acc4ae0f70502db4b893c9fc1dd7a9bf998c23e7ff2c4517741d4049a976f8",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.48.0/rules_go-v0.48.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.48.0/rules_go-v0.48.0.zip",
+    ],
+)
+
+http_archive(
+    name = "bazel_gazelle",
+    sha256 = "d76bf7a60fd8b050444090dfa2837a4eaf9829e1165618ee35dceca5cbdf58d5",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.37.0/bazel-gazelle-v0.37.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.37.0/bazel-gazelle-v0.37.0.tar.gz",
+    ],
+)
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("//:deps.bzl", "go_dependencies")
+# gazelle:repository_macro deps.bzl%go_dependencies
+go_dependencies()
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
+
+go_download_sdk(
+    name = "go_sdk_linux",
+    version = "1.22.4",
+)
+
+go_register_toolchains()
+
+gazelle_dependencies(
+    go_env = {
+        "GOPROXY": "https://proxy.golang.org|direct",
+    },
 )

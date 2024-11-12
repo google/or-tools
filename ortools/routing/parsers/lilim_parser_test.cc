@@ -19,7 +19,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
-#define ROOT_DIR "com_google_ortools/"
+#define ROOT_DIR "_main/"
 
 namespace operations_research::routing {
 namespace {

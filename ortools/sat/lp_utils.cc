@@ -856,7 +856,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
 }
 
 // TODO(user): unit test this.
-double FindFractionalScaling(const std::vector<double>& coefficients,
+double FindFractionalScaling(absl::Span<const double> coefficients,
                              double tolerance) {
   double multiplier = 1.0;
   for (const double coeff : coefficients) {
@@ -870,7 +870,7 @@ double FindFractionalScaling(const std::vector<double>& coefficients,
 }  // namespace
 
 double FindBestScalingAndComputeErrors(
-    const std::vector<double>& coefficients,
+    absl::Span<const double> coefficients,
     absl::Span<const double> lower_bounds,
     absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
     double wanted_absolute_activity_precision, double* relative_coeff_error,
@@ -1352,7 +1352,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
 }
 
 bool ScaleAndSetObjective(const SatParameters& params,
-                          const std::vector<std::pair<int, double>>& objective,
+                          absl::Span<const std::pair<int, double>> objective,
                           double objective_offset, bool maximize,
                           CpModelProto* cp_model, SolverLogger* logger) {
   // Make sure the objective is currently empty.
@@ -1507,8 +1507,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
     // Abort if the variable is not binary.
     if (!is_binary) {
       LOG(WARNING) << "The variable #" << var_id << " with name "
-                   << mp_var.name() << " is not binary. " << "lb: " << lb
-                   << " ub: " << ub;
+                   << mp_var.name() << " is not binary. "
+                   << "lb: " << lb << " ub: " << ub;
       return false;
     }
   }

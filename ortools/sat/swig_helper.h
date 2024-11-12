@@ -14,23 +14,19 @@
 #ifndef OR_TOOLS_SAT_SWIG_HELPER_H_
 #define OR_TOOLS_SAT_SWIG_HELPER_H_
 
-#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <string>
 
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
+
+class SolveWrapper;
 
 // Base class for SWIG director based on solution callbacks.
 // See http://www.swig.org/Doc4.0/SWIGDocumentation.html#CSharp_directors.
@@ -72,14 +68,14 @@ class SolutionCallback {
   operations_research::sat::CpSolverResponse Response() const;
 
   // We use mutable and non const methods to overcome SWIG difficulties.
-  void SetAtomicBooleanToStopTheSearch(std::atomic<bool>* stopped_ptr) const;
+  void SetWrapperClass(SolveWrapper* wrapper) const;
 
   bool HasResponse() const;
 
  private:
   mutable CpSolverResponse response_;
   mutable bool has_response_ = false;
-  mutable std::atomic<bool>* stopped_ptr_;
+  mutable SolveWrapper* wrapper_ = nullptr;
 };
 
 // Simple director class for C#.
@@ -126,7 +122,6 @@ class SolveWrapper {
 
  private:
   Model model_;
-  std::atomic<bool> stopped_ = false;
 };
 
 // Static methods are stored in a module which name can vary.

@@ -24,6 +24,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 
 namespace operations_research {
 namespace glop {
@@ -175,51 +176,41 @@ void Markowitz::Clear() {
   permuted_lower_.Clear();
   permuted_upper_.Clear();
   residual_matrix_non_zero_.Clear();
-  col_by_degree_.Clear();
   examined_col_.clear();
   num_fp_operations_ = 0;
   is_col_by_degree_initialized_ = false;
 }
 
-namespace {
-struct MatrixEntry {
-  RowIndex row;
-  ColIndex col;
-  Fractional coefficient;
-  MatrixEntry(RowIndex r, ColIndex c, Fractional coeff)
-      : row(r), col(c), coefficient(coeff) {}
-  bool operator<(const MatrixEntry& o) const {
-    return (row == o.row) ? col < o.col : row < o.row;
-  }
-};
-
-}  // namespace
-
 void Markowitz::ExtractSingletonColumns(
     const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
     ColumnPermutation* col_perm, int* index) {
   SCOPED_TIME_STAT(&stats_);
-  std::vector<MatrixEntry> singleton_entries;
+  tmp_singleton_entries_.clear();
   const ColIndex num_cols = basis_matrix.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    const ColumnView& column = basis_matrix.column(col);
+    const ColumnView column = basis_matrix.column(col);
     if (column.num_entries().value() == 1) {
-      singleton_entries.push_back(
-          MatrixEntry(column.GetFirstRow(), col, column.GetFirstCoefficient()));
+      const RowIndex row = column.GetFirstRow();
+
+      // We temporary mark row perm (it will be filled below).
+      // If there is a tie, we will choose the lower column.
+      if ((*row_perm)[row] != kInvalidRow) continue;
+      (*row_perm)[row] = 0;
+
+      tmp_singleton_entries_.push_back(
+          MatrixEntry(row, col, column.GetFirstCoefficient()));
     }
   }
 
   // Sorting the entries by row indices allows the row_permutation to be closer
   // to identity which seems like a good idea.
-  std::sort(singleton_entries.begin(), singleton_entries.end());
-  for (const MatrixEntry e : singleton_entries) {
-    if ((*row_perm)[e.row] == kInvalidRow) {
-      (*col_perm)[e.col] = ColIndex(*index);
-      (*row_perm)[e.row] = RowIndex(*index);
-      lower_.AddDiagonalOnlyColumn(1.0);
-      upper_.AddDiagonalOnlyColumn(e.coefficient);
-      ++(*index);
-    }
+  std::sort(tmp_singleton_entries_.begin(), tmp_singleton_entries_.end());
+  for (const MatrixEntry e : tmp_singleton_entries_) {
+    (*col_perm)[e.col] = ColIndex(*index);
+    (*row_perm)[e.row] = RowIndex(*index);
+    lower_.AddDiagonalOnlyColumn(1.0);
+    upper_.AddDiagonalOnlyColumn(e.coefficient);
+    ++(*index);
   }
   stats_.basis_singleton_column_ratio.Add(static_cast<double>(*index) /
                                           basis_matrix.num_rows().value());
@@ -246,7 +237,7 @@ void Markowitz::ExtractResidualSingletonColumns(
   RowIndex row = kInvalidRow;
   for (ColIndex col(0); col < num_cols; ++col) {
     if ((*col_perm)[col] != kInvalidCol) continue;
-    const ColumnView& column = basis_matrix.column(col);
+    const ColumnView column = basis_matrix.column(col);
     if (!IsResidualSingletonColumn(column, *row_perm, &row)) continue;
     (*col_perm)[col] = ColIndex(*index);
     (*row_perm)[row] = RowIndex(*index);
@@ -810,42 +801,65 @@ void MatrixNonZeroPattern::MergeIntoSorted(RowIndex pivot_row, RowIndex row) {
   MergeSortedVectors(col_scratchpad_, &row_non_zero_[row]);
 }
 
-void ColumnPriorityQueue::Clear() {
-  col_degree_.clear();
-  col_index_.clear();
-  col_by_degree_.clear();
+void ColumnPriorityQueue::Reset(int max_degree, ColIndex num_cols) {
+  degree_.assign(num_cols, 0);
+  col_by_degree_.assign(max_degree + 1, kInvalidCol);
+  min_degree_ = max_degree + 1;
+
+  // These are not used as long as the degree is zero.
+  prev_.resize(num_cols, kInvalidCol);
+  next_.resize(num_cols, kInvalidCol);
 }
 
-void ColumnPriorityQueue::Reset(int max_degree, ColIndex num_cols) {
-  Clear();
-  col_degree_.assign(num_cols, 0);
-  col_index_.assign(num_cols, -1);
-  col_by_degree_.resize(max_degree + 1);
-  min_degree_ = max_degree + 1;
+void ColumnPriorityQueue::Remove(ColIndex col, int32_t old_degree) {
+  DCHECK_NE(old_degree, 0);
+
+  const ColIndex old_next = next_[col];
+  const ColIndex old_prev = prev_[col];
+
+  // Remove.
+  if (old_next != -1) prev_[old_next] = old_prev;
+  if (old_prev == -1) {
+    DCHECK_EQ(col_by_degree_[old_degree], col);
+    col_by_degree_[old_degree] = old_next;
+  } else {
+    next_[old_prev] = old_next;
+  }
+
+  // Mark as removed.
+  degree_[col] = 0;
+}
+
+void ColumnPriorityQueue::Insert(ColIndex col, int32_t degree) {
+  DCHECK_EQ(degree_[col], 0);
+  DCHECK_NE(degree, 0);
+
+  const ColIndex new_next = col_by_degree_[degree];
+  next_[col] = new_next;
+  if (new_next != -1) {
+    prev_[new_next] = col;
+  }
+
+  col_by_degree_[degree] = col;
+  prev_[col] = kInvalidCol;
+  degree_[col] = degree;
+
+  min_degree_ = std::min(min_degree_, degree);
 }
 
 void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32_t degree) {
   DCHECK_GE(degree, 0);
   DCHECK_LT(degree, col_by_degree_.size());
   DCHECK_GE(col, 0);
-  DCHECK_LT(col, col_degree_.size());
+  DCHECK_LT(col, degree_.size());
 
-  const int32_t old_degree = col_degree_[col];
+  const int32_t old_degree = degree_[col];
   if (degree != old_degree) {
-    const int32_t old_index = col_index_[col];
-    if (old_index != -1) {
-      col_by_degree_[old_degree][old_index] = col_by_degree_[old_degree].back();
-      col_index_[col_by_degree_[old_degree].back()] = old_index;
-      col_by_degree_[old_degree].pop_back();
+    if (old_degree != 0) {
+      Remove(col, old_degree);
     }
-    if (degree > 0) {
-      col_index_[col] = col_by_degree_[degree].size();
-      col_degree_[col] = degree;
-      col_by_degree_[degree].push_back(col);
-      min_degree_ = std::min(min_degree_, degree);
-    } else {
-      col_index_[col] = -1;
-      col_degree_[col] = 0;
+    if (degree != 0) {
+      Insert(col, degree);
     }
   }
 }
@@ -853,16 +867,16 @@ void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32_t degree) {
 ColIndex ColumnPriorityQueue::Pop() {
   DCHECK_GE(min_degree_, 0);
   DCHECK_LE(min_degree_, col_by_degree_.size());
+  ColIndex result = kInvalidCol;
+  const int limit = col_by_degree_.size();
   while (true) {
-    if (min_degree_ == col_by_degree_.size()) return kInvalidCol;
-    if (!col_by_degree_[min_degree_].empty()) break;
+    if (min_degree_ == limit) return kInvalidCol;
+    result = col_by_degree_[min_degree_];
+    if (result != kInvalidCol) break;
     min_degree_++;
   }
-  const ColIndex col = col_by_degree_[min_degree_].back();
-  col_by_degree_[min_degree_].pop_back();
-  col_index_[col] = -1;
-  col_degree_[col] = 0;
-  return col;
+  Remove(result, min_degree_);
+  return result;
 }
 
 void SparseMatrixWithReusableColumnMemory::Reset(ColIndex num_cols) {

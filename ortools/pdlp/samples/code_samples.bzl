@@ -13,8 +13,10 @@
 
 """Helper macro to compile and test code samples."""
 
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+
 def code_sample_cc(name):
-    native.cc_binary(
+    cc_binary(
         name = name + "_cc",
         srcs = [name + ".cc"],
         deps = [
@@ -24,11 +26,11 @@ def code_sample_cc(name):
             "//ortools/pdlp:quadratic_program",
             "//ortools/pdlp:solve_log_cc_proto",
             "//ortools/pdlp:solvers_cc_proto",
-            "@eigen//:eigen3",
+            Label("@eigen"),
         ],
     )
 
-    native.cc_test(
+    cc_test(
         name = name + "_cc_test",
         size = "small",
         srcs = [name + ".cc"],
@@ -40,6 +42,6 @@ def code_sample_cc(name):
             "//ortools/pdlp:quadratic_program",
             "//ortools/pdlp:solve_log_cc_proto",
             "//ortools/pdlp:solvers_cc_proto",
-            "@eigen//:eigen3",
+            Label("@eigen"),
         ],
     )

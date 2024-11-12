@@ -6,7 +6,7 @@ FROM almalinux:latest AS env
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install git wget zlib-devel gcc-toolset-13 \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y group install "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 

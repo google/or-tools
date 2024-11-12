@@ -353,19 +353,11 @@ cc_library(
 )
 
 cc_library(
-    name = "mathlimits",
-    srcs = ["mathlimits.cc"],
-    hdrs = ["mathlimits.h"],
-    deps = [],
-)
-
-cc_library(
     name = "mathutil",
     srcs = ["mathutil.cc"],
     hdrs = ["mathutil.h"],
     deps = [
         ":base",
-        ":mathlimits",
     ],
 )
 
@@ -373,6 +365,14 @@ cc_library(
     name = "memfile",
     hdrs = ["memfile.h"],
     deps = [],
+)
+
+cc_library(
+    name = "memutil",
+    hdrs = ["memutil.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 cc_library(
@@ -405,6 +405,16 @@ cc_library(
     name = "parse_text_proto",
     hdrs = ["parse_text_proto.h"],
     deps = [
+        "@com_google_absl//absl/log:check",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "parse_test_proto",
+    hdrs = ["parse_test_proto.h"],
+    deps = [
+        ":gmock",
         "@com_google_absl//absl/log:check",
         "@com_google_protobuf//:protobuf",
     ],
@@ -446,6 +456,15 @@ cc_library(
         ":timer",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "proto_enum_utils",
+    hdrs = ["proto_enum_utils.h"],
+    deps = [
+        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
 )

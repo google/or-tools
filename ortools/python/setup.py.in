@@ -46,17 +46,21 @@ setup(
         'absl-py >= 2.0.0',
         'numpy >= 1.13.3',
         'pandas >= 2.0.0',
-        'protobuf >= 5.27.3',
+        'protobuf >= 5.28.3,<5.29',
         'immutabledict >= 3.0.0',
     ],
     package_data={
-        '@PYTHON_PROJECT@':[$<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:'.libs/*','../$<TARGET_SONAME_FILE_NAME:@PROJECT_NAME@>'>],
+        '@PYTHON_PROJECT@':[
+        '.libs/*',
+        $<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:'../$<TARGET_SONAME_FILE_NAME:@PROJECT_NAME@>'>
+        ],
         '@PYTHON_PROJECT@.init.python':[
             '$<TARGET_FILE_NAME:init_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.algorithms.python':[
             '$<TARGET_FILE_NAME:knapsack_solver_pybind11>',
+            '$<TARGET_FILE_NAME:set_cover_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.bop':['*.pyi'],
@@ -148,6 +152,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX :: Linux',
         'Operating System :: POSIX :: BSD :: FreeBSD',
+        'Operating System :: POSIX :: BSD :: NetBSD',
         'Operating System :: POSIX :: BSD :: OpenBSD',
         'Operating System :: MacOS',
         'Operating System :: MacOS :: MacOS X',
@@ -160,6 +165,7 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Programming Language :: C++',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Office/Business :: Scheduling',

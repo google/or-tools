@@ -558,7 +558,7 @@ std::vector<Literal> ExtractAssumptions(Coefficient stratified_lower_bound,
 }
 
 Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
-                                 const std::vector<Literal>& core) {
+                                 absl::Span<const Literal> core) {
   Coefficient min_weight = kCoefficientMax;
   int index = 0;
   for (int i = 0; i < core.size(); ++i) {

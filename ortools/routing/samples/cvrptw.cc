@@ -22,33 +22,36 @@
 // to be in meters and times in seconds.
 
 #include <cstdint>
+#include <cstdlib>
 #include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/random/random.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parsers/cvrptw_lib.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 
 using operations_research::Assignment;
-using operations_research::DefaultRoutingSearchParameters;
-using operations_research::GetSeed;
-using operations_research::LocationContainer;
-using operations_research::RandomDemand;
-using operations_research::RoutingDimension;
-using operations_research::RoutingIndexManager;
-using operations_research::RoutingModel;
-using operations_research::RoutingNodeIndex;
-using operations_research::RoutingSearchParameters;
-using operations_research::ServiceTimePlusTransition;
+using operations_research::routing::DefaultRoutingSearchParameters;
+using operations_research::routing::GetSeed;
+using operations_research::routing::LocationContainer;
+using operations_research::routing::RandomDemand;
+using operations_research::routing::RoutingDimension;
+using operations_research::routing::RoutingIndexManager;
+using operations_research::routing::RoutingModel;
+using operations_research::routing::RoutingNodeIndex;
+using operations_research::routing::RoutingSearchParameters;
+using operations_research::routing::ServiceTimePlusTransition;
 
 ABSL_FLAG(int, vrp_orders, 100, "Number of nodes in the problem");
 ABSL_FLAG(int, vrp_vehicles, 20, "Number of vehicles in the problem");
@@ -174,9 +177,7 @@ int main(int argc, char** argv) {
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution,
                 absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs),
-                kMaxNodesPerGroup, kSameVehicleCost,
-                routing.GetDimensionOrDie(kCapacity),
-                routing.GetDimensionOrDie(kTime));
+                kMaxNodesPerGroup, kSameVehicleCost, {kCapacity, kTime});
   } else {
     LOG(INFO) << "No solution found.";
   }

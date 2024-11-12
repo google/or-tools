@@ -28,7 +28,7 @@
 
 #include <cstdint>
 #include <functional>
-#include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -84,7 +84,17 @@ class ChristofidesPathSolver {
   bool Solve();
 
  private:
-  int64_t SafeAdd(int64_t a, int64_t b) { return CapAdd(a, b); }
+  // Safe addition operator to avoid overflows when possible.
+  template <typename T>
+  T SafeAdd(T a, T b) {
+    // TODO(user): use std::remove_cvref_t<T> once C++20 is available.
+    if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>,
+                                 int64_t> == true) {
+      return CapAdd(a, b);
+    } else {
+      return a + b;
+    }
+  }
 
   // Matching algorithm to use.
   MatchingAlgorithm matching_;

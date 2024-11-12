@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_SAT_PRESOLVE_UTIL_H_
 #define OR_TOOLS_SAT_PRESOLVE_UTIL_H_
 
-#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <string>
@@ -24,12 +23,9 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
-#include "absl/random/random.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
+#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
@@ -86,7 +82,7 @@ class PresolveTimer {
 
 // If for each literal of a clause, we can infer a domain on an integer
 // variable, then we know that this variable domain is included in the union of
-// such infered domains.
+// such inferred domains.
 //
 // This allows to propagate "element" like constraints encoded as enforced
 // linear relations, and other more general reasoning.

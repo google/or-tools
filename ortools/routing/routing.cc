@@ -50,7 +50,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/util/message_differencer.h"
-#include "ortools/base/dump_vars.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -77,6 +76,7 @@
 #include "ortools/routing/neighborhoods.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/parameters_utils.h"
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
@@ -136,16 +136,6 @@ std::string RoutingModel::RouteDimensionTravelInfo::TransitionInfo::DebugString(
       travel_value_upper_bound, line_prefix,
       travel_start_dependent_travel.DebugString(line_prefix + "\t"),
       line_prefix, travel_compression_cost.DebugString(line_prefix + "\t"));
-}
-
-std::string RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
-    PiecewiseLinearFormulation::DebugString(std::string line_prefix) const {
-  if (x_anchors.size() <= 10) {
-    return "{ " + DUMP_VARS(x_anchors, y_anchors).str() + "}";
-  }
-  return absl::StrFormat("{\n%s%s\n%s%s\n}", line_prefix,
-                         DUMP_VARS(x_anchors).str(), line_prefix,
-                         DUMP_VARS(y_anchors).str());
 }
 
 const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
@@ -568,10 +558,6 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
       cache_callbacks_(false),
       vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       vehicle_pickup_delivery_policy_(vehicles_, PICKUP_AND_DELIVERY_NO_ORDER),
-      has_hard_type_incompatibilities_(false),
-      has_temporal_type_incompatibilities_(false),
-      has_same_vehicle_type_requirements_(false),
-      has_temporal_type_requirements_(false),
       num_visit_types_(0),
       paths_metadata_(index_manager),
       manager_(index_manager),
@@ -756,6 +742,12 @@ int RoutingModel::RegisterStateDependentTransitCallback(
   return state_dependent_transit_evaluators_.size() - 1;
 }
 
+int RoutingModel::RegisterCumulDependentTransitCallback(
+    CumulDependentTransitCallback2 callback) {
+  cumul_dependent_transit_evaluators_.push_back(std::move(callback));
+  return cumul_dependent_transit_evaluators_.size() - 1;
+}
+
 void RoutingModel::AddNoCycleConstraintInternal() {
   if (no_cycle_constraint_ == nullptr) {
     no_cycle_constraint_ = solver_->MakeNoCycle(nexts_, active_);
@@ -768,7 +760,7 @@ bool RoutingModel::AddDimension(int evaluator_index, int64_t slack_max,
                                 const std::string& name) {
   const std::vector<int> evaluator_indices(vehicles_, evaluator_index);
   std::vector<int64_t> capacities(vehicles_, capacity);
-  return AddDimensionWithCapacityInternal(evaluator_indices, slack_max,
+  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
                                           std::move(capacities),
                                           fix_start_cumul_to_zero, name);
 }
@@ -777,7 +769,7 @@ bool RoutingModel::AddDimensionWithVehicleTransits(
     const std::vector<int>& evaluator_indices, int64_t slack_max,
     int64_t capacity, bool fix_start_cumul_to_zero, const std::string& name) {
   std::vector<int64_t> capacities(vehicles_, capacity);
-  return AddDimensionWithCapacityInternal(evaluator_indices, slack_max,
+  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
                                           std::move(capacities),
                                           fix_start_cumul_to_zero, name);
 }
@@ -787,7 +779,7 @@ bool RoutingModel::AddDimensionWithVehicleCapacity(
     std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
     const std::string& name) {
   const std::vector<int> evaluator_indices(vehicles_, evaluator_index);
-  return AddDimensionWithCapacityInternal(evaluator_indices, slack_max,
+  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
                                           std::move(vehicle_capacities),
                                           fix_start_cumul_to_zero, name);
 }
@@ -796,23 +788,37 @@ bool RoutingModel::AddDimensionWithVehicleTransitAndCapacity(
     const std::vector<int>& evaluator_indices, int64_t slack_max,
     std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
     const std::string& name) {
-  return AddDimensionWithCapacityInternal(evaluator_indices, slack_max,
+  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
                                           std::move(vehicle_capacities),
                                           fix_start_cumul_to_zero, name);
 }
 
+bool RoutingModel::AddDimensionWithCumulDependentVehicleTransitAndCapacity(
+    const std::vector<int>& fixed_evaluator_indices,
+    const std::vector<int>& cumul_dependent_evaluator_indices,
+    int64_t slack_max, std::vector<int64_t> vehicle_capacities,
+    bool fix_start_cumul_to_zero, const std::string& name) {
+  return AddDimensionWithCapacityInternal(
+      fixed_evaluator_indices, cumul_dependent_evaluator_indices, slack_max,
+      std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
+}
+
 bool RoutingModel::AddDimensionWithCapacityInternal(
-    const std::vector<int>& evaluator_indices, int64_t slack_max,
-    std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-    const std::string& name) {
+    const std::vector<int>& evaluator_indices,
+    const std::vector<int>& cumul_dependent_evaluator_indices,
+    int64_t slack_max, std::vector<int64_t> vehicle_capacities,
+    bool fix_start_cumul_to_zero, const std::string& name) {
   CHECK_EQ(vehicles_, vehicle_capacities.size());
   return InitializeDimensionInternal(
-      evaluator_indices, std::vector<int>(), slack_max, fix_start_cumul_to_zero,
+      evaluator_indices, cumul_dependent_evaluator_indices,
+      /*state_dependent_evaluator_indices=*/{}, slack_max,
+      fix_start_cumul_to_zero,
       new RoutingDimension(this, std::move(vehicle_capacities), name, nullptr));
 }
 
 bool RoutingModel::InitializeDimensionInternal(
     const std::vector<int>& evaluator_indices,
+    const std::vector<int>& cumul_dependent_evaluator_indices,
     const std::vector<int>& state_dependent_evaluator_indices,
     int64_t slack_max, bool fix_start_cumul_to_zero,
     RoutingDimension* dimension) {
@@ -825,8 +831,8 @@ bool RoutingModel::InitializeDimensionInternal(
     const DimensionIndex dimension_index(dimensions_.size());
     dimension_name_to_index_[dimension->name()] = dimension_index;
     dimensions_.push_back(dimension);
-    dimension->Initialize(evaluator_indices, state_dependent_evaluator_indices,
-                          slack_max);
+    dimension->Initialize(evaluator_indices, cumul_dependent_evaluator_indices,
+                          state_dependent_evaluator_indices, slack_max);
     solver_->AddConstraint(solver_->MakeDelayedPathCumul(
         nexts_, active_, dimension->cumuls(), dimension->transits()));
     if (fix_start_cumul_to_zero) {
@@ -985,9 +991,10 @@ bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacityInternal(
     new_dimension = new RoutingDimension(this, std::move(vehicle_capacities),
                                          name, base_dimension);
   }
-  return InitializeDimensionInternal(pure_transits, dependent_transits,
-                                     slack_max, fix_start_cumul_to_zero,
-                                     new_dimension);
+  return InitializeDimensionInternal(pure_transits,
+                                     /*cumul_dependent_evaluator_indices=*/{},
+                                     dependent_transits, slack_max,
+                                     fix_start_cumul_to_zero, new_dimension);
 }
 
 bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
@@ -1552,10 +1559,14 @@ struct VehicleClass {
   util_intops::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_min;
   util_intops::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_max;
   util_intops::StrongVector<DimensionIndex, int64_t> dimension_capacities;
-  /// dimension_evaluators[d]->Run(from, to) is the transit value of arc
+  /// dimension_evaluators[d]->Run(from, to) is the fixed transit value of arc
   /// from->to for a dimension d.
   util_intops::StrongVector<DimensionIndex, int64_t>
       dimension_evaluator_classes;
+  /// Same as above but for the cumul-dependent transit evaluators, if the
+  /// dimension has any.
+  util_intops::StrongVector<DimensionIndex, int64_t>
+      cumul_dependent_dimension_evaluator_classes;
   /// Hash of the visitability of (non-start/end) nodes.
   uint64_t visitable_nodes_hash;
   /// Hash of allowed resources for each resource group, or -1 if a given
@@ -1574,6 +1585,8 @@ struct VehicleClass {
            c1.dimension_end_cumuls_max == c2.dimension_end_cumuls_max &&
            c1.dimension_capacities == c2.dimension_capacities &&
            c1.dimension_evaluator_classes == c2.dimension_evaluator_classes &&
+           c1.cumul_dependent_dimension_evaluator_classes ==
+               c2.cumul_dependent_dimension_evaluator_classes &&
            c1.visitable_nodes_hash == c2.visitable_nodes_hash &&
            c1.group_allowed_resources_hash == c2.group_allowed_resources_hash;
   }
@@ -1584,8 +1597,9 @@ struct VehicleClass {
                       c.end_equivalence_class, c.dimension_start_cumuls_min,
                       c.dimension_start_cumuls_max, c.dimension_end_cumuls_min,
                       c.dimension_end_cumuls_max, c.dimension_capacities,
-                      c.dimension_evaluator_classes, c.visitable_nodes_hash,
-                      c.group_allowed_resources_hash);
+                      c.dimension_evaluator_classes,
+                      c.cumul_dependent_dimension_evaluator_classes,
+                      c.visitable_nodes_hash, c.group_allowed_resources_hash);
   }
 };
 
@@ -1618,6 +1632,8 @@ void RoutingModel::ComputeVehicleClasses() {
           dimension->vehicle_capacities()[vehicle]);
       vehicle_class.dimension_evaluator_classes.push_back(
           dimension->vehicle_to_class(vehicle));
+      vehicle_class.cumul_dependent_dimension_evaluator_classes.push_back(
+          dimension->vehicle_to_cumul_dependent_class(vehicle));
     }
     node_is_visitable.assign(Size(), true);
     for (int index = 0; index < Size(); ++index) {
@@ -1714,11 +1730,6 @@ void RoutingModel::ComputeResourceClasses() {
 }
 
 void RoutingModel::FinalizeVisitTypes() {
-  // NOTE(user): This is necessary if CloseVisitTypes() was not called
-  // explicitly before. This will be removed when the TODO regarding this logic
-  // is addressed.
-  CloseVisitTypes();
-
   single_nodes_of_type_.clear();
   single_nodes_of_type_.resize(num_visit_types_);
   pair_indices_of_type_.clear();
@@ -1753,8 +1764,7 @@ void RoutingModel::FinalizeVisitTypes() {
 }
 
 void RoutingModel::TopologicallySortVisitTypes() {
-  if (!has_same_vehicle_type_requirements_ &&
-      !has_temporal_type_requirements_) {
+  if (!HasSameVehicleTypeRequirements() && !HasTemporalTypeRequirements()) {
     return;
   }
   std::vector<std::pair<double, double>> type_requirement_tightness(
@@ -1768,9 +1778,9 @@ void RoutingModel::TopologicallySortVisitTypes() {
     int num_required_sets = 0;
     for (const std::vector<absl::flat_hash_set<int>>*
              required_type_alternatives :
-         {&required_type_alternatives_when_adding_type_index_[type],
-          &required_type_alternatives_when_removing_type_index_[type],
-          &same_vehicle_required_type_alternatives_per_type_index_[type]}) {
+         {&GetRequiredTypeAlternativesWhenAddingType(type),
+          &GetRequiredTypeAlternativesWhenRemovingType(type),
+          &GetSameVehicleRequiredTypeAlternativesOfType(type)}) {
       for (const absl::flat_hash_set<int>& alternatives :
            *required_type_alternatives) {
         types_in_requirement_graph.Set(type);
@@ -2968,7 +2978,32 @@ void RoutingModel::AddSearchMonitor(SearchMonitor* const monitor) {
   secondary_ls_monitors_.push_back(monitor);
 }
 
+void RoutingModel::AddRestoreDimensionValuesResetCallback(
+    std::function<void()> callback) {
+  if (callback) {
+    if (restore_dimension_values_reset_callbacks_.empty()) {
+      AddEnterSearchCallback([this]() {
+        for (const auto& callback : restore_dimension_values_reset_callbacks_) {
+          callback();
+        }
+      });
+    }
+    restore_dimension_values_reset_callbacks_.push_back(std::move(callback));
+  }
+}
+
 namespace {
+class EnterSearchMonitor : public SearchMonitor {
+ public:
+  EnterSearchMonitor(Solver* solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  void EnterSearch() override { callback_(); }
+  void Install() override { ListenToEvent(Solver::MonitorEvent::kEnterSearch); }
+
+ private:
+  std::function<void()> callback_;
+};
+
 class AtSolutionCallbackMonitor : public SearchMonitor {
  public:
   AtSolutionCallbackMonitor(Solver* solver, std::function<void()> callback,
@@ -2993,6 +3028,12 @@ class AtSolutionCallbackMonitor : public SearchMonitor {
   const bool track_unchecked_neighbors_;
 };
 }  // namespace
+
+void RoutingModel::AddEnterSearchCallback(std::function<void()> callback) {
+  EnterSearchMonitor* const monitor = solver_->RevAlloc(
+      new EnterSearchMonitor(solver_.get(), std::move(callback)));
+  AddSearchMonitor(monitor);
+}
 
 void RoutingModel::AddAtSolutionCallback(std::function<void()> callback,
                                          bool track_unchecked_neighbors) {
@@ -4277,28 +4318,21 @@ RoutingModel::VisitTypePolicy RoutingModel::GetVisitTypePolicy(
   return index_to_type_policy_[index];
 }
 
-void RoutingModel::CloseVisitTypes() {
-  hard_incompatible_types_per_type_index_.resize(num_visit_types_);
-  temporal_incompatible_types_per_type_index_.resize(num_visit_types_);
-  same_vehicle_required_type_alternatives_per_type_index_.resize(
-      num_visit_types_);
-  required_type_alternatives_when_adding_type_index_.resize(num_visit_types_);
-  required_type_alternatives_when_removing_type_index_.resize(num_visit_types_);
-}
-
 void RoutingModel::AddHardTypeIncompatibility(int type1, int type2) {
-  DCHECK_LT(std::max(type1, type2),
-            hard_incompatible_types_per_type_index_.size());
-  has_hard_type_incompatibilities_ = true;
+  DCHECK_LT(std::max(type1, type2), num_visit_types_);
+  if (hard_incompatible_types_per_type_index_.size() < num_visit_types_) {
+    hard_incompatible_types_per_type_index_.resize(num_visit_types_);
+  }
 
   hard_incompatible_types_per_type_index_[type1].insert(type2);
   hard_incompatible_types_per_type_index_[type2].insert(type1);
 }
 
 void RoutingModel::AddTemporalTypeIncompatibility(int type1, int type2) {
-  DCHECK_LT(std::max(type1, type2),
-            temporal_incompatible_types_per_type_index_.size());
-  has_temporal_type_incompatibilities_ = true;
+  DCHECK_LT(std::max(type1, type2), num_visit_types_);
+  if (temporal_incompatible_types_per_type_index_.size() < num_visit_types_) {
+    temporal_incompatible_types_per_type_index_.resize(num_visit_types_);
+  }
 
   temporal_incompatible_types_per_type_index_[type1].insert(type2);
   temporal_incompatible_types_per_type_index_[type2].insert(type1);
@@ -4306,24 +4340,29 @@ void RoutingModel::AddTemporalTypeIncompatibility(int type1, int type2) {
 
 const absl::flat_hash_set<int>&
 RoutingModel::GetHardTypeIncompatibilitiesOfType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, hard_incompatible_types_per_type_index_.size());
-  return hard_incompatible_types_per_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < hard_incompatible_types_per_type_index_.size()
+             ? hard_incompatible_types_per_type_index_[type]
+             : empty_incompatibility_set_;
 }
 
 const absl::flat_hash_set<int>&
 RoutingModel::GetTemporalTypeIncompatibilitiesOfType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, temporal_incompatible_types_per_type_index_.size());
-  return temporal_incompatible_types_per_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < temporal_incompatible_types_per_type_index_.size()
+             ? temporal_incompatible_types_per_type_index_[type]
+             : empty_incompatibility_set_;
 }
 
 // TODO(user): Consider if an empty "required_type_alternatives" should mean
 // trivially feasible requirement, as there are no required type alternatives?
 void RoutingModel::AddSameVehicleRequiredTypeAlternatives(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
-  DCHECK_LT(dependent_type,
-            same_vehicle_required_type_alternatives_per_type_index_.size());
+  DCHECK_LT(dependent_type, num_visit_types_);
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
@@ -4337,15 +4376,18 @@ void RoutingModel::AddSameVehicleRequiredTypeAlternatives(
     return;
   }
 
-  has_same_vehicle_type_requirements_ = true;
+  if (same_vehicle_required_type_alternatives_per_type_index_.size() <
+      num_visit_types_) {
+    same_vehicle_required_type_alternatives_per_type_index_.resize(
+        num_visit_types_);
+  }
   same_vehicle_required_type_alternatives_per_type_index_[dependent_type]
       .push_back(std::move(required_type_alternatives));
 }
 
 void RoutingModel::AddRequiredTypeAlternativesWhenAddingType(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
-  DCHECK_LT(dependent_type,
-            required_type_alternatives_when_adding_type_index_.size());
+  DCHECK_LT(dependent_type, num_visit_types_);
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
@@ -4358,15 +4400,17 @@ void RoutingModel::AddRequiredTypeAlternativesWhenAddingType(
     return;
   }
 
-  has_temporal_type_requirements_ = true;
+  if (required_type_alternatives_when_adding_type_index_.size() <
+      num_visit_types_) {
+    required_type_alternatives_when_adding_type_index_.resize(num_visit_types_);
+  }
   required_type_alternatives_when_adding_type_index_[dependent_type].push_back(
       std::move(required_type_alternatives));
 }
 
 void RoutingModel::AddRequiredTypeAlternativesWhenRemovingType(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
-  DCHECK_LT(dependent_type,
-            required_type_alternatives_when_removing_type_index_.size());
+  DCHECK_LT(dependent_type, num_visit_types_);
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
@@ -4380,31 +4424,43 @@ void RoutingModel::AddRequiredTypeAlternativesWhenRemovingType(
     return;
   }
 
-  has_temporal_type_requirements_ = true;
+  if (required_type_alternatives_when_removing_type_index_.size() <
+      num_visit_types_) {
+    required_type_alternatives_when_removing_type_index_.resize(
+        num_visit_types_);
+  }
   required_type_alternatives_when_removing_type_index_[dependent_type]
       .push_back(std::move(required_type_alternatives));
 }
 
 const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type,
-            same_vehicle_required_type_alternatives_per_type_index_.size());
-  return same_vehicle_required_type_alternatives_per_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < same_vehicle_required_type_alternatives_per_type_index_.size()
+             ? same_vehicle_required_type_alternatives_per_type_index_[type]
+             : empty_required_type_alternatives_;
 }
 
 const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetRequiredTypeAlternativesWhenAddingType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, required_type_alternatives_when_adding_type_index_.size());
-  return required_type_alternatives_when_adding_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < required_type_alternatives_when_adding_type_index_.size()
+             ? required_type_alternatives_when_adding_type_index_[type]
+             : empty_required_type_alternatives_;
 }
 
 const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetRequiredTypeAlternativesWhenRemovingType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, required_type_alternatives_when_removing_type_index_.size());
-  return required_type_alternatives_when_removing_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < required_type_alternatives_when_removing_type_index_.size()
+             ? required_type_alternatives_when_removing_type_index_[type]
+             : empty_required_type_alternatives_;
 }
 
 int64_t RoutingModel::UnperformedPenalty(int64_t var_index) const {
@@ -4627,6 +4683,12 @@ LocalSearchOperator* RoutingModel::CreateMakeInactiveOperator() {
 
 void RoutingModel::CreateNeighborhoodOperators(
     const RoutingSearchParameters& parameters) {
+  // TODO(user): Consider setting
+  // 'only_sort_neighbors_for_partial_neighborhoods' to false in
+  // GetOrCreateNodeNeighborsByCostClass(), and use neighbors regardless of
+  // the "used" ratio when parameters.ls_operator_neighbors_ratio() < 1.
+  // This would allow the operators to iterate on the neighbors by increasing
+  // distance, even if all nodes are considered as neighbors.
   double neighbors_ratio_used = 1;
   const NodeNeighborsByCostClass* neighbors_by_cost_class =
       GetOrCreateNodeNeighborsByCostClass(
@@ -4634,22 +4696,17 @@ void RoutingModel::CreateNeighborhoodOperators(
           parameters.ls_operator_min_neighbors(), neighbors_ratio_used,
           /*add_vehicle_starts_to_neighbors=*/false,
           /*add_vehicle_ends_to_neighbors=*/false);
-  // TODO(user): Consider passing incoming/outgoing neighbors separately to
-  // LS operators. This would allow the Cross operator to use both incoming and
-  // outgoing neighbors, to exchange path starts and ends independently.
-  const auto get_neighbors = [neighbors_by_cost_class, this](
-                                 int64_t node,
-                                 int64_t start) -> const std::vector<int>& {
-    if (IsEnd(node)) {
-      // HACK(user): As of CL/651760817, vehicle end nodes no longer have
-      // outgoing neighbors, which causes neighborhood operators that iterate
-      // on vehicle ends as seeds to fail. This is a temporary hack to consider
-      // the incoming neighbors for vehicle ends, before the proper fix which is
-      // to pass 2 separate callbacks for incoming and outgoing neighbors to
-      // neighborhood operators.
-      return neighbors_by_cost_class->GetIncomingNeighborsOfNodeForCostClass(
-          GetCostClassIndexOfVehicle(VehicleIndex(start)).value(), node);
-    }
+  const auto get_incoming_neighbors =
+      [neighbors_by_cost_class, this](
+          int64_t node, int64_t start) -> const std::vector<int>& {
+    DCHECK(!IsStart(node));
+    return neighbors_by_cost_class->GetIncomingNeighborsOfNodeForCostClass(
+        GetCostClassIndexOfVehicle(VehicleIndex(start)).value(), node);
+  };
+  const auto get_outgoing_neighbors =
+      [neighbors_by_cost_class, this](
+          int64_t node, int64_t start) -> const std::vector<int>& {
+    DCHECK(!IsEnd(node));
     return neighbors_by_cost_class->GetOutgoingNeighborsOfNodeForCostClass(
         GetCostClassIndexOfVehicle(VehicleIndex(start)).value(), node);
   };
@@ -4690,15 +4747,15 @@ void RoutingModel::CreateNeighborhoodOperators(
 
   // Other operators defined in the CP solver.
   local_search_operators_[RELOCATE] =
-      CreateOperatorWithNeighborsRatio<Relocate>(neighbors_ratio_used,
-                                                 get_neighbors);
+      CreateOperatorWithNeighborsRatio<Relocate>(
+          neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors);
   local_search_operators_[EXCHANGE] =
-      CreateOperatorWithNeighborsRatio<Exchange>(neighbors_ratio_used,
-                                                 get_neighbors);
+      CreateOperatorWithNeighborsRatio<Exchange>(
+          neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors);
   local_search_operators_[CROSS] = CreateOperatorWithNeighborsRatio<Cross>(
-      neighbors_ratio_used, get_neighbors);
+      neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors);
   local_search_operators_[TWO_OPT] = CreateOperatorWithNeighborsRatio<TwoOpt>(
-      neighbors_ratio_used, get_neighbors);
+      neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors);
   local_search_operators_[RELOCATE_AND_MAKE_ACTIVE] =
       CreateCPOperator<RelocateAndMakeActiveOperator>();
   local_search_operators_[MAKE_ACTIVE_AND_RELOCATE] =
@@ -4707,7 +4764,8 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreateCPOperator<MakeChainInactiveOperator>();
   local_search_operators_[SWAP_ACTIVE] = CreateCPOperator<SwapActiveOperator>();
   local_search_operators_[SWAP_ACTIVE_CHAIN] =
-      CreateCPOperator<SwapActiveChainOperator>();
+      CreateCPOperatorWithArg<SwapActiveChainOperator, int>(
+          parameters.max_swap_active_chain_size());
   local_search_operators_[EXTENDED_SWAP_ACTIVE] =
       CreateCPOperator<ExtendedSwapActiveOperator>();
   std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());
@@ -4731,19 +4789,21 @@ void RoutingModel::CreateNeighborhoodOperators(
   std::vector<LocalSearchOperator*> light_relocate_pair_operators;
   light_relocate_pair_operators.push_back(
       CreateOperatorWithNeighborsRatio<LightPairRelocateOperator>(
-          neighbors_ratio_used, get_neighbors, pickup_delivery_pairs_,
-          [this](int64_t start) {
+          neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors,
+          pickup_delivery_pairs_, [this](int64_t start) {
             return vehicle_pickup_delivery_policy_[VehicleIndex(start)] ==
                    RoutingModel::PICKUP_AND_DELIVERY_LIFO;
           }));
   light_relocate_pair_operators.push_back(
       CreatePairOperator<GroupPairAndRelocateOperator>(neighbors_ratio_used,
-                                                       get_neighbors));
+                                                       get_incoming_neighbors,
+                                                       get_outgoing_neighbors));
   local_search_operators_[LIGHT_RELOCATE_PAIR] =
       solver_->ConcatenateOperators(light_relocate_pair_operators);
   local_search_operators_[EXCHANGE_PAIR] = solver_->ConcatenateOperators(
       {CreatePairOperator<PairExchangeOperator>(neighbors_ratio_used,
-                                                get_neighbors),
+                                                get_incoming_neighbors,
+                                                get_outgoing_neighbors),
        solver_->RevAlloc(new SwapIndexPairOperator(
            nexts_,
            CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
@@ -4753,16 +4813,18 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreatePairOperator<PairExchangeRelocateOperator>();
   local_search_operators_[RELOCATE_NEIGHBORS] =
       CreateOperatorWithNeighborsRatio<MakeRelocateNeighborsOperator>(
-          neighbors_ratio_used, get_neighbors,
+          neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors,
           GetLocalSearchHomogeneousArcCostCallback(parameters));
   local_search_operators_[NODE_PAIR_SWAP] = solver_->ConcatenateOperators(
       {CreatePairOperator<IndexPairSwapActiveOperator>(),
        CreatePairOperator<PairNodeSwapActiveOperator<true>>(),
        CreatePairOperator<PairNodeSwapActiveOperator<false>>()});
   local_search_operators_[RELOCATE_SUBTRIP] =
-      CreatePairOperator<RelocateSubtrip>(neighbors_ratio_used, get_neighbors);
+      CreatePairOperator<RelocateSubtrip>(
+          neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors);
   local_search_operators_[EXCHANGE_SUBTRIP] =
-      CreatePairOperator<ExchangeSubtrip>(neighbors_ratio_used, get_neighbors);
+      CreatePairOperator<ExchangeSubtrip>(
+          neighbors_ratio_used, get_incoming_neighbors, get_outgoing_neighbors);
 
   const auto arc_cost_for_path_start =
       [this, arc_cost_getter = GetLocalSearchArcCostCallback(parameters)](
@@ -4812,7 +4874,8 @@ void RoutingModel::CreateNeighborhoodOperators(
             this, [this]() { return CheckLimit(time_buffer_); },
             GetLocalSearchArcCostCallback(parameters),
             parameters.local_cheapest_insertion_pickup_delivery_strategy(),
-            parameters.local_cheapest_insertion_sorting_mode(),
+            GetLocalCheapestInsertionSortingProperties(
+                parameters.local_cheapest_insertion_sorting_properties()),
             GetOrCreateLocalSearchFilterManager(
                 parameters,
                 {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}),
@@ -5766,27 +5829,29 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   }
   const RoutingSearchParameters::PairInsertionStrategy lci_pair_strategy =
       search_parameters.local_cheapest_insertion_pickup_delivery_strategy();
-  const RoutingSearchParameters::InsertionSortingMode sorting_mode =
-      search_parameters.local_cheapest_insertion_sorting_mode();
-  first_solution_filtered_decision_builders_
-      [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] =
-          CreateIntVarFilteredDecisionBuilder<
-              LocalCheapestInsertionFilteredHeuristic>(
-              [this](int64_t i, int64_t j, int64_t vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              lci_pair_strategy, sorting_mode,
-              GetOrCreateLocalSearchFilterManager(
-                  search_parameters, {/*filter_objective=*/false,
-                                      /*filter_with_cp_solver=*/false}),
-              bin_capacities_.get(), optimize_on_insertion);
+  first_solution_filtered_decision_builders_[FirstSolutionStrategy::
+                                                 LOCAL_CHEAPEST_INSERTION] =
+      CreateIntVarFilteredDecisionBuilder<
+          LocalCheapestInsertionFilteredHeuristic>(
+          [this](int64_t i, int64_t j, int64_t vehicle) {
+            return GetArcCostForVehicle(i, j, vehicle);
+          },
+          lci_pair_strategy,
+          GetLocalCheapestInsertionSortingProperties(
+              search_parameters.local_cheapest_insertion_sorting_properties()),
+          GetOrCreateLocalSearchFilterManager(
+              search_parameters, {/*filter_objective=*/false,
+                                  /*filter_with_cp_solver=*/false}),
+          bin_capacities_.get(), optimize_on_insertion);
   IntVarFilteredDecisionBuilder* const strong_lci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
           [this](int64_t i, int64_t j, int64_t vehicle) {
             return GetArcCostForVehicle(i, j, vehicle);
           },
-          lci_pair_strategy, sorting_mode,
+          lci_pair_strategy,
+          GetLocalCheapestInsertionSortingProperties(
+              search_parameters.local_cheapest_insertion_sorting_properties()),
           GetOrCreateLocalSearchFilterManager(search_parameters,
                                               {/*filter_objective=*/false,
                                                /*filter_with_cp_solver=*/true}),
@@ -5807,7 +5872,10 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
       [FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION] =
           CreateIntVarFilteredDecisionBuilder<
               LocalCheapestInsertionFilteredHeuristic>(
-              /*evaluator=*/nullptr, lcci_pair_strategy, sorting_mode,
+              /*evaluator=*/nullptr, lcci_pair_strategy,
+              GetLocalCheapestInsertionSortingProperties(
+                  search_parameters
+                      .local_cheapest_insertion_sorting_properties()),
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/true,
                                       /*filter_with_cp_solver=*/false}),
@@ -5815,7 +5883,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   IntVarFilteredDecisionBuilder* const strong_lcci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
-          /*evaluator=*/nullptr, lcci_pair_strategy, sorting_mode,
+          /*evaluator=*/nullptr, lcci_pair_strategy,
+          GetLocalCheapestInsertionSortingProperties(
+              search_parameters.local_cheapest_insertion_sorting_properties()),
           GetOrCreateLocalSearchFilterManager(search_parameters,
                                               {/*filter_objective=*/true,
                                                /*filter_with_cp_solver=*/true}),
@@ -6420,11 +6490,12 @@ RoutingDimension::~RoutingDimension() {
 
 void RoutingDimension::Initialize(
     const std::vector<int>& transit_evaluators,
+    const std::vector<int>& cumul_dependent_transit_evaluators,
     const std::vector<int>& state_dependent_transit_evaluators,
     int64_t slack_max) {
   InitializeCumuls();
-  InitializeTransits(transit_evaluators, state_dependent_transit_evaluators,
-                     slack_max);
+  InitializeTransits(transit_evaluators, cumul_dependent_transit_evaluators,
+                     state_dependent_transit_evaluators, slack_max);
 }
 
 void RoutingDimension::InitializeCumuls() {
@@ -6467,7 +6538,7 @@ void RoutingDimension::InitializeCumuls() {
 namespace {
 void ComputeTransitClasses(absl::Span<const int> evaluator_indices,
                            std::vector<int>* class_evaluators,
-                           std::vector<int64_t>* vehicle_to_class) {
+                           std::vector<int>* vehicle_to_class) {
   CHECK(class_evaluators != nullptr);
   CHECK(vehicle_to_class != nullptr);
   class_evaluators->clear();
@@ -6475,10 +6546,10 @@ void ComputeTransitClasses(absl::Span<const int> evaluator_indices,
   absl::flat_hash_map<int, int64_t> evaluator_to_class;
   for (int i = 0; i < evaluator_indices.size(); ++i) {
     const int evaluator_index = evaluator_indices[i];
-    int evaluator_class = -1;
-    if (!gtl::FindCopy(evaluator_to_class, evaluator_index, &evaluator_class)) {
-      evaluator_class = class_evaluators->size();
-      evaluator_to_class[evaluator_index] = evaluator_class;
+    const int new_class = class_evaluators->size();
+    const int evaluator_class =
+        gtl::LookupOrInsert(&evaluator_to_class, evaluator_index, new_class);
+    if (evaluator_class == new_class) {
       class_evaluators->push_back(evaluator_index);
     }
     (*vehicle_to_class)[i] = evaluator_class;
@@ -6583,6 +6654,7 @@ void RoutingDimension::InitializeTransitVariables(int64_t slack_max) {
 
 void RoutingDimension::InitializeTransits(
     absl::Span<const int> transit_evaluators,
+    absl::Span<const int> cumul_dependent_transit_evaluators,
     absl::Span<const int> state_dependent_transit_evaluators,
     int64_t slack_max) {
   CHECK_EQ(model_->vehicles(), transit_evaluators.size());
@@ -6595,6 +6667,9 @@ void RoutingDimension::InitializeTransits(
   dependent_transits_.resize(size, nullptr);
   ComputeTransitClasses(transit_evaluators, &class_evaluators_,
                         &vehicle_to_class_);
+  ComputeTransitClasses(cumul_dependent_transit_evaluators,
+                        &cumul_dependent_class_evaluators_,
+                        &vehicle_to_cumul_dependent_class_);
   if (base_dimension_ != nullptr) {
     ComputeTransitClasses(state_dependent_transit_evaluators,
                           &state_dependent_class_evaluators_,

@@ -369,6 +369,10 @@ class CompactSparseMatrix {
   // Add*() functions below.
   void Reset(RowIndex num_rows);
 
+  // Api to add columns one at the time.
+  void AddEntryToCurrentColumn(RowIndex row, Fractional coeff);
+  void CloseCurrentColumn();
+
   // Adds a dense column to the CompactSparseMatrix (only the non-zero will be
   // actually stored). This work in O(input.size()) and returns the index of the
   // added column.
@@ -381,7 +385,7 @@ class CompactSparseMatrix {
   // Same as AddDenseColumn(), but uses the given non_zeros pattern of input.
   // If non_zeros is empty, this actually calls AddDenseColumn().
   ColIndex AddDenseColumnWithNonZeros(const DenseColumn& dense_column,
-                                      const std::vector<RowIndex>& non_zeros);
+                                      absl::Span<const RowIndex> non_zeros);
 
   // Adds a dense column for which we know the non-zero positions and clears it.
   // Note that this function supports duplicate indices in non_zeros. The

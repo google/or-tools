@@ -14,11 +14,13 @@
 #ifndef OR_TOOLS_SAT_2D_ORTHOGONAL_PACKING_TESTING_H_
 #define OR_TOOLS_SAT_2D_ORTHOGONAL_PACKING_TESTING_H_
 
+#include <utility>
 #include <vector>
 
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/integer.h"
 
 namespace operations_research {
 namespace sat {
@@ -26,13 +28,19 @@ namespace sat {
 std::vector<Rectangle> GenerateNonConflictingRectangles(int num_rectangles,
                                                         absl::BitGenRef random);
 
+// Alternative way of generating random rectangles. This one generate random
+// rectangles and try to pack them using the left-bottom-first order.
+std::vector<Rectangle> GenerateNonConflictingRectanglesWithPacking(
+    std::pair<IntegerValue, IntegerValue> bb, int average_num_boxes,
+    absl::BitGenRef random);
+
 std::vector<RectangleInRange> MakeItemsFromRectangles(
     absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random);
 
 std::vector<ItemForPairwiseRestriction>
 GenerateItemsRectanglesWithNoPairwiseConflict(
-    const std::vector<Rectangle>& rectangles, double slack_factor,
+    absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random);
 
 std::vector<ItemForPairwiseRestriction>

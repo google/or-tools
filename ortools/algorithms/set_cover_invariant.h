@@ -18,9 +18,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/algorithms/set_cover_model.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 
@@ -66,6 +66,24 @@ class SetCoverDecision {
 
 class SetCoverInvariant {
  public:
+  // The consistency level of the invariant.
+  // The values denote the level of consistency of the invariant.
+  // There is an order between the levels, and the invariant is consistent at
+  // level k if it is consistent at all levels lower than k.
+  // The consistency level that is the most natural is to use kFreeAndUncovered,
+  // since it enables to implement most heuristics.
+  // kCostAndCoverage is used by LazyElementDegree, a fast greedy heuristic.
+  // kRedundancy is used for GuidedLocalSearch, because knowing whether a
+  // subset is redundant incrementally is faster than recomputing the
+  // information over and over again.
+  // Below, the quantities that are maintained at each level are listed.
+  enum class ConsistencyLevel {
+    kInconsistent = 0,  // The invariant is not consistent.
+    kCostAndCoverage,   // cost_ and coverage_.
+    kFreeAndUncovered,  // num_free_elements_ and num_uncovered_elements_.
+    kRedundancy         // is_redundant_ and num_non_overcovered_elements_.
+  };
+
   // Constructs an empty weighted set covering solver state.
   // The model may not change after the invariant was built.
   explicit SetCoverInvariant(SetCoverModel* m) : model_(m) { Initialize(); }
@@ -74,13 +92,8 @@ class SetCoverInvariant {
   // afterwards.
   void Initialize();
 
-  void Clear() {
-    is_selected_.assign(model_->num_subsets(), false);
-    RecomputeInvariant();
-  }
-
-  // Recomputes all the invariants for the current solution.
-  void RecomputeInvariant();
+  // Clears the invariant. Also called by Initialize.
+  void Clear();
 
   // Returns the weighted set covering model to which the state applies.
   SetCoverModel* model() const { return model_; }
@@ -110,11 +123,16 @@ class SetCoverInvariant {
   // Returns vector containing number of subsets covering each element.
   const ElementToIntVector& coverage() const { return coverage_; }
 
+  // Returns a vector containing the number of subsets within `focus` covering
+  // each element. Subsets that are without `focus` are not considered.
+  ElementToIntVector ComputeCoverageInFocus(
+      absl::Span<const SubsetIndex> focus) const;
+
   // Returns vector of Booleans telling whether each subset can be removed from
   // the solution.
   const SubsetBoolVector& is_redundant() const { return is_redundant_; }
 
-  // Returns the vector of the decisions which has led to the current solution.
+  // Returns the vector of the decisions which have led to the current solution.
   const std::vector<SetCoverDecision>& trace() const { return trace_; }
 
   // Clears the trace.
@@ -122,18 +140,18 @@ class SetCoverInvariant {
 
   // Clear the removability information.
   void ClearRemovabilityInformation() {
-    new_removable_subsets_.clear();
-    new_non_removable_subsets_.clear();
+    newly_removable_subsets_.clear();
+    newly_non_removable_subsets_.clear();
   }
 
   // Returns the subsets that become removable after the last update.
-  const std::vector<SubsetIndex>& new_removable_subsets() const {
-    return new_removable_subsets_;
+  const std::vector<SubsetIndex>& newly_removable_subsets() const {
+    return newly_removable_subsets_;
   }
 
   // Returns the subsets that become non removable after the last update.
-  const std::vector<SubsetIndex>& new_non_removable_subsets() const {
-    return new_non_removable_subsets_;
+  const std::vector<SubsetIndex>& newly_non_removable_subsets() const {
+    return newly_non_removable_subsets_;
   }
 
   // Compresses the trace so that:
@@ -147,10 +165,11 @@ class SetCoverInvariant {
   // Loads the solution and recomputes the data in the invariant.
   void LoadSolution(const SubsetBoolVector& solution);
 
-  // Returns true if the data stored in the invariant is consistent.
-  // The body of the function will CHECK-fail the first time an inconsistency
-  // is encountered.
-  bool CheckConsistency() const;
+  // Checks the consistency of the invariant at the given consistency level.
+  bool CheckConsistency(ConsistencyLevel consistency) const;
+
+  // Recomputes the invariant to the given consistency level.
+  void Recompute(ConsistencyLevel target_consistency);
 
   // Returns true if the subset is redundant within the current solution, i.e.
   // when all its elements are already covered twice. Note that the set need
@@ -158,33 +177,27 @@ class SetCoverInvariant {
   // TODO(user): Implement this using AVX-512?
   bool ComputeIsRedundant(SubsetIndex subset) const;
 
-  // Updates the invariant fully, so that is_redundant_ can be updated
-  // incrementally later with SelectAndFullyUpdate and
-  // DeselectSelectAndFullyUpdate.
-  void MakeFullyUpdated();
-
-  // Flips is_selected_[subset] to its negation, by calling Select or Deselect
-  // depending on value. Updates the invariant incrementally.
-  // FlipAndFullyUpdate performs a full incremental update of the invariant,
-  // including num_non_overcovered_elements_, is_redundant_,
-  // new_removable_subsets_, new_non_removable_subsets_. This is useful for some
-  // meta-heuristics.
-  void Flip(SubsetIndex subset) { Flip(subset, false); }
-  void FlipAndFullyUpdate(SubsetIndex subset) { Flip(subset, true); }
+  // Computes the number of free (uncovered) elements in the given subset.
+  BaseInt ComputeNumFreeElements(SubsetIndex subset) const;
 
   // Includes subset in the solution by setting is_selected_[subset] to true
-  // and incrementally updating the invariant.
-  // SelectAndFullyUpdate also updates the invariant in a more thorough way as
-  // explained with FlipAndFullyUpdate.
-  void Select(SubsetIndex subset) { Select(subset, false); }
-  void SelectAndFullyUpdate(SubsetIndex subset) { Select(subset, true); }
+  // without updating the invariant. Only updates the cost and the coverage.
+  // TODO(user): Merge with Select. Introduce consistency levels and maybe split
+  // the invariant into three.
+  void SelectNoUpdate(SubsetIndex subset);
+
+  // Flips is_selected_[subset] to its negation, by calling Select or Deselect
+  // depending on value. Updates the invariant incrementally to the given
+  // consistency level.
+  void Flip(SubsetIndex subset, ConsistencyLevel consistency);
+
+  // Includes subset in the solution by setting is_selected_[subset] to true
+  // and incrementally updating the invariant to the given consistency level.
+  void Select(SubsetIndex subset, ConsistencyLevel consistency);
 
   // Excludes subset from the solution by setting is_selected_[subset] to false
-  // and incrementally updating the invariant.
-  // DeselectAndFullyUpdate also updates the invariant in a more thorough way as
-  // explained with FlipAndFullyUpdate.
-  void Deselect(SubsetIndex subset) { Deselect(subset, false); }
-  void DeselectAndFullyUpdate(SubsetIndex subset) { Deselect(subset, true); }
+  // and incrementally updating the invariant to the given consistency level.
+  void Deselect(SubsetIndex subset, ConsistencyLevel consistency);
 
   // Returns the current solution as a proto.
   SetCoverSolutionResponse ExportSolutionAsProto() const;
@@ -212,30 +225,13 @@ class SetCoverInvariant {
   // Temporarily uses |S| BaseInts.
   std::tuple<SubsetToIntVector,  // Number of non-overcovered elements,
              SubsetBoolVector>   // Redundancy for each of the subsets.
-  ComputeNumNonOvercoveredElementsAndIsRedundant(
-      const ElementToIntVector& cvrg) const;
+  ComputeRedundancyInfo(const ElementToIntVector& cvrg) const;
 
-  // Flips is_selected_[subset] to its negation,  by calling Select or Deselect
-  // depending on value. Updates the invariant incrementally.
-  // When incremental_full_update is true, the following fields are also
-  // updated: num_non_overcovered_elements_, is_redundant_,
-  // new_removable_subsets_, new_non_removable_subsets_. This is useful for some
-  // meta-heuristics.
-  void Flip(SubsetIndex, bool incremental_full_update);
-
-  // Sets is_selected_[subset] to true and incrementally updates the invariant.
-  // Parameter incremental_full_update has the same meaning as with Flip.
-  void Select(SubsetIndex subset, bool incremental_full_update);
-
-  // Sets is_selected_[subset] to false and incrementally updates the invariant.
-  // Parameter incremental_full_update has the same meaning as with Flip.
-  void Deselect(SubsetIndex subset, bool incremental_full_update);
-
-  // Helper function for Select when AVX-512 is supported by the processor.
-  void SelectAvx512(SubsetIndex subset);
-
-  // Helper function for Deselect when AVX-512 is supported by the processor.
-  void DeselectAvx512(SubsetIndex subset);
+  // Returns true if the current consistency level consistency_ is lower than
+  // cheched_consistency and the desired consistency is higher than
+  // cheched_consistency.
+  bool NeedToRecompute(ConsistencyLevel cheched_consistency,
+                       ConsistencyLevel target_consistency);
 
   // The weighted set covering model on which the solver is run.
   SetCoverModel* model_;
@@ -276,23 +272,20 @@ class SetCoverInvariant {
   // Takes |S| bits.
   SubsetBoolVector is_redundant_;
 
-  // Subsets that become removable after the last update.
+  // Subsets that became removable after the last update.
   // Takes at most |S| BaseInts. (More likely a few percent of that).
-  std::vector<SubsetIndex> new_removable_subsets_;
+  std::vector<SubsetIndex> newly_removable_subsets_;
 
-  // Subsets that become non removable after the last update.
+  // Subsets that became non removable after the last update.
   // Takes at most |S| BaseInts. (More likely a few percent of that).
-  std::vector<SubsetIndex> new_non_removable_subsets_;
+  std::vector<SubsetIndex> newly_non_removable_subsets_;
 
-  // Denotes whether is_redundant_ and num_non_overcovered_elements_ have been
-  // updated. Initially true, it becomes false as soon as Flip,
-  // Select and Deselect are called with incremental_full_update = false. The
-  // fully updated status can be achieved again with a call to FullUpdate(),
-  // which can be expensive,
-  bool is_fully_updated_;
-
-  // True if the CPU supports the AVX-512 instruction set.
-  bool supports_avx512_;
+  // Denotes the consistency level of the invariant.
+  // Some algorithms may need to recompute the invariant to a higher consistency
+  // level.
+  // TODO(user): think of making the enforcement of the consistency level
+  // automatic at the constructor level of the heuristic algorithms.
+  ConsistencyLevel consistency_level_;
 };
 
 }  // namespace operations_research

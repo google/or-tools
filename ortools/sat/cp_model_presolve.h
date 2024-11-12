@@ -86,8 +86,9 @@ class CpModelPresolver {
   // Executes presolve method for the given constraint. Public for testing only.
   bool PresolveOneConstraint(int c);
 
-  // Public for testing only.
+  // Visible for testing.
   void RemoveEmptyConstraints();
+  void DetectDuplicateColumns();
 
  private:
   // A simple helper that logs the rules applied so far and return INFEASIBLE.
@@ -106,6 +107,9 @@ class CpModelPresolver {
   // Runs the probing.
   void Probe();
 
+  // Runs the expansion and fix constraints that became non-canonical.
+  void ExpandCpModelAndCanonicalizeConstraints();
+
   // Presolve functions.
   //
   // They should return false only if the constraint <-> variable graph didn't
@@ -119,7 +123,7 @@ class CpModelPresolver {
   // TODO(user): Make these public and unit test.
   bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveAutomaton(ConstraintProto* ct);
-  bool PresolveElement(ConstraintProto* ct);
+  bool PresolveElement(int c, ConstraintProto* ct);
   bool PresolveIntDiv(int c, ConstraintProto* ct);
   bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
@@ -307,6 +311,8 @@ class CpModelPresolver {
   // efficient than the two watcher literal scheme for clauses. Investigate!
   void MergeClauses();
 
+  void RunPropagatorsForConstraint(const ConstraintProto& ct);
+
   // Boths function are responsible for dealing with affine relations.
   // The second one returns false on UNSAT.
   void EncodeAllAffineRelations();
@@ -334,6 +340,9 @@ class CpModelPresolver {
   absl::flat_hash_map<int, int> temp_map_;
   absl::flat_hash_set<int> temp_set_;
   ConstraintProto temp_ct_;
+
+  // Used by RunPropagatorsForConstraint().
+  CpModelProto tmp_model_;
 
   // Use by TryToReduceCoefficientsOfLinearConstraint().
   struct RdEntry {
@@ -425,9 +434,17 @@ class ModelCopy {
   bool CopyBoolAnd(const ConstraintProto& ct);
   bool CopyBoolAndWithDupSupport(const ConstraintProto& ct);
 
-  bool CopyLinear(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
+
+  bool CopyElement(const ConstraintProto& ct);
+  bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
+  bool CopyLinear(const ConstraintProto& ct);
+  bool CopyLinearExpression(const LinearExpressionProto& expr,
+                            LinearExpressionProto* dst);
+  bool CopyAutomaton(const ConstraintProto& ct);
+  bool CopyTable(const ConstraintProto& ct);
+  bool CopyAllDiff(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify
@@ -455,6 +472,8 @@ class ModelCopy {
 
   std::vector<int> temp_literals_;
   absl::flat_hash_set<int> temp_literals_set_;
+
+  ConstraintProto tmp_constraint_;
 };
 
 // Copy in_model to the model in the presolve context.

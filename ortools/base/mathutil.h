@@ -17,6 +17,7 @@
 #include <math.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <vector>
@@ -24,7 +25,6 @@
 #include "absl/base/casts.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/mathlimits.h"
 
 namespace operations_research {
 class MathUtil {
@@ -180,7 +180,7 @@ class MathUtil {
     COMPILE_ASSERT(std::numeric_limits<IntOut>::radix == 2, IntOut_is_base_2);
 
     // Special case NaN, for which the logic below doesn't work.
-    if (MathLimits<FloatIn>::IsNaN(x)) {
+    if (std::isnan(x)) {
       return 0;
     }
 
@@ -190,7 +190,7 @@ class MathUtil {
     }
 
     // Handle infinities.
-    if (MathLimits<FloatIn>::IsInf(x)) {
+    if (std::isinf(x)) {
       return x < 0 ? std::numeric_limits<IntOut>::lowest()
                    : std::numeric_limits<IntOut>::max();
     }
@@ -235,7 +235,7 @@ class MathUtil {
     COMPILE_ASSERT(std::numeric_limits<IntOut>::is_integer,
                    IntOut_is_not_integer);
 
-    if (MathLimits<FloatIn>::IsNaN(x)) {
+    if (std::isnan(x)) {
       return 0;
     } else {
       return SafeCast<IntOut>((x < 0.) ? (x - 0.5) : (x + 0.5));

@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -24,6 +25,19 @@
 #include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {
+
+namespace {
+// Returns the vector a - b.
+ElementToIntVector Subtract(const ElementToIntVector& a,
+                            const ElementToIntVector& b) {
+  ElementToIntVector delta(a.size());
+  DCHECK_EQ(a.size(), b.size());
+  for (const ElementIndex i : a.index_range()) {
+    delta[i] = a[i] - b[i];
+  }
+  return delta;
+}
+}  // namespace
 
 template <typename IndexType, typename ValueType>
 using StrictVector = glop::StrictITIVector<IndexType, ValueType>;
@@ -88,11 +102,15 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus,
 
   StrictVector<ElementIndex, MPConstraint*> constraints(num_elements, nullptr);
   StrictVector<SubsetIndex, MPVariable*> vars(num_subsets, nullptr);
+  ElementToIntVector coverage_outside_focus =
+      Subtract(inv_->coverage(), inv_->ComputeCoverageInFocus(focus));
   for (const SubsetIndex subset : focus) {
     vars[subset] = solver.MakeVar(0, 1, use_integers, "");
     objective->SetCoefficient(vars[subset], model->subset_costs()[subset]);
-    for (ElementIndex element : model->columns()[subset]) {
-      if (inv_->coverage()[element] > 0) continue;
+    for (const ElementIndex element : model->columns()[subset]) {
+      // The model should only contain elements that are not forcibly covered by
+      // subsets outside the focus.
+      if (coverage_outside_focus[element] != 0) continue;
       if (constraints[element] == nullptr) {
         constexpr double kInfinity = std::numeric_limits<double>::infinity();
         constraints[element] = solver.MakeRowConstraint(1.0, kInfinity);
@@ -121,10 +139,12 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus,
       return false;
   }
   if (use_integers) {
+    using CL = SetCoverInvariant::ConsistencyLevel;
     for (const SubsetIndex subset : focus) {
-      choices[subset] = (vars[subset]->solution_value() > 0.9);
+      if (vars[subset]->solution_value() > 0.9) {
+        inv_->Select(subset, CL::kCostAndCoverage);
+      }
     }
-    inv_->LoadSolution(choices);
   } else {
     lower_bound_ = solver.Objective().Value();
   }

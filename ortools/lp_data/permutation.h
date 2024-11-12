@@ -154,7 +154,7 @@ void Permutation<IndexType>::PopulateFromIdentity() {
 template <typename IndexType>
 void Permutation<IndexType>::PopulateRandomly() {
   PopulateFromIdentity();
-  std::shuffle(perm_.begin(), perm_.end());
+  std::shuffle(perm_.begin(), perm_.end(), absl::BitGen());
 }
 
 template <typename IndexType>

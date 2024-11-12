@@ -47,7 +47,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/path.h"
-#include "ortools/graph/io.h"
+#include "ortools/graph/graph_io.h"
 #include "ortools/graph/util.h"
 
 namespace operations_research {
@@ -63,7 +63,7 @@ using ::util::GraphIsSymmetric;
 
 // Shortcut that calls RecursivelyRefinePartitionByAdjacency() on all nodes
 // of a graph, and outputs the resulting partition.
-std::string FullyRefineGraph(const std::vector<std::pair<int, int>>& arcs) {
+std::string FullyRefineGraph(absl::Span<const std::pair<int, int>> arcs) {
   Graph graph;
   for (const std::pair<int, int>& arc : arcs) {
     graph.AddArc(arc.first, arc.second);

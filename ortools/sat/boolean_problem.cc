@@ -33,7 +33,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/graph/io.h"
+#include "ortools/graph/graph_io.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/algorithms/sparse_permutation.h"

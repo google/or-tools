@@ -229,16 +229,15 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
 
 template <bool use_int128>
 void LinearConstraintPropagator<use_int128>::Explain(
-    int /*id*/, IntegerValue propagation_slack,
-    IntegerLiteral literal_to_explain, int trail_index,
-    std::vector<Literal>* literals_reason,
+    int /*id*/, IntegerValue propagation_slack, IntegerVariable var_to_explain,
+    int trail_index, std::vector<Literal>* literals_reason,
     std::vector<int>* trail_indices_reason) {
   *literals_reason = literal_reason_;
   trail_indices_reason->clear();
   shared_->reason_coeffs.clear();
   for (int i = 0; i < size_; ++i) {
     const IntegerVariable var = vars_[i];
-    if (PositiveVariable(var) == PositiveVariable(literal_to_explain.var)) {
+    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
       continue;
     }
     const int index =
@@ -446,10 +445,11 @@ bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
     IntegerValue new_ub;
     if (use_int128) {
       const IntegerValue ub = shared_->integer_trail->LevelZeroUpperBound(var);
-      const absl::int128 div128 = slack128 / absl::int128(coeff.value());
-      if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
+      if (absl::int128((ub - lb).value()) * absl::int128(coeff.value()) <=
+          slack128) {
         continue;
       }
+      const absl::int128 div128 = slack128 / absl::int128(coeff.value());
       new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
     } else {
       const IntegerValue div = slack / coeff;
@@ -653,8 +653,7 @@ LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
       integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}
 
 void LinMinPropagator::Explain(int id, IntegerValue propagation_slack,
-                               IntegerLiteral literal_to_explain,
-                               int trail_index,
+                               IntegerVariable var_to_explain, int trail_index,
                                std::vector<Literal>* literals_reason,
                                std::vector<int>* trail_indices_reason) {
   const auto& vars = exprs_[id].vars;
@@ -665,7 +664,7 @@ void LinMinPropagator::Explain(int id, IntegerValue propagation_slack,
   const int size = vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = vars[i];
-    if (PositiveVariable(var) == PositiveVariable(literal_to_explain.var)) {
+    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
       continue;
     }
     const int index =
@@ -1653,45 +1652,6 @@ void FixedModuloPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchAffineExpression(expr_, id);
   watcher->WatchAffineExpression(target_, id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
-}
-
-std::function<void(Model*)> IsOneOf(IntegerVariable var,
-                                    const std::vector<Literal>& selectors,
-                                    const std::vector<IntegerValue>& values) {
-  return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-
-    CHECK(!values.empty());
-    CHECK_EQ(values.size(), selectors.size());
-    std::vector<int64_t> unique_values;
-    absl::flat_hash_map<int64_t, std::vector<Literal>> value_to_selector;
-    for (int i = 0; i < values.size(); ++i) {
-      unique_values.push_back(values[i].value());
-      value_to_selector[values[i].value()].push_back(selectors[i]);
-    }
-    gtl::STLSortAndRemoveDuplicates(&unique_values);
-
-    integer_trail->UpdateInitialDomain(var, Domain::FromValues(unique_values));
-    if (unique_values.size() == 1) {
-      model->Add(ClauseConstraint(selectors));
-      return;
-    }
-
-    // Note that it is more efficient to call AssociateToIntegerEqualValue()
-    // with the values ordered, like we do here.
-    for (const int64_t v : unique_values) {
-      const std::vector<Literal>& selectors = value_to_selector[v];
-      if (selectors.size() == 1) {
-        encoder->AssociateToIntegerEqualValue(selectors[0], var,
-                                              IntegerValue(v));
-      } else {
-        const Literal l(model->Add(NewBooleanVariable()), true);
-        model->Add(ReifiedBoolOr(selectors, l));
-        encoder->AssociateToIntegerEqualValue(l, var, IntegerValue(v));
-      }
-    }
-  };
 }
 
 }  // namespace sat

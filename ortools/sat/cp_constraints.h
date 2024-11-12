@@ -71,7 +71,8 @@ class BooleanXorPropagator : public PropagatorInterface {
 // This constraint take care of this case when no selectors[i] is chosen yet.
 //
 // This constraint support duplicate selectors.
-class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
+class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface,
+                                          public LazyReasonInterface {
  public:
   GreaterThanAtLeastOneOfPropagator(IntegerVariable target_var,
                                     absl::Span<const AffineExpression> exprs,
@@ -88,17 +89,22 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
+  // For LazyReasonInterface.
+  void Explain(int id, IntegerValue propagation_slack,
+               IntegerVariable var_to_explain, int trail_index,
+               std::vector<Literal>* literals_reason,
+               std::vector<int>* trail_indices_reason) final;
+
  private:
   const IntegerVariable target_var_;
-  const std::vector<AffineExpression> exprs_;
-  const std::vector<Literal> selectors_;
   const std::vector<Literal> enforcements_;
+
+  // Non-const as we swap elements around.
+  std::vector<Literal> selectors_;
+  std::vector<AffineExpression> exprs_;
 
   Trail* trail_;
   IntegerTrail* integer_trail_;
-
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> integer_reason_;
 };
 
 // ============================================================================
@@ -106,7 +112,7 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
 // ============================================================================
 
 inline std::vector<IntegerValue> ToIntegerValueVector(
-    const std::vector<int64_t>& input) {
+    absl::Span<const int64_t> input) {
   std::vector<IntegerValue> result(input.size());
   for (int i = 0; i < input.size(); ++i) {
     result[i] = IntegerValue(input[i]);

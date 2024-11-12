@@ -25,3 +25,19 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   absl::strings
   ${PROJECT_NAMESPACE}::math_opt_proto)
+
+ortools_cxx_library(
+  NAME
+    math_opt_matchers
+  SOURCES
+    "matchers.cc"
+    "matchers.h"
+  TYPE
+    STATIC
+  LINK_LIBRARIES
+    absl::log
+    absl::status
+    absl::strings
+    GTest::gmock
+  TESTING
+)
