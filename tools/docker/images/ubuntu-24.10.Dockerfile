@@ -1,52 +1,49 @@
-# ref: https://hub.docker.com/_/debian
-FROM debian:10 AS env
+# Create a virtual environment with all tools installed
+# ref: https://hub.docker.com/_/ubuntu
+FROM ubuntu:24.10 AS env
 
 #############
 ##  SETUP  ##
 #############
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update -qq \
+&& apt install -yq git wget build-essential cmake lsb-release zlib1g-dev \
+&& apt clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENTRYPOINT ["/usr/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
+
+# Install SWIG
 RUN apt-get update -qq \
-&& apt-get install -qq \
- git pkg-config wget make autoconf libtool zlib1g-dev gawk g++ curl subversion \
- swig lsb-release \
+&& apt-get install -yq swig \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["/bin/bash"]
-
-# Install CMake 3.28.3
-RUN ARCH=$(uname -m) \
-&& wget -q "https://cmake.org/files/v3.28/cmake-3.28.3-linux-${ARCH}.sh" \
-&& chmod a+x cmake-3.28.3-linux-${ARCH}.sh \
-&& ./cmake-3.28.3-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.28.3-linux-${ARCH}.sh
 
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-10-
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
+# see: https://github.com/dotnet/core/pull/7423/files
 RUN apt-get update -qq \
-&& apt-get install -qq gpg apt-transport-https \
-&& wget -q "https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
-&& rm packages-microsoft-prod.deb \
-&& apt-get update -qq \
-&& apt-get install -qq dotnet-sdk-3.1 dotnet-sdk-6.0 \
+&& apt-get install -yq dotnet-sdk-8.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Install Java
+# Install Java (openjdk-11)
 RUN apt-get update -qq \
-&& apt-get install -qq default-jdk maven \
+&& apt-get install -yq default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Install Python
 RUN apt-get update -qq \
-&& apt-get install -qq python3 python3-dev python3-pip python3-venv \
+&& apt-get install -qq python3 python3-dev python3-pip \
+ python3-venv python3-virtualenv \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN python3 -m pip install absl-py mypy mypy-protobuf
+RUN python3 -m pip install --break-system-package \
+ absl-py mypy mypy-protobuf
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -88,7 +85,7 @@ RUN make archive_cpp
 # .Net
 ## build
 FROM cpp_build AS dotnet_build
-ENV USE_DOTNET_CORE_31=ON
+ENV USE_DOTNET_CORE_31=OFF
 RUN make detect_dotnet \
 && make dotnet JOBS=8
 ## archive
