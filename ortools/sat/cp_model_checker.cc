@@ -995,6 +995,9 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 }
 
 std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
+  if (!after_presolve && model.has_symmetry()) {
+    return "The symmetry field should be empty and reserved for internal use.";
+  }
   int64_t int128_overflow = 0;
   for (int v = 0; v < model.variables_size(); ++v) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
