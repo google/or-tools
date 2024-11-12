@@ -1943,9 +1943,9 @@ TRFM"""
         # This works fine with other comparison operators
         expr_ge: cp_model.BoundedLinearExpression = i + j >= 5
 
-        self.assertNotNone(expr_eq)
-        self.assertNotNone(expr_ne)
-        self.assertNotNone(expr_ge)
+        self.assertIsNotNone(expr_eq)
+        self.assertIsNotNone(expr_ne)
+        self.assertIsNotNone(expr_ge)
 
 
 if __name__ == "__main__":
