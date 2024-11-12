@@ -1014,6 +1014,8 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, Callback cb,
     const SolveInterrupter* const interrupter) {
+  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+      model_parameters, kGscipSupportedStructures, "SCIP"));
   const absl::Time start = absl::Now();
 
   GScip::Interrupter gscip_interrupter;

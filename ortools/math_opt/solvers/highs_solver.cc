@@ -908,6 +908,8 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb, const CallbackRegistrationProto&, Callback,
     const SolveInterrupter* const) {
+  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+      model_parameters, kHighsSupportedStructures, "Highs"));
   const absl::Time start = absl::Now();
   auto set_solve_time = [&start](SolveResultProto& result) -> absl::Status {
     const absl::Duration solve_time = absl::Now() - start;

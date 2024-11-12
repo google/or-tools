@@ -64,6 +64,9 @@ using pdlp::PrimalAndDualSolution;
 using pdlp::PrimalDualHybridGradientParams;
 using pdlp::SolverResult;
 
+constexpr SupportedProblemStructures kPdlpSupportedStructures = {
+    .quadratic_objectives = SupportType::kSupported};
+
 absl::StatusOr<std::unique_ptr<SolverInterface>> PdlpSolver::New(
     const ModelProto& model, const InitArgs&) {
   auto result = absl::WrapUnique(new PdlpSolver);
@@ -334,6 +337,8 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback,
     const SolveInterrupter* const interrupter) {
+  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+      model_parameters, kPdlpSupportedStructures, "PDLP"));
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
 

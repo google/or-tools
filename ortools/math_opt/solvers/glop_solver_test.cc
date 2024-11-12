@@ -110,7 +110,8 @@ MultiObjectiveTestParameters GetGlopMultiObjectiveTestParameters() {
       /*solver_type=*/SolverType::kGlop, /*parameters=*/SolveParameters(),
       /*supports_auxiliary_objectives=*/false,
       /*supports_incremental_objective_add_and_delete=*/false,
-      /*supports_incremental_objective_modification=*/false);
+      /*supports_incremental_objective_modification=*/false,
+      /*supports_integer_variables=*/false);
 }
 
 INSTANTIATE_TEST_SUITE_P(
