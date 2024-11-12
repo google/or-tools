@@ -339,6 +339,8 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
     const SolveInterrupter* const interrupter) {
+  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+      model_parameters, kCpSatSupportedStructures, "CP-SAT"));
   const absl::Time start = absl::Now();
 
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(

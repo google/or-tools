@@ -213,11 +213,16 @@ MultiObjectiveTestParameters GetGlpkMultiObjectiveTestParameters() {
       /*solver_type=*/SolverType::kGlpk, /*parameters=*/SolveParameters(),
       /*supports_auxiliary_objectives=*/false,
       /*supports_incremental_objective_add_and_delete=*/false,
-      /*supports_incremental_objective_modification=*/false);
+      /*supports_incremental_objective_modification=*/false,
+      /*supports_integer_variables=*/true);
 }
-
+// TODO(b/270997189): get these tests working on ios.
+#if defined(__APPLE__)
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleMultiObjectiveTest);
+#else
 INSTANTIATE_TEST_SUITE_P(GlpkSimpleMultiObjectiveTest, SimpleMultiObjectiveTest,
                          Values(GetGlpkMultiObjectiveTestParameters()));
+#endif
 
 INSTANTIATE_TEST_SUITE_P(GlpkIncrementalMultiObjectiveTest,
                          IncrementalMultiObjectiveTest,

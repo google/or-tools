@@ -79,7 +79,7 @@ class QuadraticConstraint {
   // The quadratic expression will have a zero offset, even if the constraint
   // was created with a non-zero one. For example:
   //
-  //   const LinearConstraint c =
+  //   const QuadraticConstraint c =
   //     model.AddQuadraticConstraint(3.2 <= x*x + 1.0 <= 4.2);
   //
   //   // Here `e` will contain 3.2 - 1.0 <= x*x <= 4.2 - 1.0.

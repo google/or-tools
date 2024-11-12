@@ -65,6 +65,26 @@ from ortools.math_opt.python.errors import status_proto_to_exception
 from ortools.math_opt.python.expressions import evaluate_expression
 from ortools.math_opt.python.expressions import fast_sum
 from ortools.math_opt.python.hash_model_storage import HashModelStorage
+from ortools.math_opt.python.init_arguments import gurobi_isv_key_from_proto
+from ortools.math_opt.python.init_arguments import GurobiISVKey
+from ortools.math_opt.python.init_arguments import (
+    streamable_gurobi_init_arguments_from_proto,
+)
+from ortools.math_opt.python.init_arguments import (
+    streamable_solver_init_arguments_from_proto,
+)
+from ortools.math_opt.python.init_arguments import StreamableCpSatInitArguments
+from ortools.math_opt.python.init_arguments import StreamableEcosInitArguments
+from ortools.math_opt.python.init_arguments import StreamableGlopInitArguments
+from ortools.math_opt.python.init_arguments import StreamableGlpkInitArguments
+from ortools.math_opt.python.init_arguments import StreamableGScipInitArguments
+from ortools.math_opt.python.init_arguments import StreamableGurobiInitArguments
+from ortools.math_opt.python.init_arguments import StreamableHighsInitArguments
+from ortools.math_opt.python.init_arguments import StreamableOsqpInitArguments
+from ortools.math_opt.python.init_arguments import StreamablePdlpInitArguments
+from ortools.math_opt.python.init_arguments import StreamableSantoriniInitArguments
+from ortools.math_opt.python.init_arguments import StreamableScsInitArguments
+from ortools.math_opt.python.init_arguments import StreamableSolverInitArguments
 from ortools.math_opt.python.message_callback import list_message_callback
 from ortools.math_opt.python.message_callback import log_messages
 from ortools.math_opt.python.message_callback import printer_message_callback

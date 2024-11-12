@@ -79,7 +79,7 @@ inline int GurobiEvent(CallbackEventProto event) {
 }
 
 SparseDoubleVectorProto ApplyFilter(
-    const std::vector<double>& grb_solution,
+    absl::Span<const double> grb_solution,
     const gtl::linked_hash_map<int64_t, int>& var_ids,
     const SparseVectorFilterProto& filter) {
   SparseVectorFilterPredicate predicate(filter);

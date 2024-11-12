@@ -305,6 +305,9 @@ cc_library(
     testonly = 1,
     srcs = ["multi_objective_tests.cc"],
     hdrs = ["multi_objective_tests.h"],
+    data = [
+        "//ortools/math_opt/solver_tests/testdata:23588.mps",
+    ],
     deps = [
         "//ortools/base:gmock",
         "//ortools/base:status_macros",
@@ -313,10 +316,12 @@ cc_library(
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/io:mps_converter",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/time",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,

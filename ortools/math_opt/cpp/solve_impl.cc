@@ -78,9 +78,11 @@ absl::StatusOr<SolveResult> CallSolve(
     };
   }
 
+  ASSIGN_OR_RETURN(ModelSolveParametersProto model_parameters,
+                   arguments.model_parameters.Proto());
   const absl::StatusOr<SolveResultProto> solve_result_proto = solver.Solve(
       {.parameters = arguments.parameters.Proto(),
-       .model_parameters = arguments.model_parameters.Proto(),
+       .model_parameters = std::move(model_parameters),
        .message_callback = arguments.message_callback,
        .callback_registration = arguments.callback_registration.Proto(),
        .user_cb = std::move(cb),

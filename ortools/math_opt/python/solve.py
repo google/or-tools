@@ -21,6 +21,7 @@ from ortools.math_opt.core.python import solver
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import compute_infeasible_subsystem_result
 from ortools.math_opt.python import errors
+from ortools.math_opt.python import init_arguments
 from ortools.math_opt.python import message_callback
 from ortools.math_opt.python import model
 from ortools.math_opt.python import model_parameters
@@ -40,6 +41,7 @@ def solve(
     msg_cb: Optional[message_callback.SolveMessageCallback] = None,
     callback_reg: Optional[callback.CallbackRegistration] = None,
     cb: Optional[SolveCallback] = None,
+    streamable_init_args: Optional[init_arguments.StreamableSolverInitArguments] = None,
 ) -> result.SolveResult:
     """Solves an optimization model.
 
@@ -56,6 +58,7 @@ def solve(
       callback_reg: Configures when the callback will be invoked (if provided) and
         what data will be collected to access in the callback.
       cb: A callback that will be called periodically as the solver runs.
+      streamable_init_args: Configuration for initializing the underlying solver.
 
     Returns:
       A SolveResult containing the termination reason, solution(s) and stats.
@@ -68,6 +71,9 @@ def solve(
     params = params or parameters.SolveParameters()
     model_params = model_params or model_parameters.ModelSolveParameters()
     callback_reg = callback_reg or callback.CallbackRegistration()
+    streamable_init_args = (
+        streamable_init_args or init_arguments.StreamableSolverInitArguments()
+    )
     model_proto = opt_model.export_model()
     proto_cb = None
     if cb is not None:
@@ -79,7 +85,7 @@ def solve(
         proto_result = solver.solve(
             model_proto,
             solver_type.value,
-            parameters_pb2.SolverInitializerProto(),
+            streamable_init_args.to_proto(),
             params.to_proto(),
             model_params.to_proto(),
             msg_cb,
@@ -98,6 +104,7 @@ def compute_infeasible_subsystem(
     *,
     params: Optional[parameters.SolveParameters] = None,
     msg_cb: Optional[message_callback.SolveMessageCallback] = None,
+    streamable_init_args: Optional[init_arguments.StreamableSolverInitArguments] = None,
 ) -> compute_infeasible_subsystem_result.ComputeInfeasibleSubsystemResult:
     """Computes an infeasible subsystem of the input model.
 
@@ -107,6 +114,7 @@ def compute_infeasible_subsystem(
         August 2023, the only supported solver is Gurobi.
       params: Configuration of the underlying solver.
       msg_cb: A callback that gives back the underlying solver's logs by the line.
+      streamable_init_args: Configuration for initializing the underlying solver.
 
     Returns:
       An `ComputeInfeasibleSubsystemResult` where `feasibility` indicates if the
@@ -116,13 +124,16 @@ def compute_infeasible_subsystem(
       RuntimeError: on invalid inputs or an internal solver error.
     """
     params = params or parameters.SolveParameters()
+    streamable_init_args = (
+        streamable_init_args or init_arguments.StreamableSolverInitArguments()
+    )
     model_proto = opt_model.export_model()
     # Solve
     try:
         proto_result = solver.compute_infeasible_subsystem(
             model_proto,
             solver_type.value,
-            parameters_pb2.SolverInitializerProto(),
+            streamable_init_args.to_proto(),
             params.to_proto(),
             msg_cb,
             None,
@@ -163,7 +174,18 @@ class IncrementalSolver:
     When it is not possible to use `with`, the close() method can be called.
     """
 
-    def __init__(self, opt_model: model.Model, solver_type: parameters.SolverType):
+    def __init__(
+        self,
+        opt_model: model.Model,
+        solver_type: parameters.SolverType,
+        *,
+        streamable_init_args: Optional[
+            init_arguments.StreamableSolverInitArguments
+        ] = None,
+    ):
+        streamable_init_args = (
+            streamable_init_args or init_arguments.StreamableSolverInitArguments()
+        )
         self._model = opt_model
         self._solver_type = solver_type
         self._update_tracker = self._model.add_update_tracker()
@@ -171,7 +193,7 @@ class IncrementalSolver:
             self._proto_solver = solver.new(
                 solver_type.value,
                 self._model.export_model(),
-                parameters_pb2.SolverInitializerProto(),
+                streamable_init_args.to_proto(),
             )
         except StatusNotOk as e:
             raise _status_not_ok_to_exception(e) from None
