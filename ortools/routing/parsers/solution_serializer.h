@@ -137,7 +137,7 @@ class RoutingSolution {
   // (TSPLIB uses -1; it is crucial that the separator cannot be a node) into
   // a vector per route, for use in FromSplit* functions.
   static std::vector<std::vector<int64_t>> SplitRoutes(
-      const std::vector<int64_t>& solution, int64_t separator);
+      absl::Span<const int64_t> solution, int64_t separator);
 
   // Builds a RoutingSolution object from a vector of routes, each represented
   // as a vector of nodes being traversed. All the routes are supposed to start
