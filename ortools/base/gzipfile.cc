@@ -52,7 +52,7 @@ absl::Status WriteToGzipFile(const absl::string_view filename,
       return {
         absl::StatusCode::kInternal,
         absl::StrCat(
-          "Unable to close the file:",
+          "Error while writing chunk to compressed file:",
           error_message
           )
       };
@@ -68,8 +68,8 @@ absl::Status WriteToGzipFile(const absl::string_view filename,
     return {
       absl::StatusCode::kInternal,
       absl::StrCat(
-        "Error while writing chunk to compressed file:",
-        error_message
+          "Unable to close the file:",
+          error_message
         )
     };
   }
