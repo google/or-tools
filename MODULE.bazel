@@ -1,5 +1,16 @@
+###############################################################################
+# Bazel now uses Bzlmod by default to manage external dependencies.
+# Please consider migrating your external dependencies from WORKSPACE to MODULE.bazel.
+#
+# For more details, please check https://github.com/bazelbuild/bazel/issues/18958
+###############################################################################
+
+OR_TOOLS_VERSION = "10.0.0"
+
 module(
-    name = "com_google_ortools",
+    name = "or-tools",
+    repo_name = "com_google_ortools",
+    version = OR_TOOLS_VERSION,
 )
 
 bazel_dep(name = "abseil-cpp", version = "20240722.0", repo_name = "com_google_absl")
