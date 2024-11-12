@@ -167,7 +167,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::ExportModelAsLpFormat(bool);
 %unignore operations_research::MPSolver::ExportModelAsMpsFormat(bool, bool);
 %unignore operations_research::MPSolver::WriteModelToMpsFile(
-  const std::string& filename, bool, bool);
+  const std::string& filename, bool, bool, bool);
 %unignore operations_research::MPSolver::SetHint(
     const std::vector<operations_research::MPVariable*>&,
     const std::vector<double>&);
@@ -190,9 +190,10 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
   }
 
   bool WriteModelToMpsFile(const std::string& filename, bool fixed_format,
-                           bool obfuscated) {
+                           bool obfuscated, bool use_gzip_compression = false) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscated;
+    options.use_gzip_compression = use_gzip_compression;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return WriteModelToMpsFile(filename, model, options).ok();
