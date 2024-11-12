@@ -211,10 +211,10 @@ PROTO2_RETURN(
    * Write the loaded model to file in MPS format.
    */
    bool writeModelToMpsFile(const std::string& filename, bool fixed_format,
-                            bool obfuscate, bool use_gzip_compression=false) {
+                            bool obfuscate, bool compress=false) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscate;
-    options.use_gzip_compression = use_gzip_compression;
+    options.use_gzip_compression = compress;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return WriteModelToMpsFile(filename, model, options).ok();

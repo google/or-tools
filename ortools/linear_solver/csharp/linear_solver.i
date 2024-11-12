@@ -190,10 +190,10 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
   }
 
   bool WriteModelToMpsFile(const std::string& filename, bool fixed_format,
-                           bool obfuscated, bool use_gzip_compression = false) {
+                           bool obfuscated, bool compress=false) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscated;
-    options.use_gzip_compression = use_gzip_compression;
+    options.use_gzip_compression = compress;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return WriteModelToMpsFile(filename, model, options).ok();
