@@ -66,6 +66,7 @@
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/util/solve_interrupter.h"
 #include "ortools/util/status_macros.h"
+#include "simplex/SimplexConst.h"
 #include "util/HighsInt.h"
 
 namespace operations_research::math_opt {
