@@ -82,6 +82,13 @@ const Assignment* SolveFromAssignmentWithAlternativeSolvers(
     const std::vector<RoutingModel*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
+// Same as above but taking alternative parameters for each alternative model.
+const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const RoutingSearchParameters& parameters,
+    const std::vector<RoutingModel*>& alternative_models,
+    const std::vector<RoutingSearchParameters>& alternative_parameters,
+    int max_non_improving_iterations);
 
 class IntVarFilteredHeuristic;
 #ifndef SWIG
@@ -320,6 +327,8 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
   /// Make nodes in the same disjunction as 'node' unperformed. 'node' is a
   /// variable index corresponding to a node.
   void MakeDisjunctionNodesUnperformed(int64_t node);
+  /// Adds all unassigned nodes to empty vehicles.
+  void AddUnassignedNodesToEmptyVehicles();
   /// Make all unassigned nodes unperformed, always returns true.
   bool MakeUnassignedNodesUnperformed();
   /// Make all partially performed pickup and delivery pairs unperformed. A
@@ -382,10 +391,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   };
   struct Seed {
     absl::InlinedVector<int64_t, 8> properties;
-    // TODO(user): merge start_end_value into the properties vector above by
-    // adding the corresponding enum to InsertionSortingProperty in
-    // parameters.proto.
-    StartEndValue start_end_value;
+    int vehicle;
     /// Indicates whether this Seed corresponds to a pair or a single node.
     /// If false, the 'index' is the pair_index, otherwise it's the node index.
     bool is_node_index = true;
@@ -396,8 +402,8 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
         if (properties[i] == other.properties[i]) continue;
         return properties[i] > other.properties[i];
       }
-      return std::tie(start_end_value, is_node_index, index) >
-             std::tie(other.start_end_value, other.is_node_index, other.index);
+      return std::tie(vehicle, is_node_index, index) >
+             std::tie(other.vehicle, other.is_node_index, other.index);
     }
   };
   // clang-format off
