@@ -19,4 +19,5 @@ exports_files([
     "pybind11_bazel.patch",
     "pybind11_protobuf.patch",
     "pybind11.patch",
+    "scip-v920.patch",
 ])
