@@ -534,6 +534,9 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
                           var);
     }
   }
+  for (const LinearExpressionProto& expr : automaton.exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+  }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
     const int64_t tail = automaton.transition_tail(i);

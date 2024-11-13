@@ -22,6 +22,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
