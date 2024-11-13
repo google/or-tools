@@ -320,6 +320,8 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
   /// Make nodes in the same disjunction as 'node' unperformed. 'node' is a
   /// variable index corresponding to a node.
   void MakeDisjunctionNodesUnperformed(int64_t node);
+  /// Adds all unassigned nodes to empty vehicles.
+  void AddUnassignedNodesToEmptyVehicles();
   /// Make all unassigned nodes unperformed, always returns true.
   bool MakeUnassignedNodesUnperformed();
   /// Make all partially performed pickup and delivery pairs unperformed. A

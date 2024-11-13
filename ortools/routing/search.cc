@@ -36,6 +36,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
@@ -621,6 +622,30 @@ void RoutingFilteredHeuristic::MakeDisjunctionNodesUnperformed(int64_t node) {
           SetNext(alternate, alternate, -1);
         }
       });
+}
+
+void RoutingFilteredHeuristic::AddUnassignedNodesToEmptyVehicles() {
+  // TODO(user): check that delta_ is empty.
+  SynchronizeFilters();
+  absl::btree_set<std::pair<int64_t, int>> empty_vehicles;
+  for (int vehicle = 0; vehicle < model_->vehicles(); ++vehicle) {
+    if (VehicleIsEmpty(vehicle)) {
+      empty_vehicles.insert({model()->GetFixedCostOfVehicle(vehicle), vehicle});
+    }
+  }
+  for (int index = 0; index < model_->Size(); ++index) {
+    if (StopSearch() || empty_vehicles.empty()) return;
+    DCHECK(!IsSecondaryVar(index));
+    if (Contains(index)) continue;
+    for (auto [cost, vehicle] : empty_vehicles) {
+      SetNext(model_->Start(vehicle), index, vehicle);
+      SetNext(index, model_->End(vehicle), vehicle);
+      if (Evaluate(/*commit=*/true).has_value()) {
+        empty_vehicles.erase({cost, vehicle});
+        break;
+      }
+    }
+  }
 }
 
 bool RoutingFilteredHeuristic::MakeUnassignedNodesUnperformed() {
@@ -3867,6 +3892,7 @@ bool SavingsFilteredHeuristic::BuildSolutionInternal() {
   BuildRoutesFromSavings();
   // Free all the space used to store the Savings in the container.
   savings_container_.reset();
+  AddUnassignedNodesToEmptyVehicles();
   MakeUnassignedNodesUnperformed();
   if (!Evaluate(/*commit=*/true).has_value()) return false;
   MakePartiallyPerformedPairsUnperformed();
