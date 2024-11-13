@@ -14,18 +14,17 @@
 #include "ortools/algorithms/set_cover_model.h"
 
 #include <algorithm>
-#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <numeric>
-#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/discrete_distribution.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"

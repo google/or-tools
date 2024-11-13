@@ -103,7 +103,8 @@ void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
   is_selected_ = solution;
   ClearTrace();
   ClearRemovabilityInformation();
-  for (SubsetIndex subset(0); bool b : solution) {
+  SubsetIndex subset(0);
+  for (const bool b : solution) {
     if (b) {
       trace_.push_back(SetCoverDecision(subset, true));
     }
@@ -167,7 +168,8 @@ std::tuple<Cost, ElementToIntVector> SetCoverInvariant::ComputeCostAndCoverage(
   // Initialize coverage, update cost, and compute the coverage for
   // all the elements covered by the selected subsets.
   const SubsetCostVector& subset_costs = model_->subset_costs();
-  for (SubsetIndex subset(0); bool b : choices) {
+  SubsetIndex subset(0);
+  for (const bool b : choices) {
     if (b) {
       cst += subset_costs[subset];
       for (const ElementIndex element : columns[subset]) {
