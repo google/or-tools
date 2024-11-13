@@ -83,7 +83,7 @@ void CheckConflict(const RectangleInRange& box_to_propagate,
           [&placed_box](const RectangleInRange& minimum_box) {
             return placed_box.IsDisjoint(minimum_box.GetMandatoryRegion());
           }))
-          << "Could place a box at position " << placed_box;
+          << "Could place a box at position " << absl::StrCat(placed_box);
     }
   }
 }
