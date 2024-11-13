@@ -35,7 +35,7 @@ jobs:
       - name: Check Bazel
         run: bazel version
       - name: Change Python in .bazelrc
-        run: sed -i 's/3.12/${{ matrix.python.version }}/g' .bazelrc
+        run: sed -i -e 's/3.12/${{ matrix.python.version }}/g' .bazelrc
       - name: Build
         run: >
           bazel build
