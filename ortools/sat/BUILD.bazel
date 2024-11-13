@@ -3069,6 +3069,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -3565,10 +3566,6 @@ cc_library(
     name = "swig_helper",
     srcs = ["swig_helper.cc"],
     hdrs = ["swig_helper.h"],
-    visibility = [
-        "//ortools/sat/java:__pkg__",
-        "//ortools/sat/python:__pkg__",
-    ],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
