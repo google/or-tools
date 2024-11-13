@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
@@ -133,6 +135,26 @@ proto_library(
     name = "parameters_proto",
     srcs = ["parameters.proto"],
     deps = ["@com_google_protobuf//:duration_proto"],
+)
+
+proto_library(
+    name = "solver_resources_proto",
+    srcs = ["solver_resources.proto"],
+)
+
+py_proto_library(
+    name = "solver_resources_py_pb2",
+    deps = [":solver_resources_proto"],
+)
+
+cc_proto_library(
+    name = "solver_resources_cc_proto",
+    deps = [":solver_resources_proto"],
+)
+
+java_proto_library(
+    name = "solver_resources_java_proto",
+    deps = [":solver_resources_proto"],
 )
 
 py_proto_library(
