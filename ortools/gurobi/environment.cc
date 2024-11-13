@@ -339,8 +339,7 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBgetstrparaminfo,
                                       "GRBgetstrparaminfo");
   gurobi_dynamic_library->GetFunction(&GRBgetenv, "GRBgetenv");
-  gurobi_dynamic_library->GetFunction(&GRBgetmultiobjenv,
-                                      "GRBgetmultiobjenv");
+  gurobi_dynamic_library->GetFunction(&GRBgetmultiobjenv, "GRBgetmultiobjenv");
   gurobi_dynamic_library->GetFunction(&GRBdiscardmultiobjenvs,
                                       "GRBdiscardmultiobjenvs");
   gurobi_dynamic_library->GetFunction(&GRBfreeenv, "GRBfreeenv");
