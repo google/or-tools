@@ -24,6 +24,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -78,8 +79,14 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
       const std::vector<std::pair<int, std::optional<IntegerValue>>>&
           found_propagations);
 
+  // This function assumes that a propagation is found and the box with index
+  // `box_index` cannot be placed to the left of new_x_min. It returns a list of
+  // indices of boxes that defines a subproblem where the propagation is still
+  // valid, including `box_index` itself.
+  std::vector<int> GetMinimumProblemWithPropagation(int box_index,
+                                                    IntegerValue new_x_min);
+
  private:
-  // Must also populate max_box_index_.
   void PopulateActiveBoxRanges();
 
   SchedulingConstraintHelper& x_;
@@ -95,11 +102,11 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
   int64_t num_conflicts_ = 0;
   int64_t num_propagations_ = 0;
   int64_t num_calls_ = 0;
-  int64_t num_cache_hits_ = 0;
-  int64_t num_cache_misses_ = 0;
 
+  CompactVectorVector<int> conflicts_per_x_and_y_;
   bool CanPlace(int box_index,
-                const std::pair<IntegerValue, IntegerValue>& position) const;
+                const std::pair<IntegerValue, IntegerValue>& position,
+                CompactVectorVector<int>* with_conflicts = nullptr) const;
 
   TryEdgeRectanglePropagator(const TryEdgeRectanglePropagator&) = delete;
   TryEdgeRectanglePropagator& operator=(const TryEdgeRectanglePropagator&) =

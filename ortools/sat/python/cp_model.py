@@ -159,7 +159,6 @@ VariableT = Union["IntVar", IntegralT]
 # We need to add 'IntVar' for pytype.
 LinearExprT = Union["LinearExpr", "IntVar", IntegralT]
 ObjLinearExprT = Union["LinearExpr", NumberT]
-BoundedLinearExprT = Union["BoundedLinearExpression", bool]
 
 ArcT = Tuple[IntegralT, IntegralT, LiteralT]
 _IndexOrSeries = Union[pd.Index, pd.Series]
@@ -570,12 +569,15 @@ class LinearExpr:
     @overload
     def __eq__(self, arg: Any) -> bool: ...
 
+    # pytype: disable=bad-return-type
     def __eq__(self, arg):
         if isinstance(arg, IntegralTypes):
             return BoundedLinearExpression(self, [arg, arg])
         if isinstance(arg, LinearExpr):
             return BoundedLinearExpression(self - arg, [0, 0])
         return False
+
+    # pytype: enable=bad-return-type
 
     def __ge__(self, arg: LinearExprT) -> "BoundedLinearExpression":
         if isinstance(arg, IntegralTypes):
@@ -618,6 +620,7 @@ class LinearExpr:
     @overload
     def __ne__(self, arg: Any) -> bool: ...
 
+    # pytype: disable=bad-return-type
     def __ne__(self, arg):
         if isinstance(arg, IntegralTypes):
             if arg >= INT_MAX:
@@ -631,6 +634,8 @@ class LinearExpr:
         elif isinstance(arg, LinearExpr):
             return BoundedLinearExpression(self - arg, [INT_MIN, -1, 1, INT_MAX])
         return True
+
+    # pytype: enable=bad-return-type
 
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name

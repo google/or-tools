@@ -13,11 +13,12 @@
 
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 
+load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
-load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("//tools/build_defs/go:go_proto_library.bzl", "go_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -3043,6 +3044,10 @@ cc_library(
         ":intervals",
         ":model",
         ":synchronization",
+        ":util",
+        "//ortools/algorithms:set_cover_heuristics",
+        "//ortools/algorithms:set_cover_invariant",
+        "//ortools/algorithms:set_cover_model",
         "//ortools/base:stl_util",
         "//ortools/util:bitset",
         "@com_google_absl//absl/algorithm:container",
@@ -3062,6 +3067,7 @@ cc_test(
         ":intervals",
         ":model",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/types:span",
     ],

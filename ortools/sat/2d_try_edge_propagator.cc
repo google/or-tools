@@ -21,6 +21,9 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
+#include "ortools/algorithms/set_cover_heuristics.h"
+#include "ortools/algorithms/set_cover_invariant.h"
+#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/diffn_util.h"
@@ -28,6 +31,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -47,9 +51,6 @@ TryEdgeRectanglePropagator::~TryEdgeRectanglePropagator() {
   stats.push_back({"TryEdgeRectanglePropagator/conflicts", num_conflicts_});
   stats.push_back(
       {"TryEdgeRectanglePropagator/propagations", num_propagations_});
-  stats.push_back({"TryEdgeRectanglePropagator/cache_hits", num_cache_hits_});
-  stats.push_back(
-      {"TryEdgeRectanglePropagator/cache_misses", num_cache_misses_});
 
   shared_stats_->AddStats(stats);
 }
@@ -106,8 +107,12 @@ void TryEdgeRectanglePropagator::PopulateActiveBoxRanges() {
 }
 
 bool TryEdgeRectanglePropagator::CanPlace(
-    int box_index,
-    const std::pair<IntegerValue, IntegerValue>& position) const {
+    int box_index, const std::pair<IntegerValue, IntegerValue>& position,
+    CompactVectorVector<int>* with_conflict) const {
+  bool can_place = true;
+  if (with_conflict != nullptr) {
+    with_conflict->Add({});
+  }
   const Rectangle placed_box = {
       .x_min = position.first,
       .x_max = position.first + active_box_ranges_[box_index].x_size,
@@ -117,10 +122,15 @@ bool TryEdgeRectanglePropagator::CanPlace(
     if (i == box_index) continue;
     const Rectangle& mandatory_region = mandatory_regions_[i];
     if (!mandatory_region.IsDisjoint(placed_box)) {
-      return false;
+      if (with_conflict != nullptr) {
+        with_conflict->AppendToLastVector(i);
+        can_place = false;
+      } else {
+        return false;
+      }
     }
   }
-  return true;
+  return can_place;
 }
 
 bool TryEdgeRectanglePropagator::Propagate() {
@@ -239,6 +249,109 @@ bool TryEdgeRectanglePropagator::Propagate() {
   return ExplainAndPropagate(found_propagations);
 }
 
+std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
+    int box_index, IntegerValue new_x_min) {
+  // We know that we can't place the box at x < new_x_min (which can be
+  // start_max for a conflict). The explanation for the propagation is complex:
+  // we tried a lot of positions, and each one overlaps with the mandatory part
+  // of at least one box. We want to find the smallest set of "conflicting
+  // boxes" that would still forbid every possible placement. To do that, we
+  // build a vector with, for each placement position, the list boxes that
+  // conflict when placing the box at that position. Then we solve
+  // (approximately) a set cover problem to find the smallest set of boxes that
+  // will still makes all positions conflicting.
+  const RectangleInRange& box = active_box_ranges_[box_index];
+
+  // We need to rerun the main propagator loop logic, but this time keeping
+  // track of which boxes conflicted for each position.
+  const int y_start =
+      absl::c_lower_bound(potential_y_positions_, box.bounding_area.y_min) -
+      potential_y_positions_.begin();
+  conflicts_per_x_and_y_.clear();
+  CHECK(!CanPlace(box_index, {box.bounding_area.x_min, box.bounding_area.y_min},
+                  &conflicts_per_x_and_y_));
+  for (int j = y_start; j < potential_y_positions_.size(); ++j) {
+    if (potential_y_positions_[j] > box.bounding_area.y_max - box.y_size) {
+      // potential_y_positions is sorted, so we can stop here.
+      break;
+    }
+    CHECK(!CanPlace(box_index,
+                    {box.bounding_area.x_min, potential_y_positions_[j]},
+                    &conflicts_per_x_and_y_));
+  }
+  for (int j = 0; j < potential_x_positions_.size(); ++j) {
+    if (potential_x_positions_[j] < box.bounding_area.x_min) {
+      continue;
+    }
+    if (potential_x_positions_[j] >= new_x_min) {
+      continue;
+    }
+    CHECK(!CanPlace(box_index,
+                    {potential_x_positions_[j], box.bounding_area.y_min},
+                    &conflicts_per_x_and_y_));
+    for (int k = y_start; k < potential_y_positions_.size(); ++k) {
+      const IntegerValue potential_y_position = potential_y_positions_[k];
+      if (potential_y_position > box.bounding_area.y_max - box.y_size) {
+        break;
+      }
+      CHECK(!CanPlace(box_index,
+                      {potential_x_positions_[j], potential_y_position},
+                      &conflicts_per_x_and_y_));
+    }
+  }
+
+  // Now gather the data per box to make easier to use the set cover solver API.
+  std::vector<std::vector<int>> conflicting_position_per_box(
+      active_box_ranges_.size(), std::vector<int>());
+  for (int i = 0; i < conflicts_per_x_and_y_.size(); ++i) {
+    DCHECK(!conflicts_per_x_and_y_[i].empty());
+    for (const int j : conflicts_per_x_and_y_[i]) {
+      conflicting_position_per_box[j].push_back(i);
+    }
+  }
+  SetCoverModel model;
+  for (const auto& conflicts : conflicting_position_per_box) {
+    if (conflicts.empty()) continue;
+    model.AddEmptySubset(/*cost=*/1);
+    for (const int i : conflicts) {
+      model.AddElementToLastSubset(i);
+    }
+  }
+  DCHECK(model.ComputeFeasibility());
+  SetCoverInvariant inv(&model);
+  GreedySolutionGenerator greedy_search(&inv);
+  CHECK(greedy_search.NextSolution());
+  GuidedLocalSearch search(&inv);
+  CHECK(search.NextSolution(100));
+  DCHECK(inv.CheckConsistency(
+      SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered));
+
+  int count = 0;
+  const auto& solution = inv.is_selected();
+  std::vector<int> boxes_participating_in_propagation;
+  boxes_participating_in_propagation.reserve(model.num_subsets() + 1);
+  boxes_participating_in_propagation.push_back(box_index);
+  for (int i = 0; i < conflicting_position_per_box.size(); ++i) {
+    const auto& conflicts = conflicting_position_per_box[i];
+    if (conflicts.empty()) continue;
+    if (solution[SubsetIndex(count)]) {
+      boxes_participating_in_propagation.push_back(i);
+    }
+    count++;
+  }
+  VLOG_EVERY_N_SEC(3, 2) << "Found no_overlap_2d constraint propagation with "
+                         << boxes_participating_in_propagation.size() << "/"
+                         << (model.num_subsets() + 1) << " items";
+
+  // TODO(user): We now know for each box the list of placements that it
+  // contributes to the conflict. We could use this information to relax the
+  // bounds of this box on the explanation of the propagation. For example, for
+  // a box that always overlaps at least five units to the right when it does,
+  // we could call AddStartMinReason(x_min - 4) instead of
+  // AddStartMinReason(x_min).
+  return boxes_participating_in_propagation;
+}
+
 bool TryEdgeRectanglePropagator::ExplainAndPropagate(
     const std::vector<std::pair<int, std::optional<IntegerValue>>>&
         found_propagations) {
@@ -246,32 +359,18 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
     const RectangleInRange& box = active_box_ranges_[box_index];
     x_.ClearReason();
     y_.ClearReason();
-    // The propagator found that this box cannot be placed with x_min in a
-    // position between [x_min, new_x_min] (or between [x_min, x_max-x_size] if
-    // it is a conflict). The conflicting boxes explaining this propagation must
-    // then have a mandatory part that overlaps with the box if it was placed in
-    // any of those x positions.
-    const Rectangle active_area = {.x_min = box.bounding_area.x_min,
-                                   .x_max = new_x_min.has_value()
-                                                ? (*new_x_min + box.x_size)
-                                                : box.bounding_area.x_max,
-                                   .y_min = box.bounding_area.y_min,
-                                   .y_max = box.bounding_area.y_max};
-    for (int j = 0; j < active_box_ranges_.size(); ++j) {
-      if (!is_active_[j]) continue;
+    const std::vector<int> minimum_problem_with_propagator =
+        GetMinimumProblemWithPropagation(
+            box_index, new_x_min.has_value()
+                           ? *new_x_min
+                           : box.bounding_area.x_max - box.x_size);
+    for (const int j : minimum_problem_with_propagator) {
+      DCHECK(is_active_[j]);
       // Important: we also add to the reason the actual box we are changing the
       // x_min. This is important, since we don't check if there are any
       // feasible placement before its current x_min, so it needs to be part of
       // the reason.
       const RectangleInRange& box_reason = active_box_ranges_[j];
-      if (j != box_index) {
-        const Rectangle mandatory_region = box_reason.GetMandatoryRegion();
-        if (mandatory_region == Rectangle::GetEmpty() ||
-            active_area.IsDisjoint(mandatory_region)) {
-          continue;
-        }
-      }
-
       const int b = box_reason.box_index;
 
       x_.AddStartMinReason(b, box_reason.bounding_area.x_min);
