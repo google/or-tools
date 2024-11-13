@@ -19,6 +19,10 @@ build --apple_platform_type=macos
 # platform.
 build --enable_platform_specific_config
 
+# Fix the python version
+build --@rules_python//python/config_settings:python_version=3.12
+
+# Per platform parameters.
 build:linux --cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare
 build:linux --host_cxxopt="-std=c++17" --host_cxxopt=-Wno-sign-compare
 

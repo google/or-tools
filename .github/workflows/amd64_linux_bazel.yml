@@ -41,12 +41,12 @@ jobs:
           sudo apt-get install bazel
       - name: Check Bazel
         run: bazel version
-      - name: Change Python in WORKSPACE
+      - name: Change Python in .bazelrc
         run: >
           sed
           -i
-          's/\(DEFAULT_PYTHON =\) "3.[0-9]\+"/\1 "${{ matrix.python.version }}"/g'
-          WORKSPACE
+          's/3.12/"${{ matrix.python.version }}"/g'
+          .bazelrc
       - name: Build
         run: >
           bazel build
