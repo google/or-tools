@@ -367,6 +367,7 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/errors.py
     ortools/math_opt/python/expressions.py
     ortools/math_opt/python/hash_model_storage.py
+    ortools/math_opt/python/init_arguments.py
     ortools/math_opt/python/mathopt.py
     ortools/math_opt/python/message_callback.py
     ortools/math_opt/python/model.py
