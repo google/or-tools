@@ -35,7 +35,13 @@ jobs:
       - name: Check Bazel
         run: bazel version
       - name: Change Python in .bazelrc
-        run: sed -i -e 's/3.12/${{ matrix.python.version }}/g' .bazelrc
+        run: |
+          sed -i '' -e 's/\(python_version=\)3.[0-9]*/\1${{ matrix.python.version }}/g' .bazelrc
+          cat .bazelrc
+      - name: Change Python in MODULE.bazel
+        run: |
+          sed -i '' -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{ matrix.python.version }}"/g' MODULE.bazel
+          cat MODULE.bazel
       - name: Build
         run: >
           bazel build
