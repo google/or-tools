@@ -676,18 +676,6 @@ inline bool IsNegatableInt64(absl::int128 x) {
          x > absl::int128(std::numeric_limits<int64_t>::min());
 }
 
-template <typename IntType>
-ABSL_DEPRECATE_AND_INLINE()
-IntType CeilOfRatio(IntType numerator, IntType denominator) {
-  return MathUtil::CeilOfRatio(numerator, denominator);
-}
-
-template <typename IntType>
-ABSL_DEPRECATE_AND_INLINE()
-IntType FloorOfRatio(IntType numerator, IntType denominator) {
-  return MathUtil::FloorOfRatio(numerator, denominator);
-}
-
 template <typename K, typename V>
 inline int CompactVectorVector<K, V>::Add(absl::Span<const V> values) {
   const int index = size();
@@ -735,9 +723,9 @@ inline absl::Span<const V> CompactVectorVector<K, V>::operator[](K key) const {
   DCHECK_LT(key, starts_.size());
   DCHECK_LT(key, sizes_.size());
   const int k = InternalKey(key);
-  const size_t size = static_cast<size_t>(sizes_[k]);
+  const size_t size = static_cast<size_t>(sizes_.data()[k]);
   if (size == 0) return {};
-  return {&buffer_[starts_[k]], size};
+  return {&buffer_.data()[starts_.data()[k]], size};
 }
 
 template <typename K, typename V>
@@ -746,9 +734,9 @@ inline absl::Span<V> CompactVectorVector<K, V>::operator[](K key) {
   DCHECK_LT(key, starts_.size());
   DCHECK_LT(key, sizes_.size());
   const int k = InternalKey(key);
-  const size_t size = static_cast<size_t>(sizes_[k]);
+  const size_t size = static_cast<size_t>(sizes_.data()[k]);
   if (size == 0) return {};
-  return absl::MakeSpan(&buffer_[starts_[k]], size);
+  return absl::MakeSpan(&buffer_.data()[starts_.data()[k]], size);
 }
 
 template <typename K, typename V>

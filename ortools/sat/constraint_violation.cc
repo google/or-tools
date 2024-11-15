@@ -28,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -791,22 +792,22 @@ std::vector<int64_t> LinearIncrementalEvaluator::SlopeBreakpoints(
     const int64_t slack_min = CapSub(domains_[c].Min(), activity);
     const int64_t slack_max = CapSub(domains_[c].Max(), activity);
     if (slack_min != std::numeric_limits<int64_t>::min()) {
-      const int64_t ceil_bp = CeilOfRatio(slack_min, coeff);
+      const int64_t ceil_bp = MathUtil::CeilOfRatio(slack_min, coeff);
       if (ceil_bp != result.back() && var_domain.Contains(ceil_bp)) {
         result.push_back(ceil_bp);
       }
-      const int64_t floor_bp = FloorOfRatio(slack_min, coeff);
+      const int64_t floor_bp = MathUtil::FloorOfRatio(slack_min, coeff);
       if (floor_bp != result.back() && var_domain.Contains(floor_bp)) {
         result.push_back(floor_bp);
       }
     }
     if (slack_min != slack_max &&
         slack_max != std::numeric_limits<int64_t>::min()) {
-      const int64_t ceil_bp = CeilOfRatio(slack_max, coeff);
+      const int64_t ceil_bp = MathUtil::CeilOfRatio(slack_max, coeff);
       if (ceil_bp != result.back() && var_domain.Contains(ceil_bp)) {
         result.push_back(ceil_bp);
       }
-      const int64_t floor_bp = FloorOfRatio(slack_max, coeff);
+      const int64_t floor_bp = MathUtil::FloorOfRatio(slack_max, coeff);
       if (floor_bp != result.back() && var_domain.Contains(floor_bp)) {
         result.push_back(floor_bp);
       }

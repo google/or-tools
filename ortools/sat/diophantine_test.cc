@@ -28,7 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "gtest/gtest.h"
-#include "ortools/sat/util.h"
+#include "ortools/base/mathutil.h"
 
 namespace operations_research::sat {
 
@@ -85,8 +85,8 @@ TEST_P(RandomTest, ReduceModuloBasis) {
   v_reduced[0] = absl::Uniform<int>(random, -100, 100);
   for (int i = 1; i <= num_rows; ++i) {
     int pivot = std::abs(static_cast<int>(basis[i - 1][i]));
-    v_reduced[i] = absl::Uniform<int>(random, -FloorOfRatio(pivot, 2),
-                                      CeilOfRatio(pivot, 2));
+    v_reduced[i] = absl::Uniform<int>(random, -MathUtil::FloorOfRatio(pivot, 2),
+                                      MathUtil::CeilOfRatio(pivot, 2));
   }
   std::vector<absl::int128> v = v_reduced;
   for (int i = 0; i < num_rows; ++i) {

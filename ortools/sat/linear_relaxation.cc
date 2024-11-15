@@ -30,6 +30,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/circuit.h"  // for ReindexArcs.
@@ -918,8 +919,9 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
     if (integer_trail->IsFixed(capacity)) {
       const IntegerValue span = max_of_ends - min_of_starts;
       const IntegerValue fixed_capacity = integer_trail->FixedValue(capacity);
-      lc.AddConstant(-FloorOfRatio(fixed_capacity.value(), demands_gcd) *
-                     FloorOfRatio(span.value(), sizes_gcd));
+      lc.AddConstant(
+          -MathUtil::FloorOfRatio(fixed_capacity.value(), demands_gcd) *
+          MathUtil::FloorOfRatio(span.value(), sizes_gcd));
     } else {
       DCHECK_EQ(demands_gcd, 1);
       lc.AddTerm(capacity, -(max_of_ends - min_of_starts) / sizes_gcd);

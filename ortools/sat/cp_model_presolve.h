@@ -456,7 +456,7 @@ class ModelCopy {
   // if interval_mapping_ is empty.
   void CopyAndMapNoOverlap(const ConstraintProto& ct);
   void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
-  void CopyAndMapCumulative(const ConstraintProto& ct);
+  bool CopyAndMapCumulative(const ConstraintProto& ct);
 
   PresolveContext* context_;
 

@@ -532,7 +532,7 @@ class SharedBoundsManager {
   void Synchronize();
 
   void LogStatistics(SolverLogger* logger);
-  int NumBoundsExported(const std::string& worker_name);
+  int NumBoundsExported(absl::string_view worker_name);
 
   // If non-empty, we will check that all bounds update contains this solution.
   // Note that this might fail once we reach optimality and we might have wrong
@@ -721,7 +721,7 @@ class SharedClausesManager {
 
   // Ids are used to identify which worker is exporting/importing clauses.
   int RegisterNewId();
-  void SetWorkerNameForId(int id, const std::string& worker_name);
+  void SetWorkerNameForId(int id, absl::string_view worker_name);
 
   // A worker can add or remove clauses from its own clause set.
   // Retains ownership of the returned ClauseFilter.

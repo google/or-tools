@@ -6944,6 +6944,8 @@ void CpModelPresolver::ConvertToBoolAnd() {
 }
 
 void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
+  if (context_->ModelIsUnsat()) return;
+
   Model model;
 
   // Enable as many propagators as possible. We do not care if some propagator
@@ -6985,11 +6987,11 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
     if (mapping->IsBoolean(var)) {
       const Literal l = mapping->Literal(var);
       if (trail->Assignment().LiteralIsFalse(l)) {
-        (void)context_->SetLiteralToFalse(proto_var);
+        if (!context_->SetLiteralToFalse(proto_var)) return;
         ++num_fixed_bools;
         continue;
       } else if (trail->Assignment().LiteralIsTrue(l)) {
-        (void)context_->SetLiteralToTrue(proto_var);
+        if (!context_->SetLiteralToTrue(proto_var)) return;
         ++num_fixed_bools;
         continue;
       }
@@ -7000,8 +7002,10 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
         const int r_var =
             mapping->GetProtoVariableFromBooleanVariable(r.Variable());
         if (r_var < 0) continue;
-        context_->StoreBooleanEqualityRelation(
-            proto_var, r.IsPositive() ? r_var : NegatedRef(r_var));
+        if (!context_->StoreBooleanEqualityRelation(
+                proto_var, r.IsPositive() ? r_var : NegatedRef(r_var))) {
+          return;
+        }
       }
     } else {
       // Restrict variable domain.
@@ -7268,7 +7272,10 @@ void CpModelPresolver::Probe() {
   if (context_->params().merge_at_most_one_work_limit() > 0.0) {
     PresolveTimer timer("MaxClique", logger_, time_limit_);
     std::vector<std::vector<Literal>> cliques;
+    std::vector<int> clique_ct_index;
 
+    // TODO(user): On large model, most of the time is spend in this copy,
+    // clearing and updating the constraint variable graph...
     int64_t num_literals_before = 0;
     const int num_constraints = context_->working_model->constraints_size();
     for (int c = 0; c < num_constraints; ++c) {
@@ -7297,9 +7304,12 @@ void CpModelPresolver::Probe() {
     }
     const int64_t num_old_cliques = cliques.size();
 
-    implication_graph->TransformIntoMaxCliques(
-        &cliques,
-        SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()));
+    double dtime = 0.0;
+    implication_graph->MergeAtMostOnes(
+        absl::MakeSpan(cliques),
+        SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()),
+        &dtime);
+    timer.AddToWork(dtime);
 
     // Note that because TransformIntoMaxCliques() extend cliques, we are ok
     // to ignore any unmapped literal. In case of equivalent literal, we always
@@ -8128,8 +8138,8 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   if (!graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat();
   }
-  graph->TransformIntoMaxCliques(
-      &cliques,
+  graph->MergeAtMostOnes(
+      absl::MakeSpan(cliques),
       SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()));
 
   // Add the Boolean variable equivalence detected by DetectEquivalences().
@@ -12339,7 +12349,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         if (first_copy) {
           constraints_using_intervals.push_back(c);
         } else {
-          CopyAndMapCumulative(ct);
+          if (!CopyAndMapCumulative(ct)) return CreateUnsatModel(c, ct);
         }
         break;
       default: {
@@ -12365,7 +12375,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         CopyAndMapNoOverlap2D(ct);
         break;
       case ConstraintProto::kCumulative:
-        CopyAndMapCumulative(ct);
+        if (!CopyAndMapCumulative(ct)) return CreateUnsatModel(c, ct);
         break;
       default:
         LOG(DFATAL) << "Shouldn't be here.";
@@ -12898,7 +12908,12 @@ void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
   }
 }
 
-void ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
+bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
+  if (ct.cumulative().intervals().empty() &&
+      ct.cumulative().capacity().vars().empty()) {
+    // Trivial constraint, either obviously SAT or UNSAT.
+    return ct.cumulative().capacity().offset() >= 0;
+  }
   // Note that we don't copy names or enforcement_literal (not supported) here.
   auto* new_ct =
       context_->working_model->add_constraints()->mutable_cumulative();
@@ -12913,6 +12928,8 @@ void ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
     new_ct->add_intervals(it->second);
     *new_ct->add_demands() = ct.cumulative().demands(i);
   }
+
+  return true;
 }
 
 bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
@@ -12987,6 +13004,10 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
         in_model.search_strategy();
     for (DecisionStrategyProto& strategy :
          *context->working_model->mutable_search_strategy()) {
+      google::protobuf::util::RemoveIf(strategy.mutable_exprs(),
+                                       [](const LinearExpressionProto* expr) {
+                                         return expr->vars().empty();
+                                       });
       if (!strategy.variables().empty()) {
         CHECK(strategy.exprs().empty());
         for (const int ref : strategy.variables()) {

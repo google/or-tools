@@ -33,6 +33,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/path.h"
 #include "ortools/packing/binpacking_2d_parser.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
@@ -40,7 +41,6 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/util.h"
 
 ABSL_FLAG(std::string, input, "", "Input file.");
 ABSL_FLAG(int, instance, -1, "Instance number if the file.");
@@ -248,7 +248,8 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   const int64_t area_of_one_bin = bin_sizes[0] * bin_sizes[1];
-  const int64_t trivial_lb = CeilOfRatio(sum_of_items_area, area_of_one_bin);
+  const int64_t trivial_lb =
+      MathUtil::CeilOfRatio(sum_of_items_area, area_of_one_bin);
   LOG(INFO) << "Trivial lower bound of the number of bins = " << trivial_lb;
   const int max_bins = absl::GetFlag(FLAGS_max_bins) == 0
                            ? trivial_lb * 2
@@ -470,12 +471,20 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   // Objective definition.
-  cp_model.Minimize(obj);
-  CHECK_GT(trivial_lb, 0);
-  for (int b = trivial_lb; b < max_bins; ++b) {
-    cp_model.AddGreaterOrEqual(obj, b + 1).OnlyEnforceIf(bin_is_used[b]);
-    cp_model.AddImplication(bin_is_used[b], bin_is_used[b - 1]);
+  if (absl::GetFlag(FLAGS_symmetry_breaking_level) >= 1) {
+    CHECK_GT(trivial_lb, 0);
+    for (int b = trivial_lb; b < max_bins; ++b) {
+      cp_model.AddGreaterOrEqual(obj, b + 1).OnlyEnforceIf(bin_is_used[b]);
+      cp_model.AddImplication(bin_is_used[b], bin_is_used[b - 1]);
+    }
+  } else {
+    LinearExpr num_used_bins = 0;
+    for (int b = 0; b < max_bins; ++b) {
+      num_used_bins += bin_is_used[b];
+    }
+    cp_model.AddGreaterOrEqual(obj, num_used_bins);
   }
+  cp_model.Minimize(obj);
 
   if (absl::GetFlag(FLAGS_symmetry_breaking_level) >= 1) {
     // First sort the items not yet fixed by area.
@@ -488,15 +497,34 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     std::sort(not_placed_items.begin(), not_placed_items.end(),
               GreaterByArea(problem));
 
-    // Symmetry breaking: i-th biggest item is in bin <= i for the first
-    // max_bins items.
-    int first_empty_bin = fixed_items.size();
-    for (const int item : not_placed_items) {
-      if (first_empty_bin + 1 >= max_bins) break;
-      for (int b = first_empty_bin + 1; b < max_bins; ++b) {
-        cp_model.FixVariable(item_to_bin[item][b], false);
+    if (absl::GetFlag(FLAGS_symmetry_breaking_level) >= 3) {
+      // Symmetry breaking: bin i "greater or equal" bin i-1.
+      int first_empty_bin = fixed_items.size();
+      const int num_active_items =
+          std::min(static_cast<int>(not_placed_items.size()), 60);
+      LinearExpr previous_bin_expr;
+      for (int b = first_empty_bin; b < max_bins; ++b) {
+        LinearExpr curr_bin_expr = 0;
+        for (int i = 0; i < num_active_items; ++i) {
+          curr_bin_expr +=
+              item_to_bin[not_placed_items[i]][b] * (int64_t{1} << i);
+        }
+        if (b > first_empty_bin) {
+          cp_model.AddLessOrEqual(curr_bin_expr, previous_bin_expr);
+        }
+        previous_bin_expr = curr_bin_expr;
       }
-      ++first_empty_bin;
+    } else {
+      // Symmetry breaking: i-th biggest item is in bin <= i for the first
+      // max_bins items.
+      int first_empty_bin = fixed_items.size();
+      for (const int item : not_placed_items) {
+        if (first_empty_bin + 1 >= max_bins) break;
+        for (int b = first_empty_bin + 1; b < max_bins; ++b) {
+          cp_model.FixVariable(item_to_bin[item][b], false);
+        }
+        ++first_empty_bin;
+      }
     }
   }
 
@@ -515,7 +543,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   // objective_lb_search by objective_shaving_search.
   if (parameters.num_workers() >= 16 && parameters.num_workers() < 24) {
     parameters.add_ignore_subsolvers("objective_lb_search");
-    parameters.add_extra_subsolvers("objective_shaving_search");
+    parameters.add_extra_subsolvers("objective_shaving");
   }
 
   // We rely on the solver default logging to log the number of bins.
