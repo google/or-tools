@@ -28,7 +28,7 @@ class RcpspTest(absltest.TestCase):
         parser = rcpsp.RcpspParser()
         data = "ortools/scheduling/testdata/j301_1.sm"
         try:
-            filename = f"{FLAGS.test_srcdir}/com_google_ortools/{data}"
+            filename = f"{FLAGS.test_srcdir}/_main/{data}"
         except flags._exceptions.UnparsedFlagAccessError:
             filename = f"../../../{data}"
         self.assertTrue(parser.parse_file(filename))
