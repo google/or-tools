@@ -16,7 +16,9 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
+#include "absl/time/time.h"
 #include "google/protobuf/repeated_field.h"
+#include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -26,6 +28,7 @@
 #include "ortools/math_opt/validators/ids_validator.h"
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
+#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -79,6 +82,17 @@ absl::Status ValidateObjectiveParameters(
            << "ObjectiveParametersProto.objective_degradation_relative_"
               "tolerance = "
            << parameters.objective_degradation_relative_tolerance() << " < 0";
+  }
+  {
+    OR_ASSIGN_OR_RETURN3(
+        const absl::Duration time_limit,
+        util_time::DecodeGoogleApiProto(parameters.time_limit()),
+        _ << "invalid ObjectiveParametersProto.time_limit");
+    if (time_limit < absl::ZeroDuration()) {
+      return util::InvalidArgumentErrorBuilder()
+             << "ObjectiveParametersProto.time_limit = " << time_limit
+             << " < 0";
+    }
   }
   return absl::OkStatus();
 }

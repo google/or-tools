@@ -38,7 +38,7 @@ namespace operations_research::math_opt {
 //   const std::pair<XXX, std::unique_ptr<UpdateData>>&
 // The returned iterator will be over non-const references to Field as read off
 // the UpdateData values.
-template <typename UpdateData, typename V, V UpdateData::*Field,
+template <typename UpdateData, typename V, V UpdateData::* Field,
           typename BaseIter>
 class UpdateDataFieldIterator {
  public:
