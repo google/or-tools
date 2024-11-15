@@ -73,6 +73,33 @@ int RemoveAt(RepeatedType* array, const IndexContainer& indices) {
   return num_indices;
 }
 
+// For RepeatedPtrField.
+// Removes all elements from 'array' for which unary predicate Pred pr is true.
+// Relative ordering of elements left in the array stays the same. Returns
+// number of removed elements.
+// The predicate is invoked exactly once for each element of 'array' in order of
+// its elements.
+// Define your predicate like this: struct MyPredicate {
+//   bool operator()(const T* t) const { ... your logic ... }
+// };
+// where T is going to be some derivation of ProtocolMessageGroup.
+//
+// Alternatively, RepeatedPtrField supports the erase-remove idiom directly.
+template <typename T, typename Pred>
+int RemoveIf(RepeatedPtrField<T>* array, const Pred& pr) {
+  T** const begin = array->mutable_data();
+  T** const end = begin + array->size();
+  T** write = begin;
+  while (write < end && !pr(*write)) ++write;
+  if (write == end) return 0;
+  // 'write' is positioned at first element to be removed.
+  for (T** scan = write + 1; scan < end; ++scan) {
+    if (!pr(*scan)) std::swap(*scan, *write++);
+  }
+  Truncate(array, write - begin);
+  return end - write;
+}
+
 template <typename T>
 T ParseTextOrDie(const std::string& input) {
   T result;

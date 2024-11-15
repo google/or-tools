@@ -33,6 +33,7 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -1616,7 +1617,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           // when all dominating variable are at their bound should not really
           // decrease.
           const int64_t min_delta =
-              slack <= 0 ? 0 : CeilOfRatio(slack, coeff_magnitude);
+              slack <= 0 ? 0 : MathUtil::CeilOfRatio(slack, coeff_magnitude);
           can_freely_decrease_until[current_ivar] = std::max(
               can_freely_decrease_until[current_ivar], current_lb + min_delta);
           can_freely_decrease_count[current_ivar]++;

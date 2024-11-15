@@ -26,7 +26,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -99,11 +101,6 @@ class InclusionDetector {
       const std::function<void(int subset, int superset)>& process);
 
   // Function that should only be used from within "process()".
-  // Returns the bitset corresponding to the elements of the current superset
-  // passed to the process() function.
-  std::vector<bool> IsInSuperset() const { return is_in_superset_; }
-
-  // Function that should only be used from within "process()".
   // Stop will abort the current search. The other two will cause the
   // corresponding candidate set to never appear in any future inclusion.
   void StopProcessingCurrentSubset() { stop_with_current_subset_ = true; }
@@ -112,7 +109,7 @@ class InclusionDetector {
     stop_ = true;
     signatures_.clear();
     one_watcher_.clear();
-    is_in_superset_.clear();
+    is_in_superset_.resize(0);
   }
 
   // The algorithm here can detect many small set included in a big set while
@@ -125,8 +122,26 @@ class InclusionDetector {
   int num_potential_subsets() const { return num_potential_subsets_; }
   int num_potential_supersets() const { return num_potential_supersets_; }
   uint64_t work_done() const { return work_done_; }
+  bool Stopped() const { return stop_; }
+
+  // Different API:
+  // 1/ Add all potential subset
+  // 2/ Call IndexAllSubsets()
+  // 3/ Call one or more time FindSubsets().
+  //    - process() can call StopProcessingCurrentSuperset() to abort early
+  //    - process() can call StopProcessingCurrentSubset() to never consider
+  //      that subset again.
+  // 4/ Call Stop() to reclaim some memory.
+  //
+  // Optimization: next_index_to_try is an index in superset that can be used
+  // to skip some position for which we already called FindSubsets().
+  void IndexAllSubsets();
+  void FindSubsets(absl::Span<const int> superset, int* next_index_to_try,
+                   const std::function<void(int subset)>& process);
 
  private:
+  uint64_t ComputeSignatureAndResizeVectors(absl::Span<const int> elements);
+
   // Allows to access the elements of each candidates via storage_[index];
   const Storage& storage_;
 
@@ -157,13 +172,13 @@ class InclusionDetector {
   uint64_t work_limit_ = std::numeric_limits<uint64_t>::max();
 
   // Temporary data only used by DetectInclusions().
-  bool stop_;
-  bool stop_with_current_subset_;
-  bool stop_with_current_superset_;
+  bool stop_ = false;
+  bool stop_with_current_subset_ = false;
+  bool stop_with_current_superset_ = false;
   std::vector<uint64_t> signatures_;
   std::vector<std::vector<int>> one_watcher_;  // Index in candidates_.
   std::vector<int> superset_elements_;
-  std::vector<bool> is_in_superset_;
+  Bitset64<int> is_in_superset_;
 };
 
 // Deduction guide.
@@ -206,6 +221,26 @@ inline void InclusionDetector<Storage>::AddPotentialSuperset(int index) {
   candidates_.push_back({index, num_elements, /*order=*/2});
 }
 
+// Compute the signature and also resize vectors if needed. We want a
+// signature that is order invariant and is compatible with inclusion.
+template <typename Storage>
+inline uint64_t InclusionDetector<Storage>::ComputeSignatureAndResizeVectors(
+    absl::Span<const int> elements) {
+  uint64_t signature = 0;
+  int max_element = 0;
+  for (const int e : elements) {
+    DCHECK_GE(e, 0);
+    max_element = std::max(max_element, e);
+    signature |= (int64_t{1} << (e & 63));
+  }
+  DCHECK_EQ(is_in_superset_.size(), one_watcher_.size());
+  if (max_element >= is_in_superset_.size()) {
+    is_in_superset_.resize(max_element + 1);
+    one_watcher_.resize(max_element + 1);
+  }
+  return signature;
+}
+
 template <typename Storage>
 inline void InclusionDetector<Storage>::DetectInclusions(
     const std::function<void(int subset, int superset)>& process) {
@@ -216,7 +251,6 @@ inline void InclusionDetector<Storage>::DetectInclusions(
 
   // Temp data must be ready to use.
   stop_ = false;
-  DCHECK(is_in_superset_.empty());
   DCHECK(signatures_.empty());
   DCHECK(one_watcher_.empty());
 
@@ -230,22 +264,7 @@ inline void InclusionDetector<Storage>::DetectInclusions(
   for (const Candidate& candidate : candidates_) {
     const auto& candidate_elements = storage_[candidate.index];
     const int candidate_index = signatures_.size();
-
-    // Compute the signature and also resize vector if needed. We want a
-    // signature that is order invariant and is compatible with inclusion.
-    uint64_t signature = 0;
-    int max_element = 0;
-    for (const int e : candidate_elements) {
-      DCHECK_GE(e, 0);
-      max_element = std::max(max_element, e);
-      signature |= (int64_t{1} << (e & 63));
-    }
-    DCHECK_EQ(is_in_superset_.size(), one_watcher_.size());
-    if (max_element >= is_in_superset_.size()) {
-      is_in_superset_.resize(max_element + 1, false);
-      one_watcher_.resize(max_element + 1);
-    }
-    signatures_.push_back(signature);
+    signatures_.push_back(ComputeSignatureAndResizeVectors(candidate_elements));
 
     stop_with_current_superset_ = false;
     if (candidate.CanBeSuperset()) {
@@ -273,10 +292,11 @@ inline void InclusionDetector<Storage>::DetectInclusions(
       superset_elements_.assign(candidate_elements.begin(),
                                 candidate_elements.end());
       for (const int e : superset_elements_) {
-        is_in_superset_[e] = true;
+        is_in_superset_.Set(e);
       }
 
       const uint64_t superset_signature = signatures_.back();
+      const auto is_in_superset_view = is_in_superset_.const_view();
       for (const int superset_e : superset_elements_) {
         for (int i = 0; i < one_watcher_[superset_e].size(); ++i) {
           const int c_index = one_watcher_[superset_e][i];
@@ -295,7 +315,7 @@ inline void InclusionDetector<Storage>::DetectInclusions(
             next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
           }
           for (const int subset_e : storage_[subset.index]) {
-            if (!is_in_superset_[subset_e]) {
+            if (!is_in_superset_view[subset_e]) {
               is_included = false;
               break;
             }
@@ -326,7 +346,7 @@ inline void InclusionDetector<Storage>::DetectInclusions(
 
       // Cleanup.
       for (const int e : superset_elements_) {
-        is_in_superset_[e] = false;
+        is_in_superset_.ClearBucket(e);
       }
     }
 
@@ -354,6 +374,130 @@ inline void InclusionDetector<Storage>::DetectInclusions(
 
   // Stop also performs some cleanup.
   Stop();
+}
+
+// TODO(user): Merge common code.
+template <typename Storage>
+inline void InclusionDetector<Storage>::IndexAllSubsets() {
+  if (num_potential_subsets_ == 0) return;
+
+  // Temp data must be ready to use.
+  stop_ = false;
+  DCHECK(signatures_.empty());
+  DCHECK(one_watcher_.empty());
+
+  // We don't really care about the order here.
+  work_done_ = 0;
+  for (const Candidate& candidate : candidates_) {
+    const auto& candidate_elements = storage_[candidate.index];
+    const int candidate_index = signatures_.size();
+    signatures_.push_back(ComputeSignatureAndResizeVectors(candidate_elements));
+
+    // Add new subset candidate to the watchers.
+    //
+    // Tricky: If this was also a superset and has been removed, we don't want
+    // to watch it!
+    if (candidate.CanBeSubset()) {
+      // Choose to watch the one with smallest list.
+      int best_choice = -1;
+      work_done_ += candidate.size;
+      if (work_done_ > work_limit_) return Stop();
+      for (const int e : candidate_elements) {
+        DCHECK_GE(e, 0);
+        DCHECK_LT(e, one_watcher_.size());
+        if (best_choice == -1 ||
+            one_watcher_[e].size() < one_watcher_[best_choice].size()) {
+          best_choice = e;
+        }
+      }
+      DCHECK_NE(best_choice, -1);
+      one_watcher_[best_choice].push_back(candidate_index);
+    }
+  }
+}
+
+template <typename Storage>
+inline void InclusionDetector<Storage>::FindSubsets(
+    absl::Span<const int> superset, int* next_index_to_try,
+    const std::function<void(int subset)>& process) {
+  // We check each time our work_done_ has increased by more than this.
+  constexpr int64_t kCheckTimeLimitInterval = 1000;
+  int64_t next_time_limit_check = kCheckTimeLimitInterval;
+
+  // Compute the signature and also resize vector if needed. We want a
+  // signature that is order invariant and is compatible with inclusion.
+  const uint64_t superset_signature =
+      ComputeSignatureAndResizeVectors(superset);
+
+  // Find any subset included in current superset.
+  work_done_ += 2 * superset.size();
+  if (work_done_ > work_limit_) return Stop();
+  if (work_done_ > next_time_limit_check) {
+    if (time_limit_->LimitReached()) return Stop();
+    next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
+  }
+
+  // Bitset should be cleared.
+  DCHECK(std::all_of(is_in_superset_.begin(), is_in_superset_.end(),
+                     [](bool b) { return !b; }));
+  for (const int e : superset) {
+    is_in_superset_.Set(e);
+  }
+
+  stop_with_current_superset_ = false;
+  const auto is_in_superset_view = is_in_superset_.const_view();
+  const auto signatures_view = signatures_.data();
+  for (; *next_index_to_try < superset.size(); ++*next_index_to_try) {
+    const int superset_e = superset[*next_index_to_try];
+    for (int i = 0; i < one_watcher_[superset_e].size(); ++i) {
+      const int c_index = one_watcher_[superset_e][i];
+      const Candidate& subset = candidates_[c_index];
+
+      // Quick check with size and signature.
+      if (subset.size > superset.size()) continue;
+      if ((signatures_view[c_index] & ~superset_signature) != 0) continue;
+
+      // Long check with bitset.
+      bool is_included = true;
+      work_done_ += subset.size;
+      if (work_done_ > work_limit_) return Stop();
+      if (work_done_ > next_time_limit_check) {
+        if (time_limit_->LimitReached()) return Stop();
+        next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
+      }
+      for (const int subset_e : storage_[subset.index]) {
+        if (!is_in_superset_view[subset_e]) {
+          is_included = false;
+          break;
+        }
+      }
+      if (!is_included) continue;
+
+      stop_with_current_subset_ = false;
+      process(subset.index);
+
+      if (stop_) return;
+      if (work_done_ > work_limit_) return Stop();
+      if (work_done_ > next_time_limit_check) {
+        if (time_limit_->LimitReached()) return Stop();
+        next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
+      }
+
+      if (stop_with_current_subset_) {
+        // Remove from the watcher list.
+        std::swap(one_watcher_[superset_e][i], one_watcher_[superset_e].back());
+        one_watcher_[superset_e].pop_back();
+        --i;
+      }
+      if (stop_with_current_superset_) break;
+    }
+    if (stop_with_current_superset_) break;
+  }
+
+  // Cleanup.
+  for (const int e : superset) {
+    is_in_superset_.ClearBucket(e);
+  }
 }
 
 }  // namespace sat

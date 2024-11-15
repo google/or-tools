@@ -32,6 +32,7 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/all_different.h"
@@ -56,7 +57,6 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/timetable.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -1311,10 +1311,10 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         if (coeffs[1] > 0) v2 = NegationOf(v2);
 
         // magnitude * v1 <= magnitude * v2 + rhs_max.
-        precedences->Add(v1, v2, CeilOfRatio(-rhs_max, magnitude));
+        precedences->Add(v1, v2, MathUtil::CeilOfRatio(-rhs_max, magnitude));
 
         // magnitude * v1 >= magnitude * v2 + rhs_min.
-        precedences->Add(v2, v1, CeilOfRatio(rhs_min, magnitude));
+        precedences->Add(v2, v1, MathUtil::CeilOfRatio(rhs_min, magnitude));
       }
     } else if (vars.size() == 3) {
       for (int i = 0; i < 3; ++i) {
@@ -1336,14 +1336,16 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
               coeff > 0
                   ? coeff * integer_trail->LowerBound(vars[other]).value()
                   : coeff * integer_trail->UpperBound(vars[other]).value();
-          precedences->Add(v1, v2, CeilOfRatio(other_lb - rhs_max, magnitude));
+          precedences->Add(
+              v1, v2, MathUtil::CeilOfRatio(other_lb - rhs_max, magnitude));
 
           // magnitude * v1 + other_ub >= magnitude * v2 + rhs_min
           const int64_t other_ub =
               coeff > 0
                   ? coeff * integer_trail->UpperBound(vars[other]).value()
                   : coeff * integer_trail->LowerBound(vars[other]).value();
-          precedences->Add(v2, v1, CeilOfRatio(rhs_min - other_ub, magnitude));
+          precedences->Add(
+              v2, v1, MathUtil::CeilOfRatio(rhs_min - other_ub, magnitude));
         }
       }
     }

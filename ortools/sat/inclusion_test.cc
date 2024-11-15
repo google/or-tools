@@ -178,6 +178,36 @@ TEST(InclusionDetectorTest, RandomTest) {
       [&num_inclusions](int subset, int superset) { ++num_inclusions; });
 }
 
+TEST(InclusionDetectorTest, AlternativeApi) {
+  CompactVectorVector<int> storage;
+  TimeLimit time_limit;
+  InclusionDetector detector(storage, &time_limit);
+
+  // Lets add some subset.
+  detector.AddPotentialSubset(storage.Add({1, 2}));
+  detector.AddPotentialSubset(storage.Add({4, 3}));
+  detector.AddPotentialSubset(storage.Add({1, 2, 3}));
+  detector.AddPotentialSubset(storage.Add({2, 3}));
+  detector.IndexAllSubsets();
+
+  // Now we can query any "superset".
+  // Note that there is no guarantee on the order of discovery.
+  std::vector<int> included;
+  int index = 0;
+  detector.FindSubsets({2, 3, 4}, &index, [&](int subset) {
+    included.push_back(subset);
+    detector.StopProcessingCurrentSubset();  // This will remove them.
+  });
+  EXPECT_THAT(included, ::testing::UnorderedElementsAre(1, 3));
+
+  // Now because we removed sets, we only get others.
+  included.clear();
+  index = 0;
+  detector.FindSubsets({1, 2, 3, 4}, &index,
+                       [&](int subset) { included.push_back(subset); });
+  EXPECT_THAT(included, ::testing::UnorderedElementsAre(0, 2));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

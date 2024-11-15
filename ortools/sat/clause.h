@@ -651,6 +651,25 @@ class BinaryImplicationGraph : public SatPropagator {
   bool TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones,
                                int64_t max_num_explored_nodes = 1e8);
 
+  // This is similar to TransformIntoMaxCliques() but we are just looking into
+  // reducing the number of constraints. If two initial clique A and B can be
+  // merged into A U B, we do it. We do not extends clique further.
+  //
+  // This approach should minimize the number of overall literals. It should
+  // be also enough for presolve. We can extend clique even more later for
+  // faster propagation or better linear relaxation.
+  //
+  // Note that we can do that relatively efficiently, if the candidate for
+  // extension of a clique A contains clique B, then we can just extend.
+  // Moreover this is a symmetric relation. And if we look at the graph of
+  // possible extension (A <-> B if A U B is a valid clique), then we can
+  // find maximum clique in this graph which might be relatively small.
+  //
+  // TODO(user): Switch to a dtime limit.
+  bool MergeAtMostOnes(absl::Span<std::vector<Literal>> at_most_ones,
+                       int64_t max_num_explored_nodes = 1e8,
+                       double* dtime = nullptr);
+
   // LP clique cut heuristic. Returns a set of "at most one" constraints on the
   // given literals or their negation that are violated by the current LP
   // solution. Note that this assumes that
@@ -834,6 +853,10 @@ class BinaryImplicationGraph : public SatPropagator {
   std::vector<Literal> ExpandAtMostOne(absl::Span<const Literal> at_most_one,
                                        int64_t max_num_explored_nodes);
 
+  // Used by TransformIntoMaxCliques() and MergeAtMostOnes().
+  std::vector<std::pair<int, int>> FilterAndSortAtMostOnes(
+      absl::Span<std::vector<Literal>> at_most_ones);
+
   // Process all at most one constraints starting at or after base_index in
   // at_most_one_buffer_. This replace literal by their representative, remove
   // fixed literals and deal with duplicates. Return false iff the model is
@@ -919,6 +942,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // because they are already initialized. Moreover they contains more
   // information.
   SparseBitset<LiteralIndex> is_marked_;
+  SparseBitset<LiteralIndex> tmp_bitset_;
   SparseBitset<LiteralIndex> is_simplified_;
 
   // Temporary stack used by MinimizeClauseWithReachability().

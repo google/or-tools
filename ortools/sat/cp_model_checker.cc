@@ -431,6 +431,11 @@ std::string ValidateElementConstraint(const CpModelProto& model,
         ProtobufShortDebugString(ct));
   }
 
+  if (element.vars().empty() && element.exprs().empty()) {
+    return "Empty element constraint is interpreted as vars[], thus invalid "
+           "since the index will be out of bounds.";
+  }
+
   // We need to be able to manipulate expression like "target - var" without
   // integer overflow.
   if (!element.vars().empty()) {
