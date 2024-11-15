@@ -11,7 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
@@ -311,9 +312,9 @@ cc_test(
 
 cc_test(
     name = "cp_sat_solver_test",
+    timeout = "eternal",
     srcs = ["cp_sat_solver_test.cc"],
     shard_count = 10,
-    timeout = "eternal",
     deps = [
         ":cp_sat_solver",
         "//ortools/base:gmock_main",
@@ -660,10 +661,12 @@ py_proto_library(
 proto_library(
     name = "highs_proto",
     srcs = ["highs.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "highs_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":highs_proto"],
 )
 

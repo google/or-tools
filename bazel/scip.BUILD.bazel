@@ -49,7 +49,7 @@ PLATFORM_FLAGS = select({
         "/DSYM=none",
         "/DSCIP_NO_SIGACTION",
         "/DSCIP_NO_STRTOK_R",
-        ],
+    ],
     "//conditions:default": [],
 })
 
@@ -99,11 +99,12 @@ cc_library(
             "src/scip/sorttpl.c",
         ],
         exclude =
-        [
-            #"src/scip/prop_symmetry.h",
-            "src/scip/*_xyz.h",
-        ]),
-        copts = [
+            [
+                #"src/scip/prop_symmetry.h",
+                "src/scip/*_xyz.h",
+            ],
+    ),
+    copts = [
         "$(STACK_FRAME_UNLIMITED)",  # src/scip/reader_cnf.c
         #"-DTPI_TNY",  # src/tpi/type_tpi_tnycthrd.h
         "-DTPI_NONE",  # src/tpi/type_tpi_none.h
