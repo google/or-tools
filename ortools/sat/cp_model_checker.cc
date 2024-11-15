@@ -915,6 +915,11 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
                             " has a domain too large to be used in a"
                             " SELECT_MEDIAN_VALUE value selection strategy");
       }
+      if (PossibleIntegerOverflow(model, {ref}, {1})) {
+        // This will become an overflow if translated to an expr.
+        return absl::StrCat("Possible integer overflow in strategy: ",
+                            ProtobufShortDebugString(strategy));
+      }
     }
     for (const LinearExpressionProto& expr : strategy.exprs()) {
       for (const int var : expr.vars()) {
