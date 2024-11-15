@@ -131,8 +131,37 @@ public class Loader {
       loaded = true;
       return;
     } catch (IOException | UnsatisfiedLinkError e) {
+      // Do nothing.
       // System.out.println("Can't System.load(jniortools)");
-      throw new RuntimeException(e);
+    }
+
+    // On windows, try to load each libraries one by one.
+    // System.out.println("Prefix: " + Platform.RESOURCE_PREFIX);
+    if (Platform.RESOURCE_PREFIX.equals("win32-x86-64")) {
+      try {
+        URI resourceURI = getNativeResourceURI();
+        Path tempPath = unpackNativeResources(resourceURI);
+        // libraries order does matter !
+        List<String> dlls = Arrays.asList(
+            "zlib1", "abseil_dll", "re2", "utf8_validity", "libprotobuf", "highs", "jniortools");
+        for (String dll : dlls) {
+          try {
+            // System.out.println("System.load(" + dll + ")");
+            System.load(tempPath.resolve(RESOURCE_PATH)
+                    .resolve(System.mapLibraryName(dll))
+                    .toAbsolutePath()
+                    .toString());
+          } catch (UnsatisfiedLinkError e) {
+            System.out.println("System.load(" + dll + ") failed!");
+            throw new RuntimeException(e);
+          }
+        }
+        loaded = true;
+        return;
+      } catch (IOException e) {
+        // Do nothing.
+        // System.out.println("unpack failed");
+      }
     }
   }
 }
