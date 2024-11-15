@@ -79,6 +79,8 @@ cache/
 **/.vscode/*
 .DS_Store
 **/.vs/*
+/.helix
+/compile_commands.json
 
 ortools/linear_solver/lpi_glop.cc
 
@@ -106,3 +108,6 @@ CMakeFiles
 DartConfiguration.tcl
 *build*/*
 build/
+
+# Ignore Bzlmod lock file until it is more stable
+MODULE.bazel.lock
