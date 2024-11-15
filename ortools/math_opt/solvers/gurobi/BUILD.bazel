@@ -30,6 +30,7 @@ cc_library(
         "//ortools/gurobi:environment",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/log:die_if_null",
         "@com_google_absl//absl/memory",

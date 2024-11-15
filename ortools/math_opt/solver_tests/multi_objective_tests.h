@@ -28,7 +28,8 @@ struct MultiObjectiveTestParameters {
       SolverType solver_type, SolveParameters parameters,
       bool supports_auxiliary_objectives,
       bool supports_incremental_objective_add_and_delete,
-      bool supports_incremental_objective_modification);
+      bool supports_incremental_objective_modification,
+      bool supports_integer_variables);
 
   // The tested solver.
   SolverType solver_type;
@@ -45,6 +46,9 @@ struct MultiObjectiveTestParameters {
   // True if the solver supports incremental, in-place modification of
   // objectives in multi-objective models.
   bool supports_incremental_objective_modification;
+
+  // True if the solver supports integer variables.
+  bool supports_integer_variables;
 };
 
 std::ostream& operator<<(std::ostream& out,

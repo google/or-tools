@@ -556,6 +556,20 @@ class Gurobi {
   // Calls GRBresetparams().
   absl::Status ResetParameters();
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Multi-objective Parameters
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Calls GRBsetdblparam() on the environment associated with the
+  // `obj_index`-th objective.
+  absl::Status SetMultiObjectiveDoubleParam(const char* name, int obj_index,
+                                            double value);
+
+  // Calls GRBgetdblparam() on the environment associated with the
+  // `obj_index`-th objective.
+  absl::StatusOr<double> GetMultiObjectiveDoubleParam(const char* name,
+                                                      int obj_index);
+
   // Typically not needed.
   GRBmodel* model() const { return gurobi_model_; }
 
@@ -570,6 +584,7 @@ class Gurobi {
   // optional_owned_primary_env can be null, primary_env cannot.
   static absl::StatusOr<std::unique_ptr<Gurobi>> New(
       GRBenvUniquePtr optional_owned_primary_env, GRBenv* primary_env);
+  absl::StatusOr<GRBenv*> GetMultiObjectiveEnv(int obj_index) const;
 
   const GRBenvUniquePtr owned_primary_env_;
   // Invariant: Not null.

@@ -150,7 +150,9 @@ inline int GrbVariableStatus(const BasisStatusProto status) {
 // is_mip indicates if the problem has integer variables or constraints that
 // would cause Gurobi to treat the problem as a MIP, e.g. SOS, indicator.
 absl::StatusOr<GurobiParametersProto> MergeParameters(
-    const SolveParametersProto& solve_parameters, const bool is_mip) {
+    const SolveParametersProto& solve_parameters,
+    const ModelSolveParametersProto& model_parameters, const bool is_mip,
+    const bool is_multi_objective_mode) {
   GurobiParametersProto merged_parameters;
 
   {
@@ -160,13 +162,29 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
     parameter->set_value(solve_parameters.enable_output() ? "1" : "0");
   }
 
-  if (solve_parameters.has_time_limit()) {
-    const double time_limit = absl::ToDoubleSeconds(
-        util_time::DecodeGoogleApiProto(solve_parameters.time_limit()).value());
-    GurobiParametersProto::Parameter* const parameter =
-        merged_parameters.add_parameters();
-    parameter->set_name(GRB_DBL_PAR_TIMELIMIT);
-    parameter->set_value(absl::StrCat(time_limit));
+  {
+    absl::Duration time_limit = absl::InfiniteDuration();
+    if (solve_parameters.has_time_limit()) {
+      ASSIGN_OR_RETURN(time_limit, util_time::DecodeGoogleApiProto(
+                                       solve_parameters.time_limit()));
+    }
+    // If we do not have a multi-objective model, but the user has specified a
+    // time limit on the primary objective, this is functionally a second way to
+    // specify the global time limit. So, we should take the min of the two.
+    if (!is_multi_objective_mode &&
+        model_parameters.primary_objective_parameters().has_time_limit()) {
+      ASSIGN_OR_RETURN(
+          const absl::Duration primary_objective_time_limit,
+          util_time::DecodeGoogleApiProto(
+              model_parameters.primary_objective_parameters().time_limit()));
+      time_limit = std::min(time_limit, primary_objective_time_limit);
+    }
+    if (time_limit < absl::InfiniteDuration()) {
+      GurobiParametersProto::Parameter* const parameter =
+          merged_parameters.add_parameters();
+      parameter->set_name(GRB_DBL_PAR_TIMELIMIT);
+      parameter->set_value(absl::StrCat(absl::ToDoubleSeconds(time_limit)));
+    }
   }
 
   if (solve_parameters.has_node_limit()) {
@@ -642,8 +660,20 @@ absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
     case GRB_NUMERIC:
       return TerminateForReason(is_maximize,
                                 TERMINATION_REASON_NUMERICAL_ERROR);
-    case GRB_SUBOPTIMAL:
+    case GRB_SUBOPTIMAL: {
+      if (is_multi_objective_mode()) {
+        // Note: We state authoritatively that suboptimal means an objective
+        // time out, but we don't really know for sure that there are no other
+        // situations in multi-objective mode where this can occur.
+        return LimitTerminationProto(
+            LIMIT_TIME, best_primal_bound, best_dual_bound,
+            solution_claims.dual_feasible_solution_exists,
+            "Gurobi returned GRB_SUBOPTIMAL for a multi-objective model, which "
+            "indicates that one or more objectives hit their per-objective "
+            "time limit");
+      }
       return TerminateForReason(is_maximize, TERMINATION_REASON_IMPRECISE);
+    }
     case GRB_USER_OBJ_LIMIT:
       // Note: maybe we should override
       // solution_claims.primal_feasible_solution_exists to true or false
@@ -904,7 +934,6 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
   for (SolutionProto& solution : solution_and_claims.solutions) {
     *result.add_solutions() = std::move(solution);
   }
-  // }
 
   ASSIGN_OR_RETURN(
       *result.mutable_termination(),
@@ -1106,6 +1135,8 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetSolutions(
   }
 }
 
+// TODO: b/365762174 - Remove logging and clamping below when Gurobi fixes its
+// behavior upstream (and we migrate onto that version).
 absl::StatusOr<SolveStatsProto> GurobiSolver::GetSolveStats(
     const absl::Time start) const {
   SolveStatsProto solve_stats;
@@ -1118,20 +1149,29 @@ absl::StatusOr<SolveStatsProto> GurobiSolver::GetSolveStats(
                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_ITERCOUNT));
     ASSIGN_OR_RETURN(const int64_t simplex_iters,
                      SafeInt64FromDouble(simplex_iters_double));
-    solve_stats.set_simplex_iterations(simplex_iters);
+    LOG_IF(ERROR, simplex_iters < 0)
+        << "Expected GRB_DBL_ATTR_ITERCOUNT to be non-negative, got: "
+        << simplex_iters << "; clamping to 0";
+    solve_stats.set_simplex_iterations(std::max(int64_t{0}, simplex_iters));
   }
 
   if (gurobi_->IsAttrAvailable(GRB_INT_ATTR_BARITERCOUNT)) {
     ASSIGN_OR_RETURN(const int barrier_iters,
                      gurobi_->GetIntAttr(GRB_INT_ATTR_BARITERCOUNT));
-    solve_stats.set_barrier_iterations(barrier_iters);
+    LOG_IF(ERROR, barrier_iters < 0)
+        << "Expected GRB_INT_ATTR_BARITERCOUNT to be non-negative, got: "
+        << barrier_iters << "; clamping to 0";
+    solve_stats.set_barrier_iterations(std::max(0, barrier_iters));
   }
 
   if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_NODECOUNT)) {
     ASSIGN_OR_RETURN(const double nodes_double,
                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
     ASSIGN_OR_RETURN(const int64_t nodes, SafeInt64FromDouble(nodes_double));
-    solve_stats.set_node_count(nodes);
+    LOG_IF(ERROR, nodes < 0)
+        << "Expected GRB_DBL_ATTR_NODECOUNT to be non-negative, got: " << nodes
+        << "; clamping to 0";
+    solve_stats.set_node_count(std::max(int64_t{0}, nodes));
   }
   return solve_stats;
 }
@@ -1596,10 +1636,12 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQcpSolution(
 }
 
 absl::Status GurobiSolver::SetParameters(
-    const SolveParametersProto& parameters) {
+    const SolveParametersProto& parameters,
+    const ModelSolveParametersProto& model_parameters) {
   ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
   ASSIGN_OR_RETURN(const GurobiParametersProto gurobi_parameters,
-                   MergeParameters(parameters, is_mip));
+                   MergeParameters(parameters, model_parameters, is_mip,
+                                   is_multi_objective_mode()));
   std::vector<std::string> parameter_errors;
   for (const GurobiParametersProto::Parameter& parameter :
        gurobi_parameters.parameters()) {
@@ -2847,7 +2889,7 @@ bool GurobiSolver::is_multi_objective_mode() const {
   return !multi_objectives_map_.empty();
 }
 
-absl::Status GurobiSolver::SetMultiObjectiveTolerances(
+absl::Status GurobiSolver::SetMultiObjectiveParameters(
     const ModelSolveParametersProto& model_parameters) {
   const auto set_tolerances =
       [&](const GurobiMultiObjectiveIndex index,
@@ -2866,15 +2908,37 @@ absl::Status GurobiSolver::SetMultiObjectiveTolerances(
     }
     return absl::OkStatus();
   };
+  const auto set_time_limit =
+      [&](const GurobiMultiObjectiveIndex index,
+          const ObjectiveParametersProto& objective_parameters)
+      -> absl::Status {
+    if (!objective_parameters.has_time_limit()) {
+      // Unset time_limit defaults to infinite, so we don't need to do anything.
+      return absl::OkStatus();
+    }
+    ASSIGN_OR_RETURN(
+        const absl::Duration time_limit,
+        util_time::DecodeGoogleApiProto(objective_parameters.time_limit()));
+    return gurobi_->SetMultiObjectiveDoubleParam(
+        GRB_DBL_PAR_TIMELIMIT, index, absl::ToDoubleSeconds(time_limit));
+  };
   if (model_parameters.has_primary_objective_parameters()) {
-    RETURN_IF_ERROR(
-        set_tolerances(multi_objectives_map_.at(std::nullopt),
-                       model_parameters.primary_objective_parameters()));
+    const GurobiMultiObjectiveIndex obj_index =
+        multi_objectives_map_.at(std::nullopt);
+    RETURN_IF_ERROR(set_tolerances(
+        obj_index, model_parameters.primary_objective_parameters()))
+        << " for primary objective";
+    RETURN_IF_ERROR(set_time_limit(
+        obj_index, model_parameters.primary_objective_parameters()))
+        << " for primary objective";
   }
   for (const auto& [id, objective_parameters] :
        model_parameters.auxiliary_objective_parameters()) {
-    RETURN_IF_ERROR(
-        set_tolerances(multi_objectives_map_.at(id), objective_parameters));
+    const GurobiMultiObjectiveIndex obj_index = multi_objectives_map_.at(id);
+    RETURN_IF_ERROR(set_tolerances(obj_index, objective_parameters))
+        << " for auxiliary objective " << id;
+    RETURN_IF_ERROR(set_time_limit(obj_index, objective_parameters))
+        << " for auxiliary objective " << id;
   }
   return absl::OkStatus();
 }
@@ -2908,6 +2972,8 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
     const SolveInterrupter* const interrupter) {
+  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+      model_parameters, kGurobiSupportedStructures, "Gurobi"));
   const absl::Time start = absl::Now();
 
   // Need to run GRBupdatemodel before:
@@ -2935,7 +3001,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
 
   // We must set the parameters before calling RegisterCallback since it
   // changes some parameters depending on the callback registration.
-  RETURN_IF_ERROR(SetParameters(parameters));
+  RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
 
   // We use a local interrupter that will triggers the calls to GRBterminate()
   // when either the user interrupter is triggered or when a callback returns
@@ -2980,7 +3046,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
       UpdateInt32ListAttribute(model_parameters.branching_priorities(),
                                GRB_INT_ATTR_BRANCHPRIORITY, variables_map_));
   if (is_multi_objective_mode()) {
-    RETURN_IF_ERROR(SetMultiObjectiveTolerances(model_parameters));
+    RETURN_IF_ERROR(SetMultiObjectiveParameters(model_parameters));
   }
   for (const int64_t lazy_constraint_id :
        model_parameters.lazy_linear_constraint_ids()) {

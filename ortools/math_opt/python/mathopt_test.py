@@ -22,6 +22,7 @@ from absl.testing import absltest
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import expressions
 from ortools.math_opt.python import hash_model_storage
+from ortools.math_opt.python import init_arguments
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python import message_callback
 from ortools.math_opt.python import model
@@ -48,6 +49,7 @@ _MODULES_TO_CHECK: List[types.ModuleType] = [
     callback,
     expressions,
     hash_model_storage,
+    init_arguments,
     message_callback,
     model,
     model_parameters,

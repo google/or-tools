@@ -28,6 +28,7 @@ py_library(
         ":errors",
         ":expressions",
         ":hash_model_storage",
+        ":init_arguments",
         ":message_callback",
         ":model",
         ":model_parameters",
@@ -160,6 +161,7 @@ py_library(
         ":callback",
         ":compute_infeasible_subsystem_result",
         ":errors",
+        ":init_arguments",
         ":message_callback",
         ":model",
         ":model_parameters",
@@ -209,4 +211,13 @@ py_library(
     name = "errors",
     srcs = ["errors.py"],
     deps = ["//ortools/math_opt:rpc_py_pb2"],
+)
+
+py_library(
+    name = "init_arguments",
+    srcs = ["init_arguments.py"],
+    deps = [
+        "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt/solvers:gurobi_py_pb2",
+    ],
 )

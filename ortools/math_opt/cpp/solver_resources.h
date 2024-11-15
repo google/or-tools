@@ -30,13 +30,17 @@ namespace operations_research::math_opt {
 // parameters are hints and may be ignored by the remote server (in particular
 // in case of solve in a local subprocess, for example).
 //
-// When using RemoteSolve() and RemoteComputeInfeasibleSubsystem(), these hints
-// are mostly optional as some defaults will be computed based on the other
-// parameters.
+// When using:
+// - RemoteSolve(),
+// - RemoteComputeInfeasibleSubsystem(),
+// - XxxRemoteStreamingSolve(),
+// - XxxRemoteStreamingComputeInfeasibleSubsystem(),
+// these hints are recommended but optional. When they are not provided,
+// resource usage will be estimated based on other parameters.
 //
-// When using RemoteStreamingSolve() these hints are used to dimension the
-// resources available during the execution of every action; thus it is
-// recommended to set them.
+// When using NewXxxRemoteStreamingIncrementalSolver() these hints are used to
+// dimension the resources available during the execution of every action; thus
+// it is recommended to set them.
 //
 struct SolverResources {
   // The number of solver threads that are expected to actually execute in

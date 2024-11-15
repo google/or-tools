@@ -67,7 +67,8 @@ MultiObjectiveTestParameters GetCpSatMultiObjectiveTestParameters() {
       /*solver_type=*/SolverType::kCpSat, /*parameters=*/SolveParameters(),
       /*supports_auxiliary_objectives=*/false,
       /*supports_incremental_objective_add_and_delete=*/false,
-      /*supports_incremental_objective_modification=*/false);
+      /*supports_incremental_objective_modification=*/false,
+      /*supports_integer_variables=*/true);
 }
 
 INSTANTIATE_TEST_SUITE_P(CpSatSimpleMultiObjectiveTest,

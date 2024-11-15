@@ -24,9 +24,11 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/constraints/second_order_cone/storage.h"  // IWYU pragma: keep (`AtomicConstraintTraits<SecondOrderConeConstraintId>`)
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research::math_opt {
 

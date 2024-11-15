@@ -16,6 +16,8 @@ import datetime
 import math
 
 from absl.testing import absltest
+from ortools.pdlp import solve_log_pb2
+from ortools.gscip import gscip_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt import solution_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -23,9 +25,10 @@ from ortools.math_opt.python import model
 from ortools.math_opt.python import result
 from ortools.math_opt.python import solution
 from ortools.math_opt.python.testing import compare_proto
+from ortools.math_opt.solvers import osqp_pb2
 
 
-class ParseTerminationReason(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+class TerminationTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
     def test_termination_unspecified(self) -> None:
         termination_proto = result_pb2.TerminationProto(
@@ -54,7 +57,19 @@ class ParseTerminationReason(compare_proto.MathOptProtoAssertions, absltest.Test
         ):
             result.parse_termination(termination_proto)
 
-    def test_termination_ok(self) -> None:
+    def test_termination_ok_proto_round_trip(self) -> None:
+        termination = result.Termination(
+            reason=result.TerminationReason.NO_SOLUTION_FOUND,
+            limit=result.Limit.OTHER,
+            detail="detail",
+            problem_status=result.ProblemStatus(
+                primal_status=result.FeasibilityStatus.FEASIBLE,
+                dual_status=result.FeasibilityStatus.INFEASIBLE,
+                primal_or_dual_infeasible=False,
+            ),
+            objective_bounds=result.ObjectiveBounds(primal_bound=10, dual_bound=20),
+        )
+
         termination_proto = result_pb2.TerminationProto(
             reason=result_pb2.TERMINATION_REASON_NO_SOLUTION_FOUND,
             limit=result_pb2.LIMIT_OTHER,
@@ -68,22 +83,12 @@ class ParseTerminationReason(compare_proto.MathOptProtoAssertions, absltest.Test
                 primal_bound=10, dual_bound=20
             ),
         )
-        termination = result.parse_termination(termination_proto)
-        self.assertEqual(termination.reason, result.TerminationReason.NO_SOLUTION_FOUND)
-        self.assertEqual(termination.limit, result.Limit.OTHER)
-        self.assertEqual(termination.detail, "detail")
-        self.assertEqual(
-            termination.problem_status,
-            result.ProblemStatus(
-                primal_status=result.FeasibilityStatus.FEASIBLE,
-                dual_status=result.FeasibilityStatus.INFEASIBLE,
-                primal_or_dual_infeasible=False,
-            ),
-        )
-        self.assertEqual(
-            termination.objective_bounds,
-            result.ObjectiveBounds(primal_bound=10, dual_bound=20),
-        )
+
+        # Test proto-> Termination
+        self.assertEqual(result.parse_termination(termination_proto), termination)
+
+        # Test Termination -> proto
+        self.assert_protos_equiv(termination.to_proto(), termination_proto)
 
 
 class ParseProblemStatus(compare_proto.MathOptProtoAssertions, absltest.TestCase):
@@ -617,83 +622,105 @@ def _make_undetermined_result_proto() -> result_pb2.SolveResultProto:
                 primal_bound=math.inf,
                 dual_bound=-math.inf,
             ),
-        ),
-        solutions=[
-            solution_pb2.SolutionProto(
-                primal_solution=solution_pb2.PrimalSolutionProto(
-                    objective_value=2.0,
-                    variable_values=sparse_containers_pb2.SparseDoubleVectorProto(
-                        ids=[0], values=[1.0]
-                    ),
-                    feasibility_status=solution_pb2.SOLUTION_STATUS_UNDETERMINED,
-                )
-            )
-        ],
+        )
     )
-    proto.solve_stats.problem_status.primal_status = (
-        result_pb2.FEASIBILITY_STATUS_UNDETERMINED
-    )
-    proto.solve_stats.problem_status.dual_status = (
-        result_pb2.FEASIBILITY_STATUS_UNDETERMINED
-    )
-    proto.solve_stats.problem_status.primal_or_dual_infeasible = False
-    proto.solve_stats.best_primal_bound = math.inf
-    proto.solve_stats.best_dual_bound = -math.inf
+    proto.solve_stats.solve_time.FromTimedelta(datetime.timedelta(minutes=2))
     return proto
+
+
+def _make_undetermined_solve_result() -> result.SolveResult:
+    return result.SolveResult(
+        termination=result.Termination(
+            reason=result.TerminationReason.NO_SOLUTION_FOUND,
+            limit=result.Limit.TIME,
+            problem_status=result.ProblemStatus(
+                primal_status=result.FeasibilityStatus.UNDETERMINED,
+                dual_status=result.FeasibilityStatus.UNDETERMINED,
+            ),
+            objective_bounds=result.ObjectiveBounds(
+                primal_bound=math.inf, dual_bound=-math.inf
+            ),
+        ),
+        solve_stats=result.SolveStats(solve_time=datetime.timedelta(minutes=2)),
+    )
 
 
 class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
     def test_solve_result_gscip_output(self) -> None:
         mod = model.Model(name="test_model")
-        mod.add_binary_variable()
+        res = _make_undetermined_solve_result()
+        res.gscip_specific_output = gscip_pb2.GScipOutput(status_detail="gscip_detail")
+
         proto = _make_undetermined_result_proto()
         proto.gscip_output.status_detail = "gscip_detail"
-        res = result.parse_solve_result(proto, mod)
-        assert res.gscip_specific_output is not None
-        self.assertEqual("gscip_detail", res.gscip_specific_output.status_detail)
 
-    def test_solve_result_no_gscip_output(self) -> None:
-        mod = model.Model(name="test_model")
-        mod.add_binary_variable()
-        proto = _make_undetermined_result_proto()
-        res = result.parse_solve_result(proto, mod)
-        self.assertIsNone(res.gscip_specific_output)
+        # proto -> result
+        actual_res = result.parse_solve_result(proto, mod)
+        self.assertIsNotNone(actual_res.gscip_specific_output)
+        assert actual_res.gscip_specific_output is not None
+        self.assertEqual("gscip_detail", actual_res.gscip_specific_output.status_detail)
+        self.assertIsNone(actual_res.pdlp_specific_output)
+        self.assertIsNone(actual_res.osqp_specific_output)
+
+        # result -> proto
+        self.assert_protos_equiv(res.to_proto(), proto)
 
     def test_solve_result_osqp_output(self) -> None:
         mod = model.Model(name="test_model")
-        mod.add_binary_variable()
-        proto = _make_undetermined_result_proto()
-        proto.osqp_output.initialized_underlying_solver = False
-        res = result.parse_solve_result(proto, mod)
-        assert res.osqp_specific_output is not None
-        self.assertFalse(res.osqp_specific_output.initialized_underlying_solver)
+        res = _make_undetermined_solve_result()
+        res.osqp_specific_output = osqp_pb2.OsqpOutput(
+            initialized_underlying_solver=True
+        )
 
-    def test_solve_result_no_osqp_output(self) -> None:
-        mod = model.Model(name="test_model")
-        mod.add_binary_variable()
         proto = _make_undetermined_result_proto()
-        res = result.parse_solve_result(proto, mod)
-        self.assertIsNone(res.osqp_specific_output)
+        proto.osqp_output.initialized_underlying_solver = True
+
+        # proto -> result
+        actual_res = result.parse_solve_result(proto, mod)
+        self.assertIsNotNone(actual_res.osqp_specific_output)
+        assert actual_res.osqp_specific_output is not None
+        self.assertTrue(actual_res.osqp_specific_output.initialized_underlying_solver)
+        self.assertIsNone(actual_res.pdlp_specific_output)
+        self.assertIsNone(actual_res.gscip_specific_output)
+
+        # result -> proto
+        self.assert_protos_equiv(res.to_proto(), proto)
 
     def test_solve_result_pdlp_output(self) -> None:
         mod = model.Model(name="test_model")
-        mod.add_binary_variable()
-        proto = _make_undetermined_result_proto()
-        proto.pdlp_output.convergence_information.corrected_dual_objective = 2.0
-        res = result.parse_solve_result(proto, mod)
-        assert res.pdlp_specific_output is not None
-        self.assertEqual(
-            res.pdlp_specific_output.convergence_information.corrected_dual_objective,
-            2.0,
+        res = _make_undetermined_solve_result()
+        res.pdlp_specific_output = result_pb2.SolveResultProto.PdlpOutput(
+            convergence_information=solve_log_pb2.ConvergenceInformation(
+                primal_objective=1.0
+            )
         )
 
-    def test_solve_result_no_pdlp_output(self) -> None:
-        mod = model.Model(name="test_model")
-        mod.add_binary_variable()
         proto = _make_undetermined_result_proto()
-        res = result.parse_solve_result(proto, mod)
-        self.assertIsNone(res.pdlp_specific_output)
+        proto.pdlp_output.convergence_information.primal_objective = 1.0
+
+        # proto -> result
+        actual_res = result.parse_solve_result(proto, mod)
+        self.assertIsNotNone(actual_res.pdlp_specific_output)
+        assert actual_res.pdlp_specific_output is not None
+        self.assertEqual(
+            actual_res.pdlp_specific_output.convergence_information.primal_objective,
+            1.0,
+        )
+        self.assertIsNone(actual_res.osqp_specific_output)
+        self.assertIsNone(actual_res.gscip_specific_output)
+
+        # result -> proto
+        self.assert_protos_equiv(res.to_proto(), proto)
+
+    def test_multiple_solver_specific_outputs_error(self) -> None:
+        res = _make_undetermined_solve_result()
+        res.gscip_specific_output = gscip_pb2.GScipOutput(status_detail="gscip_detail")
+        res.osqp_specific_output = osqp_pb2.OsqpOutput(
+            initialized_underlying_solver=False
+        )
+        with self.assertRaisesRegex(ValueError, "solver specific output"):
+            res.to_proto()
 
     def test_solve_result_from_proto_missing_bounds_in_termination(
         self,
@@ -1047,6 +1074,78 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         self.assertEqual(10, res.termination.objective_bounds.primal_bound)
         self.assertEqual(20, res.termination.objective_bounds.dual_bound)
         self.assertIsNone(res.gscip_specific_output)
+
+    def test_to_proto_round_trip(self) -> None:
+        mod = model.Model(name="test_model")
+        x = mod.add_binary_variable(name="x")
+        c = mod.add_linear_constraint(lb=0.0, ub=1.0, name="c")
+
+        s = solution.Solution(
+            primal_solution=solution.PrimalSolution(
+                variable_values={x: 1.0},
+                objective_value=2.0,
+                feasibility_status=solution.SolutionStatus.FEASIBLE,
+            )
+        )
+        r = result.SolveResult(
+            termination=result.Termination(
+                reason=result.TerminationReason.FEASIBLE,
+                limit=result.Limit.TIME,
+                problem_status=result.ProblemStatus(
+                    primal_status=result.FeasibilityStatus.FEASIBLE,
+                    dual_status=result.FeasibilityStatus.UNDETERMINED,
+                ),
+            ),
+            solve_stats=result.SolveStats(
+                node_count=3, solve_time=datetime.timedelta(seconds=4)
+            ),
+            solutions=[s],
+            primal_rays=[solution.PrimalRay(variable_values={x: 4.0})],
+            dual_rays=[solution.DualRay(reduced_costs={x: 5.0}, dual_values={c: 6.0})],
+        )
+
+        s_proto = solution_pb2.SolutionProto(
+            primal_solution=solution_pb2.PrimalSolutionProto(
+                objective_value=2.0,
+                feasibility_status=solution_pb2.SOLUTION_STATUS_FEASIBLE,
+                variable_values=sparse_containers_pb2.SparseDoubleVectorProto(
+                    ids=[0], values=[1.0]
+                ),
+            )
+        )
+        r_proto = result_pb2.SolveResultProto(
+            termination=result_pb2.TerminationProto(
+                reason=result_pb2.TERMINATION_REASON_FEASIBLE,
+                limit=result_pb2.LIMIT_TIME,
+                problem_status=result_pb2.ProblemStatusProto(
+                    primal_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                    dual_status=result_pb2.FEASIBILITY_STATUS_UNDETERMINED,
+                ),
+            ),
+            solve_stats=result_pb2.SolveStatsProto(node_count=3),
+            solutions=[s_proto],
+            primal_rays=[
+                solution_pb2.PrimalRayProto(
+                    variable_values=sparse_containers_pb2.SparseDoubleVectorProto(
+                        ids=[0], values=[4.0]
+                    )
+                )
+            ],
+            dual_rays=[
+                solution_pb2.DualRayProto(
+                    reduced_costs=sparse_containers_pb2.SparseDoubleVectorProto(
+                        ids=[0], values=[5.0]
+                    ),
+                    dual_values=sparse_containers_pb2.SparseDoubleVectorProto(
+                        ids=[0], values=[6.0]
+                    ),
+                )
+            ],
+        )
+        r_proto.solve_stats.solve_time.FromTimedelta(datetime.timedelta(seconds=4))
+
+        self.assert_protos_equiv(r.to_proto(), r_proto)
+        self.assertEqual(result.parse_solve_result(r_proto, mod), r)
 
 
 if __name__ == "__main__":
