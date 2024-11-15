@@ -133,7 +133,7 @@ cc_library(
     name = "gscip_callback_result",
     srcs = ["gscip_callback_result.cc"],
     hdrs = ["gscip_callback_result.h"],
-    deps = ["@scip//:libscip"],
+    deps = ["@scip"],
 )
 
 cc_library(
@@ -149,6 +149,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
-        "@scip//:libscip",
+        "@scip",
     ],
 )

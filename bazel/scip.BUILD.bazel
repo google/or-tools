@@ -68,7 +68,7 @@ BLISS_FILE = select({
 })
 
 cc_library(
-    name = "libscip",
+    name = "scip",
     srcs = glob(
         [
             "src/*/*.c",
