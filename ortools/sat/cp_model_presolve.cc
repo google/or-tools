@@ -12363,7 +12363,8 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kInterval:
         if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel(c, ct);
         if (first_copy) {
-          AddLinearConstraintForInterval(ct);
+          if (!AddLinearConstraintForInterval(ct))
+            return CreateUnsatModel(c, ct);
         }
         break;
       case ConstraintProto::kNoOverlap:
@@ -12883,7 +12884,7 @@ bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
   return true;
 }
 
-void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
+bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
   // Add the linear constraint enforcement => (start + size == end).
   //
   // We rely on the presolve for simplification, but deal with the trivial
@@ -12906,7 +12907,7 @@ void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
-    CopyLinear(tmp_constraint_);
+    if (!CopyLinear(tmp_constraint_)) return false;
   }
 
   // An enforced interval must have is size non-negative.
@@ -12919,8 +12920,10 @@ void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     tmp_constraint_.mutable_linear()->add_domain(-size_expr.offset());
     tmp_constraint_.mutable_linear()->add_domain(
         std::numeric_limits<int64_t>::max());
-    CopyLinear(tmp_constraint_);
+    if (!CopyLinear(tmp_constraint_)) return false;
   }
+
+  return true;
 }
 
 void ModelCopy::CopyAndMapNoOverlap(const ConstraintProto& ct) {

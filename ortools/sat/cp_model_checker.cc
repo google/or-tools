@@ -418,10 +418,12 @@ std::string ValidateElementConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
   const ElementConstraintProto& element = ct.element();
 
-  if ((element.has_linear_index() || element.has_linear_target() ||
-       !element.exprs().empty()) &&
-      (!element.vars().empty() || element.index() != 0 ||
-       element.target() != 0)) {
+  const bool in_linear_format = element.has_linear_index() ||
+                                element.has_linear_target() ||
+                                !element.exprs().empty();
+  const bool in_legacy_format =
+      !element.vars().empty() || element.index() != 0 || element.target() != 0;
+  if (in_linear_format && in_legacy_format) {
     return absl::StrCat(
         "Inconsistent element with both legacy and new format defined",
         ProtobufShortDebugString(ct));
@@ -441,6 +443,10 @@ std::string ValidateElementConstraint(const CpModelProto& model,
     overflow_detection.add_vars(/*dummy*/ 0);
     overflow_detection.add_coeffs(-1);
     for (const int ref : element.vars()) {
+      if (!VariableIndexIsValid(model, ref)) {
+        return absl::StrCat("Element vars must be valid variables: ",
+                            ProtobufShortDebugString(ct));
+      }
       overflow_detection.set_vars(1, ref);
       if (PossibleIntegerOverflow(model, overflow_detection.vars(),
                                   overflow_detection.coeffs())) {
@@ -452,8 +458,16 @@ std::string ValidateElementConstraint(const CpModelProto& model,
     }
   }
 
-  if (!element.exprs().empty() || element.has_linear_index() ||
-      element.has_linear_target()) {
+  if (in_legacy_format) {
+    if (!VariableIndexIsValid(model, element.index()) ||
+        !VariableIndexIsValid(model, element.target())) {
+      return absl::StrCat(
+          "Element constraint index and target must valid variables: ",
+          ProtobufShortDebugString(ct));
+    }
+  }
+
+  if (in_linear_format) {
     RETURN_IF_NOT_EMPTY(
         ValidateAffineExpression(model, element.linear_index()));
     RETURN_IF_NOT_EMPTY(
