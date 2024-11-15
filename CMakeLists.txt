@@ -192,21 +192,22 @@ message(STATUS "Build eigen3: ${BUILD_Eigen3}")
 if(BUILD_LP_PARSER OR BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build re2: ${BUILD_re2}")
+else()
+  set(BUILD_re2 OFF)
 endif()
+message(STATUS "Build re2: ${BUILD_re2}")
 
 if(BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build googletest: ${BUILD_googletest}")
-
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build benchmark: ${BUILD_benchmark}")
 else()
   set(BUILD_googletest OFF)
   set(BUILD_benchmark OFF)
 endif()
+message(STATUS "Build googletest: ${BUILD_googletest}")
+message(STATUS "Build benchmark: ${BUILD_benchmark}")
 
 # Optional third party solvers (enabled by default)
 ## BOP
@@ -258,10 +259,10 @@ message(STATUS "GLPK support: ${USE_GLPK}")
 if(USE_GLPK)
   CMAKE_DEPENDENT_OPTION(BUILD_GLPK "Build the GLPK dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build GLPK: ${BUILD_GLPK}")
 else()
   set(BUILD_GLPK OFF)
 endif()
+message(STATUS "Build GLPK: ${BUILD_GLPK}")
 
 ## GUROBI
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
@@ -275,10 +276,10 @@ message(STATUS "HiGHS support: ${USE_HIGHS}")
 if(USE_HIGHS)
   CMAKE_DEPENDENT_OPTION(BUILD_HIGHS "Build the HiGHS dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build HiGHS: ${BUILD_HIGHS}")
 else()
   set(BUILD_HIGHS OFF)
 endif()
+message(STATUS "Build HiGHS: ${BUILD_HIGHS}")
 
 ## PDLP
 CMAKE_DEPENDENT_OPTION(USE_PDLP "Use the PDLP solver" ON "BUILD_CXX" OFF)
@@ -286,10 +287,10 @@ message(STATUS "PDLP support: ${USE_PDLP}")
 if(USE_PDLP)
   CMAKE_DEPENDENT_OPTION(BUILD_PDLP "Build the PDLP dependency Library" ON
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build PDLP: ${BUILD_PDLP}")
 else()
   set(BUILD_PDLP OFF)
 endif()
+message(STATUS "Build PDLP: ${BUILD_PDLP}")
 
 ## SCIP
 # see: https://github.com/scipopt/scip
@@ -298,10 +299,10 @@ message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build SCIP: ${BUILD_SCIP}")
 else()
   set(BUILD_SCIP OFF)
 endif()
+message(STATUS "Build SCIP: ${BUILD_SCIP}")
 
 # Optional third party solvers (disabled by default)
 ## CPLEX
