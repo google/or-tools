@@ -26,14 +26,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
-/** Load native libraries needed for using ortools-java.*/
+/** Load native libraries needed for using ortools-java. */
 public class Loader {
   private static final String RESOURCE_PATH = "ortools-" + Platform.RESOURCE_PREFIX + "/";
 
-  /** Try to locate the native libraries directory.*/
+  /** Try to locate the native libraries directory. */
   private static URI getNativeResourceURI() throws IOException {
     ClassLoader loader = Loader.class.getClassLoader();
     URL resourceURL = loader.getResource(RESOURCE_PATH);
@@ -56,6 +58,7 @@ public class Loader {
 
   /**
    * Extract native resources in a temp directory.
+   *
    * @param resourceURI Native resource location.
    * @return The directory path containing all extracted libraries.
    */
@@ -98,34 +101,38 @@ public class Loader {
     return tempPath;
   }
 
-  /** Unpack and Load the native libraries needed for using ortools-java.*/
+  /** Unpack and Load the native libraries needed for using ortools-java. */
   private static boolean loaded = false;
 
   public static synchronized void loadNativeLibraries() {
-    if (!loaded) {
-      try {
-        // prints the name of the Operating System
-        // System.out.println("OS: " + System.getProperty("os.name"));
-        // System.out.println("Library: " + System.mapLibraryName("jniortools"));
-
-        System.loadLibrary("jniortools");
-        loaded = true;
-        return;
-      } catch (UnsatisfiedLinkError exception) {
-        // Do nothing.
-      }
-      try {
-        URI resourceURI = getNativeResourceURI();
-        Path tempPath = unpackNativeResources(resourceURI);
-        // Load the native library
-        System.load(tempPath.resolve(RESOURCE_PATH)
-                .resolve(System.mapLibraryName("jniortools"))
-                .toAbsolutePath()
-                .toString());
-        loaded = true;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    // prints the name of the Operating System
+    // System.out.println("OS: " + System.getProperty("os.name"));
+    if (loaded) {
+      return;
+    }
+    try {
+      // System.out.println("System.loadLibrary(\"jniortools\")");
+      System.loadLibrary("jniortools");
+      loaded = true;
+      return;
+    } catch (UnsatisfiedLinkError e) {
+      // Do nothing.
+      // System.out.println("Can't System.loadLibrary(jniortools)");
+    }
+    try {
+      URI resourceURI = getNativeResourceURI();
+      Path tempPath = unpackNativeResources(resourceURI);
+      // Load the native library
+      // System.out.println("System.load(" + System.mapLibraryName("jniortools") + ")");
+      System.load(tempPath.resolve(RESOURCE_PATH)
+              .resolve(System.mapLibraryName("jniortools"))
+              .toAbsolutePath()
+              .toString());
+      loaded = true;
+      return;
+    } catch (IOException | UnsatisfiedLinkError e) {
+      // System.out.println("Can't System.load(jniortools)");
+      throw new RuntimeException(e);
     }
   }
 }
