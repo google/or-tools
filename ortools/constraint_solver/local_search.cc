@@ -505,6 +505,21 @@ bool PathOperator::SwapActiveAndInactive(int64_t active, int64_t inactive) {
   return MakeChainInactive(prev, active) && MakeActive(inactive, prev);
 }
 
+bool PathOperator::SwapActiveAndInactiveChains(
+    absl::Span<const int64_t> active_chain,
+    absl::Span<const int64_t> inactive_chain) {
+  if (active_chain.empty()) return false;
+  if (active_chain == inactive_chain) return false;
+  const int before_active_chain = Prev(active_chain.front());
+  if (!MakeChainInactive(before_active_chain, active_chain.back())) {
+    return false;
+  }
+  for (auto it = inactive_chain.crbegin(); it != inactive_chain.crend(); ++it) {
+    if (!MakeActive(*it, before_active_chain)) return false;
+  }
+  return true;
+}
+
 bool PathOperator::IncrementPosition() {
   const int base_node_size = iteration_parameters_.number_of_base_nodes;
 

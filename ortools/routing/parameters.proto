@@ -173,7 +173,7 @@ message RoutingSearchParameters {
   int32 first_solution_optimization_period = 59;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 36
+  // Next ID: 37
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -381,6 +381,9 @@ message RoutingSearchParameters {
     // from the shortest path starting from the node before the chain (source),
     // through the DAG to the node following the chain.
     OptionalBoolean use_shortest_path_swap_active = 34;
+    // Similar to use_two_opt but returns the shortest path on the DAG of node
+    // alternatives of the reversed chain (cf. use_shortest_path_swap_active).
+    OptionalBoolean use_shortest_path_two_opt = 36;
     // Operator which makes an inactive node active and an active pair of nodes
     // inactive OR makes an inactive pair of nodes active and an active node
     // inactive.

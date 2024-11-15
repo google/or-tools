@@ -118,6 +118,34 @@ class ShortestPathOnAlternatives {
   SparseBitset<int64_t> touched_;
 };
 
+// Reverses a sub-chain of a path and then replaces it with the shortest path on
+// the DAG formed by the sequence of its node alternatives.
+class TwoOptWithShortestPathOperator : public PathOperator {
+ public:
+  TwoOptWithShortestPathOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      std::function<int(int64_t)> start_empty_path_class,
+      std::vector<std::vector<int64_t>> alternative_sets,
+      RoutingTransitCallback2 arc_evaluator);
+  ~TwoOptWithShortestPathOperator() override = default;
+  bool MakeNeighbor() override;
+  std::string DebugString() const override { return "TwoOptWithShortestPath"; }
+
+ protected:
+  bool OnSamePathAsPreviousBase(int64_t /*base_index*/) override {
+    // Both base nodes have to be on the same path.
+    return true;
+  }
+  int64_t GetBaseNodeRestartPosition(int base_index) override {
+    return (base_index == 0) ? StartNode(0) : BaseNode(0);
+  }
+
+ private:
+  ShortestPathOnAlternatives shortest_path_manager_;
+  std::vector<int64_t> chain_;
+};
+
 // Swaps active nodes from node alternatives in sequence. Considers chains of
 // nodes with alternatives, builds a DAG from the chain, each "layer" of the DAG
 // being composed of the set of alternatives of the node at a given rank in the
@@ -144,7 +172,7 @@ class SwapActiveToShortestPathOperator : public PathOperator {
       std::function<int(int64_t)> start_empty_path_class,
       std::vector<std::vector<int64_t>> alternative_sets,
       RoutingTransitCallback2 arc_evaluator);
-  ~SwapActiveToShortestPathOperator() override {}
+  ~SwapActiveToShortestPathOperator() override = default;
   bool MakeNeighbor() override;
   std::string DebugString() const override {
     return "SwapActiveToShortestPath";

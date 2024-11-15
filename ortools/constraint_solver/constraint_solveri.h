@@ -66,6 +66,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
@@ -1562,6 +1563,10 @@ class PathOperator : public IntVarLocalSearchOperator {
   bool MakeChainInactive(int64_t before_chain, int64_t chain_end);
   /// Replaces active by inactive in the current path, making active inactive.
   bool SwapActiveAndInactive(int64_t active, int64_t inactive);
+  /// Swaps both chains, making nodes on active_chain inactive and inserting
+  /// active_chain at the position where inactive_chain was.
+  bool SwapActiveAndInactiveChains(absl::Span<const int64_t> active_chain,
+                                   absl::Span<const int64_t> inactive_chain);
 
   /// Sets 'to' to be the node after 'from' on the given path.
   void SetNext(int64_t from, int64_t to, int64_t path) {

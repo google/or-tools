@@ -216,6 +216,39 @@ absl::Span<const int64_t> ShortestPathOnAlternatives::GetShortestPath(
   return path_;
 }
 
+TwoOptWithShortestPathOperator::TwoOptWithShortestPathOperator(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::vector<std::vector<int64_t>> alternative_sets,
+    RoutingTransitCallback2 arc_evaluator)
+    : PathOperator(vars, secondary_vars, /*number_of_base_nodes=*/2,
+                   /*skip_locally_optimal_paths=*/true,
+                   /*accept_path_end_base=*/true,
+                   std::move(start_empty_path_class), nullptr, nullptr),
+      shortest_path_manager_(vars.size(), std::move(alternative_sets),
+                             std::move(arc_evaluator)) {}
+
+bool TwoOptWithShortestPathOperator::MakeNeighbor() {
+  DCHECK_EQ(StartNode(0), StartNode(1));
+  const int64_t before_chain = BaseNode(0);
+  if (IsPathEnd(before_chain)) return false;
+  const int64_t after_chain = BaseNode(1);
+  int64_t chain_last;
+  if (!ReverseChain(before_chain, after_chain, &chain_last)) return false;
+  chain_.clear();
+  for (int64_t next = Next(before_chain); next != after_chain;
+       next = Next(next)) {
+    chain_.push_back(next);
+  }
+  // The neighbor is accepted if there were actual changes, either we reverted a
+  // chain with more than one node, or alternatives were swapped.
+  return SwapActiveAndInactiveChains(chain_,
+                                     shortest_path_manager_.GetShortestPath(
+                                         before_chain, after_chain, chain_)) ||
+         chain_.size() > 1;
+}
+
 SwapActiveToShortestPathOperator::SwapActiveToShortestPathOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
@@ -236,19 +269,9 @@ bool SwapActiveToShortestPathOperator::MakeNeighbor() {
     chain_.push_back(next);
     next = Next(next);
   }
-  if (chain_.empty()) return false;
-  const int64_t sink = next;
-  next = OldNext(before_chain);
-  bool swap_done = false;
-  for (int64_t node :
-       shortest_path_manager_.GetShortestPath(before_chain, sink, chain_)) {
-    if (node != next) {
-      SwapActiveAndInactive(next, node);
-      swap_done = true;
-    }
-    next = OldNext(next);
-  }
-  return swap_done;
+  return SwapActiveAndInactiveChains(
+      chain_, shortest_path_manager_.GetShortestPath(
+                  /*source=*/before_chain, /*sink=*/next, chain_));
 }
 
 MakePairActiveOperator::MakePairActiveOperator(

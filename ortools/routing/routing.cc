@@ -4771,14 +4771,19 @@ void RoutingModel::CreateNeighborhoodOperators(
   std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());
   for (const RoutingModel::Disjunction& disjunction : disjunctions_) {
     // Only add disjunctions of cardinality 1, as
-    // SwapActiveToShortestPathOperator only supports DAGs.
+    // SwapActiveToShortestPathOperator and TwoOptWithShortestPathOperator only
+    // support DAGs.
     if (disjunction.value.max_cardinality == 1) {
       alternative_sets.push_back(disjunction.indices);
     }
   }
   local_search_operators_[SHORTEST_PATH_SWAP_ACTIVE] =
       CreateOperator<SwapActiveToShortestPathOperator>(
-          std::move(alternative_sets),
+          alternative_sets,
+          GetLocalSearchHomogeneousArcCostCallback(parameters));
+  local_search_operators_[SHORTEST_PATH_TWO_OPT] =
+      CreateOperator<TwoOptWithShortestPathOperator>(
+          alternative_sets,
           GetLocalSearchHomogeneousArcCostCallback(parameters));
 
   // Routing-specific operators.
@@ -5004,6 +5009,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active);
     CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_SWAP_ACTIVE,
                              shortest_path_swap_active);
+    CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_TWO_OPT, shortest_path_two_opt);
   }
   LocalSearchOperator* main_operator_group =
       ConcatenateOperators(search_parameters, operators);
@@ -6044,7 +6050,8 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
                                LIN_KERNIGHAN,
                                MAKE_INACTIVE,
                                MAKE_CHAIN_INACTIVE,
-                               SHORTEST_PATH_SWAP_ACTIVE};
+                               SHORTEST_PATH_SWAP_ACTIVE,
+                               SHORTEST_PATH_TWO_OPT};
       secondary_ls_operator_ =
           GetNeighborhoodOperators(search_parameters, operators_to_consider);
     }
