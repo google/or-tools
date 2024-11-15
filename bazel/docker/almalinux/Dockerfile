@@ -6,7 +6,7 @@ FROM almalinux:latest AS env
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install git wget zlib-devel gcc-toolset-13 \
-&& dnf -y groupinstall "Development Tools" \
+&& dnf -y group install "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 
@@ -15,7 +15,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 
 # Install Bazelisk
 RUN wget \
-https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-amd64 \
+https://github.com/bazelbuild/bazelisk/releases/download/v1.23.0/bazelisk-linux-amd64 \
 && chmod +x bazelisk-linux-amd64 \
 && mv bazelisk-linux-amd64 /usr/local/bin/bazel
 
@@ -35,7 +35,6 @@ RUN dnf -y update \
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
-RUN sed -i 's/\(DEFAULT_PYTHON =\) "3.[0-9]\+"/\1 "3.9"/' WORKSPACE
 
 FROM devel AS build
 RUN bazel version
