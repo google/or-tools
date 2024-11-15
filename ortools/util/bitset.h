@@ -513,7 +513,7 @@ class Bitset64 {
   void ClearBucket(IndexType i) {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
-    data_[BitOffset64(Value(i))] = 0;
+    data_.data()[BitOffset64(Value(i))] = 0;
   }
 
   // Clears the bits at position i and i ^ 1.

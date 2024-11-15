@@ -69,6 +69,7 @@ class CompactVectorVector {
   // Size of the "key" space, always in [0, size()).
   size_t size() const;
   bool empty() const;
+  size_t num_entries() const { return buffer_.size(); }
 
   // Getters, either via [] or via a wrapping to be compatible with older api.
   //
@@ -85,9 +86,9 @@ class CompactVectorVector {
     starts_.reserve(size);
     sizes_.reserve(size);
   }
-  void reserve(int size, int num_terms) {
+  void reserve(int size, int num_entries) {
     reserve(size);
-    buffer_.reserve(num_terms);
+    buffer_.reserve(num_entries);
   }
 
   // Given a flat mapping (keys[i] -> values[i]) with two parallel vectors, not

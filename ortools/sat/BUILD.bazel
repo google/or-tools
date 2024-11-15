@@ -3640,6 +3640,7 @@ cc_library(
     name = "inclusion",
     hdrs = ["inclusion.h"],
     deps = [
+        ":util",
         "//ortools/base",
         "//ortools/util:bitset",
         "//ortools/util:time_limit",

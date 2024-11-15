@@ -7307,11 +7307,17 @@ void CpModelPresolver::Probe() {
     }
     const int64_t num_old_cliques = cliques.size();
 
+    // We adapt the limit if there is a lot of literals in amo/implications.
+    // Usually we can have big reduction on large problem so it seems
+    // worthwhile.
+    double limit = context_->params().merge_at_most_one_work_limit();
+    if (num_literals_before > 1e6) {
+      limit *= num_literals_before / 1e6;
+    }
+
     double dtime = 0.0;
-    implication_graph->MergeAtMostOnes(
-        absl::MakeSpan(cliques),
-        SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()),
-        &dtime);
+    implication_graph->MergeAtMostOnes(absl::MakeSpan(cliques),
+                                       SafeDoubleToInt64(limit), &dtime);
     timer.AddToWork(dtime);
 
     // Note that because TransformIntoMaxCliques() extend cliques, we are ok
@@ -7345,10 +7351,11 @@ void CpModelPresolver::Probe() {
 
     if (num_old_cliques != num_new_cliques ||
         num_literals_before != num_literals_after) {
-      timer.AddMessage(absl::StrCat("Merged ", num_old_cliques, "(",
-                                    num_literals_before, " literals) into ",
-                                    num_new_cliques, "(", num_literals_after,
-                                    " literals) at_most_ones. "));
+      timer.AddMessage(absl::StrCat(
+          "Merged ", FormatCounter(num_old_cliques), "(",
+          FormatCounter(num_literals_before), " literals) into ",
+          FormatCounter(num_new_cliques), "(",
+          FormatCounter(num_literals_after), " literals) at_most_ones. "));
     }
   }
 }
@@ -12383,6 +12390,8 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       default: {
         ConstraintProto* new_ct = context_->working_model->add_constraints();
         *new_ct = ct;
+        new_ct->mutable_enforcement_literal()->Clear();
+        FinishEnforcementCopy(new_ct);
         if (ignore_names) {
           // TODO(user): find a better way than copy then clear_name()?
           new_ct->clear_name();
