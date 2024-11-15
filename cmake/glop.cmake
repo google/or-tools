@@ -228,6 +228,9 @@ target_compile_options(glop PUBLIC ${GLOP_COMPILE_OPTIONS})
 # Properties
 if(NOT APPLE)
   set_target_properties(glop PROPERTIES VERSION ${PROJECT_VERSION})
+  if(UNIX)
+    set_target_properties(glop PROPERTIES INSTALL_RPATH "$ORIGIN")
+  endif()
 else()
   # Clang don't support version x.y.z with z > 255
   set_target_properties(glop PROPERTIES

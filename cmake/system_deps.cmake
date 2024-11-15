@@ -92,6 +92,10 @@ if(BUILD_TESTING AND NOT BUILD_googletest)
   find_package(GTest REQUIRED)
 endif()
 
+if(BUILD_TESTING AND NOT BUILD_benchmark)
+  find_package(benchmark REQUIRED)
+endif()
+
 # Check language Dependencies
 if(BUILD_PYTHON)
   if(NOT BUILD_pybind11)

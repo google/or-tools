@@ -117,8 +117,13 @@ if(USE_CPLEX AND NOT TARGET CPLEX::CPLEX)
 endif()
 
 # CXX Test
-if(BUILD_TESTING AND NOT TARGET GTest::gtest_main)
-  message(FATAL_ERROR "Target GTest::gtest_main not available.")
+if(BUILD_TESTING)
+  if(NOT TARGET GTest::gtest_main)
+    message(FATAL_ERROR "Target GTest::gtest_main not available.")
+  endif()
+  if(NOT TARGET benchmark::benchmark)
+    message(FATAL_ERROR "Target benchmark::benchmark not available.")
+  endif()
 endif()
 
 # Check language Dependencies

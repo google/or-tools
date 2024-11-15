@@ -9,7 +9,7 @@ Clp=1.17.7
 Cgl=0.60.5
 Cbc=2.10.7
 GLPK=5.0
-HiGHS=v1.7.2
+HiGHS=v1.8.0
 Scip=v900
 # Python
 pybind11=v2.12.0
@@ -17,3 +17,4 @@ pybind11_abseil=52f2739
 pybind11_protobuf=3b11990
 # Testing
 googletest=v1.15.2
+benchmark=v1.8.4

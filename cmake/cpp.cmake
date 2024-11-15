@@ -176,6 +176,10 @@ function(ortools_cxx_test)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_TESTING)
+    return()
+  endif()
+
   if(NOT TEST_NAME)
     message(FATAL_ERROR "no NAME provided")
   endif()
@@ -624,8 +628,7 @@ configure_package_config_file(cmake/${PROJECT_NAME}Config.cmake.in
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-  COMPATIBILITY SameMajorVersion
-  )
+  COMPATIBILITY SameMajorVersion)
 install(
   FILES
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
