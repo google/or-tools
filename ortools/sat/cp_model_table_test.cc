@@ -74,7 +74,7 @@ TEST(TableTest, DuplicateVariablesInTable) {
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(model_proto));
 }
 
-TEST(TableTest, RemoveFixedColumnsFromTable) {
+TEST(TableTest, CanonicalizeTableFixedColumns) {
   CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
     variables { domain: [ 1, 1 ] }
@@ -98,7 +98,6 @@ TEST(TableTest, RemoveFixedColumnsFromTable) {
   context.InitializeNewDomains();
 
   CanonicalizeTable(&context, model_proto.mutable_constraints(0));
-  RemoveFixedColumnsFromTable(&context, model_proto.mutable_constraints(0));
 
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
@@ -159,9 +158,6 @@ TEST(TableTest, NormalizeNoRemove) {
       }
     }
   )pb");
-  EXPECT_THAT(expected_presolved_model, testing::EqualsProto(model_proto));
-
-  RemoveFixedColumnsFromTable(&context, model_proto.mutable_constraints(0));
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(model_proto));
 }
 

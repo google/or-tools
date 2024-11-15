@@ -28,6 +28,7 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/types.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/stats.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -200,7 +201,7 @@ class SynchronizationPoint : public SubSolver {
 // any tasks. This can be used to synchronize classes used by many subsolvers
 // just once for instance.
 void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                          int num_threads);
+                          int num_threads, ModelSharedTimeLimit* time_limit);
 
 // Similar to NonDeterministicLoop() except this should result in a
 // deterministic solver provided that all SubSolver respect the Synchronize()

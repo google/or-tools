@@ -613,13 +613,6 @@ class PresolveContext {
   CpModelProto* working_model = nullptr;
   CpModelProto* mapping_model = nullptr;
 
-  // Indicate if we are allowed to remove irrelevant feasible solution from the
-  // set of feasible solution. For example, if a variable is unused, can we fix
-  // it to an arbitrary value (or its minimum objective one)? This must be true
-  // if the client wants to enumerate all solutions or wants correct tightened
-  // bounds in the response.
-  bool keep_all_feasible_solutions = false;
-
   // Number of "rules" applied. This should be equal to the sum of all numbers
   // in stats_by_rule_name. This is used to decide if we should do one more pass
   // of the presolve or not. Note that depending on the presolve transformation,

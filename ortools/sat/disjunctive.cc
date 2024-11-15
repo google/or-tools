@@ -153,7 +153,7 @@ void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
 }
 
 void AddDisjunctiveWithBooleanPrecedencesOnly(
-    const std::vector<IntervalVariable>& intervals, Model* model) {
+    absl::Span<const IntervalVariable> intervals, Model* model) {
   auto* repo = model->GetOrCreate<IntervalsRepository>();
   for (int i = 0; i < intervals.size(); ++i) {
     for (int j = i + 1; j < intervals.size(); ++j) {

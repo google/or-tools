@@ -1654,44 +1654,5 @@ void FixedModuloPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-std::function<void(Model*)> IsOneOf(IntegerVariable var,
-                                    const std::vector<Literal>& selectors,
-                                    const std::vector<IntegerValue>& values) {
-  return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-
-    CHECK(!values.empty());
-    CHECK_EQ(values.size(), selectors.size());
-    std::vector<int64_t> unique_values;
-    absl::flat_hash_map<int64_t, std::vector<Literal>> value_to_selector;
-    for (int i = 0; i < values.size(); ++i) {
-      unique_values.push_back(values[i].value());
-      value_to_selector[values[i].value()].push_back(selectors[i]);
-    }
-    gtl::STLSortAndRemoveDuplicates(&unique_values);
-
-    integer_trail->UpdateInitialDomain(var, Domain::FromValues(unique_values));
-    if (unique_values.size() == 1) {
-      model->Add(ClauseConstraint(selectors));
-      return;
-    }
-
-    // Note that it is more efficient to call AssociateToIntegerEqualValue()
-    // with the values ordered, like we do here.
-    for (const int64_t v : unique_values) {
-      const std::vector<Literal>& selectors = value_to_selector[v];
-      if (selectors.size() == 1) {
-        encoder->AssociateToIntegerEqualValue(selectors[0], var,
-                                              IntegerValue(v));
-      } else {
-        const Literal l(model->Add(NewBooleanVariable()), true);
-        model->Add(ReifiedBoolOr(selectors, l));
-        encoder->AssociateToIntegerEqualValue(l, var, IntegerValue(v));
-      }
-    }
-  };
-}
-
 }  // namespace sat
 }  // namespace operations_research

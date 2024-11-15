@@ -45,7 +45,7 @@ void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
 // i is before task j) and forces that, for each couple of task (i,j), either i
 // is before j or j is before i. Do not create any other propagators.
 void AddDisjunctiveWithBooleanPrecedencesOnly(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    absl::Span<const IntervalVariable> intervals, Model* model);
 
 // Helper class to compute the end-min of a set of tasks given their start-min
 // and size-min. In Petr Vilim's PhD "Global Constraints in Scheduling",

@@ -769,12 +769,6 @@ inline std::function<void(Model*)> IsEqualToMaxOf(
   };
 }
 
-// Expresses the fact that an existing integer variable is equal to one of
-// the given values, each selected by a given literal.
-std::function<void(Model*)> IsOneOf(IntegerVariable var,
-                                    const std::vector<Literal>& selectors,
-                                    const std::vector<IntegerValue>& values);
-
 template <class T>
 void RegisterAndTransferOwnership(Model* model, T* ct) {
   ct->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());

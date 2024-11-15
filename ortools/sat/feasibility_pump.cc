@@ -198,32 +198,33 @@ bool FeasibilityPump::Solve() {
 
 void FeasibilityPump::MaybePushToRepo() {
   if (incomplete_solutions_ == nullptr) return;
+  const double kInfinity = std::numeric_limits<double>::infinity();
 
-  std::vector<double> lp_solution(model_vars_size_,
-                                  std::numeric_limits<double>::infinity());
   // TODO(user): Consider adding solutions that have low fractionality.
   if (lp_solution_is_integer_) {
     // Fill the solution using LP solution values.
+    tmp_solution_.assign(model_vars_size_, kInfinity);
     for (const IntegerVariable positive_var : integer_variables_) {
       const int model_var =
           mapping_->GetProtoVariableFromIntegerVariable(positive_var);
       if (model_var >= 0 && model_var < model_vars_size_) {
-        lp_solution[model_var] = GetLPSolutionValue(positive_var);
+        tmp_solution_[model_var] = GetLPSolutionValue(positive_var);
       }
     }
-    incomplete_solutions_->AddSolution(lp_solution);
+    incomplete_solutions_->AddSolution(tmp_solution_);
   }
 
   if (integer_solution_is_feasible_) {
     // Fill the solution using Integer solution values.
+    tmp_solution_.assign(model_vars_size_, kInfinity);
     for (const IntegerVariable positive_var : integer_variables_) {
       const int model_var =
           mapping_->GetProtoVariableFromIntegerVariable(positive_var);
       if (model_var >= 0 && model_var < model_vars_size_) {
-        lp_solution[model_var] = GetIntegerSolutionValue(positive_var);
+        tmp_solution_[model_var] = GetIntegerSolutionValue(positive_var);
       }
     }
-    incomplete_solutions_->AddSolution(lp_solution);
+    incomplete_solutions_->AddSolution(tmp_solution_);
   }
 }
 
