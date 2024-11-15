@@ -27,10 +27,13 @@ option csharp_namespace = "Google.OrTools.Service";
 enum SolutionStatusProto {
   // Guard value representing no status.
   SOLUTION_STATUS_UNSPECIFIED = 0;
+
   // Solver does not claim a feasibility status.
   SOLUTION_STATUS_UNDETERMINED = 1;
+
   // Solver claims the solution is feasible.
   SOLUTION_STATUS_FEASIBLE = 2;
+
   // Solver claims the solution is infeasible.
   SOLUTION_STATUS_INFEASIBLE = 3;
 }
