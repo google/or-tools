@@ -349,10 +349,6 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
     return absl::StrCat("An int_prod constraint should have a target: ",
                         ProtobufShortDebugString(ct));
   }
-  if (ct.int_prod().exprs().empty()) {
-    return absl::StrCat("An int_prod constraint should have some expressions: ",
-                        ProtobufShortDebugString(ct));
-  }
 
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
     RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));

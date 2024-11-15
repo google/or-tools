@@ -178,17 +178,16 @@ TEST(InclusionDetectorTest, RandomTest) {
       [&num_inclusions](int subset, int superset) { ++num_inclusions; });
 }
 
-TEST(InclusionDetectorTest, AlternativeApi) {
+TEST(SubsetsDetectorTest, AlternativeApi) {
   CompactVectorVector<int> storage;
-  TimeLimit time_limit;
-  InclusionDetector detector(storage, &time_limit);
+  storage.Add({1, 2});
+  storage.Add({4, 3});
+  storage.Add({1, 2, 3});
+  storage.Add({2, 3});
 
-  // Lets add some subset.
-  detector.AddPotentialSubset(storage.Add({1, 2}));
-  detector.AddPotentialSubset(storage.Add({4, 3}));
-  detector.AddPotentialSubset(storage.Add({1, 2, 3}));
-  detector.AddPotentialSubset(storage.Add({2, 3}));
-  detector.IndexAllSubsets();
+  TimeLimit time_limit;
+  SubsetsDetector detector(storage, &time_limit);
+  detector.IndexAllStorageAsSubsets();
 
   // Now we can query any "superset".
   // Note that there is no guarantee on the order of discovery.

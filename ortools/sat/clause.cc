@@ -1863,17 +1863,16 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
   // Data to detect inclusion of base amo into extend amo.
   std::vector<int> detector_clique_index;
   CompactVectorVector<int> storage;
-  InclusionDetector detector(storage, time_limit_);
-  detector.SetWorkLimit(max_num_explored_nodes);
-
-  // First add all clique as possible subset.
   for (const auto& [index, old_size] : index_size_vector) {
-    std::vector<Literal>& clique = at_most_ones[index];
     if (time_limit_->LimitReached()) break;
     detector_clique_index.push_back(index);
-    detector.AddPotentialSubset(storage.AddLiterals(clique));
+    storage.AddLiterals(at_most_ones[index]);
   }
-  detector.IndexAllSubsets();
+
+  // We use an higher limit here as the code is faster.
+  SubsetsDetector detector(storage, time_limit_);
+  detector.SetWorkLimit(10 * max_num_explored_nodes);
+  detector.IndexAllStorageAsSubsets();
 
   // Now try to expand one by one.
   //
@@ -1995,7 +1994,7 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
   }
   if (dtime != nullptr) {
     *dtime +=
-        2e-8 * work_done_in_mark_descendants_ + 1e-8 * detector.work_done();
+        1e-8 * work_done_in_mark_descendants_ + 1e-9 * detector.work_done();
   }
   return true;
 }
