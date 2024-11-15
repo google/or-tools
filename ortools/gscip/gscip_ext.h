@@ -31,6 +31,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/gscip/gscip.h"
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
@@ -70,13 +71,13 @@ GScipLinearRange GScipLe(GScipLinearExpr left, const GScipLinearExpr& right);
 // Adds the constraint resultant = maximum(terms). Supports unbounded variables
 // in terms.
 absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
-                                const std::vector<GScipLinearExpr>& terms,
+                                absl::Span<const GScipLinearExpr> terms,
                                 absl::string_view name = "");
 
 // Adds the constraint resultant = minimum(terms). Supports unbounded variables
 // in terms.
 absl::Status GScipCreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
-                                const std::vector<GScipLinearExpr>& terms,
+                                absl::Span<const GScipLinearExpr> terms,
                                 absl::string_view name = "");
 
 // Models the constraint z = 1 => lb <= ax <= ub
