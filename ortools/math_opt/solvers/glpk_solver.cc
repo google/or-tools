@@ -1060,6 +1060,8 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration,
     const Callback /*cb*/, const SolveInterrupter* const interrupter) {
+  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+      model_parameters, kGlpkSupportedStructures, "GLPK"));
   RETURN_IF_ERROR(CheckCurrentThread());
 
   const absl::Time start = absl::Now();

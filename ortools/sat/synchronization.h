@@ -508,9 +508,8 @@ class SharedBoundsManager {
   //
   // Note that this do not work with symmetries. And for now we don't call it
   // when this is the case.
-  void FixVariablesFromPartialSolution(
-      const std::vector<int64_t>& solution,
-      const std::vector<int>& variables_to_fix);
+  void FixVariablesFromPartialSolution(absl::Span<const int64_t> solution,
+                                       absl::Span<const int> variables_to_fix);
 
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed
@@ -532,7 +531,7 @@ class SharedBoundsManager {
   void Synchronize();
 
   void LogStatistics(SolverLogger* logger);
-  int NumBoundsExported(const std::string& worker_name);
+  int NumBoundsExported(absl::string_view worker_name);
 
   // If non-empty, we will check that all bounds update contains this solution.
   // Note that this might fail once we reach optimality and we might have wrong
@@ -721,7 +720,7 @@ class SharedClausesManager {
 
   // Ids are used to identify which worker is exporting/importing clauses.
   int RegisterNewId();
-  void SetWorkerNameForId(int id, const std::string& worker_name);
+  void SetWorkerNameForId(int id, absl::string_view worker_name);
 
   // A worker can add or remove clauses from its own clause set.
   // Retains ownership of the returned ClauseFilter.

@@ -66,7 +66,7 @@ int64_t FindRationalFactor(double x, int64_t limit = 1e4,
 // TODO(user): Ideally the lower/upper should be int64_t so that we can have
 // an exact definition for the max_absolute_activity allowed.
 double FindBestScalingAndComputeErrors(
-    const std::vector<double>& coefficients,
+    absl::Span<const double> coefficients,
     absl::Span<const double> lower_bounds,
     absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
     double wanted_absolute_activity_precision, double* relative_coeff_error,
@@ -156,7 +156,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
 // This will almost always returns true except for really bad cases like having
 // infinity in the objective.
 bool ScaleAndSetObjective(const SatParameters& params,
-                          const std::vector<std::pair<int, double>>& objective,
+                          absl::Span<const std::pair<int, double>> objective,
                           double objective_offset, bool maximize,
                           CpModelProto* cp_model, SolverLogger* logger);
 

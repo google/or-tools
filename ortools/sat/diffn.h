@@ -165,7 +165,7 @@ class RectanglePairwisePropagator : public PropagatorInterface {
 
   // Return false if a conflict is found.
   bool FindRestrictionsAndPropagateConflict(
-      const std::vector<ItemForPairwiseRestriction>& items,
+      absl::Span<const ItemForPairwiseRestriction> items,
       std::vector<PairwiseRestriction>* restrictions);
 
   bool FindRestrictionsAndPropagateConflict(

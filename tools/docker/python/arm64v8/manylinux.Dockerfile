@@ -1,6 +1,7 @@
 # To build it on x86_64 please read
 # https://github.com/multiarch/qemu-user-static#getting-started
 FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
+# note: CMake 3.30.5 and SWIG 4.2.1 are already installed
 
 RUN yum -y update \
 && yum -y install \
@@ -14,25 +15,6 @@ RUN yum -y update \
 && rm -rf /var/cache/yum
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
-
-# Install CMake 3.28.3
-RUN wget -q --no-check-certificate "https://cmake.org/files/v3.28/cmake-3.28.3-linux-aarch64.sh" \
-&& chmod a+x cmake-3.28.3-linux-aarch64.sh \
-&& ./cmake-3.28.3-linux-aarch64.sh --prefix=/usr --skip-license \
-&& rm cmake-3.28.3-linux-aarch64.sh
-
-# Install SWIG 4.2.1
-RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.2.1/swig-4.2.1.tar.gz" \
- -o swig-4.2.1.tar.gz \
-&& tar xvf swig-4.2.1.tar.gz \
-&& rm swig-4.2.1.tar.gz \
-&& cd swig-4.2.1 \
-&& ./configure --prefix=/usr/local \
-&& make -j 4 \
-&& make install \
-&& cd .. \
-&& rm -rf swig-4.2.1
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

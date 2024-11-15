@@ -1697,33 +1697,16 @@ int ElementInIntersectionOrMinusOne(absl::Span<const int> a,
 
 }  // namespace
 
-bool BinaryImplicationGraph::TransformIntoMaxCliques(
-    std::vector<std::vector<Literal>>* at_most_ones,
-    int64_t max_num_explored_nodes) {
-  // The code below assumes a DAG.
-  if (!DetectEquivalences()) return false;
-  work_done_in_mark_descendants_ = 0;
-
-  int num_extended = 0;
-  int num_removed = 0;
-  int num_added = 0;
-
-  // Data to detect inclusion of base amo into extend amo.
-  std::vector<int> detector_clique_index;
-  CompactVectorVector<int> storage;
-  InclusionDetector detector(storage, time_limit_);
-  detector.SetWorkLimit(1e9);
-
-  std::vector<int> dense_index_to_index;
-  util_intops::StrongVector<LiteralIndex, std::vector<int>>
-      max_cliques_containing(implications_.size());
-
+std::vector<std::pair<int, int>>
+BinaryImplicationGraph::FilterAndSortAtMostOnes(
+    absl::Span<std::vector<Literal>> at_most_ones) {
   // We starts by processing larger constraints first.
   // But we want the output order to be stable.
   std::vector<std::pair<int, int>> index_size_vector;
-  index_size_vector.reserve(at_most_ones->size());
-  for (int index = 0; index < at_most_ones->size(); ++index) {
-    std::vector<Literal>& clique = (*at_most_ones)[index];
+  const int num_amos = at_most_ones.size();
+  index_size_vector.reserve(num_amos);
+  for (int index = 0; index < num_amos; ++index) {
+    std::vector<Literal>& clique = at_most_ones[index];
     if (clique.size() <= 1) continue;
 
     // Note(user): Because we always use literal with the smallest variable
@@ -1760,6 +1743,32 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
       [](const std::pair<int, int> a, const std::pair<int, int>& b) {
         return a.second > b.second;
       });
+  return index_size_vector;
+}
+
+bool BinaryImplicationGraph::TransformIntoMaxCliques(
+    std::vector<std::vector<Literal>>* at_most_ones,
+    int64_t max_num_explored_nodes) {
+  // The code below assumes a DAG.
+  if (!DetectEquivalences()) return false;
+  work_done_in_mark_descendants_ = 0;
+
+  int num_extended = 0;
+  int num_removed = 0;
+  int num_added = 0;
+
+  // Data to detect inclusion of base amo into extend amo.
+  std::vector<int> detector_clique_index;
+  CompactVectorVector<int> storage;
+  InclusionDetector detector(storage, time_limit_);
+  detector.SetWorkLimit(1e9);
+
+  std::vector<int> dense_index_to_index;
+  util_intops::StrongVector<LiteralIndex, std::vector<int>>
+      max_cliques_containing(implications_.size());
+
+  const std::vector<std::pair<int, int>> index_size_vector =
+      FilterAndSortAtMostOnes(absl::MakeSpan(*at_most_ones));
 
   absl::flat_hash_set<int> cannot_be_removed;
   std::vector<bool> was_extended(at_most_ones->size(), false);
@@ -1775,8 +1784,9 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
           max_cliques_containing[clique[0]], max_cliques_containing[clique[1]]);
       if (dense_index >= 0) {
         const int superset_index = dense_index_to_index[dense_index];
-        if (was_extended[superset_index])
+        if (was_extended[superset_index]) {
           cannot_be_removed.insert(superset_index);
+        }
         ++num_removed;
         clique.clear();
         continue;
@@ -1836,6 +1846,156 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
             << (work_done_in_mark_descendants_ > max_num_explored_nodes
                     ? " (Aborted)"
                     : "");
+  }
+  return true;
+}
+
+bool BinaryImplicationGraph::MergeAtMostOnes(
+    absl::Span<std::vector<Literal>> at_most_ones,
+    int64_t max_num_explored_nodes, double* dtime) {
+  // The code below assumes a DAG.
+  if (!DetectEquivalences()) return false;
+  work_done_in_mark_descendants_ = 0;
+
+  const std::vector<std::pair<int, int>> index_size_vector =
+      FilterAndSortAtMostOnes(at_most_ones);
+
+  // Data to detect inclusion of base amo into extend amo.
+  std::vector<int> detector_clique_index;
+  CompactVectorVector<int> storage;
+  InclusionDetector detector(storage, time_limit_);
+  detector.SetWorkLimit(max_num_explored_nodes);
+
+  // First add all clique as possible subset.
+  for (const auto& [index, old_size] : index_size_vector) {
+    std::vector<Literal>& clique = at_most_ones[index];
+    if (time_limit_->LimitReached()) break;
+    detector_clique_index.push_back(index);
+    detector.AddPotentialSubset(storage.AddLiterals(clique));
+  }
+  detector.IndexAllSubsets();
+
+  // Now try to expand one by one.
+  //
+  // TODO(user): We should process clique with elements in common together so
+  // that we can reuse MarkDescendants() which is slow. We should be able to
+  // "cache" a few of the last calls.
+  std::vector<int> intersection;
+  const int num_to_consider = index_size_vector.size();
+  for (int subset_index = 0; subset_index < num_to_consider; ++subset_index) {
+    const int index = index_size_vector[subset_index].first;
+    std::vector<Literal>& clique = at_most_ones[index];
+    if (clique.empty()) continue;  // Was deleted.
+
+    if (work_done_in_mark_descendants_ > max_num_explored_nodes) break;
+    if (detector.Stopped()) break;
+
+    // We start with the clique in the "intersection".
+    // This prefix will never change.
+    int clique_i = 0;
+    int next_index_to_try = 0;
+    intersection.clear();
+    tmp_bitset_.ClearAndResize(LiteralIndex(implications_.size()));
+    for (const Literal l : clique) {
+      intersection.push_back(l.Index().value());
+      tmp_bitset_.Set(l);
+    }
+
+    while (true) {
+      if (work_done_in_mark_descendants_ > max_num_explored_nodes) break;
+      if (detector.Stopped()) break;
+
+      // Compute the intersection of all the element (or the new ones) of this
+      // clique.
+      //
+      // Optimization: if clique_i > 0 && intersection.size() == clique.size()
+      // we already know that we performed the max possible extension.
+      if (clique_i > 0 && intersection.size() == clique.size()) {
+        clique_i = clique.size();
+      }
+      for (; clique_i < clique.size(); ++clique_i) {
+        const Literal l = clique[clique_i];
+
+        is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
+        MarkDescendants(l);
+
+        if (clique_i == 0) {
+          // Initially we have the clique + the negation of everything
+          // propagated by l.
+          for (const LiteralIndex index :
+               is_marked_.PositionsSetAtLeastOnce()) {
+            const Literal lit = Literal(index).Negated();
+            if (!tmp_bitset_[lit]) {
+              intersection.push_back(lit.Index().value());
+            }
+          }
+        } else {
+          // We intersect we the negation of everything propagated by not(l).
+          // Note that we always keep the clique in case some implication where
+          // not added to the graph.
+          int new_size = 0;
+          const int old_size = intersection.size();
+          for (int i = 0; i < old_size; ++i) {
+            if (i == next_index_to_try) {
+              next_index_to_try = new_size;
+            }
+            const int index = intersection[i];
+            const Literal lit = Literal(LiteralIndex(index));
+            if (tmp_bitset_[lit] || is_marked_[lit.Negated()]) {
+              intersection[new_size++] = index;
+            }
+          }
+          intersection.resize(new_size);
+        }
+
+        // We can abort early as soon as there is no extra literal than the
+        // initial clique.
+        if (intersection.size() <= clique.size()) break;
+      }
+
+      // Should contains the original clique. If there are no more entry, then
+      // we will not extend this clique. However, we still call FindSubsets() in
+      // order to remove fully included ones.
+      CHECK_GE(intersection.size(), clique.size());
+
+      // Look for element included in the intersection.
+      // Note that we clear element fully included at the same time.
+      //
+      // TODO(user): next_index_to_try help, but we might still rescan most of
+      // the one-watcher list of intersection[next_index_to_try], we could be
+      // a bit faster here.
+      int num_extra = 0;
+      detector.FindSubsets(intersection, &next_index_to_try, [&](int subset) {
+        if (subset == subset_index) {
+          detector.StopProcessingCurrentSubset();
+          return;
+        }
+
+        num_extra = 0;
+        for (const int index : storage[subset]) {
+          const LiteralIndex lit_index = LiteralIndex(index);
+          if (tmp_bitset_[lit_index]) continue;  // In clique.
+          tmp_bitset_.Set(lit_index);
+          clique.push_back(Literal(lit_index));  // extend.
+          ++num_extra;
+        }
+        if (num_extra == 0) {
+          // Fully included -- remove.
+          at_most_ones[detector_clique_index[subset]].clear();
+          detector.StopProcessingCurrentSubset();
+          return;
+        }
+
+        detector.StopProcessingCurrentSuperset();  // Finish.
+      });
+
+      // No extension: end loop.
+      if (num_extra == 0) break;
+    }
+  }
+  if (dtime != nullptr) {
+    *dtime +=
+        2e-8 * work_done_in_mark_descendants_ + 1e-8 * detector.work_done();
   }
   return true;
 }
@@ -2239,7 +2399,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
 
   // Optim.
   for (const Literal l : clique) {
-    if (implications_[l].empty() || is_redundant_[l]) {
+    if (!implies_something_[l]) {
       return clique;
     }
   }

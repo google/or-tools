@@ -1031,4 +1031,44 @@ public final class CpModelTest {
       table.addTuple(tuple);
     }
   }
+
+  @Test
+  public void testAddInt() {
+    System.out.println("testAddInt");
+    CpModel model = new CpModel();
+
+    // Create decision variables
+    IntVar x = model.newIntVar(0, 5, "x");
+    IntVar y = model.newIntVar(0, 5, "y");
+
+    model.addHint(y, 2);
+    model.addHint(x, 3);
+
+    assertThat(model.model().getSolutionHint().getVarsCount()).isEqualTo(2);
+    assertThat(model.model().getSolutionHint().getValuesCount()).isEqualTo(2);
+    assertThat(model.model().getSolutionHint().getVars(0)).isEqualTo(y.getIndex());
+    assertThat(model.model().getSolutionHint().getValues(0)).isEqualTo(2);
+    assertThat(model.model().getSolutionHint().getVars(1)).isEqualTo(x.getIndex());
+    assertThat(model.model().getSolutionHint().getValues(1)).isEqualTo(3);
+  }
+
+  @Test
+  public void testAddBooleanInt() {
+    System.out.println("testAddBooleanInt");
+    CpModel model = new CpModel();
+
+    // Create decision variables
+    Literal x = model.newBoolVar("x");
+    Literal y = model.newBoolVar("y");
+
+    model.addHint(y, true);
+    model.addHint(x.not(), true);
+
+    assertThat(model.model().getSolutionHint().getVarsCount()).isEqualTo(2);
+    assertThat(model.model().getSolutionHint().getValuesCount()).isEqualTo(2);
+    assertThat(model.model().getSolutionHint().getVars(0)).isEqualTo(y.getIndex());
+    assertThat(model.model().getSolutionHint().getValues(0)).isEqualTo(1);
+    assertThat(model.model().getSolutionHint().getVars(1)).isEqualTo(x.getIndex());
+    assertThat(model.model().getSolutionHint().getValues(1)).isEqualTo(0);
+  }
 }

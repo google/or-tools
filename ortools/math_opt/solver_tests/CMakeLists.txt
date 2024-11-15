@@ -110,7 +110,8 @@ ortools_cxx_library(
   TESTING
 )
 
-# In CMake or-tools is linked with all enable solvers so this test won't work.
+# In CMake, or-tools is linked with all solvers enable at configure time so this
+# test won't work...
 #ortools_cxx_test(
 #  NAME
 #    ${_PREFIX}_unregistered_solver_test

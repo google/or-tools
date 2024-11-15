@@ -558,10 +558,6 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
       cache_callbacks_(false),
       vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       vehicle_pickup_delivery_policy_(vehicles_, PICKUP_AND_DELIVERY_NO_ORDER),
-      has_hard_type_incompatibilities_(false),
-      has_temporal_type_incompatibilities_(false),
-      has_same_vehicle_type_requirements_(false),
-      has_temporal_type_requirements_(false),
       num_visit_types_(0),
       paths_metadata_(index_manager),
       manager_(index_manager),
@@ -1734,11 +1730,6 @@ void RoutingModel::ComputeResourceClasses() {
 }
 
 void RoutingModel::FinalizeVisitTypes() {
-  // NOTE(user): This is necessary if CloseVisitTypes() was not called
-  // explicitly before. This will be removed when the TODO regarding this logic
-  // is addressed.
-  CloseVisitTypes();
-
   single_nodes_of_type_.clear();
   single_nodes_of_type_.resize(num_visit_types_);
   pair_indices_of_type_.clear();
@@ -1773,8 +1764,7 @@ void RoutingModel::FinalizeVisitTypes() {
 }
 
 void RoutingModel::TopologicallySortVisitTypes() {
-  if (!has_same_vehicle_type_requirements_ &&
-      !has_temporal_type_requirements_) {
+  if (!HasSameVehicleTypeRequirements() && !HasTemporalTypeRequirements()) {
     return;
   }
   std::vector<std::pair<double, double>> type_requirement_tightness(
@@ -1788,9 +1778,9 @@ void RoutingModel::TopologicallySortVisitTypes() {
     int num_required_sets = 0;
     for (const std::vector<absl::flat_hash_set<int>>*
              required_type_alternatives :
-         {&required_type_alternatives_when_adding_type_index_[type],
-          &required_type_alternatives_when_removing_type_index_[type],
-          &same_vehicle_required_type_alternatives_per_type_index_[type]}) {
+         {&GetRequiredTypeAlternativesWhenAddingType(type),
+          &GetRequiredTypeAlternativesWhenRemovingType(type),
+          &GetSameVehicleRequiredTypeAlternativesOfType(type)}) {
       for (const absl::flat_hash_set<int>& alternatives :
            *required_type_alternatives) {
         types_in_requirement_graph.Set(type);
@@ -4328,28 +4318,21 @@ RoutingModel::VisitTypePolicy RoutingModel::GetVisitTypePolicy(
   return index_to_type_policy_[index];
 }
 
-void RoutingModel::CloseVisitTypes() {
-  hard_incompatible_types_per_type_index_.resize(num_visit_types_);
-  temporal_incompatible_types_per_type_index_.resize(num_visit_types_);
-  same_vehicle_required_type_alternatives_per_type_index_.resize(
-      num_visit_types_);
-  required_type_alternatives_when_adding_type_index_.resize(num_visit_types_);
-  required_type_alternatives_when_removing_type_index_.resize(num_visit_types_);
-}
-
 void RoutingModel::AddHardTypeIncompatibility(int type1, int type2) {
-  DCHECK_LT(std::max(type1, type2),
-            hard_incompatible_types_per_type_index_.size());
-  has_hard_type_incompatibilities_ = true;
+  DCHECK_LT(std::max(type1, type2), num_visit_types_);
+  if (hard_incompatible_types_per_type_index_.size() < num_visit_types_) {
+    hard_incompatible_types_per_type_index_.resize(num_visit_types_);
+  }
 
   hard_incompatible_types_per_type_index_[type1].insert(type2);
   hard_incompatible_types_per_type_index_[type2].insert(type1);
 }
 
 void RoutingModel::AddTemporalTypeIncompatibility(int type1, int type2) {
-  DCHECK_LT(std::max(type1, type2),
-            temporal_incompatible_types_per_type_index_.size());
-  has_temporal_type_incompatibilities_ = true;
+  DCHECK_LT(std::max(type1, type2), num_visit_types_);
+  if (temporal_incompatible_types_per_type_index_.size() < num_visit_types_) {
+    temporal_incompatible_types_per_type_index_.resize(num_visit_types_);
+  }
 
   temporal_incompatible_types_per_type_index_[type1].insert(type2);
   temporal_incompatible_types_per_type_index_[type2].insert(type1);
@@ -4357,24 +4340,29 @@ void RoutingModel::AddTemporalTypeIncompatibility(int type1, int type2) {
 
 const absl::flat_hash_set<int>&
 RoutingModel::GetHardTypeIncompatibilitiesOfType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, hard_incompatible_types_per_type_index_.size());
-  return hard_incompatible_types_per_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < hard_incompatible_types_per_type_index_.size()
+             ? hard_incompatible_types_per_type_index_[type]
+             : empty_incompatibility_set_;
 }
 
 const absl::flat_hash_set<int>&
 RoutingModel::GetTemporalTypeIncompatibilitiesOfType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, temporal_incompatible_types_per_type_index_.size());
-  return temporal_incompatible_types_per_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < temporal_incompatible_types_per_type_index_.size()
+             ? temporal_incompatible_types_per_type_index_[type]
+             : empty_incompatibility_set_;
 }
 
 // TODO(user): Consider if an empty "required_type_alternatives" should mean
 // trivially feasible requirement, as there are no required type alternatives?
 void RoutingModel::AddSameVehicleRequiredTypeAlternatives(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
-  DCHECK_LT(dependent_type,
-            same_vehicle_required_type_alternatives_per_type_index_.size());
+  DCHECK_LT(dependent_type, num_visit_types_);
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
@@ -4388,15 +4376,18 @@ void RoutingModel::AddSameVehicleRequiredTypeAlternatives(
     return;
   }
 
-  has_same_vehicle_type_requirements_ = true;
+  if (same_vehicle_required_type_alternatives_per_type_index_.size() <
+      num_visit_types_) {
+    same_vehicle_required_type_alternatives_per_type_index_.resize(
+        num_visit_types_);
+  }
   same_vehicle_required_type_alternatives_per_type_index_[dependent_type]
       .push_back(std::move(required_type_alternatives));
 }
 
 void RoutingModel::AddRequiredTypeAlternativesWhenAddingType(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
-  DCHECK_LT(dependent_type,
-            required_type_alternatives_when_adding_type_index_.size());
+  DCHECK_LT(dependent_type, num_visit_types_);
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
@@ -4409,15 +4400,17 @@ void RoutingModel::AddRequiredTypeAlternativesWhenAddingType(
     return;
   }
 
-  has_temporal_type_requirements_ = true;
+  if (required_type_alternatives_when_adding_type_index_.size() <
+      num_visit_types_) {
+    required_type_alternatives_when_adding_type_index_.resize(num_visit_types_);
+  }
   required_type_alternatives_when_adding_type_index_[dependent_type].push_back(
       std::move(required_type_alternatives));
 }
 
 void RoutingModel::AddRequiredTypeAlternativesWhenRemovingType(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
-  DCHECK_LT(dependent_type,
-            required_type_alternatives_when_removing_type_index_.size());
+  DCHECK_LT(dependent_type, num_visit_types_);
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
@@ -4431,31 +4424,43 @@ void RoutingModel::AddRequiredTypeAlternativesWhenRemovingType(
     return;
   }
 
-  has_temporal_type_requirements_ = true;
+  if (required_type_alternatives_when_removing_type_index_.size() <
+      num_visit_types_) {
+    required_type_alternatives_when_removing_type_index_.resize(
+        num_visit_types_);
+  }
   required_type_alternatives_when_removing_type_index_[dependent_type]
       .push_back(std::move(required_type_alternatives));
 }
 
 const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type,
-            same_vehicle_required_type_alternatives_per_type_index_.size());
-  return same_vehicle_required_type_alternatives_per_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < same_vehicle_required_type_alternatives_per_type_index_.size()
+             ? same_vehicle_required_type_alternatives_per_type_index_[type]
+             : empty_required_type_alternatives_;
 }
 
 const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetRequiredTypeAlternativesWhenAddingType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, required_type_alternatives_when_adding_type_index_.size());
-  return required_type_alternatives_when_adding_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < required_type_alternatives_when_adding_type_index_.size()
+             ? required_type_alternatives_when_adding_type_index_[type]
+             : empty_required_type_alternatives_;
 }
 
 const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetRequiredTypeAlternativesWhenRemovingType(int type) const {
+  DCHECK(closed_);
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, required_type_alternatives_when_removing_type_index_.size());
-  return required_type_alternatives_when_removing_type_index_[type];
+  DCHECK_LT(type, num_visit_types_);
+  return type < required_type_alternatives_when_removing_type_index_.size()
+             ? required_type_alternatives_when_removing_type_index_[type]
+             : empty_required_type_alternatives_;
 }
 
 int64_t RoutingModel::UnperformedPenalty(int64_t var_index) const {
@@ -4766,14 +4771,19 @@ void RoutingModel::CreateNeighborhoodOperators(
   std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());
   for (const RoutingModel::Disjunction& disjunction : disjunctions_) {
     // Only add disjunctions of cardinality 1, as
-    // SwapActiveToShortestPathOperator only supports DAGs.
+    // SwapActiveToShortestPathOperator and TwoOptWithShortestPathOperator only
+    // support DAGs.
     if (disjunction.value.max_cardinality == 1) {
       alternative_sets.push_back(disjunction.indices);
     }
   }
   local_search_operators_[SHORTEST_PATH_SWAP_ACTIVE] =
       CreateOperator<SwapActiveToShortestPathOperator>(
-          std::move(alternative_sets),
+          alternative_sets,
+          GetLocalSearchHomogeneousArcCostCallback(parameters));
+  local_search_operators_[SHORTEST_PATH_TWO_OPT] =
+      CreateOperator<TwoOptWithShortestPathOperator>(
+          alternative_sets,
           GetLocalSearchHomogeneousArcCostCallback(parameters));
 
   // Routing-specific operators.
@@ -4999,6 +5009,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active);
     CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_SWAP_ACTIVE,
                              shortest_path_swap_active);
+    CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_TWO_OPT, shortest_path_two_opt);
   }
   LocalSearchOperator* main_operator_group =
       ConcatenateOperators(search_parameters, operators);
@@ -6039,7 +6050,8 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
                                LIN_KERNIGHAN,
                                MAKE_INACTIVE,
                                MAKE_CHAIN_INACTIVE,
-                               SHORTEST_PATH_SWAP_ACTIVE};
+                               SHORTEST_PATH_SWAP_ACTIVE,
+                               SHORTEST_PATH_TWO_OPT};
       secondary_ls_operator_ =
           GetNeighborhoodOperators(search_parameters, operators_to_consider);
     }
@@ -6533,7 +6545,7 @@ void RoutingDimension::InitializeCumuls() {
 namespace {
 void ComputeTransitClasses(absl::Span<const int> evaluator_indices,
                            std::vector<int>* class_evaluators,
-                           std::vector<int64_t>* vehicle_to_class) {
+                           std::vector<int>* vehicle_to_class) {
   CHECK(class_evaluators != nullptr);
   CHECK(vehicle_to_class != nullptr);
   class_evaluators->clear();

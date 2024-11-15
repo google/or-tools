@@ -226,6 +226,8 @@ std::function<int(GRBenv** envP)> GRBemptyenv = nullptr;
 std::function<int(GRBenv** envP, const char* logfilename)> GRBloadenv = nullptr;
 std::function<int(GRBenv* env)> GRBstartenv = nullptr;
 std::function<GRBenv*(GRBmodel* model)> GRBgetenv = nullptr;
+std::function<GRBenv*(GRBmodel* model, int num)> GRBgetmultiobjenv = nullptr;
+std::function<GRBenv*(GRBmodel* model)> GRBdiscardmultiobjenvs = nullptr;
 std::function<void(GRBenv* env)> GRBfreeenv = nullptr;
 std::function<const char*(GRBenv* env)> GRBgeterrormsg = nullptr;
 std::function<void(int* majorP, int* minorP, int* technicalP)> GRBversion =
@@ -337,6 +339,9 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBgetstrparaminfo,
                                       "GRBgetstrparaminfo");
   gurobi_dynamic_library->GetFunction(&GRBgetenv, "GRBgetenv");
+  gurobi_dynamic_library->GetFunction(&GRBgetmultiobjenv, "GRBgetmultiobjenv");
+  gurobi_dynamic_library->GetFunction(&GRBdiscardmultiobjenvs,
+                                      "GRBdiscardmultiobjenvs");
   gurobi_dynamic_library->GetFunction(&GRBfreeenv, "GRBfreeenv");
   gurobi_dynamic_library->GetFunction(&GRBgeterrormsg, "GRBgeterrormsg");
   gurobi_dynamic_library->GetFunction(&GRBversion, "GRBversion");

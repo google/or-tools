@@ -349,6 +349,10 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
     return absl::StrCat("An int_prod constraint should have a target: ",
                         ProtobufShortDebugString(ct));
   }
+  if (ct.int_prod().exprs().empty()) {
+    return absl::StrCat("An int_prod constraint should have some expressions: ",
+                        ProtobufShortDebugString(ct));
+  }
 
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
     RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
@@ -427,6 +431,11 @@ std::string ValidateElementConstraint(const CpModelProto& model,
         ProtobufShortDebugString(ct));
   }
 
+  if (element.vars().empty() && element.exprs().empty()) {
+    return "Empty element constraint is interpreted as vars[], thus invalid "
+           "since the index will be out of bounds.";
+  }
+
   // We need to be able to manipulate expression like "target - var" without
   // integer overflow.
   if (!element.vars().empty()) {
@@ -475,7 +484,8 @@ std::string ValidateElementConstraint(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateTableConstraint(const ConstraintProto& ct) {
+std::string ValidateTableConstraint(const CpModelProto& model,
+                                    const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
   if (!arg.vars().empty() && !arg.exprs().empty()) {
     return absl::StrCat(
@@ -487,6 +497,9 @@ std::string ValidateTableConstraint(const ConstraintProto& ct) {
         "Inconsistent table empty expressions and non-empty tuples: ",
         ProtobufShortDebugString(ct));
   }
+  if (arg.vars().empty() && arg.exprs().empty() && arg.values().empty()) {
+    return "";
+  }
   const int arity = arg.vars().empty() ? arg.exprs().size() : arg.vars().size();
   if (arg.values().size() % arity != 0) {
     return absl::StrCat(
@@ -494,10 +507,19 @@ std::string ValidateTableConstraint(const ConstraintProto& ct) {
         "the number of expressions: ",
         ProtobufDebugString(ct));
   }
+  for (const int var : arg.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in table constraint: ", var);
+    }
+  }
+  for (const LinearExpressionProto& expr : arg.exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+  }
   return "";
 }
 
-std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
+std::string ValidateAutomatonConstraint(const CpModelProto& model,
+                                        const ConstraintProto& ct) {
   const AutomatonConstraintProto& automaton = ct.automaton();
   if (!automaton.vars().empty() && !automaton.exprs().empty()) {
     return absl::StrCat(
@@ -510,6 +532,15 @@ std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
     return absl::StrCat(
         "The transitions repeated fields must have the same size: ",
         ProtobufShortDebugString(ct));
+  }
+  for (const int var : automaton.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in automaton constraint: ",
+                          var);
+    }
+  }
+  for (const LinearExpressionProto& expr : automaton.exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
@@ -976,6 +1007,9 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 }
 
 std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
+  if (!after_presolve && model.has_symmetry()) {
+    return "The symmetry field should be empty and reserved for internal use.";
+  }
   int64_t int128_overflow = 0;
   for (int v = 0; v < model.variables_size(); ++v) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
@@ -1051,11 +1085,11 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateElementConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
         support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         RETURN_IF_NOT_EMPTY(

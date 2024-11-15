@@ -55,6 +55,7 @@
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -1593,6 +1594,183 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         orbitope[0].size());
     context->UpdateNewConstraintsVariableUsage();
     return true;
+  }
+
+  return true;
+}
+
+namespace {
+
+std::vector<absl::Span<int>> GetCyclesAsSpan(
+    SparsePermutationProto& permutation) {
+  std::vector<absl::Span<int>> result;
+  int start = 0;
+  const int num_cycles = permutation.cycle_sizes().size();
+  for (int i = 0; i < num_cycles; ++i) {
+    const int size = permutation.cycle_sizes(i);
+    result.push_back(
+        absl::MakeSpan(&permutation.mutable_support()->at(start), size));
+    start += size;
+  }
+  return result;
+}
+
+}  // namespace
+
+bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
+                                         PresolveContext* context) {
+  std::vector<absl::Span<int>> cycles;
+  int num_problematic_generators = 0;
+  for (SparsePermutationProto& generator : *symmetry->mutable_permutations()) {
+    // We process each cycle at once.
+    // If all variables from a cycle are fixed to the same value, this is
+    // fine and we can just remove the cycle.
+    //
+    // TODO(user): These are just basic checks and do not guarantee that we
+    // properly kept this symmetry in the presolve.
+    //
+    // TODO(user): Deal with case where all variable in an orbit has been found
+    // to be equivalent to each other. Or all variables have affine
+    // representative, like if all domains where [0][2], we should have remapped
+    // all such variable to Booleans.
+    cycles = GetCyclesAsSpan(generator);
+    bool problematic = false;
+
+    int new_num_cycles = 0;
+    const int old_num_cycles = cycles.size();
+    for (int i = 0; i < old_num_cycles; ++i) {
+      if (cycles[i].empty()) continue;
+      const int reference_var = cycles[i][0];
+      const Domain reference_domain = context->DomainOf(reference_var);
+      const AffineRelation::Relation reference_relation =
+          context->GetAffineRelation(reference_var);
+
+      int num_affine_relations = 0;
+      int num_with_same_representative = 0;
+
+      int num_fixed = 0;
+      int num_unused = 0;
+      for (const int var : cycles[i]) {
+        CHECK(RefIsPositive(var));
+        if (context->DomainOf(var) != reference_domain) {
+          context->UpdateRuleStats(
+              "TODO symmetry: different domain in symmetric variables");
+          problematic = true;
+          break;
+        }
+
+        if (context->DomainOf(var).IsFixed()) {
+          ++num_fixed;
+          continue;
+        }
+
+        // If we have affine relation, we only support the case where they
+        // are all the same.
+        const auto affine_relation = context->GetAffineRelation(var);
+        if (affine_relation == reference_relation) {
+          ++num_with_same_representative;
+        }
+        if (affine_relation.representative != var) {
+          ++num_affine_relations;
+        }
+
+        if (context->VariableIsNotUsedAnymore(var)) {
+          ++num_unused;
+          continue;
+        }
+      }
+
+      if (problematic) break;
+
+      if (num_fixed > 0) {
+        if (num_fixed != cycles[i].size()) {
+          context->UpdateRuleStats(
+              "TODO symmetry: not all variables fixed in cycle");
+          problematic = true;
+          break;
+        }
+        continue;  // We can skip this cycle
+      }
+
+      if (num_affine_relations > 0) {
+        if (num_with_same_representative != cycles[i].size()) {
+          context->UpdateRuleStats(
+              "TODO symmetry: not all variables have same representative");
+          problematic = true;
+          break;
+        }
+        continue;  // We can skip this cycle
+      }
+
+      // Note that the order matter.
+      // If all have the same representative, we don't care about this one.
+      if (num_unused > 0) {
+        if (num_unused != cycles[i].size()) {
+          context->UpdateRuleStats(
+              "TODO symmetry: not all variables unused in cycle");
+          problematic = true;
+          break;
+        }
+        continue;  // We can skip this cycle
+      }
+
+      // Lets keep this cycle.
+      cycles[new_num_cycles++] = cycles[i];
+    }
+
+    if (problematic) {
+      ++num_problematic_generators;
+      generator.clear_support();
+      generator.clear_cycle_sizes();
+      continue;
+    }
+
+    if (new_num_cycles < old_num_cycles) {
+      cycles.resize(new_num_cycles);
+      generator.clear_cycle_sizes();
+      int new_support_size = 0;
+      for (const absl::Span<int> cycle : cycles) {
+        for (const int var : cycle) {
+          generator.set_support(new_support_size++, var);
+        }
+        generator.add_cycle_sizes(cycle.size());
+      }
+      generator.mutable_support()->Truncate(new_support_size);
+    }
+  }
+
+  if (num_problematic_generators > 0) {
+    SOLVER_LOG(context->logger(), "[Symmetry] ", num_problematic_generators,
+               " generators where problematic !! Fix.");
+  }
+
+  // Lets remove empty generators.
+  int new_size = 0;
+  const int old_size = symmetry->permutations().size();
+  for (int i = 0; i < old_size; ++i) {
+    if (symmetry->permutations(i).support().empty()) continue;
+    if (new_size != i) {
+      symmetry->mutable_permutations()->SwapElements(new_size, i);
+    }
+    ++new_size;
+  }
+  if (new_size != old_size) {
+    symmetry->mutable_permutations()->DeleteSubrange(new_size,
+                                                     old_size - new_size);
+  }
+
+  // Lets output the new statistics.
+  // TODO(user): Avoid the reconvertion.
+  {
+    const int num_vars = context->working_model->variables().size();
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    for (const SparsePermutationProto& perm : symmetry->permutations()) {
+      generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+    }
+    SOLVER_LOG(context->logger(),
+               "[Symmetry] final processing #generators:", generators.size());
+    const std::vector<int> orbits = GetOrbits(num_vars, generators);
+    LogOrbitInformation(orbits, context->logger());
   }
 
   return true;

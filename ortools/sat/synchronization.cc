@@ -124,10 +124,10 @@ SharedResponseManager::SharedResponseManager(Model* model)
 
 namespace {
 
-std::string ProgressMessage(const std::string& event_or_solution_count,
+std::string ProgressMessage(absl::string_view event_or_solution_count,
                             double time_in_seconds, double obj_best,
                             double obj_lb, double obj_ub,
-                            const std::string& solution_info) {
+                            absl::string_view solution_info) {
   const std::string obj_next =
       obj_lb <= obj_ub ? absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub)
                        : "next:[]";
@@ -967,8 +967,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
 // this break determinism if two solution for the same subpart comes at the same
 // time.
 void SharedBoundsManager::FixVariablesFromPartialSolution(
-    const std::vector<int64_t>& solution,
-    const std::vector<int>& variables_to_fix) {
+    absl::Span<const int64_t> solution,
+    absl::Span<const int> variables_to_fix) {
   // This function shouldn't be called if we has symmetry.
   CHECK(!has_symmetry_);
   absl::MutexLock mutex_lock(&mutex_);
@@ -1119,7 +1119,7 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   }
 }
 
-int SharedBoundsManager::NumBoundsExported(const std::string& worker_name) {
+int SharedBoundsManager::NumBoundsExported(absl::string_view worker_name) {
   absl::MutexLock mutex_lock(&mutex_);
   const auto it = bounds_exported_.find(worker_name);
   if (it == bounds_exported_.end()) return 0;
@@ -1285,7 +1285,7 @@ int SharedClausesManager::RegisterNewId() {
 }
 
 void SharedClausesManager::SetWorkerNameForId(int id,
-                                              const std::string& worker_name) {
+                                              absl::string_view worker_name) {
   absl::MutexLock mutex_lock(&mutex_);
   id_to_worker_name_[id] = worker_name;
 }

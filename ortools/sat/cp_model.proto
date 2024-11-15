@@ -251,6 +251,13 @@ message RoutesConstraintProto {
 // the listed n-tuples in values. The n-tuples are encoded in a flattened way:
 //     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
 // Expressions must be affine (a * var + b).
+// Corner cases:
+//  - If all `vars`, `values` and `exprs` are empty, the constraint is trivially
+//    true, irrespective of the value of `negated`.
+//  - If `values` is empty but either vars or exprs is not, the constraint is
+//    trivially false if `negated` is false, and trivially true if `negated` is
+//    true.
+//  - If `vars` and `exprs` are empty but `values` is not, the model is invalid.
 message TableConstraintProto {
   repeated int32 vars = 1;  // Legacy field.
   repeated int64 values = 2;

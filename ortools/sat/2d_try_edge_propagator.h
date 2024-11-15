@@ -24,6 +24,8 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace sat {
@@ -55,17 +57,38 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  protected:
-  std::vector<RectangleInRange> active_box_ranges_;
-  int max_box_index_ = 0;
+  // placed_boxes_ is a list that is only meaningful for indices for which
+  // is_in_cache_[box_index] is true. After applying this condition,
+  // placed_boxes_ contains a list of boxes placed at their current x_min and
+  // that does not overlap with the mandatory region of any other box in
+  // placed_boxes_. In other words, there is no point on looking for any
+  // propagation for this heuristic between boxes that are already in
+  // placed_boxes_.
+  std::vector<Rectangle> placed_boxes_;
+  std::vector<bool> is_in_cache_;
 
-  // Must also populate max_box_index_.
-  virtual void PopulateActiveBoxRanges();
+  std::vector<Rectangle> mandatory_regions_;
+  std::vector<RectangleInRange> active_box_ranges_;
+  std::vector<bool> is_active_;
+  Bitset64<int> has_mandatory_region_;
+
+  std::vector<int> changed_item_;
+  std::vector<int> changed_mandatory_;
 
   virtual bool ExplainAndPropagate(
       const std::vector<std::pair<int, std::optional<IntegerValue>>>&
           found_propagations);
 
+  // This function assumes that a propagation is found and the box with index
+  // `box_index` cannot be placed to the left of new_x_min. It returns a list of
+  // indices of boxes that defines a subproblem where the propagation is still
+  // valid, including `box_index` itself.
+  std::vector<int> GetMinimumProblemWithPropagation(int box_index,
+                                                    IntegerValue new_x_min);
+
  private:
+  void PopulateActiveBoxRanges();
+
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
   SharedStatistics* shared_stats_;
@@ -79,11 +102,11 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
   int64_t num_conflicts_ = 0;
   int64_t num_propagations_ = 0;
   int64_t num_calls_ = 0;
-  int64_t num_cache_hits_ = 0;
-  int64_t num_cache_misses_ = 0;
 
+  CompactVectorVector<int> conflicts_per_x_and_y_;
   bool CanPlace(int box_index,
-                const std::pair<IntegerValue, IntegerValue>& position) const;
+                const std::pair<IntegerValue, IntegerValue>& position,
+                CompactVectorVector<int>* with_conflicts = nullptr) const;
 
   TryEdgeRectanglePropagator(const TryEdgeRectanglePropagator&) = delete;
   TryEdgeRectanglePropagator& operator=(const TryEdgeRectanglePropagator&) =

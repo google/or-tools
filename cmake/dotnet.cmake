@@ -98,6 +98,9 @@ endif()
 if(USE_DOTNET_8)
   list(APPEND TFM "net8.0")
 endif()
+if(USE_DOTNET_9)
+  list(APPEND TFM "net9.0")
+endif()
 
 list(LENGTH TFM TFM_LENGTH)
 if(TFM_LENGTH EQUAL "0")
@@ -285,6 +288,13 @@ function(add_dotnet_test)
           ${DOTNET_EXECUTABLE} test --nologo --framework net8.0 -c Release
           WORKING_DIRECTORY ${DOTNET_TEST_DIR})
     endif()
+    if(USE_DOTNET_9)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net90
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} test --nologo --framework net9.0 -c Release
+          WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    endif()
   endif()
   message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
 endfunction()
@@ -362,15 +372,20 @@ file(MAKE_DIRECTORY ${DOTNET_PACKAGES_DIR})
 # *.csproj.in contains:
 # CMake variable(s) (@PROJECT_NAME@) that configure_file() can manage and
 # generator expression ($<TARGET_FILE:...>) that file(GENERATE) can manage.
+set(is_windows "$<PLATFORM_ID:Windows>")
 set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
 
-set(need_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
+set(need_unix_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
+set(need_windows_zlib_lib "$<AND:${is_windows},$<BOOL:${BUILD_ZLIB}>>")
 
-set(need_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
+set(need_unix_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
+set(need_windows_absl_lib "$<AND:${is_windows},$<BOOL:${BUILD_absl}>>")
 
-set(need_re2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_re2}>>")
+set(need_unix_re2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_re2}>>")
+set(need_windows_re2_lib "$<AND:${is_windows},$<BOOL:${BUILD_re2}>>")
 
-set(need_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
+set(need_unix_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
+set(need_windows_protobuf_lib "$<AND:${is_windows},$<BOOL:${BUILD_Protobuf}>>")
 
 set(need_coinutils_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_CoinUtils}>>")
 set(need_osi_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Osi}>>")
@@ -378,7 +393,8 @@ set(need_clp_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Clp}>>")
 set(need_cgl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cgl}>>")
 set(need_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
 
-set(need_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
+set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
+set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
 
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
 
@@ -610,6 +626,13 @@ function(add_dotnet_sample)
           ${DOTNET_EXECUTABLE} run --no-build --framework net8.0 -c Release
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
+    if(USE_DOTNET_9)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_net90
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --no-build --framework net9.0 -c Release
+        WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
+    endif()
   endif()
   message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
 endfunction()
@@ -722,6 +745,13 @@ if(NOT EXAMPLE_FILE_NAME)
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_net80
         COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
           ${DOTNET_EXECUTABLE} run --no-build --framework net8.0 -c Release ${EXAMPLE_NAME}.csproj
+        WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
+    endif()
+    if(USE_DOTNET_9)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_net90
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --no-build --framework net9.0 -c Release ${EXAMPLE_NAME}.csproj
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
   endif()

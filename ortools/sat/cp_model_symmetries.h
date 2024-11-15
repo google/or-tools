@@ -66,6 +66,13 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 // mas74.pb.gz, or the square??.mps for instance. But it is less good overall.
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context);
 
+// This make sure all variables from the same orbit have the same domain.
+// We also remove from the generator cycles on fixed or removed variables.
+//
+// Returns false on UNSAT.
+bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
+                                         PresolveContext* context);
+
 }  // namespace sat
 }  // namespace operations_research
 

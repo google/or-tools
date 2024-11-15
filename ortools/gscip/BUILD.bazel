@@ -11,7 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(
@@ -131,7 +133,7 @@ cc_library(
     name = "gscip_callback_result",
     srcs = ["gscip_callback_result.cc"],
     hdrs = ["gscip_callback_result.h"],
-    deps = ["@scip//:libscip"],
+    deps = ["@scip"],
 )
 
 cc_library(
@@ -147,6 +149,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
-        "@scip//:libscip",
+        "@scip",
     ],
 )

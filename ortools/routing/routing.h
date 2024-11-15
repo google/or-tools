@@ -1100,11 +1100,7 @@ class RoutingModel {
   const std::vector<int>& GetSingleNodesOfType(int type) const;
   const std::vector<int>& GetPairIndicesOfType(int type) const;
   VisitTypePolicy GetVisitTypePolicy(int64_t index) const;
-  /// This function should be called once all node visit types have been set and
-  /// prior to adding any incompatibilities/requirements.
-  // TODO(user): Reconsider the logic and potentially remove the need to
-  /// "close" types.
-  void CloseVisitTypes();
+
   int GetNumberOfVisitTypes() const { return num_visit_types_; }
 #ifndef SWIG
   const std::vector<std::vector<int>>& GetTopologicallySortedVisitTypes()
@@ -1117,6 +1113,9 @@ class RoutingModel {
   /// Two nodes with "hard" incompatible types cannot share the same route at
   /// all, while with a "temporal" incompatibility they can't be on the same
   /// route at the same time.
+  /// NOTE: To avoid unnecessary memory reallocations, it is recommended to only
+  /// add incompatibilities once all the existing types have been set with
+  /// SetVisitType().
   void AddHardTypeIncompatibility(int type1, int type2);
   void AddTemporalTypeIncompatibility(int type1, int type2);
   /// Returns visit types incompatible with a given type.
@@ -1127,10 +1126,10 @@ class RoutingModel {
   /// Returns true iff any hard (resp. temporal) type incompatibilities have
   /// been added to the model.
   bool HasHardTypeIncompatibilities() const {
-    return has_hard_type_incompatibilities_;
+    return !hard_incompatible_types_per_type_index_.empty();
   }
   bool HasTemporalTypeIncompatibilities() const {
-    return has_temporal_type_incompatibilities_;
+    return !temporal_incompatible_types_per_type_index_.empty();
   }
   /// Requirements:
   /// NOTE: As of 2019-04, cycles in the requirement graph are not supported,
@@ -1142,6 +1141,9 @@ class RoutingModel {
   /// For same-vehicle requirements, a node of dependent type type_D requires at
   /// least one node of type type_R among the required alternatives on the same
   /// route.
+  /// NOTE: To avoid unnecessary memory reallocations, it is recommended to only
+  /// add requirements once all the existing types have been set with
+  /// SetVisitType().
   void AddSameVehicleRequiredTypeAlternatives(
       int dependent_type, absl::flat_hash_set<int> required_type_alternatives);
   /// If type_D depends on type_R when adding type_D, any node_D of type_D and
@@ -1172,10 +1174,11 @@ class RoutingModel {
   /// Returns true iff any same-route (resp. temporal) type requirements have
   /// been added to the model.
   bool HasSameVehicleTypeRequirements() const {
-    return has_same_vehicle_type_requirements_;
+    return !same_vehicle_required_type_alternatives_per_type_index_.empty();
   }
   bool HasTemporalTypeRequirements() const {
-    return has_temporal_type_requirements_;
+    return !required_type_alternatives_when_adding_type_index_.empty() ||
+           !required_type_alternatives_when_removing_type_index_.empty();
   }
 
   /// Returns true iff the model has any incompatibilities or requirements set
@@ -2109,6 +2112,7 @@ class RoutingModel {
     SWAP_ACTIVE_CHAIN,
     EXTENDED_SWAP_ACTIVE,
     SHORTEST_PATH_SWAP_ACTIVE,
+    SHORTEST_PATH_TWO_OPT,
     NODE_PAIR_SWAP,
     PATH_LNS,
     FULL_PATH_LNS,
@@ -2692,19 +2696,17 @@ class RoutingModel {
 
   std::vector<absl::flat_hash_set<int> >
       hard_incompatible_types_per_type_index_;
-  bool has_hard_type_incompatibilities_;
   std::vector<absl::flat_hash_set<int> >
       temporal_incompatible_types_per_type_index_;
-  bool has_temporal_type_incompatibilities_;
+  const absl::flat_hash_set<int> empty_incompatibility_set_;
 
   std::vector<std::vector<absl::flat_hash_set<int> > >
       same_vehicle_required_type_alternatives_per_type_index_;
-  bool has_same_vehicle_type_requirements_;
   std::vector<std::vector<absl::flat_hash_set<int> > >
       required_type_alternatives_when_adding_type_index_;
   std::vector<std::vector<absl::flat_hash_set<int> > >
       required_type_alternatives_when_removing_type_index_;
-  bool has_temporal_type_requirements_;
+  const std::vector<absl::flat_hash_set<int>> empty_required_type_alternatives_;
   absl::flat_hash_map</*type*/int, absl::flat_hash_set<VisitTypePolicy> >
       trivially_infeasible_visit_types_to_policies_;
 
@@ -3786,16 +3788,14 @@ class RoutingDimension {
   std::vector<IntVar*> fixed_transits_;
   /// Values in class_evaluators_ correspond to the evaluators in
   /// RoutingModel::transit_evaluators_ for each vehicle class.
-  // TODO(user): Make the *vehicle_to*_class_* members vector<int> instead
-  // of vector<int64_t>.
   std::vector<int> class_evaluators_;
-  std::vector<int64_t> vehicle_to_class_;
+  std::vector<int> vehicle_to_class_;
 
   /// Values in cumul_dependent_class_evaluators_ correspond to the evaluators
   /// in RoutingModel::cumul_dependent_transit_evaluators_ for each vehicle
   /// class.
   std::vector<int> cumul_dependent_class_evaluators_;
-  std::vector<int64_t> vehicle_to_cumul_dependent_class_;
+  std::vector<int> vehicle_to_cumul_dependent_class_;
 #ifndef SWIG
   ReverseArcListGraph<int, int> path_precedence_graph_;
 #endif
@@ -3813,7 +3813,7 @@ class RoutingDimension {
   // in RoutingModel::state_dependent_transit_evaluators_ for each vehicle
   // class.
   std::vector<int> state_dependent_class_evaluators_;
-  std::vector<int64_t> state_dependent_vehicle_to_class_;
+  std::vector<int> state_dependent_vehicle_to_class_;
 
   // For each pickup/delivery pair_index for which limits have been set,
   // pickup_to_delivery_limits_per_pair_index_[pair_index] contains the

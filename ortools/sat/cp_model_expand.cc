@@ -1270,6 +1270,26 @@ bool TableIsInCanonicalForm(ConstraintProto* ct) {
     LOG(ERROR) << "Table is in the legacy format.";
     return false;
   }
+  if (table.values().empty()) {
+    if (table.exprs().empty()) {
+      return true;
+    }
+    if (table.exprs_size() != 1) {
+      LOG(ERROR) << "Table is empty but has more than one expression.";
+      return false;
+    }
+    if (table.exprs(0).offset() != 0) {
+      LOG(ERROR) << "Table is empty but has an expression with a non-zero "
+                    "offset.";
+      return false;
+    }
+    if (!table.exprs(0).vars().empty()) {
+      LOG(ERROR) << "Table is empty but has an expression with a non-constant "
+                    "coefficient.";
+      return false;
+    }
+    return true;
+  }
   for (const LinearExpressionProto& expr : table.exprs()) {
     if (expr.offset() != 0) {
       LOG(ERROR) << "Expression contains an non-zero offset.";
@@ -1280,6 +1300,10 @@ bool TableIsInCanonicalForm(ConstraintProto* ct) {
                     "different from 1.";
       return false;
     }
+    if (expr.vars().empty()) {
+      LOG(ERROR) << "Constant expression.";
+      return false;
+    }
   }
   return true;
 }
@@ -1287,7 +1311,14 @@ bool TableIsInCanonicalForm(ConstraintProto* ct) {
 void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   DCHECK(TableIsInCanonicalForm(ct));
   TableConstraintProto& table = *ct->mutable_table();
+  if (table.values().empty()) {  // Early exit.
+    context->UpdateRuleStats("table: empty negated constraint");
+    ct->Clear();
+    return;
+  }
+
   const int num_exprs = table.exprs_size();
+  DCHECK_GT(num_exprs, 0);
   const int num_original_tuples = table.values_size() / num_exprs;
   std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;
@@ -1295,12 +1326,6 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
     for (int j = 0; j < num_exprs; ++j) {
       tuples[i].push_back(table.values(count++));
     }
-  }
-
-  if (tuples.empty()) {  // Early exit.
-    context->UpdateRuleStats("table: empty negated constraint");
-    ct->Clear();
-    return;
   }
 
   // Compress tuples.
@@ -1833,14 +1858,24 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
 void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   DCHECK(TableIsInCanonicalForm(ct));
   const TableConstraintProto& table = ct->table();
+  if (table.exprs().empty()) {
+    CHECK(table.values().empty());
+    context->UpdateRuleStats("table: empty trivial");
+    ct->Clear();
+    return;
+  }
   const int num_exprs = table.exprs_size();
   const int num_original_tuples = table.values_size() / num_exprs;
 
   // Read tuples flat array and recreate the vector of tuples.
   std::vector<int> vars;
   vars.reserve(table.exprs_size());
-  for (const LinearExpressionProto& expr : table.exprs()) {
-    vars.push_back(expr.vars(0));
+  if (table.values().empty()) {
+    DCHECK(table.exprs_size() == 1 && table.exprs(0).vars().empty());
+  } else {
+    for (const LinearExpressionProto& expr : table.exprs()) {
+      vars.push_back(expr.vars(0));
+    }
   }
   std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;

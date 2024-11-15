@@ -23,14 +23,16 @@
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/util.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
@@ -111,7 +113,7 @@ void SequentialLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
 // On portable platform, we don't support multi-threading for now.
 
 void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                          int num_threads) {
+                          int num_threads, ModelSharedTimeLimit* time_limit) {
   SequentialLoop(subsolvers);
 }
 
@@ -189,7 +191,8 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 }
 
 void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                          const int num_threads) {
+                          const int num_threads,
+                          ModelSharedTimeLimit* time_limit) {
   CHECK_GT(num_threads, 0);
   if (num_threads == 1) {
     return SequentialLoop(subsolvers);
@@ -248,6 +251,20 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
       const absl::MutexLock mutex_lock(&mutex);
       ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
       best = NextSubsolverToSchedule(subsolvers, /*deterministic=*/false);
+      if (VLOG_IS_ON(1) && time_limit->LimitReached()) {
+        std::vector<std::string> debug;
+        for (int i = 0; i < subsolvers.size(); ++i) {
+          if (subsolvers[i] != nullptr && num_in_flight_per_subsolvers[i] > 0) {
+            debug.push_back(absl::StrCat(subsolvers[i]->name(), ":",
+                                         num_in_flight_per_subsolvers[i]));
+          }
+        }
+        if (!debug.empty()) {
+          VLOG_EVERY_N_SEC(1, 1)
+              << "Subsolvers still running after time limit: "
+              << absl::StrJoin(debug, ",");
+        }
+      }
     }
     if (best == -1) {
       if (all_done) break;

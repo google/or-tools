@@ -34,6 +34,19 @@ namespace sat {
 void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
   if (context->ModelIsUnsat()) return;
 
+  DCHECK(ct->table().vars().empty());
+  if (ct->table().exprs().empty()) {
+    CHECK(ct->table().values().empty());
+    return;
+  }
+
+  if (ct->table().values().empty()) {
+    // Make the trivial table constraint canonical.
+    ct->mutable_table()->clear_exprs();
+    ct->mutable_table()->add_exprs()->set_offset(0);
+    return;
+  }
+
   const int num_exprs = ct->table().exprs_size();
   const int num_tuples = ct->table().values_size() / num_exprs;
 
@@ -44,9 +57,13 @@ void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
   // the position in the reduced list of expressions.
   std::vector<std::optional<int>> position_mapping(num_exprs, std::nullopt);
   int num_shared_vars = 0;
+  int num_fixed_exprs = 0;
   for (int i = 0; i < num_exprs; ++i) {
     const LinearExpressionProto& expr = ct->table().exprs(i);
-    if (context->IsFixed(expr)) continue;
+    if (context->IsFixed(expr)) {
+      ++num_fixed_exprs;
+      continue;
+    }
 
     const int var = expr.vars(0);
     const auto [it, inserted] =
@@ -57,7 +74,7 @@ void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
     }
   }
 
-  const int num_kept_exprs = num_exprs - num_shared_vars;
+  const int num_kept_exprs = num_exprs - num_shared_vars - num_fixed_exprs;
 
   std::vector<std::vector<int64_t>> new_tuples;
   new_tuples.reserve(num_tuples);
@@ -77,7 +94,6 @@ void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
           tuple_is_valid = false;
           break;
         }
-        new_scaled_values.push_back(value);
       } else if (position_mapping[e].has_value()) {
         const int var_first_position = position_mapping[e].value();
         const int64_t var_value = new_scaled_values[var_first_position];
@@ -114,6 +130,7 @@ void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
     int index = 0;
     for (int e = 0; e < num_exprs; ++e) {
       if (position_mapping[e].has_value()) continue;
+      if (context->IsFixed(ct->table().exprs(e))) continue;
       ct->mutable_table()->mutable_exprs()->SwapElements(index++, e);
     }
     CHECK_EQ(index, num_kept_exprs);
@@ -127,48 +144,37 @@ void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
     context->UpdateRuleStats("table: remove tuples");
   }
 
+  if (num_kept_exprs == 0) {
+    // The table was not empty from the beginning (we test it), but it became
+    // empty after removing all fixed variables. So either we also remove all
+    // the tuples, in which case there was no tuple that matched, or some tuple
+    // (of size 0!) remained and in this case we did find a match.
+    context->UpdateRuleStats("table: all constant");
+    const bool all_tuples_invalid = new_tuples.empty();
+    const bool is_trivially_sat = all_tuples_invalid == ct->table().negated();
+    ct->mutable_table()->clear_exprs();
+    ct->mutable_table()->clear_values();
+    ct->mutable_table()->add_exprs()->set_offset(0);
+    ct->mutable_table()->set_negated(is_trivially_sat);
+    return;
+  }
+
+  if (new_tuples.empty()) {
+    // Add a trivially unsat table constraint so code downstream can handle
+    // any eventual enforcement literals.
+    context->UpdateRuleStats("table: all tuples invalid");
+    ct->mutable_table()->clear_exprs();
+    ct->mutable_table()->clear_values();
+    ct->mutable_table()->add_exprs()->set_offset(0);
+    ct->mutable_table()->set_negated(false);
+    return;
+  }
+
   // Write sorted tuples.
   ct->mutable_table()->clear_values();
   for (const std::vector<int64_t>& tuple : new_tuples) {
     ct->mutable_table()->mutable_values()->Add(tuple.begin(), tuple.end());
   }
-}
-
-void RemoveFixedColumnsFromTable(PresolveContext* context,
-                                 ConstraintProto* ct) {
-  if (context->ModelIsUnsat()) return;
-  const int num_exprs = ct->table().exprs_size();
-  const int num_tuples = ct->table().values_size() / num_exprs;
-  std::vector<bool> is_fixed(num_exprs, false);
-  int num_fixed_exprs = 0;
-  for (int e = 0; e < num_exprs; ++e) {
-    is_fixed[e] = context->IsFixed(ct->table().exprs(e));
-    num_fixed_exprs += is_fixed[e];
-  }
-  if (num_fixed_exprs == 0) return;
-
-  int num_kept_exprs = num_exprs - num_fixed_exprs;
-
-  int index = 0;
-  for (int e = 0; e < num_exprs; ++e) {
-    if (is_fixed[e]) continue;
-    ct->mutable_table()->mutable_exprs()->SwapElements(index++, e);
-  }
-  CHECK_EQ(index, num_kept_exprs);
-  ct->mutable_table()->mutable_exprs()->DeleteSubrange(index,
-                                                       num_exprs - index);
-  index = 0;
-  for (int t = 0; t < num_tuples; ++t) {
-    for (int e = 0; e < num_exprs; ++e) {
-      if (is_fixed[e]) continue;
-      ct->mutable_table()->set_values(index++,
-                                      ct->table().values(t * num_exprs + e));
-    }
-  }
-  CHECK_EQ(index, num_tuples * num_kept_exprs);
-  ct->mutable_table()->mutable_values()->Truncate(index);
-
-  context->UpdateRuleStats("table: remove fixed columns");
 }
 
 void CompressTuples(absl::Span<const int64_t> domain_sizes,

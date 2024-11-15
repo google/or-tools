@@ -44,6 +44,7 @@ CpSolverResponse SolveAndCheck(
     absl::btree_set<std::vector<int>>* solutions = nullptr) {
   SatParameters params;
   params.set_enumerate_all_solutions(true);
+  params.set_keep_all_feasible_solutions_in_presolve(true);
   if (!extra_parameters.empty()) {
     params.MergeFromString(extra_parameters);
   }

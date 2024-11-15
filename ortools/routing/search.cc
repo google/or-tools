@@ -36,6 +36,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
@@ -104,27 +105,29 @@ bool AreAssignmentsEquivalent(const RoutingModel& model,
   return true;
 }
 
+absl::Duration GetTimeLimit(const RoutingSearchParameters& search_parameters) {
+  return search_parameters.has_time_limit()
+             ? util_time::DecodeGoogleApiProto(search_parameters.time_limit())
+                   .value()
+             : absl::InfiniteDuration();
+}
+
 // TODO(user): Refactor this function with other versions living in
 // routing.cc.
+// TODO(user): Should we update solution limits as well?
 bool UpdateTimeLimits(Solver* solver, int64_t start_time_ms,
                       absl::Duration time_limit,
                       RoutingSearchParameters& search_parameters) {
   if (!search_parameters.has_time_limit()) return true;
   const absl::Duration elapsed_time =
       absl::Milliseconds(solver->wall_time() - start_time_ms);
-  const absl::Duration time_left = time_limit - elapsed_time;
-  if (time_left < absl::ZeroDuration()) return false;
+  const absl::Duration time_left =
+      std::min(time_limit - elapsed_time, GetTimeLimit(search_parameters));
+  if (time_left <= absl::ZeroDuration()) return false;
   const absl::Status status = util_time::EncodeGoogleApiProto(
       time_left, search_parameters.mutable_time_limit());
   DCHECK_OK(status);
   return true;
-}
-
-absl::Duration GetTimeLimit(const RoutingSearchParameters& search_parameters) {
-  return search_parameters.has_time_limit()
-             ? util_time::DecodeGoogleApiProto(search_parameters.time_limit())
-                   .value()
-             : absl::InfiniteDuration();
 }
 }  // namespace
 
@@ -133,13 +136,39 @@ const Assignment* SolveWithAlternativeSolvers(
     const std::vector<RoutingModel*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations) {
+  return SolveFromAssignmentWithAlternativeSolvers(
+      /*assignment=*/nullptr, primary_model, alternative_models, parameters,
+      max_non_improving_iterations);
+}
+
+const Assignment* SolveFromAssignmentWithAlternativeSolvers(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations) {
+  return SolveFromAssignmentWithAlternativeSolversAndParameters(
+      assignment, primary_model, parameters, alternative_models, {},
+      max_non_improving_iterations);
+}
+
+const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const RoutingSearchParameters& primary_parameters,
+    const std::vector<RoutingModel*>& alternative_models,
+    const std::vector<RoutingSearchParameters>& alternative_parameters,
+    int max_non_improving_iterations) {
   const int64_t start_time_ms = primary_model->solver()->wall_time();
   if (max_non_improving_iterations < 0) return nullptr;
-  RoutingSearchParameters mutable_search_parameters = parameters;
+  // Shortcut if no alternative models will be explored.
+  if (max_non_improving_iterations == 0 || alternative_models.empty()) {
+    return primary_model->SolveFromAssignmentWithParameters(assignment,
+                                                            primary_parameters);
+  }
+  RoutingSearchParameters mutable_search_parameters = primary_parameters;
   // The first alternating phases are limited to greedy descent. The final pass
   // at the end of this function will actually use the metaheuristic if needed.
   // TODO(user): Add support for multiple metaheuristics.
-  LocalSearchMetaheuristic_Value metaheuristic =
+  const LocalSearchMetaheuristic_Value metaheuristic =
       mutable_search_parameters.local_search_metaheuristic();
   const bool run_metaheuristic_phase =
       metaheuristic != LocalSearchMetaheuristic::GREEDY_DESCENT &&
@@ -147,6 +176,18 @@ const Assignment* SolveWithAlternativeSolvers(
   if (run_metaheuristic_phase) {
     mutable_search_parameters.set_local_search_metaheuristic(
         LocalSearchMetaheuristic::GREEDY_DESCENT);
+  }
+  std::vector<RoutingSearchParameters> mutable_alternative_parameters =
+      alternative_parameters;
+  DCHECK(mutable_alternative_parameters.empty() ||
+         mutable_alternative_parameters.size() == alternative_models.size());
+  for (RoutingSearchParameters& mutable_alternative_parameter :
+       mutable_alternative_parameters) {
+    if (!mutable_alternative_parameter.has_time_limit() &&
+        mutable_search_parameters.has_time_limit()) {
+      *mutable_alternative_parameter.mutable_time_limit() =
+          mutable_search_parameters.time_limit();
+    }
   }
   const absl::Duration time_limit = GetTimeLimit(mutable_search_parameters);
   Assignment* best_assignment = primary_model->solver()->MakeAssignment();
@@ -158,8 +199,10 @@ const Assignment* SolveWithAlternativeSolvers(
   Assignment* primary_first_solution =
       primary_model->solver()->MakeAssignment();
   Assignment* current_solution = primary_model->solver()->MakeAssignment();
-  const Assignment* solution =
-      primary_model->SolveWithParameters(mutable_search_parameters);
+  DCHECK(assignment == nullptr ||
+         assignment->solver() == primary_model->solver());
+  const Assignment* solution = primary_model->SolveFromAssignmentWithParameters(
+      assignment, mutable_search_parameters);
   if (solution == nullptr) return nullptr;
   best_assignment->Copy(solution);
   int iteration = 0;
@@ -169,14 +212,18 @@ const Assignment* SolveWithAlternativeSolvers(
     }
     current_solution->Copy(solution);
     for (int i = 0; i < alternative_models.size(); ++i) {
+      RoutingSearchParameters& mutable_alternative_parameter =
+          mutable_alternative_parameters.empty()
+              ? mutable_search_parameters
+              : mutable_alternative_parameters[i];
       if (!UpdateTimeLimits(primary_model->solver(), start_time_ms, time_limit,
-                            mutable_search_parameters)) {
+                            mutable_alternative_parameter)) {
         return best_assignment;
       }
       ConvertAssignment(primary_model, solution, alternative_models[i],
                         first_solutions[i]);
       solution = alternative_models[i]->SolveFromAssignmentWithParameters(
-          first_solutions[i], mutable_search_parameters);
+          first_solutions[i], mutable_alternative_parameter);
       if (solution == nullptr) {
         solution = first_solutions[i];
       }
@@ -193,12 +240,12 @@ const Assignment* SolveWithAlternativeSolvers(
     // No modifications done in this iteration, no need to continue.
     if (AreAssignmentsEquivalent(*primary_model, *solution,
                                  *current_solution)) {
-      return best_assignment;
+      break;
     }
     // We're back to the best assignment which means we will cycle if we
     // continue the search.
     if (AreAssignmentsEquivalent(*primary_model, *solution, *best_assignment)) {
-      return best_assignment;
+      break;
     }
     if (solution->ObjectiveValue() >= best_assignment->ObjectiveValue()) {
       ++iteration;
@@ -611,6 +658,30 @@ void RoutingFilteredHeuristic::MakeDisjunctionNodesUnperformed(int64_t node) {
       });
 }
 
+void RoutingFilteredHeuristic::AddUnassignedNodesToEmptyVehicles() {
+  // TODO(user): check that delta_ is empty.
+  SynchronizeFilters();
+  absl::btree_set<std::pair<int64_t, int>> empty_vehicles;
+  for (int vehicle = 0; vehicle < model_->vehicles(); ++vehicle) {
+    if (VehicleIsEmpty(vehicle)) {
+      empty_vehicles.insert({model()->GetFixedCostOfVehicle(vehicle), vehicle});
+    }
+  }
+  for (int index = 0; index < model_->Size(); ++index) {
+    if (StopSearch() || empty_vehicles.empty()) return;
+    DCHECK(!IsSecondaryVar(index));
+    if (Contains(index)) continue;
+    for (auto [cost, vehicle] : empty_vehicles) {
+      SetNext(model_->Start(vehicle), index, vehicle);
+      SetNext(index, model_->End(vehicle), vehicle);
+      if (Evaluate(/*commit=*/true).has_value()) {
+        empty_vehicles.erase({cost, vehicle});
+        break;
+      }
+    }
+  }
+}
+
 bool RoutingFilteredHeuristic::MakeUnassignedNodesUnperformed() {
   // TODO(user): check that delta_ is empty.
   SynchronizeFilters();
@@ -761,8 +832,9 @@ void CheapestInsertionFilteredHeuristic::AddSeedNodeToQueue(
   }
   const int64_t num_allowed_vehicles = model()->VehicleVar(node)->Size();
   const int64_t neg_penalty = CapOpp(model()->UnperformedPenalty(node));
-  sq->priority_queue.push({.properties = {num_allowed_vehicles, neg_penalty},
-                           .start_end_value = start_end_value,
+  sq->priority_queue.push({.properties = {num_allowed_vehicles, neg_penalty,
+                                          start_end_value.distance},
+                           .vehicle = start_end_value.vehicle,
                            .is_node_index = true,
                            .index = node});
   start_end_distances->pop_back();
@@ -1639,7 +1711,7 @@ int GlobalCheapestInsertionFilteredHeuristic::InsertSeedNode(
     const Seed& seed = priority_queue.top();
     const int seed_node = seed.index;
     DCHECK(seed.is_node_index);
-    const int seed_vehicle = seed.start_end_value.vehicle;
+    const int seed_vehicle = seed.vehicle;
     priority_queue.pop();
 
     std::vector<StartEndValue>& other_start_end_values =
@@ -2545,10 +2617,11 @@ int64_t GetNegMaxDistanceFromVehicles(const RoutingModel& model,
 }
 
 // Returns the average distance between all pickup/delivery nodes of the given
-// pair from all vehicles.
-// For a given pickup/delivery, the distance from a vehicle v is defined as
-// ArcCost(start[v]->pickup) + ArcCost(delivery->end[v]).
-int64_t GetAvgPickupDeliveryPairDistanceFromVehicles(
+// pair from all vehicles where they can be serverd. Returns an empty optional
+// if no vehicle can serve the pair. For a given pickup/delivery, the distance
+// from a vehicle v is defined as ArcCost(start[v]->pickup) +
+// ArcCost(delivery->end[v]).
+std::optional<int64_t> GetAvgPickupDeliveryPairDistanceFromVehicles(
     const RoutingModel& model, int pair_index,
     const Bitset64<int>& vehicle_set) {
   const auto& [pickups, deliveries] =
@@ -2587,9 +2660,9 @@ int64_t GetAvgPickupDeliveryPairDistanceFromVehicles(
       }
     }
   }
-  // TODO(user): When no valid pairs are found, avoid creating entries for
-  // this pair since it cannot be inserted anywhere.
-  return valid_pairs > 0 ? avg_pair_distance_sum / valid_pairs : 0;
+  return valid_pairs > 0
+             ? std::make_optional<int64_t>(avg_pair_distance_sum / valid_pairs)
+             : std::nullopt;
 }
 
 }  // namespace
@@ -2609,7 +2682,8 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
 
   auto get_insertion_properties = [this](int64_t penalty,
                                          int64_t num_allowed_vehicles,
-                                         int64_t avg_distance_to_vehicle) {
+                                         int64_t avg_distance_to_vehicle,
+                                         int64_t neg_max_distance_to_vehicles) {
     DCHECK_NE(0, num_allowed_vehicles);
     absl::InlinedVector<int64_t, 8> properties;
     properties.reserve(insertion_sorting_properties_.size());
@@ -2640,6 +2714,15 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
           break;
       }
     }
+
+    // Historically the negative max distance to vehicles has always been
+    // considered to be the last property in the hierarchy defining how nodes
+    // are sorted for the LCI heuristic.
+    // TODO(user): add a specific property enum for
+    // neg_max_distance_to_vehicles and only append it here if it hasn't already
+    // been done above.
+    properties.push_back(neg_max_distance_to_vehicles);
+
     return properties;
   };
 
@@ -2686,20 +2769,27 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
           std::max(delivery_penalty, model.UnperformedPenalty(delivery));
     }
 
-    const int64_t avg_pair_to_vehicle_cost =
+    const std::optional<int64_t> maybe_avg_pair_to_vehicle_cost =
         compute_avg_pickup_delivery_pair_distance_from_vehicles
             ? GetAvgPickupDeliveryPairDistanceFromVehicles(model, pair_index,
                                                            vehicle_set)
-            : 0;
+            : std::make_optional<int64_t>(0);
 
-    insertion_order_.push_back(
-        {.properties = get_insertion_properties(
-             CapAdd(pickup_penalty, delivery_penalty), num_allowed_vehicles,
-             avg_pair_to_vehicle_cost),
-         .start_end_value = {GetNegMaxDistanceFromVehicles(model, pair_index),
-                             0},
-         .is_node_index = false,
-         .index = pair_index});
+    if (!maybe_avg_pair_to_vehicle_cost.has_value()) {
+      // There is no vehicle that can serve the pickup/delivery nodes in the
+      // current pair index.
+      continue;
+    }
+
+    absl::InlinedVector<int64_t, 8> properties = get_insertion_properties(
+        CapAdd(pickup_penalty, delivery_penalty), num_allowed_vehicles,
+        maybe_avg_pair_to_vehicle_cost.value(),
+        GetNegMaxDistanceFromVehicles(model, pair_index));
+
+    insertion_order_.push_back({.properties = std::move(properties),
+                                .vehicle = 0,
+                                .is_node_index = false,
+                                .index = pair_index});
   }
 
   for (int node = 0; node < model.Size(); ++node) {
@@ -2715,13 +2805,14 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
         },
         vehicle_set);
     DCHECK_GT(vehicle_set.size(), 0);
-    insertion_order_.push_back(
-        {.properties = get_insertion_properties(
-             model.UnperformedPenalty(node), model.VehicleVar(node)->Size(),
-             sum_distance / vehicle_set.size()),
-         .start_end_value = {CapOpp(min_distance), 0},
-         .is_node_index = true,
-         .index = node});
+
+    absl::InlinedVector<int64_t, 8> properties = get_insertion_properties(
+        model.UnperformedPenalty(node), model.VehicleVar(node)->Size(),
+        sum_distance / vehicle_set.size(), CapOpp(min_distance));
+    insertion_order_.push_back({.properties = std::move(properties),
+                                .vehicle = 0,
+                                .is_node_index = true,
+                                .index = node});
   }
 
   absl::c_sort(insertion_order_, std::greater<Seed>());
@@ -3848,6 +3939,7 @@ bool SavingsFilteredHeuristic::BuildSolutionInternal() {
   BuildRoutesFromSavings();
   // Free all the space used to store the Savings in the container.
   savings_container_.reset();
+  AddUnassignedNodesToEmptyVehicles();
   MakeUnassignedNodesUnperformed();
   if (!Evaluate(/*commit=*/true).has_value()) return false;
   MakePartiallyPerformedPairsUnperformed();

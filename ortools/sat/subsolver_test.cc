@@ -21,6 +21,8 @@
 
 #include "absl/synchronization/mutex.h"
 #include "gtest/gtest.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -91,7 +93,9 @@ void TestLoopFunction() {
     const int batch_size = 20;
     DeterministicLoop(subsolvers, num_threads, batch_size);
   } else {
-    NonDeterministicLoop(subsolvers, num_threads);
+    Model m;
+    ModelSharedTimeLimit shared_limit(&m);
+    NonDeterministicLoop(subsolvers, num_threads, &shared_limit);
   }
   EXPECT_EQ(state.max_update_value, state.limit - 1);
 }

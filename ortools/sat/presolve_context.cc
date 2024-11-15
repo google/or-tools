@@ -429,7 +429,8 @@ bool PresolveContext::VariableIsUnique(int ref) const {
 }
 
 bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
-  return !keep_all_feasible_solutions && VariableIsUnique(ref);
+  return !params_.keep_all_feasible_solutions_in_presolve() &&
+         VariableIsUnique(ref);
 }
 
 bool PresolveContext::VariableWithCostIsUnique(int ref) const {
@@ -446,8 +447,8 @@ bool PresolveContext::VariableWithCostIsUnique(int ref) const {
 bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return !keep_all_feasible_solutions && !objective_domain_is_constraining_ &&
-         VariableWithCostIsUnique(var);
+  return !params_.keep_all_feasible_solutions_in_presolve() &&
+         !objective_domain_is_constraining_ && VariableWithCostIsUnique(var);
 }
 
 // Here, even if the variable is equivalent to others, if its affine defining
@@ -524,6 +525,11 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   if (IsFixed(expr)) {
     return FixedValue(expr) == value;
   }
+  if (value > MaxOf(expr)) return false;
+  if (value < MinOf(expr)) return false;
+
+  // We assume expression is validated for overflow initially, and the code
+  // below should be overflow safe.
   if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
   return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
 }
@@ -778,7 +784,7 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
 
 bool PresolveContext::HasUnusedAffineVariable() const {
   if (is_unsat_) return false;  // We do not care in this case.
-  if (keep_all_feasible_solutions) return false;
+  if (params_.keep_all_feasible_solutions_in_presolve()) return false;
 
   // We can leave non-optimal stuff around if we reach the time limit.
   if (time_limit_->LimitReached()) return false;
@@ -1844,7 +1850,9 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   // If a variable only appear in objective, we can fix it!
   // Note that we don't care if it was in affine relation, because if none
   // of the relations are left, then we can still fix it.
-  if (!keep_all_feasible_solutions && !objective_domain_is_constraining_ &&
+  if (params_.cp_model_presolve() &&
+      !params_.keep_all_feasible_solutions_in_presolve() &&
+      !objective_domain_is_constraining_ &&
       ConstraintVariableGraphIsUpToDate() &&
       var_to_constraints_[var].size() == 1 &&
       var_to_constraints_[var].contains(kObjectiveConstraint)) {

@@ -219,7 +219,7 @@ std::vector<Literal> ExtractAssumptions(Coefficient stratified_lower_bound,
 // Returns the minimum weight of the nodes in the core. Note that the literal in
 // the core must appear in the same order as the one in nodes.
 Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
-                                 const std::vector<Literal>& core);
+                                 absl::Span<const Literal> core);
 
 // Returns the maximum node weight under the given upper_bound. Returns zero if
 // no such weight exist (note that a node weight is strictly positive, so this

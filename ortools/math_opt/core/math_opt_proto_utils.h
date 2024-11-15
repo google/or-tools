@@ -343,6 +343,14 @@ absl::Status ModelIsSupported(const ModelProto& model,
 bool UpdateIsSupported(const ModelUpdateProto& update,
                        const SupportedProblemStructures& support_menu);
 
+// Returns an InvalidArgumentError (respectively, UnimplementedError) if a
+// problem structure is present in `model_parameters` and not supported (resp.,
+// not yet implemented) according to `support_menu`.
+absl::Status ModelSolveParametersAreSupported(
+    const ModelSolveParametersProto& model_parameters,
+    const SupportedProblemStructures& support_menu,
+    absl::string_view solver_name);
+
 void UpgradeSolveResultProtoForStatsMigration(
     SolveResultProto& solve_result_proto);
 

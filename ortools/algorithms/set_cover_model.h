@@ -44,9 +44,9 @@
 // - its columns are such that M(i, j) = 1 iff the i-th element of E is present
 //   in S_j.
 //
-// We alse use m to denote |E|, the number of elements, and n to denote |S|, the
+// We also use m to denote |E|, the number of elements, and n to denote |S|, the
 // number of subsets.
-// Finally, nnz or #nz denotes the numbers of non-zeros, i.e. the sum of the
+// Finally, NNZ denotes the numbers of non-zeros, i.e. the sum of the
 // cardinalities of all the subsets.
 
 namespace operations_research {
@@ -258,6 +258,14 @@ class SetCoverModel {
   // Computes deciles on columns and returns a vector of deciles.
   std::vector<BaseInt> ComputeColumnDeciles() const;
 
+  // Computes basic statistics on the deltas of the row and column elements and
+  // returns a Stats structure. The deltas are computed as the difference
+  // between two consecutive indices in rows or columns. The number of bytes
+  // computed is meant using a variable-length base-128 encoding.
+  // TODO(user): actually use this to compress the rows and columns.
+  Stats ComputeRowDeltaSizeStats() const;
+  Stats ComputeColumnDeltaSizeStats() const;
+
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
   // columns.size() - 1
@@ -282,11 +290,11 @@ class SetCoverModel {
 
   // Vector of columns. Each column corresponds to a subset and contains the
   // elements of the given subset.
-  // This takes nnz (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
+  // This takes NNZ (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
   // On classical benchmarks, the fill rate is in the 2 to 5% range.
   // Some synthetic benchmarks have fill rates of 20%, while benchmarks for
   // rail rotations have a fill rate of 0.2 to 0.4%.
-  // TODO(user): try using a compressed representation like Protocol Buffers,
+  // TODO(user): try using a compressed representation like VarInt or LEB128,
   // since the data is only iterated upon.
   SparseColumnView columns_;
 

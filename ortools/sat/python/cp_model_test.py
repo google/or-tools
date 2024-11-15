@@ -1929,6 +1929,24 @@ TRFM"""
                 max(best_bound_callback.last_time, solution_callback.last_time) + 5.0,
             )
 
+    def testIssue4434(self) -> None:
+        print("testIssue4434")
+        model = cp_model.CpModel()
+        i = model.NewIntVar(0, 10, "i")
+        j = model.NewIntVar(0, 10, "j")
+
+        # Causes a mypy error: Argument has incompatible type
+        # "BoundedLinearExpression | bool"; expected "BoundedLinearExpression"
+        expr_eq: cp_model.BoundedLinearExpression = i + j == 5
+        expr_ne: cp_model.BoundedLinearExpression = i + j != 5
+
+        # This works fine with other comparison operators
+        expr_ge: cp_model.BoundedLinearExpression = i + j >= 5
+
+        self.assertIsNotNone(expr_eq)
+        self.assertIsNotNone(expr_ne)
+        self.assertIsNotNone(expr_ge)
+
 
 if __name__ == "__main__":
     absltest.main()

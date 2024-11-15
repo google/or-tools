@@ -13,12 +13,12 @@
 
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
-load("@rules_java//java:defs.bzl", "java_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -230,6 +230,7 @@ cc_library(
         ":cp_model_utils",
         ":sat_parameters_cc_proto",
         ":util",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/graph:strongly_connected_components",
         "//ortools/util:dense_set",
@@ -662,6 +663,7 @@ cc_library(
         ":util",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
@@ -1282,6 +1284,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/random:distributions",
@@ -1445,6 +1448,7 @@ cc_library(
         ":util",
         "//ortools/algorithms:dynamic_partition",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:affine_relation",
@@ -2204,6 +2208,7 @@ cc_library(
         ":scheduling_cuts",
         ":util",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:logging",
@@ -2466,7 +2471,6 @@ cc_library(
         ":linear_constraint_manager",
         ":model",
         ":sat_base",
-        ":util",
         "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/base:strong_vector",
@@ -3044,8 +3048,15 @@ cc_library(
         ":intervals",
         ":model",
         ":synchronization",
+        ":util",
+        "//ortools/algorithms:set_cover_heuristics",
+        "//ortools/algorithms:set_cover_invariant",
+        "//ortools/algorithms:set_cover_model",
+        "//ortools/base:stl_util",
+        "//ortools/util:bitset",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -3060,7 +3071,10 @@ cc_test(
         ":intervals",
         ":model",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -3348,12 +3362,14 @@ cc_library(
     srcs = ["subsolver.cc"],
     hdrs = ["subsolver.h"],
     deps = [
+        ":util",
         "//ortools/base",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
         "//ortools/base:types",
         "//ortools/util:stats",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
@@ -3367,7 +3383,9 @@ cc_test(
     size = "small",
     srcs = ["subsolver_test.cc"],
     deps = [
+        ":model",
         ":subsolver",
+        ":util",
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/synchronization",
     ],
@@ -3515,6 +3533,7 @@ cc_library(
         "//ortools/util:affine_relation",
         "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:btree",
@@ -3551,10 +3570,6 @@ cc_library(
     name = "swig_helper",
     srcs = ["swig_helper.cc"],
     hdrs = ["swig_helper.h"],
-    visibility = [
-        "//ortools/sat/java:__pkg__",
-        "//ortools/sat/python:__pkg__",
-    ],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -3626,8 +3641,10 @@ cc_library(
     hdrs = ["inclusion.h"],
     deps = [
         "//ortools/base",
+        "//ortools/util:bitset",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -3637,6 +3654,7 @@ cc_library(
     hdrs = ["diophantine.h"],
     deps = [
         ":util",
+        "//ortools/base:mathutil",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/types:span",
@@ -3700,8 +3718,8 @@ cc_test(
     srcs = ["diophantine_test.cc"],
     deps = [
         ":diophantine",
-        ":util",
         "//ortools/base:gmock_main",
+        "//ortools/base:mathutil",
         "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/random",

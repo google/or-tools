@@ -3900,8 +3900,11 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     if (rhs.Min() != rhs.Max()) continue;
 
     // NOTE: The mapping doesn't allow us to remove a variable if
-    // 'keep_all_feasible_solutions' is true.
-    if (context_->keep_all_feasible_solutions) continue;
+    // keep_all_feasible_solutions is true.
+    //
+    // TODO(user): This shouldn't be necessary, but caused some failure on
+    // IntModExpandTest.FzTest. Fix.
+    if (context_->params().keep_all_feasible_solutions_in_presolve()) continue;
 
     // Only consider "implied free" variables. Note that the coefficient of
     // magnitude 1 is important otherwise we can't easily remove the
@@ -5154,7 +5157,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
       context_->UpdateRuleStats("table: negative table without tuples");
       return RemoveConstraint(ct);
     } else {
-      context_->UpdateRuleStats("table: positive table without tuplest");
+      context_->UpdateRuleStats("table: positive table without tuples");
       return MarkConstraintAsFalse(ct);
     }
   }
@@ -5177,7 +5180,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   }
 
   if (num_fixed_exprs > 0) {
-    RemoveFixedColumnsFromTable(context_, ct);
+    CanonicalizeTable(context_, ct);
   }
 
   // Nothing more to do for negated tables.
@@ -6944,6 +6947,8 @@ void CpModelPresolver::ConvertToBoolAnd() {
 }
 
 void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
+  if (context_->ModelIsUnsat()) return;
+
   Model model;
 
   // Enable as many propagators as possible. We do not care if some propagator
@@ -6985,11 +6990,11 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
     if (mapping->IsBoolean(var)) {
       const Literal l = mapping->Literal(var);
       if (trail->Assignment().LiteralIsFalse(l)) {
-        (void)context_->SetLiteralToFalse(proto_var);
+        if (!context_->SetLiteralToFalse(proto_var)) return;
         ++num_fixed_bools;
         continue;
       } else if (trail->Assignment().LiteralIsTrue(l)) {
-        (void)context_->SetLiteralToTrue(proto_var);
+        if (!context_->SetLiteralToTrue(proto_var)) return;
         ++num_fixed_bools;
         continue;
       }
@@ -7000,8 +7005,10 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
         const int r_var =
             mapping->GetProtoVariableFromBooleanVariable(r.Variable());
         if (r_var < 0) continue;
-        context_->StoreBooleanEqualityRelation(
-            proto_var, r.IsPositive() ? r_var : NegatedRef(r_var));
+        if (!context_->StoreBooleanEqualityRelation(
+                proto_var, r.IsPositive() ? r_var : NegatedRef(r_var))) {
+          return;
+        }
       }
     } else {
       // Restrict variable domain.
@@ -7268,7 +7275,10 @@ void CpModelPresolver::Probe() {
   if (context_->params().merge_at_most_one_work_limit() > 0.0) {
     PresolveTimer timer("MaxClique", logger_, time_limit_);
     std::vector<std::vector<Literal>> cliques;
+    std::vector<int> clique_ct_index;
 
+    // TODO(user): On large model, most of the time is spend in this copy,
+    // clearing and updating the constraint variable graph...
     int64_t num_literals_before = 0;
     const int num_constraints = context_->working_model->constraints_size();
     for (int c = 0; c < num_constraints; ++c) {
@@ -7297,9 +7307,12 @@ void CpModelPresolver::Probe() {
     }
     const int64_t num_old_cliques = cliques.size();
 
-    implication_graph->TransformIntoMaxCliques(
-        &cliques,
-        SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()));
+    double dtime = 0.0;
+    implication_graph->MergeAtMostOnes(
+        absl::MakeSpan(cliques),
+        SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()),
+        &dtime);
+    timer.AddToWork(dtime);
 
     // Note that because TransformIntoMaxCliques() extend cliques, we are ok
     // to ignore any unmapped literal. In case of equivalent literal, we always
@@ -7365,9 +7378,8 @@ bool FixFromAssignment(const VariablesAssignment& assignment,
 bool CpModelPresolver::PresolvePureSatPart() {
   // TODO(user): Reenable some SAT presolve with
   // keep_all_feasible_solutions set to true.
-  if (context_->ModelIsUnsat() || context_->keep_all_feasible_solutions) {
-    return true;
-  }
+  if (context_->ModelIsUnsat()) return true;
+  if (context_->params().keep_all_feasible_solutions_in_presolve()) return true;
 
   // Compute a dense re-indexing for the Booleans of the problem.
   int num_variables = 0;
@@ -7576,6 +7588,15 @@ bool CpModelPresolver::PresolvePureSatPart() {
     // TODO(user): BVA takes time and does not seems to help on the minizinc
     // benchmarks. So we currently disable it, except if we are on a pure-SAT
     // problem, where we follow the default (true) or the user specified value.
+    params.set_presolve_use_bva(false);
+  }
+
+  // Disable BVA if we want to keep the symmetries.
+  //
+  // TODO(user): We could still do it, we just need to do in a symmetric way
+  // and also update the generators to take into account the new variables. This
+  // do not seems that easy.
+  if (context_->params().keep_symmetry_in_presolve()) {
     params.set_presolve_use_bva(false);
   }
 
@@ -8128,8 +8149,8 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   if (!graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat();
   }
-  graph->TransformIntoMaxCliques(
-      &cliques,
+  graph->MergeAtMostOnes(
+      absl::MakeSpan(cliques),
       SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()));
 
   // Add the Boolean variable equivalence detected by DetectEquivalences().
@@ -8920,6 +8941,7 @@ struct ColumnEqForDuplicateDetection {
 void CpModelPresolver::DetectDuplicateColumns() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
   PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
 
   const int num_vars = context_->working_model->variables().size();
@@ -11178,7 +11200,7 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
   CHECK(RefIsPositive(var));
   CHECK(context_->ConstraintVariableGraphIsUpToDate());
   if (context_->ModelIsUnsat()) return;
-  if (context_->keep_all_feasible_solutions) return;
+  if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
   if (context_->IsFixed(var)) return;
   if (!context_->ModelIsExpanded()) return;
   if (!context_->CanBeUsedAsLiteral(var)) return;
@@ -11338,7 +11360,8 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
     // an exactly one.
     // Tricky: if there is a cost, we don't want the objective to be
     // constraining to be able to do that.
-    if (context_->keep_all_feasible_solutions) return;
+    if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
+    if (context_->params().keep_symmetry_in_presolve()) return;
     if (cost != 0 && context_->ObjectiveDomainIsConstraining()) return;
 
     if (RefIsPositive(c1_ref) == (cost < 0)) {
@@ -11509,6 +11532,8 @@ void CpModelPresolver::MaybeTransferLinear1ToAnotherVariable(int var) {
 
 // TODO(user): We can still remove the variable even if we want to keep
 // all feasible solutions for the cases when we have a full encoding.
+// Similarly this shouldn't break symmetry, but we do need to do it for all
+// symmetric variable at once.
 //
 // TODO(user): In fixed search, we disable this rule because we don't update
 // the search strategy, but for some strategy we could.
@@ -11517,7 +11542,8 @@ void CpModelPresolver::MaybeTransferLinear1ToAnotherVariable(int var) {
 // the presolve.
 void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
   if (context_->ModelIsUnsat()) return;
-  if (context_->keep_all_feasible_solutions) return;
+  if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
+  if (context_->params().keep_symmetry_in_presolve()) return;
   if (context_->IsFixed(var)) return;
   if (context_->VariableWasRemoved(var)) return;
   if (context_->CanBeUsedAsLiteral(var)) return;
@@ -12126,7 +12152,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     //
     // TODO(user): We can support assumptions but we need to not cut them out
     // of the feasible region.
-    if (context_->keep_all_feasible_solutions) break;
+    if (context_->params().keep_all_feasible_solutions_in_presolve()) break;
     if (!context_->working_model->assumptions().empty()) break;
 
     // Starts by the "faster" algo that exploit variables that can move freely
@@ -12137,6 +12163,10 @@ void CpModelPresolver::PresolveToFixPoint() {
       ++num_dual_strengthening;
       DualBoundStrengthening dual_bound_strengthening;
       ScanModelForDualBoundStrengthening(*context_, &dual_bound_strengthening);
+
+      // TODO(user): Make sure that if we fix one variable, we fix its full
+      // symmetric orbit. There should be no reason that we don't do that
+      // though.
       if (!dual_bound_strengthening.Strengthen(context_)) return;
       if (ProcessChangedVariables(&in_queue, &queue)) break;
 
@@ -12148,6 +12178,11 @@ void CpModelPresolver::PresolveToFixPoint() {
       if (dual_bound_strengthening.NumDeletedConstraints() == 0) break;
     }
     if (!queue.empty()) continue;
+
+    // Dominance reasoning will likely break symmetry.
+    // TODO(user): We can apply the one that do not break any though, or the
+    // operations that are safe.
+    if (context_->params().keep_symmetry_in_presolve()) break;
 
     // Detect & exploit dominance between variables.
     // TODO(user): This can be slow, remove from fix-pint loop?
@@ -12309,6 +12344,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kAutomaton:
         if (!CopyAutomaton(ct)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kAllDiff:
+        if (!CopyAllDiff(ct)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
         break;
@@ -12339,7 +12377,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         if (first_copy) {
           constraints_using_intervals.push_back(c);
         } else {
-          CopyAndMapCumulative(ct);
+          if (!CopyAndMapCumulative(ct)) return CreateUnsatModel(c, ct);
         }
         break;
       default: {
@@ -12365,7 +12403,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         CopyAndMapNoOverlap2D(ct);
         break;
       case ConstraintProto::kCumulative:
-        CopyAndMapCumulative(ct);
+        if (!CopyAndMapCumulative(ct)) return CreateUnsatModel(c, ct);
         break;
       default:
         LOG(DFATAL) << "Shouldn't be here.";
@@ -12751,7 +12789,15 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
     fill_expr(var, new_ct->mutable_table()->add_exprs());
   }
   *new_ct->mutable_table()->mutable_values() = ct.table().values();
+  new_ct->mutable_table()->set_negated(ct.table().negated());
 
+  return true;
+}
+
+bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
+  if (ct.all_diff().exprs().size() <= 1) return true;
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  *new_ct = ct;
   return true;
 }
 
@@ -12898,7 +12944,12 @@ void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
   }
 }
 
-void ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
+bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
+  if (ct.cumulative().intervals().empty() &&
+      ct.cumulative().capacity().vars().empty()) {
+    // Trivial constraint, either obviously SAT or UNSAT.
+    return ct.cumulative().capacity().offset() >= 0;
+  }
   // Note that we don't copy names or enforcement_literal (not supported) here.
   auto* new_ct =
       context_->working_model->add_constraints()->mutable_cumulative();
@@ -12913,6 +12964,8 @@ void ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
     new_ct->add_intervals(it->second);
     *new_ct->add_demands() = ct.cumulative().demands(i);
   }
+
+  return true;
 }
 
 bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
@@ -12987,6 +13040,10 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
         in_model.search_strategy();
     for (DecisionStrategyProto& strategy :
          *context->working_model->mutable_search_strategy()) {
+      google::protobuf::util::RemoveIf(strategy.mutable_exprs(),
+                                       [](const LinearExpressionProto* expr) {
+                                         return expr->vars().empty();
+                                       });
       if (!strategy.variables().empty()) {
         CHECK(strategy.exprs().empty());
         for (const int ref : strategy.variables()) {
@@ -13282,13 +13339,6 @@ void CpModelPresolver::ExpandCpModelAndCanonicalizeConstraints() {
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
 CpSolverStatus CpModelPresolver::Presolve() {
-  // TODO(user): move in the context.
-  context_->keep_all_feasible_solutions =
-      context_->params().keep_all_feasible_solutions_in_presolve() ||
-      context_->params().enumerate_all_solutions() ||
-      !context_->working_model->assumptions().empty() ||
-      !context_->params().cp_model_presolve();
-
   // We copy the search strategy to the mapping_model.
   for (const auto& decision_strategy :
        context_->working_model->search_strategy()) {
@@ -13333,6 +13383,13 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
   // If presolve is false, just run expansion.
   if (!context_->params().cp_model_presolve()) {
+    for (ConstraintProto& ct :
+         *context_->working_model->mutable_constraints()) {
+      if (ct.constraint_case() == ConstraintProto::kLinear) {
+        context_->CanonicalizeLinearConstraint(&ct);
+      }
+    }
+
     ExpandCpModelAndCanonicalizeConstraints();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
@@ -13350,6 +13407,17 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // trivial presolving during the initial copy of the model, and expansion
     // might do more.
     InitializeMappingModelVariables();
+
+    // We don't want to run postsolve when the presolve is disabled, but the
+    // expansion might have added some constraints to the mapping model. To
+    // restore correctness, we merge them with the working model.
+    if (!context_->mapping_model->constraints().empty()) {
+      context_->UpdateRuleStats(
+          "TODO: mapping model not empty with presolve disabled");
+      context_->working_model->mutable_constraints()->MergeFrom(
+          context_->mapping_model->constraints());
+      context_->mapping_model->clear_constraints();
+    }
 
     if (logger_->LoggingIsEnabled()) context_->LogInfo();
     return CpSolverStatus::UNKNOWN;
@@ -13410,13 +13478,31 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // more advanced presolve rule? Ideally we could even exploit them. But in
     // this case, it is still good to compute them early.
     if (context_->params().symmetry_level() > 0 && !context_->ModelIsUnsat() &&
-        !time_limit_->LimitReached() &&
-        !context_->keep_all_feasible_solutions) {
+        !time_limit_->LimitReached()) {
       // Both kind of duplications might introduce a lot of symmetries and we
       // want to do that before we even compute them.
       DetectDuplicateColumns();
       DetectDuplicateConstraints();
-      DetectAndExploitSymmetriesInPresolve(context_);
+      if (context_->params().keep_symmetry_in_presolve()) {
+        // If the presolve always keep symmetry, we compute it once and for all.
+        if (!context_->working_model->has_symmetry()) {
+          DetectAndAddSymmetryToProto(context_->params(),
+                                      context_->working_model, logger_);
+        }
+
+        // We distinguish an empty symmetry message meaning that symmetry were
+        // computed and there is none, and the absence of symmetry message
+        // meaning we don't know.
+        //
+        // TODO(user): Maybe this is a bit brittle. Also move this logic to
+        // DetectAndAddSymmetryToProto() ?
+        if (!context_->working_model->has_symmetry()) {
+          context_->working_model->mutable_symmetry()->Clear();
+        }
+      } else if (!context_->params()
+                      .keep_all_feasible_solutions_in_presolve()) {
+        DetectAndExploitSymmetriesInPresolve(context_);
+      }
     }
 
     // Runs SAT specific presolve on the pure-SAT part of the problem.
@@ -13470,7 +13556,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
     DetectDifferentVariables();
     ProcessSetPPC();
 
-    if (context_->params().find_big_linear_overlap()) {
+    // These operations might break symmetry. Or at the very least, the newly
+    // created variable must be incorporated in the generators.
+    if (context_->params().find_big_linear_overlap() &&
+        !context_->params().keep_symmetry_in_presolve()) {
       FindAlmostIdenticalLinearConstraints();
 
       ActivityBoundHelper activity_amo_helper;
@@ -13517,10 +13606,12 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // Tries to spread the objective amongst many variables.
   // We re-do a canonicalization with the final linear expression.
   if (context_->working_model->has_objective()) {
-    ExpandObjective();
-    if (context_->ModelIsUnsat()) return InfeasibleStatus();
-    ShiftObjectiveWithExactlyOnes();
-    if (context_->ModelIsUnsat()) return InfeasibleStatus();
+    if (!context_->params().keep_symmetry_in_presolve()) {
+      ExpandObjective();
+      if (context_->ModelIsUnsat()) return InfeasibleStatus();
+      ShiftObjectiveWithExactlyOnes();
+      if (context_->ModelIsUnsat()) return InfeasibleStatus();
+    }
 
     // We re-do a canonicalization with the final linear expression.
     if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
@@ -13553,6 +13644,14 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // Adds all needed affine relation to context_->working_model.
   EncodeAllAffineRelations();
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
+
+  // If we have symmetry information, lets filter it.
+  if (context_->working_model->has_symmetry()) {
+    if (!FilterOrbitOnUnusedOrFixedVariables(
+            context_->working_model->mutable_symmetry(), context_)) {
+      return InfeasibleStatus();
+    }
+  }
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
   // but first we use the representative of the affine relations for the
@@ -13616,7 +13715,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // If the variable is not fixed, we have multiple feasible solution for
     // this variable, so we can't remove it if we want all of them.
     if (context_->VariableIsNotUsedAnymore(i) &&
-        (!context_->keep_all_feasible_solutions || context_->IsFixed(i))) {
+        (!context_->params().keep_all_feasible_solutions_in_presolve() ||
+         context_->IsFixed(i))) {
       // Tricky. Variables that where not removed by a presolve rule should be
       // fixed first during postsolve, so that more complex postsolve rules
       // can use their values. One way to do that is to fix them here.
@@ -13808,6 +13908,22 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   // Check that all variables are used.
   for (const IntegerVariableProto& v : proto->variables()) {
     CHECK_GT(v.domain_size(), 0);
+  }
+
+  // Remap the symmetries. Note that we should have properly dealt with fixed
+  // orbit and such in FilterOrbitOnUnusedOrFixedVariables().
+  if (proto->has_symmetry()) {
+    for (SparsePermutationProto& generator :
+         *proto->mutable_symmetry()->mutable_permutations()) {
+      for (int& var : *generator.mutable_support()) {
+        CHECK(RefIsPositive(var));
+        var = mapping[var];
+        CHECK_NE(var, -1);
+      }
+    }
+
+    // We clear the orbitope info (we don't really use it after presolve).
+    proto->mutable_symmetry()->clear_orbitopes();
   }
 }
 

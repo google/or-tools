@@ -19,12 +19,12 @@
 #include <cstdint>
 #include <limits>
 #include <numeric>
-#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/discrete_distribution.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
@@ -169,6 +169,7 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
   for (Cost& cost : model.subset_costs_) {
     cost = min_cost + absl::Uniform<double>(bitgen, 0, cost_range);
   }
+  model.CreateSparseRowView();
   return model;
 }
 
@@ -207,12 +208,14 @@ void SetCoverModel::AddElementToLastSubset(ElementIndex element) {
 void SetCoverModel::SetSubsetCost(BaseInt subset, Cost cost) {
   CHECK(std::isfinite(cost));
   DCHECK_GE(subset, 0);
-  num_subsets_ = std::max(num_subsets_, subset + 1);
-  columns_.resize(num_subsets_, SparseColumn());
-  subset_costs_.resize(num_subsets_, 0.0);
+  if (subset >= num_subsets()) {
+    num_subsets_ = std::max(num_subsets_, subset + 1);
+    columns_.resize(num_subsets_, SparseColumn());
+    subset_costs_.resize(num_subsets_, 0.0);
+    row_view_is_valid_ = false;
+    UpdateAllSubsetsList();
+  }
   subset_costs_[SubsetIndex(subset)] = cost;
-  UpdateAllSubsetsList();
-  row_view_is_valid_ = false;  // Probably overkill, but better safe than sorry.
 }
 
 void SetCoverModel::SetSubsetCost(SubsetIndex subset, Cost cost) {
@@ -220,10 +223,12 @@ void SetCoverModel::SetSubsetCost(SubsetIndex subset, Cost cost) {
 }
 
 void SetCoverModel::AddElementToSubset(BaseInt element, BaseInt subset) {
-  num_subsets_ = std::max(num_subsets_, subset + 1);
-  subset_costs_.resize(num_subsets_, 0.0);
-  columns_.resize(num_subsets_, SparseColumn());
-  UpdateAllSubsetsList();
+  if (subset >= num_subsets()) {
+    num_subsets_ = subset + 1;
+    subset_costs_.resize(num_subsets_, 0.0);
+    columns_.resize(num_subsets_, SparseColumn());
+    UpdateAllSubsetsList();
+  }
   columns_[SubsetIndex(subset)].push_back(ElementIndex(element));
   num_elements_ = std::max(num_elements_, element + 1);
   ++num_nonzeros_;
@@ -240,6 +245,7 @@ void SetCoverModel::ReserveNumSubsets(BaseInt num_subsets) {
   num_subsets_ = std::max(num_subsets_, num_subsets);
   columns_.resize(num_subsets_, SparseColumn());
   subset_costs_.resize(num_subsets_, 0.0);
+  UpdateAllSubsetsList();
 }
 
 void SetCoverModel::ReserveNumSubsets(SubsetIndex num_subsets) {
@@ -363,8 +369,51 @@ double StandardDeviation(const std::vector<T>& values) {
     sum += sample;
     ++n;
   }
+  // Since we know all the values, we can compute the standard deviation
+  // exactly.
   return n == 0.0 ? 0.0 : sqrt((sum_of_squares - sum * sum / n) / n);
 }
+
+// Statistics accumulation class used to compute statistics on the deltas of
+// the row and column elements and their sizes in bytes.
+// Since the values are not all stored, it's not possible to compute the median
+// exactly. It is returned as 0.0. NaN would be a better choice, but it's just
+// not a good idea as NaNs can propagate and cause problems.
+class StatsAccumulator {
+ public:
+  StatsAccumulator()
+      : count_(0),
+        min_(kInfinity),
+        max_(-kInfinity),
+        sum_(0.0),
+        sum_of_squares_(0.0) {}
+
+  void Register(double value) {
+    ++count_;
+    min_ = std::min(min_, value);
+    max_ = std::max(max_, value);
+    sum_ += value;
+    sum_of_squares_ += value * value;
+  }
+
+  SetCoverModel::Stats ComputeStats() const {
+    const BaseInt n = count_;
+    // Since the code is used on a known number of values, we can compute the
+    // standard deviation exactly, even if the values are not all stored.
+    const double stddev =
+        n == 0 ? 0.0 : sqrt((sum_of_squares_ - sum_ * sum_ / n) / n);
+    return SetCoverModel::Stats{min_, max_, 0.0, sum_ / n, stddev};
+  }
+
+ private:
+  static constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  int64_t count_;
+  double min_;
+  double max_;
+  double sum_;
+  double sum_of_squares_;
+};
+}  // namespace
 
 template <typename T>
 SetCoverModel::Stats ComputeStats(std::vector<T> sizes) {
@@ -391,7 +440,6 @@ std::vector<T> ComputeDeciles(std::vector<T> values) {
   }
   return deciles;
 }
-}  // namespace
 
 SetCoverModel::Stats SetCoverModel::ComputeCostStats() {
   std::vector<Cost> subset_costs(num_subsets());
@@ -433,6 +481,40 @@ std::vector<BaseInt> SetCoverModel::ComputeColumnDeciles() const {
     column_sizes[subset.value()] = columns_[subset].size();
   }
   return ComputeDeciles(std::move(column_sizes));
+}
+
+namespace {
+// Returns the number of bytes needed to store x with a base-128 encoding.
+BaseInt Base128SizeInBytes(BaseInt x) {
+  const uint64_t u = x == 0 ? 1 : static_cast<uint64_t>(x);
+  return (64 - absl::countl_zero(u) + 6) / 7;
+}
+}  // namespace
+
+SetCoverModel::Stats SetCoverModel::ComputeColumnDeltaSizeStats() const {
+  StatsAccumulator acc;
+  for (const SparseColumn& column : columns_) {
+    BaseInt previous = 0;
+    for (const ElementIndex element : column) {
+      const BaseInt delta = element.value() - previous;
+      previous = element.value();
+      acc.Register(Base128SizeInBytes(delta));
+    }
+  }
+  return acc.ComputeStats();
+}
+
+SetCoverModel::Stats SetCoverModel::ComputeRowDeltaSizeStats() const {
+  StatsAccumulator acc;
+  for (const SparseRow& row : rows_) {
+    BaseInt previous = 0;
+    for (const SubsetIndex subset : row) {
+      const BaseInt delta = subset.value() - previous;
+      previous = subset.value();
+      acc.Register(Base128SizeInBytes(delta));
+    }
+  }
+  return acc.ComputeStats();
 }
 
 }  // namespace operations_research

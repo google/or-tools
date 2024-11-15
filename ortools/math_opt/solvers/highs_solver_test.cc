@@ -42,6 +42,7 @@
 #include "ortools/math_opt/solver_tests/lp_parameter_tests.h"
 #include "ortools/math_opt/solver_tests/lp_tests.h"
 #include "ortools/math_opt/solver_tests/mip_tests.h"
+#include "ortools/math_opt/solver_tests/multi_objective_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
 #include "ortools/math_opt/solvers/highs.pb.h"
 #include "ortools/math_opt/testing/param_name.h"
@@ -231,6 +232,23 @@ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CallbackTest);
 INSTANTIATE_TEST_SUITE_P(HighsInfeasibleSubsystemTest, InfeasibleSubsystemTest,
                          testing::Values(InfeasibleSubsystemTestParameters(
                              {.solver_type = SolverType::kHighs})));
+
+MultiObjectiveTestParameters GetHighsMultiObjectiveTestParameters() {
+  return MultiObjectiveTestParameters(
+      /*solver_type=*/SolverType::kHighs, /*parameters=*/SolveParameters(),
+      /*supports_auxiliary_objectives=*/false,
+      /*supports_incremental_objective_add_and_delete=*/false,
+      /*supports_incremental_objective_modification=*/false,
+      /*supports_integer_variables=*/true);
+}
+
+INSTANTIATE_TEST_SUITE_P(HighsSimpleMultiObjectiveTest,
+                         SimpleMultiObjectiveTest,
+                         Values(GetHighsMultiObjectiveTestParameters()));
+
+INSTANTIATE_TEST_SUITE_P(HighsIncrementalMultiObjectiveTest,
+                         IncrementalMultiObjectiveTest,
+                         Values(GetHighsMultiObjectiveTestParameters()));
 
 TEST(HighsSolverTest, FractionalBoundsForIntegerVariables) {
   Model model;

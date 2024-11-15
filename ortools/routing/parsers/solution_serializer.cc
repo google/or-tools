@@ -45,7 +45,7 @@ std::vector<RoutingSolution::Route> RoutesFromVector(
 }  // namespace
 
 std::vector<std::vector<int64_t>> RoutingSolution::SplitRoutes(
-    const std::vector<int64_t>& solution, int64_t separator) {
+    absl::Span<const int64_t> solution, int64_t separator) {
   // The solution vector separates routes by -1: split this vector into a vector
   // per route, where the other helpers can make the rest of the way to a proper
   // RoutingSolution object.

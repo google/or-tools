@@ -11,7 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = [
@@ -27,6 +28,7 @@ proto_library(
         "//ortools/service/v1/mathopt:model_proto",
         "//ortools/service/v1/mathopt:parameters_proto",
         "//ortools/service/v1/mathopt:result_proto",
+        "//ortools/service/v1/mathopt:solver_resources_proto",
     ],
 )
 

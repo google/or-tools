@@ -132,113 +132,80 @@ int64_t MakeRelocateNeighborsOperator::Reposition(int64_t before_to_move,
   return kNoChange;
 }
 
-SwapActiveToShortestPathOperator::SwapActiveToShortestPathOperator(
-    const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::vector<std::vector<int64_t>> alternative_sets,
+ShortestPathOnAlternatives::ShortestPathOnAlternatives(
+    int num_nodes, std::vector<std::vector<int64_t>> alternative_sets,
     RoutingTransitCallback2 arc_evaluator)
-    : PathOperator(vars, secondary_vars, 1, true, false,
-                   std::move(start_empty_path_class), nullptr, nullptr),
-      arc_evaluator_(std::move(arc_evaluator)),
+    : arc_evaluator_(std::move(arc_evaluator)),
       alternative_sets_(std::move(alternative_sets)),
-      to_alternative_set_(vars.size(), -1),
-      path_predecessor_(vars.size(), -1),
-      touched_(vars.size()) {
+      to_alternative_set_(num_nodes, -1),
+      path_predecessor_(num_nodes, -1),
+      touched_(num_nodes) {
   for (int i = 0; i < alternative_sets_.size(); ++i) {
     for (int j : alternative_sets_[i]) {
       if (j < to_alternative_set_.size()) to_alternative_set_[j] = i;
     }
   }
-}
-
-bool SwapActiveToShortestPathOperator::MakeNeighbor() {
-  const int64_t before_chain = BaseNode(0);
-  if (to_alternative_set_[before_chain] != -1) return false;
-  int64_t next = Next(before_chain);
-  std::vector<int> alternatives;
-  while (!IsPathEnd(next) && to_alternative_set_[next] != -1 &&
-         alternative_sets_[to_alternative_set_[next]].size() > 1) {
-    alternatives.push_back(to_alternative_set_[next]);
-    next = Next(next);
-  }
-  if (alternatives.empty()) return false;
-  const int sink = next;
-  next = OldNext(before_chain);
-  bool swap_done = false;
-  for (int64_t node : GetShortestPath(before_chain, sink, alternatives)) {
-    if (node != next) {
-      SwapActiveAndInactive(next, node);
-      swap_done = true;
+  for (int i = 0; i < num_nodes; ++i) {
+    if (to_alternative_set_[i] == -1) {
+      to_alternative_set_[i] = alternative_sets_.size();
+      alternative_sets_.push_back({int64_t{i}});
     }
-    next = OldNext(next);
   }
-  return swap_done;
 }
 
-const std::vector<int64_t>& SwapActiveToShortestPathOperator::GetShortestPath(
-    int source, int sink, const std::vector<int>& alternative_chain) {
+bool ShortestPathOnAlternatives::HasAlternatives(int node) const {
+  return alternative_sets_[to_alternative_set_[node]].size() > 1;
+}
+
+absl::Span<const int64_t> ShortestPathOnAlternatives::GetShortestPath(
+    int64_t source, int64_t sink, absl::Span<const int64_t> chain) {
   path_.clear();
-  if (alternative_chain.empty()) return path_;
-  // Initializing values at the first "layer" after the source (from source to
-  // all alternatives at rank 0).
-  const std::vector<int64_t>& first_alternative_set =
-      alternative_sets_[alternative_chain[0]];
-  std::vector<int64_t> prev_values;
-  prev_values.reserve(first_alternative_set.size());
-  for (int alternative_node : first_alternative_set) {
-    prev_values.push_back(arc_evaluator_(source, alternative_node));
-  }
+  if (chain.empty()) return path_;
+
+  const std::vector<int64_t> source_alternatives = {source};
+  auto prev_alternative_set = absl::Span<const int64_t>(source_alternatives);
+  std::vector<int64_t> prev_values = {0};
+
+  auto get_best_predecessor = [this, &prev_alternative_set, &prev_values](
+                                  int64_t node) -> std::pair<int64_t, int64_t> {
+    int64_t predecessor = -1;
+    int64_t min_value = kint64max;
+    for (int prev_alternative = 0;
+         prev_alternative < prev_alternative_set.size(); ++prev_alternative) {
+      const int64_t new_value =
+          CapAdd(prev_values[prev_alternative],
+                 arc_evaluator_(prev_alternative_set[prev_alternative], node));
+      if (new_value <= min_value) {
+        min_value = new_value;
+        predecessor = prev_alternative_set[prev_alternative];
+      }
+    }
+    return {predecessor, min_value};
+  };
+
   // Updating values "layer" by "layer" (each one is fully connected to the
   // previous one).
-  std::vector<int64_t> current_values;
-  for (int rank = 1; rank < alternative_chain.size(); ++rank) {
+  for (const int64_t node : chain) {
     const std::vector<int64_t>& current_alternative_set =
-        alternative_sets_[alternative_chain[rank]];
-    current_values.clear();
-    current_values.reserve(current_alternative_set.size());
-    const std::vector<int64_t>& prev_alternative_set =
-        alternative_sets_[alternative_chain[rank - 1]];
+        alternative_sets_[to_alternative_set_[node]];
+    current_values_.clear();
+    current_values_.reserve(current_alternative_set.size());
     for (int alternative_node : current_alternative_set) {
-      int64_t min_value = kint64max;
-      int predecessor = -1;
-      for (int prev_alternative = 0;
-           prev_alternative < prev_alternative_set.size(); ++prev_alternative) {
-        const int64_t new_value =
-            CapAdd(prev_values[prev_alternative],
-                   arc_evaluator_(prev_alternative_set[prev_alternative],
-                                  alternative_node));
-        if (new_value <= min_value) {
-          min_value = new_value;
-          predecessor = prev_alternative_set[prev_alternative];
-        }
-      }
-      current_values.push_back(min_value);
+      auto [predecessor, min_value] = get_best_predecessor(alternative_node);
+      current_values_.push_back(min_value);
       path_predecessor_[alternative_node] = predecessor;
     }
-    prev_values.swap(current_values);
+    prev_alternative_set = absl::MakeConstSpan(current_alternative_set);
+    prev_values.swap(current_values_);
   }
   // Get the predecessor in the shortest path to sink in the last layer.
-  int64_t min_value = kint64max;
-  int predecessor = -1;
-  const std::vector<int64_t>& last_alternative_set =
-      alternative_sets_[alternative_chain.back()];
-  for (int alternative = 0; alternative < last_alternative_set.size();
-       ++alternative) {
-    const int64_t new_value =
-        CapAdd(prev_values[alternative],
-               arc_evaluator_(last_alternative_set[alternative], sink));
-    if (new_value <= min_value) {
-      min_value = new_value;
-      predecessor = last_alternative_set[alternative];
-    }
-  }
+  auto [predecessor, min_value] = get_best_predecessor(sink);
   if (predecessor == -1) return path_;
   // Build the path from predecessors on the shortest path.
-  path_.resize(alternative_chain.size(), predecessor);
+  path_.resize(chain.size(), predecessor);
   touched_.SparseClearAll();
   touched_.Set(predecessor);
-  for (int rank = alternative_chain.size() - 2; rank >= 0; --rank) {
+  for (int rank = chain.size() - 2; rank >= 0; --rank) {
     path_[rank] = path_predecessor_[path_[rank + 1]];
     if (touched_[path_[rank]]) {
       path_.clear();
@@ -247,6 +214,64 @@ const std::vector<int64_t>& SwapActiveToShortestPathOperator::GetShortestPath(
     touched_.Set(path_[rank]);
   }
   return path_;
+}
+
+TwoOptWithShortestPathOperator::TwoOptWithShortestPathOperator(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::vector<std::vector<int64_t>> alternative_sets,
+    RoutingTransitCallback2 arc_evaluator)
+    : PathOperator(vars, secondary_vars, /*number_of_base_nodes=*/2,
+                   /*skip_locally_optimal_paths=*/true,
+                   /*accept_path_end_base=*/true,
+                   std::move(start_empty_path_class), nullptr, nullptr),
+      shortest_path_manager_(vars.size(), std::move(alternative_sets),
+                             std::move(arc_evaluator)) {}
+
+bool TwoOptWithShortestPathOperator::MakeNeighbor() {
+  DCHECK_EQ(StartNode(0), StartNode(1));
+  const int64_t before_chain = BaseNode(0);
+  if (IsPathEnd(before_chain)) return false;
+  const int64_t after_chain = BaseNode(1);
+  int64_t chain_last;
+  if (!ReverseChain(before_chain, after_chain, &chain_last)) return false;
+  chain_.clear();
+  for (int64_t next = Next(before_chain); next != after_chain;
+       next = Next(next)) {
+    chain_.push_back(next);
+  }
+  // The neighbor is accepted if there were actual changes, either we reverted a
+  // chain with more than one node, or alternatives were swapped.
+  return SwapActiveAndInactiveChains(chain_,
+                                     shortest_path_manager_.GetShortestPath(
+                                         before_chain, after_chain, chain_)) ||
+         chain_.size() > 1;
+}
+
+SwapActiveToShortestPathOperator::SwapActiveToShortestPathOperator(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::vector<std::vector<int64_t>> alternative_sets,
+    RoutingTransitCallback2 arc_evaluator)
+    : PathOperator(vars, secondary_vars, 1, true, false,
+                   std::move(start_empty_path_class), nullptr, nullptr),
+      shortest_path_manager_(vars.size(), std::move(alternative_sets),
+                             std::move(arc_evaluator)) {}
+
+bool SwapActiveToShortestPathOperator::MakeNeighbor() {
+  const int64_t before_chain = BaseNode(0);
+  if (shortest_path_manager_.HasAlternatives(before_chain)) return false;
+  int64_t next = Next(before_chain);
+  chain_.clear();
+  while (!IsPathEnd(next) && shortest_path_manager_.HasAlternatives(next)) {
+    chain_.push_back(next);
+    next = Next(next);
+  }
+  return SwapActiveAndInactiveChains(
+      chain_, shortest_path_manager_.GetShortestPath(
+                  /*source=*/before_chain, /*sink=*/next, chain_));
 }
 
 MakePairActiveOperator::MakePairActiveOperator(

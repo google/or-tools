@@ -931,7 +931,7 @@ bool RectanglePairwisePropagator::Propagate() {
 }
 
 bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
-    const std::vector<ItemForPairwiseRestriction>& items,
+    absl::Span<const ItemForPairwiseRestriction> items,
     std::vector<PairwiseRestriction>* restrictions) {
   const int max_pairs =
       params_->max_pairs_pairwise_reasoning_in_no_overlap_2d();

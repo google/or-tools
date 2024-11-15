@@ -3,12 +3,13 @@
 #FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
 # Use dnf
 FROM quay.io/pypa/manylinux_2_28_x86_64:latest AS env
+# note: CMake 3.30.5 and SWIG 4.2.1 are already installed
 
 #############
 ##  SETUP  ##
 #############
 RUN dnf -y update \
-&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y group install 'Development Tools' \
 && dnf -y install wget curl \
  pcre2-devel openssl \
  which redhat-lsb-core \
@@ -18,25 +19,6 @@ RUN dnf -y update \
 
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
-
-# Install CMake 3.28.3
-RUN wget -q --no-check-certificate "https://cmake.org/files/v3.28/cmake-3.28.3-linux-x86_64.sh" \
-&& chmod a+x cmake-3.28.3-linux-x86_64.sh \
-&& ./cmake-3.28.3-linux-x86_64.sh --prefix=/usr --skip-license \
-&& rm cmake-3.28.3-linux-x86_64.sh
-
-# Install SWIG 4.2.1
-RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.2.1/swig-4.2.1.tar.gz" \
- -o swig-4.2.1.tar.gz \
-&& tar xvf swig-4.2.1.tar.gz \
-&& rm swig-4.2.1.tar.gz \
-&& cd swig-4.2.1 \
-&& ./configure --prefix=/usr \
-&& make -j 4 \
-&& make install \
-&& cd .. \
-&& rm -rf swig-4.2.1
 
 # Install .Net
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install

@@ -109,6 +109,7 @@ SetCoverModel ReadBeasleySetCoverProblem(absl::string_view filename) {
     }
   }
   file->Close(file::Defaults()).IgnoreError();
+  model.CreateSparseRowView();
   return model;
 }
 
@@ -117,7 +118,7 @@ SetCoverModel ReadRailSetCoverProblem(absl::string_view filename) {
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
-  const int num_cols(reader.ParseNextInteger());
+  const BaseInt num_cols(reader.ParseNextInteger());
   model.ReserveNumSubsets(num_cols);
   for (int i(0); i < num_cols; ++i) {
     const double cost(reader.ParseNextDouble());
@@ -130,6 +131,7 @@ SetCoverModel ReadRailSetCoverProblem(absl::string_view filename) {
     }
   }
   file->Close(file::Defaults()).IgnoreError();
+  model.CreateSparseRowView();
   return model;
 }
 

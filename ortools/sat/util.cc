@@ -500,12 +500,13 @@ void MaxBoundedSubsetSum::AddMultiples(int64_t coeff, int64_t max_value) {
   if (current_max_ == bound_) return;
   gcd_ = std::gcd(gcd_, coeff);
 
-  const int64_t num_values = std::min(max_value, FloorOfRatio(bound_, coeff));
+  const int64_t num_values =
+      std::min(max_value, MathUtil::FloorOfRatio(bound_, coeff));
   if (num_values > 10) {
     // We only keep GCD in this case.
     sums_.clear();
     expanded_sums_.clear();
-    current_max_ = FloorOfRatio(bound_, gcd_) * gcd_;
+    current_max_ = MathUtil::FloorOfRatio(bound_, gcd_) * gcd_;
     return;
   }
 
@@ -569,7 +570,7 @@ void MaxBoundedSubsetSum::AddChoicesInternal(absl::Span<const int64_t> values) {
   if (gcd_ == 1) {
     current_max_ = bound_;
   } else {
-    current_max_ = FloorOfRatio(bound_, gcd_) * gcd_;
+    current_max_ = MathUtil::FloorOfRatio(bound_, gcd_) * gcd_;
   }
 }
 

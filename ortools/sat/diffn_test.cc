@@ -13,8 +13,6 @@
 
 #include "ortools/sat/diffn.h"
 
-#include <stdint.h>
-
 #include <vector>
 
 #include "absl/strings/str_join.h"
@@ -159,7 +157,9 @@ TEST(NonOverlappingRectanglesTest, CountSolutionsWithZeroAreaBoxes) {
   diffn.AddRectangle(x2, y2);
 
   Model model;
-  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  SatParameters* params = model.GetOrCreate<SatParameters>();
+  params->set_enumerate_all_solutions(true);
+  params->set_keep_all_feasible_solutions_in_presolve(true);
   int count = 0;
   model.Add(
       NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {

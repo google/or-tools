@@ -5,7 +5,7 @@ FROM almalinux:9
 ##  SETUP  ##
 #############
 RUN dnf -y update \
-&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y group install 'Development Tools' \
 && dnf -y install zlib-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf

@@ -39,7 +39,6 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -231,8 +230,9 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
   int64_t min_outgoing_flow = 1;
   if (!demands_.empty()) {
     min_outgoing_flow =
-        contain_depot ? CeilOfRatio(total_demand_ - subset_demand, capacity_)
-                      : CeilOfRatio(subset_demand, capacity_);
+        contain_depot
+            ? MathUtil::CeilOfRatio(total_demand_ - subset_demand, capacity_)
+            : MathUtil::CeilOfRatio(subset_demand, capacity_);
   }
 
   // We still need to serve nodes with a demand of zero, and in the corner

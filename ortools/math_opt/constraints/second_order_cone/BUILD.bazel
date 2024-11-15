@@ -24,6 +24,7 @@ cc_library(
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
         "@com_google_absl//absl/strings",
     ],
 )

@@ -29,11 +29,8 @@ namespace sat {
 // Canonicalizes the table constraint by removing all unreachable tuples, and
 // all columns which have the same variable of a previous column.
 //
-// This also sort all the tuples.
+// This also sort all the tuples and remove all fixed columns from the table.
 void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct);
-
-// Removed all fixed columns from the table.
-void RemoveFixedColumnsFromTable(PresolveContext* context, ConstraintProto* ct);
 
 // This method tries to compress a list of tuples by merging complementary
 // tuples, that is a set of tuples that only differ on one variable, and that

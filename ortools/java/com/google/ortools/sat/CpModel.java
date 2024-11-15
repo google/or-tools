@@ -943,6 +943,17 @@ public final class CpModel {
     modelBuilder.getSolutionHintBuilder().addValues(value);
   }
 
+  /** Adds hinting to a literal */
+  public void addHint(Literal lit, boolean value) {
+    if (isPositive(lit)) {
+      modelBuilder.getSolutionHintBuilder().addVars(lit.getIndex());
+      modelBuilder.getSolutionHintBuilder().addValues(value ? 1 : 0);
+    } else {
+      modelBuilder.getSolutionHintBuilder().addVars(negated(lit.getIndex()));
+      modelBuilder.getSolutionHintBuilder().addValues(value ? 0 : 1);
+    }
+  }
+
   /** Remove all solution hints */
   public void clearHints() {
     modelBuilder.clearSolutionHint();
@@ -1096,6 +1107,10 @@ public final class CpModel {
 
   public int negated(int index) {
     return -index - 1;
+  }
+
+  public boolean isPositive(Literal lit) {
+    return lit.getIndex() >= 0;
   }
 
   /** Returns the model builder. */

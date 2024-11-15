@@ -228,11 +228,11 @@ std::optional<E> EnumFromString(absl::string_view str);
 //
 // It calls EnumToOptString(), printing the returned value if not nullopt. When
 // nullopt it prints the enum numeric value instead.
-template <typename E,
-          // We must use enable_if here to prevent this overload to be selected
-          // for other types than ones that implement Enum<E>.
-          typename = std::enable_if_t<Enum<E>::kIsImplemented>>
-std::ostream& operator<<(std::ostream& out, const E value) {
+// We must use enable_if here to prevent this overload to be selected
+// for other types than ones that implement Enum<E>.
+template <typename E>
+std::enable_if_t<Enum<E>::kIsImplemented, std::ostream&> operator<<(
+    std::ostream& out, const E value) {
   const std::optional<absl::string_view> opt_str = EnumToOptString(value);
   if (opt_str.has_value()) {
     out << *opt_str;

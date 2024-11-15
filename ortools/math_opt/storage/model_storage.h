@@ -164,14 +164,13 @@ class ModelStorage {
   // considered invalid when solving.
   //
   // See ApplyUpdateProto() for dealing with subsequent updates.
-  static absl::StatusOr<std::unique_ptr<ModelStorage>> FromModelProto(
+  static absl::StatusOr<std::unique_ptr<ModelStorage> > FromModelProto(
       const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
   inline explicit ModelStorage(absl::string_view model_name = "",
                                absl::string_view primary_objective_name = "");
 
-  ModelStorage(const ModelStorage&) = delete;
   ModelStorage& operator=(const ModelStorage&) = delete;
 
   // Returns a clone of the model, optionally changing model's name.
@@ -183,7 +182,7 @@ class ModelStorage {
   std::unique_ptr<ModelStorage> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
-  inline const std::string& name() const { return name_; }
+  inline const std::string& name() const { return copyable_data_.name; }
 
   //////////////////////////////////////////////////////////////////////////////
   // Variables
@@ -326,7 +325,7 @@ class ModelStorage {
 
   // The {linear constraint, variable, coefficient} tuples with nonzero linear
   // constraint matrix coefficients.
-  inline std::vector<std::tuple<LinearConstraintId, VariableId, double>>
+  inline std::vector<std::tuple<LinearConstraintId, VariableId, double> >
   linear_constraint_matrix() const;
 
   // Returns the variables with nonzero coefficients in a linear constraint.
@@ -399,7 +398,7 @@ class ModelStorage {
   // are ordered such that .first <= .second. All values are nonempty.
   //
   // TODO(b/233630053) do no allocate the result, expose an iterator API.
-  inline std::vector<std::tuple<VariableId, VariableId, double>>
+  inline std::vector<std::tuple<VariableId, VariableId, double> >
   quadratic_objective_terms(ObjectiveId id) const;
 
   //////////////////////////////////////////////////////////////////////////////
@@ -692,6 +691,30 @@ class ModelStorage {
         dirty_indicator_constraints;
   };
 
+  // All data that is copied (by the C++ default copy constructor) when using
+  // Clone().
+  struct CopyableData {
+    CopyableData(const absl::string_view model_name,
+                 const absl::string_view primary_objective_name)
+        : name(model_name), objectives(/*name=*/primary_objective_name) {}
+    std::string name;
+
+    VariableStorage variables;
+    ObjectiveStorage objectives;
+    LinearConstraintStorage linear_constraints;
+
+    AtomicConstraintStorage<QuadraticConstraintData> quadratic_constraints;
+    AtomicConstraintStorage<SecondOrderConeConstraintData> soc_constraints;
+    AtomicConstraintStorage<Sos1ConstraintData> sos1_constraints;
+    AtomicConstraintStorage<Sos2ConstraintData> sos2_constraints;
+    AtomicConstraintStorage<IndicatorConstraintData> indicator_constraints;
+  };
+
+  // Private copy constructor that copies only copyable_data_, not
+  // update_trackers_. It is used internally by Clone().
+  ModelStorage(const ModelStorage& other)
+      : copyable_data_(other.copyable_data_) {}
+
   auto UpdateAndGetVariableDiffs() {
     return MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_variables>(
         update_trackers_.GetUpdatedTrackers());
@@ -745,18 +768,7 @@ class ModelStorage {
   template <typename ConstraintData>
   const AtomicConstraintStorage<ConstraintData>& constraint_storage() const;
 
-  std::string name_;
-
-  VariableStorage variables_;
-  ObjectiveStorage objectives_;
-  LinearConstraintStorage linear_constraints_;
-
-  AtomicConstraintStorage<QuadraticConstraintData> quadratic_constraints_;
-  AtomicConstraintStorage<SecondOrderConeConstraintData> soc_constraints_;
-  AtomicConstraintStorage<Sos1ConstraintData> sos1_constraints_;
-  AtomicConstraintStorage<Sos2ConstraintData> sos2_constraints_;
-  AtomicConstraintStorage<IndicatorConstraintData> indicator_constraints_;
-
+  CopyableData copyable_data_;
   UpdateTrackers<UpdateTrackerData> update_trackers_;
 };
 
@@ -768,7 +780,8 @@ class ModelStorage {
 
 ModelStorage::ModelStorage(const absl::string_view model_name,
                            const absl::string_view primary_objective_name)
-    : name_(model_name), objectives_(primary_objective_name) {}
+    : copyable_data_(/*model_name=*/model_name,
+                     /*primary_objective_name=*/primary_objective_name) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Variables
@@ -780,34 +793,37 @@ VariableId ModelStorage::AddVariable(absl::string_view name) {
 }
 
 double ModelStorage::variable_lower_bound(const VariableId id) const {
-  return variables_.lower_bound(id);
+  return copyable_data_.variables.lower_bound(id);
 }
 
 double ModelStorage::variable_upper_bound(const VariableId id) const {
-  return variables_.upper_bound(id);
+  return copyable_data_.variables.upper_bound(id);
 }
 
 bool ModelStorage::is_variable_integer(VariableId id) const {
-  return variables_.is_integer(id);
+  return copyable_data_.variables.is_integer(id);
 }
 
 const std::string& ModelStorage::variable_name(const VariableId id) const {
-  return variables_.name(id);
+  return copyable_data_.variables.name(id);
 }
 
 void ModelStorage::set_variable_lower_bound(const VariableId id,
                                             const double lower_bound) {
-  variables_.set_lower_bound(id, lower_bound, UpdateAndGetVariableDiffs());
+  copyable_data_.variables.set_lower_bound(id, lower_bound,
+                                           UpdateAndGetVariableDiffs());
 }
 
 void ModelStorage::set_variable_upper_bound(const VariableId id,
                                             const double upper_bound) {
-  variables_.set_upper_bound(id, upper_bound, UpdateAndGetVariableDiffs());
+  copyable_data_.variables.set_upper_bound(id, upper_bound,
+                                           UpdateAndGetVariableDiffs());
 }
 
 void ModelStorage::set_variable_is_integer(const VariableId id,
                                            const bool is_integer) {
-  variables_.set_integer(id, is_integer, UpdateAndGetVariableDiffs());
+  copyable_data_.variables.set_integer(id, is_integer,
+                                       UpdateAndGetVariableDiffs());
 }
 
 void ModelStorage::set_variable_as_integer(VariableId id) {
@@ -818,18 +834,20 @@ void ModelStorage::set_variable_as_continuous(VariableId id) {
   set_variable_is_integer(id, false);
 }
 
-int ModelStorage::num_variables() const { return variables_.size(); }
+int ModelStorage::num_variables() const {
+  return static_cast<int>(copyable_data_.variables.size());
+}
 
 VariableId ModelStorage::next_variable_id() const {
-  return variables_.next_id();
+  return copyable_data_.variables.next_id();
 }
 
 void ModelStorage::ensure_next_variable_id_at_least(const VariableId id) {
-  variables_.ensure_next_id_at_least(id);
+  copyable_data_.variables.ensure_next_id_at_least(id);
 }
 
 bool ModelStorage::has_variable(const VariableId id) const {
-  return variables_.contains(id);
+  return copyable_data_.variables.contains(id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -843,46 +861,46 @@ LinearConstraintId ModelStorage::AddLinearConstraint(absl::string_view name) {
 
 double ModelStorage::linear_constraint_lower_bound(
     const LinearConstraintId id) const {
-  return linear_constraints_.lower_bound(id);
+  return copyable_data_.linear_constraints.lower_bound(id);
 }
 
 double ModelStorage::linear_constraint_upper_bound(
     const LinearConstraintId id) const {
-  return linear_constraints_.upper_bound(id);
+  return copyable_data_.linear_constraints.upper_bound(id);
 }
 
 const std::string& ModelStorage::linear_constraint_name(
     const LinearConstraintId id) const {
-  return linear_constraints_.name(id);
+  return copyable_data_.linear_constraints.name(id);
 }
 
 void ModelStorage::set_linear_constraint_lower_bound(
     const LinearConstraintId id, const double lower_bound) {
-  linear_constraints_.set_lower_bound(id, lower_bound,
-                                      UpdateAndGetLinearConstraintDiffs());
+  copyable_data_.linear_constraints.set_lower_bound(
+      id, lower_bound, UpdateAndGetLinearConstraintDiffs());
 }
 
 void ModelStorage::set_linear_constraint_upper_bound(
     const LinearConstraintId id, const double upper_bound) {
-  linear_constraints_.set_upper_bound(id, upper_bound,
-                                      UpdateAndGetLinearConstraintDiffs());
+  copyable_data_.linear_constraints.set_upper_bound(
+      id, upper_bound, UpdateAndGetLinearConstraintDiffs());
 }
 
 int ModelStorage::num_linear_constraints() const {
-  return linear_constraints_.size();
+  return static_cast<int>(copyable_data_.linear_constraints.size());
 }
 
 LinearConstraintId ModelStorage::next_linear_constraint_id() const {
-  return linear_constraints_.next_id();
+  return copyable_data_.linear_constraints.next_id();
 }
 
 void ModelStorage::ensure_next_linear_constraint_id_at_least(
     LinearConstraintId id) {
-  linear_constraints_.ensure_next_id_at_least(id);
+  copyable_data_.linear_constraints.ensure_next_id_at_least(id);
 }
 
 bool ModelStorage::has_linear_constraint(const LinearConstraintId id) const {
-  return linear_constraints_.contains(id);
+  return copyable_data_.linear_constraints.contains(id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -891,34 +909,35 @@ bool ModelStorage::has_linear_constraint(const LinearConstraintId id) const {
 
 double ModelStorage::linear_constraint_coefficient(
     LinearConstraintId constraint, VariableId variable) const {
-  return linear_constraints_.matrix().get(constraint, variable);
+  return copyable_data_.linear_constraints.matrix().get(constraint, variable);
 }
 
 bool ModelStorage::is_linear_constraint_coefficient_nonzero(
     LinearConstraintId constraint, VariableId variable) const {
-  return linear_constraints_.matrix().contains(constraint, variable);
+  return copyable_data_.linear_constraints.matrix().contains(constraint,
+                                                             variable);
 }
 
 void ModelStorage::set_linear_constraint_coefficient(
     const LinearConstraintId constraint, const VariableId variable,
     const double value) {
-  linear_constraints_.set_term(constraint, variable, value,
-                               UpdateAndGetLinearConstraintDiffs());
+  copyable_data_.linear_constraints.set_term(
+      constraint, variable, value, UpdateAndGetLinearConstraintDiffs());
 }
 
-std::vector<std::tuple<LinearConstraintId, VariableId, double>>
+std::vector<std::tuple<LinearConstraintId, VariableId, double> >
 ModelStorage::linear_constraint_matrix() const {
-  return linear_constraints_.matrix().Terms();
+  return copyable_data_.linear_constraints.matrix().Terms();
 }
 
 std::vector<VariableId> ModelStorage::variables_in_linear_constraint(
     LinearConstraintId constraint) const {
-  return linear_constraints_.matrix().row(constraint);
+  return copyable_data_.linear_constraints.matrix().row(constraint);
 }
 
 std::vector<LinearConstraintId> ModelStorage::linear_constraints_with_variable(
     VariableId variable) const {
-  return linear_constraints_.matrix().column(variable);
+  return copyable_data_.linear_constraints.matrix().column(variable);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -926,47 +945,49 @@ std::vector<LinearConstraintId> ModelStorage::linear_constraints_with_variable(
 ////////////////////////////////////////////////////////////////////////////////
 
 bool ModelStorage::is_maximize(const ObjectiveId id) const {
-  return objectives_.maximize(id);
+  return copyable_data_.objectives.maximize(id);
 }
 
 int64_t ModelStorage::objective_priority(const ObjectiveId id) const {
-  return objectives_.priority(id);
+  return copyable_data_.objectives.priority(id);
 }
 
 double ModelStorage::objective_offset(const ObjectiveId id) const {
-  return objectives_.offset(id);
+  return copyable_data_.objectives.offset(id);
 }
 
 double ModelStorage::linear_objective_coefficient(
     const ObjectiveId id, const VariableId variable) const {
-  return objectives_.linear_term(id, variable);
+  return copyable_data_.objectives.linear_term(id, variable);
 }
 
 double ModelStorage::quadratic_objective_coefficient(
     const ObjectiveId id, const VariableId first_variable,
     const VariableId second_variable) const {
-  return objectives_.quadratic_term(id, first_variable, second_variable);
+  return copyable_data_.objectives.quadratic_term(id, first_variable,
+                                                  second_variable);
 }
 
 bool ModelStorage::is_linear_objective_coefficient_nonzero(
     const ObjectiveId id, const VariableId variable) const {
-  return objectives_.linear_terms(id).contains(variable);
+  return copyable_data_.objectives.linear_terms(id).contains(variable);
 }
 
 bool ModelStorage::is_quadratic_objective_coefficient_nonzero(
     const ObjectiveId id, const VariableId first_variable,
     const VariableId second_variable) const {
-  return objectives_.quadratic_terms(id).get(first_variable, second_variable) !=
-         0.0;
+  return copyable_data_.objectives.quadratic_terms(id).get(
+             first_variable, second_variable) != 0.0;
 }
 
 const std::string& ModelStorage::objective_name(const ObjectiveId id) const {
-  return objectives_.name(id);
+  return copyable_data_.objectives.name(id);
 }
 
 void ModelStorage::set_is_maximize(const ObjectiveId id,
                                    const bool is_maximize) {
-  objectives_.set_maximize(id, is_maximize, UpdateAndGetObjectiveDiffs());
+  copyable_data_.objectives.set_maximize(id, is_maximize,
+                                         UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::set_maximize(const ObjectiveId id) {
@@ -979,49 +1000,50 @@ void ModelStorage::set_minimize(const ObjectiveId id) {
 
 void ModelStorage::set_objective_priority(const ObjectiveId id,
                                           const int64_t value) {
-  objectives_.set_priority(id, value, UpdateAndGetObjectiveDiffs());
+  copyable_data_.objectives.set_priority(id, value,
+                                         UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::set_objective_offset(const ObjectiveId id,
                                         const double value) {
-  objectives_.set_offset(id, value, UpdateAndGetObjectiveDiffs());
+  copyable_data_.objectives.set_offset(id, value, UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::set_linear_objective_coefficient(const ObjectiveId id,
                                                     const VariableId variable,
                                                     const double value) {
-  objectives_.set_linear_term(id, variable, value,
-                              UpdateAndGetObjectiveDiffs());
+  copyable_data_.objectives.set_linear_term(id, variable, value,
+                                            UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::set_quadratic_objective_coefficient(
     const ObjectiveId id, const VariableId first_variable,
     const VariableId second_variable, const double value) {
-  objectives_.set_quadratic_term(id, first_variable, second_variable, value,
-                                 UpdateAndGetObjectiveDiffs());
+  copyable_data_.objectives.set_quadratic_term(
+      id, first_variable, second_variable, value, UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::clear_objective(const ObjectiveId id) {
-  objectives_.Clear(id, UpdateAndGetObjectiveDiffs());
+  copyable_data_.objectives.Clear(id, UpdateAndGetObjectiveDiffs());
 }
 
 const absl::flat_hash_map<VariableId, double>& ModelStorage::linear_objective(
     const ObjectiveId id) const {
-  return objectives_.linear_terms(id);
+  return copyable_data_.objectives.linear_terms(id);
 }
 
 int64_t ModelStorage::num_linear_objective_terms(const ObjectiveId id) const {
-  return objectives_.linear_terms(id).size();
+  return copyable_data_.objectives.linear_terms(id).size();
 }
 
 int64_t ModelStorage::num_quadratic_objective_terms(
     const ObjectiveId id) const {
-  return objectives_.quadratic_terms(id).nonzeros();
+  return copyable_data_.objectives.quadratic_terms(id).nonzeros();
 }
 
-std::vector<std::tuple<VariableId, VariableId, double>>
+std::vector<std::tuple<VariableId, VariableId, double> >
 ModelStorage::quadratic_objective_terms(const ObjectiveId id) const {
-  return objectives_.quadratic_terms(id).Terms();
+  return copyable_data_.objectives.quadratic_terms(id).Terms();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1030,38 +1052,38 @@ ModelStorage::quadratic_objective_terms(const ObjectiveId id) const {
 
 AuxiliaryObjectiveId ModelStorage::AddAuxiliaryObjective(
     const int64_t priority, const absl::string_view name) {
-  return objectives_.AddAuxiliaryObjective(priority, name);
+  return copyable_data_.objectives.AddAuxiliaryObjective(priority, name);
 }
 
 void ModelStorage::DeleteAuxiliaryObjective(const AuxiliaryObjectiveId id) {
-  objectives_.Delete(id, UpdateAndGetObjectiveDiffs());
+  copyable_data_.objectives.Delete(id, UpdateAndGetObjectiveDiffs());
 }
 
 int ModelStorage::num_auxiliary_objectives() const {
-  return static_cast<int>(objectives_.num_auxiliary_objectives());
+  return static_cast<int>(copyable_data_.objectives.num_auxiliary_objectives());
 }
 
 AuxiliaryObjectiveId ModelStorage::next_auxiliary_objective_id() const {
-  return objectives_.next_id();
+  return copyable_data_.objectives.next_id();
 }
 
 void ModelStorage::ensure_next_auxiliary_objective_id_at_least(
     const AuxiliaryObjectiveId id) {
-  objectives_.ensure_next_id_at_least(id);
+  copyable_data_.objectives.ensure_next_id_at_least(id);
 }
 
 bool ModelStorage::has_auxiliary_objective(
     const AuxiliaryObjectiveId id) const {
-  return objectives_.contains(id);
+  return copyable_data_.objectives.contains(id);
 }
 
 std::vector<AuxiliaryObjectiveId> ModelStorage::AuxiliaryObjectives() const {
-  return objectives_.AuxiliaryObjectives();
+  return copyable_data_.objectives.AuxiliaryObjectives();
 }
 
 std::vector<AuxiliaryObjectiveId> ModelStorage::SortedAuxiliaryObjectives()
     const {
-  return objectives_.SortedAuxiliaryObjectives();
+  return copyable_data_.objectives.SortedAuxiliaryObjectives();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1162,13 +1184,13 @@ std::vector<VariableId> ModelStorage::VariablesInConstraint(
 template <>
 inline AtomicConstraintStorage<QuadraticConstraintData>&
 ModelStorage::constraint_storage() {
-  return quadratic_constraints_;
+  return copyable_data_.quadratic_constraints;
 }
 
 template <>
 inline const AtomicConstraintStorage<QuadraticConstraintData>&
 ModelStorage::constraint_storage() const {
-  return quadratic_constraints_;
+  return copyable_data_.quadratic_constraints;
 }
 
 template <>
@@ -1184,13 +1206,13 @@ constexpr typename AtomicConstraintStorage<QuadraticConstraintData>::Diff
 template <>
 inline AtomicConstraintStorage<SecondOrderConeConstraintData>&
 ModelStorage::constraint_storage() {
-  return soc_constraints_;
+  return copyable_data_.soc_constraints;
 }
 
 template <>
 inline const AtomicConstraintStorage<SecondOrderConeConstraintData>&
 ModelStorage::constraint_storage() const {
-  return soc_constraints_;
+  return copyable_data_.soc_constraints;
 }
 
 template <>
@@ -1206,13 +1228,13 @@ constexpr typename AtomicConstraintStorage<SecondOrderConeConstraintData>::Diff
 template <>
 inline AtomicConstraintStorage<Sos1ConstraintData>&
 ModelStorage::constraint_storage() {
-  return sos1_constraints_;
+  return copyable_data_.sos1_constraints;
 }
 
 template <>
 inline const AtomicConstraintStorage<Sos1ConstraintData>&
 ModelStorage::constraint_storage() const {
-  return sos1_constraints_;
+  return copyable_data_.sos1_constraints;
 }
 
 template <>
@@ -1228,13 +1250,13 @@ constexpr typename AtomicConstraintStorage<Sos1ConstraintData>::Diff
 template <>
 inline AtomicConstraintStorage<Sos2ConstraintData>&
 ModelStorage::constraint_storage() {
-  return sos2_constraints_;
+  return copyable_data_.sos2_constraints;
 }
 
 template <>
 inline const AtomicConstraintStorage<Sos2ConstraintData>&
 ModelStorage::constraint_storage() const {
-  return sos2_constraints_;
+  return copyable_data_.sos2_constraints;
 }
 
 template <>
@@ -1250,13 +1272,13 @@ constexpr typename AtomicConstraintStorage<Sos2ConstraintData>::Diff
 template <>
 inline AtomicConstraintStorage<IndicatorConstraintData>&
 ModelStorage::constraint_storage() {
-  return indicator_constraints_;
+  return copyable_data_.indicator_constraints;
 }
 
 template <>
 inline const AtomicConstraintStorage<IndicatorConstraintData>&
 ModelStorage::constraint_storage() const {
-  return indicator_constraints_;
+  return copyable_data_.indicator_constraints;
 }
 
 template <>

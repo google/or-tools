@@ -12,8 +12,9 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -289,6 +290,7 @@ cc_library(
         "//ortools/base:strong_vector",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
@@ -321,7 +323,7 @@ cc_library(
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -348,7 +350,6 @@ cc_library(
     deps = [
         ":set_cover_model",
         "//ortools/base:file",
-        "//ortools/base:strong_vector",
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -369,6 +370,7 @@ cc_test(
         ":set_cover_mip",
         ":set_cover_model",
         "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",

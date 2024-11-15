@@ -37,6 +37,7 @@ using ::operations_research::ElementIndex;
 using ::operations_research::GreedySolutionGenerator;
 using ::operations_research::GuidedLocalSearch;
 using ::operations_research::GuidedTabuSearch;
+using ::operations_research::LazyElementDegreeSolutionGenerator;
 using ::operations_research::Preprocessor;
 using ::operations_research::RandomSolutionGenerator;
 using ::operations_research::ReadBeasleySetCoverProblem;
@@ -127,44 +128,46 @@ PYBIND11_MODULE(set_cover, m) {
           [](SetCoverModel& model) -> const std::vector<double>& {
             return model.subset_costs().get();
           })
-      .def("columns",
-           [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
-             // Due to the inner StrongVector, make a deep copy. Anyway,
-             // columns() returns a const ref, so this keeps the semantics, not
-             // the efficiency.
-             std::vector<std::vector<BaseInt>> columns;
-             std::transform(
-                 model.columns().begin(), model.columns().end(),
-                 columns.begin(),
-                 [](const SparseColumn& column) -> std::vector<BaseInt> {
-                   std::vector<BaseInt> col(column.size());
-                   std::transform(column.begin(), column.end(), col.begin(),
-                                  [](ElementIndex element) -> BaseInt {
-                                    return element.value();
-                                  });
-                   return col;
-                 });
-             return columns;
-           })
-      .def("rows",
-           [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
-             // Due to the inner StrongVector, make a deep copy. Anyway,
-             // rows() returns a const ref, so this keeps the semantics, not
-             // the efficiency.
-             std::vector<std::vector<BaseInt>> rows;
-             std::transform(
-                 model.rows().begin(), model.rows().end(), rows.begin(),
-                 [](const SparseRow& row) -> std::vector<BaseInt> {
-                   std::vector<BaseInt> r(row.size());
-                   std::transform(row.begin(), row.end(), r.begin(),
-                                  [](SubsetIndex element) -> BaseInt {
-                                    return element.value();
-                                  });
-                   return r;
-                 });
-             return rows;
-           })
-      .def("row_view_is_valid", &SetCoverModel::row_view_is_valid)
+      .def_property_readonly(
+          "columns",
+          [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
+            // Due to the inner StrongVector, make a deep copy. Anyway,
+            // columns() returns a const ref, so this keeps the semantics, not
+            // the efficiency.
+            std::vector<std::vector<BaseInt>> columns(model.columns().size());
+            std::transform(
+                model.columns().begin(), model.columns().end(), columns.begin(),
+                [](const SparseColumn& column) -> std::vector<BaseInt> {
+                  std::vector<BaseInt> col(column.size());
+                  std::transform(column.begin(), column.end(), col.begin(),
+                                 [](ElementIndex element) -> BaseInt {
+                                   return element.value();
+                                 });
+                  return col;
+                });
+            return columns;
+          })
+      .def_property_readonly(
+          "rows",
+          [](SetCoverModel& model) -> std::vector<std::vector<BaseInt>> {
+            // Due to the inner StrongVector, make a deep copy. Anyway,
+            // rows() returns a const ref, so this keeps the semantics, not
+            // the efficiency.
+            std::vector<std::vector<BaseInt>> rows(model.rows().size());
+            std::transform(model.rows().begin(), model.rows().end(),
+                           rows.begin(),
+                           [](const SparseRow& row) -> std::vector<BaseInt> {
+                             std::vector<BaseInt> r(row.size());
+                             std::transform(row.begin(), row.end(), r.begin(),
+                                            [](SubsetIndex element) -> BaseInt {
+                                              return element.value();
+                                            });
+                             return r;
+                           });
+            return rows;
+          })
+      .def_property_readonly("row_view_is_valid",
+                             &SetCoverModel::row_view_is_valid)
       .def("SubsetRange",
            [](SetCoverModel& model) {
              return make_iterator<>(IntIterator::begin(model.num_subsets()),
@@ -242,11 +245,17 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("decision", &SetCoverDecision::decision);
 
+  py::enum_<SetCoverInvariant::ConsistencyLevel>(m, "consistency_level")
+      .value("COST_AND_COVERAGE",
+             SetCoverInvariant::ConsistencyLevel::kCostAndCoverage)
+      .value("FREE_AND_UNCOVERED",
+             SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered)
+      .value("REDUNDANCY", SetCoverInvariant::ConsistencyLevel::kRedundancy);
+
   py::class_<SetCoverInvariant>(m, "SetCoverInvariant")
       .def(py::init<SetCoverModel*>())
       .def("initialize", &SetCoverInvariant::Initialize)
       .def("clear", &SetCoverInvariant::Clear)
-      .def("recompute_invariant", &SetCoverInvariant::RecomputeInvariant)
       .def("model", &SetCoverInvariant::model)
       .def_property(
           "model",
@@ -295,9 +304,10 @@ PYBIND11_MODULE(set_cover, m) {
       .def("clear_trace", &SetCoverInvariant::ClearTrace)
       .def("clear_removability_information",
            &SetCoverInvariant::ClearRemovabilityInformation)
-      .def("new_removable_subsets", &SetCoverInvariant::new_removable_subsets)
-      .def("new_non_removable_subsets",
-           &SetCoverInvariant::new_non_removable_subsets)
+      .def("newly_removable_subsets",
+           &SetCoverInvariant::newly_removable_subsets)
+      .def("newly_non_removable_subsets",
+           &SetCoverInvariant::newly_non_removable_subsets)
       .def("compress_trace", &SetCoverInvariant::CompressTrace)
       .def("load_solution",
            [](SetCoverInvariant& invariant,
@@ -312,43 +322,28 @@ PYBIND11_MODULE(set_cover, m) {
             return invariant.ComputeIsRedundant(SubsetIndex(subset));
           },
           arg("subset"))
-      .def("make_fully_updated", &SetCoverInvariant::MakeFullyUpdated)
+      .def("recompute", &SetCoverInvariant::Recompute)
       .def(
           "flip",
-          [](SetCoverInvariant& invariant, BaseInt subset) {
-            invariant.Flip(SubsetIndex(subset));
+          [](SetCoverInvariant& invariant, BaseInt subset,
+             SetCoverInvariant::ConsistencyLevel consistency) {
+            invariant.Flip(SubsetIndex(subset), consistency);
           },
-          arg("subset"))
-      .def(
-          "flip_and_fully_update",
-          [](SetCoverInvariant& invariant, BaseInt subset) {
-            invariant.FlipAndFullyUpdate(SubsetIndex(subset));
-          },
-          arg("subset"))
+          arg("subset"), arg("consistency"))
       .def(
           "select",
-          [](SetCoverInvariant& invariant, BaseInt subset) {
-            invariant.Select(SubsetIndex(subset));
+          [](SetCoverInvariant& invariant, BaseInt subset,
+             SetCoverInvariant::ConsistencyLevel consistency) {
+            invariant.Select(SubsetIndex(subset), consistency);
           },
-          arg("subset"))
-      .def(
-          "select_and_fully_update",
-          [](SetCoverInvariant& invariant, BaseInt subset) {
-            invariant.SelectAndFullyUpdate(SubsetIndex(subset));
-          },
-          arg("subset"))
+          arg("subset"), arg("consistency"))
       .def(
           "deselect",
-          [](SetCoverInvariant& invariant, BaseInt subset) {
-            invariant.Deselect(SubsetIndex(subset));
+          [](SetCoverInvariant& invariant, BaseInt subset,
+             SetCoverInvariant::ConsistencyLevel consistency) {
+            invariant.Deselect(SubsetIndex(subset), consistency);
           },
-          arg("subset"))
-      .def(
-          "deselect_and_fully_update",
-          [](SetCoverInvariant& invariant, BaseInt subset) {
-            invariant.DeselectAndFullyUpdate(SubsetIndex(subset));
-          },
-          arg("subset"))
+          arg("subset"), arg("consistency"))
       .def("export_solution_as_proto",
            &SetCoverInvariant::ExportSolutionAsProto)
       .def("import_solution_from_proto",
@@ -427,6 +422,27 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](ElementDegreeSolutionGenerator& heuristic,
+              const std::vector<BaseInt>& focus,
+              const std::vector<double>& costs) -> bool {
+             return heuristic.NextSolution(
+                 VectorIntToVectorSubsetIndex(focus),
+                 VectorDoubleToSubsetCostVector(costs));
+           });
+
+  py::class_<LazyElementDegreeSolutionGenerator>(
+      m, "LazyElementDegreeSolutionGenerator")
+      .def(py::init<SetCoverInvariant*>())
+      .def("next_solution",
+           [](LazyElementDegreeSolutionGenerator& heuristic) -> bool {
+             return heuristic.NextSolution();
+           })
+      .def("next_solution",
+           [](LazyElementDegreeSolutionGenerator& heuristic,
+              const std::vector<BaseInt>& focus) -> bool {
+             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
+           })
+      .def("next_solution",
+           [](LazyElementDegreeSolutionGenerator& heuristic,
               const std::vector<BaseInt>& focus,
               const std::vector<double>& costs) -> bool {
              return heuristic.NextSolution(
