@@ -60,12 +60,13 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 class CarpParser {
  public:
   CarpParser();
@@ -76,7 +77,7 @@ class CarpParser {
 #endif
 
   // Loads instance from a file into this parser object.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
 
   // Returns the name of the instance being solved.
   const std::string& name() const { return name_; }
@@ -156,7 +157,7 @@ class CarpParser {
   };
 
   void Initialize();
-  bool ParseFile(const std::string& file_name);
+  bool ParseFile(absl::string_view file_name);
   bool ParseMetadataLine(absl::Span<const std::string> words);
   bool ParseEdge(std::string_view line, bool with_servicing);
 
@@ -181,6 +182,6 @@ class CarpParser {
   int64_t n_vehicles_;
   int64_t capacity_;
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_CARP_PARSER_H_

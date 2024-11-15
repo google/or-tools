@@ -21,9 +21,9 @@
 // Reader for Multicommodity fixed-charge Network Design (MCND) files using the
 // .dow format.
 
-namespace operations_research {
+namespace operations_research::routing {
 ::absl::Status ReadFile(absl::string_view file_name,
                         CapacityPlanningInstance* request);
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_DOW_PARSER_H_

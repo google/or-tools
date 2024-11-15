@@ -19,7 +19,7 @@
 #include "absl/hash/hash_testing.h"
 #include "gtest/gtest.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(SimpleGraphTest, EdgeHashing) {
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
@@ -100,4 +100,4 @@ TEST(Coordinates3Test, Double) {
        Coordinates3<double>(1.0, 2.0, 3.0)}));
 }
 }  //  namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

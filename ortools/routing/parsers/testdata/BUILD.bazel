@@ -12,6 +12,7 @@
 # limitations under the License.
 
 exports_files([
+    "c1_10_2-90-42222.96.txt",
     "carp_gdb19.dat",  # https://github.com/vidalt/HGS-CARP/blob/master/Instances/CARP/gdb19.dat
     # https://www.sciencedirect.com/science/article/abs/pii/0305054883900266
     "carp_gdb19_diferente_deposito.dat",

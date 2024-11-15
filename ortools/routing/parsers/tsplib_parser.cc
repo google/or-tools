@@ -36,7 +36,7 @@
 #include "ortools/util/filelineiter.h"
 #include "re2/re2.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 // ----- Distances -----
@@ -171,7 +171,7 @@ TspLibParser::TspLibParser()
       edge_column_(0),
       to_read_(0) {}
 
-bool TspLibParser::LoadFile(const std::string& file_name) {
+bool TspLibParser::LoadFile(absl::string_view file_name) {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   for (const std::string& line :
@@ -182,7 +182,7 @@ bool TspLibParser::LoadFile(const std::string& file_name) {
   return true;
 }
 
-int TspLibParser::SizeFromFile(const std::string& file_name) const {
+int TspLibParser::SizeFromFile(absl::string_view file_name) const {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   int size = 0;
@@ -747,7 +747,7 @@ TspLibTourParser::TspLibTourParser() : section_(UNDEFINED_SECTION), size_(0) {}
 
 // TODO(user): Return false when issues were encountered while parsing the
 // file.
-bool TspLibTourParser::LoadFile(const std::string& file_name) {
+bool TspLibTourParser::LoadFile(absl::string_view file_name) {
   section_ = UNDEFINED_SECTION;
   comments_.clear();
   tour_.clear();
@@ -818,7 +818,7 @@ CVRPToursParser::CVRPToursParser() : cost_(0) {}
 
 // TODO(user): Return false when issues were encountered while parsing the
 // file.
-bool CVRPToursParser::LoadFile(const std::string& file_name) {
+bool CVRPToursParser::LoadFile(absl::string_view file_name) {
   tours_.clear();
   cost_ = 0;
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
@@ -852,4 +852,4 @@ void CVRPToursParser::ProcessNewLine(const std::string& line) {
   }
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

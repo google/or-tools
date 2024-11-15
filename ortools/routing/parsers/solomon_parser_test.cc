@@ -18,9 +18,10 @@
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/path.h"
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
+#define ROOT_DIR "_main/"
 
 ABSL_FLAG(std::string, solomon_test_archive,
           "ortools/bench/solomon/"
@@ -29,7 +30,7 @@ ABSL_FLAG(std::string, solomon_test_archive,
 ABSL_FLAG(std::string, solomon_test_instance, "google2.txt",
           "Solomon: testing instance");
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(SolomonParserTest, LoadEmptyFileName) {
   std::string empty_file_name;
@@ -58,8 +59,40 @@ TEST(SolomonParserTest, LoadNonExistingInstance) {
   SolomonParser parser;
   EXPECT_FALSE(parser.LoadFile(
       "doesnotexist.txt",
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
+      file::JoinPath(::testing::SrcDir(),
                      absl::GetFlag(FLAGS_solomon_test_archive))));
 }
+
+TEST(SolomonSolutionParserTest, LoadEmptyFileName) {
+  std::string empty_file_name;
+  SolomonSolutionParser parser;
+  EXPECT_FALSE(parser.LoadFile(empty_file_name));
+}
+
+TEST(SolomonSolutionParserTest, LoadNonExistingFile) {
+  SolomonSolutionParser parser;
+  EXPECT_FALSE(parser.LoadFile(""));
+}
+
+TEST(SolomonSolutionParserTest, LoadFile) {
+  SolomonSolutionParser parser;
+  EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                             "ortools/routing/parsers/testdata/"
+                                             "c1_10_2-90-42222.96.txt")));
+  EXPECT_EQ(parser.NumberOfRoutes(), 90);
+  EXPECT_EQ(parser.GetValueFromKey("Instance Name"), "c1_10_2");
+  EXPECT_EQ(
+      parser.GetValueFromKey("Authors"),
+      "Zhu He, Longfei Wang, Weibo Lin, Yujie Chen, Haoyuan Hu "
+      "(haoyuan.huhy@cainiao.com), Yinghui Xu & VRP Team (Ying Zhang, Guotao "
+      "Wu, Kunpeng Han et al.), unpublished result of CAINIAO AI.");
+  EXPECT_EQ(parser.GetValueFromKey("Date"), "05-10-2018");
+  EXPECT_EQ(parser.GetValueFromKey("Reference"),
+            "\"New Algorithm for VRPTW\", unpublished result of CAINIAO AI.");
+  EXPECT_EQ(parser.GetValueFromKey("NonExistingKey"), "");
+  EXPECT_THAT(parser.route(0), ::testing::ElementsAre(1, 987, 466, 279, 31, 276,
+                                                      263, 207, 646, 193, 3));
+}
+
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

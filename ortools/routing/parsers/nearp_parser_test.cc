@@ -15,20 +15,13 @@
 
 #include <string>
 
-#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
+#define ROOT_DIR "_main/"
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
-
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(NearpParserTest, Constructor) {
   NearpParser parser;
@@ -55,10 +48,9 @@ TEST(NearpParserTest, LoadNonExistingFile) {
 }
 
 TEST(NearpParserTest, LoadBHW1) {
-  std::string file_name =
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                     "ortools/routing/parsers/testdata/"
-                     "nearp_BHW1.dat");
+  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                         "ortools/routing/parsers/testdata/"
+                                         "nearp_BHW1.dat");
   NearpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "BHW1");
@@ -97,10 +89,9 @@ TEST(NearpParserTest, LoadBHW1) {
 }
 
 TEST(NearpParserTest, LoadToy) {
-  std::string file_name =
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                     "ortools/routing/parsers/"
-                     "testdata/nearp_toy.dat");
+  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                         "ortools/routing/parsers/"
+                                         "testdata/nearp_toy.dat");
   NearpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "Toy");
@@ -139,4 +130,4 @@ TEST(NearpParserTest, LoadToy) {
   EXPECT_EQ(parser.GetNodeName(3), "N4");
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

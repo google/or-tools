@@ -25,7 +25,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 RoutingOutputFormat RoutingOutputFormatFromString(std::string_view format) {
   const std::string format_normalized =
@@ -45,7 +45,7 @@ std::vector<RoutingSolution::Route> RoutesFromVector(
 }  // namespace
 
 std::vector<std::vector<int64_t>> RoutingSolution::SplitRoutes(
-    const std::vector<int64_t>& solution, int64_t separator) {
+    absl::Span<const int64_t> solution, int64_t separator) {
   // The solution vector separates routes by -1: split this vector into a vector
   // per route, where the other helpers can make the rest of the way to a proper
   // RoutingSolution object.
@@ -384,7 +384,7 @@ std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
   // Before serializing the route, make some tests to check that the hypotheses
   // are respected (otherwise, the output of the function is highly likely
   // pure garbage).
-  RoutingSolution::Event first_event = route[0];
+  const RoutingSolution::Event& first_event = route[0];
   CHECK(first_event.type == RoutingSolution::Event::Type::kStart)
       << "The route does not begin with a Start event to indicate "
          "the depot.";
@@ -397,7 +397,7 @@ std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
   std::string current_route;
 
   for (int64_t i = 1; i < route.size() - 1; ++i) {
-    RoutingSolution::Event event = route[i];
+    const RoutingSolution::Event& event = route[i];
 
     // Ignore the depot, as CVRPLIB doesn't output the depot in the routes
     // (all routes implicitly start and end at the depot).
@@ -410,7 +410,7 @@ std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
   // Last event: end at a depot. Due to the strange way CVRPLIB
   // outputs nodes, the depot must be the same at the beginning and the
   // end of the route.
-  RoutingSolution::Event last_event = route.back();
+  const RoutingSolution::Event& last_event = route.back();
   if (last_event.type == RoutingSolution::Event::Type::kEnd) {
     CHECK_EQ(depot, last_event.arc.tail());
     CHECK_EQ(last_event.arc.tail(), last_event.arc.head());
@@ -422,4 +422,4 @@ std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
   return current_route;
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

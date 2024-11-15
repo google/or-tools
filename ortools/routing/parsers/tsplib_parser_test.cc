@@ -21,7 +21,6 @@
 
 #include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
-#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
@@ -31,15 +30,9 @@
 #include "ortools/base/path.h"
 #include "ortools/base/zipfile.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
+#define ROOT_DIR "_main/"
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
-
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 TEST(TspLibParserTest, GeneratedDataSets) {
@@ -251,8 +244,8 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
 TEST(TspLibParserTest, ParseKytojoki33Depot) {
   // This file inverts EDGE_WEIGHT_TYPE and EDGE_WEIGHT_FORMAT.
   std::string file_name = file::JoinPath(
-      absl::GetFlag(FLAGS_test_srcdir),
-      ROOT_DIR "ortools/routing/parsers/testdata/", "tsplib_Kytojoki_33.vrp");
+      ::testing::SrcDir(), ROOT_DIR "ortools/routing/parsers/testdata/",
+      "tsplib_Kytojoki_33.vrp");
   TspLibParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   // The depot is a new node, given by its coordinates, instead of an existing
@@ -301,8 +294,8 @@ TEST(TspLibTourParserTest, LoadAllDataSets) {
       ": Optimal solution of ulysses22 (7013)"};
   int file_index = 0;
   std::vector<std::string> matches;
-  if (file::Match(file::JoinPath("/tarfs", absl::GetFlag(FLAGS_test_srcdir),
-                                 kArchive, "*\\.opt\\.tour\\.gz"),
+  if (file::Match(file::JoinPath("/tarfs", ::testing::SrcDir(), kArchive,
+                                 "*\\.opt\\.tour\\.gz"),
                   &matches, file::Defaults())
           .ok()) {
     for (const std::string& match : matches) {
@@ -336,9 +329,9 @@ TEST(CVRPToursParserTest, LoadAllDataSets) {
                                        /*opt-A-n55-k9*/ 1073};
   int file_index = 0;
   std::vector<std::string> matches;
-  if (file::Match(file::JoinPath("/zip", absl::GetFlag(FLAGS_test_srcdir),
-                                 kArchive, "opt-A-\\.*"),
-                  &matches, file::Defaults())
+  if (file::Match(
+          file::JoinPath("/zip", ::testing::SrcDir(), kArchive, "opt-A-\\.*"),
+          &matches, file::Defaults())
           .ok()) {
     for (const std::string& match : matches) {
       CVRPToursParser parser;
@@ -349,4 +342,4 @@ TEST(CVRPToursParserTest, LoadAllDataSets) {
   }
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

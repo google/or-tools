@@ -32,7 +32,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Indicates the format in which the output should be done. This enumeration is
 // used for solutions and solver statistics.
@@ -137,7 +137,7 @@ class RoutingSolution {
   // (TSPLIB uses -1; it is crucial that the separator cannot be a node) into
   // a vector per route, for use in FromSplit* functions.
   static std::vector<std::vector<int64_t>> SplitRoutes(
-      const std::vector<int64_t>& solution, int64_t separator);
+      absl::Span<const int64_t> solution, int64_t separator);
 
   // Builds a RoutingSolution object from a vector of routes, each represented
   // as a vector of nodes being traversed. All the routes are supposed to start
@@ -291,6 +291,6 @@ void PrintStatistic(absl::string_view name, T value,
                     RoutingOutputFormat format) {
   absl::PrintF("%s\n", FormatStatistic(name, value, format));
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_

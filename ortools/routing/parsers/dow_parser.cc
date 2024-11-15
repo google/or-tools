@@ -29,7 +29,7 @@
 #include "ortools/routing/parsers/capacity_planning.pb.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 ::absl::Status ReadFile(absl::string_view file_name,
                         CapacityPlanningInstance* request) {
   if (!file::Exists(file_name, file::Defaults()).ok()) {
@@ -103,4 +103,4 @@ namespace operations_research {
   return absl::OkStatus();
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

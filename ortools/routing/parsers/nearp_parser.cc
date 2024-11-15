@@ -22,10 +22,11 @@
 
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 NearpParser::NearpParser() { Initialize(); }
 
@@ -49,12 +50,12 @@ void NearpParser::Initialize() {
   section_ = METADATA;
 }
 
-bool NearpParser::LoadFile(const std::string& file_name) {
+bool NearpParser::LoadFile(absl::string_view file_name) {
   Initialize();
   return ParseFile(file_name);
 }
 
-bool NearpParser::ParseFile(const std::string& file_name) {
+bool NearpParser::ParseFile(absl::string_view file_name) {
   // Only put the first word as header, as the main check is just done on this
   // first word (no ambiguity is possible for well-formed files; a more precise
   // check is done for metadata).
@@ -357,7 +358,6 @@ std::optional<ArcOrEdge> ParseArcOrEdge(std::string_view line,
       absl::StrSplit(line, absl::ByAnyChar(" :\t(),"), absl::SkipEmpty());
 
   // Parse the name.
-  const std::string name = words[0];
 
   // Parse the tail and the head of the arc/edge.
   std::optional<int64_t> opt_tail = ParseNodeIndex(words[1]);
@@ -447,4 +447,4 @@ std::string NearpParser::GetEdgeName(Edge edge) const {
     return absl::StrCat("NrE", edge_position - num_edges_with_servicing_ + 1);
   }
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing

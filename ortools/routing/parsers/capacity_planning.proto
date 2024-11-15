@@ -13,7 +13,11 @@
 
 syntax = "proto3";
 
-package operations_research;
+option java_package = "com.google.ortools.routing.parser";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Routing.Parser";
+
+package operations_research.routing;
 
 // This is the proto for describing the multicommodity fixed-charged network
 // design problem.

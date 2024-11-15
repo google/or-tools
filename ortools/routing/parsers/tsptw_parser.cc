@@ -29,7 +29,7 @@
 #include "ortools/base/zipfile.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 namespace {
 
@@ -66,7 +66,7 @@ TspTWParser::TspTWParser()
       distance_function_(nullptr),
       time_function_(nullptr) {}
 
-bool TspTWParser::LoadFile(const std::string& file_name) {
+bool TspTWParser::LoadFile(absl::string_view file_name) {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   coords_.clear();
@@ -81,7 +81,7 @@ bool TspTWParser::LoadFile(const std::string& file_name) {
   return ParseLopezIbanezBlum(file_name) || ParseDaSilvaUrrutia(file_name);
 }
 
-bool TspTWParser::ParseLopezIbanezBlum(const std::string& file_name) {
+bool TspTWParser::ParseLopezIbanezBlum(absl::string_view file_name) {
   int section = 0;
   int entry_count = 0;
   for (const std::string& line :
@@ -154,7 +154,7 @@ bool TspTWParser::ParseLopezIbanezBlum(const std::string& file_name) {
   return entry_count == size_;
 }
 
-bool TspTWParser::ParseDaSilvaUrrutia(const std::string& file_name) {
+bool TspTWParser::ParseDaSilvaUrrutia(absl::string_view file_name) {
   for (const std::string& line :
        FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
     // Skip header.
@@ -211,4 +211,4 @@ bool TspTWParser::ParseDaSilvaUrrutia(const std::string& file_name) {
   return true;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
