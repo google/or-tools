@@ -149,7 +149,7 @@ void TimeTableEdgeFinding::BuildTimeTable() {
 }
 
 bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
-  demands_->CacheAllEnergyValues();
+  if (!demands_->CacheAllEnergyValues()) return true;
 
   // Initialize the data structures and build the free parts.
   // --------------------------------------------------------
