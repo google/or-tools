@@ -85,7 +85,7 @@ bool CumulativeEnergyConstraint::Propagate() {
   // This only uses one time direction, but the helper might be used elsewhere.
   // TODO(user): just keep the current direction?
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
-  demands_->CacheAllEnergyValues();
+  if (!demands_->CacheAllEnergyValues()) return true;
 
   const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
   // TODO(user): force capacity_max >= 0, fail/remove optionals when 0.
@@ -506,7 +506,7 @@ bool CumulativeDualFeasibleEnergyConstraint::FindAndPropagateConflict(
 
 bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
-  demands_->CacheAllEnergyValues();
+  if (!demands_->CacheAllEnergyValues()) return true;
 
   const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
   if (capacity_max <= 0) return true;

@@ -660,6 +660,8 @@ class SchedulingDemandHelper {
   // it might have a more complex formula. In all case, the energy is assumed
   // to be only consumed during the interval duration.
   //
+  // Returns false if the energy can overflow and was not computed.
+  //
   // IMPORTANT: One must call CacheAllEnergyValues() for the values to be
   // updated. TODO(user): this is error prone, maybe we should revisit. But if
   // there is many alternatives, we don't want to rescan the list more than a
@@ -669,7 +671,7 @@ class SchedulingDemandHelper {
   // expressing the interval as a set of alternatives.
   //
   // At level 0, it will filter false literals from decomposed energies.
-  void CacheAllEnergyValues();
+  bool CacheAllEnergyValues();
   IntegerValue EnergyMin(int t) const { return cached_energies_min_[t]; }
   IntegerValue EnergyMax(int t) const { return cached_energies_max_[t]; }
   bool EnergyIsQuadratic(int t) const { return energy_is_quadratic_[t]; }

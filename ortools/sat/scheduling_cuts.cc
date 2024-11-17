@@ -599,7 +599,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
                           integer_trail, time_limit,
                           model](LinearConstraintManager* manager) {
     if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
-    demands_helper->CacheAllEnergyValues();
+    if (!demands_helper->CacheAllEnergyValues()) return true;
 
     const auto& lp_values = manager->LpValues();
     std::vector<EnergyEvent> events;
@@ -712,7 +712,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
   result.generate_cuts = [helper, capacity, demands_helper,
                           model](LinearConstraintManager* manager) {
     if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
-    demands_helper->CacheAllEnergyValues();
+    if (!demands_helper->CacheAllEnergyValues()) return true;
 
     TopNCuts top_n_cuts(5);
     std::vector<TimeTableEvent> events;
@@ -1481,7 +1481,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
   result.generate_cuts = [integer_trail, helper, demands_helper, capacity,
                           model](LinearConstraintManager* manager) {
     if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
-    demands_helper->CacheAllEnergyValues();
+    if (!demands_helper->CacheAllEnergyValues()) return true;
 
     auto generate_cuts = [integer_trail, model, manager, helper, demands_helper,
                           capacity](bool mirror) {

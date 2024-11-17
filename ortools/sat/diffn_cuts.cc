@@ -325,8 +325,8 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
                              LinearConstraintManager* manager) {
     if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
     if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
-    x_demands_helper->CacheAllEnergyValues();
-    y_demands_helper->CacheAllEnergyValues();
+    if (!x_demands_helper->CacheAllEnergyValues()) return true;
+    if (!y_demands_helper->CacheAllEnergyValues()) return true;
 
     const int num_rectangles = x_helper->NumTasks();
     std::vector<int> active_rectangles;

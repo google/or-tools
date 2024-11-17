@@ -12965,7 +12965,7 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   // Note that we don't copy names or enforcement_literal (not supported) here.
   auto* new_ct =
       context_->working_model->add_constraints()->mutable_cumulative();
-  *new_ct->mutable_capacity() = ct.cumulative().capacity();
+  CopyLinearExpression(ct.cumulative().capacity(), new_ct->mutable_capacity());
 
   const int num_intervals = ct.cumulative().intervals().size();
   new_ct->mutable_intervals()->Reserve(num_intervals);

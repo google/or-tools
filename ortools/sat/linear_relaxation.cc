@@ -795,7 +795,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
                              const std::optional<AffineExpression>& makespan,
                              Model* model, LinearRelaxation* relaxation) {
   const int num_intervals = helper->NumTasks();
-  demands_helper->CacheAllEnergyValues();
+  if (!demands_helper->CacheAllEnergyValues()) return;
 
   IntegerValue min_of_starts = kMaxIntegerValue;
   IntegerValue max_of_ends = kMinIntegerValue;
