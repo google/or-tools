@@ -5785,7 +5785,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   // thus to check whether a graph is fully connected we must check also the
   // size of the unique component.
   const bool is_fully_connected =
-      components.size() == 1 && components[0].size() == active_boxes.size();
+      (components.size() == 1 && components[0].size() == active_boxes.size()) ||
+      (active_boxes.size() <= 1);
   if (!is_fully_connected) {
     for (const absl::Span<int> boxes : components) {
       if (boxes.size() <= 1) continue;

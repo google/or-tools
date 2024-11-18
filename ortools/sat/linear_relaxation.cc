@@ -993,16 +993,29 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
   std::vector<AffineExpression> x_sizes;
   std::vector<AffineExpression> y_sizes;
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
+    const IntegerValue curr_x_min = integer_trail->LevelZeroLowerBound(
+        intervals_repository->Start(x_intervals[i]));
+    const IntegerValue curr_x_max = integer_trail->LevelZeroUpperBound(
+        intervals_repository->End(x_intervals[i]));
+    const IntegerValue curr_y_min = integer_trail->LevelZeroLowerBound(
+        intervals_repository->Start(y_intervals[i]));
+    const IntegerValue curr_y_max = integer_trail->LevelZeroUpperBound(
+        intervals_repository->End(y_intervals[i]));
+    if (curr_x_min > curr_x_max || curr_y_min > curr_y_max) {
+      // This can happen if the box must be absent.
+      continue;
+    }
     x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
     y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
-    x_min = std::min(x_min, integer_trail->LevelZeroLowerBound(
-                                intervals_repository->Start(x_intervals[i])));
-    x_max = std::max(x_max, integer_trail->LevelZeroUpperBound(
-                                intervals_repository->End(x_intervals[i])));
-    y_min = std::min(y_min, integer_trail->LevelZeroLowerBound(
-                                intervals_repository->Start(y_intervals[i])));
-    y_max = std::max(y_max, integer_trail->LevelZeroUpperBound(
-                                intervals_repository->End(y_intervals[i])));
+    x_min = std::min(x_min, curr_x_min);
+    x_max = std::max(x_max, curr_x_max);
+    y_min = std::min(y_min, curr_y_min);
+    y_max = std::max(y_max, curr_y_max);
+  }
+
+  if (x_min > x_max || y_min > y_max) {
+    // All boxes must be absent.
+    return;
   }
 
   const IntegerValue max_area =
