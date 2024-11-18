@@ -439,6 +439,7 @@ class ModelCopy {
 
   bool CopyElement(const ConstraintProto& ct);
   bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
+  bool CopyIntDiv(const ConstraintProto& ct, bool ignore_names);
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyLinearExpression(const LinearExpressionProto& expr,
                             LinearExpressionProto* dst);
