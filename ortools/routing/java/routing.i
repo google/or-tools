@@ -39,12 +39,11 @@ class RoutingSearchStatus;
 
 // Include the files we want to wrap a first time.
 %{
-#include "ortools/routing/types.h"
-#include "ortools/routing/parameters.h"
-#include "ortools/routing/routing.h"
 #include "ortools/routing/enums.pb.h"
+#include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
-#include <memory>
+#include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 %}
 
 // RoutingModel methods.
