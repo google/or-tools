@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -125,7 +126,7 @@ public class VrpInitialRoutes {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex, 0, 3000,
+    boolean unused = routing.addDimension(transitCallbackIndex, 0, 3000,
         true, // start cumul to zero
         "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
@@ -145,8 +146,8 @@ public class VrpInitialRoutes {
 
     // Solve the problem.
     // [START solve]
-    Assignment solution = routing.solveFromAssignmentWithParameters(
-        initialSolution, searchParameters);
+    Assignment solution =
+        routing.solveFromAssignmentWithParameters(initialSolution, searchParameters);
     // [END solve]
 
     // Print solution on console.

@@ -14,7 +14,7 @@
 // Wrapper for RoutingIndexManager.
 
 %include "ortools/base/base.i"
-%include "ortools/util/java/vector.i"
+%include "ortools/constraint_solver/java/routing_types.i"
 
 %{
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -26,7 +26,6 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 %ignoreall
 
 %unignore operations_research;
-
 namespace operations_research {
 
 %unignore RoutingIndexManager;

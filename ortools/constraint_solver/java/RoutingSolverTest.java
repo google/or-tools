@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.RoutingModelParameters;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.RoutingSearchStatus;
 import com.google.protobuf.Duration;
 import java.util.ArrayList;
 import java.util.function.LongBinaryOperator;
@@ -35,11 +36,13 @@ import org.junit.jupiter.api.Test;
 public final class RoutingSolverTest {
   @AutoValue
   abstract static class Location {
-    static Location create(Integer latitude, Integer longitude) {
+    static Location create(int latitude, int longitude) {
       return new AutoValue_RoutingSolverTest_Location(latitude, longitude);
     }
-    abstract Integer latitude();
-    abstract Integer longitude();
+
+    abstract int latitude();
+
+    abstract int longitude();
   }
   private ArrayList<Location> coordinates;
 
@@ -89,7 +92,7 @@ public final class RoutingSolverTest {
         final int toNode = manager.indexToNode(toIndex);
         return (long) Math.abs(toNode - fromNode);
       };
-      model.registerTransitCallback(transit);
+      final int unused = model.registerTransitCallback(transit);
       System.gc(); // model should keep alive the callback
     }
   }
@@ -170,7 +173,7 @@ public final class RoutingSolverTest {
     System.gc();
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     Assignment solution = model.solveWithParameters(parameters);
     assertEquals(10, solution.objectiveValue());
     solution = model.solveFromAssignmentWithParameters(solution, parameters);
@@ -189,9 +192,9 @@ public final class RoutingSolverTest {
     System.gc();
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(10, solution.objectiveValue());
   }
@@ -214,9 +217,9 @@ public final class RoutingSolverTest {
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(10, solution.objectiveValue());
   }
@@ -232,9 +235,9 @@ public final class RoutingSolverTest {
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(10, solution.objectiveValue());
   }
@@ -254,9 +257,9 @@ public final class RoutingSolverTest {
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(8, solution.objectiveValue());
   }
@@ -273,9 +276,9 @@ public final class RoutingSolverTest {
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(45, solution.objectiveValue());
   }
@@ -291,9 +294,9 @@ public final class RoutingSolverTest {
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(8, solution.objectiveValue());
   }
@@ -312,9 +315,9 @@ public final class RoutingSolverTest {
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(10, solution.objectiveValue());
   }
@@ -334,7 +337,7 @@ public final class RoutingSolverTest {
       routes[i][0] = manager.nodeToIndex(i + 1);
     }
     Assignment assignment = new Assignment(model.solver());
-    model.routesToAssignment(routes, false, true, assignment);
+    assertTrue(model.routesToAssignment(routes, false, true, assignment));
     for (int i = 0; i < vehicles; ++i) {
       assertEquals(assignment.value(model.nextVar(model.start(i))), i + 1);
       assertEquals(assignment.value(model.nextVar(i + 1)), model.end(i));
@@ -358,9 +361,9 @@ public final class RoutingSolverTest {
     b[0] = 1;
     int[] c = new int[1];
     c[0] = 4;
-    model.addDisjunction(manager.nodesToIndices(a));
-    model.addDisjunction(manager.nodesToIndices(b));
-    model.addDisjunction(manager.nodesToIndices(c));
+    int unused = model.addDisjunction(manager.nodesToIndices(a));
+    unused = model.addDisjunction(manager.nodesToIndices(b));
+    unused = model.addDisjunction(manager.nodesToIndices(c));
 
     Assignment solution = model.solve(null);
     assertEquals(8, solution.objectiveValue());
@@ -387,9 +390,9 @@ public final class RoutingSolverTest {
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solveWithParameters(searchParameters);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(20, solution.objectiveValue());
   }
@@ -416,9 +419,9 @@ public final class RoutingSolverTest {
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solveWithParameters(searchParameters);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(45, solution.objectiveValue());
   }
@@ -451,9 +454,9 @@ public final class RoutingSolverTest {
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solveWithParameters(searchParameters);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(10, solution.objectiveValue());
   }
@@ -488,7 +491,7 @@ public final class RoutingSolverTest {
     for (int i = 1; i < coordinates.size(); i++) {
       int[] a = new int[1];
       a[0] = i;
-      model.addDisjunction(manager.nodesToIndices(a), 10);
+      int unused = model.addDisjunction(manager.nodesToIndices(a), 10);
 
       dimension.cumulVar(i).setMin(0);
       dimension.cumulVar(i).setMax(40);
@@ -500,9 +503,9 @@ public final class RoutingSolverTest {
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     Assignment solution = model.solveWithParameters(searchParameters);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     solution = model.solve(solution);
     assertNotNull(solution);
@@ -527,9 +530,9 @@ public final class RoutingSolverTest {
     dimension.setSpanCostCoefficientForAllVehicles(2);
     assertEquals(2, dimension.getSpanCostCoefficientForVehicle(0));
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     assertEquals(2 * (10 + 1), solution.objectiveValue());
   }
@@ -551,9 +554,9 @@ public final class RoutingSolverTest {
     timeDimension.setGlobalSpanCostCoefficient(2);
     assertEquals(2, timeDimension.getGlobalSpanCostCoefficient());
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_SUCCESS, model.status());
     assertNotNull(solution);
     assertEquals(2 * (11 - 1), solution.objectiveValue());
   }
@@ -583,13 +586,13 @@ public final class RoutingSolverTest {
     assertNotNull(model);
     final LongBinaryOperator callback = createReturnOneCallback();
     final long[] capacity = {5, 6, 7};
-    model.addDimensionWithVehicleCapacity(
-        model.registerTransitCallback(callback), 1000, capacity, false, "dim");
+    assertTrue(model.addDimensionWithVehicleCapacity(
+        model.registerTransitCallback(callback), 1000, capacity, false, "dim"));
     RoutingDimension dimension = model.getMutableDimension("dim");
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     for (int vehicle = 0; vehicle < 3; ++vehicle) {
       assertEquals(vehicle + 4, solution.max(dimension.cumulVar(model.start(vehicle))));
@@ -611,12 +614,12 @@ public final class RoutingSolverTest {
       transits[i] = model.registerTransitCallback(callbacks[i]);
     }
     long capacity = 5;
-    model.addDimensionWithVehicleTransits(transits, 1000, capacity, false, "dim");
+    assertTrue(model.addDimensionWithVehicleTransits(transits, 1000, capacity, false, "dim"));
     RoutingDimension dimension = model.getMutableDimension("dim");
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     for (int vehicle = 0; vehicle < 3; ++vehicle) {
       assertEquals(
@@ -642,12 +645,13 @@ public final class RoutingSolverTest {
     for (int i = 0; i < 3; ++i) {
       capacity[i] = i + 5L;
     }
-    model.addDimensionWithVehicleTransitAndCapacity(transits, 1000, capacity, false, "dim");
+    assertTrue(
+        model.addDimensionWithVehicleTransitAndCapacity(transits, 1000, capacity, false, "dim"));
     final RoutingDimension dimension = model.getMutableDimension("dim");
 
-    assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
+    assertEquals(RoutingSearchStatus.Value.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     for (int vehicle = 0; vehicle < 3; ++vehicle) {
       assertEquals(4, solution.max(dimension.cumulVar(model.start(vehicle))));

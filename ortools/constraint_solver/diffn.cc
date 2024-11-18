@@ -275,7 +275,7 @@ class Diffn : public Constraint {
   }
 
   Constraint* MakeCumulativeConstraint(const std::vector<IntVar*>& positions,
-                                       const std::vector<int64_t>& sizes,
+                                       absl::Span<const int64_t> sizes,
                                        const std::vector<IntVar*>& demands,
                                        int64_t capacity) {
     std::vector<IntervalVar*> intervals;

@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
@@ -662,7 +663,7 @@ void AppendTasksFromPath(absl::Span<const int64_t> path,
   }
 }
 
-void FillTravelBoundsOfVehicle(int vehicle, const std::vector<int64_t>& path,
+void FillTravelBoundsOfVehicle(int vehicle, absl::Span<const int64_t> path,
                                const RoutingDimension& dimension,
                                TravelBounds* travel_bounds) {
   // Fill path and min/max/pre/post travel bounds.
@@ -945,7 +946,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
           interval->SetEndMax(arc_start_max);
           if (interval_is_performed) {
             dimension_->CumulVar(path_[pos])
-                ->SetMin(CapSub(interval_end_min, arc_start_offset));
+                ->SetMin(CapAdd(interval_end_min, arc_start_offset));
           }
         }
         continue;
@@ -1004,7 +1005,8 @@ class VehicleBreaksFilter : public BasePathFilter {
 VehicleBreaksFilter::VehicleBreaksFilter(const RoutingModel& routing_model,
                                          const RoutingDimension& dimension)
     : BasePathFilter(routing_model.Nexts(),
-                     routing_model.Size() + routing_model.vehicles()),
+                     routing_model.Size() + routing_model.vehicles(),
+                     routing_model.GetPathsMetadata()),
       model_(routing_model),
       dimension_(dimension) {
   DCHECK(dimension_.HasBreakConstraints());

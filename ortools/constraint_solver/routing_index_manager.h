@@ -14,13 +14,13 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 
+#include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/routing_types.h"
 
 namespace operations_research {
@@ -96,7 +96,7 @@ class RoutingIndexManager {
   }
   // Same as IndexToNode but for a given vector of indices.
   std::vector<NodeIndex> IndicesToNodes(
-      const std::vector<int64_t>& indices) const;
+      absl::Span<const int64_t> indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
   /// complete.

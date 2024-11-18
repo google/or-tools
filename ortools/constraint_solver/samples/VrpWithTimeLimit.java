@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import static java.lang.Math.max;
 
@@ -92,10 +93,10 @@ public final class VrpWithTimeLimit {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex,
-        /*slack_max=*/0,
-        /*capacity=*/3000,
-        /*fix_start_cumul_to_zero=*/true, "Distance");
+    boolean unused = routing.addDimension(transitCallbackIndex,
+        /* slack_max= */ 0,
+        /* capacity= */ 3000,
+        /* fix_start_cumul_to_zero= */ true, "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]

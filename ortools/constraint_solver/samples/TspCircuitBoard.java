@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -109,7 +110,7 @@ public class TspCircuitBoard {
       route += manager.indexToNode(index) + " -> ";
       long previousIndex = index;
       index = solution.value(routing.nextVar(index));
-      routing.getArcCostForVehicle(previousIndex, index, 0);
+      routeDistance += routing.getArcCostForVehicle(previousIndex, index, 0);
     }
     route += manager.indexToNode(routing.end(0));
     logger.info(route);

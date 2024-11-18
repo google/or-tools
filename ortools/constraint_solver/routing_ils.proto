@@ -21,31 +21,181 @@
 
 syntax = "proto3";
 
+option java_package = "com.google.ortools.constraintsolver";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.ConstraintSolver";
+
 import "ortools/constraint_solver/routing_enums.proto";
 
 package operations_research;
 
+// Ruin strategy that removes a number of spatially close routes.
+message SpatiallyCloseRoutesRuinStrategy {
+  // Number of spatially close routes ruined at each ruin application.
+  optional uint32 num_ruined_routes = 3;
+}
+
+// Ruin strategy that removes a number of customers by performing a random walk
+// on the underlying routing solution. More precisely, starting from a randomly
+// selected seed visit, the walk is extended by either moving within the
+// same route or by jumping to a visit served by a different neighboring
+// route. Every active visit encountered along this random walk is made
+// unperformed.
+message RandomWalkRuinStrategy {
+  // Number of visits removed during a ruin application defined on visits.
+  // Note that pickup and delivery pairs are considered as a single entity,
+  // i.e., the removal of a pickup (respectively delivery) causes the removal of
+  // the associated delivery (respectively pickup) and it counts as a single
+  // removal.
+  optional uint32 num_removed_visits = 7;
+}
+
+// Ruin strategy based on the "Slack Induction by String Removals for Vehicle
+// Routing Problems" by Jan Christiaens and Greet Vanden Berghe, Transportation
+// Science 2020.
+// Link to paper:
+// https://kuleuven.limo.libis.be/discovery/fulldisplay?docid=lirias1988666&context=SearchWebhook&vid=32KUL_KUL:Lirias&lang=en&search_scope=lirias_profile&adaptor=SearchWebhook&tab=LIRIAS&query=any,contains,LIRIAS1988666&offset=0
+//
+// Note that, in this implementation, the notion of "string" is replaced by
+// "sequence".
+//
+// The main idea of this ruin is to remove a number of geographically close
+// sequences of nodes. In particular, at every ruin application, a maximum
+// number max_ruined_routes of routes are disrupted. The value for
+// max_ruined_routes is defined as
+//       (4 * avg_num_removed_visits) / (1 + max_sequence_size) + 1
+// with
+// - avg_num_removed_visits: user-defined parameter ruling the average number of
+//   visits that are removed in face of several ruin applications (see also the
+//   proto message below)
+// - max_sequence_size is defined as
+//        min{max_removed_sequence_size, average_route_size}
+//   with
+//   - max_removed_sequence_size: user-defined parameter that specifies
+//     the maximum number of visits removed from a single route (see also the
+//     proto message below)
+//   - average_route_size: the average size of a non-empty route in the current
+//     solution
+//
+// The actual number of ruined routes is then obtained as
+//                  floor(U(1, max_ruined_routes + 1))
+// where U is a continuous uniform distribution of real values in the given
+// interval.
+//
+// The routes affected by the ruin procedure are selected as follows.
+// First, a non start/end seed node is randomly selected. The route serving this
+// node is the first ruined route. Then, until the required number of routes has
+// been ruined, neighbor nodes of the initial seed node are scanned and the
+// associated not yet ruined routes are disrupted. Nodes defining the selected
+// routes are designated as seed nodes for the "sequence" and "split sequence"
+// removal procedures described below.
+//
+// For every selected route, a maximum number route_max_sequence_size of nodes
+// are removed. In particular, route_max_sequence_size is defined as
+//                min{route_size, max_sequence_size}
+// with route_size being the size of the current route.
+//
+// Then, the actual number of removed nodes num_removed_nodes is defined as
+//              floor(U(1, route_max_sequence_size + 1))
+// where U is a continuous uniform distribution of real values in the given
+// interval.
+//
+// As mentioned above, the selected num_removed_nodes number of nodes is removed
+// either via the "sequence" removal or "split sequence" removal procedures. The
+// two removal procedures are executed with equal probabilities.
+//
+// The "sequence" removal procedure removes a randomly selected sequence of size
+// num_removed_nodes that includes the seed node.
+//
+// The "split sequence" removal procedure also removes a randomly selected
+// sequence of size num_removed_nodes that includes the seed node, but it can
+// possibly preserve a subsequence of contiguous nodes.
+// In particular, the procedure first selects a sequence of size
+// num_removed_nodes + num_bypassed, then num_bypassed contiguous nodes in the
+// selected sequence are preserved while the others removed.
+//
+// The definition of num_bypassed is as follows. First num_bypassed = 1. The
+// current value of num_bypassed is maintaned if
+//          U(0, 1) < bypass_factor * U(0, 1)
+// or the maximum value for num_bypassed, equal to
+//           route_size - num_removed_nodes
+// is reached. The value is incremented of a unit otherwise,
+// and the process is repeated. The value assigned to bypass_factor affects the
+// number of preserved visits (see also the proto message below).
+message SISRRuinStrategy {
+  // Maximum number of removed visits per sequence. The parameter name in the
+  // paper is L^{max} and the suggested value is 10.
+  optional uint32 max_removed_sequence_size = 1;
+
+  // Number of visits that are removed on average. The parameter name in the
+  // paper is \bar{c} and the suggested value is 10.
+  optional uint32 avg_num_removed_visits = 2;
+
+  // Value in [0, 1] ruling the number of preserved customers in the split
+  // sequence removal. The parameter name in the paper is \alpha and the
+  // suggested value is 0.01.
+  optional double bypass_factor = 3;
+}
+
 // Ruin strategies, used in perturbation based on ruin and recreate approaches.
 message RuinStrategy {
+  oneof strategy {
+    SpatiallyCloseRoutesRuinStrategy spatially_close_routes = 1;
+    RandomWalkRuinStrategy random_walk = 2;
+    SISRRuinStrategy sisr = 3;
+  }
+}
+
+// The ruin composition strategies specifies how ruin are selected at every ILS
+// iteration.
+message RuinCompositionStrategy {
   enum Value {
     // Unspecified value.
     UNSET = 0;
 
-    // Removes a number of spatially close routes.
-    SPATIALLY_CLOSE_ROUTES_REMOVAL = 1;
+    // Execute all ruin strategies sequentially in the same order provided in
+    // input.
+    RUN_ALL_SEQUENTIALLY = 1;
+
+    // Execute all ruin strategies in a random order.
+    RUN_ALL_RANDOMLY = 2;
+
+    // Execute a randomly selected ruin.
+    RUN_ONE_RANDOMLY = 3;
   }
 }
 
 // Parameters to configure a perturbation based on a ruin and recreate approach.
 message RuinRecreateParameters {
-  // Strategy defining how a reference solution is ruined.
-  RuinStrategy.Value ruin_strategy = 1;
+  // List of ruin strategies determining how a reference solution is ruined.
+  repeated RuinStrategy ruin_strategies = 1;
+
+  // The composition strategy to use when combining the given 'ruin_strategies'.
+  // Has no effect when ruin_strategies is composed of a single strategy.
+  RuinCompositionStrategy.Value ruin_composition_strategy = 2;
 
   // Strategy defining how a reference solution is recreated.
-  FirstSolutionStrategy.Value recreate_strategy = 2;
+  FirstSolutionStrategy.Value recreate_strategy = 3;
 
-  // Number of routes removed during a ruin application defined on routes.
-  uint32 num_ruined_routes = 3;
+  // Ratio in [0, 1] of non start/end nodes to consider as neighbors for the
+  // identification of routes spatially close to a non start/end seed node.
+  //
+  // In particular, given a non start/end seed node s served by route r, we say
+  // that a route r' is spatially close to the seed node s if there is at
+  // least one non start/end node s' among the neighbors of s, such that s' is
+  // served by r'.
+  //
+  // The neighbors_ratio is coupled with the corresponding min_neighbors and
+  // max_neighbors values, defining the minimum and maximum number of neighbor
+  // nodes considered for a given seed node:
+  // num_neighbors = min(max_neighbors,
+  //          max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES))
+  //
+  // Neighbors ratio, and minimum and maximum number of non start/end neighbor
+  // nodes for the identification of spatially close routes.
+  optional double route_selection_neighbors_ratio = 4;
+  optional uint32 route_selection_min_neighbors = 5;
+  optional uint32 route_selection_max_neighbors = 6;
 }
 
 // Defines how a reference solution is perturbed.
@@ -59,6 +209,67 @@ message PerturbationStrategy {
   }
 }
 
+// The cooling schedule strategy defines how to compute the current simulated
+// annealing temperature t given
+// - the initial temperature t0
+// - the final temperature t1
+// - the current search progress 0 <= p <= 1
+//
+// The value of t0 and t1 is defined by the initial_temperature and
+// final_temperature in SimulatedAnnealingParameters, respectively.
+//
+// The search progress p is derived, at any given time, by the search limits.
+// In particular, p measures how far we are in the search process w.r.t. to the
+// number of explored solutions and the time limit.
+//
+// The temperature t, computed according to one of the strategies defined below,
+// together with the selected AcceptanceStrategy, is used to guide the search
+// trajectory. In particular, given a neighbor solution S', generated by the
+// the application of the perturbation and improvement step to a reference
+// solution S, we have that S will be replaced by S' iff
+//                  cost(S') + t * log(U(0, 1)) < cost(S)
+// where U(0, 1) is a random number sampled from a uniform distribution of real
+// numbers in [0, 1].
+message CoolingScheduleStrategy {
+  enum Value {
+    // Unspecified value.
+    UNSET = 0;
+
+    // Exponentially decreases the temperature as the search progresses.
+    // More precisely, t = t0 * (t1/t0)^p.
+    EXPONENTIAL = 1;
+
+    // Linearly decreases the temperature as the search progresses.
+    // More precisely, t = t0 - p * (t0 - t1).
+    LINEAR = 2;
+  }
+}
+
+// Specifies the behavior of a simulated annealing acceptance strategy.
+message SimulatedAnnealingParameters {
+  // Determines the speed at which the temperature changes from initial to
+  // final.
+  CoolingScheduleStrategy.Value cooling_schedule_strategy = 1;
+
+  // The initial temperature. See CoolingScheduleStrategy for its usage.
+  optional double initial_temperature = 2;
+
+  // The final temperature. See CoolingScheduleStrategy for its usage.
+  optional double final_temperature = 3;
+
+  // Automatically define the value for the temperatures as follows.
+  // First, a  reference temperature t is defined as
+  //           w1 * c1 + w2 * c2 + ... + wK * cK
+  // where 0 < wJ <= 1 is the fraction of vehicles of cost class J and cJ is the
+  // average arc cost for the cost class J.
+  // The value of cJ is identified by randomly sampling N arc costs for the cost
+  // class J, where N is equal to the number of instance nodes.
+  // The initial and final temperatures are then defined as
+  // - initial_temperature: 0.1 * t
+  // - final_temperature: 0.001 * t
+  optional bool automatic_temperatures = 4;
+}
+
 // Determines when a neighbor solution, obtained by the application of a
 // perturbation and improvement step to a reference solution, is used to
 // replace the reference solution.
@@ -67,9 +278,13 @@ message AcceptanceStrategy {
     // Unspecified value.
     UNSET = 0;
 
-    // Accept only solutions that are improving with respect to the reference
+    // Accepts only solutions that are improving with respect to the reference
     // one.
     GREEDY_DESCENT = 1;
+
+    // Accepts a candidate solution with a probability that depends on its
+    // quality and on the current state of the search.
+    SIMULATED_ANNEALING = 2;
   }
 }
 
@@ -84,9 +299,13 @@ message IteratedLocalSearchParameters {
 
   // Determines whether solution S', obtained from the perturbation, should be
   // optimized with a local search application.
-  bool improve_perturbed_solution = 3;
+  optional bool improve_perturbed_solution = 3;
 
   // Determines when the neighbor solution S', possibly improved if
   // `improve_perturbed_solution` is true, replaces the reference solution S.
   AcceptanceStrategy.Value acceptance_strategy = 4;
+
+  // Parameters to customize a simulated annealing acceptance strategy. These
+  // parameters are required iff the acceptance_strategy is SIMULATED_ANNEALING.
+  SimulatedAnnealingParameters simulated_annealing_parameters = 5;
 }

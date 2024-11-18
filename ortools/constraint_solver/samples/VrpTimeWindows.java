@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -141,7 +142,7 @@ public class VrpTimeWindows {
 
     // Add Time constraint.
     // [START time_constraint]
-    routing.addDimension(transitCallbackIndex, // transit callback
+    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback
         30, // allow waiting time
         30, // vehicle maximum capacities
         false, // start cumul to zero

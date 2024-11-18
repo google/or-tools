@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -147,14 +148,15 @@ public class VrpDropNodes {
       int fromNode = manager.indexToNode(fromIndex);
       return data.demands[fromNode];
     });
-    routing.addDimensionWithVehicleCapacity(demandCallbackIndex, 0, // null capacity slack
+    boolean unused = routing.addDimensionWithVehicleCapacity(demandCallbackIndex,
+        0, // null capacity slack
         data.vehicleCapacities, // vehicle maximum capacities
         true, // start cumul to zero
         "Capacity");
     // Allow to drop nodes.
     long penalty = 1000;
     for (int i = 1; i < data.distanceMatrix.length; ++i) {
-      routing.addDisjunction(new long[] {manager.nodeToIndex(i)}, penalty);
+      int unusedNested = routing.addDisjunction(new long[] {manager.nodeToIndex(i)}, penalty);
     }
     // [END capacity_constraint]
 

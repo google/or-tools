@@ -870,16 +870,14 @@ IntExpr* Solver::MakeMonotonicElement(Solver::IndexEvaluator1 values,
                                       bool increasing, IntVar* const index) {
   CHECK_EQ(this, index->solver());
   if (increasing) {
-    return RegisterIntExpr(
-        RevAlloc(new IncreasingIntExprFunctionElement(this, values, index)));
+    return RegisterIntExpr(RevAlloc(
+        new IncreasingIntExprFunctionElement(this, std::move(values), index)));
   } else {
-    // You need to pass by copy such that opposite_value does not include a
-    // dandling reference when leaving this scope.
-    Solver::IndexEvaluator1 opposite_values = [values](int64_t i) {
-      return -values(i);
-    };
-    return RegisterIntExpr(MakeOpposite(RevAlloc(
-        new IncreasingIntExprFunctionElement(this, opposite_values, index))));
+    return RegisterIntExpr(
+        MakeOpposite(RevAlloc(new IncreasingIntExprFunctionElement(
+            this,
+            [values = std::move(values)](int64_t i) { return -values(i); },
+            index))));
   }
 }
 

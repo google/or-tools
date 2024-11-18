@@ -13,13 +13,13 @@
 
 // [START program]
 // [START import]
-#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <sstream>
 #include <vector>
 
-#include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -73,6 +73,13 @@ std::vector<std::vector<int64_t>> GenerateManhattanDistanceMatrix(
 //! @param[in] solution Solution found by the solver.
 void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
+  RoutingSearchStatus::Value status = routing.status();
+  LOG(INFO) << "Status: " << RoutingSearchStatus::Value_Name(status);
+  if (status != RoutingSearchStatus::ROUTING_OPTIMAL &&
+      status != RoutingSearchStatus::ROUTING_SUCCESS) {
+    LOG(ERROR) << "No Solution found!";
+    return;
+  }
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   // Inspect solution.
   int64_t index = routing.Start(0);
@@ -145,11 +152,9 @@ void Tsp() {
   PrintSolution(manager, routing, *solution);
   // [END print_solution]
 }
-
 }  // namespace operations_research
 
-int main(int argc, char* argv[]) {
-  InitGoogle(argv[0], &argc, &argv, true);
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::Tsp();
   return EXIT_SUCCESS;
 }

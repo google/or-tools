@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -73,8 +74,10 @@ bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
   if (next_accessor == nullptr) {
     return false;
   }
+  model_->solver()->set_context(DebugString());
   const Assignment* const result_assignment =
       heuristic_->BuildSolutionFromRoutes(next_accessor);
+  model_->solver()->set_context("");
 
   if (result_assignment == nullptr) {
     return false;
@@ -389,38 +392,16 @@ void FilteredHeuristicCloseNodesLNSOperator::RemoveNodeAndActiveSibling(
   if (!IsActive(node)) return;
   RemoveNode(node);
 
-  for (int64_t sibling_node : GetActiveSiblings(node)) {
-    if (!model_->IsStart(sibling_node) && !model_->IsEnd(sibling_node)) {
-      RemoveNode(sibling_node);
-    }
+  if (const std::optional<int64_t> sibling_node =
+          model_->GetFirstMatchingPickupDeliverySibling(
+              node,
+              [this](int64_t node) {
+                return IsActive(node) && !model_->IsStart(node) &&
+                       !model_->IsEnd(node);
+              });
+      sibling_node.has_value()) {
+    RemoveNode(sibling_node.value());
   }
-}
-
-std::vector<int64_t> FilteredHeuristicCloseNodesLNSOperator::GetActiveSiblings(
-    int64_t node) const {
-  // NOTE: In most use-cases, where each node is a pickup or delivery in a
-  // single index pair, this function is in O(k) where k is the number of
-  // alternative deliveries or pickups for this index pair.
-  std::vector<int64_t> active_siblings;
-  for (const auto& [pair_index, unused] : model_->GetPickupPositions(node)) {
-    for (int64_t sibling_delivery :
-         pickup_delivery_pairs_[pair_index].delivery_alternatives) {
-      if (IsActive(sibling_delivery)) {
-        active_siblings.push_back(sibling_delivery);
-        break;
-      }
-    }
-  }
-  for (const auto& [pair_index, unused] : model_->GetDeliveryPositions(node)) {
-    for (int64_t sibling_pickup :
-         pickup_delivery_pairs_[pair_index].pickup_alternatives) {
-      if (IsActive(sibling_pickup)) {
-        active_siblings.push_back(sibling_pickup);
-        break;
-      }
-    }
-  }
-  return active_siblings;
 }
 
 std::function<int64_t(int64_t)>

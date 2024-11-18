@@ -15,6 +15,8 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_CONSTRAINTS_H_
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <vector>
 
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -41,6 +43,11 @@ Constraint* MakeResourceConstraint(
 Constraint* MakePathSpansAndTotalSlacks(const RoutingDimension* dimension,
                                         std::vector<IntVar*> spans,
                                         std::vector<IntVar*> total_slacks);
+
+Constraint* MakeRouteConstraint(
+    RoutingModel* model, std::vector<IntVar*> route_cost_vars,
+    std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
+        route_evaluator);
 
 }  // namespace operations_research
 

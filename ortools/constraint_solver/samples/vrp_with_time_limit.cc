@@ -15,10 +15,12 @@
 // [START import]
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
-#include <vector>
 
 #include "google/protobuf/duration.pb.h"
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"

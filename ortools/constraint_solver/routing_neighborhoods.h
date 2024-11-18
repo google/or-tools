@@ -56,16 +56,17 @@ class MakeRelocateNeighborsOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       RoutingTransitCallback2 arc_evaluator);
   MakeRelocateNeighborsOperator(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
       RoutingTransitCallback2 arc_evaluator)
-      : MakeRelocateNeighborsOperator(vars, secondary_vars,
-                                      std::move(start_empty_path_class),
-                                      nullptr, std::move(arc_evaluator)) {}
+      : MakeRelocateNeighborsOperator(
+            vars, secondary_vars, std::move(start_empty_path_class), nullptr,
+            nullptr, std::move(arc_evaluator)) {}
   ~MakeRelocateNeighborsOperator() override {}
 
   bool MakeNeighbor() override;
@@ -91,6 +92,58 @@ class MakeRelocateNeighborsOperator : public PathOperator {
   int64_t Reposition(int64_t before_to_move, int64_t up_to);
 
   RoutingTransitCallback2 arc_evaluator_;
+};
+
+// Class used to compute shortest paths on DAGs formed by chains of alternative
+// node sets.
+class ShortestPathOnAlternatives {
+ public:
+  ShortestPathOnAlternatives(int num_nodes,
+                             std::vector<std::vector<int64_t>> alternative_sets,
+                             RoutingTransitCallback2 arc_evaluator);
+  bool HasAlternatives(int node) const;
+  // Returns the shortest path between source and sink, going through the DAG
+  // formed by the alternative nodes of the chain. The path omits source and
+  // sink.
+  absl::Span<const int64_t> GetShortestPath(int64_t source, int64_t sink,
+                                            absl::Span<const int64_t> chain);
+
+ private:
+  RoutingTransitCallback2 arc_evaluator_;
+  std::vector<std::vector<int64_t>> alternative_sets_;
+  std::vector<int> to_alternative_set_;
+  std::vector<int64_t> path_predecessor_;
+  std::vector<int64_t> path_;
+  std::vector<int64_t> current_values_;
+  SparseBitset<int64_t> touched_;
+};
+
+// Reverses a sub-chain of a path and then replaces it with the shortest path on
+// the DAG formed by the sequence of its node alternatives.
+class TwoOptWithShortestPathOperator : public PathOperator {
+ public:
+  TwoOptWithShortestPathOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      std::function<int(int64_t)> start_empty_path_class,
+      std::vector<std::vector<int64_t>> alternative_sets,
+      RoutingTransitCallback2 arc_evaluator);
+  ~TwoOptWithShortestPathOperator() override = default;
+  bool MakeNeighbor() override;
+  std::string DebugString() const override { return "TwoOptWithShortestPath"; }
+
+ protected:
+  bool OnSamePathAsPreviousBase(int64_t /*base_index*/) override {
+    // Both base nodes have to be on the same path.
+    return true;
+  }
+  int64_t GetBaseNodeRestartPosition(int base_index) override {
+    return (base_index == 0) ? StartNode(0) : BaseNode(0);
+  }
+
+ private:
+  ShortestPathOnAlternatives shortest_path_manager_;
+  std::vector<int64_t> chain_;
 };
 
 // Swaps active nodes from node alternatives in sequence. Considers chains of
@@ -119,29 +172,22 @@ class SwapActiveToShortestPathOperator : public PathOperator {
       std::function<int(int64_t)> start_empty_path_class,
       std::vector<std::vector<int64_t>> alternative_sets,
       RoutingTransitCallback2 arc_evaluator);
-  ~SwapActiveToShortestPathOperator() override {}
+  ~SwapActiveToShortestPathOperator() override = default;
   bool MakeNeighbor() override;
   std::string DebugString() const override {
     return "SwapActiveToShortestPath";
   }
 
  private:
-  const std::vector<int64_t>& GetShortestPath(
-      int source, int sink, const std::vector<int>& alternative_chain);
-
-  RoutingTransitCallback2 arc_evaluator_;
-  const std::vector<std::vector<int64_t>> alternative_sets_;
-  std::vector<int> to_alternative_set_;
-  std::vector<int64_t> path_predecessor_;
-  std::vector<int64_t> path_;
-  SparseBitset<int64_t> touched_;
+  ShortestPathOnAlternatives shortest_path_manager_;
+  std::vector<int64_t> chain_;
 };
 
 /// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
 /// are static and given). These neighborhoods are very useful for Pickup and
 /// Delivery problems where pickup and delivery nodes must remain on the same
 /// route.
-// TODO(user): Add option to prune neighbords where the order of node pairs
+// TODO(user): Add option to prune neighbors where the order of node pairs
 //                is violated (ie precedence between pickup and delivery nodes).
 // TODO(user): Move this to local_search.cc if it's generic enough.
 // TODO(user): Detect pairs automatically by parsing the constraint model;
@@ -187,7 +233,7 @@ class MakePairActiveOperator : public PathOperator {
  private:
   void OnNodeInitialization() override;
   int FindNextInactivePair(int pair_index) const;
-  bool ContainsActiveNodes(const std::vector<int64_t>& nodes) const;
+  bool ContainsActiveNodes(absl::Span<const int64_t> nodes) const;
 
   int inactive_pair_;
   int inactive_pair_first_index_;
@@ -253,7 +299,8 @@ class GroupPairAndRelocateOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       const std::vector<PickupDeliveryPair>& pairs);
   GroupPairAndRelocateOperator(
       const std::vector<IntVar*>& vars,
@@ -262,7 +309,7 @@ class GroupPairAndRelocateOperator : public PathOperator {
       const std::vector<PickupDeliveryPair>& pairs)
       : GroupPairAndRelocateOperator(vars, secondary_vars,
                                      std::move(start_empty_path_class), nullptr,
-                                     pairs) {}
+                                     nullptr, pairs) {}
   ~GroupPairAndRelocateOperator() override {}
 
   bool MakeNeighbor() override;
@@ -286,7 +333,8 @@ class LightPairRelocateOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       const std::vector<PickupDeliveryPair>& pairs,
       std::function<bool(int64_t)> force_lifo = nullptr);
   LightPairRelocateOperator(const std::vector<IntVar*>& vars,
@@ -317,7 +365,8 @@ class PairExchangeOperator : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
       const std::vector<PickupDeliveryPair>& pairs);
   PairExchangeOperator(const std::vector<IntVar*>& vars,
                        const std::vector<IntVar*>& secondary_vars,
@@ -325,7 +374,7 @@ class PairExchangeOperator : public PathOperator {
                        const std::vector<PickupDeliveryPair>& pairs)
       : PairExchangeOperator(vars, secondary_vars,
                              std::move(start_empty_path_class), nullptr,
-                             pairs) {}
+                             nullptr, pairs) {}
   ~PairExchangeOperator() override {}
 
   bool MakeNeighbor() override;
@@ -555,7 +604,7 @@ PairNodeSwapActiveOperator<swap_first>::PairNodeSwapActiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator(vars, secondary_vars, 2, false, false,
-                   std::move(start_empty_path_class), nullptr),
+                   std::move(start_empty_path_class), nullptr, nullptr),
       inactive_pair_(0),
       pairs_(pairs) {}
 
@@ -658,14 +707,15 @@ class RelocateSubtrip : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
-      const std::vector<PickupDeliveryPair>& pairs);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
+      absl::Span<const PickupDeliveryPair> pairs);
   RelocateSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
                   std::function<int(int64_t)> start_empty_path_class,
-                  const std::vector<PickupDeliveryPair>& pairs)
+                  absl::Span<const PickupDeliveryPair> pairs)
       : RelocateSubtrip(vars, secondary_vars, std::move(start_empty_path_class),
-                        nullptr, pairs) {}
+                        nullptr, nullptr, pairs) {}
 
   std::string DebugString() const override { return "RelocateSubtrip"; }
   bool MakeNeighbor() override;
@@ -695,14 +745,15 @@ class ExchangeSubtrip : public PathOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
-      std::function<const std::vector<int>&(int, int)> get_neighbors,
-      const std::vector<PickupDeliveryPair>& pairs);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
+      absl::Span<const PickupDeliveryPair> pairs);
   ExchangeSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
                   std::function<int(int64_t)> start_empty_path_class,
-                  const std::vector<PickupDeliveryPair>& pairs)
+                  absl::Span<const PickupDeliveryPair> pairs)
       : ExchangeSubtrip(vars, secondary_vars, std::move(start_empty_path_class),
-                        nullptr, pairs) {}
+                        nullptr, nullptr, pairs) {}
 
   std::string DebugString() const override { return "ExchangeSubtrip"; }
   bool MakeNeighbor() override;
@@ -734,7 +785,7 @@ class ExchangeSubtrip : public PathOperator {
   bool ExtractChainsFromDelivery(int64_t base_node,
                                  std::vector<int64_t>* rejects,
                                  std::vector<int64_t>* subtrip);
-  void SetPath(const std::vector<int64_t>& path, int path_id);
+  void SetPath(absl::Span<const int64_t> path, int path_id);
 
   const PickupAndDeliveryData pd_data_;
   // Represents the set of opened pairs during ExtractChainsFromXXX().

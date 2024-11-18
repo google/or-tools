@@ -14,9 +14,12 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -74,7 +77,7 @@ void PrintSolution(
   DataModel data;
   int64_t total_distance = 0;
   for (int i = 0; i < routes.size(); ++i) {
-    std::vector<RoutingIndexManager::NodeIndex> route = routes[i];
+    const std::vector<RoutingIndexManager::NodeIndex>& route = routes[i];
     int64_t route_distance{0};
     std::stringstream route_text;
     LOG(INFO) << "Route for Vehicle " << i << ":";

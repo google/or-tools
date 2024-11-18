@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -153,7 +154,7 @@ public final class VrpBreaks {
 
     // Add Time constraint.
     // [START time_constraint]
-    routing.addDimension(transitCallbackIndex, 10, 180,
+    boolean unused = routing.addDimension(transitCallbackIndex, 10, 180,
         true, // start cumul to zero
         "Time");
     RoutingDimension timeDimension = routing.getMutableDimension("Time");

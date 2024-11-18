@@ -140,6 +140,7 @@ class LocalSearchProfiler;
 class ModelCache;
 class ModelVisitor;
 class ObjectiveMonitor;
+class BaseObjectiveMonitor;
 class OptimizeVar;
 class Pack;
 class ProfiledDecisionBuilder;
@@ -165,6 +166,8 @@ template <typename F>
 class LightIntFunctionElementCt;
 template <typename F>
 class LightIntIntFunctionElementCt;
+template <typename F>
+class LightIntIntIntFunctionElementCt;
 
 inline int64_t CpRandomSeed() {
   return absl::GetFlag(FLAGS_cp_random_seed) == -1
@@ -512,6 +515,14 @@ class Solver {
     ///   1 -> [5] ->  3  -> 4 with 2 inactive
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
     SWAPACTIVE,
+
+    /// Operator which replaces a chain of active nodes by an inactive one.
+    /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    /// (where 1 and 4 are first and last nodes of the path) are:
+    ///   1 -> [5] ->  3  -> 4 with 2 inactive
+    ///   1 ->  2  -> [5] -> 4 with 3 inactive
+    ///   1 -> [5] -> 4 with 2 and 3 inactive
+    SWAPACTIVECHAIN,
 
     /// Operator which makes an inactive node active and an active one inactive.
     /// It is similar to SwapActiveOperator except that it tries to insert the
@@ -1074,6 +1085,17 @@ class Solver {
     optimization_direction_ = direction;
   }
 
+  // An internal method called by Guided Local Search to share current
+  // penalties with the solver.
+  void SetGuidedLocalSearchPenaltyCallback(
+      std::function<int64_t(int64_t, int64_t, int64_t)> penalty_callback) {
+    penalty_callback_ = std::move(penalty_callback);
+  }
+  // Returns the current (Guided Local Search)penalty of the given arc tuple.
+  int64_t GetGuidedLocalSearchPenalty(int64_t i, int64_t j, int64_t k) const {
+    return (penalty_callback_ == nullptr) ? 0 : penalty_callback_(i, j, k);
+  }
+
   // All factories (MakeXXX methods) encapsulate creation of objects
   // through RevAlloc(). Hence, the Solver used for allocating the
   // returned object will retain ownership of the allocated memory.
@@ -1237,6 +1259,18 @@ class Solver {
     return RevAlloc(new LightIntIntFunctionElementCt<F>(
         this, var, index1, index2, std::move(values),
         std::move(deep_serialize)));
+  }
+
+  /// Light three-dimension function-based element constraint ensuring
+  /// var == values(index1, index2, index3).
+  /// The constraint does not perform bound reduction of the resulting variable
+  /// until the index variables are bound.
+  template <typename F>
+  Constraint* MakeLightElement(F values, IntVar* const var,
+                               IntVar* const index1, IntVar* const index2,
+                               IntVar* const index3) {
+    return RevAlloc(new LightIntIntIntFunctionElementCt<F>(
+        this, var, index1, index2, index3, std::move(values)));
   }
 
   /// Returns the expression expr such that vars[expr] == value.
@@ -1769,14 +1803,26 @@ class Solver {
   /// and the distance between nodes is one, the {force/distance} of nodes
   /// would be: start{0/1} P1{0/1} P2{1/1} D1{3/1} D2{2/1} end{0/0}.
   /// The energy would be 0*1 + 1*1 + 3*1 + 2*1 + 0*1.
-  /// The cost of each path is
-  /// costs[path] = energy[path] * path_unit_costs[path].
+  /// The cost per unit of energy is cost_per_unit_below_threshold until the
+  /// force reaches the threshold, then it is cost_per_unit_above_threshold:
+  /// min(threshold, force.CumulVar(Next(node))) * distance.TransitVar(node) *
+  /// cost_per_unit_below_threshold + max(0, force.CumulVar(Next(node)) -
+  /// threshold) * distance.TransitVar(node) * cost_per_unit_above_threshold.
   struct PathEnergyCostConstraintSpecification {
+    struct EnergyCost {
+      int64_t threshold;
+      int64_t cost_per_unit_below_threshold;
+      int64_t cost_per_unit_above_threshold;
+      bool IsNull() const {
+        return (cost_per_unit_below_threshold == 0 || threshold == 0) &&
+               (cost_per_unit_above_threshold == 0 || threshold == kint64max);
+      }
+    };
     std::vector<IntVar*> nexts;
     std::vector<IntVar*> paths;
     std::vector<IntVar*> forces;
     std::vector<IntVar*> distances;
-    std::vector<int64_t> path_unit_costs;
+    std::vector<EnergyCost> path_energy_costs;
     std::vector<bool> path_used_when_empty;
     std::vector<int64_t> path_starts;
     std::vector<int64_t> path_ends;
@@ -2317,15 +2363,29 @@ class Solver {
 
   /// Creates a Guided Local Search monitor.
   /// Description here: http://en.wikipedia.org/wiki/Guided_Local_Search
+#ifndef SWIG
   ObjectiveMonitor* MakeGuidedLocalSearch(
       bool maximize, IntVar* objective, IndexEvaluator2 objective_function,
       int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs = nullptr,
       bool reset_penalties_on_new_best_solution = false);
   ObjectiveMonitor* MakeGuidedLocalSearch(
       bool maximize, IntVar* objective, IndexEvaluator3 objective_function,
       int64_t step, const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs = nullptr,
       bool reset_penalties_on_new_best_solution = false);
+#endif
+
+  // Creates a composite objective monitor which alternates between objective
+  // monitors every time the search reaches a local optimum local optimium
+  // reached. This will stop if all monitors return false when LocalOptimium is
+  // called.
+  BaseObjectiveMonitor* MakeRoundRobinCompoundObjectiveMonitor(
+      std::vector<BaseObjectiveMonitor*> monitors,
+      int num_max_local_optima_before_metaheuristic_switch);
 
   /// This search monitor will restart the search periodically.
   /// At the iteration n, it will restart after scale_factor * Luby(n) failures
@@ -2722,11 +2782,17 @@ class Solver {
   /// Local Search Operators.
   LocalSearchOperator* MakeOperator(
       const std::vector<IntVar*>& vars, LocalSearchOperators op,
-      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+          nullptr,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+          nullptr);
   LocalSearchOperator* MakeOperator(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, LocalSearchOperators op,
-      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+          nullptr,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+          nullptr);
   // TODO(user): Make the callback an IndexEvaluator2 when there are no
   // secondary variables.
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
@@ -3293,6 +3359,8 @@ class Solver {
   std::unique_ptr<LocalSearchMonitor> local_search_monitor_;
   int anonymous_variable_index_;
   bool should_fail_;
+
+  std::function<int64_t(int64_t, int64_t, int64_t)> penalty_callback_;
 };
 
 std::ostream& operator<<(std::ostream& out, const Solver* const s);  /// NOLINT
@@ -3335,7 +3403,7 @@ class PropagationBaseObject : public BaseObject {
   PropagationBaseObject(const PropagationBaseObject&) = delete;
   PropagationBaseObject& operator=(const PropagationBaseObject&) = delete;
 #endif
-  ~PropagationBaseObject() override{};
+  ~PropagationBaseObject() override {};
 
   std::string DebugString() const override {
     if (name().empty()) {
@@ -3662,6 +3730,7 @@ class ModelVisitor : public BaseObject {
   static const char kFinalStatesArgument[];
   static const char kFixedChargeArgument[];
   static const char kIndex2Argument[];
+  static const char kIndex3Argument[];
   static const char kIndexArgument[];
   static const char kInitialState[];
   static const char kIntervalArgument[];
@@ -4228,7 +4297,7 @@ class IntVar : public IntExpr {
   IntVar& operator=(const IntVar&) = delete;
 #endif
 
-  ~IntVar() override{};
+  ~IntVar() override {};
 
   bool IsVar() const override { return true; }
   IntVar* Var() override { return this; }
@@ -4438,8 +4507,32 @@ class SolutionCollector : public SearchMonitor {
 #endif  // SWIG
 };
 
-// Base objective monitor class. All metaheuristics derive from this.
-class ObjectiveMonitor : public SearchMonitor {
+// Base objective monitor class. All metaheuristics and metaheuristic combiners
+// derive from this.
+class BaseObjectiveMonitor : public SearchMonitor {
+ public:
+  explicit BaseObjectiveMonitor(Solver* solver) : SearchMonitor(solver) {}
+  ~BaseObjectiveMonitor() override {}
+#ifndef SWIG
+  BaseObjectiveMonitor(const BaseObjectiveMonitor&) = delete;
+  BaseObjectiveMonitor& operator=(const BaseObjectiveMonitor&) = delete;
+#endif  // SWIG
+  virtual IntVar* ObjectiveVar(int index) const = 0;
+  virtual IntVar* MinimizationVar(int index) const = 0;
+  virtual int64_t Step(int index) const = 0;
+  virtual bool Maximize(int index) const = 0;
+  virtual int64_t BestValue(int index) const = 0;
+  virtual int Size() const = 0;
+  bool is_active() const { return is_active_; }
+  void set_active(bool is_active) { is_active_ = is_active; }
+
+ private:
+  bool is_active_ = true;
+};
+
+// Base atomic objective monitor class. All non-composite metaheuristics derive
+// from this.
+class ObjectiveMonitor : public BaseObjectiveMonitor {
  public:
   ObjectiveMonitor(Solver* solver, const std::vector<bool>& maximize,
                    std::vector<IntVar*> vars, std::vector<int64_t> steps);
@@ -4448,17 +4541,21 @@ class ObjectiveMonitor : public SearchMonitor {
   ObjectiveMonitor(const ObjectiveMonitor&) = delete;
   ObjectiveMonitor& operator=(const ObjectiveMonitor&) = delete;
 #endif  // SWIG
-  IntVar* ObjectiveVar(int index) const { return objective_vars_[index]; }
-  IntVar* MinimizationVar(int index) const { return minimization_vars_[index]; }
-  int64_t Step(int index) const { return steps_[index]; }
-  bool Maximize(int index) const {
+  IntVar* ObjectiveVar(int index) const override {
+    return objective_vars_[index];
+  }
+  IntVar* MinimizationVar(int index) const override {
+    return minimization_vars_[index];
+  }
+  int64_t Step(int index) const override { return steps_[index]; }
+  bool Maximize(int index) const override {
     return ObjectiveVar(index) != MinimizationVar(index);
   }
-  int64_t BestValue(int index) const {
+  int64_t BestValue(int index) const override {
     return Maximize(index) ? CapOpp(BestInternalValue(index))
                            : BestInternalValue(index);
   }
-  int Size() const { return objective_vars_.size(); }
+  int Size() const override { return objective_vars_.size(); }
   void EnterSearch() override;
   bool AtSolution() override;
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;

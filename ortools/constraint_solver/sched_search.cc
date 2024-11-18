@@ -16,6 +16,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -813,7 +814,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
     }
     const int chosen = s->Rand32(all_candidates.size());
     *best_sequence = all_candidates[chosen];
-    best_possible_firsts_ = all_possible_firsts[chosen];
+    best_possible_firsts_ = std::move(all_possible_firsts[chosen]);
     return true;
   }
 

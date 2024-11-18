@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <new>
 #include <string>
 #include <utility>
 #include <vector>
@@ -140,7 +141,7 @@ bool DimensionFixedTransitsEqualTransitEvaluators(
 // corresponding 'variables' vector.
 void AppendRouteCumulAndBreakVarAndValues(
     const RoutingDimension& dimension, int vehicle,
-    const std::vector<int64_t>& cumul_values,
+    absl::Span<const int64_t> cumul_values,
     absl::Span<const int64_t> break_values, std::vector<IntVar*>* variables,
     std::vector<int64_t>* values) {
   auto& vars = *variables;
@@ -356,10 +357,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       std::vector<int64_t>* break_start_end_values) {
     cumul_values->clear();
     break_start_end_values->clear();
-    const RouteDimensionTravelInfo& dimension_travel_info =
+    const RouteDimensionTravelInfo* const dimension_travel_info =
         dimension_travel_info_per_route_.empty()
-            ? RouteDimensionTravelInfo()
-            : dimension_travel_info_per_route_[vehicle];
+            ? nullptr
+            : &dimension_travel_info_per_route_[vehicle];
     const Resource* resource = nullptr;
     if (rg_index_ >= 0 && model_.ResourceVar(vehicle, rg_index_)->Bound()) {
       const int resource_index =
@@ -370,8 +371,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       }
     }
     const bool use_mp_optimizer =
-        dimension_.HasBreakConstraints() &&
-        !dimension_.GetBreakIntervalsOfVehicle(vehicle).empty();
+        dimension_.HasQuadraticCostSoftSpanUpperBounds() ||
+        (dimension_.HasBreakConstraints() &&
+         !dimension_.GetBreakIntervalsOfVehicle(vehicle).empty());
     LocalDimensionCumulOptimizer* const optimizer =
         use_mp_optimizer ? mp_optimizer_ : lp_optimizer_;
     DCHECK_NE(optimizer, nullptr);
@@ -407,7 +409,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
   bool ComputeVehicleResourceClassValuesAndIndices(
-      const std::vector<int>& vehicles_to_assign,
+      absl::Span<const int> vehicles_to_assign,
       const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>&
           used_resources_per_class,
       const std::function<int64_t(int64_t)>& next_accessor,
@@ -494,7 +496,8 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
         monitor_(monitor),
         optimize_and_pack_(optimize_and_pack),
         dimension_travel_info_per_route_(
-            std::move(dimension_travel_info_per_route)) {
+            std::move(dimension_travel_info_per_route)),
+        decision_level_(0) {
     DCHECK(dimension_travel_info_per_route_.empty() ||
            dimension_travel_info_per_route_.size() ==
                global_optimizer_->dimension()->model()->vehicles());
@@ -526,6 +529,24 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   }
 
   Decision* Next(Solver* solver) override {
+    if (decision_level_.Value() == 2) return nullptr;
+    if (decision_level_.Value() == 1) {
+      Decision* d = set_values_from_targets_->Next(solver);
+      if (d == nullptr) decision_level_.SetValue(solver, 2);
+      return d;
+    }
+    decision_level_.SetValue(solver, 1);
+    if (!FillCPValues()) {
+      solver->Fail();
+    }
+    set_values_from_targets_ =
+        MakeSetValuesFromTargets(solver, cp_variables_, cp_values_);
+    return solver->MakeAssignVariablesValuesOrDoNothing(cp_variables_,
+                                                        cp_values_);
+  }
+
+ private:
+  bool FillCPValues() {
     const RoutingDimension* dimension = global_optimizer_->dimension();
     DCHECK(DimensionFixedTransitsEqualTransitEvaluators(*dimension));
     RoutingModel* const model = dimension->model();
@@ -539,7 +560,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
         &resource_indices_per_group_);
 
     if (status == DimensionSchedulingStatus::INFEASIBLE) {
-      solver->Fail();
+      return false;
     } else if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
       // If relaxation is not feasible, try the MILP optimizer.
       const DimensionSchedulingStatus mp_status =
@@ -547,7 +568,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
               global_mp_optimizer_, &cumul_values_, &break_start_end_values_,
               &resource_indices_per_group_);
       if (mp_status != DimensionSchedulingStatus::OPTIMAL) {
-        solver->Fail();
+        return false;
       }
     } else {
       DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
@@ -588,15 +609,9 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
         cp_values_[j] = cp_variables_[j]->Min();
       }
     }
-    if (!solver->SolveAndCommit(MakeSetValuesFromTargets(solver, cp_variables_,
-                                                         std::move(cp_values_)),
-                                monitor_)) {
-      solver->Fail();
-    }
-    return nullptr;
+    return true;
   }
 
- private:
   DimensionSchedulingStatus ComputeCumulBreakAndResourceValues(
       GlobalDimensionCumulOptimizer* optimizer,
       std::vector<int64_t>* cumul_values,
@@ -621,15 +636,20 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   GlobalDimensionCumulOptimizer* const global_mp_optimizer_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
-  // The following 5 members are stored internally to avoid unnecessary memory
+  std::vector<IntVar*> cp_variables_;
+  std::vector<int64_t> cp_values_;
+  // The following 3 members are stored internally to avoid unnecessary memory
   // reallocations.
   std::vector<int64_t> cumul_values_;
   std::vector<int64_t> break_start_end_values_;
   std::vector<std::vector<int>> resource_indices_per_group_;
-  std::vector<int64_t> cp_values_;
-  std::vector<IntVar*> cp_variables_;
   const std::vector<RoutingModel::RouteDimensionTravelInfo>
       dimension_travel_info_per_route_;
+  // Decision level of this decision builder:
+  // - level 0: set remaining dimension values at once.
+  // - level 1: set remaining dimension values one by one.
+  Rev<int> decision_level_;
+  DecisionBuilder* set_values_from_targets_ = nullptr;
 };
 
 }  // namespace
@@ -657,6 +677,7 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
   explicit RestoreDimensionValuesForUnchangedRoutes(RoutingModel* model)
       : model_(model) {
     model_->AddAtSolutionCallback([this]() { AtSolution(); });
+    model_->AddRestoreDimensionValuesResetCallback([this]() { Reset(); });
     next_last_value_.resize(model_->Nexts().size(), -1);
   }
 
@@ -667,6 +688,8 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
     s->SaveAndSetValue(&must_return_decision_, false);
     return MakeDecision(s);
   }
+
+  void Reset() { next_last_value_.assign(model_->Nexts().size(), -1); }
 
  private:
   // Initialize() is lazy to make sure all dimensions have been instantiated

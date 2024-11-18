@@ -14,9 +14,12 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -73,11 +76,18 @@ struct DataModel {
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
-void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
+void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
+  RoutingSearchStatus::Value status = routing.status();
+  LOG(INFO) << "Status: " << RoutingSearchStatus::Value_Name(status);
+  if (status != RoutingSearchStatus::ROUTING_OPTIMAL &&
+      status != RoutingSearchStatus::ROUTING_SUCCESS) {
+    LOG(ERROR) << "No Solution found!";
+    return;
+  }
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   int64_t total_distance{0};
-  for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
+  for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
     int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t distance{0};
@@ -148,7 +158,7 @@ void Vrp() {
 
   // Print solution on console.
   // [START print_solution]
-  PrintSolution(data, manager, routing, *solution);
+  PrintSolution(manager, routing, *solution);
   // [END print_solution]
 }
 }  // namespace operations_research

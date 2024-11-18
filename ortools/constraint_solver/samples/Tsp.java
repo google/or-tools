@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import static java.lang.Math.abs;
 
@@ -22,12 +23,14 @@ import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.RoutingSearchStatus;
 import com.google.ortools.constraintsolver.main;
 import java.util.function.LongBinaryOperator;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Minimal TSP.*/
+/** Minimal TSP. */
 public class Tsp {
   private static final Logger logger = Logger.getLogger(Tsp.class.getName());
 
@@ -54,6 +57,7 @@ public class Tsp {
     };
     public final int vehicleNumber = 1;
     public final int depot = 0;
+
     public DataModel() {
       // Convert locations in meters using a city block dimension of 114m x 80m.
       for (int[] element : locations) {
@@ -62,6 +66,7 @@ public class Tsp {
       }
     }
   }
+
   // [END data_model]
 
   // [START manhattan_distance]
@@ -86,6 +91,7 @@ public class Tsp {
         }
       }
     }
+
     @Override
     public long applyAsLong(long fromIndex, long toIndex) {
       // Convert from routing variable Index to distance matrix NodeIndex.
@@ -93,15 +99,24 @@ public class Tsp {
       int toNode = indexManager.indexToNode(toIndex);
       return distanceMatrix[fromNode][toNode];
     }
+
     private final long[][] distanceMatrix;
     private final RoutingIndexManager indexManager;
   }
+
   // [END manhattan_distance]
 
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
-      DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+    RoutingSearchStatus.Value status = routing.status();
+    logger.info("Status: " + status);
+    if (status != RoutingSearchStatus.Value.ROUTING_OPTIMAL
+        && status != RoutingSearchStatus.Value.ROUTING_SUCCESS) {
+      logger.warning("No solution found!");
+      return;
+    }
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
@@ -119,6 +134,7 @@ public class Tsp {
     logger.info(route);
     logger.info("Distance of the route: " + routeDistance + "m");
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
@@ -166,7 +182,7 @@ public class Tsp {
 
     // Print solution on console.
     // [START print_solution]
-    printSolution(data, routing, manager, solution);
+    printSolution(routing, manager, solution);
     // [END print_solution]
   }
 }

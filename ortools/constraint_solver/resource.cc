@@ -2595,7 +2595,7 @@ DisjunctiveConstraint::~DisjunctiveConstraint() {}
 void DisjunctiveConstraint::SetTransitionTime(
     std::function<int64_t(int64_t, int64_t)> transition_time) {
   if (transition_time != nullptr) {
-    transition_time_ = transition_time;
+    transition_time_ = std::move(transition_time);
   } else {
     transition_time_ = [](int64_t x, int64_t y) { return 0; };
   }

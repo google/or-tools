@@ -627,7 +627,8 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
     const int64_t size = nexts.size();
     sink_handler = [size](int64_t index) { return index >= size; };
   }
-  return RevAlloc(new NoCycle(this, nexts, active, sink_handler, assume_paths));
+  return RevAlloc(
+      new NoCycle(this, nexts, active, std::move(sink_handler), assume_paths));
 }
 
 Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
@@ -1661,7 +1662,7 @@ class PathEnergyCostConstraint : public Constraint {
     const int num_nexts = specification_.nexts.size();
     DCHECK_EQ(num_nexts, specification_.distances.size());
 
-    const int num_paths = specification_.path_unit_costs.size();
+    const int num_paths = specification_.path_energy_costs.size();
     DCHECK_EQ(num_paths, specification_.costs.size());
     DCHECK_EQ(num_paths, specification_.path_used_when_empty.size());
     DCHECK_EQ(num_paths, specification_.path_starts.size());
@@ -1685,11 +1686,13 @@ class PathEnergyCostConstraint : public Constraint {
 // after all per-node calls have triggered.
 void PathEnergyCostConstraint::Post() {
   // path demons are delayed, to be run after all node demons.
-  path_demons_.resize(specification_.path_unit_costs.size(), nullptr);
-  for (int path = 0; path < specification_.path_unit_costs.size(); ++path) {
+  const int num_paths = specification_.path_energy_costs.size();
+  path_demons_.resize(num_paths, nullptr);
+  for (int path = 0; path < num_paths; ++path) {
     // If unit cost is 0, initial propagation takes care of setting the cost
     // to 0, no need to register a demon.
-    if (specification_.path_unit_costs[path] == 0) continue;
+    const auto& cost = specification_.path_energy_costs[path];
+    if (cost.IsNull()) continue;
     path_demons_[path] = MakeDelayedConstraintDemon1(
         solver(), this, &PathEnergyCostConstraint::PropagatePath,
         "PropagatePath", path);
@@ -1711,9 +1714,10 @@ void PathEnergyCostConstraint::Post() {
 }
 
 void PathEnergyCostConstraint::InitialPropagate() {
-  const int num_paths = specification_.path_unit_costs.size();
+  const int num_paths = specification_.path_energy_costs.size();
   for (int path = 0; path < num_paths; ++path) {
-    if (specification_.path_unit_costs[path] == 0) {
+    const auto& cost = specification_.path_energy_costs[path];
+    if (cost.IsNull()) {
       specification_.costs[path]->SetValue(0);
     } else {
       PropagatePath(path);
@@ -1733,8 +1737,12 @@ void PathEnergyCostConstraint::NodeDispatcher(int node) {
 // Propagate only forces, distance -> energy.
 void PathEnergyCostConstraint::PropagatePath(int path) {
   // Compute energy along mandatory path.
-  int64_t energy_min = 0;
-  int64_t energy_max = 0;
+  const auto& [threshold, cost_per_unit_below, cost_per_unit_above] =
+      specification_.path_energy_costs[path];
+  int64_t energy_below_min = 0;
+  int64_t energy_below_max = 0;
+  int64_t energy_above_min = 0;
+  int64_t energy_above_max = 0;
   int current = specification_.path_starts[path];
   const int num_nodes = specification_.nexts.size();
   int num_nonend_nodes = 0;
@@ -1746,22 +1754,28 @@ void PathEnergyCostConstraint::PropagatePath(int path) {
     const int64_t distance_min = specification_.distances[current]->Min();
     const int64_t distance_max = specification_.distances[current]->Max();
     DCHECK_GE(distance_min, 0);  // Bounds are correct when distance is >= 0.
-    energy_min = CapAdd(
-        energy_min, CapProd(specification_.forces[next]->Min(), distance_min));
-    energy_max = CapAdd(
-        energy_max, CapProd(specification_.forces[next]->Max(), distance_max));
+    const IntVar* force = specification_.forces[next];
+    CapAddTo(CapProd(std::min(threshold, force->Min()), distance_min),
+             &energy_below_min);
+    CapAddTo(CapProd(std::min(threshold, force->Max()), distance_max),
+             &energy_below_max);
+    CapAddTo(CapProd(std::max<int64_t>(0, CapSub(force->Min(), threshold)),
+                     distance_min),
+             &energy_above_min);
+    CapAddTo(CapProd(std::max<int64_t>(0, CapSub(force->Max(), threshold)),
+                     distance_max),
+             &energy_above_max);
     current = next;
   }
-  // TODO(user): test more incremental propagation. Energy can be computed
-  // as unordered sum of force[next] * distance[node], it can be done without
-  // browsing the whole path at every trigger.
   if (current == specification_.path_ends[path]) {
     if (num_nonend_nodes == 1 && !specification_.path_used_when_empty[path]) {
       specification_.costs[path]->SetValue(0);
     } else {
       specification_.costs[path]->SetRange(
-          CapProd(energy_min, specification_.path_unit_costs[path]),
-          CapProd(energy_max, specification_.path_unit_costs[path]));
+          CapAdd(CapProd(energy_below_min, cost_per_unit_below),
+                 CapProd(energy_above_min, cost_per_unit_above)),
+          CapAdd(CapProd(energy_below_max, cost_per_unit_below),
+                 CapProd(energy_above_max, cost_per_unit_above)));
     }
   }
 }

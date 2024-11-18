@@ -44,6 +44,11 @@ message LocalSearchStatistics {
     int64 num_accepted_neighbors = 4;
     // Time spent in the operator.
     double duration_seconds = 5;
+    // Time spent in creating neighbors (calling MakeNextNeighbor).
+    double make_next_neighbor_duration_seconds = 6;
+    // Time spent in accepting a neighbor (restoration and storage, not
+    // including filtering).
+    double accept_neighbor_duration_seconds = 7;
   }
   // Statistics for each operator called during the search.
   repeated LocalSearchOperatorStatistics local_search_operator_statistics = 1;
@@ -86,8 +91,8 @@ message ConstraintSolverStatistics {
 
 // Search statistics.
 message SearchStatistics {
-  // Local search statistics.
-  LocalSearchStatistics local_search_statistics = 1;
+  // Local search statistics for each solver context.
+  repeated LocalSearchStatistics local_search_statistics = 1;
   // Constraint solver statistics.
-  ConstraintSolverStatistics constraint_solver_statistics = 2;
+  repeated ConstraintSolverStatistics constraint_solver_statistics = 2;
 }

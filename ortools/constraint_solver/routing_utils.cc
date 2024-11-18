@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -45,7 +46,7 @@ bool BinCapacities::CheckAdditionFeasibility(int item, int bin) const {
   return CheckAdditionsFeasibility({item}, bin);
 }
 
-bool BinCapacities::CheckAdditionsFeasibility(const std::vector<int>& items,
+bool BinCapacities::CheckAdditionsFeasibility(absl::Span<const int> items,
                                               int bin) const {
   for (size_t dim = 0; dim < load_demands_per_dimension_.size(); ++dim) {
     const LoadLimit& limit = load_limits_per_bin_[bin][dim];

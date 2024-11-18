@@ -16,10 +16,10 @@
 
 #include <cstdint>
 #include <functional>
-#include <utility>
 #include <vector>
 
 #include "ortools/base/int_type.h"
+#include "ortools/util/piecewise_linear_function.h"
 
 namespace operations_research {
 
@@ -48,6 +48,9 @@ struct PickupDeliveryPair {
 
 typedef std::function<int64_t(int64_t)> RoutingTransitCallback1;
 typedef std::function<int64_t(int64_t, int64_t)> RoutingTransitCallback2;
+typedef std::function<const FloatSlopePiecewiseLinearFunction*(int64_t,
+                                                               int64_t)>
+    RoutingCumulDependentTransitCallback2;
 
 }  // namespace operations_research
 

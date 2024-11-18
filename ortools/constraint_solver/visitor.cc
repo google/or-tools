@@ -45,9 +45,7 @@ void ArgumentHolder::SetIntegerArrayArgument(
 
 void ArgumentHolder::SetIntegerMatrixArgument(const std::string& arg_name,
                                               const IntTupleSet& values) {
-  std::pair<std::string, IntTupleSet> to_insert =
-      std::make_pair(arg_name, values);
-  matrix_argument_.insert(to_insert);
+  matrix_argument_.insert(std::make_pair(arg_name, values));
 }
 
 void ArgumentHolder::SetIntegerExpressionArgument(const std::string& arg_name,
