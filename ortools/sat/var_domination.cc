@@ -1383,6 +1383,17 @@ void ScanModelForDualBoundStrengthening(
 }
 
 namespace {
+// Decrements the solution hint of `lit` and increments the solution hint of
+// `dominating_lit` if both hint values are present and equal to 1 and 0,
+// respectively.
+void MaybeUpdateLiteralHintFromDominance(PresolveContext& context, int lit,
+                                         int dominating_lit) {
+  if (context.LiteralSolutionHintIs(lit, true) &&
+      context.LiteralSolutionHintIs(dominating_lit, false)) {
+    context.UpdateLiteralSolutionHint(lit, false);
+    context.UpdateLiteralSolutionHint(dominating_lit, true);
+  }
+}
 
 bool ProcessAtMostOne(
     absl::Span<const int> literals, const std::string& message,
@@ -1397,13 +1408,18 @@ bool ProcessAtMostOne(
 
     const auto dominating_ivars = var_domination.DominatingVariables(ref);
     for (const IntegerVariable ivar : dominating_ivars) {
+      const int iref = VarDomination::IntegerVariableToRef(ivar);
       if (!(*in_constraints)[ivar]) continue;
-      if (context->IsFixed(VarDomination::IntegerVariableToRef(ivar))) {
+      if (context->IsFixed(iref)) {
         continue;
       }
 
-      // We can set the dominated variable to false.
+      // We can set the dominated variable to false. If the hint value of `ref`
+      // is 1 then the hint value of `iref` should be 0 due to the "at most one"
+      // constraint. Hence the hint feasibility can always be preserved (if the
+      // hint value of `ref` is 0 the hint does not need to be updated).
       context->UpdateRuleStats(message);
+      MaybeUpdateLiteralHintFromDominance(*context, ref, iref);
       if (!context->SetLiteralToFalse(ref)) return false;
       break;
     }
@@ -1466,24 +1482,32 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         implications.insert({a, b});
         implications.insert({NegatedRef(b), NegatedRef(a)});
 
-        // If (a--, b--) is valid, we can always set a to false.
+        // If (a--, b--) is valid, we can always set a to false. If the hint
+        // value of `a` is 1 then the hint value of `b` should be 1 due to the
+        // a => b constraint. Hence the hint feasibility can always be preserved
+        // (if the hint value of `a` is 0 the hint does not need to be updated).
         for (const IntegerVariable ivar :
              var_domination.DominatingVariables(a)) {
           const int ref = VarDomination::IntegerVariableToRef(ivar);
           if (ref == NegatedRef(b)) {
             context->UpdateRuleStats("domination: in implication");
+            MaybeUpdateLiteralHintFromDominance(*context, a, ref);
             if (!context->SetLiteralToFalse(a)) return false;
             break;
           }
         }
         if (context->IsFixed(a)) break;
 
-        // If (b++, a++) is valid, then we can always set b to true.
+        // If (b++, a++) is valid, then we can always set b to true. If the hint
+        // value of `b` is 0 then the hint value of `a` should be 0 due to the
+        // a => b constraint. Hence the hint feasibility can always be preserved
+        // (if the hint value of `b` is 1 the hint does not need to be updated).
         for (const IntegerVariable ivar :
              var_domination.DominatingVariables(NegatedRef(b))) {
           const int ref = VarDomination::IntegerVariableToRef(ivar);
           if (ref == a) {
             context->UpdateRuleStats("domination: in implication");
+            MaybeUpdateLiteralHintFromDominance(*context, NegatedRef(b), ref);
             if (!context->SetLiteralToTrue(b)) return false;
             break;
           }
@@ -1810,6 +1834,11 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
         ++num_added;
         context->AddImplication(ref, dom_ref);
+        // The newly added implication can break the hint only if the hint value
+        // of `ref` is 1 and the hint value of `dom_ref` is 0. In this case the
+        // call below fixes it by negating both values. Otherwise it does
+        // nothing and thus preserves its feasibility.
+        MaybeUpdateLiteralHintFromDominance(*context, ref, dom_ref);
         context->UpdateNewConstraintsVariableUsage();
         implications.insert({ref, dom_ref});
         implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});

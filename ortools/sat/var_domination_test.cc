@@ -30,6 +30,7 @@ namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::ElementsAre;
+using ::testing::EqualsProto;
 using ::testing::IsEmpty;
 using ::testing::UnorderedElementsAre;
 
@@ -183,6 +184,189 @@ TEST(VarDominationTest, ExploitDominanceRelationWithHoles) {
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0][7,10]");
+}
+
+// X - 2Y >= -1
+// X => Y
+//
+// Doing (X--, Y--) is always beneficial if possible.
+TEST(VarDominationTest, ExploitDominanceOfImplicant) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 1 ]
+    }
+    constraints {
+      enforcement_literal: 0
+      bool_and { literals: [ 1 ] }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, -2 ]
+        domain: [ -1, 10 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 1, 1 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), 0);
+}
+
+// 2X - Y >= 0
+// X => Y
+//
+// Doing (X++, Y++) is always beneficial if possible.
+TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 1 ]
+    }
+    constraints {
+      enforcement_literal: 0
+      bool_and { literals: [ 1 ] }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 2, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 0, 0 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[1]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[1]");
+  EXPECT_EQ(context.SolutionHint(0), 1);
+  EXPECT_EQ(context.SolutionHint(1), 1);
+}
+
+// X + 2Y >= 0
+// ExactlyOne(X, Y)
+//
+// Doing (X--, Y++) is always beneficial if possible.
+TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 1 ]
+    }
+    constraints { exactly_one { literals: [ 0, 1 ] } }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 1, 0 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), 1);
+}
+
+// Objective: min(X + 2Y)
+// Constraint: BoolOr(X, Y)
+//
+// Doing (X++, Y--) is always beneficial if possible.
+TEST(VarDominationTest, ExploitRemainingDominance) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 1 ]
+    }
+    constraints { bool_or { literals: [ 0, 1 ] } }
+    objective {
+      vars: [ 0, 1 ]
+      coeffs: [ 1, 2 ]
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 0, 1 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  // Check that an implication between X and Y was added, and that the hint was
+  // updated in consequence.
+  EXPECT_EQ(context.working_model->constraints_size(), 2);
+  const ConstraintProto expected_constraint_proto =
+      ParseTestProto(R"pb(enforcement_literal: -1
+                          bool_and { literals: -2 })pb");
+  EXPECT_THAT(context.working_model->constraints(1),
+              EqualsProto(expected_constraint_proto));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[0,1]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
+  EXPECT_EQ(context.SolutionHint(0), 1);
+  EXPECT_EQ(context.SolutionHint(1), 0);
 }
 
 // X + Y + Z = 0

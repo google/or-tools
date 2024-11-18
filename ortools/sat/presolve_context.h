@@ -591,11 +591,28 @@ class PresolveContext {
 
   void PermuteHintValues(const SparsePermutation& perm);
 
-  // Solution hint accessor.
+  // Solution hint accessors.
   bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }
   int64_t SolutionHint(int var) const { return hint_[var]; }
   bool HintIsLoaded() const { return hint_is_loaded_; }
   absl::Span<const int64_t> SolutionHint() const { return hint_; }
+
+  bool LiteralSolutionHintIs(int lit, bool value) const {
+    const int var = PositiveRef(lit);
+    return hint_is_loaded_ && hint_has_value_[var] &&
+           hint_[var] == (RefIsPositive(lit) ? value : !value);
+  }
+
+  void UpdateLiteralSolutionHint(int lit, bool value) {
+    UpdateSolutionHint(PositiveRef(lit), RefIsPositive(lit) ? value : !value);
+  }
+
+  // Updates the hint of an existing variable with an existing hint.
+  void UpdateSolutionHint(int var, int64_t value) {
+    CHECK(hint_is_loaded_);
+    CHECK(hint_has_value_[var]);
+    hint_[var] = value;
+  }
 
   // Allows to set the hint of a newly created variable.
   void SetNewVariableHint(int var, int64_t value) {
