@@ -12343,6 +12343,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kIntProd:
         if (!CopyIntProd(ct, ignore_names)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kIntDiv:
+        if (!CopyIntDiv(ct, ignore_names)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kElement:
         if (!CopyElement(ct)) return CreateUnsatModel(c, ct);
         break;
@@ -12882,6 +12885,19 @@ bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
   }
   CopyLinearExpression(ct.int_prod().target(),
                        new_ct->mutable_int_prod()->mutable_target());
+  return true;
+}
+
+bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (!ignore_names) {
+    new_ct->set_name(ct.name());
+  }
+  for (const LinearExpressionProto& expr : ct.int_div().exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_int_div()->add_exprs());
+  }
+  CopyLinearExpression(ct.int_div().target(),
+                       new_ct->mutable_int_div()->mutable_target());
   return true;
 }
 

@@ -50,12 +50,12 @@ std::function<void(Model*)> Cumulative(
     auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
     SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
 
+    if (!integer_trail->SafeEnqueue(capacity.GreaterOrEqual(0), {})) {
+      sat_solver->NotifyThatModelIsUnsat();
+    }
     if (demands.empty()) {
-      // If there is no demand, we can just add a constraint that the capacity
-      // is not negative.
-      if (!integer_trail->SafeEnqueue(capacity.GreaterOrEqual(0), {})) {
-        sat_solver->NotifyThatModelIsUnsat();
-      }
+      // If there is no demand, since we already added a constraint that the
+      // capacity is not negative above, we can stop here.
       return;
     }
 
