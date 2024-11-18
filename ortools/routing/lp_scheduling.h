@@ -456,6 +456,9 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     // significantly faster than both full presolve and no presolve.
     parameters_.set_cp_model_presolve(true);
     parameters_.set_max_presolve_iterations(1);
+    parameters_.set_cp_model_probing_level(0);
+    parameters_.set_use_sat_inprocessing(false);
+    parameters_.set_symmetry_level(0);
     parameters_.set_catch_sigint_signal(false);
     parameters_.set_mip_max_bound(1e8);
     parameters_.set_search_branching(sat::SatParameters::LP_SEARCH);
