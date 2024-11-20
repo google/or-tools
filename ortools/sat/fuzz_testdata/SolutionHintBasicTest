@@ -1,0 +1,5406 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+name: "Random 3-SAT"
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 1
+}
+constraints {
+  bool_or {
+    literals: 34
+    literals: 13
+    literals: 157
+  }
+}
+constraints {
+  bool_or {
+    literals: -103
+    literals: 12
+    literals: 65
+  }
+}
+constraints {
+  bool_or {
+    literals: 107
+    literals: -183
+    literals: 87
+  }
+}
+constraints {
+  bool_or {
+    literals: -57
+    literals: 108
+    literals: -96
+  }
+}
+constraints {
+  bool_or {
+    literals: 174
+    literals: -9
+    literals: 141
+  }
+}
+constraints {
+  bool_or {
+    literals: -113
+    literals: 144
+    literals: -145
+  }
+}
+constraints {
+  bool_or {
+    literals: -56
+    literals: 130
+    literals: -166
+  }
+}
+constraints {
+  bool_or {
+    literals: -73
+    literals: 82
+    literals: -173
+  }
+}
+constraints {
+  bool_or {
+    literals: -46
+    literals: -80
+    literals: -189
+  }
+}
+constraints {
+  bool_or {
+    literals: 108
+    literals: -105
+    literals: -1
+  }
+}
+constraints {
+  bool_or {
+    literals: 154
+    literals: -155
+    literals: 30
+  }
+}
+constraints {
+  bool_or {
+    literals: 94
+    literals: 112
+    literals: -126
+  }
+}
+constraints {
+  bool_or {
+    literals: 93
+    literals: 73
+    literals: 89
+  }
+}
+constraints {
+  bool_or {
+    literals: 197
+    literals: -140
+    literals: -27
+  }
+}
+constraints {
+  bool_or {
+    literals: 96
+    literals: 152
+    literals: 65
+  }
+}
+constraints {
+  bool_or {
+    literals: 136
+    literals: 65
+    literals: 199
+  }
+}
+constraints {
+  bool_or {
+    literals: 1
+    literals: -48
+    literals: -147
+  }
+}
+constraints {
+  bool_or {
+    literals: -61
+    literals: 8
+    literals: -186
+  }
+}
+constraints {
+  bool_or {
+    literals: 158
+    literals: -84
+    literals: -128
+  }
+}
+constraints {
+  bool_or {
+    literals: -60
+    literals: -182
+    literals: 100
+  }
+}
+constraints {
+  bool_or {
+    literals: -94
+    literals: 42
+    literals: 152
+  }
+}
+constraints {
+  bool_or {
+    literals: -116
+    literals: -65
+    literals: 111
+  }
+}
+constraints {
+  bool_or {
+    literals: 126
+    literals: -87
+    literals: 39
+  }
+}
+constraints {
+  bool_or {
+    literals: 106
+    literals: 12
+    literals: -106
+  }
+}
+constraints {
+  bool_or {
+    literals: 40
+    literals: 104
+    literals: 42
+  }
+}
+constraints {
+  bool_or {
+    literals: -185
+    literals: -28
+    literals: 145
+  }
+}
+constraints {
+  bool_or {
+    literals: -163
+    literals: 156
+    literals: -124
+  }
+}
+constraints {
+  bool_or {
+    literals: -171
+    literals: -173
+    literals: -26
+  }
+}
+constraints {
+  bool_or {
+    literals: -51
+    literals: -15
+    literals: -67
+  }
+}
+constraints {
+  bool_or {
+    literals: 66
+    literals: 148
+    literals: 34
+  }
+}
+constraints {
+  bool_or {
+    literals: 37
+    literals: 81
+    literals: 83
+  }
+}
+constraints {
+  bool_or {
+    literals: -189
+    literals: -18
+    literals: 5
+  }
+}
+constraints {
+  bool_or {
+    literals: -74
+    literals: -199
+    literals: -39
+  }
+}
+constraints {
+  bool_or {
+    literals: -60
+    literals: -169
+    literals: 58
+  }
+}
+constraints {
+  bool_or {
+    literals: 114
+    literals: 81
+    literals: 169
+  }
+}
+constraints {
+  bool_or {
+    literals: -157
+    literals: 96
+    literals: -35
+  }
+}
+constraints {
+  bool_or {
+    literals: 167
+    literals: -86
+    literals: -195
+  }
+}
+constraints {
+  bool_or {
+    literals: 151
+    literals: 160
+    literals: -182
+  }
+}
+constraints {
+  bool_or {
+    literals: 76
+    literals: -102
+    literals: 2
+  }
+}
+constraints {
+  bool_or {
+    literals: 134
+    literals: 28
+    literals: 106
+  }
+}
+constraints {
+  bool_or {
+    literals: 182
+    literals: 168
+    literals: -24
+  }
+}
+constraints {
+  bool_or {
+    literals: 9
+    literals: 125
+    literals: -111
+  }
+}
+constraints {
+  bool_or {
+    literals: -102
+    literals: -87
+    literals: 7
+  }
+}
+constraints {
+  bool_or {
+    literals: 73
+    literals: -129
+    literals: -90
+  }
+}
+constraints {
+  bool_or {
+    literals: 5
+    literals: -55
+    literals: 146
+  }
+}
+constraints {
+  bool_or {
+    literals: -100
+    literals: 182
+    literals: -192
+  }
+}
+constraints {
+  bool_or {
+    literals: 78
+    literals: -178
+    literals: 152
+  }
+}
+constraints {
+  bool_or {
+    literals: 106
+    literals: -16
+    literals: 52
+  }
+}
+constraints {
+  bool_or {
+    literals: 66
+    literals: -121
+    literals: 99
+  }
+}
+constraints {
+  bool_or {
+    literals: 167
+    literals: -26
+    literals: -21
+  }
+}
+constraints {
+  bool_or {
+    literals: 42
+    literals: 173
+    literals: -192
+  }
+}
+constraints {
+  bool_or {
+    literals: -80
+    literals: 16
+    literals: 137
+  }
+}
+constraints {
+  bool_or {
+    literals: -61
+    literals: 104
+    literals: -96
+  }
+}
+constraints {
+  bool_or {
+    literals: 3
+    literals: 81
+    literals: -97
+  }
+}
+constraints {
+  bool_or {
+    literals: -163
+    literals: 94
+    literals: -27
+  }
+}
+constraints {
+  bool_or {
+    literals: 11
+    literals: -107
+    literals: -191
+  }
+}
+constraints {
+  bool_or {
+    literals: -5
+    literals: -82
+    literals: 83
+  }
+}
+constraints {
+  bool_or {
+    literals: -96
+    literals: -194
+    literals: 193
+  }
+}
+constraints {
+  bool_or {
+    literals: 129
+    literals: -4
+    literals: 125
+  }
+}
+constraints {
+  bool_or {
+    literals: 196
+    literals: -196
+    literals: -164
+  }
+}
+constraints {
+  bool_or {
+    literals: -195
+    literals: -96
+    literals: -61
+  }
+}
+constraints {
+  bool_or {
+    literals: -28
+    literals: -195
+    literals: -63
+  }
+}
+constraints {
+  bool_or {
+    literals: -21
+    literals: 12
+    literals: 142
+  }
+}
+constraints {
+  bool_or {
+    literals: -152
+    literals: 30
+    literals: -133
+  }
+}
+constraints {
+  bool_or {
+    literals: -42
+    literals: 65
+    literals: -66
+  }
+}
+constraints {
+  bool_or {
+    literals: 181
+    literals: -126
+    literals: -4
+  }
+}
+constraints {
+  bool_or {
+    literals: -99
+    literals: 38
+    literals: -86
+  }
+}
+constraints {
+  bool_or {
+    literals: -55
+    literals: 187
+    literals: 21
+  }
+}
+constraints {
+  bool_or {
+    literals: -113
+    literals: 102
+    literals: 133
+  }
+}
+constraints {
+  bool_or {
+    literals: -172
+    literals: 114
+    literals: 186
+  }
+}
+constraints {
+  bool_or {
+    literals: -174
+    literals: -99
+    literals: 55
+  }
+}
+constraints {
+  bool_or {
+    literals: 184
+    literals: 68
+    literals: -12
+  }
+}
+constraints {
+  bool_or {
+    literals: -44
+    literals: -99
+    literals: 38
+  }
+}
+constraints {
+  bool_or {
+    literals: -116
+    literals: 121
+    literals: 195
+  }
+}
+constraints {
+  bool_or {
+    literals: 167
+    literals: 150
+    literals: -116
+  }
+}
+constraints {
+  bool_or {
+    literals: -159
+    literals: -105
+    literals: -16
+  }
+}
+constraints {
+  bool_or {
+    literals: -13
+    literals: 191
+    literals: 158
+  }
+}
+constraints {
+  bool_or {
+    literals: -73
+    literals: 36
+    literals: 61
+  }
+}
+constraints {
+  bool_or {
+    literals: -110
+    literals: 23
+    literals: 160
+  }
+}
+constraints {
+  bool_or {
+    literals: 7
+    literals: 168
+    literals: -58
+  }
+}
+constraints {
+  bool_or {
+    literals: 181
+    literals: 87
+    literals: 48
+  }
+}
+constraints {
+  bool_or {
+    literals: 25
+    literals: 42
+    literals: -20
+  }
+}
+constraints {
+  bool_or {
+    literals: -128
+    literals: -167
+    literals: -159
+  }
+}
+constraints {
+  bool_or {
+    literals: -4
+    literals: -72
+    literals: -98
+  }
+}
+constraints {
+  bool_or {
+    literals: 163
+    literals: 16
+    literals: 69
+  }
+}
+constraints {
+  bool_or {
+    literals: 98
+    literals: 75
+    literals: -130
+  }
+}
+constraints {
+  bool_or {
+    literals: 31
+    literals: 134
+    literals: -80
+  }
+}
+constraints {
+  bool_or {
+    literals: -121
+    literals: 175
+    literals: 120
+  }
+}
+constraints {
+  bool_or {
+    literals: 137
+    literals: 145
+    literals: -77
+  }
+}
+constraints {
+  bool_or {
+    literals: 176
+    literals: 190
+    literals: -94
+  }
+}
+constraints {
+  bool_or {
+    literals: 77
+    literals: -199
+    literals: -16
+  }
+}
+constraints {
+  bool_or {
+    literals: 42
+    literals: -34
+    literals: -50
+  }
+}
+constraints {
+  bool_or {
+    literals: -44
+    literals: -41
+    literals: -17
+  }
+}
+constraints {
+  bool_or {
+    literals: 64
+    literals: 65
+    literals: 115
+  }
+}
+constraints {
+  bool_or {
+    literals: 105
+    literals: 41
+    literals: -120
+  }
+}
+constraints {
+  bool_or {
+    literals: 125
+    literals: -116
+    literals: -46
+  }
+}
+constraints {
+  bool_or {
+    literals: -122
+    literals: 165
+    literals: 159
+  }
+}
+constraints {
+  bool_or {
+    literals: 30
+    literals: 146
+    literals: -178
+  }
+}
+constraints {
+  bool_or {
+    literals: 175
+    literals: 12
+    literals: -166
+  }
+}
+constraints {
+  bool_or {
+    literals: -182
+    literals: -67
+    literals: 16
+  }
+}
+constraints {
+  bool_or {
+    literals: 158
+    literals: 26
+    literals: -37
+  }
+}
+constraints {
+  bool_or {
+    literals: -176
+    literals: 9
+    literals: -13
+  }
+}
+constraints {
+  bool_or {
+    literals: -115
+    literals: -122
+    literals: 26
+  }
+}
+constraints {
+  bool_or {
+    literals: -28
+    literals: 138
+    literals: 141
+  }
+}
+constraints {
+  bool_or {
+    literals: -131
+    literals: 21
+    literals: 109
+  }
+}
+constraints {
+  bool_or {
+    literals: 45
+    literals: 153
+    literals: -186
+  }
+}
+constraints {
+  bool_or {
+    literals: -43
+    literals: -4
+    literals: 146
+  }
+}
+constraints {
+  bool_or {
+    literals: 183
+    literals: -13
+    literals: -154
+  }
+}
+constraints {
+  bool_or {
+    literals: -36
+    literals: 122
+    literals: 148
+  }
+}
+constraints {
+  bool_or {
+    literals: 18
+    literals: 197
+    literals: -102
+  }
+}
+constraints {
+  bool_or {
+    literals: -145
+    literals: 30
+    literals: 133
+  }
+}
+constraints {
+  bool_or {
+    literals: 70
+    literals: -124
+    literals: -70
+  }
+}
+constraints {
+  bool_or {
+    literals: 88
+    literals: -149
+    literals: 99
+  }
+}
+constraints {
+  bool_or {
+    literals: -44
+    literals: 26
+    literals: 190
+  }
+}
+constraints {
+  bool_or {
+    literals: -30
+    literals: 87
+    literals: 54
+  }
+}
+constraints {
+  bool_or {
+    literals: -49
+    literals: -92
+    literals: 3
+  }
+}
+constraints {
+  bool_or {
+    literals: 99
+    literals: 67
+    literals: -33
+  }
+}
+constraints {
+  bool_or {
+    literals: -52
+    literals: 168
+    literals: -66
+  }
+}
+constraints {
+  bool_or {
+    literals: -155
+    literals: 1
+    literals: -189
+  }
+}
+constraints {
+  bool_or {
+    literals: -58
+    literals: -92
+    literals: -40
+  }
+}
+constraints {
+  bool_or {
+    literals: 69
+    literals: 172
+    literals: -198
+  }
+}
+constraints {
+  bool_or {
+    literals: -178
+    literals: -166
+    literals: 169
+  }
+}
+constraints {
+  bool_or {
+    literals: 12
+    literals: -22
+    literals: -73
+  }
+}
+constraints {
+  bool_or {
+    literals: 46
+    literals: 122
+    literals: 45
+  }
+}
+constraints {
+  bool_or {
+    literals: -78
+    literals: -185
+    literals: -179
+  }
+}
+constraints {
+  bool_or {
+    literals: 108
+    literals: 16
+    literals: -6
+  }
+}
+constraints {
+  bool_or {
+    literals: 132
+    literals: 83
+    literals: -15
+  }
+}
+constraints {
+  bool_or {
+    literals: -57
+    literals: -134
+    literals: 112
+  }
+}
+constraints {
+  bool_or {
+    literals: -134
+    literals: 160
+    literals: 128
+  }
+}
+constraints {
+  bool_or {
+    literals: 6
+    literals: 197
+    literals: 18
+  }
+}
+constraints {
+  bool_or {
+    literals: -122
+    literals: -176
+    literals: -130
+  }
+}
+constraints {
+  bool_or {
+    literals: -118
+    literals: -4
+    literals: 180
+  }
+}
+constraints {
+  bool_or {
+    literals: 138
+    literals: -198
+    literals: 28
+  }
+}
+constraints {
+  bool_or {
+    literals: 3
+    literals: 53
+    literals: 71
+  }
+}
+constraints {
+  bool_or {
+    literals: -67
+    literals: 53
+    literals: 185
+  }
+}
+constraints {
+  bool_or {
+    literals: 183
+    literals: 113
+    literals: 159
+  }
+}
+constraints {
+  bool_or {
+    literals: 55
+    literals: 130
+    literals: 129
+  }
+}
+constraints {
+  bool_or {
+    literals: -2
+    literals: -172
+    literals: -3
+  }
+}
+constraints {
+  bool_or {
+    literals: 57
+    literals: -107
+    literals: -57
+  }
+}
+constraints {
+  bool_or {
+    literals: 31
+    literals: -80
+    literals: 152
+  }
+}
+constraints {
+  bool_or {
+    literals: -64
+    literals: -144
+    literals: 177
+  }
+}
+constraints {
+  bool_or {
+    literals: -94
+    literals: 147
+    literals: -111
+  }
+}
+constraints {
+  bool_or {
+    literals: -101
+    literals: -70
+    literals: -117
+  }
+}
+constraints {
+  bool_or {
+    literals: 189
+    literals: 21
+    literals: -31
+  }
+}
+constraints {
+  bool_or {
+    literals: 136
+    literals: -164
+    literals: -99
+  }
+}
+constraints {
+  bool_or {
+    literals: 135
+    literals: -141
+    literals: -88
+  }
+}
+constraints {
+  bool_or {
+    literals: -74
+    literals: -99
+    literals: -24
+  }
+}
+constraints {
+  bool_or {
+    literals: 181
+    literals: -70
+    literals: -50
+  }
+}
+constraints {
+  bool_or {
+    literals: 182
+    literals: -13
+    literals: -79
+  }
+}
+constraints {
+  bool_or {
+    literals: 155
+    literals: -165
+    literals: -159
+  }
+}
+constraints {
+  bool_or {
+    literals: -6
+    literals: -145
+    literals: 198
+  }
+}
+constraints {
+  bool_or {
+    literals: -8
+    literals: -109
+    literals: -187
+  }
+}
+constraints {
+  bool_or {
+    literals: -109
+    literals: 155
+    literals: -180
+  }
+}
+constraints {
+  bool_or {
+    literals: -128
+    literals: 166
+    literals: 22
+  }
+}
+constraints {
+  bool_or {
+    literals: 60
+    literals: -7
+    literals: -60
+  }
+}
+constraints {
+  bool_or {
+    literals: -2
+    literals: 65
+    literals: 64
+  }
+}
+constraints {
+  bool_or {
+    literals: -193
+    literals: 55
+    literals: -34
+  }
+}
+constraints {
+  bool_or {
+    literals: -41
+    literals: 115
+    literals: -106
+  }
+}
+constraints {
+  bool_or {
+    literals: 47
+    literals: -194
+    literals: -81
+  }
+}
+constraints {
+  bool_or {
+    literals: 90
+    literals: 141
+    literals: -130
+  }
+}
+constraints {
+  bool_or {
+    literals: -161
+    literals: -7
+    literals: -95
+  }
+}
+constraints {
+  bool_or {
+    literals: 84
+    literals: 129
+    literals: -39
+  }
+}
+constraints {
+  bool_or {
+    literals: -72
+    literals: -79
+    literals: -186
+  }
+}
+constraints {
+  bool_or {
+    literals: 10
+    literals: -103
+    literals: 95
+  }
+}
+constraints {
+  bool_or {
+    literals: -127
+    literals: -85
+    literals: 172
+  }
+}
+constraints {
+  bool_or {
+    literals: -65
+    literals: 43
+    literals: 146
+  }
+}
+constraints {
+  bool_or {
+    literals: 125
+    literals: -94
+    literals: -191
+  }
+}
+constraints {
+  bool_or {
+    literals: 0
+    literals: -110
+    literals: 49
+  }
+}
+constraints {
+  bool_or {
+    literals: 9
+    literals: 180
+    literals: -91
+  }
+}
+constraints {
+  bool_or {
+    literals: -54
+    literals: -56
+    literals: -174
+  }
+}
+constraints {
+  bool_or {
+    literals: 99
+    literals: -195
+    literals: -155
+  }
+}
+constraints {
+  bool_or {
+    literals: -85
+    literals: 112
+    literals: 14
+  }
+}
+constraints {
+  bool_or {
+    literals: 43
+    literals: -12
+    literals: -105
+  }
+}
+constraints {
+  bool_or {
+    literals: 104
+    literals: -71
+    literals: 59
+  }
+}
+constraints {
+  bool_or {
+    literals: -12
+    literals: -163
+    literals: -63
+  }
+}
+constraints {
+  bool_or {
+    literals: -90
+    literals: -65
+    literals: 87
+  }
+}
+constraints {
+  bool_or {
+    literals: -86
+    literals: 78
+    literals: -6
+  }
+}
+constraints {
+  bool_or {
+    literals: -17
+    literals: -145
+    literals: 70
+  }
+}
+constraints {
+  bool_or {
+    literals: 96
+    literals: 109
+    literals: 123
+  }
+}
+constraints {
+  bool_or {
+    literals: -68
+    literals: 148
+    literals: -24
+  }
+}
+constraints {
+  bool_or {
+    literals: 198
+    literals: -171
+    literals: -99
+  }
+}
+constraints {
+  bool_or {
+    literals: 181
+    literals: 61
+    literals: -3
+  }
+}
+constraints {
+  bool_or {
+    literals: 161
+    literals: -159
+    literals: -54
+  }
+}
+constraints {
+  bool_or {
+    literals: 37
+    literals: 77
+    literals: -188
+  }
+}
+constraints {
+  bool_or {
+    literals: -46
+    literals: -159
+    literals: -41
+  }
+}
+constraints {
+  bool_or {
+    literals: -99
+    literals: -167
+    literals: -51
+  }
+}
+constraints {
+  bool_or {
+    literals: 149
+    literals: 7
+    literals: 66
+  }
+}
+constraints {
+  bool_or {
+    literals: 88
+    literals: 180
+    literals: -136
+  }
+}
+constraints {
+  bool_or {
+    literals: 159
+    literals: -168
+    literals: 23
+  }
+}
+constraints {
+  bool_or {
+    literals: 116
+    literals: -144
+    literals: 84
+  }
+}
+constraints {
+  bool_or {
+    literals: 30
+    literals: 159
+    literals: 112
+  }
+}
+constraints {
+  bool_or {
+    literals: -160
+    literals: 100
+    literals: 168
+  }
+}
+constraints {
+  bool_or {
+    literals: -105
+    literals: 25
+    literals: 40
+  }
+}
+constraints {
+  bool_or {
+    literals: 198
+    literals: -32
+    literals: 144
+  }
+}
+constraints {
+  bool_or {
+    literals: 38
+    literals: -30
+    literals: 192
+  }
+}
+constraints {
+  bool_or {
+    literals: 128
+    literals: -94
+    literals: -30
+  }
+}
+constraints {
+  bool_or {
+    literals: 156
+    literals: -153
+    literals: -192
+  }
+}
+constraints {
+  bool_or {
+    literals: 6
+    literals: 10
+    literals: 190
+  }
+}
+constraints {
+  bool_or {
+    literals: 157
+    literals: -87
+    literals: 150
+  }
+}
+constraints {
+  bool_or {
+    literals: 163
+    literals: -138
+    literals: 182
+  }
+}
+constraints {
+  bool_or {
+    literals: 139
+    literals: 147
+    literals: 66
+  }
+}
+constraints {
+  bool_or {
+    literals: -7
+    literals: -62
+    literals: 37
+  }
+}
+constraints {
+  bool_or {
+    literals: 80
+    literals: -6
+    literals: 38
+  }
+}
+constraints {
+  bool_or {
+    literals: 141
+    literals: 176
+    literals: 142
+  }
+}
+constraints {
+  bool_or {
+    literals: -44
+    literals: -45
+    literals: 100
+  }
+}
+constraints {
+  bool_or {
+    literals: 148
+    literals: -124
+    literals: -120
+  }
+}
+constraints {
+  bool_or {
+    literals: -25
+    literals: 132
+    literals: -73
+  }
+}
+constraints {
+  bool_or {
+    literals: -151
+    literals: -189
+    literals: -157
+  }
+}
+constraints {
+  bool_or {
+    literals: -199
+    literals: 137
+    literals: -180
+  }
+}
+constraints {
+  bool_or {
+    literals: -37
+    literals: -36
+    literals: -197
+  }
+}
+constraints {
+  bool_or {
+    literals: 177
+    literals: 95
+    literals: 48
+  }
+}
+constraints {
+  bool_or {
+    literals: -182
+    literals: 54
+    literals: -119
+  }
+}
+constraints {
+  bool_or {
+    literals: 35
+    literals: 78
+    literals: 22
+  }
+}
+constraints {
+  bool_or {
+    literals: 93
+    literals: -32
+    literals: 72
+  }
+}
+constraints {
+  bool_or {
+    literals: -10
+    literals: 117
+    literals: -120
+  }
+}
+constraints {
+  bool_or {
+    literals: 77
+    literals: -105
+    literals: -173
+  }
+}
+constraints {
+  bool_or {
+    literals: 58
+    literals: 100
+    literals: 5
+  }
+}
+constraints {
+  bool_or {
+    literals: 29
+    literals: 18
+    literals: -72
+  }
+}
+constraints {
+  bool_or {
+    literals: 17
+    literals: 178
+    literals: -21
+  }
+}
+constraints {
+  bool_or {
+    literals: 135
+    literals: 85
+    literals: -190
+  }
+}
+constraints {
+  bool_or {
+    literals: 92
+    literals: 112
+    literals: -31
+  }
+}
+constraints {
+  bool_or {
+    literals: -32
+    literals: 170
+    literals: -16
+  }
+}
+constraints {
+  bool_or {
+    literals: 12
+    literals: 102
+    literals: 120
+  }
+}
+constraints {
+  bool_or {
+    literals: -142
+    literals: 42
+    literals: -75
+  }
+}
+constraints {
+  bool_or {
+    literals: -34
+    literals: -126
+    literals: -77
+  }
+}
+constraints {
+  bool_or {
+    literals: 185
+    literals: -130
+    literals: 179
+  }
+}
+constraints {
+  bool_or {
+    literals: 60
+    literals: 99
+    literals: 61
+  }
+}
+constraints {
+  bool_or {
+    literals: -126
+    literals: 141
+    literals: 91
+  }
+}
+constraints {
+  bool_or {
+    literals: -25
+    literals: -166
+    literals: 187
+  }
+}
+constraints {
+  bool_or {
+    literals: -88
+    literals: 32
+    literals: 66
+  }
+}
+constraints {
+  bool_or {
+    literals: -76
+    literals: -190
+    literals: 82
+  }
+}
+constraints {
+  bool_or {
+    literals: -122
+    literals: -19
+    literals: 196
+  }
+}
+constraints {
+  bool_or {
+    literals: -175
+    literals: -171
+    literals: -195
+  }
+}
+constraints {
+  bool_or {
+    literals: 92
+    literals: -76
+    literals: 172
+  }
+}
+constraints {
+  bool_or {
+    literals: -126
+    literals: -20
+    literals: 145
+  }
+}
+constraints {
+  bool_or {
+    literals: -168
+    literals: 24
+    literals: 42
+  }
+}
+constraints {
+  bool_or {
+    literals: -97
+    literals: 128
+    literals: -189
+  }
+}
+constraints {
+  bool_or {
+    literals: 88
+    literals: 159
+    literals: -61
+  }
+}
+constraints {
+  bool_or {
+    literals: 183
+    literals: -12
+    literals: 114
+  }
+}
+constraints {
+  bool_or {
+    literals: -192
+    literals: 73
+    literals: 75
+  }
+}
+constraints {
+  bool_or {
+    literals: -152
+    literals: -113
+    literals: 143
+  }
+}
+constraints {
+  bool_or {
+    literals: 28
+    literals: -59
+    literals: 39
+  }
+}
+constraints {
+  bool_or {
+    literals: -113
+    literals: 168
+    literals: -186
+  }
+}
+constraints {
+  bool_or {
+    literals: 134
+    literals: -173
+    literals: 148
+  }
+}
+constraints {
+  bool_or {
+    literals: 79
+    literals: 63
+    literals: -108
+  }
+}
+constraints {
+  bool_or {
+    literals: -63
+    literals: 86
+    literals: -195
+  }
+}
+constraints {
+  bool_or {
+    literals: 99
+    literals: 145
+    literals: 112
+  }
+}
+constraints {
+  bool_or {
+    literals: 86
+    literals: -16
+    literals: 58
+  }
+}
+constraints {
+  bool_or {
+    literals: 150
+    literals: -113
+    literals: 72
+  }
+}
+constraints {
+  bool_or {
+    literals: -77
+    literals: -174
+    literals: -114
+  }
+}
+constraints {
+  bool_or {
+    literals: 175
+    literals: -113
+    literals: 68
+  }
+}
+constraints {
+  bool_or {
+    literals: -116
+    literals: 15
+    literals: 88
+  }
+}
+constraints {
+  bool_or {
+    literals: 188
+    literals: -189
+    literals: -58
+  }
+}
+constraints {
+  bool_or {
+    literals: -146
+    literals: 163
+    literals: 170
+  }
+}
+constraints {
+  bool_or {
+    literals: -35
+    literals: -69
+    literals: -143
+  }
+}
+constraints {
+  bool_or {
+    literals: -81
+    literals: -69
+    literals: 134
+  }
+}
+constraints {
+  bool_or {
+    literals: -73
+    literals: -54
+    literals: -33
+  }
+}
+constraints {
+  bool_or {
+    literals: 16
+    literals: -121
+    literals: -145
+  }
+}
+constraints {
+  bool_or {
+    literals: 16
+    literals: 94
+    literals: -52
+  }
+}
+constraints {
+  bool_or {
+    literals: -186
+    literals: -103
+    literals: 123
+  }
+}
+constraints {
+  bool_or {
+    literals: 99
+    literals: -36
+    literals: 86
+  }
+}
+constraints {
+  bool_or {
+    literals: -25
+    literals: 187
+    literals: -78
+  }
+}
+constraints {
+  bool_or {
+    literals: 171
+    literals: -67
+    literals: 135
+  }
+}
+constraints {
+  bool_or {
+    literals: 163
+    literals: 199
+    literals: 98
+  }
+}
+constraints {
+  bool_or {
+    literals: 158
+    literals: 194
+    literals: -119
+  }
+}
+constraints {
+  bool_or {
+    literals: 137
+    literals: 105
+    literals: 155
+  }
+}
+constraints {
+  bool_or {
+    literals: 91
+    literals: 17
+    literals: -108
+  }
+}
+constraints {
+  bool_or {
+    literals: 40
+    literals: 152
+    literals: 130
+  }
+}
+constraints {
+  bool_or {
+    literals: 142
+    literals: 175
+    literals: 122
+  }
+}
+constraints {
+  bool_or {
+    literals: -20
+    literals: 192
+    literals: -102
+  }
+}
+constraints {
+  bool_or {
+    literals: 29
+    literals: -86
+    literals: 38
+  }
+}
+constraints {
+  bool_or {
+    literals: 161
+    literals: 157
+    literals: 158
+  }
+}
+constraints {
+  bool_or {
+    literals: 27
+    literals: -70
+    literals: 64
+  }
+}
+constraints {
+  bool_or {
+    literals: 178
+    literals: -188
+    literals: -31
+  }
+}
+constraints {
+  bool_or {
+    literals: -109
+    literals: 187
+    literals: -85
+  }
+}
+constraints {
+  bool_or {
+    literals: 187
+    literals: -93
+    literals: 86
+  }
+}
+constraints {
+  bool_or {
+    literals: 134
+    literals: -166
+    literals: -200
+  }
+}
+constraints {
+  bool_or {
+    literals: 52
+    literals: 60
+    literals: 4
+  }
+}
+constraints {
+  bool_or {
+    literals: -176
+    literals: -110
+    literals: 85
+  }
+}
+constraints {
+  bool_or {
+    literals: -159
+    literals: 107
+    literals: -30
+  }
+}
+constraints {
+  bool_or {
+    literals: 14
+    literals: 105
+    literals: 178
+  }
+}
+constraints {
+  bool_or {
+    literals: -43
+    literals: -171
+    literals: -163
+  }
+}
+constraints {
+  bool_or {
+    literals: -41
+    literals: -98
+    literals: 171
+  }
+}
+constraints {
+  bool_or {
+    literals: 24
+    literals: 6
+    literals: -161
+  }
+}
+constraints {
+  bool_or {
+    literals: -29
+    literals: 47
+    literals: 41
+  }
+}
+constraints {
+  bool_or {
+    literals: -11
+    literals: -191
+    literals: -194
+  }
+}
+constraints {
+  bool_or {
+    literals: 146
+    literals: -8
+    literals: 18
+  }
+}
+constraints {
+  bool_or {
+    literals: 110
+    literals: -7
+    literals: -180
+  }
+}
+constraints {
+  bool_or {
+    literals: -167
+    literals: -189
+    literals: 105
+  }
+}
+constraints {
+  bool_or {
+    literals: -125
+    literals: 132
+    literals: 92
+  }
+}
+constraints {
+  bool_or {
+    literals: -15
+    literals: 24
+    literals: -91
+  }
+}
+constraints {
+  bool_or {
+    literals: 65
+    literals: -171
+    literals: 148
+  }
+}
+constraints {
+  bool_or {
+    literals: 92
+    literals: 152
+    literals: 129
+  }
+}
+constraints {
+  bool_or {
+    literals: 129
+    literals: 70
+    literals: -118
+  }
+}
+constraints {
+  bool_or {
+    literals: 94
+    literals: 83
+    literals: -70
+  }
+}
+constraints {
+  bool_or {
+    literals: -83
+    literals: -196
+    literals: 16
+  }
+}
+constraints {
+  bool_or {
+    literals: -165
+    literals: 150
+    literals: -80
+  }
+}
+constraints {
+  bool_or {
+    literals: 71
+    literals: -36
+    literals: -112
+  }
+}
+constraints {
+  bool_or {
+    literals: 134
+    literals: 106
+    literals: 157
+  }
+}
+constraints {
+  bool_or {
+    literals: -145
+    literals: 34
+    literals: -61
+  }
+}
+constraints {
+  bool_or {
+    literals: 155
+    literals: 59
+    literals: -165
+  }
+}
+constraints {
+  bool_or {
+    literals: 89
+    literals: -179
+    literals: 195
+  }
+}
+constraints {
+  bool_or {
+    literals: -152
+    literals: -128
+    literals: 76
+  }
+}
+constraints {
+  bool_or {
+    literals: 97
+    literals: 72
+    literals: 156
+  }
+}
+constraints {
+  bool_or {
+    literals: 16
+    literals: -111
+    literals: 124
+  }
+}
+constraints {
+  bool_or {
+    literals: 55
+    literals: 134
+    literals: -28
+  }
+}
+constraints {
+  bool_or {
+    literals: 115
+    literals: -84
+    literals: 61
+  }
+}
+constraints {
+  bool_or {
+    literals: 70
+    literals: 22
+    literals: 69
+  }
+}
+constraints {
+  bool_or {
+    literals: -24
+    literals: -101
+    literals: -169
+  }
+}
+constraints {
+  bool_or {
+    literals: -109
+    literals: 98
+    literals: -48
+  }
+}
+constraints {
+  bool_or {
+    literals: 80
+    literals: 97
+    literals: 106
+  }
+}
+constraints {
+  bool_or {
+    literals: -83
+    literals: -14
+    literals: 102
+  }
+}
+constraints {
+  bool_or {
+    literals: -128
+    literals: 43
+    literals: 25
+  }
+}
+constraints {
+  bool_or {
+    literals: 101
+    literals: -15
+    literals: 128
+  }
+}
+constraints {
+  bool_or {
+    literals: 159
+    literals: 114
+    literals: -54
+  }
+}
+constraints {
+  bool_or {
+    literals: -113
+    literals: 157
+    literals: 167
+  }
+}
+constraints {
+  bool_or {
+    literals: 48
+    literals: 33
+    literals: -166
+  }
+}
+constraints {
+  bool_or {
+    literals: 107
+    literals: 11
+    literals: -143
+  }
+}
+constraints {
+  bool_or {
+    literals: 152
+    literals: 190
+    literals: -56
+  }
+}
+constraints {
+  bool_or {
+    literals: -99
+    literals: 112
+    literals: 95
+  }
+}
+constraints {
+  bool_or {
+    literals: 11
+    literals: -167
+    literals: -196
+  }
+}
+constraints {
+  bool_or {
+    literals: 53
+    literals: 153
+    literals: 35
+  }
+}
+constraints {
+  bool_or {
+    literals: -120
+    literals: -25
+    literals: 124
+  }
+}
+constraints {
+  bool_or {
+    literals: 52
+    literals: -135
+    literals: 172
+  }
+}
+constraints {
+  bool_or {
+    literals: -34
+    literals: 151
+    literals: 7
+  }
+}
+constraints {
+  bool_or {
+    literals: 173
+    literals: -189
+    literals: -91
+  }
+}
+constraints {
+  bool_or {
+    literals: -141
+    literals: 22
+    literals: -113
+  }
+}
+constraints {
+  bool_or {
+    literals: -54
+    literals: 95
+    literals: -138
+  }
+}
+constraints {
+  bool_or {
+    literals: -37
+    literals: 32
+    literals: 7
+  }
+}
+constraints {
+  bool_or {
+    literals: -62
+    literals: 145
+    literals: -114
+  }
+}
+constraints {
+  bool_or {
+    literals: 101
+    literals: 77
+    literals: 98
+  }
+}
+constraints {
+  bool_or {
+    literals: -200
+    literals: -184
+    literals: -130
+  }
+}
+constraints {
+  bool_or {
+    literals: 36
+    literals: 91
+    literals: 141
+  }
+}
+constraints {
+  bool_or {
+    literals: -156
+    literals: 21
+    literals: 177
+  }
+}
+constraints {
+  bool_or {
+    literals: -33
+    literals: -54
+    literals: 28
+  }
+}
+constraints {
+  bool_or {
+    literals: 41
+    literals: 196
+    literals: 83
+  }
+}
+constraints {
+  bool_or {
+    literals: 68
+    literals: 186
+    literals: 126
+  }
+}
+constraints {
+  bool_or {
+    literals: -182
+    literals: 19
+    literals: 24
+  }
+}
+constraints {
+  bool_or {
+    literals: -13
+    literals: -144
+    literals: -72
+  }
+}
+constraints {
+  bool_or {
+    literals: -168
+    literals: 56
+    literals: 141
+  }
+}
+constraints {
+  bool_or {
+    literals: 16
+    literals: 9
+    literals: 111
+  }
+}
+constraints {
+  bool_or {
+    literals: -140
+    literals: -129
+    literals: -145
+  }
+}
+constraints {
+  bool_or {
+    literals: 64
+    literals: -18
+    literals: -56
+  }
+}
+constraints {
+  bool_or {
+    literals: -114
+    literals: 187
+    literals: -191
+  }
+}
+constraints {
+  bool_or {
+    literals: -117
+    literals: -55
+    literals: -95
+  }
+}
+constraints {
+  bool_or {
+    literals: -44
+    literals: 29
+    literals: -19
+  }
+}
+constraints {
+  bool_or {
+    literals: -140
+    literals: -187
+    literals: 30
+  }
+}
+constraints {
+  bool_or {
+    literals: -180
+    literals: 18
+    literals: -30
+  }
+}
+constraints {
+  bool_or {
+    literals: 10
+    literals: -119
+    literals: -29
+  }
+}
+constraints {
+  bool_or {
+    literals: 146
+    literals: 22
+    literals: -113
+  }
+}
+constraints {
+  bool_or {
+    literals: -166
+    literals: -190
+    literals: -7
+  }
+}
+constraints {
+  bool_or {
+    literals: -132
+    literals: 21
+    literals: -151
+  }
+}
+constraints {
+  bool_or {
+    literals: 187
+    literals: -122
+    literals: 88
+  }
+}
+constraints {
+  bool_or {
+    literals: -93
+    literals: 67
+    literals: -105
+  }
+}
+constraints {
+  bool_or {
+    literals: -164
+    literals: -200
+    literals: 42
+  }
+}
+constraints {
+  bool_or {
+    literals: 177
+    literals: 74
+    literals: -85
+  }
+}
+constraints {
+  bool_or {
+    literals: -13
+    literals: 170
+    literals: 143
+  }
+}
+constraints {
+  bool_or {
+    literals: -5
+    literals: 124
+    literals: -194
+  }
+}
+constraints {
+  bool_or {
+    literals: -43
+    literals: 64
+    literals: 35
+  }
+}
+constraints {
+  bool_or {
+    literals: -35
+    literals: -106
+    literals: -173
+  }
+}
+constraints {
+  bool_or {
+    literals: -57
+    literals: -6
+    literals: 61
+  }
+}
+constraints {
+  bool_or {
+    literals: -170
+    literals: -187
+    literals: 48
+  }
+}
+constraints {
+  bool_or {
+    literals: 85
+    literals: -193
+    literals: -188
+  }
+}
+constraints {
+  bool_or {
+    literals: 144
+    literals: 80
+    literals: 137
+  }
+}
+constraints {
+  bool_or {
+    literals: 133
+    literals: 95
+    literals: 72
+  }
+}
+constraints {
+  bool_or {
+    literals: 112
+    literals: 72
+    literals: 91
+  }
+}
+constraints {
+  bool_or {
+    literals: 22
+    literals: -69
+    literals: 197
+  }
+}
+constraints {
+  bool_or {
+    literals: -96
+    literals: -1
+    literals: 13
+  }
+}
+constraints {
+  bool_or {
+    literals: -178
+    literals: -196
+    literals: -163
+  }
+}
+constraints {
+  bool_or {
+    literals: 145
+    literals: -166
+    literals: -138
+  }
+}
+constraints {
+  bool_or {
+    literals: -69
+    literals: 80
+    literals: -147
+  }
+}
+constraints {
+  bool_or {
+    literals: 98
+    literals: -40
+    literals: -198
+  }
+}
+constraints {
+  bool_or {
+    literals: -157
+    literals: -76
+    literals: -51
+  }
+}
+constraints {
+  bool_or {
+    literals: 89
+    literals: -180
+    literals: -190
+  }
+}
+constraints {
+  bool_or {
+    literals: 16
+    literals: -79
+    literals: -51
+  }
+}
+constraints {
+  bool_or {
+    literals: -154
+    literals: 146
+    literals: 193
+  }
+}
+constraints {
+  bool_or {
+    literals: -18
+    literals: 128
+    literals: 92
+  }
+}
+constraints {
+  bool_or {
+    literals: -52
+    literals: 4
+    literals: 38
+  }
+}
+constraints {
+  bool_or {
+    literals: -194
+    literals: -108
+    literals: -40
+  }
+}
+constraints {
+  bool_or {
+    literals: -53
+    literals: 30
+    literals: 143
+  }
+}
+constraints {
+  bool_or {
+    literals: -8
+    literals: 87
+    literals: 133
+  }
+}
+constraints {
+  bool_or {
+    literals: -176
+    literals: -136
+    literals: 121
+  }
+}
+constraints {
+  bool_or {
+    literals: -81
+    literals: 107
+    literals: 180
+  }
+}
+constraints {
+  bool_or {
+    literals: 66
+    literals: -83
+    literals: -46
+  }
+}
+constraints {
+  bool_or {
+    literals: -187
+    literals: -13
+    literals: -116
+  }
+}
+constraints {
+  bool_or {
+    literals: -75
+    literals: 109
+    literals: 132
+  }
+}
+constraints {
+  bool_or {
+    literals: 179
+    literals: 111
+    literals: -127
+  }
+}
+constraints {
+  bool_or {
+    literals: -28
+    literals: 3
+    literals: 50
+  }
+}
+constraints {
+  bool_or {
+    literals: -132
+    literals: -155
+    literals: 117
+  }
+}
+constraints {
+  bool_or {
+    literals: 138
+    literals: 70
+    literals: -172
+  }
+}
+constraints {
+  bool_or {
+    literals: -120
+    literals: -52
+    literals: -3
+  }
+}
+constraints {
+  bool_or {
+    literals: 144
+    literals: 49
+    literals: 180
+  }
+}
+constraints {
+  bool_or {
+    literals: -80
+    literals: 29
+    literals: -145
+  }
+}
+constraints {
+  bool_or {
+    literals: 195
+    literals: 184
+    literals: -111
+  }
+}
+constraints {
+  bool_or {
+    literals: 73
+    literals: 113
+    literals: 103
+  }
+}
+constraints {
+  bool_or {
+    literals: 35
+    literals: -199
+    literals: 63
+  }
+}
+constraints {
+  bool_or {
+    literals: -122
+    literals: 119
+    literals: -196
+  }
+}
+constraints {
+  bool_or {
+    literals: -102
+    literals: -82
+    literals: 137
+  }
+}
+constraints {
+  bool_or {
+    literals: 84
+    literals: 2
+    literals: -109
+  }
+}
+constraints {
+  bool_or {
+    literals: -168
+    literals: -53
+    literals: 57
+  }
+}
+constraints {
+  bool_or {
+    literals: -97
+    literals: 115
+    literals: -170
+  }
+}
+constraints {
+  bool_or {
+    literals: -56
+    literals: -28
+    literals: -195
+  }
+}
+constraints {
+  bool_or {
+    literals: 48
+    literals: -127
+    literals: -119
+  }
+}
+constraints {
+  bool_or {
+    literals: -159
+    literals: 163
+    literals: 190
+  }
+}
+constraints {
+  bool_or {
+    literals: -104
+    literals: 85
+    literals: -161
+  }
+}
+constraints {
+  bool_or {
+    literals: 128
+    literals: -195
+    literals: -192
+  }
+}
+constraints {
+  bool_or {
+    literals: -153
+    literals: -46
+    literals: -105
+  }
+}
+constraints {
+  bool_or {
+    literals: 93
+    literals: 94
+    literals: -67
+  }
+}
+constraints {
+  bool_or {
+    literals: -47
+    literals: 64
+    literals: -48
+  }
+}
+constraints {
+  bool_or {
+    literals: -86
+    literals: 97
+    literals: 143
+  }
+}
+constraints {
+  bool_or {
+    literals: 57
+    literals: 97
+    literals: 14
+  }
+}
+constraints {
+  bool_or {
+    literals: 38
+    literals: -59
+    literals: 127
+  }
+}
+constraints {
+  bool_or {
+    literals: 44
+    literals: 4
+    literals: 175
+  }
+}
+constraints {
+  bool_or {
+    literals: -129
+    literals: 151
+    literals: 12
+  }
+}
+constraints {
+  bool_or {
+    literals: -190
+    literals: -15
+    literals: 72
+  }
+}
+constraints {
+  bool_or {
+    literals: -55
+    literals: -41
+    literals: -189
+  }
+}
+constraints {
+  bool_or {
+    literals: -54
+    literals: -8
+    literals: -30
+  }
+}
+constraints {
+  bool_or {
+    literals: -17
+    literals: 145
+    literals: -27
+  }
+}
+constraints {
+  bool_or {
+    literals: -79
+    literals: -142
+    literals: -30
+  }
+}
+constraints {
+  bool_or {
+    literals: -198
+    literals: -37
+    literals: 30
+  }
+}
+constraints {
+  bool_or {
+    literals: 134
+    literals: -39
+    literals: 39
+  }
+}
+constraints {
+  bool_or {
+    literals: -31
+    literals: -157
+    literals: -110
+  }
+}
+constraints {
+  bool_or {
+    literals: 109
+    literals: 54
+    literals: 128
+  }
+}
+constraints {
+  bool_or {
+    literals: 181
+    literals: -139
+    literals: -82
+  }
+}
+constraints {
+  bool_or {
+    literals: -74
+    literals: 134
+    literals: -10
+  }
+}
+constraints {
+  bool_or {
+    literals: 166
+    literals: -130
+    literals: -113
+  }
+}
+constraints {
+  bool_or {
+    literals: -107
+    literals: 79
+    literals: 161
+  }
+}
+constraints {
+  bool_or {
+    literals: -48
+    literals: 78
+    literals: -138
+  }
+}
+constraints {
+  bool_or {
+    literals: -54
+    literals: -21
+    literals: 117
+  }
+}
+constraints {
+  bool_or {
+    literals: -199
+    literals: -40
+    literals: 116
+  }
+}
+constraints {
+  bool_or {
+    literals: -157
+    literals: 59
+    literals: -139
+  }
+}
+constraints {
+  bool_or {
+    literals: -43
+    literals: 172
+    literals: -75
+  }
+}
+constraints {
+  bool_or {
+    literals: 58
+    literals: 51
+    literals: -185
+  }
+}
+constraints {
+  bool_or {
+    literals: -84
+    literals: -41
+    literals: -123
+  }
+}
+constraints {
+  bool_or {
+    literals: 8
+    literals: -44
+    literals: 72
+  }
+}
+constraints {
+  bool_or {
+    literals: -90
+    literals: -59
+    literals: -102
+  }
+}
+constraints {
+  bool_or {
+    literals: 23
+    literals: 113
+    literals: -77
+  }
+}
+constraints {
+  bool_or {
+    literals: -20
+    literals: -134
+    literals: -62
+  }
+}
+constraints {
+  bool_or {
+    literals: 184
+    literals: -10
+    literals: -98
+  }
+}
+constraints {
+  bool_or {
+    literals: 26
+    literals: 146
+    literals: 198
+  }
+}
+constraints {
+  bool_or {
+    literals: -153
+    literals: -109
+    literals: 4
+  }
+}
+constraints {
+  bool_or {
+    literals: 19
+    literals: -141
+    literals: -109
+  }
+}
+constraints {
+  bool_or {
+    literals: 20
+    literals: 180
+    literals: -142
+  }
+}
+constraints {
+  bool_or {
+    literals: 117
+    literals: -129
+    literals: 72
+  }
+}
+constraints {
+  bool_or {
+    literals: -20
+    literals: 193
+    literals: -15
+  }
+}
+constraints {
+  bool_or {
+    literals: 153
+    literals: -76
+    literals: 161
+  }
+}
+constraints {
+  bool_or {
+    literals: 170
+    literals: 7
+    literals: -132
+  }
+}
+constraints {
+  bool_or {
+    literals: 67
+    literals: -117
+    literals: 39
+  }
+}
+constraints {
+  bool_or {
+    literals: -37
+    literals: -60
+    literals: 188
+  }
+}
+constraints {
+  bool_or {
+    literals: 151
+    literals: -13
+    literals: -184
+  }
+}
+constraints {
+  bool_or {
+    literals: -106
+    literals: -95
+    literals: -144
+  }
+}
+constraints {
+  bool_or {
+    literals: 7
+    literals: 131
+    literals: 107
+  }
+}
+constraints {
+  bool_or {
+    literals: 53
+    literals: 129
+    literals: -10
+  }
+}
+constraints {
+  bool_or {
+    literals: 79
+    literals: 84
+    literals: -42
+  }
+}
+constraints {
+  bool_or {
+    literals: 14
+    literals: -23
+    literals: -146
+  }
+}
+constraints {
+  bool_or {
+    literals: 129
+    literals: 171
+    literals: -17
+  }
+}
+constraints {
+  bool_or {
+    literals: 184
+    literals: -144
+    literals: -80
+  }
+}
+constraints {
+  bool_or {
+    literals: 115
+    literals: -149
+    literals: -136
+  }
+}
+constraints {
+  bool_or {
+    literals: -99
+    literals: 133
+    literals: 3
+  }
+}
+constraints {
+  bool_or {
+    literals: 156
+    literals: 191
+    literals: 104
+  }
+}
+constraints {
+  bool_or {
+    literals: -84
+    literals: -139
+    literals: 87
+  }
+}
+constraints {
+  bool_or {
+    literals: 89
+    literals: -83
+    literals: 39
+  }
+}
+constraints {
+  bool_or {
+    literals: 114
+    literals: -128
+    literals: 109
+  }
+}
+constraints {
+  bool_or {
+    literals: 121
+    literals: -173
+    literals: -123
+  }
+}
+constraints {
+  bool_or {
+    literals: -136
+    literals: 37
+    literals: 110
+  }
+}
+constraints {
+  bool_or {
+    literals: -78
+    literals: -133
+    literals: -137
+  }
+}
+constraints {
+  bool_or {
+    literals: 170
+    literals: -31
+    literals: 179
+  }
+}
+constraints {
+  bool_or {
+    literals: 60
+    literals: 165
+    literals: 2
+  }
+}
+constraints {
+  bool_or {
+    literals: -53
+    literals: 2
+    literals: -196
+  }
+}
+constraints {
+  bool_or {
+    literals: 131
+    literals: -146
+    literals: -113
+  }
+}
+constraints {
+  bool_or {
+    literals: 27
+    literals: 73
+    literals: -48
+  }
+}
+constraints {
+  bool_or {
+    literals: 131
+    literals: -135
+    literals: -3
+  }
+}
+constraints {
+  bool_or {
+    literals: 147
+    literals: -189
+    literals: -81
+  }
+}
+constraints {
+  bool_or {
+    literals: 30
+    literals: 51
+    literals: -142
+  }
+}
+constraints {
+  bool_or {
+    literals: 115
+    literals: 163
+    literals: 20
+  }
+}
+constraints {
+  bool_or {
+    literals: -50
+    literals: 128
+    literals: 125
+  }
+}
+constraints {
+  bool_or {
+    literals: -30
+    literals: -110
+    literals: 130
+  }
+}
+constraints {
+  bool_or {
+    literals: -177
+    literals: -17
+    literals: 182
+  }
+}
+constraints {
+  bool_or {
+    literals: 46
+    literals: -151
+    literals: 54
+  }
+}
+constraints {
+  bool_or {
+    literals: 143
+    literals: 130
+    literals: 150
+  }
+}
+constraints {
+  bool_or {
+    literals: 125
+    literals: -36
+    literals: -184
+  }
+}
+constraints {
+  bool_or {
+    literals: 21
+    literals: -149
+    literals: 151
+  }
+}
+constraints {
+  bool_or {
+    literals: 67
+    literals: -159
+    literals: 183
+  }
+}
+constraints {
+  bool_or {
+    literals: 27
+    literals: -73
+    literals: 38
+  }
+}
+constraints {
+  bool_or {
+    literals: -39
+    literals: -89
+    literals: -158
+  }
+}
+constraints {
+  bool_or {
+    literals: -145
+    literals: 14
+    literals: 182
+  }
+}
+constraints {
+  bool_or {
+    literals: -95
+    literals: 151
+    literals: -7
+  }
+}
+constraints {
+  bool_or {
+    literals: 173
+    literals: -15
+    literals: 125
+  }
+}
+constraints {
+  bool_or {
+    literals: 134
+    literals: 94
+    literals: -58
+  }
+}
+constraints {
+  bool_or {
+    literals: -154
+    literals: 159
+    literals: 180
+  }
+}
+constraints {
+  bool_or {
+    literals: -87
+    literals: -136
+    literals: 54
+  }
+}
+constraints {
+  bool_or {
+    literals: 116
+    literals: -170
+    literals: 122
+  }
+}
+constraints {
+  bool_or {
+    literals: 84
+    literals: 78
+    literals: 160
+  }
+}
+constraints {
+  bool_or {
+    literals: 138
+    literals: -107
+    literals: -81
+  }
+}
+constraints {
+  bool_or {
+    literals: 107
+    literals: 181
+    literals: -168
+  }
+}
+constraints {
+  bool_or {
+    literals: -85
+    literals: -29
+    literals: 192
+  }
+}
+constraints {
+  bool_or {
+    literals: 13
+    literals: 174
+    literals: -132
+  }
+}
+constraints {
+  bool_or {
+    literals: 56
+    literals: -40
+    literals: -166
+  }
+}
+constraints {
+  bool_or {
+    literals: -54
+    literals: -117
+    literals: -190
+  }
+}
+constraints {
+  bool_or {
+    literals: -87
+    literals: 148
+    literals: 128
+  }
+}
+constraints {
+  bool_or {
+    literals: -41
+    literals: 1
+    literals: -39
+  }
+}
+constraints {
+  bool_or {
+    literals: -84
+    literals: -148
+    literals: -11
+  }
+}
+constraints {
+  bool_or {
+    literals: -85
+    literals: -150
+    literals: 123
+  }
+}
+constraints {
+  bool_or {
+    literals: -130
+    literals: -118
+    literals: 66
+  }
+}
+constraints {
+  bool_or {
+    literals: -167
+    literals: -127
+    literals: -25
+  }
+}
+constraints {
+  bool_or {
+    literals: -77
+    literals: -12
+    literals: 164
+  }
+}
+constraints {
+  bool_or {
+    literals: -59
+    literals: -27
+    literals: -174
+  }
+}
+constraints {
+  bool_or {
+    literals: -168
+    literals: 194
+    literals: 183
+  }
+}
+constraints {
+  bool_or {
+    literals: -1
+    literals: 126
+    literals: -14
+  }
+}
+constraints {
+  bool_or {
+    literals: 105
+    literals: -184
+    literals: 47
+  }
+}
+constraints {
+  bool_or {
+    literals: 179
+    literals: -67
+    literals: -169
+  }
+}
+constraints {
+  bool_or {
+    literals: 130
+    literals: 196
+    literals: 36
+  }
+}
+constraints {
+  bool_or {
+    literals: -156
+    literals: -94
+    literals: 66
+  }
+}
+constraints {
+  bool_or {
+    literals: 49
+    literals: 111
+    literals: 80
+  }
+}
+constraints {
+  bool_or {
+    literals: 37
+    literals: 47
+    literals: 11
+  }
+}
+constraints {
+  bool_or {
+    literals: -11
+    literals: -80
+    literals: -3
+  }
+}
+constraints {
+  bool_or {
+    literals: -73
+    literals: -38
+    literals: -132
+  }
+}
+constraints {
+  bool_or {
+    literals: -115
+    literals: -196
+    literals: -186
+  }
+}
+constraints {
+  bool_or {
+    literals: -169
+    literals: -56
+    literals: -147
+  }
+}
+constraints {
+  bool_or {
+    literals: -76
+    literals: 82
+    literals: -56
+  }
+}
+constraints {
+  bool_or {
+    literals: 68
+    literals: 176
+    literals: -148
+  }
+}
+constraints {
+  bool_or {
+    literals: 16
+    literals: -68
+    literals: -76
+  }
+}
+constraints {
+  bool_or {
+    literals: 106
+    literals: 148
+    literals: 193
+  }
+}
+constraints {
+  bool_or {
+    literals: 75
+    literals: -63
+    literals: -152
+  }
+}
+constraints {
+  bool_or {
+    literals: 16
+    literals: 144
+    literals: -20
+  }
+}
+constraints {
+  bool_or {
+    literals: -24
+    literals: 152
+    literals: 161
+  }
+}
+constraints {
+  bool_or {
+    literals: -175
+    literals: 193
+    literals: -117
+  }
+}
+constraints {
+  bool_or {
+    literals: -198
+    literals: 15
+    literals: -84
+  }
+}
+constraints {
+  bool_or {
+    literals: -61
+    literals: 176
+    literals: 196
+  }
+}
+constraints {
+  bool_or {
+    literals: 131
+    literals: 113
+    literals: -123
+  }
+}
+constraints {
+  bool_or {
+    literals: -173
+    literals: -141
+    literals: 157
+  }
+}
+constraints {
+  bool_or {
+    literals: -153
+    literals: 37
+    literals: -65
+  }
+}
+constraints {
+  bool_or {
+    literals: -6
+    literals: -137
+    literals: 193
+  }
+}
+constraints {
+  bool_or {
+    literals: 44
+    literals: -25
+    literals: -161
+  }
+}
+constraints {
+  bool_or {
+    literals: -141
+    literals: 120
+    literals: 61
+  }
+}
+constraints {
+  bool_or {
+    literals: -113
+    literals: -178
+    literals: 45
+  }
+}
+constraints {
+  bool_or {
+    literals: -45
+    literals: 68
+    literals: -166
+  }
+}
+constraints {
+  bool_or {
+    literals: 64
+    literals: 134
+    literals: -117
+  }
+}
+constraints {
+  bool_or {
+    literals: 107
+    literals: 30
+    literals: 174
+  }
+}
+constraints {
+  bool_or {
+    literals: 163
+    literals: -135
+    literals: -84
+  }
+}
+constraints {
+  bool_or {
+    literals: -96
+    literals: -39
+    literals: 139
+  }
+}
+constraints {
+  bool_or {
+    literals: -106
+    literals: -135
+    literals: 108
+  }
+}
+constraints {
+  bool_or {
+    literals: 83
+    literals: -144
+    literals: 128
+  }
+}
+constraints {
+  bool_or {
+    literals: 10
+    literals: 121
+    literals: -112
+  }
+}
+constraints {
+  bool_or {
+    literals: -66
+    literals: -153
+    literals: -105
+  }
+}
+constraints {
+  bool_or {
+    literals: -176
+    literals: -188
+    literals: 168
+  }
+}
+constraints {
+  bool_or {
+    literals: -103
+    literals: 182
+    literals: -111
+  }
+}
+constraints {
+  bool_or {
+    literals: 44
+    literals: -130
+    literals: 154
+  }
+}
+constraints {
+  bool_or {
+    literals: 151
+    literals: 23
+    literals: 34
+  }
+}
+constraints {
+  bool_or {
+    literals: 116
+    literals: -7
+    literals: -87
+  }
+}
+constraints {
+  bool_or {
+    literals: -130
+    literals: 113
+    literals: -41
+  }
+}
+constraints {
+  bool_or {
+    literals: -162
+    literals: -63
+    literals: 146
+  }
+}
+constraints {
+  bool_or {
+    literals: 168
+    literals: -106
+    literals: -130
+  }
+}
+constraints {
+  bool_or {
+    literals: -184
+    literals: -148
+    literals: -22
+  }
+}
+constraints {
+  bool_or {
+    literals: -32
+    literals: 166
+    literals: 150
+  }
+}
+constraints {
+  bool_or {
+    literals: -128
+    literals: -11
+    literals: -50
+  }
+}
+constraints {
+  bool_or {
+    literals: 15
+    literals: 173
+    literals: 186
+  }
+}
+constraints {
+  bool_or {
+    literals: 30
+    literals: 131
+    literals: -136
+  }
+}
+constraints {
+  bool_or {
+    literals: 26
+    literals: 164
+    literals: -31
+  }
+}
+constraints {
+  bool_or {
+    literals: -162
+    literals: -178
+    literals: 120
+  }
+}
+constraints {
+  bool_or {
+    literals: -119
+    literals: -151
+    literals: -107
+  }
+}
+constraints {
+  bool_or {
+    literals: 40
+    literals: -67
+    literals: 38
+  }
+}
+constraints {
+  bool_or {
+    literals: -166
+    literals: 122
+    literals: 157
+  }
+}
+constraints {
+  bool_or {
+    literals: 147
+    literals: -160
+    literals: -117
+  }
+}
+constraints {
+  bool_or {
+    literals: 199
+    literals: 50
+    literals: 178
+  }
+}
+constraints {
+  bool_or {
+    literals: 95
+    literals: -65
+    literals: 89
+  }
+}
+constraints {
+  bool_or {
+    literals: 73
+    literals: -33
+    literals: -126
+  }
+}
+constraints {
+  bool_or {
+    literals: -162
+    literals: -179
+    literals: 68
+  }
+}
+constraints {
+  bool_or {
+    literals: -19
+    literals: -160
+    literals: 64
+  }
+}
+constraints {
+  bool_or {
+    literals: 111
+    literals: 122
+    literals: -44
+  }
+}
+constraints {
+  bool_or {
+    literals: 29
+    literals: 47
+    literals: 153
+  }
+}
+constraints {
+  bool_or {
+    literals: 36
+    literals: -170
+    literals: -91
+  }
+}
+constraints {
+  bool_or {
+    literals: -172
+    literals: -128
+    literals: 106
+  }
+}
+constraints {
+  bool_or {
+    literals: -71
+    literals: 78
+    literals: -123
+  }
+}
+constraints {
+  bool_or {
+    literals: -138
+    literals: -103
+    literals: 18
+  }
+}
+constraints {
+  bool_or {
+    literals: -9
+    literals: 89
+    literals: 166
+  }
+}
+constraints {
+  bool_or {
+    literals: -62
+    literals: -119
+    literals: 158
+  }
+}
+constraints {
+  bool_or {
+    literals: 42
+    literals: -133
+    literals: 139
+  }
+}
+constraints {
+  bool_or {
+    literals: -119
+    literals: -130
+    literals: 189
+  }
+}
+constraints {
+  bool_or {
+    literals: 130
+    literals: 75
+    literals: -24
+  }
+}
+constraints {
+  bool_or {
+    literals: -77
+    literals: -87
+    literals: 183
+  }
+}
+constraints {
+  bool_or {
+    literals: -106
+    literals: -161
+    literals: -68
+  }
+}
+constraints {
+  bool_or {
+    literals: 180
+    literals: 148
+    literals: 142
+  }
+}
+constraints {
+  bool_or {
+    literals: -8
+    literals: 178
+    literals: 124
+  }
+}
+constraints {
+  bool_or {
+    literals: -39
+    literals: 163
+    literals: -139
+  }
+}
+constraints {
+  bool_or {
+    literals: 96
+    literals: -158
+    literals: -68
+  }
+}
+constraints {
+  bool_or {
+    literals: 143
+    literals: 152
+    literals: 180
+  }
+}
+constraints {
+  bool_or {
+    literals: 65
+    literals: 91
+    literals: -35
+  }
+}
+constraints {
+  bool_or {
+    literals: -118
+    literals: -55
+    literals: 14
+  }
+}
+constraints {
+  bool_or {
+    literals: -144
+    literals: 59
+    literals: 73
+  }
+}
+constraints {
+  bool_or {
+    literals: -46
+    literals: 105
+    literals: -86
+  }
+}
+constraints {
+  bool_or {
+    literals: 56
+    literals: -20
+    literals: 45
+  }
+}
+constraints {
+  bool_or {
+    literals: 63
+    literals: -69
+    literals: -110
+  }
+}
+constraints {
+  bool_or {
+    literals: 114
+    literals: -179
+    literals: 168
+  }
+}
+constraints {
+  bool_or {
+    literals: -94
+    literals: -197
+    literals: -20
+  }
+}
+constraints {
+  bool_or {
+    literals: -105
+    literals: 51
+    literals: -110
+  }
+}
+constraints {
+  bool_or {
+    literals: 147
+    literals: -191
+    literals: 113
+  }
+}
+constraints {
+  bool_or {
+    literals: 40
+    literals: 110
+    literals: -54
+  }
+}
+constraints {
+  bool_or {
+    literals: 105
+    literals: 71
+    literals: 185
+  }
+}
+constraints {
+  bool_or {
+    literals: 140
+    literals: 144
+    literals: -127
+  }
+}
+solution_hint {
+  vars: 0
+  vars: 1
+  vars: 2
+  vars: 3
+  vars: 4
+  vars: 5
+  vars: 6
+  vars: 7
+  vars: 8
+  vars: 9
+  vars: 10
+  vars: 11
+  vars: 12
+  vars: 13
+  vars: 14
+  vars: 15
+  vars: 16
+  vars: 17
+  vars: 18
+  vars: 19
+  vars: 20
+  vars: 21
+  vars: 22
+  vars: 23
+  vars: 24
+  vars: 25
+  vars: 26
+  vars: 27
+  vars: 28
+  vars: 29
+  vars: 30
+  vars: 31
+  vars: 32
+  vars: 33
+  vars: 34
+  vars: 35
+  vars: 36
+  vars: 37
+  vars: 38
+  vars: 39
+  vars: 40
+  vars: 41
+  vars: 42
+  vars: 43
+  vars: 44
+  vars: 45
+  vars: 46
+  vars: 47
+  vars: 48
+  vars: 49
+  vars: 50
+  vars: 51
+  vars: 52
+  vars: 53
+  vars: 54
+  vars: 55
+  vars: 56
+  vars: 57
+  vars: 58
+  vars: 59
+  vars: 60
+  vars: 61
+  vars: 62
+  vars: 63
+  vars: 64
+  vars: 65
+  vars: 66
+  vars: 67
+  vars: 68
+  vars: 69
+  vars: 70
+  vars: 71
+  vars: 72
+  vars: 73
+  vars: 74
+  vars: 75
+  vars: 76
+  vars: 77
+  vars: 78
+  vars: 79
+  vars: 80
+  vars: 81
+  vars: 82
+  vars: 83
+  vars: 84
+  vars: 85
+  vars: 86
+  vars: 87
+  vars: 88
+  vars: 89
+  vars: 90
+  vars: 91
+  vars: 92
+  vars: 93
+  vars: 94
+  vars: 95
+  vars: 96
+  vars: 97
+  vars: 98
+  vars: 99
+  vars: 100
+  vars: 101
+  vars: 102
+  vars: 103
+  vars: 104
+  vars: 105
+  vars: 106
+  vars: 107
+  vars: 108
+  vars: 109
+  vars: 110
+  vars: 111
+  vars: 112
+  vars: 113
+  vars: 114
+  vars: 115
+  vars: 116
+  vars: 117
+  vars: 118
+  vars: 119
+  vars: 120
+  vars: 121
+  vars: 122
+  vars: 123
+  vars: 124
+  vars: 125
+  vars: 126
+  vars: 127
+  vars: 128
+  vars: 129
+  vars: 130
+  vars: 131
+  vars: 132
+  vars: 133
+  vars: 134
+  vars: 135
+  vars: 136
+  vars: 137
+  vars: 138
+  vars: 139
+  vars: 140
+  vars: 141
+  vars: 142
+  vars: 143
+  vars: 144
+  vars: 145
+  vars: 146
+  vars: 147
+  vars: 148
+  vars: 149
+  vars: 150
+  vars: 151
+  vars: 152
+  vars: 153
+  vars: 154
+  vars: 155
+  vars: 156
+  vars: 157
+  vars: 158
+  vars: 159
+  vars: 160
+  vars: 161
+  vars: 162
+  vars: 163
+  vars: 164
+  vars: 165
+  vars: 166
+  vars: 167
+  vars: 168
+  vars: 169
+  vars: 170
+  vars: 171
+  vars: 172
+  vars: 173
+  vars: 174
+  vars: 175
+  vars: 176
+  vars: 177
+  vars: 178
+  vars: 179
+  vars: 180
+  vars: 181
+  vars: 182
+  vars: 183
+  vars: 184
+  vars: 185
+  vars: 186
+  vars: 187
+  vars: 188
+  vars: 189
+  vars: 190
+  vars: 191
+  vars: 192
+  vars: 193
+  vars: 194
+  vars: 195
+  vars: 196
+  vars: 197
+  vars: 198
+  vars: 199
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 1
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 1
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+  values: 1
+  values: 0
+  values: 0
+  values: 0
+}
