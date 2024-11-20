@@ -1517,12 +1517,15 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
+  // How many shared tree workers to run?
+  const int num_shared_tree_workers = shared->shared_tree_manager->NumWorkers();
+
   // Add shared tree workers if asked.
-  if (params.shared_tree_num_workers() > 0 &&
+  if (num_shared_tree_workers >= 2 &&
       shared->model_proto.assumptions().empty()) {
     for (const SatParameters& local_params : RepeatParameters(
              name_filter.Filter({name_to_params.at("shared_tree")}),
-             params.shared_tree_num_workers())) {
+             num_shared_tree_workers)) {
       full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), shared));

@@ -88,7 +88,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(restart_dl_average_ratio);
   TEST_IS_FINITE(restart_lbd_average_ratio);
   TEST_IS_FINITE(shared_tree_open_leaves_per_worker);
-  TEST_IS_FINITE(shared_tree_worker_objective_split_probability);
   TEST_IS_FINITE(shaving_search_deterministic_time);
   TEST_IS_FINITE(strategy_change_increase_ratio);
   TEST_IS_FINITE(symmetry_detection_deterministic_time_limit);
@@ -103,7 +102,7 @@ std::string ValidateParameters(const SatParameters& params) {
   const int kMaxReasonableParallelism = 10'000;
   TEST_IN_RANGE(num_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(num_search_workers, 0, kMaxReasonableParallelism);
-  TEST_IN_RANGE(shared_tree_num_workers, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(shared_tree_num_workers, -1, kMaxReasonableParallelism);
   TEST_IN_RANGE(interleave_batch_size, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(shared_tree_open_leaves_per_worker, 1,
                 kMaxReasonableParallelism);
@@ -113,7 +112,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
-  TEST_IN_RANGE(shared_tree_worker_objective_split_probability, 0.0, 1.0);
 
   // Feasibility jump.
   TEST_NOT_NAN(feasibility_jump_decay);
