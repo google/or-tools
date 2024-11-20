@@ -34,8 +34,6 @@ config_setting(
     constraint_values = ["@platforms//os:windows"],
 )
 
-# ----- Routing and ArcRouting -----
-
 proto_library(
     name = "enums_proto",
     srcs = ["enums.proto"],
