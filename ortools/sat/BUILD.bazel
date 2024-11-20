@@ -3751,11 +3751,11 @@ cc_test(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
-        "//ortools/base:gmock_main",
+        "//ortools/base:fuzztest",
         "//ortools/base:path",
         "@bazel_tools//tools/cpp/runfiles",
         "@com_google_absl//absl/log:check",
-        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 

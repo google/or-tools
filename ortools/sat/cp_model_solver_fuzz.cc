@@ -14,8 +14,8 @@
 #include <string>
 
 #include "absl/log/check.h"
-#include "fuzztest/fuzztest.h"
-#include "gtest/gtest.h"        // IWYU pragma: keep
+#include "gtest/gtest.h"  // IWYU pragma: keep
+#include "ortools/base/fuzztest.h"
 #include "ortools/base/path.h"  // IWYU pragma: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -26,7 +26,8 @@ namespace operations_research::sat {
 namespace {
 
 std::string GetTestDataDir() {
-  return file::JoinPath(testing::SrcDir(), "_main/sat/fuzz_testdata");
+  return file::JoinPathRespectAbsolute(::testing::SrcDir(),
+                                       "_main/ortools/sat/fuzz_testdata");
 }
 
 void Solve(const CpModelProto& proto) {
@@ -59,9 +60,10 @@ void Solve(const CpModelProto& proto) {
 // Fuzzing repeats solve() 100 times, and timeout after 600s.
 // With a time limit of 4s, we should be fine.
 FUZZ_TEST(CpModelProtoFuzzer, Solve)
-    .WithDomains(fuzztest::Arbitrary<CpModelProto>())
-    .WithSeeds(
-        fuzztest::ReadFilesFromDirectory<CpModelProto>(GetTestDataDir()));
+    .WithDomains(/*proto:*/ fuzztest::Arbitrary<CpModelProto>())
+    .WithSeeds([]() {
+      return fuzztest::ReadFilesFromDirectory<CpModelProto>(GetTestDataDir());
+    });
 
 }  // namespace
 }  // namespace operations_research::sat
