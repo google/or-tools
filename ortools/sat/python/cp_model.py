@@ -3522,8 +3522,8 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")
 
-        value = 0
-        to_process = [(expression, 1)]
+        value: int = 0
+        to_process: list[tuple[LinearExprT, int]] = [(expression, 1)]
         while to_process:
             expr, coeff = to_process.pop()
             if isinstance(expr, IntegralTypes):
