@@ -3744,6 +3744,22 @@ cc_test(
 )
 
 cc_test(
+    name = "cp_model_solver_fuzz",
+    size = "large",
+    srcs = ["cp_model_solver_fuzz.cc"],
+    data = glob(["fuzz_testdata/*"]),
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_solver",
+        "//ortools/base:fuzztest",
+        "//ortools/base:path",
+        "@bazel_tools//tools/cpp/runfiles",
+        "@com_google_absl//absl/log:check",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
+
+cc_test(
     name = "flaky_models_test",
     size = "small",
     srcs = ["flaky_models_test.cc"],

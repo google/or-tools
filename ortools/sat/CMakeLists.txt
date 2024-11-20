@@ -13,6 +13,7 @@
 
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_fuzz.cc")
 list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/opb_reader.h
   ${CMAKE_CURRENT_SOURCE_DIR}/sat_cnf_reader.h
