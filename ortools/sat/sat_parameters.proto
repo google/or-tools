@@ -23,7 +23,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 304
+// NEXT TAG: 305
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1085,32 +1085,30 @@ message SatParameters {
   // TODO(user): Add reference to paper when published.
   optional double violation_ls_compound_move_probability = 259 [default = 0.5];
 
-  // Enables experimental workstealing-like shared tree search.
-  // If non-zero, start this many complete worker threads to explore a shared
+  // Enables shared tree search.
+  // If positive, start this many complete worker threads to explore a shared
   // search tree. These workers communicate objective bounds and simple decision
   // nogoods relating to the shared prefix of the tree, and will avoid exploring
   // the same subtrees as one another.
+  // Specifying a negative number uses a heuristic to select an appropriate
+  // number of shared tree workeres based on the total number of workers.
   optional int32 shared_tree_num_workers = 235 [default = 0];
 
   // Set on shared subtree workers. Users should not set this directly.
   optional bool use_shared_tree_search = 236 [default = false];
 
-  // After their assigned prefix, shared tree workers will branch on the
-  // objective with this probability. Higher numbers cause the shared tree
-  // search to focus on improving the lower bound over finding primal solutions.
-  optional double shared_tree_worker_objective_split_probability = 237
-      [default = 0.5];
-
-  // Minimum number of restarts before a worker will replace a subtree
+  // Minimum restarts before a worker will replace a subtree
   // that looks "bad" based on the average LBD of learned clauses.
   optional int32 shared_tree_worker_min_restarts_per_subtree = 282
       [default = 1];
 
   // If true, workers share more of the information from their local trail.
-  // Specifically, literals implied by the shared tree decisions and
-  // the longest conflict-free assignment from the last restart (to enable
-  // cross-worker phase-saving).
+  // Specifically, literals implied by the shared tree decisions.
   optional bool shared_tree_worker_enable_trail_sharing = 295 [default = true];
+
+  // If true, shared tree workers share their target phase when returning an
+  // assigned subtree for the next worker to use.
+  optional bool shared_tree_worker_enable_phase_sharing = 304 [default = true];
 
   // How many open leaf nodes should the shared tree maintain per worker.
   optional double shared_tree_open_leaves_per_worker = 281 [default = 2.0];
@@ -1119,7 +1117,7 @@ message SatParameters {
   // total number of nodes that may be generated in the shared tree. If the
   // shared tree runs out of unassigned leaves, workers act as portfolio
   // workers. Note: this limit includes interior nodes, not just leaves.
-  optional int32 shared_tree_max_nodes_per_worker = 238 [default = 100000];
+  optional int32 shared_tree_max_nodes_per_worker = 238 [default = 10000];
 
   enum SharedTreeSplitStrategy {
     // Uses the default strategy, currently equivalent to
