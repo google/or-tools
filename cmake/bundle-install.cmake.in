@@ -34,7 +34,7 @@ if (@BUILD_SCIP@)
   set(DEPS ${DEPS} libscip.lib)
 endif()
 if (@BUILD_GLPK@)
-  set(DEPS ${DEPS} libglpk.lib)
+  set(DEPS ${DEPS} *glpk.lib)
 endif()
 
 # Bundle all .lib into @PROJECT_NAME@_full.lib
