@@ -27,11 +27,7 @@
 
 namespace operations_research {
 
-#if defined(PROTOBUF_INTERNAL_IMPL)
 using google::protobuf::Message;
-#else
-using google::protobuf::Message;
-#endif
 
 // Some SolveWithProto() returns a StatusOr<MPModelResponse>, this utility
 // just convert bad absl::StatusOr to a proper error in MPModelResponse.
