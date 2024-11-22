@@ -22,6 +22,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -5051,30 +5052,68 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
     }
   }
 
-  // If the accessible part of the array is made of a single constant value,
-  // then we do not care about the index. And, because of the previous target
-  // domain reduction, the target is also fixed.
-  if (all_constants && context_->IsFixed(target)) {
-    context_->UpdateRuleStats("element: one value array");
-    return RemoveConstraint(ct);
-  }
-
-  // Special case when the index is boolean, and the array does not contain
-  // variables.
-  if (context_->MinOf(index) == 0 && context_->MaxOf(index) == 1 &&
-      all_constants) {
-    const int64_t v0 = context_->FixedValue(ct->element().exprs(0));
-    const int64_t v1 = context_->FixedValue(ct->element().exprs(1));
-
-    ConstraintProto* const eq = context_->working_model->add_constraints();
-    eq->mutable_linear()->add_domain(v0);
-    eq->mutable_linear()->add_domain(v0);
-    AddLinearExpressionToLinearConstraint(target, 1, eq->mutable_linear());
-    AddLinearExpressionToLinearConstraint(index, v0 - v1, eq->mutable_linear());
-    context_->CanonicalizeLinearConstraint(eq);
-    context_->UpdateNewConstraintsVariableUsage();
-    context_->UpdateRuleStats("element: linearize constant element of size 2");
-    return RemoveConstraint(ct);
+  // Detect is the element is of the form a * index_var + b.
+  if (all_constants) {
+    if (context_->IsFixed(target)) {
+      // If the accessible part of the array is made of a single constant
+      // value, then we do not care about the index. And, because of the
+      // previous target domain reduction, the target is also fixed.
+      context_->UpdateRuleStats("element: one value array");
+      return RemoveConstraint(ct);
+    }
+    std::optional<int64_t> first_index_var_value;
+    std::optional<int64_t> first_target_var_value;
+    std::optional<int64_t> slope;
+    bool is_affine = true;
+    const Domain& index_var_domain = context_->DomainOf(index_var);
+    for (const int64_t index_var_value : index_var_domain.Values()) {
+      const int64_t index_value =
+          AffineExpressionValueAt(index, index_var_value);
+      const int64_t expr_value =
+          context_->FixedValue(ct->element().exprs(index_value));
+      const int64_t target_var_value = GetInnerVarValue(target, expr_value);
+      if (!first_index_var_value.has_value()) {
+        first_index_var_value = index_var_value;
+        first_target_var_value = target_var_value;
+      } else if (!slope.has_value()) {
+        const int64_t delta_x = index_var_value - first_index_var_value.value();
+        const int64_t delta_y =
+            target_var_value - first_target_var_value.value();
+        if (delta_y % delta_x != 0) {  // not an integer slope.
+          is_affine = false;
+          break;
+        }
+        slope = delta_y / delta_x;
+      } else {  // Non constant.
+        const int64_t delta_x = index_var_value - first_index_var_value.value();
+        const int64_t delta_y =
+            target_var_value - first_target_var_value.value();
+        if (delta_y % delta_x != 0) {  // not an integer slope.
+          is_affine = false;
+          break;
+        }
+        if (slope.value() != delta_y / delta_x) {
+          is_affine = false;
+          break;
+        }
+      }
+    }
+    if (is_affine) {
+      DCHECK_NE(slope.value(), 0);
+      ConstraintProto* const lin = context_->working_model->add_constraints();
+      lin->mutable_linear()->add_vars(target.vars(0));
+      lin->mutable_linear()->add_coeffs(1);
+      lin->mutable_linear()->add_vars(index_var);
+      lin->mutable_linear()->add_coeffs(-slope.value());
+      const int64_t offset = first_target_var_value.value() -
+                             slope.value() * first_index_var_value.value();
+      lin->mutable_linear()->add_domain(offset);
+      lin->mutable_linear()->add_domain(offset);
+      context_->CanonicalizeLinearConstraint(lin);
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->UpdateRuleStats("element: rewrite as affine constraint");
+      return RemoveConstraint(ct);
+    }
   }
 
   // If a variable (target or index) appears only in this constraint, it does
@@ -7462,7 +7501,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
       for (const int ref : ct.enforcement_literal()) {
         clause.push_back(convert(ref).Negated());
       }
-      sat_solver->AddProblemClause(clause, /*is_safe=*/false);
+      sat_solver->AddProblemClause(clause);
 
       context_->working_model->mutable_constraints(i)->Clear();
       context_->UpdateConstraintVariableUsage(i);
@@ -7488,7 +7527,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
       clause.push_back(Literal(kNoLiteralIndex));  // will be replaced below.
       for (const int ref : ct.bool_and().literals()) {
         clause.back() = convert(ref);
-        sat_solver->AddProblemClause(clause, /*is_safe=*/false);
+        sat_solver->AddProblemClause(clause);
       }
 
       context_->working_model->mutable_constraints(i)->Clear();
