@@ -45,41 +45,8 @@ namespace operations_research {
 // subproblems in different threads.
 //
 
-// The preprocessor finds the elements that can only be covered by one subset.
-// Obviously, such subsets which are the only ones that can cover a given
-// element are chosen.
-
-// The consistency level is maintained up to kFreeAndUncovered.
-class Preprocessor {
- public:
-  explicit Preprocessor(absl::Nonnull<SetCoverInvariant*> inv)
-      : inv_(inv), num_columns_fixed_by_singleton_row_(0) {}
-
-  // Returns true if a solution was found.
-  // TODO(user): Add time-outs and exit with a partial solution. This seems
-  // unlikely, though.
-  bool NextSolution();
-
-  // Computes the next partial solution considering only the subsets whose
-  // indices are in focus.
-  bool NextSolution(absl::Span<const SubsetIndex> focus);
-
-  // Returns the number of columns that are the only one for a given row.
-  int num_columns_fixed_by_singleton_row() const {
-    return num_columns_fixed_by_singleton_row_;
-  }
-
- private:
-  // The data structure that will maintain the invariant for the model.
-  SetCoverInvariant* inv_;
-
-  // The number of columns that are the only one for a given row, i.e.
-  // the subsets that are unique in covering a particular element.
-  BaseInt num_columns_fixed_by_singleton_row_;
-};
-
 // An obvious idea is to take all the S_j's (or equivalently to set all the
-// x_j's to 1). It's a bit silly but fast, and we can improve on it later using
+// x_j's to 1). It's very silly but fast, and we can improve on it later using
 // local search.
 
 // The consistency level is maintained up to kFreeAndUncovered.

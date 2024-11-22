@@ -32,7 +32,7 @@ class SolutionCounter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
     @property
-    def solution_count(self) -> None:
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
@@ -57,13 +57,13 @@ class SolutionObjective(cp_model.CpSolverSolutionCallback):
 
     def __init__(self) -> None:
         cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__obj = 0
+        self.__obj: float = 0
 
     def on_solution_callback(self) -> None:
         self.__obj = self.objective_value
 
     @property
-    def obj(self) -> None:
+    def obj(self) -> float:
         return self.__obj
 
 
@@ -88,11 +88,11 @@ class RecordSolution(cp_model.CpSolverSolutionCallback):
             self.__bool_var_values.append(self.boolean_value(bool_var))
 
     @property
-    def int_var_values(self) -> None:
+    def int_var_values(self) -> list[int]:
         return self.__int_var_values
 
     @property
-    def bool_var_values(self) -> None:
+    def bool_var_values(self) -> list[bool]:
         return self.__bool_var_values
 
 
@@ -647,7 +647,10 @@ class CpModelTest(absltest.TestCase):
         print("testCircuit")
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
-        model.add_circuit((i, i + 1, x[i]) for i in range(5))
+        arcs: list[tuple[int, int, cp_model.LiteralT]] = [
+            (i, i + 1, x[i]) for i in range(5)
+        ]
+        model.add_circuit(arcs)
         self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].circuit.heads, 5)
@@ -659,7 +662,10 @@ class CpModelTest(absltest.TestCase):
         print("testMultipleCircuit")
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
-        model.add_multiple_circuit((i, i + 1, x[i]) for i in range(5))
+        arcs: list[tuple[int, int, cp_model.LiteralT]] = [
+            (i, i + 1, x[i]) for i in range(5)
+        ]
+        model.add_multiple_circuit(arcs)
         self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].routes.heads, 5)

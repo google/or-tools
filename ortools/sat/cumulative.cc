@@ -44,12 +44,20 @@ std::function<void(Model*)> Cumulative(
     const std::vector<AffineExpression>& demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper) {
   return [=](Model* model) mutable {
-    if (vars.empty()) return;
-
     auto* intervals = model->GetOrCreate<IntervalsRepository>();
     auto* encoder = model->GetOrCreate<IntegerEncoder>();
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+
+    if (!integer_trail->SafeEnqueue(capacity.GreaterOrEqual(0), {})) {
+      sat_solver->NotifyThatModelIsUnsat();
+    }
+    if (demands.empty()) {
+      // If there is no demand, since we already added a constraint that the
+      // capacity is not negative above, we can stop here.
+      return;
+    }
 
     // Redundant constraints to ensure that the resource capacity is high enough
     // for each task. Also ensure that no task consumes more resource than what

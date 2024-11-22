@@ -14,9 +14,9 @@ To begin, skim:
 
 ### Parameters
 
-*   [routing_parameters.proto](../routing/parameters.proto):
+*   [parameters.proto](../routing/parameters.proto):
     The Vehicle Routing solver parameters.
-*   [routing_enums.proto](../routing/enums.proto):
+*   [enums.proto](../routing/enums.proto):
     Enums used to define routing parameters.
 
 ### Solution

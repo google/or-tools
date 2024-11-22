@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_WORK_ASSIGNMENT_H_
 
 #include <stdint.h>
+#include <sys/stat.h>
 
 #include <array>
 #include <cmath>
@@ -58,6 +59,8 @@ class ProtoLiteral {
   ProtoLiteral Negated() const {
     return ProtoLiteral(NegatedRef(proto_var_), -lb_ + 1);
   }
+  int proto_var() const { return proto_var_; }
+  IntegerValue lb() const { return lb_; }
   bool operator==(const ProtoLiteral& other) const {
     return proto_var_ == other.proto_var_ && lb_ == other.lb_;
   }
@@ -69,8 +72,15 @@ class ProtoLiteral {
 
   // Note you should only decode integer literals at the root level.
   Literal Decode(CpModelMapping*, IntegerEncoder*) const;
+
+  // Enodes a literal as a ProtoLiteral. This can encode literals that occur in
+  // the proto model, and also integer bounds literals.
   static std::optional<ProtoLiteral> Encode(Literal, CpModelMapping*,
                                             IntegerEncoder*);
+
+  // As above, but will only encode literals that are boolean variables or their
+  // negations (i.e. not integer bounds literals).
+  static std::optional<ProtoLiteral> EncodeLiteral(Literal, CpModelMapping*);
 
  private:
   IntegerLiteral DecodeInteger(CpModelMapping*) const;
@@ -136,11 +146,15 @@ class ProtoTrail {
   absl::Span<const ProtoLiteral> Literals() const { return literals_; }
 
   const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
-  void SetPhase(absl::Span<const ProtoLiteral> phase) {
-    target_phase_.clear();
+  void ClearTargetPhase() { target_phase_.clear(); }
+  void SetPhase(const ProtoLiteral& lit) {
+    if (implication_level_.contains(lit)) return;
+    target_phase_.push_back(lit);
+  }
+  void SetTargetPhase(absl::Span<const ProtoLiteral> phase) {
+    ClearTargetPhase();
     for (const ProtoLiteral& lit : phase) {
-      if (implication_level_.contains(lit)) return;
-      target_phase_.push_back(lit);
+      SetPhase(lit);
     }
   }
 
@@ -203,12 +217,13 @@ class SharedTreeManager {
   }
 
  private:
-  // Because it is quite difficult to get a flat_hash_set to release memory,
+  // Because it is quite difficult to get a flat_hash_map to release memory,
   // we store info we need only for open nodes implications via a unique_ptr.
   // Note to simplify code, the root will always have a NodeTrailInfo after it
   // is closed.
   struct NodeTrailInfo {
-    absl::flat_hash_set<ProtoLiteral> implications;
+    // A map from literal to the best lower bound proven at this node.
+    absl::flat_hash_map<int, IntegerValue> implications;
     // This is only non-empty for nodes where all but one descendent is closed
     // (i.e. mostly leaves).
     std::vector<ProtoLiteral> phase;

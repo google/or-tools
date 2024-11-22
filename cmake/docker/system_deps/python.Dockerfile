@@ -32,7 +32,7 @@ RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test
 FROM env AS install_env
 WORKDIR /home/sample
 COPY --from=build /home/project/build/python/dist/*.whl .
-RUN python -m pip install *.whl
+RUN python -m pip install --break-system-packages *.whl
 
 FROM install_env AS install_devel
 COPY cmake/samples/python .

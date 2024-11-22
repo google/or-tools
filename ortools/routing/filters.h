@@ -1443,7 +1443,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   enum Status { UNKNOWN, ENABLED, DISABLED };
 
   virtual bool DisableFiltering() const { return false; }
-  virtual void OnBeforeSynchronizePaths() {}
+  virtual void OnBeforeSynchronizePaths(bool) {}
   virtual void OnAfterSynchronizePaths() {}
   virtual void OnSynchronizePathFromStart(int64_t) {}
   virtual bool InitializeAcceptPath() { return true; }

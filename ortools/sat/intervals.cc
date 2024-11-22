@@ -927,7 +927,7 @@ void SchedulingDemandHelper::InitDecomposedEnergies() {
 
 IntegerValue SchedulingDemandHelper::SimpleEnergyMin(int t) const {
   if (demands_.empty()) return kMinIntegerValue;
-  return DemandMin(t) * helper_->SizeMin(t);
+  return CapProdI(DemandMin(t), helper_->SizeMin(t));
 }
 
 IntegerValue SchedulingDemandHelper::LinearEnergyMin(int t) const {
@@ -951,7 +951,7 @@ IntegerValue SchedulingDemandHelper::DecomposedEnergyMin(int t) const {
 
 IntegerValue SchedulingDemandHelper::SimpleEnergyMax(int t) const {
   if (demands_.empty()) return kMaxIntegerValue;
-  return DemandMax(t) * helper_->SizeMax(t);
+  return CapProdI(DemandMax(t), helper_->SizeMax(t));
 }
 
 IntegerValue SchedulingDemandHelper::LinearEnergyMax(int t) const {
@@ -973,7 +973,7 @@ IntegerValue SchedulingDemandHelper::DecomposedEnergyMax(int t) const {
   return result;
 }
 
-void SchedulingDemandHelper::CacheAllEnergyValues() {
+bool SchedulingDemandHelper::CacheAllEnergyValues() {
   const int num_tasks = cached_energies_min_.size();
   const bool is_at_level_zero = sat_solver_->CurrentDecisionLevel() == 0;
   for (int t = 0; t < num_tasks; ++t) {
@@ -991,14 +991,16 @@ void SchedulingDemandHelper::CacheAllEnergyValues() {
 
     cached_energies_min_[t] = std::max(
         {SimpleEnergyMin(t), LinearEnergyMin(t), DecomposedEnergyMin(t)});
-    CHECK_NE(cached_energies_min_[t], kMinIntegerValue);
+    if (cached_energies_min_[t] <= kMinIntegerValue) return false;
     energy_is_quadratic_[t] =
         decomposed_energies_[t].empty() && !demands_.empty() &&
         !integer_trail_->IsFixed(demands_[t]) && !helper_->SizeIsFixed(t);
     cached_energies_max_[t] = std::min(
         {SimpleEnergyMax(t), LinearEnergyMax(t), DecomposedEnergyMax(t)});
-    CHECK_NE(cached_energies_max_[t], kMaxIntegerValue);
+    if (cached_energies_max_[t] >= kMaxIntegerValue) return false;
   }
+
+  return true;
 }
 
 IntegerValue SchedulingDemandHelper::DemandMin(int t) const {

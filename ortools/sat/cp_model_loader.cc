@@ -1540,9 +1540,15 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
     case 0: {
       auto* integer_trail = m->GetOrCreate<IntegerTrail>();
       auto* sat_solver = m->GetOrCreate<SatSolver>();
-      if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
-          !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
-        sat_solver->NotifyThatModelIsUnsat();
+      if (prod.IsConstant()) {
+        if (prod.constant.value() != 1) {
+          sat_solver->NotifyThatModelIsUnsat();
+        }
+      } else {
+        if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
+            !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
+          sat_solver->NotifyThatModelIsUnsat();
+        }
       }
       break;
     }

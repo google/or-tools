@@ -117,23 +117,6 @@ class SetCoverTest(absltest.TestCase):
             inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
         )
 
-    def test_preprocessor(self):
-        model = create_initial_cover_model()
-        self.assertTrue(model.compute_feasibility())
-
-        inv = set_cover.SetCoverInvariant(model)
-        preprocessor = set_cover.Preprocessor(inv)
-        self.assertTrue(preprocessor.next_solution())
-        self.assertTrue(
-            inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
-        )
-
-        greedy = set_cover.GreedySolutionGenerator(inv)
-        self.assertTrue(greedy.next_solution())
-        self.assertTrue(
-            inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
-        )
-
     def test_infeasible(self):
         model = set_cover.SetCoverModel()
         model.add_empty_subset(1.0)

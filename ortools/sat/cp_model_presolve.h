@@ -439,6 +439,7 @@ class ModelCopy {
 
   bool CopyElement(const ConstraintProto& ct);
   bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
+  bool CopyIntDiv(const ConstraintProto& ct, bool ignore_names);
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyLinearExpression(const LinearExpressionProto& expr,
                             LinearExpressionProto* dst);
@@ -450,7 +451,7 @@ class ModelCopy {
   // linear constraint between the start, size and end. This allow to simplify
   // the input proto and client side code.
   bool CopyInterval(const ConstraintProto& ct, int c, bool ignore_names);
-  void AddLinearConstraintForInterval(const ConstraintProto& ct);
+  bool AddLinearConstraintForInterval(const ConstraintProto& ct);
 
   // These function remove unperformed intervals. Note that they requires
   // interval to appear before (validated) as they test unperformed by testing

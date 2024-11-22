@@ -28,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
@@ -56,7 +57,7 @@ namespace sat {
 template <class Storage>
 class InclusionDetector {
  public:
-  explicit InclusionDetector(const Storage& storage, TimeLimit* time_limit)
+  InclusionDetector(const Storage& storage, TimeLimit* time_limit)
       : storage_(storage), time_limit_(time_limit) {}
 
   // Resets the class to an empty state.
@@ -124,24 +125,7 @@ class InclusionDetector {
   uint64_t work_done() const { return work_done_; }
   bool Stopped() const { return stop_; }
 
-  // Different API:
-  // 1/ Add all potential subset
-  // 2/ Call IndexAllSubsets()
-  // 3/ Call one or more time FindSubsets().
-  //    - process() can call StopProcessingCurrentSuperset() to abort early
-  //    - process() can call StopProcessingCurrentSubset() to never consider
-  //      that subset again.
-  // 4/ Call Stop() to reclaim some memory.
-  //
-  // Optimization: next_index_to_try is an index in superset that can be used
-  // to skip some position for which we already called FindSubsets().
-  void IndexAllSubsets();
-  void FindSubsets(absl::Span<const int> superset, int* next_index_to_try,
-                   const std::function<void(int subset)>& process);
-
  private:
-  uint64_t ComputeSignatureAndResizeVectors(absl::Span<const int> elements);
-
   // Allows to access the elements of each candidates via storage_[index];
   const Storage& storage_;
 
@@ -171,7 +155,6 @@ class InclusionDetector {
   uint64_t work_done_ = 0;
   uint64_t work_limit_ = std::numeric_limits<uint64_t>::max();
 
-  // Temporary data only used by DetectInclusions().
   bool stop_ = false;
   bool stop_with_current_subset_ = false;
   bool stop_with_current_superset_ = false;
@@ -181,9 +164,69 @@ class InclusionDetector {
   Bitset64<int> is_in_superset_;
 };
 
+// Similar API and purpose to InclusionDetector. But this one is a bit simpler
+// and faster if it fit your usage. This assume an initial given set of
+// potential subsets, that will be queried against supersets one by one.
+template <class Storage>
+class SubsetsDetector {
+ public:
+  SubsetsDetector(const Storage& storage, TimeLimit* time_limit)
+      : storage_(storage), time_limit_(time_limit) {}
+
+  void SetWorkLimit(uint64_t work_limit) { work_limit_ = work_limit; }
+  void StopProcessingCurrentSubset() { stop_with_current_subset_ = true; }
+  void StopProcessingCurrentSuperset() { stop_with_current_superset_ = true; }
+  void Stop() {
+    stop_ = true;
+    one_watcher_.clear();
+    is_in_superset_.resize(0);
+  }
+
+  uint64_t work_done() const { return work_done_; }
+  bool Stopped() const { return stop_; }
+
+  // Different API than InclusionDetector.
+  // 1/ Add all potential subset to the storage_.
+  // 2/ Call IndexAllStorageAsSubsets()
+  // 3/ Call one or more time FindSubsets().
+  //    - process() can call StopProcessingCurrentSuperset() to abort early
+  //    - process() can call StopProcessingCurrentSubset() to never consider
+  //      that subset again.
+  // 4/ Call Stop() to reclaim some memory.
+  //
+  // Optimization: next_index_to_try is an index in superset that can be used
+  // to skip some position for which we already called FindSubsets().
+  void IndexAllStorageAsSubsets();
+  void FindSubsets(absl::Span<const int> superset, int* next_index_to_try,
+                   const std::function<void(int subset)>& process);
+
+ private:
+  // Allows to access the elements of each subsets via storage_[index];
+  const Storage& storage_;
+
+  TimeLimit* time_limit_;
+  uint64_t work_done_ = 0;
+  uint64_t work_limit_ = std::numeric_limits<uint64_t>::max();
+
+  struct OneWatcherData {
+    int index;
+    int other_element;
+    uint64_t signature;
+  };
+
+  bool stop_ = false;
+  bool stop_with_current_subset_ = false;
+  bool stop_with_current_superset_ = false;
+  CompactVectorVector<int, OneWatcherData> one_watcher_;
+  Bitset64<int> is_in_superset_;
+};
+
 // Deduction guide.
 template <typename Storage>
 InclusionDetector(const Storage& storage) -> InclusionDetector<Storage>;
+
+template <typename Storage>
+SubsetsDetector(const Storage& storage) -> SubsetsDetector<Storage>;
 
 template <typename Storage>
 inline void InclusionDetector<Storage>::AddPotentialSet(int index) {
@@ -221,10 +264,9 @@ inline void InclusionDetector<Storage>::AddPotentialSuperset(int index) {
   candidates_.push_back({index, num_elements, /*order=*/2});
 }
 
-// Compute the signature and also resize vectors if needed. We want a
+// Compute the signature and the maximum element. We want a
 // signature that is order invariant and is compatible with inclusion.
-template <typename Storage>
-inline uint64_t InclusionDetector<Storage>::ComputeSignatureAndResizeVectors(
+inline std::pair<uint64_t, int> ComputeSignatureAndMaxElement(
     absl::Span<const int> elements) {
   uint64_t signature = 0;
   int max_element = 0;
@@ -233,12 +275,7 @@ inline uint64_t InclusionDetector<Storage>::ComputeSignatureAndResizeVectors(
     max_element = std::max(max_element, e);
     signature |= (int64_t{1} << (e & 63));
   }
-  DCHECK_EQ(is_in_superset_.size(), one_watcher_.size());
-  if (max_element >= is_in_superset_.size()) {
-    is_in_superset_.resize(max_element + 1);
-    one_watcher_.resize(max_element + 1);
-  }
-  return signature;
+  return {signature, max_element};
 }
 
 template <typename Storage>
@@ -264,7 +301,15 @@ inline void InclusionDetector<Storage>::DetectInclusions(
   for (const Candidate& candidate : candidates_) {
     const auto& candidate_elements = storage_[candidate.index];
     const int candidate_index = signatures_.size();
-    signatures_.push_back(ComputeSignatureAndResizeVectors(candidate_elements));
+
+    const auto [signature, max_element] =
+        ComputeSignatureAndMaxElement(candidate_elements);
+    signatures_.push_back(signature);
+    DCHECK_EQ(is_in_superset_.size(), one_watcher_.size());
+    if (max_element >= is_in_superset_.size()) {
+      is_in_superset_.resize(max_element + 1);
+      one_watcher_.resize(max_element + 1);
+    }
 
     stop_with_current_superset_ = false;
     if (candidate.CanBeSuperset()) {
@@ -376,48 +421,63 @@ inline void InclusionDetector<Storage>::DetectInclusions(
   Stop();
 }
 
-// TODO(user): Merge common code.
 template <typename Storage>
-inline void InclusionDetector<Storage>::IndexAllSubsets() {
-  if (num_potential_subsets_ == 0) return;
-
-  // Temp data must be ready to use.
+inline void SubsetsDetector<Storage>::IndexAllStorageAsSubsets() {
   stop_ = false;
-  DCHECK(signatures_.empty());
-  DCHECK(one_watcher_.empty());
 
-  // We don't really care about the order here.
+  // Flat representation of one_watcher_, we will fill it in one go from there.
+  std::vector<int> tmp_keys;
+  std::vector<OneWatcherData> tmp_values;
+  std::vector<int> element_to_num_watched;
+
   work_done_ = 0;
-  for (const Candidate& candidate : candidates_) {
-    const auto& candidate_elements = storage_[candidate.index];
-    const int candidate_index = signatures_.size();
-    signatures_.push_back(ComputeSignatureAndResizeVectors(candidate_elements));
+  for (int index = 0; index < storage_.size(); ++index) {
+    const auto& subset = storage_[index];
+    CHECK_GE(subset.size(), 2);
 
-    // Add new subset candidate to the watchers.
-    //
-    // Tricky: If this was also a superset and has been removed, we don't want
-    // to watch it!
-    if (candidate.CanBeSubset()) {
-      // Choose to watch the one with smallest list.
-      int best_choice = -1;
-      work_done_ += candidate.size;
-      if (work_done_ > work_limit_) return Stop();
-      for (const int e : candidate_elements) {
-        DCHECK_GE(e, 0);
-        DCHECK_LT(e, one_watcher_.size());
-        if (best_choice == -1 ||
-            one_watcher_[e].size() < one_watcher_[best_choice].size()) {
-          best_choice = e;
-        }
-      }
-      DCHECK_NE(best_choice, -1);
-      one_watcher_[best_choice].push_back(candidate_index);
+    const auto [signature, max_element] = ComputeSignatureAndMaxElement(subset);
+    if (max_element >= is_in_superset_.size()) {
+      is_in_superset_.resize(max_element + 1);
     }
+    if (max_element >= element_to_num_watched.size()) {
+      element_to_num_watched.resize(max_element + 1);
+    }
+
+    // Choose to watch the one with smallest list so far.
+    int best_choice = -1;
+    int best_value = -1;
+    int second_choice = -1;
+    int second_value = -1;
+    work_done_ += subset.size();
+    if (work_done_ > work_limit_) return Stop();
+    for (const int e : subset) {
+      DCHECK_GE(e, 0);
+      DCHECK_LT(e, element_to_num_watched.size());
+      const int value = element_to_num_watched[e];
+      if (value >= best_value) {
+        second_choice = best_choice;
+        second_value = best_value;
+        best_choice = e;
+        best_value = value;
+      } else if (value > second_value) {
+        second_choice = e;
+        second_value = value;
+      }
+    }
+    DCHECK_NE(best_choice, -1);
+    DCHECK_NE(second_choice, -1);
+    DCHECK_NE(best_choice, second_choice);
+
+    element_to_num_watched[best_choice]++;
+    tmp_keys.push_back(best_choice);
+    tmp_values.push_back({index, second_choice, signature});
   }
+
+  one_watcher_.ResetFromFlatMapping(tmp_keys, tmp_values);
 }
 
 template <typename Storage>
-inline void InclusionDetector<Storage>::FindSubsets(
+inline void SubsetsDetector<Storage>::FindSubsets(
     absl::Span<const int> superset, int* next_index_to_try,
     const std::function<void(int subset)>& process) {
   // We check each time our work_done_ has increased by more than this.
@@ -426,8 +486,11 @@ inline void InclusionDetector<Storage>::FindSubsets(
 
   // Compute the signature and also resize vector if needed. We want a
   // signature that is order invariant and is compatible with inclusion.
-  const uint64_t superset_signature =
-      ComputeSignatureAndResizeVectors(superset);
+  const auto [superset_signature, max_element] =
+      ComputeSignatureAndMaxElement(superset);
+  if (max_element >= is_in_superset_.size()) {
+    is_in_superset_.resize(max_element + 1);
+  }
 
   // Find any subset included in current superset.
   work_done_ += 2 * superset.size();
@@ -446,26 +509,36 @@ inline void InclusionDetector<Storage>::FindSubsets(
 
   stop_with_current_superset_ = false;
   const auto is_in_superset_view = is_in_superset_.const_view();
-  const auto signatures_view = signatures_.data();
   for (; *next_index_to_try < superset.size(); ++*next_index_to_try) {
     const int superset_e = superset[*next_index_to_try];
-    for (int i = 0; i < one_watcher_[superset_e].size(); ++i) {
-      const int c_index = one_watcher_[superset_e][i];
-      const Candidate& subset = candidates_[c_index];
+    if (superset_e >= one_watcher_.size()) continue;
+    auto cached_span = one_watcher_[superset_e];
+    for (int i = 0; i < cached_span.size(); ++i) {
+      ++work_done_;
 
-      // Quick check with size and signature.
-      if (subset.size > superset.size()) continue;
-      if ((signatures_view[c_index] & ~superset_signature) != 0) continue;
+      // Do a bunch of quick checks. The second one is optimized for size 2
+      // which happens a lot in our usage of merging clique with implications.
+      const auto [subset_index, other_e, subset_signature] = cached_span[i];
+      if ((subset_signature & ~superset_signature) != 0) continue;
+      if (!is_in_superset_view[other_e]) continue;
 
       // Long check with bitset.
+      const absl::Span<const int> subset = storage_[subset_index];
+      if (subset.size() > superset.size()) continue;
+
+      // TODO(user): Technically we do not need to check the watched position or
+      // the "other element" position, we could do that by permuting them first
+      // or last and iterating on a subspan. However, in many slow situation, we
+      // have millions of size 2 sets, and the time is dominated by the first
+      // check.
       bool is_included = true;
-      work_done_ += subset.size;
+      work_done_ += subset.size();
       if (work_done_ > work_limit_) return Stop();
       if (work_done_ > next_time_limit_check) {
         if (time_limit_->LimitReached()) return Stop();
         next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
       }
-      for (const int subset_e : storage_[subset.index]) {
+      for (const int subset_e : subset) {
         if (!is_in_superset_view[subset_e]) {
           is_included = false;
           break;
@@ -474,8 +547,10 @@ inline void InclusionDetector<Storage>::FindSubsets(
       if (!is_included) continue;
 
       stop_with_current_subset_ = false;
-      process(subset.index);
+      process(subset_index);
 
+      // TODO(user): Remove this and the more complex API need once we move
+      // class.
       if (stop_) return;
       if (work_done_ > work_limit_) return Stop();
       if (work_done_ > next_time_limit_check) {
@@ -484,9 +559,8 @@ inline void InclusionDetector<Storage>::FindSubsets(
       }
 
       if (stop_with_current_subset_) {
-        // Remove from the watcher list.
-        std::swap(one_watcher_[superset_e][i], one_watcher_[superset_e].back());
-        one_watcher_[superset_e].pop_back();
+        one_watcher_.RemoveBySwap(superset_e, i);
+        cached_span.remove_suffix(1);
         --i;
       }
       if (stop_with_current_superset_) break;

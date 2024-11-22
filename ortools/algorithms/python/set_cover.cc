@@ -19,7 +19,6 @@
 #include <memory>
 #include <vector>
 
-#include "absl/base/nullability.h"
 #include "ortools/algorithms/set_cover_heuristics.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -38,7 +37,6 @@ using ::operations_research::GreedySolutionGenerator;
 using ::operations_research::GuidedLocalSearch;
 using ::operations_research::GuidedTabuSearch;
 using ::operations_research::LazyElementDegreeSolutionGenerator;
-using ::operations_research::Preprocessor;
 using ::operations_research::RandomSolutionGenerator;
 using ::operations_research::ReadBeasleySetCoverProblem;
 using ::operations_research::ReadRailSetCoverProblem;
@@ -350,20 +348,6 @@ PYBIND11_MODULE(set_cover, m) {
            &SetCoverInvariant::ImportSolutionFromProto);
 
   // set_cover_heuristics.h
-  py::class_<Preprocessor>(m, "Preprocessor")
-      .def(py::init<absl::Nonnull<SetCoverInvariant*>>())
-      .def("next_solution",
-           [](Preprocessor& heuristic) -> bool {
-             return heuristic.NextSolution();
-           })
-      .def("next_solution",
-           [](Preprocessor& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
-             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
-           })
-      .def("num_columns_fixed_by_singleton_row",
-           &Preprocessor::num_columns_fixed_by_singleton_row);
-
   py::class_<TrivialSolutionGenerator>(m, "TrivialSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
       .def("next_solution",

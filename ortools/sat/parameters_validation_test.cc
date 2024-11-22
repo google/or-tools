@@ -62,8 +62,8 @@ TEST(ValidateParameters, LinearizationLevel) {
 
 TEST(ValidateParameters, NumSharedTreeSearchWorkers) {
   SatParameters params;
-  params.set_shared_tree_num_workers(-1);
-  EXPECT_THAT(ValidateParameters(params), HasSubstr("should be in [0,10000]"));
+  params.set_shared_tree_num_workers(-2);
+  EXPECT_THAT(ValidateParameters(params), HasSubstr("should be in [-1,10000]"));
 }
 
 TEST(ValidateParameters, SharedTreeSearchMaxNodesPerWorker) {

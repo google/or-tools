@@ -539,6 +539,38 @@ TEST(SharedTreeManagerTest, CloseTreeTest) {
   EXPECT_EQ(trail2.MaxLevel(), 1);
   EXPECT_EQ(trail2.Decision(1), ProtoLiteral(0, 1));
 }
+
+TEST(SharedTreeManagerTest, TrailSharing) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  auto bool_phase_var = model_builder.NewBoolVar();
+  model_builder.AddLessOrEqual(int_var, 6)
+      .OnlyEnforceIf({bool_var, bool_phase_var});
+  model_builder.Maximize(int_var + bool_phase_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(4);
+  params.set_shared_tree_num_workers(4);
+  params.set_cp_model_presolve(false);
+  model.Add(NewSatParameters(params));
+  LoadVariables(model_builder.Build(), false, &model);
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+
+  ProtoTrail trail1, trail2;
+  shared_tree_manager->ProposeSplit(trail1, ProtoLiteral(0, 1));
+  trail1.AddImplication(1, ProtoLiteral(1, 1));
+  trail1.AddImplication(1, ProtoLiteral(1, 3));
+  shared_tree_manager->SyncTree(trail1);
+  trail1.SetPhase(ProtoLiteral(2, 1));
+  shared_tree_manager->ReplaceTree(trail1);
+  shared_tree_manager->ReplaceTree(trail2);
+
+  EXPECT_EQ(trail2.Implications(1).size(), 1);
+  EXPECT_EQ(trail2.TargetPhase().size(), 1);
+  EXPECT_TRUE(trail1.Implications(1).empty());
+  EXPECT_TRUE(trail1.TargetPhase().empty());
+}
 // TODO(user): Test objective propagation.
 }  // namespace
 }  // namespace sat

@@ -14,7 +14,7 @@ COPY . .
 FROM devel AS build
 RUN cmake -version
 RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
-RUN cmake --build build --target all -v
+RUN OPENSSL_ENABLE_SHA1_SIGNATURES=1 cmake --build build --target all -v
 RUN cmake --build build --target install -v
 
 FROM build AS test

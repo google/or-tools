@@ -216,6 +216,19 @@ cc_library(
 )
 
 cc_library(
+    name = "fuzztest",
+    testonly = 1,
+    hdrs = ["fuzztest.h"],
+    deps = [
+        "@com_google_absl//absl/log:check",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:googletest_fixture_adapter",
+        "@com_google_fuzztest//fuzztest:init_fuzztest",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
     name = "status_matchers",
     hdrs = ["status_matchers.h"],
     deps = [

@@ -5785,7 +5785,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   // thus to check whether a graph is fully connected we must check also the
   // size of the unique component.
   const bool is_fully_connected =
-      components.size() == 1 && components[0].size() == active_boxes.size();
+      (components.size() == 1 && components[0].size() == active_boxes.size()) ||
+      (active_boxes.size() <= 1);
   if (!is_fully_connected) {
     for (const absl::Span<int> boxes : components) {
       if (boxes.size() <= 1) continue;
@@ -7307,11 +7308,17 @@ void CpModelPresolver::Probe() {
     }
     const int64_t num_old_cliques = cliques.size();
 
+    // We adapt the limit if there is a lot of literals in amo/implications.
+    // Usually we can have big reduction on large problem so it seems
+    // worthwhile.
+    double limit = context_->params().merge_at_most_one_work_limit();
+    if (num_literals_before > 1e6) {
+      limit *= num_literals_before / 1e6;
+    }
+
     double dtime = 0.0;
-    implication_graph->MergeAtMostOnes(
-        absl::MakeSpan(cliques),
-        SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()),
-        &dtime);
+    implication_graph->MergeAtMostOnes(absl::MakeSpan(cliques),
+                                       SafeDoubleToInt64(limit), &dtime);
     timer.AddToWork(dtime);
 
     // Note that because TransformIntoMaxCliques() extend cliques, we are ok
@@ -7345,10 +7352,11 @@ void CpModelPresolver::Probe() {
 
     if (num_old_cliques != num_new_cliques ||
         num_literals_before != num_literals_after) {
-      timer.AddMessage(absl::StrCat("Merged ", num_old_cliques, "(",
-                                    num_literals_before, " literals) into ",
-                                    num_new_cliques, "(", num_literals_after,
-                                    " literals) at_most_ones. "));
+      timer.AddMessage(absl::StrCat(
+          "Merged ", FormatCounter(num_old_cliques), "(",
+          FormatCounter(num_literals_before), " literals) into ",
+          FormatCounter(num_new_cliques), "(",
+          FormatCounter(num_literals_after), " literals) at_most_ones. "));
     }
   }
 }
@@ -12335,6 +12343,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kIntProd:
         if (!CopyIntProd(ct, ignore_names)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kIntDiv:
+        if (!CopyIntDiv(ct, ignore_names)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kElement:
         if (!CopyElement(ct)) return CreateUnsatModel(c, ct);
         break;
@@ -12356,7 +12367,8 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kInterval:
         if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel(c, ct);
         if (first_copy) {
-          AddLinearConstraintForInterval(ct);
+          if (!AddLinearConstraintForInterval(ct))
+            return CreateUnsatModel(c, ct);
         }
         break;
       case ConstraintProto::kNoOverlap:
@@ -12383,6 +12395,8 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       default: {
         ConstraintProto* new_ct = context_->working_model->add_constraints();
         *new_ct = ct;
+        new_ct->mutable_enforcement_literal()->Clear();
+        FinishEnforcementCopy(new_ct);
         if (ignore_names) {
           // TODO(user): find a better way than copy then clear_name()?
           new_ct->clear_name();
@@ -12874,7 +12888,20 @@ bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
   return true;
 }
 
-void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
+bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (!ignore_names) {
+    new_ct->set_name(ct.name());
+  }
+  for (const LinearExpressionProto& expr : ct.int_div().exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_int_div()->add_exprs());
+  }
+  CopyLinearExpression(ct.int_div().target(),
+                       new_ct->mutable_int_div()->mutable_target());
+  return true;
+}
+
+bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
   // Add the linear constraint enforcement => (start + size == end).
   //
   // We rely on the presolve for simplification, but deal with the trivial
@@ -12897,7 +12924,7 @@ void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
-    CopyLinear(tmp_constraint_);
+    if (!CopyLinear(tmp_constraint_)) return false;
   }
 
   // An enforced interval must have is size non-negative.
@@ -12910,8 +12937,10 @@ void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     tmp_constraint_.mutable_linear()->add_domain(-size_expr.offset());
     tmp_constraint_.mutable_linear()->add_domain(
         std::numeric_limits<int64_t>::max());
-    CopyLinear(tmp_constraint_);
+    if (!CopyLinear(tmp_constraint_)) return false;
   }
+
+  return true;
 }
 
 void ModelCopy::CopyAndMapNoOverlap(const ConstraintProto& ct) {
@@ -12953,7 +12982,7 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   // Note that we don't copy names or enforcement_literal (not supported) here.
   auto* new_ct =
       context_->working_model->add_constraints()->mutable_cumulative();
-  *new_ct->mutable_capacity() = ct.cumulative().capacity();
+  CopyLinearExpression(ct.cumulative().capacity(), new_ct->mutable_capacity());
 
   const int num_intervals = ct.cumulative().intervals().size();
   new_ct->mutable_intervals()->Reserve(num_intervals);
