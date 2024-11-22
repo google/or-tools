@@ -57,7 +57,6 @@ namespace sat {
 SatSolver::SatSolver() : SatSolver(new Model()) {
   owned_model_.reset(model_);
   model_->Register<SatSolver>(this);
-  logger_ = model_->GetOrCreate<SolverLogger>();
 }
 
 SatSolver::SatSolver(Model* model)
@@ -161,7 +160,7 @@ bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
 
   // Let filter clauses if we are at level zero
   if (trail_->CurrentDecisionLevel() == 0) {
-    return AddProblemClause(literals, /*is_safe=*/false);
+    return AddProblemClause(literals);
   }
 
   const int index = trail_->Index();
@@ -201,47 +200,36 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
   return AddProblemClause({a, b, c});
 }
 
-// Note(user): we assume there is no duplicate literals in the clauses added
-// here if is_safe is true. Most of the code works, but some advanced algo might
-// be wrong/suboptimal if this is the case. So even when presolve is off we need
-// some "cleanup" to enforce this invariant. Alternatively we could have robut
-// algo in all the stack, but that seems a worse design.
-bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
-                                 bool is_safe) {
+// Note that we will do a bit of presolve here, which might not always be
+// necessary if we know we are already adding a "clean" clause with no
+// duplicates or literal equivalent to others. However, we found that it is
+// better to make sure we always have "clean" clause in the solver rather than
+// to over-optimize this. In particular, presolve might be disabled or
+// incomplete, so such unclean clause might find their way here.
+bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
+  DCHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
 
-  // Filter already assigned literals.
-  if (CurrentDecisionLevel() == 0) {
-    literals_scratchpad_.clear();
-    for (const Literal l : literals) {
-      if (trail_->Assignment().LiteralIsTrue(l)) return true;
-      if (trail_->Assignment().LiteralIsFalse(l)) continue;
-      literals_scratchpad_.push_back(l);
-    }
-  } else {
-    literals_scratchpad_.assign(literals.begin(), literals.end());
+  // Filter already assigned literals. Note that we also remap literal in case
+  // we discovered equivalence later in the search.
+  literals_scratchpad_.clear();
+  for (Literal l : literals) {
+    l = binary_implication_graph_->RepresentativeOf(l);
+    if (trail_->Assignment().LiteralIsTrue(l)) return true;
+    if (trail_->Assignment().LiteralIsFalse(l)) continue;
+    literals_scratchpad_.push_back(l);
   }
 
-  if (!is_safe) {
-    gtl::STLSortAndRemoveDuplicates(&literals_scratchpad_);
-    for (int i = 0; i + 1 < literals_scratchpad_.size(); ++i) {
-      if (literals_scratchpad_[i] == literals_scratchpad_[i + 1].Negated()) {
-        return true;
-      }
+  // A clause with l and not(l) is trivially true.
+  gtl::STLSortAndRemoveDuplicates(&literals_scratchpad_);
+  for (int i = 0; i + 1 < literals_scratchpad_.size(); ++i) {
+    if (literals_scratchpad_[i] == literals_scratchpad_[i + 1].Negated()) {
+      return true;
     }
   }
 
-  if (!AddProblemClauseInternal(literals_scratchpad_)) return false;
-
-  // Tricky: The PropagationIsDone() condition shouldn't change anything for a
-  // pure SAT problem, however in the CP-SAT context, calling Propagate() can
-  // tigger computation (like the LP) even if no domain changed since the last
-  // call. We do not want to do that.
-  if (!PropagationIsDone() && !Propagate()) {
-    return SetModelUnsat();
-  }
-  return true;
+  return AddProblemClauseInternal(literals_scratchpad_);
 }
 
 bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
@@ -278,6 +266,13 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
     }
   }
 
+  // Tricky: The PropagationIsDone() condition shouldn't change anything for a
+  // pure SAT problem, however in the CP-SAT context, calling Propagate() can
+  // tigger computation (like the LP) even if no domain changed since the last
+  // call. We do not want to do that.
+  if (!PropagationIsDone() && !Propagate()) {
+    return SetModelUnsat();
+  }
   return true;
 }
 

@@ -1027,7 +1027,7 @@ int RegisterClausesLevelZeroImport(int id,
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddBinaryClause(l1, l2)) {
+      if (!sat_solver->AddProblemClause({l1, l2})) {
         return false;
       }
     }

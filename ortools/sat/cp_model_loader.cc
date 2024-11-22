@@ -776,7 +776,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
           // TODO(user): It should be safe otherwise the exactly_one will have
           // duplicate literal, but I am not sure that if presolve is off we can
           // assume that.
-          sat_solver->AddProblemClause(clause, /*is_safe=*/false);
+          sat_solver->AddProblemClause(clause);
         }
       }
       if (need_extra_propagation) {
@@ -1011,7 +1011,7 @@ void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
-  sat_solver->AddProblemClause(literals, /*is_safe=*/false);
+  sat_solver->AddProblemClause(literals);
   if (literals.size() == 3) {
     m->GetOrCreate<ProductDetector>()->ProcessTernaryClause(literals);
   }
@@ -1026,7 +1026,7 @@ void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
     literals.push_back(literal);
-    sat_solver->AddProblemClause(literals, /*is_safe=*/false);
+    sat_solver->AddProblemClause(literals);
     literals.pop_back();
   }
 }

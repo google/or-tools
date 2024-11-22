@@ -110,16 +110,21 @@ class SatSolver {
   bool AddBinaryClause(Literal a, Literal b);
   bool AddTernaryClause(Literal a, Literal b, Literal c);
 
-  // Adds a clause to the problem. Returns false if the problem is detected to
-  // be UNSAT.
-  // If is_safe is false, we will do some basic presolving like removing
-  // duplicate literals.
+  // Adds a clause to the problem.
+  // Returns false if the problem is detected to be UNSAT.
   //
-  // TODO(user): Rename this to AddClause(), also get rid of the specialized
+  // This must only be called at level zero, use AddClauseDuringSearch() for
+  // adding clause at a positive level.
+  //
+  // We call this a "problem" clause just because we will never delete such
+  // clause unless it is proven to always be satisfied. So this can be called
+  // with the initial clause of a problem, but also infered clause that we
+  // don't want to delete.
+  //
+  // TODO(user): Rename this to AddClause() ? Also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
   // just end up calling this?
-  bool AddProblemClause(absl::Span<const Literal> literals,
-                        bool is_safe = true);
+  bool AddProblemClause(absl::Span<const Literal> literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
@@ -941,8 +946,7 @@ inline std::function<void(Model*)> AtMostOneConstraint(
 inline std::function<void(Model*)> ClauseConstraint(
     absl::Span<const Literal> literals) {
   return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddProblemClause(literals,
-                                                      /*is_safe=*/false);
+    model->GetOrCreate<SatSolver>()->AddProblemClause(literals);
   };
 }
 
