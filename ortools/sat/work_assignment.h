@@ -102,6 +102,8 @@ class ProtoLiteral {
 // implications may be propagated.
 class ProtoTrail {
  public:
+  ProtoTrail();
+
   // Adds a new assigned level to the trail.
   void PushLevel(const ProtoLiteral& decision, IntegerValue objective_lb,
                  int node_id);
@@ -147,18 +149,25 @@ class ProtoTrail {
 
   const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
   void ClearTargetPhase() { target_phase_.clear(); }
-  void SetPhase(const ProtoLiteral& lit) {
-    if (implication_level_.contains(lit)) return;
-    target_phase_.push_back(lit);
+  // Appends a literal to the target phase, returns false if the phase is full.
+  bool AddPhase(const ProtoLiteral& lit) {
+    if (target_phase_.size() >= kMaxPhaseSize) return false;
+    if (!implication_level_.contains(lit)) {
+      target_phase_.push_back(lit);
+    }
+    return true;
   }
   void SetTargetPhase(absl::Span<const ProtoLiteral> phase) {
     ClearTargetPhase();
     for (const ProtoLiteral& lit : phase) {
-      SetPhase(lit);
+      if (!AddPhase(lit)) break;
     }
   }
 
  private:
+  // 256 ProtoLiterals take up 4KiB
+  static constexpr int kMaxPhaseSize = 256;
+
   std::vector<ProtoLiteral>& MutableImplications(int level) {
     return implications_[level - 1];
   }
@@ -335,14 +344,11 @@ class SharedTreeWorker {
   LevelZeroCallbackHelper* level_zero_callbacks_;
   RevIntRepository* reversible_int_repository_;
 
-  int64_t num_restarts_ = 0;
   int64_t num_trees_ = 0;
 
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
   std::vector<std::vector<Literal>> assigned_tree_implications_;
-  // How many restarts had happened when the current tree was assigned?
-  int64_t tree_assignment_restart_ = -1;
 
   // True if the last decision may split the assigned tree and has not yet been
   // proposed to the SharedTreeManager.
