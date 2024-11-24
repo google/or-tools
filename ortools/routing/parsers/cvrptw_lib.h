@@ -20,6 +20,8 @@
 #include <functional>
 #include <memory>
 #include <random>
+#include <string>
+#include <vector>
 
 #include "ortools/base/strong_vector.h"
 #include "ortools/routing/routing.h"

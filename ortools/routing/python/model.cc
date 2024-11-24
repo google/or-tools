@@ -16,6 +16,7 @@
 #include <functional>
 #include <iterator>
 #include <utility>
+#include <vector>
 
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
