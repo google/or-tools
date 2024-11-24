@@ -159,6 +159,8 @@ std::optional<ProtoLiteral> ProtoLiteral::EncodeLiteral(
   return result;
 }
 
+ProtoTrail::ProtoTrail() { target_phase_.reserve(kMaxPhaseSize); }
+
 void ProtoTrail::PushLevel(const ProtoLiteral& decision,
                            IntegerValue objective_lb, int node_id) {
   CHECK_GT(node_id, 0);
@@ -791,8 +793,8 @@ bool SharedTreeWorker::SyncWithSharedTree() {
   if (ShouldReplaceSubtree()) {
     ++num_trees_;
     VLOG(2) << parameters_->name() << " acquiring tree #" << num_trees_
-            << " after " << num_restarts_ - tree_assignment_restart_
-            << " restarts prev depth: " << assigned_tree_.MaxLevel()
+            << " after " << restart_policy_->NumRestarts() << " restarts"
+            << " prev depth: " << assigned_tree_.MaxLevel()
             << " target: " << assigned_tree_lbds_.WindowAverage()
             << " lbd: " << restart_policy_->LbdAverageSinceReset();
     if (parameters_->shared_tree_worker_enable_phase_sharing() &&
@@ -804,11 +806,10 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         // workers.
         auto encoded = ProtoLiteral::EncodeLiteral(lit, mapping_);
         if (!encoded.has_value()) continue;
-        assigned_tree_.SetPhase(*encoded);
+        if (!assigned_tree_.AddPhase(*encoded)) break;
       }
     }
     manager_->ReplaceTree(assigned_tree_);
-    tree_assignment_restart_ = num_restarts_;
     assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
     restart_policy_->Reset();
     if (parameters_->shared_tree_worker_enable_phase_sharing()) {
@@ -854,9 +855,8 @@ SatSolver::Status SharedTreeWorker::Search(
       return sat_solver_->UnsatStatus();
     }
     if (heuristics_->restart_policies[heuristics_->policy_index]()) {
-      ++num_restarts_;
-      heuristics_->policy_index =
-          num_restarts_ % heuristics_->decision_policies.size();
+      heuristics_->policy_index = restart_policy_->NumRestarts() %
+                                  heuristics_->decision_policies.size();
       sat_solver_->Backtrack(0);
     }
     if (!SyncWithLocalTrail()) return sat_solver_->UnsatStatus();
