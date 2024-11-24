@@ -23,6 +23,6 @@ plotly==5.15.0
 jupyterlab==4.2.5
 notebook==7.2.2
 jupyter-server==2.14.2
-tornado==6.4.1
+tornado==6.4.2
 Pygments==2.15.0
 jsonschema==4.19.0
