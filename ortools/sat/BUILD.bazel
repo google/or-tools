@@ -191,6 +191,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":diffn_util",
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:types",

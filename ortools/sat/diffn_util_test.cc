@@ -483,6 +483,22 @@ TEST(RectangleTest, BasicTest) {
             Rectangle({.x_min = 1, .x_max = 2, .y_min = 1, .y_max = 2}));
 }
 
+TEST(RectangleTest, LineAndPointWorksTest) {
+  const Rectangle vertical_line = {
+      .x_min = 1, .x_max = 1, .y_min = 0, .y_max = 10};
+  const Rectangle r1 = {.x_min = 0, .x_max = 3, .y_min = 1, .y_max = 3};
+  EXPECT_FALSE(vertical_line.IsDisjoint(r1));
+
+  const Rectangle horizontal_line = {
+      .x_min = 0, .x_max = 10, .y_min = 2, .y_max = 2};
+  EXPECT_FALSE(vertical_line.IsDisjoint(horizontal_line));
+
+  const Rectangle point = {.x_min = 1, .x_max = 1, .y_min = 2, .y_max = 2};
+  EXPECT_FALSE(r1.IsDisjoint(point));
+
+  EXPECT_TRUE(horizontal_line.IsDisjoint(point));
+}
+
 TEST(RectangleTest, RandomRegionDifferenceTest) {
   absl::BitGen random;
   const int64_t size = 20;

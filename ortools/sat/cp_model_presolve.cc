@@ -22,7 +22,6 @@
 #include <limits>
 #include <memory>
 #include <numeric>
-#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -5056,7 +5055,7 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
     }
   }
 
-  // Detect is the element is of the form a * index_var + b.
+  // Detect is the element can be rewritten as a * target + b * index == c.
   if (all_constants) {
     if (context_->IsFixed(target)) {
       // If the accessible part of the array is made of a single constant
@@ -5065,58 +5064,55 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
       context_->UpdateRuleStats("element: one value array");
       return RemoveConstraint(ct);
     }
-    std::optional<int64_t> first_index_var_value;
-    std::optional<int64_t> first_target_var_value;
-    std::optional<int64_t> slope;
+    int64_t first_index_var_value;
+    int64_t first_target_var_value;
+    int64_t d_index = 0;
+    int64_t d_target = 0;
+    int num_terms = 0;
     bool is_affine = true;
     const Domain& index_var_domain = context_->DomainOf(index_var);
     for (const int64_t index_var_value : index_var_domain.Values()) {
+      ++num_terms;
       const int64_t index_value =
           AffineExpressionValueAt(index, index_var_value);
       const int64_t expr_value =
           context_->FixedValue(ct->element().exprs(index_value));
       const int64_t target_var_value = GetInnerVarValue(target, expr_value);
-      if (!first_index_var_value.has_value()) {
+      if (num_terms == 1) {
         first_index_var_value = index_var_value;
         first_target_var_value = target_var_value;
-      } else if (!slope.has_value()) {
-        const int64_t delta_x = index_var_value - first_index_var_value.value();
-        const int64_t delta_y =
-            target_var_value - first_target_var_value.value();
-        if (delta_y % delta_x != 0) {  // not an integer slope.
-          is_affine = false;
-          break;
-        }
-        slope = delta_y / delta_x;
-      } else {  // Non constant.
-        const int64_t delta_x = index_var_value - first_index_var_value.value();
-        const int64_t delta_y =
-            target_var_value - first_target_var_value.value();
-        if (delta_y % delta_x != 0) {  // not an integer slope.
-          is_affine = false;
-          break;
-        }
-        if (slope.value() != delta_y / delta_x) {
+      } else if (num_terms == 2) {
+        d_index = index_var_value - first_index_var_value;
+        d_target = target_var_value - first_target_var_value;
+        const int64_t gcd = std::gcd(d_index, d_target);
+        d_index /= gcd;
+        d_target /= gcd;
+      } else {
+        const int64_t offset = CapSub(
+            CapProd(d_index, CapSub(target_var_value, first_target_var_value)),
+            CapProd(d_target, CapSub(index_var_value, first_index_var_value)));
+        if (offset != 0) {
           is_affine = false;
           break;
         }
       }
     }
     if (is_affine) {
-      DCHECK_NE(slope.value(), 0);
-      ConstraintProto* const lin = context_->working_model->add_constraints();
-      lin->mutable_linear()->add_vars(target.vars(0));
-      lin->mutable_linear()->add_coeffs(1);
-      lin->mutable_linear()->add_vars(index_var);
-      lin->mutable_linear()->add_coeffs(-slope.value());
-      const int64_t offset = first_target_var_value.value() -
-                             slope.value() * first_index_var_value.value();
-      lin->mutable_linear()->add_domain(offset);
-      lin->mutable_linear()->add_domain(offset);
-      context_->CanonicalizeLinearConstraint(lin);
-      context_->UpdateNewConstraintsVariableUsage();
-      context_->UpdateRuleStats("element: rewrite as affine constraint");
-      return RemoveConstraint(ct);
+      const int64_t offset = CapSub(CapProd(first_target_var_value, d_index),
+                                    CapProd(first_index_var_value, d_target));
+      if (!AtMinOrMaxInt64(offset)) {
+        ConstraintProto* const lin = context_->working_model->add_constraints();
+        lin->mutable_linear()->add_vars(target.vars(0));
+        lin->mutable_linear()->add_coeffs(d_index);
+        lin->mutable_linear()->add_vars(index_var);
+        lin->mutable_linear()->add_coeffs(-d_target);
+        lin->mutable_linear()->add_domain(offset);
+        lin->mutable_linear()->add_domain(offset);
+        context_->CanonicalizeLinearConstraint(lin);
+        context_->UpdateNewConstraintsVariableUsage();
+        context_->UpdateRuleStats("element: rewrite as affine constraint");
+        return RemoveConstraint(ct);
+      }
     }
   }
 

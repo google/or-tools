@@ -58,6 +58,8 @@ struct Rectangle {
 
   bool IsDisjoint(const Rectangle& other) const;
 
+  // The methods below are not meant to be used with zero-area rectangles.
+
   // Returns an empty rectangle if no intersection.
   Rectangle Intersect(const Rectangle& other) const;
   IntegerValue IntersectArea(const Rectangle& other) const;
