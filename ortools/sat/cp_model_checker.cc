@@ -33,6 +33,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -1414,24 +1415,12 @@ class ConstraintChecker {
     return true;
   }
 
-  bool IntervalsAreDisjoint(const IntervalConstraintProto& interval1,
-                            const IntervalConstraintProto& interval2) {
-    return IntervalEnd(interval1) <= IntervalStart(interval2) ||
-           IntervalEnd(interval2) <= IntervalStart(interval1);
-  }
-
-  bool IntervalIsEmpty(const IntervalConstraintProto& interval) {
-    return IntervalStart(interval) == IntervalEnd(interval);
-  }
-
   bool NoOverlap2DConstraintIsFeasible(const CpModelProto& model,
                                        const ConstraintProto& ct) {
     const auto& arg = ct.no_overlap_2d();
     // Those intervals from arg.x_intervals and arg.y_intervals where both
     // the x and y intervals are enforced.
-    std::vector<std::pair<const IntervalConstraintProto* const,
-                          const IntervalConstraintProto* const>>
-        enforced_intervals_xy;
+    std::vector<Rectangle> enforced_rectangles;
     {
       const int num_intervals = arg.x_intervals_size();
       CHECK_EQ(arg.y_intervals_size(), num_intervals);
@@ -1439,24 +1428,20 @@ class ConstraintChecker {
         const ConstraintProto& x = model.constraints(arg.x_intervals(i));
         const ConstraintProto& y = model.constraints(arg.y_intervals(i));
         if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y)) {
-          enforced_intervals_xy.push_back({&x.interval(), &y.interval()});
+          enforced_rectangles.push_back({.x_min = IntervalStart(x.interval()),
+                                         .x_max = IntervalEnd(x.interval()),
+                                         .y_min = IntervalStart(y.interval()),
+                                         .y_max = IntervalEnd(y.interval())});
         }
       }
     }
-    const int num_enforced_intervals = enforced_intervals_xy.size();
+    const int num_enforced_intervals = enforced_rectangles.size();
     for (int i = 0; i < num_enforced_intervals; ++i) {
       for (int j = i + 1; j < num_enforced_intervals; ++j) {
-        const auto& xi = *enforced_intervals_xy[i].first;
-        const auto& yi = *enforced_intervals_xy[i].second;
-        const auto& xj = *enforced_intervals_xy[j].first;
-        const auto& yj = *enforced_intervals_xy[j].second;
-        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
-          VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
-                  << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
-                  << IntervalEnd(yi) << "]) and " << j << "(x=["
-                  << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
-                  << IntervalStart(yj) << ", " << IntervalEnd(yj)
-                  << "]) are not disjoint.";
+        if (!enforced_rectangles[i].IsDisjoint(enforced_rectangles[j])) {
+          VLOG(1) << "Rectangles " << i << "(" << enforced_rectangles[i] << ", "
+                  << enforced_rectangles[i].x_max << ") and " << j << "("
+                  << enforced_rectangles[j] << ") are not disjoint.";
           return false;
         }
       }
