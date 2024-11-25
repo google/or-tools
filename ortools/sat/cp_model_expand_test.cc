@@ -92,6 +92,29 @@ TEST(ReservoirExpandTest, NoOptionalAndInitiallyFeasible) {
   EXPECT_EQ(27, solutions.size());
 }
 
+TEST(ReservoirExpandTest, SimpleSemaphore) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 10 }
+    variables { domain: 0 domain: 10 }
+    variables { domain: 0 domain: 1 }
+    constraints {
+      reservoir {
+        max_level: 2
+        time_exprs { vars: 0 coeffs: 1 }
+        time_exprs { vars: 1 coeffs: 1 }
+        active_literals: [ 2, 2 ]
+        level_changes { offset: -1 }
+        level_changes { offset: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+  EXPECT_EQ(187, solutions.size());
+}
+
 TEST(ReservoirExpandTest, GizaReport) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 10 }

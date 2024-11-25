@@ -603,14 +603,18 @@ class PresolveContext {
            hint_[var] == (RefIsPositive(lit) ? value : !value);
   }
 
+  // If the given literal is already hinted, updates its hint.
+  // Otherwise do nothing.
   void UpdateLiteralSolutionHint(int lit, bool value) {
-    UpdateSolutionHint(PositiveRef(lit), RefIsPositive(lit) ? value : !value);
+    UpdateSolutionHint(PositiveRef(lit), RefIsPositive(lit) == value ? 1 : 0);
   }
 
-  // Updates the hint of an existing variable with an existing hint.
+  // If the given variable is already hinted, updates its hint value.
+  // Otherwise, do nothing.
   void UpdateSolutionHint(int var, int64_t value) {
-    CHECK(hint_is_loaded_);
-    CHECK(hint_has_value_[var]);
+    DCHECK(RefIsPositive(var));
+    if (!hint_is_loaded_) return;
+    if (!hint_has_value_[var]) return;
     hint_[var] = value;
   }
 

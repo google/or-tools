@@ -106,6 +106,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(interleave_batch_size, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(shared_tree_open_leaves_per_worker, 1,
                 kMaxReasonableParallelism);
+  TEST_IN_RANGE(shared_tree_balance_tolerance, 0,
+                log2(kMaxReasonableParallelism));
 
   // TODO(user): Consider using annotations directly in the proto for these
   // validation. It is however not open sourced.

@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1383,6 +1384,19 @@ void ScanModelForDualBoundStrengthening(
 }
 
 namespace {
+std::optional<int64_t> GetRefSolutionHint(const PresolveContext& context,
+                                          int ref) {
+  const int var = PositiveRef(ref);
+  if (!context.VarHasSolutionHint(var)) return std::nullopt;
+  const int64_t var_hint = context.SolutionHint(var);
+  return RefIsPositive(ref) ? var_hint : -var_hint;
+}
+
+void SetRefSolutionHint(PresolveContext& context, int ref, int hint) {
+  context.UpdateSolutionHint(PositiveRef(ref),
+                             RefIsPositive(ref) ? hint : -hint);
+}
+
 // Decrements the solution hint of `lit` and increments the solution hint of
 // `dominating_lit` if both hint values are present and equal to 1 and 0,
 // respectively.
@@ -1392,6 +1406,55 @@ void MaybeUpdateLiteralHintFromDominance(PresolveContext& context, int lit,
       context.LiteralSolutionHintIs(dominating_lit, false)) {
     context.UpdateLiteralSolutionHint(lit, false);
     context.UpdateLiteralSolutionHint(dominating_lit, true);
+  }
+}
+
+// Decrements the solution hint of `ref` by the minimum amount necessary to be
+// in `domain`, and increments the solution hint of one or more
+// `dominating_variables` by the same total amount. Does nothing if a hint is
+// missing or if it is not possible to increment the hint of the dominating
+// variables by the amount subtracted from the hint of the dominated variable.
+//
+// The lower bound of `domain` must be the lower bound of `ref`'s current domain
+// in `context`.
+void MaybeUpdateRefHintFromDominance(
+    PresolveContext& context, int ref, const Domain& domain,
+    const absl::Span<const IntegerVariable> dominating_variables) {
+  const std::optional<int64_t> ref_hint = GetRefSolutionHint(context, ref);
+  if (!ref_hint.has_value()) return;
+  // The quantity to subtract from the solution hint of `ref`.
+  const int64_t ref_hint_delta = *ref_hint - domain.ClosestValue(*ref_hint);
+  // If it is 0 there is nothing to do. It might be negative if the solution
+  // hint is not initially feasible (in which case we can't fix it).
+  if (ref_hint_delta <= 0) return;
+
+  // First step: check that the hint of the dominating variable(s) can be
+  // incremented by ref_hint_delta (possibly spread over multiple variables),
+  // and store the new hint values in `new_ref_hint_value_pairs`.
+  std::vector<std::pair<int, int64_t>> new_ref_hint_value_pairs;
+  new_ref_hint_value_pairs.push_back({ref, *ref_hint - ref_hint_delta});
+  int64_t remaining_delta = ref_hint_delta;
+  for (const IntegerVariable ivar : dominating_variables) {
+    const int dominating_ref = VarDomination::IntegerVariableToRef(ivar);
+    const std::optional<int64_t> dominating_ref_hint =
+        GetRefSolutionHint(context, dominating_ref);
+    if (!dominating_ref_hint.has_value()) continue;
+    const int64_t delta =
+        context.DomainOf(dominating_ref)
+            .ClosestValue(*dominating_ref_hint + remaining_delta) -
+        *dominating_ref_hint;
+    // This might happen if the solution hint is not initially feasible.
+    if (delta < 0) continue;
+    new_ref_hint_value_pairs.push_back(
+        {dominating_ref, *dominating_ref_hint + delta});
+    remaining_delta -= delta;
+    if (remaining_delta == 0) break;
+  }
+  if (remaining_delta != 0) return;
+
+  // Second step: actually update the hints.
+  for (const auto& [ref, hint] : new_ref_hint_value_pairs) {
+    SetRefSolutionHint(context, ref, hint);
   }
 }
 
@@ -1668,7 +1731,10 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         const int64_t lb = context->MinOf(current_ref);
         if (delta + coeff_magnitude > slack) {
           context->UpdateRuleStats("domination: fixed to lb.");
-          if (!context->IntersectDomainWith(current_ref, Domain(lb))) {
+          const Domain reduced_domain = Domain(lb);
+          MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
+                                          dominated_by);
+          if (!context->IntersectDomainWith(current_ref, reduced_domain)) {
             return false;
           }
 
@@ -1699,7 +1765,10 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         }
         if (new_ub < context->MaxOf(current_ref)) {
           context->UpdateRuleStats("domination: reduced ub.");
-          if (!context->IntersectDomainWith(current_ref, Domain(lb, new_ub))) {
+          const Domain reduced_domain = Domain(lb, new_ub);
+          MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
+                                          dominated_by);
+          if (!context->IntersectDomainWith(current_ref, reduced_domain)) {
             return false;
           }
 
@@ -1807,8 +1876,14 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             increase_is_forbidden[var] = true;
             context->UpdateRuleStats(
                 "domination: dual strenghtening using dominance");
-            if (!context->IntersectDomainWith(
-                    ref, Domain(context->MinOf(ref), lb))) {
+            const Domain reduced_domain = Domain(context->MinOf(ref), lb);
+            const std::optional<int64_t> ref_hint =
+                GetRefSolutionHint(*context, ref);
+            if (ref_hint.has_value()) {
+              SetRefSolutionHint(*context, ref,
+                                 reduced_domain.ClosestValue(*ref_hint));
+            }
+            if (!context->IntersectDomainWith(ref, reduced_domain)) {
               return false;
             }
 
