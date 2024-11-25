@@ -169,8 +169,8 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
   context->UpdateRuleStats("reservoir: expanded using circuit.");
 }
 
-void ExpandReservoirUsingPrecedences(int64_t sum_of_positive_demand,
-                                     int64_t sum_of_negative_demand,
+void ExpandReservoirUsingPrecedences(bool max_level_is_constraining,
+                                     bool min_level_is_constraining,
                                      ConstraintProto* reservoir_ct,
                                      PresolveContext* context) {
   const ReservoirConstraintProto& reservoir = reservoir_ct->reservoir();
@@ -192,23 +192,21 @@ void ExpandReservoirUsingPrecedences(int64_t sum_of_positive_demand,
 
     // No need for some constraints if the reservoir is just constrained in
     // one direction.
-    if (demand_i > 0 && sum_of_positive_demand <= reservoir.max_level()) {
-      continue;
-    }
-    if (demand_i < 0 && sum_of_negative_demand >= reservoir.min_level()) {
-      continue;
-    }
+    if (demand_i > 0 && !max_level_is_constraining) continue;
+    if (demand_i < 0 && !min_level_is_constraining) continue;
 
-    ConstraintProto* new_ct = context->working_model->add_constraints();
-    LinearConstraintProto* new_linear = new_ct->mutable_linear();
-
-    // Add contributions from previous events.
+    ConstraintProto* new_cumul = context->working_model->add_constraints();
+    LinearConstraintProto* new_linear = new_cumul->mutable_linear();
     int64_t offset = 0;
+
+    // Add contributions from events that happened at time_j <= time_i.
     const LinearExpressionProto& time_i = reservoir.time_exprs(i);
     for (int j = 0; j < num_events; ++j) {
       if (i == j) continue;
       const int active_j = is_active_literal(j);
       if (context->LiteralIsFalse(active_j)) continue;
+      const int64_t demand_j = context->FixedValue(reservoir.level_changes(j));
+      if (demand_j == 0) continue;
 
       // Get or create the literal equivalent to
       // active_i && active_j && time[j] <= time[i].
@@ -218,18 +216,8 @@ void ExpandReservoirUsingPrecedences(int64_t sum_of_positive_demand,
       const LinearExpressionProto& time_j = reservoir.time_exprs(j);
       const int j_lesseq_i = context->GetOrCreateReifiedPrecedenceLiteral(
           time_j, time_i, active_j, active_i);
-      context->working_model->mutable_variables(j_lesseq_i)
-          ->set_name(absl::StrCat(j, " before ", i));
-
-      const int64_t demand = context->FixedValue(reservoir.level_changes(j));
-      if (RefIsPositive(j_lesseq_i)) {
-        new_linear->add_vars(j_lesseq_i);
-        new_linear->add_coeffs(demand);
-      } else {
-        new_linear->add_vars(NegatedRef(j_lesseq_i));
-        new_linear->add_coeffs(-demand);
-        offset -= demand;
-      }
+      AddWeightedLiteralToLinearConstraint(j_lesseq_i, demand_j, new_linear,
+                                           &offset);
     }
 
     // Add contribution from event i.
@@ -237,25 +225,21 @@ void ExpandReservoirUsingPrecedences(int64_t sum_of_positive_demand,
     // TODO(user): Alternatively we can mark the whole constraint as enforced
     // only if active_i is true. Experiments with both version, right now we
     // miss enough benchmarks to conclude.
-    if (RefIsPositive(active_i)) {
-      new_linear->add_vars(active_i);
-      new_linear->add_coeffs(demand_i);
-    } else {
-      new_linear->add_vars(NegatedRef(active_i));
-      new_linear->add_coeffs(-demand_i);
-      offset -= demand_i;
-    }
+    AddWeightedLiteralToLinearConstraint(active_i, demand_i, new_linear,
+                                         &offset);
 
     // Note that according to the sign of demand_i, we only need one side.
+    // We apply the offset here to make sure we use int64_t min and max.
     if (demand_i > 0) {
       new_linear->add_domain(std::numeric_limits<int64_t>::min());
-      new_linear->add_domain(reservoir.max_level());
+      new_linear->add_domain(reservoir.max_level() - offset);
     } else {
-      new_linear->add_domain(reservoir.min_level());
+      new_linear->add_domain(reservoir.min_level() - offset);
       new_linear->add_domain(std::numeric_limits<int64_t>::max());
     }
 
-    context->CanonicalizeLinearConstraint(new_ct);
+    // Canonicalize the newly created constraint.
+    context->CanonicalizeLinearConstraint(new_cumul);
   }
 
   reservoir_ct->Clear();
@@ -367,9 +351,10 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
   } else {
     // This one is the faster option usually.
     if (all_demands_are_fixed) {
-      ExpandReservoirUsingPrecedences(sum_of_positive_demand,
-                                      sum_of_negative_demand, reservoir_ct,
-                                      context);
+      ExpandReservoirUsingPrecedences(
+          sum_of_positive_demand > reservoir_ct->reservoir().max_level(),
+          sum_of_negative_demand < reservoir_ct->reservoir().min_level(),
+          reservoir_ct, context);
     } else {
       context->UpdateRuleStats(
           "reservoir: skipped expansion due to variable demands");

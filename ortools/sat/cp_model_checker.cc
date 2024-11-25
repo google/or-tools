@@ -1720,7 +1720,7 @@ class ConstraintChecker {
       current_level += delta.second;
       if (current_level < min_level || current_level > max_level) {
         VLOG(1) << "Reservoir level " << current_level
-                << " is out of bounds at time" << delta.first;
+                << " is out of bounds at time: " << delta.first;
         return false;
       }
     }

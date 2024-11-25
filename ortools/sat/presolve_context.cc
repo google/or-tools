@@ -2319,7 +2319,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   if (!LiteralIsTrue(active_i)) {
     AddImplication(result, active_i);
   }
-  if (!LiteralIsTrue(active_j)) {
+  if (!LiteralIsTrue(active_j) && active_i != active_j) {
     AddImplication(result, active_j);
   }
 
@@ -2341,7 +2341,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
     if (!LiteralIsTrue(active_i)) {
       greater->add_enforcement_literal(active_i);
     }
-    if (!LiteralIsTrue(active_j)) {
+    if (!LiteralIsTrue(active_j) && active_i != active_j) {
       greater->add_enforcement_literal(active_j);
     }
     CanonicalizeLinearConstraint(greater);

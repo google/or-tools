@@ -13,8 +13,6 @@
 
 #include "ortools/sat/var_domination.h"
 
-#include <string>
-
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
@@ -226,6 +224,9 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(NegationOf(Y)));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
   EXPECT_EQ(context.SolutionHint(0), 0);
@@ -272,6 +273,9 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(NegationOf(X)), ElementsAre(Y));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[1]");
   EXPECT_EQ(context.SolutionHint(0), 1);
@@ -315,10 +319,70 @@ TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.SolutionHint(0), 0);
   EXPECT_EQ(context.SolutionHint(1), 1);
+}
+
+// Objective: min(X + Y + 2Z)
+// Constraint: X + Y + Z <= 10
+// X, Y in [-10, 10], Z in [5, 10]
+//
+// Doing (X++, Z--) or (Y++, Z--) is always beneficial if possible.
+TEST(VarDominationTest, ExploitDominanceWithIntegerVariables) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ 5, 10 ]
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1, 2 ]
+      coeffs: [ 1, 1, 2 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 1, 1, 8 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  const IntegerVariable Z = VarDomination::RefToIntegerVariable(2);
+  EXPECT_THAT(var_dom.DominatingVariables(Z), ElementsAre(X, Y));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[-5]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0,10]");
+  EXPECT_EQ(context.DomainOf(2).ToString(), "[5]");
+  EXPECT_EQ(context.SolutionHint(0), -5);
+  EXPECT_EQ(context.SolutionHint(1), 10);
+  EXPECT_EQ(context.SolutionHint(2), 5);
 }
 
 // Objective: min(X + 2Y)
@@ -367,6 +431,70 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.SolutionHint(0), 1);
   EXPECT_EQ(context.SolutionHint(1), 0);
+}
+
+// Objective: min(X)
+// Constraint: -5 <= X + Y <= 5
+// Constraint: -15 <= Y + Z <= 15
+// X,Y in [-10, 10], Z in [-5, 5]
+//
+// Doing (X--, Y++) is always beneficial if possible.
+TEST(VarDominationTest, ExploitRemainingDominanceWithIntegerVariables) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ -5, 5 ]
+    }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ 1 ]
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ -5, 5 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ 1, 1 ]
+        domain: [ -15, 15 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 1, 2 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,-5]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[5,10]");
+  EXPECT_EQ(context.DomainOf(2).ToString(), "[5]");
+  EXPECT_EQ(context.SolutionHint(0), -5);
+  EXPECT_EQ(context.SolutionHint(1), 6);
+  EXPECT_EQ(context.SolutionHint(2), 5);
 }
 
 // X + Y + Z = 0

@@ -643,6 +643,20 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
   }
 }
 
+void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
+                                          LinearConstraintProto* linear,
+                                          int64_t* offset) {
+  if (coeff == 0) return;
+  if (RefIsPositive(lit)) {
+    linear->add_vars(lit);
+    linear->add_coeffs(coeff);
+  } else {
+    linear->add_vars(NegatedRef(lit));
+    linear->add_coeffs(-coeff);
+    *offset += coeff;
+  }
+}
+
 bool SafeAddLinearExpressionToLinearConstraint(
     const LinearExpressionProto& expr, int64_t coefficient,
     LinearConstraintProto* linear) {

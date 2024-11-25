@@ -237,6 +237,13 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
                                            int64_t coefficient,
                                            LinearConstraintProto* linear);
 
+// Same as above, but with a single term (lit, coeff). Note that lit can be
+// negative. The offset is relative to the linear expression (and should be
+// negated when added to the rhs of the linear constraint proto).
+void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
+                                          LinearConstraintProto* linear,
+                                          int64_t* offset);
+
 // Same method, but returns if the addition was possible without overflowing.
 bool SafeAddLinearExpressionToLinearConstraint(
     const LinearExpressionProto& expr, int64_t coefficient,

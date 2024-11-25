@@ -458,6 +458,7 @@ TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
   params.set_cp_model_presolve(false);
   params.set_shared_tree_split_strategy(
       SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
+  params.set_shared_tree_balance_tolerance(0);
   model.Add(NewSatParameters(params));
   LoadVariables(model_builder.Build(), false, &model);
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();
@@ -493,6 +494,7 @@ TEST(SharedTreeManagerTest, BalancedSplitTest) {
   params.set_cp_model_presolve(false);
   params.set_shared_tree_split_strategy(
       SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
+  params.set_shared_tree_balance_tolerance(0);
   model.Add(NewSatParameters(params));
   LoadVariables(model_builder.Build(), false, &model);
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();

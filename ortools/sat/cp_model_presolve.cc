@@ -444,7 +444,11 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
       return MarkConstraintAsFalse(ct);
     }
     if (context_->VariableIsUniqueAndRemovable(literal)) {
+      // This is a "dual" reduction.
       changed = true;
+      context_->UpdateRuleStats(
+          "bool_and: setting unused literal in rhs to true");
+      context_->UpdateLiteralSolutionHint(literal, true);
       if (!context_->SetLiteralToTrue(literal)) return true;
       continue;
     }
@@ -6879,8 +6883,8 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
       (num_positives == 0 || num_negatives == 0)) {
     // If all level_changes have the same sign, and if the initial state is
     // always feasible, we do not care about the order, just the sum.
-    auto* const sum =
-        context_->working_model->add_constraints()->mutable_linear();
+    auto* const sum_ct = context_->working_model->add_constraints();
+    auto* const sum = sum_ct->mutable_linear();
     int64_t fixed_contrib = 0;
     for (int i = 0; i < proto.level_changes_size(); ++i) {
       const int64_t demand = context_->FixedValue(proto.level_changes(i));
@@ -6898,6 +6902,7 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
     }
     sum->add_domain(proto.min_level() - fixed_contrib);
     sum->add_domain(proto.max_level() - fixed_contrib);
+    CanonicalizeLinear(sum_ct);
     context_->UpdateRuleStats("reservoir: converted to linear");
     return RemoveConstraint(ct);
   }

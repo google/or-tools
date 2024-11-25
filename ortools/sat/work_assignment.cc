@@ -342,7 +342,8 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     // TODO(user): Need to write up the shape this creates.
     // This rule will allow twice as many leaves in the preferred subtree.
     if (discrepancy + path.MaxLevel() >
-        MaxAllowedDiscrepancyPlusDepth(num_desired_leaves)) {
+        MaxAllowedDiscrepancyPlusDepth(num_desired_leaves) +
+            params_.shared_tree_balance_tolerance()) {
       VLOG(2) << "Too high discrepancy to accept split";
       return;
     }
@@ -356,7 +357,8 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     }
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_BALANCED_TREE) {
-    if (path.MaxLevel() + 1 > log2(num_desired_leaves)) {
+    if (path.MaxLevel() + 1 >
+        log2(num_desired_leaves) + params_.shared_tree_balance_tolerance()) {
       VLOG(2) << "Tree too unbalanced to accept split";
       return;
     }
