@@ -591,7 +591,9 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     model_.mutable_constraints(ct)->add_enforcement_literal(condition);
   }
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
-    parameters_.set_max_time_in_seconds(absl::ToDoubleSeconds(duration_limit));
+    const double max_time = absl::ToDoubleSeconds(duration_limit);
+    if (max_time <= 0.0) return DimensionSchedulingStatus::INFEASIBLE;
+    parameters_.set_max_time_in_seconds(max_time);
     VLOG(2) << ProtobufDebugString(model_);
     if (hint_.vars_size() == model_.variables_size()) {
       *model_.mutable_solution_hint() = hint_;
@@ -600,6 +602,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     model.Add(sat::NewSatParameters(parameters_));
     response_ = sat::SolveCpModel(model_, &model);
     VLOG(2) << response_;
+    DCHECK_NE(response_.status(), sat::CpSolverStatus::MODEL_INVALID);
     if (response_.status() == sat::CpSolverStatus::OPTIMAL ||
         (response_.status() == sat::CpSolverStatus::FEASIBLE &&
          !model_.has_floating_point_objective())) {
