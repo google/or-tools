@@ -564,7 +564,7 @@ TEST(SharedTreeManagerTest, TrailSharing) {
   trail1.AddImplication(1, ProtoLiteral(1, 1));
   trail1.AddImplication(1, ProtoLiteral(1, 3));
   shared_tree_manager->SyncTree(trail1);
-  trail1.SetPhase(ProtoLiteral(2, 1));
+  trail1.AddPhase(ProtoLiteral(2, 1));
   shared_tree_manager->ReplaceTree(trail1);
   shared_tree_manager->ReplaceTree(trail2);
 
