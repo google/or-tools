@@ -141,6 +141,11 @@ bool TryEdgeRectanglePropagator::Propagate() {
 
   PopulateActiveBoxRanges();
 
+  // Our algo is quadratic, so we don't want to run it on really large problems.
+  if (changed_item_.size() > 1000) {
+    return true;
+  }
+
   // If a mandatory region is changed, we need to replace any cached box that
   // now became overlapping with it.
   for (const int mandatory_idx : changed_mandatory_) {
@@ -157,11 +162,6 @@ bool TryEdgeRectanglePropagator::Propagate() {
     return true;
   }
   gtl::STLSortAndRemoveDuplicates(&changed_item_);
-
-  // Our algo is quadratic, so we don't want to run it on really large problems.
-  if (changed_item_.size() > 1000) {
-    return true;
-  }
 
   potential_x_positions_.clear();
   potential_y_positions_.clear();

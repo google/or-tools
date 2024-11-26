@@ -753,6 +753,98 @@ void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
   LogFinalStatistics(shared);
 }
 
+bool VarIsFixed(const CpModelProto& model_proto, int i) {
+  return model_proto.variables(i).domain_size() == 2 &&
+         model_proto.variables(i).domain(0) ==
+             model_proto.variables(i).domain(1);
+}
+
+// Returns false if there is a complete solution hint that is infeasible, or
+// true otherwise.
+bool TestSolutionHintForFeasibility(const CpModelProto& model_proto,
+                                    SolverLogger* logger = nullptr,
+                                    SharedResponseManager* manager = nullptr) {
+  if (!model_proto.has_solution_hint()) return true;
+
+  int num_active_variables = 0;
+  int num_hinted_variables = 0;
+  for (int var = 0; var < model_proto.variables_size(); ++var) {
+    if (VarIsFixed(model_proto, var)) continue;
+    ++num_active_variables;
+  }
+
+  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+    const int ref = model_proto.solution_hint().vars(i);
+    if (VarIsFixed(model_proto, PositiveRef(ref))) continue;
+    ++num_hinted_variables;
+  }
+  CHECK_LE(num_hinted_variables, num_active_variables);
+
+  if (num_active_variables != num_hinted_variables) {
+    if (logger != nullptr) {
+      SOLVER_LOG(
+          logger, "The solution hint is incomplete: ", num_hinted_variables,
+          " out of ", num_active_variables, " non fixed variables hinted.");
+    }
+    return true;
+  }
+
+  std::vector<int64_t> solution(model_proto.variables_size(), 0);
+  // Pre-assign from fixed domains.
+  for (int var = 0; var < model_proto.variables_size(); ++var) {
+    if (VarIsFixed(model_proto, var)) {
+      solution[var] = model_proto.variables(var).domain(0);
+    }
+  }
+
+  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+    const int ref = model_proto.solution_hint().vars(i);
+    const int var = PositiveRef(ref);
+    const int64_t value = model_proto.solution_hint().values(i);
+    const int64_t hinted_value = RefIsPositive(ref) ? value : -value;
+    const Domain domain = ReadDomainFromProto(model_proto.variables(var));
+    if (!domain.Contains(hinted_value)) {
+      if (logger != nullptr) {
+        SOLVER_LOG(
+            logger,
+            "The solution hint is complete but it contains values outside "
+            "of the domain of the variables.");
+      }
+      return false;
+    }
+    solution[var] = hinted_value;
+  }
+
+  if (SolutionIsFeasible(model_proto, solution)) {
+    if (manager != nullptr) {
+      // Add it to the pool right away! Note that we already have a log in this
+      // case, so we don't log anything more.
+      manager->NewSolution(solution, "complete_hint", nullptr);
+    } else if (logger != nullptr) {
+      std::string message = "The solution hint is complete and is feasible.";
+      if (model_proto.has_objective()) {
+        absl::StrAppend(
+            &message, " Its objective value is ",
+            ScaleObjectiveValue(
+                model_proto.objective(),
+                ComputeInnerObjective(model_proto.objective(), solution)),
+            ".");
+      }
+      SOLVER_LOG(logger, message);
+    }
+    return true;
+  } else {
+    // TODO(user): Change the code to make the solution checker more
+    // informative by returning a message instead of just VLOGing it.
+    if (logger != nullptr) {
+      SOLVER_LOG(logger,
+                 "The solution hint is complete, but it is infeasible! we "
+                 "will try to repair it.");
+    }
+    return false;
+  }
+}
+
 // Encapsulate a full CP-SAT solve without presolve in the SubSolver API.
 class FullProblemSolver : public SubSolver {
  public:
@@ -1249,6 +1341,11 @@ class LnsSolver : public SubSolver {
           return;
         }
       }
+      bool hint_feasible_before_presolve = false;
+      if (lns_parameters_.debug_crash_if_presolve_breaks_hint()) {
+        hint_feasible_before_presolve =
+            TestSolutionHintForFeasibility(lns_fragment, /*logger=*/nullptr);
+      }
 
       CpModelProto debug_copy;
       if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
@@ -1277,6 +1374,14 @@ class LnsSolver : public SubSolver {
       // Release the context.
       context.reset(nullptr);
       neighborhood.delta.Clear();
+
+      if (lns_parameters_.debug_crash_if_presolve_breaks_hint() &&
+          hint_feasible_before_presolve &&
+          !TestSolutionHintForFeasibility(lns_fragment, /*logger=*/nullptr)) {
+        LOG(FATAL) << "Presolve broke a feasible LNS hint. The model name is '"
+                   << lns_fragment.name()
+                   << "' (use the --cp_model_dump_submodels flag to dump it).";
+      }
 
       // TODO(user): Depending on the problem, we should probably use the
       // parameters that work bests (core, linearization_level, etc...) or
@@ -1923,87 +2028,6 @@ void AddPostsolveClauses(const std::vector<int>& postsolve_mapping,
   postsolve->clauses.clear();
 }
 
-bool VarIsFixed(const CpModelProto& model_proto, int i) {
-  return model_proto.variables(i).domain_size() == 2 &&
-         model_proto.variables(i).domain(0) ==
-             model_proto.variables(i).domain(1);
-}
-
-void TestSolutionHintForFeasibility(const CpModelProto& model_proto,
-                                    SolverLogger* logger,
-                                    SharedResponseManager* manager = nullptr) {
-  if (!model_proto.has_solution_hint()) return;
-
-  int num_active_variables = 0;
-  int num_hinted_variables = 0;
-  for (int var = 0; var < model_proto.variables_size(); ++var) {
-    if (VarIsFixed(model_proto, var)) continue;
-    ++num_active_variables;
-  }
-
-  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-    const int ref = model_proto.solution_hint().vars(i);
-    if (VarIsFixed(model_proto, PositiveRef(ref))) continue;
-    ++num_hinted_variables;
-  }
-  CHECK_LE(num_hinted_variables, num_active_variables);
-
-  if (num_active_variables != num_hinted_variables) {
-    SOLVER_LOG(
-        logger, "The solution hint is incomplete: ", num_hinted_variables,
-        " out of ", num_active_variables, " non fixed variables hinted.");
-    return;
-  }
-
-  std::vector<int64_t> solution(model_proto.variables_size(), 0);
-  // Pre-assign from fixed domains.
-  for (int var = 0; var < model_proto.variables_size(); ++var) {
-    if (VarIsFixed(model_proto, var)) {
-      solution[var] = model_proto.variables(var).domain(0);
-    }
-  }
-
-  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-    const int ref = model_proto.solution_hint().vars(i);
-    const int var = PositiveRef(ref);
-    const int64_t value = model_proto.solution_hint().values(i);
-    const int64_t hinted_value = RefIsPositive(ref) ? value : -value;
-    const Domain domain = ReadDomainFromProto(model_proto.variables(var));
-    if (!domain.Contains(hinted_value)) {
-      SOLVER_LOG(logger,
-                 "The solution hint is complete but it contains values outside "
-                 "of the domain of the variables.");
-      return;
-    }
-    solution[var] = hinted_value;
-  }
-
-  if (SolutionIsFeasible(model_proto, solution)) {
-    if (manager != nullptr) {
-      // Add it to the pool right away! Note that we already have a log in this
-      // case, so we don't log anything more.
-      manager->NewSolution(solution, "complete_hint", nullptr);
-    } else {
-      std::string message = "The solution hint is complete and is feasible.";
-      if (model_proto.has_objective()) {
-        absl::StrAppend(
-            &message, " Its objective value is ",
-            ScaleObjectiveValue(
-                model_proto.objective(),
-                ComputeInnerObjective(model_proto.objective(), solution)),
-            ".");
-      }
-      SOLVER_LOG(logger, message);
-    }
-  } else {
-    // TODO(user): Change the code to make the solution checker more
-    // informative by returning a message instead of just VLOGing it.
-    SOLVER_LOG(logger,
-               "The solution hint is complete, but it is infeasible! we "
-               "will try to repair it.");
-  }
-}
-
 }  // namespace
 
 std::function<void(Model*)> NewFeasibleSolutionObserver(
@@ -2276,8 +2300,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // validation. Note that after the model has been validated, we are sure there
   // are do duplicate variables in the solution hint, so we can just check the
   // size.
+  bool hint_feasible_before_presolve = false;
   if (!context->ModelIsUnsat()) {
-    TestSolutionHintForFeasibility(model_proto, logger);
+    hint_feasible_before_presolve =
+        TestSolutionHintForFeasibility(model_proto, logger);
   }
 
   // If the objective was a floating point one, do some postprocessing on the
@@ -2604,11 +2630,18 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // we might not have the same behavior as the initial search that follow the
   // hint will be infeasible, so the activities of the variables will be
   // different.
+  bool hint_feasible_after_presolve;
   if (!params.enumerate_all_solutions()) {
-    TestSolutionHintForFeasibility(*new_cp_model_proto, logger,
-                                   shared_response_manager);
+    hint_feasible_after_presolve = TestSolutionHintForFeasibility(
+        *new_cp_model_proto, logger, shared_response_manager);
   } else {
-    TestSolutionHintForFeasibility(*new_cp_model_proto, logger, nullptr);
+    hint_feasible_after_presolve =
+        TestSolutionHintForFeasibility(*new_cp_model_proto, logger, nullptr);
+  }
+
+  if (hint_feasible_before_presolve && !hint_feasible_after_presolve &&
+      params.debug_crash_if_presolve_breaks_hint()) {
+    LOG(FATAL) << "Presolve broke a feasible hint";
   }
 
   LoadDebugSolution(*new_cp_model_proto, model);

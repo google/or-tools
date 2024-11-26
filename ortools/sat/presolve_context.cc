@@ -18,7 +18,6 @@
 #include <cstdlib>
 #include <limits>
 #include <numeric>
-#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -37,7 +36,6 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -563,7 +561,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   }
 
 #ifdef CHECK_HINT
-  if (!domains[var].Contains(hint_[var])) {
+  if (HintIsLoaded() && !domains[var].Contains(hint_[var])) {
     LOG(FATAL) << "Hint with value " << hint_[var]
                << " infeasible when changing domain of " << var << " to "
                << domains[var];
@@ -702,7 +700,7 @@ void PresolveContext::AddVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (!ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (HintIsLoaded() && !ConstraintIsFeasible(*working_model, ct, hint_)) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -758,7 +756,7 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (!ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (HintIsLoaded() && !ConstraintIsFeasible(*working_model, ct, hint_)) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -1123,7 +1121,7 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
 #ifdef CHECK_HINT
   const int64_t vx = hint_[var_x];
   const int64_t vy = hint_[var_y];
-  if (vx != vy * coeff + offset) {
+  if (HintIsLoaded() && vx != vy * coeff + offset) {
     LOG(FATAL) << "Affine relation incompatible with hint: " << vx
                << " != " << vy << " * " << coeff << " + " << offset;
   }
@@ -1401,12 +1399,27 @@ void PresolveContext::LoadSolutionHint() {
   if (working_model->has_solution_hint()) {
     const auto hint_proto = working_model->solution_hint();
     const int num_terms = hint_proto.vars().size();
+    int num_changes = 0;
     for (int i = 0; i < num_terms; ++i) {
       const int var = hint_proto.vars(i);
       if (!RefIsPositive(var)) break;  // Abort. Shouldn't happen.
       if (var < hint_.size()) {
         hint_has_value_[var] = true;
-        hint_[var] = hint_proto.values(i);
+        const int64_t hint_value = hint_proto.values(i);
+        hint_[var] = DomainOf(var).ClosestValue(hint_value);
+        if (hint_[var] != hint_value) {
+          ++num_changes;
+        }
+      }
+    }
+    if (num_changes > 0) {
+      UpdateRuleStats("hint: moved var hint within its domain.", num_changes);
+    }
+    for (int i = 0; i < hint_.size(); ++i) {
+      if (hint_has_value_[i]) continue;
+      if (IsFixed(i)) {
+        hint_has_value_[i] = true;
+        hint_[i] = FixedValue(i);
       }
     }
   }
@@ -1505,10 +1518,20 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
   DCHECK(RefIsPositive(var));
   DCHECK(!VariableWasRemoved(literal));
   DCHECK(!VariableWasRemoved(var));
+  if (is_unsat_) return false;
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
 
   // The code below is not 100% correct if this is not the case.
-  DCHECK(DomainOf(var).Contains(value));
+  CHECK(DomainOf(var).Contains(value));
+  if (DomainOf(var).IsFixed()) {
+    return SetLiteralToTrue(literal);
+  }
+  if (LiteralIsTrue(literal)) {
+    return IntersectDomainWith(var, Domain(value));
+  }
+  if (LiteralIsFalse(literal)) {
+    return IntersectDomainWith(var, Domain(value).Complement());
+  }
 
   // If an encoding already exist, make the two Boolean equals.
   const auto [it, inserted] =
@@ -1535,9 +1558,33 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
   }
 
   if (DomainOf(var).Size() == 2) {
-    // TODO(user): There is a bug here if the var == value was not in the
-    // domain, it will just be ignored.
-    CanonicalizeDomainOfSizeTwo(var);
+    if (!CanBeUsedAsLiteral(var)) {
+      // TODO(user): There is a bug here if the var == value was not in the
+      // domain, it will just be ignored.
+      CanonicalizeDomainOfSizeTwo(var);
+      if (is_unsat_) return false;
+
+      if (IsFixed(var)) {
+        if (FixedValue(var) == value) {
+          return SetLiteralToTrue(literal);
+        } else {
+          return SetLiteralToFalse(literal);
+        }
+      }
+
+      // We should have a Boolean now.
+      CanonicalizeEncoding(&var, &value);
+    }
+
+    CHECK(CanBeUsedAsLiteral(var));
+    if (value == 0) {
+      if (!StoreBooleanEqualityRelation(literal, NegatedRef(var))) {
+        return false;
+      }
+    } else {
+      CHECK_EQ(value, 1);
+      if (!StoreBooleanEqualityRelation(literal, var)) return false;
+    }
   } else if (add_constraints) {
     UpdateRuleStats("variables: add encoding constraint");
     AddImplyInDomain(literal, var, Domain(value));
@@ -1668,6 +1715,20 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
   if (!CanonicalizeEncoding(&ref, &value)) return false;
+  DCHECK(RefIsPositive(ref));
+
+  if (!DomainOf(ref).Contains(value)) {
+    if (literal != nullptr) *literal = GetFalseLiteral();
+    return true;
+  }
+
+  if (CanBeUsedAsLiteral(ref)) {
+    if (literal != nullptr) {
+      *literal = value == 1 ? ref : NegatedRef(ref);
+    }
+    return true;
+  }
+
   const auto first_it = encoding_.find(ref);
   if (first_it == encoding_.end()) return false;
   const auto it = first_it->second.find(value);
@@ -1704,6 +1765,11 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   // Returns the false literal if the value is not in the domain.
   if (!domains[var].Contains(value)) {
     return GetFalseLiteral();
+  }
+
+  // Return the literal itself if this was called or canonicalized to a Boolean.
+  if (CanBeUsedAsLiteral(ref)) {
+    return value == 1 ? ref : NegatedRef(ref);
   }
 
   // Returns the associated literal if already present.
@@ -2704,6 +2770,12 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
     ApplyToAllLiteralIndices(mapping_function, &ct);
     ApplyToAllIntervalIndices(interval_mapping_function, &ct);
   }
+}
+
+bool PresolveContext::DebugTestHintFeasibility() {
+  WriteVariableDomainsToProto();
+  if (hint_.size() != working_model->variables().size()) return false;
+  return SolutionIsFeasible(*working_model, hint_);
 }
 
 }  // namespace sat

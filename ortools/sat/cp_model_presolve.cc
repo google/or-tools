@@ -3472,6 +3472,9 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
   if (ct->linear().vars().size() <= 1) return;
 
+  // TODO(user): It is possible in some corner-case that the linear constraint
+  // is NOT canonicalized. This is because we might detect equivalence here and
+  // we will continue with ProcessOneLinearWithAmo() in the parent loop.
   tmp_terms_.clear();
   temp_ct_.Clear();
   Domain non_boolean_domain(0);
@@ -5111,6 +5114,9 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
         context_->CanonicalizeLinearConstraint(lin);
         context_->UpdateNewConstraintsVariableUsage();
         context_->UpdateRuleStats("element: rewrite as affine constraint");
+        VLOG(1) << "element: " << ct->DebugString() << " -> "
+                << lin->DebugString() << " with "
+                << context_->DomainOf(index_var);
         return RemoveConstraint(ct);
       }
     }
@@ -7703,6 +7709,16 @@ bool CpModelPresolver::PresolvePureSatPart() {
 
   // Update the constraints <-> variables graph.
   context_->UpdateNewConstraintsVariableUsage();
+
+  // We mark as removed any variables removed by the pure SAT presolve.
+  // This is mainly to discover or avoid bug as we might have stale entries
+  // in our encoding hash-map for instance.
+  for (int i = 0; i < num_variables; ++i) {
+    const int var = new_to_old_index[i];
+    if (context_->VarToConstraints(var).empty()) {
+      context_->MarkVariableAsRemoved(var);
+    }
+  }
 
   // Add the sat_postsolver clauses to mapping_model.
   //
@@ -13141,16 +13157,13 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
     for (int i = 0; i < num_terms; ++i) {
       const int var = in_model.solution_hint().vars(i);
       const int64_t value = in_model.solution_hint().values(i);
-      const auto& domain = in_model.variables(var).domain();
-      if (domain.empty()) continue;  // UNSAT.
-      const int64_t min = domain[0];
-      const int64_t max = domain[domain.size() - 1];
-      if (value < min) {
+      const Domain& domain = ReadDomainFromProto(in_model.variables(var));
+      if (domain.IsEmpty()) continue;  // UNSAT.
+      const int64_t closest_domain_value = domain.ClosestValue(value);
+      if (closest_domain_value != value) {
         context->UpdateRuleStats("hint: moved var hint within its domain.");
-        context->working_model->mutable_solution_hint()->set_values(i, min);
-      } else if (value > max) {
-        context->working_model->mutable_solution_hint()->set_values(i, max);
-        context->UpdateRuleStats("hint: moved var hint within its domain.");
+        context->working_model->mutable_solution_hint()->set_values(
+            i, closest_domain_value);
       }
     }
   }

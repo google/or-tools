@@ -587,6 +587,9 @@ class PresolveContext {
 
   // This should be called only once after InitializeNewDomains() to load
   // the hint, in order to maintain it as best as possible during presolve.
+  // Hint values outside the domain of their variable are adjusted to the
+  // nearest value in this domain. Missing hint values are completed when
+  // possible (e.g. for the model proto's fixed variables).
   void LoadSolutionHint();
 
   void PermuteHintValues(const SparsePermutation& perm);
@@ -625,6 +628,11 @@ class PresolveContext {
     hint_has_value_[var] = true;
     hint_[var] = value;
   }
+
+  // This is slow O(problem_size) but can be used to debug presolve, either by
+  // pinpointing the transition from feasible to infeasible or the other way
+  // around if for some reason the presolve drop constraint that it shouldn't.
+  bool DebugTestHintFeasibility();
 
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
