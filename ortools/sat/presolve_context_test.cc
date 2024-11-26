@@ -14,14 +14,12 @@
 #include "ortools/sat/presolve_context.h"
 
 #include <cstdint>
-#include <string>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
@@ -1031,6 +1029,33 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraint) {
     }
   )pb");
   EXPECT_THAT(working_model.constraints(0), testing::EqualsProto(expected));
+}
+
+TEST(PresolveContextTest, LoadSolutionHint) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 5, 5 ] }
+    variables { domain: [ 0, 1 ] }
+    solution_hint {
+      vars: [ 0, 2 ]
+      values: [ 12, 0 ]
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+
+  EXPECT_TRUE(context.HintIsLoaded());
+  EXPECT_TRUE(context.VarHasSolutionHint(0));
+  EXPECT_TRUE(context.VarHasSolutionHint(1));  // From the fixed domain.
+  EXPECT_TRUE(context.VarHasSolutionHint(2));
+  EXPECT_EQ(context.SolutionHint(0), 10);  // Clamped to the domain.
+  EXPECT_EQ(context.SolutionHint(1), 5);   // From the fixed domain.
+  EXPECT_EQ(context.SolutionHint(2), 0);
+  EXPECT_TRUE(context.LiteralSolutionHintIs(2, false));
+  EXPECT_TRUE(context.LiteralSolutionHintIs(NegatedRef(2), true));
+  EXPECT_THAT(context.SolutionHint(), ::testing::ElementsAre(10, 5, 0));
 }
 
 }  // namespace

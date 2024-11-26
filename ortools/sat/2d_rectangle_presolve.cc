@@ -164,15 +164,19 @@ bool PresolveFixed2dRectangles(
 
   // Now check if there is any space that cannot be occupied by any non-fixed
   // item.
-  std::vector<Rectangle> bounding_boxes;
-  bounding_boxes.reserve(non_fixed_boxes.size());
-  for (const RectangleInRange& box : non_fixed_boxes) {
-    bounding_boxes.push_back(box.bounding_area);
-  }
-  std::vector<Rectangle> empty_spaces =
-      FindEmptySpaces(bounding_box, std::move(bounding_boxes));
-  for (const Rectangle& r : empty_spaces) {
-    add_box(r);
+  // TODO(user): remove the limit of 1000 and reimplement FindEmptySpaces()
+  // using a sweep line algorithm.
+  if (non_fixed_boxes.size() < 1000) {
+    std::vector<Rectangle> bounding_boxes;
+    bounding_boxes.reserve(non_fixed_boxes.size());
+    for (const RectangleInRange& box : non_fixed_boxes) {
+      bounding_boxes.push_back(box.bounding_area);
+    }
+    std::vector<Rectangle> empty_spaces =
+        FindEmptySpaces(bounding_box, std::move(bounding_boxes));
+    for (const Rectangle& r : empty_spaces) {
+      add_box(r);
+    }
   }
 
   // Now look for gaps between objects that are too small to place anything.
@@ -1391,32 +1395,36 @@ bool ReduceNumberOfBoxesExactMandatory(
   std::vector<Rectangle> result = *mandatory_rectangles;
   std::vector<Rectangle> new_optional_rectangles = *optional_rectangles;
 
-  Rectangle mandatory_bounding_box = (*mandatory_rectangles)[0];
-  for (const Rectangle& box : *mandatory_rectangles) {
-    mandatory_bounding_box.GrowToInclude(box);
-  }
-  const std::vector<Rectangle> mandatory_empty_holes =
-      FindEmptySpaces(mandatory_bounding_box, *mandatory_rectangles);
-  const std::vector<std::vector<int>> mandatory_holes_components =
-      SplitInConnectedComponents(BuildNeighboursGraph(mandatory_empty_holes));
-
-  // Now for every connected component of the holes in the mandatory area, see
-  // if we can fill them with optional boxes.
-  std::vector<Rectangle> holes_in_component;
-  for (const std::vector<int>& component : mandatory_holes_components) {
-    holes_in_component.clear();
-    holes_in_component.reserve(component.size());
-    for (const int index : component) {
-      holes_in_component.push_back(mandatory_empty_holes[index]);
+  // This heuristic can be slow for very large problems, so gate it with a
+  // reasonable limit.
+  if (mandatory_rectangles->size() < 1000) {
+    Rectangle mandatory_bounding_box = (*mandatory_rectangles)[0];
+    for (const Rectangle& box : *mandatory_rectangles) {
+      mandatory_bounding_box.GrowToInclude(box);
     }
-    if (RegionIncludesOther(new_optional_rectangles, holes_in_component)) {
-      // Fill the hole.
-      result.insert(result.end(), holes_in_component.begin(),
-                    holes_in_component.end());
-      // We can modify `optional_rectangles` here since we know that if we
-      // remove a hole this function will return true.
-      new_optional_rectangles = PavedRegionDifference(
-          new_optional_rectangles, std::move(holes_in_component));
+    const std::vector<Rectangle> mandatory_empty_holes =
+        FindEmptySpaces(mandatory_bounding_box, *mandatory_rectangles);
+    const std::vector<std::vector<int>> mandatory_holes_components =
+        SplitInConnectedComponents(BuildNeighboursGraph(mandatory_empty_holes));
+
+    // Now for every connected component of the holes in the mandatory area, see
+    // if we can fill them with optional boxes.
+    std::vector<Rectangle> holes_in_component;
+    for (const std::vector<int>& component : mandatory_holes_components) {
+      holes_in_component.clear();
+      holes_in_component.reserve(component.size());
+      for (const int index : component) {
+        holes_in_component.push_back(mandatory_empty_holes[index]);
+      }
+      if (RegionIncludesOther(new_optional_rectangles, holes_in_component)) {
+        // Fill the hole.
+        result.insert(result.end(), holes_in_component.begin(),
+                      holes_in_component.end());
+        // We can modify `optional_rectangles` here since we know that if we
+        // remove a hole this function will return true.
+        new_optional_rectangles = PavedRegionDifference(
+            new_optional_rectangles, std::move(holes_in_component));
+      }
     }
   }
   const Neighbours neighbours = BuildNeighboursGraph(result);
