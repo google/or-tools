@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_heuristics.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -57,7 +58,7 @@ using ::py::arg;
 using ::py::make_iterator;
 
 std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
-    const std::vector<BaseInt>& ints) {
+    absl::Span<const BaseInt> ints) {
   std::vector<SubsetIndex> subs;
   std::transform(ints.begin(), ints.end(), subs.begin(),
                  [](int subset) -> SubsetIndex { return SubsetIndex(subset); });
@@ -65,7 +66,7 @@ std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
 }
 
 SubsetCostVector VectorDoubleToSubsetCostVector(
-    const std::vector<double>& doubles) {
+    absl::Span<const double> doubles) {
   SubsetCostVector costs(doubles.begin(), doubles.end());
   return costs;
 }
