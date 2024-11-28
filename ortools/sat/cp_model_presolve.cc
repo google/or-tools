@@ -5777,13 +5777,34 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     const int x_interval_index = proto.x_intervals(i);
     const int y_interval_index = proto.y_intervals(i);
 
+    ct->mutable_no_overlap_2d()->set_x_intervals(new_size, x_interval_index);
+    ct->mutable_no_overlap_2d()->set_y_intervals(new_size, y_interval_index);
+
+    // We don't want to fully presolve the intervals (intervals have their own
+    // presolve), but we don't want to bother with negative sizes downstream in
+    // this function.
+    for (const int interval_index : {x_interval_index, y_interval_index}) {
+      if (context_->StartMin(interval_index) >
+          context_->EndMax(interval_index)) {
+        const ConstraintProto* interval_ct =
+            context_->working_model->mutable_constraints(interval_index);
+        if (interval_ct->enforcement_literal_size() == 1) {
+          const int literal = interval_ct->enforcement_literal(0);
+          if (!context_->SetLiteralToFalse(literal)) {
+            return true;
+          }
+        } else {
+          return context_->NotifyThatModelIsUnsat(
+              "no_overlap_2d: impossible interval.");
+        }
+      }
+    }
+
     if (context_->ConstraintIsInactive(x_interval_index) ||
         context_->ConstraintIsInactive(y_interval_index)) {
       continue;
     }
 
-    ct->mutable_no_overlap_2d()->set_x_intervals(new_size, x_interval_index);
-    ct->mutable_no_overlap_2d()->set_y_intervals(new_size, y_interval_index);
     bounding_boxes.push_back(
         {IntegerValue(context_->StartMin(x_interval_index)),
          IntegerValue(context_->EndMax(x_interval_index)),
@@ -5821,7 +5842,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     }
   }
 
-  std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
+  const CompactVectorVector<int> components = GetOverlappingRectangleComponents(
       bounding_boxes, absl::MakeSpan(active_boxes));
   // The result of GetOverlappingRectangleComponents() omit singleton components
   // thus to check whether a graph is fully connected we must check also the
@@ -5830,7 +5851,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       (components.size() == 1 && components[0].size() == active_boxes.size()) ||
       (active_boxes.size() <= 1);
   if (!is_fully_connected) {
-    for (const absl::Span<int> boxes : components) {
+    for (int i = 0; i < components.size(); ++i) {
+      absl::Span<const int> boxes = components[i];
       if (boxes.size() <= 1) continue;
 
       NoOverlap2DConstraintProto* new_no_overlap_2d =
@@ -5891,15 +5913,9 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
 
   // We check if the fixed boxes are not overlapping so downstream code can
   // assume it to be true.
-  for (int i = 0; i < fixed_boxes.size(); ++i) {
-    const Rectangle& fixed_box = fixed_boxes[i];
-    for (int j = i + 1; j < fixed_boxes.size(); ++j) {
-      const Rectangle& other_fixed_box = fixed_boxes[j];
-      if (!fixed_box.IsDisjoint(other_fixed_box)) {
-        return context_->NotifyThatModelIsUnsat(
-            "Two fixed boxes in no_overlap_2d overlap");
-      }
-    }
+  if (!FindPartialRectangleIntersections(fixed_boxes).empty()) {
+    return context_->NotifyThatModelIsUnsat(
+        "Two fixed boxes in no_overlap_2d overlap");
   }
 
   if (fixed_boxes.size() == active_boxes.size()) {
