@@ -807,83 +807,83 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
   return true;
 }
 
-bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
-                                             Trail* trail) {
+bool BinaryImplicationGraph::Propagate(Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
 
-  const auto assignment = AssignmentView(trail->Assignment());
-  DCHECK(assignment.LiteralIsTrue(true_literal));
-
-  // Note(user): This update is not exactly correct because in case of conflict
-  // we don't inspect that much clauses. But doing ++num_inspections_ inside the
-  // loop does slow down the code by a few percent.
-  num_inspections_ += implications_[true_literal].size();
-
-  for (const Literal literal : implications_[true_literal]) {
-    if (assignment.LiteralIsTrue(literal)) {
-      // Note(user): I tried to update the reason here if the literal was
-      // enqueued after the true_literal on the trail. This property is
-      // important for ComputeFirstUIPConflict() to work since it needs the
-      // trail order to be a topological order for the deduction graph.
-      // But the performance was not too good...
-      continue;
-    }
-
-    ++num_propagations_;
-    if (assignment.LiteralIsFalse(literal)) {
-      // Conflict.
-      *(trail->MutableConflict()) = {true_literal.Negated(), literal};
-      return false;
-    } else {
-      // Propagation.
-      reasons_[trail->Index()] = true_literal.Negated();
-      trail->FastEnqueue(literal);
-    }
-  }
-
-  // Propagate the at_most_one constraints.
-  if (true_literal.Index() < at_most_ones_.size()) {
-    for (const int start : at_most_ones_[true_literal]) {
-      bool seen = false;
-      for (const Literal literal : AtMostOne(start)) {
-        ++num_inspections_;
-        if (literal == true_literal) {
-          if (DEBUG_MODE) {
-            DCHECK(!seen);
-            seen = true;
-          }
-          continue;
-        }
-        if (assignment.LiteralIsFalse(literal)) continue;
-
-        ++num_propagations_;
-        if (assignment.LiteralIsTrue(literal)) {
-          // Conflict.
-          *(trail->MutableConflict()) = {true_literal.Negated(),
-                                         literal.Negated()};
-          return false;
-        } else {
-          // Propagation.
-          reasons_[trail->Index()] = true_literal.Negated();
-          trail->FastEnqueue(literal.Negated());
-        }
-      }
-    }
-  }
-
-  return true;
-}
-
-bool BinaryImplicationGraph::Propagate(Trail* trail) {
   if (IsEmpty()) {
     propagation_trail_index_ = trail->Index();
     return true;
   }
   trail->SetCurrentPropagatorId(propagator_id_);
+
+  const auto assignment = AssignmentView(trail->Assignment());
+  const auto implies_something = implies_something_.view();
+  auto* implications = implications_.data();
+
   while (propagation_trail_index_ < trail->Index()) {
-    const Literal literal = (*trail)[propagation_trail_index_++];
-    if (!PropagateOnTrue(literal, trail)) return false;
+    const Literal true_literal = (*trail)[propagation_trail_index_++];
+    DCHECK(assignment.LiteralIsTrue(true_literal));
+    if (!implies_something[true_literal]) continue;
+
+    // Note(user): This update is not exactly correct because in case of
+    // conflict we don't inspect that much clauses. But doing ++num_inspections_
+    // inside the loop does slow down the code by a few percent.
+    const absl::Span<const Literal> implied =
+        implications[true_literal.Index().value()];
+    num_inspections_ += implied.size();
+    for (const Literal literal : implied) {
+      if (assignment.LiteralIsTrue(literal)) {
+        // Note(user): I tried to update the reason here if the literal was
+        // enqueued after the true_literal on the trail. This property is
+        // important for ComputeFirstUIPConflict() to work since it needs the
+        // trail order to be a topological order for the deduction graph.
+        // But the performance was not too good...
+        continue;
+      }
+
+      ++num_propagations_;
+      if (assignment.LiteralIsFalse(literal)) {
+        // Conflict.
+        *(trail->MutableConflict()) = {true_literal.Negated(), literal};
+        return false;
+      } else {
+        // Propagation.
+        reasons_[trail->Index()] = true_literal.Negated();
+        trail->FastEnqueue(literal);
+      }
+    }
+
+    // Propagate the at_most_one constraints.
+    if (true_literal.Index() < at_most_ones_.size()) {
+      for (const int start : at_most_ones_[true_literal]) {
+        bool seen = false;
+        for (const Literal literal : AtMostOne(start)) {
+          ++num_inspections_;
+          if (literal == true_literal) {
+            if (DEBUG_MODE) {
+              DCHECK(!seen);
+              seen = true;
+            }
+            continue;
+          }
+          if (assignment.LiteralIsFalse(literal)) continue;
+
+          ++num_propagations_;
+          if (assignment.LiteralIsTrue(literal)) {
+            // Conflict.
+            *(trail->MutableConflict()) = {true_literal.Negated(),
+                                           literal.Negated()};
+            return false;
+          } else {
+            // Propagation.
+            reasons_[trail->Index()] = true_literal.Negated();
+            trail->FastEnqueue(literal.Negated());
+          }
+        }
+      }
+    }
   }
+
   return true;
 }
 

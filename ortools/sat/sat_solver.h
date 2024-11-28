@@ -698,7 +698,7 @@ class SatSolver {
 
   // Given the learned clause after a conflict, this computes the correct
   // backtrack level to call Backtrack() with.
-  int ComputeBacktrackLevel(const std::vector<Literal>& literals);
+  int ComputeBacktrackLevel(absl::Span<const Literal> literals);
 
   // The LBD (Literal Blocks Distance) is the number of different decision
   // levels at which the literals of the clause were assigned. Note that we

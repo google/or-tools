@@ -23,6 +23,7 @@
 #include <limits>
 #include <optional>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -30,13 +31,19 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/minimum_spanning_tree.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/util.h"
@@ -1537,8 +1544,9 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
 std::string RenderDot(std::optional<Rectangle> bb,
                       absl::Span<const Rectangle> solution,
                       std::string_view extra_dot_payload) {
-  const std::vector<std::string> colors = {"red",  "green",  "blue",
-                                           "cyan", "yellow", "purple"};
+  const std::vector<std::string> colors = {"#0000ff80", "#ee00ee80",
+                                           "#ff000080", "#eeee0080",
+                                           "#00ff0080", "#00eeee80"};
   std::stringstream ss;
   ss << "digraph {\n";
   ss << "  graph [ bgcolor=lightgray ]\n";
@@ -1586,6 +1594,209 @@ std::vector<Rectangle> PavedRegionDifference(
     if (original_region.empty()) break;
   }
   return original_region;
+}
+
+std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
+    absl::Span<const Rectangle> rectangles) {
+  // We are going to use a sweep line algorithm to find the intersections.
+  // First, we sort the rectangles by their x coordinates, then consider a sweep
+  // line that goes from the left to the right.
+  enum class Type {
+    kEnd,
+    kBegin,
+  };
+  struct RectangleHorizontalEdge {
+    IntegerValue x_coordinate;
+    int index;
+    Type type;
+  };
+  std::vector<RectangleHorizontalEdge> edges;
+  edges.reserve(rectangles.size() * 2);
+  for (int i = 0; i < rectangles.size(); ++i) {
+    edges.push_back({.x_coordinate = rectangles[i].x_min,
+                     .index = i,
+                     .type = Type::kBegin});
+    edges.push_back(
+        {.x_coordinate = rectangles[i].x_max, .index = i, .type = Type::kEnd});
+  }
+
+  std::sort(
+      edges.begin(), edges.end(),
+      [](const RectangleHorizontalEdge& a, const RectangleHorizontalEdge& b) {
+        return std::tuple(a.x_coordinate, a.type, a.index) <
+               std::tuple(b.x_coordinate, b.type, b.index);
+      });
+
+  // Current y-coordinate intervals that are intersecting the sweep line.
+  // Note that the interval_set only contains disjoint intervals.
+  struct Interval {
+    IntegerValue start;
+    mutable IntegerValue end;
+
+    // This interval will always be a "subpart" of the full y-span of the
+    // initial rectangle with given index.
+    mutable int index;
+
+    bool operator<(const Interval& other) const { return start < other.start; }
+
+    std::string to_string() const {
+      return absl::StrCat("[", start.value(), ",", end.value(), "](", index,
+                          ")");
+    }
+  };
+  std::set<Interval> interval_set;
+
+  // The finer point of this algorithm is deciding what to keep on our interval
+  // list when we find two rectangles that intersect. Since we don't want to
+  // lose track of any rectangle that might intersect another one, we keep in
+  // the intervals the pieces that has the largest x_max: ie., we make sure that
+  // we will not remove an interval that is still intersecting some rectangles.
+  absl::btree_set<std::pair<int, int>> arcs;
+  int current_index = 0;
+  while (current_index < edges.size()) {
+    const IntegerValue x_pos = edges[current_index].x_coordinate;
+    // First check all the rectangles that end at this x_pos and remove them
+    // from the interval list.
+    for (; current_index < edges.size() &&
+           edges[current_index].x_coordinate == x_pos &&
+           edges[current_index].type == Type::kEnd;
+         ++current_index) {
+      const int index_to_remove = edges[current_index].index;
+      const Rectangle r = rectangles[index_to_remove];
+
+      // Loop over all intervals intersecting [r.y_min, r.y_max] and remove the
+      // one with the given index.
+      const Interval for_lookup = {r.y_min, r.y_max, index_to_remove};
+      auto it = interval_set.lower_bound(for_lookup);
+      while (it != interval_set.end()) {
+        // Subtle: we need to find the next interval here because the current
+        // one might be invalidated by the erase.
+        auto current = it++;
+        if (current->start >= r.y_max) break;
+        if (current->index == index_to_remove) {
+          interval_set.erase(current);
+        }
+      }
+    }
+    // Now add the rectangles that start at this x_pos and potentially detect
+    // any overlap.
+    for (; current_index < edges.size() &&
+           edges[current_index].x_coordinate == x_pos &&
+           edges[current_index].type == Type::kBegin;
+         ++current_index) {
+      const int cur_index = edges[current_index].index;
+      const Rectangle r = rectangles[cur_index];
+
+      // We need to insert a new interval, we will split it according to the
+      // interval that it overlaps with.
+      Interval to_insert = {r.y_min, r.y_max, cur_index};
+      auto it = interval_set.lower_bound(to_insert);
+      if (it != interval_set.begin()) --it;
+      while (it != interval_set.end()) {
+        auto current = it++;
+        if (to_insert.start == to_insert.end) break;
+        if (current->end <= to_insert.start) continue;
+        if (current->start >= to_insert.end) break;
+
+        // We have an intersection.
+        if (to_insert.index == cur_index) {
+          arcs.insert({std::min(to_insert.index, current->index),
+                       std::max(to_insert.index, current->index)});
+        }
+
+        // It can be composed of up to 3 part:
+        // Where part1 and/or part2 could be empty.
+        //   current     [                  ]
+        //   to_insert            [                   ]
+        //   current     [                            ]
+        //   to_insert            [         ]
+        //   current              [         ]
+        //   to_insert   [                            ]
+        //   current              [                   ]
+        //   to_insert   [                  ]
+        //               | part1  |  part2  | part 3  |
+        const int first_index =
+            current->start < to_insert.start ? current->index : to_insert.index;
+        const int middle_index =
+            rectangles[to_insert.index].x_max < rectangles[current->index].x_max
+                ? current->index
+                : to_insert.index;
+        const int last_index =
+            current->end > to_insert.end ? current->index : to_insert.index;
+
+        IntegerValue points[4];
+        points[0] = current->start;
+        points[1] = current->end;
+        points[2] = to_insert.start;
+        points[3] = to_insert.end;
+        std::sort(points, points + 4);
+
+        // There is always a middle part because the intersection is not empty.
+        CHECK_LT(points[1], points[2]);
+
+        if (points[0] == points[1]) {
+          // Rewrite current as part 2.
+          current->end = points[2];
+          current->index = middle_index;
+        } else {
+          if (points[0] == current->start) {
+            // Rewrite current as part 1.
+            current->end = points[1];
+            current->index = first_index;
+
+            // Insert a new part2 interval.
+            // As an optimization, if middle_index == last_index, we just
+            // merge part2 and 3 in the next to_insert.
+            if (middle_index == last_index) {
+              to_insert.start = points[1];
+              to_insert.end = points[3];
+              to_insert.index = last_index;
+              continue;
+            }
+            interval_set.insert({points[1], points[2], middle_index});
+          } else {
+            CHECK_EQ(points[1], current->start);
+
+            // Rewrite current as part 2.
+            current->end = points[2];
+            current->index = middle_index;
+
+            // Insert a new part1 interval.
+            interval_set.insert({points[0], points[1], first_index});
+          }
+        }
+
+        // To_insert is the final part (it can be empty).
+        to_insert.start = points[2];
+        to_insert.end = points[3];
+        to_insert.index = last_index;
+      }
+
+      if (to_insert.start < to_insert.end) {
+        interval_set.insert(to_insert);
+      }
+    }
+  }
+
+  // At this point we have a set of arcs that doesn't contain all of the
+  // pairwise intersections, but is not either a minimal spanning tree either
+  // since it has cycles. The good property is that it does have enough arcs to
+  // cover all the rectangles, so we can use it to build a proper MST.
+  ::util::ReverseArcListGraph<> graph;
+  std::vector<int> arc_indexes;
+  absl::flat_hash_map<int, std::pair<int, int>> pair_by_arc_index;
+  for (const auto& [a, b] : arcs) {
+    pair_by_arc_index[arc_indexes.size()] = {a, b};
+    arc_indexes.push_back(graph.AddArc(a, b));
+  }
+  const std::vector<int> mst_arc_indices =
+      BuildKruskalMinimumSpanningTreeFromSortedArcs(graph, arc_indexes);
+  std::vector<std::pair<int, int>> result;
+  for (const int arc_index : mst_arc_indices) {
+    const auto& [a, b] = pair_by_arc_index[arc_index];
+    result.push_back({a, b});
+  }
+  return result;
 }
 
 }  // namespace sat

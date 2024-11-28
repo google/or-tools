@@ -17,6 +17,7 @@
 #include <optional>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
@@ -114,10 +115,10 @@ void AppendExactlyOneRelaxation(const ConstraintProto& ct, Model* model,
 void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation);
 
-void AppendLinMaxRelaxationPart2(
-    IntegerVariable target, const std::vector<Literal>& alternative_literals,
-    const std::vector<LinearExpression>& exprs, Model* model,
-    LinearRelaxation* relaxation);
+void AppendLinMaxRelaxationPart2(IntegerVariable target,
+                                 absl::Span<const Literal> alternative_literals,
+                                 absl::Span<const LinearExpression> exprs,
+                                 Model* model, LinearRelaxation* relaxation);
 
 // Note: This only works if all affine expressions share the same variable.
 void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,

@@ -189,7 +189,7 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model);
 // with the lowest min has a value <= this min.
 std::function<BooleanOrIntegerLiteral()>
 UnassignedVarWithLowestMinAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model);
+    absl::Span<const IntegerVariable> vars, Model* model);
 
 // Set the first unassigned Literal/Variable to its value.
 //

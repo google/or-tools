@@ -5114,9 +5114,6 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
         context_->CanonicalizeLinearConstraint(lin);
         context_->UpdateNewConstraintsVariableUsage();
         context_->UpdateRuleStats("element: rewrite as affine constraint");
-        VLOG(1) << "element: " << ct->DebugString() << " -> "
-                << lin->DebugString() << " with "
-                << context_->DomainOf(index_var);
         return RemoveConstraint(ct);
       }
     }
@@ -5490,7 +5487,7 @@ void AddImplication(int lhs, int rhs, CpModelProto* proto,
 
 template <typename ClauseContainer>
 void ExtractClauses(bool merge_into_bool_and,
-                    const std::vector<int>& index_mapping,
+                    absl::Span<const int> index_mapping,
                     const ClauseContainer& container, CpModelProto* proto) {
   // We regroup the "implication" into bool_and to have a more concise proto and
   // also for nicer information about the number of binary clauses.
@@ -7716,13 +7713,17 @@ bool CpModelPresolver::PresolvePureSatPart() {
   for (int i = 0; i < num_variables; ++i) {
     const int var = new_to_old_index[i];
     if (context_->VarToConstraints(var).empty()) {
+      // Such variable needs to be fixed to some value for the SAT postsolve to
+      // work.
+      if (!context_->IsFixed(var)) {
+        CHECK(context_->IntersectDomainWith(
+            var, Domain(context_->DomainOf(var).SmallestValue())));
+      }
       context_->MarkVariableAsRemoved(var);
     }
   }
 
   // Add the sat_postsolver clauses to mapping_model.
-  //
-  // TODO(user): Mark removed variable as removed to detect any potential bugs.
   ExtractClauses(/*merge_into_bool_and=*/false, new_to_old_index,
                  sat_postsolver, context_->mapping_model);
   return true;
@@ -10239,7 +10240,7 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
 // TODO(user): In some case we only need common_part <= new_var.
 bool CpModelPresolver::RemoveCommonPart(
     const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
-    const std::vector<std::pair<int, int64_t>>& block,
+    absl::Span<const std::pair<int, int64_t>> block,
     ActivityBoundHelper* helper) {
   int new_var;
   int64_t gcd = 0;
@@ -12335,7 +12336,7 @@ void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
   }
 }
 
-void ModelCopy::CreateVariablesFromDomains(const std::vector<Domain>& domains) {
+void ModelCopy::CreateVariablesFromDomains(absl::Span<const Domain> domains) {
   for (const Domain& domain : domains) {
     FillDomainInProto(domain, context_->working_model->add_variables());
   }
@@ -13936,7 +13937,11 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   }
 
   // Remap the solution hint. Note that after remapping, we may have duplicate
-  // variable, so we only keep the first occurrence.
+  // variables. For instance, identical constant variables are mapped to a
+  // single one. Another case is variables with the same representative. In the
+  // later case we only keep the representative, since the hint of the others
+  // might no longer be valid (the hint of non-representative variables is not
+  // updated). In the former case we keep only the hint of the first occurrence.
   if (proto->has_solution_hint()) {
     absl::flat_hash_set<int> used_vars;
     auto* mutable_hint = proto->mutable_solution_hint();
@@ -13944,6 +13949,9 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
     mutable_hint->clear_values();
     const int num_vars = context.working_model->variables().size();
     for (int hinted_var = 0; hinted_var < num_vars; ++hinted_var) {
+      if (context.GetAffineRelation(hinted_var).representative != hinted_var) {
+        continue;
+      }
       if (!context.VarHasSolutionHint(hinted_var)) continue;
       int64_t hinted_value = context.SolutionHint(hinted_var);
 
@@ -13956,18 +13964,11 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
         hinted_value = context.MaxOf(hinted_var);
       }
 
-      // Note that if (hinted_value - r.offset) is not divisible by r.coeff,
-      // then the hint is clearly infeasible, but we still set it to a "close"
-      // value.
-      const AffineRelation::Relation r = context.GetAffineRelation(hinted_var);
-      const int var = r.representative;
-      const int64_t value = (hinted_value - r.offset) / r.coeff;
-
-      const int image = mapping[var];
+      const int image = mapping[hinted_var];
       if (image >= 0) {
         if (!used_vars.insert(image).second) continue;
         mutable_hint->add_vars(image);
-        mutable_hint->add_values(value);
+        mutable_hint->add_values(hinted_value);
       }
     }
   }

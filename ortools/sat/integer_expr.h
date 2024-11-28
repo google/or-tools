@@ -432,9 +432,10 @@ class SquarePropagator : public PropagatorInterface {
 // Weighted sum <= constant.
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumLowerOrEqual(
-    const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
+    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
     int64_t upper_bound) {
-  return [=](Model* model) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     return AddWeightedSumLowerOrEqual({}, vars, coefficients, upper_bound,
                                       model);
   };

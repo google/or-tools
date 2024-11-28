@@ -510,9 +510,9 @@ class BasicKnapsackSolver {
     bool infeasible = false;
     std::vector<int64_t> solution;
   };
-  Result Solve(const std::vector<Domain>& domains,
-               const std::vector<int64_t>& coeffs,
-               const std::vector<int64_t>& costs, const Domain& rhs);
+  Result Solve(absl::Span<const Domain> domains,
+               absl::Span<const int64_t> coeffs,
+               absl::Span<const int64_t> costs, const Domain& rhs);
 
  private:
   Result InternalSolve(int64_t num_values, const Domain& rhs);

@@ -14,12 +14,17 @@
 #include "ortools/sat/diffn_util.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <sstream>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
@@ -31,6 +36,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/integer.h"
 #include "ortools/util/strong_integers.h"
@@ -262,7 +268,7 @@ std::vector<IndexedInterval> GenerateRandomIntervalVector(
 }
 
 std::vector<std::vector<int>> GetOverlappingIntervalComponentsBruteForce(
-    const std::vector<IndexedInterval>& intervals) {
+    absl::Span<const IndexedInterval> intervals) {
   // Build the adjacency list.
   std::vector<std::vector<int>> adj(intervals.size());
   for (int i = 1; i < intervals.size(); ++i) {
@@ -284,15 +290,15 @@ std::vector<std::vector<int>> GetOverlappingIntervalComponentsBruteForce(
     components[component_indices[i]].push_back(i);
   }
   // Sort the components by start, like GetOverlappingIntervalComponents().
-  absl::c_sort(components, [&intervals](const std::vector<int>& c1,
-                                        const std::vector<int>& c2) {
+  absl::c_sort(components, [intervals](const std::vector<int>& c1,
+                                       const std::vector<int>& c2) {
     CHECK(!c1.empty() && !c2.empty());
     return intervals[c1[0]].start < intervals[c2[0]].start;
   });
   // Inside each component, the intervals should be sorted, too.
   // Moreover, we need to convert our indices to IntervalIndex.index.
   for (std::vector<int>& component : components) {
-    absl::c_sort(component, [&intervals](int i, int j) {
+    absl::c_sort(component, [intervals](int i, int j) {
       return IndexedInterval::ComparatorByStartThenEndThenIndex()(intervals[i],
                                                                   intervals[j]);
     });
@@ -903,6 +909,138 @@ TEST(ProbingRectangleTest, CounterExample) {
       FindRectangleWithEnergyTooLargeExhaustive(rectangles).has_value());
 }
 
+std::vector<std::pair<int, int>> GetAllIntersections(
+    absl::Span<const Rectangle> rectangles) {
+  std::vector<std::pair<int, int>> result;
+  for (int i = 0; i < rectangles.size(); ++i) {
+    for (int j = i + 1; j < rectangles.size(); ++j) {
+      if (!rectangles[i].IsDisjoint(rectangles[j])) {
+        result.push_back({i, j});
+      }
+    }
+  }
+  return result;
+}
+
+TEST(FindPartialIntersections, Simple) {
+  Rectangle r1 = {.x_min = 0, .x_max = 2, .y_min = 0, .y_max = 2};
+  Rectangle r2 = {.x_min = 1, .x_max = 3, .y_min = 1, .y_max = 3};
+  Rectangle r3 = {.x_min = 5, .x_max = 8, .y_min = 1, .y_max = 3};
+  EXPECT_THAT(FindPartialRectangleIntersections({r1, r2, r3}),
+              UnorderedElementsAre(
+                  testing::AnyOf(std::make_pair(1, 0), std::make_pair(0, 1))));
+}
+
+bool GraphsDefineSameConnectedComponents(
+    const std::vector<std::pair<int, int>>& graph1,
+    const std::vector<std::pair<int, int>>& graph2) {
+  int max = -1;
+  int max2 = -1;
+  for (const auto& [a, b] : graph1) {
+    max = std::max(max, a);
+    max = std::max(max, b);
+  }
+  for (const auto& [a, b] : graph2) {
+    max2 = std::max(max2, a);
+    max2 = std::max(max2, b);
+  }
+  if (max != max2) return false;
+  std::vector<std::vector<int>> view1(max + 1);
+  std::vector<std::vector<int>> view2(max + 1);
+  for (const auto& [a, b] : graph1) {
+    view1[a].push_back(b);
+    view1[b].push_back(a);
+  }
+  for (const auto& [a, b] : graph2) {
+    view2[a].push_back(b);
+    view2[b].push_back(a);
+  }
+  std::vector<std::vector<int>> components1;
+  std::vector<std::vector<int>> components2;
+  FindStronglyConnectedComponents(max + 1, view1, &components1);
+  FindStronglyConnectedComponents(max + 1, view2, &components2);
+  for (auto& v : components1) {
+    std::sort(v.begin(), v.end());
+  }
+  for (auto& v : components2) {
+    std::sort(v.begin(), v.end());
+  }
+  std::sort(components1.begin(), components1.end());
+  std::sort(components2.begin(), components2.end());
+  return components1 == components2;
+}
+
+bool HasCycles(const std::vector<std::pair<int, int>>& graph) {
+  std::vector<std::vector<int>> view;
+  for (const auto& [a, b] : graph) {
+    if (view.size() <= std::max(a, b)) view.resize(std::max(a, b) + 1);
+    view[a].push_back(b);
+    view[b].push_back(a);
+  }
+  absl::flat_hash_map<int, int> parent;
+  for (int i = 0; i < view.size(); ++i) {
+    if (parent.contains(i)) continue;
+    std::vector<int> stack;
+    stack.push_back(i);
+    parent[i] = -1;
+    while (!stack.empty()) {
+      const int node = stack.back();
+      stack.pop_back();
+      const int cur_parent = parent[node];
+      for (const int neighbor : view[node]) {
+        if (neighbor == cur_parent) continue;
+        stack.push_back(neighbor);
+        auto [found, _] = parent.insert({neighbor, node});
+        if (found->second != node) return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::string RenderRectGraph(std::optional<Rectangle> bb,
+                            absl::Span<const Rectangle> rectangles,
+                            absl::Span<const std::pair<int, int>> neighbours) {
+  std::stringstream ss;
+  ss << "  edge[headclip=false, tailclip=false, penwidth=30];\n";
+  for (auto [arc1, arc2] : neighbours) {
+    ss << "  " << arc1 << "->" << arc2 << " [color=\"black\"];\n";
+  }
+  return RenderDot(bb, rectangles, ss.str());
+}
+
+TEST(FindPartialIntersections, Random) {
+  absl::BitGen random;
+  constexpr int num_runs = 100;
+  for (int k = 0; k < num_runs; k++) {
+    std::vector<Rectangle> rectangles =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, random);
+    const int num_to_grow = absl::Uniform(random, 0, 20);
+    for (int i = 0; i < num_to_grow; ++i) {
+      Rectangle& rec =
+          rectangles[absl::Uniform(random, size_t{0}, rectangles.size())];
+      rec = {.x_min = rec.x_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .x_max = rec.x_max + IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_min = rec.y_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_max = rec.y_max + IntegerValue(absl::Uniform(random, 0, 4))};
+    }
+    const std::vector<std::pair<int, int>> naive_result =
+        GetAllIntersections(rectangles);
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(rectangles);
+    for (const auto& [i, j] : result) {
+      EXPECT_FALSE(rectangles[i].IsDisjoint(rectangles[j]));
+    }
+    EXPECT_TRUE(GraphsDefineSameConnectedComponents(naive_result, result))
+        << RenderRectGraph(std::nullopt, rectangles, result);
+    EXPECT_FALSE(HasCycles(result))
+        << RenderRectGraph(std::nullopt, rectangles, result);
+    if (k == 0) {
+      LOG(INFO) << RenderRectGraph(std::nullopt, rectangles, result);
+    }
+  }
+}
+
 void BM_FindRectangles(benchmark::State& state) {
   absl::BitGen random;
   std::vector<std::vector<RectangleInRange>> problems;
@@ -998,6 +1136,45 @@ BENCHMARK(BM_FindPairwiseRestrictions)
     ->ArgPair(200, 100)
     ->ArgPair(1000, 100)
     ->ArgPair(10000, 100);
+
+void BM_FindPartialIntersections(benchmark::State& state) {
+  absl::BitGen random;
+  std::vector<std::vector<Rectangle>> problems;
+  static constexpr int kNumProblems = 10;
+  for (int i = 0; i < kNumProblems; i++) {
+    std::vector<Rectangle>& rectangles = problems.emplace_back(
+        GenerateNonConflictingRectangles(state.range(0), random));
+    const int num_to_grow = absl::Uniform(random, 0, 20);
+    for (int i = 0; i < num_to_grow; ++i) {
+      Rectangle& rec =
+          rectangles[absl::Uniform(random, size_t{0}, rectangles.size())];
+      rec = {.x_min = rec.x_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .x_max = rec.x_max + IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_min = rec.y_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_max = rec.y_max + IntegerValue(absl::Uniform(random, 0, 4))};
+    }
+  }
+  int idx = 0;
+  for (auto s : state) {
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(problems[idx]);
+    CHECK_LT(result.size(), state.range(0) * state.range(0));
+    ++idx;
+    if (idx == kNumProblems) idx = 0;
+  }
+}
+
+BENCHMARK(BM_FindPartialIntersections)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(20)
+    ->Arg(30)
+    ->Arg(40)
+    ->Arg(80)
+    ->Arg(100)
+    ->Arg(200)
+    ->Arg(1000)
+    ->Arg(10000);
 
 }  // namespace
 }  // namespace sat

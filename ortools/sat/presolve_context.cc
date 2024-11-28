@@ -532,8 +532,8 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
 }
 
-ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
-    int ref, const Domain& domain, bool* domain_modified) {
+ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWithInternal(
+    int ref, const Domain& domain, bool* domain_modified, bool update_hint) {
   DCHECK(!DomainIsEmpty(ref));
   const int var = PositiveRef(ref);
 
@@ -560,8 +560,13 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
                      domain.ToString()));
   }
 
+  if (update_hint && VarHasSolutionHint(var)) {
+    UpdateVarSolutionHint(var, domains[var].ClosestValue(SolutionHint(var)));
+  }
+
 #ifdef CHECK_HINT
-  if (HintIsLoaded() && !domains[var].Contains(hint_[var])) {
+  if (working_model->has_solution_hint() && HintIsLoaded() &&
+      !domains[var].Contains(hint_[var])) {
     LOG(FATAL) << "Hint with value " << hint_[var]
                << " infeasible when changing domain of " << var << " to "
                << domains[var];
@@ -572,10 +577,11 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   // Note that the recursive call should only by one level deep.
   const AffineRelation::Relation r = GetAffineRelation(var);
   if (r.representative == var) return true;
-  return IntersectDomainWith(r.representative,
-                             DomainOf(var)
-                                 .AdditionWith(Domain(-r.offset))
-                                 .InverseMultiplicationBy(r.coeff));
+  return IntersectDomainWithInternal(r.representative,
+                                     DomainOf(var)
+                                         .AdditionWith(Domain(-r.offset))
+                                         .InverseMultiplicationBy(r.coeff),
+                                     /*domain_modified=*/nullptr, update_hint);
 }
 
 ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
@@ -700,7 +706,8 @@ void PresolveContext::AddVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (HintIsLoaded() && !ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (working_model->has_solution_hint() && HintIsLoaded() &&
+      !ConstraintIsFeasible(*working_model, ct, hint_)) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -756,7 +763,8 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (HintIsLoaded() && !ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (working_model->has_solution_hint() && HintIsLoaded() &&
+      !ConstraintIsFeasible(*working_model, ct, hint_)) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -1121,7 +1129,8 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
 #ifdef CHECK_HINT
   const int64_t vx = hint_[var_x];
   const int64_t vy = hint_[var_y];
-  if (HintIsLoaded() && vx != vy * coeff + offset) {
+  if (working_model->has_solution_hint() && HintIsLoaded() &&
+      vx != vy * coeff + offset) {
     LOG(FATAL) << "Affine relation incompatible with hint: " << vx
                << " != " << vy << " * " << coeff << " + " << offset;
   }

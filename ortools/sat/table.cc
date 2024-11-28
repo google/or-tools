@@ -19,6 +19,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -28,9 +29,10 @@ namespace operations_research {
 namespace sat {
 
 std::function<void(Model*)> LiteralTableConstraint(
-    const std::vector<std::vector<Literal>>& literal_tuples,
+    absl::Span<const std::vector<Literal>> literal_tuples,
     const std::vector<Literal>& line_literals) {
-  return [=](Model* model) {
+  return [=, literal_tuples = std::vector<std::vector<Literal>>(
+                 literal_tuples.begin(), literal_tuples.end())](Model* model) {
     CHECK_EQ(literal_tuples.size(), line_literals.size());
     const int num_tuples = line_literals.size();
     if (num_tuples == 0) return;

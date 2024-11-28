@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -257,7 +258,16 @@ class PresolveContext {
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
   ABSL_MUST_USE_RESULT bool IntersectDomainWith(
-      int ref, const Domain& domain, bool* domain_modified = nullptr);
+      int ref, const Domain& domain, bool* domain_modified = nullptr) {
+    return IntersectDomainWithInternal(ref, domain, domain_modified,
+                                       /*update_hint=*/false);
+  }
+
+  ABSL_MUST_USE_RESULT bool IntersectDomainWithAndUpdateHint(
+      int ref, const Domain& domain, bool* domain_modified = nullptr) {
+    return IntersectDomainWithInternal(ref, domain, domain_modified,
+                                       /*update_hint=*/true);
+  }
 
   // Returns false if the 'lit' doesn't have the desired value in the domain.
   ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
@@ -600,6 +610,11 @@ class PresolveContext {
   bool HintIsLoaded() const { return hint_is_loaded_; }
   absl::Span<const int64_t> SolutionHint() const { return hint_; }
 
+  bool LiteralSolutionHint(int lit) const {
+    const int var = PositiveRef(lit);
+    return RefIsPositive(lit) ? hint_[var] : !hint_[var];
+  }
+
   bool LiteralSolutionHintIs(int lit, bool value) const {
     const int var = PositiveRef(lit);
     return hint_is_loaded_ && hint_has_value_[var] &&
@@ -609,12 +624,24 @@ class PresolveContext {
   // If the given literal is already hinted, updates its hint.
   // Otherwise do nothing.
   void UpdateLiteralSolutionHint(int lit, bool value) {
-    UpdateSolutionHint(PositiveRef(lit), RefIsPositive(lit) == value ? 1 : 0);
+    UpdateVarSolutionHint(PositiveRef(lit),
+                          RefIsPositive(lit) == value ? 1 : 0);
+  }
+
+  std::optional<int64_t> GetRefSolutionHint(int ref) {
+    const int var = PositiveRef(ref);
+    if (!VarHasSolutionHint(var)) return std::nullopt;
+    const int64_t var_hint = SolutionHint(var);
+    return RefIsPositive(ref) ? var_hint : -var_hint;
+  }
+
+  void UpdateRefSolutionHint(int ref, int hint) {
+    UpdateVarSolutionHint(PositiveRef(ref), RefIsPositive(ref) ? hint : -hint);
   }
 
   // If the given variable is already hinted, updates its hint value.
   // Otherwise, do nothing.
-  void UpdateSolutionHint(int var, int64_t value) {
+  void UpdateVarSolutionHint(int var, int64_t value) {
     DCHECK(RefIsPositive(var));
     if (!hint_is_loaded_) return;
     if (!hint_has_value_[var]) return;
@@ -706,6 +733,11 @@ class PresolveContext {
   // Returns false if this make the problem infeasible.
   bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
+
+  ABSL_MUST_USE_RESULT bool IntersectDomainWithInternal(int ref,
+                                                        const Domain& domain,
+                                                        bool* domain_modified,
+                                                        bool update_hint);
 
   SolverLogger* logger_;
   const SatParameters& params_;

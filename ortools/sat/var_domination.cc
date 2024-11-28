@@ -733,7 +733,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
     if (ub_limit == lb) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWith(var, Domain(lb)));
+      CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(lb)));
       continue;
     }
 
@@ -743,7 +743,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
     if (lb_limit == ub) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWith(var, Domain(ub)));
+      CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(ub)));
       continue;
     }
 
@@ -761,7 +761,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         }
         ++num_fixed_vars;
         context->UpdateRuleStats("dual: fix variable with multiple choices");
-        CHECK(context->IntersectDomainWith(var, Domain(value)));
+        CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(value)));
         continue;
       }
     }
@@ -784,7 +784,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                     .Max()
               : lb;
       context->UpdateRuleStats("dual: reduced domain");
-      CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
+      CHECK(context->IntersectDomainWithAndUpdateHint(var,
+                                                      Domain(new_lb, new_ub)));
     }
   }
   if (num_fixed_vars > 0) {
@@ -834,7 +835,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
       // If we have an enforcement literal then we can always add the
       // implication "not enforced" => var at its lower bound.
-      // If we also had enforced => fixed var, then var is in affine relation
+      // If we also have enforced => fixed var, then var is in affine relation
       // with the enforced literal and we can remove one variable.
       //
       // TODO(user): We can also deal with more than one enforcement.
@@ -895,6 +896,13 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           processed[PositiveRef(enf)] = true;
           processed[positive_ref] = true;
           context->UpdateRuleStats("dual: add implication");
+          // The new implication can break the hint if hint(enf) is 0 and
+          // hint(ref) is 1. In this case the only locking constraint `ct` does
+          // not apply and thus does not prevent decreasing the hint of ref in
+          // order to preserve the hint feasibility.
+          if (context->LiteralSolutionHintIs(enf, false)) {
+            context->UpdateLiteralSolutionHint(ref, false);
+          }
           context->AddImplication(NegatedRef(enf), NegatedRef(ref));
           context->UpdateNewConstraintsVariableUsage();
           continue;
@@ -1092,6 +1100,13 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
     processed[PositiveRef(a)] = true;
     processed[PositiveRef(b)] = true;
+    // If hint(a) is false we can always set it to hint(b) since this can only
+    // increase its value. If hint(a) is true then hint(b) must be true as well
+    // if the hint is feasible, due to the a => b constraint. Setting hint(a) to
+    // hint(b) is thus always safe.
+    if (context->VarHasSolutionHint(PositiveRef(b))) {
+      context->UpdateLiteralSolutionHint(a, context->LiteralSolutionHint(b));
+    }
     context->StoreBooleanEqualityRelation(a, b);
     context->UpdateRuleStats("dual: enforced equivalence");
   }
@@ -1384,19 +1399,6 @@ void ScanModelForDualBoundStrengthening(
 }
 
 namespace {
-std::optional<int64_t> GetRefSolutionHint(const PresolveContext& context,
-                                          int ref) {
-  const int var = PositiveRef(ref);
-  if (!context.VarHasSolutionHint(var)) return std::nullopt;
-  const int64_t var_hint = context.SolutionHint(var);
-  return RefIsPositive(ref) ? var_hint : -var_hint;
-}
-
-void SetRefSolutionHint(PresolveContext& context, int ref, int hint) {
-  context.UpdateSolutionHint(PositiveRef(ref),
-                             RefIsPositive(ref) ? hint : -hint);
-}
-
 // Decrements the solution hint of `lit` and increments the solution hint of
 // `dominating_lit` if both hint values are present and equal to 1 and 0,
 // respectively.
@@ -1420,7 +1422,7 @@ void MaybeUpdateLiteralHintFromDominance(PresolveContext& context, int lit,
 void MaybeUpdateRefHintFromDominance(
     PresolveContext& context, int ref, const Domain& domain,
     const absl::Span<const IntegerVariable> dominating_variables) {
-  const std::optional<int64_t> ref_hint = GetRefSolutionHint(context, ref);
+  const std::optional<int64_t> ref_hint = context.GetRefSolutionHint(ref);
   if (!ref_hint.has_value()) return;
   // The quantity to subtract from the solution hint of `ref`.
   const int64_t ref_hint_delta = *ref_hint - domain.ClosestValue(*ref_hint);
@@ -1437,7 +1439,7 @@ void MaybeUpdateRefHintFromDominance(
   for (const IntegerVariable ivar : dominating_variables) {
     const int dominating_ref = VarDomination::IntegerVariableToRef(ivar);
     const std::optional<int64_t> dominating_ref_hint =
-        GetRefSolutionHint(context, dominating_ref);
+        context.GetRefSolutionHint(dominating_ref);
     if (!dominating_ref_hint.has_value()) continue;
     const int64_t delta =
         context.DomainOf(dominating_ref)
@@ -1454,7 +1456,7 @@ void MaybeUpdateRefHintFromDominance(
 
   // Second step: actually update the hints.
   for (const auto& [ref, hint] : new_ref_hint_value_pairs) {
-    SetRefSolutionHint(context, ref, hint);
+    context.UpdateRefSolutionHint(ref, hint);
   }
 }
 
@@ -1876,14 +1878,8 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             increase_is_forbidden[var] = true;
             context->UpdateRuleStats(
                 "domination: dual strenghtening using dominance");
-            const Domain reduced_domain = Domain(context->MinOf(ref), lb);
-            const std::optional<int64_t> ref_hint =
-                GetRefSolutionHint(*context, ref);
-            if (ref_hint.has_value()) {
-              SetRefSolutionHint(*context, ref,
-                                 reduced_domain.ClosestValue(*ref_hint));
-            }
-            if (!context->IntersectDomainWith(ref, reduced_domain)) {
+            if (!context->IntersectDomainWithAndUpdateHint(
+                    ref, Domain(context->MinOf(ref), lb))) {
               return false;
             }
 

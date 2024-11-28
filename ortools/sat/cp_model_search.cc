@@ -421,7 +421,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
+    absl::Span<const IntegerVariable> variable_mapping,
     std::function<BooleanOrIntegerLiteral()> instrumented_strategy,
     Model* model) {
   std::vector<int> ref_to_display;
@@ -436,7 +436,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
   });
 
   std::vector<std::pair<int64_t, int64_t>> old_domains(variable_mapping.size());
-  return [instrumented_strategy, model, &variable_mapping, &cp_model_proto,
+  return [instrumented_strategy, model, variable_mapping, &cp_model_proto,
           old_domains, ref_to_display]() mutable {
     const BooleanOrIntegerLiteral decision = instrumented_strategy();
     if (!decision.HasValue()) return decision;

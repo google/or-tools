@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -96,7 +97,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
 // arguments.
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
+    absl::Span<const IntegerVariable> variable_mapping,
     std::function<BooleanOrIntegerLiteral()> instrumented_strategy,
     Model* model);
 

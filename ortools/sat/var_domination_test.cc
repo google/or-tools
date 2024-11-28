@@ -800,6 +800,45 @@ TEST(VarDominationTest, NegativeCoefficients) {
   EXPECT_THAT(var_dom.DominatingVariables(Z), IsEmpty());
 }
 
+TEST(DualBoundReductionTest, FixVariableToDomainBound) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ -10, 10 ] }
+    variables { domain: [ -10, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ -15, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: [ 0, 15 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ -5, 5 ]
+    }
+  )pb");
+  DualBoundStrengthening dual_bound_strengthening;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+  context.ReadObjectiveFromProto();
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
+  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[-10]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[10]");
+  EXPECT_EQ(context.SolutionHint(0), -10);
+  EXPECT_EQ(context.SolutionHint(1), 10);
+}
+
 // Bound propagation see nothing, but if we can remove feasible solution, from
 // this constraint point of view, all variables can freely increase or decrease
 // until zero (because the constraint is trivial above/below).
@@ -817,17 +856,27 @@ TEST(DualBoundReductionTest, BasicTest) {
         domain: [ -20, 20 ]
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 3, 4, 5 ]
+    }
   )pb");
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
+  context.LoadSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), 0);
+  EXPECT_EQ(context.SolutionHint(2), 0);
 }
 
 TEST(DualBoundReductionTest, CarefulWithHoles) {
@@ -849,13 +898,15 @@ TEST(DualBoundReductionTest, CarefulWithHoles) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-5,5]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-5,0][7]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[-6][3,5]");
 }
 
-// Here the infered bounds crosses, so we have multiple choices, we will fix
+// Here the inferred bounds crosses, so we have multiple choices, we will fix
 // to the lowest magnitude.
 TEST(DualBoundReductionTest, Choices) {
   CpModelProto model_proto = ParseTestProto(R"pb(
@@ -869,17 +920,74 @@ TEST(DualBoundReductionTest, Choices) {
         domain: [ -25, 25 ]
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 3, 4, 5 ]
+    }
   )pb");
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
+  context.LoadSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-2]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[2]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), -2);
+  EXPECT_EQ(context.SolutionHint(2), 2);
+}
+
+TEST(DualBoundReductionTest, AddImplication) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      # a => (b == c)
+      enforcement_literal: 0
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ -1, 1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 1 ]
+      values: [ 0, 1, 1 ]
+    }
+  )pb");
+  DualBoundStrengthening dual_bound_strengthening;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+  context.ReadObjectiveFromProto();
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
+  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
+  // not(a) => not(b) and not(a) => not(c) should be added.
+  ASSERT_EQ(context.working_model->constraints_size(), 3);
+  const ConstraintProto expected_constraint_proto1 =
+      ParseTestProto(R"pb(enforcement_literal: -1 bool_and { literals: -2 })pb");
+  EXPECT_THAT(context.working_model->constraints(1),
+              EqualsProto(expected_constraint_proto1));
+  const ConstraintProto expected_constraint_proto2 =
+      ParseTestProto(R"pb(enforcement_literal: -1 bool_and { literals: -3 })pb");
+  EXPECT_THAT(context.working_model->constraints(2),
+              EqualsProto(expected_constraint_proto2));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
+  EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), 0);
+  EXPECT_EQ(context.SolutionHint(2), 0);
 }
 
 TEST(DualBoundReductionTest, EquivalenceDetection) {
@@ -905,20 +1013,27 @@ TEST(DualBoundReductionTest, EquivalenceDetection) {
         literals: [ 0, 2 ]  # a + c >= 0
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 1, 1 ]
+    }
   )pb");
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
+  context.LoadSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");
-
   // Equivalence between a and b.
   EXPECT_EQ(context.GetLiteralRepresentative(1), 0);
+  EXPECT_TRUE(context.LiteralSolutionHint(0));
 }
 
 }  // namespace

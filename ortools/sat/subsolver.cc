@@ -30,6 +30,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/util.h"
@@ -82,7 +83,7 @@ void ClearSubsolversThatAreDone(
   }
 }
 
-void SynchronizeAll(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
+void SynchronizeAll(absl::Span<const std::unique_ptr<SubSolver>> subsolvers) {
   for (const auto& subsolver : subsolvers) {
     if (subsolver == nullptr) continue;
     subsolver->Synchronize();

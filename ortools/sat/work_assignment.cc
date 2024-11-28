@@ -73,22 +73,6 @@ int MaxAllowedDiscrepancyPlusDepth(int num_leaves) {
   }
   return i;
 }
-
-int DefaultNumSharedTreeWorkers(Model* model) {
-  const SatParameters& params = *model->Get<SatParameters>();
-  // Shared tree workers are not deterministic, so don't enable them by default
-  // in interleaved search which is normally used to get deterministic results.
-  if (params.interleave_search()) return 0;
-  if (params.num_workers() < 16) return 0;
-  const bool has_objective =
-      model->Get<CpModelProto>()->has_objective() ||
-      model->Get<CpModelProto>()->has_floating_point_objective();
-  if (has_objective) {
-    return (params.num_workers() - 8) / 2;
-  }
-  return (params.num_workers() - 8) * 3 / 4;
-}
-
 }  // namespace
 
 Literal ProtoLiteral::Decode(CpModelMapping* mapping,
@@ -232,9 +216,7 @@ absl::Span<const ProtoLiteral> ProtoTrail::Implications(int level) const {
 
 SharedTreeManager::SharedTreeManager(Model* model)
     : params_(*model->GetOrCreate<SatParameters>()),
-      num_workers_(params_.shared_tree_num_workers() >= 0
-                       ? params_.shared_tree_num_workers()
-                       : DefaultNumSharedTreeWorkers(model)),
+      num_workers_(params_.shared_tree_num_workers()),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       num_splits_wanted_(
           num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1),
@@ -243,6 +225,7 @@ SharedTreeManager::SharedTreeManager(Model* model)
                   std::numeric_limits<int>::max() / std::max(num_workers_, 1)
               ? std::numeric_limits<int>::max()
               : num_workers_ * params_.shared_tree_max_nodes_per_worker()) {
+  CHECK_GE(num_workers_, 0);
   // Create the root node with a fake literal.
   nodes_.push_back(
       {.literal = ProtoLiteral(),

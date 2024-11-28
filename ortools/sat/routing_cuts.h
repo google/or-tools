@@ -69,7 +69,7 @@ void GenerateInterestingSubsets(int num_nodes,
 // TODO(user): This also allocate O(n) memory internally, we could reuse it from
 // call to call if needed.
 void ExtractAllSubsetsFromForest(
-    const std::vector<int>& parent, std::vector<int>* subset_data,
+    absl::Span<const int> parent, std::vector<int>* subset_data,
     std::vector<absl::Span<const int>>* subsets,
     int node_limit = std::numeric_limits<int>::max());
 

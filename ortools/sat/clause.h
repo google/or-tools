@@ -833,12 +833,6 @@ class BinaryImplicationGraph : public SatPropagator {
   // proof if needed. This will propagate right away the implications.
   bool FixLiteral(Literal true_literal);
 
-  // Propagates all the direct implications of the given literal becoming true.
-  // Returns false if a conflict was encountered, in which case
-  // trail->SetFailingClause() will be called with the correct size 2 clause.
-  // This calls trail->Enqueue() on the newly assigned literals.
-  bool PropagateOnTrue(Literal true_literal, Trail* trail);
-
   // Remove any literal whose negation is marked (except the first one).
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
 

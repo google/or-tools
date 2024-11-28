@@ -269,22 +269,24 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
 
 std::function<BooleanOrIntegerLiteral()>
 UnassignedVarWithLowestMinAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model) {
+    absl::Span<const IntegerVariable> vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [/*copy */ vars, integer_trail]() {
-    IntegerVariable candidate = kNoIntegerVariable;
-    IntegerValue candidate_lb;
-    for (const IntegerVariable var : vars) {
-      const IntegerValue lb = integer_trail->LowerBound(var);
-      if (lb < integer_trail->UpperBound(var) &&
-          (candidate == kNoIntegerVariable || lb < candidate_lb)) {
-        candidate = var;
-        candidate_lb = lb;
-      }
-    }
-    if (candidate == kNoIntegerVariable) return BooleanOrIntegerLiteral();
-    return BooleanOrIntegerLiteral(AtMinValue(candidate, integer_trail));
-  };
+  return
+      [/*copy */ vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
+       integer_trail]() {
+        IntegerVariable candidate = kNoIntegerVariable;
+        IntegerValue candidate_lb;
+        for (const IntegerVariable var : vars) {
+          const IntegerValue lb = integer_trail->LowerBound(var);
+          if (lb < integer_trail->UpperBound(var) &&
+              (candidate == kNoIntegerVariable || lb < candidate_lb)) {
+            candidate = var;
+            candidate_lb = lb;
+          }
+        }
+        if (candidate == kNoIntegerVariable) return BooleanOrIntegerLiteral();
+        return BooleanOrIntegerLiteral(AtMinValue(candidate, integer_trail));
+      };
 }
 
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(

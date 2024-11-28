@@ -311,8 +311,7 @@ std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
 namespace {
 
 IntegerVariable GetOrCreateVariableWithTightBound(
-    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
-    Model* model) {
+    absl::Span<const std::pair<IntegerVariable, int64_t>> terms, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -700,7 +699,7 @@ void RegisterVariableBoundsLevelZeroExport(
   const std::string name = model->Name();
 
   auto broadcast_level_zero_bounds =
-      [=](const std::vector<IntegerVariable>& modified_vars) mutable {
+      [=](absl::Span<const IntegerVariable> modified_vars) mutable {
         // Inspect the modified IntegerVariables.
         for (const IntegerVariable& var : modified_vars) {
           const IntegerVariable positive_var = PositiveVariable(var);
@@ -873,7 +872,7 @@ void RegisterObjectiveBestBoundExport(
   const auto broadcast_objective_lower_bound =
       [objective_var, integer_trail, shared_response_manager, model,
        best_obj_lb =
-           kMinIntegerValue](const std::vector<IntegerVariable>&) mutable {
+           kMinIntegerValue](absl::Span<const IntegerVariable>) mutable {
         const IntegerValue objective_lb =
             integer_trail->LevelZeroLowerBound(objective_var);
         if (objective_lb > best_obj_lb) {
@@ -1816,7 +1815,7 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
 // the model before presolve.
 void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
                                      CpModelProto mapping_proto,
-                                     const std::vector<int>& postsolve_mapping,
+                                     absl::Span<const int> postsolve_mapping,
                                      std::vector<int64_t>* solution) {
   WallTimer wall_timer;
   wall_timer.Start();
@@ -1925,6 +1924,21 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
 #endif
     SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
     params->set_num_workers(num_cores);
+  }
+
+  if (params->shared_tree_num_workers() == -1) {
+    int num_shared_tree_workers = 0;
+    if (params->num_workers() >= 16) {
+      if (model_proto.has_objective() ||
+          model_proto.has_floating_point_objective()) {
+        num_shared_tree_workers = (params->num_workers() - 8) / 2;
+      } else {
+        num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
+      }
+    }
+    SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+               num_shared_tree_workers);
+    params->set_shared_tree_num_workers(num_shared_tree_workers);
   }
 
   // We currently only use the feasibility pump or rins/rens if it is enabled
