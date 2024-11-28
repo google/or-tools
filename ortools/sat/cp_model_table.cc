@@ -160,12 +160,14 @@ void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
   }
 
   if (new_tuples.empty()) {
-    // Add a trivially unsat table constraint so code downstream can handle
-    // any eventual enforcement literals.
+    // Add a trivially unsat (or trivially sat if negated) table constraint so
+    // code downstream can handle any eventual enforcement literals.
     context->UpdateRuleStats("table: all tuples invalid");
     ct->mutable_table()->clear_exprs();
     ct->mutable_table()->clear_values();
-    ct->mutable_table()->add_exprs()->set_offset(0);
+    if (!ct->table().negated()) {
+      ct->mutable_table()->add_exprs()->set_offset(0);
+    }
     ct->mutable_table()->set_negated(false);
     return;
   }
