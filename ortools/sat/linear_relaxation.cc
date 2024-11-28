@@ -1122,10 +1122,10 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
 //
 // Add linking constraint to the CP solver
 // sum zi = 1 and for all i, zi => max = expr_i.
-void AppendLinMaxRelaxationPart2(
-    IntegerVariable target, const std::vector<Literal>& alternative_literals,
-    const std::vector<LinearExpression>& exprs, Model* model,
-    LinearRelaxation* relaxation) {
+void AppendLinMaxRelaxationPart2(IntegerVariable target,
+                                 absl::Span<const Literal> alternative_literals,
+                                 absl::Span<const LinearExpression> exprs,
+                                 Model* model, LinearRelaxation* relaxation) {
   const int num_exprs = exprs.size();
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 

@@ -461,7 +461,7 @@ void GenerateInterestingSubsets(int num_nodes,
                               /*node_limit=*/num_nodes);
 }
 
-void ExtractAllSubsetsFromForest(const std::vector<int>& parent,
+void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
                                  std::vector<int>* subset_data,
                                  std::vector<absl::Span<const int>>* subsets,
                                  int node_limit) {

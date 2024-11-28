@@ -169,8 +169,8 @@ class RectanglePairwisePropagator : public PropagatorInterface {
       std::vector<PairwiseRestriction>* restrictions);
 
   bool FindRestrictionsAndPropagateConflict(
-      const std::vector<ItemForPairwiseRestriction>& items1,
-      const std::vector<ItemForPairwiseRestriction>& items2,
+      absl::Span<const ItemForPairwiseRestriction> items1,
+      absl::Span<const ItemForPairwiseRestriction> items2,
       std::vector<PairwiseRestriction>* restrictions);
 
   bool PropagateTwoBoxes(const PairwiseRestriction& restriction);

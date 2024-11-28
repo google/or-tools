@@ -57,7 +57,7 @@ using operations_research::MPVariableProto;
 
 namespace {
 
-void ScaleConstraint(const std::vector<double>& var_scaling,
+void ScaleConstraint(absl::Span<const double> var_scaling,
                      MPConstraintProto* mp_constraint) {
   const int num_terms = mp_constraint->coefficient_size();
   for (int i = 0; i < num_terms; ++i) {

@@ -602,8 +602,8 @@ int64_t MaxBoundedSubsetSum::MaxIfAdded(int64_t candidate) const {
 }
 
 BasicKnapsackSolver::Result BasicKnapsackSolver::Solve(
-    const std::vector<Domain>& domains, const std::vector<int64_t>& coeffs,
-    const std::vector<int64_t>& costs, const Domain& rhs) {
+    absl::Span<const Domain> domains, absl::Span<const int64_t> coeffs,
+    absl::Span<const int64_t> costs, const Domain& rhs) {
   const int num_vars = domains.size();
   if (num_vars == 0) return {};
 

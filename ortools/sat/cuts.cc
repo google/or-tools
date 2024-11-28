@@ -2548,8 +2548,8 @@ IntegerValue MPlusCoefficient(
 // rhs = wI(i)i * xi + Sum(k=1..d)(MPlusCoefficient_ki * zk)
 // for variable xi for given target index I(i).
 double ComputeContribution(
-    const IntegerVariable xi_var, const std::vector<IntegerVariable>& z_vars,
-    const std::vector<LinearExpression>& exprs,
+    const IntegerVariable xi_var, absl::Span<const IntegerVariable> z_vars,
+    absl::Span<const LinearExpression> exprs,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail, const int target_index) {
   CHECK_GE(target_index, 0);
@@ -2645,7 +2645,7 @@ CutGenerator CreateLinMaxCutGenerator(
 namespace {
 
 IntegerValue EvaluateMaxAffine(
-    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    absl::Span<const std::pair<IntegerValue, IntegerValue>> affines,
     IntegerValue x) {
   IntegerValue y = kMinIntegerValue;
   for (const auto& p : affines) {

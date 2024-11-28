@@ -25,6 +25,7 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -286,7 +287,7 @@ class CpModelPresolver {
   // this cannot happen by maybe taking the rhs into account?
   bool RemoveCommonPart(
       const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
-      const std::vector<std::pair<int, int64_t>>& block,
+      absl::Span<const std::pair<int, int64_t>> block,
       ActivityBoundHelper* helper);
 
   // Try to identify many linear constraints that share a common linear
@@ -414,7 +415,7 @@ class ModelCopy {
 
   // Setup new variables from a vector of domains.
   // Inactive variables will be fixed to their lower bound.
-  void CreateVariablesFromDomains(const std::vector<Domain>& domains);
+  void CreateVariablesFromDomains(absl::Span<const Domain> domains);
 
  private:
   // Overwrites the out_model to be unsat. Returns false.

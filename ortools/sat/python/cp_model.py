@@ -1444,7 +1444,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError("name={} is not a valid identifier".format(name))
+            raise ValueError(f"name={name} is not a valid identifier")
         if (
             isinstance(lower_bounds, IntegralTypes)
             and isinstance(upper_bounds, IntegralTypes)
@@ -1634,8 +1634,8 @@ class CpModel:
 
         Adds a circuit constraint from a sparse list of arcs that encode the graph.
 
-        A circuit is a unique Hamiltonian path in a subgraph of the total
-        graph. In case a node 'i' is not in the path, then there must be a
+        A circuit is a unique Hamiltonian circuit in a subgraph of the total
+        graph. In case a node 'i' is not in the circuit, then there must be a
         loop arc 'i -> i' associated with a true literal. Otherwise
         this constraint will fail.
 
@@ -2341,7 +2341,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError("name={} is not a valid identifier".format(name))
+            raise ValueError(f"name={name} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_linear_expr_series_and_validate_index(sizes, index)
@@ -2414,7 +2414,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError("name={} is not a valid identifier".format(name))
+            raise ValueError(f"name={name} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_integral_series_and_validate_index(sizes, index)
@@ -2518,7 +2518,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError("name={} is not a valid identifier".format(name))
+            raise ValueError(f"name={name} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_linear_expr_series_and_validate_index(sizes, index)
@@ -2612,7 +2612,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError("name={} is not a valid identifier".format(name))
+            raise ValueError(f"name={name} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_integral_series_and_validate_index(sizes, index)
@@ -3767,15 +3767,14 @@ def _convert_to_integral_series_and_validate_index(
       ValueError: If the index does not match.
     """
     if isinstance(value_or_series, IntegralTypes):
-        result = pd.Series(data=value_or_series, index=index)
+        return pd.Series(data=value_or_series, index=index)
     elif isinstance(value_or_series, pd.Series):
         if value_or_series.index.equals(index):
-            result = value_or_series
+            return value_or_series
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError("invalid type={}".format(type(value_or_series)))
-    return result
+        raise TypeError(f"invalid type={type(value_or_series)}")
 
 
 def _convert_to_linear_expr_series_and_validate_index(
@@ -3795,15 +3794,14 @@ def _convert_to_linear_expr_series_and_validate_index(
       ValueError: If the index does not match.
     """
     if isinstance(value_or_series, IntegralTypes):
-        result = pd.Series(data=value_or_series, index=index)
+        return pd.Series(data=value_or_series, index=index)
     elif isinstance(value_or_series, pd.Series):
         if value_or_series.index.equals(index):
-            result = value_or_series
+            return value_or_series
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError("invalid type={}".format(type(value_or_series)))
-    return result
+        raise TypeError(f"invalid type={type(value_or_series)}")
 
 
 def _convert_to_literal_series_and_validate_index(
@@ -3823,12 +3821,11 @@ def _convert_to_literal_series_and_validate_index(
       ValueError: If the index does not match.
     """
     if isinstance(value_or_series, IntegralTypes):
-        result = pd.Series(data=value_or_series, index=index)
+        return pd.Series(data=value_or_series, index=index)
     elif isinstance(value_or_series, pd.Series):
         if value_or_series.index.equals(index):
-            result = value_or_series
+            return value_or_series
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError("invalid type={}".format(type(value_or_series)))
-    return result
+        raise TypeError(f"invalid type={type(value_or_series)}")

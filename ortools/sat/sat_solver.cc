@@ -1695,7 +1695,7 @@ bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
   return true;
 }
 
-int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
+int SatSolver::ComputeBacktrackLevel(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_GT(CurrentDecisionLevel(), 0);
 
