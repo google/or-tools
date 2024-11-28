@@ -109,6 +109,12 @@ enum class SolverType {
   // Slow/not recommended for production. Not an LP solver (no dual information
   // returned).
   kSantorini = SOLVER_TYPE_SANTORINI,
+
+  // Fico XPRESS solver (third party).
+  //
+  // Supports LP, MIP, and nonconvex integer quadratic problems.
+  // A fast option, but has special licensing.
+  kXpress = SOLVER_TYPE_XPRESS
 };
 
 MATH_OPT_DEFINE_ENUM(SolverType, SOLVER_TYPE_UNSPECIFIED);

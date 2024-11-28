@@ -233,3 +233,31 @@ if(USE_HIGHS)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
 endif()
+
+if(USE_XPRESS)
+  add_subdirectory(xpress)
+  ortools_cxx_test(
+    NAME
+      math_opt_solvers_xpress_solver_test
+    SOURCES
+      "xpress_solver_test.cc"
+    LINK_LIBRARIES
+      GTest::gmock
+      GTest::gmock_main
+      absl::status
+      ortools::math_opt_matchers
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
+  )
+endif()

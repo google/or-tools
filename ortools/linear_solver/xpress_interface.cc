@@ -204,13 +204,6 @@ void interruptXPRESS(XPRSprob& xprsProb, CUSTOM_INTERRUPT_REASON reason) {
   XPRSinterrupt(xprsProb, 1000 + reason);
 }
 
-enum XPRS_BASIS_STATUS {
-  XPRS_AT_LOWER = 0,
-  XPRS_BASIC = 1,
-  XPRS_AT_UPPER = 2,
-  XPRS_FREE_SUPER = 3
-};
-
 // In case we need to return a double but don't have a value for that
 // we just return a NaN.
 #if !defined(XPRS_NAN)
