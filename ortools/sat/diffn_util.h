@@ -33,6 +33,7 @@
 #include "absl/types/span.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -124,8 +125,9 @@ inline IntegerValue Rectangle::IntersectArea(const Rectangle& other) const {
 //
 // This method removes all singleton components. It will modify the
 // active_rectangle span in place.
-std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
-    absl::Span<const Rectangle> rectangles, absl::Span<int> active_rectangles);
+CompactVectorVector<int> GetOverlappingRectangleComponents(
+    absl::Span<const Rectangle> rectangles,
+    absl::Span<const int> active_rectangles);
 
 // Visible for testing. The algo is in O(n^4) so shouldn't be used directly.
 // Returns true if there exist a bounding box with too much energy.
@@ -651,14 +653,15 @@ inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
   return PavedRegionDifference({other.begin(), other.end()}, region).empty();
 }
 
-// For a given a set of N rectangles in `rectangles`, there might be up to
-// N*(N-1)/2 pairs of rectangles that intersect one another. If each of these
-// pairs describe an arc and each rectangle describe a node, the rectangles and
-// their intersections describe a graph. This function returns the full spanning
-// forest for this graph (ie., a spanning tree for each connected component).
-// This function allows to know if a set of rectangles has any intersection,
-// find an example intersection for each rectangle that has one, or split the
-// rectangles into connected components according to their intersections.
+// For a given a set of N rectangles with non-zero area in `rectangles`, there
+// might be up to N*(N-1)/2 pairs of rectangles that intersect one another. If
+// each of these pairs describe an arc and each rectangle describe a node, the
+// rectangles and their intersections describe a graph. This function returns
+// the full spanning forest for this graph (ie., a spanning tree for each
+// connected component). This function allows to know if a set of rectangles has
+// any intersection, find an example intersection for each rectangle that has
+// one, or split the rectangles into connected components according to their
+// intersections.
 //
 // The returned tuples are the arcs of the spanning forest represented by their
 // indices in the input vector.
@@ -671,6 +674,10 @@ inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
 //
 // TODO(user): Find a real O(N log N) algorithm.
 std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
+    absl::Span<const Rectangle> rectangles);
+
+// Same as above, but also correctly handles rectangles with zero area.
+std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
     absl::Span<const Rectangle> rectangles);
 
 }  // namespace sat

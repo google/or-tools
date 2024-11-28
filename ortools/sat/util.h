@@ -101,6 +101,12 @@ class CompactVectorVector {
   template <typename Keys, typename Values>
   void ResetFromFlatMapping(Keys keys, Values values);
 
+  // Same as above but for any collections of std::pair<K, V>, or, more
+  // generally, any iterable collection of objects that have a `first` and a
+  // `second` members.
+  template <typename Collection>
+  void ResetFromPairs(const Collection& pairs, int minimum_num_nodes = 0);
+
   // Initialize this vector from the transpose of another.
   // IMPORTANT: This cannot be called with the vector itself.
   //
@@ -803,6 +809,50 @@ inline void CompactVectorVector<K, V>::ResetFromFlatMapping(Keys keys,
   buffer_.resize(keys.size());
   for (int i = 0; i < keys.size(); ++i) {
     buffer_[starts_[InternalKey(keys[i])]++] = values[i];
+  }
+
+  // Restore starts_.
+  for (int k = max_key - 1; k > 0; --k) {
+    starts_[k] = starts_[k - 1];
+  }
+  starts_[0] = 0;
+}
+
+// Similar to ResetFromFlatMapping().
+template <typename K, typename V>
+template <typename Collection>
+inline void CompactVectorVector<K, V>::ResetFromPairs(const Collection& pairs,
+                                                      int minimum_num_nodes) {
+  // Compute maximum index.
+  int max_key = minimum_num_nodes;
+  for (const auto& [key, _] : pairs) {
+    max_key = std::max(max_key, InternalKey(key) + 1);
+  }
+
+  if (pairs.empty()) {
+    clear();
+    sizes_.assign(minimum_num_nodes, 0);
+    starts_.assign(minimum_num_nodes, 0);
+    return;
+  }
+
+  // Compute sizes_;
+  sizes_.assign(max_key, 0);
+  for (const auto& [key, _] : pairs) {
+    sizes_[InternalKey(key)]++;
+  }
+
+  // Compute starts_;
+  starts_.assign(max_key, 0);
+  for (int k = 1; k < max_key; ++k) {
+    starts_[k] = starts_[k - 1] + sizes_[k - 1];
+  }
+
+  // Copy data and uses starts as temporary indices.
+  buffer_.resize(pairs.size());
+  for (int i = 0; i < pairs.size(); ++i) {
+    const auto& [key, value] = pairs[i];
+    buffer_[starts_[InternalKey(key)]++] = value;
   }
 
   // Restore starts_.

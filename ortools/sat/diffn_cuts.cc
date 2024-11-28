@@ -137,7 +137,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
 
 void GenerateNoOverlap2dEnergyCut(
     absl::Span<const std::vector<LiteralValueValue>> energies,
-    absl::Span<int> rectangles, absl::string_view cut_name, Model* model,
+    absl::Span<const int> rectangles, absl::string_view cut_name, Model* model,
     LinearConstraintManager* manager, SchedulingConstraintHelper* x_helper,
     SchedulingConstraintHelper* y_helper,
     SchedulingDemandHelper* y_demands_helper) {
@@ -355,11 +355,13 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 
     if (active_rectangles.size() <= 1) return true;
 
-    std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
-        cached_rectangles, absl::MakeSpan(active_rectangles));
+    const CompactVectorVector<int> components =
+        GetOverlappingRectangleComponents(cached_rectangles,
+                                          absl::MakeSpan(active_rectangles));
 
     // Forward pass. No need to do a backward pass.
-    for (absl::Span<int> rectangles : components) {
+    for (int i = 0; i < components.size(); ++i) {
+      absl::Span<const int> rectangles = components[i];
       if (rectangles.size() <= 1) continue;
 
       GenerateNoOverlap2dEnergyCut(energies, rectangles, "NoOverlap2dXEnergy",
@@ -602,9 +604,11 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 
     if (active_rectangles.size() <= 1) return true;
 
-    std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
-        cached_rectangles, absl::MakeSpan(active_rectangles));
-    for (absl::Span<int> rectangles : components) {
+    const CompactVectorVector<int> components =
+        GetOverlappingRectangleComponents(cached_rectangles,
+                                          absl::MakeSpan(active_rectangles));
+    for (int i = 0; i < components.size(); ++i) {
+      absl::Span<const int> rectangles = components[i];
       if (rectangles.size() <= 1) continue;
 
       auto generate_cuts = [product_decomposer, manager, model, &rectangles](

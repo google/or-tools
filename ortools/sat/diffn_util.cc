@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <ostream>
 #include <set>
@@ -44,6 +45,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/util.h"
@@ -105,27 +107,41 @@ absl::InlinedVector<Rectangle, 4> Rectangle::RegionDifference(
   return result;
 }
 
-std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
-    absl::Span<const Rectangle> rectangles, absl::Span<int> active_rectangles) {
+CompactVectorVector<int> GetOverlappingRectangleComponents(
+    absl::Span<const Rectangle> rectangles,
+    absl::Span<const int> active_rectangles) {
   if (active_rectangles.empty()) return {};
 
-  std::vector<absl::Span<int>> result;
-  const int size = active_rectangles.size();
-  for (int start = 0; start < size;) {
-    // Find the component of active_rectangles[start].
-    int end = start + 1;
-    for (int i = start; i < end; i++) {
-      for (int j = end; j < size; ++j) {
-        if (!rectangles[active_rectangles[i]].IsDisjoint(
-                rectangles[active_rectangles[j]])) {
-          std::swap(active_rectangles[end++], active_rectangles[j]);
-        }
-      }
+  std::vector<Rectangle> rectangles_to_process;
+  std::vector<int> rectangles_index;
+  rectangles_to_process.reserve(active_rectangles.size());
+  rectangles_index.reserve(active_rectangles.size());
+  for (const int r : active_rectangles) {
+    rectangles_to_process.push_back(rectangles[r]);
+    rectangles_index.push_back(r);
+  }
+
+  std::vector<std::pair<int, int>> intersections =
+      FindPartialRectangleIntersectionsAlsoEmpty(rectangles_to_process);
+  const int num_intersections = intersections.size();
+  intersections.reserve(num_intersections * 2 + 1);
+  for (int i = 0; i < num_intersections; ++i) {
+    intersections.push_back({intersections[i].second, intersections[i].first});
+  }
+
+  CompactVectorVector<int> view;
+  view.ResetFromPairs(intersections, /*minimum_num_nodes=*/rectangles.size());
+  CompactVectorVector<int> components;
+  FindStronglyConnectedComponents(static_cast<int>(rectangles.size()), view,
+                                  &components);
+  CompactVectorVector<int> result;
+  for (int i = 0; i < components.size(); ++i) {
+    absl::Span<const int> component = components[i];
+    if (component.size() == 1) continue;
+    result.Add({});
+    for (const int r : component) {
+      result.AppendToLastVector(rectangles_index[r]);
     }
-    if (end > start + 1) {
-      result.push_back(active_rectangles.subspan(start, end - start));
-    }
-    start = end;
   }
   return result;
 }
@@ -1613,6 +1629,8 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
   std::vector<RectangleHorizontalEdge> edges;
   edges.reserve(rectangles.size() * 2);
   for (int i = 0; i < rectangles.size(); ++i) {
+    DCHECK_GT(rectangles[i].SizeX(), 0);
+    DCHECK_GT(rectangles[i].SizeY(), 0);
     edges.push_back({.x_coordinate = rectangles[i].x_min,
                      .index = i,
                      .type = Type::kBegin});
@@ -1782,6 +1800,117 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
   // pairwise intersections, but is not either a minimal spanning tree either
   // since it has cycles. The good property is that it does have enough arcs to
   // cover all the rectangles, so we can use it to build a proper MST.
+  ::util::ReverseArcListGraph<> graph;
+  std::vector<int> arc_indexes;
+  absl::flat_hash_map<int, std::pair<int, int>> pair_by_arc_index;
+  for (const auto& [a, b] : arcs) {
+    pair_by_arc_index[arc_indexes.size()] = {a, b};
+    arc_indexes.push_back(graph.AddArc(a, b));
+  }
+  const std::vector<int> mst_arc_indices =
+      BuildKruskalMinimumSpanningTreeFromSortedArcs(graph, arc_indexes);
+  std::vector<std::pair<int, int>> result;
+  for (const int arc_index : mst_arc_indices) {
+    const auto& [a, b] = pair_by_arc_index[arc_index];
+    result.push_back({a, b});
+  }
+  return result;
+}
+
+std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
+    absl::Span<const Rectangle> rectangles) {
+  auto first_index_no_area_it = std::find_if(
+      rectangles.begin(), rectangles.end(), [](const Rectangle& r) {
+        DCHECK_GE(r.SizeX(), 0);
+        DCHECK_GE(r.SizeY(), 0);
+        return r.SizeX() == 0 || r.SizeY() == 0;
+      });
+  if (first_index_no_area_it == rectangles.end()) {
+    // Avoid copying, all rectangles have non-zero area.
+    return FindPartialRectangleIntersections(rectangles);
+  }
+
+  // Now we need to do the boring code of special-casing all the different cases
+  // of rectangles with zero area. We still want to use the N log N algorithm
+  // for the subset of the input with non-zero area.
+  std::vector<Rectangle> rectangles_with_area, horizontal_lines, vertical_lines,
+      points;
+  std::vector<int> rectangles_with_area_indexes, horizontal_lines_indexes,
+      vertical_lines_indexes, points_indexes;
+  rectangles_with_area.reserve(rectangles.size());
+  rectangles_with_area_indexes.reserve(rectangles.size());
+  rectangles_with_area.insert(rectangles_with_area.end(), rectangles.begin(),
+                              first_index_no_area_it);
+  rectangles_with_area_indexes.resize(rectangles_with_area.size());
+  std::iota(rectangles_with_area_indexes.begin(),
+            rectangles_with_area_indexes.end(), 0);
+
+  for (int i = first_index_no_area_it - rectangles.begin();
+       i < rectangles.size(); ++i) {
+    if (rectangles[i].SizeX() > 0 && rectangles[i].SizeY() > 0) {
+      rectangles_with_area.push_back(rectangles[i]);
+      rectangles_with_area_indexes.push_back(i);
+    } else if (rectangles[i].SizeX() > 0) {
+      horizontal_lines.push_back(rectangles[i]);
+      horizontal_lines_indexes.push_back(i);
+    } else if (rectangles[i].SizeY() > 0) {
+      vertical_lines.push_back(rectangles[i]);
+      vertical_lines_indexes.push_back(i);
+    } else {
+      points.push_back(rectangles[i]);
+      points_indexes.push_back(i);
+    }
+  }
+
+  // Handle rectangles intersecting rectangles using the sweep line algorithm.
+  std::vector<std::pair<int, int>> arcs =
+      FindPartialRectangleIntersections(rectangles_with_area);
+  for (std::pair<int, int>& arc : arcs) {
+    arc.first = rectangles_with_area_indexes[arc.first];
+    arc.second = rectangles_with_area_indexes[arc.second];
+  }
+
+  // Handle rectangles intersecting non-rectangles.
+  for (int i = 0; i < rectangles_with_area.size(); ++i) {
+    const int index = rectangles_with_area_indexes[i];
+    const Rectangle& r = rectangles_with_area[i];
+    for (int j = 0; j < vertical_lines.size(); ++j) {
+      const int vertical_line_index = vertical_lines_indexes[j];
+      const Rectangle& vertical_line = vertical_lines[j];
+      if (!r.IsDisjoint(vertical_line)) {
+        arcs.push_back({index, vertical_line_index});
+      }
+    }
+    for (int j = 0; j < horizontal_lines.size(); ++j) {
+      const int horizontal_line_index = horizontal_lines_indexes[j];
+      const Rectangle& horizontal_line = horizontal_lines[j];
+      if (!r.IsDisjoint(horizontal_line)) {
+        arcs.push_back({index, horizontal_line_index});
+      }
+    }
+    for (int j = 0; j < points.size(); ++j) {
+      const int point_index = points_indexes[j];
+      const Rectangle& point = points[j];
+      if (!r.IsDisjoint(point)) {
+        arcs.push_back({index, point_index});
+      }
+    }
+  }
+
+  // Finally handle vertical lines intersecting horizontal lines.
+  for (int i = 0; i < horizontal_lines.size(); ++i) {
+    const int index = horizontal_lines_indexes[i];
+    const Rectangle& r = horizontal_lines[i];
+    for (int j = 0; j < vertical_lines.size(); ++j) {
+      const int vertical_line_index = vertical_lines_indexes[j];
+      const Rectangle& vertical_line = vertical_lines[j];
+      if (!r.IsDisjoint(vertical_line)) {
+        arcs.push_back({index, vertical_line_index});
+      }
+    }
+  }
+
+  // Now make our graph a minimal spanning tree again.
   ::util::ReverseArcListGraph<> graph;
   std::vector<int> arc_indexes;
   absl::flat_hash_map<int, std::pair<int, int>> pair_by_arc_index;

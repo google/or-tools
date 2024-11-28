@@ -2919,6 +2919,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/graph",
         "//ortools/graph:minimum_spanning_tree",
+        "//ortools/graph:strongly_connected_components",
         "//ortools/util:integer_pq",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:btree",

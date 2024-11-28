@@ -1435,16 +1435,15 @@ class ConstraintChecker {
         }
       }
     }
-    const int num_enforced_intervals = enforced_rectangles.size();
-    for (int i = 0; i < num_enforced_intervals; ++i) {
-      for (int j = i + 1; j < num_enforced_intervals; ++j) {
-        if (!enforced_rectangles[i].IsDisjoint(enforced_rectangles[j])) {
-          VLOG(1) << "Rectangles " << i << "(" << enforced_rectangles[i] << ", "
-                  << enforced_rectangles[i].x_max << ") and " << j << "("
-                  << enforced_rectangles[j] << ") are not disjoint.";
-          return false;
-        }
-      }
+    const std::vector<std::pair<int, int>> intersections =
+        FindPartialRectangleIntersectionsAlsoEmpty(enforced_rectangles);
+    if (!intersections.empty()) {
+      VLOG(1) << "Rectangles " << intersections[0].first << "("
+              << enforced_rectangles[intersections[0].first] << ") and "
+              << intersections[0].second << "("
+              << enforced_rectangles[intersections[0].second]
+              << ") are not disjoint.";
+      return false;
     }
     return true;
   }
