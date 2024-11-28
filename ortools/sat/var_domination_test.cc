@@ -975,11 +975,13 @@ TEST(DualBoundReductionTest, AddImplication) {
   // not(a) => not(b) and not(a) => not(c) should be added.
   ASSERT_EQ(context.working_model->constraints_size(), 3);
   const ConstraintProto expected_constraint_proto1 =
-      ParseTestProto(R"pb(enforcement_literal: -1 bool_and { literals: -2 })pb");
+      ParseTestProto(R"pb(enforcement_literal: -1
+                          bool_and { literals: -2 })pb");
   EXPECT_THAT(context.working_model->constraints(1),
               EqualsProto(expected_constraint_proto1));
   const ConstraintProto expected_constraint_proto2 =
-      ParseTestProto(R"pb(enforcement_literal: -1 bool_and { literals: -3 })pb");
+      ParseTestProto(R"pb(enforcement_literal: -1
+                          bool_and { literals: -3 })pb");
   EXPECT_THAT(context.working_model->constraints(2),
               EqualsProto(expected_constraint_proto2));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
