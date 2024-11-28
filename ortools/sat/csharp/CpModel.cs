@@ -299,9 +299,9 @@ public class CpModel
      * Adds and returns an empty circuit constraint.
      * </summary>
      *
-     * <remarks> A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node <c>i</c>
-     * is not in the path, then there must be a loop arc <c> i -> i</c> associated with a true
-     * literal. Otherwise this constraint will fail.
+     * <remarks> A circuit is a unique Hamiltonian circuit in a subgraph of the total graph. In case
+     * a node <c>i</c> is not in the circuit, then there must be a loop arc <c> i -> i</c>
+     * associated with a true literal. Otherwise this constraint will fail.
      * </remarks>
      */
     public CircuitConstraint AddCircuit()
