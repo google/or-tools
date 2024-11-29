@@ -425,9 +425,9 @@ public final class CpModel {
    *
    * <p>Adds an empty circuit constraint.
    *
-   * <p>A circuit is a unique Hamiltonian circuit in a subgraph of the total graph. In case a node
-   * 'i' is not in the circuit, then there must be a loop arc {@code 'i -> i'} associated with a
-   * true literal. Otherwise this constraint will fail.
+   * <p>A circuit is a unique Hamiltonian cycle in a subgraph of the total graph. In case a node 'i'
+   * is not in the cycle, then there must be a loop arc {@code 'i -> i'} associated with a true
+   * literal. Otherwise this constraint will fail.
    */
   public CircuitConstraint addCircuit() {
     return new CircuitConstraint(modelBuilder);
