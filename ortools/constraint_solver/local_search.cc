@@ -18,7 +18,6 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <random>
 #include <string>
@@ -757,8 +756,9 @@ void PathOperator::InitializePathStarts() {
       base_sibling_alternatives_[j] = 0;
       if (IsInactive(base_nodes_[j]) || node_paths[base_nodes_[j]] == -1) {
         // Base node was made inactive or was moved to a new path, reposition
-        // the base node to the start of the path on which it was.
-        base_nodes_[j] = path_starts_[base_paths_[j]];
+        // the base node to its restart position.
+        base_nodes_[j] = GetBaseNodeRestartPosition(j);
+        base_paths_[j] = node_paths[base_nodes_[j]];
       } else {
         base_paths_[j] = node_paths[base_nodes_[j]];
       }
@@ -3990,8 +3990,8 @@ class LocalSearchProfiler : public LocalSearchMonitor {
               absl::string_view name, int64_t num_neighbors,
               int64_t num_filtered_neighbors, int64_t num_accepted_neighbors,
               double duration_seconds,
-              double make_next_neighbor_duration_seconds,
-              double accept_neighbor_duration_seconds) {
+              double /*make_next_neighbor_duration_seconds*/,
+              double /*accept_neighbor_duration_seconds*/) {
             // TODO(user): Add make_next_neighbor_duration_seconds and
             // accept_neighbor_duration_seconds to stats.
             absl::StrAppendFormat(
