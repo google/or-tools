@@ -652,16 +652,7 @@ class LinearProgrammingConstraintCollection
     : public std::vector<LinearProgrammingConstraint*> {
  public:
   explicit LinearProgrammingConstraintCollection(Model* model)
-      : std::vector<LinearProgrammingConstraint*>() {
-    model->GetOrCreate<CpSolverResponseStatisticCallbacks>()
-        ->callbacks.push_back([this](CpSolverResponse* response) {
-          int64_t num_lp_iters = 0;
-          for (const LinearProgrammingConstraint* lp : *this) {
-            num_lp_iters += lp->total_num_simplex_iterations();
-          }
-          response->set_num_lp_iterations(num_lp_iters);
-        });
-  }
+      : std::vector<LinearProgrammingConstraint*>() {}
 };
 
 }  // namespace sat

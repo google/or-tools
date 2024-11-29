@@ -39,7 +39,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
@@ -188,17 +188,6 @@ class SharedIncompleteSolutionManager {
   mutable int64_t num_queried_ ABSL_GUARDED_BY(mutex_) = 0;
 };
 
-// Used by FillSolveStatsInResponse() to extract statistic to put in a
-// CpSolverResponse. The callbacks registered here are supposed to only modify
-// the statistic fields, nothing else.
-struct CpSolverResponseStatisticCallbacks {
-  std::vector<std::function<void(CpSolverResponse*)>> callbacks;
-};
-
-// Get the solve statistics from the associated model classes and fills the
-// response with them.
-void FillSolveStatsInResponse(Model* model, CpSolverResponse* response);
-
 // Manages the global best response kept by the solver. This class is
 // responsible for logging the progress of the solutions and bounds as they are
 // found.
@@ -242,6 +231,15 @@ class SharedResponseManager {
   // solution returned by GetResponse().
   void AddFinalResponsePostprocessor(
       std::function<void(CpSolverResponse*)> postprocessor);
+
+  // Similar to the one above, but this one has access to the local model used
+  // to create the response. It can thus extract statistics and fill them.
+  void AddStatisticsPostprocessor(
+      std::function<void(Model*, CpSolverResponse*)> postprocessor);
+
+  // Calls all registered AddStatisticsPostprocessor() with the given model on
+  // the given response.
+  void FillSolveStatsInResponse(Model* model, CpSolverResponse* response);
 
   // Adds a callback that will be called on each new solution (for
   // satisfiability problem) or each improving new solution (for an optimization
@@ -459,6 +457,8 @@ class SharedResponseManager {
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::function<void(CpSolverResponse*)>> final_postprocessors_
       ABSL_GUARDED_BY(mutex_);
+  std::vector<std::function<void(Model*, CpSolverResponse*)>>
+      statistics_postprocessors_ ABSL_GUARDED_BY(mutex_);
 
   // Dump prefix.
   std::string dump_prefix_;

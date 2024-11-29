@@ -144,11 +144,10 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
-        ":integer",
+        ":integer_base",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
-        ":sat_solver",
         ":symmetry_util",
         ":util",
         "//ortools/algorithms:sparse_permutation",
@@ -616,9 +615,8 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
-        ":integer",
+        ":integer_base",
         ":intervals",
-        ":linear_constraint",
         ":model",
         ":sat_base",
         "//ortools/base",
@@ -1482,10 +1480,34 @@ cc_test(
 )
 
 cc_library(
+    name = "integer_base",
+    hdrs = ["integer_base.h"],
+    deps = [
+        ":model",
+        ":sat_base",
+        "//ortools/base",
+        "//ortools/base:strong_vector",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/meta:type_traits",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "integer",
     srcs = ["integer.cc"],
     hdrs = ["integer.h"],
     deps = [
+        ":integer_base",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",

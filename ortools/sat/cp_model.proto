@@ -731,7 +731,7 @@ message CpSolverSolution {
 
 // The response returned by a solver trying to solve a CpModelProto.
 //
-// Next id: 31
+// Next id: 32
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -820,6 +820,7 @@ message CpSolverResponse {
   // the default-search if none are specified.
   int64 num_integers = 30;
   int64 num_booleans = 10;
+  int64 num_fixed_booleans = 31;
   int64 num_conflicts = 11;
   int64 num_branches = 12;
   int64 num_binary_propagations = 13;

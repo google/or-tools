@@ -907,7 +907,7 @@ class FullProblemSolver : public SubSolver {
 
   ~FullProblemSolver() override {
     CpSolverResponse response;
-    FillSolveStatsInResponse(&local_model_, &response);
+    shared_->response->FillSolveStatsInResponse(&local_model_, &response);
     shared_->response->AppendResponseToBeMerged(response);
     shared_->stat_tables.AddTimingStat(*this);
     shared_->stat_tables.AddLpStat(name(), &local_model_);
@@ -2081,6 +2081,47 @@ std::function<SatParameters(Model*)> NewSatParameters(
   };
 }
 
+namespace {
+void RegisterSearchStatisticCallback(Model* global_model) {
+  global_model->GetOrCreate<SharedResponseManager>()
+      ->AddStatisticsPostprocessor([](Model* local_model,
+                                      CpSolverResponse* response) {
+        auto* sat_solver = local_model->Get<SatSolver>();
+        if (sat_solver != nullptr) {
+          response->set_num_booleans(sat_solver->NumVariables());
+          response->set_num_fixed_booleans(sat_solver->NumFixedVariables());
+          response->set_num_branches(sat_solver->num_branches());
+          response->set_num_conflicts(sat_solver->num_failures());
+          response->set_num_binary_propagations(sat_solver->num_propagations());
+          response->set_num_restarts(sat_solver->num_restarts());
+        } else {
+          response->set_num_booleans(0);
+          response->set_num_fixed_booleans(0);
+          response->set_num_branches(0);
+          response->set_num_conflicts(0);
+          response->set_num_binary_propagations(0);
+          response->set_num_restarts(0);
+        }
+
+        auto* integer_trail = local_model->Get<IntegerTrail>();
+        response->set_num_integers(
+            integer_trail == nullptr
+                ? 0
+                : integer_trail->NumIntegerVariables().value() / 2);
+        response->set_num_integer_propagations(
+            integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
+
+        int64_t num_lp_iters = 0;
+        auto* lp_constraints =
+            local_model->GetOrCreate<LinearProgrammingConstraintCollection>();
+        for (const LinearProgrammingConstraint* lp : *lp_constraints) {
+          num_lp_iters += lp->total_num_simplex_iterations();
+        }
+        response->set_num_lp_iterations(num_lp_iters);
+      });
+}
+}  // namespace
+
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto* wall_timer = model->GetOrCreate<WallTimer>();
   auto* user_timer = model->GetOrCreate<UserTimer>();
@@ -2126,6 +2167,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   shared_response_manager->set_dump_prefix(
       absl::GetFlag(FLAGS_cp_model_dump_prefix));
+  RegisterSearchStatisticCallback(model);
 
 #if !defined(__PORTABLE_PLATFORM__)
   // Note that the postprocessors are executed in reverse order, so this
@@ -2183,7 +2225,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       CpSolverResponse status_response;
       status_response.set_status(CpSolverStatus::MODEL_INVALID);
       status_response.set_solution_info(error);
-      FillSolveStatsInResponse(model, &status_response);
+      shared_response_manager->FillSolveStatsInResponse(model,
+                                                        &status_response);
       shared_response_manager->AppendResponseToBeMerged(status_response);
       return shared_response_manager->GetResponse();
     }
@@ -2221,7 +2264,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       CpSolverResponse status_response;
       status_response.set_status(CpSolverStatus::MODEL_INVALID);
       status_response.set_solution_info(error);
-      FillSolveStatsInResponse(model, &status_response);
+      shared_response_manager->FillSolveStatsInResponse(model,
+                                                        &status_response);
       shared_response_manager->AppendResponseToBeMerged(status_response);
       return shared_response_manager->GetResponse();
     }
@@ -2407,7 +2451,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         CpSolverResponse status_response;
         status_response.set_status(CpSolverStatus::INFEASIBLE);
         status_response.add_sufficient_assumptions_for_infeasibility(ref);
-        FillSolveStatsInResponse(model, &status_response);
+        shared_response_manager->FillSolveStatsInResponse(model,
+                                                          &status_response);
         shared_response_manager->AppendResponseToBeMerged(status_response);
         return shared_response_manager->GetResponse();
       }
@@ -2427,7 +2472,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SOLVER_LOG(logger, "Problem closed by presolve.");
     CpSolverResponse status_response;
     status_response.set_status(presolve_status);
-    FillSolveStatsInResponse(model, &status_response);
+    shared_response_manager->FillSolveStatsInResponse(model, &status_response);
     shared_response_manager->AppendResponseToBeMerged(status_response);
     return shared_response_manager->GetResponse();
   }
@@ -2598,7 +2643,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         "\nPresolvedNumTerms: ", num_terms);
 
     CpSolverResponse status_response;
-    FillSolveStatsInResponse(model, &status_response);
+    shared_response_manager->FillSolveStatsInResponse(model, &status_response);
     shared_response_manager->AppendResponseToBeMerged(status_response);
     return shared_response_manager->GetResponse();
   }
