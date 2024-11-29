@@ -568,6 +568,20 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
     if (task_to_start_event_[current_task] == -1) continue;
     if (!helper_->IsPresent(current_task)) continue;
 
+    if (demands_->DemandMin(current_task) == 0) continue;
+
+    if (demands_->DemandMin(current_task) > capacity_max) {
+      // Obvious conflict, we check here since we assume the demand for each
+      // task to be lower than the capacity in the code downstream.
+      demands_->AddDemandMinReason(current_task);
+
+      if (capacity_.var != kNoIntegerVariable) {
+        helper_->MutableIntegerReason()->push_back(
+            integer_trail_->UpperBoundAsLiteral(capacity_.var));
+      }
+      return helper_->ReportConflict();
+    }
+    
     // Add the current task to the tree.
     {
       const IntegerValue current_pseudo_energy =
