@@ -52,11 +52,10 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -145,29 +144,12 @@ std::string SatProgressMessage(const std::string& event_or_solution_count,
 
 }  // namespace
 
-void FillSolveStatsInResponse(Model* model, CpSolverResponse* response) {
+void SharedResponseManager::FillSolveStatsInResponse(
+    Model* model, CpSolverResponse* response) {
   if (model == nullptr) return;
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
-  auto* integer_trail = model->Get<IntegerTrail>();
-  response->set_num_booleans(sat_solver->NumVariables());
-  response->set_num_branches(sat_solver->num_branches());
-  response->set_num_conflicts(sat_solver->num_failures());
-  response->set_num_binary_propagations(sat_solver->num_propagations());
-  response->set_num_restarts(sat_solver->num_restarts());
-
-  response->set_num_integers(
-      integer_trail == nullptr
-          ? 0
-          : integer_trail->NumIntegerVariables().value() / 2);
-  response->set_num_integer_propagations(
-      integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
-
-  // TODO(user): find a way to clear all stats fields that might be set by
-  // one of the callback.
-  response->set_num_lp_iterations(0);
-  for (const auto& set_stats :
-       model->GetOrCreate<CpSolverResponseStatisticCallbacks>()->callbacks) {
-    set_stats(response);
+  absl::MutexLock mutex_lock(&mutex_);
+  for (const auto& set_stats : statistics_postprocessors_) {
+    set_stats(model, response);
   }
 }
 
@@ -452,6 +434,12 @@ void SharedResponseManager::AddFinalResponsePostprocessor(
   final_postprocessors_.push_back(postprocessor);
 }
 
+void SharedResponseManager::AddStatisticsPostprocessor(
+    std::function<void(Model*, CpSolverResponse*)> postprocessor) {
+  absl::MutexLock mutex_lock(&mutex_);
+  statistics_postprocessors_.push_back(postprocessor);
+}
+
 int SharedResponseManager::AddSolutionCallback(
     std::function<void(const CpSolverResponse&)> callback) {
   absl::MutexLock mutex_lock(&mutex_);
@@ -696,18 +684,21 @@ void SharedResponseManager::NewSolution(
       !callbacks_.empty()) {
     tmp_postsolved_response =
         GetResponseInternal(solution_values, solution_info);
-    FillSolveStatsInResponse(model, &tmp_postsolved_response);
+
+    // Same as FillSolveStatsInResponse() but since we already hold the mutex...
+    if (model != nullptr && !statistics_postprocessors_.empty()) {
+      for (const auto& set_stats : statistics_postprocessors_) {
+        set_stats(model, &tmp_postsolved_response);
+      }
+    }
   }
 
-  // TODO(user): Remove this code and the need for model in this function.
-  // Use search log callbacks instead.
   if (logger_->LoggingIsEnabled()) {
     std::string solution_message = solution_info;
-    if (model != nullptr) {
-      const int64_t num_bool = model->Get<Trail>()->NumVariables();
-      const int64_t num_fixed = model->Get<SatSolver>()->NumFixedVariables();
-      absl::StrAppend(&solution_message, " (fixed_bools=", num_fixed, "/",
-                      num_bool, ")");
+    if (tmp_postsolved_response.num_booleans() > 0) {
+      absl::StrAppend(&solution_message, " (fixed_bools=",
+                      tmp_postsolved_response.num_fixed_booleans(), "/",
+                      tmp_postsolved_response.num_booleans(), ")");
     }
 
     if (!search_log_callbacks_.empty()) {

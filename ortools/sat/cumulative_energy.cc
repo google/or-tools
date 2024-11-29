@@ -581,7 +581,7 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
       }
       return helper_->ReportConflict();
     }
-    
+
     // Add the current task to the tree.
     {
       const IntegerValue current_pseudo_energy =

@@ -1634,8 +1634,8 @@ class CpModel:
 
         Adds a circuit constraint from a sparse list of arcs that encode the graph.
 
-        A circuit is a unique Hamiltonian circuit in a subgraph of the total
-        graph. In case a node 'i' is not in the circuit, then there must be a
+        A circuit is a unique Hamiltonian cycle in a subgraph of the total
+        graph. In case a node 'i' is not in the cycle, then there must be a
         loop arc 'i -> i' associated with a true literal. Otherwise
         this constraint will fail.
 

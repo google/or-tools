@@ -81,7 +81,8 @@ void SharedStatTables::AddTimingStat(const SubSolver& subsolver) {
 void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
   CpSolverResponse r;
-  FillSolveStatsInResponse(model, &r);
+  model->GetOrCreate<SharedResponseManager>()->FillSolveStatsInResponse(model,
+                                                                        &r);
   search_table_.push_back({FormatName(name), FormatCounter(r.num_booleans()),
                            FormatCounter(r.num_conflicts()),
                            FormatCounter(r.num_branches()),
