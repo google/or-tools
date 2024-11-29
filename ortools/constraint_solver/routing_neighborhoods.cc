@@ -154,6 +154,8 @@ ShortestPathOnAlternatives::ShortestPathOnAlternatives(
 }
 
 bool ShortestPathOnAlternatives::HasAlternatives(int node) const {
+  DCHECK_LT(node, to_alternative_set_.size());
+  DCHECK_LT(to_alternative_set_[node], alternative_sets_.size());
   return alternative_sets_[to_alternative_set_[node]].size() > 1;
 }
 
@@ -232,8 +234,33 @@ TwoOptWithShortestPathOperator::TwoOptWithShortestPathOperator(
 bool TwoOptWithShortestPathOperator::MakeNeighbor() {
   DCHECK_EQ(StartNode(0), StartNode(1));
   const int64_t before_chain = BaseNode(0);
-  if (IsPathEnd(before_chain)) return false;
+  if (IsPathEnd(before_chain)) {
+    ResetChainStatus();
+    return false;
+  }
   const int64_t after_chain = BaseNode(1);
+  bool has_alternatives = false;
+  if (before_chain != after_chain) {
+    const int64_t prev_after_chain = Prev(after_chain);
+    if (prev_after_chain != before_chain &&
+        chain_status_.start == before_chain &&
+        chain_status_.end == prev_after_chain) {
+      has_alternatives =
+          chain_status_.has_alternatives ||
+          shortest_path_manager_.HasAlternatives(prev_after_chain);
+    } else {
+      // Non-incremental computation of alternative presence. The chains are
+      // small by definition.
+      for (int64_t node = Next(before_chain); node != after_chain;
+           node = Next(node)) {
+        has_alternatives |= shortest_path_manager_.HasAlternatives(node);
+      }
+    }
+  }
+  chain_status_.start = before_chain;
+  chain_status_.end = after_chain;
+  chain_status_.has_alternatives = has_alternatives;
+  if (!has_alternatives) return false;
   int64_t chain_last;
   if (!ReverseChain(before_chain, after_chain, &chain_last)) return false;
   chain_.clear();
@@ -255,14 +282,19 @@ SwapActiveToShortestPathOperator::SwapActiveToShortestPathOperator(
     std::function<int(int64_t)> start_empty_path_class,
     std::vector<std::vector<int64_t>> alternative_sets,
     RoutingTransitCallback2 arc_evaluator)
-    : PathOperator(vars, secondary_vars, 1, true, false,
+    : PathOperator(vars, secondary_vars, /*number_of_base_nodes=*/1,
+                   /*skip_locally_optimal_paths=*/true,
+                   /*accept_path_end_base=*/false,
                    std::move(start_empty_path_class), nullptr, nullptr),
       shortest_path_manager_(vars.size(), std::move(alternative_sets),
                              std::move(arc_evaluator)) {}
 
 bool SwapActiveToShortestPathOperator::MakeNeighbor() {
   const int64_t before_chain = BaseNode(0);
-  if (shortest_path_manager_.HasAlternatives(before_chain)) return false;
+  if (!IsPathStart(before_chain) &&
+      shortest_path_manager_.HasAlternatives(before_chain)) {
+    return false;
+  }
   int64_t next = Next(before_chain);
   chain_.clear();
   while (!IsPathEnd(next) && shortest_path_manager_.HasAlternatives(next)) {

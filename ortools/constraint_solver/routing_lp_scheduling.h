@@ -456,9 +456,12 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     // significantly faster than both full presolve and no presolve.
     parameters_.set_cp_model_presolve(true);
     parameters_.set_max_presolve_iterations(1);
+    parameters_.set_cp_model_probing_level(0);
+    parameters_.set_use_sat_inprocessing(false);
+    parameters_.set_symmetry_level(0);
     parameters_.set_catch_sigint_signal(false);
     parameters_.set_mip_max_bound(1e8);
-    parameters_.set_search_branching(sat::SatParameters::LP_SEARCH);
+    parameters_.set_search_branching(sat::SatParameters::PORTFOLIO_SEARCH);
     parameters_.set_linearization_level(2);
     parameters_.set_cut_level(0);
     parameters_.set_use_absl_random(false);
@@ -588,7 +591,9 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     model_.mutable_constraints(ct)->add_enforcement_literal(condition);
   }
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
-    parameters_.set_max_time_in_seconds(absl::ToDoubleSeconds(duration_limit));
+    const double max_time = absl::ToDoubleSeconds(duration_limit);
+    if (max_time <= 0.0) return DimensionSchedulingStatus::INFEASIBLE;
+    parameters_.set_max_time_in_seconds(max_time);
     VLOG(2) << ProtobufDebugString(model_);
     if (hint_.vars_size() == model_.variables_size()) {
       *model_.mutable_solution_hint() = hint_;
@@ -597,6 +602,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     model.Add(sat::NewSatParameters(parameters_));
     response_ = sat::SolveCpModel(model_, &model);
     VLOG(2) << response_;
+    DCHECK_NE(response_.status(), sat::CpSolverStatus::MODEL_INVALID);
     if (response_.status() == sat::CpSolverStatus::OPTIMAL ||
         (response_.status() == sat::CpSolverStatus::FEASIBLE &&
          !model_.has_floating_point_objective())) {

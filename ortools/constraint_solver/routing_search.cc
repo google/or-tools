@@ -2683,10 +2683,12 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
   auto get_insertion_properties = [this](int64_t penalty,
                                          int64_t num_allowed_vehicles,
                                          int64_t avg_distance_to_vehicle,
-                                         int64_t neg_max_distance_to_vehicles) {
+                                         int64_t neg_min_distance_to_vehicles) {
     DCHECK_NE(0, num_allowed_vehicles);
     absl::InlinedVector<int64_t, 8> properties;
     properties.reserve(insertion_sorting_properties_.size());
+
+    bool neg_min_distance_to_vehicles_appended = false;
     for (const int property : insertion_sorting_properties_) {
       switch (property) {
         case RoutingSearchParameters::SORTING_PROPERTY_ALLOWED_VEHICLES:
@@ -2700,12 +2702,17 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
           properties.push_back(CapOpp(penalty / num_allowed_vehicles));
           break;
         case RoutingSearchParameters::
-            SORTING_PROPERTY_HIGHEST_ARC_COST_TO_VEHICLE_START_ENDS:
+            SORTING_PROPERTY_HIGHEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS:
           properties.push_back(CapOpp(avg_distance_to_vehicle));
           break;
         case RoutingSearchParameters::
-            SORTING_PROPERTY_LOWEST_ARC_COST_TO_VEHICLE_START_ENDS:
+            SORTING_PROPERTY_LOWEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS:
           properties.push_back(avg_distance_to_vehicle);
+          break;
+        case RoutingSearchParameters::
+            SORTING_PROPERTY_LOWEST_MIN_ARC_COST_TO_VEHICLE_START_ENDS:
+          properties.push_back(neg_min_distance_to_vehicles);
+          neg_min_distance_to_vehicles_appended = true;
           break;
         default:
           LOG(DFATAL)
@@ -2717,11 +2724,11 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
 
     // Historically the negative max distance to vehicles has always been
     // considered to be the last property in the hierarchy defining how nodes
-    // are sorted for the LCI heuristic.
-    // TODO(user): add a specific property enum for
-    // neg_max_distance_to_vehicles and only append it here if it hasn't already
-    // been done above.
-    properties.push_back(neg_max_distance_to_vehicles);
+    // are sorted for the LCI heuristic, so we add it here iff it wasn't added
+    // before
+    if (!neg_min_distance_to_vehicles_appended) {
+      properties.push_back(neg_min_distance_to_vehicles);
+    }
 
     return properties;
   };
@@ -2733,10 +2740,10 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
        insertion_sorting_properties_) {
     if (property ==
             RoutingSearchParameters::
-                SORTING_PROPERTY_HIGHEST_ARC_COST_TO_VEHICLE_START_ENDS ||
+                SORTING_PROPERTY_HIGHEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS ||
         property ==
             RoutingSearchParameters::
-                SORTING_PROPERTY_LOWEST_ARC_COST_TO_VEHICLE_START_ENDS) {
+                SORTING_PROPERTY_LOWEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS) {
       compute_avg_pickup_delivery_pair_distance_from_vehicles = true;
       break;
     }

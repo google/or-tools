@@ -612,7 +612,7 @@ void BasePathFilter::SynchronizeFullAssignment() {
     new_nexts_[touched] = kUnassigned;
   }
   delta_touched_.clear();
-  OnBeforeSynchronizePaths();
+  OnBeforeSynchronizePaths(/*synchronizing_all_paths=*/true);
   UpdateAllRanks();
   OnAfterSynchronizePaths();
 }
@@ -650,7 +650,7 @@ void BasePathFilter::OnSynchronize(const Assignment* delta) {
     new_nexts_[touched] = kUnassigned;
   }
   delta_touched_.clear();
-  OnBeforeSynchronizePaths();
+  OnBeforeSynchronizePaths(/*synchronizing_all_paths=*/false);
   for (const int64_t touched_start : touched_paths_.PositionsSetAtLeastOnce()) {
     int64_t node = touched_start;
     while (node < Size()) {
@@ -1252,7 +1252,10 @@ class PathCumulFilter : public BasePathFilter {
                   int64_t chain_end) override;
   bool FinalizeAcceptPath(int64_t objective_min,
                           int64_t objective_max) override;
-  void OnBeforeSynchronizePaths() override;
+
+  void OnBeforeSynchronizePaths(bool synchronizing_all_paths) override;
+  void OnSynchronizePathFromStart(int64_t start) override;
+  void OnAfterSynchronizePaths() override;
 
   // TODO(user): consider making those methods external functions.
   // Fills the data of path in dimension_values_: nodes, cumuls, travels,
@@ -1842,6 +1845,7 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
   // Filter costs: span (linear/quadratic/piecewise),
   // soft cumul windows (linear/piecewise).
   if (!filter_objective_cost_) return true;
+
   CapSubFrom(cost_of_path_.Get(path), &accepted_objective_value_);
   if (routing_model_.IsEnd(GetNext(path_start)) &&
       !routing_model_.IsVehicleUsedWhenEmpty(path)) {
@@ -2049,33 +2053,45 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
   return accepted_objective_value_ <= objective_max;
 }
 
-void PathCumulFilter::OnBeforeSynchronizePaths() {
-  dimension_values_.Reset();
-  cost_of_path_.Revert();
-  cost_of_path_.SetAllAndCommit(0);
-  global_span_cost_.SetAndCommit(0);
-  accepted_objective_value_ = 0;
-  synchronized_objective_value_ = 0;  // Accept() relies on this value.
-  location_of_node_.Revert();
-  location_of_node_.SetAllAndCommit({-1, -1});
-  if (!HasAnySyncedPath()) return;
-  // Use AcceptPath() and FinalizeAcceptPath() to compute the bounds and
-  // pathwise costs of the new solution incrementally, then commit all data
-  // structures to this state.
-  InitializeAcceptPath();
-  const int num_paths = NumPaths();
-  for (int path = 0; path < num_paths; ++path) {
-    if (!IsVarSynced(Start(path))) continue;
-    const bool is_accepted = AcceptPath(Start(path), Start(path), End(path));
-    DCHECK(is_accepted);
+void PathCumulFilter::OnBeforeSynchronizePaths(bool synchronizing_all_paths) {
+  if (synchronizing_all_paths) {
+    // All paths are being synchronized, so we can reset all the data and let
+    // OnSynchronizePathFromStart() calls recompute everything. Otherwise we let
+    // the InitializeAcceptPath() call below revert the data structures.
+    dimension_values_.Reset();
+    cost_of_path_.Revert();
+    cost_of_path_.SetAllAndCommit(0);
+    location_of_node_.Revert();
+    location_of_node_.SetAllAndCommit({-1, -1});
+    global_span_cost_.SetAndCommit(0);
+    synchronized_objective_value_ = 0;  // Accept() relies on this value.
   }
-  // TODO(user): check whether this could go into FinalizeAcceptPath(),
-  // with a Commit() on some data structure.
+
+  accepted_objective_value_ = synchronized_objective_value_;
+  if (HasAnySyncedPath()) {
+    // Revert the data structures that are used to compute the bounds and
+    // pathwise costs of the new solution incrementally.
+    InitializeAcceptPath();
+  }
+}
+
+void PathCumulFilter::OnSynchronizePathFromStart(int64_t start) {
+  DCHECK(IsVarSynced(start));
+  // Using AcceptPath() to compute the bounds and pathwise costs of the new
+  // solution incrementally.
+  const int path = GetPath(start);
+  const bool is_accepted = AcceptPath(start, start, End(path));
+  DCHECK(is_accepted);
+}
+
+void PathCumulFilter::OnAfterSynchronizePaths() {
   if (filter_objective_cost_ && FilterGlobalSpanCost()) {
+    // TODO(user): check whether this could go into FinalizeAcceptPath(),
+    // with a Commit() on some data structure.
     paths_by_decreasing_span_min_.clear();
     paths_by_decreasing_end_min_.clear();
     paths_by_increasing_start_max_.clear();
-    for (int path = 0; path < num_paths; ++path) {
+    for (int path = 0; path < NumPaths(); ++path) {
       const int num_path_nodes = dimension_values_.Nodes(path).size();
       if (num_path_nodes == 0 ||
           (num_path_nodes == 2 &&
@@ -2093,6 +2109,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
     absl::c_sort(paths_by_decreasing_end_min_, std::greater<ValuedPath>());
     absl::c_sort(paths_by_increasing_start_max_);
   }
+  // Using FinalizeAcceptPath() to commit all data structures to this state.
   FinalizeAcceptPath(kint64min, kint64max);
   dimension_values_.Commit();
   cost_of_path_.Commit();
@@ -2829,7 +2846,7 @@ class ResourceGroupAssignmentFilter : public BasePathFilter {
   bool AcceptPath(int64_t path_start, int64_t, int64_t) override;
   bool FinalizeAcceptPath(int64_t objective_min,
                           int64_t objective_max) override;
-  void OnBeforeSynchronizePaths() override;
+  void OnBeforeSynchronizePaths(bool synchronizing_all_paths) override;
   void OnSynchronizePathFromStart(int64_t start) override;
   void OnAfterSynchronizePaths() override;
 
@@ -2993,7 +3010,7 @@ bool ResourceGroupAssignmentFilter::FinalizeAcceptPath(
   return assignment_cost >= 0 && delta_cost_without_transit_ <= objective_max;
 }
 
-void ResourceGroupAssignmentFilter::OnBeforeSynchronizePaths() {
+void ResourceGroupAssignmentFilter::OnBeforeSynchronizePaths(bool) {
   if (!HasAnySyncedPath()) {
     vehicle_to_resource_class_assignment_costs_.assign(model_.vehicles(), {});
   }
