@@ -4774,8 +4774,6 @@ void RoutingModel::CreateNeighborhoodOperators(
     // Only add disjunctions of cardinality 1 and of size > 1, as
     // SwapActiveToShortestPathOperator and TwoOptWithShortestPathOperator only
     // support DAGs, and don't care about chain-DAGS.
-    // TODO(user): Optimize TwoOptWithShortestPathOperator to skip DAG-less
-    // chains.
     if (disjunction.value.max_cardinality == 1 &&
         disjunction.indices.size() > 1) {
       alternative_sets.push_back(disjunction.indices);
@@ -4785,6 +4783,7 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreateOperator<SwapActiveToShortestPathOperator>(
           alternative_sets,
           GetLocalSearchHomogeneousArcCostCallback(parameters));
+  // TODO(user): Consider having only one variant of 2Opt active.
   local_search_operators_[SHORTEST_PATH_TWO_OPT] =
       CreateOperator<TwoOptWithShortestPathOperator>(
           alternative_sets,

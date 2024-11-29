@@ -461,7 +461,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     parameters_.set_symmetry_level(0);
     parameters_.set_catch_sigint_signal(false);
     parameters_.set_mip_max_bound(1e8);
-    parameters_.set_search_branching(sat::SatParameters::LP_SEARCH);
+    parameters_.set_search_branching(sat::SatParameters::PORTFOLIO_SEARCH);
     parameters_.set_linearization_level(2);
     parameters_.set_cut_level(0);
     parameters_.set_use_absl_random(false);
