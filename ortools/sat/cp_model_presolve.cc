@@ -1043,7 +1043,7 @@ bool CpModelPresolver::PropagateAndReduceLinMax(ConstraintProto* ct) {
   return changed;
 }
 
-bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
+bool CpModelPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
   const LinearExpressionProto& target = ct->lin_max().target();
@@ -1120,6 +1120,8 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
     context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
+
+  if (!DivideLinMaxByGcd(c, ct)) return false;
 
   // Cut everything above the max if possible.
   // If one of the linear expression has many term and is above the max, we
@@ -7037,6 +7039,8 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
     return;
   }
 
+  time_limit_->AdvanceDeterministicTime(
+      model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
   auto* mapping = model.GetOrCreate<CpModelMapping>();
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
@@ -8309,8 +8313,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinearArgument(*ct, ct->mutable_lin_max())) {
         context_->UpdateConstraintVariableUsage(c);
       }
-      if (!DivideLinMaxByGcd(c, ct)) return false;
-      return PresolveLinMax(ct);
+      return PresolveLinMax(c, ct);
     case ConstraintProto::kIntProd:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_prod())) {
         context_->UpdateConstraintVariableUsage(c);
@@ -12431,6 +12434,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kAllDiff:
         if (!CopyAllDiff(ct)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kLinMax:
+        if (!CopyLinMax(ct)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
         break;
@@ -12885,6 +12891,31 @@ bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
   if (ct.all_diff().exprs().size() <= 1) return true;
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   *new_ct = ct;
+  return true;
+}
+
+bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  for (const auto& expr : ct.lin_max().exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_lin_max()->add_exprs());
+    auto& last_expr = *new_ct->mutable_lin_max()->mutable_exprs(
+        new_ct->lin_max().exprs_size() - 1);
+    if (last_expr.vars().empty() && new_ct->lin_max().exprs().size() > 1) {
+      LinearExpressionProto* first_expr =
+          new_ct->mutable_lin_max()->mutable_exprs(0);
+      if (first_expr->vars().empty()) {
+        // We have two constants, keep the largest.
+        first_expr->set_offset(
+            std::max(first_expr->offset(), last_expr.offset()));
+        new_ct->mutable_lin_max()->mutable_exprs()->RemoveLast();
+      } else {
+        // Put the constant in the first position.
+        last_expr.Swap(first_expr);
+      }
+    }
+  }
+  CopyLinearExpression(ct.lin_max().target(),
+                       new_ct->mutable_lin_max()->mutable_target());
   return true;
 }
 

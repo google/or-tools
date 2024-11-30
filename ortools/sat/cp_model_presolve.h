@@ -131,7 +131,7 @@ class CpModelPresolver {
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
   bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
-  bool PresolveLinMax(ConstraintProto* ct);
+  bool PresolveLinMax(int c, ConstraintProto* ct);
   bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
   bool PropagateAndReduceAffineMax(ConstraintProto* ct);
   bool PropagateAndReduceIntAbs(ConstraintProto* ct);
@@ -447,6 +447,7 @@ class ModelCopy {
   bool CopyAutomaton(const ConstraintProto& ct);
   bool CopyTable(const ConstraintProto& ct);
   bool CopyAllDiff(const ConstraintProto& ct);
+  bool CopyLinMax(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify
