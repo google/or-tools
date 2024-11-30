@@ -34,6 +34,7 @@
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"

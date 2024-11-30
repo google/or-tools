@@ -29,6 +29,7 @@
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
@@ -531,6 +532,8 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
   const IntegerValue largest_window =
       helper_->EndMax(helper_->TaskByDecreasingEndMax().front().task_index) -
       helper_->TaskByIncreasingStartMin().front().time;
+  if (largest_window == 0) return true;
+
   const IntegerValue max_for_fixpoint_inverse =
       std::numeric_limits<IntegerValue>::max() /
       (num_events * capacity_max * largest_window);
@@ -567,7 +570,7 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
        ::gtl::reversed_view(by_decreasing_end_max)) {
     if (task_to_start_event_[current_task] == -1) continue;
     if (!helper_->IsPresent(current_task)) continue;
-
+    if (helper_->SizeMin(current_task) == 0) continue;
     if (demands_->DemandMin(current_task) == 0) continue;
 
     if (demands_->DemandMin(current_task) > capacity_max) {
@@ -577,8 +580,14 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
 
       if (capacity_.var != kNoIntegerVariable) {
         helper_->MutableIntegerReason()->push_back(
-            integer_trail_->UpperBoundAsLiteral(capacity_.var));
+            integer_trail_->UpperBoundAsLiteral(capacity_));
       }
+
+      const AffineExpression size = helper_->Sizes()[current_task];
+      if (size.var != kNoIntegerVariable) {
+        helper_->MutableIntegerReason()->push_back(size.GreaterOrEqual(1));
+      }
+
       return helper_->ReportConflict();
     }
 

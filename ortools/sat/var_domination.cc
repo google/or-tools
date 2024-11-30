@@ -970,6 +970,16 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
           processed[PositiveRef(ref)] = true;
           processed[PositiveRef(var)] = true;
+          // The `new_ct` constraint `ref` => (`var` in `complement`) below can
+          // break the hint if hint(var) is not in `complement`. In this case,
+          // set the hint of `ref` to false. This should be safe since the only
+          // constraint blocking `ref` from decreasing is `ct` = not(ref) =>
+          // (`var` in `rhs`) -- which does not apply when `ref` is true.
+          const std::optional<int64_t> var_hint =
+              context->GetRefSolutionHint(var);
+          if (var_hint.has_value() && !complement.Contains(*var_hint)) {
+            context->UpdateLiteralSolutionHint(ref, false);
+          }
           ConstraintProto* new_ct = context->working_model->add_constraints();
           new_ct->add_enforcement_literal(ref);
           new_ct->mutable_linear()->add_vars(var);
