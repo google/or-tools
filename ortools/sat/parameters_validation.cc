@@ -93,6 +93,10 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(symmetry_detection_deterministic_time_limit);
   TEST_IS_FINITE(variable_activity_decay);
 
+  TEST_IS_FINITE(lns_initial_difficulty);
+  TEST_IS_FINITE(lns_initial_deterministic_limit);
+  TEST_IN_RANGE(lns_initial_difficulty, 0.0, 1.0);
+
   TEST_POSITIVE(at_most_one_max_expansion_size);
 
   TEST_NOT_NAN(max_time_in_seconds);

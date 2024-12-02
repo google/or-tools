@@ -23,7 +23,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 307
+// NEXT TAG: 309
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1212,6 +1212,10 @@ message SatParameters {
   optional bool stop_after_root_propagation = 252 [default = false];
 
   // LNS parameters.
+
+  // Initial parameters for neighborhood generation.
+  optional double lns_initial_difficulty = 307 [default = 0.5];
+  optional double lns_initial_deterministic_limit = 308 [default = 0.1];
 
   // Testing parameters used to disable all lns workers.
   optional bool use_lns = 283 [default = true];

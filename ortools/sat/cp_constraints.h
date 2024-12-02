@@ -161,10 +161,13 @@ inline std::function<void(Model*)> GreaterThanAtLeastOneOf(
 // Note(user): If there is just one or two candidates, this doesn't add
 // anything.
 inline std::function<void(Model*)> PartialIsOneOfVar(
-    IntegerVariable target_var, const std::vector<IntegerVariable>& vars,
-    const std::vector<Literal>& selectors) {
+    IntegerVariable target_var, absl::Span<const IntegerVariable> vars,
+    absl::Span<const Literal> selectors) {
   CHECK_EQ(vars.size(), selectors.size());
-  return [=](Model* model) {
+  return [=,
+          selectors = std::vector<Literal>(selectors.begin(), selectors.end()),
+          vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     const std::vector<IntegerValue> offsets(vars.size(), IntegerValue(0));
     if (vars.size() > 2) {
       // Propagate the min.

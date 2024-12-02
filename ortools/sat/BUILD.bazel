@@ -949,6 +949,7 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -1442,6 +1443,7 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":integer",
+        ":integer_base",
         ":presolve_context",
         ":presolve_util",
         ":util",
@@ -1469,7 +1471,7 @@ cc_test(
     srcs = ["var_domination_test.cc"],
     deps = [
         ":cp_model_cc_proto",
-        ":integer",
+        ":integer_base",
         ":model",
         ":presolve_context",
         ":var_domination",
@@ -3207,6 +3209,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

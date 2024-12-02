@@ -116,7 +116,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // variables in relaxed_variables.
   Neighborhood RelaxGivenVariables(
       const CpSolverResponse& initial_solution,
-      const std::vector<int>& relaxed_variables) const;
+      absl::Span<const int> relaxed_variables) const;
 
   // Returns a trivial model by fixing all active variables to the initial
   // solution values.
@@ -361,7 +361,11 @@ class NeighborhoodGenerator {
  public:
   NeighborhoodGenerator(absl::string_view name,
                         NeighborhoodGeneratorHelper const* helper)
-      : name_(name), helper_(*helper), difficulty_(0.5) {}
+      : name_(name),
+        helper_(*helper),
+        deterministic_limit_(
+            helper->Parameters().lns_initial_deterministic_limit()),
+        difficulty_(helper->Parameters().lns_initial_difficulty()) {}
   virtual ~NeighborhoodGenerator() = default;
 
   using ActiveRectangle = NeighborhoodGeneratorHelper::ActiveRectangle;
@@ -714,6 +718,19 @@ class RandomRectanglesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomRectanglesPackingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
+};
+
+// Only make sense for problems with no_overlap_2d constraints. This selects one
+// random rectangles and relax the closest rectangles to it.
+class RectanglesPackingRelaxOneNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RectanglesPackingRelaxOneNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 

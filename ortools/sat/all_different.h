@@ -36,7 +36,7 @@ namespace sat {
 // encodes all the variables and simply enforces a <= 1 constraint on each
 // possible values.
 std::function<void(Model*)> AllDifferentBinary(
-    const std::vector<IntegerVariable>& vars);
+    absl::Span<const IntegerVariable> vars);
 
 // Enforces that the given tuple of variables takes different values.
 // Same as AllDifferentBinary() but use a different propagator that only enforce
@@ -62,7 +62,7 @@ std::function<void(Model*)> AllDifferentOnBounds(
 //
 // This will fully encode variables.
 std::function<void(Model*)> AllDifferentAC(
-    const std::vector<IntegerVariable>& variables);
+    absl::Span<const IntegerVariable> variables);
 
 // Implementation of AllDifferentAC().
 class AllDifferentConstraint : PropagatorInterface {

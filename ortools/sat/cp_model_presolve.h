@@ -254,6 +254,10 @@ class CpModelPresolver {
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ConvertToBoolAnd();
 
+  // Sometimes an upper bound on the objective can reduce the domains of many
+  // variables. This "propagates" the objective like a normal linear constraint.
+  bool PropagateObjective();
+
   // Try to reformulate the objective in term of "base" variables. This is
   // mainly useful for core based approach where having more terms in the
   // objective (but with a same trivial lower bound) should help.

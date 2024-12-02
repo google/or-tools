@@ -50,6 +50,24 @@ using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
+TEST(CenterToCenterDistanceTest, BasicTest) {
+  Rectangle a, b;
+  a.x_min = 0;
+  a.x_max = 2;
+  a.y_min = 0;
+  a.y_max = 2;
+  b.x_min = 0;
+  b.x_max = 10;
+  b.y_min = 0;
+  b.y_max = 10;
+
+  // This is just the distance between (1,1) and (5,5) which should be sqrt(32).
+  EXPECT_EQ(CenterToCenterL2Distance(a, b), std::sqrt(32));
+
+  // Now this is 4.
+  EXPECT_EQ(CenterToCenterLInfinityDistance(a, b), 4.0);
+}
+
 TEST(GetOverlappingRectangleComponentsTest, NoComponents) {
   EXPECT_TRUE(GetOverlappingRectangleComponents({}, {}).empty());
   IntegerValue zero(0);
