@@ -1351,8 +1351,8 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
 // We list for each tuple the possible values the variable can take.
 // If the list is empty, then this encode "any value".
 void ProcessOneCompressedColumn(
-    int variable, const std::vector<int>& tuple_literals,
-    const std::vector<absl::InlinedVector<int64_t, 2>>& values,
+    int variable, absl::Span<const int> tuple_literals,
+    absl::Span<const absl::InlinedVector<int64_t, 2>> values,
     std::optional<int> table_is_active_literal, PresolveContext* context) {
   DCHECK_EQ(tuple_literals.size(), values.size());
 
@@ -1656,7 +1656,7 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
 // is called. Some checks will fail otherwise.
 void CompressAndExpandPositiveTable(ConstraintProto* ct,
                                     bool last_column_is_cost,
-                                    const std::vector<int>& vars,
+                                    absl::Span<const int> vars,
                                     std::vector<std::vector<int64_t>>* tuples,
                                     PresolveContext* context) {
   const int num_tuples_before_compression = tuples->size();

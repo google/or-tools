@@ -120,6 +120,28 @@ inline IntegerValue Rectangle::IntersectArea(const Rectangle& other) const {
   }
 }
 
+// Returns the L2 distance between the centers of the two rectangles.
+inline double CenterToCenterL2Distance(const Rectangle& a, const Rectangle& b) {
+  const double diff_x =
+      (static_cast<double>(a.x_min.value()) + a.x_max.value()) / 2.0 -
+      (static_cast<double>(b.x_min.value()) + b.x_max.value()) / 2.0;
+  const double diff_y =
+      (static_cast<double>(a.y_min.value()) + a.y_max.value()) / 2.0 -
+      (static_cast<double>(b.y_min.value()) + b.y_max.value()) / 2.0;
+  return std::sqrt(diff_x * diff_x + diff_y * diff_y);
+}
+
+inline double CenterToCenterLInfinityDistance(const Rectangle& a,
+                                              const Rectangle& b) {
+  const double diff_x =
+      (static_cast<double>(a.x_min.value()) + a.x_max.value()) / 2.0 -
+      (static_cast<double>(b.x_min.value()) + b.x_max.value()) / 2.0;
+  const double diff_y =
+      (static_cast<double>(a.y_min.value()) + a.y_max.value()) / 2.0 -
+      (static_cast<double>(b.y_min.value()) + b.y_max.value()) / 2.0;
+  return std::max(std::abs(diff_x), std::abs(diff_y));
+}
+
 // Creates a graph when two nodes are connected iff their rectangles overlap.
 // Then partition into connected components.
 //

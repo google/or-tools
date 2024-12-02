@@ -759,6 +759,53 @@ bool VarIsFixed(const CpModelProto& model_proto, int i) {
              model_proto.variables(i).domain(1);
 }
 
+// Note that we restrict the objective to be <= so that the hint is still
+// feasible. Alternatively, we could look for < hint value if we only want
+// better solution.
+void RestrictObjectiveUsingHint(CpModelProto* model_proto) {
+  if (!model_proto->has_objective()) return;
+  if (!model_proto->has_solution_hint()) return;
+
+  // We will abort if the hint is not complete, ignoring fixed variables.
+  const int num_vars = model_proto->variables().size();
+  int num_filled = 0;
+  std::vector<bool> filled(num_vars, false);
+  std::vector<int64_t> solution(num_vars, 0);
+  for (int var = 0; var < num_vars; ++var) {
+    if (VarIsFixed(*model_proto, var)) {
+      solution[var] = model_proto->variables(var).domain(0);
+      filled[var] = true;
+      ++num_filled;
+    }
+  }
+  const auto& hint_proto = model_proto->solution_hint();
+  const int num_hinted = hint_proto.vars().size();
+  for (int i = 0; i < num_hinted; ++i) {
+    const int var = hint_proto.vars(i);
+    CHECK(RefIsPositive(var));
+    if (filled[var]) continue;
+
+    const int64_t value = hint_proto.values(i);
+    solution[var] = value;
+    filled[var] = true;
+    ++num_filled;
+  }
+  if (num_filled != num_vars) return;
+
+  const int64_t obj_upper_bound =
+      ComputeInnerObjective(model_proto->objective(), solution);
+  const Domain restriction =
+      Domain(std::numeric_limits<int64_t>::min(), obj_upper_bound);
+
+  if (model_proto->objective().domain().empty()) {
+    FillDomainInProto(restriction, model_proto->mutable_objective());
+  } else {
+    FillDomainInProto(ReadDomainFromProto(model_proto->objective())
+                          .IntersectionWith(restriction),
+                      model_proto->mutable_objective());
+  }
+}
+
 // Returns false if there is a complete solution hint that is infeasible, or
 // true otherwise.
 bool TestSolutionHintForFeasibility(const CpModelProto& model_proto,
@@ -1347,6 +1394,12 @@ class LnsSolver : public SubSolver {
             TestSolutionHintForFeasibility(lns_fragment, /*logger=*/nullptr);
       }
 
+      // If we use a hint, we will restrict the objective to be <= to the one
+      // of the hint. This is helpful on some model where doing so can cause
+      // the presolve to restrict the domain of many variables. Note that the
+      // hint will still be feasible as we use <= and not <.
+      RestrictObjectiveUsingHint(&lns_fragment);
+
       CpModelProto debug_copy;
       if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
         // We need to make a copy because the presolve is destructive.
@@ -1777,9 +1830,15 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const bool has_no_overlap2d =
         !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
     if (has_no_overlap2d) {
-      if (name_filter.Keep("packing_rectangles_lns")) {
+      if (name_filter.Keep("packing_random_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
+      if (name_filter.Keep("packing_square_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RectanglesPackingRelaxOneNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params, helper, shared));
       }
@@ -2012,8 +2071,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 // If the option use_sat_inprocessing is true, then before post-solving a
 // solution, we need to make sure we add any new clause required for postsolving
 // to the mapping_model.
-void AddPostsolveClauses(const std::vector<int>& postsolve_mapping,
-                         Model* model, CpModelProto* mapping_proto) {
+void AddPostsolveClauses(absl::Span<const int> postsolve_mapping, Model* model,
+                         CpModelProto* mapping_proto) {
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* postsolve = model->GetOrCreate<PostsolveClauses>();
   for (const auto& clause : postsolve->clauses) {

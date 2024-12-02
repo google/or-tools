@@ -702,7 +702,7 @@ ShapePath TraceBoundary(
 
 std::string RenderShapes(std::optional<Rectangle> bb,
                          absl::Span<const Rectangle> rectangles,
-                         const std::vector<SingleShape>& shapes) {
+                         absl::Span<const SingleShape> shapes) {
   const std::vector<std::string> colors = {"black", "white",  "orange",
                                            "cyan",  "yellow", "purple"};
   std::stringstream ss;

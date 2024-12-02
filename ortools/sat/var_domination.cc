@@ -39,7 +39,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/util.h"
@@ -850,8 +850,10 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                     context->deductions.ImpliedDomain(enf, positive_ref));
         if (implied.IsEmpty()) {
           context->UpdateRuleStats("dual: fix variable");
+          context->UpdateLiteralSolutionHint(enf, false);
           if (!context->SetLiteralToFalse(enf)) return false;
-          if (!context->IntersectDomainWith(positive_ref, Domain(bound))) {
+          if (!context->IntersectDomainWithAndUpdateHint(positive_ref,
+                                                         Domain(bound))) {
             return false;
           }
           continue;
@@ -860,7 +862,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // Corner case.
           if (implied.FixedValue() == bound) {
             context->UpdateRuleStats("dual: fix variable");
-            if (!context->IntersectDomainWith(positive_ref, implied)) {
+            if (!context->IntersectDomainWithAndUpdateHint(positive_ref,
+                                                           implied)) {
               return false;
             }
             continue;
@@ -925,6 +928,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                                .IntersectionWith(var_domain);
         if (rhs.IsEmpty()) {
           context->UpdateRuleStats("linear1: infeasible");
+          context->UpdateLiteralSolutionHint(ct.enforcement_literal(0), false);
           if (!context->SetLiteralToFalse(ct.enforcement_literal(0))) {
             return false;
           }
@@ -1866,8 +1870,9 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           // TODO(user): It look like testing this is not really necessary.
           // The reduction done by this class seem to be order independent.
           bool ok = true;
-          for (const IntegerVariable dom :
-               var_domination.DominatingVariables(var)) {
+          const absl::Span<const IntegerVariable> dominating_vars =
+              var_domination.DominatingVariables(var);
+          for (const IntegerVariable dom : dominating_vars) {
             // Note that we assumed that a fixed point was reached before this
             // is called, so modified_domains should have been empty as we
             // entered this function. If not, the code is still correct, but we
@@ -1888,9 +1893,18 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             increase_is_forbidden[var] = true;
             context->UpdateRuleStats(
                 "domination: dual strenghtening using dominance");
-            if (!context->IntersectDomainWithAndUpdateHint(
-                    ref, Domain(context->MinOf(ref), lb))) {
-              return false;
+            const Domain reduced_domain = Domain(context->MinOf(ref), lb);
+            if (dominating_vars.empty()) {
+              if (!context->IntersectDomainWithAndUpdateHint(ref,
+                                                             reduced_domain)) {
+                return false;
+              }
+            } else {
+              MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
+                                              dominating_vars);
+              if (!context->IntersectDomainWith(ref, reduced_domain)) {
+                return false;
+              }
             }
 
             // The rest of the loop only care about Booleans.

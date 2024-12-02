@@ -36,8 +36,9 @@ namespace operations_research {
 namespace sat {
 
 std::function<void(Model*)> AllDifferentBinary(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> vars) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     // Fully encode all the given variables and construct a mapping value ->
     // List of literal each indicating that a given variable takes this value.
     //
@@ -97,8 +98,9 @@ std::function<void(Model*)> AllDifferentOnBounds(
 }
 
 std::function<void(Model*)> AllDifferentAC(
-    const std::vector<IntegerVariable>& variables) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> variables) {
+  return [=, variables = std::vector<IntegerVariable>(
+                 variables.begin(), variables.end())](Model* model) {
     if (variables.size() < 3) return;
 
     AllDifferentConstraint* constraint = new AllDifferentConstraint(

@@ -825,7 +825,7 @@ struct IndexedRectangle {
 };
 
 void InsertRectanglePredecences(
-    const std::vector<IndexedRectangle>& rectangles,
+    absl::Span<const IndexedRectangle> rectangles,
     absl::flat_hash_set<std::pair<int, int>>* precedences) {
   // TODO(user): Refine set of interesting points.
   std::vector<IntegerValue> interesting_points;
@@ -1148,7 +1148,7 @@ void NeighborhoodGeneratorHelper::AddSolutionHinting(
 
 Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
     const CpSolverResponse& initial_solution,
-    const std::vector<int>& relaxed_variables) const {
+    absl::Span<const int> relaxed_variables) const {
   std::vector<bool> relaxed_variables_set(model_proto_.variables_size(), false);
   for (const int var : relaxed_variables) relaxed_variables_set[var] = true;
   absl::flat_hash_set<int> fixed_variables;
@@ -1737,8 +1737,8 @@ namespace {
 
 // Create a constraint sum (X - LB) + sum (UB - X) <= rhs.
 ConstraintProto DistanceToBoundsSmallerThanConstraint(
-    const std::vector<std::pair<int, int64_t>>& dist_to_lower_bound,
-    const std::vector<std::pair<int, int64_t>>& dist_to_upper_bound,
+    absl::Span<const std::pair<int, int64_t>> dist_to_lower_bound,
+    absl::Span<const std::pair<int, int64_t>> dist_to_upper_bound,
     const int64_t rhs) {
   DCHECK_GE(rhs, 0);
   ConstraintProto new_constraint;
@@ -2290,6 +2290,84 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
 }
 
+Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, SolveData& data,
+    absl::BitGenRef random) {
+  // First pick one rectangle.
+  const std::vector<ActiveRectangle> all_active_rectangles =
+      helper_.GetActiveRectangles(initial_solution);
+  if (all_active_rectangles.size() <= 1) return helper_.FullNeighborhood();
+
+  const ActiveRectangle& base_rectangle =
+      all_active_rectangles[absl::Uniform<int>(random, 0,
+                                               all_active_rectangles.size())];
+
+  const auto get_rectangle = [&initial_solution, helper = &helper_](
+                                 const ActiveRectangle& rectangle) {
+    const int x_interval_idx = rectangle.x_interval;
+    const int y_interval_idx = rectangle.y_interval;
+    const ConstraintProto& x_interval_ct =
+        helper->ModelProto().constraints(x_interval_idx);
+    const ConstraintProto& y_interval_ct =
+        helper->ModelProto().constraints(y_interval_idx);
+    return Rectangle{.x_min = GetLinearExpressionValue(
+                         x_interval_ct.interval().start(), initial_solution),
+                     .x_max = GetLinearExpressionValue(
+                         x_interval_ct.interval().end(), initial_solution),
+                     .y_min = GetLinearExpressionValue(
+                         y_interval_ct.interval().start(), initial_solution),
+                     .y_max = GetLinearExpressionValue(
+                         y_interval_ct.interval().end(), initial_solution)};
+  };
+
+  const Rectangle center_rect = get_rectangle(base_rectangle);
+
+  // Now compute a neighborhood around that rectangle. In this neighborhood
+  // we prefer a "Square" region around the initial rectangle center rather than
+  // a circle.
+  //
+  // Note that we only consider two rectangles as potential neighbors if they
+  // are part of the same no_overlap_2d constraint.
+  absl::flat_hash_set<int> variables_to_freeze;
+  std::vector<std::pair<int, double>> distances;
+  distances.reserve(all_active_rectangles.size());
+  for (int i = 0; i < all_active_rectangles.size(); ++i) {
+    const ActiveRectangle& rectangle = all_active_rectangles[i];
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
+                                  variables_to_freeze);
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
+                                  variables_to_freeze);
+
+    const Rectangle rect = get_rectangle(rectangle);
+    const bool same_no_overlap_as_center_rect = absl::c_any_of(
+        base_rectangle.no_overlap_2d_constraints, [&rectangle](const int c) {
+          return rectangle.no_overlap_2d_constraints.contains(c);
+        });
+    if (same_no_overlap_as_center_rect) {
+      distances.push_back(
+          {i, CenterToCenterLInfinityDistance(center_rect, rect)});
+    }
+  }
+  std::sort(distances.begin(), distances.end(),
+            [](const auto& a, const auto& b) { return a.second < b.second; });
+
+  const int num_to_sample = data.difficulty * all_active_rectangles.size();
+  absl::flat_hash_set<int> variables_to_relax;
+  const int num_to_relax = std::min<int>(distances.size(), num_to_sample);
+  for (int i = 0; i < num_to_relax; ++i) {
+    const int rectangle_idx = distances[i].first;
+    const ActiveRectangle& rectangle = all_active_rectangles[rectangle_idx];
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
+                                  variables_to_relax);
+    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
+                                  variables_to_relax);
+  }
+  for (const int v : variables_to_relax) {
+    variables_to_freeze.erase(v);
+  }
+  return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
+}
+
 Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
@@ -2327,22 +2405,16 @@ Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
                          y_interval_ct.interval().end(), initial_solution)};
   };
 
-  // TODO(user): This computes the distance between the center of the
-  // rectangles. We could use the real distance between the closest points, but
-  // not sure it is worth the extra complexity.
-  const auto compute_rectangle_distance = [](const Rectangle& rect1,
-                                             const Rectangle& rect2) {
-    return (static_cast<double>(rect1.x_min.value()) + rect1.x_max.value() -
-            rect2.x_min.value() - rect2.x_max.value()) *
-           (static_cast<double>(rect1.y_min.value()) + rect1.y_max.value() -
-            rect2.y_min.value() - rect2.y_max.value());
-  };
   const Rectangle rect1 = get_rectangle(chosen_rectangle_1);
   const Rectangle rect2 = get_rectangle(chosen_rectangle_2);
 
   // Now compute a neighborhood around each rectangle. Note that we only
   // consider two rectangles as potential neighbors if they are part of the same
   // no_overlap_2d constraint.
+  //
+  // TODO(user): This computes the distance between the center of the
+  // rectangles. We could use the real distance between the closest points, but
+  // not sure it is worth the extra complexity.
   absl::flat_hash_set<int> variables_to_freeze;
   std::vector<std::pair<int, double>> distances1;
   std::vector<std::pair<int, double>> distances2;
@@ -2367,10 +2439,10 @@ Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
                          return rectangle.no_overlap_2d_constraints.contains(c);
                        });
     if (same_no_overlap_as_rect1) {
-      distances1.push_back({i, compute_rectangle_distance(rect1, rect)});
+      distances1.push_back({i, CenterToCenterL2Distance(rect1, rect)});
     }
     if (same_no_overlap_as_rect2) {
-      distances2.push_back({i, compute_rectangle_distance(rect2, rect)});
+      distances2.push_back({i, CenterToCenterL2Distance(rect2, rect)});
     }
   }
   const int num_to_sample_each =

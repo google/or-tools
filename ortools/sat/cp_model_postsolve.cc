@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -226,7 +227,7 @@ int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
 }
 
 bool LinearExpressionIsFixed(const LinearExpressionProto& expr,
-                             const std::vector<Domain>& domains) {
+                             absl::Span<const Domain> domains) {
   for (const int var : expr.vars()) {
     if (!domains[var].IsFixed()) return false;
   }
@@ -335,7 +336,7 @@ void PostsolveIntProd(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
 void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
-                       const std::vector<int>& postsolve_mapping,
+                       absl::Span<const int> postsolve_mapping,
                        std::vector<int64_t>* solution) {
   CHECK_EQ(solution->size(), postsolve_mapping.size());
 

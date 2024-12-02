@@ -7031,6 +7031,7 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
   local_params.set_use_conservative_scale_overload_checker(true);
   local_params.set_use_dual_scheduling_heuristics(true);
 
+  model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
   std::vector<int> variable_mapping;
   CreateValidModelWithSingleConstraint(ct, context_, &variable_mapping,
                                        &tmp_model_);
@@ -7811,6 +7812,73 @@ void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
     context_->UpdateRuleStats("objective: shifted cost with exactly ones",
                               num_shifts);
   }
+}
+
+bool CpModelPresolver::PropagateObjective() {
+  if (!context_->working_model->has_objective()) return true;
+  if (context_->ModelIsUnsat()) return false;
+  context_->WriteObjectiveToProto();
+
+  int64_t min_activity = 0;
+  int64_t max_variation = 0;
+  const CpObjectiveProto& objective = context_->working_model->objective();
+  const int num_terms = objective.vars().size();
+  for (int i = 0; i < num_terms; ++i) {
+    const int var = objective.vars(i);
+    const int64_t coeff = objective.coeffs(i);
+    CHECK(RefIsPositive(var));
+    CHECK_NE(coeff, 0);
+
+    const int64_t domain_min = context_->MinOf(var);
+    const int64_t domain_max = context_->MaxOf(var);
+    if (coeff > 0) {
+      min_activity += coeff * domain_min;
+    } else {
+      min_activity += coeff * domain_max;
+    }
+    const int64_t variation = std::abs(coeff) * (domain_max - domain_min);
+    max_variation = std::max(max_variation, variation);
+  }
+
+  // Infeasible ?
+  const int64_t slack =
+      CapSub(ReadDomainFromProto(objective).Max(), min_activity);
+  if (slack < 0) {
+    return context_->NotifyThatModelIsUnsat(
+        "infeasible while propagating objective");
+  }
+
+  // No propagation ?
+  if (max_variation <= slack) return true;
+
+  int num_propagations = 0;
+  for (int i = 0; i < num_terms; ++i) {
+    const int var = objective.vars(i);
+    const int64_t coeff = objective.coeffs(i);
+    const int64_t domain_min = context_->MinOf(var);
+    const int64_t domain_max = context_->MaxOf(var);
+
+    const int64_t new_diff = slack / std::abs(coeff);
+    if (new_diff >= domain_max - domain_min) continue;
+
+    ++num_propagations;
+    if (coeff > 0) {
+      if (!context_->IntersectDomainWith(
+              var, Domain(domain_min, domain_min + new_diff))) {
+        return false;
+      }
+    } else {
+      if (!context_->IntersectDomainWith(
+              var, Domain(domain_max - new_diff, domain_max))) {
+        return false;
+      }
+    }
+  }
+  CHECK_GT(num_propagations, 0);
+
+  context_->UpdateRuleStats("objective: restricted var domains by propagation",
+                            num_propagations);
+  return true;
 }
 
 // Expand the objective expression in some easy cases.
@@ -12895,25 +12963,43 @@ bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
 }
 
 bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
-  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  // We will create it lazily if we end up copying something.
+  ConstraintProto* new_ct = nullptr;
+
+  // Regroup all constant terms and copy the other.
+  int64_t max_of_fixed_terms = std::numeric_limits<int64_t>::min();
   for (const auto& expr : ct.lin_max().exprs()) {
-    CopyLinearExpression(expr, new_ct->mutable_lin_max()->add_exprs());
-    auto& last_expr = *new_ct->mutable_lin_max()->mutable_exprs(
-        new_ct->lin_max().exprs_size() - 1);
-    if (last_expr.vars().empty() && new_ct->lin_max().exprs().size() > 1) {
-      LinearExpressionProto* first_expr =
-          new_ct->mutable_lin_max()->mutable_exprs(0);
-      if (first_expr->vars().empty()) {
-        // We have two constants, keep the largest.
-        first_expr->set_offset(
-            std::max(first_expr->offset(), last_expr.offset()));
-        new_ct->mutable_lin_max()->mutable_exprs()->RemoveLast();
-      } else {
-        // Put the constant in the first position.
-        last_expr.Swap(first_expr);
+    if (context_->IsFixed(expr)) {
+      max_of_fixed_terms =
+          std::max(max_of_fixed_terms, context_->FixedValue(expr));
+    } else {
+      // copy.
+      if (new_ct == nullptr) {
+        new_ct = context_->working_model->add_constraints();
       }
+      CopyLinearExpression(expr, new_ct->mutable_lin_max()->add_exprs());
     }
   }
+
+  // If we have no non-fixed expression, we can just fix the target when it
+  // involve at most one variable.
+  if (new_ct == nullptr && ct.enforcement_literal().empty() &&
+      ct.lin_max().target().vars().size() <= 1) {
+    context_->UpdateRuleStats("lin_max: all exprs fixed during copy");
+    return context_->IntersectDomainWith(ct.lin_max().target(),
+                                         Domain(max_of_fixed_terms));
+  }
+
+  // Otherwise, add a constant term if needed.
+  if (max_of_fixed_terms > std::numeric_limits<int64_t>::min()) {
+    if (new_ct == nullptr) {
+      new_ct = context_->working_model->add_constraints();
+    }
+    new_ct->mutable_lin_max()->add_exprs()->set_offset(max_of_fixed_terms);
+  }
+
+  // Finish by copying the target.
+  if (new_ct == nullptr) return false;  // No expr == unsat.
   CopyLinearExpression(ct.lin_max().target(),
                        new_ct->mutable_lin_max()->mutable_target());
   return true;
@@ -13575,6 +13661,9 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (time_limit_->LimitReached()) break;
     context_->UpdateRuleStats("presolve: iteration");
     const int64_t old_num_presolve_op = context_->num_presolve_operations;
+
+    // Propagate the objective.
+    if (!PropagateObjective()) return InfeasibleStatus();
 
     // TODO(user): The presolve transformations we do after this is called might
     // result in even more presolve if we were to call this again! improve the

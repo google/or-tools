@@ -21,6 +21,7 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/strongly_connected_components.h"
@@ -53,9 +54,9 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 
   // The constraints take a sparse representation of a graph on [0, n). Each arc
   // being present when the given literal is true.
-  CircuitPropagator(int num_nodes, const std::vector<int>& tails,
-                    const std::vector<int>& heads,
-                    const std::vector<Literal>& literals, Options options,
+  CircuitPropagator(int num_nodes, absl::Span<const int> tails,
+                    absl::Span<const int> heads,
+                    absl::Span<const Literal> literals, Options options,
                     Model* model);
 
   // This type is neither copyable nor movable.
@@ -173,7 +174,7 @@ class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
 class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
  public:
   CircuitCoveringPropagator(std::vector<std::vector<Literal>> graph,
-                            const std::vector<int>& distinguished_nodes,
+                            absl::Span<const int> distinguished_nodes,
                             Model* model);
 
   void SetLevel(int level) final;
@@ -254,9 +255,9 @@ void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
 
 // TODO(user): Change to a sparse API like for the function above.
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal>>& graph);
+    absl::Span<const std::vector<Literal>> graph);
 std::function<void(Model*)> CircuitCovering(
-    const std::vector<std::vector<Literal>>& graph,
+    absl::Span<const std::vector<Literal>> graph,
     const std::vector<int>& distinguished_nodes);
 
 }  // namespace sat
