@@ -122,7 +122,7 @@ class GreedySolutionGenerator {
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(const std::vector<SubsetIndex>& focus);
+  bool NextSolution(absl::Span<const SubsetIndex> focus);
 
   // Same with a different set of costs.
   bool NextSolution(absl::Span<const SubsetIndex> focus,

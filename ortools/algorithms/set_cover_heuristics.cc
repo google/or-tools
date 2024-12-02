@@ -95,7 +95,7 @@ bool GreedySolutionGenerator::NextSolution() {
 }
 
 bool GreedySolutionGenerator::NextSolution(
-    const std::vector<SubsetIndex>& focus) {
+    absl::Span<const SubsetIndex> focus) {
   return NextSolution(focus, inv_->model()->subset_costs());
 }
 

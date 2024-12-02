@@ -123,6 +123,7 @@ class KnightsCover {
 
 TEST(SetCoverProtoTest, SaveReload) {
   SetCoverModel model = KnightsCover(10, 10).model();
+  model.SortElementsInSubsets();
   SetCoverProto proto = model.ExportModelAsProto();
   SetCoverModel reloaded;
   reloaded.ImportModelFromProto(proto);

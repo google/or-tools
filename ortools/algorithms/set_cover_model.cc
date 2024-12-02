@@ -183,6 +183,7 @@ void SetCoverModel::UpdateAllSubsetsList() {
 }
 
 void SetCoverModel::AddEmptySubset(Cost cost) {
+  elements_in_subsets_are_sorted_ = false;
   subset_costs_.push_back(cost);
   columns_.push_back(SparseColumn());
   all_subsets_.push_back(SubsetIndex(num_subsets_));
@@ -194,6 +195,7 @@ void SetCoverModel::AddEmptySubset(Cost cost) {
 }
 
 void SetCoverModel::AddElementToLastSubset(BaseInt element) {
+  elements_in_subsets_are_sorted_ = false;
   columns_.back().push_back(ElementIndex(element));
   num_elements_ = std::max(num_elements_, element + 1);
   // No need to update the list all_subsets_.
@@ -206,6 +208,7 @@ void SetCoverModel::AddElementToLastSubset(ElementIndex element) {
 }
 
 void SetCoverModel::SetSubsetCost(BaseInt subset, Cost cost) {
+  elements_in_subsets_are_sorted_ = false;
   CHECK(std::isfinite(cost));
   DCHECK_GE(subset, 0);
   if (subset >= num_subsets()) {
@@ -223,6 +226,7 @@ void SetCoverModel::SetSubsetCost(SubsetIndex subset, Cost cost) {
 }
 
 void SetCoverModel::AddElementToSubset(BaseInt element, BaseInt subset) {
+  elements_in_subsets_are_sorted_ = false;
   if (subset >= num_subsets()) {
     num_subsets_ = subset + 1;
     subset_costs_.resize(num_subsets_, 0.0);
@@ -264,6 +268,13 @@ void SetCoverModel::ReserveNumElementsInSubset(ElementIndex num_elements,
   ReserveNumElementsInSubset(num_elements.value(), subset.value());
 }
 
+void SetCoverModel::SortElementsInSubsets() {
+  for (const SubsetIndex subset : SubsetRange()) {
+    std::sort(columns_[subset].begin(), columns_[subset].end());
+  }
+  elements_in_subsets_are_sorted_ = true;
+}
+
 void SetCoverModel::CreateSparseRowView() {
   if (row_view_is_valid_) {
     return;
@@ -287,6 +298,7 @@ void SetCoverModel::CreateSparseRowView() {
     }
   }
   row_view_is_valid_ = true;
+  elements_in_subsets_are_sorted_ = true;
 }
 
 bool SetCoverModel::ComputeFeasibility() const {
@@ -319,13 +331,15 @@ bool SetCoverModel::ComputeFeasibility() const {
   return true;
 }
 
-SetCoverProto SetCoverModel::ExportModelAsProto() {
+SetCoverProto SetCoverModel::ExportModelAsProto() const {
+  CHECK(elements_in_subsets_are_sorted_);
   SetCoverProto message;
   for (const SubsetIndex subset : SubsetRange()) {
     SetCoverProto::Subset* subset_proto = message.add_subset();
     subset_proto->set_cost(subset_costs_[subset]);
-    std::sort(columns_[subset].begin(), columns_[subset].end());
-    for (const ElementIndex element : columns_[subset]) {
+    SparseColumn column = columns_[subset];
+    std::sort(column.begin(), column.end());
+    for (const ElementIndex element : column) {
       subset_proto->add_element(element.value());
     }
   }
@@ -433,8 +447,9 @@ std::vector<T> ComputeDeciles(std::vector<T> values) {
   const int kNumDeciles = 10;
   std::vector<T> deciles;
   deciles.reserve(kNumDeciles);
+  const float step = values.size() / kNumDeciles;
   for (int i = 1; i <= kNumDeciles; ++i) {
-    const size_t point = values.size() * i / kNumDeciles - 1;
+    const size_t point = std::max<float>(0, i * step - 1);
     std::nth_element(values.begin(), values.begin() + point, values.end());
     deciles.push_back(values[point]);
   }
