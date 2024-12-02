@@ -56,6 +56,7 @@ class SetCoverTest(absltest.TestCase):
 
     def test_save_reload(self):
         model = create_knights_cover_model(10, 10)
+        model.sort_elements_in_subsets()
         proto = model.export_model_as_proto()
         reloaded = set_cover.SetCoverModel()
         reloaded.import_model_from_proto(proto)

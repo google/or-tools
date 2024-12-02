@@ -208,6 +208,7 @@ PYBIND11_MODULE(set_cover, m) {
           },
           arg("subset"), arg("cost"))
       .def("create_sparse_row_view", &SetCoverModel::CreateSparseRowView)
+      .def("sort_elements_in_subsets", &SetCoverModel::SortElementsInSubsets)
       .def("compute_feasibility", &SetCoverModel::ComputeFeasibility)
       .def(
           "reserve_num_subsets",

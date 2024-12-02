@@ -109,6 +109,7 @@ class SetCoverModel {
         num_subsets_(0),
         num_nonzeros_(0),
         row_view_is_valid_(false),
+        elements_in_subsets_are_sorted_(false),
         subset_costs_(),
         columns_(),
         rows_(),
@@ -204,7 +205,12 @@ class SetCoverModel {
   void AddElementToSubset(BaseInt element, BaseInt subset);
   void AddElementToSubset(ElementIndex element, SubsetIndex subset);
 
-  // Creates the sparse ("dual") representation of the problem.
+  // Sorts the elements in each subset. Should be called before exporting the
+  // model to a proto.
+  void SortElementsInSubsets();
+
+  // Creates the sparse ("dual") representation of the problem. This also sorts
+  // the elements in each subset.
   void CreateSparseRowView();
 
   // Returns true if the problem is feasible, i.e. if the subsets cover all
@@ -220,10 +226,12 @@ class SetCoverModel {
   void ReserveNumElementsInSubset(ElementIndex num_elements,
                                   SubsetIndex subset);
 
-  // Returns the model as a SetCoverProto. The function is not const because
-  // the element indices in the columns need to be sorted for the representation
-  // as a protobuf to be canonical.
-  SetCoverProto ExportModelAsProto();
+  // Returns the model as a SetCoverProto. Note that the elements of each subset
+  // are sorted locally before being exported to the proto. This is done to
+  // ensure that the proto is deterministic. The function is const because it
+  // does not modify the model. Therefore, the model as exported by this
+  // function may be different from the initial model.
+  SetCoverProto ExportModelAsProto() const;
 
   // Imports the model from a SetCoverProto.
   void ImportModelFromProto(const SetCoverProto& message);
@@ -283,6 +291,9 @@ class SetCoverModel {
 
   // True when the SparseRowView is up-to-date.
   bool row_view_is_valid_;
+
+  // True when the elements in each subset are sorted.
+  bool elements_in_subsets_are_sorted_;
 
   // Costs for each subset.
 
