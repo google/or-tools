@@ -54,8 +54,14 @@ TEST(SatClauseTest, BasicAllocation) {
 }
 
 struct TestSatClause {
+#ifdef _MSC_VER
+  // MSVC doesn't allow to overflow at the word boundary.
+  unsigned int is_learned : 1;
+  unsigned int is_attached : 1;
+#else
   bool is_learned : 1;
   bool is_attached : 1;
+#endif
   unsigned int size : 30;
 
   // We test that Literal literals[0]; does not increase the size.
