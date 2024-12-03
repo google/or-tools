@@ -94,17 +94,9 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     const LinearConstraintsProto& constraints) {
   const int num_new_constraints = constraints.lower_bounds().size();
 
-  // Constraints are translated into:
-  // 1.  ax <= upper_bound (if lower bound <= -INFINITY, and upper_bound
-  //                        is finite and less than INFINITY)
-  // 2.  ax >= lower_bound (if upper bound >= INFINITY, and lower_bound is
-  //                        finite and greater than -INFINITY)
-  // 3.  ax == xxxxx_bound (if both bounds are finite, equal, and their
-  //                        absolute values less than INFINITY)
-  // 4.  ax - slack = 0.0  (otherwise,
-  //                        slack bounds == [lower_bound, upper_bound])
-  std::vector<double> constraint_rhs;
   std::vector<char> constraint_sense;
+  std::vector<double> constraint_rhs;
+  std::vector<double> constraint_rng;
   std::vector<LinearConstraintData*> new_slacks;
   constraint_rhs.reserve(num_new_constraints);
   constraint_sense.reserve(num_new_constraints);
@@ -113,7 +105,7 @@ absl::Status XpressSolver::AddNewLinearConstraints(
   for (int i = 0; i < num_new_constraints; ++i) {
     const int64_t id = constraints.ids(i);
     LinearConstraintData& constraint_data =
-        gtl::InsertKeyOrDie(&linear_constraints_map_, id);
+        InsertKeyOrDie(&linear_constraints_map_, id);
     const double lb = constraints.lower_bounds(i);
     const double ub = constraints.upper_bounds(i);
     constraint_data.lower_bound = lb;
@@ -121,6 +113,7 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     constraint_data.constraint_index = i + n_constraints;
     char sense = XPRS_EQUAL;
     double rhs = 0.0;
+    double rng = 0.0;
     const bool lb_is_xprs_neg_inf = lb <= XPRS_MINUSINFINITY;
     const bool ub_is_xprs_pos_inf = ub >= XPRS_PLUSINFINITY;
     if (lb_is_xprs_neg_inf && !ub_is_xprs_pos_inf) {
@@ -133,23 +126,19 @@ absl::Status XpressSolver::AddNewLinearConstraints(
       sense = XPRS_EQUAL;
       rhs = lb;
     } else {
-      // Note that constraints where the lower bound and the upper bound are
-      // -+infinity translate into a range constraint with an unbounded slack.
-      constraint_data.slack_index = new_slacks.size() + n_constraints;
-      new_slacks.push_back(&constraint_data);
+      if (ub < lb) {
+        return absl::InvalidArgumentError("Lower bound > Upper bound");
+      }
+      sense = XPRS_RANGE;
+      rhs = ub;
+      rng = ub - lb;
     }
-    constraint_rhs.emplace_back(rhs);
     constraint_sense.emplace_back(sense);
+    constraint_rhs.emplace_back(rhs);
+    constraint_rng.emplace_back(rng);
   }
   // Add all constraints in one call.
-  RETURN_IF_ERROR(xpress_->AddConstrs(constraint_sense, constraint_rhs));
-  // Add slacks for true ranged constraints (if needed)
-  if (!new_slacks.empty()) {
-    // TODO
-    return absl::UnimplementedError(
-        "XpressSolver does not support slack variables yet");
-  }
-  return absl::OkStatus();
+  return xpress_->AddConstrs(constraint_sense, constraint_rhs, constraint_rng);
 }
 
 absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {

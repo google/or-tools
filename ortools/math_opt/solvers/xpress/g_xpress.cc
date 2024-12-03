@@ -105,11 +105,12 @@ absl::Status Xpress::AddVars(const absl::Span<const int> vbegin,
 }
 
 absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,
-                                const absl::Span<const double> rhs) {
+                                const absl::Span<const double> rhs,
+                                const absl::Span<const double> rng) {
   const int num_cons = static_cast<int>(sense.size());
   CHECK_EQ(rhs.size(), num_cons);
   return ToStatus(XPRSaddrows(xpress_model_, num_cons, 0, sense.data(),
-                              rhs.data(), NULL, NULL, NULL, NULL));
+                              rhs.data(), rng.data(), NULL, NULL, NULL));
 }
 
 absl::Status Xpress::SetObjective(bool maximize, double offset,

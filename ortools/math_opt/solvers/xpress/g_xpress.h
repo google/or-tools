@@ -64,7 +64,9 @@ class Xpress {
                        absl::Span<const char> vtype);
 
   absl::Status AddConstrs(absl::Span<const char> sense,
-                          absl::Span<const double> rhs);
+                          absl::Span<const double> rhs,
+                          absl::Span<const double> rng);
+
   absl::Status SetObjective(bool maximize, double offset,
                             absl::Span<const int> colind,
                             absl::Span<const double> values);
