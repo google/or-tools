@@ -71,7 +71,7 @@ class XpressSolver : public SolverInterface {
   explicit XpressSolver(std::unique_ptr<Xpress> g_xpress);
 
   // For easing reading the code, we declare these types:
-  using VariableId = int64_t;
+  using VarId = int64_t;
   using AuxiliaryObjectiveId = int64_t;
   using LinearConstraintId = int64_t;
   using QuadraticConstraintId = int64_t;
@@ -111,11 +111,12 @@ class XpressSolver : public SolverInterface {
   };
 
   struct SolutionClaims {
-    bool primal_feasible_solution_exists;
-    bool dual_feasible_solution_exists;
+    bool primal_feasible_solution_exists = false;
+    bool dual_feasible_solution_exists = false;
   };
 
   struct SolutionsAndClaims {
+    // TODO: simplify this structure or change it
     std::vector<SolutionProto> solutions;
     SolutionClaims solution_claims;
   };
@@ -181,7 +182,7 @@ class XpressSolver : public SolverInterface {
 
   // Internal correspondence from variable proto IDs to Xpress-numbered
   // variables.
-  gtl::linked_hash_map<VariableId, XpressVariableIndex> variables_map_;
+  gtl::linked_hash_map<VarId, XpressVariableIndex> variables_map_;
   // Internal correspondence from linear constraint proto IDs to
   // Xpress-numbered linear constraint and extra information.
   gtl::linked_hash_map<LinearConstraintId, LinearConstraintData>
@@ -197,17 +198,6 @@ class XpressSolver : public SolverInterface {
   // Fields to track the number of Xpress variables and constraints. These
   // quantities are updated immediately after adding or removing to the model,
   // so it is correct even if XPRESS C API has not yet been called.
-
-  // Number of Xpress variables.
-  int num_xpress_variables_ = 0;
-  // Number of Xpress linear constraints.
-  int num_xpress_lin_cons_ = 0;
-  // Number of Xpress quadratic constraints.
-  int num_xpress_quad_cons_ = 0;
-  // Number of Xpress SOS constraints.
-  int num_xpress_sos_cons_ = 0;
-  // Number of Xpress general constraints.
-  int num_xpress_gen_cons_ = 0;
 
   bool is_mip_ = false;
   bool is_maximize_ = false;

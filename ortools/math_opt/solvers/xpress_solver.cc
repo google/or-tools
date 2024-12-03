@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "xpress_solver.h"
+#include "ortools/math_opt/solvers/xpress_solver.h"
 
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
@@ -66,9 +66,10 @@ absl::Status XpressSolver::AddNewVariables(
     const VariablesProto& new_variables) {
   const int num_new_variables = new_variables.lower_bounds().size();
   std::vector<char> variable_type(num_new_variables);
+  int n_variables = xpress_->GetNumberOfColumns();
   for (int j = 0; j < num_new_variables; ++j) {
-    const VariableId id = new_variables.ids(j);
-    InsertOrDie(&variables_map_, id, j + num_xpress_variables_);
+    const VarId id = new_variables.ids(j);
+    InsertOrDie(&variables_map_, id, j + n_variables);
     variable_type[j] =
         new_variables.integers(j) ? XPRS_INTEGER : XPRS_CONTINUOUS;
     if (new_variables.integers(j)) {
@@ -79,7 +80,6 @@ absl::Status XpressSolver::AddNewVariables(
   RETURN_IF_ERROR(xpress_->AddVars({}, new_variables.lower_bounds(),
                                    new_variables.upper_bounds(),
                                    variable_type));
-  num_xpress_variables_ += num_new_variables;
 
   // Not adding names for performance (have to call XPRSaddnames)
   // TODO : keep names in a cache and add them when needed?
@@ -109,6 +109,7 @@ absl::Status XpressSolver::AddNewLinearConstraints(
   constraint_rhs.reserve(num_new_constraints);
   constraint_sense.reserve(num_new_constraints);
   new_slacks.reserve(num_new_constraints);
+  int n_constraints = xpress_->GetNumberOfRows();
   for (int i = 0; i < num_new_constraints; ++i) {
     const int64_t id = constraints.ids(i);
     LinearConstraintData& constraint_data =
@@ -117,7 +118,7 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     const double ub = constraints.upper_bounds(i);
     constraint_data.lower_bound = lb;
     constraint_data.upper_bound = ub;
-    constraint_data.constraint_index = i + num_xpress_lin_cons_;
+    constraint_data.constraint_index = i + n_constraints;
     char sense = XPRS_EQUAL;
     double rhs = 0.0;
     const bool lb_is_xprs_neg_inf = lb <= XPRS_MINUSINFINITY;
@@ -134,7 +135,7 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     } else {
       // Note that constraints where the lower bound and the upper bound are
       // -+infinity translate into a range constraint with an unbounded slack.
-      constraint_data.slack_index = new_slacks.size() + num_xpress_variables_;
+      constraint_data.slack_index = new_slacks.size() + n_constraints;
       new_slacks.push_back(&constraint_data);
     }
     constraint_rhs.emplace_back(rhs);
@@ -142,7 +143,6 @@ absl::Status XpressSolver::AddNewLinearConstraints(
   }
   // Add all constraints in one call.
   RETURN_IF_ERROR(xpress_->AddConstrs(constraint_sense, constraint_rhs));
-  num_xpress_lin_cons_ += num_new_constraints;
   // Add slacks for true ranged constraints (if needed)
   if (!new_slacks.empty()) {
     // TODO
@@ -153,6 +153,8 @@ absl::Status XpressSolver::AddNewLinearConstraints(
 }
 
 absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
+  // TODO: reactivate the following code after figuring out why the condition is
+  // true for LP tests
   /*if (objective.has_quadratic_coefficients()) {
     return absl::UnimplementedError(
         "Quadratic objectives are not yet implemented in XPRESS solver "
@@ -176,12 +178,14 @@ absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
 absl::Status XpressSolver::ChangeCoefficients(
     const SparseDoubleMatrixProto& matrix) {
   const int num_coefficients = matrix.row_ids().size();
-  std::vector<int> row_index(num_coefficients);
-  std::vector<int> col_index(num_coefficients);
+  std::vector<int> row_index;
+  row_index.reserve(num_coefficients);
+  std::vector<int> col_index;
+  col_index.reserve(num_coefficients);
   for (int k = 0; k < num_coefficients; ++k) {
-    row_index[k] =
-        linear_constraints_map_.at(matrix.row_ids(k)).constraint_index;
-    col_index[k] = variables_map_.at(matrix.column_ids(k));
+    row_index.push_back(
+        linear_constraints_map_.at(matrix.row_ids(k)).constraint_index);
+    col_index.push_back(variables_map_.at(matrix.column_ids(k)));
   }
   return xpress_->ChgCoeffs(row_index, col_index, matrix.coefficients());
 }
@@ -250,20 +254,15 @@ absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
   ASSIGN_OR_RETURN(*result.mutable_termination(),
                    ConvertTerminationReason(solution_claims, best_primal_bound,
                                             best_dual_bound));
-  return std::move(result);
+  return result;
 }
 
 absl::StatusOr<double> XpressSolver::GetBestPrimalBound() const {
-  ASSIGN_OR_RETURN(
-      const double best_primal_bound,
-      xpress_->GetDoubleAttr(is_mip_ ? XPRS_MIPOBJVAL : XPRS_LPOBJVAL));
-  return best_primal_bound;
+  return xpress_->GetDoubleAttr(is_mip_ ? XPRS_MIPOBJVAL : XPRS_LPOBJVAL);
 }
 
 absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
-  ASSIGN_OR_RETURN(const double best_dual_bound,
-                   xpress_->GetDoubleAttr(XPRS_BESTBOUND));
-  return best_dual_bound;
+  return xpress_->GetDoubleAttr(XPRS_BESTBOUND);
 }
 
 absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetSolutions(
@@ -385,7 +384,7 @@ XpressSolver::GetConvexDualSolutionIfAvailable(
         "unavailable or infinite, and no dual feasible solution is returned");
   }
   return SolutionAndClaim<DualSolutionProto>{
-      .solution = std::move(dual_solution),
+      .solution = dual_solution,
       .feasible_solution_exists = dual_feasible_solution_exists};
 }
 
@@ -432,7 +431,7 @@ absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
   } else if (xpress_status_ == XPRS_LP_UNBOUNDED) {
     basis.set_basic_dual_feasibility(SOLUTION_STATUS_INFEASIBLE);
   }
-  return std::move(basis);
+  return basis;
 }
 
 absl::StatusOr<SolveStatsProto> XpressSolver::GetSolveStats(
@@ -465,6 +464,10 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
   // TODO : improve this
   if (!is_mip_) {
     switch (xpress_status_) {
+      case XPRS_LP_UNSTARTED:
+        return TerminateForReason(
+            is_maximize_, TERMINATION_REASON_OTHER_ERROR,
+            "Problem solve has not started (XPRS_LP_UNSTARTED)");
       case XPRS_LP_OPTIMAL:
         return OptimalTerminationProto(best_primal_bound, best_dual_bound);
       case XPRS_LP_INFEAS:
@@ -472,6 +475,13 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
             is_maximize_, solution_claims.dual_feasible_solution_exists
                               ? FEASIBILITY_STATUS_FEASIBLE
                               : FEASIBILITY_STATUS_UNDETERMINED);
+      case XPRS_LP_CUTOFF:
+        return CutoffTerminationProto(
+            is_maximize_, "Objective worse than cutoff (XPRS_LP_CUTOFF)");
+      case XPRS_LP_UNFINISHED:
+        return LimitTerminationProto(
+            is_maximize_, LIMIT_UNSPECIFIED, best_primal_bound, best_dual_bound,
+            "Solve did not finish (XPRS_LP_UNFINISHED)");
       case XPRS_LP_UNBOUNDED:
         if (solution_claims.primal_feasible_solution_exists) {
           return UnboundedTerminationProto(is_maximize_);
@@ -479,8 +489,21 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         return InfeasibleOrUnboundedTerminationProto(
             is_maximize_, FEASIBILITY_STATUS_INFEASIBLE,
             "Xpress status XPRS_LP_UNBOUNDED");
+      case XPRS_LP_CUTOFF_IN_DUAL:
+        return CutoffTerminationProto(
+            is_maximize_, "Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL)");
+      case XPRS_LP_UNSOLVED:
+        return TerminateForReason(
+            is_maximize_, TERMINATION_REASON_NUMERICAL_ERROR,
+            "Problem could not be solved due to numerical issues "
+            "(XPRS_LP_UNSOLVED)");
+      case XPRS_LP_NONCONVEX:
+        return TerminateForReason(is_maximize_, TERMINATION_REASON_OTHER_ERROR,
+                                  "Problem contains quadratic data, which is "
+                                  "not convex (XPRS_LP_NONCONVEX)");
       default:
-        return TerminateForReason(is_maximize_, TERMINATION_REASON_IMPRECISE);
+        return absl::InternalError(absl::StrCat(
+            "Missing Xpress LP status code case: ", xpress_status_));
     }
   } else {
     return absl::UnimplementedError("XpressSolver does not handle MIPs yet");

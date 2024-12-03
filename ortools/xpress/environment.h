@@ -424,9 +424,15 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_MIPSTATUS 1011
 #define XPRS_NODES 1013
 #define XPRS_COLS 1018
+#define XPRS_LP_UNSTARTED 0
 #define XPRS_LP_OPTIMAL 1
 #define XPRS_LP_INFEAS 2
+#define XPRS_LP_CUTOFF 3
+#define XPRS_LP_UNFINISHED 4
 #define XPRS_LP_UNBOUNDED 5
+#define XPRS_LP_CUTOFF_IN_DUAL 6
+#define XPRS_LP_UNSOLVED 7
+#define XPRS_LP_NONCONVEX 8
 #define XPRS_MIP_SOLUTION 4
 #define XPRS_MIP_INFEAS 5
 #define XPRS_MIP_OPTIMAL 6

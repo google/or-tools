@@ -40,6 +40,11 @@ if(NOT USE_SCIP)
   list(FILTER _SRCS EXCLUDE REGEX "/gscip_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/gscip_.*.cc$")
 endif()
+if(NOT USE_XPRESS)
+  list(FILTER _SRCS EXCLUDE REGEX "/xpress/")
+  list(FILTER _SRCS EXCLUDE REGEX "/xpress_.*.h$")
+  list(FILTER _SRCS EXCLUDE REGEX "/xpress_.*.cc$")
+endif()
 target_sources(${NAME} PRIVATE ${_SRCS})
 set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
@@ -235,7 +240,6 @@ if(USE_HIGHS)
 endif()
 
 if(USE_XPRESS)
-  add_subdirectory(xpress)
   ortools_cxx_test(
     NAME
       math_opt_solvers_xpress_solver_test

@@ -29,45 +29,6 @@
 
 using namespace operations_research::math_opt;
 
-using ::testing::AnyOf;
-using ::testing::status::IsOkAndHolds;
-constexpr double kTolerance = 1.0e-5;
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
-struct SolvedModel {
-  std::unique_ptr<Model> model;
-  SolveResult expected_result;
-};
-
-// max(x + 2 * y)
-// s.t.: -1 <= x <= 1.5
-//        0 <= y <= 1
-//       x + y <= 1.5
-// optimal solution is: (x, y) = (0.5, 1)
-//                      obj_value = 2.5
-TEST(XpressSolverTest, SimpleLpTwoVar) {
-  // Build the model.
-  Model lp_model("getting_started_lp");
-  const Variable x = lp_model.AddContinuousVariable(-1.0, 1.5, "x");
-  const Variable y = lp_model.AddContinuousVariable(0.0, 1.0, "y");
-  lp_model.AddLinearConstraint(x + y <= 1.5, "c");
-  lp_model.Maximize(x + 2 * y);
-
-  // Set parameters, e.g. turn on logging.
-  SolveArguments args;
-  args.parameters.enable_output = true;
-
-  // Solve and ensure an optimal solution was found with no errors.
-  const absl::StatusOr<SolveResult> result =
-      Solve(lp_model, SolverType::kXpress, args);
-  CHECK_OK(result.status());
-  CHECK_OK(result->termination.EnsureIsOptimal());
-
-  EXPECT_EQ(result->objective_value(), 2.5);
-  EXPECT_EQ(result->variable_values().at(x), 0.5);
-  EXPECT_EQ(result->variable_values().at(y), 1);
-}
-
 SimpleLpTestParameters XpressDefaults() {
   return SimpleLpTestParameters(
       SolverType::kXpress, SolveParameters(), /*supports_duals=*/true,

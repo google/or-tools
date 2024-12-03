@@ -42,10 +42,6 @@ class Xpress {
  public:
   Xpress() = delete;
 
-  absl::Status ToStatus(
-      int xprs_err,
-      absl::StatusCode code = absl::StatusCode::kInvalidArgument) const;
-
   // Creates a new Xpress
   static absl::StatusOr<std::unique_ptr<Xpress>> New(
       const std::string& model_name);
@@ -87,16 +83,21 @@ class Xpress {
   std::vector<double> GetReducedCostValues() const;
   std::vector<int> GetVariableBasis() const;
 
+  static void XPRS_CC printXpressMessage(XPRSprob prob, void* data,
+                                         const char* sMsg, int nLen,
+                                         int nMsgLvl);
+
+  int GetNumberOfRows() const;
+  int GetNumberOfColumns() const;
+
  private:
   XPRSprob xpress_model_;
 
   explicit Xpress(XPRSprob& model);
 
-  int GetNumberOfRows() const;
-  int GetNumberOfColumns() const;
-
-  static void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char* sMsg,
-                                   int nLen, int nMsgLvl);
+  absl::Status ToStatus(
+      int xprs_err,
+      absl::StatusCode code = absl::StatusCode::kInvalidArgument) const;
 };
 
 }  // namespace operations_research::math_opt
