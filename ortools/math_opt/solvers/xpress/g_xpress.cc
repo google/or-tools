@@ -63,8 +63,7 @@ void XPRS_CC Xpress::printXpressMessage(XPRSprob prob, void* data,
                                         const char* sMsg, int nLen,
                                         int nMsgLvl) {
   if (sMsg) {
-    const std::string strMsg = sMsg;
-    std::cout << strMsg << std::endl;
+    std::cout << sMsg << std::endl;
   }
 }
 
