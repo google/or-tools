@@ -25,8 +25,14 @@ public class AutomatonConstraint extends Constraint {
     super(builder);
   }
 
-  /// Adds a transitions to the automaton.
-  AutomatonConstraint addTransition(int tail, int head, long label) {
+  /**
+   * Adds a transitions to the automaton.
+   *
+   * @param head the head of the transition
+   * @param label the label of the transition
+   * @return this constraint
+   */
+  public AutomatonConstraint addTransition(int tail, int head, long label) {
     getBuilder()
         .getAutomatonBuilder()
         .addTransitionTail(tail)
