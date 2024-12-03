@@ -251,7 +251,8 @@ absl::StatusOr<double> XpressSolver::GetBestPrimalBound() const {
 }
 
 absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
-  return xpress_->GetDoubleAttr(XPRS_BESTBOUND);
+  // TODO: setting LP primal value as best dual bound. Can this be improved?
+  return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
 }
 
 absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetSolutions(
@@ -302,6 +303,7 @@ bool XpressSolver::isFeasible() const {
 }
 
 SolutionStatusProto XpressSolver::getLpSolutionStatus() const {
+  // TODO : put all statuses here
   switch (xpress_status_) {
     case XPRS_LP_OPTIMAL:
       return SOLUTION_STATUS_FEASIBLE;
@@ -318,18 +320,18 @@ absl::StatusOr<XpressSolver::SolutionAndClaim<PrimalSolutionProto>>
 XpressSolver::GetConvexPrimalSolutionIfAvailable(
     const ModelSolveParametersProto& model_parameters) const {
   PrimalSolutionProto primal_solution;
+  primal_solution.set_feasibility_status(getLpSolutionStatus());
   if (isFeasible()) {
     ASSIGN_OR_RETURN(const double sol_val,
                      xpress_->GetDoubleAttr(XPRS_LPOBJVAL));
     primal_solution.set_objective_value(sol_val);
+    XpressVectorToSparseDoubleVector(xpress_->GetPrimalValues().value(),
+                                     variables_map_,
+                                     *primal_solution.mutable_variable_values(),
+                                     model_parameters.variable_values_filter());
   } else {
     // TODO
   }
-  primal_solution.set_feasibility_status(getLpSolutionStatus());
-  XpressVectorToSparseDoubleVector(xpress_->GetPrimalValues().value(),
-                                   variables_map_,
-                                   *primal_solution.mutable_variable_values(),
-                                   model_parameters.variable_values_filter());
   const bool primal_feasible_solution_exists =
       (primal_solution.feasibility_status() == SOLUTION_STATUS_FEASIBLE);
   return SolutionAndClaim<PrimalSolutionProto>{
@@ -364,7 +366,9 @@ XpressSolver::GetConvexDualSolutionIfAvailable(
   dual_solution.set_feasibility_status(getLpSolutionStatus());
   bool dual_feasible_solution_exists =
       (dual_solution.feasibility_status() == SOLUTION_STATUS_FEASIBLE);
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
+  ASSIGN_OR_RETURN(const double best_dual_bound,
+                   xpress_->GetDoubleAttr(XPRS_LPOBJVAL));
+  // const double best_dual_bound = is_maximize_ ? kMinusInf : kPlusInf;
   if (dual_feasible_solution_exists || std::isfinite(best_dual_bound)) {
     dual_feasible_solution_exists = true;
   } else if (xpress_status_ == XPRS_LP_OPTIMAL) {
