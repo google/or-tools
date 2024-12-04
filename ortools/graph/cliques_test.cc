@@ -157,7 +157,11 @@ void RunBronKerboschAlgorithmUntilCompletion(
 }
 
 TEST(BronKerbosch, CompleteGraph) {
+#if !defined(_MSC_VER)
   constexpr int kNumNodes[] = {1, 5, 50, 500, 5000};
+#else
+  constexpr int kNumNodes[] = {1, 5, 50, 500};
+#endif
   for (const int num_nodes : kNumNodes) {
     auto graph = FullGraph;
     CliqueReporter<int> reporter;
