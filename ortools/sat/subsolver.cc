@@ -69,7 +69,7 @@ int NextSubsolverToSchedule(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 }
 
 void ClearSubsolversThatAreDone(
-    const std::vector<int>& num_in_flight_per_subsolvers,
+    absl::Span<const int> num_in_flight_per_subsolvers,
     std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
   for (int i = 0; i < subsolvers.size(); ++i) {
     if (subsolvers[i] == nullptr) continue;

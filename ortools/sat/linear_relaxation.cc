@@ -628,10 +628,10 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
 //
 // These property ensures that all other intervals ends before the start of
 // the makespan interval.
-std::optional<int> DetectMakespan(
-    const std::vector<IntervalVariable>& intervals,
-    const std::vector<AffineExpression>& demands,
-    const AffineExpression& capacity, Model* model) {
+std::optional<int> DetectMakespan(absl::Span<const IntervalVariable> intervals,
+                                  absl::Span<const AffineExpression> demands,
+                                  const AffineExpression& capacity,
+                                  Model* model) {
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
 

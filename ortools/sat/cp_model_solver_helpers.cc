@@ -1971,8 +1971,10 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       time_limit(global_model->GetOrCreate<ModelSharedTimeLimit>()),
       logger(global_model->GetOrCreate<SolverLogger>()),
       stats(global_model->GetOrCreate<SharedStatistics>()),
+      stat_tables(global_model->GetOrCreate<SharedStatTables>()),
       response(global_model->GetOrCreate<SharedResponseManager>()),
-      shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()) {
+      shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
+      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
 
   if (params.share_level_zero_bounds()) {
@@ -2004,6 +2006,31 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
   if (params.share_binary_clauses() && params.num_workers() > 1) {
     clauses = std::make_unique<SharedClausesManager>(always_synchronize,
                                                      absl::Seconds(1));
+  }
+}
+
+void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
+  // Note that we do not register the logger which is not a shared class.
+  local_model->Register<SharedResponseManager>(response);
+  local_model->Register<SharedLsSolutionRepository>(ls_hints);
+  local_model->Register<SharedTreeManager>(shared_tree_manager);
+  local_model->Register<SharedStatistics>(stats);
+  local_model->Register<SharedStatTables>(stat_tables);
+
+  // TODO(user): Use parameters and not the presence/absence of these class
+  // to decide when to use them.
+  if (lp_solutions != nullptr) {
+    local_model->Register<SharedLPSolutionRepository>(lp_solutions.get());
+  }
+  if (incomplete_solutions != nullptr) {
+    local_model->Register<SharedIncompleteSolutionManager>(
+        incomplete_solutions.get());
+  }
+  if (bounds != nullptr) {
+    local_model->Register<SharedBoundsManager>(bounds.get());
+  }
+  if (clauses != nullptr) {
+    local_model->Register<SharedClausesManager>(clauses.get());
   }
 }
 

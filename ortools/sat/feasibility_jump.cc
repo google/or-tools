@@ -389,6 +389,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           state_->solution = solution.variable_values;
           ++state_->num_solutions_imported;
         } else {
+          if (!first_time) {
+            // Register this solution before we reset the search.
+            const int num_violations = evaluator_->ViolatedConstraints().size();
+            shared_hints_->AddSolution(state_->solution, num_violations);
+          }
           ResetCurrentSolution(/*use_hint=*/first_time,
                                state_->options.use_objective,
                                state_->options.perturbation_probability);

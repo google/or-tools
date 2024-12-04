@@ -228,16 +228,23 @@ struct IndexedInterval {
   }
 };
 
-// Given n fixed intervals, returns the subsets of intervals that overlap during
-// at least one time unit. Note that we only return "maximal" subset and filter
-// subset strictly included in another.
+// Given n fixed intervals that must be sorted by
+// IndexedInterval::ComparatorByStart(), returns the subsets of intervals that
+// overlap during at least one time unit. Note that we only return "maximal"
+// subset and filter subset strictly included in another.
+//
+// IMPORTANT: The span of intervals will not be usable after this function! this
+// could be changed if needed with an extra copy.
 //
 // All Intervals must have a positive size.
 //
 // The algo is in O(n log n) + O(result_size) which is usually O(n^2).
-void ConstructOverlappingSets(bool already_sorted,
-                              std::vector<IndexedInterval>* intervals,
-                              std::vector<std::vector<int>>* result);
+//
+// If the last argument is not empty, we will sort the interval in the result
+// according to the given order, i.e. i will be before j if order[i] < order[j].
+void ConstructOverlappingSets(absl::Span<IndexedInterval> intervals,
+                              CompactVectorVector<int>* result,
+                              absl::Span<const int> order = {});
 
 // Given n intervals, returns the set of connected components (using the overlap
 // relation between 2 intervals). Components are sorted by their start, and
@@ -700,6 +707,16 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
 
 // Same as above, but also correctly handles rectangles with zero area.
 std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
+    absl::Span<const Rectangle> rectangles);
+
+// This function is faster that the FindPartialRectangleIntersections() if one
+// only want to know if there is at least one intersection. It is in O(N log N).
+//
+// IMPORTANT: this assumes rectangles are already sorted by their x_min.
+//
+// If a pair {i, j} is returned, we will have i < j, and no intersection in
+// the subset of rectanges in [0, j).
+absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
     absl::Span<const Rectangle> rectangles);
 
 }  // namespace sat

@@ -54,7 +54,7 @@ ObjectiveShavingSolver::ObjectiveShavingSolver(
       local_proto_(shared->model_proto) {}
 
 ObjectiveShavingSolver::~ObjectiveShavingSolver() {
-  shared_->stat_tables.AddTimingStat(*this);
+  shared_->stat_tables->AddTimingStat(*this);
 }
 
 bool ObjectiveShavingSolver::TaskIsAvailable() {

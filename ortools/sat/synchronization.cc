@@ -878,9 +878,9 @@ SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
 }
 
 void SharedBoundsManager::ReportPotentialNewBounds(
-    const std::string& worker_name, const std::vector<int>& variables,
-    const std::vector<int64_t>& new_lower_bounds,
-    const std::vector<int64_t>& new_upper_bounds) {
+    const std::string& worker_name, absl::Span<const int> variables,
+    absl::Span<const int64_t> new_lower_bounds,
+    absl::Span<const int64_t> new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
   int num_improvements = 0;

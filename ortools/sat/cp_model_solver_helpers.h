@@ -56,8 +56,10 @@ struct SharedClasses {
   ModelSharedTimeLimit* const time_limit;
   SolverLogger* const logger;
   SharedStatistics* const stats;
+  SharedStatTables* const stat_tables;
   SharedResponseManager* const response;
   SharedTreeManager* const shared_tree_manager;
+  SharedLsSolutionRepository* const ls_hints;
 
   // These can be nullptr depending on the options.
   std::unique_ptr<SharedBoundsManager> bounds;
@@ -65,8 +67,9 @@ struct SharedClasses {
   std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
   std::unique_ptr<SharedClausesManager> clauses;
 
-  // For displaying summary at the end.
-  SharedStatTables stat_tables;
+  // call local_model->Register() on most of the class here, this allow to
+  // more easily depends on one of the shared class deep within the solver.
+  void RegisterSharedClassesInLocalModel(Model* local_model);
 
   bool SearchIsDone();
 };

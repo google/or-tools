@@ -193,8 +193,6 @@ TEST(FilterBoxesThatAreTooLargeTest, BasicTest) {
 }
 
 TEST(ConstructOverlappingSetsTest, BasicTest) {
-  std::vector<std::vector<int>> result{{3}};  // To be sure we clear.
-
   //    --------------------0
   //    --------1   --------2
   //        ------------3
@@ -204,25 +202,30 @@ TEST(ConstructOverlappingSetsTest, BasicTest) {
                                          {2, IntegerValue(6), IntegerValue(10)},
                                          {3, IntegerValue(2), IntegerValue(8)},
                                          {4, IntegerValue(3), IntegerValue(6)}};
+  absl::c_sort(intervals, IndexedInterval::ComparatorByStart());
 
   // Note that the order is deterministic, but not sorted.
-  ConstructOverlappingSets(/*already_sorted=*/false, &intervals, &result);
-  EXPECT_THAT(result, ElementsAre(UnorderedElementsAre(0, 1, 3, 4),
-                                  UnorderedElementsAre(3, 0, 2)));
+  CompactVectorVector<int> result;
+  result.Add({0, 1, 2});  // To be sure we clear.
+  ConstructOverlappingSets(absl::MakeSpan(intervals), &result);
+  EXPECT_THAT(result.AsVectorOfSpan(),
+              ElementsAre(UnorderedElementsAre(0, 1, 3, 4),
+                          UnorderedElementsAre(3, 0, 2)));
 }
 
 TEST(ConstructOverlappingSetsTest, OneSet) {
-  std::vector<std::vector<int>> result{{3}};  // To be sure we clear.
-
   std::vector<IndexedInterval> intervals{
       {0, IntegerValue(0), IntegerValue(10)},
       {1, IntegerValue(1), IntegerValue(10)},
       {2, IntegerValue(2), IntegerValue(10)},
       {3, IntegerValue(3), IntegerValue(10)},
       {4, IntegerValue(4), IntegerValue(10)}};
+  absl::c_sort(intervals, IndexedInterval::ComparatorByStart());
 
-  ConstructOverlappingSets(/*already_sorted=*/false, &intervals, &result);
-  EXPECT_THAT(result, ElementsAre(ElementsAre(0, 1, 2, 3, 4)));
+  CompactVectorVector<int> result;
+  result.Add({0, 1, 2});  // To be sure we clear.
+  ConstructOverlappingSets(absl::MakeSpan(intervals), &result);
+  EXPECT_THAT(result.AsVectorOfSpan(), ElementsAre(ElementsAre(0, 1, 2, 3, 4)));
 }
 
 TEST(GetOverlappingIntervalComponentsTest, BasicTest) {
@@ -1033,6 +1036,13 @@ TEST(FindPartialIntersections, Random) {
   for (int k = 0; k < num_runs; k++) {
     std::vector<Rectangle> rectangles =
         GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, random);
+
+    // We also test FindOneIntersectionIfPresent().
+    absl::c_sort(rectangles, [](const Rectangle& a, const Rectangle& b) {
+      return a.x_min < b.x_min;
+    });
+    EXPECT_EQ(FindOneIntersectionIfPresent(rectangles), std::nullopt);
+
     const int num_to_grow = absl::Uniform(random, 0, 20);
     for (int i = 0; i < num_to_grow; ++i) {
       Rectangle& rec =
@@ -1049,12 +1059,26 @@ TEST(FindPartialIntersections, Random) {
     for (const auto& [i, j] : result) {
       EXPECT_FALSE(rectangles[i].IsDisjoint(rectangles[j]));
     }
+
     EXPECT_TRUE(GraphsDefineSameConnectedComponents(naive_result, result))
         << RenderRectGraph(std::nullopt, rectangles, result);
     EXPECT_FALSE(HasCycles(result))
         << RenderRectGraph(std::nullopt, rectangles, result);
     if (k == 0) {
       LOG(INFO) << RenderRectGraph(std::nullopt, rectangles, result);
+    }
+
+    // We also test FindOneIntersectionIfPresent().
+    absl::c_sort(rectangles, [](const Rectangle& a, const Rectangle& b) {
+      return a.x_min < b.x_min;
+    });
+    if (naive_result.empty()) {
+      EXPECT_EQ(FindOneIntersectionIfPresent(rectangles), std::nullopt);
+    } else {
+      auto opt_pair = FindOneIntersectionIfPresent(rectangles);
+      EXPECT_NE(opt_pair, std::nullopt);
+      EXPECT_FALSE(
+          rectangles[opt_pair->first].IsDisjoint(rectangles[opt_pair->second]));
     }
   }
 }

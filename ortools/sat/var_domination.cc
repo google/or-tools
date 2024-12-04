@@ -876,6 +876,14 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           processed[PositiveRef(enf)] = true;
           processed[positive_ref] = true;
           context->UpdateRuleStats("dual: affine relation");
+          // The new affine relation added below can break the hint if hint(enf)
+          // is 0. In this case the only constraint blocking `ref` from
+          // decreasing [`ct` = enf => (var = implied)] does not apply. We can
+          // thus set the hint of `positive_ref` to `bound` to preserve the hint
+          // feasibility.
+          if (context->LiteralSolutionHintIs(enf, false)) {
+            context->UpdateRefSolutionHint(positive_ref, bound);
+          }
           if (RefIsPositive(enf)) {
             // positive_ref = enf * implied + (1 - enf) * bound.
             if (!context->StoreAffineRelation(
@@ -883,7 +891,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               return false;
             }
           } else {
-            // positive_ref = (1 - enf) * implied + enf * bound.
+            // enf_var = PositiveRef(enf).
+            // positive_ref = (1 - enf_var) * implied + enf_var * bound.
             if (!context->StoreAffineRelation(positive_ref, PositiveRef(enf),
                                               bound - implied.FixedValue(),
                                               implied.FixedValue())) {
@@ -958,10 +967,25 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             // remove the constraint.
             if (rhs.IsFixed()) {
               if (encoding_lit == NegatedRef(ref)) continue;
+              // Extending `ct` = "not(ref) => encoding_lit" to an equality can
+              // break the hint only if hint(ref) = hint(encoding_lit) = 1. But
+              // in this case `ct` is actually not blocking ref from decreasing.
+              // We can thus set its hint to 0 to preserve the hint feasibility.
+              if (context->LiteralSolutionHintIs(encoding_lit, true)) {
+                context->UpdateLiteralSolutionHint(ref, false);
+              }
               context->StoreBooleanEqualityRelation(encoding_lit,
                                                     NegatedRef(ref));
             } else {
               if (encoding_lit == ref) continue;
+              // Extending `ct` = "not(ref) => not(encoding_lit)" to an equality
+              // can break the hint only if hint(encoding_lit) = 0 and hint(ref)
+              // = 1. But in this case `ct` is actually not blocking ref from
+              // decreasing. We can thus set its hint to 0 to preserve the hint
+              // feasibility.
+              if (context->LiteralSolutionHintIs(encoding_lit, false)) {
+                context->UpdateLiteralSolutionHint(ref, false);
+              }
               context->StoreBooleanEqualityRelation(encoding_lit, ref);
             }
             context->working_model->mutable_constraints(ct_index)->Clear();
@@ -1045,6 +1069,18 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               ++num_bool_in_near_duplicate_ct;
               processed[PositiveRef(ref)] = true;
               processed[PositiveRef(other_ref)] = true;
+              // If the two hints are different, and since both refs have an
+              // equivalent blocking constraint, then the constraint is actually
+              // not blocking the ref at 1 from decreasing. Hence we can set its
+              // hint to false to preserve the hint feasibility despite the new
+              // Boolean equality constraint.
+              if (context->VarHasSolutionHint(PositiveRef(ref)) &&
+                  context->VarHasSolutionHint(PositiveRef(other_ref)) &&
+                  context->LiteralSolutionHint(ref) !=
+                      context->LiteralSolutionHint(other_ref)) {
+                context->UpdateLiteralSolutionHint(ref, false);
+                context->UpdateLiteralSolutionHint(other_ref, false);
+              }
               context->StoreBooleanEqualityRelation(ref, other_ref);
 
               // We can delete one of the constraint since they are duplicate
@@ -1427,28 +1463,26 @@ void MaybeUpdateLiteralHintFromDominance(PresolveContext& context, int lit,
 
 // Decrements the solution hint of `ref` by the minimum amount necessary to be
 // in `domain`, and increments the solution hint of one or more
-// `dominating_variables` by the same total amount. Does nothing if a hint is
-// missing or if it is not possible to increment the hint of the dominating
-// variables by the amount subtracted from the hint of the dominated variable.
+// `dominating_variables` by the same total amount (or less if it is not
+// possible to exactly match this amount).
 //
-// The lower bound of `domain` must be the lower bound of `ref`'s current domain
-// in `context`.
+// `domain` must be an interval with the same lower bound as `ref`'s current
+// domain D in `context`, and whose upper bound must be in D.
 void MaybeUpdateRefHintFromDominance(
     PresolveContext& context, int ref, const Domain& domain,
     const absl::Span<const IntegerVariable> dominating_variables) {
   const std::optional<int64_t> ref_hint = context.GetRefSolutionHint(ref);
   if (!ref_hint.has_value()) return;
-  // The quantity to subtract from the solution hint of `ref`.
+  // The quantity to subtract from the solution hint of `ref`. If the closest
+  // value of *ref_hint in `domain` is not *ref_hint then it is either the lower
+  // or upper bound of `domain`, which by hypothesis are in `ref`'s current
+  // domain D. Hence, in any case, this closest value is in D.
   const int64_t ref_hint_delta = *ref_hint - domain.ClosestValue(*ref_hint);
   // If it is 0 there is nothing to do. It might be negative if the solution
   // hint is not initially feasible (in which case we can't fix it).
   if (ref_hint_delta <= 0) return;
 
-  // First step: check that the hint of the dominating variable(s) can be
-  // incremented by ref_hint_delta (possibly spread over multiple variables),
-  // and store the new hint values in `new_ref_hint_value_pairs`.
-  std::vector<std::pair<int, int64_t>> new_ref_hint_value_pairs;
-  new_ref_hint_value_pairs.push_back({ref, *ref_hint - ref_hint_delta});
+  context.UpdateRefSolutionHint(ref, *ref_hint - ref_hint_delta);
   int64_t remaining_delta = ref_hint_delta;
   for (const IntegerVariable ivar : dominating_variables) {
     const int dominating_ref = VarDomination::IntegerVariableToRef(ivar);
@@ -1461,16 +1495,9 @@ void MaybeUpdateRefHintFromDominance(
         *dominating_ref_hint;
     // This might happen if the solution hint is not initially feasible.
     if (delta < 0) continue;
-    new_ref_hint_value_pairs.push_back(
-        {dominating_ref, *dominating_ref_hint + delta});
+    context.UpdateRefSolutionHint(dominating_ref, *dominating_ref_hint + delta);
     remaining_delta -= delta;
     if (remaining_delta == 0) break;
-  }
-  if (remaining_delta != 0) return;
-
-  // Second step: actually update the hints.
-  for (const auto& [ref, hint] : new_ref_hint_value_pairs) {
-    context.UpdateRefSolutionHint(ref, hint);
   }
 }
 
@@ -1894,17 +1921,10 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             context->UpdateRuleStats(
                 "domination: dual strenghtening using dominance");
             const Domain reduced_domain = Domain(context->MinOf(ref), lb);
-            if (dominating_vars.empty()) {
-              if (!context->IntersectDomainWithAndUpdateHint(ref,
-                                                             reduced_domain)) {
-                return false;
-              }
-            } else {
-              MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
-                                              dominating_vars);
-              if (!context->IntersectDomainWith(ref, reduced_domain)) {
-                return false;
-              }
+            MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
+                                            dominating_vars);
+            if (!context->IntersectDomainWith(ref, reduced_domain)) {
+              return false;
             }
 
             // The rest of the loop only care about Booleans.
