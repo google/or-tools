@@ -5882,14 +5882,14 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       indexed_intervals.push_back({x, IntegerValue(context_->StartMin(y)),
                                    IntegerValue(context_->EndMax(y))});
     }
-    std::vector<std::vector<int>> no_overlaps;
-    ConstructOverlappingSets(/*already_sorted=*/false, &indexed_intervals,
-                             &no_overlaps);
-    for (const std::vector<int>& no_overlap : no_overlaps) {
+    CompactVectorVector<int> no_overlaps;
+    absl::c_sort(indexed_intervals, IndexedInterval::ComparatorByStart());
+    ConstructOverlappingSets(absl::MakeSpan(indexed_intervals), &no_overlaps);
+    for (int i = 0; i < no_overlaps.size(); ++i) {
       ConstraintProto* new_ct = context_->working_model->add_constraints();
       // Unfortunately, the Assign() method does not work in or-tools as the
       // protobuf int32_t type is not the int type.
-      for (const int i : no_overlap) {
+      for (const int i : no_overlaps[i]) {
         new_ct->mutable_no_overlap()->add_intervals(i);
       }
     }

@@ -579,12 +579,12 @@ IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
 }
 
 void SplitDisjointBoxes(const SchedulingConstraintHelper& x,
-                        absl::Span<int> boxes,
-                        std::vector<absl::Span<int>>* result) {
+                        absl::Span<const int> boxes,
+                        std::vector<absl::Span<const int>>* result) {
   result->clear();
-  std::sort(boxes.begin(), boxes.end(), [&x](int a, int b) {
+  DCHECK(std::is_sorted(boxes.begin(), boxes.end(), [&x](int a, int b) {
     return x.ShiftedStartMin(a) < x.ShiftedStartMin(b);
-  });
+  }));
   int current_start = 0;
   std::size_t current_length = 1;
   IntegerValue current_max_end = x.EndMax(boxes[0]);
@@ -670,6 +670,7 @@ NonOverlappingRectanglesDisjunctivePropagator::
       global_y_(*y),
       x_(x->NumTasks(), model),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       overload_checker_(&x_),
       forward_detectable_precedences_(true, &x_),
       backward_detectable_precedences_(false, &x_),
@@ -700,7 +701,7 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
 
 bool NonOverlappingRectanglesDisjunctivePropagator::
     FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-        bool fast_propagation, const SchedulingConstraintHelper& x,
+        bool fast_propagation, SchedulingConstraintHelper* x,
         SchedulingConstraintHelper* y) {
   // Note that since we only push bounds on x, we cache the value for y just
   // once.
@@ -713,13 +714,13 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
     // Ignore absent boxes.
-    if (x.IsAbsent(box) || y->IsAbsent(box)) continue;
+    if (x->IsAbsent(box) || y->IsAbsent(box)) continue;
 
     // Ignore boxes where the relevant presence literal is only on the y
     // dimension, or if both intervals are optionals with different literals.
-    if (x.IsPresent(box) && !y->IsPresent(box)) continue;
-    if (!x.IsPresent(box) && !y->IsPresent(box) &&
-        x.PresenceLiteral(box) != y->PresenceLiteral(box)) {
+    if (x->IsPresent(box) && !y->IsPresent(box)) continue;
+    if (!x->IsPresent(box) && !y->IsPresent(box) &&
+        x->PresenceLiteral(box) != y->PresenceLiteral(box)) {
       continue;
     }
 
@@ -732,16 +733,60 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
   // Less than 2 boxes, no propagation.
   if (indexed_boxes_.size() < 2) return true;
-  ConstructOverlappingSets(/*already_sorted=*/true, &indexed_boxes_,
-                           &events_overlapping_boxes_);
+
+  // In ConstructOverlappingSets() we will always sort the output by
+  // x.ShiftedStartMin(t). We want to speed that up so we cache the order here.
+  if (!x->SynchronizeAndSetTimeDirection(x->CurrentTimeIsForward())) {
+    return false;
+  }
+
+  // Optim: Abort if all rectangle can be fixed to their mandatory y + minimium
+  // x position without any overlap. Technically we might still propagate the x
+  // end in this setting, but the current code will just abort below in
+  // SplitDisjointBoxes() anyway.
+  //
+  // This is guaranteed to be O(N log N) whereas the algo below is O(N ^ 2).
+  if (indexed_boxes_.size() > 100) {
+    rectangles_.clear();
+    rectangles_.reserve(indexed_boxes_.size());
+    for (const auto [box, y_mandatory_start, y_mandatory_end] :
+         indexed_boxes_) {
+      // Note that we invert the x/y position here in order to be already sorted
+      // for FindOneIntersectionIfPresent()
+      rectangles_.push_back(
+          {/*x_min=*/y_mandatory_start, /*x_max=*/y_mandatory_end,
+           /*y_min=*/x->StartMin(box), /*y_max=*/x->EndMin(box)});
+    }
+    const auto opt_pair = FindOneIntersectionIfPresent(rectangles_);
+    {
+      const size_t n = rectangles_.size();
+      time_limit_->AdvanceDeterministicTime(
+          static_cast<double>(n) * static_cast<double>(absl::bit_width(n)) *
+          1e-8);
+    }
+    if (opt_pair == std::nullopt) {
+      return true;
+    }
+  }
+
+  order_.assign(x->NumTasks(), 0);
+  {
+    int i = 0;
+    for (const auto [t, _lit, _time] : x->TaskByIncreasingShiftedStartMin()) {
+      order_[t] = i++;
+    }
+  }
+  ConstructOverlappingSets(absl::MakeSpan(indexed_boxes_),
+                           &events_overlapping_boxes_, order_);
 
   // Split lists of boxes into disjoint set of boxes (w.r.t. overlap).
   boxes_to_propagate_.clear();
   reduced_overlapping_boxes_.clear();
+  int work_done = indexed_boxes_.size();
   for (int i = 0; i < events_overlapping_boxes_.size(); ++i) {
-    SplitDisjointBoxes(x, absl::MakeSpan(events_overlapping_boxes_[i]),
-                       &disjoint_boxes_);
-    for (absl::Span<int> sub_boxes : disjoint_boxes_) {
+    work_done += events_overlapping_boxes_[i].size();
+    SplitDisjointBoxes(*x, events_overlapping_boxes_[i], &disjoint_boxes_);
+    for (const absl::Span<const int> sub_boxes : disjoint_boxes_) {
       // Boxes are sorted in a stable manner in the Split method.
       // Note that we do not use reduced_overlapping_boxes_ directly so that
       // the order of iteration is deterministic.
@@ -749,6 +794,9 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
       if (insertion.second) boxes_to_propagate_.push_back(sub_boxes);
     }
   }
+
+  // TODO(user): This is a poor dtime, but we want it not to be zero here.
+  time_limit_->AdvanceDeterministicTime(static_cast<double>(work_done) * 1e-8);
 
   // And finally propagate.
   //
@@ -759,7 +807,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     if (!fast_propagation && boxes.size() <= 2) continue;
 
     x_.ClearOtherHelper();
-    if (!x_.ResetFromSubset(x, boxes)) return false;
+    if (!x_.ResetFromSubset(*x, boxes)) return false;
 
     // Collect the common overlapping coordinates of all boxes.
     IntegerValue lb(std::numeric_limits<int64_t>::min());
@@ -815,11 +863,11 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // done by the fast mode.
   const bool fast_propagation = watcher_->GetCurrentId() == fast_id_;
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      fast_propagation, global_x_, &global_y_));
+      fast_propagation, &global_x_, &global_y_));
 
   // We can actually swap dimensions to propagate vertically.
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      fast_propagation, global_y_, &global_x_));
+      fast_propagation, &global_y_, &global_x_));
 
   return true;
 }

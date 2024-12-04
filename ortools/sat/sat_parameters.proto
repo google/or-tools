@@ -23,7 +23,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 309
+// NEXT TAG: 310
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -72,6 +72,10 @@ message SatParameters {
   // of conflicts in an arithmetically increasing fashion. So x the first time,
   // 2 * x the second time, etc...
   optional int32 polarity_rephase_increment = 168 [default = 1000];
+
+  // If true and we have first solution LS workers, tries in some phase to
+  // follow a LS solutions that violates has litle constraints as possible.
+  optional bool polarity_exploit_ls_hints = 309 [default = false];
 
   // The proportion of polarity chosen at random. Note that this take
   // precedence over the phase saving heuristic. This is different from

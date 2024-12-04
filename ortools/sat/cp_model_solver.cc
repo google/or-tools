@@ -682,12 +682,13 @@ void LogFinalStatistics(SharedClasses* shared) {
   shared->logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
   SOLVER_LOG(shared->logger, "");
 
-  shared->stat_tables.Display(shared->logger);
+  shared->stat_tables->Display(shared->logger);
   shared->response->DisplayImprovementStatistics();
 
   std::vector<std::vector<std::string>> table;
   table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});
   table.push_back(shared->response->SolutionsRepository().TableLineStats());
+  table.push_back(shared->ls_hints->TableLineStats());
   if (shared->lp_solutions != nullptr) {
     table.push_back(shared->lp_solutions->TableLineStats());
   }
@@ -914,35 +915,9 @@ class FullProblemSolver : public SubSolver {
               shared_->response->first_solution_solvers_should_stop());
     }
 
-    if (shared->response != nullptr) {
-      local_model_.Register<SharedResponseManager>(shared->response);
-    }
-
-    if (shared->lp_solutions != nullptr) {
-      local_model_.Register<SharedLPSolutionRepository>(
-          shared->lp_solutions.get());
-    }
-
-    if (shared->incomplete_solutions != nullptr) {
-      local_model_.Register<SharedIncompleteSolutionManager>(
-          shared->incomplete_solutions.get());
-    }
-
-    if (shared->bounds != nullptr) {
-      local_model_.Register<SharedBoundsManager>(shared->bounds.get());
-    }
-
-    if (shared->clauses != nullptr) {
-      local_model_.Register<SharedClausesManager>(shared->clauses.get());
-    }
-
-    if (local_parameters.use_shared_tree_search()) {
-      local_model_.Register<SharedTreeManager>(shared->shared_tree_manager);
-    }
-
     // TODO(user): For now we do not count LNS statistics. We could easily
     // by registering the SharedStatistics class with LNS local model.
-    local_model_.Register<SharedStatistics>(shared_->stats);
+    shared_->RegisterSharedClassesInLocalModel(&local_model_);
 
     // Setup the local logger, in multi-thread log_search_progress should be
     // false by default, but we might turn it on for debugging. It is on by
@@ -956,10 +931,10 @@ class FullProblemSolver : public SubSolver {
     CpSolverResponse response;
     shared_->response->FillSolveStatsInResponse(&local_model_, &response);
     shared_->response->AppendResponseToBeMerged(response);
-    shared_->stat_tables.AddTimingStat(*this);
-    shared_->stat_tables.AddLpStat(name(), &local_model_);
-    shared_->stat_tables.AddSearchStat(name(), &local_model_);
-    shared_->stat_tables.AddClausesStat(name(), &local_model_);
+    shared_->stat_tables->AddTimingStat(*this);
+    shared_->stat_tables->AddLpStat(name(), &local_model_);
+    shared_->stat_tables->AddSearchStat(name(), &local_model_);
+    shared_->stat_tables->AddClausesStat(name(), &local_model_);
   }
 
   bool IsDone() override {
@@ -1104,30 +1079,11 @@ class FeasibilityPumpSolver : public SubSolver {
     *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
         local_model_->GetOrCreate<TimeLimit>());
-
-    if (shared->response != nullptr) {
-      local_model_->Register<SharedResponseManager>(shared->response);
-    }
-
-    if (shared->lp_solutions != nullptr) {
-      local_model_->Register<SharedLPSolutionRepository>(
-          shared->lp_solutions.get());
-    }
-
-    if (shared->incomplete_solutions != nullptr) {
-      local_model_->Register<SharedIncompleteSolutionManager>(
-          shared->incomplete_solutions.get());
-    }
-
-    // Level zero variable bounds sharing.
-    if (shared_->bounds != nullptr) {
-      RegisterVariableBoundsLevelZeroImport(
-          shared_->model_proto, shared_->bounds.get(), local_model_.get());
-    }
+    shared_->RegisterSharedClassesInLocalModel(local_model_.get());
   }
 
   ~FeasibilityPumpSolver() override {
-    shared_->stat_tables.AddTimingStat(*this);
+    shared_->stat_tables->AddTimingStat(*this);
   }
 
   bool IsDone() override { return shared_->SearchIsDone(); }
@@ -1216,8 +1172,8 @@ class LnsSolver : public SubSolver {
         shared_(shared) {}
 
   ~LnsSolver() override {
-    shared_->stat_tables.AddTimingStat(*this);
-    shared_->stat_tables.AddLnsStat(
+    shared_->stat_tables->AddTimingStat(*this);
+    shared_->stat_tables->AddLnsStat(
         name(),
         /*num_fully_solved_calls=*/generator_->num_fully_solved_calls(),
         /*num_calls=*/generator_->num_calls(),
@@ -1654,6 +1610,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       "synchronization_agent", [shared]() {
         shared->response->Synchronize();
         shared->response->MutableSolutionsRepository()->Synchronize();
+        shared->ls_hints->Synchronize();
         if (shared->bounds != nullptr) {
           shared->bounds->Synchronize();
         }
@@ -1946,7 +1903,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
     if (num_ls_default > 0) {
       std::shared_ptr<SharedLsStates> states = std::make_shared<SharedLsStates>(
-          ls_name, params, &shared->stat_tables);
+          ls_name, params, shared->stat_tables);
       for (int i = 0; i < num_ls_default; ++i) {
         SatParameters local_params = params;
         local_params.set_random_seed(
@@ -1956,14 +1913,15 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
             std::make_unique<FeasibilityJumpSolver>(
                 ls_name, SubSolver::INCOMPLETE, get_linear_model(),
                 local_params, states, shared->time_limit, shared->response,
-                shared->bounds.get(), shared->stats, &shared->stat_tables));
+                shared->bounds.get(), shared->ls_hints, shared->stats,
+                shared->stat_tables));
       }
     }
 
     if (num_ls_lin > 0) {
       std::shared_ptr<SharedLsStates> lin_states =
           std::make_shared<SharedLsStates>(lin_ls_name, params,
-                                           &shared->stat_tables);
+                                           shared->stat_tables);
       for (int i = 0; i < num_ls_lin; ++i) {
         SatParameters local_params = params;
         local_params.set_random_seed(
@@ -1973,7 +1931,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
             std::make_unique<FeasibilityJumpSolver>(
                 lin_ls_name, SubSolver::INCOMPLETE, get_linear_model(),
                 local_params, lin_states, shared->time_limit, shared->response,
-                shared->bounds.get(), shared->stats, &shared->stat_tables));
+                shared->bounds.get(), shared->ls_hints, shared->stats,
+                shared->stat_tables));
       }
     }
   }
@@ -2011,13 +1970,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         if (local_params.feasibility_jump_linearization_level() == 0) {
           if (fj_states == nullptr) {
             fj_states = std::make_shared<SharedLsStates>(
-                local_params.name(), params, &shared->stat_tables);
+                local_params.name(), params, shared->stat_tables);
           }
           states = fj_states;
         } else {
           if (fj_lin_states == nullptr) {
             fj_lin_states = std::make_shared<SharedLsStates>(
-                local_params.name(), params, &shared->stat_tables);
+                local_params.name(), params, shared->stat_tables);
           }
           states = fj_lin_states;
         }
@@ -2026,8 +1985,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
             std::make_unique<FeasibilityJumpSolver>(
                 local_params.name(), SubSolver::FIRST_SOLUTION,
                 get_linear_model(), local_params, states, shared->time_limit,
-                shared->response, shared->bounds.get(), shared->stats,
-                &shared->stat_tables));
+                shared->response, shared->bounds.get(), shared->ls_hints,
+                shared->stats, shared->stat_tables));
       } else {
         first_solution_full_subsolvers.push_back(
             std::make_unique<FullProblemSolver>(

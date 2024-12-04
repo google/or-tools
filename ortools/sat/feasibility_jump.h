@@ -473,6 +473,7 @@ class FeasibilityJumpSolver : public SubSolver {
                         ModelSharedTimeLimit* shared_time_limit,
                         SharedResponseManager* shared_response,
                         SharedBoundsManager* shared_bounds,
+                        SharedLsSolutionRepository* shared_hints,
                         SharedStatistics* shared_stats,
                         SharedStatTables* stat_tables)
       : SubSolver(name, type),
@@ -481,6 +482,7 @@ class FeasibilityJumpSolver : public SubSolver {
         states_(std::move(ls_states)),
         shared_time_limit_(shared_time_limit),
         shared_response_(shared_response),
+        shared_hints_(shared_hints),
         stat_tables_(stat_tables),
         random_(params_),
         var_domains_(shared_bounds) {}
@@ -589,6 +591,7 @@ class FeasibilityJumpSolver : public SubSolver {
   std::shared_ptr<SharedLsStates> states_;
   ModelSharedTimeLimit* shared_time_limit_;
   SharedResponseManager* shared_response_;
+  SharedLsSolutionRepository* shared_hints_;
   SharedStatTables* stat_tables_;
   ModelRandomGenerator random_;
 

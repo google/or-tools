@@ -37,7 +37,8 @@ namespace sat {
 SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
       trail_(*model->GetOrCreate<Trail>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      ls_hints_(model->GetOrCreate<SharedLsSolutionRepository>()) {}
 
 void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   const int old_num_variables = activities_.size();
@@ -133,6 +134,7 @@ void SatDecisionPolicy::RephaseIfNeeded() {
       FlipCurrentPolarity();
       break;
     case 7:
+      if (UseLsSolutionAsInitialPolarity()) break;
       UseLongestAssignmentAsInitialPolarity();
       break;
   }
@@ -186,6 +188,25 @@ void SatDecisionPolicy::UseLongestAssignmentAsInitialPolarity() {
     var_polarity_[l.Variable()] = l.IsPositive();
   }
   best_partial_assignment_.clear();
+}
+
+bool SatDecisionPolicy::UseLsSolutionAsInitialPolarity() {
+  if (!parameters_.polarity_exploit_ls_hints()) return false;
+
+  if (ls_hints_->NumSolutions() == 0) return false;
+
+  // This is in term of proto variable.
+  // TODO(user): use cp_model_mapping. But this is not needed to experiment
+  // on pure sat problems.
+  std::vector<int64_t> solution =
+      ls_hints_->GetRandomBiasedSolution(*random_).variable_values;
+  if (solution.size() != var_polarity_.size()) return false;
+
+  for (int i = 0; i < solution.size(); ++i) {
+    var_polarity_[BooleanVariable(i)] = solution[i] == 1;
+  }
+
+  return false;
 }
 
 void SatDecisionPolicy::FlipCurrentPolarity() {

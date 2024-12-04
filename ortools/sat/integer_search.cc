@@ -167,15 +167,17 @@ IntegerLiteral SplitUsingBestSolutionValueInRepository(
 // not executed often, but otherwise it is done for each search decision,
 // which seems expensive. Improve.
 std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model) {
+    absl::Span<const IntegerVariable> vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [/*copy*/ vars, integer_trail]() {
-    for (const IntegerVariable var : vars) {
-      const IntegerLiteral decision = AtMinValue(var, integer_trail);
-      if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
-    }
-    return BooleanOrIntegerLiteral();
-  };
+  return
+      [/*copy*/ vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
+       integer_trail]() {
+        for (const IntegerVariable var : vars) {
+          const IntegerLiteral decision = AtMinValue(var, integer_trail);
+          if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
+        }
+        return BooleanOrIntegerLiteral();
+      };
 }
 
 std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model) {

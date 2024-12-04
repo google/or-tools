@@ -722,7 +722,7 @@ class SatSolver {
 
   // Activity management for clauses. This work the same way at the ones for
   // variables, but with different parameters.
-  void BumpReasonActivities(const std::vector<Literal>& literals);
+  void BumpReasonActivities(absl::Span<const Literal> literals);
   void BumpClauseActivity(SatClause* clause);
   void RescaleClauseActivities(double scaling_factor);
   void UpdateClauseActivityIncrement();

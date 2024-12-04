@@ -554,8 +554,9 @@ void SharedTreeManager::AssignLeaf(ProtoTrail& path, Node* leaf) {
     if (leaf->implied) {
       path.SetLevelImplied(path.MaxLevel());
     }
-    if (params_.shared_tree_worker_enable_trail_sharing()) {
-      for (const auto& [var, lb] : GetTrailInfo(leaf)->implications) {
+    if (params_.shared_tree_worker_enable_trail_sharing() &&
+        leaf->trail_info != nullptr) {
+      for (const auto& [var, lb] : leaf->trail_info->implications) {
         path.AddImplication(path.MaxLevel(), ProtoLiteral(var, lb));
       }
     }
@@ -766,7 +767,9 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
   // If we have no assignment, try to get one.
   if (assigned_tree_.MaxLevel() == 0) return true;
   if (restart_policy_->NumRestarts() <
-      parameters_->shared_tree_worker_min_restarts_per_subtree()) {
+          parameters_->shared_tree_worker_min_restarts_per_subtree() ||
+      time_limit_->GetElapsedDeterministicTime() <
+          earliest_replacement_dtime_) {
     return false;
   }
   return assigned_tree_lbds_.WindowAverage() <
@@ -783,7 +786,9 @@ bool SharedTreeWorker::SyncWithSharedTree() {
             << " target: " << assigned_tree_lbds_.WindowAverage()
             << " lbd: " << restart_policy_->LbdAverageSinceReset();
     if (parameters_->shared_tree_worker_enable_phase_sharing() &&
-        assigned_tree_.MaxLevel() > 0 &&
+        // Only save the phase if we've done a non-trivial amount of work on
+        // this subtree.
+        FinishedMinRestarts() &&
         !decision_policy_->GetBestPartialAssignment().empty()) {
       assigned_tree_.ClearTargetPhase();
       for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
@@ -797,6 +802,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
     manager_->ReplaceTree(assigned_tree_);
     assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
     restart_policy_->Reset();
+    earliest_replacement_dtime_ = 0;
     if (parameters_->shared_tree_worker_enable_phase_sharing()) {
       VLOG(2) << "Importing phase of length: "
               << assigned_tree_.TargetPhase().size();
@@ -805,6 +811,14 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         decision_policy_->SetTargetPolarity(DecodeDecision(lit));
       }
     }
+  }
+  // If we commit to this subtree, keep it for at least 1s of dtime.
+  // This allows us to replace obviously bad subtrees quickly, and not replace
+  // too frequently overall.
+  if (FinishedMinRestarts() && earliest_replacement_dtime_ >=
+                                   time_limit_->GetElapsedDeterministicTime()) {
+    earliest_replacement_dtime_ =
+        time_limit_->GetElapsedDeterministicTime() + 1;
   }
   VLOG(2) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();
@@ -825,7 +839,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
 SatSolver::Status SharedTreeWorker::Search(
     const std::function<void()>& feasible_solution_observer) {
   // Inside GetAssociatedLiteral if a literal becomes fixed at level 0 during
-  // Search,the code checks it is at level 0 when decoding the literal, but
+  // Search, the code CHECKs it is at level 0 when decoding the literal, but
   // the fixed literals are cached, so we can create them now to avoid a
   // crash.
   sat_solver_->Backtrack(0);

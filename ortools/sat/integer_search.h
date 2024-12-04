@@ -172,7 +172,7 @@ IntegerLiteral SplitDomainUsingBestSolutionValue(IntegerVariable var,
 //
 // Note that this function will create the associated literal if needed.
 std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model);
+    absl::Span<const IntegerVariable> vars, Model* model);
 
 // Choose the variable with most fractional LP value.
 std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model);

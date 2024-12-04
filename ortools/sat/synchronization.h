@@ -115,7 +115,7 @@ class SharedSolutionRepository {
   // right away. One must call Synchronize for this to happen. In order to be
   // deterministic, this will keep all solutions until Synchronize() is called,
   // so we need to be careful not to generate too many solutions at once.
-  void Add(const Solution& solution);
+  void Add(Solution solution);
 
   // Updates the current pool of solution with the one recently added. Note that
   // we use a stable ordering of solutions, so the final pool will be
@@ -147,6 +147,7 @@ class SharedSolutionRepository {
   std::vector<Solution> new_solutions_ ABSL_GUARDED_BY(mutex_);
 };
 
+// Solutions coming from the LP.
 class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
  public:
   explicit SharedLPSolutionRepository(int num_solutions_to_keep)
@@ -154,6 +155,28 @@ class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
                                          "lp solutions") {}
 
   void NewLPSolution(std::vector<double> lp_solution);
+};
+
+// Set of best solution from the feasibility jump workers.
+//
+// We store (solution, num_violated_constraints), so we have a list of solutions
+// that violate as little constraints as possible. This can be used to set the
+// phase during SAT search.
+//
+// TODO(user): We could also use it after first solution to orient a SAT search
+// towards better solutions. But then it is a bit trickier to rank solutions
+// compared to the old ones.
+class SharedLsSolutionRepository : public SharedSolutionRepository<int64_t> {
+ public:
+  SharedLsSolutionRepository()
+      : SharedSolutionRepository<int64_t>(10, "fj solution hints") {}
+
+  void AddSolution(std::vector<int64_t> solution, int num_violations) {
+    SharedSolutionRepository<int64_t>::Solution sol;
+    sol.rank = num_violations;
+    sol.variable_values = std::move(solution);
+    Add(sol);
+  }
 };
 
 // Set of partly filled solutions. They are meant to be finished by some lns
@@ -495,9 +518,9 @@ class SharedBoundsManager {
   // manager. The manager will compare these bounds changes against its
   // global state, and incorporate the improving ones.
   void ReportPotentialNewBounds(const std::string& worker_name,
-                                const std::vector<int>& variables,
-                                const std::vector<int64_t>& new_lower_bounds,
-                                const std::vector<int64_t>& new_upper_bounds);
+                                absl::Span<const int> variables,
+                                absl::Span<const int64_t> new_lower_bounds,
+                                absl::Span<const int64_t> new_upper_bounds);
 
   // If we solved a small independent component of the full problem, then we can
   // in most situation fix the solution on this subspace.
@@ -850,11 +873,11 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
 }
 
 template <typename ValueType>
-void SharedSolutionRepository<ValueType>::Add(const Solution& solution) {
+void SharedSolutionRepository<ValueType>::Add(Solution solution) {
   if (num_solutions_to_keep_ <= 0) return;
   absl::MutexLock mutex_lock(&mutex_);
   ++num_added_;
-  new_solutions_.push_back(solution);
+  new_solutions_.push_back(std::move(solution));
 }
 
 template <typename ValueType>

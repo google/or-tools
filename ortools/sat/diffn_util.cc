@@ -107,41 +107,33 @@ absl::InlinedVector<Rectangle, 4> Rectangle::RegionDifference(
   return result;
 }
 
+// TODO(user): Switch to a faster O(n log n) algo.
 CompactVectorVector<int> GetOverlappingRectangleComponents(
     absl::Span<const Rectangle> rectangles,
     absl::Span<const int> active_rectangles) {
   if (active_rectangles.empty()) return {};
 
-  std::vector<Rectangle> rectangles_to_process;
-  std::vector<int> rectangles_index;
-  rectangles_to_process.reserve(active_rectangles.size());
-  rectangles_index.reserve(active_rectangles.size());
-  for (const int r : active_rectangles) {
-    rectangles_to_process.push_back(rectangles[r]);
-    rectangles_index.push_back(r);
-  }
+  std::vector<int> active_rectangles_copy(active_rectangles.begin(),
+                                          active_rectangles.end());
+  const int size = active_rectangles_copy.size();
+  absl::Span<int> indices = absl::MakeSpan(active_rectangles_copy);
 
-  std::vector<std::pair<int, int>> intersections =
-      FindPartialRectangleIntersectionsAlsoEmpty(rectangles_to_process);
-  const int num_intersections = intersections.size();
-  intersections.reserve(num_intersections * 2 + 1);
-  for (int i = 0; i < num_intersections; ++i) {
-    intersections.push_back({intersections[i].second, intersections[i].first});
-  }
-
-  CompactVectorVector<int> view;
-  view.ResetFromPairs(intersections, /*minimum_num_nodes=*/rectangles.size());
-  CompactVectorVector<int> components;
-  FindStronglyConnectedComponents(static_cast<int>(rectangles.size()), view,
-                                  &components);
   CompactVectorVector<int> result;
-  for (int i = 0; i < components.size(); ++i) {
-    absl::Span<const int> component = components[i];
-    if (component.size() == 1) continue;
-    result.Add({});
-    for (const int r : component) {
-      result.AppendToLastVector(rectangles_index[r]);
+  for (int start = 0; start < size;) {
+    // Find the component of active_rectangles[start].
+    int end = start + 1;
+    for (int i = start; i < end; i++) {
+      const Rectangle rect = rectangles[indices[i]];
+      for (int j = end; j < size; ++j) {
+        if (!rect.IsDisjoint(rectangles[indices[j]])) {
+          std::swap(indices[end++], indices[j]);
+        }
+      }
     }
+    if (end > start + 1) {
+      result.Add(indices.subspan(start, end - start));
+    }
+    start = end;
   }
   return result;
 }
@@ -435,52 +427,76 @@ absl::Span<int> FilterBoxesThatAreTooLarge(
   return boxes.subspan(0, new_size);
 }
 
-void ConstructOverlappingSets(bool already_sorted,
-                              std::vector<IndexedInterval>* intervals,
-                              std::vector<std::vector<int>>* result) {
+void ConstructOverlappingSets(absl::Span<IndexedInterval> intervals,
+                              CompactVectorVector<int>* result,
+                              absl::Span<const int> order) {
   result->clear();
-  if (already_sorted) {
-    DCHECK(std::is_sorted(intervals->begin(), intervals->end(),
-                          IndexedInterval::ComparatorByStart()));
-  } else {
-    std::sort(intervals->begin(), intervals->end(),
-              IndexedInterval::ComparatorByStart());
-  }
+  DCHECK(std::is_sorted(intervals.begin(), intervals.end(),
+                        IndexedInterval::ComparatorByStart()));
   IntegerValue min_end_in_set = kMaxIntegerValue;
-  intervals->push_back({-1, kMaxIntegerValue, kMaxIntegerValue});  // Sentinel.
-  const int size = intervals->size();
 
   // We do a line sweep. The "current" subset crossing the "line" at
   // (time, time + 1) will be in (*intervals)[start_index, end_index) at the end
   // of the loop block.
   int start_index = 0;
+  const int size = intervals.size();
   for (int end_index = 0; end_index < size;) {
-    const IntegerValue time = (*intervals)[end_index].start;
+    const IntegerValue time = intervals[end_index].start;
 
     // First, if there is some deletion, we will push the "old" set to the
     // result before updating it. Otherwise, we will have a superset later, so
     // we just continue for now.
     if (min_end_in_set <= time) {
-      result->push_back({});
-      min_end_in_set = kMaxIntegerValue;
-      for (int i = start_index; i < end_index; ++i) {
-        result->back().push_back((*intervals)[i].index);
-        if ((*intervals)[i].end <= time) {
-          std::swap((*intervals)[start_index++], (*intervals)[i]);
-        } else {
-          min_end_in_set = std::min(min_end_in_set, (*intervals)[i].end);
+      // Push the current set to result first if its size is > 1.
+      if (start_index + 1 < end_index) {
+        result->Add({});
+        for (int i = start_index; i < end_index; ++i) {
+          result->AppendToLastVector(intervals[i].index);
         }
       }
 
-      // Do not output subset of size one.
-      if (result->back().size() == 1) result->pop_back();
+      // Update the set. Note that we keep the order.
+      min_end_in_set = kMaxIntegerValue;
+      int new_start = end_index;
+      for (int i = end_index; --i >= start_index;) {
+        if (intervals[i].end > time) {
+          min_end_in_set = std::min(min_end_in_set, intervals[i].end);
+          intervals[--new_start] = intervals[i];
+        }
+      }
+      start_index = new_start;
     }
 
     // Add all the new intervals starting exactly at "time".
-    do {
-      min_end_in_set = std::min(min_end_in_set, (*intervals)[end_index].end);
+    // Note that we always add at least one here.
+    const int old_end = end_index;
+    while (end_index < size && intervals[end_index].start == time) {
+      min_end_in_set = std::min(min_end_in_set, intervals[end_index].end);
       ++end_index;
-    } while (end_index < size && (*intervals)[end_index].start == time);
+    }
+
+    // If order is not empty, make sure we maintain the order.
+    // TODO(user): we could only do that when we push a new set.
+    if (!order.empty() && end_index > old_end) {
+      std::sort(intervals.data() + old_end, intervals.data() + end_index,
+                [order](const IndexedInterval& a, const IndexedInterval& b) {
+                  return order[a.index] < order[b.index];
+                });
+      std::inplace_merge(
+          intervals.data() + start_index, intervals.data() + old_end,
+          intervals.data() + end_index,
+          [order](const IndexedInterval& a, const IndexedInterval& b) {
+            return order[a.index] < order[b.index];
+          });
+    }
+  }
+
+  // Push final set.
+  if (start_index + 1 < size) {
+    result->Add({});
+    for (int i = start_index; i < size; ++i) {
+      result->AppendToLastVector(intervals[i].index);
+    }
   }
 }
 
@@ -1926,6 +1942,83 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
     result.push_back({a, b});
   }
   return result;
+}
+
+absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
+    absl::Span<const Rectangle> rectangles) {
+  DCHECK(
+      absl::c_is_sorted(rectangles, [](const Rectangle& a, const Rectangle& b) {
+        return a.x_min < b.x_min;
+      }));
+
+  // Current y-coordinate intervals that are intersecting the sweep line.
+  // Note that the interval_set only contains disjoint intervals.
+  struct Interval {
+    int index;
+    IntegerValue y_min;
+    IntegerValue y_max;
+
+    // IMPORTANT: For correctness, we need later insert to be first!
+    bool operator<(const Interval& other) const {
+      if (y_min == other.y_min) return index > other.index;
+      return y_min < other.y_min;
+    }
+
+    std::string to_string() const {
+      return absl::StrCat("[", y_min.value(), ",", y_max.value(), "](", index,
+                          ")");
+    }
+  };
+
+  // TODO(user): Use fixed binary tree instead, it should be faster.
+  // We just need insert/erase/previous/next API.
+  std::set<Interval> interval_set;
+
+  for (int i = 0; i < rectangles.size(); ++i) {
+    const IntegerValue x = rectangles[i].x_min;
+
+    // Try to add the y part of this rectangle to the set, if there is an
+    // intersection, lazily remove it if its x_max is already passed, otherwise
+    // report the intersection.
+    const Interval to_insert = {i, rectangles[i].y_min, rectangles[i].y_max};
+    auto [it, inserted] = interval_set.insert(to_insert);
+    DCHECK(inserted);
+
+    // Note that the intersection is either before 'it', or just after it.
+    if (it != interval_set.begin()) {
+      auto it_before = it;
+      --it_before;
+
+      // Lazy erase stale entry.
+      if (rectangles[it_before->index].x_max <= x) {
+        interval_set.erase(it_before);
+      } else {
+        DCHECK_LE(it_before->y_min, to_insert.y_min);
+        if (it_before->y_max > to_insert.y_min) {
+          // Intersection.
+          return {{it_before->index, i}};
+        }
+      }
+    }
+    ++it;
+    while (it != interval_set.end()) {
+      // Lazy erase stale entry.
+      if (rectangles[it->index].x_max <= x) {
+        auto to_erase = it++;
+        interval_set.erase(to_erase);
+        continue;
+      }
+
+      DCHECK_LE(to_insert.y_min, it->y_min);
+      if (to_insert.y_max > it->y_min) {
+        // Intersection.
+        return {{it->index, i}};
+      }
+      break;
+    }
+  }
+
+  return {};
 }
 
 }  // namespace sat

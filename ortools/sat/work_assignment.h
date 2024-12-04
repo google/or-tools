@@ -318,6 +318,11 @@ class SharedTreeWorker {
   bool NextDecision(LiteralIndex* decision_index);
   void MaybeProposeSplit();
   bool ShouldReplaceSubtree();
+  bool FinishedMinRestarts() const {
+    return assigned_tree_.MaxLevel() > 0 &&
+           restart_policy_->NumRestarts() >=
+               parameters_->shared_tree_worker_min_restarts_per_subtree();
+  }
 
   // Add any implications to the clause database for the current level.
   // Return true if any new information was added.
@@ -362,6 +367,7 @@ class SharedTreeWorker {
   // If a tree has worse LBD than the average over the last few trees we replace
   // the tree.
   RunningAverage assigned_tree_lbds_;
+  double earliest_replacement_dtime_ = 0;
 
   // Stores the trail index of the last implication added to assigned_tree_.
   int reversible_trail_index_ = 0;

@@ -1608,7 +1608,7 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   return unsat_assumptions;
 }
 
-void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
+void SatSolver::BumpReasonActivities(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   for (const Literal literal : literals) {
     const BooleanVariable var = literal.Variable();

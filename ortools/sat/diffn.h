@@ -31,6 +31,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -111,7 +112,7 @@ class NonOverlappingRectanglesDisjunctivePropagator
  private:
   bool PropagateOnXWhenOnlyTwoBoxes();
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      bool fast_propagation, const SchedulingConstraintHelper& x,
+      bool fast_propagation, SchedulingConstraintHelper* x,
       SchedulingConstraintHelper* y);
 
   SchedulingConstraintHelper& global_x_;
@@ -119,14 +120,18 @@ class NonOverlappingRectanglesDisjunctivePropagator
   SchedulingConstraintHelper x_;
 
   GenericLiteralWatcher* watcher_;
+  TimeLimit* time_limit_;
   int fast_id_;  // Propagator id of the "fast" version.
 
+  // Temporary data.
   std::vector<IndexedInterval> indexed_boxes_;
-  std::vector<std::vector<int>> events_overlapping_boxes_;
+  std::vector<Rectangle> rectangles_;
+  std::vector<int> order_;
+  CompactVectorVector<int> events_overlapping_boxes_;
 
-  absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
-  std::vector<absl::Span<int>> boxes_to_propagate_;
-  std::vector<absl::Span<int>> disjoint_boxes_;
+  absl::flat_hash_set<absl::Span<const int>> reduced_overlapping_boxes_;
+  std::vector<absl::Span<const int>> boxes_to_propagate_;
+  std::vector<absl::Span<const int>> disjoint_boxes_;
   std::vector<int> non_zero_area_boxes_;
 
   DisjunctiveOverloadChecker overload_checker_;

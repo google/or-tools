@@ -704,6 +704,13 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_optimize_with_lb_tree_search(false);
     new_params.set_optimize_with_max_hs(false);
 
+    // Given that each workers work on a different part of the subtree, it might
+    // not be a good idea to try to work on a global shared solution.
+    //
+    // TODO(user): Experiments more here, in particular we could follow it if
+    // it falls into the current subtree.
+    new_params.set_polarity_exploit_ls_hints(false);
+
     strategies["shared_tree"] = new_params;
   }
 
