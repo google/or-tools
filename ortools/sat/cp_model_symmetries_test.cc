@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
-#include <string>
 #include <vector>
 
 #include "absl/log/check.h"

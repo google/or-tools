@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"

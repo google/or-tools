@@ -14,6 +14,7 @@
 #include "ortools/sat/diffn_util.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -38,7 +39,8 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -1179,7 +1181,7 @@ BENCHMARK(BM_FindPairwiseRestrictions)
     ->ArgPair(1000, 100)
     ->ArgPair(10000, 100);
 
-void BM_FindPartialIntersections(benchmark::State& state) {
+void BM_FindPartialIntersectionsSparse(benchmark::State& state) {
   absl::BitGen random;
   std::vector<std::vector<Rectangle>> problems;
   static constexpr int kNumProblems = 10;
@@ -1206,7 +1208,95 @@ void BM_FindPartialIntersections(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_FindPartialIntersections)
+BENCHMARK(BM_FindPartialIntersectionsSparse)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(20)
+    ->Arg(30)
+    ->Arg(40)
+    ->Arg(80)
+    ->Arg(100)
+    ->Arg(200)
+    ->Arg(1000)
+    ->Arg(10000);
+
+std::vector<Rectangle> GeneratePathologicalCase(int num_rectangles) {
+  std::vector<Rectangle> rectangles;
+  for (int i = 0; i < num_rectangles / 2; ++i) {
+    rectangles.push_back({.x_min = 2 * i,
+                          .x_max = 2 * i + 1,
+                          .y_min = 0,
+                          .y_max = 2 * num_rectangles});
+    rectangles.push_back({
+        .x_min = 0,
+        .x_max = 2 * num_rectangles,
+        .y_min = 2 * i,
+        .y_max = 2 * i + 1,
+    });
+  }
+  return rectangles;
+}
+
+void BM_FindPartialIntersectionsPathological(benchmark::State& state) {
+  const std::vector<Rectangle> rectangles =
+      GeneratePathologicalCase(state.range(0));
+  for (auto s : state) {
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(rectangles);
+    CHECK_LT(result.size(), state.range(0) * state.range(0));
+  }
+}
+
+BENCHMARK(BM_FindPartialIntersectionsPathological)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(20)
+    ->Arg(30)
+    ->Arg(40)
+    ->Arg(80)
+    ->Arg(100)
+    ->Arg(200)
+    ->Arg(1000)
+    ->Arg(10000);
+
+std::vector<Rectangle> GenerateDenseCase(int num_rectangles) {
+  absl::BitGen random;
+  std::vector<Rectangle> rectangles;
+  for (int i = 0; i < num_rectangles; ++i) {
+    const IntegerValue x_min = absl::Uniform(random, 0, num_rectangles);
+    const IntegerValue y_min = absl::Uniform(random, 0, num_rectangles);
+    rectangles.push_back(
+        {.x_min = x_min,
+         .x_max = x_min + absl::Uniform(random, 1, num_rectangles),
+         .y_min = y_min,
+         .y_max = y_min + absl::Uniform(random, 1, num_rectangles)});
+  }
+  return rectangles;
+}
+
+void BM_FindPartialIntersectionsDense(benchmark::State& state) {
+  absl::BitGen random;
+  std::vector<std::vector<Rectangle>> problems;
+  static constexpr int kNumProblems = 10;
+  for (int i = 0; i < kNumProblems; i++) {
+    problems.push_back(GenerateDenseCase(state.range(0)));
+  }
+  int idx = 0;
+  for (auto s : state) {
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(problems[idx]);
+    CHECK_LT(result.size(), state.range(0) * state.range(0));
+    ++idx;
+    if (idx == kNumProblems) idx = 0;
+  }
+}
+
+TEST(FindPartialIntersectionsDenseTest, Random) {
+  const std::vector<std::pair<int, int>> result =
+      FindPartialRectangleIntersections(GenerateDenseCase(20));
+}
+
+BENCHMARK(BM_FindPartialIntersectionsDense)
     ->Arg(5)
     ->Arg(10)
     ->Arg(20)

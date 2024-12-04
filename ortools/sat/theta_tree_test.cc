@@ -20,7 +20,7 @@
 
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/strong_integers.h"
 

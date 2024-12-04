@@ -18,23 +18,17 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <limits>
-#include <memory>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
-#include "absl/container/btree_map.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"

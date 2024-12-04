@@ -15,7 +15,6 @@
 
 #include <stdint.h>
 
-#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -23,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"

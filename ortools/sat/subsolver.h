@@ -27,12 +27,10 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/stats.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {

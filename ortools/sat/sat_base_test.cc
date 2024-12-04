@@ -13,10 +13,7 @@
 
 #include "ortools/sat/sat_base.h"
 
-#include <string>
-
 #include "gtest/gtest.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

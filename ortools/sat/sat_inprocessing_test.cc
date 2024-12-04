@@ -13,7 +13,6 @@
 
 #include "ortools/sat/sat_inprocessing.h"
 
-#include <string>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"

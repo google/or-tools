@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_SAT_2D_ORTHOGONAL_PACKING_H_
 #define OR_TOOLS_SAT_2D_ORTHOGONAL_PACKING_H_
 
-#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <utility>
@@ -23,8 +22,9 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace sat {

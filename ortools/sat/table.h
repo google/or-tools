@@ -14,13 +14,10 @@
 #ifndef OR_TOOLS_SAT_TABLE_H_
 #define OR_TOOLS_SAT_TABLE_H_
 
-#include <cstdint>
 #include <functional>
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/base/types.h"
-#include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 

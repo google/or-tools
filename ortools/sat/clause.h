@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <new>
 #include <string>
 #include <utility>
 #include <vector>

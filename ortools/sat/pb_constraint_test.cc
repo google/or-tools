@@ -14,7 +14,6 @@
 #include "ortools/sat/pb_constraint.h"
 
 #include <cstdint>
-#include <string>
 #include <utility>
 #include <vector>
 

@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <functional>
 #include <limits>
 #include <string>
 #include <tuple>

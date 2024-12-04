@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SYMMETRY_H_
 #define OR_TOOLS_SAT_SYMMETRY_H_
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 

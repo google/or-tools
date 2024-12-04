@@ -15,20 +15,23 @@
 #define OR_TOOLS_SAT_DISJUNCTIVE_H_
 
 #include <algorithm>
-#include <functional>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/theta_tree.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

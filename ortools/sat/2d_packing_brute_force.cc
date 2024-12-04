@@ -26,7 +26,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

@@ -15,7 +15,6 @@
 #define OR_TOOLS_SAT_DRAT_PROOF_HANDLER_H_
 
 #include <memory>
-#include <string>
 #include <vector>
 
 #if !defined(__PORTABLE_PLATFORM__)

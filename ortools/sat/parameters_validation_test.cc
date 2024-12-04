@@ -14,7 +14,6 @@
 #include "ortools/sat/parameters_validation.h"
 
 #include <limits>
-#include <string>
 
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"

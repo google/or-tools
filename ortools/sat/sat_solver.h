@@ -29,14 +29,10 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"

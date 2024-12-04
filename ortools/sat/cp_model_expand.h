@@ -16,9 +16,6 @@
 
 #include <stdint.h>
 
-#include <vector>
-
-#include "absl/container/flat_hash_set.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/presolve_context.h"
 

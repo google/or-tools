@@ -13,8 +13,6 @@
 
 #include "ortools/sat/restart.h"
 
-#include <string>
-
 #include "absl/base/macros.h"
 #include "gtest/gtest.h"
 #include "ortools/sat/model.h"

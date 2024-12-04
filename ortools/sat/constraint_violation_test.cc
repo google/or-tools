@@ -14,7 +14,6 @@
 #include "ortools/sat/constraint_violation.h"
 
 #include <cstdint>
-#include <utility>
 #include <vector>
 
 #include "absl/types/span.h"

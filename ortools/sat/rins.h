@@ -20,11 +20,8 @@
 #include <vector>
 
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/sat/integer.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

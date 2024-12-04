@@ -32,23 +32,25 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/btree_map.h"
-#include "absl/container/btree_set.h"
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
-#include "absl/strings/str_cat.h"
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/fixed_shape_binary_tree.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/strong_integers.h"
 
@@ -107,33 +109,41 @@ absl::InlinedVector<Rectangle, 4> Rectangle::RegionDifference(
   return result;
 }
 
-// TODO(user): Switch to a faster O(n log n) algo.
 CompactVectorVector<int> GetOverlappingRectangleComponents(
     absl::Span<const Rectangle> rectangles,
     absl::Span<const int> active_rectangles) {
   if (active_rectangles.empty()) return {};
 
-  std::vector<int> active_rectangles_copy(active_rectangles.begin(),
-                                          active_rectangles.end());
-  const int size = active_rectangles_copy.size();
-  absl::Span<int> indices = absl::MakeSpan(active_rectangles_copy);
+  std::vector<Rectangle> rectangles_to_process;
+  std::vector<int> rectangles_index;
+  rectangles_to_process.reserve(active_rectangles.size());
+  rectangles_index.reserve(active_rectangles.size());
+  for (const int r : active_rectangles) {
+    rectangles_to_process.push_back(rectangles[r]);
+    rectangles_index.push_back(r);
+  }
 
+  std::vector<std::pair<int, int>> intersections =
+      FindPartialRectangleIntersectionsAlsoEmpty(rectangles_to_process);
+  const int num_intersections = intersections.size();
+  intersections.reserve(num_intersections * 2 + 1);
+  for (int i = 0; i < num_intersections; ++i) {
+    intersections.push_back({intersections[i].second, intersections[i].first});
+  }
+
+  CompactVectorVector<int> view;
+  view.ResetFromPairs(intersections, /*minimum_num_nodes=*/rectangles.size());
+  CompactVectorVector<int> components;
+  FindStronglyConnectedComponents(static_cast<int>(rectangles.size()), view,
+                                  &components);
   CompactVectorVector<int> result;
-  for (int start = 0; start < size;) {
-    // Find the component of active_rectangles[start].
-    int end = start + 1;
-    for (int i = start; i < end; i++) {
-      const Rectangle rect = rectangles[indices[i]];
-      for (int j = end; j < size; ++j) {
-        if (!rect.IsDisjoint(rectangles[indices[j]])) {
-          std::swap(indices[end++], indices[j]);
-        }
-      }
+  for (int i = 0; i < components.size(); ++i) {
+    absl::Span<const int> component = components[i];
+    if (component.size() == 1) continue;
+    result.Add({});
+    for (const int r : component) {
+      result.AppendToLastVector(rectangles_index[r]);
     }
-    if (end > start + 1) {
-      result.Add(indices.subspan(start, end - start));
-    }
-    start = end;
   }
   return result;
 }
@@ -1628,209 +1638,263 @@ std::vector<Rectangle> PavedRegionDifference(
   return original_region;
 }
 
-std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
-    absl::Span<const Rectangle> rectangles) {
+// Each node in the tree will hold either a single box that is covering the
+// whole interval represented by the node, or, if no such box exists, a superset
+// of all the connected components of boxes that are overlapping the interval.
+// It is a superset and not the exact set of connected components because we
+// don't delete nodes that became stale, as explained in the class comment
+// below.
+struct BinaryTreeNode {
+  // Contains exactly one element if occupying_box_index != -1.
+  absl::flat_hash_set<int> connected_components_descendants;
+  // Hold the x_max of the box that is currently occupying this node (if any) to
+  // know when it is stale.
+  int occupying_box_x_max;
+  // -1 if not occupied.
+  int occupying_box_index = -1;
+};
+
+// A data structure to store which boxes are overlapping the current sweep line.
+// This uses a binary tree in a slight non-standard way: in a typical use of a
+// binary tree the actual values are stored in the leaves and the intermediate
+// nodes are there just to make finding the right leaf efficient. Here we do the
+// opposite: the values are stored as high up in the tree as possible.
+// For example, for a tree of size 8 a box that occupies the y interval [0, 7]
+// will be stored as a single node at the root. In the same tree, a box that
+// occupies [3, 7] will be stored with the nodes representing the [3, 4), [4, 6)
+// and [6, 8) intervals. There is no difference on what is stored in the
+// intermediate nodes or on the leaves. When the sweep line moves, we don't
+// update the existing nodes on the tree. Thus, some nodes will become stale and
+// will represent boxes that no longer overlap the sweep line. Those stale nodes
+// get removed lazily.
+struct SweepLineIntervalTree {
+  explicit SweepLineIntervalTree(int max_y, int num_boxes)
+      : tree(LeafIndex(max_y + 1)), tree_nodes(tree.StorageSize()) {
+    union_find.SetNumberOfNodes(num_boxes);
+  }
+
+  // Recompute the connected components of a given node, by simply setting it to
+  // {self} + left.connected_components + right.connected_components.
+  void RecomputeConnectedComponents(TreeNodeIndex idx) {
+    BinaryTreeNode& node = tree_nodes[idx];
+    if (node.occupying_box_index != -1) {
+      node.connected_components_descendants = {
+          union_find.FindRoot(node.occupying_box_index)};
+      return;
+    }
+    node.connected_components_descendants.clear();
+    if (tree.IsLeaf(idx)) return;
+    for (const TreeNodeIndex child_idx :
+         {tree.LeftChild(idx), tree.RightChild(idx)}) {
+      // The order is non-deterministic, but since this is doing the union of
+      // hash sets the result is deterministic.
+      for (const int c :
+           tree_nodes[child_idx].connected_components_descendants) {
+        node.connected_components_descendants.insert(union_find.FindRoot(c));
+      }
+    }
+  }
+
+  // We don't have global deletion method in this class, but this method
+  // checks if a single interval is fully to the left of the sweep line and
+  // removes it if so, also updating its connected components.
+  void RemoveNodeIfXMaxLowerOrEqual(TreeNodeIndex idx, int x_threshold) {
+    BinaryTreeNode& node = tree_nodes[idx];
+    if (node.occupying_box_index == -1) {
+      // Node is already empty.
+      return;
+    }
+    if (node.occupying_box_x_max > x_threshold) {
+      // Node is still overlapping the sweep line.
+      return;
+    }
+    node.occupying_box_index = -1;
+    RecomputeConnectedComponents(idx);
+  }
+
+  void UpdateChildrenIntersecting(TreeNodeIndex idx, int sweep_line_x_pos,
+                                  int component_index,
+                                  std::vector<int>* new_connections) {
+    if (tree.IsLeaf(idx)) return;
+    for (const TreeNodeIndex child_idx :
+         {tree.LeftChild(idx), tree.RightChild(idx)}) {
+      RemoveNodeIfXMaxLowerOrEqual(child_idx, sweep_line_x_pos);
+      BinaryTreeNode& child_node = tree_nodes[child_idx];
+      if (child_node.occupying_box_index != -1) {
+        if (union_find.AddEdge(child_node.occupying_box_index,
+                               component_index)) {
+          new_connections->push_back(child_node.occupying_box_index);
+        }
+        // No need to recurse here: we already connected everything on this
+        // branch to the new box.
+        continue;
+      }
+      const bool had_different_component =
+          absl::c_any_of(child_node.connected_components_descendants,
+                         [this, component_index](const int c) {
+                           return !union_find.Connected(c, component_index);
+                         });
+      // Since everything is intersecting the current box, all descendants
+      // must be in one single component.
+      child_node.connected_components_descendants = {component_index};
+
+      // Only go down on the tree if we have below either:
+      //  - a different component to connect.
+      //  - a box to remove that is in a different component.
+      // In any case, we will visit O(c + d) terminals, where c is the number of
+      // components we are connecting and d is the number of boxes that we will
+      // delete. Since a box can only be deleted log N times (one per interval
+      // it was cut into) and we can only connect O(N) components in total, the
+      // amortized cost of a call to UpdateChildrenIntersecting is O((log N)^2).
+      if (had_different_component) {
+        UpdateChildrenIntersecting(child_idx, sweep_line_x_pos, component_index,
+                                   new_connections);
+      }
+    }
+  }
+
+  bool UpdateParents(TreeNodeIndex node, int sweep_line_x_pos,
+                     int component_index, std::vector<int>* new_connections) {
+    if (node == tree.Root()) return false;
+    for (TreeNodeIndex parent = tree.Parent(node); parent != tree.Root();
+         parent = tree.Parent(parent)) {
+      RemoveNodeIfXMaxLowerOrEqual(parent, sweep_line_x_pos);
+      BinaryTreeNode& parent_value = tree_nodes[parent];
+      if (parent_value.occupying_box_index != -1) {
+        if (union_find.AddEdge(parent_value.occupying_box_index,
+                               component_index)) {
+          new_connections->push_back(parent_value.occupying_box_index);
+          return true;
+        }
+      }
+      parent_value.connected_components_descendants.insert(component_index);
+    }
+    return false;
+  }
+
+  // Add a new box to the sweep line. This will store it in the tree (split in
+  // log N intervals) check if it connects to one or more existing connected
+  // components, and for each case it does, add the box that it is overlapping
+  // to new_connections.
+  void AddInterval(TreeNodeIndex idx, int sweep_line_x_pos, int box_index,
+                   int x_max, std::vector<int>* new_connections) {
+    RemoveNodeIfXMaxLowerOrEqual(idx, sweep_line_x_pos);
+    int cur_box_component = union_find.FindRoot(box_index);
+    BinaryTreeNode& node = tree_nodes[idx];
+    if (node.occupying_box_index == -1) {
+      node.connected_components_descendants = {box_index};
+      node.occupying_box_index = box_index;
+      node.occupying_box_x_max = x_max;
+      const bool had_occupied_parent = UpdateParents(
+          idx, sweep_line_x_pos, cur_box_component, new_connections);
+      // We can only be connecting children if it is not already connect via
+      // something above on the tree.
+      if (!had_occupied_parent) {
+        UpdateChildrenIntersecting(idx, sweep_line_x_pos, cur_box_component,
+                                   new_connections);
+      }
+    } else {
+      // We have already something fully occupying this interval.
+      if (union_find.AddEdge(node.occupying_box_index, cur_box_component)) {
+        new_connections->push_back(node.occupying_box_index);
+        cur_box_component = union_find.FindRoot(cur_box_component);
+      }
+      node.connected_components_descendants = {cur_box_component};
+      if (node.occupying_box_x_max < x_max) {
+        // Replace the existing box by the new one.
+        node.occupying_box_index = box_index;
+        node.occupying_box_x_max = x_max;
+      }
+    }
+  }
+
+  FixedShapeBinaryTree tree;
+  util_intops::StrongVector<TreeNodeIndex, BinaryTreeNode> tree_nodes;
+  DenseConnectedComponentsFinder union_find;
+};
+
+struct Rectangle32 {
+  int x_min;
+  int x_max;
+  int y_min;
+  int y_max;
+  int index;
+};
+
+std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
+    absl::Span<Rectangle32> rectangles, int y_max) {
   // We are going to use a sweep line algorithm to find the intersections.
   // First, we sort the rectangles by their x coordinates, then consider a sweep
   // line that goes from the left to the right.
-  enum class Type {
-    kEnd,
-    kBegin,
-  };
-  struct RectangleHorizontalEdge {
-    IntegerValue x_coordinate;
-    int index;
-    Type type;
-  };
-  std::vector<RectangleHorizontalEdge> edges;
-  edges.reserve(rectangles.size() * 2);
+  std::sort(rectangles.begin(), rectangles.end(),
+            [](const Rectangle32& a, const Rectangle32& b) {
+              return std::tuple(a.x_min, -a.x_max, a.index) <
+                     std::tuple(b.x_min, -b.x_max, b.index);
+            });
+
+  SweepLineIntervalTree interval_tree(y_max, rectangles.size());
+
+  std::vector<TreeNodeIndex> interval_pieces;
+  std::vector<int> new_connections;
+  std::vector<std::pair<int, int>> arcs;
+  for (int rectangle_index = 0; rectangle_index < rectangles.size();
+       ++rectangle_index) {
+    const int sweep_line_x_pos = rectangles[rectangle_index].x_min;
+    const Rectangle32& r = rectangles[rectangle_index];
+    interval_pieces.clear();
+    interval_tree.tree.PartitionIntervalIntoNodes(
+        LeafIndex(r.y_min), LeafIndex(r.y_max - 1), &interval_pieces);
+    new_connections.clear();
+    for (const TreeNodeIndex& node : interval_pieces) {
+      interval_tree.AddInterval(node, sweep_line_x_pos, rectangle_index,
+                                r.x_max, &new_connections);
+    }
+    for (const int new_connection : new_connections) {
+      arcs.push_back({rectangles[new_connection].index, r.index});
+    }
+  }
+  return arcs;
+}
+
+std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
+    absl::Span<const Rectangle> rectangles) {
+  if (rectangles.empty()) return {};
+  std::vector<IntegerValue> to_sort_x;
+  std::vector<IntegerValue> to_sort_y;
+  for (const Rectangle& r : rectangles) {
+    DCHECK_GT(r.SizeX(), 0);
+    DCHECK_GT(r.SizeY(), 0);
+    to_sort_x.push_back(r.x_min);
+    to_sort_x.push_back(r.x_max);
+    to_sort_y.push_back(r.y_min);
+    to_sort_y.push_back(r.y_max);
+  }
+  gtl::STLSortAndRemoveDuplicates(&to_sort_x);
+  gtl::STLSortAndRemoveDuplicates(&to_sort_y);
+
+  absl::flat_hash_map<IntegerValue, int> x_map;
+  absl::flat_hash_map<IntegerValue, int> y_map;
+  x_map.reserve(to_sort_x.size());
+  y_map.reserve(to_sort_y.size());
+  for (int i = 0; i < to_sort_x.size(); ++i) {
+    x_map[to_sort_x[i]] = i;
+  }
+  for (int i = 0; i < to_sort_y.size(); ++i) {
+    y_map[to_sort_y[i]] = i;
+  }
+
+  std::vector<Rectangle32> rectangles32;
+  rectangles32.reserve(rectangles.size());
   for (int i = 0; i < rectangles.size(); ++i) {
-    DCHECK_GT(rectangles[i].SizeX(), 0);
-    DCHECK_GT(rectangles[i].SizeY(), 0);
-    edges.push_back({.x_coordinate = rectangles[i].x_min,
-                     .index = i,
-                     .type = Type::kBegin});
-    edges.push_back(
-        {.x_coordinate = rectangles[i].x_max, .index = i, .type = Type::kEnd});
+    const Rectangle& r = rectangles[i];
+    rectangles32.push_back({.x_min = x_map[r.x_min],
+                            .x_max = x_map[r.x_max],
+                            .y_min = y_map[r.y_min],
+                            .y_max = y_map[r.y_max],
+                            .index = i});
   }
-
-  std::sort(
-      edges.begin(), edges.end(),
-      [](const RectangleHorizontalEdge& a, const RectangleHorizontalEdge& b) {
-        return std::tuple(a.x_coordinate, a.type, a.index) <
-               std::tuple(b.x_coordinate, b.type, b.index);
-      });
-
-  // Current y-coordinate intervals that are intersecting the sweep line.
-  // Note that the interval_set only contains disjoint intervals.
-  struct Interval {
-    IntegerValue start;
-    mutable IntegerValue end;
-
-    // This interval will always be a "subpart" of the full y-span of the
-    // initial rectangle with given index.
-    mutable int index;
-
-    bool operator<(const Interval& other) const { return start < other.start; }
-
-    std::string to_string() const {
-      return absl::StrCat("[", start.value(), ",", end.value(), "](", index,
-                          ")");
-    }
-  };
-  std::set<Interval> interval_set;
-
-  // The finer point of this algorithm is deciding what to keep on our interval
-  // list when we find two rectangles that intersect. Since we don't want to
-  // lose track of any rectangle that might intersect another one, we keep in
-  // the intervals the pieces that has the largest x_max: ie., we make sure that
-  // we will not remove an interval that is still intersecting some rectangles.
-  absl::btree_set<std::pair<int, int>> arcs;
-  int current_index = 0;
-  while (current_index < edges.size()) {
-    const IntegerValue x_pos = edges[current_index].x_coordinate;
-    // First check all the rectangles that end at this x_pos and remove them
-    // from the interval list.
-    for (; current_index < edges.size() &&
-           edges[current_index].x_coordinate == x_pos &&
-           edges[current_index].type == Type::kEnd;
-         ++current_index) {
-      const int index_to_remove = edges[current_index].index;
-      const Rectangle r = rectangles[index_to_remove];
-
-      // Loop over all intervals intersecting [r.y_min, r.y_max] and remove the
-      // one with the given index.
-      const Interval for_lookup = {r.y_min, r.y_max, index_to_remove};
-      auto it = interval_set.lower_bound(for_lookup);
-      while (it != interval_set.end()) {
-        // Subtle: we need to find the next interval here because the current
-        // one might be invalidated by the erase.
-        auto current = it++;
-        if (current->start >= r.y_max) break;
-        if (current->index == index_to_remove) {
-          interval_set.erase(current);
-        }
-      }
-    }
-    // Now add the rectangles that start at this x_pos and potentially detect
-    // any overlap.
-    for (; current_index < edges.size() &&
-           edges[current_index].x_coordinate == x_pos &&
-           edges[current_index].type == Type::kBegin;
-         ++current_index) {
-      const int cur_index = edges[current_index].index;
-      const Rectangle r = rectangles[cur_index];
-
-      // We need to insert a new interval, we will split it according to the
-      // interval that it overlaps with.
-      Interval to_insert = {r.y_min, r.y_max, cur_index};
-      auto it = interval_set.lower_bound(to_insert);
-      if (it != interval_set.begin()) --it;
-      while (it != interval_set.end()) {
-        auto current = it++;
-        if (to_insert.start == to_insert.end) break;
-        if (current->end <= to_insert.start) continue;
-        if (current->start >= to_insert.end) break;
-
-        // We have an intersection.
-        if (to_insert.index == cur_index) {
-          arcs.insert({std::min(to_insert.index, current->index),
-                       std::max(to_insert.index, current->index)});
-        }
-
-        // It can be composed of up to 3 part:
-        // Where part1 and/or part2 could be empty.
-        //   current     [                  ]
-        //   to_insert            [                   ]
-        //   current     [                            ]
-        //   to_insert            [         ]
-        //   current              [         ]
-        //   to_insert   [                            ]
-        //   current              [                   ]
-        //   to_insert   [                  ]
-        //               | part1  |  part2  | part 3  |
-        const int first_index =
-            current->start < to_insert.start ? current->index : to_insert.index;
-        const int middle_index =
-            rectangles[to_insert.index].x_max < rectangles[current->index].x_max
-                ? current->index
-                : to_insert.index;
-        const int last_index =
-            current->end > to_insert.end ? current->index : to_insert.index;
-
-        IntegerValue points[4];
-        points[0] = current->start;
-        points[1] = current->end;
-        points[2] = to_insert.start;
-        points[3] = to_insert.end;
-        std::sort(points, points + 4);
-
-        // There is always a middle part because the intersection is not empty.
-        CHECK_LT(points[1], points[2]);
-
-        if (points[0] == points[1]) {
-          // Rewrite current as part 2.
-          current->end = points[2];
-          current->index = middle_index;
-        } else {
-          if (points[0] == current->start) {
-            // Rewrite current as part 1.
-            current->end = points[1];
-            current->index = first_index;
-
-            // Insert a new part2 interval.
-            // As an optimization, if middle_index == last_index, we just
-            // merge part2 and 3 in the next to_insert.
-            if (middle_index == last_index) {
-              to_insert.start = points[1];
-              to_insert.end = points[3];
-              to_insert.index = last_index;
-              continue;
-            }
-            interval_set.insert({points[1], points[2], middle_index});
-          } else {
-            CHECK_EQ(points[1], current->start);
-
-            // Rewrite current as part 2.
-            current->end = points[2];
-            current->index = middle_index;
-
-            // Insert a new part1 interval.
-            interval_set.insert({points[0], points[1], first_index});
-          }
-        }
-
-        // To_insert is the final part (it can be empty).
-        to_insert.start = points[2];
-        to_insert.end = points[3];
-        to_insert.index = last_index;
-      }
-
-      if (to_insert.start < to_insert.end) {
-        interval_set.insert(to_insert);
-      }
-    }
-  }
-
-  // At this point we have a set of arcs that doesn't contain all of the
-  // pairwise intersections, but is not either a minimal spanning tree either
-  // since it has cycles. The good property is that it does have enough arcs to
-  // cover all the rectangles, so we can use it to build a proper MST.
-  ::util::ReverseArcListGraph<> graph;
-  std::vector<int> arc_indexes;
-  absl::flat_hash_map<int, std::pair<int, int>> pair_by_arc_index;
-  for (const auto& [a, b] : arcs) {
-    pair_by_arc_index[arc_indexes.size()] = {a, b};
-    arc_indexes.push_back(graph.AddArc(a, b));
-  }
-  const std::vector<int> mst_arc_indices =
-      BuildKruskalMinimumSpanningTreeFromSortedArcs(graph, arc_indexes);
-  std::vector<std::pair<int, int>> result;
-  for (const int arc_index : mst_arc_indices) {
-    const auto& [a, b] = pair_by_arc_index[arc_index];
-    result.push_back({a, b});
-  }
-  return result;
+  return FindPartialRectangleIntersectionsImpl(absl::MakeSpan(rectangles32),
+                                               to_sort_y.size());
 }
 
 std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
@@ -1847,8 +1911,8 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
   }
 
   // Now we need to do the boring code of special-casing all the different cases
-  // of rectangles with zero area. We still want to use the N log N algorithm
-  // for the subset of the input with non-zero area.
+  // of rectangles with zero area. We still want to use the quasilinear
+  // algorithm for the subset of the input with non-zero area.
   std::vector<Rectangle> rectangles_with_area, horizontal_lines, vertical_lines,
       points;
   std::vector<int> rectangles_with_area_indexes, horizontal_lines_indexes,

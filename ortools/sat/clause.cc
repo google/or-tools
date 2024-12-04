@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <new>
 #include <queue>
 #include <string>
 #include <utility>

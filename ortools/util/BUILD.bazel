@@ -523,6 +523,16 @@ cc_library(
 )
 
 cc_library(
+    name = "fixed_shape_binary_tree",
+    hdrs = ["fixed_shape_binary_tree.h"],
+    deps = [
+        ":strong_integers",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
+    ],
+)
+
+cc_library(
     name = "solve_interrupter",
     srcs = ["solve_interrupter.cc"],
     hdrs = ["solve_interrupter.h"],
