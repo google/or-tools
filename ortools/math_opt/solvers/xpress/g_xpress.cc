@@ -144,7 +144,7 @@ absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
 }
 
 absl::StatusOr<int> Xpress::LpOptimizeAndGetStatus() {
-  RETURN_IF_ERROR(ToStatus(XPRSlpoptimize(xpress_model_, NULL)))
+  RETURN_IF_ERROR(ToStatus(XPRSlpoptimize(xpress_model_, nullptr)))
       << "XPRESS LP solve failed";
   int xpress_status;
   RETURN_IF_ERROR(
@@ -157,7 +157,7 @@ absl::Status Xpress::PostSolve() {
 }
 
 absl::StatusOr<int> Xpress::MipOptimizeAndGetStatus() {
-  RETURN_IF_ERROR(ToStatus(XPRSmipoptimize(xpress_model_, NULL)))
+  RETURN_IF_ERROR(ToStatus(XPRSmipoptimize(xpress_model_, nullptr)))
       << "XPRESS MIP solve failed";
   int xpress_status;
   RETURN_IF_ERROR(

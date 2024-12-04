@@ -394,6 +394,23 @@ inline BasisStatusProto ConvertVariableStatus(const int status) {
   }
 }
 
+inline BasisStatusProto ConvertConstraintStatus(const int status) {
+  // XPRESS row basis status is that of the slack variable
+  // For example, if the slack variable is at LB, the constraint is at UB
+  switch (status) {
+    case XPRS_BASIC:
+      return BASIS_STATUS_BASIC;
+    case XPRS_AT_LOWER:
+      return BASIS_STATUS_AT_UPPER_BOUND;
+    case XPRS_AT_UPPER:
+      return BASIS_STATUS_AT_LOWER_BOUND;
+    case XPRS_FREE_SUPER:
+      return BASIS_STATUS_FREE;
+    default:
+      return BASIS_STATUS_UNSPECIFIED;
+  }
+}
+
 absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
   BasisProto basis;
 
@@ -419,7 +436,7 @@ absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
   // Constraint basis
   for (auto [constraint_id, xprs_ct_index] : linear_constraints_map_) {
     basis.mutable_constraint_status()->add_ids(constraint_id);
-    const BasisStatusProto status = ConvertVariableStatus(
+    const BasisStatusProto status = ConvertConstraintStatus(
         xprs_constraint_basis_status[xprs_ct_index.constraint_index]);
     if (status == BASIS_STATUS_UNSPECIFIED) {
       return absl::InternalError(absl::StrCat(
@@ -513,9 +530,11 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
 
 absl::StatusOr<bool> XpressSolver::Update(
     const ModelUpdateProto& model_update) {
-  // TODO: implement this
-  return absl::UnimplementedError(
-      "XpressSolver::Update is not implemented yet");
+  if (!UpdateIsSupported(model_update, kXpressSupportedStructures)) {
+    return false;
+  }
+  // TODO: implement Update
+  return false;
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
