@@ -32,9 +32,43 @@ using namespace operations_research::math_opt;
 SimpleLpTestParameters XpressDefaults() {
   return SimpleLpTestParameters(
       SolverType::kXpress, SolveParameters(), /*supports_duals=*/true,
-      /*supports_basis=*/true,
+      /*supports_basis=*/false,
       /*ensures_primal_ray=*/false, /*ensures_dual_ray=*/false,
       /*disallows_infeasible_or_unbounded=*/true);
+}
+
+TEST(XpressSolverTest, SimpleLpTwoVar) {
+  double p = 0.0;
+  auto model = std::make_unique<Model>();
+  const Variable x_1 = model->AddVariable(0.0, 1.0, false, "x_1");
+  const Variable x_2 = model->AddVariable(0.0, 1.0, false, "x_2");
+  model->Maximize(2 * x_1 + x_2);
+  const LinearConstraint y = model->AddLinearConstraint(x_1 + x_2 <= 1.5, "y");
+  SolveResult result{Termination::Optimal(2.5)};
+  result.solutions.push_back(Solution{
+      .primal_solution =
+          PrimalSolution{.variable_values = {{x_1, 1.0}, {x_2, 0.5}},
+                         .objective_value = 2.5,
+                         .feasibility_status = SolutionStatus::kFeasible},
+      .dual_solution =
+          DualSolution{.dual_values = {{y, 1.0}},
+                       .reduced_costs = {{x_1, 1.0}, {x_2, 0.0}},
+                       .objective_value = 2.5,
+                       .feasibility_status = SolutionStatus::kFeasible}});
+
+  // Set parameters, e.g. turn on logging.
+  SolveArguments args;
+  args.parameters.enable_output = true;
+
+  // Solve and ensure an optimal solution was found with no errors.
+  const absl::StatusOr<SolveResult> resultX =
+      Solve(*model, SolverType::kXpress, args);
+  for (auto vb : resultX->solutions[0].basis->variable_status) {
+    std::cout << vb.first << " = " << vb.second << "\n";
+  }
+  for (auto vb : resultX->solutions[0].basis->constraint_status) {
+    std::cout << vb.first << " = " << vb.second << "\n";
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(XpressSolverLpTest, SimpleLpTest,

@@ -32,6 +32,8 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/xpress/environment.h"
 
+// TODO : try to remove all CHECK_EQ and replace them with absl Status
+
 namespace operations_research::math_opt {
 constexpr int kXpressOk = 0;
 
@@ -99,9 +101,8 @@ absl::Status Xpress::AddVars(const absl::Span<const int> vbegin,
     CHECK_EQ(vbegin.size(), num_vars);
   }
   // TODO: look into int64 support for number of vars (use XPRSaddcols64)
-  CHECK_EQ(kXpressOk, XPRSaddcols(xpress_model_, num_vars, 0, c_obj, nullptr,
-                                  nullptr, nullptr, lb.data(), ub.data()));
-  return absl::OkStatus();
+  return ToStatus(XPRSaddcols(xpress_model_, num_vars, 0, c_obj, nullptr,
+                              nullptr, nullptr, lb.data(), ub.data()));
 }
 
 absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,
@@ -116,17 +117,19 @@ absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,
 absl::Status Xpress::SetObjective(bool maximize, double offset,
                                   const absl::Span<const int> colind,
                                   const absl::Span<const double> values) {
+  RETURN_IF_ERROR(ToStatus(XPRSchgobjsense(
+      xpress_model_, maximize ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE)))
+      << "Failed to change objective sense in XPRESS";
+
+  static int indexes[1] = {-1};
+  double xprs_values[1] = {-offset};
+  RETURN_IF_ERROR(ToStatus(XPRSchgobj(xpress_model_, 1, indexes, xprs_values)))
+      << "Failed to set objective offset in XPRESS";
+
   const int n_cols = static_cast<int>(colind.size());
   auto c_colind = const_cast<int*>(colind.data());
   auto c_values = const_cast<double*>(values.data());
-  CHECK_EQ(kXpressOk, XPRSchgobj(xpress_model_, n_cols, c_colind, c_values));
-  static int indexes[1] = {-1};
-  double xprs_values[1] = {-offset};
-  CHECK_EQ(kXpressOk, XPRSchgobj(xpress_model_, 1, indexes, xprs_values));
-  CHECK_EQ(kXpressOk,
-           XPRSchgobjsense(xpress_model_,
-                           maximize ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
-  return absl::OkStatus();
+  return ToStatus(XPRSchgobj(xpress_model_, n_cols, c_colind, c_values));
 }
 
 absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
@@ -136,9 +139,8 @@ absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
   auto c_rowind = const_cast<int*>(rowind.data());
   auto c_colind = const_cast<int*>(colind.data());
   auto c_values = const_cast<double*>(values.data());
-  CHECK_EQ(kXpressOk,
-           XPRSchgmcoef(xpress_model_, n_coefs, c_rowind, c_colind, c_values));
-  return absl::OkStatus();
+  return ToStatus(
+      XPRSchgmcoef(xpress_model_, n_coefs, c_rowind, c_colind, c_values));
 }
 
 absl::StatusOr<int> Xpress::LpOptimizeAndGetStatus() {
@@ -206,26 +208,31 @@ int Xpress::GetNumberOfColumns() const {
   return n;
 }
 
-std::vector<double> Xpress::GetConstraintDuals() const {
+absl::StatusOr<std::vector<double>> Xpress::GetConstraintDuals() const {
   int nRows = GetNumberOfRows();
   double values[nRows];
-  CHECK_EQ(kXpressOk,
-           XPRSgetlpsol(xpress_model_, nullptr, nullptr, values, nullptr));
-  return {values, values + nRows};
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetlpsol(xpress_model_, nullptr, nullptr, values, nullptr)))
+      << "Failed to retrieve LP solution from XPRESS";
+  std::vector<double> result(values, values + nRows);
+  return result;
 }
-std::vector<double> Xpress::GetReducedCostValues() const {
+absl::StatusOr<std::vector<double>> Xpress::GetReducedCostValues() const {
   int nCols = GetNumberOfColumns();
   double values[nCols];
-  CHECK_EQ(kXpressOk,
-           XPRSgetlpsol(xpress_model_, nullptr, nullptr, nullptr, values));
-  return {values, values + nCols};
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetlpsol(xpress_model_, nullptr, nullptr, nullptr, values)))
+      << "Failed to retrieve LP solution from XPRESS";
+  std::vector<double> result(values, values + nCols);
+  return result;
 }
 
-std::vector<int> Xpress::GetVariableBasis() const {
-  int const nCols = GetNumberOfColumns();
-  std::vector<int> basis(nCols);
-  CHECK_EQ(kXpressOk, XPRSgetbasis(xpress_model_, basis.data(), 0));
-  return basis;
+absl::Status Xpress::GetBasis(std::vector<int>& rowBasis,
+                              std::vector<int>& colBasis) const {
+  rowBasis.resize(GetNumberOfRows());
+  colBasis.resize(GetNumberOfColumns());
+  return ToStatus(
+      XPRSgetbasis(xpress_model_, rowBasis.data(), colBasis.data()));
 }
 
 }  // namespace operations_research::math_opt

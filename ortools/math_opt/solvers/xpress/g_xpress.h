@@ -81,9 +81,9 @@ class Xpress {
   void Terminate();
 
   absl::StatusOr<std::vector<double>> GetPrimalValues() const;
-  std::vector<double> GetConstraintDuals() const;
-  std::vector<double> GetReducedCostValues() const;
-  std::vector<int> GetVariableBasis() const;
+  absl::StatusOr<std::vector<double>> GetConstraintDuals() const;
+  absl::StatusOr<std::vector<double>> GetReducedCostValues() const;
+  absl::Status GetBasis(std::vector<int>& rowBasis, std::vector<int>& colBasis) const;
 
   static void XPRS_CC printXpressMessage(XPRSprob prob, void* data,
                                          const char* sMsg, int nLen,
