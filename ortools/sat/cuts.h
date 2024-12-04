@@ -16,12 +16,10 @@
 
 #include <stdint.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
-#include <limits>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -35,8 +33,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"

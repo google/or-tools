@@ -28,6 +28,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"

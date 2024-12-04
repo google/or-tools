@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_SAT_INTEGER_EXPR_H_
 #define OR_TOOLS_SAT_INTEGER_EXPR_H_
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -25,7 +24,9 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"

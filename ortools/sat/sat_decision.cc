@@ -20,12 +20,13 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"

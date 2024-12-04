@@ -34,7 +34,7 @@
 #include "ortools/graph/max_flow.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {

@@ -23,7 +23,7 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 
 namespace operations_research {

@@ -15,17 +15,22 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
 
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/max_flow.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"

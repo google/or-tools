@@ -15,10 +15,10 @@
 #define OR_TOOLS_SAT_DIFFN_UTIL_H_
 
 #include <algorithm>
-#include <iosfwd>
+#include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <optional>
-#include <ostream>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -30,8 +30,9 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -695,13 +696,9 @@ inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
 // The returned tuples are the arcs of the spanning forest represented by their
 // indices in the input vector.
 //
-// Note: This function runs in O(N log N + M) time where N is the number of
-// rectangles and M is the total number of intersections. Thus, it is still
-// technically quadratic. However, in practice, it will skip many intersections
-// and it should be much faster than a naive N^2 implementation even when there
-// are a very large number of intersections.
-//
-// TODO(user): Find a real O(N log N) algorithm.
+// Note: This function runs in O(N (log N)^2) time on the input size, which
+// would be impossible to do if we were to return all the intersections, which
+// can be quadratic in number.
 std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
     absl::Span<const Rectangle> rectangles);
 

@@ -17,17 +17,13 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
-#include <functional>
 #include <limits>
 #include <numeric>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
@@ -37,7 +33,6 @@
 #include "google/protobuf/descriptor.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"

@@ -41,7 +41,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"

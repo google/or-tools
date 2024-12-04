@@ -15,21 +15,18 @@
 #define OR_TOOLS_SAT_CIRCUIT_H_
 
 #include <functional>
-#include <memory>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

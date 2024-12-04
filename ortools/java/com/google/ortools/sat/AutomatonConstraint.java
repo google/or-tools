@@ -28,6 +28,7 @@ public class AutomatonConstraint extends Constraint {
   /**
    * Adds a transitions to the automaton.
    *
+   * @param tail the tail of the transition
    * @param head the head of the transition
    * @param label the label of the transition
    * @return this constraint

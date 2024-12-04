@@ -14,16 +14,17 @@
 #ifndef OR_TOOLS_SAT_STAT_TABLES_H_
 #define OR_TOOLS_SAT_STAT_TABLES_H_
 
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/subsolver.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research::sat {

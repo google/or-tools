@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_SYMMETRIES_H_
 #define OR_TOOLS_SAT_CP_MODEL_SYMMETRIES_H_
 
-#include <limits>
 #include <memory>
 #include <vector>
 

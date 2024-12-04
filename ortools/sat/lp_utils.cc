@@ -36,7 +36,7 @@
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"

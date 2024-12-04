@@ -28,6 +28,7 @@
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"

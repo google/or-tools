@@ -24,7 +24,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
@@ -35,6 +34,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"

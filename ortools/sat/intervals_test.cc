@@ -15,16 +15,15 @@
 
 #include <stdint.h>
 
-#include <string>
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

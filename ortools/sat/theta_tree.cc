@@ -17,7 +17,7 @@
 #include <cstdint>
 
 #include "absl/log/check.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {

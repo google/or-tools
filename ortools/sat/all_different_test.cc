@@ -22,8 +22,8 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_solver.h"

@@ -28,7 +28,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 

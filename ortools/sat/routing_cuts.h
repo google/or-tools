@@ -18,14 +18,13 @@
 
 #include <functional>
 #include <limits>
-#include <optional>
 #include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 

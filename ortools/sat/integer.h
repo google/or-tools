@@ -21,8 +21,6 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <memory>
-#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -43,7 +41,6 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/rev.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"

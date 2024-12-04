@@ -23,6 +23,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"

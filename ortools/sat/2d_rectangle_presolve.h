@@ -23,7 +23,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {

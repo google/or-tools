@@ -15,7 +15,6 @@
 #define OR_TOOLS_SAT_DIFFN_H_
 
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <vector>
 
@@ -27,7 +26,6 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"

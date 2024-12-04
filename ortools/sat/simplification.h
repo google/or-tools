@@ -21,7 +21,6 @@
 
 #include <cstdint>
 #include <deque>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -29,13 +28,11 @@
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/logging.h"
-#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

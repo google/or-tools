@@ -66,6 +66,7 @@
 #include "ortools/sat/diophantine.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"

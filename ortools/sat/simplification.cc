@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <deque>
 #include <limits>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -33,10 +32,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/drat_proof_handler.h"
-#include "ortools/sat/model.h"
-#include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/logging.h"

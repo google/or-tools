@@ -16,14 +16,13 @@
 
 #include <stddef.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/sat_base.h"

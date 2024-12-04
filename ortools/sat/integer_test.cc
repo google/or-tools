@@ -16,7 +16,6 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -26,7 +25,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"

@@ -15,10 +15,10 @@
 #define OR_TOOLS_SAT_THETA_TREE_H_
 
 #include <cstdint>
+#include <limits>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {

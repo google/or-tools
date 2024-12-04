@@ -38,6 +38,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"

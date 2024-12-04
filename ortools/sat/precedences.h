@@ -22,19 +22,21 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

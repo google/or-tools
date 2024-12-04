@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <limits>
@@ -25,7 +26,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log_streamer.h"
@@ -36,7 +36,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
