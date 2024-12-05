@@ -71,12 +71,6 @@ namespace operations_research::routing {
 import com.google.ortools.constraintsolver.Constraint;
 %}
 
-// GlobalVehicleBreaksConstraint
-%typemap(javaimports) GlobalVehicleBreaksConstraint %{
-// Types from ConstraintSolver
-import com.google.ortools.constraintsolver.Constraint;
-%}
-
 // RoutingModel
 %unignore RoutingModel;
 // Map transit callback to Java @FunctionalInterface types.

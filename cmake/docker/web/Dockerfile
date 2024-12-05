@@ -4,7 +4,7 @@ FROM archlinux:latest AS env
 
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN pacman -Syu --noconfirm git base-devel glibc cmake
+RUN pacman -Syu --noconfirm git base-devel cmake
 RUN cmake -version
 RUN pacman -Syu --noconfirm nodejs emscripten
 ENV PATH=/usr/lib/emscripten:$PATH
