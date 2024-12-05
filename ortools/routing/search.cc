@@ -261,6 +261,189 @@ const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
   return best_assignment;
 }
 
+namespace {
+void ConvertAssignment(const RoutingModel* src_model, const Assignment* src,
+                       const RoutingModel* dst_model, Assignment* dst) {
+  DCHECK_EQ(src_model->Nexts().size(), dst_model->Nexts().size());
+  DCHECK_NE(src, nullptr);
+  DCHECK_EQ(src_model->solver(), src->solver());
+  DCHECK_EQ(dst_model->solver(), dst->solver());
+  for (int i = 0; i < src_model->Nexts().size(); i++) {
+    IntVar* const dst_next_var = dst_model->NextVar(i);
+    if (!dst->Contains(dst_next_var)) {
+      dst->Add(dst_next_var);
+    }
+    dst->SetValue(dst_next_var, src->Value(src_model->NextVar(i)));
+  }
+}
+
+bool AreAssignmentsEquivalent(const RoutingModel& model,
+                              const Assignment& assignment1,
+                              const Assignment& assignment2) {
+  for (IntVar* next_var : model.Nexts()) {
+    if (assignment1.Value(next_var) != assignment2.Value(next_var)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+absl::Duration GetTimeLimit(const RoutingSearchParameters& search_parameters) {
+  return search_parameters.has_time_limit()
+             ? util_time::DecodeGoogleApiProto(search_parameters.time_limit())
+                   .value()
+             : absl::InfiniteDuration();
+}
+
+// TODO(user): Refactor this function with other versions living in
+// routing.cc.
+// TODO(user): Should we update solution limits as well?
+bool UpdateTimeLimits(Solver* solver, int64_t start_time_ms,
+                      absl::Duration time_limit,
+                      RoutingSearchParameters& search_parameters) {
+  if (!search_parameters.has_time_limit()) return true;
+  const absl::Duration elapsed_time =
+      absl::Milliseconds(solver->wall_time() - start_time_ms);
+  const absl::Duration time_left =
+      std::min(time_limit - elapsed_time, GetTimeLimit(search_parameters));
+  if (time_left <= absl::ZeroDuration()) return false;
+  const absl::Status status = util_time::EncodeGoogleApiProto(
+      time_left, search_parameters.mutable_time_limit());
+  DCHECK_OK(status);
+  return true;
+}
+}  // namespace
+
+const Assignment* SolveWithAlternativeSolvers(
+    RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations) {
+  return SolveFromAssignmentWithAlternativeSolvers(
+      /*assignment=*/nullptr, primary_model, alternative_models, parameters,
+      max_non_improving_iterations);
+}
+
+const Assignment* SolveFromAssignmentWithAlternativeSolvers(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations) {
+  return SolveFromAssignmentWithAlternativeSolversAndParameters(
+      assignment, primary_model, parameters, alternative_models, {},
+      max_non_improving_iterations);
+}
+
+const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const RoutingSearchParameters& primary_parameters,
+    const std::vector<RoutingModel*>& alternative_models,
+    const std::vector<RoutingSearchParameters>& alternative_parameters,
+    int max_non_improving_iterations) {
+  const int64_t start_time_ms = primary_model->solver()->wall_time();
+  if (max_non_improving_iterations < 0) return nullptr;
+  // Shortcut if no alternative models will be explored.
+  if (max_non_improving_iterations == 0 || alternative_models.empty()) {
+    return primary_model->SolveFromAssignmentWithParameters(assignment,
+                                                            primary_parameters);
+  }
+  RoutingSearchParameters mutable_search_parameters = primary_parameters;
+  // The first alternating phases are limited to greedy descent. The final pass
+  // at the end of this function will actually use the metaheuristic if needed.
+  // TODO(user): Add support for multiple metaheuristics.
+  const LocalSearchMetaheuristic_Value metaheuristic =
+      mutable_search_parameters.local_search_metaheuristic();
+  const bool run_metaheuristic_phase =
+      metaheuristic != LocalSearchMetaheuristic::GREEDY_DESCENT &&
+      metaheuristic != LocalSearchMetaheuristic::AUTOMATIC;
+  if (run_metaheuristic_phase) {
+    mutable_search_parameters.set_local_search_metaheuristic(
+        LocalSearchMetaheuristic::GREEDY_DESCENT);
+  }
+  std::vector<RoutingSearchParameters> mutable_alternative_parameters =
+      alternative_parameters;
+  DCHECK(mutable_alternative_parameters.empty() ||
+         mutable_alternative_parameters.size() == alternative_models.size());
+  for (RoutingSearchParameters& mutable_alternative_parameter :
+       mutable_alternative_parameters) {
+    if (!mutable_alternative_parameter.has_time_limit() &&
+        mutable_search_parameters.has_time_limit()) {
+      *mutable_alternative_parameter.mutable_time_limit() =
+          mutable_search_parameters.time_limit();
+    }
+  }
+  const absl::Duration time_limit = GetTimeLimit(mutable_search_parameters);
+  Assignment* best_assignment = primary_model->solver()->MakeAssignment();
+  std::vector<Assignment*> first_solutions;
+  first_solutions.reserve(alternative_models.size());
+  for (RoutingModel* model : alternative_models) {
+    first_solutions.push_back(model->solver()->MakeAssignment());
+  }
+  Assignment* primary_first_solution =
+      primary_model->solver()->MakeAssignment();
+  Assignment* current_solution = primary_model->solver()->MakeAssignment();
+  DCHECK(assignment == nullptr ||
+         assignment->solver() == primary_model->solver());
+  const Assignment* solution = primary_model->SolveFromAssignmentWithParameters(
+      assignment, mutable_search_parameters);
+  if (solution == nullptr) return nullptr;
+  best_assignment->Copy(solution);
+  int iteration = 0;
+  while (iteration < max_non_improving_iterations) {
+    if (best_assignment->ObjectiveValue() > solution->ObjectiveValue()) {
+      best_assignment->Copy(solution);
+    }
+    current_solution->Copy(solution);
+    for (int i = 0; i < alternative_models.size(); ++i) {
+      RoutingSearchParameters& mutable_alternative_parameter =
+          mutable_alternative_parameters.empty()
+              ? mutable_search_parameters
+              : mutable_alternative_parameters[i];
+      if (!UpdateTimeLimits(primary_model->solver(), start_time_ms, time_limit,
+                            mutable_alternative_parameter)) {
+        return best_assignment;
+      }
+      ConvertAssignment(primary_model, solution, alternative_models[i],
+                        first_solutions[i]);
+      solution = alternative_models[i]->SolveFromAssignmentWithParameters(
+          first_solutions[i], mutable_alternative_parameter);
+      if (solution == nullptr) {
+        solution = first_solutions[i];
+      }
+      if (!UpdateTimeLimits(primary_model->solver(), start_time_ms, time_limit,
+                            mutable_search_parameters)) {
+        return best_assignment;
+      }
+      ConvertAssignment(alternative_models[i], solution, primary_model,
+                        primary_first_solution);
+      solution = primary_model->SolveFromAssignmentWithParameters(
+          primary_first_solution, mutable_search_parameters);
+      if (solution == nullptr) return best_assignment;
+    }
+    // No modifications done in this iteration, no need to continue.
+    if (AreAssignmentsEquivalent(*primary_model, *solution,
+                                 *current_solution)) {
+      break;
+    }
+    // We're back to the best assignment which means we will cycle if we
+    // continue the search.
+    if (AreAssignmentsEquivalent(*primary_model, *solution, *best_assignment)) {
+      break;
+    }
+    if (solution->ObjectiveValue() >= best_assignment->ObjectiveValue()) {
+      ++iteration;
+    }
+  }
+  if (run_metaheuristic_phase &&
+      UpdateTimeLimits(primary_model->solver(), start_time_ms, time_limit,
+                       mutable_search_parameters)) {
+    mutable_search_parameters.set_local_search_metaheuristic(metaheuristic);
+    return primary_model->SolveFromAssignmentWithParameters(
+        best_assignment, mutable_search_parameters);
+  }
+  return best_assignment;
+}
+
 // --- VehicleTypeCurator ---
 
 void VehicleTypeCurator::Reset(const std::function<bool(int)>& store_vehicle) {

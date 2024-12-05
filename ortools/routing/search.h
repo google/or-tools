@@ -90,6 +90,48 @@ const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
     const std::vector<RoutingSearchParameters>& alternative_parameters,
     int max_non_improving_iterations);
 
+// Solves a routing model using alternative models. This assumes that the models
+// are equivalent in the sense that a solution to one model is also a solution
+// to the other models. This is true for models that differ only by their arc
+// costs or objective for instance.
+// The primary model is the main model, to which the returned solution will
+// correspond.
+// The method solves the primary model and alternative models alternatively.
+// It works as follows (all solves use 'parameters'):
+// 1) solve the primary model with a greedy descent,
+// 2) let 'alt' be the first alternative model,
+// 3) solve 'alt' starting from the solution to the primary model with a greedy
+//    descent,
+// 4) solve the primary model from the solution to 'alt' with a greedy descent,
+// 5) if the new solution improves the best solution found so far, update it,
+//    otherwise increase the iteration counter,
+// 6) if the iteration counter is less than 'max_non_improving_iterations', let
+// 'alt' be the next "round-robin" alternative model, and go to step 3,
+// 7) if 'parameters' specified a metaheuristic, solve the primary model using
+//    that metaheuristic starting from the best solution found so far,
+// 8) return the best solution found.
+// Note that if the time limit is reached at any stage, the search is
+// interrupted and the best solution found will be returned immediately.
+// TODO(user): Add a version taking search parameters for alternative models.
+const Assignment* SolveWithAlternativeSolvers(
+    RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations);
+// Same as above, but taking an initial solution.
+const Assignment* SolveFromAssignmentWithAlternativeSolvers(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const std::vector<RoutingModel*>& alternative_models,
+    const RoutingSearchParameters& parameters,
+    int max_non_improving_iterations);
+// Same as above but taking alternative parameters for each alternative model.
+const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
+    const Assignment* assignment, RoutingModel* primary_model,
+    const RoutingSearchParameters& parameters,
+    const std::vector<RoutingModel*>& alternative_models,
+    const std::vector<RoutingSearchParameters>& alternative_parameters,
+    int max_non_improving_iterations);
+
 class IntVarFilteredHeuristic;
 #ifndef SWIG
 /// Helper class that manages vehicles. This class is based on the

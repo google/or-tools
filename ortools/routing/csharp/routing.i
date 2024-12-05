@@ -129,6 +129,33 @@ using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 using Domain = Google.OrTools.Util.Domain;
 %}
+%typemap(cscode) RoutingDimension %{
+  // Keep reference to delegate to avoid GC to collect them early.
+  private List<IntIntToLong> limitCallbacks;
+  private IntIntToLong StoreIntIntToLong(IntIntToLong limit) {
+    if (limitCallbacks == null)
+      limitCallbacks = new List<IntIntToLong>();
+    limitCallbacks.Add(limit);
+    return limit;
+  }
+
+  private List<LongLongToLong> groupDelayCallbacks;
+  private LongLongToLong StoreLongLongToLong(LongLongToLong groupDelay) {
+    if (groupDelayCallbacks == null)
+      groupDelayCallbacks = new List<LongLongToLong>();
+    groupDelayCallbacks.Add(groupDelay);
+    return groupDelay;
+  }
+%}
+%ignore RoutingDimension::GetBreakDistanceDurationOfVehicle;
+
+// RoutingModel
+%unignore RoutingModel;
+%typemap(csimports) RoutingModel %{
+using System;
+using System.Collections.Generic;
+using Domain = Google.OrTools.Util.Domain;
+%}
 %typemap(cscode) RoutingModel %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<LongToLong> unaryTransitCallbacks;
