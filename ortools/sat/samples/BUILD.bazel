@@ -94,6 +94,8 @@ code_sample_py(name = "scheduling_with_calendar_sample_sat")
 
 code_sample_cc_go_py(name = "search_for_all_solutions_sample_sat")
 
+code_sample_py(name = "sequences_in_no_overlap_sample_sat")
+
 code_sample_cc_go_py(name = "simple_sat_program")
 
 code_sample_cc_go_py(name = "solution_hinting_sample_sat")

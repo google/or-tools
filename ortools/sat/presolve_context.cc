@@ -138,33 +138,49 @@ int PresolveContext::NewBoolVar(absl::string_view source) {
 int PresolveContext::NewBoolVarWithClause(absl::Span<const int> clause) {
   const int new_var = NewBoolVar("with clause");
   if (hint_is_loaded_) {
+    int new_hint = 0;
     bool all_have_hint = true;
     for (const int literal : clause) {
       const int var = PositiveRef(literal);
       if (!hint_has_value_[var]) {
         all_have_hint = false;
-        continue;
+        break;
       }
-      if (RefIsPositive(literal)) {
-        if (hint_[var] == 1) {
-          hint_has_value_[new_var] = true;
-          hint_[new_var] = 1;
-          break;
-        }
-      } else {
-        if (hint_[var] == 0) {
-          hint_has_value_[new_var] = true;
-          hint_[new_var] = 1;
-          break;
-        }
+      if (hint_[var] == (RefIsPositive(literal) ? 1 : 0)) {
+        new_hint = 1;
+        break;
       }
     }
-
-    // If all literals where hinted and at zero, we set the hint of
-    // new_var to zero, otherwise we leave it unassigned.
-    if (all_have_hint && !hint_has_value_[new_var]) {
+    // Leave the `new_var` hint unassigned if any literal is not hinted.
+    if (all_have_hint) {
       hint_has_value_[new_var] = true;
-      hint_[new_var] = 0;
+      hint_[new_var] = new_hint;
+    }
+  }
+  return new_var;
+}
+
+int PresolveContext::NewBoolVarWithConjunction(
+    absl::Span<const int> conjunction) {
+  const int new_var = NewBoolVar("with conjunction");
+  if (hint_is_loaded_) {
+    int new_hint = 1;
+    bool all_have_hint = true;
+    for (const int literal : conjunction) {
+      const int var = PositiveRef(literal);
+      if (!hint_has_value_[var]) {
+        all_have_hint = false;
+        break;
+      }
+      if (hint_[var] == (RefIsPositive(literal) ? 0 : 1)) {
+        new_hint = 0;
+        break;
+      }
+    }
+    // Leave the `new_var` hint unassigned if any literal is not hinted.
+    if (all_have_hint) {
+      hint_has_value_[new_var] = true;
+      hint_[new_var] = new_hint;
     }
   }
   return new_var;
@@ -1492,6 +1508,9 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   } else {
     UpdateRuleStats("variables with 2 values: create encoding literal");
     max_literal = NewBoolVar("var with 2 values");
+    if (hint_is_loaded_ && hint_has_value_[var]) {
+      SetNewVariableHint(max_literal, hint_[var] == var_max ? 1 : 0);
+    }
     min_literal = NegatedRef(max_literal);
     var_map[var_min] = SavedLiteral(min_literal);
     var_map[var_max] = SavedLiteral(max_literal);
@@ -1830,14 +1849,18 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
       return value == 1 ? representative : NegatedRef(representative);
     } else {
       const int literal = NewBoolVar("integer encoding");
-      InsertVarValueEncoding(literal, var, var_max);
+      if (!InsertVarValueEncoding(literal, var, var_max)) {
+        return GetFalseLiteral();
+      }
       const int representative = GetLiteralRepresentative(literal);
       return value == var_max ? representative : NegatedRef(representative);
     }
   }
 
   const int literal = NewBoolVar("integer encoding");
-  InsertVarValueEncoding(literal, var, value);
+  if (!InsertVarValueEncoding(literal, var, value)) {
+    return GetFalseLiteral();
+  }
   return GetLiteralRepresentative(literal);
 }
 

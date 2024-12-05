@@ -2278,8 +2278,8 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
           // Just fix everything.
           context_->UpdateRuleStats("independent linear: solved by DP");
           for (int i = 0; i < num_vars; ++i) {
-            if (!context_->IntersectDomainWith(ct->linear().vars(i),
-                                               Domain(result.solution[i]))) {
+            if (!context_->IntersectDomainWithAndUpdateHint(
+                    ct->linear().vars(i), Domain(result.solution[i]))) {
               return false;
             }
           }
@@ -2291,7 +2291,8 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
         if (ct->enforcement_literal().size() == 1) {
           indicator = ct->enforcement_literal(0);
         } else {
-          indicator = context_->NewBoolVar("indicator");
+          indicator =
+              context_->NewBoolVarWithConjunction(ct->enforcement_literal());
           auto* new_ct = context_->working_model->add_constraints();
           *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
           new_ct->mutable_bool_or()->add_literals(indicator);
@@ -2302,12 +2303,16 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
               costs[i] > 0 ? domains[i].Min() : domains[i].Max();
           const int64_t other_value = result.solution[i];
           if (best_value == other_value) {
-            if (!context_->IntersectDomainWith(ct->linear().vars(i),
-                                               Domain(best_value))) {
+            if (!context_->IntersectDomainWithAndUpdateHint(
+                    ct->linear().vars(i), Domain(best_value))) {
               return false;
             }
             continue;
           }
+          context_->UpdateVarSolutionHint(
+              ct->linear().vars(i), context_->LiteralSolutionHint(indicator)
+                                        ? other_value
+                                        : best_value);
           if (RefIsPositive(indicator)) {
             if (!context_->StoreAffineRelation(ct->linear().vars(i), indicator,
                                                other_value - best_value,
@@ -11763,7 +11768,8 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
       int64_t value1, value2;
       if (cost == 0) {
         context_->UpdateRuleStats("variables: fix singleton var in linear1");
-        return (void)context_->IntersectDomainWith(var, Domain(implied.Min()));
+        return (void)context_->IntersectDomainWithAndUpdateHint(
+            var, Domain(implied.Min()));
       } else if (cost > 0) {
         value1 = context_->MinOf(var);
         value2 = implied.Min();
@@ -11775,7 +11781,7 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
       // Nothing else to do in this case, the constraint will be reduced to
       // a pure Boolean constraint later.
       context_->UpdateRuleStats("variables: reduced domain to two values");
-      return (void)context_->IntersectDomainWith(
+      return (void)context_->IntersectDomainWithAndUpdateHint(
           var, Domain::FromValues({value1, value2}));
     }
   }
@@ -12004,6 +12010,7 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     }
     PresolveAtMostOne(new_ct);
   }
+  if (context_->ModelIsUnsat()) return;
 
   // Add enough constraints to the mapping model to recover a valid value
   // for var when all the booleans are fixed.
