@@ -115,6 +115,10 @@ class PresolveContext {
   // Its hint value will be the same as the value of the given clause.
   int NewBoolVarWithClause(absl::Span<const int> clause);
 
+  // Create a new bool var.
+  // Its hint value will be the same as the value of the given conjunction.
+  int NewBoolVarWithConjunction(absl::Span<const int> conjunction);
+
   // Some expansion code use constant literal to be simpler to write. This will
   // create a NewBoolVar() the first time, but later call will just returns it.
   int GetTrueLiteral();
