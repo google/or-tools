@@ -74,7 +74,7 @@ class Xpress {
   absl::Status ChgCoeffs(absl::Span<const int> cind, absl::Span<const int> vind,
                          absl::Span<const double> val);
 
-  absl::StatusOr<int> LpOptimizeAndGetStatus();
+  absl::StatusOr<int> LpOptimizeAndGetStatus(std::string flags);
   absl::StatusOr<int> MipOptimizeAndGetStatus();
   absl::Status PostSolve();
 

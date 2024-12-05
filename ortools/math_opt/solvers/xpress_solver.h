@@ -57,7 +57,7 @@ class XpressSolver : public SolverInterface {
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
       const SolveInterrupter* interrupter) override;
-  absl::Status CallXpressSolve(bool enableOutput);
+  absl::Status CallXpressSolve(const SolveParametersProto& parameters);
 
   // Updates the problem (not implemented yet)
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;

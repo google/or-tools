@@ -143,8 +143,8 @@ absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
       XPRSchgmcoef(xpress_model_, n_coefs, c_rowind, c_colind, c_values));
 }
 
-absl::StatusOr<int> Xpress::LpOptimizeAndGetStatus() {
-  RETURN_IF_ERROR(ToStatus(XPRSlpoptimize(xpress_model_, nullptr)))
+absl::StatusOr<int> Xpress::LpOptimizeAndGetStatus(std::string flags) {
+  RETURN_IF_ERROR(ToStatus(XPRSlpoptimize(xpress_model_, flags.c_str())))
       << "XPRESS LP solve failed";
   int xpress_status;
   RETURN_IF_ERROR(

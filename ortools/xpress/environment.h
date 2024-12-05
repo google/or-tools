@@ -420,6 +420,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_OBJSENSE 2008
 #define XPRS_ROWS 1001
 #define XPRS_SIMPLEXITER 1009
+#define XPRS_BARITER 5001
 #define XPRS_LPSTATUS 1010
 #define XPRS_MIPSTATUS 1011
 #define XPRS_NODES 1013

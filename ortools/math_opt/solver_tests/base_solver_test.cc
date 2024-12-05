@@ -50,6 +50,9 @@ bool ActivatePrimalRay(const SolverType solver_type, SolveParameters& params) {
       return false;
     case SolverType::kHighs:
       return false;
+    case SolverType::kXpress:
+      // TODO: support XPRESS
+      return false;
     default:
       LOG(FATAL)
           << "Solver " << solver_type
@@ -81,6 +84,9 @@ bool ActivateDualRay(const SolverType solver_type, SolveParameters& params) {
     case SolverType::kScs:
       return false;
     case SolverType::kHighs:
+      return false;
+    case SolverType::kXpress:
+      // TODO: support XPRESS
       return false;
     default:
       LOG(FATAL)

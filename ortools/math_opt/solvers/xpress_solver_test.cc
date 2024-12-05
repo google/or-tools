@@ -48,6 +48,28 @@ INSTANTIATE_TEST_SUITE_P(
         /*ensures_primal_ray=*/false, /*ensures_dual_ray=*/false,
         /*disallows_infeasible_or_unbounded=*/true)));
 
+// TODO: implement missing LP features
+INSTANTIATE_TEST_SUITE_P(XpressLpModelSolveParametersTest,
+                         LpModelSolveParametersTest,
+                         testing::Values(LpModelSolveParametersTestParameters(
+                             SolverType::kXpress, /*exact_zeros=*/true,
+                             /*supports_duals=*/true,
+                             /*supports_primal_only_warm_starts=*/false)));
+
+// TODO: implement missing LP features
+INSTANTIATE_TEST_SUITE_P(
+    GlopLpParameterTest, LpParameterTest,
+    testing::Values(LpParameterTestParams(SolverType::kXpress,
+                                          /*supports_simplex=*/true,
+                                          /*supports_barrier=*/true,
+                                          /*supports_first_order=*/false,
+                                          /*supports_random_seed=*/false,
+                                          /*supports_presolve=*/false,
+                                          /*supports_cutoff=*/false,
+                                          /*supports_objective_limit=*/false,
+                                          /*supports_best_bound_limit=*/false,
+                                          /*reports_limits=*/false)));
+
 // TODO: implement message callbacks
 INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
                          testing::Values(MessageCallbackTestParams(
@@ -97,7 +119,17 @@ INSTANTIATE_TEST_SUITE_P(XpressInfeasibleSubsystemTest, InfeasibleSubsystemTest,
                          testing::Values(InfeasibleSubsystemTestParameters(
                              {.solver_type = SolverType::kXpress,
                               .support_menu = {
-                                  .supports_infeasible_subsystems = false}})));
+                               .supports_infeasible_subsystems = false}})));
+
+
+// TODO: When XPRESS supports MIP hints, enable the following test
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MipSolutionHintTest);
+
+// TODO: When XPRESS supports MIP branch priorities, enable the following test
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(BranchPrioritiesTest);
+
+// TODO: When XPRESS supports lazy constraints, enable the following test
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(LazyConstraintsTest);
 
 }  // namespace
 }  // namespace math_opt

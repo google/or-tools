@@ -20,19 +20,36 @@
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/solve_result.h"
 #include "ortools/math_opt/validators/callback_validator.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/xpress/environment.h"
 
 namespace operations_research {
 namespace math_opt {
 namespace {
-// TODO: set parameters
 // TODO: add all unsupported parameter combinations here
-absl::Status SetParameters(const SolveParametersProto& parameters) {
+absl::Status CheckParameters(const SolveParametersProto& parameters) {
   std::vector<std::string> warnings;
   if (parameters.has_threads() && parameters.threads() > 1) {
     warnings.push_back(absl::StrCat(
         "XpressSolver only supports parameters.threads = 1; value ",
         parameters.threads(), " is not supported"));
+  }
+  if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED &&
+      parameters.lp_algorithm() != LP_ALGORITHM_PRIMAL_SIMPLEX &&
+      parameters.lp_algorithm() != LP_ALGORITHM_DUAL_SIMPLEX &&
+      parameters.lp_algorithm() != LP_ALGORITHM_BARRIER) {
+    warnings.emplace_back(absl::StrCat(
+        "XpressSolver does not support the 'lp_algorithm' parameter value: ",
+        ProtoEnumToString(parameters.lp_algorithm())));
+  }
+  if (parameters.has_objective_limit()) {
+    warnings.emplace_back("XpressSolver does not support objective_limit yet");
+  }
+  if (parameters.has_best_bound_limit()) {
+    warnings.emplace_back("XpressSolver does not support best_bound_limit yet");
+  }
+  if (parameters.has_cutoff_limit()) {
+    warnings.emplace_back("XpressSolver does not support cutoff_limit yet");
   }
   if (!warnings.empty()) {
     return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
@@ -210,7 +227,7 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
 
-  RETURN_IF_ERROR(SetParameters(parameters));
+  RETURN_IF_ERROR(CheckParameters(parameters));
 
   // Check that bounds are not inverted just before solve
   // XPRESS returns "infeasible" when bounds are inverted
@@ -219,8 +236,7 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     RETURN_IF_ERROR(inv_bounds.ToStatus());
   }
 
-  RETURN_IF_ERROR(CallXpressSolve(parameters.enable_output()))
-      << "Error during XPRESS solve";
+  RETURN_IF_ERROR(CallXpressSolve(parameters)) << "Error during XPRESS solve";
 
   ASSIGN_OR_RETURN(SolveResultProto solve_result,
                    ExtractSolveResultProto(start, model_parameters));
@@ -228,9 +244,10 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   return solve_result;
 }
 
-absl::Status XpressSolver::CallXpressSolve(bool enableOutput) {
+absl::Status XpressSolver::CallXpressSolve(
+    const SolveParametersProto& parameters) {
   // Enable screen output right before solve
-  if (enableOutput) {
+  if (parameters.enable_output()) {
     RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_OUTPUTLOG, 1))
         << "Unable to enable XPRESS logs";
   }
@@ -238,7 +255,50 @@ absl::Status XpressSolver::CallXpressSolve(bool enableOutput) {
   if (is_mip_) {
     ASSIGN_OR_RETURN(xpress_status_, xpress_->MipOptimizeAndGetStatus());
   } else {
-    ASSIGN_OR_RETURN(xpress_status_, xpress_->LpOptimizeAndGetStatus());
+    std::string flags;
+    // TODO: put "p", "d", "b" in environment.h?
+    // TODO: refactor this, it is ugly
+    switch (parameters.lp_algorithm()) {
+      case LP_ALGORITHM_PRIMAL_SIMPLEX:
+        flags = "p";
+        if (parameters.has_iteration_limit()) {
+          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
+                                              parameters.iteration_limit()));
+        }
+        break;
+      case LP_ALGORITHM_DUAL_SIMPLEX:
+        flags = "d";
+        if (parameters.has_iteration_limit()) {
+          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
+                                              parameters.iteration_limit()));
+        }
+        break;
+      case LP_ALGORITHM_BARRIER:
+        flags = "b";
+        if (parameters.has_iteration_limit()) {
+          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_BARITERLIMIT,
+                                              parameters.iteration_limit()));
+          // we also have to set simplex iter limits because barrier iterations
+          // call simplex iterations
+          // TODO: verify this
+          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
+                                              parameters.iteration_limit()));
+        }
+        break;
+      default:
+        // this makes XPRESS use default algorithm (XPRS_DEFAULTALG)
+        flags = "";
+        if (parameters.has_iteration_limit()) {
+          // TODO: fetch the default alg and set its limit? or default to primal
+          // simplex
+          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
+                                              parameters.iteration_limit()));
+          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_BARITERLIMIT,
+                                              parameters.iteration_limit()));
+        }
+        break;
+    }
+    ASSIGN_OR_RETURN(xpress_status_, xpress_->LpOptimizeAndGetStatus(flags));
   }
   // Post-solve
   if (!(is_mip_ ? (xpress_status_ == XPRS_MIP_OPTIMAL)
@@ -246,7 +306,7 @@ absl::Status XpressSolver::CallXpressSolve(bool enableOutput) {
     RETURN_IF_ERROR(xpress_->PostSolve()) << "Post-solve failed in XPRESS";
   }
   // Disable screen output right after solve
-  if (enableOutput) {
+  if (parameters.enable_output()) {
     RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_OUTPUTLOG, 0))
         << "Unable to disable XPRESS logs";
   }
@@ -324,17 +384,27 @@ absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetLpSolution(
 }
 
 bool XpressSolver::isFeasible() const {
-  return xpress_status_ == (is_mip_ ? XPRS_MIP_OPTIMAL : XPRS_LP_OPTIMAL);
+  if (is_mip_) {
+    return xpress_status_ == XPRS_MIP_OPTIMAL;
+  } else {
+    return xpress_status_ == XPRS_LP_OPTIMAL ||
+           xpress_status_ == XPRS_LP_UNFINISHED;
+  }
 }
 
 SolutionStatusProto XpressSolver::getLpSolutionStatus() const {
-  // TODO : put all statuses here
   switch (xpress_status_) {
     case XPRS_LP_OPTIMAL:
+    case XPRS_LP_UNFINISHED:
       return SOLUTION_STATUS_FEASIBLE;
     case XPRS_LP_INFEAS:
+    case XPRS_LP_CUTOFF:
+    case XPRS_LP_CUTOFF_IN_DUAL:
+    case XPRS_LP_NONCONVEX:
       return SOLUTION_STATUS_INFEASIBLE;
+    case XPRS_LP_UNSTARTED:
     case XPRS_LP_UNBOUNDED:
+    case XPRS_LP_UNSOLVED:
       return SOLUTION_STATUS_UNDETERMINED;
     default:
       return SOLUTION_STATUS_UNSPECIFIED;
@@ -486,6 +556,19 @@ absl::StatusOr<SolveStatsProto> XpressSolver::GetSolveStats(
   SolveStatsProto solve_stats;
   CHECK_OK(util_time::EncodeGoogleApiProto(absl::Now() - start,
                                            solve_stats.mutable_solve_time()));
+
+  // TODO : only run one of the following depending on algorithm?
+  // LP simplex iterations
+  {
+    ASSIGN_OR_RETURN(const int iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
+    solve_stats.set_simplex_iterations(iters);
+  }
+  // LP barrier iterations
+  {
+    ASSIGN_OR_RETURN(const int iters, xpress_->GetIntAttr(XPRS_BARITER));
+    solve_stats.set_barrier_iterations(iters);
+  }
+
   // TODO : complete these stats
   return solve_stats;
 }
@@ -525,8 +608,10 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         return CutoffTerminationProto(
             is_maximize_, "Objective worse than cutoff (XPRS_LP_CUTOFF)");
       case XPRS_LP_UNFINISHED:
-        return LimitTerminationProto(
-            is_maximize_, LIMIT_UNSPECIFIED, best_primal_bound, best_dual_bound,
+        // TODO: add support for more limit types here (this only works for LP
+        // iterations limit for now)
+        return FeasibleTerminationProto(
+            is_maximize_, LIMIT_ITERATION, best_primal_bound, best_dual_bound,
             "Solve did not finish (XPRS_LP_UNFINISHED)");
       case XPRS_LP_UNBOUNDED:
         return UnboundedTerminationProto(is_maximize_,
