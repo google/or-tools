@@ -11,36 +11,85 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <ortools/base/status_matchers.h>
+#include <limits>
+#include <optional>
+#include <string>
+#include <vector>
 
-#include <ostream>
-
-#include "absl/log/check.h"
-#include "absl/status/statusor.h"
 #include "gtest/gtest.h"
-#include "ortools/base/gmock.h"
-#include "ortools/base/init_google.h"
-#include "ortools/math_opt/core/solver.h"
-#include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
+#include "ortools/math_opt/solver_tests/callback_tests.h"
+#include "ortools/math_opt/solver_tests/generic_tests.h"
+#include "ortools/math_opt/solver_tests/infeasible_subsystem_tests.h"
+#include "ortools/math_opt/solver_tests/invalid_input_tests.h"
+#include "ortools/math_opt/solver_tests/logical_constraint_tests.h"
+#include "ortools/math_opt/solver_tests/lp_incomplete_solve_tests.h"
+#include "ortools/math_opt/solver_tests/lp_initial_basis_tests.h"
 #include "ortools/math_opt/solver_tests/lp_model_solve_parameters_tests.h"
+#include "ortools/math_opt/solver_tests/lp_parameter_tests.h"
 #include "ortools/math_opt/solver_tests/lp_tests.h"
-#include "ortools/port/proto_utils.h"
+#include "ortools/math_opt/solver_tests/multi_objective_tests.h"
+#include "ortools/math_opt/solver_tests/qc_tests.h"
+#include "ortools/math_opt/solver_tests/qp_tests.h"
+#include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
+#include "ortools/math_opt/solver_tests/status_tests.h"
 
-using namespace operations_research::math_opt;
+namespace operations_research {
+namespace math_opt {
+namespace {
+using testing::ValuesIn;
 
-SimpleLpTestParameters XpressDefaults() {
-  return SimpleLpTestParameters(
-      SolverType::kXpress, SolveParameters(), /*supports_duals=*/true,
-      /*supports_basis=*/true,
-      /*ensures_primal_ray=*/false, /*ensures_dual_ray=*/false,
-      /*disallows_infeasible_or_unbounded=*/true);
+// TODO: implement missing LP features
+INSTANTIATE_TEST_SUITE_P(
+    XpressSolverLpTest, SimpleLpTest,
+    testing::Values(SimpleLpTestParameters(
+        SolverType::kXpress, SolveParameters(), /*supports_duals=*/true,
+        /*supports_basis=*/true,
+        /*ensures_primal_ray=*/false, /*ensures_dual_ray=*/false,
+        /*disallows_infeasible_or_unbounded=*/true)));
+
+// TODO: implement message callbacks
+INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
+                         testing::Values(MessageCallbackTestParams(
+                             SolverType::kXpress,
+                             /*support_message_callback=*/false,
+                             /*support_interrupter=*/false,
+                             /*integer_variables=*/false, "")));
+
+
+// TODO: implement callbacks
+INSTANTIATE_TEST_SUITE_P(
+    XpressCallbackTest, CallbackTest,
+    testing::Values(CallbackTestParams(SolverType::kXpress,
+                                       /*integer_variables=*/false,
+                                       /*add_lazy_constraints=*/false,
+                                       /*add_cuts=*/false,
+                                       /*supported_events=*/{},
+                                       /*all_solutions=*/std::nullopt,
+                                       /*reaches_cut_callback*/ std::nullopt)));
+
+INSTANTIATE_TEST_SUITE_P(XpressInvalidInputTest, InvalidInputTest,
+                         testing::Values(InvalidInputTestParameters(
+                             SolverType::kXpress,
+                             /*use_integer_variables=*/false)));
+
+InvalidParameterTestParams InvalidThreadsParameters() {
+  SolveParameters params;
+  params.threads = 2;
+  return InvalidParameterTestParams(SolverType::kXpress, std::move(params),
+                                    {"only supports parameters.threads = 1"});
 }
 
-INSTANTIATE_TEST_SUITE_P(XpressSolverLpTest, SimpleLpTest,
-                         testing::Values(XpressDefaults()));
+// TODO: add all invalid parameters combinations
+INSTANTIATE_TEST_SUITE_P(XpressInvalidParameterTest, InvalidParameterTest,
+ValuesIn({InvalidThreadsParameters()}));
 
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  RUN_ALL_TESTS();
-}
+INSTANTIATE_TEST_SUITE_P(XpressGenericTest, GenericTest,
+                         testing::Values(GenericTestParameters(
+                             SolverType::kXpress, /*support_interrupter=*/false,
+                             /*integer_variables=*/false,
+                             /*expected_log=*/"Optimal solution found")));
+
+}  // namespace
+}  // namespace math_opt
+}  // namespace operations_research

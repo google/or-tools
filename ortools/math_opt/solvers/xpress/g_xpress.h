@@ -89,8 +89,11 @@ class Xpress {
                                          const char* sMsg, int nLen,
                                          int nMsgLvl);
 
-  int GetNumberOfRows() const;
-  int GetNumberOfColumns() const;
+  int GetNumberOfConstraints() const;
+  int GetNumberOfVariables() const;
+
+  absl::StatusOr<std::vector<double>> GetVarLb() const;
+  absl::StatusOr<std::vector<double>> GetVarUb() const;
 
  private:
   XPRSprob xpress_model_;

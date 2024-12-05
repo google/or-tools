@@ -251,17 +251,21 @@ if(USE_XPRESS)
       absl::status
       ortools::math_opt_matchers
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
-      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
-      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
   )
 endif()

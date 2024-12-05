@@ -13,14 +13,33 @@
 
 #include "ortools/math_opt/solvers/xpress_solver.h"
 
+#include "absl/strings/str_join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/solve_result.h"
+#include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/xpress/environment.h"
 
-namespace operations_research::math_opt {
+namespace operations_research {
+namespace math_opt {
+namespace {
+// TODO: set parameters
+// TODO: add all unsupported parameter combinations here
+absl::Status SetParameters(const SolveParametersProto& parameters) {
+  std::vector<std::string> warnings;
+  if (parameters.has_threads() && parameters.threads() > 1) {
+    warnings.push_back(absl::StrCat(
+        "XpressSolver only supports parameters.threads = 1; value ",
+        parameters.threads(), " is not supported"));
+  }
+  if (!warnings.empty()) {
+    return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
+  }
+  return absl::OkStatus();
+}
+}  // namespace
 
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .integer_variables = SupportType::kNotImplemented,
@@ -66,7 +85,7 @@ absl::Status XpressSolver::AddNewVariables(
     const VariablesProto& new_variables) {
   const int num_new_variables = new_variables.lower_bounds().size();
   std::vector<char> variable_type(num_new_variables);
-  int n_variables = xpress_->GetNumberOfColumns();
+  int n_variables = xpress_->GetNumberOfVariables();
   for (int j = 0; j < num_new_variables; ++j) {
     const VarId id = new_variables.ids(j);
     InsertOrDie(&variables_map_, id, j + n_variables);
@@ -101,7 +120,7 @@ absl::Status XpressSolver::AddNewLinearConstraints(
   constraint_rhs.reserve(num_new_constraints);
   constraint_sense.reserve(num_new_constraints);
   new_slacks.reserve(num_new_constraints);
-  int n_constraints = xpress_->GetNumberOfRows();
+  int n_constraints = xpress_->GetNumberOfConstraints();
   for (int i = 0; i < num_new_constraints; ++i) {
     const int64_t id = constraints.ids(i);
     LinearConstraintData& constraint_data =
@@ -126,9 +145,6 @@ absl::Status XpressSolver::AddNewLinearConstraints(
       sense = XPRS_EQUAL;
       rhs = lb;
     } else {
-      if (ub < lb) {
-        return absl::InvalidArgumentError("Lower bound > Upper bound");
-      }
       sense = XPRS_RANGE;
       rhs = ub;
       rng = ub - lb;
@@ -149,9 +165,6 @@ absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
         "Quadratic objectives are not yet implemented in XPRESS solver "
         "interface.");
   }*/
-  if (objective.linear_coefficients().ids_size() == 0) {
-    return absl::OkStatus();
-  }
   std::vector<int> index;
   index.reserve(objective.linear_coefficients().ids_size());
   for (const int64_t id : objective.linear_coefficients().ids()) {
@@ -193,6 +206,18 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // TODO: set branching properties
   // TODO: set lazy constraints
   // TODO: add interrupter using xpress_->Terminate();
+
+  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
+                                                /*supported_events=*/{}));
+
+  RETURN_IF_ERROR(SetParameters(parameters));
+
+  // Check that bounds are not inverted just before solve
+  // XPRESS returns "infeasible" when bounds are inverted
+  {
+    ASSIGN_OR_RETURN(const InvertedBounds inv_bounds, ListInvertedBounds());
+    RETURN_IF_ERROR(inv_bounds.ToStatus());
+  }
 
   RETURN_IF_ERROR(CallXpressSolve(parameters.enable_output()))
       << "Error during XPRESS solve";
@@ -325,7 +350,7 @@ XpressSolver::GetConvexPrimalSolutionIfAvailable(
   }
   PrimalSolutionProto primal_solution;
   primal_solution.set_feasibility_status(getLpSolutionStatus());
-  ASSIGN_OR_RETURN(const double sol_val, xpress_->GetDoubleAttr(XPRS_LPOBJVAL));
+  ASSIGN_OR_RETURN(const double sol_val, GetBestPrimalBound());
   primal_solution.set_objective_value(sol_val);
   XpressVectorToSparseDoubleVector(xpress_->GetPrimalValues().value(),
                                    variables_map_,
@@ -359,13 +384,12 @@ XpressSolver::GetConvexDualSolutionIfAvailable(
   XpressVectorToSparseDoubleVector(xprs_reduced_cost_values, variables_map_,
                                    *dual_solution.mutable_reduced_costs(),
                                    model_parameters.reduced_costs_filter());
-  ASSIGN_OR_RETURN(const double sol_val, xpress_->GetDoubleAttr(XPRS_LPOBJVAL));
+  ASSIGN_OR_RETURN(const double sol_val, GetBestPrimalBound());
   dual_solution.set_objective_value(sol_val);
   dual_solution.set_feasibility_status(getLpSolutionStatus());
   bool dual_feasible_solution_exists =
       (dual_solution.feasibility_status() == SOLUTION_STATUS_FEASIBLE);
-  ASSIGN_OR_RETURN(const double best_dual_bound,
-                   xpress_->GetDoubleAttr(XPRS_LPOBJVAL));
+  ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
   // const double best_dual_bound = is_maximize_ ? kMinusInf : kPlusInf;
   if (dual_feasible_solution_exists || std::isfinite(best_dual_bound)) {
     dual_feasible_solution_exists = true;
@@ -546,6 +570,30 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
       "XpressSolver::ComputeInfeasibleSubsystem is not implemented yet");
 }
 
-MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_XPRESS, XpressSolver::New)
+absl::StatusOr<InvertedBounds> XpressSolver::ListInvertedBounds() const {
+  InvertedBounds inverted_bounds;
+  {
+    ASSIGN_OR_RETURN(const std::vector<double> var_lbs, xpress_->GetVarLb());
+    ASSIGN_OR_RETURN(const std::vector<double> var_ubs, xpress_->GetVarUb());
+    for (const auto& [id, index] : variables_map_) {
+      if (var_lbs[index] > var_ubs[index]) {
+        inverted_bounds.variables.push_back(id);
+      }
+    }
+  }
+  // TODO: we better fetch constraint lb & ub from xpress_ to ensure sync
+  for (const auto& [id, cstr_data] : linear_constraints_map_) {
+    if (cstr_data.lower_bound > cstr_data.upper_bound) {
+      inverted_bounds.linear_constraints.push_back(id);
+    }
+  }
+  // Above code have inserted ids in non-stable order.
+  std::sort(inverted_bounds.variables.begin(), inverted_bounds.variables.end());
+  std::sort(inverted_bounds.linear_constraints.begin(),
+            inverted_bounds.linear_constraints.end());
+  return inverted_bounds;
+}
 
-}  // namespace operations_research::math_opt
+MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_XPRESS, XpressSolver::New)
+}  // namespace math_opt
+}  // namespace operations_research

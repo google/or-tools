@@ -187,52 +187,71 @@ absl::StatusOr<double> Xpress::GetDoubleAttr(int attribute) const {
 }
 
 absl::StatusOr<std::vector<double>> Xpress::GetPrimalValues() const {
-  int nCols = GetNumberOfColumns();
-  XPRSgetintattrib(xpress_model_, XPRS_COLS, &nCols);
-  std::vector<double> values(nCols);
+  int nVars = GetNumberOfVariables();
+  XPRSgetintattrib(xpress_model_, XPRS_COLS, &nVars);
+  std::vector<double> values(nVars);
   RETURN_IF_ERROR(ToStatus(
       XPRSgetlpsol(xpress_model_, values.data(), nullptr, nullptr, nullptr)))
       << "Error getting Xpress LP solution";
   return values;
 }
 
-int Xpress::GetNumberOfRows() const {
+int Xpress::GetNumberOfConstraints() const {
   int n;
   XPRSgetintattrib(xpress_model_, XPRS_ROWS, &n);
   return n;
 }
 
-int Xpress::GetNumberOfColumns() const {
+int Xpress::GetNumberOfVariables() const {
   int n;
   XPRSgetintattrib(xpress_model_, XPRS_COLS, &n);
   return n;
 }
 
 absl::StatusOr<std::vector<double>> Xpress::GetConstraintDuals() const {
-  int nRows = GetNumberOfRows();
-  double values[nRows];
+  int nCons = GetNumberOfConstraints();
+  double values[nCons];
   RETURN_IF_ERROR(
       ToStatus(XPRSgetlpsol(xpress_model_, nullptr, nullptr, values, nullptr)))
       << "Failed to retrieve LP solution from XPRESS";
-  std::vector<double> result(values, values + nRows);
+  std::vector<double> result(values, values + nCons);
   return result;
 }
 absl::StatusOr<std::vector<double>> Xpress::GetReducedCostValues() const {
-  int nCols = GetNumberOfColumns();
-  double values[nCols];
+  int nVars = GetNumberOfVariables();
+  double values[nVars];
   RETURN_IF_ERROR(
       ToStatus(XPRSgetlpsol(xpress_model_, nullptr, nullptr, nullptr, values)))
       << "Failed to retrieve LP solution from XPRESS";
-  std::vector<double> result(values, values + nCols);
+  std::vector<double> result(values, values + nVars);
   return result;
 }
 
 absl::Status Xpress::GetBasis(std::vector<int>& rowBasis,
                               std::vector<int>& colBasis) const {
-  rowBasis.resize(GetNumberOfRows());
-  colBasis.resize(GetNumberOfColumns());
+  rowBasis.resize(GetNumberOfConstraints());
+  colBasis.resize(GetNumberOfVariables());
   return ToStatus(
       XPRSgetbasis(xpress_model_, rowBasis.data(), colBasis.data()));
+}
+
+absl::StatusOr<std::vector<double>> Xpress::GetVarLb() const {
+  int nVars = GetNumberOfVariables();
+  std::vector<double> bounds;
+  bounds.reserve(nVars);
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetlb(xpress_model_, bounds.data(), 0, nVars - 1)))
+      << "Failed to retrieve variable LB from XPRESS";
+  return bounds;
+}
+absl::StatusOr<std::vector<double>> Xpress::GetVarUb() const {
+  int nVars = GetNumberOfVariables();
+  std::vector<double> bounds;
+  bounds.reserve(nVars);
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetub(xpress_model_, bounds.data(), 0, nVars - 1)))
+      << "Failed to retrieve variable UB from XPRESS";
+  return bounds;
 }
 
 }  // namespace operations_research::math_opt
