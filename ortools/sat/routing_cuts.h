@@ -108,7 +108,7 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs);
 // Pairs Network Flow Analysis", Dan Gusfield, 1990,
 // https://ranger.uta.edu/~weems/NOTES5311/LAB/LAB2SPR21/gusfield.huGomory.pdf
 std::vector<int> ComputeGomoryHuTree(
-    int num_nodes, const std::vector<ArcWithLpValue>& relevant_arcs);
+    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs);
 
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the

@@ -3883,6 +3883,21 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
       }
       if (fixed) {
         context_->UpdateRuleStats("linear: tightened into equality");
+        // Compute a new `var` hint so that the lhs of `ct` is equal to `rhs`.
+        int64_t var_hint = rhs.FixedValue();
+        bool var_hint_is_valid = true;
+        for (int j = 0; j < num_vars; ++j) {
+          if (j == i) continue;
+          const int term_var = ct->linear().vars(j);
+          if (!context_->VarHasSolutionHint(term_var)) {
+            var_hint_is_valid = false;
+            break;
+          }
+          var_hint -= context_->SolutionHint(term_var) * ct->linear().coeffs(j);
+        }
+        if (var_hint_is_valid) {
+          context_->UpdateRefSolutionHint(var, var_hint / var_coeff);
+        }
         FillDomainInProto(rhs, ct->mutable_linear());
         negated_rhs = rhs.Negation();
 

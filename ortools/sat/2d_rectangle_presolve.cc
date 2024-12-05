@@ -59,6 +59,14 @@ bool PresolveFixed2dRectangles(
   }
 
   const int original_num_boxes = fixed_boxes->size();
+
+  // The greedy algorithm is really fast. Run it first since it might greatly
+  // reduce the size of large trivial instances.
+  std::vector<Rectangle> empty_vec;
+  if (ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec)) {
+    changed = true;
+  }
+
   IntegerValue min_x_size = std::numeric_limits<IntegerValue>::max();
   IntegerValue min_y_size = std::numeric_limits<IntegerValue>::max();
 
