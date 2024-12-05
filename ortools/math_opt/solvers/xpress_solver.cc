@@ -567,7 +567,7 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
                                          const SolveInterrupter* interrupter) {
   // TODO: implement this
   return absl::UnimplementedError(
-      "XpressSolver::ComputeInfeasibleSubsystem is not implemented yet");
+      "XpressSolver cannot compute infeasible subsystem yet");
 }
 
 absl::StatusOr<InvertedBounds> XpressSolver::ListInvertedBounds() const {

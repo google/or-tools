@@ -85,6 +85,8 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "highs";
     case SolverType::kSantorini:
       return "santorini";
+    case SolverType::kXpress:
+      return "xpress";
   }
   return std::nullopt;
 }

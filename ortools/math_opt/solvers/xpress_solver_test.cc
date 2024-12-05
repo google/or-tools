@@ -56,7 +56,6 @@ INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
                              /*support_interrupter=*/false,
                              /*integer_variables=*/false, "")));
 
-
 // TODO: implement callbacks
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
@@ -82,13 +81,23 @@ InvalidParameterTestParams InvalidThreadsParameters() {
 
 // TODO: add all invalid parameters combinations
 INSTANTIATE_TEST_SUITE_P(XpressInvalidParameterTest, InvalidParameterTest,
-ValuesIn({InvalidThreadsParameters()}));
+                         ValuesIn({InvalidThreadsParameters()}));
 
 INSTANTIATE_TEST_SUITE_P(XpressGenericTest, GenericTest,
                          testing::Values(GenericTestParameters(
                              SolverType::kXpress, /*support_interrupter=*/false,
                              /*integer_variables=*/false,
                              /*expected_log=*/"Optimal solution found")));
+
+// TODO: When XPRESS callbacks are supported, enable this test.
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TimeLimitTest);
+
+// TODO: implement IIS support
+INSTANTIATE_TEST_SUITE_P(XpressInfeasibleSubsystemTest, InfeasibleSubsystemTest,
+                         testing::Values(InfeasibleSubsystemTestParameters(
+                             {.solver_type = SolverType::kXpress,
+                              .support_menu = {
+                                  .supports_infeasible_subsystems = false}})));
 
 }  // namespace
 }  // namespace math_opt
