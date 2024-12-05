@@ -516,7 +516,7 @@ void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
 }
 
 std::vector<int> ComputeGomoryHuTree(
-    int num_nodes, const std::vector<ArcWithLpValue>& relevant_arcs) {
+    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs) {
   // Initialize the graph. Note that we use only arcs with a relevant lp
   // value, so this should be small in practice.
   SimpleMaxFlow max_flow;

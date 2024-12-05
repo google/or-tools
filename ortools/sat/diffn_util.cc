@@ -2015,38 +2015,36 @@ absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
         return a.x_min < b.x_min;
       }));
 
-  // Current y-coordinate intervals that are intersecting the sweep line.
-  // Note that the interval_set only contains disjoint intervals.
-  struct Interval {
-    int index;
+  // Set of box intersection the sweep line. We only store y_min, other
+  // coordinates can be accessed via rectangles[index].coordinate.
+  struct Element {
+    mutable int index;
     IntegerValue y_min;
-    IntegerValue y_max;
-
-    // IMPORTANT: For correctness, we need later insert to be first!
-    bool operator<(const Interval& other) const {
-      if (y_min == other.y_min) return index > other.index;
-      return y_min < other.y_min;
-    }
-
-    std::string to_string() const {
-      return absl::StrCat("[", y_min.value(), ",", y_max.value(), "](", index,
-                          ")");
-    }
+    bool operator<(const Element& other) const { return y_min < other.y_min; }
   };
-
-  // TODO(user): Use fixed binary tree instead, it should be faster.
-  // We just need insert/erase/previous/next API.
-  std::set<Interval> interval_set;
+  std::set<Element> interval_set;
 
   for (int i = 0; i < rectangles.size(); ++i) {
     const IntegerValue x = rectangles[i].x_min;
+    const IntegerValue y_min = rectangles[i].y_min;
+    const IntegerValue y_max = rectangles[i].y_max;
 
-    // Try to add the y part of this rectangle to the set, if there is an
-    // intersection, lazily remove it if its x_max is already passed, otherwise
-    // report the intersection.
-    const Interval to_insert = {i, rectangles[i].y_min, rectangles[i].y_max};
-    auto [it, inserted] = interval_set.insert(to_insert);
-    DCHECK(inserted);
+    // TODO(user): We can handle that, but it require some changes below.
+    DCHECK_LE(y_min, y_max);
+
+    // Try to add this rectangle to the set, if there is an intersection, lazily
+    // remove it if its x_max is already passed, otherwise report the
+    // intersection.
+    auto [it, inserted] = interval_set.insert({i, y_min});
+    if (!inserted) {
+      if (rectangles[it->index].x_max <= x) {
+        // We just replace if the rectangle at position i is stale.
+        it->index = i;
+      } else {
+        // Intersection.
+        return {{it->index, i}};
+      }
+    }
 
     // Note that the intersection is either before 'it', or just after it.
     if (it != interval_set.begin()) {
@@ -2057,8 +2055,9 @@ absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
       if (rectangles[it_before->index].x_max <= x) {
         interval_set.erase(it_before);
       } else {
-        DCHECK_LE(it_before->y_min, to_insert.y_min);
-        if (it_before->y_max > to_insert.y_min) {
+        DCHECK_LE(it_before->y_min, y_min);
+        const IntegerValue y_max_before = rectangles[it_before->index].y_max;
+        if (y_max_before > y_min) {
           // Intersection.
           return {{it_before->index, i}};
         }
@@ -2073,8 +2072,8 @@ absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
         continue;
       }
 
-      DCHECK_LE(to_insert.y_min, it->y_min);
-      if (to_insert.y_max > it->y_min) {
+      DCHECK_LE(y_min, it->y_min);
+      if (y_max > it->y_min) {
         // Intersection.
         return {{it->index, i}};
       }
