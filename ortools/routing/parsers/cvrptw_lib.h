@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/routing/routing.h"
 
@@ -130,7 +131,7 @@ void DisplayPlan(const RoutingIndexManager& manager,
                  const operations_research::Assignment& plan,
                  bool use_same_vehicle_costs, int64_t max_nodes_per_group,
                  int64_t same_vehicle_cost,
-                 const std::vector<std::string>& dimension_names);
+                 absl::Span<const std::string> dimension_names);
 
 }  // namespace operations_research::routing
 

@@ -27,6 +27,7 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/index_manager.h"
@@ -166,7 +167,7 @@ void DisplayPlan(const RoutingIndexManager& manager,
                  const operations_research::Assignment& plan,
                  bool use_same_vehicle_costs, int64_t max_nodes_per_group,
                  int64_t same_vehicle_cost,
-                 const std::vector<std::string>& dimension_names) {
+                 absl::Span<const std::string> dimension_names) {
   std::vector<const RoutingDimension*> dimensions;
   for (const std::string& dimension_name : dimension_names) {
     dimensions.push_back(&routing.GetDimensionOrDie(dimension_name));
