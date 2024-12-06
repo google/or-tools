@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <limits>
 #include <vector>
@@ -51,7 +52,7 @@ class HungarianOptimizer {
  private:
   typedef void (HungarianOptimizer::*Step)();
 
-  typedef enum { NONE, PRIME, STAR } Mark;
+  typedef enum : uint8_t { NONE, PRIME, STAR } Mark;
 
   // Convert the final cost matrix into a set of assignments of preimage->image.
   // Returns the assignment in the two vectors passed as argument, the same as
