@@ -32,8 +32,6 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/xpress/environment.h"
 
-// TODO : try to remove all CHECK_EQ and replace them with absl Status
-
 namespace operations_research::math_opt {
 constexpr int kXpressOk = 0;
 
@@ -88,17 +86,16 @@ absl::Status Xpress::AddVars(const absl::Span<const int> vbegin,
                              const absl::Span<const double> lb,
                              const absl::Span<const double> ub,
                              const absl::Span<const char> vtype) {
-  CHECK_EQ(vind.size(), vval.size());
   const int num_vars = static_cast<int>(lb.size());
-  CHECK_EQ(ub.size(), num_vars);
-  CHECK_EQ(vtype.size(), num_vars);
+  if (vind.size() != vval.size() || ub.size() != num_vars ||
+      vtype.size() != num_vars || (!obj.empty() && obj.size() != num_vars) ||
+      (!vbegin.empty() && vbegin.size() != num_vars)) {
+      return absl::InvalidArgumentError(
+          "Xpress::AddVars arguments are of inconsistent sizes");
+    }
   double* c_obj = nullptr;
   if (!obj.empty()) {
-    CHECK_EQ(obj.size(), num_vars);
     c_obj = const_cast<double*>(obj.data());
-  }
-  if (!vbegin.empty()) {
-    CHECK_EQ(vbegin.size(), num_vars);
   }
   // TODO: look into int64 support for number of vars (use XPRSaddcols64)
   return ToStatus(XPRSaddcols(xpress_model_, num_vars, 0, c_obj, nullptr,
@@ -109,7 +106,10 @@ absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,
                                 const absl::Span<const double> rhs,
                                 const absl::Span<const double> rng) {
   const int num_cons = static_cast<int>(sense.size());
-  CHECK_EQ(rhs.size(), num_cons);
+  if (rhs.size() != num_cons) {
+    return absl::InvalidArgumentError(
+        "RHS must have one element per constraint.");
+  }
   return ToStatus(XPRSaddrows(xpress_model_, num_cons, 0, sense.data(),
                               rhs.data(), rng.data(), NULL, NULL, NULL));
 }
@@ -233,6 +233,12 @@ absl::Status Xpress::GetBasis(std::vector<int>& rowBasis,
   colBasis.resize(GetNumberOfVariables());
   return ToStatus(
       XPRSgetbasis(xpress_model_, rowBasis.data(), colBasis.data()));
+}
+
+absl::Status Xpress::SetStartingBasis(std::vector<int>& rowBasis,
+                                      std::vector<int>& colBasis) const {
+  return ToStatus(
+      XPRSloadbasis(xpress_model_, rowBasis.data(), colBasis.data()));
 }
 
 absl::StatusOr<std::vector<double>> Xpress::GetVarLb() const {

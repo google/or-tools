@@ -18,6 +18,7 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/solve_result.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
@@ -26,7 +27,7 @@
 namespace operations_research {
 namespace math_opt {
 namespace {
-// TODO: add all unsupported parameter combinations here
+
 absl::Status CheckParameters(const SolveParametersProto& parameters) {
   std::vector<std::string> warnings;
   if (parameters.has_threads() && parameters.threads() > 1) {
@@ -59,14 +60,14 @@ absl::Status CheckParameters(const SolveParametersProto& parameters) {
 }  // namespace
 
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
-    .integer_variables = SupportType::kNotImplemented,
-    .multi_objectives = SupportType::kNotImplemented,
-    .quadratic_objectives = SupportType::kNotImplemented,
-    .quadratic_constraints = SupportType::kNotImplemented,
-    .second_order_cone_constraints = SupportType::kNotImplemented,
-    .sos1_constraints = SupportType::kNotImplemented,
-    .sos2_constraints = SupportType::kNotImplemented,
-    .indicator_constraints = SupportType::kNotImplemented};
+    .integer_variables = SupportType::kNotSupported,
+    .multi_objectives = SupportType::kNotSupported,
+    .quadratic_objectives = SupportType::kNotSupported,
+    .quadratic_constraints = SupportType::kNotSupported,
+    .second_order_cone_constraints = SupportType::kNotSupported,
+    .sos1_constraints = SupportType::kNotSupported,
+    .sos2_constraints = SupportType::kNotSupported,
+    .indicator_constraints = SupportType::kNotSupported};
 
 absl::StatusOr<std::unique_ptr<XpressSolver>> XpressSolver::New(
     const ModelProto& input_model, const SolverInterface::InitArgs& init_args) {
@@ -118,7 +119,7 @@ absl::Status XpressSolver::AddNewVariables(
                                    variable_type));
 
   // Not adding names for performance (have to call XPRSaddnames)
-  // TODO : keep names in a cache and add them when needed?
+  // TODO: keep names in a cache and add them when needed?
 
   return absl::OkStatus();
 }
@@ -175,13 +176,6 @@ absl::Status XpressSolver::AddNewLinearConstraints(
 }
 
 absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
-  // TODO: reactivate the following code after figuring out why the condition is
-  // true for LP tests
-  /*if (objective.has_quadratic_coefficients()) {
-    return absl::UnimplementedError(
-        "Quadratic objectives are not yet implemented in XPRESS solver "
-        "interface.");
-  }*/
   std::vector<int> index;
   index.reserve(objective.linear_coefficients().ids_size());
   for (const int64_t id : objective.linear_coefficients().ids()) {
@@ -215,14 +209,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, Callback cb,
     const SolveInterrupter* interrupter) {
+  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+      model_parameters, kXpressSupportedStructures, "XPRESS"));
   const absl::Time start = absl::Now();
-
-  // TODO: set solve parameters
-  // TODO: set basis
-  // TODO: set hints
-  // TODO: set branching properties
-  // TODO: set lazy constraints
-  // TODO: add interrupter using xpress_->Terminate();
 
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
@@ -236,6 +225,11 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     RETURN_IF_ERROR(inv_bounds.ToStatus());
   }
 
+  // Set initial basis
+  if (model_parameters.has_initial_basis()) {
+    RETURN_IF_ERROR(SetXpressStartingBasis(model_parameters.initial_basis()));
+  }
+
   RETURN_IF_ERROR(CallXpressSolve(parameters)) << "Error during XPRESS solve";
 
   ASSIGN_OR_RETURN(SolveResultProto solve_result,
@@ -244,6 +238,20 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   return solve_result;
 }
 
+inline std::string GetOptimizationFlags(
+    const SolveParametersProto& parameters) {
+  switch (parameters.lp_algorithm()) {
+    case LP_ALGORITHM_PRIMAL_SIMPLEX:
+      return "p";
+    case LP_ALGORITHM_DUAL_SIMPLEX:
+      return "d";
+    case LP_ALGORITHM_BARRIER:
+      return "b";
+    default:
+      // this makes XPRESS use default algorithm (XPRS_DEFAULTALG)
+      return "";
+  }
+}
 absl::Status XpressSolver::CallXpressSolve(
     const SolveParametersProto& parameters) {
   // Enable screen output right before solve
@@ -255,50 +263,10 @@ absl::Status XpressSolver::CallXpressSolve(
   if (is_mip_) {
     ASSIGN_OR_RETURN(xpress_status_, xpress_->MipOptimizeAndGetStatus());
   } else {
-    std::string flags;
-    // TODO: put "p", "d", "b" in environment.h?
-    // TODO: refactor this, it is ugly
-    switch (parameters.lp_algorithm()) {
-      case LP_ALGORITHM_PRIMAL_SIMPLEX:
-        flags = "p";
-        if (parameters.has_iteration_limit()) {
-          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
-                                              parameters.iteration_limit()));
-        }
-        break;
-      case LP_ALGORITHM_DUAL_SIMPLEX:
-        flags = "d";
-        if (parameters.has_iteration_limit()) {
-          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
-                                              parameters.iteration_limit()));
-        }
-        break;
-      case LP_ALGORITHM_BARRIER:
-        flags = "b";
-        if (parameters.has_iteration_limit()) {
-          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_BARITERLIMIT,
-                                              parameters.iteration_limit()));
-          // we also have to set simplex iter limits because barrier iterations
-          // call simplex iterations
-          // TODO: verify this
-          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
-                                              parameters.iteration_limit()));
-        }
-        break;
-      default:
-        // this makes XPRESS use default algorithm (XPRS_DEFAULTALG)
-        flags = "";
-        if (parameters.has_iteration_limit()) {
-          // TODO: fetch the default alg and set its limit? or default to primal
-          // simplex
-          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT,
-                                              parameters.iteration_limit()));
-          RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_BARITERLIMIT,
-                                              parameters.iteration_limit()));
-        }
-        break;
-    }
-    ASSIGN_OR_RETURN(xpress_status_, xpress_->LpOptimizeAndGetStatus(flags));
+    RETURN_IF_ERROR(SetLpIterLimits(parameters))
+        << "Could not set iteration limits.";
+    ASSIGN_OR_RETURN(xpress_status_, xpress_->LpOptimizeAndGetStatus(
+                                         GetOptimizationFlags(parameters)));
   }
   // Post-solve
   if (!(is_mip_ ? (xpress_status_ == XPRS_MIP_OPTIMAL)
@@ -310,6 +278,24 @@ absl::Status XpressSolver::CallXpressSolve(
     RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_OUTPUTLOG, 0))
         << "Unable to disable XPRESS logs";
   }
+  return absl::OkStatus();
+}
+
+absl::Status XpressSolver::SetLpIterLimits(
+    const SolveParametersProto& parameters) {
+  // If the user has set no limits, we still have to reset the limits
+  // explicitly to their default values, else the parameters could be kept
+  // between solves. XPRESS default value for XPRS_LPITERLIMIT is 2147483647
+  int lp_iter_limit = parameters.has_iteration_limit()
+                          ? parameters.iteration_limit()
+                          : 2147483647;
+  // XPRESS default value for XPRS_BARITERLIMIT is 500
+  int bar_iter_limit =
+      parameters.has_iteration_limit() ? parameters.iteration_limit() : 500;
+  RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT, lp_iter_limit))
+      << "Could not set XPRS_LPITERLIMIT";
+  RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_BARITERLIMIT, bar_iter_limit))
+      << "Could not set XPRS_BARITERLIMIT";
   return absl::OkStatus();
 }
 
@@ -396,6 +382,9 @@ SolutionStatusProto XpressSolver::getLpSolutionStatus() const {
   switch (xpress_status_) {
     case XPRS_LP_OPTIMAL:
     case XPRS_LP_UNFINISHED:
+      // TODO: XPRESS returns XPRS_LP_UNFINISHED even if it found no solution
+      // maybe we should adapt this code (try it out with LpIncompleteSolveTest,
+      // by setting "initial basis" support flags to true)
       return SOLUTION_STATUS_FEASIBLE;
     case XPRS_LP_INFEAS:
     case XPRS_LP_CUTOFF:
@@ -473,14 +462,19 @@ XpressSolver::GetConvexDualSolutionIfAvailable(
       .feasible_solution_exists = dual_feasible_solution_exists};
 }
 
-inline BasisStatusProto ConvertVariableStatus(const int status) {
+inline BasisStatusProto XpressToMathOptBasisStatus(const int status,
+                                                   bool isConstraint) {
+  // XPRESS row basis status is that of the slack variable
+  // For example, if the slack variable is at LB, the constraint is at UB
   switch (status) {
     case XPRS_BASIC:
       return BASIS_STATUS_BASIC;
     case XPRS_AT_LOWER:
-      return BASIS_STATUS_AT_LOWER_BOUND;
+      return isConstraint ? BASIS_STATUS_AT_UPPER_BOUND
+                          : BASIS_STATUS_AT_LOWER_BOUND;
     case XPRS_AT_UPPER:
-      return BASIS_STATUS_AT_UPPER_BOUND;
+      return isConstraint ? BASIS_STATUS_AT_LOWER_BOUND
+                          : BASIS_STATUS_AT_UPPER_BOUND;
     case XPRS_FREE_SUPER:
       return BASIS_STATUS_FREE;
     default:
@@ -488,21 +482,39 @@ inline BasisStatusProto ConvertVariableStatus(const int status) {
   }
 }
 
-inline BasisStatusProto ConvertConstraintStatus(const int status) {
+inline int MathOptToXpressBasisStatus(const BasisStatusProto status,
+                                      bool isConstraint) {
   // XPRESS row basis status is that of the slack variable
   // For example, if the slack variable is at LB, the constraint is at UB
   switch (status) {
-    case XPRS_BASIC:
-      return BASIS_STATUS_BASIC;
-    case XPRS_AT_LOWER:
-      return BASIS_STATUS_AT_UPPER_BOUND;
-    case XPRS_AT_UPPER:
-      return BASIS_STATUS_AT_LOWER_BOUND;
-    case XPRS_FREE_SUPER:
-      return BASIS_STATUS_FREE;
+    case BASIS_STATUS_BASIC:
+      return XPRS_BASIC;
+    case BASIS_STATUS_AT_LOWER_BOUND:
+      return isConstraint ? XPRS_AT_UPPER : XPRS_AT_LOWER;
+    case BASIS_STATUS_AT_UPPER_BOUND:
+      return isConstraint ? XPRS_AT_LOWER : XPRS_AT_UPPER;
+    case BASIS_STATUS_FREE:
+      return XPRS_FREE_SUPER;
     default:
-      return BASIS_STATUS_UNSPECIFIED;
+      return XPRS_FREE_SUPER;
   }
+}
+
+absl::Status XpressSolver::SetXpressStartingBasis(const BasisProto& basis) {
+  std::vector<int> xpress_var_basis_status(xpress_->GetNumberOfVariables());
+  for (const auto [id, value] : MakeView(basis.variable_status())) {
+    xpress_var_basis_status[variables_map_.at(id)] =
+        MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value), false);
+  }
+  std::vector<int> xpress_constr_basis_status(
+      xpress_->GetNumberOfConstraints());
+  for (const auto [id, value] : MakeView(basis.constraint_status())) {
+    xpress_constr_basis_status[linear_constraints_map_.at(id)
+                                   .constraint_index] =
+        MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value), true);
+  }
+  return xpress_->SetStartingBasis(xpress_constr_basis_status,
+                                   xpress_var_basis_status);
 }
 
 absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
@@ -517,8 +529,8 @@ absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
   // Variable basis
   for (auto [variable_id, xprs_variable_index] : variables_map_) {
     basis.mutable_variable_status()->add_ids(variable_id);
-    const BasisStatusProto variable_status =
-        ConvertVariableStatus(xprs_variable_basis_status[xprs_variable_index]);
+    const BasisStatusProto variable_status = XpressToMathOptBasisStatus(
+        xprs_variable_basis_status[xprs_variable_index], false);
     if (variable_status == BASIS_STATUS_UNSPECIFIED) {
       return absl::InternalError(
           absl::StrCat("Invalid Xpress variable basis status: ",
@@ -530,8 +542,8 @@ absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
   // Constraint basis
   for (auto [constraint_id, xprs_ct_index] : linear_constraints_map_) {
     basis.mutable_constraint_status()->add_ids(constraint_id);
-    const BasisStatusProto status = ConvertConstraintStatus(
-        xprs_constraint_basis_status[xprs_ct_index.constraint_index]);
+    const BasisStatusProto status = XpressToMathOptBasisStatus(
+        xprs_constraint_basis_status[xprs_ct_index.constraint_index], true);
     if (status == BASIS_STATUS_UNSPECIFIED) {
       return absl::InternalError(absl::StrCat(
           "Invalid Xpress constraint basis status: ",
@@ -557,7 +569,6 @@ absl::StatusOr<SolveStatsProto> XpressSolver::GetSolveStats(
   CHECK_OK(util_time::EncodeGoogleApiProto(absl::Now() - start,
                                            solve_stats.mutable_solve_time()));
 
-  // TODO : only run one of the following depending on algorithm?
   // LP simplex iterations
   {
     ASSIGN_OR_RETURN(const int iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
@@ -569,7 +580,7 @@ absl::StatusOr<SolveStatsProto> XpressSolver::GetSolveStats(
     solve_stats.set_barrier_iterations(iters);
   }
 
-  // TODO : complete these stats
+  // TODO: complete these stats
   return solve_stats;
 }
 
@@ -639,10 +650,7 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
 
 absl::StatusOr<bool> XpressSolver::Update(
     const ModelUpdateProto& model_update) {
-  if (!UpdateIsSupported(model_update, kXpressSupportedStructures)) {
-    return false;
-  }
-  // TODO: implement Update
+  // Not implemented yet
   return false;
 }
 
@@ -650,7 +658,6 @@ absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
                                          MessageCallback message_cb,
                                          const SolveInterrupter* interrupter) {
-  // TODO: implement this
   return absl::UnimplementedError(
       "XpressSolver cannot compute infeasible subsystem yet");
 }
@@ -666,7 +673,9 @@ absl::StatusOr<InvertedBounds> XpressSolver::ListInvertedBounds() const {
       }
     }
   }
-  // TODO: we better fetch constraint lb & ub from xpress_ to ensure sync
+  // We could have used XPRSgetrhsrange to check if one is negative. However,
+  // XPRSaddrows ignores the sign of the RHS range and takes the absolute value
+  // in all cases. So we need to do the following checks on the internal model.
   for (const auto& [id, cstr_data] : linear_constraints_map_) {
     if (cstr_data.lower_bound > cstr_data.upper_bound) {
       inverted_bounds.linear_constraints.push_back(id);

@@ -193,10 +193,10 @@ class XpressSolver : public SolverInterface {
   int get_model_index(const LinearConstraintData& index) const {
     return index.constraint_index;
   }
-
   SolutionStatusProto getLpSolutionStatus() const;
-
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
+  absl::Status SetXpressStartingBasis(const BasisProto& basis);
+  absl::Status SetLpIterLimits(const SolveParametersProto& parameters);
 
   // Fields to track the number of Xpress variables and constraints. These
   // quantities are updated immediately after adding or removing to the model,
