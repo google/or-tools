@@ -24,7 +24,6 @@
 #include <numeric>
 #include <optional>
 #include <ostream>
-#include <set>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -33,6 +32,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
@@ -2022,7 +2022,10 @@ absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
     IntegerValue y_min;
     bool operator<(const Element& other) const { return y_min < other.y_min; }
   };
-  std::set<Element> interval_set;
+
+  // Note: To use btree_set that has no iterator stability, we have to be
+  // a bit careful below.
+  absl::btree_set<Element> interval_set;
 
   for (int i = 0; i < rectangles.size(); ++i) {
     const IntegerValue x = rectangles[i].x_min;
@@ -2044,31 +2047,36 @@ absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
         // Intersection.
         return {{it->index, i}};
       }
-    }
+    } else {
+      // If there was no element at position y_min, we need to test if the
+      // interval before is stale or if it overlap with the new one.
+      if (it != interval_set.begin()) {
+        auto it_before = it;
+        --it_before;
 
-    // Note that the intersection is either before 'it', or just after it.
-    if (it != interval_set.begin()) {
-      auto it_before = it;
-      --it_before;
-
-      // Lazy erase stale entry.
-      if (rectangles[it_before->index].x_max <= x) {
-        interval_set.erase(it_before);
-      } else {
-        DCHECK_LE(it_before->y_min, y_min);
-        const IntegerValue y_max_before = rectangles[it_before->index].y_max;
-        if (y_max_before > y_min) {
-          // Intersection.
-          return {{it_before->index, i}};
+        // Lazy erase stale entry.
+        if (rectangles[it_before->index].x_max <= x) {
+          // For absl::btree_set we don't have iterator stability, so we do need
+          // to re-assign 'it' to the element just after the one we erased.
+          it = interval_set.erase(it_before);
+        } else {
+          DCHECK_LE(it_before->y_min, y_min);
+          const IntegerValue y_max_before = rectangles[it_before->index].y_max;
+          if (y_max_before > y_min) {
+            // Intersection.
+            return {{it_before->index, i}};
+          }
         }
       }
     }
+
+    // We handled the part before, now we need to deal with the interval that
+    // starts after y_min.
     ++it;
     while (it != interval_set.end()) {
       // Lazy erase stale entry.
       if (rectangles[it->index].x_max <= x) {
-        auto to_erase = it++;
-        interval_set.erase(to_erase);
+        it = interval_set.erase(it);
         continue;
       }
 
