@@ -1271,7 +1271,7 @@ class LnsSolver : public SubSolver {
           static_cast<double>(generator_->num_fully_solved_calls()) /
           static_cast<double>(num_calls);
       const std::string lns_info = absl::StrFormat(
-          "%s (d=%0.3f s=%i t=%0.2f p=%0.2f stall=%d h=%s)", source_info,
+          "%s (d=%0.2e s=%i t=%0.2f p=%0.2f stall=%d h=%s)", source_info,
           data.difficulty, task_id, data.deterministic_limit,
           fully_solved_proportion, stall, search_info);
 
@@ -1550,18 +1550,22 @@ class LnsSolver : public SubSolver {
         }
         if (neighborhood.is_simple) {
           absl::StrAppend(
-              &s, " [", "relaxed:", neighborhood.num_relaxed_variables,
-              " in_obj:", neighborhood.num_relaxed_variables_in_objective,
+              &s, " [",
+              "relaxed:", FormatCounter(neighborhood.num_relaxed_variables),
+              " in_obj:",
+              FormatCounter(neighborhood.num_relaxed_variables_in_objective),
               " compo:",
               neighborhood.variables_that_can_be_fixed_to_local_optimum.size(),
               "]");
         }
-        SOLVER_LOG(shared_->logger, s, " [d:", data.difficulty,
-                   ", id:", task_id, ", dtime:", data.deterministic_time, "/",
-                   data.deterministic_limit,
-                   ", status:", ProtoEnumToString<CpSolverStatus>(data.status),
-                   ", #calls:", generator_->num_calls(),
-                   ", p:", fully_solved_proportion, "]");
+        SOLVER_LOG(
+            shared_->logger, s,
+            " [d:", absl::StrFormat("%0.2e", data.difficulty), ", id:", task_id,
+            ", dtime:", absl::StrFormat("%0.2f", data.deterministic_time), "/",
+            data.deterministic_limit,
+            ", status:", ProtoEnumToString<CpSolverStatus>(data.status),
+            ", #calls:", generator_->num_calls(),
+            ", p:", fully_solved_proportion, "]");
       }
     };
   }

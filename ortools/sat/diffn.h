@@ -127,6 +127,11 @@ class NonOverlappingRectanglesDisjunctivePropagator
   std::vector<int> order_;
   CompactVectorVector<int> events_overlapping_boxes_;
 
+  // List of box that are fully fixed in the current dive, and for which we
+  // know they are no conflict between them.
+  bool rev_is_in_dive_ = false;
+  Bitset64<int> already_checked_fixed_boxes_;
+
   absl::flat_hash_set<absl::Span<const int>> reduced_overlapping_boxes_;
   std::vector<absl::Span<const int>> boxes_to_propagate_;
   std::vector<absl::Span<const int>> disjoint_boxes_;

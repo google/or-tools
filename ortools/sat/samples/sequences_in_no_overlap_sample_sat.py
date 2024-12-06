@@ -29,7 +29,7 @@ def sequence_constraints_with_circuit(
     sequence_length_constraints: Dict[str, Tuple[int, int]],
     sequence_cumul_constraints: Dict[str, Tuple[int, int, int]],
 ) -> Sequence[Tuple[cp_model.IntVar, int]]:
-    """This method uses a circuit constraint to rank tasks.
+    """This method enforces constraints on sequences of tasks of the same type.
 
     This method assumes that all starts are disjoint, meaning that all tasks have
     a strictly positive duration, and they appear in the same NoOverlap
@@ -42,8 +42,10 @@ def sequence_constraints_with_circuit(
 
     The circuit constraint ensures there is at most 1 hamiltonian cycle of
     length > 1. If no such path exists, then no tasks are active.
-    We also need to enforce that any hamiltonian cycle of size > 1 must contain
-    the node 0. And thus, there is a self loop on node 0 iff the circuit is empty.
+    In this simplified model, all tasks must be performed.
+
+    Note that we do not enforce the minimum length constraint on the last sequence
+    of tasks of the same type.
 
     Args:
       model: The CpModel to add the constraints to.
@@ -52,13 +54,13 @@ def sequence_constraints_with_circuit(
       task_types: The type of all tasks.
       lengths: The computed length of the current sequence for each task.
       cumuls: The computed cumul of the current sequence for each task.
-      sequence_length_constraints: the array of tuple (`task_type`,
-        (`length_min`, `length_max`)) that specifies the minimum and maximum
-        length of the sequence of tasks of type `task_type`.
-      sequence_cumul_constraints: the array of tuple (`task_type`,
-        (`soft_max`, `linear_penalty`, `hard_max`)) that specifies that if the
-        cumul of the sequence of tasks of type `task_type` is greater than
-        `soft_max`, then `linear_penalty` must be added to the cost
+      sequence_length_constraints: the array of tuple (`task_type`, (`length_min`,
+        `length_max`)) that specifies the minimum and maximum length of the
+        sequence of tasks of type `task_type`.
+      sequence_cumul_constraints: the array of tuple (`task_type`, (`soft_max`,
+        `linear_penalty`, `hard_max`)) that specifies that if the cumul of the
+        sequence of tasks of type `task_type` is greater than `soft_max`, then
+        `linear_penalty` must be added to the cost
 
     Returns:
       The list of pairs (Boolean variables, penalty) to be added to the objective.
@@ -77,7 +79,7 @@ def sequence_constraints_with_circuit(
         model.add(cumuls[i] == durations[i]).only_enforce_if(start_lit)
 
         # As there are no other constraints on the problem, we can add this
-        # redundant constraint.
+        # redundant constraint. This is not valid in general.
         model.add(starts[i] == 0).only_enforce_if(start_lit)
 
         # if node i is last.
@@ -106,32 +108,37 @@ def sequence_constraints_with_circuit(
             # In a non pure problem, the following equality must be an inequality.
             model.add(starts[j] == starts[i] + durations[i]).only_enforce_if(lit)
 
-            # We add the constraint to incrementally maintain the length and the cumul
-            # variables of the sequence.
+            # We add the constraints to incrementally maintain the length and the
+            # cumul variables of the sequence.
             if task_types[i] == task_types[j]:  # Same task type.
                 # Increase the length of the sequence by 1.
                 model.add(lengths[j] == lengths[i] + 1).only_enforce_if(lit)
 
-                # Make sure the length of the sequence is within the bounds.
-                length_max = sequence_length_constraints[task_types[j]][1]
-                model.add(lengths[j] <= length_max).only_enforce_if(lit)
+                # Make sure the length of the sequence is within the bounds of the task
+                # type.
+                type_length_max = sequence_length_constraints[task_types[j]][1]
+                model.add(lengths[j] <= type_length_max).only_enforce_if(lit)
 
                 # Increase the cumul of the sequence by the duration of the task.
                 model.add(cumuls[j] == cumuls[i] + durations[j]).only_enforce_if(lit)
 
                 # Make sure the cumul of the sequence is within the bounds.
-                cumul_hard_max = sequence_cumul_constraints[task_types[j]][2]
-                model.add(cumuls[j] <= cumul_hard_max).only_enforce_if(lit)
+                type_cumul_hard_max = sequence_cumul_constraints[task_types[j]][2]
+                model.add(cumuls[j] <= type_cumul_hard_max).only_enforce_if(lit)
 
-            else:  # Switching task type.
+            else:
+                # Switching task type. task[i] is the last task of the previous
+                # sequence, task[j] is the first task of the new sequence.
+                #
                 # Reset the length to 1.
                 model.add(lengths[j] == 1).only_enforce_if(lit)
 
                 # Make sure the previous length is within bounds.
-                length_min = sequence_length_constraints[task_types[i]][0]
-                model.add(lengths[i] >= length_min).only_enforce_if(lit)
+                type_length_min = sequence_length_constraints[task_types[i]][0]
+                model.add(lengths[i] >= type_length_min).only_enforce_if(lit)
 
                 # Reset the cumul to the duration of the task.
+                # Note we do not check that the duration of the task is within bounds.
                 model.add(cumuls[j] == durations[j]).only_enforce_if(lit)
 
                 # Penalize the cumul of the previous task w.r.t. the soft max
@@ -170,13 +177,13 @@ def sequences_in_no_overlap_sample_sat():
         (2, "B"),
     ]
 
-    # Sequence length constraints on task_types: (hard_min, hard_max)
+    # Sequence length constraints per task_types: (hard_min, hard_max)
     sequence_length_constraints = {
         "A": (1, 3),
         "B": (2, 2),
     }
 
-    # Sequence cumul constraints on task_types:
+    # Sequence accumulated durations constraints per task_types:
     #     (soft_max, linear_penalty, hard_max)
     sequence_cumul_constraints = {
         "A": (6, 1, 10),
@@ -222,8 +229,8 @@ def sequences_in_no_overlap_sample_sat():
     # Adds NoOverlap constraint.
     model.add_no_overlap(intervals)
 
-    # Adds the constraints on the partial lengths and cumuls of the sequence of
-    # tasks.
+    # Adds the constraints on the lengths and cumuls of maximal sequences of
+    # tasks of the same type.
     penalty_terms = sequence_constraints_with_circuit(
         model,
         starts,
@@ -244,7 +251,11 @@ def sequences_in_no_overlap_sample_sat():
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         # Prints out the makespan and the start times and ranks of all tasks.
-        print(f"Optimal cost: {solver.objective_value}")
+        if status == cp_model.OPTIMAL:
+            print(f"Optimal cost: {solver.objective_value}")
+        else:
+            print(f"Feasible cost: {solver.objective_value}")
+
         to_sort = []
         for t in all_tasks:
             to_sort.append((solver.value(starts[t]), t))
@@ -256,7 +267,7 @@ def sequences_in_no_overlap_sample_sat():
                 f" {solver.value(lengths[t])}, cumul = {solver.value(cumuls[t])} "
             )
     else:
-        print(f"Solver exited with nonoptimal status: {status}")
+        print(f"Solver exited with the following status: {status}")
 
 
 sequences_in_no_overlap_sample_sat()

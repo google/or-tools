@@ -240,7 +240,7 @@ void SharedStatTables::AddLnsStat(absl::string_view name,
   lns_table_.push_back(
       {FormatName(name), absl::StrCat(num_improving_calls, "/", num_calls),
        absl::StrFormat("%2.0f%%", 100 * fully_solved_proportion),
-       absl::StrFormat("%0.2f", difficulty),
+       absl::StrFormat("%0.2e", difficulty),
        absl::StrFormat("%0.2f", deterministic_limit)});
 }
 

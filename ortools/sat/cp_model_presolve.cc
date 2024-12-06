@@ -177,7 +177,7 @@ bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
     if (context_->VariableIsUniqueAndRemovable(literal)) {
       // We can simply set it to false and ignore the constraint in this case.
       context_->UpdateRuleStats("enforcement: literal not used");
-      CHECK(context_->SetLiteralToFalse(literal));
+      CHECK(context_->SetLiteralAndHintToFalse(literal));
       return RemoveConstraint(ct);
     }
 
@@ -190,7 +190,7 @@ bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
       if (RefIsPositive(literal) == (obj_coeff > 0)) {
         // It is just more advantageous to set it to false!
         context_->UpdateRuleStats("enforcement: literal with unique direction");
-        CHECK(context_->SetLiteralToFalse(literal));
+        CHECK(context_->SetLiteralAndHintToFalse(literal));
         return RemoveConstraint(ct);
       }
     }
@@ -346,7 +346,7 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
     // objective var usage by 1).
     if (context_->VariableIsUniqueAndRemovable(literal)) {
       context_->UpdateRuleStats("bool_or: singleton");
-      if (!context_->SetLiteralToTrue(literal)) return true;
+      if (!context_->SetLiteralAndHintToTrue(literal)) return true;
       return RemoveConstraint(ct);
     }
     if (context_->tmp_literal_set.contains(NegatedRef(literal))) {
@@ -448,8 +448,7 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
       changed = true;
       context_->UpdateRuleStats(
           "bool_and: setting unused literal in rhs to true");
-      context_->UpdateLiteralSolutionHint(literal, true);
-      if (!context_->SetLiteralToTrue(literal)) return true;
+      if (!context_->SetLiteralAndHintToTrue(literal)) return true;
       continue;
     }
 
@@ -495,8 +494,15 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
       // The other case where the constraint is redundant is treated elsewhere.
       if (obj_coeff < 0) {
         context_->UpdateRuleStats("bool_and: dual equality.");
-        context_->StoreBooleanEqualityRelation(enforcement,
-                                               ct->bool_and().literals(0));
+        // Extending `ct` = "enforcement => implied_literal" to an equality can
+        // break the hint only if hint(implied_literal) = 1 and
+        // hint(enforcement) = 0. But in this case the `enforcement` hint can be
+        // increased to 1 to preserve the hint feasibility.
+        const int implied_literal = ct->bool_and().literals(0);
+        if (context_->LiteralSolutionHintIs(implied_literal, true)) {
+          context_->UpdateLiteralSolutionHint(enforcement, true);
+        }
+        context_->StoreBooleanEqualityRelation(enforcement, implied_literal);
       }
     }
   }
@@ -7758,7 +7764,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
       // Such variable needs to be fixed to some value for the SAT postsolve to
       // work.
       if (!context_->IsFixed(var)) {
-        CHECK(context_->IntersectDomainWith(
+        CHECK(context_->IntersectDomainWithAndUpdateHint(
             var, Domain(context_->DomainOf(var).SmallestValue())));
       }
       context_->MarkVariableAsRemoved(var);

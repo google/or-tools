@@ -633,6 +633,16 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
   return SetLiteralToFalse(NegatedRef(lit));
 }
 
+ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralAndHintToFalse(int lit) {
+  const int var = PositiveRef(lit);
+  const int64_t value = RefIsPositive(lit) ? 0 : 1;
+  return IntersectDomainWithAndUpdateHint(var, Domain(value));
+}
+
+ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralAndHintToTrue(int lit) {
+  return SetLiteralAndHintToFalse(NegatedRef(lit));
+}
+
 bool PresolveContext::ConstraintIsInactive(int index) const {
   const ConstraintProto& ct = working_model->constraints(index);
   if (ct.constraint_case() ==
@@ -1956,11 +1966,11 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
       var_to_constraints_[var].contains(kObjectiveConstraint)) {
     UpdateRuleStats("objective: variable not used elsewhere");
     if (coeff > 0) {
-      if (!IntersectDomainWith(var, Domain(MinOf(var)))) {
+      if (!IntersectDomainWithAndUpdateHint(var, Domain(MinOf(var)))) {
         return false;
       }
     } else {
-      if (!IntersectDomainWith(var, Domain(MaxOf(var)))) {
+      if (!IntersectDomainWithAndUpdateHint(var, Domain(MaxOf(var)))) {
         return false;
       }
     }
