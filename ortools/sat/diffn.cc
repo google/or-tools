@@ -706,56 +706,109 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
         bool fast_propagation, SchedulingConstraintHelper* x,
         SchedulingConstraintHelper* y) {
-  // Note that since we only push bounds on x, we cache the value for y just
-  // once.
-  if (!y->SynchronizeAndSetTimeDirection(true)) return false;
+  // When they are many fixed box that we know do not overlap, we compute
+  // the bounding box of the others, and we can exclude all boxes outside this
+  // region. This can help, especially for some LNS neighborhood.
+  int num_fixed = 0;
+  int num_others = 0;
+  Rectangle other_bounding_box;
 
-  // Compute relevant boxes, the one with a mandatory part of y. Because we will
+  // push_back() can be slow as it might not be inlined, so we manage directly
+  // our "boxes" in boxes_data[0 .. num_boxes], with a memory that is always big
+  // enough.
+  indexed_boxes_.resize(y->NumTasks());
+  int num_boxes = 0;
+  IndexedInterval* boxes_data = indexed_boxes_.data();
+
+  // Compute relevant boxes, the one with a mandatory part on y. Because we will
   // need to sort it this way, we consider them by increasing start max.
-  indexed_boxes_.clear();
   const auto temp = y->TaskByIncreasingNegatedStartMax();
+  auto fixed_boxes = already_checked_fixed_boxes_.view();
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
-    // Ignore absent boxes.
-    if (x->IsAbsent(box) || y->IsAbsent(box)) continue;
 
-    // Ignore boxes where the relevant presence literal is only on the y
-    // dimension, or if both intervals are optionals with different literals.
-    if (x->IsPresent(box) && !y->IsPresent(box)) continue;
-    if (!x->IsPresent(box) && !y->IsPresent(box) &&
-        x->PresenceLiteral(box) != y->PresenceLiteral(box)) {
-      continue;
+    // By definition, fixed boxes are always present.
+    // Doing this check optimize a bit the case where we have many fixed boxes.
+    if (!fixed_boxes[box]) {
+      // Ignore absent boxes.
+      if (x->IsAbsent(box) || y->IsAbsent(box)) continue;
+
+      // Ignore boxes where the relevant presence literal is only on the y
+      // dimension, or if both intervals are optionals with different literals.
+      if (x->IsPresent(box) && !y->IsPresent(box)) continue;
+      if (!x->IsPresent(box) && !y->IsPresent(box) &&
+          x->PresenceLiteral(box) != y->PresenceLiteral(box)) {
+        continue;
+      }
     }
 
+    // Only consider box with a mandatory part on y.
     const IntegerValue start_max = -temp[i].time;
     const IntegerValue end_min = y->EndMin(box);
     if (start_max < end_min) {
-      indexed_boxes_.push_back({box, start_max, end_min});
+      boxes_data[num_boxes++] = {box, start_max, end_min};
+
+      // Optim: If many rectangle are fixed and known not to overlap, we might
+      // filter them out.
+      if (fixed_boxes[box]) {
+        ++num_fixed;
+      } else {
+        const bool is_fixed = x->StartIsFixed(box) && x->EndIsFixed(box) &&
+                              y->StartIsFixed(box) && y->EndIsFixed(box);
+        if (is_fixed) {
+          // We will "check it" below, so it will be checked next time.
+          fixed_boxes.Set(box);
+        }
+
+        const Rectangle r = {x->StartMin(box), x->EndMax(box), start_max,
+                             end_min};
+        if (num_others == 0) {
+          other_bounding_box = r;
+        } else {
+          other_bounding_box.GrowToInclude(r);
+        }
+        ++num_others;
+      }
     }
   }
 
-  // Less than 2 boxes, no propagation.
-  if (indexed_boxes_.size() < 2) return true;
-
-  // In ConstructOverlappingSets() we will always sort the output by
-  // x.ShiftedStartMin(t). We want to speed that up so we cache the order here.
-  if (!x->SynchronizeAndSetTimeDirection(x->CurrentTimeIsForward())) {
-    return false;
+  // We remove from boxes_data all the fixed and checked box outside the
+  // other_bounding_box.
+  //
+  // TODO(user): We could be smarter here, if we have just a few non-fixed
+  // boxes, likely their mandatory y-part do not span the whole horizon, so
+  // we could remove any fixed boxes outside these "stripes".
+  if (num_others == 0) return true;
+  if (num_fixed > 0) {
+    int new_size = 0;
+    for (int i = 0; i < num_boxes; ++i) {
+      const IndexedInterval& interval = boxes_data[i];
+      const int box = interval.index;
+      const Rectangle r = {x->StartMin(box), x->EndMax(box), interval.start,
+                           interval.end};
+      if (other_bounding_box.IsDisjoint(r)) continue;
+      boxes_data[new_size++] = interval;
+    }
+    num_boxes = new_size;
   }
 
-  // Optim: Abort if all rectangle can be fixed to their mandatory y + minimium
-  // x position without any overlap. Technically we might still propagate the x
-  // end in this setting, but the current code will just abort below in
-  // SplitDisjointBoxes() anyway.
+  // Less than 2 boxes, no propagation.
+  const auto boxes = absl::MakeSpan(boxes_data, num_boxes);
+  if (boxes.size() < 2) return true;
+
+  // Optim: Abort if all rectangle can be fixed to their mandatory y +
+  // minimium x position without any overlap.
   //
   // This is guaranteed to be O(N log N) whereas the algo below is O(N ^ 2).
-  if (indexed_boxes_.size() > 100) {
+  //
+  // TODO(user): We might still propagate the x end in this setting, but the
+  // current code will just abort below in SplitDisjointBoxes() anyway.
+  {
     rectangles_.clear();
-    rectangles_.reserve(indexed_boxes_.size());
-    for (const auto [box, y_mandatory_start, y_mandatory_end] :
-         indexed_boxes_) {
-      // Note that we invert the x/y position here in order to be already sorted
-      // for FindOneIntersectionIfPresent()
+    rectangles_.reserve(boxes.size());
+    for (const auto [box, y_mandatory_start, y_mandatory_end] : boxes) {
+      // Note that we invert the x/y position here in order to be already
+      // sorted for FindOneIntersectionIfPresent()
       rectangles_.push_back(
           {/*x_min=*/y_mandatory_start, /*x_max=*/y_mandatory_end,
            /*y_min=*/x->StartMin(box), /*y_max=*/x->EndMin(box)});
@@ -769,6 +822,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     }
     if (opt_pair == std::nullopt) {
       return true;
+    } else {
+      // TODO(user): Test if we have a conflict here.
     }
   }
 
@@ -779,13 +834,12 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
       order_[t] = i++;
     }
   }
-  ConstructOverlappingSets(absl::MakeSpan(indexed_boxes_),
-                           &events_overlapping_boxes_, order_);
+  ConstructOverlappingSets(boxes, &events_overlapping_boxes_, order_);
 
   // Split lists of boxes into disjoint set of boxes (w.r.t. overlap).
   boxes_to_propagate_.clear();
   reduced_overlapping_boxes_.clear();
-  int work_done = indexed_boxes_.size();
+  int work_done = boxes.size();
   for (int i = 0; i < events_overlapping_boxes_.size(); ++i) {
     work_done += events_overlapping_boxes_[i].size();
     SplitDisjointBoxes(*x, events_overlapping_boxes_[i], &disjoint_boxes_);
@@ -803,10 +857,11 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
   // And finally propagate.
   //
-  // TODO(user): Sorting of boxes seems influential on the performance. Test.
+  // TODO(user): Sorting of boxes seems influential on the performance.
+  // Test.
   for (const absl::Span<const int> boxes : boxes_to_propagate_) {
-    // The case of two boxes should be taken care of during "fast" propagation,
-    // so we can skip it here.
+    // The case of two boxes should be taken care of during "fast"
+    // propagation, so we can skip it here.
     if (!fast_propagation && boxes.size() <= 2) continue;
 
     x_.ClearOtherHelper();
@@ -857,9 +912,22 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   return true;
 }
 
+// Note that we optimized this function for two main use cases:
+// - smallish problem where we don't have more than 100 boxes.
+// - large problem with many 1000s boxes, but with only a small subset that is
+//   not fixed (mainly coming from LNS).
 bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
-  global_x_.SetTimeDirection(true);
-  global_y_.SetTimeDirection(true);
+  if (!global_x_.SynchronizeAndSetTimeDirection(true)) return false;
+  if (!global_y_.SynchronizeAndSetTimeDirection(true)) return false;
+
+  // If we are "diving" we maintain the set of fixed boxes for which we know
+  // that they are not overlapping.
+  const bool backtrack_since_last_call = !rev_is_in_dive_;
+  watcher_->SetUntilNextBacktrack(&rev_is_in_dive_);
+  if (backtrack_since_last_call) {
+    const int num_tasks = global_x_.NumTasks();
+    already_checked_fixed_boxes_.ClearAndResize(num_tasks);
+  }
 
   // Note that the code assumes that this was registered twice in fast and slow
   // mode. So we will not redo some propagation in slow mode that was already

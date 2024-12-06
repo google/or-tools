@@ -276,6 +276,8 @@ class PresolveContext {
   // Returns false if the 'lit' doesn't have the desired value in the domain.
   ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
   ABSL_MUST_USE_RESULT bool SetLiteralToTrue(int lit);
+  ABSL_MUST_USE_RESULT bool SetLiteralAndHintToFalse(int lit);
+  ABSL_MUST_USE_RESULT bool SetLiteralAndHintToTrue(int lit);
 
   // Same as IntersectDomainWith() but take a linear expression as input.
   // If this expression if of size > 1, this does nothing for now, so it will
