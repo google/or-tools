@@ -39,8 +39,18 @@ using ::operations_research::GuidedLocalSearch;
 using ::operations_research::GuidedTabuSearch;
 using ::operations_research::LazyElementDegreeSolutionGenerator;
 using ::operations_research::RandomSolutionGenerator;
-using ::operations_research::ReadBeasleySetCoverProblem;
-using ::operations_research::ReadRailSetCoverProblem;
+using ::operations_research::ReadFimiDat;
+using ::operations_research::ReadOrlibRail;
+using ::operations_research::ReadOrlibScp;
+using ::operations_research::ReadSetCoverProto;
+using ::operations_research::ReadSetCoverSolutionProto;
+using ::operations_research::ReadSetCoverSolutionText;
+using ::operations_research::WriteOrlibRail;
+using ::operations_research::WriteOrlibScp;
+using ::operations_research::WriteSetCoverProto;
+using ::operations_research::WriteSetCoverSolutionProto;
+using ::operations_research::WriteSetCoverSolutionText;
+
 using ::operations_research::SetCoverDecision;
 using ::operations_research::SetCoverInvariant;
 using ::operations_research::SetCoverModel;
@@ -550,8 +560,17 @@ PYBIND11_MODULE(set_cover, m) {
         });
 
   // set_cover_reader.h
-  m.def("read_beasly_set_cover_problem", &ReadBeasleySetCoverProblem);
-  m.def("read_rail_set_cover_problem", &ReadRailSetCoverProblem);
+  m.def("read_orlib_scp", &ReadOrlibScp);
+  m.def("read_orlib_rail", &ReadOrlibRail);
+  m.def("read_fimi_dat", &ReadFimiDat);
+  m.def("read_set_cover_proto", &ReadSetCoverProto);
+  m.def("write_orlib_scp", &WriteOrlibScp);
+  m.def("write_orlib_rail", &WriteOrlibRail);
+  m.def("write_set_cover_proto", &WriteSetCoverProto);
+  m.def("write_set_cover_solution_text", &WriteSetCoverSolutionText);
+  m.def("write_set_cover_solution_proto", &WriteSetCoverSolutionProto);
+  m.def("read_set_cover_solution_text", &ReadSetCoverSolutionText);
+  m.def("read_set_cover_solution_proto", &ReadSetCoverSolutionProto);
 
   // set_cover_lagrangian.h
   // TODO(user): add support for SetCoverLagrangian.

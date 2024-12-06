@@ -30,6 +30,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
@@ -179,7 +180,7 @@ class MPModelProtoExporter {
   // The sparse matrix must be passed as a vector of columns ('transpose').
   void AppendMpsColumns(
       bool integrality,
-      const std::vector<std::vector<std::pair<int, double>>>& transpose,
+      absl::Span<const std::vector<std::pair<int, double>>> transpose,
       std::string* output);
 
   // Appends a line describing the bound of a variablenew-line if two columns
@@ -722,7 +723,7 @@ void MPModelProtoExporter::AppendNewLineIfTwoColumns(std::string* output) {
 
 void MPModelProtoExporter::AppendMpsColumns(
     bool integrality,
-    const std::vector<std::vector<std::pair<int, double>>>& transpose,
+    absl::Span<const std::vector<std::pair<int, double>>> transpose,
     std::string* output) {
   current_mps_column_ = 0;
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {

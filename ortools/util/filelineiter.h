@@ -35,7 +35,7 @@
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
  public:
-  enum {
+  enum : int {
     DEFAULT = 0x0000,
     REMOVE_LINEFEED = DEFAULT,
     KEEP_LINEFEED = 0x0001,       // Terminating \n in result.
