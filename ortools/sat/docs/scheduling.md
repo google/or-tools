@@ -2676,7 +2676,6 @@ def sequence_constraints_with_circuit(
     all_tasks = range(num_tasks)
 
     arcs: List[cp_model.ArcT] = []
-    penalty_terms = []
     for i in all_tasks:
         # if node i is first.
         start_lit = model.new_bool_var(f"start_{i}")
@@ -2695,17 +2694,6 @@ def sequence_constraints_with_circuit(
         # Make sure the previous length is within bounds.
         type_length_min = sequence_length_constraints[task_types[i]][0]
         model.add(lengths[i] >= type_length_min).only_enforce_if(end_lit)
-
-        # Penalize the cumul of the last task w.r.t. the soft max
-        soft_max, linear_penalty, hard_max = sequence_cumul_constraints[task_types[i]]
-        if soft_max < hard_max:
-            aux = model.new_int_var(0, hard_max - soft_max, f"aux_{i}")
-            model.add_max_equality(aux, [0, cumuls[i] - soft_max])
-
-            excess = model.new_int_var(0, hard_max - soft_max, f"excess_{i}")
-            model.add(excess == aux).only_enforce_if(end_lit)
-            model.add(excess == 0).only_enforce_if(~end_lit)
-            penalty_terms.append((excess, linear_penalty))
 
         for j in all_tasks:
             if i == j:
@@ -2746,18 +2734,24 @@ def sequence_constraints_with_circuit(
                 # Reset the cumul to the duration of the task.
                 model.add(cumuls[j] == durations[j]).only_enforce_if(lit)
 
-                # Penalize the cumul of the previous task w.r.t. the soft max
-                if soft_max < hard_max:
-                    aux = model.new_int_var(0, hard_max - soft_max, f"aux_{i}")
-                    model.add_max_equality(aux, [0, cumuls[i] - soft_max])
-
-                    excess = model.new_int_var(0, hard_max - soft_max, f"excess_{i}")
-                    model.add(excess == aux).only_enforce_if(lit)
-                    model.add(excess == 0).only_enforce_if(~lit)
-                    penalty_terms.append((excess, linear_penalty))
-
     # Add the circuit constraint.
     model.add_circuit(arcs)
+
+    # Create the penalty terms. We can penalize each cumul locally.
+    penalty_terms = []
+    for i in all_tasks:
+        # Penalize the cumul of the last task w.r.t. the soft max
+        soft_max, linear_penalty, hard_max = sequence_cumul_constraints[task_types[i]]
+
+        # To make it separable per task, and avoid double counting, we use the
+        # following trick:
+        #     reduced_excess = min(durations[i], max(0, cumul[i] - soft_max))
+        if soft_max < hard_max:
+            excess = model.new_int_var(0, hard_max - soft_max, f"excess+_{i}")
+            model.add_max_equality(excess, [0, cumuls[i] - soft_max])
+            reduced_excess = model.new_int_var(0, durations[i], f"reduced_excess_{i}")
+            model.add_min_equality(reduced_excess, [durations[i], excess])
+            penalty_terms.append((reduced_excess, linear_penalty))
 
     return penalty_terms
 
@@ -2826,13 +2820,13 @@ def sequences_in_no_overlap_sample_sat():
     lengths = []
     for i in all_tasks:
         max_hard_length = sequence_length_constraints[task_types[i]][1]
-        lengths.append(model.new_int_var(0, max_hard_length, f"length_{i}"))
+        lengths.append(model.new_int_var(1, max_hard_length, f"length_{i}"))
 
     # Create cumul variables for each task.
     cumuls = []
     for i in all_tasks:
         max_hard_cumul = sequence_cumul_constraints[task_types[i]][2]
-        cumuls.append(model.new_int_var(0, max_hard_cumul, f"cumul_{i}"))
+        cumuls.append(model.new_int_var(durations[i], max_hard_cumul, f"cumul_{i}"))
 
     # Adds NoOverlap constraint.
     model.add_no_overlap(intervals)
