@@ -109,6 +109,8 @@ enum class SolverType {
   // Slow/not recommended for production. Not an LP solver (no dual information
   // returned).
   kSantorini = SOLVER_TYPE_SANTORINI,
+
+  kMosek = SOLVER_TYPE_MOSEK,
 };
 
 MATH_OPT_DEFINE_ENUM(SolverType, SOLVER_TYPE_UNSPECIFIED);

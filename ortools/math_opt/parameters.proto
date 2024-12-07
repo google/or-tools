@@ -105,6 +105,12 @@ enum SolverTypeProto {
   // Slow/not recommended for production. Not an LP solver (no dual information
   // returned).
   SOLVER_TYPE_SANTORINI = 11;
+  
+  // Mosek solver (third party).
+  //
+  // Supports LP, MIP, and nonconvex integer quadratic problems. Generally the
+  // fastest option, but has special licensing.
+  SOLVER_TYPE_MOSEK = 12;
 }
 
 // Selects an algorithm for solving linear programs.

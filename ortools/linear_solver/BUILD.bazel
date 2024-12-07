@@ -144,6 +144,19 @@ config_setting(
     },
 )
 
+bool_flag(
+    name = "with_mosek",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "use_mosek",
+    flag_values = {
+        ":with_mosek": "true",
+    },
+)
+
+
 proto_library(
     name = "linear_solver_proto",
     srcs = ["linear_solver.proto"],
@@ -210,6 +223,9 @@ cc_library(
     }) + select({
         ":use_cplex": ["cplex_interface.cc"],
         "//conditions:default": [],
+    }) + select({
+        ":use_mosek": ["mosek_interface.cc"],
+        "//conditions:default": [],
     }),
     hdrs = [
         "linear_expr.h",
@@ -251,6 +267,9 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_cplex": ["-DUSE_CPLEX"],
+        "//conditions:default": [],
+    }) + select({
+        ":use_mosek": ["-DUSE_MOSEK"],
         "//conditions:default": [],
     }),
     deps = [
