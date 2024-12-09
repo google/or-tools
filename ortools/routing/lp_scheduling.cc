@@ -1303,7 +1303,7 @@ std::vector<bool> SlopeAndYInterceptToConvexityRegions(
 namespace {
 // Find a "good" scaling factor for constraints with non-integers coefficients.
 // See sat::FindBestScalingAndComputeErrors() for more infos.
-double FindBestScaling(const std::vector<double>& coefficients,
+double FindBestScaling(absl::Span<const double> coefficients,
                        absl::Span<const double> lower_bounds,
                        absl::Span<const double> upper_bounds,
                        int64_t max_absolute_activity,
@@ -1722,6 +1722,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       solver->SetVariableDisjointBounds(lp_cumul, starts, ends);
     }
   }
+  solver->AddRoute(path, lp_cumuls);
   // Create LP variables for slacks.
   std::vector<int> lp_slacks(path_size - 1, -1);
   for (int pos = 0; pos < path_size - 1; ++pos) {
@@ -1966,13 +1967,14 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   // breaks are scheduled, those variables are used both in the pure breaks
   // part and in the break distance part of the model.
   // Otherwise, it doesn't need the variables and they are not created.
-  std::vector<int> lp_break_start;
-  std::vector<int> lp_break_duration;
-  std::vector<int> lp_break_end;
+  struct LpBreak {
+    int start;
+    int end;
+    int duration;
+  };
+  std::vector<LpBreak> lp_breaks;
   if (solver->IsCPSATSolver()) {
-    lp_break_start.resize(num_breaks, -1);
-    lp_break_duration.resize(num_breaks, -1);
-    lp_break_end.resize(num_breaks, -1);
+    lp_breaks.resize(num_breaks, {.start = -1, .end = -1, .duration = -1});
   }
 
   std::vector<int> slack_exact_lower_bound_ct(path_size - 1, -1);
@@ -2004,29 +2006,26 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         current_route_break_variables_.push_back(-1);
         continue;
       }
-      lp_break_start[br] =
-          solver->AddVariable(break_start_min, break_start_max);
-      SET_DEBUG_VARIABLE_NAME(solver, lp_break_start[br],
+      lp_breaks[br] = {
+          .start = solver->AddVariable(break_start_min, break_start_max),
+          .end = solver->AddVariable(break_end_min, break_end_max),
+          .duration =
+              solver->AddVariable(break_duration_min, break_duration_max)};
+      const auto [break_start, break_end, break_duration] = lp_breaks[br];
+      SET_DEBUG_VARIABLE_NAME(solver, break_start,
                               absl::StrFormat("lp_break_start(%ld)", br));
-      lp_break_end[br] = solver->AddVariable(break_end_min, break_end_max);
-      SET_DEBUG_VARIABLE_NAME(solver, lp_break_end[br],
+      SET_DEBUG_VARIABLE_NAME(solver, break_end,
                               absl::StrFormat("lp_break_end(%ld)", br));
-      lp_break_duration[br] =
-          solver->AddVariable(break_duration_min, break_duration_max);
-      SET_DEBUG_VARIABLE_NAME(solver, lp_break_duration[br],
+      SET_DEBUG_VARIABLE_NAME(solver, break_duration,
                               absl::StrFormat("lp_break_duration(%ld)", br));
       // start + duration = end.
-      solver->AddLinearConstraint(0, 0,
-                                  {{lp_break_end[br], 1},
-                                   {lp_break_start[br], -1},
-                                   {lp_break_duration[br], -1}});
+      solver->AddLinearConstraint(
+          0, 0, {{break_end, 1}, {break_start, -1}, {break_duration, -1}});
       // Record index of variables
-      all_break_variables_[all_break_variables_offset + 2 * br] =
-          lp_break_start[br];
-      all_break_variables_[all_break_variables_offset + 2 * br + 1] =
-          lp_break_end[br];
-      current_route_break_variables_.push_back(lp_break_start[br]);
-      current_route_break_variables_.push_back(lp_break_end[br]);
+      all_break_variables_[all_break_variables_offset + 2 * br] = break_start;
+      all_break_variables_[all_break_variables_offset + 2 * br + 1] = break_end;
+      current_route_break_variables_.push_back(break_start);
+      current_route_break_variables_.push_back(break_end);
     } else {
       if (break_end_min <= vehicle_start_max ||
           vehicle_end_min <= break_start_max) {
@@ -2048,7 +2047,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       if (break_end_min <= vehicle_start_max) {
         const int ct = solver->AddLinearConstraint(
             0, std::numeric_limits<int64_t>::max(),
-            {{lp_cumuls.front(), 1}, {lp_break_end[br], -1}});
+            {{lp_cumuls.front(), 1}, {lp_breaks[br].end, -1}});
         const int break_is_before_route = solver->AddVariable(0, 1);
         SET_DEBUG_VARIABLE_NAME(
             solver, break_is_before_route,
@@ -2060,7 +2059,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       if (vehicle_end_min <= break_start_max) {
         const int ct = solver->AddLinearConstraint(
             0, std::numeric_limits<int64_t>::max(),
-            {{lp_break_start[br], 1}, {lp_cumuls.back(), -1}});
+            {{lp_breaks[br].start, 1}, {lp_cumuls.back(), -1}});
         const int break_is_after_route = solver->AddVariable(0, 1);
         SET_DEBUG_VARIABLE_NAME(
             solver, break_is_after_route,
@@ -2124,7 +2123,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
             solver, break_duration_in_slack,
             absl::StrFormat("break_duration_in_slack(%ld, %ld)", br, pos));
         solver->AddProductConstraint(break_duration_in_slack,
-                                     {break_in_slack, lp_break_duration[br]});
+                                     {break_in_slack, lp_breaks[br].duration});
         if (slack_exact_lower_bound_ct[pos] == -1) {
           slack_exact_lower_bound_ct[pos] = solver->AddLinearConstraint(
               std::numeric_limits<int64_t>::min(), 0, {{lp_slacks[pos], -1}});
@@ -2135,13 +2134,13 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         // 1) break_start >= cumul[pos] + pre_travel[pos]
         const int break_start_after_current_ct = solver->AddLinearConstraint(
             pre_travel[pos], std::numeric_limits<int64_t>::max(),
-            {{lp_break_start[br], 1}, {lp_cumuls[pos], -1}});
+            {{lp_breaks[br].start, 1}, {lp_cumuls[pos], -1}});
         solver->SetEnforcementLiteral(break_start_after_current_ct,
                                       break_in_slack);
         // 2) break_end <= cumul[pos+1] - post_travel[pos]
         const int break_ends_before_next_ct = solver->AddLinearConstraint(
             post_travel[pos], std::numeric_limits<int64_t>::max(),
-            {{lp_cumuls[pos + 1], 1}, {lp_break_end[br], -1}});
+            {{lp_cumuls[pos + 1], 1}, {lp_breaks[br].end, -1}});
         solver->SetEnforcementLiteral(break_ends_before_next_ct,
                                       break_in_slack);
       }
@@ -2158,10 +2157,10 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
     // When this feature is used, breaks are in sorted order.
     for (int br = 1; br < num_breaks; ++br) {
-      if (lp_break_start[br] == -1 || lp_break_start[br - 1] == -1) continue;
+      if (lp_breaks[br].start == -1 || lp_breaks[br - 1].start == -1) continue;
       solver->AddLinearConstraint(
           0, std::numeric_limits<int64_t>::max(),
-          {{lp_break_end[br - 1], -1}, {lp_break_start[br], 1}});
+          {{lp_breaks[br - 1].end, -1}, {lp_breaks[br].start, 1}});
     }
   }
   for (const auto& distance_duration :
@@ -2201,7 +2200,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     solver->AddLinearConstraint(limit, limit,
                                 {{previous_cover, 1}, {lp_cumuls.front(), -1}});
     for (int br = 0; br < num_breaks; ++br) {
-      if (lp_break_start[br] == -1) continue;
+      const LpBreak& lp_break = lp_breaks[br];
+      if (lp_break.start == -1) continue;
       const int64_t break_end_min = CapSub(breaks[br]->EndMin(), cumul_offset);
       const int64_t break_end_max = CapSub(breaks[br]->EndMax(), cumul_offset);
       // break_is_eligible <=>
@@ -2218,11 +2218,11 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
             1, 1, {{break_is_eligible, 1}, {break_is_not_eligible, 1}});
         const int positive_ct = solver->AddLinearConstraint(
             min_break_duration, std::numeric_limits<int64_t>::max(),
-            {{lp_break_end[br], 1}, {lp_break_start[br], -1}});
+            {{lp_break.end, 1}, {lp_break.start, -1}});
         solver->SetEnforcementLiteral(positive_ct, break_is_eligible);
         const int negative_ct = solver->AddLinearConstraint(
             std::numeric_limits<int64_t>::min(), min_break_duration - 1,
-            {{lp_break_end[br], 1}, {lp_break_start[br], -1}});
+            {{lp_break.end, 1}, {lp_break.start, -1}});
         solver->SetEnforcementLiteral(negative_ct, break_is_not_eligible);
       }
       // break_is_eligible => break_cover == break_end + limit.
@@ -2236,7 +2236,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       SET_DEBUG_VARIABLE_NAME(solver, break_cover,
                               absl::StrFormat("break_cover(%ld)", br));
       const int limit_cover_ct = solver->AddLinearConstraint(
-          limit, limit, {{break_cover, 1}, {lp_break_end[br], -1}});
+          limit, limit, {{break_cover, 1}, {lp_break.end, -1}});
       solver->SetEnforcementLiteral(limit_cover_ct, break_is_eligible);
       const int empty_cover_ct = solver->AddLinearConstraint(
           CapAdd(vehicle_start_min, limit), CapAdd(vehicle_start_min, limit),
@@ -2255,7 +2255,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
           {{lp_cumuls.back(), 1}, {previous_cover, -1}});
       const int break_start_cover_ct = solver->AddLinearConstraint(
           0, std::numeric_limits<int64_t>::max(),
-          {{previous_cover, 1}, {lp_break_start[br], -1}});
+          {{previous_cover, 1}, {lp_break.start, -1}});
       solver->SetEnforcementLiteral(break_start_cover_ct,
                                     route_end_is_not_covered);
 

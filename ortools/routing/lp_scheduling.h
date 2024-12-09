@@ -198,6 +198,13 @@ class RoutingLinearSolverWrapper {
 
   // This function is meant to override the parameters of the solver.
   virtual void SetParameters(const std::string& parameters) = 0;
+  // When solving a scheduling problem, this can be called to add hints that
+  // help the underlying solver:
+  // - nodes is the sequence of nodes in a route represented in the model.
+  // - schedule_variables is the sequence of variables used to represent the
+  //   time at which each node is scheduled.
+  virtual void AddRoute(absl::Span<const int64_t> nodes,
+                        absl::Span<const int> schedule_variables) = 0;
 
   // Returns if the model is empty or not.
   virtual bool ModelIsEmpty() const { return true; }
@@ -384,6 +391,7 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
   void AddProductConstraint(int /*product_var*/,
                             std::vector<int> /*vars*/) override {}
   void SetEnforcementLiteral(int /*ct*/, int /*condition*/) override {};
+  void AddRoute(absl::Span<const int64_t>, absl::Span<const int>) override{};
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
     lp_solver_.GetMutableParameters()->set_max_time_in_seconds(
         absl::ToDoubleSeconds(duration_limit));
@@ -471,6 +479,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     model_.Clear();
     response_.Clear();
     objective_coefficients_.clear();
+    schedule_variables_.clear();
   }
   int CreateNewPositiveVariable() override {
     const int index = model_.variables_size();
@@ -590,11 +599,39 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     DCHECK_LT(ct, model_.constraints_size());
     model_.mutable_constraints(ct)->add_enforcement_literal(condition);
   }
+  void AddRoute(absl::Span<const int64_t> nodes,
+                absl::Span<const int> schedule_variables) override {
+    DCHECK_EQ(nodes.size(), schedule_variables.size());
+    for (const int64_t node : nodes) {
+      if (node >= schedule_hint_.size()) schedule_hint_.resize(node + 1, 0);
+    }
+    for (int n = 0; n < nodes.size(); ++n) {
+      schedule_variables_.push_back(
+          {.node = nodes[n], .cumul = schedule_variables[n]});
+    }
+  }
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
     const double max_time = absl::ToDoubleSeconds(duration_limit);
     if (max_time <= 0.0) return DimensionSchedulingStatus::INFEASIBLE;
     parameters_.set_max_time_in_seconds(max_time);
     VLOG(2) << ProtobufDebugString(model_);
+    auto record_hint = [this]() {
+      hint_.Clear();
+      for (int i = 0; i < response_.solution_size(); ++i) {
+        hint_.add_vars(i);
+        hint_.add_values(response_.solution(i));
+      }
+      for (const auto& [node, cumul] : schedule_variables_) {
+        schedule_hint_[node] = response_.solution(cumul);
+      }
+    };
+    model_.clear_solution_hint();
+    auto* hint = model_.mutable_solution_hint();
+    for (const auto& [node, cumul] : schedule_variables_) {
+      if (schedule_hint_[node] == 0) continue;
+      hint->add_vars(cumul);
+      hint->add_values(schedule_hint_[node]);
+    }
     if (hint_.vars_size() == model_.variables_size()) {
       *model_.mutable_solution_hint() = hint_;
     }
@@ -606,11 +643,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     if (response_.status() == sat::CpSolverStatus::OPTIMAL ||
         (response_.status() == sat::CpSolverStatus::FEASIBLE &&
          !model_.has_floating_point_objective())) {
-      hint_.Clear();
-      for (int i = 0; i < response_.solution_size(); ++i) {
-        hint_.add_vars(i);
-        hint_.add_values(response_.solution(i));
-      }
+      record_hint();
       return DimensionSchedulingStatus::OPTIMAL;
     }
     return DimensionSchedulingStatus::INFEASIBLE;
@@ -639,6 +672,14 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
   sat::SatParameters parameters_;
   std::vector<double> objective_coefficients_;
   sat::PartialVariableAssignment hint_;
+  struct NodeAndCumul {
+    int64_t node;
+    int cumul;
+  };
+  // Stores node/cumul pairs of the routes in the current model.
+  std::vector<NodeAndCumul> schedule_variables_;
+  // Maps node to its last known value in any optimal solution.
+  std::vector<int64_t> schedule_hint_;
 };
 
 // Utility class used in Local/GlobalDimensionCumulOptimizer to set the linear
