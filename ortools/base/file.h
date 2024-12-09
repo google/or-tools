@@ -32,14 +32,12 @@ class File {
 #ifndef SWIG  // no overloading
   // Opens file "name" with flags specified by "mode".
   // Flags are defined by fopen(), that is "r", "r+", "w", "w+". "a", and "a+".
-  // The caller should free the File after closing it by passing the returned
-  // pointer to delete.
+  // The caller should call Close() to free the File after closing it.
   static File* Open(absl::string_view filename, absl::string_view mode);
 
   // Opens file "name" with flags specified by "mode".
   // If open failed, program will exit.
-  // The caller should free the File after closing it by passing the returned
-  // pointer to delete.
+  // The caller should call Close() to free the File after closing it.
   static File* OpenOrDie(absl::string_view filename, absl::string_view mode);
 #endif  // SWIG
 
@@ -71,7 +69,7 @@ class File {
   // Writes a string to file and append a "\n".
   bool WriteLine(absl::string_view line);
 
-  // Closes the file.
+  // Closes the file and delete the underlying FILE* descriptor.
   bool Close();
   absl::Status Close(int flags);
 
