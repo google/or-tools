@@ -1478,7 +1478,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
     ) -> None:
         """Test that the two linear expressions are almost equal."""
         self.assertEqual(len(expr1.variable_indices), len(expr2.variable_indices))
-        if expr1.variable_indices:
+        if len(expr1.variable_indices) > 0:  # pylint: disable=g-explicit-length-test
             self.assertSequenceEqual(expr1.variable_indices, expr2.variable_indices)
             self.assertSequenceAlmostEqual(
                 expr1.coefficients, expr2.coefficients, places=5
