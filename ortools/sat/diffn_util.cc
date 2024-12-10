@@ -2008,7 +2008,7 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
   return result;
 }
 
-absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
     absl::Span<const Rectangle> rectangles) {
   DCHECK(
       absl::c_is_sorted(rectangles, [](const Rectangle& a, const Rectangle& b) {

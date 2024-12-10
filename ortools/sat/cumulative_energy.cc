@@ -529,14 +529,15 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
   if (num_events == 0) return true;
   ++num_calls_;
 
-  const IntegerValue largest_window =
-      helper_->EndMax(helper_->TaskByDecreasingEndMax().front().task_index) -
-      helper_->TaskByIncreasingStartMin().front().time;
-  if (largest_window == 0) return true;
+  const IntegerValue start_end_magnitude =
+      std::max(IntTypeAbs(helper_->EndMax(
+                   helper_->TaskByDecreasingEndMax().front().task_index)),
+               IntTypeAbs(helper_->TaskByIncreasingStartMin().front().time));
+  if (start_end_magnitude == 0) return true;
 
   const IntegerValue max_for_fixpoint_inverse =
       std::numeric_limits<IntegerValue>::max() /
-      (num_events * capacity_max * largest_window);
+      (num_events * capacity_max * start_end_magnitude);
 
   theta_tree_.Reset(num_events);
 
