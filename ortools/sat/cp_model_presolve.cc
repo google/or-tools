@@ -12889,6 +12889,13 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
 
   DCHECK(!non_fixed_variables_.empty());
 
+  if (non_fixed_variables_.size() == 1 && ct.enforcement_literal().empty()) {
+    context_->UpdateRuleStats("linear1: x in domain");
+    return context_->IntersectDomainWith(
+        non_fixed_variables_[0],
+        new_rhs.InverseMultiplicationBy(non_fixed_coefficients_[0]));
+  }
+
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   FinishEnforcementCopy(new_ct);
   LinearConstraintProto* linear = new_ct->mutable_linear();
