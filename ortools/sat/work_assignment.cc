@@ -820,6 +820,8 @@ bool SharedTreeWorker::SyncWithSharedTree() {
                                    time_limit_->GetElapsedDeterministicTime()) {
     earliest_replacement_dtime_ =
         time_limit_->GetElapsedDeterministicTime() + 1;
+    // Treat this as reassigning the same tree.
+    assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
   }
   VLOG(2) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();

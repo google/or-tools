@@ -216,10 +216,13 @@ void PrecedenceRelations::Build() {
 
   // We will construct a graph with the current relation from all_relations_.
   // And use this to compute the "closure".
-  // Note that the non-determinism of the arcs order shouldn't matter.
   CHECK(arc_offsets_.empty());
   graph_.ReserveArcs(2 * root_relations_.size());
-  for (const auto [var_pair, negated_offset] : root_relations_) {
+  std::vector<
+      std::pair<std::pair<IntegerVariable, IntegerVariable>, IntegerValue>>
+      root_relations_sorted(root_relations_.begin(), root_relations_.end());
+  std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
+  for (const auto [var_pair, negated_offset] : root_relations_sorted) {
     // TODO(user): Support negative offset?
     //
     // Note that if we only have >= 0 ones, if we do have a cycle, we could

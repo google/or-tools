@@ -2489,11 +2489,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const CpSolverStatus presolve_status =
       PresolveCpModel(context.get(), &postsolve_mapping);
 
-  // Delete the context as soon a the presolve is done. Note that only
+  // Delete the context as soon as the presolve is done. Note that only
   // postsolve_mapping and mapping_proto are needed for postsolve.
   context.reset(nullptr);
 
   if (presolve_status != CpSolverStatus::UNKNOWN) {
+    if (presolve_status == CpSolverStatus::INFEASIBLE &&
+        hint_feasible_before_presolve &&
+        params.debug_crash_if_presolve_breaks_hint()) {
+      LOG(FATAL) << "Presolve bug: model with feasible hint found UNSAT "
+                    "after presolve.";
+    }
     SOLVER_LOG(logger, "Problem closed by presolve.");
     CpSolverResponse status_response;
     status_response.set_status(presolve_status);

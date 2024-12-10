@@ -713,7 +713,7 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
 //
 // If a pair {i, j} is returned, we will have i < j, and no intersection in
 // the subset of rectanges in [0, j).
-absl::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
     absl::Span<const Rectangle> rectangles);
 
 }  // namespace sat
