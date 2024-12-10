@@ -269,6 +269,11 @@ message(STATUS "Build GLPK: ${BUILD_GLPK}")
 CMAKE_DEPENDENT_OPTION(USE_GUROBI "Use the Gurobi solver" ON "BUILD_CXX" OFF)
 message(STATUS "Gurobi support: ${USE_GUROBI}")
 
+## MOSEK
+# see: https://mosek.com
+CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the MOSEK solver" ON "BUILD_CXX" OFF)
+message(STATUS "MOSEK support: ${USE_MOSEK}")
+
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
 CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" ON "BUILD_CXX" OFF)

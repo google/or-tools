@@ -92,6 +92,7 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
     case MPModelRequest::HIGHS_LINEAR_PROGRAMMING:
     case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:
     case MPModelRequest::CPLEX_LINEAR_PROGRAMMING:
+    case MPModelRequest::MOSEK_LINEAR_PROGRAMMING:
       return false;
 
     case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING:
@@ -104,6 +105,7 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
     case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::CPLEX_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::MOSEK_MIXED_INTEGER_PROGRAMMING:
       return true;
   }
   LOG(DFATAL) << "Invalid SolverType: " << solver_type;
@@ -404,6 +406,9 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
 #if defined(USE_CPLEX)
 extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 #endif
+#if defined(USE_MOSEK)
+extern MPSolverInterface* BuildMosekInterface(bool mip, MPSolver* const solver);
+#endif
 extern MPSolverInterface* BuildXpressInterface(bool mip,
                                                MPSolver* const solver);
 
@@ -458,6 +463,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildCplexInterface(false, solver);
     case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
       return BuildCplexInterface(true, solver);
+#endif
+#if defined(USE_MOSEK)
+    case MPSolver::MOSEK_LINEAR_PROGRAMMING:
+      return BuildMosekInterface(false, solver);
+    case MPSolver::MOSEK_MIXED_INTEGER_PROGRAMMING:
+      return BuildMosekInterface(true, solver);
 #endif
     case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
       return BuildXpressInterface(true, solver);
@@ -543,6 +554,12 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
+#ifdef USE_MOSEK
+  if (problem_type == MOSEK_LINEAR_PROGRAMMING ||
+      problem_type == MOSEK_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
+#endif
   if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
       problem_type == XPRESS_LINEAR_PROGRAMMING) {
     return XpressIsCorrectlyInstalled();
@@ -573,6 +590,7 @@ constexpr
         {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
         {MPSolver::HIGHS_LINEAR_PROGRAMMING, "highs_lp"},
         {MPSolver::CPLEX_LINEAR_PROGRAMMING, "cplex_lp"},
+        {MPSolver::MOSEK_LINEAR_PROGRAMMING, "mosek_lp"},
         {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
         {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
         {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
@@ -584,6 +602,7 @@ constexpr
         {MPSolver::PDLP_LINEAR_PROGRAMMING, "pdlp"},
         {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
+        {MPSolver::MOSEK_MIXED_INTEGER_PROGRAMMING, "mosek"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
 };
 // static

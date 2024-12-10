@@ -87,6 +87,10 @@ if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
 endif()
 
+if(USE_MOSEK) 
+    find_package(MOSEK REQUIRED)
+endif()
+
 # CXX Test
 if(BUILD_TESTING AND NOT BUILD_googletest)
   find_package(GTest REQUIRED)

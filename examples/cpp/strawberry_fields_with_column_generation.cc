@@ -634,6 +634,12 @@ int main(int argc, char** argv) {
     found = true;
   }
 #endif
+#if defined(USE_MOSEK)
+  if (absl::GetFlag(FLAGS_colgen_solver) == "mosek") {
+    solver_type = operations_research::MPSolver::MOSEK_LINEAR_PROGRAMMING;
+    found = true;
+  }
+#endif
   if (!found) {
     LOG(ERROR) << "Unknown solver " << absl::GetFlag(FLAGS_colgen_solver);
     return 1;
