@@ -1489,14 +1489,14 @@ void MaybeUpdateRefHintFromDominance(
     const std::optional<int64_t> dominating_ref_hint =
         context.GetRefSolutionHint(dominating_ref);
     if (!dominating_ref_hint.has_value()) continue;
-    const int64_t delta =
-        context.DomainOf(dominating_ref)
-            .ClosestValue(*dominating_ref_hint + remaining_delta) -
-        *dominating_ref_hint;
+    const Domain& dominating_ref_domain = context.DomainOf(dominating_ref);
+    const int64_t new_dominating_ref_hint =
+        dominating_ref_domain.ValueAtOrBefore(*dominating_ref_hint +
+                                              remaining_delta);
     // This might happen if the solution hint is not initially feasible.
-    if (delta < 0) continue;
-    context.UpdateRefSolutionHint(dominating_ref, *dominating_ref_hint + delta);
-    remaining_delta -= delta;
+    if (!dominating_ref_domain.Contains(new_dominating_ref_hint)) continue;
+    context.UpdateRefSolutionHint(dominating_ref, new_dominating_ref_hint);
+    remaining_delta -= (new_dominating_ref_hint - *dominating_ref_hint);
     if (remaining_delta == 0) break;
   }
 }

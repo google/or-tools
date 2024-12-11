@@ -102,7 +102,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
 
     bool new_variables_have_been_fixed = false;
 
-    {
+    if (!model_variables.empty()) {
       absl::MutexLock domain_lock(&domain_mutex_);
 
       for (int i = 0; i < model_variables.size(); ++i) {
@@ -520,6 +520,19 @@ int64_t GetLinearExpressionValue(const LinearExpressionProto& expr,
     result += expr.coeffs(i) * initial_solution.solution(expr.vars(i));
   }
   return result;
+}
+
+void RestrictAffineExpression(const LinearExpressionProto& expr,
+                              const Domain& restriction,
+                              CpModelProto* mutable_proto) {
+  CHECK_LE(expr.vars().size(), 1);
+  if (expr.vars().empty()) return;
+  const Domain implied_domain = restriction.AdditionWith(Domain(-expr.offset()))
+                                    .InverseMultiplicationBy(expr.coeffs(0));
+  const Domain domain =
+      ReadDomainFromProto(mutable_proto->variables(expr.vars(0)))
+          .IntersectionWith(implied_domain);
+  FillDomainInProto(domain, mutable_proto->mutable_variables(expr.vars(0)));
 }
 
 struct StartEndIndex {
@@ -2348,24 +2361,75 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
           {i, CenterToCenterLInfinityDistance(center_rect, rect)});
     }
   }
-  std::sort(distances.begin(), distances.end(),
-            [](const auto& a, const auto& b) { return a.second < b.second; });
+  std::stable_sort(
+      distances.begin(), distances.end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
 
   const int num_to_sample = data.difficulty * all_active_rectangles.size();
-  absl::flat_hash_set<int> variables_to_relax;
   const int num_to_relax = std::min<int>(distances.size(), num_to_sample);
+  Rectangle relaxed_bounding_box = center_rect;
+  absl::flat_hash_set<int> boxes_to_relax;
   for (int i = 0; i < num_to_relax; ++i) {
     const int rectangle_idx = distances[i].first;
     const ActiveRectangle& rectangle = all_active_rectangles[rectangle_idx];
+    relaxed_bounding_box.GrowToInclude(get_rectangle(rectangle));
+    boxes_to_relax.insert(rectangle_idx);
+  }
+
+  // Heuristic: we relax a bit the bounding box in order to allow some
+  // movements, this is needed to not have a trivial neighborhood if we relax a
+  // single box for instance.
+  const IntegerValue x_size = relaxed_bounding_box.SizeX();
+  const IntegerValue y_size = relaxed_bounding_box.SizeY();
+  relaxed_bounding_box.x_min = CapSubI(relaxed_bounding_box.x_min, x_size / 2);
+  relaxed_bounding_box.x_max = CapAddI(relaxed_bounding_box.x_max, x_size / 2);
+  relaxed_bounding_box.y_min = CapSubI(relaxed_bounding_box.y_min, y_size / 2);
+  relaxed_bounding_box.y_max = CapAddI(relaxed_bounding_box.y_max, y_size / 2);
+
+  for (const int b : boxes_to_relax) {
+    const ActiveRectangle& rectangle = all_active_rectangles[b];
+    absl::flat_hash_set<int> variables_to_relax;
     InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
                                   variables_to_relax);
     InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
                                   variables_to_relax);
+    for (const int v : variables_to_relax) {
+      variables_to_freeze.erase(v);
+    }
   }
-  for (const int v : variables_to_relax) {
-    variables_to_freeze.erase(v);
+  Neighborhood neighborhood =
+      helper_.FixGivenVariables(initial_solution, variables_to_freeze);
+
+  // The call above add the relaxed variables to the neighborhood using the
+  // current bounds at level 0. For big problems, this might create a hard model
+  // with a large complicated landscape of fixed boxes with a lot of potential
+  // places to place the relaxed boxes. Therefore we update the domain so the
+  // boxes can only stay around the area we decided to relax.
+  for (const int b : boxes_to_relax) {
+    {
+      const IntervalConstraintProto& x_interval =
+          helper_.ModelProto()
+              .constraints(all_active_rectangles[b].x_interval)
+              .interval();
+      const Domain x_domain = Domain(relaxed_bounding_box.x_min.value(),
+                                     relaxed_bounding_box.x_max.value());
+      RestrictAffineExpression(x_interval.start(), x_domain,
+                               &neighborhood.delta);
+      RestrictAffineExpression(x_interval.end(), x_domain, &neighborhood.delta);
+    }
+    {
+      const IntervalConstraintProto& y_interval =
+          helper_.ModelProto()
+              .constraints(all_active_rectangles[b].y_interval)
+              .interval();
+      const Domain y_domain = Domain(relaxed_bounding_box.y_min.value(),
+                                     relaxed_bounding_box.y_max.value());
+      RestrictAffineExpression(y_interval.start(), y_domain,
+                               &neighborhood.delta);
+      RestrictAffineExpression(y_interval.end(), y_domain, &neighborhood.delta);
+    }
   }
-  return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
+  return neighborhood;
 }
 
 Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
