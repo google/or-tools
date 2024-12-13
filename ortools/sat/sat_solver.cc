@@ -538,7 +538,7 @@ namespace {
 
 // Returns true iff 'b' is subsumed by 'a' (i.e 'a' is included in 'b').
 // This is slow and only meant to be used in DCHECKs.
-bool ClauseSubsumption(const std::vector<Literal>& a, SatClause* b) {
+bool ClauseSubsumption(absl::Span<const Literal> a, SatClause* b) {
   std::vector<Literal> superset(b->begin(), b->end());
   std::vector<Literal> subset(a.begin(), a.end());
   std::sort(superset.begin(), superset.end());
@@ -1062,7 +1062,7 @@ void SatSolver::Backtrack(int target_level) {
   last_decision_or_backtrack_trail_index_ = trail_->Index();
 }
 
-bool SatSolver::AddBinaryClauses(const std::vector<BinaryClause>& clauses) {
+bool SatSolver::AddBinaryClauses(absl::Span<const BinaryClause> clauses) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
   for (const BinaryClause c : clauses) {
@@ -1684,7 +1684,7 @@ void SatSolver::UpdateClauseActivityIncrement() {
   clause_activity_increment_ *= 1.0 / parameters_->clause_activity_decay();
 }
 
-bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
+bool SatSolver::IsConflictValid(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   if (literals.empty()) return false;
   const int highest_level = DecisionLevel(literals[0].Variable());

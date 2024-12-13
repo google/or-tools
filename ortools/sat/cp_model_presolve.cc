@@ -2942,6 +2942,34 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   return false;
 }
 
+namespace {
+// Set the hint in `context` for the variable in `equality` that has no hint, if
+// there is exactly one. Otherwise do nothing.
+void MaybeComputeMissingHint(PresolveContext* context,
+                             const LinearConstraintProto& equality) {
+  DCHECK(equality.domain_size() == 2 &&
+         equality.domain(0) == equality.domain(1));
+  if (!context->HintIsLoaded()) return;
+  int term_with_missing_hint = -1;
+  int64_t missing_term_value = equality.domain(0);
+  for (int i = 0; i < equality.vars_size(); ++i) {
+    if (context->VarHasSolutionHint(equality.vars(i))) {
+      missing_term_value -=
+          context->SolutionHint(equality.vars(i)) * equality.coeffs(i);
+    } else if (term_with_missing_hint == -1) {
+      term_with_missing_hint = i;
+    } else {
+      // More than one variable has a missing hint.
+      return;
+    }
+  }
+  if (term_with_missing_hint == -1) return;
+  context->SetNewVariableHint(
+      equality.vars(term_with_missing_hint),
+      missing_term_value / equality.coeffs(term_with_missing_hint));
+}
+}  // namespace
+
 bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (ct->linear().vars().size() <= 1) return false;
@@ -3064,6 +3092,15 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
     }
   }
   context_->InitializeNewDomains();
+  // Scan the new constraints added above in reverse order so that the hint of
+  // `new_variables[k]` can be computed from the hint of the existing variables
+  // and from the hints of `new_variables[k']`, with k' > k.
+  const int num_constraints = context_->working_model->constraints_size();
+  for (int i = 0; i < num_replaced_variables; ++i) {
+    MaybeComputeMissingHint(
+        context_,
+        context_->working_model->constraints(num_constraints - 1 - i).linear());
+  }
 
   if (VLOG_IS_ON(2)) {
     std::string log_eq = absl::StrCat(linear_constraint.domain(0), " = ");
@@ -7457,7 +7494,7 @@ void CpModelPresolver::Probe() {
 namespace {
 
 bool FixFromAssignment(const VariablesAssignment& assignment,
-                       const std::vector<int>& var_mapping,
+                       absl::Span<const int> var_mapping,
                        PresolveContext* context) {
   const int num_vars = assignment.NumberOfVariables();
   for (int i = 0; i < num_vars; ++i) {

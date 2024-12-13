@@ -2414,7 +2414,7 @@ IntegerValue SumOfAllDiffLowerBounder::GetBestLowerBound(std::string& suffix) {
 namespace {
 
 void TryToGenerateAllDiffCut(
-    const std::vector<std::pair<double, AffineExpression>>& sorted_exprs_lp,
+    absl::Span<const std::pair<double, AffineExpression>> sorted_exprs_lp,
     const IntegerTrail& integer_trail,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     TopNCuts& top_n_cuts, Model* model) {
@@ -2527,8 +2527,8 @@ IntegerValue MaxCornerDifference(const IntegerVariable var,
 //                       target expr I(i), max expr k.
 // The coefficient of zk is Sum(i=1..n)(MPlusCoefficient_ki) + bk
 IntegerValue MPlusCoefficient(
-    const std::vector<IntegerVariable>& x_vars,
-    const std::vector<LinearExpression>& exprs,
+    absl::Span<const IntegerVariable> x_vars,
+    absl::Span<const LinearExpression> exprs,
     const util_intops::StrongVector<IntegerVariable, int>& variable_partition,
     const int max_index, const IntegerTrail& integer_trail) {
   IntegerValue coeff = exprs[max_index].offset;
@@ -2659,7 +2659,7 @@ IntegerValue EvaluateMaxAffine(
 
 bool BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
-    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    absl::Span<const std::pair<IntegerValue, IntegerValue>> affines,
     Model* model, LinearConstraintBuilder* builder) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   const IntegerValue x_min = integer_trail->LevelZeroLowerBound(var);

@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/flags/declare.h"
+#include "absl/types/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer_base.h"
@@ -128,7 +129,7 @@ int RegisterClausesLevelZeroImport(int id,
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,
                               const CpModelProto& mapping_proto,
-                              const std::vector<int>& postsolve_mapping,
+                              absl::Span<const int> postsolve_mapping,
                               std::vector<int64_t>* solution);
 
 // Try to find a solution by following the hint and using a low conflict limit.

@@ -374,7 +374,7 @@ class SatSolver {
   // Functions to manage the set of learned binary clauses.
   // Only clauses added/learned when TrackBinaryClause() is true are managed.
   void TrackBinaryClauses(bool value) { track_binary_clauses_ = value; }
-  bool AddBinaryClauses(const std::vector<BinaryClause>& clauses);
+  bool AddBinaryClauses(absl::Span<const BinaryClause> clauses);
   const std::vector<BinaryClause>& NewlyAddedBinaryClauses();
   void ClearNewlyAddedBinaryClauses();
 
@@ -690,7 +690,7 @@ class SatSolver {
   // - This literal appears in the first position.
   // - All the other literals are of smaller decision level.
   // - There is no literal with a decision level of zero.
-  bool IsConflictValid(const std::vector<Literal>& literals);
+  bool IsConflictValid(absl::Span<const Literal> literals);
 
   // Given the learned clause after a conflict, this computes the correct
   // backtrack level to call Backtrack() with.
@@ -912,8 +912,9 @@ inline std::function<void(Model*)> CardinalityConstraint(
 }
 
 inline std::function<void(Model*)> ExactlyOneConstraint(
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
@@ -926,8 +927,9 @@ inline std::function<void(Model*)> ExactlyOneConstraint(
 }
 
 inline std::function<void(Model*)> AtMostOneConstraint(
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
@@ -997,8 +999,9 @@ inline std::function<void(Model*)> EnforcedClause(
 //
 // Note(user): we could have called ReifiedBoolOr() with everything negated.
 inline std::function<void(Model*)> ReifiedBoolAnd(
-    const std::vector<Literal>& literals, Literal r) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals, Literal r) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<Literal> clause;
     for (const Literal l : literals) {
       model->Add(Implication(r, l));  // r => l.
