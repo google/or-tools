@@ -63,8 +63,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
   std::vector<RectangleInRange> GeneralizeExplanation(const Conflict& conflict);
 
-  bool BuildAndReportEnergyTooLarge(
-      const std::vector<RectangleInRange>& ranges);
+  bool BuildAndReportEnergyTooLarge(absl::Span<const RectangleInRange> ranges);
 
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;

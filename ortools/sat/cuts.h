@@ -702,7 +702,7 @@ CutGenerator CreateLinMaxCutGenerator(
 // This function will reset the bounds of the builder.
 bool BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
-    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    absl::Span<const std::pair<IntegerValue, IntegerValue>> affines,
     Model* model, LinearConstraintBuilder* builder);
 
 // By definition, the Max of affine functions is convex. The linear polytope is

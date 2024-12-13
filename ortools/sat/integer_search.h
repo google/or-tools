@@ -203,8 +203,8 @@ struct BooleanOrIntegerVariable {
   IntegerVariable int_var = kNoIntegerVariable;
 };
 std::function<BooleanOrIntegerLiteral()> FollowHint(
-    const std::vector<BooleanOrIntegerVariable>& vars,
-    const std::vector<IntegerValue>& values, Model* model);
+    absl::Span<const BooleanOrIntegerVariable> vars,
+    absl::Span<const IntegerValue> values, Model* model);
 
 // Combines search heuristics in order: if the i-th one returns kNoLiteralIndex,
 // ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,

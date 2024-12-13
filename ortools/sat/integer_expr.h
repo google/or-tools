@@ -603,10 +603,16 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
   };
 }
 inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
-    const std::vector<Literal>& enforcement_literals,
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<int64_t>& coefficients, int64_t upper_bound) {
-  return [=](Model* model) {
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const IntegerVariable> vars,
+    absl::Span<const int64_t> coefficients, int64_t upper_bound) {
+  return [=,
+          coefficients =
+              std::vector<int64_t>(coefficients.begin(), coefficients.end()),
+          vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
+          enforcement_literals =
+              std::vector<Literal>(enforcement_literals.begin(),
+                                   enforcement_literals.end())](Model* model) {
     AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coefficients,
                                  upper_bound, model);
   };

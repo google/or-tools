@@ -1116,8 +1116,8 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
 }
 
 std::function<BooleanOrIntegerLiteral()> FollowHint(
-    const std::vector<BooleanOrIntegerVariable>& vars,
-    const std::vector<IntegerValue>& values, Model* model) {
+    absl::Span<const BooleanOrIntegerVariable> vars,
+    absl::Span<const IntegerValue> values, Model* model) {
   auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
@@ -1130,7 +1130,10 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
   int* rev_start_index = model->TakeOwnership(new int);
   *rev_start_index = 0;
 
-  return [=]() {
+  return [=,
+          vars =
+              std::vector<BooleanOrIntegerVariable>(vars.begin(), vars.end()),
+          values = std::vector<IntegerValue>(values.begin(), values.end())]() {
     rev_int_repo->SaveState(rev_start_index);
     for (int i = *rev_start_index; i < vars.size(); ++i) {
       const IntegerValue value = values[i];

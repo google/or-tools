@@ -315,11 +315,11 @@ std::vector<std::vector<int>> GetOverlappingIntervalComponentsBruteForce(
     components[component_indices[i]].push_back(i);
   }
   // Sort the components by start, like GetOverlappingIntervalComponents().
-  absl::c_sort(components, [intervals](const std::vector<int>& c1,
-                                       const std::vector<int>& c2) {
-    CHECK(!c1.empty() && !c2.empty());
-    return intervals[c1[0]].start < intervals[c2[0]].start;
-  });
+  absl::c_sort(components,
+               [intervals](absl::Span<const int> c1, absl::Span<const int> c2) {
+                 CHECK(!c1.empty() && !c2.empty());
+                 return intervals[c1[0]].start < intervals[c2[0]].start;
+               });
   // Inside each component, the intervals should be sorted, too.
   // Moreover, we need to convert our indices to IntervalIndex.index.
   for (std::vector<int>& component : components) {
@@ -736,7 +736,7 @@ void ReduceUntilDone(ProbingRectangle& ranges, absl::BitGen& random) {
 // detect a conflict even if there is one by looking only at those rectangles,
 // see the ProbingRectangleTest.CounterExample unit test for a concrete example.
 std::optional<Rectangle> FindRectangleWithEnergyTooLargeExhaustive(
-    const std::vector<RectangleInRange>& box_ranges) {
+    absl::Span<const RectangleInRange> box_ranges) {
   int num_boxes = box_ranges.size();
   std::vector<IntegerValue> x;
   x.reserve(num_boxes * 4);
@@ -957,8 +957,8 @@ TEST(FindPartialIntersections, Simple) {
 }
 
 bool GraphsDefineSameConnectedComponents(
-    const std::vector<std::pair<int, int>>& graph1,
-    const std::vector<std::pair<int, int>>& graph2) {
+    absl::Span<const std::pair<int, int>> graph1,
+    absl::Span<const std::pair<int, int>> graph2) {
   int max = -1;
   int max2 = -1;
   for (const auto& [a, b] : graph1) {

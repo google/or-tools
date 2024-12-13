@@ -337,7 +337,7 @@ IntegerVariable GetOrCreateVariableWithTightBound(
 }
 
 IntegerVariable GetOrCreateVariableLinkedToSumOf(
-    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
+    absl::Span<const std::pair<IntegerVariable, int64_t>> terms,
     bool lb_required, bool ub_required, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
@@ -1862,7 +1862,7 @@ void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,
                               const CpModelProto& mapping_proto,
-                              const std::vector<int>& postsolve_mapping,
+                              absl::Span<const int> postsolve_mapping,
                               std::vector<int64_t>* solution) {
   if (params.debug_postsolve_with_full_solver()) {
     PostsolveResponseWithFullSolver(num_variable_in_original_model,

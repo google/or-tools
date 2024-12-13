@@ -530,7 +530,7 @@ int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
 }
 
 bool NonOverlappingRectanglesEnergyPropagator::BuildAndReportEnergyTooLarge(
-    const std::vector<RectangleInRange>& ranges) {
+    absl::Span<const RectangleInRange> ranges) {
   if (ranges.size() == 2) {
     num_conflicts_two_boxes_++;
     return ClearAndAddTwoBoxesConflictReason(ranges[0].box_index,
