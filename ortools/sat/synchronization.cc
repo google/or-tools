@@ -78,14 +78,17 @@ void SharedLPSolutionRepository::NewLPSolution(
   if (lp_solution.empty()) return;
 
   // Add this solution to the pool.
-  SharedSolutionRepository<double>::Solution solution;
-  solution.variable_values = std::move(lp_solution);
+  auto solution =
+      std::make_shared<SharedSolutionRepository<double>::Solution>();
+  solution->variable_values = std::move(lp_solution);
 
   // We always prefer to keep the solution from the last synchronize batch.
-  absl::MutexLock mutex_lock(&mutex_);
-  solution.rank = -num_synchronization_;
-  ++num_added_;
-  new_solutions_.push_back(solution);
+  {
+    absl::MutexLock mutex_lock(&mutex_);
+    solution->rank = -num_synchronization_;
+    ++num_added_;
+    new_solutions_.push_back(solution);
+  }
 }
 
 void SharedIncompleteSolutionManager::AddSolution(
@@ -546,17 +549,21 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
 
 CpSolverResponse SharedResponseManager::GetResponse() {
   absl::MutexLock mutex_lock(&mutex_);
-  CpSolverResponse result =
-      solutions_.NumSolutions() == 0
-          ? GetResponseInternal({}, "")
-          : GetResponseInternal(solutions_.GetSolution(0).variable_values,
-                                solutions_.GetSolution(0).info);
-
+  CpSolverResponse result;
+  if (solutions_.NumSolutions() == 0) {
+    result = GetResponseInternal({}, "");
+  } else {
+    std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+        solution = solutions_.GetSolution(0);
+    result = GetResponseInternal(solution->variable_values, solution->info);
+  }
   // If this is true, we postsolve and copy all of our solutions.
   if (parameters_.fill_additional_solutions_in_response()) {
     std::vector<int64_t> temp;
     for (int i = 0; i < solutions_.NumSolutions(); ++i) {
-      temp = solutions_.GetSolution(i).variable_values;
+      std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+          solution = solutions_.GetSolution(i);
+      temp = solution->variable_values;
       for (int i = solution_postprocessors_.size(); --i >= 0;) {
         solution_postprocessors_[i](&temp);
       }

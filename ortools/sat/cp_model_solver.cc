@@ -1214,16 +1214,16 @@ class LnsSolver : public SubSolver {
             shared_->response->SolutionsRepository();
         if (repo.NumSolutions() > 0) {
           base_response.set_status(CpSolverStatus::FEASIBLE);
-          const SharedSolutionRepository<int64_t>::Solution solution =
-              repo.GetRandomBiasedSolution(random);
-          for (const int64_t value : solution.variable_values) {
-            base_response.add_solution(value);
-          }
+          std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+              solution = repo.GetRandomBiasedSolution(random);
+          base_response.mutable_solution()->Assign(
+              solution->variable_values.begin(),
+              solution->variable_values.end());
 
           // Note: We assume that the solution rank is the solution internal
           // objective.
-          data.initial_best_objective = repo.GetSolution(0).rank;
-          data.base_objective = solution.rank;
+          data.initial_best_objective = repo.GetSolution(0)->rank;
+          data.base_objective = solution->rank;
         } else {
           base_response.set_status(CpSolverStatus::UNKNOWN);
 
@@ -1282,8 +1282,17 @@ class LnsSolver : public SubSolver {
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
 
       // Presolve and solve the LNS fragment.
-      CpModelProto lns_fragment;
-      CpModelProto mapping_proto;
+      int64_t buffer_size;
+      {
+        absl::MutexLock l(&next_arena_size_mutex_);
+        buffer_size = next_arena_size_;
+      }
+      std::vector<char> arena_buffer(buffer_size);
+      google::protobuf::Arena arena(arena_buffer.data(), arena_buffer.size());
+      CpModelProto& lns_fragment =
+          *google::protobuf::Arena::Create<CpModelProto>(&arena);
+      CpModelProto& mapping_proto =
+          *google::protobuf::Arena::Create<CpModelProto>(&arena);
       auto context = std::make_unique<PresolveContext>(
           &local_model, &lns_fragment, &mapping_proto);
 
@@ -1516,9 +1525,8 @@ class LnsSolver : public SubSolver {
         // if we just recovered the base solution.
         if (data.status == CpSolverStatus::OPTIMAL ||
             data.status == CpSolverStatus::FEASIBLE) {
-          const std::vector<int64_t> base_solution(
-              base_response.solution().begin(), base_response.solution().end());
-          if (solution_values != base_solution) {
+          if (absl::MakeSpan(solution_values) !=
+              absl::MakeSpan(base_response.solution())) {
             new_solution = true;
             shared_->response->NewSolution(solution_values, solution_info,
                                            /*model=*/nullptr);
@@ -1567,6 +1575,10 @@ class LnsSolver : public SubSolver {
             ", #calls:", generator_->num_calls(),
             ", p:", fully_solved_proportion, "]");
       }
+      {
+        absl::MutexLock l(&next_arena_size_mutex_);
+        next_arena_size_ = arena.SpaceUsed();
+      }
     };
   }
 
@@ -1581,6 +1593,12 @@ class LnsSolver : public SubSolver {
   NeighborhoodGeneratorHelper* helper_;
   const SatParameters lns_parameters_;
   SharedClasses* shared_;
+  // This is a optimization to allocate the arena for the LNS fragment already
+  // at roughly the right size. We will update it with the last size of the
+  // latest LNS fragment.
+  absl::Mutex next_arena_size_mutex_;
+  int64_t next_arena_size_ ABSL_GUARDED_BY(next_arena_size_mutex_) =
+      helper_->ModelProto().SpaceUsedLong();
 };
 
 void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {

@@ -471,6 +471,7 @@ NeighborhoodGeneratorHelper::GetActiveRectangles(
   }
 
   std::vector<ActiveRectangle> results;
+  results.reserve(active_rectangles.size());
   for (const auto& [rectangle, no_overlap_2d_constraints] : active_rectangles) {
     ActiveRectangle& result = results.emplace_back();
     result.x_interval = rectangle.first;
@@ -532,7 +533,9 @@ void RestrictAffineExpression(const LinearExpressionProto& expr,
   const Domain domain =
       ReadDomainFromProto(mutable_proto->variables(expr.vars(0)))
           .IntersectionWith(implied_domain);
-  FillDomainInProto(domain, mutable_proto->mutable_variables(expr.vars(0)));
+  if (!domain.IsEmpty()) {
+    FillDomainInProto(domain, mutable_proto->mutable_variables(expr.vars(0)));
+  }
 }
 
 struct StartEndIndex {
@@ -1034,7 +1037,14 @@ std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const CpSolverResponse& base_solution,
     const absl::flat_hash_set<int>& variables_to_fix) const {
-  Neighborhood neighborhood;
+  int initial_num_variables = 0;
+  {
+    absl::ReaderMutexLock domain_lock(&domain_mutex_);
+
+    initial_num_variables =
+        model_proto_with_only_variables_->variables().size();
+  }
+  Neighborhood neighborhood(initial_num_variables);
 
   // TODO(user): Maybe relax all variables in the objective when the number
   // is small or negligible compared to the number of variables.

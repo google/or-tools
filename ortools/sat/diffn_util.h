@@ -683,27 +683,25 @@ inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
   return PavedRegionDifference({other.begin(), other.end()}, region).empty();
 }
 
-// For a given a set of N rectangles with non-zero area in `rectangles`, there
-// might be up to N*(N-1)/2 pairs of rectangles that intersect one another. If
-// each of these pairs describe an arc and each rectangle describe a node, the
-// rectangles and their intersections describe a graph. This function returns
-// the full spanning forest for this graph (ie., a spanning tree for each
-// connected component). This function allows to know if a set of rectangles has
-// any intersection, find an example intersection for each rectangle that has
-// one, or split the rectangles into connected components according to their
-// intersections.
+// For a given a set of N rectangles in `rectangles`, there might be up to
+// N*(N-1)/2 pairs of rectangles that intersect one another. If each of these
+// pairs describe an arc and each rectangle describe a node, the rectangles and
+// their intersections describe a graph. This function returns the full spanning
+// forest for this graph (ie., a spanning tree for each connected component).
+// This function allows to know if a set of rectangles has any intersection,
+// find an example intersection for each rectangle that has one, or split the
+// rectangles into connected components according to their intersections.
 //
 // The returned tuples are the arcs of the spanning forest represented by their
 // indices in the input vector.
+//
+// This function works with degenerate rectangles (ie., points or lines) and
+// have the same semantics for overlap as Rectangle::IsDisjoint().
 //
 // Note: This function runs in O(N (log N)^2) time on the input size, which
 // would be impossible to do if we were to return all the intersections, which
 // can be quadratic in number.
 std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
-    absl::Span<const Rectangle> rectangles);
-
-// Same as above, but also correctly handles rectangles with zero area.
-std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
     absl::Span<const Rectangle> rectangles);
 
 // This function is faster that the FindPartialRectangleIntersections() if one

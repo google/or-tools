@@ -82,6 +82,11 @@ class SavedVariable {
   int ref_ = 0;
 };
 
+// If a floating point objective is present, scale it using the current domains
+// and transform it to an integer_objective.
+ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective(
+    const SatParameters& params, SolverLogger* logger, CpModelProto* proto);
+
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
@@ -141,6 +146,7 @@ class PresolveContext {
   int64_t FixedValue(int ref) const;
   bool DomainContains(int ref, int64_t value) const;
   Domain DomainOf(int ref) const;
+  absl::Span<const Domain> AllDomains() const { return domains_; }
 
   // Helper to query the state of an interval.
   bool IntervalIsConstant(int ct_ref) const;
@@ -159,6 +165,10 @@ class PresolveContext {
   int64_t MaxOf(const LinearExpressionProto& expr) const;
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
+
+  // This is faster than testing IsFixed() + FixedValue().
+  std::optional<int64_t> FixedValueOrNullopt(
+      const LinearExpressionProto& expr) const;
 
   // Accepts any proto with two parallel vector .vars() and .coeffs(), like
   // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware
@@ -224,7 +234,7 @@ class PresolveContext {
 
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
-    return domains[var].IsIncludedIn(domain);
+    return domains_[var].IsIncludedIn(domain);
   }
 
   // Returns true if this ref only appear in one constraint.
@@ -388,6 +398,16 @@ class PresolveContext {
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();
 
+  // This is a bit hacky. Clear some fields. See call site.
+  //
+  // TODO(user): The ModelCopier should probably not depend on the full context
+  // it only need to read/write domains and call UpdateRuleStats(), so we might
+  // want to split that part out so that we can just initialize the full context
+  // later. Alternatively, we could just move more complex part of the context
+  // out, like the graph, the encoding, the affine representative, and so on to
+  // individual and easier to manage classes.
+  void ResetAfterCopy();
+
   // Clears the "rules" statistics.
   void ClearStats();
 
@@ -472,7 +492,6 @@ class PresolveContext {
   ABSL_MUST_USE_RESULT bool CanonicalizeOneObjectiveVariable(int var);
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
-  ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective();
 
   // When the objective is singleton, we can always restrict the domain of var
   // so that the current objective domain is non-constraining. Returns false
@@ -616,6 +635,18 @@ class PresolveContext {
   bool HintIsLoaded() const { return hint_is_loaded_; }
   absl::Span<const int64_t> SolutionHint() const { return hint_; }
 
+  // Similar to SolutionHint() but make sure the value is within the current
+  // bounds of the variable.
+  int64_t ClampedSolutionHint(int var) {
+    int64_t value = hint_[var];
+    if (value > MaxOf(var)) {
+      value = MaxOf(var);
+    } else if (value < MinOf(var)) {
+      value = MinOf(var);
+    }
+    return value;
+  }
+
   bool LiteralSolutionHint(int lit) const {
     const int var = PositiveRef(lit);
     return RefIsPositive(lit) ? hint_[var] : !hint_[var];
@@ -754,7 +785,7 @@ class PresolveContext {
   bool is_unsat_ = false;
 
   // The current domain of each variables.
-  std::vector<Domain> domains;
+  std::vector<Domain> domains_;
 
   // Parallel to domains.
   //

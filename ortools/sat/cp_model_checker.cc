@@ -17,11 +17,13 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -1420,6 +1422,7 @@ class ConstraintChecker {
     const auto& arg = ct.no_overlap_2d();
     // Those intervals from arg.x_intervals and arg.y_intervals where both
     // the x and y intervals are enforced.
+    bool has_zero_sizes = false;
     std::vector<Rectangle> enforced_rectangles;
     {
       const int num_intervals = arg.x_intervals_size();
@@ -1432,16 +1435,34 @@ class ConstraintChecker {
                                          .x_max = IntervalEnd(x.interval()),
                                          .y_min = IntervalStart(y.interval()),
                                          .y_max = IntervalEnd(y.interval())});
+          const auto& rect = enforced_rectangles.back();
+          if (rect.x_min == rect.x_max || rect.y_min == rect.y_max) {
+            has_zero_sizes = true;
+          }
         }
       }
     }
-    const std::vector<std::pair<int, int>> intersections =
-        FindPartialRectangleIntersectionsAlsoEmpty(enforced_rectangles);
-    if (!intersections.empty()) {
-      VLOG(1) << "Rectangles " << intersections[0].first << "("
-              << enforced_rectangles[intersections[0].first] << ") and "
-              << intersections[0].second << "("
-              << enforced_rectangles[intersections[0].second]
+
+    std::optional<std::pair<int, int>> one_intersection;
+    if (!has_zero_sizes) {
+      absl::c_stable_sort(enforced_rectangles,
+                          [](const Rectangle& a, const Rectangle& b) {
+                            return a.x_min < b.x_min;
+                          });
+      one_intersection = FindOneIntersectionIfPresent(enforced_rectangles);
+    } else {
+      const std::vector<std::pair<int, int>> intersections =
+          FindPartialRectangleIntersections(enforced_rectangles);
+      if (!intersections.empty()) {
+        one_intersection = intersections[0];
+      }
+    }
+
+    if (one_intersection != std::nullopt) {
+      VLOG(1) << "Rectangles " << one_intersection->first << "("
+              << enforced_rectangles[one_intersection->first] << ") and "
+              << one_intersection->second << "("
+              << enforced_rectangles[one_intersection->second]
               << ") are not disjoint.";
       return false;
     }

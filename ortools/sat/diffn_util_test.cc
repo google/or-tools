@@ -34,6 +34,7 @@
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
+#include "ortools/base/fuzztest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/connected_components.h"
@@ -41,6 +42,7 @@
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -1054,6 +1056,27 @@ TEST(FindPartialIntersections, Random) {
              .y_min = rec.y_min - IntegerValue(absl::Uniform(random, 0, 4)),
              .y_max = rec.y_max + IntegerValue(absl::Uniform(random, 0, 4))};
     }
+    const int num_of_rectangle_with_area = rectangles.size();
+    const int num_points = absl::Uniform(random, 0, 5);
+    for (int i = 0; i < num_points; ++i) {
+      const IntegerValue x = absl::Uniform(random, 0, 100);
+      const IntegerValue y = absl::Uniform(random, 0, 100);
+      rectangles.push_back({.x_min = x, .x_max = x, .y_min = y, .y_max = y});
+    }
+    const int num_lines = absl::Uniform(random, 0, 5);
+    for (int i = 0; i < num_lines; ++i) {
+      const IntegerValue v = absl::Uniform(random, 0, 100);
+      const IntegerValue i1 = absl::Uniform(random, 0, 99);
+      const IntegerValue i2 = absl::Uniform(random, i1.value() + 1, 100);
+      if (absl::Bernoulli(random, 0.5)) {
+        rectangles.push_back(
+            {.x_min = i1, .x_max = i2, .y_min = v, .y_max = v});
+      } else {
+        rectangles.push_back(
+            {.x_min = v, .x_max = v, .y_min = i1, .y_max = i2});
+      }
+    }
+
     const std::vector<std::pair<int, int>> naive_result =
         GetAllIntersections(rectangles);
     const std::vector<std::pair<int, int>> result =
@@ -1071,19 +1094,50 @@ TEST(FindPartialIntersections, Random) {
     }
 
     // We also test FindOneIntersectionIfPresent().
-    absl::c_sort(rectangles, [](const Rectangle& a, const Rectangle& b) {
-      return a.x_min < b.x_min;
-    });
-    if (naive_result.empty()) {
-      EXPECT_EQ(FindOneIntersectionIfPresent(rectangles), std::nullopt);
+    std::sort(rectangles.begin(),
+              rectangles.begin() + num_of_rectangle_with_area,
+              [](const Rectangle& a, const Rectangle& b) {
+                return a.x_min < b.x_min;
+              });
+    absl::Span<const Rectangle> rectangles_with_area =
+        absl::MakeSpan(rectangles).subspan(0, num_of_rectangle_with_area);
+    if (FindPartialRectangleIntersections(rectangles_with_area).empty()) {
+      EXPECT_EQ(FindOneIntersectionIfPresent(rectangles_with_area),
+                std::nullopt);
     } else {
-      auto opt_pair = FindOneIntersectionIfPresent(rectangles);
+      auto opt_pair = FindOneIntersectionIfPresent(rectangles_with_area);
       EXPECT_NE(opt_pair, std::nullopt);
       EXPECT_FALSE(
           rectangles[opt_pair->first].IsDisjoint(rectangles[opt_pair->second]));
     }
   }
 }
+
+void CheckFuzzedRectangles(
+    const std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t>>& tuples) {
+  std::vector<Rectangle> rectangles;
+  rectangles.reserve(tuples.size());
+  for (const auto& [x_min, x_size, y_min, y_size] : tuples) {
+    rectangles.push_back({.x_min = x_min,
+                          .x_max = CapAdd(x_min, x_size),
+                          .y_min = y_min,
+                          .y_max = CapAdd(y_min, y_size)});
+  }
+  const std::vector<std::pair<int, int>> result =
+      FindPartialRectangleIntersections(rectangles);
+  for (const auto& [i, j] : result) {
+    CHECK(!rectangles[i].IsDisjoint(rectangles[j])) << i << " " << j;
+  }
+  const std::vector<std::pair<int, int>> naive_result =
+      GetAllIntersections(rectangles);
+  CHECK(GraphsDefineSameConnectedComponents(naive_result, result))
+      << RenderRectGraph(std::nullopt, rectangles, result);
+}
+
+FUZZ_TEST(FindPartialIntersections, CheckFuzzedRectangles)
+    .WithDomains(fuzztest::VectorOf(fuzztest::TupleOf(
+        fuzztest::Arbitrary<int64_t>(), fuzztest::NonNegative<int64_t>(),
+        fuzztest::Arbitrary<int64_t>(), fuzztest::NonNegative<int64_t>())));
 
 void BM_FindRectangles(benchmark::State& state) {
   absl::BitGen random;
