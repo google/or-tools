@@ -27,6 +27,8 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -36,6 +38,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -1039,15 +1042,12 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::OptimizeAndPack(
     packing_parameters.set_use_preprocessing(true);
     solver->SetParameters(packing_parameters.SerializeAsString());
   }
-  DimensionSchedulingStatus status = DimensionSchedulingStatus::OPTIMAL;
-  if (Optimize(next_accessor, dimension_travel_info_per_route, solver,
+  DimensionSchedulingStatus status =
+      Optimize(next_accessor, dimension_travel_info_per_route, solver,
                /*cumul_values=*/nullptr, /*break_values=*/nullptr,
                /*resource_indices_per_group=*/nullptr, &cost,
                /*transit_cost=*/nullptr,
-               /*clear_lp=*/false, /*optimize_resource_assignment=*/false) ==
-      DimensionSchedulingStatus::INFEASIBLE) {
-    status = DimensionSchedulingStatus::INFEASIBLE;
-  }
+               /*clear_lp=*/false, /*optimize_resource_assignment=*/false);
   if (status != DimensionSchedulingStatus::INFEASIBLE) {
     std::vector<int> vehicles(dimension()->model()->vehicles());
     std::iota(vehicles.begin(), vehicles.end(), 0);
@@ -2147,6 +2147,114 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
   }
 
+  // TODO(user): find why adding these constraints make CPSAT slower.
+  if (!solver->IsCPSATSolver()) {
+    for (const auto& [limit, min_break_duration] :
+         dimension_->GetBreakDistanceDurationOfVehicle(vehicle)) {
+      int64_t min_num_breaks = 0;
+      if (limit > 0) {
+        min_num_breaks =
+            std::max<int64_t>(0, CapSub(total_fixed_transit, 1) / limit);
+      }
+      if (CapSub(current_route_min_cumuls_.back(),
+                 current_route_max_cumuls_.front()) > limit) {
+        min_num_breaks = std::max<int64_t>(min_num_breaks, 1);
+      }
+      if (num_breaks < min_num_breaks) return false;
+      if (min_num_breaks == 0) continue;
+
+      // Adds an LP relaxation of interbreak constraints.
+      // For all 0 <= pl < pr < path_size, for k > 0,
+      // if sum_{p in [pl, pr)} fixed_transit[p] > k * limit,
+      // then sum_{p in [pl, pr)} slack[p] >= k * min_break_duration.
+      //
+      // Moreover, if end_min[pr] - start_max[pl] > limit,
+      // the sum_{p in [pl, pr)} slack[p] >= min_break_duration.
+      //
+      // We want to apply the constraints above, without the ones that are
+      // dominated:
+      // - do not add the same constraint for k' < k, keep the largest k.
+      // - do not add the constraint for both (pl', pr') and (pl, pr)
+      //   if [pl', pr') is a subset of [pl, pr), keep the smallest interval.
+      // TODO(user): reduce the number of constraints further;
+      // for instance if the constraint holds for (k, pl, pr) and (k', pl', pr')
+      // with pr <= pr', then no need to add the constraint for (k+k', pl, pr').
+      //
+      // We need fast access to sum_{p in [pl, pr)} fixed_transit[p].
+      // This will be sum_transits[pr] - sum_transits[pl]. Note that
+      // sum_transits[0] = 0, sum_transits[path_size-1] = total_fixed_transit.
+      std::vector<int64_t> sum_transits(path_size);
+      {
+        sum_transits[0] = 0;
+        for (int pos = 1; pos < path_size; ++pos) {
+          sum_transits[pos] = sum_transits[pos - 1] + fixed_transit[pos - 1];
+        }
+      }
+      // To add the slack sum constraints, we need slack sum variables.
+      // Those are created lazily in a sparse vector, then only those useful
+      // variables are linked to slack variables after slack sum constraints
+      // have been added.
+      std::vector<int> slack_sum_vars(path_size, -1);
+      // Given a number of breaks k, an interval of path positions [pl, pr),
+      // returns true if the interbreak constraint triggers for k breaks.
+      // TODO(user): find tighter end_min/start_max conditions.
+      // Mind that a break may be longer than min_break_duration.
+      auto trigger = [&](int k, int pl, int pr) -> bool {
+        if (k == 1) {
+          const int64_t span_lb =
+              current_route_min_cumuls_[pr] - current_route_max_cumuls_[pl];
+          if (span_lb > limit) return true;
+        }
+        return sum_transits[pr] - sum_transits[pl] > k * limit;
+      };
+      int min_sum_var_index = path_size;
+      int max_sum_var_index = -1;
+      for (int k = 1; k <= min_num_breaks; ++k) {
+        int pr = 0;
+        for (int pl = 0; pl < path_size - 1; ++pl) {
+          pr = std::max(pr, pl + 1);
+          // Increase pr until transit(pl, pr) > k * limit.
+          while (pr < path_size && !trigger(k, pl, pr)) ++pr;
+          if (pr == path_size) break;
+          // Reduce [pl, pr) from the left.
+          while (pl < pr && trigger(k, pl + 1, pr)) ++pl;
+          if (slack_sum_vars[pl] == -1) {
+            slack_sum_vars[pl] = solver->CreateNewPositiveVariable();
+            min_sum_var_index = std::min(min_sum_var_index, pl);
+          }
+          if (slack_sum_vars[pr] == -1) {
+            slack_sum_vars[pr] = solver->CreateNewPositiveVariable();
+            max_sum_var_index = std::max(max_sum_var_index, pr);
+          }
+          // If k is the largest for this interval, add the constraint.
+          // The call trigger(k', pl, pr) may hold for both k and k+1 with an
+          // irreducible interval [pl, pr] when there is a transit > limit at
+          // the beginning and at the end of the sub-route. sum_slacks[pr] -
+          // sum_slacks[pl] >= k * min_break_duration.
+          if (k < min_num_breaks && trigger(k + 1, pl, pr)) continue;
+          solver->AddLinearConstraint(
+              k * min_break_duration, kint64max,
+              {{slack_sum_vars[pr], 1}, {slack_sum_vars[pl], -1}});
+        }
+      }
+      if (min_sum_var_index < max_sum_var_index) {
+        slack_sum_vars[min_sum_var_index] = solver->AddVariable(0, 0);
+        int prev_index = min_sum_var_index;
+        for (int pos = min_sum_var_index + 1; pos <= max_sum_var_index; ++pos) {
+          if (slack_sum_vars[pos] == -1) continue;
+          // slack_sum_var[pos] =
+          // slack_sum_var[prev_index] + sum_{p in [prev_index, pos)} slack[p].
+          const int ct = solver->AddLinearConstraint(
+              0, 0,
+              {{slack_sum_vars[pos], 1}, {slack_sum_vars[prev_index], -1}});
+          for (int p = prev_index; p < pos; ++p) {
+            solver->SetCoefficient(ct, lp_slacks[p], -1);
+          }
+          prev_index = pos;
+        }
+      }
+    }
+  }
   if (!solver->IsCPSATSolver()) return true;
   if (!dimension_->GetBreakDistanceDurationOfVehicle(vehicle).empty()) {
     // If there is an optional interval, the following model would be wrong.
@@ -2266,7 +2374,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   }
 
   return true;
-}
+}  // NOLINT(readability/fn_size)
 
 namespace {
 bool AllValuesContainedExcept(const IntVar& var, absl::Span<const int> values,

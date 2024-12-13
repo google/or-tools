@@ -2742,31 +2742,43 @@ bool LPCumulFilter::Accept(const Assignment* delta,
   if (!filter_objective_cost_) {
     // No need to compute the cost of the LP, only verify its feasibility.
     delta_cost_without_transit_ = 0;
-    const DimensionSchedulingStatus status = lp_optimizer_.ComputeCumuls(
+    DimensionSchedulingStatus status = lp_optimizer_.ComputeCumuls(
         next_accessor, {}, nullptr, nullptr, nullptr);
-    if (status == DimensionSchedulingStatus::OPTIMAL) return true;
-    if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
-        mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
-                                    nullptr) ==
-            DimensionSchedulingStatus::OPTIMAL) {
-      return true;
+    if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
+      status = mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
+                                           nullptr);
     }
-    return false;
+    DCHECK(status != DimensionSchedulingStatus::FEASIBLE)
+        << "FEASIBLE without filtering objective cost should be OPTIMAL";
+    return status == DimensionSchedulingStatus::OPTIMAL;
   }
 
-  const DimensionSchedulingStatus status =
+  DimensionSchedulingStatus status =
       lp_optimizer_.ComputeCumulCostWithoutFixedTransits(
           next_accessor, &delta_cost_without_transit_);
-  if (status == DimensionSchedulingStatus::INFEASIBLE) {
-    delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
-    return false;
-  }
-  if (delta_cost_without_transit_ > objective_max) return false;
 
-  if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
-      mp_optimizer_.ComputeCumulCostWithoutFixedTransits(
-          next_accessor, &delta_cost_without_transit_) !=
-          DimensionSchedulingStatus::OPTIMAL) {
+  if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY ||
+      status == DimensionSchedulingStatus::FEASIBLE) {
+    const DimensionSchedulingStatus lp_status = status;
+    int64_t mp_cost;
+    status = mp_optimizer_.ComputeCumulCostWithoutFixedTransits(next_accessor,
+                                                                &mp_cost);
+    if (lp_status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
+        status == DimensionSchedulingStatus::OPTIMAL) {
+      // TRICKY: If the MP is only feasible, the computed cost isn't a lower
+      // bound to the problem, so we keep the LP relaxation's lower bound
+      // found by Glop.
+      delta_cost_without_transit_ = mp_cost;
+    } else if (lp_status == DimensionSchedulingStatus::FEASIBLE &&
+               status != DimensionSchedulingStatus::INFEASIBLE) {
+      // TRICKY: Since feasible costs are not lower bounds, we keep the lowest
+      // of the costs between the LP-feasible and CP-SAT (feasible or optimal).
+      delta_cost_without_transit_ =
+          std::min(delta_cost_without_transit_, mp_cost);
+    }
+  }
+
+  if (status == DimensionSchedulingStatus::INFEASIBLE) {
     delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
     return false;
   }
@@ -2796,22 +2808,17 @@ void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
                 next_accessor, &synchronized_cost_without_transit_)
           : lp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
                                         nullptr);
-  if (status == DimensionSchedulingStatus::INFEASIBLE) {
-    // TODO(user): This should only happen if the LP solver times out.
-    // DCHECK the fail wasn't due to an infeasible model.
-    synchronized_cost_without_transit_ = 0;
-  }
   if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
     status = filter_objective_cost_
                  ? mp_optimizer_.ComputeCumulCostWithoutFixedTransits(
                        next_accessor, &synchronized_cost_without_transit_)
                  : mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr,
                                                nullptr, nullptr);
-    if (status != DimensionSchedulingStatus::OPTIMAL) {
-      // TODO(user): This should only happen if the MP solver times out.
-      // DCHECK the fail wasn't due to an infeasible model.
-      synchronized_cost_without_transit_ = 0;
-    }
+  }
+  if (status == DimensionSchedulingStatus::INFEASIBLE) {
+    // TODO(user): This should only happen if the LP/MIP solver times out.
+    // DCHECK the fail wasn't due to an infeasible model.
+    synchronized_cost_without_transit_ = 0;
   }
 }
 
@@ -3159,7 +3166,8 @@ ResourceGroupAssignmentFilter::ComputeRouteCumulCostWithoutResourceAssignment(
       }
       break;
     default:
-      DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
+      DCHECK(status == DimensionSchedulingStatus::OPTIMAL ||
+             status == DimensionSchedulingStatus::FEASIBLE);
   }
   return route_cost;
 }

@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <new>
 #include <string>
 #include <utility>
 #include <vector>
@@ -256,6 +255,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       solver->TopPeriodicCheck();
       std::vector<int64_t> cumul_values;
       std::vector<int64_t> break_start_end_values;
+      // TODO(user): Distinguish between FEASIBLE and OPTIMAL statuses to
+      // keep track of the FEASIBLE-only cases.
       if (!ComputeCumulAndBreakValuesForVehicle(vehicle, next, &cumul_values,
                                                 &break_start_end_values)) {
         return false;
@@ -385,9 +386,6 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
             : optimizer->ComputeRouteCumuls(
                   vehicle, next_accessor, dimension_travel_info, resource,
                   cumul_values, break_start_end_values);
-    if (status == DimensionSchedulingStatus::INFEASIBLE) {
-      return false;
-    }
     // If relaxation is not feasible, try the MP optimizer.
     if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
       DCHECK(!use_mp_optimizer);
@@ -399,11 +397,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
                    : mp_optimizer_->ComputeRouteCumuls(
                          vehicle, next_accessor, dimension_travel_info,
                          resource, cumul_values, break_start_end_values);
-      if (status == DimensionSchedulingStatus::INFEASIBLE) {
-        return false;
-      }
-    } else {
-      DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
+    }
+    if (status == DimensionSchedulingStatus::INFEASIBLE) {
+      return false;
     }
     return true;
   }
@@ -555,23 +551,17 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
         model->GetDimensionResourceGroupIndices(dimension).empty()
             ? global_optimizer_
             : global_mp_optimizer_;
-    const DimensionSchedulingStatus status = ComputeCumulBreakAndResourceValues(
+    DimensionSchedulingStatus status = ComputeCumulBreakAndResourceValues(
         optimizer, &cumul_values_, &break_start_end_values_,
         &resource_indices_per_group_);
-
+    if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
+      // If relaxation is not feasible, try the MILP optimizer.
+      status = ComputeCumulBreakAndResourceValues(
+          global_mp_optimizer_, &cumul_values_, &break_start_end_values_,
+          &resource_indices_per_group_);
+    }
     if (status == DimensionSchedulingStatus::INFEASIBLE) {
       return false;
-    } else if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
-      // If relaxation is not feasible, try the MILP optimizer.
-      const DimensionSchedulingStatus mp_status =
-          ComputeCumulBreakAndResourceValues(
-              global_mp_optimizer_, &cumul_values_, &break_start_end_values_,
-              &resource_indices_per_group_);
-      if (mp_status != DimensionSchedulingStatus::OPTIMAL) {
-        return false;
-      }
-    } else {
-      DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
     }
     // Concatenate cumul_values_, break_start_end_values_ and all
     // resource_indices_per_group_ into cp_values_.

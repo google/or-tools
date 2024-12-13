@@ -161,6 +161,8 @@ enum class DimensionSchedulingStatus {
   // An optimal solution was found, however constraints which were relaxed were
   // violated.
   RELAXED_OPTIMAL_ONLY,
+  // Only a feasible solution was found, optimality was not proven.
+  FEASIBLE,
   // A solution could not be found.
   INFEASIBLE
 };
@@ -169,7 +171,7 @@ class RoutingLinearSolverWrapper {
  public:
   static const int kNoConstraint = -1;
 
-  virtual ~RoutingLinearSolverWrapper() {}
+  virtual ~RoutingLinearSolverWrapper() = default;
   virtual void Clear() = 0;
   virtual int CreateNewPositiveVariable() = 0;
   virtual void SetVariableName(int index, absl::string_view name) = 0;
@@ -404,8 +406,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     linear_program_.NotifyThatColumnsAreClean();
     VLOG(2) << linear_program_.Dump();
     const glop::ProblemStatus status = lp_solver_.Solve(linear_program_);
+    const bool feasible_only = status == glop::ProblemStatus::PRIMAL_FEASIBLE;
     if (status != glop::ProblemStatus::OPTIMAL &&
-        status != glop::ProblemStatus::IMPRECISE) {
+        status != glop::ProblemStatus::IMPRECISE && !feasible_only) {
       return DimensionSchedulingStatus::INFEASIBLE;
     }
     if (is_relaxation_) {
@@ -423,6 +426,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
       if (it == interval_list->end() || value < it->start) {
         return DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY;
       }
+    }
+    if (feasible_only && !linear_program_.objective_coefficients().empty()) {
+      return DimensionSchedulingStatus::FEASIBLE;
     }
     return DimensionSchedulingStatus::OPTIMAL;
   }
@@ -627,13 +633,14 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     };
     model_.clear_solution_hint();
     auto* hint = model_.mutable_solution_hint();
-    for (const auto& [node, cumul] : schedule_variables_) {
-      if (schedule_hint_[node] == 0) continue;
-      hint->add_vars(cumul);
-      hint->add_values(schedule_hint_[node]);
-    }
     if (hint_.vars_size() == model_.variables_size()) {
-      *model_.mutable_solution_hint() = hint_;
+      *hint = hint_;
+    } else {
+      for (const auto& [node, cumul] : schedule_variables_) {
+        if (schedule_hint_[node] == 0) continue;
+        hint->add_vars(cumul);
+        hint->add_values(schedule_hint_[node]);
+      }
     }
     sat::Model model;
     model.Add(sat::NewSatParameters(parameters_));
@@ -645,6 +652,10 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
          !model_.has_floating_point_objective())) {
       record_hint();
       return DimensionSchedulingStatus::OPTIMAL;
+    } else if (response_.status() == sat::CpSolverStatus::FEASIBLE) {
+      // TODO(user): Consider storing "feasible" solutions in a separate
+      // cache we use as hint when the "optimal" cache is empty.
+      return DimensionSchedulingStatus::FEASIBLE;
     }
     return DimensionSchedulingStatus::INFEASIBLE;
   }
