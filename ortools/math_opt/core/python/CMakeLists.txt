@@ -22,9 +22,6 @@ if(APPLE)
     INSTALL_RPATH
       "@loader_path;@loader_path/../../../../${PYTHON_PROJECT}/.libs;@loader_path/../../../../pybind11_abseil"
     )
-  set_property(TARGET math_opt_pybind11 APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress"
-    )
 elseif(UNIX)
   set_target_properties(math_opt_pybind11 PROPERTIES
     INSTALL_RPATH

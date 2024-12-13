@@ -19,7 +19,6 @@ if(APPLE)
   set_target_properties(pdlp_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
   set_target_properties(pdlp_pybind11 PROPERTIES

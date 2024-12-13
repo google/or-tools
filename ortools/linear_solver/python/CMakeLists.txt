@@ -29,9 +29,9 @@ target_compile_definitions(pywraplp PUBLIC "PY3")
 if(APPLE)
   set_target_properties(pywraplp PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
-  set_property(TARGET pywraplp APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress")
+    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs"
+  )
+  target_link_options(pywraplp PRIVATE "LINKER:-undefined,dynamic_lookup")
 elseif(UNIX)
   set_target_properties(pywraplp PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../${PROJECT_NAME}/.libs")
@@ -58,9 +58,6 @@ if(APPLE)
   set_target_properties(model_builder_helper_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    )
-  set_property(TARGET model_builder_helper_pybind11 APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
   set_target_properties(model_builder_helper_pybind11 PROPERTIES

@@ -21,9 +21,6 @@ if(APPLE)
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     )
-  set_property(TARGET swig_helper_pybind11 APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress"
-    )
 elseif(UNIX)
   set_target_properties(swig_helper_pybind11 PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"

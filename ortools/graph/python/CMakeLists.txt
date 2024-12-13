@@ -19,7 +19,6 @@ if(APPLE)
   set_target_properties(linear_sum_assignment_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
   set_target_properties(linear_sum_assignment_pybind11 PROPERTIES
@@ -37,7 +36,6 @@ if(APPLE)
   set_target_properties(max_flow_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
   set_target_properties(max_flow_pybind11 PROPERTIES
@@ -55,7 +53,6 @@ if(APPLE)
   set_target_properties(min_cost_flow_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
   set_target_properties(min_cost_flow_pybind11 PROPERTIES
