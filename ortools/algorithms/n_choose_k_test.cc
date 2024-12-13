@@ -28,7 +28,6 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
-//#include "ortools/base/fuzztest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/util/flat_matrix.h"
