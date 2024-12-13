@@ -905,7 +905,8 @@ TEST(PresolveContextTest, ObjectiveScalingMinimize) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  ASSERT_TRUE(context.ScaleFloatingPointObjective());
+  ASSERT_TRUE(ScaleFloatingPointObjective(context.params(), context.logger(),
+                                          &working_model));
   ASSERT_TRUE(working_model.has_objective());
   ASSERT_FALSE(working_model.has_floating_point_objective());
   const CpObjectiveProto& obj = working_model.objective();
@@ -929,7 +930,8 @@ TEST(PresolveContextTest, ObjectiveScalingMaximize) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  ASSERT_TRUE(context.ScaleFloatingPointObjective());
+  ASSERT_TRUE(ScaleFloatingPointObjective(context.params(), context.logger(),
+                                          &working_model));
   ASSERT_TRUE(working_model.has_objective());
   ASSERT_FALSE(working_model.has_floating_point_objective());
   const CpObjectiveProto& obj = working_model.objective();

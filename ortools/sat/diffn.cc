@@ -71,6 +71,7 @@ IntegerVariable CreateVariableWithTightDomain(
 IntegerVariable CreateVariableEqualToMinOf(
     absl::Span<const AffineExpression> exprs, Model* model) {
   std::vector<LinearExpression> converted;
+  converted.reserve(exprs.size());
   for (const AffineExpression& affine : exprs) {
     LinearExpression e;
     e.offset = affine.constant;
@@ -81,32 +82,34 @@ IntegerVariable CreateVariableEqualToMinOf(
     converted.push_back(e);
   }
 
-  LinearExpression target;
   const IntegerVariable var = CreateVariableWithTightDomain(exprs, model);
+  LinearExpression target;
   target.vars.push_back(var);
   target.coeffs.push_back(IntegerValue(1));
-  model->Add(IsEqualToMinOf(target, converted));
+  AddIsEqualToMinOf(target, std::move(converted), model);
   return var;
 }
 
 IntegerVariable CreateVariableEqualToMaxOf(
     absl::Span<const AffineExpression> exprs, Model* model) {
   std::vector<LinearExpression> converted;
+  converted.reserve(exprs.size());
   for (const AffineExpression& affine : exprs) {
+    // We take the negation of affine.
     LinearExpression e;
-    e.offset = affine.constant;
+    e.offset = -affine.constant;
     if (affine.var != kNoIntegerVariable) {
-      e.vars.push_back(affine.var);
-      e.coeffs.push_back(affine.coeff);
+      e.vars = {NegationOf(affine.var)};
+      e.coeffs = {affine.coeff};
     }
-    converted.push_back(NegationOf(e));
+    converted.push_back(std::move(e));
   }
 
-  LinearExpression target;
   const IntegerVariable var = CreateVariableWithTightDomain(exprs, model);
-  target.vars.push_back(NegationOf(var));
-  target.coeffs.push_back(IntegerValue(1));
-  model->Add(IsEqualToMinOf(target, converted));
+  LinearExpression target;
+  target.vars = {NegationOf(var)};
+  target.coeffs = {IntegerValue(1)};
+  AddIsEqualToMinOf(target, std::move(converted), model);
   return var;
 }
 

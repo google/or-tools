@@ -641,9 +641,9 @@ void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchUpperBound(min_var_, id);
 }
 
-LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
+LinMinPropagator::LinMinPropagator(std::vector<LinearExpression> exprs,
                                    IntegerVariable min_var, Model* model)
-    : exprs_(exprs),
+    : exprs_(std::move(exprs)),
       min_var_(min_var),
       model_(model),
       integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}

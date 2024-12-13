@@ -21,7 +21,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <numeric>
 #include <optional>
 #include <ostream>
 #include <sstream>
@@ -44,8 +43,6 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/connected_components.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/minimum_spanning_tree.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
@@ -124,7 +121,7 @@ CompactVectorVector<int> GetOverlappingRectangleComponents(
   }
 
   std::vector<std::pair<int, int>> intersections =
-      FindPartialRectangleIntersectionsAlsoEmpty(rectangles_to_process);
+      FindPartialRectangleIntersections(rectangles_to_process);
   const int num_intersections = intersections.size();
   intersections.reserve(num_intersections * 2 + 1);
   for (int i = 0; i < num_intersections; ++i) {
@@ -1821,16 +1818,19 @@ struct Rectangle32 {
   int index;
 };
 
+// Requires that rectangles are sorted by x_min and that sizes on both
+// dimensions are > 0.
 std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
     absl::Span<Rectangle32> rectangles, int y_max) {
   // We are going to use a sweep line algorithm to find the intersections.
   // First, we sort the rectangles by their x coordinates, then consider a sweep
-  // line that goes from the left to the right.
-  std::sort(rectangles.begin(), rectangles.end(),
-            [](const Rectangle32& a, const Rectangle32& b) {
-              return std::tuple(a.x_min, -a.x_max, a.index) <
-                     std::tuple(b.x_min, -b.x_max, b.index);
-            });
+  // line that goes from the left to the right. See the comment on the
+  // SweepLineIntervalTree class for more details about what we store for each
+  // line.
+  DCHECK(std::is_sorted(rectangles.begin(), rectangles.end(),
+                        [](const Rectangle32& a, const Rectangle32& b) {
+                          return a.x_min < b.x_min;
+                        }));
 
   SweepLineIntervalTree interval_tree(y_max, rectangles.size());
 
@@ -1839,6 +1839,10 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
   std::vector<std::pair<int, int>> arcs;
   for (int rectangle_index = 0; rectangle_index < rectangles.size();
        ++rectangle_index) {
+    DCHECK_LT(rectangles[rectangle_index].x_min,
+              rectangles[rectangle_index].x_max);
+    DCHECK_LT(rectangles[rectangle_index].y_min,
+              rectangles[rectangle_index].y_max);
     const int sweep_line_x_pos = rectangles[rectangle_index].x_min;
     const Rectangle32& r = rectangles[rectangle_index];
     interval_pieces.clear();
@@ -1858,154 +1862,154 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
 
 std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
     absl::Span<const Rectangle> rectangles) {
+  // This function preprocess the data and calls
+  // FindPartialRectangleIntersectionsImpl() to actually solve the problem
+  // using a sweep line algorithm. The preprocessing consists of the following:
+  //  - It converts the arbitrary int64_t coordinates into a small integer by
+  //    sorting the possible values and assigning them consecutive integers.
+  //  - It grows zero size intervals to make them size one. This simplifies
+  //    things considerably, since it is hard to reason about degenerated
+  //    rectangles in the general algorithm.
+  //
+  // Note that the last point need to be done with care. Imagine the following
+  // example:
+  //  +----------+
+  //  |          |
+  //  |          +--------------+
+  //  |          |              |
+  //  |          |   p,q    r   |
+  //  |          +----*-----*-+-+
+  //  |          |            |
+  //  |          |            |
+  //  |          |            |
+  //  |          +------------+
+  //  |          |
+  //  |          |
+  //  +----------+
+  // Where p,q and r are points (ie, boxes of size 0x0) and p and q have the
+  // same coordinates. We replace them by the following:
+  //  +----------+
+  //  |          |
+  //  |          +----------------------+
+  //  |          |                      |
+  //  |          |                      |
+  //  |          +----+-+---------------+
+  //  |          |    |p|
+  //  |          |    +-+-+
+  //  |          |      |q|
+  //  |          |      +-+     +-+
+  //  |          |              |r|
+  //  |          +--------------+-+---+
+  //  |          |                    |
+  //  |          |                    |
+  //  |          |                    |
+  //  |          +--------------------+
+  //  |          |
+  //  |          |
+  //  +----------+
+  //
+  // That is a pretty radical deformation of the original shape, but it retains
+  // the property of whether a pair of rectangles intersect or not.
+
   if (rectangles.empty()) return {};
-  std::vector<IntegerValue> to_sort_x;
-  std::vector<IntegerValue> to_sort_y;
-  for (const Rectangle& r : rectangles) {
-    DCHECK_GT(r.SizeX(), 0);
-    DCHECK_GT(r.SizeY(), 0);
-    to_sort_x.push_back(r.x_min);
-    to_sort_x.push_back(r.x_max);
-    to_sort_y.push_back(r.y_min);
-    to_sort_y.push_back(r.y_max);
-  }
-  gtl::STLSortAndRemoveDuplicates(&to_sort_x);
-  gtl::STLSortAndRemoveDuplicates(&to_sort_y);
 
-  absl::flat_hash_map<IntegerValue, int> x_map;
-  absl::flat_hash_map<IntegerValue, int> y_map;
-  x_map.reserve(to_sort_x.size());
-  y_map.reserve(to_sort_y.size());
-  for (int i = 0; i < to_sort_x.size(); ++i) {
-    x_map[to_sort_x[i]] = i;
-  }
-  for (int i = 0; i < to_sort_y.size(); ++i) {
-    y_map[to_sort_y[i]] = i;
-  }
-
-  std::vector<Rectangle32> rectangles32;
-  rectangles32.reserve(rectangles.size());
+  enum class Event {
+    kEnd = 0,
+    kPoint = 1,
+    kBegin = 2,
+  };
+  std::vector<std::tuple<IntegerValue, Event, int>> x_events;
+  std::vector<std::tuple<IntegerValue, Event, int>> y_events;
+  x_events.reserve(rectangles.size() * 2);
+  y_events.reserve(rectangles.size() * 2);
   for (int i = 0; i < rectangles.size(); ++i) {
     const Rectangle& r = rectangles[i];
-    rectangles32.push_back({.x_min = x_map[r.x_min],
-                            .x_max = x_map[r.x_max],
-                            .y_min = y_map[r.y_min],
-                            .y_max = y_map[r.y_max],
-                            .index = i});
-  }
-  return FindPartialRectangleIntersectionsImpl(absl::MakeSpan(rectangles32),
-                                               to_sort_y.size());
-}
-
-std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsAlsoEmpty(
-    absl::Span<const Rectangle> rectangles) {
-  auto first_index_no_area_it = std::find_if(
-      rectangles.begin(), rectangles.end(), [](const Rectangle& r) {
-        DCHECK_GE(r.SizeX(), 0);
-        DCHECK_GE(r.SizeY(), 0);
-        return r.SizeX() == 0 || r.SizeY() == 0;
-      });
-  if (first_index_no_area_it == rectangles.end()) {
-    // Avoid copying, all rectangles have non-zero area.
-    return FindPartialRectangleIntersections(rectangles);
-  }
-
-  // Now we need to do the boring code of special-casing all the different cases
-  // of rectangles with zero area. We still want to use the quasilinear
-  // algorithm for the subset of the input with non-zero area.
-  std::vector<Rectangle> rectangles_with_area, horizontal_lines, vertical_lines,
-      points;
-  std::vector<int> rectangles_with_area_indexes, horizontal_lines_indexes,
-      vertical_lines_indexes, points_indexes;
-  rectangles_with_area.reserve(rectangles.size());
-  rectangles_with_area_indexes.reserve(rectangles.size());
-  rectangles_with_area.insert(rectangles_with_area.end(), rectangles.begin(),
-                              first_index_no_area_it);
-  rectangles_with_area_indexes.resize(rectangles_with_area.size());
-  std::iota(rectangles_with_area_indexes.begin(),
-            rectangles_with_area_indexes.end(), 0);
-
-  for (int i = first_index_no_area_it - rectangles.begin();
-       i < rectangles.size(); ++i) {
-    if (rectangles[i].SizeX() > 0 && rectangles[i].SizeY() > 0) {
-      rectangles_with_area.push_back(rectangles[i]);
-      rectangles_with_area_indexes.push_back(i);
-    } else if (rectangles[i].SizeX() > 0) {
-      horizontal_lines.push_back(rectangles[i]);
-      horizontal_lines_indexes.push_back(i);
-    } else if (rectangles[i].SizeY() > 0) {
-      vertical_lines.push_back(rectangles[i]);
-      vertical_lines_indexes.push_back(i);
+    DCHECK_GE(r.SizeX(), 0);
+    DCHECK_GE(r.SizeY(), 0);
+    if (r.SizeX() == 0) {
+      x_events.push_back({r.x_min, Event::kPoint, i});
     } else {
-      points.push_back(rectangles[i]);
-      points_indexes.push_back(i);
+      x_events.push_back({r.x_min, Event::kBegin, i});
+      x_events.push_back({r.x_max, Event::kEnd, i});
+    }
+    if (r.SizeY() == 0) {
+      y_events.push_back({r.y_min, Event::kPoint, i});
+    } else {
+      y_events.push_back({r.y_min, Event::kBegin, i});
+      y_events.push_back({r.y_max, Event::kEnd, i});
+    }
+  }
+  std::sort(y_events.begin(), y_events.end());
+
+  std::vector<Rectangle32> rectangles32;
+  rectangles32.resize(rectangles.size());
+  IntegerValue prev_y = 0;
+  Event prev_event = Event::kEnd;
+  int cur_index = -1;
+  for (int i = 0; i < y_events.size(); ++i) {
+    const auto [y, event, index] = y_events[i];
+    if ((prev_event != event && prev_event != Event::kEnd) || prev_y != y ||
+        event == Event::kPoint || cur_index == -1) {
+      ++cur_index;
+    }
+
+    switch (event) {
+      case Event::kBegin:
+        rectangles32[index].y_min = cur_index;
+        rectangles32[index].index = index;
+        break;
+      case Event::kEnd:
+        rectangles32[index].y_max = cur_index;
+        break;
+      case Event::kPoint:
+        rectangles32[index].y_min = cur_index;
+        rectangles32[index].y_max = cur_index + 1;
+        rectangles32[index].index = index;
+        break;
+    }
+    prev_event = event;
+    prev_y = y;
+  }
+  const int max_y_index = cur_index + 1;
+
+  std::sort(x_events.begin(), x_events.end());
+  IntegerValue prev_x = 0;
+  prev_event = Event::kEnd;
+  cur_index = -1;
+  for (int i = 0; i < x_events.size(); ++i) {
+    const auto [x, event, index] = x_events[i];
+    if ((prev_event != event && prev_event != Event::kEnd) || prev_x != x ||
+        event == Event::kPoint || cur_index == -1) {
+      ++cur_index;
+    }
+
+    switch (event) {
+      case Event::kBegin:
+        rectangles32[index].x_min = cur_index;
+        break;
+      case Event::kEnd:
+        rectangles32[index].x_max = cur_index;
+        break;
+      case Event::kPoint:
+        rectangles32[index].x_min = cur_index;
+        rectangles32[index].x_max = cur_index + 1;
+        break;
+    }
+    prev_event = event;
+    prev_x = x;
+  }
+
+  std::vector<Rectangle32> sorted_rectangles32;
+  sorted_rectangles32.reserve(rectangles.size());
+  for (int i = 0; i < x_events.size(); ++i) {
+    const auto [x, event, index] = x_events[i];
+    if (event == Event::kBegin || event == Event::kPoint) {
+      sorted_rectangles32.push_back(rectangles32[index]);
     }
   }
 
-  // Handle rectangles intersecting rectangles using the sweep line algorithm.
-  std::vector<std::pair<int, int>> arcs =
-      FindPartialRectangleIntersections(rectangles_with_area);
-  for (std::pair<int, int>& arc : arcs) {
-    arc.first = rectangles_with_area_indexes[arc.first];
-    arc.second = rectangles_with_area_indexes[arc.second];
-  }
-
-  // Handle rectangles intersecting non-rectangles.
-  for (int i = 0; i < rectangles_with_area.size(); ++i) {
-    const int index = rectangles_with_area_indexes[i];
-    const Rectangle& r = rectangles_with_area[i];
-    for (int j = 0; j < vertical_lines.size(); ++j) {
-      const int vertical_line_index = vertical_lines_indexes[j];
-      const Rectangle& vertical_line = vertical_lines[j];
-      if (!r.IsDisjoint(vertical_line)) {
-        arcs.push_back({index, vertical_line_index});
-      }
-    }
-    for (int j = 0; j < horizontal_lines.size(); ++j) {
-      const int horizontal_line_index = horizontal_lines_indexes[j];
-      const Rectangle& horizontal_line = horizontal_lines[j];
-      if (!r.IsDisjoint(horizontal_line)) {
-        arcs.push_back({index, horizontal_line_index});
-      }
-    }
-    for (int j = 0; j < points.size(); ++j) {
-      const int point_index = points_indexes[j];
-      const Rectangle& point = points[j];
-      if (!r.IsDisjoint(point)) {
-        arcs.push_back({index, point_index});
-      }
-    }
-  }
-
-  // Finally handle vertical lines intersecting horizontal lines.
-  for (int i = 0; i < horizontal_lines.size(); ++i) {
-    const int index = horizontal_lines_indexes[i];
-    const Rectangle& r = horizontal_lines[i];
-    for (int j = 0; j < vertical_lines.size(); ++j) {
-      const int vertical_line_index = vertical_lines_indexes[j];
-      const Rectangle& vertical_line = vertical_lines[j];
-      if (!r.IsDisjoint(vertical_line)) {
-        arcs.push_back({index, vertical_line_index});
-      }
-    }
-  }
-
-  // Now make our graph a minimal spanning tree again.
-  ::util::ReverseArcListGraph<> graph;
-  std::vector<int> arc_indexes;
-  absl::flat_hash_map<int, std::pair<int, int>> pair_by_arc_index;
-  for (const auto& [a, b] : arcs) {
-    pair_by_arc_index[arc_indexes.size()] = {a, b};
-    arc_indexes.push_back(graph.AddArc(a, b));
-  }
-  const std::vector<int> mst_arc_indices =
-      BuildKruskalMinimumSpanningTreeFromSortedArcs(graph, arc_indexes);
-  std::vector<std::pair<int, int>> result;
-  for (const int arc_index : mst_arc_indices) {
-    const auto& [a, b] = pair_by_arc_index[arc_index];
-    result.push_back({a, b});
-  }
-  return result;
+  return FindPartialRectangleIntersectionsImpl(
+      absl::MakeSpan(sorted_rectangles32), max_y_index);
 }
 
 std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(

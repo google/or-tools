@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -218,55 +219,55 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
 }
 
 bool PresolveContext::DomainIsEmpty(int ref) const {
-  return domains[PositiveRef(ref)].IsEmpty();
+  return domains_[PositiveRef(ref)].IsEmpty();
 }
 
 bool PresolveContext::IsFixed(int ref) const {
-  DCHECK_LT(PositiveRef(ref), domains.size());
+  DCHECK_LT(PositiveRef(ref), domains_.size());
   DCHECK(!DomainIsEmpty(ref));
-  return domains[PositiveRef(ref)].IsFixed();
+  return domains_[PositiveRef(ref)].IsFixed();
 }
 
 bool PresolveContext::CanBeUsedAsLiteral(int ref) const {
   const int var = PositiveRef(ref);
-  return domains[var].Min() >= 0 && domains[var].Max() <= 1;
+  return domains_[var].Min() >= 0 && domains_[var].Max() <= 1;
 }
 
 bool PresolveContext::LiteralIsTrue(int lit) const {
   DCHECK(CanBeUsedAsLiteral(lit));
   if (RefIsPositive(lit)) {
-    return domains[lit].Min() == 1;
+    return domains_[lit].Min() == 1;
   } else {
-    return domains[PositiveRef(lit)].Max() == 0;
+    return domains_[PositiveRef(lit)].Max() == 0;
   }
 }
 
 bool PresolveContext::LiteralIsFalse(int lit) const {
   DCHECK(CanBeUsedAsLiteral(lit));
   if (RefIsPositive(lit)) {
-    return domains[lit].Max() == 0;
+    return domains_[lit].Max() == 0;
   } else {
-    return domains[PositiveRef(lit)].Min() == 1;
+    return domains_[PositiveRef(lit)].Min() == 1;
   }
 }
 
 int64_t PresolveContext::MinOf(int ref) const {
   DCHECK(!DomainIsEmpty(ref));
-  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
-                            : -domains[PositiveRef(ref)].Max();
+  return RefIsPositive(ref) ? domains_[PositiveRef(ref)].Min()
+                            : -domains_[PositiveRef(ref)].Max();
 }
 
 int64_t PresolveContext::MaxOf(int ref) const {
   DCHECK(!DomainIsEmpty(ref));
-  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Max()
-                            : -domains[PositiveRef(ref)].Min();
+  return RefIsPositive(ref) ? domains_[PositiveRef(ref)].Max()
+                            : -domains_[PositiveRef(ref)].Min();
 }
 
 int64_t PresolveContext::FixedValue(int ref) const {
   DCHECK(!DomainIsEmpty(ref));
   CHECK(IsFixed(ref));
-  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
-                            : -domains[PositiveRef(ref)].Min();
+  return RefIsPositive(ref) ? domains_[PositiveRef(ref)].Min()
+                            : -domains_[PositiveRef(ref)].Min();
 }
 
 int64_t PresolveContext::MinOf(const LinearExpressionProto& expr) const {
@@ -307,6 +308,18 @@ int64_t PresolveContext::FixedValue(const LinearExpressionProto& expr) const {
   for (int i = 0; i < expr.vars_size(); ++i) {
     if (expr.coeffs(i) == 0) continue;
     result += expr.coeffs(i) * FixedValue(expr.vars(i));
+  }
+  return result;
+}
+
+std::optional<int64_t> PresolveContext::FixedValueOrNullopt(
+    const LinearExpressionProto& expr) const {
+  int64_t result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    if (expr.coeffs(i) == 0) continue;
+    const Domain& domain = domains_[expr.vars(i)];
+    if (!domain.IsFixed()) return std::nullopt;
+    result += expr.coeffs(i) * domain.Min();
   }
   return result;
 }
@@ -519,18 +532,18 @@ bool PresolveContext::VariableIsOnlyUsedInLinear1AndOneExtraConstraint(
 Domain PresolveContext::DomainOf(int ref) const {
   Domain result;
   if (RefIsPositive(ref)) {
-    result = domains[ref];
+    result = domains_[ref];
   } else {
-    result = domains[PositiveRef(ref)].Negation();
+    result = domains_[PositiveRef(ref)].Negation();
   }
   return result;
 }
 
 bool PresolveContext::DomainContains(int ref, int64_t value) const {
   if (!RefIsPositive(ref)) {
-    return domains[PositiveRef(ref)].Contains(-value);
+    return domains_[PositiveRef(ref)].Contains(-value);
   }
-  return domains[ref].Contains(value);
+  return domains_[ref].Contains(value);
 }
 
 bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
@@ -554,38 +567,38 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWithInternal(
   const int var = PositiveRef(ref);
 
   if (RefIsPositive(ref)) {
-    if (domains[var].IsIncludedIn(domain)) {
+    if (domains_[var].IsIncludedIn(domain)) {
       return true;
     }
-    domains[var] = domains[var].IntersectionWith(domain);
+    domains_[var] = domains_[var].IntersectionWith(domain);
   } else {
     const Domain temp = domain.Negation();
-    if (domains[var].IsIncludedIn(temp)) {
+    if (domains_[var].IsIncludedIn(temp)) {
       return true;
     }
-    domains[var] = domains[var].IntersectionWith(temp);
+    domains_[var] = domains_[var].IntersectionWith(temp);
   }
 
   if (domain_modified != nullptr) {
     *domain_modified = true;
   }
   modified_domains.Set(var);
-  if (domains[var].IsEmpty()) {
+  if (domains_[var].IsEmpty()) {
     return NotifyThatModelIsUnsat(
         absl::StrCat("var #", ref, " as empty domain after intersecting with ",
                      domain.ToString()));
   }
 
   if (update_hint && VarHasSolutionHint(var)) {
-    UpdateVarSolutionHint(var, domains[var].ClosestValue(SolutionHint(var)));
+    UpdateVarSolutionHint(var, domains_[var].ClosestValue(SolutionHint(var)));
   }
 
 #ifdef CHECK_HINT
   if (working_model->has_solution_hint() && HintIsLoaded() &&
-      !domains[var].Contains(hint_[var])) {
+      !domains_[var].Contains(hint_[var])) {
     LOG(FATAL) << "Hint with value " << hint_[var]
                << " infeasible when changing domain of " << var << " to "
-               << domains[var];
+               << domains_[var];
   }
 #endif
 
@@ -1042,10 +1055,11 @@ void PresolveContext::CanonicalizeVariable(int ref) {
   UpdateNewConstraintsVariableUsage();
 }
 
-bool PresolveContext::ScaleFloatingPointObjective() {
-  DCHECK(working_model->has_floating_point_objective());
-  DCHECK(!working_model->has_objective());
-  const auto& objective = working_model->floating_point_objective();
+bool ScaleFloatingPointObjective(const SatParameters& params,
+                                 SolverLogger* logger, CpModelProto* proto) {
+  DCHECK(proto->has_floating_point_objective());
+  DCHECK(!proto->has_objective());
+  const auto& objective = proto->floating_point_objective();
   std::vector<std::pair<int, double>> terms;
   for (int i = 0; i < objective.vars_size(); ++i) {
     DCHECK(RefIsPositive(objective.vars(i)));
@@ -1053,12 +1067,9 @@ bool PresolveContext::ScaleFloatingPointObjective() {
   }
   const double offset = objective.offset();
   const bool maximize = objective.maximize();
-  working_model->clear_floating_point_objective();
+  proto->clear_floating_point_objective();
 
-  // We need the domains up to date before scaling.
-  WriteVariableDomainsToProto();
-  return ScaleAndSetObjective(params_, terms, offset, maximize, working_model,
-                              logger_);
+  return ScaleAndSetObjective(params, terms, offset, maximize, proto, logger);
 }
 
 bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
@@ -1401,11 +1412,21 @@ std::string PresolveContext::AffineRelationDebugString(int ref) const {
                       RefDebugString(r.representative), " + ", r.offset);
 }
 
+void PresolveContext::ResetAfterCopy() {
+  domains_.clear();
+  modified_domains.ClearAll();
+  var_with_reduced_small_degree.ClearAll();
+  var_to_constraints_.clear();
+  var_to_num_linear1_.clear();
+  objective_map_.clear();
+  hint_.clear();
+}
+
 // Create the internal structure for any new variables in working_model.
 void PresolveContext::InitializeNewDomains() {
   const int new_size = working_model->variables().size();
-  DCHECK_GE(new_size, domains.size());
-  if (domains.size() == new_size) return;
+  DCHECK_GE(new_size, domains_.size());
+  if (domains_.size() == new_size) return;
 
   modified_domains.Resize(new_size);
   var_with_reduced_small_degree.Resize(new_size);
@@ -1414,10 +1435,12 @@ void PresolveContext::InitializeNewDomains() {
 
   // We mark the domain as modified so we will look at these new variable during
   // our presolve loop.
-  for (int i = domains.size(); i < new_size; ++i) {
+  const int old_size = domains_.size();
+  domains_.resize(new_size);
+  for (int i = old_size; i < new_size; ++i) {
     modified_domains.Set(i);
-    domains.emplace_back(ReadDomainFromProto(working_model->variables(i)));
-    if (domains.back().IsEmpty()) {
+    domains_[i] = ReadDomainFromProto(working_model->variables(i));
+    if (domains_[i].IsEmpty()) {
       is_unsat_ = true;
       return;
     }
@@ -1560,7 +1583,9 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
 
   // The code below is not 100% correct if this is not the case.
-  CHECK(DomainOf(var).Contains(value));
+  if (!DomainOf(var).Contains(value)) {
+    return SetLiteralToFalse(literal);
+  }
   if (DomainOf(var).IsFixed()) {
     return SetLiteralToTrue(literal);
   }
@@ -1781,7 +1806,7 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
 
 bool PresolveContext::IsFullyEncoded(int ref) const {
   const int var = PositiveRef(ref);
-  const int64_t size = domains[var].Size();
+  const int64_t size = domains_[var].Size();
   if (size <= 2) return true;
   const auto& it = encoding_.find(var);
   return it == encoding_.end() ? false : size <= it->second.size();
@@ -1801,7 +1826,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   const int var = ref;
 
   // Returns the false literal if the value is not in the domain.
-  if (!domains[var].Contains(value)) {
+  if (!domains_[var].Contains(value)) {
     return GetFalseLiteral();
   }
 
@@ -1825,7 +1850,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   }
 
   // Special case for fixed domains.
-  if (domains[var].Size() == 1) {
+  if (domains_[var].Size() == 1) {
     const int true_literal = GetTrueLiteral();
     var_map[value] = SavedLiteral(true_literal);
     return true_literal;
@@ -1834,7 +1859,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   // Special case for domains of size 2.
   const int64_t var_min = MinOf(var);
   const int64_t var_max = MaxOf(var);
-  if (domains[var].Size() == 2) {
+  if (domains_[var].Size() == 2) {
     // Checks if the other value is already encoded.
     const int64_t other_value = value == var_min ? var_max : var_min;
     auto other_it = var_map.find(other_value);
@@ -1942,6 +1967,7 @@ void PresolveContext::ReadObjectiveFromProto() {
 
     const int var = PositiveRef(ref);
     objective_map_[var] += RefIsPositive(ref) ? coeff : -coeff;
+
     if (objective_map_[var] == 0) {
       RemoveVariableFromObjective(var);
     } else {
@@ -2759,22 +2785,22 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
     auto [it, inserted] =
         inverse_interval_map.insert({i, mini_model->constraints_size()});
     if (inserted) {
-      *mini_model->add_constraints() = context->working_model->constraints(i);
+      const ConstraintProto& itv_ct = context->working_model->constraints(i);
+      *mini_model->add_constraints() = itv_ct;
 
       // Now add end = start + size for the interval. This is not strictly
       // necessary but it makes the presolve more powerful.
       ConstraintProto* linear = mini_model->add_constraints();
-      *linear->mutable_enforcement_literal() = ct.enforcement_literal();
+      *linear->mutable_enforcement_literal() = itv_ct.enforcement_literal();
       LinearConstraintProto* mutable_linear = linear->mutable_linear();
-      const IntervalConstraintProto& itv =
-          context->working_model->constraints(i).interval();
+      const IntervalConstraintProto& itv = itv_ct.interval();
 
       mutable_linear->add_domain(0);
       mutable_linear->add_domain(0);
       AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
       AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
       AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
-      CanonicalizeLinearExpressionNoContext(ct.enforcement_literal(),
+      CanonicalizeLinearExpressionNoContext(itv_ct.enforcement_literal(),
                                             mutable_linear);
     }
   }

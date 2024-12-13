@@ -1558,6 +1558,14 @@ bool DisjunctiveEdgeFinding::Propagate() {
       return false;
     }
 
+    // Corner case: The propagation of the previous window might have made the
+    // current task absent even if it wasn't at the loop beginning.
+    if (helper_->IsAbsent(presence_lit)) {
+      window_.clear();
+      window_end = kMinIntegerValue;
+      continue;
+    }
+
     // Start of the next window.
     window_.clear();
     window_.push_back({task, shifted_smin});

@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <random>
 #include <utility>
 #include <vector>
@@ -199,12 +200,12 @@ bool SatDecisionPolicy::UseLsSolutionAsInitialPolarity() {
   // This is in term of proto variable.
   // TODO(user): use cp_model_mapping. But this is not needed to experiment
   // on pure sat problems.
-  std::vector<int64_t> solution =
-      ls_hints_->GetRandomBiasedSolution(*random_).variable_values;
-  if (solution.size() != var_polarity_.size()) return false;
+  std::shared_ptr<const SharedLsSolutionRepository::Solution> solution =
+      ls_hints_->GetRandomBiasedSolution(*random_);
+  if (solution->variable_values.size() != var_polarity_.size()) return false;
 
-  for (int i = 0; i < solution.size(); ++i) {
-    var_polarity_[BooleanVariable(i)] = solution[i] == 1;
+  for (int i = 0; i < solution->variable_values.size(); ++i) {
+    var_polarity_[BooleanVariable(i)] = solution->variable_values[i] == 1;
   }
 
   return false;

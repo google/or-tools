@@ -243,8 +243,8 @@ class MinPropagator : public PropagatorInterface {
 // Assumes Canonical expressions (all positive coefficients).
 class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
  public:
-  LinMinPropagator(const std::vector<LinearExpression>& exprs,
-                   IntegerVariable min_var, Model* model);
+  LinMinPropagator(std::vector<LinearExpression> exprs, IntegerVariable min_var,
+                   Model* model);
   LinMinPropagator(const LinMinPropagator&) = delete;
   LinMinPropagator& operator=(const LinMinPropagator&) = delete;
 
@@ -696,79 +696,51 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
 }
 
 // Expresses the fact that an existing integer variable is equal to the minimum
-// of other integer variables.
-inline std::function<void(Model*)> IsEqualToMinOf(
-    IntegerVariable min_var, const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
-    for (const IntegerVariable& var : vars) {
-      model->Add(LowerOrEqual(min_var, var));
-    }
-
-    MinPropagator* constraint =
-        new MinPropagator(vars, min_var, model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
-
-// Expresses the fact that an existing integer variable is equal to the minimum
 // of linear expressions. Assumes Canonical expressions (all positive
 // coefficients).
+inline void AddIsEqualToMinOf(const LinearExpression& min_expr,
+                              std::vector<LinearExpression> exprs,
+                              Model* model) {
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  IntegerVariable min_var;
+  if (min_expr.vars.size() == 1 && std::abs(min_expr.coeffs[0].value()) == 1 &&
+      min_expr.offset == 0) {
+    if (min_expr.coeffs[0].value() == 1) {
+      min_var = min_expr.vars[0];
+    } else {
+      min_var = NegationOf(min_expr.vars[0]);
+    }
+  } else {
+    // Create a new variable if the expression is not just a single variable.
+    IntegerValue min_lb = min_expr.Min(*integer_trail);
+    IntegerValue min_ub = min_expr.Max(*integer_trail);
+    min_var = integer_trail->AddIntegerVariable(min_lb, min_ub);
+
+    // min_var = min_expr
+    LinearConstraintBuilder builder(0, 0);
+    builder.AddLinearExpression(min_expr, 1);
+    builder.AddTerm(min_var, -1);
+    LoadLinearConstraint(builder.Build(), model);
+  }
+  for (const LinearExpression& expr : exprs) {
+    LinearConstraintBuilder builder(0, kMaxIntegerValue);
+    builder.AddLinearExpression(expr, 1);
+    builder.AddTerm(min_var, -1);
+    LoadLinearConstraint(builder.Build(), model);
+  }
+
+  LinMinPropagator* constraint =
+      new LinMinPropagator(std::move(exprs), min_var, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
+}
+
+ABSL_DEPRECATED("Use AddIsEqualToMinOf() instead.")
 inline std::function<void(Model*)> IsEqualToMinOf(
     const LinearExpression& min_expr,
     const std::vector<LinearExpression>& exprs) {
-  return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
-    IntegerVariable min_var;
-    if (min_expr.vars.size() == 1 &&
-        std::abs(min_expr.coeffs[0].value()) == 1 && min_expr.offset == 0) {
-      if (min_expr.coeffs[0].value() == 1) {
-        min_var = min_expr.vars[0];
-      } else {
-        min_var = NegationOf(min_expr.vars[0]);
-      }
-    } else {
-      // Create a new variable if the expression is not just a single variable.
-      IntegerValue min_lb = min_expr.Min(*integer_trail);
-      IntegerValue min_ub = min_expr.Max(*integer_trail);
-      min_var = integer_trail->AddIntegerVariable(min_lb, min_ub);
-
-      // min_var = min_expr
-      LinearConstraintBuilder builder(0, 0);
-      builder.AddLinearExpression(min_expr, 1);
-      builder.AddTerm(min_var, -1);
-      LoadLinearConstraint(builder.Build(), model);
-    }
-    for (const LinearExpression& expr : exprs) {
-      LinearConstraintBuilder builder(0, kMaxIntegerValue);
-      builder.AddLinearExpression(expr, 1);
-      builder.AddTerm(min_var, -1);
-      LoadLinearConstraint(builder.Build(), model);
-    }
-
-    LinMinPropagator* constraint = new LinMinPropagator(exprs, min_var, model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
-
-// Expresses the fact that an existing integer variable is equal to the maximum
-// of other integer variables.
-inline std::function<void(Model*)> IsEqualToMaxOf(
-    IntegerVariable max_var, const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
-    std::vector<IntegerVariable> negated_vars;
-    for (const IntegerVariable& var : vars) {
-      negated_vars.push_back(NegationOf(var));
-      model->Add(GreaterOrEqual(max_var, var));
-    }
-
-    MinPropagator* constraint = new MinPropagator(
-        negated_vars, NegationOf(max_var), model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+  return [&](Model* model) { AddIsEqualToMinOf(min_expr, exprs, model); };
 }
 
 template <class T>

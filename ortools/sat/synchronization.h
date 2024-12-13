@@ -21,6 +21,7 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -97,7 +98,7 @@ class SharedSolutionRepository {
   int NumSolutions() const;
 
   // Returns the solution #i where i must be smaller than NumSolutions().
-  Solution GetSolution(int index) const;
+  std::shared_ptr<const Solution> GetSolution(int index) const;
 
   // Returns the rank of the best known solution.
   // You shouldn't call this if NumSolutions() is zero.
@@ -109,7 +110,8 @@ class SharedSolutionRepository {
   ValueType GetVariableValueInSolution(int var_index, int solution_index) const;
 
   // Returns a random solution biased towards good solutions.
-  Solution GetRandomBiasedSolution(absl::BitGenRef random) const;
+  std::shared_ptr<const Solution> GetRandomBiasedSolution(
+      absl::BitGenRef random) const;
 
   // Add a new solution. Note that it will not be added to the pool of solution
   // right away. One must call Synchronize for this to happen. In order to be
@@ -143,8 +145,8 @@ class SharedSolutionRepository {
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
   mutable std::vector<int> tmp_indices_ ABSL_GUARDED_BY(mutex_);
-  std::vector<Solution> solutions_ ABSL_GUARDED_BY(mutex_);
-  std::vector<Solution> new_solutions_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::shared_ptr<Solution>> solutions_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::shared_ptr<Solution>> new_solutions_ ABSL_GUARDED_BY(mutex_);
 };
 
 // Solutions coming from the LP.
@@ -813,7 +815,7 @@ int SharedSolutionRepository<ValueType>::NumSolutions() const {
 }
 
 template <typename ValueType>
-typename SharedSolutionRepository<ValueType>::Solution
+std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetSolution(int i) const {
   absl::MutexLock mutex_lock(&mutex_);
   ++num_queried_;
@@ -824,24 +826,24 @@ template <typename ValueType>
 int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_GT(solutions_.size(), 0);
-  return solutions_[0].rank;
+  return solutions_[0]->rank;
 }
 
 template <typename ValueType>
 ValueType SharedSolutionRepository<ValueType>::GetVariableValueInSolution(
     int var_index, int solution_index) const {
   absl::MutexLock mutex_lock(&mutex_);
-  return solutions_[solution_index].variable_values[var_index];
+  return solutions_[solution_index]->variable_values[var_index];
 }
 
 // TODO(user): Experiments on the best distribution.
 template <typename ValueType>
-typename SharedSolutionRepository<ValueType>::Solution
+std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     absl::BitGenRef random) const {
   absl::MutexLock mutex_lock(&mutex_);
   ++num_queried_;
-  const int64_t best_rank = solutions_[0].rank;
+  const int64_t best_rank = solutions_[0]->rank;
 
   // As long as we have solution with the best objective that haven't been
   // explored too much, we select one uniformly. Otherwise, we select a solution
@@ -855,9 +857,9 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
   // Select all the best solution with a low enough selection count.
   tmp_indices_.clear();
   for (int i = 0; i < solutions_.size(); ++i) {
-    const auto& solution = solutions_[i];
-    if (solution.rank == best_rank &&
-        solution.num_selected <= kExplorationThreshold) {
+    std::shared_ptr<const Solution> solution = solutions_[i];
+    if (solution->rank == best_rank &&
+        solution->num_selected <= kExplorationThreshold) {
       tmp_indices_.push_back(i);
     }
   }
@@ -868,16 +870,20 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
   } else {
     index = tmp_indices_[absl::Uniform<int>(random, 0, tmp_indices_.size())];
   }
-  solutions_[index].num_selected++;
+  solutions_[index]->num_selected++;
   return solutions_[index];
 }
 
 template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Add(Solution solution) {
   if (num_solutions_to_keep_ <= 0) return;
-  absl::MutexLock mutex_lock(&mutex_);
-  ++num_added_;
-  new_solutions_.push_back(std::move(solution));
+  std::shared_ptr<Solution> solution_ptr =
+      std::make_shared<Solution>(std::move(solution));
+  {
+    absl::MutexLock mutex_lock(&mutex_);
+    ++num_added_;
+    new_solutions_.push_back(std::move(solution_ptr));
+  }
 }
 
 template <typename ValueType>
@@ -893,15 +899,17 @@ void SharedSolutionRepository<ValueType>::Synchronize() {
   // existing solutions.
   //
   // TODO(user): Introduce a notion of orthogonality to diversify the pool?
-  gtl::STLStableSortAndRemoveDuplicates(&solutions_);
+  gtl::STLStableSortAndRemoveDuplicates(
+      &solutions_, [](const std::shared_ptr<Solution>& a,
+                      const std::shared_ptr<Solution>& b) { return *a < *b; });
   if (solutions_.size() > num_solutions_to_keep_) {
     solutions_.resize(num_solutions_to_keep_);
   }
 
   if (!solutions_.empty()) {
     VLOG(2) << "Solution pool update:" << " num_solutions=" << solutions_.size()
-            << " min_rank=" << solutions_[0].rank
-            << " max_rank=" << solutions_.back().rank;
+            << " min_rank=" << solutions_[0]->rank
+            << " max_rank=" << solutions_.back()->rank;
   }
 
   num_synchronization_++;

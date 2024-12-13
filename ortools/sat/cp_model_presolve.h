@@ -43,13 +43,14 @@ namespace sat {
 
 // Replaces all the instance of a variable i (and the literals referring to it)
 // by mapping[i]. The definition of variables i is also moved to its new index.
-// Variables with a negative mapping value are ignored and it is an error if
-// such variable is referenced anywhere (this is CHECKed).
+// If mapping[i] < 0 the variable can be ignored if possible. If it is not
+// possible, then we will use a new index for it (at the end) and the mapping
+// will be updated to reflect that.
 //
-// The image of the mapping should be dense in [0, new_num_variables), this is
-// also CHECKed.
-void ApplyVariableMapping(const std::vector<int>& mapping,
-                          const PresolveContext& context);
+// The image of the mapping should be dense in [0, reverse_mapping->size()).
+void ApplyVariableMapping(absl::Span<int> mapping,
+                          std::vector<int>* reverse_mapping,
+                          CpModelProto* proto);
 
 // Presolves the initial content of presolved_model.
 //
@@ -95,10 +96,9 @@ class CpModelPresolver {
   // A simple helper that logs the rules applied so far and return INFEASIBLE.
   CpSolverStatus InfeasibleStatus();
 
-  // At the end of presolve, the mapping model is initialized to contains all
-  // the variable from the original model + the one created during presolve
-  // expand. It also contains the tightened domains.
-  void InitializeMappingModelVariables();
+  // If there is a large proportion of fixed variables, remap the whole proto
+  // before we start the presolve.
+  bool MaybeRemoveFixedVariables(std::vector<int>* postsolve_mapping);
 
   // Runs the inner loop of the presolver.
   bool ProcessChangedVariables(std::vector<bool>* in_queue,
@@ -471,7 +471,7 @@ class ModelCopy {
   // Temp vectors.
   std::vector<int> non_fixed_variables_;
   std::vector<int64_t> non_fixed_coefficients_;
-  absl::flat_hash_map<int, int> interval_mapping_;
+  std::vector<int64_t> interval_mapping_;
   int starting_constraint_index_ = 0;
 
   std::vector<int> temp_enforcement_literals_;

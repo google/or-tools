@@ -332,9 +332,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // will still be exact as it will work for any set of multiplier.
   void IgnoreTrivialConstraintMultipliers(
       std::vector<std::pair<glop::RowIndex, double>>* lp_multipliers);
-  std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleMultipliers(
+  void ScaleMultipliers(
       absl::Span<const std::pair<glop::RowIndex, double>> lp_multipliers,
-      bool take_objective_into_account, IntegerValue* scaling) const;
+      bool take_objective_into_account, IntegerValue* scaling,
+      std::vector<std::pair<glop::RowIndex, IntegerValue>>* output) const;
 
   // Can we have an overflow if we scale each coefficients with
   // std::round(std::ldexp(coeff, power)) ?

@@ -383,10 +383,10 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           new_best_solution_was_found) {
         if (type() == SubSolver::INCOMPLETE) {
           // Choose a base solution for this neighborhood.
-          const SharedSolutionRepository<int64_t>::Solution solution =
-              shared_response_->SolutionsRepository().GetRandomBiasedSolution(
-                  random_);
-          state_->solution = solution.variable_values;
+          std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+              solution = shared_response_->SolutionsRepository()
+                             .GetRandomBiasedSolution(random_);
+          state_->solution = solution->variable_values;
           ++state_->num_solutions_imported;
         } else {
           if (!first_time) {

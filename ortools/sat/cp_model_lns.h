@@ -44,6 +44,14 @@ namespace sat {
 
 // Neighborhood returned by Neighborhood generators.
 struct Neighborhood {
+  static constexpr int kDefaultArenaSizePerVariable = 128;
+
+  explicit Neighborhood(int num_variables_hint = 10)
+      : arena_buffer(kDefaultArenaSizePerVariable * num_variables_hint),
+        arena(std::make_unique<google::protobuf::Arena>(arena_buffer.data(),
+                                                        arena_buffer.size())),
+        delta(*google::protobuf::Arena::Create<CpModelProto>(arena.get())) {}
+
   // True if neighborhood generator was able to generate a neighborhood.
   bool is_generated = false;
 
@@ -58,7 +66,9 @@ struct Neighborhood {
   // The delta will contains all variables from the initial model, potentially
   // with updated domains.
   // It can contains new variables and new constraints, and solution hinting.
-  CpModelProto delta;
+  std::vector<char> arena_buffer;
+  std::unique_ptr<google::protobuf::Arena> arena;
+  CpModelProto& delta;
 
   // Neighborhood Id. Used to identify the neighborhood by a generator.
   // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.

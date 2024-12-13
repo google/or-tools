@@ -1659,8 +1659,9 @@ void LinearProgrammingConstraint::AddCGCuts() {
         IgnoreTrivialConstraintMultipliers(&tmp_cg_multipliers_);
         if (tmp_cg_multipliers_.size() <= 1) continue;
       }
-      tmp_integer_multipliers_ = ScaleMultipliers(
-          tmp_cg_multipliers_, /*take_objective_into_account=*/false, &scaling);
+      ScaleMultipliers(tmp_cg_multipliers_,
+                       /*take_objective_into_account=*/false, &scaling,
+                       &tmp_integer_multipliers_);
       if (scaling != 0) {
         if (AddCutFromConstraints("CG", tmp_integer_multipliers_)) {
           ++num_added;
@@ -2273,16 +2274,16 @@ void LinearProgrammingConstraint::IgnoreTrivialConstraintMultipliers(
   lp_multipliers->resize(new_size);
 }
 
-std::vector<std::pair<RowIndex, IntegerValue>>
-LinearProgrammingConstraint::ScaleMultipliers(
+void LinearProgrammingConstraint::ScaleMultipliers(
     absl::Span<const std::pair<RowIndex, double>> lp_multipliers,
-    bool take_objective_into_account, IntegerValue* scaling) const {
+    bool take_objective_into_account, IntegerValue* scaling,
+    std::vector<std::pair<RowIndex, IntegerValue>>* output) const {
   *scaling = 0;
 
-  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
+  output->clear();
   if (lp_multipliers.empty()) {
     // Empty linear combinaison.
-    return integer_multipliers;
+    return;
   }
 
   // TODO(user): we currently do not support scaling down, so we just abort
@@ -2291,7 +2292,7 @@ LinearProgrammingConstraint::ScaleMultipliers(
   if (ScalingCanOverflow(/*power=*/0, take_objective_into_account,
                          lp_multipliers, overflow_cap)) {
     ++num_scaling_issues_;
-    return integer_multipliers;
+    return;
   }
 
   // Note that we don't try to scale by more than 63 since in practice the
@@ -2319,16 +2320,15 @@ LinearProgrammingConstraint::ScaleMultipliers(
     const IntegerValue coeff(std::round(double_coeff * scaling_as_double));
     if (coeff != 0) {
       gcd = std::gcd(gcd, std::abs(coeff.value()));
-      integer_multipliers.push_back({row, coeff});
+      output->push_back({row, coeff});
     }
   }
   if (gcd > 1) {
     *scaling /= gcd;
-    for (auto& entry : integer_multipliers) {
+    for (auto& entry : *output) {
       entry.second /= gcd;
     }
   }
-  return integer_multipliers;
 }
 
 template <bool check_overflow>
@@ -2611,8 +2611,8 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
 
   IntegerValue scaling = 0;
   IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
-  tmp_integer_multipliers_ = ScaleMultipliers(
-      tmp_lp_multipliers_, take_objective_into_account, &scaling);
+  ScaleMultipliers(tmp_lp_multipliers_, take_objective_into_account, &scaling,
+                   &tmp_integer_multipliers_);
   if (scaling == 0) {
     VLOG(1) << simplex_.GetProblemStatus();
     VLOG(1) << "Issue while computing the exact LP reason. Aborting.";
@@ -2681,8 +2681,8 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
     tmp_lp_multipliers_.push_back({row, row_factors_[row.value()] * value});
   }
   IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
-  tmp_integer_multipliers_ = ScaleMultipliers(
-      tmp_lp_multipliers_, /*take_objective_into_account=*/false, &scaling);
+  ScaleMultipliers(tmp_lp_multipliers_, /*take_objective_into_account=*/false,
+                   &scaling, &tmp_integer_multipliers_);
   if (scaling == 0) {
     VLOG(1) << "Isse while computing the exact dual ray reason. Aborting.";
     return true;
