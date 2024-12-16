@@ -1924,7 +1924,7 @@ class NearestNeighbors {
   NearestNeighbors& operator=(const NearestNeighbors&) = delete;
 
   virtual ~NearestNeighbors() {}
-  void Initialize(const std::vector<int>& path);
+  void Initialize(absl::Span<const int> path);
   const std::vector<int>& Neighbors(int index) const;
 
   virtual std::string DebugString() const { return "NearestNeighbors"; }
@@ -1945,7 +1945,7 @@ NearestNeighbors::NearestNeighbors(Solver::IndexEvaluator3 evaluator,
       path_operator_(path_operator),
       size_(size) {}
 
-void NearestNeighbors::Initialize(const std::vector<int>& path) {
+void NearestNeighbors::Initialize(absl::Span<const int> path) {
   for (int node : path) {
     if (node < path_operator_.number_of_nexts()) ComputeNearest(node, path);
   }

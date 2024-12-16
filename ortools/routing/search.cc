@@ -2543,7 +2543,7 @@ bool LocalCheapestInsertionFilteredHeuristic::OptimizeOnInsertion(
 namespace {
 // Computes the cost from vehicle starts to pickups.
 std::vector<std::vector<int64_t>> ComputeStartToPickupCosts(
-    const RoutingModel& model, const std::vector<int64_t>& pickups,
+    const RoutingModel& model, absl::Span<const int64_t> pickups,
     const Bitset64<int>& vehicle_set) {
   std::vector<std::vector<int64_t>> pickup_costs(model.Size());
   for (int64_t pickup : pickups) {
@@ -2560,7 +2560,7 @@ std::vector<std::vector<int64_t>> ComputeStartToPickupCosts(
 
 // Computes the cost from deliveries to vehicle ends.
 std::vector<std::vector<int64_t>> ComputeDeliveryToEndCosts(
-    const RoutingModel& model, const std::vector<int64_t>& deliveries,
+    const RoutingModel& model, absl::Span<const int64_t> deliveries,
     const Bitset64<int>& vehicle_set) {
   std::vector<std::vector<int64_t>> delivery_costs(model.Size());
   for (int64_t delivery : deliveries) {
@@ -4822,8 +4822,8 @@ class RouteConstructor {
   enum MergeStatus { FIRST_SECOND, SECOND_FIRST, NO_MERGE };
 
   struct RouteSort {
-    bool operator()(const std::vector<int>& route1,
-                    const std::vector<int>& route2) const {
+    bool operator()(absl::Span<const int> route1,
+                    absl::Span<const int> route2) const {
       return (route1.size() < route2.size());
     }
   } RouteComparator;
