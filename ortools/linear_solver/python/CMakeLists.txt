@@ -29,8 +29,7 @@ target_compile_definitions(pywraplp PUBLIC "PY3")
 if(APPLE)
   set_target_properties(pywraplp PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs"
-  )
+    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
   target_link_options(pywraplp PRIVATE "LINKER:-undefined,dynamic_lookup")
 elseif(UNIX)
   set_target_properties(pywraplp PROPERTIES
@@ -57,19 +56,16 @@ target_include_directories(model_builder_helper_pybind11 PRIVATE
 if(APPLE)
   set_target_properties(model_builder_helper_pybind11 PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    )
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
 elseif(UNIX)
   set_target_properties(model_builder_helper_pybind11 PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
-    )
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
 endif()
 
 target_link_libraries(model_builder_helper_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_native_proto_caster
-  Eigen3::Eigen
-)
+  Eigen3::Eigen)
 add_library(${PROJECT_NAMESPACE}::model_builder_helper_pybind11 ALIAS model_builder_helper_pybind11)
 
 if(BUILD_TESTING)

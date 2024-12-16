@@ -30,8 +30,7 @@ target_compile_definitions(pywrapcp PUBLIC "PY3")
 if(APPLE)
   set_target_properties(pywrapcp PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs"
-  )
+    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
   target_link_options(pywrapcp PRIVATE "LINKER:-undefined,dynamic_lookup")
 elseif(UNIX)
   set_target_properties(pywrapcp PROPERTIES
