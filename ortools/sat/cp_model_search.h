@@ -78,7 +78,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
 // Constructs an integer completion search strategy.
 std::function<BooleanOrIntegerLiteral()>
 ConstructIntegerCompletionSearchStrategy(
-    const std::vector<IntegerVariable>& variable_mapping,
+    absl::Span<const IntegerVariable> variable_mapping,
     IntegerVariable objective_var, Model* model);
 
 // Constructs a search strategy that follows the hints from the model.

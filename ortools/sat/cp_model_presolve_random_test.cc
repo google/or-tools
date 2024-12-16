@@ -239,6 +239,7 @@ TEST_P(RandomPreprocessorTest, TestHintSurvivePresolve) {
   // We just check that the hint is correct.
   SatParameters params;
   params.set_debug_crash_on_bad_hint(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
   params.set_stop_after_first_solution(true);
   const CpSolverResponse with_hint = SolveWithParameters(model_proto, params);
 

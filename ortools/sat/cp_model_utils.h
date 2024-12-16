@@ -34,6 +34,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/options.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -99,12 +100,22 @@ std::vector<int> UsedVariables(const ConstraintProto& ct);
 // Returns the sorted list of interval used by a constraint.
 std::vector<int> UsedIntervals(const ConstraintProto& ct);
 
-// Insert variables in a constraint into a set.
-template <typename Set>
-void InsertVariablesFromConstraint(const CpModelProto& model_proto, int index,
-                                   Set& output) {
+// Insert/Remove variables from an interval constraint into a bitset.
+inline void InsertVariablesFromInterval(const CpModelProto& model_proto,
+                                        int index, Bitset64<int>& output) {
   const ConstraintProto& ct = model_proto.constraints(index);
-  for (const int var : UsedVariables(ct)) output.insert(var);
+  for (const int ref : ct.enforcement_literal()) output.Set(PositiveRef(ref));
+  for (const int var : ct.interval().start().vars()) output.Set(var);
+  for (const int var : ct.interval().size().vars()) output.Set(var);
+  for (const int var : ct.interval().end().vars()) output.Set(var);
+}
+inline void RemoveVariablesFromInterval(const CpModelProto& model_proto,
+                                        int index, Bitset64<int>& output) {
+  const ConstraintProto& ct = model_proto.constraints(index);
+  for (const int ref : ct.enforcement_literal()) output.Clear(PositiveRef(ref));
+  for (const int var : ct.interval().start().vars()) output.Clear(var);
+  for (const int var : ct.interval().size().vars()) output.Clear(var);
+  for (const int var : ct.interval().end().vars()) output.Clear(var);
 }
 
 // Returns true if a proto.domain() contain the given value.

@@ -32,8 +32,9 @@ std::string GetTestDataDir() {
 
 void Solve(const CpModelProto& proto) {
   const CpSolverResponse response =
-      operations_research::sat::SolveWithParameters(proto,
-                                                    "max_time_in_seconds: 4.0");
+      operations_research::sat::SolveWithParameters(
+          proto,
+          "max_time_in_seconds: 4.0,debug_crash_if_presolve_breaks_hint:true");
 
   const CpSolverResponse response_no_presolve =
       operations_research::sat::SolveWithParameters(

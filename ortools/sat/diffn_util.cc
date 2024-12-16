@@ -1972,6 +1972,8 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
   }
   const int max_y_index = cur_index + 1;
 
+  gtl::STLClearObject(&y_events);
+
   std::sort(x_events.begin(), x_events.end());
   IntegerValue prev_x = 0;
   prev_event = Event::kEnd;
@@ -2008,6 +2010,7 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
     }
   }
 
+  gtl::STLClearObject(&x_events);
   return FindPartialRectangleIntersectionsImpl(
       absl::MakeSpan(sorted_rectangles32), max_y_index);
 }

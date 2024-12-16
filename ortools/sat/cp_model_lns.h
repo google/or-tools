@@ -115,11 +115,12 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   }
   void Synchronize() override;
 
+  int NumVariables() const { return model_proto_.variables().size(); }
+
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.
-  Neighborhood FixGivenVariables(
-      const CpSolverResponse& base_solution,
-      const absl::flat_hash_set<int>& variables_to_fix) const;
+  Neighborhood FixGivenVariables(const CpSolverResponse& base_solution,
+                                 const Bitset64<int>& variables_to_fix) const;
 
   // Returns the LNS fragment which will relax all inactive variables and all
   // variables in relaxed_variables.

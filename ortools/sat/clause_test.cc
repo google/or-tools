@@ -108,6 +108,16 @@ TEST(BinaryImplicationGraphTest, BasicUnsatSccTest) {
   EXPECT_FALSE(graph->DetectEquivalences());
 }
 
+TEST(BinaryImplicationGraphTest, IssueFoundOnMipLibTest) {
+  Model model;
+  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
+  model.GetOrCreate<SatSolver>()->SetNumVariables(10);
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, +2, -3, -4})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, +2, +3, +4, +5})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, -2, -3, +4, +5})));
+  EXPECT_TRUE(graph->DetectEquivalences());
+}
+
 TEST(BinaryImplicationGraphTest, DetectEquivalences) {
   // We take a bunch of random permutations, equivalence classes will be cycles.
   // We make sure the representative of x and not(x) are always negation of

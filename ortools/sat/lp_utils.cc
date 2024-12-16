@@ -67,7 +67,7 @@ void ScaleConstraint(absl::Span<const double> var_scaling,
   }
 }
 
-void ApplyVarScaling(const std::vector<double>& var_scaling,
+void ApplyVarScaling(absl::Span<const double> var_scaling,
                      MPModelProto* mp_model) {
   const int num_variables = mp_model->variable_size();
   for (int i = 0; i < num_variables; ++i) {

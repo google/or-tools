@@ -542,6 +542,10 @@ class PresolveContext {
     const auto it = objective_map_.find(var);
     return it == objective_map_.end() ? 0 : it->second;
   }
+
+  // Returns true if the variables in the objective with a positive (resp.
+  // negative) coefficient can freely decrease (resp. increase) within their
+  // domain (if we ignore the other constraints).
   bool ObjectiveDomainIsConstraining() const {
     return objective_domain_is_constraining_;
   }

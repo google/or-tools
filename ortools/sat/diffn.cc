@@ -66,51 +66,30 @@ IntegerVariable CreateVariableWithTightDomain(
   return integer_trail->AddIntegerVariable(min, max);
 }
 
-// TODO(user): Use the faster variable only version if all expressions reduce
-// to a single variable?
-IntegerVariable CreateVariableEqualToMinOf(
+IntegerVariable CreateVariableAtOrAboveMinOf(
     absl::Span<const AffineExpression> exprs, Model* model) {
-  std::vector<LinearExpression> converted;
-  converted.reserve(exprs.size());
-  for (const AffineExpression& affine : exprs) {
-    LinearExpression e;
-    e.offset = affine.constant;
-    if (affine.var != kNoIntegerVariable) {
-      e.vars.push_back(affine.var);
-      e.coeffs.push_back(affine.coeff);
-    }
-    converted.push_back(e);
-  }
-
   const IntegerVariable var = CreateVariableWithTightDomain(exprs, model);
-  LinearExpression target;
-  target.vars.push_back(var);
-  target.coeffs.push_back(IntegerValue(1));
-  AddIsEqualToMinOf(target, std::move(converted), model);
+  auto* constraint = new MinPropagator({exprs.begin(), exprs.end()}, var,
+                                       model->GetOrCreate<IntegerTrail>());
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
+
   return var;
 }
 
-IntegerVariable CreateVariableEqualToMaxOf(
+IntegerVariable CreateVariableAtOrBelowMaxOf(
     absl::Span<const AffineExpression> exprs, Model* model) {
-  std::vector<LinearExpression> converted;
-  converted.reserve(exprs.size());
-  for (const AffineExpression& affine : exprs) {
-    // We take the negation of affine.
-    LinearExpression e;
-    e.offset = -affine.constant;
-    if (affine.var != kNoIntegerVariable) {
-      e.vars = {NegationOf(affine.var)};
-      e.coeffs = {affine.coeff};
-    }
-    converted.push_back(std::move(e));
-  }
+  std::vector<AffineExpression> negated_exprs(exprs.begin(), exprs.end());
+  for (AffineExpression& affine : negated_exprs) affine = affine.Negated();
 
-  const IntegerVariable var = CreateVariableWithTightDomain(exprs, model);
-  LinearExpression target;
-  target.vars = {NegationOf(var)};
-  target.coeffs = {IntegerValue(1)};
-  AddIsEqualToMinOf(target, std::move(converted), model);
-  return var;
+  const IntegerVariable var =
+      CreateVariableWithTightDomain(negated_exprs, model);
+  auto* constraint = new MinPropagator(std::move(negated_exprs), var,
+                                       model->GetOrCreate<IntegerTrail>());
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
+
+  return NegationOf(var);
 }
 
 // Add a cumulative relaxation. That is, on one dimension, it does not enforce
@@ -118,11 +97,14 @@ IntegerVariable CreateVariableEqualToMaxOf(
 void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
                                    SchedulingConstraintHelper* y,
                                    Model* model) {
+  // Note that we only need one side!
+  // We want something <= max_end - min_start
+  //
   // TODO(user): Use conditional affine min/max !!
   const IntegerVariable min_start_var =
-      CreateVariableEqualToMinOf(y->Starts(), model);
+      CreateVariableAtOrAboveMinOf(y->Starts(), model);
   const IntegerVariable max_end_var =
-      CreateVariableEqualToMaxOf(y->Ends(), model);
+      CreateVariableAtOrBelowMaxOf(y->Ends(), model);
 
   // (max_end - min_start) >= capacity.
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();

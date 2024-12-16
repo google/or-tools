@@ -357,7 +357,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
 
 std::function<BooleanOrIntegerLiteral()>
 ConstructIntegerCompletionSearchStrategy(
-    const std::vector<IntegerVariable>& variable_mapping,
+    absl::Span<const IntegerVariable> variable_mapping,
     IntegerVariable objective_var, Model* model) {
   const auto& params = *model->GetOrCreate<SatParameters>();
   if (!params.instantiate_all_variables()) {

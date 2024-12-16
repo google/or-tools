@@ -49,7 +49,7 @@ namespace sat {
 // Note that this is mainly a "symmetric" case algo, but it does still work for
 // the asymmetric case.
 void GenerateInterestingSubsets(int num_nodes,
-                                const std::vector<std::pair<int, int>>& arcs,
+                                absl::Span<const std::pair<int, int>> arcs,
                                 int stop_at_num_components,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets);

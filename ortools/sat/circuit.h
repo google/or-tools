@@ -119,9 +119,9 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 // Enforce the fact that there is no cycle in the given directed graph.
 class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
  public:
-  NoCyclePropagator(int num_nodes, const std::vector<int>& tails,
-                    const std::vector<int>& heads,
-                    const std::vector<Literal>& literals, Model* model);
+  NoCyclePropagator(int num_nodes, absl::Span<const int> tails,
+                    absl::Span<const int> heads,
+                    absl::Span<const Literal> literals, Model* model);
 
   void SetLevel(int level) final;
   bool Propagate() final;

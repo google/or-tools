@@ -810,12 +810,12 @@ void RestrictObjectiveUsingHint(CpModelProto* model_proto) {
   }
 }
 
-// Returns false if there is a complete solution hint that is infeasible, or
-// true otherwise.
-bool TestSolutionHintForFeasibility(const CpModelProto& model_proto,
-                                    SolverLogger* logger = nullptr,
-                                    SharedResponseManager* manager = nullptr) {
-  if (!model_proto.has_solution_hint()) return true;
+// Returns true iff there is a hint, and (ignoring fixed variables) if it is
+// complete and feasible.
+bool SolutionHintIsCompleteAndFeasible(
+    const CpModelProto& model_proto, SolverLogger* logger = nullptr,
+    SharedResponseManager* manager = nullptr) {
+  if (!model_proto.has_solution_hint()) return false;
 
   int num_active_variables = 0;
   int num_hinted_variables = 0;
@@ -837,7 +837,7 @@ bool TestSolutionHintForFeasibility(const CpModelProto& model_proto,
           logger, "The solution hint is incomplete: ", num_hinted_variables,
           " out of ", num_active_variables, " non fixed variables hinted.");
     }
-    return true;
+    return false;
   }
 
   std::vector<int64_t> solution(model_proto.variables_size(), 0);
@@ -1287,8 +1287,8 @@ class LnsSolver : public SubSolver {
         absl::MutexLock l(&next_arena_size_mutex_);
         buffer_size = next_arena_size_;
       }
-      std::vector<char> arena_buffer(buffer_size);
-      google::protobuf::Arena arena(arena_buffer.data(), arena_buffer.size());
+      auto arena_buffer = std::make_unique<char[]>(buffer_size);
+      google::protobuf::Arena arena(arena_buffer.get(), buffer_size);
       CpModelProto& lns_fragment =
           *google::protobuf::Arena::Create<CpModelProto>(&arena);
       CpModelProto& mapping_proto =
@@ -1359,7 +1359,7 @@ class LnsSolver : public SubSolver {
       bool hint_feasible_before_presolve = false;
       if (lns_parameters_.debug_crash_if_presolve_breaks_hint()) {
         hint_feasible_before_presolve =
-            TestSolutionHintForFeasibility(lns_fragment, /*logger=*/nullptr);
+            SolutionHintIsCompleteAndFeasible(lns_fragment, /*logger=*/nullptr);
       }
 
       // If we use a hint, we will restrict the objective to be <= to the one
@@ -1398,7 +1398,8 @@ class LnsSolver : public SubSolver {
 
       if (lns_parameters_.debug_crash_if_presolve_breaks_hint() &&
           hint_feasible_before_presolve &&
-          !TestSolutionHintForFeasibility(lns_fragment, /*logger=*/nullptr)) {
+          !SolutionHintIsCompleteAndFeasible(lns_fragment,
+                                             /*logger=*/nullptr)) {
         LOG(FATAL) << "Presolve broke a feasible LNS hint. The model name is '"
                    << lns_fragment.name()
                    << "' (use the --cp_model_dump_submodels flag to dump it).";
@@ -2390,7 +2391,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   bool hint_feasible_before_presolve = false;
   if (!context->ModelIsUnsat()) {
     hint_feasible_before_presolve =
-        TestSolutionHintForFeasibility(model_proto, logger);
+        SolutionHintIsCompleteAndFeasible(model_proto, logger);
   }
 
   // If the objective was a floating point one, do some postprocessing on the
@@ -2726,11 +2727,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // different.
   bool hint_feasible_after_presolve;
   if (!params.enumerate_all_solutions()) {
-    hint_feasible_after_presolve = TestSolutionHintForFeasibility(
+    hint_feasible_after_presolve = SolutionHintIsCompleteAndFeasible(
         *new_cp_model_proto, logger, shared_response_manager);
   } else {
     hint_feasible_after_presolve =
-        TestSolutionHintForFeasibility(*new_cp_model_proto, logger, nullptr);
+        SolutionHintIsCompleteAndFeasible(*new_cp_model_proto, logger, nullptr);
   }
 
   if (hint_feasible_before_presolve && !hint_feasible_after_presolve &&
