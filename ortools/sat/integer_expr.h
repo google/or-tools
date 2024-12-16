@@ -220,8 +220,8 @@ class LevelZeroEquality : PropagatorInterface {
 // TODO(user): Implement a more efficient algorithm when the need arise.
 class MinPropagator : public PropagatorInterface {
  public:
-  MinPropagator(const std::vector<IntegerVariable>& vars,
-                IntegerVariable min_var, IntegerTrail* integer_trail);
+  MinPropagator(std::vector<AffineExpression> vars, AffineExpression min_var,
+                IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.
   MinPropagator(const MinPropagator&) = delete;
@@ -231,8 +231,8 @@ class MinPropagator : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const std::vector<IntegerVariable> vars_;
-  const IntegerVariable min_var_;
+  const std::vector<AffineExpression> vars_;
+  const AffineExpression min_var_;
   IntegerTrail* integer_trail_;
 
   std::vector<IntegerLiteral> integer_reason_;
@@ -729,6 +729,8 @@ inline void AddIsEqualToMinOf(const LinearExpression& min_expr,
     builder.AddTerm(min_var, -1);
     LoadLinearConstraint(builder.Build(), model);
   }
+
+  // Add for all i, min <= exprs[i].
   for (const LinearExpression& expr : exprs) {
     LinearConstraintBuilder builder(0, kMaxIntegerValue);
     builder.AddLinearExpression(expr, 1);

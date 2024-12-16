@@ -1287,8 +1287,8 @@ class LnsSolver : public SubSolver {
         absl::MutexLock l(&next_arena_size_mutex_);
         buffer_size = next_arena_size_;
       }
-      std::vector<char> arena_buffer(buffer_size);
-      google::protobuf::Arena arena(arena_buffer.data(), arena_buffer.size());
+      auto arena_buffer = std::make_unique<char[]>(buffer_size);
+      google::protobuf::Arena arena(arena_buffer.get(), buffer_size);
       CpModelProto& lns_fragment =
           *google::protobuf::Arena::Create<CpModelProto>(&arena);
       CpModelProto& mapping_proto =

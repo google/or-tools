@@ -358,10 +358,9 @@ bool CircuitPropagator::Propagate() {
   return true;
 }
 
-NoCyclePropagator::NoCyclePropagator(int num_nodes,
-                                     const std::vector<int>& tails,
-                                     const std::vector<int>& heads,
-                                     const std::vector<Literal>& literals,
+NoCyclePropagator::NoCyclePropagator(int num_nodes, absl::Span<const int> tails,
+                                     absl::Span<const int> heads,
+                                     absl::Span<const Literal> literals,
                                      Model* model)
     : num_nodes_(num_nodes),
       trail_(model->GetOrCreate<Trail>()),

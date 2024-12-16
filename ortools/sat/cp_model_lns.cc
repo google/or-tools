@@ -558,7 +558,7 @@ struct TimePartition {
 // Selects all intervals in a random time window to meet the difficulty
 // requirement.
 TimePartition PartitionIndicesAroundRandomTimeWindow(
-    const std::vector<int>& intervals, const CpModelProto& model_proto,
+    absl::Span<const int> intervals, const CpModelProto& model_proto,
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
   std::vector<StartEndIndex> start_end_indices;
@@ -1036,15 +1036,10 @@ std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
 
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const CpSolverResponse& base_solution,
-    const absl::flat_hash_set<int>& variables_to_fix) const {
-  int initial_num_variables = 0;
-  {
-    absl::ReaderMutexLock domain_lock(&domain_mutex_);
-
-    initial_num_variables =
-        model_proto_with_only_variables_->variables().size();
-  }
-  Neighborhood neighborhood(initial_num_variables);
+    const Bitset64<int>& variables_to_fix) const {
+  const int num_variables = variables_to_fix.size();
+  Neighborhood neighborhood(num_variables);
+  neighborhood.delta.mutable_variables()->Reserve(num_variables);
 
   // TODO(user): Maybe relax all variables in the objective when the number
   // is small or negligible compared to the number of variables.
@@ -1054,12 +1049,9 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
           : -1;
 
   // Fill in neighborhood.delta all variable domains.
+  int num_fixed = 0;
   {
     absl::ReaderMutexLock domain_lock(&domain_mutex_);
-
-    const int num_variables =
-        model_proto_with_only_variables_->variables().size();
-    neighborhood.delta.mutable_variables()->Reserve(num_variables);
     for (int i = 0; i < num_variables; ++i) {
       const IntegerVariableProto& current_var =
           model_proto_with_only_variables_->variables(i);
@@ -1068,17 +1060,20 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
       // We only copy the name in debug mode.
       if (DEBUG_MODE) new_var->set_name(current_var.name());
 
-      const Domain domain = ReadDomainFromProto(current_var);
-      const int64_t base_value = base_solution.solution(i);
+      if (variables_to_fix[i] && i != unique_objective_variable) {
+        ++num_fixed;
 
-      if (variables_to_fix.contains(i) && i != unique_objective_variable) {
-        if (domain.Contains(base_value)) {
+        // Note the use of DomainInProtoContains() instead of
+        // ReadDomainFromProto() as the later is slower and allocate memory.
+        const int64_t base_value = base_solution.solution(i);
+        if (DomainInProtoContains(current_var, base_value)) {
           new_var->add_domain(base_value);
           new_var->add_domain(base_value);
         } else {
           // If under the updated domain, the base solution is no longer valid,
           // We should probably regenerate this neighborhood. But for now we
           // just do a best effort and take the closest value.
+          const Domain domain = ReadDomainFromProto(current_var);
           int64_t closest_value = domain.Min();
           int64_t closest_dist = std::abs(closest_value - base_value);
           for (const ClosedInterval interval : domain) {
@@ -1093,7 +1088,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
           FillDomainInProto(Domain(closest_value, closest_value), new_var);
         }
       } else {
-        FillDomainInProto(domain, new_var);
+        *new_var->mutable_domain() = current_var.domain();
       }
     }
   }
@@ -1138,10 +1133,15 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     neighborhood.variables_that_can_be_fixed_to_local_optimum.clear();
   }
 
+  const int num_relaxed = num_variables - num_fixed;
+  neighborhood.delta.mutable_solution_hint()->mutable_vars()->Reserve(
+      num_relaxed);
+  neighborhood.delta.mutable_solution_hint()->mutable_values()->Reserve(
+      num_relaxed);
   AddSolutionHinting(base_solution, &neighborhood.delta);
 
   neighborhood.is_generated = true;
-  neighborhood.is_reduced = !variables_to_fix.empty();
+  neighborhood.is_reduced = num_fixed > 0;
   neighborhood.is_simple = true;
 
   // TODO(user): force better objective? Note that this is already done when the
@@ -1172,25 +1172,26 @@ void NeighborhoodGeneratorHelper::AddSolutionHinting(
 Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
     const CpSolverResponse& initial_solution,
     absl::Span<const int> relaxed_variables) const {
-  std::vector<bool> relaxed_variables_set(model_proto_.variables_size(), false);
-  for (const int var : relaxed_variables) relaxed_variables_set[var] = true;
-  absl::flat_hash_set<int> fixed_variables;
+  Bitset64<int> fixed_variables(NumVariables());
   {
     absl::ReaderMutexLock graph_lock(&graph_mutex_);
     for (const int i : active_variables_) {
-      if (!relaxed_variables_set[i]) {
-        fixed_variables.insert(i);
-      }
+      fixed_variables.Set(i);
     }
   }
+  for (const int var : relaxed_variables) fixed_variables.Clear(var);
   return FixGivenVariables(initial_solution, fixed_variables);
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
     const CpSolverResponse& initial_solution) const {
-  const std::vector<int>& all_variables = ActiveVariables();
-  const absl::flat_hash_set<int> fixed_variables(all_variables.begin(),
-                                                 all_variables.end());
+  Bitset64<int> fixed_variables(NumVariables());
+  {
+    absl::ReaderMutexLock graph_lock(&graph_mutex_);
+    for (const int i : active_variables_) {
+      fixed_variables.Set(i);
+    }
+  }
   return FixGivenVariables(initial_solution, fixed_variables);
 }
 
@@ -1319,8 +1320,10 @@ Neighborhood RelaxRandomVariablesGenerator::Generate(
     absl::BitGenRef random) {
   std::vector<int> fixed_variables = helper_.ActiveVariables();
   GetRandomSubset(1.0 - data.difficulty, &fixed_variables, random);
-  return helper_.FixGivenVariables(
-      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
+
+  Bitset64<int> to_fix(helper_.NumVariables());
+  for (const int var : fixed_variables) to_fix.Set(var);
+  return helper_.FixGivenVariables(initial_solution, to_fix);
 }
 
 Neighborhood RelaxRandomConstraintsGenerator::Generate(
@@ -2302,14 +2305,13 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
       helper_.GetActiveRectangles(initial_solution);
   GetRandomSubset(1.0 - data.difficulty, &rectangles_to_freeze, random);
 
-  absl::flat_hash_set<int> variables_to_freeze;
+  Bitset64<int> variables_to_freeze(helper_.NumVariables());
   for (const ActiveRectangle& rectangle : rectangles_to_freeze) {
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
-                                  variables_to_freeze);
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
-                                  variables_to_freeze);
+    InsertVariablesFromInterval(helper_.ModelProto(), rectangle.x_interval,
+                                variables_to_freeze);
+    InsertVariablesFromInterval(helper_.ModelProto(), rectangle.y_interval,
+                                variables_to_freeze);
   }
-
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
 }
 
@@ -2351,15 +2353,15 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
   //
   // Note that we only consider two rectangles as potential neighbors if they
   // are part of the same no_overlap_2d constraint.
-  absl::flat_hash_set<int> variables_to_freeze;
+  Bitset64<int> variables_to_freeze(helper_.NumVariables());
   std::vector<std::pair<int, double>> distances;
   distances.reserve(all_active_rectangles.size());
   for (int i = 0; i < all_active_rectangles.size(); ++i) {
     const ActiveRectangle& rectangle = all_active_rectangles[i];
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
-                                  variables_to_freeze);
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
-                                  variables_to_freeze);
+    InsertVariablesFromInterval(helper_.ModelProto(), rectangle.x_interval,
+                                variables_to_freeze);
+    InsertVariablesFromInterval(helper_.ModelProto(), rectangle.y_interval,
+                                variables_to_freeze);
 
     const Rectangle rect = get_rectangle(rectangle);
     const bool same_no_overlap_as_center_rect = absl::c_any_of(
@@ -2398,14 +2400,10 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
 
   for (const int b : boxes_to_relax) {
     const ActiveRectangle& rectangle = all_active_rectangles[b];
-    absl::flat_hash_set<int> variables_to_relax;
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
-                                  variables_to_relax);
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
-                                  variables_to_relax);
-    for (const int v : variables_to_relax) {
-      variables_to_freeze.erase(v);
-    }
+    RemoveVariablesFromInterval(helper_.ModelProto(), rectangle.x_interval,
+                                variables_to_freeze);
+    RemoveVariablesFromInterval(helper_.ModelProto(), rectangle.y_interval,
+                                variables_to_freeze);
   }
   Neighborhood neighborhood =
       helper_.FixGivenVariables(initial_solution, variables_to_freeze);
@@ -2489,17 +2487,17 @@ Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
   // TODO(user): This computes the distance between the center of the
   // rectangles. We could use the real distance between the closest points, but
   // not sure it is worth the extra complexity.
-  absl::flat_hash_set<int> variables_to_freeze;
+  Bitset64<int> variables_to_freeze(helper_.NumVariables());
   std::vector<std::pair<int, double>> distances1;
   std::vector<std::pair<int, double>> distances2;
   distances1.reserve(all_active_rectangles.size());
   distances2.reserve(all_active_rectangles.size());
   for (int i = 0; i < all_active_rectangles.size(); ++i) {
     const ActiveRectangle& rectangle = all_active_rectangles[i];
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
-                                  variables_to_freeze);
-    InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
-                                  variables_to_freeze);
+    InsertVariablesFromInterval(helper_.ModelProto(), rectangle.x_interval,
+                                variables_to_freeze);
+    InsertVariablesFromInterval(helper_.ModelProto(), rectangle.y_interval,
+                                variables_to_freeze);
 
     const Rectangle rect = get_rectangle(rectangle);
     const bool same_no_overlap_as_rect1 =
@@ -2525,21 +2523,17 @@ Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
             [](const auto& a, const auto& b) { return a.second < b.second; });
   std::sort(distances2.begin(), distances2.end(),
             [](const auto& a, const auto& b) { return a.second < b.second; });
-  absl::flat_hash_set<int> variables_to_relax;
   for (auto& samples : {distances1, distances2}) {
     const int num_potential_samples = samples.size();
     for (int i = 0; i < std::min(num_potential_samples, num_to_sample_each);
          ++i) {
       const int rectangle_idx = samples[i].first;
       const ActiveRectangle& rectangle = all_active_rectangles[rectangle_idx];
-      InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.x_interval,
-                                    variables_to_relax);
-      InsertVariablesFromConstraint(helper_.ModelProto(), rectangle.y_interval,
-                                    variables_to_relax);
+      RemoveVariablesFromInterval(helper_.ModelProto(), rectangle.x_interval,
+                                  variables_to_freeze);
+      RemoveVariablesFromInterval(helper_.ModelProto(), rectangle.y_interval,
+                                  variables_to_freeze);
     }
-  }
-  for (const int v : variables_to_relax) {
-    variables_to_freeze.erase(v);
   }
 
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
@@ -2583,15 +2577,15 @@ Neighborhood SlicePackingNeighborhoodGenerator::Generate(
     indices_to_fix[index] = false;
   }
 
-  absl::flat_hash_set<int> variables_to_freeze;
+  Bitset64<int> variables_to_freeze(helper_.NumVariables());
   for (int index = 0; index < active_rectangles.size(); ++index) {
     if (indices_to_fix[index]) {
-      InsertVariablesFromConstraint(helper_.ModelProto(),
-                                    active_rectangles[index].x_interval,
-                                    variables_to_freeze);
-      InsertVariablesFromConstraint(helper_.ModelProto(),
-                                    active_rectangles[index].y_interval,
-                                    variables_to_freeze);
+      InsertVariablesFromInterval(helper_.ModelProto(),
+                                  active_rectangles[index].x_interval,
+                                  variables_to_freeze);
+      InsertVariablesFromInterval(helper_.ModelProto(),
+                                  active_rectangles[index].y_interval,
+                                  variables_to_freeze);
     }
   }
 
@@ -2613,8 +2607,10 @@ Neighborhood RoutingRandomNeighborhoodGenerator::Generate(
                                    all_path_variables.end());
   std::sort(fixed_variables.begin(), fixed_variables.end());
   GetRandomSubset(1.0 - data.difficulty, &fixed_variables, random);
-  return helper_.FixGivenVariables(
-      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
+
+  Bitset64<int> to_fix(helper_.NumVariables());
+  for (const int var : fixed_variables) to_fix.Set(var);
+  return helper_.FixGivenVariables(initial_solution, to_fix);
 }
 
 Neighborhood RoutingPathNeighborhoodGenerator::Generate(
@@ -2656,11 +2652,11 @@ Neighborhood RoutingPathNeighborhoodGenerator::Generate(
   }
 
   // Compute the set of variables to fix.
-  absl::flat_hash_set<int> fixed_variables;
+  Bitset64<int> to_fix(helper_.NumVariables());
   for (const int var : all_path_variables) {
-    if (!relaxed_variables.contains(var)) fixed_variables.insert(var);
+    if (!relaxed_variables.contains(var)) to_fix.Set(var);
   }
-  return helper_.FixGivenVariables(initial_solution, fixed_variables);
+  return helper_.FixGivenVariables(initial_solution, to_fix);
 }
 
 Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
@@ -2722,11 +2718,11 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
   }
 
   // Compute the set of variables to fix.
-  absl::flat_hash_set<int> fixed_variables;
+  Bitset64<int> to_fix(helper_.NumVariables());
   for (const int var : all_path_variables) {
-    if (!relaxed_variables.contains(var)) fixed_variables.insert(var);
+    if (!relaxed_variables.contains(var)) to_fix.Set(var);
   }
-  return helper_.FixGivenVariables(initial_solution, fixed_variables);
+  return helper_.FixGivenVariables(initial_solution, to_fix);
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {

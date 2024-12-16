@@ -11834,7 +11834,21 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
       // Nothing else to do in this case, the constraint will be reduced to
       // a pure Boolean constraint later.
       context_->UpdateRuleStats("variables: reduced domain to two values");
-      return (void)context_->IntersectDomainWithAndUpdateHint(
+      // If the hint enforces `ct`, then the hint of `var` must be in the
+      // implied domain. In any case its new value must not increase the
+      // objective value (the objective domain is non-constraining, but this
+      // only guarantees that `var` can freely *decrease* the objective). The
+      // code below ensures this (`value2` is the 'cheapest' value the implied
+      // domain, and `value1` the cheapest value in the variable's domain).
+      bool enforcing_hint = true;
+      for (const int enforcement_lit : ct.enforcement_literal()) {
+        if (context_->LiteralSolutionHintIs(enforcement_lit, false)) {
+          enforcing_hint = false;
+          break;
+        }
+      }
+      context_->UpdateVarSolutionHint(var, enforcing_hint ? value2 : value1);
+      return (void)context_->IntersectDomainWith(
           var, Domain::FromValues({value1, value2}));
     }
   }
@@ -14372,7 +14386,15 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
     }
     mutable_vars->Truncate(new_size);
     mutable_coeffs->Truncate(new_size);
+
+    // Tricky: The objective domain is on the linear objective expression
+    // without the offset, so we need to shift it if there is one.
     objective->set_offset(objective->offset() + offset);
+    if (!objective->domain().empty()) {
+      Domain obj_domain =
+          ReadDomainFromProto(*objective).AdditionWith(Domain(-offset));
+      FillDomainInProto(obj_domain, objective);
+    }
 
     context_->ReadObjectiveFromProto();
     if (!context_->CanonicalizeObjective()) return false;

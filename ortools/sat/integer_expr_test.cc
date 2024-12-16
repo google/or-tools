@@ -434,6 +434,32 @@ TEST(LinMinMaxTest, LevelZeroPropagation) {
   EXPECT_BOUNDS_EQ(vars[2], 5, 8);
 }
 
+TEST(AffineMinTest, LevelZeroPropagation) {
+  Model model;
+  std::vector<AffineExpression> vars{model.Add(NewIntegerVariable(4, 9)),
+                                     model.Add(NewIntegerVariable(2, 7)),
+                                     model.Add(NewIntegerVariable(3, 8))};
+  const AffineExpression min = model.Add(NewIntegerVariable(-100, 100));
+
+  auto* constraint =
+      new MinPropagator(vars, min, model.GetOrCreate<IntegerTrail>());
+  constraint->RegisterWith(model.GetOrCreate<GenericLiteralWatcher>());
+  model.TakeOwnership(constraint);
+
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
+  EXPECT_EQ(integer_trail->LowerBound(min), 2);
+
+  EXPECT_TRUE(integer_trail->Enqueue(min.LowerOrEqual(2)));
+  EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
+  EXPECT_EQ(integer_trail->UpperBound(min), 2);
+
+  // Vars 1 is the only candidate.
+  EXPECT_EQ(integer_trail->UpperBound(vars[0]), 9);
+  EXPECT_EQ(integer_trail->UpperBound(vars[1]), 2);
+  EXPECT_EQ(integer_trail->UpperBound(vars[2]), 8);
+}
+
 TEST(LinMinTest, OnlyOnePossibleCandidate) {
   Model model;
   std::vector<IntegerVariable> vars{model.Add(NewIntegerVariable(4, 7)),

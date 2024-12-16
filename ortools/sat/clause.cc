@@ -1446,7 +1446,17 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     // that this might result in more implications when we expand small at most
     // one.
     at_most_ones_.clear();
+    int saved_trail_index = propagation_trail_index_;
     CleanUpAndAddAtMostOnes(/*base_index=*/0);
+    // This might have run the propagation on a few variables without taking
+    // into account the AMOs. Propagate again.
+    //
+    // TODO(user): Maybe a better alternative is to not propagate when we fix
+    // variables inside CleanUpAndAddAtMostOnes().
+    if (propagation_trail_index_ != saved_trail_index) {
+      propagation_trail_index_ = saved_trail_index;
+      Propagate(trail_);
+    }
 
     num_implications_ = 0;
     for (LiteralIndex i(0); i < size; ++i) {

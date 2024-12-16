@@ -215,7 +215,7 @@ namespace {
 
 // Note that if a domain is not fixed, we just take its Min() value.
 int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
-                                 const std::vector<Domain>& domains) {
+                                 absl::Span<const Domain> domains) {
   int64_t value = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
     const int ref = expr.vars(i);

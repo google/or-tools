@@ -125,6 +125,7 @@ cc_library(
         "//ortools/base:file",
         "//ortools/base:hash",
         "//ortools/base:stl_util",
+        "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/container:flat_hash_map",
