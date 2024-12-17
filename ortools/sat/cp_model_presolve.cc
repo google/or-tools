@@ -9609,16 +9609,17 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     if (context_->VariableWithCostIsUniqueAndRemovable(a) &&
         context_->VariableWithCostIsUniqueAndRemovable(b)) {
       // Both these case should be presolved before, but it is easy to deal with
-      // if we encounter them here in some corner cases.
+      // if we encounter them here in some corner cases. And the code after
+      // 'continue' uses this, in particular to update the hint.
       bool skip = false;
       if (RefIsPositive(a) == context_->ObjectiveCoeff(PositiveRef(a)) > 0) {
         context_->UpdateRuleStats("duplicate: dual fixing enforcement.");
-        if (!context_->SetLiteralToFalse(a)) return;
+        if (!context_->SetLiteralAndHintToFalse(a)) return;
         skip = true;
       }
       if (RefIsPositive(b) == context_->ObjectiveCoeff(PositiveRef(b)) > 0) {
         context_->UpdateRuleStats("duplicate: dual fixing enforcement.");
-        if (!context_->SetLiteralToFalse(b)) return;
+        if (!context_->SetLiteralAndHintToFalse(b)) return;
         skip = true;
       }
       if (skip) continue;
@@ -9643,6 +9644,16 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
       // Sign is correct, i.e. ignoring the constraint is expensive.
       // The two enforcement can be made equivalent.
       context_->UpdateRuleStats("duplicate: dual equivalence of enforcement");
+      // If `a` and `b` hints are different then the whole hint satisfies
+      // the enforced constraint. We can thus change them to true (this cannot
+      // increase the objective value thanks to the `skip` test above -- the
+      // objective domain is non-constraining, but this only guarantees that
+      // singleton variables can freely *decrease* the objective).
+      if (context_->LiteralSolutionHint(a) !=
+          context_->LiteralSolutionHint(b)) {
+        context_->UpdateLiteralSolutionHint(a, true);
+        context_->UpdateLiteralSolutionHint(b, true);
+      }
       context_->StoreBooleanEqualityRelation(a, b);
 
       // We can also remove duplicate constraint now. It will be done later but
@@ -14364,38 +14375,9 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
   }
 
   // TODO(user): Right now the copy do not remove fixed variable from the
-  // objective, so we do that here so that these variable should not appear
-  // anymore. Fix that.
+  // objective, but ReadObjectiveFromProto() does it. Maybe we should just not
+  // copy them in the first place.
   if (context_->working_model->has_objective()) {
-    auto* objective = context_->working_model->mutable_objective();
-    auto* mutable_vars = objective->mutable_vars();
-    auto* mutable_coeffs = objective->mutable_coeffs();
-    const int old_size = objective->vars().size();
-    int64_t offset = 0;
-    int new_size = 0;
-    for (int i = 0; i < old_size; ++i) {
-      const int var = objective->vars(i);
-      const int64_t coeff = objective->coeffs(i);
-      if (context_->IsFixed(var)) {
-        offset += context_->FixedValue(var) * coeff;
-        continue;
-      }
-      mutable_vars->Set(new_size, var);
-      mutable_coeffs->Set(new_size, coeff);
-      ++new_size;
-    }
-    mutable_vars->Truncate(new_size);
-    mutable_coeffs->Truncate(new_size);
-
-    // Tricky: The objective domain is on the linear objective expression
-    // without the offset, so we need to shift it if there is one.
-    objective->set_offset(objective->offset() + offset);
-    if (!objective->domain().empty()) {
-      Domain obj_domain =
-          ReadDomainFromProto(*objective).AdditionWith(Domain(-offset));
-      FillDomainInProto(obj_domain, objective);
-    }
-
     context_->ReadObjectiveFromProto();
     if (!context_->CanonicalizeObjective()) return false;
     if (!PropagateObjective()) return false;

@@ -464,7 +464,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
   if (num_constants > 0) {
     const std::string temp =
-        absl::StrCat("  - ", num_constants, " constants in {",
+        absl::StrCat("  - ", FormatCounter(num_constants), " constants in {",
                      absl::StrJoin(constant_values, ","), "} \n");
     absl::StrAppend(&result, Summarize(temp));
   }
@@ -503,62 +503,62 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                       FormatCounter(name_to_num_complex_domain[c_name]), ")");
     }
     if (name == "kInterval" && num_fixed_intervals > 0) {
-      absl::StrAppend(&constraints.back(), " (#fixed: ", num_fixed_intervals,
-                      ")");
-    } else if (name == "kNoOverlap2D") {
       absl::StrAppend(&constraints.back(),
-                      " (#rectangles: ", no_overlap_2d_num_rectangles);
+                      " (#fixed: ", FormatCounter(num_fixed_intervals), ")");
+    } else if (name == "kNoOverlap2D") {
+      absl::StrAppend(&constraints.back(), " (#rectangles: ",
+                      FormatCounter(no_overlap_2d_num_rectangles));
       if (no_overlap_2d_num_optional_rectangles > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #optional: ", no_overlap_2d_num_optional_rectangles);
+        absl::StrAppend(&constraints.back(), ", #optional: ",
+                        FormatCounter(no_overlap_2d_num_optional_rectangles));
       }
       if (no_overlap_2d_num_linear_areas > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #linear_areas: ", no_overlap_2d_num_linear_areas);
+        absl::StrAppend(&constraints.back(), ", #linear_areas: ",
+                        FormatCounter(no_overlap_2d_num_linear_areas));
       }
       if (no_overlap_2d_num_quadratic_areas > 0) {
         absl::StrAppend(&constraints.back(), ", #quadratic_areas: ",
-                        no_overlap_2d_num_quadratic_areas);
+                        FormatCounter(no_overlap_2d_num_quadratic_areas));
       }
       if (no_overlap_2d_num_fixed_rectangles > 0) {
         absl::StrAppend(&constraints.back(), ", #fixed_rectangles: ",
-                        no_overlap_2d_num_fixed_rectangles);
+                        FormatCounter(no_overlap_2d_num_fixed_rectangles));
       }
       absl::StrAppend(&constraints.back(), ")");
     } else if (name == "kCumulative") {
-      absl::StrAppend(&constraints.back(),
-                      " (#intervals: ", cumulative_num_intervals);
+      absl::StrAppend(&constraints.back(), " (#intervals: ",
+                      FormatCounter(cumulative_num_intervals));
       if (cumulative_num_optional_intervals > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #optional: ", cumulative_num_optional_intervals);
+        absl::StrAppend(&constraints.back(), ", #optional: ",
+                        FormatCounter(cumulative_num_optional_intervals));
       }
       if (cumulative_num_variable_sizes > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #variable_sizes: ", cumulative_num_variable_sizes);
+        absl::StrAppend(&constraints.back(), ", #variable_sizes: ",
+                        FormatCounter(cumulative_num_variable_sizes));
       }
       if (cumulative_num_variable_demands > 0) {
         absl::StrAppend(&constraints.back(), ", #variable_demands: ",
                         cumulative_num_variable_demands);
       }
       if (cumulative_num_fixed_intervals > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #fixed_intervals: ", cumulative_num_fixed_intervals);
+        absl::StrAppend(&constraints.back(), ", #fixed_intervals: ",
+                        FormatCounter(cumulative_num_fixed_intervals));
       }
       absl::StrAppend(&constraints.back(), ")");
     } else if (name == "kNoOverlap") {
-      absl::StrAppend(&constraints.back(),
-                      " (#intervals: ", no_overlap_num_intervals);
+      absl::StrAppend(&constraints.back(), " (#intervals: ",
+                      FormatCounter(no_overlap_num_intervals));
       if (no_overlap_num_optional_intervals > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #optional: ", no_overlap_num_optional_intervals);
+        absl::StrAppend(&constraints.back(), ", #optional: ",
+                        FormatCounter(no_overlap_num_optional_intervals));
       }
       if (no_overlap_num_variable_sizes > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #variable_sizes: ", no_overlap_num_variable_sizes);
+        absl::StrAppend(&constraints.back(), ", #variable_sizes: ",
+                        FormatCounter(no_overlap_num_variable_sizes));
       }
       if (no_overlap_num_fixed_intervals > 0) {
-        absl::StrAppend(&constraints.back(),
-                        ", #fixed_intervals: ", no_overlap_num_fixed_intervals);
+        absl::StrAppend(&constraints.back(), ", #fixed_intervals: ",
+                        FormatCounter(no_overlap_num_fixed_intervals));
       }
       absl::StrAppend(&constraints.back(), ")");
     }
@@ -1282,13 +1282,13 @@ class LnsSolver : public SubSolver {
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
 
       // Presolve and solve the LNS fragment.
-      int64_t buffer_size;
+      size_t buffer_size;
       {
         absl::MutexLock l(&next_arena_size_mutex_);
         buffer_size = next_arena_size_;
       }
-      auto arena_buffer = std::make_unique<char[]>(buffer_size);
-      google::protobuf::Arena arena(arena_buffer.get(), buffer_size);
+      google::protobuf::Arena arena(
+          google::protobuf::ArenaOptions({.start_block_size = buffer_size}));
       CpModelProto& lns_fragment =
           *google::protobuf::Arena::Create<CpModelProto>(&arena);
       CpModelProto& mapping_proto =

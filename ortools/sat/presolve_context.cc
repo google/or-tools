@@ -1951,28 +1951,40 @@ void PresolveContext::ReadObjectiveFromProto() {
   // summing an objective partial sum. Because of the model validation, this
   // shouldn't overflow, and we make sure it stays this way.
   objective_overflow_detection_ = std::abs(objective_integer_before_offset_);
+  int64_t fixed_terms = 0;
 
   objective_map_.clear();
   for (int i = 0; i < obj.vars_size(); ++i) {
-    const int ref = obj.vars(i);
+    int var = obj.vars(i);
+    int64_t coeff = obj.coeffs(i);
+
+    // TODO(user): There should be no negative reference here !
+    if (!RefIsPositive(var)) {
+      var = NegatedRef(var);
+      coeff = -coeff;
+    }
+
+    // We remove fixed terms as we read the objective. This can help a lot on
+    // LNS problems with a large proportions of fixed terms.
+    if (IsFixed(var)) {
+      fixed_terms += FixedValue(var) * coeff;
+      continue;
+    }
+
     const int64_t var_max_magnitude =
-        std::max(std::abs(MinOf(ref)), std::abs(MaxOf(ref)));
-
-    // Skipping var fixed to zero allow to avoid some overflow in situation
-    // were we can deal with it.
-    if (var_max_magnitude == 0) continue;
-
-    const int64_t coeff = obj.coeffs(i);
+        std::max(std::abs(MinOf(var)), std::abs(MaxOf(var)));
     objective_overflow_detection_ += var_max_magnitude * std::abs(coeff);
 
-    const int var = PositiveRef(ref);
-    objective_map_[var] += RefIsPositive(ref) ? coeff : -coeff;
-
+    objective_map_[var] += RefIsPositive(var) ? coeff : -coeff;
     if (objective_map_[var] == 0) {
       RemoveVariableFromObjective(var);
     } else {
       var_to_constraints_[var].insert(kObjectiveConstraint);
     }
+  }
+
+  if (fixed_terms != 0) {
+    AddToObjectiveOffset(fixed_terms);
   }
 }
 
