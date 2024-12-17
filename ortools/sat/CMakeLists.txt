@@ -53,6 +53,7 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
+        fuzztest::fuzztest
         GTest::gmock
         GTest::gtest_main
     )
