@@ -22,9 +22,6 @@ if(APPLE)
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     )
-  set_property(TARGET knapsack_solver_pybind11 APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress"
-    )
 elseif(UNIX)
   set_target_properties(knapsack_solver_pybind11 PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
@@ -44,9 +41,6 @@ if(APPLE)
   set_target_properties(set_cover_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    )
-  set_property(TARGET set_cover_pybind11 APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
   set_target_properties(set_cover_pybind11 PROPERTIES

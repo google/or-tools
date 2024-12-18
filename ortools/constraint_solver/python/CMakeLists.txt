@@ -20,21 +20,15 @@ set_target_properties(constraint_solver_pybind11 PROPERTIES
 if(APPLE)
   set_target_properties(constraint_solver_pybind11 PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    )
-  set_property(TARGET constraint_solver_pybind11 APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress"
-    )
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
 elseif(UNIX)
   set_target_properties(constraint_solver_pybind11 PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
-    )
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
 endif()
 
 target_link_libraries(constraint_solver_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
-  pybind11_native_proto_caster
-)
+  pybind11_native_proto_caster)
 add_library(${PROJECT_NAMESPACE}::constraint_solver_pybind11 ALIAS constraint_solver_pybind11)
 
 # legacy pywrapcp
@@ -58,8 +52,7 @@ if(APPLE)
   set_target_properties(pywrapcp PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
-  set_property(TARGET pywrapcp APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress")
+  target_link_options(pywrapcp PRIVATE "LINKER:-undefined,dynamic_lookup")
 elseif(UNIX)
   set_target_properties(pywrapcp PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../${PROJECT_NAME}/.libs")

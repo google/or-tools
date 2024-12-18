@@ -20,15 +20,10 @@ set_target_properties(routing_pybind11 PROPERTIES
 if(APPLE)
   set_target_properties(routing_pybind11 PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    )
-  set_property(TARGET routing_pybind11 APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress"
-    )
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
 elseif(UNIX)
   set_target_properties(routing_pybind11 PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
-    )
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
 endif()
 
 target_link_libraries(routing_pybind11 PRIVATE
@@ -58,8 +53,7 @@ if(APPLE)
   set_target_properties(pywraprouting PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
-  set_property(TARGET pywraprouting APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress")
+  target_link_options(pywraprouting PRIVATE "LINKER:-undefined,dynamic_lookup")
 elseif(UNIX)
   set_target_properties(pywraprouting PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../${PROJECT_NAME}/.libs")
