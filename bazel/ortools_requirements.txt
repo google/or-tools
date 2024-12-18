@@ -30,7 +30,7 @@ mypy-extensions==1.0.0
     #   mypy
 mypy-protobuf==3.5.0
     # via -r bazel/ortools_requirements.in
-numpy==2.1.1
+numpy==2.2.0
     # via
     #   -r bazel/ortools_requirements.in
     #   pandas
