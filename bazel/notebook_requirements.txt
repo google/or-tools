@@ -177,7 +177,7 @@ notebook-shim==0.2.3
     # via
     #   jupyterlab
     #   notebook
-numpy==2.1.1
+numpy==2.2.0
     # via
     #   -r bazel/notebook_requirements.in
     #   pandas
