@@ -90,6 +90,9 @@ endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
 endif()
+if(USE_MOSEK)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_MOSEK")
+endif()
 
 if(WIN32)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "__WIN32__")
@@ -565,6 +568,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${CPLEX_DEPS}
   ${GLPK_DEPS}
   ${HIGHS_DEPS}
+  ${MOSEK_DEPS}
   ${PDLP_DEPS}
   ${SCIP_DEPS}
   Threads::Threads)
