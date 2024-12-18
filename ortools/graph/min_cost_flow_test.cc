@@ -34,6 +34,73 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
+namespace {
+
+TEST(SolveTest, CapacityTooLarge) {
+  using Graph = ::util::ReverseArcListGraph<int64_t, int64_t>;
+  using Solver =
+      ::operations_research::GenericMinCostFlow<Graph, int64_t, int64_t>;
+
+  const int num_nodes = 6;
+  const int num_arcs = 10;
+  auto graph = std::make_unique<Graph>(num_nodes, num_arcs);
+  auto solver = std::make_unique<Solver>(graph.get());
+  const std::vector<int64_t> tails = {1, 2, 3, 4, 5, 0, 1, 2, 3, 4};
+  const std::vector<int64_t> heads = {0, 1, 2, 3, 4, 5, 5, 5, 5, 5};
+  const std::vector<int64_t> capacities = {
+      3184525836262886912, 3184525836262886912, 3184525836262886912,
+      3184525836262886912, 3184525836262886912, 1025,
+      3184525836262886914, 3184525836262886914, 3184525836262886914,
+      3184525836262886914,
+  };
+  const std::vector<int64_t> objectives(num_arcs, 0);
+  const std::vector<int64_t> supplies = {-3184525836262885888, 1, 1, 1, 1,
+                                         3184525836262885884};
+  for (int64_t e = 0; e < num_arcs; ++e) {
+    graph->AddArc(/*tail=*/tails[e], /*head=*/heads[e]);
+    solver->SetArcCapacity(/*arc=*/e, /*new_capacity=*/capacities[e]);
+    solver->SetArcUnitCost(/*arc=*/e, /*unit_cost=*/objectives[e]);
+  }
+  for (int64_t n = 0; n < num_nodes; ++n) {
+    solver->SetNodeSupply(/*node=*/n, /*supply=*/supplies[n]);
+  }
+
+  // This one can actually be "corrected" by our simple heuristic.
+  EXPECT_TRUE(solver->Solve());
+  EXPECT_EQ(solver->status(), Solver::OPTIMAL);
+}
+
+TEST(SolveTest, CapacityTooLarge2) {
+  using Graph = ::util::ReverseArcListGraph<int64_t, int64_t>;
+  using Solver =
+      ::operations_research::GenericMinCostFlow<Graph, int64_t, int64_t>;
+
+  const int num_nodes = 3;
+  const int num_arcs = 6;
+  auto graph = std::make_unique<Graph>(num_nodes, num_arcs);
+  auto solver = std::make_unique<Solver>(graph.get());
+
+  // We construct a double cycle so that the incoming/outgoing flow cannot be
+  // easily bounded.
+  const int64_t kint64max = std::numeric_limits<int64_t>::max();
+  const std::vector<int64_t> tails = {0, 0, 1, 1, 2, 2};
+  const std::vector<int64_t> heads = {1, 1, 2, 2, 0, 0};
+  const std::vector<int64_t> capacities(num_arcs, kint64max - 10);
+  const std::vector<int64_t> objectives(num_arcs, 0);
+  const std::vector<int64_t> supplies = {-(kint64max - 10), kint64max - 10, 0};
+
+  for (int64_t e = 0; e < num_arcs; ++e) {
+    graph->AddArc(/*tail=*/tails[e], /*head=*/heads[e]);
+    solver->SetArcCapacity(/*arc=*/e, /*new_capacity=*/capacities[e]);
+    solver->SetArcUnitCost(/*arc=*/e, /*unit_cost=*/objectives[e]);
+  }
+  for (int64_t n = 0; n < num_nodes; ++n) {
+    solver->SetNodeSupply(/*node=*/n, /*supply=*/supplies[n]);
+  }
+
+  EXPECT_FALSE(solver->Solve());
+  EXPECT_EQ(solver->status(), Solver::BAD_CAPACITY_RANGE);
+}
 
 template <typename Graph>
 void GenericMinCostFlowTester(
@@ -77,11 +144,6 @@ void GenericMinCostFlowTester(
       }
     } else if (expected_status == GenericMinCostFlow<Graph>::INFEASIBLE) {
       EXPECT_FALSE(ok);
-      for (int node = 0; node < graph.num_nodes(); ++node) {
-        FlowQuantity delta = min_cost_flow.InitialSupply(node) -
-                             min_cost_flow.FeasibleSupply(node);
-        EXPECT_EQ(0, delta) << "at node " << node;
-      }
     }
   }
 }
@@ -169,66 +231,6 @@ TYPED_TEST(GenericMinCostFlowTest, Test3) {
       kExpectedFlowCost, kExpectedFlow, GenericMinCostFlow<TypeParam>::OPTIMAL);
 }
 
-TYPED_TEST(GenericMinCostFlowTest, Infeasible) {
-  const int kNumNodes = 6;
-  const int kNumArcs = 9;
-  const FlowQuantity kNodeSupply[kNumNodes] = {20, 0, 0, 0, 0, -20};
-  const FlowQuantity kNodeInfeasibility[kNumNodes] = {4, 0, 0, 0, 0, -4};
-  const NodeIndex kTail[kNumArcs] = {0, 0, 1, 1, 1, 2, 3, 4, 4};
-  const NodeIndex kHead[kNumArcs] = {1, 2, 1, 3, 4, 3, 5, 3, 5};
-  const CostValue kCost[kNumArcs] = {1, 6, 3, 5, 7, 3, 1, 6, 9};
-  const FlowQuantity kCapacity[kNumArcs] = {10, 10, 10, 6, 6, 6, 10, 10, 10};
-  const NodeIndex kInfeasibleSupplyNode[] = {0};
-  const NodeIndex kInfeasibleDemandNode[] = {5};
-  const NodeIndex kFeasibleSupply[] = {16};
-  const NodeIndex kFeasibleDemand[] = {-16};
-
-  TypeParam graph(kNumNodes, kNumArcs);
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
-    graph.AddArc(kTail[arc], kHead[arc]);
-  }
-  std::vector<ArcIndex> permutation;
-  Graphs<TypeParam>::Build(&graph, &permutation);
-  EXPECT_TRUE(permutation.empty());
-
-  GenericMinCostFlow<TypeParam> min_cost_flow(&graph);
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
-    min_cost_flow.SetArcUnitCost(arc, kCost[arc]);
-    min_cost_flow.SetArcCapacity(arc, kCapacity[arc]);
-  }
-  for (ArcIndex arc = 0; arc < kNumNodes; ++arc) {
-    min_cost_flow.SetNodeSupply(arc, kNodeSupply[arc]);
-  }
-  std::vector<NodeIndex> infeasible_supply_node;
-  std::vector<NodeIndex> infeasible_demand_node;
-  bool feasible = min_cost_flow.CheckFeasibility(&infeasible_supply_node,
-                                                 &infeasible_demand_node);
-  EXPECT_FALSE(feasible);
-  for (int i = 0; i < infeasible_supply_node.size(); ++i) {
-    const NodeIndex node = infeasible_supply_node[i];
-    EXPECT_EQ(node, kInfeasibleSupplyNode[i]);
-    EXPECT_EQ(min_cost_flow.FeasibleSupply(node), kFeasibleSupply[i]);
-  }
-  for (int i = 0; i < infeasible_demand_node.size(); ++i) {
-    const NodeIndex node = infeasible_demand_node[i];
-    EXPECT_EQ(node, kInfeasibleDemandNode[i]);
-    EXPECT_EQ(min_cost_flow.FeasibleSupply(node), kFeasibleDemand[i]);
-  }
-  bool ok = min_cost_flow.Solve();
-  EXPECT_FALSE(ok);
-  EXPECT_EQ(GenericMinCostFlow<TypeParam>::INFEASIBLE, min_cost_flow.status());
-  for (NodeIndex node = 0; node < kNumNodes; ++node) {
-    FlowQuantity delta =
-        min_cost_flow.InitialSupply(node) - min_cost_flow.FeasibleSupply(node);
-    EXPECT_EQ(kNodeInfeasibility[node], delta);
-  }
-  EXPECT_EQ(min_cost_flow.GetOptimalCost(), 0);
-  min_cost_flow.MakeFeasible();
-  ok = min_cost_flow.Solve();
-  EXPECT_TRUE(ok);
-  EXPECT_EQ(GenericMinCostFlow<TypeParam>::OPTIMAL, min_cost_flow.status());
-}
-
 // Test on a 4x4 matrix. Example taken from
 // http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm
 TYPED_TEST(GenericMinCostFlowTest, Small4x4Matrix) {
@@ -275,7 +277,7 @@ TYPED_TEST(GenericMinCostFlowTest, Small4x4Matrix) {
 TYPED_TEST(GenericMinCostFlowTest, TotalFlowCostOverflow) {
   const int kNumNodes = 2;
   const int kNumArcs = 1;
-  const FlowQuantity kNodeSupply[kNumNodes] = {1LL << 61, -1LL << 61};
+  const FlowQuantity kNodeSupply[kNumNodes] = {1LL << 61, -(1LL << 61)};
   const NodeIndex kTail[kNumArcs] = {0};
   const NodeIndex kHead[kNumArcs] = {1};
   const CostValue kCost[kNumArcs] = {10};
@@ -298,7 +300,7 @@ TEST(GenericMinCostFlowTest, OverflowPrevention1) {
   mcf.SetNodeSupply(1, -std::numeric_limits<int64_t>::max());
 
   EXPECT_FALSE(mcf.Solve());
-  EXPECT_EQ(mcf.status(), MinCostFlowBase::BAD_COST_RANGE);
+  EXPECT_EQ(mcf.status(), MinCostFlowBase::BAD_CAPACITY_RANGE);
 }
 
 TEST(GenericMinCostFlowTest, OverflowPrevention2) {
@@ -976,4 +978,5 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
 
 BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem);
 
+}  // namespace
 }  // namespace operations_research
