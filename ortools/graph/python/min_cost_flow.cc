@@ -51,6 +51,7 @@ PYBIND11_MODULE(min_cost_flow, m) {
 
   pybind11::enum_<SimpleMinCostFlow::Status>(smcf, "Status")
       .value("BAD_COST_RANGE", MinCostFlowBase::Status::BAD_COST_RANGE)
+      .value("BAD_CAPACITY_RANGE", MinCostFlowBase::Status::BAD_CAPACITY_RANGE)
       .value("BAD_RESULT", MinCostFlowBase::Status::BAD_RESULT)
       .value("FEASIBLE", MinCostFlowBase::Status::FEASIBLE)
       .value("INFEASIBLE", MinCostFlowBase::Status::INFEASIBLE)

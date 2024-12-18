@@ -201,9 +201,6 @@ class MinCostFlowBase {
     // execution.
     //
     // Some details on how to deal with this:
-    // - The sum of all incoming/outgoing capacity at each node should not
-    //   overflow. TODO(user): this is not always properly checked and probably
-    //   deserve a different return status.
     // - Since we scale cost, each arc unit cost times (num_nodes + 1) should
     //   not overflow. We detect that at the beginning of the Solve().
     // - This is however not sufficient as the node potential depends on the
@@ -225,7 +222,28 @@ class MinCostFlowBase {
     //   deal with since we will still have the proper flow on each arc. It is
     //   thus possible to recompute the total cost in double or using
     //   absl::int128 if the need arise.
-    BAD_COST_RANGE
+    BAD_COST_RANGE,
+
+    // This is returned in our initial check if the arc capacity are too large.
+    // For each node these quantity should not overflow the FlowQuantity type
+    // which is int64_t by default.
+    // - Its initial excess (+supply or -demand) + sum incoming arc capacity
+    // - Its initial excess (+supply or -demand) - sum outgoing arc capacity.
+    //
+    // Note that these are upper bounds that guarantee that no overflow will
+    // take place during the algorithm execution. It is possible to go over that
+    // and still encounter no overflow, but since we cannot guarantee this, we
+    // rather check early and return a proper status.
+    //
+    // Note that we might cap the capacity of the arcs if we can detect it
+    // is too large in order to avoid returning this status for simple case,
+    // like if a client used int64_t max for all arcs out of the source.
+    //
+    // TODO(user): Not sure this is a good idea, probably better to make sure
+    // client use reasonable capacities. Also we should template by FlowQuantity
+    // and allow use of absl::int128 so we never have issue if the input is
+    // int64_t.
+    BAD_CAPACITY_RANGE,
   };
 };
 
@@ -379,6 +397,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
  public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
+  typedef typename Graph::IncomingArcIterator IncomingArcIterator;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator
       OutgoingOrOppositeIncomingArcIterator;
@@ -413,30 +432,8 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // Sets the capacity for the given arc.
   void SetArcCapacity(ArcIndex arc, ArcFlowType new_capacity);
 
-  // Sets the flow for the given arc. Note that new_flow must be smaller than
-  // the capacity of the arc.
-  void SetArcFlow(ArcIndex arc, ArcFlowType new_flow);
-
   // Solves the problem, returning true if a min-cost flow could be found.
   bool Solve();
-
-  // Checks for feasibility, i.e., that all the supplies and demands can be
-  // matched without exceeding bottlenecks in the network.
-  // If infeasible_supply_node (resp. infeasible_demand_node) are not NULL,
-  // they are populated with the indices of the nodes where the initial supplies
-  // (resp. demands) are too large. Feasible values for the supplies and
-  // demands are accessible through FeasibleSupply.
-  // Note that CheckFeasibility is called by Solve() when the flag
-  // min_cost_flow_check_feasibility is set to true (which is the default.)
-  bool CheckFeasibility(std::vector<NodeIndex>* infeasible_supply_node,
-                        std::vector<NodeIndex>* infeasible_demand_node);
-
-  // Makes the min-cost flow problem solvable by truncating supplies and
-  // demands to a level acceptable by the network. There may be several ways to
-  // do it. In our case, the levels are computed from the result of the max-flow
-  // algorithm run in CheckFeasibility().
-  // MakeFeasible returns false if CheckFeasibility() was not called before.
-  bool MakeFeasible();
 
   // Returns the cost of the minimum-cost flow found by the algorithm. This
   // works in O(num_arcs). This will only work if the last Solve() call was
@@ -450,23 +447,17 @@ class GenericMinCostFlow : public MinCostFlowBase {
   FlowQuantity Flow(ArcIndex arc) const;
 
   // Returns the capacity of the given arc.
+  //
+  // Warning: If the capacity were close to ArcFlowType::max() we might have
+  // adjusted them in order to avoid overflow.
   FlowQuantity Capacity(ArcIndex arc) const;
 
   // Returns the unscaled cost for the given arc.
   CostValue UnitCost(ArcIndex arc) const;
 
-  // Returns the supply at a given node. Demands are modelled as negative
-  // supplies.
+  // Returns the supply at a given node.
+  // Demands are modelled as negative supplies.
   FlowQuantity Supply(NodeIndex node) const;
-
-  // Returns the initial supply at a given node.
-  FlowQuantity InitialSupply(NodeIndex node) const;
-
-  // Returns the largest supply (if > 0) or largest demand in absolute value
-  // (if < 0) admissible at node. If the problem is not feasible, some of these
-  // values will be smaller (in absolute value) than the initial supplies
-  // and demand given as input.
-  FlowQuantity FeasibleSupply(NodeIndex node) const;
 
   // Whether to check the feasibility of the problem with a max-flow, prior to
   // solving it. This uses about twice as much memory, but detects infeasible
@@ -481,6 +472,12 @@ class GenericMinCostFlow : public MinCostFlowBase {
   void SetPriceScaling(bool value) { scale_prices_ = value; }
 
  private:
+  // Checks for feasibility, i.e., that all the supplies and demands can be
+  // matched without exceeding bottlenecks in the network.
+  // Note that CheckFeasibility is called by Solve() when SetCheckFeasibility()
+  // is set to true, which is the default.
+  bool CheckFeasibility();
+
   // Returns true if the given arc is admissible i.e. if its residual capacity
   // is strictly positive, and its reduced cost strictly negative, i.e., pushing
   // more flow into it will result in a reduction of the total cost.
@@ -642,12 +639,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // An array containing the initial excesses (i.e. the supplies) for each
   // node. This is used to create the max-flow-based feasibility checker.
   std::vector<FlowQuantity> initial_node_excess_;
-
-  // An array containing the best acceptable excesses for each of the
-  // nodes. These excesses are imposed by the result of the max-flow-based
-  // feasibility checker for the nodes with an initial supply != 0. For the
-  // other nodes, the excess is simply 0.
-  std::vector<FlowQuantity> feasible_node_excess_;
 
   // Statistics about this class.
   StatsGroup stats_;

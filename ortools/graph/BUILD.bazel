@@ -97,6 +97,27 @@ cc_test(
 )
 
 cc_library(
+    name = "minimum_vertex_cover",
+    srcs = ["minimum_vertex_cover.cc"],
+    hdrs = ["minimum_vertex_cover.h"],
+    deps = [
+        ":ebert_graph",
+        ":max_flow",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "minimum_vertex_cover_test",
+    srcs = ["minimum_vertex_cover_test.cc"],
+    deps = [
+        ":minimum_vertex_cover",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/algorithm:container",
+    ],
+)
+
+cc_library(
     name = "multi_dijkstra",
     hdrs = ["multi_dijkstra.h"],
     deps = [
@@ -443,40 +464,57 @@ cc_library(
     srcs = ["max_flow.cc"],
     hdrs = ["max_flow.h"],
     deps = [
-        ":ebert_graph",
         ":flow_problem_cc_proto",
+        ":generic_max_flow",
         ":graph",
-        ":graphs",
-        "//ortools/base",
-        "//ortools/util:stats",
-        "//ortools/util:zvector",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
 cc_test(
     name = "max_flow_test",
-    size = "medium",
     srcs = ["max_flow_test.cc"],
     data = ["//ortools/graph/testdata:max_flow_test1.pb.txt"],
     deps = [
-        ":graph",
-        ":graphs",
+        ":ebert_graph",
+        ":flow_problem_cc_proto",
         ":max_flow",
-        "//ortools/base",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
-        "//ortools/linear_solver",
         "//ortools/util:file_util",
-        "@com_google_absl//absl/algorithm:container",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "generic_max_flow",
+    hdrs = ["generic_max_flow.h"],
+    deps = [
+        ":ebert_graph",
+        ":flow_problem_cc_proto",
+        ":graphs",
+        "//ortools/base",
+        "//ortools/util:stats",
+        "//ortools/util:zvector",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "generic_max_flow_test",
+    size = "medium",
+    srcs = ["generic_max_flow_test.cc"],
+    deps = [
+        ":ebert_graph",
+        ":generic_max_flow",
+        ":graph",
+        ":graphs",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/linear_solver",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
         "@com_google_benchmark//:benchmark",
-        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -496,14 +534,13 @@ cc_library(
         ":graph",
         ":graphs",
         ":max_flow",
-        "//ortools/base",
-        "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
-        "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
         "//ortools/util:zvector",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
