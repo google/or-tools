@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SYNCHRONIZATION_H_
 #define OR_TOOLS_SAT_SYNCHRONIZATION_H_
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstddef>
@@ -26,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
@@ -103,6 +105,8 @@ class SharedSolutionRepository {
   // Returns the rank of the best known solution.
   // You shouldn't call this if NumSolutions() is zero.
   int64_t GetBestRank() const;
+
+  std::vector<std::shared_ptr<const Solution>> GetBestNSolutions(int n) const;
 
   // Returns the variable value of variable 'var_index' from solution
   // 'solution_index' where solution_index must be smaller than NumSolutions()
@@ -827,6 +831,30 @@ int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_GT(solutions_.size(), 0);
   return solutions_[0]->rank;
+}
+
+template <typename ValueType>
+std::vector<std::shared_ptr<
+    const typename SharedSolutionRepository<ValueType>::Solution>>
+SharedSolutionRepository<ValueType>::GetBestNSolutions(int n) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  // Sorted and unique.
+  DCHECK(absl::c_is_sorted(
+      solutions_,
+      [](const std::shared_ptr<const Solution>& a,
+         const std::shared_ptr<const Solution>& b) { return *a < *b; }));
+  DCHECK(absl::c_adjacent_find(solutions_,
+                               [](const std::shared_ptr<const Solution>& a,
+                                  const std::shared_ptr<const Solution>& b) {
+                                 return *a == *b;
+                               }) == solutions_.end());
+  std::vector<std::shared_ptr<const Solution>> result;
+  const int num_solutions = std::min(static_cast<int>(solutions_.size()), n);
+  result.reserve(num_solutions);
+  for (int i = 0; i < num_solutions; ++i) {
+    result.push_back(solutions_[i]);
+  }
+  return result;
 }
 
 template <typename ValueType>

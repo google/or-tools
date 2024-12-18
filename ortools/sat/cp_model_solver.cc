@@ -22,6 +22,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <random>
 #include <string>
 #include <thread>
@@ -51,6 +52,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_lns.h"
@@ -1542,6 +1544,19 @@ class LnsSolver : public SubSolver {
         }
       }
 
+      if (new_solution && !base_response.solution().empty()) {
+        std::string combined_solution_info = solution_info;
+        std::optional<std::vector<int64_t>> combined_solution =
+            FindCombinedSolution(shared_->model_proto, solution_values,
+                                 base_response.solution(), shared_->response,
+                                 &combined_solution_info);
+        if (combined_solution.has_value()) {
+          shared_->response->NewSolution(combined_solution.value(),
+                                         combined_solution_info,
+                                         /*model=*/nullptr);
+        }
+      }
+
       generator_->AddSolveData(data);
 
       if (VLOG_IS_ON(2) && display_lns_info) {
@@ -2344,6 +2359,22 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     status_response.set_solution_info(info);
     shared_response_manager->AppendResponseToBeMerged(status_response);
     return shared_response_manager->GetResponse();
+  }
+
+  if (context->working_model->has_symmetry()) {
+    SOLVER_LOG(logger, "Ignoring internal symmetry field");
+    context->working_model->clear_symmetry();
+  }
+  if (context->working_model->has_objective()) {
+    CpObjectiveProto* objective = context->working_model->mutable_objective();
+    if (objective->integer_scaling_factor() != 0 ||
+        objective->integer_before_offset() != 0 ||
+        objective->integer_after_offset() != 0) {
+      SOLVER_LOG(logger, "Ignoring internal objective.integer_* fields.");
+      objective->clear_integer_scaling_factor();
+      objective->clear_integer_before_offset();
+      objective->clear_integer_after_offset();
+    }
   }
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&

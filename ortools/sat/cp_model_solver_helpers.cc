@@ -1268,7 +1268,9 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
     Prober* prober = model->GetOrCreate<Prober>();
-    prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
+    if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0)) {
+      return unsat();
+    }
     if (!model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
       return unsat();

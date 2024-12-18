@@ -849,11 +849,14 @@ void SchedulingConstraintHelper::ImportOtherReasons(
 }
 
 std::string SchedulingConstraintHelper::TaskDebugString(int t) const {
-  return absl::StrCat("t=", t, " is_present=", IsPresent(t), " size=[",
-                      SizeMin(t).value(), ",", SizeMax(t).value(), "]",
-                      " start=[", StartMin(t).value(), ",", StartMax(t).value(),
-                      "]", " end=[", EndMin(t).value(), ",", EndMax(t).value(),
-                      "]");
+  return absl::StrCat("t=", t, " is_present=",
+                      (IsPresent(t)  ? "1"
+                       : IsAbsent(t) ? "0"
+                                     : "?"),
+                      " size=[", SizeMin(t).value(), ",", SizeMax(t).value(),
+                      "]", " start=[", StartMin(t).value(), ",",
+                      StartMax(t).value(), "]", " end=[", EndMin(t).value(),
+                      ",", EndMax(t).value(), "]");
 }
 
 IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,

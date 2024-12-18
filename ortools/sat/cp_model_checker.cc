@@ -105,13 +105,13 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 
   // Internally, we often take the negation of a domain, and we also want to
   // have sentinel values greater than the min/max of a variable domain, so
-  // the domain must fall in [kint64min + 2, kint64max - 1].
+  // the domain must fall in [-kint64max / 2, kint64max / 2].
   const int64_t lb = proto.domain(0);
   const int64_t ub = proto.domain(proto.domain_size() - 1);
-  if (lb < std::numeric_limits<int64_t>::min() + 2 ||
-      ub > std::numeric_limits<int64_t>::max() - 1) {
+  if (lb < -std::numeric_limits<int64_t>::max() / 2 ||
+      ub > std::numeric_limits<int64_t>::max() / 2) {
     return absl::StrCat(
-        "var #", v, " domain do not fall in [kint64min + 2, kint64max - 1]. ",
+        "var #", v, " domain do not fall in [-kint64max / 2, kint64max / 2]. ",
         ProtobufShortDebugString(proto));
   }
 
@@ -361,8 +361,14 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
   // Detect potential overflow.
   Domain product_domain(1);
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
-    product_domain = product_domain.ContinuousMultiplicationBy(
-        {MinOfExpression(model, expr), MaxOfExpression(model, expr)});
+    const int64_t min_expr = MinOfExpression(model, expr);
+    const int64_t max_expr = MaxOfExpression(model, expr);
+    if (min_expr == 0 && max_expr == 0) {
+      // An overflow multiplied by zero is still invalid.
+      continue;
+    }
+    product_domain =
+        product_domain.ContinuousMultiplicationBy({min_expr, max_expr});
   }
 
   if (product_domain.Max() <= -std ::numeric_limits<int64_t>::max() ||
@@ -918,11 +924,6 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
                             " has a domain too large to be used in a"
                             " SELECT_MEDIAN_VALUE value selection strategy");
       }
-      if (PossibleIntegerOverflow(model, {ref}, {1})) {
-        // This will become an overflow if translated to an expr.
-        return absl::StrCat("Possible integer overflow in strategy: ",
-                            ProtobufShortDebugString(strategy));
-      }
     }
     for (const LinearExpressionProto& expr : strategy.exprs()) {
       for (const int var : expr.vars()) {
@@ -1025,9 +1026,6 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 }
 
 std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
-  if (!after_presolve && model.has_symmetry()) {
-    return "The symmetry field should be empty and reserved for internal use.";
-  }
   int64_t int128_overflow = 0;
   for (int v = 0; v < model.variables_size(); ++v) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
@@ -1637,18 +1635,43 @@ class ConstraintChecker {
     const int num_arcs = ct.routes().tails_size();
     int num_used_arcs = 0;
     int num_self_arcs = 0;
+
+    // Compute the number of nodes.
     int num_nodes = 0;
-    std::vector<int> tail_to_head;
+    for (int i = 0; i < num_arcs; ++i) {
+      num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
+      num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
+    }
+
+    std::vector<int> tail_to_head(num_nodes, -1);
+    std::vector<bool> has_incoming_arc(num_nodes, false);
+    std::vector<int> has_outgoing_arc(num_nodes, false);
     std::vector<int> depot_nexts;
     for (int i = 0; i < num_arcs; ++i) {
       const int tail = ct.routes().tails(i);
       const int head = ct.routes().heads(i);
-      num_nodes = std::max(num_nodes, 1 + tail);
-      num_nodes = std::max(num_nodes, 1 + head);
-      tail_to_head.resize(num_nodes, -1);
       if (LiteralIsTrue(ct.routes().literals(i))) {
+        // Check for loops.
+        if (tail != 0) {
+          if (has_outgoing_arc[tail]) {
+            VLOG(1) << "routes: node " << tail << "has two outgoing arcs";
+            return false;
+          }
+          has_outgoing_arc[tail] = true;
+        }
+        if (head != 0) {
+          if (has_incoming_arc[head]) {
+            VLOG(1) << "routes: node " << head << "has two incoming arcs";
+            return false;
+          }
+          has_incoming_arc[head] = true;
+        }
+
         if (tail == head) {
-          if (tail == 0) return false;
+          if (tail == 0) {
+            VLOG(1) << "Self loop on node 0 are forbidden.";
+            return false;
+          }
           ++num_self_arcs;
           continue;
         }
@@ -1656,7 +1679,7 @@ class ConstraintChecker {
         if (tail == 0) {
           depot_nexts.push_back(head);
         } else {
-          if (tail_to_head[tail] != -1) return false;
+          DCHECK_EQ(tail_to_head[tail], -1);
           tail_to_head[tail] = head;
         }
       }
@@ -1769,9 +1792,9 @@ class ConstraintChecker {
             // This indicates that such a constraint was not added to the model.
             // It should probably be a validation error, but it is hard to
             // detect beforehand.
-            LOG(ERROR) << "Warning, an interval constraint was likely used "
-                          "without a corresponding linear constraint linking "
-                          "its start, size and end.";
+            VLOG(1) << "Warning, an interval constraint was likely used "
+                       "without a corresponding linear constraint linking "
+                       "its start, size and end.";
           }
           return false;
         }

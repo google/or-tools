@@ -110,6 +110,14 @@ bool CumulativeEnergyConstraint::Propagate() {
 
   bool tree_has_mandatory_intervals = false;
 
+  const IntegerValue start_end_magnitude =
+      std::max(IntTypeAbs(helper_->EndMax(
+                   helper_->TaskByDecreasingEndMax().front().task_index)),
+               IntTypeAbs(helper_->TaskByIncreasingStartMin().front().time));
+  if (ProdOverflow(start_end_magnitude, capacity_max)) {
+    return true;
+  }
+
   // Main loop: insert tasks by increasing end_max, check for overloads.
   const auto by_decreasing_end_max = helper_->TaskByDecreasingEndMax();
   for (const auto [current_task, current_end] :
@@ -535,9 +543,14 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
                IntTypeAbs(helper_->TaskByIncreasingStartMin().front().time));
   if (start_end_magnitude == 0) return true;
 
+  const IntegerValue max_energy =
+      CapProdI(CapProdI(start_end_magnitude, capacity_max), num_events);
+  if (max_energy == kMaxIntegerValue) {
+    return true;
+  }
+
   const IntegerValue max_for_fixpoint_inverse =
-      std::numeric_limits<IntegerValue>::max() /
-      (num_events * capacity_max * start_end_magnitude);
+      std::numeric_limits<IntegerValue>::max() / max_energy;
 
   theta_tree_.Reset(num_events);
 
