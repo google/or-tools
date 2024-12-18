@@ -12539,6 +12539,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
     const CpModelProto& in_model, bool first_copy,
     std::function<bool(int)> active_constraints) {
   context_->InitializeNewDomains();
+  if (context_->ModelIsUnsat()) return false;
   const bool ignore_names = context_->params().ignore_names();
 
   // If first_copy is true, we reorder the scheduling constraint to be sure they
@@ -12592,6 +12593,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         break;
       case ConstraintProto::kIntDiv:
         if (!CopyIntDiv(ct, ignore_names)) return CreateUnsatModel(c, ct);
+        break;
+      case ConstraintProto::kIntMod:
+        if (!CopyIntMod(ct, ignore_names)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kElement:
         if (!CopyElement(ct)) return CreateUnsatModel(c, ct);
@@ -13061,6 +13065,7 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
   }
   *new_ct->mutable_table()->mutable_values() = ct.table().values();
   new_ct->mutable_table()->set_negated(ct.table().negated());
+  *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
 
   return true;
 }
@@ -13068,7 +13073,9 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
 bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
   if (ct.all_diff().exprs().size() <= 1) return true;
   ConstraintProto* new_ct = context_->working_model->add_constraints();
-  *new_ct = ct;
+  for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_all_diff()->add_exprs());
+  }
   return true;
 }
 
@@ -13201,6 +13208,19 @@ bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
   return true;
 }
 
+bool ModelCopy::CopyIntMod(const ConstraintProto& ct, bool ignore_names) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (!ignore_names) {
+    new_ct->set_name(ct.name());
+  }
+  for (const LinearExpressionProto& expr : ct.int_mod().exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_int_mod()->add_exprs());
+  }
+  CopyLinearExpression(ct.int_mod().target(),
+                       new_ct->mutable_int_mod()->mutable_target());
+  return true;
+}
+
 bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
   // Add the linear constraint enforcement => (start + size == end).
   //
@@ -13276,9 +13296,9 @@ void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
 
 bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   if (ct.cumulative().intervals().empty() &&
-      ct.cumulative().capacity().vars().empty()) {
+      context_->IsFixed(ct.cumulative().capacity())) {
     // Trivial constraint, either obviously SAT or UNSAT.
-    return ct.cumulative().capacity().offset() >= 0;
+    return context_->FixedValue(ct.cumulative().capacity()) >= 0;
   }
   // Note that we don't copy names or enforcement_literal (not supported) here.
   auto* new_ct =
@@ -14357,6 +14377,7 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
   // case, and it comment nicely that we do require domains to be up to date
   // in the context.
   context_->InitializeNewDomains();
+  if (context_->ModelIsUnsat()) return false;
 
   // Initialize the mapping to remove all fixed variables.
   const int num_vars = context_->working_model->variables().size();

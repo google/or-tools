@@ -51,7 +51,7 @@ class ObjectiveShavingSolver : public SubSolver {
  private:
   std::string Info();
 
-  bool ResetModel(int64_t task_id);
+  bool ResetAndSolveModel(int64_t task_id);
 
   // This is fixed at construction.
   SatParameters local_params_;
@@ -114,8 +114,8 @@ class VariablesShavingSolver : public SubSolver {
                                CpModelProto* shaving_proto)
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  bool ResetModel(int64_t task_id, State* state, Model* local_sat_model,
-                  CpModelProto* shaving_proto);
+  bool ResetAndSolveModel(int64_t task_id, State* state, Model* local_sat_model,
+                          CpModelProto* shaving_proto);
 
   // This is fixed at construction.
   SatParameters local_params_;

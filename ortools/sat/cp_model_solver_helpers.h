@@ -36,6 +36,7 @@
 
 ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
 ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 
 namespace operations_research {

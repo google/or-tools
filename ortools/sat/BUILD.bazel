@@ -523,6 +523,7 @@ cc_library(
     deps = [
         ":circuit",
         ":clause",
+        ":combine_solutions",
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_lns",
@@ -3009,7 +3010,7 @@ cc_library(
         ":diffn_util",
         ":integer_base",
         "//ortools/base:stl_util",
-        "//ortools/graph:max_flow",
+        "//ortools/graph:minimum_vertex_cover",
         "//ortools/graph:strongly_connected_components",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:btree",
@@ -3696,6 +3697,32 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "combine_solutions",
+    srcs = ["combine_solutions.cc"],
+    hdrs = ["combine_solutions.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":synchronization",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "combine_solutions_test",
+    srcs = ["combine_solutions_test.cc"],
+    deps = [
+        ":combine_solutions",
+        ":model",
+        ":synchronization",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
     ],
 )
 

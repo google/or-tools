@@ -289,30 +289,34 @@ TEST(ValidateCpModelTest, VariableLowerBoundTooLarge2) {
 }
 
 TEST(ValidateCpModelTest, VariableDomainOverflow) {
-  CHECK_EQ(std::numeric_limits<int64_t>::max() - 1,
-           int64_t{9223372036854775806});
+  CHECK_EQ(std::numeric_limits<int64_t>::max() / 2,
+           int64_t{4611686018427387903});
 
   const CpModelProto model_ok = ParseTestProto(R"pb(
-    variables { name: 'a' domain: 0 domain: 9223372036854775806 }
+    variables {
+      name: 'a'
+      domain: -4611686018427387903
+      domain: 4611686018427387903
+    }
   )pb");
   EXPECT_TRUE(ValidateCpModel(model_ok).empty());
 
   const CpModelProto model_bad0 = ParseTestProto(R"pb(
-    variables { name: 'a' domain: -1 domain: 9223372036854775806 }
+    variables { name: 'a' domain: 0 domain: 4611686018427387904 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad0), HasSubstr("overflow"));
+  EXPECT_THAT(ValidateCpModel(model_bad0), HasSubstr("do not fall in"));
 
   const CpModelProto model_bad1 = ParseTestProto(R"pb(
-    variables { name: 'a' domain: -2 domain: 9223372036854775806 }
+    variables { name: 'a' domain: -4611686018427387904 domain: 0 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad1), HasSubstr("overflow"));
+  EXPECT_THAT(ValidateCpModel(model_bad1), HasSubstr("do not fall in"));
 
   CHECK_EQ(std::numeric_limits<int64_t>::min() + 2,
            int64_t{-9223372036854775806});
   const CpModelProto model_bad2 = ParseTestProto(R"pb(
     variables { name: 'a' domain: -9223372036854775806 domain: 2 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad2), HasSubstr("overflow"));
+  EXPECT_THAT(ValidateCpModel(model_bad2), HasSubstr("do not fall in"));
 }
 
 TEST(ValidateCpModelTest, ObjectiveOverflow) {

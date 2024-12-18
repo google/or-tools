@@ -74,8 +74,7 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
     objective_ub_ = shared_->response->GetInnerObjectiveUpperBound();
   }
   return [this, task_id]() {
-    if (ResetModel(task_id)) {
-      SolveLoadedCpModel(local_proto_, local_sat_model_.get());
+    if (ResetAndSolveModel(task_id)) {
       const CpSolverResponse local_response =
           local_sat_model_->GetOrCreate<SharedResponseManager>()->GetResponse();
 
@@ -150,7 +149,7 @@ std::string ObjectiveShavingSolver::Info() {
                       " csts=", local_proto_.constraints().size(), ")");
 }
 
-bool ObjectiveShavingSolver::ResetModel(int64_t task_id) {
+bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   local_sat_model_ = std::make_unique<Model>(name());
   *local_sat_model_->GetOrCreate<SatParameters>() = local_params_;
   local_sat_model_->GetOrCreate<SatParameters>()->set_random_seed(
@@ -202,16 +201,24 @@ bool ObjectiveShavingSolver::ResetModel(int64_t task_id) {
         local_proto_.mutable_variables(local_proto_.objective().vars(0));
     const Domain reduced_var_domain = obj_domain.IntersectionWith(
         Domain(obj_var->domain(0), obj_var->domain(1)));
+    if (reduced_var_domain.IsEmpty()) {
+      return false;
+    }
     FillDomainInProto(reduced_var_domain, obj_var);
   } else {
     auto* obj = local_proto_.add_constraints()->mutable_linear();
     *obj->mutable_vars() = local_proto_.objective().vars();
     *obj->mutable_coeffs() = local_proto_.objective().coeffs();
+    if (obj_domain.IsEmpty()) {
+      return false;
+    }
     FillDomainInProto(obj_domain, obj);
   }
 
   // Clear the objective.
   local_proto_.clear_objective();
+  local_proto_.set_name(
+      absl::StrCat(local_proto_.name(), "_obj_shaving_", objective_lb.value()));
 
   // Dump?
   if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
@@ -316,8 +323,7 @@ std::function<void()> VariablesShavingSolver::GenerateTask(int64_t task_id) {
     Model local_sat_model;
     CpModelProto shaving_proto;
     State state;
-    if (ResetModel(task_id, &state, &local_sat_model, &shaving_proto)) {
-      SolveLoadedCpModel(shaving_proto, &local_sat_model);
+    if (ResetAndSolveModel(task_id, &state, &local_sat_model, &shaving_proto)) {
       const CpSolverResponse local_response =
           local_sat_model.GetOrCreate<SharedResponseManager>()->GetResponse();
       ProcessLocalResponse(local_response, state);
@@ -498,9 +504,9 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
   }
 }
 
-bool VariablesShavingSolver::ResetModel(int64_t task_id, State* state,
-                                        Model* local_sat_model,
-                                        CpModelProto* shaving_proto) {
+bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
+                                                Model* local_sat_model,
+                                                CpModelProto* shaving_proto) {
   *local_sat_model->GetOrCreate<SatParameters>() = local_params_;
   local_sat_model->GetOrCreate<SatParameters>()->set_random_seed(
       CombineSeed(local_params_.random_seed(), task_id));
@@ -518,6 +524,9 @@ bool VariablesShavingSolver::ResetModel(int64_t task_id, State* state,
   time_limit->ChangeDeterministicLimit(
       time_limit->GetElapsedDeterministicTime() +
       local_params_.shaving_search_deterministic_time());
+
+  shaving_proto->set_name(absl::StrCat("shaving_var_", state->var_index,
+                                       (state->minimize ? "_min" : "_max")));
 
   // Presolve if asked.
   if (local_params_.cp_model_presolve()) {
@@ -550,6 +559,7 @@ bool VariablesShavingSolver::ResetModel(int64_t task_id, State* state,
   if (time_limit->LimitReached()) return false;
 
   LoadCpModel(*shaving_proto, local_sat_model);
+  SolveLoadedCpModel(*shaving_proto, local_sat_model);
   return true;
 }
 

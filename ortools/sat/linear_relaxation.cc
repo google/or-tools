@@ -964,6 +964,10 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   //
   // TODO(user): In some cases, we could have only one task that can be
   // first.
+  if (ProdOverflow(std::max(-min_of_starts, max_of_ends),
+                   integer_trail->UpperBound(capacity))) {
+    return;
+  }
   const AffineExpression span_start = min_of_starts;
   const AffineExpression span_end =
       makespan.has_value() ? makespan.value() : max_of_ends;

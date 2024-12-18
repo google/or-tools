@@ -519,6 +519,17 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   int CurrentDecisionLevel() const { return trail_->CurrentDecisionLevel(); }
 
  private:
+  // Tricky: when a task is optional, it is possible it size min is negative,
+  // but we know that if a task is present, its size should be >= 0. So in the
+  // reason, when we need the size_min and it is currently negative, we can just
+  // ignore it and use zero instead.
+  AffineExpression NegatedSizeOrZero(int t) {
+    if (integer_trail_->LowerBound(sizes_[t]) <= 0) {
+      return AffineExpression(0);
+    }
+    return sizes_[t].Negated();
+  }
+
   // Generic reason for a <= upper_bound, given that a = b + c in case the
   // current upper bound of a is not good enough.
   void AddGenericReason(const AffineExpression& a, IntegerValue upper_bound,
@@ -877,7 +888,7 @@ inline void SchedulingConstraintHelper::AddStartMaxReason(
     int t, IntegerValue upper_bound) {
   AddOtherReason(t);
   DCHECK(!IsAbsent(t));
-  AddGenericReason(starts_[t], upper_bound, ends_[t], sizes_[t].Negated());
+  AddGenericReason(starts_[t], upper_bound, ends_[t], NegatedSizeOrZero(t));
 }
 
 inline void SchedulingConstraintHelper::AddEndMinReason(
@@ -885,7 +896,7 @@ inline void SchedulingConstraintHelper::AddEndMinReason(
   AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   AddGenericReason(minus_ends_[t], -lower_bound, minus_starts_[t],
-                   sizes_[t].Negated());
+                   NegatedSizeOrZero(t));
 }
 
 inline void SchedulingConstraintHelper::AddEndMaxReason(
