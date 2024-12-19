@@ -37,6 +37,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/path.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/graph/graph.h"
@@ -303,7 +304,7 @@ int main(int argc, char** argv) {
       "file_name, parsing_time, loading_time, solving_time, optimal_cost\n");
   for (int i = 0; i < file_list.size(); ++i) {
     const std::string file_name = file_list[i];
-    absl::PrintF("%s,", file_name);
+    absl::PrintF("%s,", file::Basename(file_name));
     fflush(stdout);
 
     // Parse the input as a proto.

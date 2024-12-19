@@ -22,6 +22,7 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 
 namespace operations_research {
 
@@ -71,7 +72,7 @@ bool SetCoverInvariant::CheckConsistency(ConsistencyLevel consistency) const {
     return true;
   }
   auto [cst, cvrg] = ComputeCostAndCoverage(is_selected_);
-  CHECK_EQ(cost_, cst);
+  CHECK(MathUtil::AlmostEquals(cost_, cst));
   for (const ElementIndex element : model_->ElementRange()) {
     CHECK_EQ(cvrg[element], coverage_[element]);
   }
@@ -448,6 +449,6 @@ void SetCoverInvariant::ImportSolutionFromProto(
     is_selected_[SubsetIndex(s)] = true;
   }
   Cost cost = message.cost();
-  CHECK_EQ(cost, cost_);
+  CHECK(MathUtil::AlmostEquals(cost, cost_));
 }
 }  // namespace operations_research

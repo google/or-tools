@@ -16,7 +16,6 @@
 
 #include <vector>
 
-#include "absl/base/nullability.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
 #include "ortools/algorithms/set_cover_invariant.h"

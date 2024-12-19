@@ -368,7 +368,7 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](TrivialSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            });
 
@@ -380,7 +380,7 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](RandomSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            });
 
@@ -392,13 +392,13 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](GreedySolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            })
       .def("next_solution",
            [](GreedySolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus,
-              const std::vector<double>& costs) -> bool {
+              absl::Span<const BaseInt> focus,
+              absl::Span<const double> costs) -> bool {
              return heuristic.NextSolution(
                  VectorIntToVectorSubsetIndex(focus),
                  VectorDoubleToSubsetCostVector(costs));
@@ -413,7 +413,7 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](ElementDegreeSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            })
       .def("next_solution",
@@ -439,8 +439,8 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](LazyElementDegreeSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus,
-              const std::vector<double>& costs) -> bool {
+              absl::Span<const BaseInt> focus,
+              absl::Span<const double> costs) -> bool {
              return heuristic.NextSolution(
                  VectorIntToVectorSubsetIndex(focus),
                  VectorDoubleToSubsetCostVector(costs));
@@ -474,7 +474,7 @@ PYBIND11_MODULE(set_cover, m) {
              return heuristic.NextSolution(num_iterations);
            })
       .def("next_solution",
-           [](GuidedLocalSearch& heuristic, const std::vector<BaseInt>& focus,
+           [](GuidedLocalSearch& heuristic, absl::Span<const BaseInt> focus,
               int num_iterations) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus),
                                            num_iterations);
@@ -552,7 +552,7 @@ PYBIND11_MODULE(set_cover, m) {
         return {cleared.begin(), cleared.end()};
       });
   m.def("clear_most_covered_elements",
-        [](const std::vector<BaseInt>& focus, BaseInt num_subsets,
+        [](absl::Span<const BaseInt> focus, BaseInt num_subsets,
            SetCoverInvariant* inv) -> std::vector<BaseInt> {
           const std::vector<SubsetIndex> cleared = ClearMostCoveredElements(
               VectorIntToVectorSubsetIndex(focus), num_subsets, inv);

@@ -123,11 +123,14 @@
 #ifndef OR_TOOLS_GRAPH_GENERIC_MAX_FLOW_H_
 #define OR_TOOLS_GRAPH_GENERIC_MAX_FLOW_H_
 
+#include <algorithm>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
@@ -427,7 +430,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   const Graph* graph_;
 
   // An array representing the excess for each node in graph_.
-  std::vector<FlowQuantity> node_excess_;
+  std::unique_ptr<FlowQuantity[]> node_excess_;
 
   // An array representing the height function for each node in graph_. For a
   // given node, this is a lower bound on the shortest path length from this
@@ -440,7 +443,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // never changes. If a node as an height >= n, then this node can't reach the
   // sink and its height minus n is a lower bound on the shortest path length
   // from this node to the source in the residual graph.
-  std::vector<NodeHeight> node_potential_;
+  std::unique_ptr<NodeHeight[]> node_potential_;
 
   // An array representing the residual_capacity for each arc in graph_.
   // Residual capacities enable one to represent the capacity and flow for all
@@ -461,7 +464,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   ZVector<FlowQuantity> residual_arc_capacity_;
 
   // An array representing the first admissible arc for each node in graph_.
-  std::vector<ArcIndex> first_admissible_arc_;
+  std::unique_ptr<ArcIndex[]> first_admissible_arc_;
 
   // A priority queue used for managing active nodes in the algorithm. It allows
   // to select the active node with highest height before each Discharge().
@@ -566,9 +569,12 @@ GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph, NodeIndex source,
   DCHECK(graph->IsNodeValid(sink));
   const NodeIndex max_num_nodes = Graphs<Graph>::NodeReservation(*graph_);
   if (max_num_nodes > 0) {
-    node_excess_.assign(max_num_nodes, 0);
-    node_potential_.assign(max_num_nodes, 0);
-    first_admissible_arc_.assign(max_num_nodes, Graph::kNilArc);
+    node_excess_ = std::make_unique<FlowQuantity[]>(max_num_nodes);
+    node_potential_ = std::make_unique<NodeHeight[]>(max_num_nodes);
+    first_admissible_arc_ =
+        absl::make_unique<ArcIndex[]>(max_num_nodes);
+    std::fill(first_admissible_arc_.get(),
+              first_admissible_arc_.get() + max_num_nodes, Graph::kNilArc);
     bfs_queue_.reserve(max_num_nodes);
   }
   const ArcIndex max_num_arcs = Graphs<Graph>::ArcReservation(*graph_);
@@ -771,20 +777,21 @@ void GenericMaxFlow<Graph>::InitializePreflow() {
   //
   // TODO(user): find a way to make the re-solving incremental (not an obvious
   // task, and there has not been a lot of literature on the subject.)
-  node_excess_.assign(max_num_nodes, 0);
+  std::fill(node_excess_.get(), node_excess_.get() + max_num_nodes, 0);
   for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
     SetCapacityAndClearFlow(arc, Capacity(arc));
   }
 
   // All the initial heights are zero except for the source whose height is
   // equal to the number of nodes and will never change during the algorithm.
-  node_potential_.assign(max_num_nodes, 0);
+  std::fill(node_potential_.get(), node_potential_.get() + max_num_nodes, 0);
   node_potential_[source_] = num_nodes;
 
   // Initially no arcs are admissible except maybe the one leaving the source,
   // but we treat the source in a special way, see
   // SaturateOutgoingArcsFromSource().
-  first_admissible_arc_.assign(max_num_nodes, Graph::kNilArc);
+  std::fill(first_admissible_arc_.get(),
+            first_admissible_arc_.get() + max_num_nodes, Graph::kNilArc);
 }
 
 // Note(user): Calling this function will break the property on the node
@@ -956,7 +963,7 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
   node_in_bfs_queue_[sink_] = true;
 
   // We cache this as this is a hot-loop and we don't want bound checking.
-  FlowQuantity* const node_excess = node_excess_.data();
+  FlowQuantity* const node_excess = node_excess_.get();
 
   // We do a BFS in the reverse residual graph, starting from the sink.
   // Because all the arcs from the source are saturated (except in
@@ -1222,9 +1229,9 @@ void GenericMaxFlow<Graph>::Discharge(const NodeIndex node) {
   const NodeIndex num_nodes = graph_->num_nodes();
 
   // We cache this as this is a hot-loop and we don't want bound checking.
-  FlowQuantity* const node_excess = node_excess_.data();
-  NodeHeight* const node_potentials = node_potential_.data();
-  ArcIndex* const first_admissible_arc = first_admissible_arc_.data();
+  FlowQuantity* const node_excess = node_excess_.get();
+  NodeHeight* const node_potentials = node_potential_.get();
+  ArcIndex* const first_admissible_arc = first_admissible_arc_.get();
 
   while (true) {
     DCHECK(IsActive(node));

@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <array>
+#include <cstddef>
 #include <iterator>
 #include <numeric>  // std::iota
 #include <sstream>

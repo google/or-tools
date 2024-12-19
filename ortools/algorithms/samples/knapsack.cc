@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <numeric>

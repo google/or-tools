@@ -167,8 +167,8 @@ class MPModelProtoExporter {
   // a name, and a value. If the line is not empty, then only the pair
   // (name, value) is appended. The number of columns, limited to 2 by the MPS
   // format is also taken care of.
-  void AppendMpsTermWithContext(const std::string& head_name,
-                                const std::string& name, double value,
+  void AppendMpsTermWithContext(absl::string_view head_name,
+                                absl::string_view name, double value,
                                 std::string* output);
 
   // Appends a new-line if two columns are already present on the MPS line.
@@ -693,9 +693,10 @@ void MPModelProtoExporter::AppendMpsLineHeaderWithNewLine(
   absl::StrAppend(output, "\n");
 }
 
-void MPModelProtoExporter::AppendMpsTermWithContext(
-    const std::string& head_name, const std::string& name, double value,
-    std::string* output) {
+void MPModelProtoExporter::AppendMpsTermWithContext(absl::string_view head_name,
+                                                    absl::string_view name,
+                                                    double value,
+                                                    std::string* output) {
   if (current_mps_column_ == 0) {
     AppendMpsLineHeader("", head_name, output);
   }

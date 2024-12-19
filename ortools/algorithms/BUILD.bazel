@@ -101,6 +101,7 @@ cc_library(
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -294,6 +295,7 @@ cc_library(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -305,6 +307,7 @@ cc_library(
         ":set_cover_cc_proto",
         ":set_cover_model",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
@@ -320,9 +323,10 @@ cc_library(
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base",
-        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/types:span",
     ],
@@ -355,7 +359,27 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_binary(
+    name = "set_cover_solve",
+    srcs = ["set_cover_solve.cc"],
+    deps = [
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        ":set_cover_reader",
+        #"//file/placer",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
     ],
 )
 

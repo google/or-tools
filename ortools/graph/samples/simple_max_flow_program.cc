@@ -14,6 +14,7 @@
 // [START program]
 // From Taha 'Introduction to Operations Research', example 6.4-2."""
 // [START import]
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 

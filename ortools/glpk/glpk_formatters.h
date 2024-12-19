@@ -15,6 +15,7 @@
 #ifndef OR_TOOLS_GLPK_GLPK_FORMATTERS_H_
 #define OR_TOOLS_GLPK_GLPK_FORMATTERS_H_
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 

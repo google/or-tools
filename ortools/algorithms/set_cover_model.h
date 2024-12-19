@@ -261,10 +261,10 @@ class SetCoverModel {
   Stats ComputeColumnStats();
 
   // Computes deciles on rows and returns a vector of deciles.
-  std::vector<BaseInt> ComputeRowDeciles() const;
+  std::vector<int64_t> ComputeRowDeciles() const;
 
   // Computes deciles on columns and returns a vector of deciles.
-  std::vector<BaseInt> ComputeColumnDeciles() const;
+  std::vector<int64_t> ComputeColumnDeciles() const;
 
   // Computes basic statistics on the deltas of the row and column elements and
   // returns a Stats structure. The deltas are computed as the difference
