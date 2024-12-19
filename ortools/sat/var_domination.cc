@@ -992,7 +992,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             context->UpdateConstraintVariableUsage(ct_index);
             processed[PositiveRef(ref)] = true;
             processed[PositiveRef(var)] = true;
-            processed[PositiveRef(encoding_lit)] = true;
+            // `encoding_lit` was maybe a new variable added during this loop,
+            // so make sure we cannot go out-of-bound.
+            if (PositiveRef(encoding_lit) < processed.size()) {
+              processed[PositiveRef(encoding_lit)] = true;
+            }
             continue;
           }
 

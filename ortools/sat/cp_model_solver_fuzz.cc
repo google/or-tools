@@ -31,14 +31,32 @@ std::string GetTestDataDir() {
 }
 
 void Solve(const CpModelProto& proto) {
-  const CpSolverResponse response =
-      operations_research::sat::SolveWithParameters(
-          proto,
-          "max_time_in_seconds: 4.0,debug_crash_if_presolve_breaks_hint:true");
+  SatParameters params;
+  params.set_max_time_in_seconds(4.0);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
 
+  // Enable all fancy heuristics.
+  params.set_linearization_level(2);
+  params.set_use_try_edge_reasoning_in_no_overlap_2d(true);
+  params.set_exploit_all_precedences(true);
+  params.set_use_hard_precedences_in_cumulative(true);
+  params.set_max_num_intervals_for_timetable_edge_finding(1000);
+  params.set_use_overload_checker_in_cumulative(true);
+  params.set_use_strong_propagation_in_disjunctive(true);
+  params.set_use_timetable_edge_finding_in_cumulative(true);
+  params.set_max_pairs_pairwise_reasoning_in_no_overlap_2d(50000);
+  params.set_use_timetabling_in_no_overlap_2d(true);
+  params.set_use_energetic_reasoning_in_no_overlap_2d(true);
+  params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
+  params.set_use_conservative_scale_overload_checker(true);
+  params.set_use_dual_scheduling_heuristics(true);
+
+  const CpSolverResponse response =
+      operations_research::sat::SolveWithParameters(proto, params);
+
+  params.set_cp_model_presolve(false);
   const CpSolverResponse response_no_presolve =
-      operations_research::sat::SolveWithParameters(
-          proto, "max_time_in_seconds:4.0,cp_model_presolve:false");
+      operations_research::sat::SolveWithParameters(proto, params);
 
   CHECK_EQ(response.status() == CpSolverStatus::MODEL_INVALID,
            response_no_presolve.status() == CpSolverStatus::MODEL_INVALID)
