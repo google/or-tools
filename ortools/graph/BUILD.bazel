@@ -114,6 +114,7 @@ cc_test(
         ":minimum_vertex_cover",
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/algorithm:container",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 
@@ -495,6 +496,7 @@ cc_library(
         "//ortools/base",
         "//ortools/util:stats",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -579,6 +581,7 @@ cc_binary(
         ":min_cost_flow",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:path",
         "//ortools/base:status_macros",
         "//ortools/base:timer",
         "//ortools/util:filelineiter",

@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 

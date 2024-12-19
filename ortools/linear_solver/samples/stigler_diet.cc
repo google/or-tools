@@ -15,6 +15,7 @@
 // The Stigler diet problem.
 // [START import]
 #include <array>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>  // std::pair

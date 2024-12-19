@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 
 namespace operations_research {
@@ -73,6 +74,22 @@ TEST(BipartiteMinimumVertexCoverTest, Empty) {
                           false),
             6);
 }
+
+void BM_CompleteBipartite(benchmark::State& state) {
+  const int num_left = state.range(0);
+  const int num_right = state.range(1);
+  std::vector<std::vector<int>> left_to_right =
+      MakeCompleteBipartiteGraph(num_left, num_right);
+  for (auto _ : state) {
+    BipartiteMinimumVertexCover(left_to_right, num_right);
+  }
+}
+BENCHMARK(BM_CompleteBipartite)
+    ->ArgPair(1, 128)
+    ->ArgPair(128, 1)
+    ->ArgPair(32, 32)
+    ->ArgPair(8, 64)
+    ->ArgPair(64, 8);
 
 }  // namespace
 }  // namespace operations_research

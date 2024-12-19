@@ -23,10 +23,11 @@ namespace operations_research {
 // i.e., the binomial coefficient (n, k).
 // This is like std::exp(MathUtil::LogCombinations(n, k)), but faster, with
 // perfect accuracy, and returning an error iff the result would overflow an
-// int64_t or if an argument is invalid (i.e., n < 0, k < 0, or k > n).
+// int64_t or if an argument is invalid (i.e., n < 0, k < 0). Returns 0 for k >
+// n.
 //
 // NOTE(user): If you need a variation of this, ask the authors: it's very easy
-// to add. E.g., other int types, other behaviors (e.g., return 0 if k > n, or
+// to add. E.g., other int types, other behaviors (e.g., return
 // std::numeric_limits<int64_t>::max() on overflow, etc).
 absl::StatusOr<int64_t> NChooseK(int64_t n, int64_t k);
 }  // namespace operations_research

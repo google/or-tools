@@ -278,6 +278,61 @@ class MathUtil {
   // Note that if k > 15, this uses Stirling's approximation of log(n!).
   // The relative error is about 1/(1260*k^5) (which is 7.6e-10 when k=16).
   static double LogCombinations(int n, int k);
+
+  // Tests whether two values are close enough to each other to be considered
+  // equal. This function is intended to be used mainly as a replacement for
+  // equality tests of floating point values in CHECK()s, and as a replacement
+  // for equality comparison against golden files. It is the same as == for
+  // integer types. The purpose of AlmostEquals() is to avoid false positive
+  // error reports in unit tests and regression tests due to minute differences
+  // in floating point arithmetic (for example, due to a different compiler).
+  //
+  // We cannot use simple equality to compare floating point values
+  // because floating point expressions often accumulate inaccuracies, and
+  // new compilers may introduce further variations in the values.
+  //
+  // Two values x and y are considered "almost equals" if:
+  // (a) Both values are very close to zero: x and y are in the range
+  //     [-standard_error, standard_error]
+  //     Normal calculations producing these values are likely to be dealing
+  //     with meaningless residual values.
+  // -or-
+  // (b) The difference between the values is small:
+  //     abs(x - y) <= standard_error
+  // -or-
+  // (c) The values are finite and the relative difference between them is
+  //     small:
+  //     abs (x - y) <= standard_error * max(abs(x), abs(y))
+  // -or-
+  // (d) The values are both positive infinity or both negative infinity.
+  //
+  // Cases (b) and (c) are the same as MathUtils::NearByFractionOrMargin(x, y).
+  //
+  // standard_error is the corresponding MathLimits<T>::kStdError constant.
+  // It is equivalent to 5 bits of mantissa error. See util/math/mathlimits.cc.
+  //
+  // Caveat:
+  // AlmostEquals() is not appropriate for checking long sequences of
+  // operations where errors may cascade (like extended sums or matrix
+  // computations), or where significant cancellation may occur
+  // (e.g., the expression (x+y)-x, where x is much larger than y).
+  // Both cases may produce errors in excess of standard_error.
+  // In any case, you should not test the results of calculations which have
+  // not been vetted for possible cancellation errors and the like.
+  template <typename T>
+  static bool AlmostEquals(const T x, const T y) {
+    static_assert(std::is_arithmetic_v<T>);
+    if constexpr (std::numeric_limits<T>::is_integer) {
+      return x == y;
+    } else {
+      if (x == y)  // Covers +inf and -inf, and is a shortcut for finite values.
+        return true;
+
+      if (std::abs(x) <= 1e-6 && std::abs(y) <= 1e-6) return true;
+      if (std::abs(x - y) <= 1e-6) return true;
+      return std::abs(x - y) / std::max(std::abs(x), std::abs(y)) <= 1e-6;
+    }
+  }
 };
 }  // namespace operations_research
 

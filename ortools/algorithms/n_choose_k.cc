@@ -146,11 +146,10 @@ absl::StatusOr<int64_t> NChooseK(int64_t n, int64_t k) {
   if (k < 0) {
     return absl::InvalidArgumentError(absl::StrFormat("k is negative (%d)", k));
   }
-  if (k > n) {
-    return absl::InvalidArgumentError(
-        absl::StrFormat("k=%d is greater than n=%d", k, n));
+  if (k > n / 2) {
+    if (k > n) return 0;  // No way to choose more than n elements from n.
+    k = n - k;
   }
-  if (k > n / 2) k = n - k;
   if (k == 0) return 1;
   if (n < std::numeric_limits<uint32_t>::max() &&
       !NChooseKIntermediateComputationOverflowsInt<uint32_t>(n, k)) {

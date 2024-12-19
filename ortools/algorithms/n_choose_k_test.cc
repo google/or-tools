@@ -28,6 +28,7 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
+//#include "ortools/base/fuzztest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/util/flat_matrix.h"
@@ -50,11 +51,7 @@ TEST(NChooseKTest, TrivialErrorCases) {
                                           HasSubstr("n is negative")));
     EXPECT_THAT(NChooseK(x, -1), StatusIs(absl::StatusCode::kInvalidArgument,
                                           HasSubstr("k is negative")));
-    if (x != kint64max) {
-      EXPECT_THAT(NChooseK(x, x + 1),
-                  StatusIs(absl::StatusCode::kInvalidArgument,
-                           HasSubstr("greater than n")));
-    }
+    if (x != kint64max) EXPECT_THAT(NChooseK(x, x + 1), IsOkAndHolds(0));
     ASSERT_FALSE(HasFailure()) << DUMP_VARS(t, x);
   }
 }
@@ -310,13 +307,15 @@ void BM_NChooseK(benchmark::State& state) {
   }
   state.SetItemsProcessed(state.iterations() * kNumInputs);
 }
-BENCHMARK(BM_NChooseK<30, operations_research::NChooseK>);  // int32_t domain.
-BENCHMARK(
-    BM_NChooseK<60, operations_research::NChooseK>);  // int{32,64} domain.
-BENCHMARK(
-    BM_NChooseK<100, operations_research::NChooseK>);  // int{32,64,128} domain.
-BENCHMARK(
-    BM_NChooseK<100, MathUtil::LogCombinations>);  // int{32,64,128} domain.
+// int32_t domain.
+BENCHMARK(BM_NChooseK<30, operations_research::NChooseK>);
+
+// int{32,64} domain.
+BENCHMARK(BM_NChooseK<60, operations_research::NChooseK>);
+
+// int{32,64,128} domain.
+BENCHMARK(BM_NChooseK<100, operations_research::NChooseK>);
+BENCHMARK(BM_NChooseK<100, MathUtil::LogCombinations>);
 
 }  // namespace
 }  // namespace operations_research

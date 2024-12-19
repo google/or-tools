@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/algorithms/set_cover.pb.h"
@@ -111,6 +112,9 @@ SetCoverModel ReadOrlibScp(absl::string_view filename) {
     model.SetSubsetCost(subset.value(), cost);
   }
   for (ElementIndex element : ElementRange(num_rows)) {
+    LOG_EVERY_N_SEC(INFO, 5)
+        << absl::StrFormat("Reading element %d (%.1f%%)", element.value(),
+                           100.0 * element.value() / model.num_elements());
     const RowEntryIndex row_size(reader.ParseNextInteger());
     for (RowEntryIndex entry(0); entry < row_size; ++entry) {
       // Correct the 1-indexing.
@@ -118,6 +122,7 @@ SetCoverModel ReadOrlibScp(absl::string_view filename) {
       model.AddElementToSubset(element.value(), subset);
     }
   }
+  LOG(INFO) << "Finished reading the model.";
   file->Close(file::Defaults()).IgnoreError();
   model.CreateSparseRowView();
   return model;
@@ -131,7 +136,10 @@ SetCoverModel ReadOrlibRail(absl::string_view filename) {
   const ElementIndex num_rows(reader.ParseNextInteger());
   const BaseInt num_cols(reader.ParseNextInteger());
   model.ReserveNumSubsets(num_cols);
-  for (int subset(0); subset < num_cols; ++subset) {
+  for (BaseInt subset(0); subset < num_cols; ++subset) {
+    LOG_EVERY_N_SEC(INFO, 5)
+        << absl::StrFormat("Reading subset %d (%.1f%%)", subset,
+                           100.0 * subset / model.num_subsets());
     const double cost(reader.ParseNextDouble());
     model.SetSubsetCost(subset, cost);
     const ColumnEntryIndex column_size(reader.ParseNextInteger());
@@ -142,6 +150,7 @@ SetCoverModel ReadOrlibRail(absl::string_view filename) {
       model.AddElementToSubset(element.value(), subset);
     }
   }
+  LOG(INFO) << "Finished reading the model.";
   file->Close(file::Defaults()).IgnoreError();
   model.CreateSparseRowView();
   return model;
@@ -149,8 +158,11 @@ SetCoverModel ReadOrlibRail(absl::string_view filename) {
 
 SetCoverModel ReadFimiDat(absl::string_view filename) {
   SetCoverModel model;
+  BaseInt subset(0);
   for (const std::string& line : FileLines(filename)) {
-    SubsetIndex subset(0);
+    LOG_EVERY_N_SEC(INFO, 5)
+        << absl::StrFormat("Reading subset %d (%.1f%%)", subset,
+                           100.0 * subset / model.num_subsets());
     std::vector<std::string> elements = absl::StrSplit(line, ' ');
     if (elements.back().empty() || elements.back()[0] == '\0') {
       elements.pop_back();
@@ -165,6 +177,7 @@ SetCoverModel ReadFimiDat(absl::string_view filename) {
     }
     ++subset;
   }
+  LOG(INFO) << "Finished reading the model.";
   model.CreateSparseRowView();
   return model;
 }
@@ -189,19 +202,27 @@ class LineWriter {
   LineWriter(File* file, int max_cols)
       : num_cols_(0), max_cols_(max_cols), line_(), file_(file) {}
   ~LineWriter() { Close(); }
-  void Write(BaseInt value) {
-    const std::string text = absl::StrCat(value, " ");
+
+  void Write(absl::string_view text) {
     const int text_size = text.size();
-    if (num_cols_ + text_size > max_cols_) {
+    if (!text.empty() && text_size + num_cols_ > max_cols_) {
       CHECK_OK(file::WriteString(file_, absl::StrCat(line_, "\n"),
                                  file::Defaults()));
       line_.clear();
-    } else {
-      absl::StrAppend(&line_, text);
-      num_cols_ += text_size;
+      num_cols_ = 0;
     }
+    absl::StrAppend(&line_, text);
+    num_cols_ += text_size;
   }
-  void Close() { CHECK_OK(file::WriteString(file_, line_, file::Defaults())); }
+
+  void Write(BaseInt value) { Write(absl::StrCat(value, " ")); }
+
+  void Write(double value) { Write(absl::StrFormat("%.17g ", value)); }
+
+  void Close() {
+    CHECK_OK(
+        file::WriteString(file_, absl::StrCat(line_, "\n"), file::Defaults()));
+  }
 
  private:
   int num_cols_;
@@ -217,19 +238,25 @@ void WriteOrlibScp(const SetCoverModel& model, absl::string_view filename) {
   CHECK_OK(file::WriteString(
       file, absl::StrCat(model.num_elements(), " ", model.num_subsets(), "\n"),
       file::Defaults()));
-  LineWriter cost_writer(file, kMaxCols);
-  for (const SubsetIndex subset : model.SubsetRange()) {
-    cost_writer.Write(model.subset_costs()[subset]);
-  }
-  for (const ElementIndex element : model.ElementRange()) {
-    CHECK_OK(file::WriteString(file,
-                               absl::StrCat(model.rows()[element].size(), "\n"),
-                               file::Defaults()));
-    LineWriter row_writer(file, kMaxCols);
-    for (const SubsetIndex subset : model.rows()[element]) {
-      row_writer.Write(subset.value() + 1);
+  {  // RAII for the file writer.
+    LineWriter cost_writer(file, kMaxCols);
+    for (const SubsetIndex subset : model.SubsetRange()) {
+      cost_writer.Write(model.subset_costs()[subset]);
+    }
+    for (const ElementIndex element : model.ElementRange()) {
+      LOG_EVERY_N_SEC(INFO, 5)
+          << absl::StrFormat("Writing element %d (%.1f%%)", element.value(),
+                             100.0 * element.value() / model.num_elements());
+      CHECK_OK(file::WriteString(
+          file, absl::StrCat(model.rows()[element].size(), "\n"),
+          file::Defaults()));
+      LineWriter row_writer(file, kMaxCols);
+      for (const SubsetIndex subset : model.rows()[element]) {
+        row_writer.Write(subset.value() + 1);
+      }
     }
   }
+  LOG(INFO) << "Finished writing the model.";
   file->Close(file::Defaults()).IgnoreError();
 }
 
@@ -241,6 +268,9 @@ void WriteOrlibRail(const SetCoverModel& model, absl::string_view filename) {
       file, absl::StrCat(model.num_elements(), " ", model.num_subsets(), "\n"),
       file::Defaults()));
   for (const SubsetIndex subset : model.SubsetRange()) {
+    LOG_EVERY_N_SEC(INFO, 5)
+        << absl::StrFormat("Writing subset %d (%.1f%%)", subset.value(),
+                           100.0 * subset.value() / model.num_subsets());
     CHECK_OK(
         file::WriteString(file,
                           absl::StrCat(model.subset_costs()[subset], " ",
@@ -251,6 +281,7 @@ void WriteOrlibRail(const SetCoverModel& model, absl::string_view filename) {
       writer.Write(element.value() + 1);
     }
   }
+  LOG(INFO) << "Finished writing the model.";
   file->Close(file::Defaults()).IgnoreError();
 }
 
