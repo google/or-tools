@@ -13707,6 +13707,7 @@ namespace {
 void UpdateHintInProto(PresolveContext* context) {
   CpModelProto* proto = context->working_model;
   if (!proto->has_solution_hint()) return;
+  if (context->ModelIsUnsat()) return;
 
   // Extract the new hint information from the context.
   auto* mutable_hint = proto->mutable_solution_hint();
