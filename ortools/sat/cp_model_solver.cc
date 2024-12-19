@@ -868,7 +868,27 @@ bool SolutionHintIsCompleteAndFeasible(
     solution[var] = hinted_value;
   }
 
-  if (SolutionIsFeasible(model_proto, solution)) {
+  const bool is_feasible = SolutionIsFeasible(model_proto, solution);
+  bool breaks_assumptions = false;
+  if (is_feasible) {
+    for (const int literal_ref : model_proto.assumptions()) {
+      if (solution[PositiveRef(literal_ref)] !=
+          (RefIsPositive(literal_ref) ? 1 : 0)) {
+        breaks_assumptions = true;
+        break;
+      }
+    }
+  }
+  if (is_feasible && breaks_assumptions) {
+    if (logger != nullptr) {
+      SOLVER_LOG(
+          logger,
+          "The solution hint is complete and feasible, but it breaks the "
+          "assumptions of the model.");
+    }
+    return false;
+  }
+  if (is_feasible) {
     if (manager != nullptr) {
       // Add it to the pool right away! Note that we already have a log in this
       // case, so we don't log anything more.

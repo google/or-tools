@@ -13822,7 +13822,11 @@ CpSolverStatus CpModelPresolver::Presolve() {
       }
     }
 
+    if (!context_->HintIsLoaded()) {
+      context_->LoadSolutionHint();
+    }
     ExpandCpModelAndCanonicalizeConstraints();
+    UpdateHintInProto(context_);
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We still write back the canonical objective has we don't deal well
@@ -14046,6 +14050,11 @@ CpSolverStatus CpModelPresolver::Presolve() {
   if (context_->working_model->has_objective()) {
     if (!context_->params().keep_symmetry_in_presolve()) {
       ExpandObjective();
+      if (!context_->modified_domains.PositionsSetAtLeastOnce().empty()) {
+        // If we have fixed variables or created new affine relations, there
+        // might be more things to presolve.
+        PresolveToFixPoint();
+      }
       if (context_->ModelIsUnsat()) return InfeasibleStatus();
       ShiftObjectiveWithExactlyOnes();
       if (context_->ModelIsUnsat()) return InfeasibleStatus();
