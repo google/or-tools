@@ -718,6 +718,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     TopNCuts top_n_cuts(5);
     std::vector<TimeTableEvent> events;
     const auto& lp_values = manager->LpValues();
+    if (lp_values.empty()) return true;  // No linear relaxation.
     const double capacity_lp = capacity.LpValue(lp_values);
 
     // Iterate through the intervals. If start_max < end_min, the demand
