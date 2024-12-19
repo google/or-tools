@@ -6,7 +6,7 @@ version = "0.0.1"
 ORTools_jll = "717719f8-c30c-5086-8f3c-70cd6a1e3a46"
 
 [compat]
-ORTools_jll = "9.7.0+2"
+ORTools_jll = "9.11.0"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
