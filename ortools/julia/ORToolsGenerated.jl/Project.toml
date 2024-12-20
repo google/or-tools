@@ -1,4 +1,4 @@
-name = "ORTools"
+name = "ORToolsGenerated"
 uuid = "6b269722-41d3-11ee-be56-0242ac120002"
 version = "0.0.1"
 
@@ -7,6 +7,7 @@ ORTools_jll = "717719f8-c30c-5086-8f3c-70cd6a1e3a46"
 
 [compat]
 ORTools_jll = "9.11.0"
+julia = "1.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
