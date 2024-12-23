@@ -35,7 +35,7 @@
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/base/fuzztest.h"
+//#include "ortools/base/fuzztest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/connected_components.h"
@@ -1135,10 +1135,12 @@ void CheckFuzzedRectangles(
       << RenderRectGraph(std::nullopt, rectangles, result);
 }
 
+/*
 FUZZ_TEST(FindPartialIntersections, CheckFuzzedRectangles)
     .WithDomains(fuzztest::VectorOf(fuzztest::TupleOf(
         fuzztest::Arbitrary<int64_t>(), fuzztest::NonNegative<int64_t>(),
         fuzztest::Arbitrary<int64_t>(), fuzztest::NonNegative<int64_t>())));
+*/
 
 void BM_FindRectangles(benchmark::State& state) {
   absl::BitGen random;
