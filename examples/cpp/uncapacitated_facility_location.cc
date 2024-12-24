@@ -220,6 +220,11 @@ void RunAllExamples(int32_t facilities, int32_t clients, double fix_cost) {
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
                                 MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_CPLEX
+#if defined(USE_MOSEK)
+  LOG(INFO) << "---- Integer programming example with MOSEK ----";
+  UncapacitatedFacilityLocation(facilities, clients, fix_cost,
+                                MPSolver::MOSEK_MIXED_INTEGER_PROGRAMMING);
+#endif  // USE_CPLEX
   LOG(INFO) << "---- Integer programming example with CP-SAT ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
                                 MPSolver::SAT_INTEGER_PROGRAMMING);
