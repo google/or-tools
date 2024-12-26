@@ -140,7 +140,7 @@ static void PyFunctionSolverToVoid(PyObject* pyfunc,
   PyObject* const pysolver =
       SWIG_NewPointerObj(s, SWIGTYPE_p_operations_research__Solver,
                          SWIG_POINTER_EXCEPTION);
-  PyObject* const pyresult = PyEval_CallFunction(pyfunc, "(O)", pysolver);
+  PyObject* const pyresult = PyObject_CallFunction(pyfunc, "(O)", pysolver);
   if (!pyresult) {
     PyErr_SetString(PyExc_RuntimeError,
                     "std::function<void(Solver*)> invocation failed.");
