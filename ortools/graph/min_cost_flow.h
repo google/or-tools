@@ -257,6 +257,11 @@ class MinCostFlowBase {
 // GenericMinCostFlow<> interface.
 class SimpleMinCostFlow : public MinCostFlowBase {
  public:
+  typedef int32_t NodeIndex;
+  typedef int32_t ArcIndex;
+  typedef int64_t FlowQuantity;
+  typedef int64_t CostValue;
+
   // By default, the constructor takes no size. New node indices are created
   // lazily by AddArcWithCapacityAndUnitCost() or SetNodeSupply() such that the
   // set of valid nodes will always be [0, NumNodes()).
@@ -389,14 +394,15 @@ class SimpleMinCostFlow : public MinCostFlowBase {
 // Note that the latter two are different than FlowQuantity and CostValue, which
 // are used for global, aggregated values and may need to be larger.
 //
-// TODO(user): Avoid using the globally defined type CostValue and FlowQuantity.
 // Also uses the Arc*Type where there is no risk of overflow in more places.
-template <typename Graph, typename ArcFlowType = FlowQuantity,
-          typename ArcScaledCostType = CostValue>
+template <typename Graph, typename ArcFlowType = int64_t,
+          typename ArcScaledCostType = int64_t>
 class GenericMinCostFlow : public MinCostFlowBase {
  public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
+  typedef int64_t CostValue;
+  typedef int64_t FlowQuantity;
   typedef typename Graph::IncomingArcIterator IncomingArcIterator;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator

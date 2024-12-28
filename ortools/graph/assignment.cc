@@ -14,13 +14,17 @@
 #include "ortools/graph/assignment.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 
-#include "absl/flags/flag.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/linear_assignment.h"
 
 namespace operations_research {
+
+using ArcIndex = int32_t;
+using NodeIndex = int32_t;
+using CostValue = int64_t;
 
 SimpleLinearSumAssignment::SimpleLinearSumAssignment() : num_nodes_(0) {}
 
@@ -66,8 +70,9 @@ SimpleLinearSumAssignment::Status SimpleLinearSumAssignment::Solve() {
   }
 
   const ArcIndex num_arcs = arc_cost_.size();
-  ForwardStarGraph graph(2 * num_nodes_, num_arcs);
-  LinearSumAssignment<ForwardStarGraph> assignment(graph, num_nodes_);
+  ::util::ListGraph<> graph(2 * num_nodes_, num_arcs);
+  LinearSumAssignment<::util::ListGraph<>, CostValue> assignment(graph,
+                                                                 num_nodes_);
   for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
     graph.AddArc(arc_tail_[arc], num_nodes_ + arc_head_[arc]);
     assignment.SetArcCost(arc, arc_cost_[arc]);

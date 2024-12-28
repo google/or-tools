@@ -14,13 +14,16 @@
 #include "ortools/graph/generic_max_flow.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <random>
 #include <string>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
@@ -56,19 +59,22 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
   }
   std::vector<typename Graph::ArcIndex> permutation;
   Graphs<Graph>::Build(&graph, &permutation);
-  EXPECT_TRUE(permutation.empty());
 
   GenericMaxFlow<Graph> max_flow(&graph, 0, num_nodes - 1);
   for (typename Graph::ArcIndex arc = 0; arc < num_arcs; ++arc) {
-    max_flow.SetArcCapacity(arc, capacity[arc]);
-    EXPECT_EQ(max_flow.Capacity(arc), capacity[arc]);
+    const int image = arc < permutation.size() ? permutation[arc] : arc;
+
+    max_flow.SetArcCapacity(image, capacity[arc]);
+    EXPECT_EQ(max_flow.Capacity(image), capacity[arc]);
   }
   EXPECT_TRUE(max_flow.Solve());
   if (max_flow.status() == GenericMaxFlow<Graph>::OPTIMAL) {
     const FlowQuantity total_flow = max_flow.GetOptimalFlow();
     EXPECT_EQ(expected_total_flow, total_flow);
-    for (int i = 0; i < num_arcs; ++i) {
-      EXPECT_EQ(expected_flow[i], max_flow.Flow(i)) << " i = " << i;
+    for (int arc = 0; arc < num_arcs; ++arc) {
+      const int image = arc < permutation.size() ? permutation[arc] : arc;
+
+      EXPECT_EQ(expected_flow[arc], max_flow.Flow(image)) << " arc = " << arc;
     }
   }
 
@@ -94,7 +100,7 @@ class GenericMaxFlowTest : public ::testing::Test {};
 
 typedef ::testing::Types<StarGraph, util::ReverseArcListGraph<>,
                          util::ReverseArcStaticGraph<>,
-                         util::ReverseArcMixedGraph<> >
+                         util::ReverseArcMixedGraph<>>
     GraphTypes;
 
 TYPED_TEST_SUITE(GenericMaxFlowTest, GraphTypes);
@@ -284,8 +290,11 @@ void GenerateCompleteGraph(const typename Graph::NodeIndex num_tails,
   AddSourceAndSink(num_tails, num_heads, graph);
 }
 
+// Generate a bipartite graph where each right node is connected to `degree`
+// random nodes on the left.
 template <typename Graph>
-void GeneratePartialRandomGraph(const typename Graph::NodeIndex num_tails,
+void GeneratePartialRandomGraph(absl::BitGenRef random,
+                                const typename Graph::NodeIndex num_tails,
                                 const typename Graph::NodeIndex num_heads,
                                 const typename Graph::NodeIndex degree,
                                 Graph* graph) {
@@ -293,11 +302,10 @@ void GeneratePartialRandomGraph(const typename Graph::NodeIndex num_tails,
   const typename Graph::ArcIndex num_arcs =
       num_tails * degree + num_tails + num_heads;
   graph->Reserve(num_nodes, num_arcs);
-  std::mt19937 randomizer(0);
   for (typename Graph::NodeIndex tail = 0; tail < num_tails; ++tail) {
     for (typename Graph::NodeIndex d = 0; d < degree; ++d) {
       const typename Graph::NodeIndex head =
-          absl::Uniform(randomizer, 0, num_heads);
+          absl::Uniform(random, 0, num_heads);
       graph->AddArc(tail, head + num_tails);
     }
   }
@@ -305,13 +313,13 @@ void GeneratePartialRandomGraph(const typename Graph::NodeIndex num_tails,
 }
 
 template <typename Graph>
-void GenerateRandomArcValuations(const Graph& graph, const int64_t max_range,
+void GenerateRandomArcValuations(absl::BitGenRef random, const Graph& graph,
+                                 const int64_t max_range,
                                  std::vector<int64_t>* arc_valuation) {
   const typename Graph::ArcIndex num_arcs = graph.num_arcs();
   arc_valuation->resize(num_arcs);
-  std::mt19937 randomizer(0);
   for (typename Graph::ArcIndex arc = 0; arc < graph.num_arcs(); ++arc) {
-    (*arc_valuation)[arc] = absl::Uniform(randomizer, 0, max_range);
+    (*arc_valuation)[arc] = absl::Uniform(random, 0, max_range);
   }
 }
 
@@ -330,12 +338,14 @@ FlowQuantity SolveMaxFlow(GenericMaxFlow<Graph>* max_flow) {
   EXPECT_EQ(GenericMaxFlow<Graph>::OPTIMAL, max_flow->status());
   const Graph* graph = max_flow->graph();
   for (typename Graph::ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {
-    EXPECT_LE(max_flow->Flow(Graphs<Graph>::OppositeArc(*graph, arc)), 0)
-        << arc;
-    EXPECT_EQ(0, max_flow->Capacity(Graphs<Graph>::OppositeArc(*graph, arc)))
-        << arc;
-    EXPECT_LE(0, max_flow->Flow(arc)) << arc;
-    EXPECT_LE(max_flow->Flow(arc), max_flow->Capacity(arc)) << arc;
+    const typename Graph::ArcIndex opposite_arc = graph->OppositeArc(arc);
+    EXPECT_EQ(max_flow->Flow(arc), -max_flow->Flow(opposite_arc));
+    if (max_flow->Flow(arc) > 0) {
+      EXPECT_LE(max_flow->Flow(arc), max_flow->Capacity(arc));
+    } else {
+      EXPECT_LE(0, max_flow->Flow(opposite_arc));
+      EXPECT_LE(max_flow->Flow(opposite_arc), max_flow->Capacity(opposite_arc));
+    }
   }
   return max_flow->GetOptimalFlow();
 }
@@ -365,13 +375,11 @@ FlowQuantity SolveMaxFlowWithLP(GenericMaxFlow<Graph>* max_flow) {
     constraint[graph->Head(arc)]->SetCoefficient(var[arc], -1.0);
   }
   MPObjective* const objective = solver.MutableObjective();
-  for (typename Graph::OutgoingArcIterator arc_it(*graph, source_index);
-       arc_it.Ok(); arc_it.Next()) {
-    const typename Graph::ArcIndex arc = arc_it.Index();
+  for (const typename Graph::ArcIndex arc : graph->OutgoingArcs(source_index)) {
     objective->SetCoefficient(var[arc], -1.0);
   }
   solver.Solve();
-  return static_cast<FlowQuantity>(-objective->Value() + .5);
+  return static_cast<FlowQuantity>(std::round(-objective->Value()));
 }
 
 template <typename Graph>
@@ -380,39 +388,56 @@ struct MaxFlowSolver {
 };
 
 template <typename Graph>
-void FullRandomAssignment(typename MaxFlowSolver<Graph>::Solver f,
-                          typename Graph::NodeIndex num_tails,
-                          typename Graph::NodeIndex num_heads,
-                          FlowQuantity expected_flow1,
-                          FlowQuantity expected_flow2) {
+void FullAssignment(std::optional<FlowQuantity> unused,
+                    typename MaxFlowSolver<Graph>::Solver f,
+                    typename Graph::NodeIndex num_tails,
+                    typename Graph::NodeIndex num_heads) {
   Graph graph;
   GenerateCompleteGraph(num_tails, num_heads, &graph);
   Graphs<Graph>::Build(&graph);
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
-  FlowQuantity flow = f(max_flow.get());
-  EXPECT_EQ(expected_flow1, flow);
+
+  // In a complete graph we should always reach the maximum flow.
+  const FlowQuantity flow = f(max_flow.get());
+  EXPECT_EQ(std::min(num_tails, num_heads), flow);
 }
 
 template <typename Graph>
-void PartialRandomAssignment(typename MaxFlowSolver<Graph>::Solver f,
+void PartialRandomAssignment(std::optional<FlowQuantity> expected_flow,
+                             typename MaxFlowSolver<Graph>::Solver f,
                              typename Graph::NodeIndex num_tails,
-                             typename Graph::NodeIndex num_heads,
-                             FlowQuantity expected_flow1,
-                             FlowQuantity expected_flow2) {
-  const typename Graph::NodeIndex kDegree = 10;
+                             typename Graph::NodeIndex num_heads) {
+  absl::BitGen absl_random;
+  std::mt19937 mt_random(0);
+  absl::BitGenRef random = expected_flow != std::nullopt
+                               ? absl::BitGenRef(mt_random)
+                               : absl::BitGenRef(absl_random);
+
+  const typename Graph::NodeIndex kDegree = 3;
   Graph graph;
-  GeneratePartialRandomGraph(num_tails, num_heads, kDegree, &graph);
-  Graphs<Graph>::Build(&graph);
-  CHECK_EQ(graph.num_arcs(), num_tails * kDegree + num_tails + num_heads);
+  GeneratePartialRandomGraph(random, num_tails, num_heads, kDegree, &graph);
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+
+  std::vector<int> permutation;
+  graph.Build(&permutation);
+  arc_capacity.resize(graph.num_arcs(), 0);
+  util::Permute(permutation, &arc_capacity);
+
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
-  FlowQuantity flow = f(max_flow.get());
-  EXPECT_EQ(expected_flow1, flow);
+
+  const FlowQuantity flow = f(max_flow.get());
+  if (expected_flow != std::nullopt) {
+    EXPECT_EQ(*expected_flow, flow);
+  } else {
+    // Use the LP as reference value.
+    const FlowQuantity expected_flow1 = SolveMaxFlowWithLP(max_flow.get());
+    EXPECT_EQ(expected_flow1, flow);
+  }
 }
 
 template <typename Graph>
@@ -426,104 +451,127 @@ void ChangeCapacities(absl::Span<const int64_t> arc_capacity,
 }
 
 template <typename Graph>
-void PartialRandomFlow(typename MaxFlowSolver<Graph>::Solver f,
+void PartialRandomFlow(std::optional<FlowQuantity> expected_flow,
+                       typename MaxFlowSolver<Graph>::Solver f,
                        typename Graph::NodeIndex num_tails,
-                       typename Graph::NodeIndex num_heads,
-                       FlowQuantity expected_flow1,
-                       FlowQuantity expected_flow2) {
+                       typename Graph::NodeIndex num_heads) {
+  absl::BitGen absl_random;
+  std::mt19937 mt_random(0);
+  absl::BitGenRef random = expected_flow != std::nullopt
+                               ? absl::BitGenRef(mt_random)
+                               : absl::BitGenRef(absl_random);
+
   const typename Graph::NodeIndex kDegree = 10;
   const FlowQuantity kCapacityRange = 10000;
   const FlowQuantity kCapacityDelta = 1000;
   Graph graph;
-  GeneratePartialRandomGraph(num_tails, num_heads, kDegree, &graph);
+  GeneratePartialRandomGraph(random, num_tails, num_heads, kDegree, &graph);
   std::vector<int64_t> arc_capacity(graph.num_arcs());
-  GenerateRandomArcValuations(graph, kCapacityRange, &arc_capacity);
+  GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
 
   std::vector<typename Graph::ArcIndex> permutation;
   Graphs<Graph>::Build(&graph, &permutation);
+  arc_capacity.resize(graph.num_arcs(), 0);  // In case Build() adds more arcs.
   util::Permute(permutation, &arc_capacity);
 
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
+
+  if (expected_flow != std::nullopt) {
+    FlowQuantity flow = f(max_flow.get());  // Just solve once.
+    EXPECT_EQ(flow, *expected_flow);
+    return;
+  }
+
+  const FlowQuantity expected_flow1 = SolveMaxFlowWithLP(max_flow.get());
   FlowQuantity flow = f(max_flow.get());
   EXPECT_EQ(expected_flow1, flow);
+
   ChangeCapacities(arc_capacity, kCapacityDelta, max_flow.get());
+
+  const FlowQuantity expected_flow2 = SolveMaxFlowWithLP(max_flow.get());
   flow = f(max_flow.get());
   EXPECT_EQ(expected_flow2, flow);
+
   ChangeCapacities(arc_capacity, 0, max_flow.get());
   flow = f(max_flow.get());
   EXPECT_EQ(expected_flow1, flow);
 }
 
 template <typename Graph>
-void FullRandomFlow(typename MaxFlowSolver<Graph>::Solver f,
+void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
+                    typename MaxFlowSolver<Graph>::Solver f,
                     typename Graph::NodeIndex num_tails,
-                    typename Graph::NodeIndex num_heads,
-                    FlowQuantity expected_flow1, FlowQuantity expected_flow2) {
+                    typename Graph::NodeIndex num_heads) {
+  absl::BitGen absl_random;
+  std::mt19937 mt_random(0);
+  absl::BitGenRef random = expected_flow != std::nullopt
+                               ? absl::BitGenRef(mt_random)
+                               : absl::BitGenRef(absl_random);
+
   const FlowQuantity kCapacityRange = 10000;
   const FlowQuantity kCapacityDelta = 1000;
   Graph graph;
   GenerateCompleteGraph(num_tails, num_heads, &graph);
   std::vector<int64_t> arc_capacity(graph.num_arcs());
-  GenerateRandomArcValuations(graph, kCapacityRange, &arc_capacity);
+  GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
 
   std::vector<typename Graph::ArcIndex> permutation;
   Graphs<Graph>::Build(&graph, &permutation);
+  arc_capacity.resize(graph.num_arcs(), 0);  // In case Build() adds more arcs.
   util::Permute(permutation, &arc_capacity);
 
-  std::unique_ptr<GenericMaxFlow<Graph> > max_flow(new GenericMaxFlow<Graph>(
+  std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
+
+  if (expected_flow != std::nullopt) {
+    const FlowQuantity flow = f(max_flow.get());  // Just solve once.
+    EXPECT_EQ(flow, expected_flow);
+    return;
+  }
+
+  const FlowQuantity expected_flow1 = SolveMaxFlowWithLP(max_flow.get());
   FlowQuantity flow = f(max_flow.get());
   EXPECT_EQ(expected_flow1, flow);
+
   ChangeCapacities(arc_capacity, kCapacityDelta, max_flow.get());
+  const FlowQuantity expected_flow2 = SolveMaxFlowWithLP(max_flow.get());
   flow = f(max_flow.get());
   EXPECT_EQ(expected_flow2, flow);
+
   ChangeCapacities(arc_capacity, 0, max_flow.get());
   flow = f(max_flow.get());
   EXPECT_EQ(expected_flow1, flow);
 }
 
-#define LP_AND_FLOW_TEST(test_name, size, expected_flow1, expected_flow2) \
-  LP_ONLY_TEST(test_name, size, expected_flow1, expected_flow2)           \
-  FLOW_ONLY_TEST(test_name, size, expected_flow1, expected_flow2)         \
-  FLOW_ONLY_TEST_SG(test_name, size, expected_flow1, expected_flow2)
-
-#define LP_ONLY_TEST(test_name, size, expected_flow1, expected_flow2) \
-  TEST(LPMaxFlowTest, test_name##size) {                              \
-    test_name<StarGraph>(SolveMaxFlowWithLP<StarGraph>, size, size,   \
-                         expected_flow1, expected_flow2);             \
+#define LP_AND_FLOW_TEST(test_name, size)                                      \
+  TEST(MaxFlowStaticGraphTest, test_name##size) {                              \
+    test_name<util::ReverseArcStaticGraph<>>(std::nullopt, SolveMaxFlow, size, \
+                                             size);                            \
+  }                                                                            \
+  TEST(MaxFlowListGraphTest, test_name##size) {                                \
+    test_name<util::ReverseArcListGraph<>>(std::nullopt, SolveMaxFlow, size,   \
+                                           size);                              \
+  }                                                                            \
+  TEST(MaxFlowStarGraphTest, test_name##size) {                                \
+    test_name<StarGraph>(std::nullopt, SolveMaxFlow, size, size);              \
   }
 
-#define FLOW_ONLY_TEST(test_name, size, expected_flow1, expected_flow2) \
-  TEST(MaxFlowTest, test_name##size) {                                  \
-    test_name<StarGraph>(SolveMaxFlow, size, size, expected_flow1,      \
-                         expected_flow2);                               \
-  }
-
-#define FLOW_ONLY_TEST_SG(test_name, size, expected_flow1, expected_flow2)     \
-  TEST(MaxFlowTestStaticGraph, test_name##size) {                              \
-    test_name<util::ReverseArcStaticGraph<> >(SolveMaxFlow, size, size,        \
-                                              expected_flow1, expected_flow2); \
-  }
-
-LP_AND_FLOW_TEST(FullRandomAssignment, 300, 300, 300);
-LP_AND_FLOW_TEST(PartialRandomAssignment, 100, 100, 100);
-LP_AND_FLOW_TEST(PartialRandomAssignment, 1000, 1000, 1000);
-LP_AND_FLOW_TEST(PartialRandomFlow, 400, 1898664, 1515203);
-LP_AND_FLOW_TEST(FullRandomFlow, 100, 482391, 386587);
-
-// LARGE must be defined from the build command line to test larger instances.
-#ifdef LARGE
-LP_AND_FLOW_TEST(PartialRandomAssignment, 10000, 10000, 10000);
-#endif
+// These are absl::BitGen random test, so they will always work on different
+// graphs.
+LP_AND_FLOW_TEST(FullAssignment, 300);
+LP_AND_FLOW_TEST(PartialRandomAssignment, 100);
+LP_AND_FLOW_TEST(PartialRandomAssignment, 1000);
+LP_AND_FLOW_TEST(PartialRandomFlow, 400);
+LP_AND_FLOW_TEST(FullRandomFlow, 100);
 
 template <typename Graph>
 static void BM_FullRandomAssignment(benchmark::State& state) {
   const int kSize = 3000;
   for (auto _ : state) {
-    FullRandomAssignment<Graph>(SolveMaxFlow, kSize, kSize, kSize, kSize);
+    FullAssignment<Graph>(std::nullopt, SolveMaxFlow, kSize, kSize);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }
@@ -532,7 +580,7 @@ template <typename Graph>
 static void BM_PartialRandomAssignment(benchmark::State& state) {
   const int kSize = 10100;
   for (auto _ : state) {
-    PartialRandomAssignment<Graph>(SolveMaxFlow, kSize, kSize, kSize, kSize);
+    PartialRandomAssignment<Graph>(9512, SolveMaxFlow, kSize, kSize);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }
@@ -541,7 +589,7 @@ template <typename Graph>
 static void BM_PartialRandomFlow(benchmark::State& state) {
   const int kSize = 800;
   for (auto _ : state) {
-    PartialRandomFlow<Graph>(SolveMaxFlow, kSize, kSize, 3884850, 3112123);
+    PartialRandomFlow<Graph>(3939172, SolveMaxFlow, kSize, kSize);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }
@@ -550,34 +598,33 @@ template <typename Graph>
 static void BM_FullRandomFlow(benchmark::State& state) {
   const int kSize = 800;
   for (auto _ : state) {
-    FullRandomFlow<Graph>(SolveMaxFlow, kSize, kSize, 4000549, 3239512);
+    FullRandomFlow<Graph>(3952652, SolveMaxFlow, kSize, kSize);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }
 
+// Note that these benchmark include the graph creation and generation...
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, StarGraph);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcMixedGraph<>);
+
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, StarGraph);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcMixedGraph<>);
 
-// One iteration of each of the following tests is slow.
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, StarGraph);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcMixedGraph<>);
+
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, StarGraph);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcMixedGraph<>);
 
 #undef LP_AND_FLOW_TEST
-#undef LP_ONLY_TEST
-#undef FLOW_ONLY_TEST
-#undef FLOW_ONLY_TEST_SG
 
 // ----------------------------------------------------------
 // PriorityQueueWithRestrictedPush tests.

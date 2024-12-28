@@ -107,7 +107,7 @@ typedef ::testing::Types<
     ForwardEbertGraph<int16_t, ArcIndex>, ForwardStaticGraph<int16_t, ArcIndex>,
     EbertGraph<NodeIndex, int16_t>, ForwardEbertGraph<NodeIndex, int16_t>,
     ForwardStaticGraph<NodeIndex, int16_t>, StarGraph, ForwardStarGraph,
-    ForwardStarStaticGraph, util::ListGraph<>, util::ReverseArcListGraph<>>
+    util::ListGraph<>, util::ReverseArcListGraph<>>
     GraphTypesForAssignmentTestingWithGraphBuilder;
 
 TYPED_TEST_SUITE(LinearSumAssignmentTestWithGraphBuilder,
@@ -479,23 +479,23 @@ class MacholWien
 // The test parameter specifies the problem size and the stack/queue active node
 // list flag.
 TEST_P(MacholWien, SolveHardProblem) {
-  typedef ForwardStarStaticGraph GraphType;
+  using Graph = ::util::CompleteBipartiteGraph<>;
   NodeIndex n = ::testing::get<0>(GetParam());
   absl::SetFlag(&FLAGS_assignment_stack_order, ::testing::get<1>(GetParam()));
-  AssignmentProblemSetup<GraphType> setup(n, n * n, false);
+  Graph graph(n, n);
+  LinearSumAssignment<Graph> assignment(graph, n);
   for (NodeIndex i = 0; i < n; ++i) {
     for (NodeIndex j = 0; j < n; ++j) {
-      CreateArcWithCost<GraphType>(i, n + j, i * j, setup.builder,
-                                   setup.assignment);
+      const ArcIndex arc = graph.GetArc(i, n + j);
+      assignment.SetArcCost(arc, i * j);
     }
   }
-  setup.Finalize();
-  EXPECT_TRUE(setup.assignment->ComputeAssignment());
-  for (LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator node_it(
-           *setup.assignment);
+  EXPECT_TRUE(assignment.ComputeAssignment());
+  for (LinearSumAssignment<Graph>::BipartiteLeftNodeIterator node_it(
+           assignment);
        node_it.Ok(); node_it.Next()) {
     const NodeIndex left_node = node_it.Index();
-    const NodeIndex right_node = setup.assignment->GetMate(left_node);
+    const NodeIndex right_node = assignment.GetMate(left_node);
     EXPECT_EQ(2 * n - 1, left_node + right_node);
   }
 }
@@ -596,12 +596,8 @@ void BM_ConstructRandomAssignmentProblem(benchmark::State& state) {
 BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, StarGraph, false);
 BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarGraph,
                     false);
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarStaticGraph,
-                    false);
 BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, StarGraph, true);
 BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarGraph,
-                    true);
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarStaticGraph,
                     true);
 
 template <typename GraphType>
@@ -646,12 +642,8 @@ void BM_SolveRandomAssignmentProblem(benchmark::State& state) {
 
 BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, StarGraph, false);
 BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarGraph, false);
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarStaticGraph,
-                    false);
 BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, StarGraph, true);
 BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarGraph, true);
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarStaticGraph,
-                    true);
 
 template <typename GraphType>
 void BM_SolveRandomAssignmentProblemWithNewGraphApi(benchmark::State& state) {
@@ -698,14 +690,10 @@ BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem, StarGraph,
                     false);
 BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
                     ForwardStarGraph, false);
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
-                    ForwardStarStaticGraph, false);
 BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem, StarGraph,
                     true);
 BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
                     ForwardStarGraph, true);
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
-                    ForwardStarStaticGraph, true);
 
 template <typename GraphType>
 void BM_ConstructAndSolveRandomAssignmentProblemWithNewGraphApi(
