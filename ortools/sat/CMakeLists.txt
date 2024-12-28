@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
+file(GLOB _SRCS "*.h" "*.cc" "python/linear_expr.h" "python/linear_expr.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_fuzz.cc")
 list(REMOVE_ITEM _SRCS
