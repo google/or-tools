@@ -524,7 +524,7 @@ class DimensionValues {
 // This applies light reasoning, and runs in O(#breaks * #interbreak rules).
 bool PropagateLightweightVehicleBreaks(
     int path, DimensionValues& dimension_values,
-    const std::vector<std::pair<int64_t, int64_t>>& interbreaks);
+    absl::Span<const std::pair<int64_t, int64_t>> interbreaks);
 
 /// Returns a filter tracking route constraints.
 IntVarLocalSearchFilter* MakeRouteConstraintFilter(

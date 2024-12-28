@@ -251,16 +251,24 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 
     // First look at vehicles that do not need resource assignment (fewer/faster
     // computations).
+    // NOTE(user): If it ever becomes an issue, we can consider leaving more
+    // 'shares' for the resource assignment calls since they're more expensive.
+    int solve_duration_shares = vehicles_without_resource_assignment.size() +
+                                vehicles_with_resource_assignment.size();
     for (int vehicle : vehicles_without_resource_assignment) {
       solver->TopPeriodicCheck();
       std::vector<int64_t> cumul_values;
       std::vector<int64_t> break_start_end_values;
       // TODO(user): Distinguish between FEASIBLE and OPTIMAL statuses to
-      // keep track of the FEASIBLE-only cases.
-      if (!ComputeCumulAndBreakValuesForVehicle(vehicle, next, &cumul_values,
-                                                &break_start_end_values)) {
+      // keep track of the FEASIBLE-only cases, and resolve the feasible-only
+      // cases with the remaining time (if any) after all routes have been
+      // scheduled with the initial 'solve_duration_ratio'.
+      if (!ComputeCumulAndBreakValuesForVehicle(
+              vehicle, /*solve_duration_ratio=*/1.0 / solve_duration_shares,
+              next, &cumul_values, &break_start_end_values)) {
         return false;
       }
+      solve_duration_shares--;
       AppendRouteCumulAndBreakVarAndValues(dimension_, vehicle, cumul_values,
                                            break_start_end_values,
                                            &cp_variables_, &cp_values_);
@@ -353,7 +361,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
   bool ComputeCumulAndBreakValuesForVehicle(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       std::vector<int64_t>* cumul_values,
       std::vector<int64_t>* break_start_end_values) {
     cumul_values->clear();
@@ -379,29 +388,29 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         use_mp_optimizer ? mp_optimizer_ : lp_optimizer_;
     DCHECK_NE(optimizer, nullptr);
     DimensionSchedulingStatus status =
-        optimize_and_pack_
-            ? optimizer->ComputePackedRouteCumuls(
-                  vehicle, next_accessor, dimension_travel_info, resource,
-                  cumul_values, break_start_end_values)
-            : optimizer->ComputeRouteCumuls(
-                  vehicle, next_accessor, dimension_travel_info, resource,
-                  cumul_values, break_start_end_values);
+        optimize_and_pack_ ? optimizer->ComputePackedRouteCumuls(
+                                 vehicle, solve_duration_ratio, next_accessor,
+                                 dimension_travel_info, resource, cumul_values,
+                                 break_start_end_values)
+                           : optimizer->ComputeRouteCumuls(
+                                 vehicle, solve_duration_ratio, next_accessor,
+                                 dimension_travel_info, resource, cumul_values,
+                                 break_start_end_values);
     // If relaxation is not feasible, try the MP optimizer.
     if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
       DCHECK(!use_mp_optimizer);
       DCHECK_NE(mp_optimizer_, nullptr);
       status = optimize_and_pack_
                    ? mp_optimizer_->ComputePackedRouteCumuls(
-                         vehicle, next_accessor, dimension_travel_info,
-                         resource, cumul_values, break_start_end_values)
+                         vehicle, solve_duration_ratio, next_accessor,
+                         dimension_travel_info, resource, cumul_values,
+                         break_start_end_values)
                    : mp_optimizer_->ComputeRouteCumuls(
-                         vehicle, next_accessor, dimension_travel_info,
-                         resource, cumul_values, break_start_end_values);
+                         vehicle, solve_duration_ratio, next_accessor,
+                         dimension_travel_info, resource, cumul_values,
+                         break_start_end_values);
     }
-    if (status == DimensionSchedulingStatus::INFEASIBLE) {
-      return false;
-    }
-    return true;
+    return status != DimensionSchedulingStatus::INFEASIBLE;
   }
 
   bool ComputeVehicleResourceClassValuesAndIndices(
@@ -414,17 +423,20 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     if (vehicles_to_assign.empty()) return true;
     DCHECK_NE(resource_group_, nullptr);
 
+    int solve_duration_shares = vehicles_to_assign.size();
     for (int v : vehicles_to_assign) {
       DCHECK(resource_group_->VehicleRequiresAResource(v));
       auto& [assignment_costs, cumul_values, break_values] =
           vehicle_resource_class_values_[v];
       if (!ComputeVehicleToResourceClassAssignmentCosts(
-              v, *resource_group_, used_resources_per_class, next_accessor,
+              v, /*solve_duration_ratio=*/1.0 / solve_duration_shares,
+              *resource_group_, used_resources_per_class, next_accessor,
               dimension_.transit_evaluator(v),
               /*optimize_vehicle_costs*/ true, lp_optimizer_, mp_optimizer_,
               &assignment_costs, &cumul_values, &break_values)) {
         return false;
       }
+      solve_duration_shares--;
     }
 
     return ComputeBestVehicleToResourceAssignment(
