@@ -14,9 +14,14 @@
 #include "ortools/graph/assignment.h"
 
 #include <limits>
+#include <random>
+#include <tuple>
+#include <vector>
 
+#include "absl/log/check.h"
+#include "absl/random/distributions.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/graph/ebert_graph.h"
 
 namespace operations_research {
 
@@ -69,6 +74,7 @@ TEST(SimpleLinearSumAssignmentTest, InfeasibleProblem) {
 }
 
 TEST(SimpleLinearSumAssignmentTest, Overflow) {
+  using CostValue = SimpleLinearSumAssignment::CostValue;
   SimpleLinearSumAssignment assignment;
   assignment.AddArcWithCost(0, 0, std::numeric_limits<CostValue>::max());
   assignment.AddArcWithCost(0, 1, std::numeric_limits<CostValue>::max());
@@ -77,5 +83,37 @@ TEST(SimpleLinearSumAssignmentTest, Overflow) {
   EXPECT_EQ(SimpleLinearSumAssignment::POSSIBLE_OVERFLOW, assignment.Solve());
   EXPECT_EQ(0, assignment.OptimalCost());
 }
+
+void BM_SimpleLinearSumAssignment(benchmark::State& state) {
+  using CostValue = SimpleLinearSumAssignment::CostValue;
+  constexpr CostValue kCostLimit = 1000000;
+
+  const int num_left = state.range(0);
+  const int degree = state.range(1);
+
+  std::mt19937 rng(12345);
+
+  // Each left node is connected to `degree` right nodes.
+  std::vector<std::tuple<int, int, CostValue>> arcs;
+  arcs.reserve(num_left * degree);
+  for (int left = 0; left < num_left; ++left) {
+    for (int i = 0; i < degree; ++i) {
+      const int right = (left + i) % num_left;
+      const CostValue cost =
+          absl::Uniform(rng, 0, absl::Uniform(rng, 0, kCostLimit));
+      arcs.emplace_back(left, right, cost);
+    }
+  }
+
+  for (auto _ : state) {
+    SimpleLinearSumAssignment assignment;
+    assignment.ReserveArcs(num_left * degree);
+    for (const auto& [left, right, cost] : arcs) {
+      assignment.AddArcWithCost(left, right, cost);
+    }
+    CHECK_EQ(assignment.Solve(), SimpleLinearSumAssignment::OPTIMAL);
+  }
+}
+BENCHMARK(BM_SimpleLinearSumAssignment)->ArgPair(100, 2)->ArgPair(100, 20);
 
 }  // namespace operations_research

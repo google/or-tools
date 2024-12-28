@@ -19,6 +19,8 @@
 #include <numeric>
 #include <string>
 #include <vector>
+
+#include "ortools/base/logging.h"
 // [END import]
 
 namespace operations_research {

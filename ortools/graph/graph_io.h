@@ -48,6 +48,9 @@ enum GraphToStringFormat {
 
   // Ditto, but the adjacency lists are sorted.
   PRINT_GRAPH_ADJACENCY_LISTS_SORTED,
+
+  // Dot format, can be visualized with Graphviz.
+  PRINT_GRAPH_DOT,
 };
 template <class Graph>
 std::string GraphToString(const Graph& graph, GraphToStringFormat format);
@@ -74,6 +77,15 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
 template <class Graph>
 std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
   std::string out;
+  if (format == PRINT_GRAPH_DOT) {
+    absl::StrAppend(&out, "digraph {\n");
+    for (const auto arc : graph.AllForwardArcs()) {
+      absl::StrAppend(&out, "  ", static_cast<int64_t>(graph.Tail(arc)), "->",
+                      static_cast<int64_t>(graph.Head(arc)), ";\n");
+    }
+    absl::StrAppend(&out, "}\n");
+    return out;
+  }
   std::vector<uint64_t> adj;
   for (const typename Graph::NodeIndex node : graph.AllNodes()) {
     if (format == PRINT_GRAPH_ARCS) {

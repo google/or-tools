@@ -168,15 +168,19 @@
 //    the arc tail array adds another m * sizeof(NodeIndexType).
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
 
@@ -202,11 +206,27 @@ typedef int64_t FlowQuantity;
 typedef int64_t CostValue;
 typedef EbertGraph<NodeIndex, ArcIndex> StarGraph;
 typedef ForwardEbertGraph<NodeIndex, ArcIndex> ForwardStarGraph;
-typedef ForwardStaticGraph<NodeIndex, ArcIndex> ForwardStarStaticGraph;
 typedef ZVector<NodeIndex> NodeIndexArray;
 typedef ZVector<ArcIndex> ArcIndexArray;
 typedef ZVector<FlowQuantity> QuantityArray;
 typedef ZVector<CostValue> CostArray;
+
+// Adapt our old iteration style to support range-based for loops. Add typedefs
+// required by std::iterator_traits.
+#define DEFINE_STL_ITERATOR_FUNCTIONS(iterator_class_name)  \
+  using iterator_category = std::input_iterator_tag;        \
+  using difference_type = ptrdiff_t;                        \
+  using pointer = const ArcIndexType*;                      \
+  using value_type = ArcIndexType;                          \
+  using reference = value_type;                             \
+  bool operator!=(const iterator_class_name& other) const { \
+    return this->arc_ != other.arc_;                        \
+  }                                                         \
+  bool operator==(const iterator_class_name& other) const { \
+    return this->arc_ == other.arc_;                        \
+  }                                                         \
+  ArcIndexType operator*() const { return this->arc_; }     \
+  void operator++() { this->Next(); }
 
 template <typename NodeIndexType, typename ArcIndexType, typename DerivedGraph>
 class StarGraphBase {
@@ -400,6 +420,8 @@ class StarGraphBase {
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndexType Index() const { return arc_; }
 
+    DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingArcIterator);
+
    private:
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
@@ -530,7 +552,7 @@ class PermutationIndexComparisonByArcHead {
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
-class ForwardStaticGraph
+class ABSL_DEPRECATED("Use `::util::StaticGraph<>` instead.") ForwardStaticGraph
     : public StarGraphBase<NodeIndexType, ArcIndexType,
                            ForwardStaticGraph<NodeIndexType, ArcIndexType> > {
   typedef StarGraphBase<NodeIndexType, ArcIndexType,
@@ -1190,7 +1212,7 @@ class EbertGraphBase
 // Most users should only use StarGraph, which is EbertGraph<int32_t, int32_t>,
 // and other type shortcuts; see the bottom of this file.
 template <typename NodeIndexType, typename ArcIndexType>
-class EbertGraph
+class ABSL_DEPRECATED("Use `::util::ListGraph<>` instead.") EbertGraph
     : public EbertGraphBase<NodeIndexType, ArcIndexType,
                             EbertGraph<NodeIndexType, ArcIndexType> > {
   typedef EbertGraphBase<NodeIndexType, ArcIndexType,
@@ -1229,6 +1251,7 @@ class EbertGraph
 
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
+  static constexpr bool kHasNegativeReverseArcs = true;
 
   EbertGraph() {}
 
@@ -1280,6 +1303,8 @@ class EbertGraph
 
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndexType Index() const { return arc_; }
+
+    DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingOrOppositeIncomingArcIterator);
 
    private:
     // Returns true if the invariant for the iterator is verified.
@@ -1363,6 +1388,31 @@ class EbertGraph
     ArcIndexType arc_;
   };
 #endif  // SWIG
+
+  // Minimal change to use StarGraph with the new util/graph.h API.
+  // EbertGraph is going away, so this is just temporary.
+  void Build() {}
+  void Build(std::vector<ArcIndex>* permutation) { permutation->clear(); }
+  ArcIndexType OppositeArc(ArcIndex arc) const { return Opposite(arc); }
+  util::BeginEndWrapper<typename Base::OutgoingArcIterator> OutgoingArcs(
+      NodeIndexType node) const {
+    return util::BeginEndWrapper<typename Base::OutgoingArcIterator>(
+        typename Base::OutgoingArcIterator(*this, node),
+        typename Base::OutgoingArcIterator(*this, node, kNilArc));
+  }
+  util::BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
+  OutgoingOrOppositeIncomingArcs(NodeIndexType node) const {
+    return util::BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>(
+        OutgoingOrOppositeIncomingArcIterator(*this, node),
+        OutgoingOrOppositeIncomingArcIterator(*this, node, kNilArc));
+  }
+  util::BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
+  OutgoingOrOppositeIncomingArcsStartingFrom(NodeIndexType node,
+                                             ArcIndex arc) const {
+    return util::BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>(
+        OutgoingOrOppositeIncomingArcIterator(*this, node, arc),
+        OutgoingOrOppositeIncomingArcIterator(*this, node, kNilArc));
+  }
 
   // Utility function to check that an arc index is within the bounds.
   // It is exported so that users of the EbertGraph class can use it.
@@ -1566,7 +1616,7 @@ class EbertGraph
 // A forward-star-only graph representation for greater efficiency in
 // those algorithms that don't need reverse arcs.
 template <typename NodeIndexType, typename ArcIndexType>
-class ForwardEbertGraph
+class ABSL_DEPRECATED("Use `::util::ListGraph<>` instead.") ForwardEbertGraph
     : public EbertGraphBase<NodeIndexType, ArcIndexType,
                             ForwardEbertGraph<NodeIndexType, ArcIndexType> > {
   typedef EbertGraphBase<NodeIndexType, ArcIndexType,
@@ -2126,6 +2176,8 @@ bool BuildLineGraph(const GraphType& graph, GraphType* const line_graph) {
   }
   return true;
 }
+
+#undef DEFINE_STL_ITERATOR_FUNCTIONS
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_GRAPH_EBERT_GRAPH_H_

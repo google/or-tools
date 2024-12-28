@@ -48,14 +48,17 @@
 #ifndef OR_TOOLS_GRAPH_ASSIGNMENT_H_
 #define OR_TOOLS_GRAPH_ASSIGNMENT_H_
 
+#include <cstdint>
 #include <vector>
-
-#include "ortools/graph/ebert_graph.h"
 
 namespace operations_research {
 
 class SimpleLinearSumAssignment {
  public:
+  typedef int32_t NodeIndex;
+  typedef int32_t ArcIndex;
+  typedef int64_t CostValue;
+
   // The constructor takes no size.
   // New node indices will be created lazily by AddArcWithCost().
   SimpleLinearSumAssignment();
@@ -66,6 +69,14 @@ class SimpleLinearSumAssignment {
   SimpleLinearSumAssignment& operator=(const SimpleLinearSumAssignment&) =
       delete;
 #endif
+
+  // Reserves space for the given number of arcs, to avoid reallocation in
+  // `AddArcWithCost().
+  void ReserveArcs(ArcIndex num_arcs) {
+    arc_tail_.reserve(num_arcs);
+    arc_head_.reserve(num_arcs);
+    arc_cost_.reserve(num_arcs);
+  }
 
   // Adds an arc from a left node to a right node with a given cost.
   // * Node indices must be non-negative (>= 0). For a perfect

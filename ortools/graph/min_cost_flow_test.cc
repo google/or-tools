@@ -864,10 +864,10 @@ FLOW_ONLY_TEST_SG(FullRandomFlow, 3000, 5588622, 7140712);  // 230s
 //   blaze run -c opt --linkopt=-static [--run_under=perflab] --
 //   ortools/graph/min_cost_flow_test --benchmarks=all
 //   --benchmark_min_iters=1 --heap_check= --benchmark_memory_usage
-static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
+template <typename Graph, typename ArcFlowType, typename ArcScaledCostType,
+          int kNumChannels, int kNumUsers>
+void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
   std::mt19937 my_random(12345);
-  const int kNumChannels = 20000;
-  const int kNumUsers = 20000;
   // Average probability of a user-channel pair being matched.
   const double kDensity = 1.0 / 200;
   const int kMaxChannelsPerUser = 5 * static_cast<int>(kDensity * kNumChannels);
@@ -909,12 +909,6 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
   CHECK_LE(total_demand, kNumUsers * kMaxChannelsPerUser);
 
   for (auto _ : state) {
-    // We don't have more than 65536 nodes, so we use 16-bit integers to spare
-    // memory (and potentially speed up the code). Arc indices must be 32 bits
-    // though, since we have much more.
-    typedef util::ReverseArcStaticGraph<
-        /*NodeIndexType*/ uint16_t, /*ArcIndexType*/ int32_t>
-        Graph;
     Graph graph(/*num_nodes=*/kNumUsers + kNumChannels + 1,
                 /*arc_capacity=*/kNumChannels * kNumUsers + kNumUsers);
     // We model this problem as a graph (on which we'll do a min-cost flow):
@@ -935,17 +929,15 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
     for (int j = 0; j < kNumUsers; ++j) {
       graph.AddArc(/*tail=*/kNumChannels + 1 + j, /*head=*/0);
     }
-    std::vector<Graph::ArcIndex> permutation;
-    graph.Build(&permutation);
+    std::vector<typename Graph::ArcIndex> permutation;
+    Graphs<Graph>::Build(&graph, &permutation);
     // To spare memory, we added arcs in the right order, so that no permutation
     // is needed. See graph.h.
     CHECK(permutation.empty());
 
     // To spare memory, the types are chosen as small as possible.
-    GenericMinCostFlow<Graph,
-                       /*ArcFlowType=*/int16_t,
-                       /*ArcScaledCostType=*/int32_t>
-        min_cost_flow(&graph);
+    GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType> min_cost_flow(
+        &graph);
 
     // We also disable the feasibility check which takes a huge amount of
     // memory.
@@ -954,7 +946,7 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
     min_cost_flow.SetNodeSupply(/*node=*/0, /*supply=*/-total_demand);
     // Now, set the arcs capacity and cost, in the same order as we created them
     // above.
-    Graph::ArcIndex arc_index = 0;
+    typename Graph::ArcIndex arc_index = 0;
     for (int i = 0; i < kNumChannels; ++i) {
       min_cost_flow.SetNodeSupply(
           /*node=*/i + 1, /*supply=*/num_users_per_channel[i]);
@@ -976,7 +968,20 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem);
+// We don't have more than 65536 nodes, so we use 16-bit integers to spare
+// memory (and potentially speed up the code). Arc indices must be 32 bits
+// though, since we have much more.
+BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<
+          util::ReverseArcStaticGraph<uint16_t, int32_t>, int16_t, int32_t,
+          /*kNumChannels=*/20000, /*kNumUsers=*/20000>);
+// We also benchmark with default parameter types and StarGraph for reference.
+// We use fewer channels and users to avoid running out of memory.
+BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<
+          ::util::ReverseArcListGraph<>, int64_t, int64_t,
+          /*kNumChannels=*/5000, /*kNumUsers=*/5000>);
+BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<StarGraph, int64_t, int64_t,
+                                               /*kNumChannels=*/5000,
+                                               /*kNumUsers=*/5000>);
 
 }  // namespace
 }  // namespace operations_research

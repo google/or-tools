@@ -16,8 +16,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-using ::operations_research::NodeIndex;
 using ::operations_research::SimpleLinearSumAssignment;
+using NodeIndex = ::operations_research::SimpleLinearSumAssignment::NodeIndex;
 using ::pybind11::arg;
 
 PYBIND11_MODULE(linear_sum_assignment, m) {

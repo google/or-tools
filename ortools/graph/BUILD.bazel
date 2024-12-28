@@ -351,12 +351,12 @@ cc_library(
     name = "ebert_graph",
     hdrs = ["ebert_graph.h"],
     deps = [
+        ":iterators",
         "//ortools/base",
-        "//ortools/base:types",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_prod",
     ],
 )
 
@@ -399,7 +399,7 @@ cc_library(
 
 cc_test(
     name = "shortest_paths_test",
-    timeout = "eternal",
+    size = "enormous",
     srcs = ["shortest_paths_test.cc"],
     tags = ["noasan"],  # Times out occasionally in ASAN mode.
     deps = [
@@ -510,6 +510,7 @@ cc_test(
         ":generic_max_flow",
         ":graph",
         ":graphs",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "//ortools/base",
         "//ortools/base:gmock_main",
         "//ortools/linear_solver",
@@ -533,6 +534,7 @@ cc_library(
     }),
     deps = [
         ":ebert_graph",
+        ":generic_max_flow",
         ":graph",
         ":graphs",
         ":max_flow",
@@ -600,9 +602,8 @@ cc_library(
     srcs = ["assignment.cc"],
     hdrs = ["assignment.h"],
     deps = [
-        ":ebert_graph",
+        ":graph",
         ":linear_assignment",
-        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -612,8 +613,10 @@ cc_test(
     srcs = ["assignment_test.cc"],
     deps = [
         ":assignment",
-        ":ebert_graph",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_benchmark//:benchmark",        
     ],
 )
 
@@ -626,12 +629,10 @@ cc_library(
     deps = [
         ":ebert_graph",
         "//ortools/base",
-        "//ortools/base:types",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_googletest//:gtest_prod",
     ],
 )
 

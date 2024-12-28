@@ -1198,11 +1198,9 @@ static void BM_RandomArcs(benchmark::State& state) {
 
 BENCHMARK_TEMPLATE2(BM_RandomArcs, StarGraph, false);
 BENCHMARK_TEMPLATE2(BM_RandomArcs, ForwardStarGraph, false);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ForwardStarStaticGraph, false);
 
 BENCHMARK_TEMPLATE2(BM_RandomArcs, StarGraph, true);
 BENCHMARK_TEMPLATE2(BM_RandomArcs, ForwardStarGraph, true);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ForwardStarStaticGraph, true);
 
 template <typename GraphType, bool sort_arcs>
 static void BM_RandomAnnotatedArcs(benchmark::State& state) {
@@ -1229,11 +1227,9 @@ static void BM_RandomAnnotatedArcs(benchmark::State& state) {
 
 BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, StarGraph, false);
 BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, ForwardStarGraph, false);
-BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, ForwardStarStaticGraph, false);
 
 BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, StarGraph, true);
 BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, ForwardStarGraph, true);
-BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, ForwardStarStaticGraph, true);
 
 template <typename GraphType>
 static void BM_AddRandomArcsAndDoNotRetrieveGraph(benchmark::State& state) {
@@ -1256,7 +1252,5 @@ static void BM_AddRandomArcsAndDoNotRetrieveGraph(benchmark::State& state) {
 
 BENCHMARK_TEMPLATE(BM_AddRandomArcsAndDoNotRetrieveGraph, StarGraph);
 BENCHMARK_TEMPLATE(BM_AddRandomArcsAndDoNotRetrieveGraph, ForwardStarGraph);
-BENCHMARK_TEMPLATE(BM_AddRandomArcsAndDoNotRetrieveGraph,
-                   ForwardStarStaticGraph);
 
 }  // namespace operations_research
