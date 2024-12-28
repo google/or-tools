@@ -36,10 +36,6 @@ inline std::string Stringify(const double a) {
   return absl::StrFormat("%.16g", a);
 }
 
-inline std::string Stringify(const long double a) {
-  return absl::StrFormat("%.19g", a);
-}
-
 // Returns a string "num/den" representing the rational approximation of x.
 // The absolute difference between the output fraction and the input "x" will
 // not exceed "precision".
