@@ -698,9 +698,12 @@ void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
 
 std::function<void(Model*)> CircuitCovering(
     absl::Span<const std::vector<Literal>> graph,
-    const std::vector<int>& distinguished_nodes) {
-  return [=, graph = std::vector<std::vector<Literal>>(
-                 graph.begin(), graph.end())](Model* model) {
+    absl::Span<const int> distinguished_nodes) {
+  return [=,
+          distinguished_nodes = std::vector<int>(distinguished_nodes.begin(),
+                                                 distinguished_nodes.end()),
+          graph = std::vector<std::vector<Literal>>(
+              graph.begin(), graph.end())](Model* model) {
     CircuitCoveringPropagator* constraint =
         new CircuitCoveringPropagator(graph, distinguished_nodes, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());

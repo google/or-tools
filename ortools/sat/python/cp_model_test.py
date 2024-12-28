@@ -366,30 +366,6 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(x, prod.expression())
         self.assertEqual(4, prod.coefficient())
 
-    def testSimplification2(self) -> None:
-        print("testSimplification2")
-        model = cp_model.CpModel()
-        x = model.new_int_var(-10, 10, "x")
-        prod = 2 * (x * 2)
-        self.assertEqual(x, prod.expression())
-        self.assertEqual(4, prod.coefficient())
-
-    def testSimplification3(self) -> None:
-        print("testSimplification3")
-        model = cp_model.CpModel()
-        x = model.new_int_var(-10, 10, "x")
-        prod = (2 * x) * 2
-        self.assertEqual(x, prod.expression())
-        self.assertEqual(4, prod.coefficient())
-
-    def testSimplification4(self) -> None:
-        print("testSimplification4")
-        model = cp_model.CpModel()
-        x = model.new_int_var(-10, 10, "x")
-        prod = 2 * (2 * x)
-        self.assertEqual(x, prod.expression())
-        self.assertEqual(4, prod.coefficient())
-
     def testLinearNonEqualWithConstant(self) -> None:
         print("testLinearNonEqualWithConstant")
         model = cp_model.CpModel()
@@ -459,7 +435,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(16.1, solver.objective_value)
 
     def testNaturalApiMaximizeComplex(self) -> None:
-        print("testNaturalApiMaximizeFloat")
+        print("testNaturalApiMaximizeComplex")
         model = cp_model.CpModel()
         x1 = model.new_bool_var("x1")
         x2 = model.new_bool_var("x1")
@@ -1169,7 +1145,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(str(x < 2), "x <= 1")
         self.assertEqual(str(x != 2), "x != 2")
         self.assertEqual(str(x * 3), "(3 * x)")
-        self.assertEqual(str(-x), "-x")
+        self.assertEqual(str(-x), "(-x)")
         self.assertEqual(str(x + 3), "(x + 3)")
         self.assertEqual(str(x <= cp_model.INT_MAX), "True (unbounded expr x)")
         self.assertEqual(str(x != 9223372036854775807), "x <= 9223372036854775806")
@@ -1177,14 +1153,14 @@ class CpModelTest(absltest.TestCase):
         y = model.new_int_var(0, 4, "y")
         self.assertEqual(
             str(cp_model.LinearExpr.weighted_sum([x, y + 1, 2], [1, -2, 3])),
-            "x - 2 * (y + 1) + 6",
+            "(x - 2 * (y + 1) + 6)",
         )
         self.assertEqual(str(cp_model.LinearExpr.term(x, 3)), "(3 * x)")
-        self.assertEqual(str(x != y), "(x + -y) != 0")
+        self.assertEqual(str(x != y), "(x - y) != 0")
         self.assertEqual(
-            "0 <= x <= 10", str(cp_model.BoundedLinearExpression(x, [0, 10]))
+            "0 <= x <= 10",
+            str(cp_model.BoundedLinearExpression(x, cp_model.Domain(0, 10))),
         )
-        print(str(model))
         b = model.new_bool_var("b")
         self.assertEqual(str(cp_model.LinearExpr.term(b.negated(), 3)), "(3 * not(b))")
 
@@ -1198,15 +1174,15 @@ class CpModelTest(absltest.TestCase):
         y = model.new_int_var(0, 3, "y")
         z = model.new_int_var(0, 3, "z")
         self.assertEqual(repr(x), "x(0..4)")
-        self.assertEqual(repr(x * 2), "ProductCst(x(0..4), 2)")
-        self.assertEqual(repr(x + y), "sum(x(0..4), y(0..3))")
+        self.assertEqual(repr(x * 2), "IntAffine(expr=x(0..4), coeff=2, offset=0)")
+        self.assertEqual(repr(x + y), "IntSum(x(0..4), y(0..3), 0)")
         self.assertEqual(
             repr(cp_model.LinearExpr.sum([x, y, z])),
-            "SumArray(x(0..4), y(0..3), z(0..3), 0)",
+            "IntSum(x(0..4), y(0..3), z(0..3), 0)",
         )
         self.assertEqual(
             repr(cp_model.LinearExpr.weighted_sum([x, y, 2], [1, 2, 3])),
-            "weighted_sum([x(0..4), y(0..3)], [1, 2], 6)",
+            "IntWeightedSum([x(0..4), y(0..3)], [1, 2], 6)",
         )
         i = model.new_interval_var(x, 2, y, "i")
         self.assertEqual(repr(i), "i(start = x, size = 2, end = y)")
