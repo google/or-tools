@@ -92,7 +92,8 @@ void SolutionCallback::StopSearch() {
   if (wrapper_ != nullptr) wrapper_->StopSearch();
 }
 
-operations_research::sat::CpSolverResponse SolutionCallback::Response() const {
+const operations_research::sat::CpSolverResponse& SolutionCallback::Response()
+    const {
   return response_;
 }
 

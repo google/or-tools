@@ -255,7 +255,7 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
     absl::Span<const std::vector<Literal>> graph);
 std::function<void(Model*)> CircuitCovering(
     absl::Span<const std::vector<Literal>> graph,
-    const std::vector<int>& distinguished_nodes);
+    absl::Span<const int> distinguished_nodes);
 
 }  // namespace sat
 }  // namespace operations_research
