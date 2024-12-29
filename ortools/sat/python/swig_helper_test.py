@@ -109,7 +109,7 @@ class SwigHelperTest(absltest.TestCase):
         self.assertTrue(text_format.Parse(model_string, model))
 
         solve_wrapper = swig_helper.SolveWrapper()
-        response_wrapper = solve_wrapper.solve(model)
+        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
         self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
         self.assertEqual(30.0, response_wrapper.objective_value())
@@ -153,7 +153,7 @@ class SwigHelperTest(absltest.TestCase):
 
         solve_wrapper = swig_helper.SolveWrapper()
         solve_wrapper.set_parameters(parameters)
-        response_wrapper = solve_wrapper.solve(model)
+        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
         self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
         self.assertEqual(30.0, response_wrapper.objective_value())
@@ -175,7 +175,7 @@ class SwigHelperTest(absltest.TestCase):
         model.objective.scaling_factor = -1
 
         solve_wrapper = swig_helper.SolveWrapper()
-        response_wrapper = solve_wrapper.solve(model)
+        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
         self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
         self.assertEqual(30.0, response_wrapper.objective_value())
@@ -197,7 +197,7 @@ class SwigHelperTest(absltest.TestCase):
         params = sat_parameters_pb2.SatParameters()
         params.enumerate_all_solutions = True
         solve_wrapper.set_parameters(params)
-        response_wrapper = solve_wrapper.solve(model)
+        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
         self.assertEqual(5, callback.solution_count())
         self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
@@ -226,7 +226,7 @@ class SwigHelperTest(absltest.TestCase):
         params.linearization_level = 2
         params.log_search_progress = True
         solve_wrapper.set_parameters(params)
-        response_wrapper = solve_wrapper.solve(model)
+        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
         self.assertEqual(2.6, best_bound_callback.best_bound)
         self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())

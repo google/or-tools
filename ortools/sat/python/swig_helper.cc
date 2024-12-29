@@ -270,6 +270,12 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("set_parameters", &SolveWrapper::SetParameters, arg("parameters"))
       .def("solve",
            [](SolveWrapper* solve_wrapper,
+              const CpModelProto& model_proto) -> CpSolverResponse {
+             ::pybind11::gil_scoped_release release;
+             return solve_wrapper->Solve(model_proto);
+           })
+      .def("solve_and_return_response_wrapper",
+           [](SolveWrapper* solve_wrapper,
               const CpModelProto& model_proto) -> ResponseWrapper {
              ::py::gil_scoped_release release;
              return ResponseWrapper(solve_wrapper->Solve(model_proto));
