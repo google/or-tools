@@ -56,6 +56,11 @@ class PySolutionCallback : public SolutionCallback {
   }
 };
 
+void throw_error(PyObject* py_exception, const std::string& message) {
+  PyErr_SetString(py_exception, message.c_str());
+  throw py::error_already_set();
+}
+
 // A trampoline class to override the __str__ and __repr__ methods.
 class PyBaseIntVar : public BaseIntVar {
  public:
@@ -140,9 +145,9 @@ class ResponseWrapper {
     IntExprVisitor visitor;
     int64_t value;
     if (!visitor.Evaluate(expr, response_, &value)) {
-      LOG(ERROR) << "Failed to evaluate linear expression: "
-                 << expr->DebugString();
-      return -1;
+      throw_error(PyExc_TypeError,
+                  absl::StrCat("Failed to evaluate linear expression: ",
+                               expr->DebugString()));
     }
     return value;
   }
@@ -154,11 +159,6 @@ class ResponseWrapper {
  private:
   const CpSolverResponse response_;
 };
-
-void throw_error(PyObject* py_exception, const std::string& message) {
-  PyErr_SetString(py_exception, message.c_str());
-  throw py::error_already_set();
-}
 
 const char* kLinearExprClassDoc = R"doc(
   Holds an integer linear expression.
@@ -318,6 +318,8 @@ PYBIND11_MODULE(swig_helper, m) {
   py::implicitly_convertible<int64_t, ExprOrValue>();
 
   py::class_<LinearExpr>(m, "LinearExpr", kLinearExprClassDoc)
+      // We make sure to keep the order of the overloads: LinearExpr* before
+      // ExprOrValue as this is faster to parse and type check.
       .def_static(
           "sum",
           py::overload_cast<const std::vector<LinearExpr*>&>(&LinearExpr::Sum),
@@ -346,24 +348,8 @@ PYBIND11_MODULE(swig_helper, m) {
                                     const std::vector<double>&>(
                       &LinearExpr::WeightedSum),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static(
-          "Sum",
-          py::overload_cast<const std::vector<LinearExpr*>&>(&LinearExpr::Sum),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static(
-          "Sum",
-          py::overload_cast<const std::vector<ExprOrValue>&>(&LinearExpr::Sum),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("WeightedSum",
-                  py::overload_cast<const std::vector<ExprOrValue>&,
-                                    const std::vector<double>&>(
-                      &LinearExpr::WeightedSum),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("WeightedSum",
-                  py::overload_cast<const std::vector<ExprOrValue>&,
-                                    const std::vector<int64_t>&>(
-                      &LinearExpr::WeightedSum),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      // Make sure to keep the order of the overloads: int before float as an
+      // an integer value will be silently converted to a float.
       .def_static("term",
                   py::overload_cast<LinearExpr*, int64_t>(&LinearExpr::Term),
                   arg("expr"), arg("coeff"), "Returns expr * coeff.",
@@ -374,22 +360,48 @@ PYBIND11_MODULE(swig_helper, m) {
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static(
           "affine",
-          py::overload_cast<LinearExpr*, double, double>(&LinearExpr::Affine),
+          py::overload_cast<LinearExpr*, int64_t, int64_t>(&LinearExpr::Affine),
           arg("expr"), arg("coeff"), arg("offset"),
           "Returns expr * coeff + offset.", py::return_value_policy::automatic,
           py::keep_alive<0, 1>())
       .def_static(
           "affine",
-          py::overload_cast<LinearExpr*, int64_t, int64_t>(&LinearExpr::Affine),
+          py::overload_cast<LinearExpr*, double, double>(&LinearExpr::Affine),
           arg("expr"), arg("coeff"), arg("offset"),
           "Returns expr * coeff + offset.", py::return_value_policy::automatic,
           py::keep_alive<0, 1>())
-      .def_static("constant", py::overload_cast<double>(&LinearExpr::Constant),
-                  arg("value"), "Returns a constant linear expression.",
-                  py::return_value_policy::automatic)
       .def_static("constant", py::overload_cast<int64_t>(&LinearExpr::Constant),
                   arg("value"), "Returns a constant linear expression.",
                   py::return_value_policy::automatic)
+      .def_static("constant", py::overload_cast<double>(&LinearExpr::Constant),
+                  arg("value"), "Returns a constant linear expression.",
+                  py::return_value_policy::automatic)
+      .def_static(
+          "Sum",
+          py::overload_cast<const std::vector<LinearExpr*>&>(&LinearExpr::Sum),
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "Sum",
+          py::overload_cast<const std::vector<ExprOrValue>&>(&LinearExpr::Sum),
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("WeightedSum",
+                  py::overload_cast<const std::vector<ExprOrValue>&,
+                                    const std::vector<int64_t>&>(
+                      &LinearExpr::WeightedSum),
+                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("WeightedSum",
+                  py::overload_cast<const std::vector<ExprOrValue>&,
+                                    const std::vector<double>&>(
+                      &LinearExpr::WeightedSum),
+                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("Term",
+                  py::overload_cast<LinearExpr*, int64_t>(&LinearExpr::Term),
+                  arg("expr"), arg("coeff"), "Returns expr * coeff.",
+                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("Term",
+                  py::overload_cast<LinearExpr*, double>(&LinearExpr::Term),
+                  arg("expr"), arg("coeff"), "Returns expr * coeff.",
+                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__str__", &LinearExpr::ToString)
       .def("__repr__", &LinearExpr::DebugString)
       .def("is_integer", &LinearExpr::IsInteger)

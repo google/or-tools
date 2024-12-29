@@ -171,11 +171,13 @@ LinearExpr* LinearExpr::Term(LinearExpr* expr, int64_t coeff) {
 }
 
 LinearExpr* LinearExpr::Affine(LinearExpr* expr, double coeff, double offset) {
+  if (coeff == 1.0 && offset == 0.0) return expr;
   return new FloatAffine(expr, coeff, offset);
 }
 
 LinearExpr* LinearExpr::Affine(LinearExpr* expr, int64_t coeff,
                                int64_t offset) {
+  if (coeff == 1 && offset == 0) return expr;
   return new IntAffine(expr, coeff, offset);
 }
 
@@ -192,10 +194,12 @@ LinearExpr* LinearExpr::Add(LinearExpr* other) {
 }
 
 LinearExpr* LinearExpr::AddInt(int64_t cst) {
+  if (cst == 0) return this;
   return new IntAffine(this, 1, cst);
 }
 
 LinearExpr* LinearExpr::AddDouble(double cst) {
+  if (cst == 0.0) return this;
   return new FloatAffine(this, 1.0, cst);
 }
 
