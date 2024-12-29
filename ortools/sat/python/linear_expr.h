@@ -78,21 +78,30 @@ class LinearExpr {
   static LinearExpr* Constant(int64_t value);
   static LinearExpr* Constant(double value);
 
-  LinearExpr* Add(LinearExpr* other);
+  LinearExpr* Add(LinearExpr* expr);
   LinearExpr* AddInt(int64_t cst);
   LinearExpr* AddDouble(double cst);
-  LinearExpr* Sub(ExprOrValue other);
-  LinearExpr* RSub(ExprOrValue other);
-  LinearExpr* Mul(double cst);
-  LinearExpr* Mul(int64_t cst);
+  LinearExpr* Sub(LinearExpr* expr);
+  LinearExpr* SubInt(int64_t cst);
+  LinearExpr* SubDouble(double cst);
+  LinearExpr* RSubInt(int64_t cst);
+  LinearExpr* RSubDouble(double cst);
+  LinearExpr* MulInt(int64_t cst);
+  LinearExpr* MulDouble(double cst);
   LinearExpr* Neg();
 
-  BoundedLinearExpression* Eq(ExprOrValue other);
-  BoundedLinearExpression* Ne(ExprOrValue other);
-  BoundedLinearExpression* Ge(ExprOrValue other);
-  BoundedLinearExpression* Le(ExprOrValue other);
-  BoundedLinearExpression* Lt(ExprOrValue other);
-  BoundedLinearExpression* Gt(ExprOrValue other);
+  BoundedLinearExpression* Eq(LinearExpr* rhs);
+  BoundedLinearExpression* EqCst(int64_t rhs);
+  BoundedLinearExpression* Ne(LinearExpr* rhs);
+  BoundedLinearExpression* NeCst(int64_t rhs);
+  BoundedLinearExpression* Ge(LinearExpr* rhs);
+  BoundedLinearExpression* GeCst(int64_t rhs);
+  BoundedLinearExpression* Le(LinearExpr* rhs);
+  BoundedLinearExpression* LeCst(int64_t rhs);
+  BoundedLinearExpression* Lt(LinearExpr* rhs);
+  BoundedLinearExpression* LtCst(int64_t rhs);
+  BoundedLinearExpression* Gt(LinearExpr* rhs);
+  BoundedLinearExpression* GtCst(int64_t rhs);
 };
 
 // Compare the indices of variables.
