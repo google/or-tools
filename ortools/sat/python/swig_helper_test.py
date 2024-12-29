@@ -305,11 +305,11 @@ class SwigHelperTest(absltest.TestCase):
 
         e8 = swig_helper.LinearExpr.sum([x, y, z])
         self.assertEqual(str(e8), "(x + y + z)")
-        e9 = swig_helper.LinearExpr.sum([x, y, z], 11)
+        e9 = swig_helper.LinearExpr.sum([x, y, z, 11])
         self.assertEqual(str(e9), "(x + y + z + 11)")
         e10 = swig_helper.LinearExpr.weighted_sum([x, y, z], [1, 2, 3])
         self.assertEqual(str(e10), "(x + 2 * y + 3 * z)")
-        e11 = swig_helper.LinearExpr.weighted_sum([x, y, z], [1, 2, 3], -5)
+        e11 = swig_helper.LinearExpr.weighted_sum([x, y, z, 5], [1, 2, 3, -1])
         self.assertEqual(str(e11), "(x + 2 * y + 3 * z - 5)")
 
     def testFloatLinExpr(self):
@@ -317,7 +317,6 @@ class SwigHelperTest(absltest.TestCase):
         self.assertTrue(x.is_integer())
         self.assertIsInstance(x, TestIntVar)
         self.assertIsInstance(x, swig_helper.LinearExpr)
-        self.assertIsInstance(x, swig_helper.FloatLinearExpr)
         e1 = x + 2.5
         self.assertFalse(e1.is_integer())
         self.assertEqual(str(e1), "(x + 2.5)")
@@ -342,18 +341,18 @@ class SwigHelperTest(absltest.TestCase):
         self.assertEqual(str(e7), "(x - (2.4 * y))")
 
         z = TestIntVar(2, "z")
-        e8 = swig_helper.FloatLinearExpr.sum([x, y, z])
-        self.assertFalse(e8.is_integer())
-        self.assertEqual(str(e8), "(x + y + z)")
-        e9 = swig_helper.FloatLinearExpr.sum([x, y, z], 1.5)
+        e8 = swig_helper.LinearExpr.sum([x, y, z, -2])
+        self.assertTrue(e8.is_integer())
+        self.assertEqual(str(e8), "(x + y + z - 2)")
+        e9 = swig_helper.LinearExpr.sum([x, y, z, 1.5])
         self.assertFalse(e9.is_integer())
         self.assertEqual(str(e9), "(x + y + z + 1.5)")
-        e10 = swig_helper.FloatLinearExpr.weighted_sum([x, y, z], [1.0, 2.2, 3.3])
+        e10 = swig_helper.LinearExpr.weighted_sum([x, y, z], [1.0, 2.2, 3.3])
         self.assertFalse(e10.is_integer())
         self.assertEqual(str(e10), "(x + 2.2 * y + 3.3 * z)")
-        e11 = swig_helper.FloatLinearExpr.weighted_sum([x, y, z], [1.0, 2.2, 3.3], 1.5)
+        e11 = swig_helper.LinearExpr.weighted_sum([x, y, z, 1.5], [1.0, 2.2, 3.3, -1])
         self.assertFalse(e11.is_integer())
-        self.assertEqual(str(e11), "(x + 2.2 * y + 3.3 * z + 1.5)")
+        self.assertEqual(str(e11), "(x + 2.2 * y + 3.3 * z - 1.5)")
         e12 = (x + 2) * 3.1
         self.assertFalse(e12.is_integer())
         self.assertEqual(str(e12), "(3.1 * (x + 2))")

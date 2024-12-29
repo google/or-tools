@@ -28,119 +28,221 @@ namespace operations_research {
 namespace sat {
 namespace python {
 
-FloatLinearExpr* FloatLinearExpr::Sum(
-    const std::vector<FloatExprOrValue>& exprs) {
-  return Sum(exprs, 0.0);
+bool LinearExpr::IsInteger() {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  return lin.ProcessAll();
 }
 
-FloatLinearExpr* FloatLinearExpr::Sum(
-    const std::vector<FloatExprOrValue>& exprs, double cst) {
-  std::vector<FloatLinearExpr*> lin_exprs;
-  for (const FloatExprOrValue& choice : exprs) {
+LinearExpr* LinearExpr::Sum(const std::vector<LinearExpr*>& exprs) {
+  if (exprs.empty()) {
+    return new IntConstant(0);
+  } else if (exprs.size() == 1) {
+    return exprs[0];
+  } else {
+    return new IntSum(exprs, 0);
+  }
+}
+
+LinearExpr* LinearExpr::Sum(const std::vector<ExprOrValue>& exprs) {
+  std::vector<LinearExpr*> lin_exprs;
+  int64_t int_offset = 0;
+  double double_offset = 0.0;
+
+  for (const ExprOrValue& choice : exprs) {
     if (choice.expr != nullptr) {
       lin_exprs.push_back(choice.expr);
     } else {
-      cst += choice.value;
+      int_offset += choice.int_value;
+      double_offset += choice.double_value;
     }
   }
-  if (lin_exprs.empty()) return new FloatConstant(cst);
-  if (lin_exprs.size() == 1) return Affine(lin_exprs[0], 1.0, cst);
-  return new FloatWeightedSum(lin_exprs, cst);
+
+  // Special case: if there is only one term, return it.
+  if (int_offset == 0 && double_offset == 0.0 && lin_exprs.size() == 1) {
+    return lin_exprs[0];
+  }
+
+  // Special case: if there is no double offset, return an integer expression.
+  if (double_offset == 0.0) {
+    if (lin_exprs.empty()) {
+      return new IntConstant(int_offset);
+    } else if (lin_exprs.size() == 1) {
+      return new IntAffine(lin_exprs[0], 1, int_offset);
+    } else {
+      return new IntSum(lin_exprs, int_offset);
+    }
+  } else {  // General floating point case.
+    double_offset += static_cast<double>(int_offset);
+    if (lin_exprs.empty()) {
+      return new FloatConstant(double_offset);
+    } else if (lin_exprs.size() == 1) {
+      return new FloatAffine(lin_exprs[0], 1.0, double_offset);
+    } else {
+      return new FloatSum(lin_exprs, double_offset);
+    }
+  }
 }
 
-FloatLinearExpr* FloatLinearExpr::WeightedSum(
-    const std::vector<FloatExprOrValue>& exprs,
-    const std::vector<double>& coeffs) {
-  return WeightedSum(exprs, coeffs, 0.0);
+LinearExpr* LinearExpr::WeightedSum(const std::vector<LinearExpr*>& exprs,
+                                    const std::vector<double>& coeffs) {
+  if (exprs.empty()) return new FloatConstant(0.0);
+  if (exprs.size() == 1) {
+    return new FloatAffine(exprs[0], coeffs[0], 0.0);
+  }
+  return new FloatWeightedSum(exprs, coeffs, 0.0);
 }
 
-FloatLinearExpr* FloatLinearExpr::WeightedSum(
-    const std::vector<FloatExprOrValue>& exprs,
-    const std::vector<double>& coeffs, double cst) {
-  std::vector<FloatLinearExpr*> lin_exprs;
+LinearExpr* LinearExpr::WeightedSum(const std::vector<LinearExpr*>& exprs,
+                                    const std::vector<int64_t>& coeffs) {
+  if (exprs.empty()) return new IntConstant(0);
+  if (exprs.size() == 1) {
+    return new IntAffine(exprs[0], coeffs[0], 0);
+  }
+  return new IntWeightedSum(exprs, coeffs, 0);
+}
+
+LinearExpr* LinearExpr::WeightedSum(const std::vector<ExprOrValue>& exprs,
+                                    const std::vector<double>& coeffs) {
+  std::vector<LinearExpr*> lin_exprs;
   std::vector<double> lin_coeffs;
+  double cst = 0.0;
   for (int i = 0; i < exprs.size(); ++i) {
     if (exprs[i].expr != nullptr) {
       lin_exprs.push_back(exprs[i].expr);
       lin_coeffs.push_back(coeffs[i]);
     } else {
-      cst += exprs[i].value * coeffs[i];
+      cst += coeffs[i] *
+             (exprs[i].double_value + static_cast<double>(exprs[i].int_value));
     }
   }
 
   if (lin_exprs.empty()) return new FloatConstant(cst);
   if (lin_exprs.size() == 1) {
-    return Affine(lin_exprs[0], lin_coeffs[0], cst);
+    return new FloatAffine(lin_exprs[0], lin_coeffs[0], cst);
   }
   return new FloatWeightedSum(lin_exprs, lin_coeffs, cst);
 }
 
-FloatLinearExpr* FloatLinearExpr::Term(FloatLinearExpr* expr, double coeff) {
+LinearExpr* LinearExpr::WeightedSum(const std::vector<ExprOrValue>& exprs,
+                                    const std::vector<int64_t>& coeffs) {
+  std::vector<LinearExpr*> lin_exprs;
+  std::vector<int64_t> lin_coeffs;
+  int64_t int_cst = 0;
+  double double_cst = 0.0;
+  for (int i = 0; i < exprs.size(); ++i) {
+    if (exprs[i].expr != nullptr) {
+      lin_exprs.push_back(exprs[i].expr);
+      lin_coeffs.push_back(coeffs[i]);
+    } else {
+      int_cst += coeffs[i] * exprs[i].int_value;
+      double_cst += coeffs[i] * exprs[i].double_value;
+    }
+  }
+
+  if (double_cst != 0.0) {
+    double_cst += static_cast<double>(int_cst);
+    if (lin_exprs.empty()) return new FloatConstant(double_cst);
+    if (lin_exprs.size() == 1) {
+      return new FloatAffine(lin_exprs[0], static_cast<double>(lin_coeffs[0]),
+                             double_cst);
+    }
+    std::vector<double> lin_coeffs_double;
+    lin_coeffs_double.reserve(lin_coeffs.size());
+    for (int64_t coeff : lin_coeffs) {
+      lin_coeffs_double.push_back(static_cast<double>(coeff));
+    }
+    return new FloatWeightedSum(lin_exprs, lin_coeffs_double, double_cst);
+  }
+
+  if (lin_exprs.empty()) return new IntConstant(int_cst);
+  if (lin_exprs.size() == 1) {
+    return new IntAffine(lin_exprs[0], lin_coeffs[0], int_cst);
+  }
+  return new IntWeightedSum(lin_exprs, lin_coeffs, int_cst);
+}
+
+LinearExpr* LinearExpr::Term(LinearExpr* expr, double coeff) {
   return new FloatAffine(expr, coeff, 0.0);
 }
 
-FloatLinearExpr* FloatLinearExpr::Affine(FloatLinearExpr* expr, double coeff,
-                                         double offset) {
+LinearExpr* LinearExpr::Term(LinearExpr* expr, int64_t coeff) {
+  return new IntAffine(expr, coeff, 0);
+}
+
+LinearExpr* LinearExpr::Affine(LinearExpr* expr, double coeff, double offset) {
   return new FloatAffine(expr, coeff, offset);
 }
 
-FloatLinearExpr* FloatLinearExpr::Constant(double value) {
+LinearExpr* LinearExpr::Affine(LinearExpr* expr, int64_t coeff,
+                               int64_t offset) {
+  return new IntAffine(expr, coeff, offset);
+}
+
+LinearExpr* LinearExpr::Constant(double value) {
   return new FloatConstant(value);
 }
 
-FloatLinearExpr* FloatLinearExpr::FloatAddCst(double cst) {
-  if (cst == 0.0) return this;
+LinearExpr* LinearExpr::Constant(int64_t value) {
+  return new IntConstant(value);
+}
+
+LinearExpr* LinearExpr::Add(LinearExpr* other) {
+  return new BinaryAdd(this, other);
+}
+
+LinearExpr* LinearExpr::AddInt(int64_t cst) {
+  return new IntAffine(this, 1, cst);
+}
+
+LinearExpr* LinearExpr::AddDouble(double cst) {
   return new FloatAffine(this, 1.0, cst);
 }
 
-FloatLinearExpr* FloatLinearExpr::FloatAdd(FloatLinearExpr* other) {
-  std::vector<FloatLinearExpr*> exprs;
-  exprs.push_back(this);
-  exprs.push_back(other);
-  return new FloatWeightedSum(exprs, 0);
+LinearExpr* LinearExpr::Sub(ExprOrValue other) {
+  if (other.expr != nullptr) {
+    return new IntWeightedSum({this, other.expr}, {1, -1}, 0);
+  } else if (other.double_value != 0.0) {
+    return new FloatAffine(this, 1.0, -other.double_value);
+  } else if (other.int_value != 0) {
+    return new IntAffine(this, 1, -other.int_value);
+  } else {
+    return this;
+  }
 }
 
-FloatLinearExpr* FloatLinearExpr::FloatSubCst(double cst) {
-  if (cst == 0.0) return this;
-  return new FloatAffine(this, 1.0, -cst);
+LinearExpr* LinearExpr::RSub(ExprOrValue other) {
+  if (other.expr != nullptr) {
+    return new IntWeightedSum({this, other.expr}, {-1, 1}, 0);
+  } else if (other.double_value != 0.0) {
+    return new FloatAffine(this, -1.0, other.double_value);
+  } else {
+    return new IntAffine(this, -1, other.int_value);
+  }
 }
 
-FloatLinearExpr* FloatLinearExpr::FloatSub(FloatLinearExpr* other) {
-  std::vector<FloatLinearExpr*> exprs;
-  exprs.push_back(this);
-  exprs.push_back(other);
-  return new FloatWeightedSum(exprs, {1, -1}, 0);
-}
-
-FloatLinearExpr* FloatLinearExpr::FloatRSub(FloatLinearExpr* other) {
-  std::vector<FloatLinearExpr*> exprs;
-  exprs.push_back(this);
-  exprs.push_back(other);
-  return new FloatWeightedSum(exprs, {-1, 1}, 0);
-}
-
-FloatLinearExpr* FloatLinearExpr::FloatRSubCst(double cst) {
-  return new FloatAffine(this, -1.0, cst);
-}
-
-FloatLinearExpr* FloatLinearExpr::FloatMulCst(double cst) {
-  if (cst == 0.0) return Sum({});
+LinearExpr* LinearExpr::Mul(double cst) {
+  if (cst == 0.0) return new IntConstant(0);
   if (cst == 1.0) return this;
   return new FloatAffine(this, cst, 0.0);
 }
 
-FloatLinearExpr* FloatLinearExpr::FloatNeg() {
-  return new FloatAffine(this, -1.0, 0.0);
+LinearExpr* LinearExpr::Mul(int64_t cst) {
+  if (cst == 0) return new IntConstant(0);
+  if (cst == 1) return this;
+  return new IntAffine(this, cst, 0);
 }
 
-void FloatExprVisitor::AddToProcess(FloatLinearExpr* expr, double coeff) {
+LinearExpr* LinearExpr::Neg() { return new IntAffine(this, -1, 0); }
+
+void FloatExprVisitor::AddToProcess(LinearExpr* expr, double coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
 void FloatExprVisitor::AddConstant(double constant) { offset_ += constant; }
 void FloatExprVisitor::AddVarCoeff(BaseIntVar* var, double coeff) {
   canonical_terms_[var] += coeff;
 }
-double FloatExprVisitor::Process(FloatLinearExpr* expr,
+double FloatExprVisitor::Process(LinearExpr* expr,
                                  std::vector<BaseIntVar*>* vars,
                                  std::vector<double>* coeffs) {
   AddToProcess(expr, 1.0);
@@ -161,9 +263,15 @@ double FloatExprVisitor::Process(FloatLinearExpr* expr,
   return offset_;
 }
 
-CanonicalFloatExpression::CanonicalFloatExpression(FloatLinearExpr* expr) {
+CanonicalFloatExpression::CanonicalFloatExpression(LinearExpr* expr) {
   FloatExprVisitor lin;
   offset_ = lin.Process(expr, &vars_, &coeffs_);
+}
+
+CanonicalIntExpression::CanonicalIntExpression(LinearExpr* expr) : ok_(true) {
+  IntExprVisitor lin;
+  lin.AddToProcess(expr, 1);
+  ok_ = lin.Process(&vars_, &coeffs_, &offset_);
 }
 
 void FloatConstant::VisitAsFloat(FloatExprVisitor* lin, double c) {
@@ -176,13 +284,13 @@ std::string FloatConstant::DebugString() const {
   return absl::StrCat("FloatConstant(", value_, ")");
 }
 
-FloatWeightedSum::FloatWeightedSum(const std::vector<FloatLinearExpr*>& exprs,
+FloatWeightedSum::FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
                                    double offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(exprs.size(), 1),
       offset_(offset) {}
 
-FloatWeightedSum::FloatWeightedSum(const std::vector<FloatLinearExpr*>& exprs,
+FloatWeightedSum::FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
                                    const std::vector<double>& coeffs,
                                    double offset)
     : exprs_(exprs.begin(), exprs.end()),
@@ -242,7 +350,72 @@ std::string FloatWeightedSum::ToString() const {
   return s;
 }
 
-FloatAffine::FloatAffine(FloatLinearExpr* expr, double coeff, double offset)
+std::string FloatWeightedSum::DebugString() const {
+  return absl::StrCat("FloatWeightedSum([",
+                      absl::StrJoin(exprs_, ", ",
+                                    [](std::string* out, const LinearExpr* e) {
+                                      absl::StrAppend(out, e->DebugString());
+                                    }),
+                      "], [", absl::StrJoin(coeffs_, "], "), offset_, ")");
+}
+
+std::string IntWeightedSum::ToString() const {
+  if (exprs_.empty()) {
+    return absl::StrCat(offset_);
+  }
+  std::string s = "(";
+  bool first_printed = true;
+  for (int i = 0; i < exprs_.size(); ++i) {
+    if (coeffs_[i] == 0) continue;
+    if (first_printed) {
+      first_printed = false;
+      if (coeffs_[i] == 1) {
+        absl::StrAppend(&s, exprs_[i]->ToString());
+      } else if (coeffs_[i] == -1) {
+        absl::StrAppend(&s, "-", exprs_[i]->ToString());
+      } else {
+        absl::StrAppend(&s, coeffs_[i], " * ", exprs_[i]->ToString());
+      }
+    } else {
+      if (coeffs_[i] == 1) {
+        absl::StrAppend(&s, " + ", exprs_[i]->ToString());
+      } else if (coeffs_[i] == -1) {
+        absl::StrAppend(&s, " - ", exprs_[i]->ToString());
+      } else if (coeffs_[i] > 1) {
+        absl::StrAppend(&s, " + ", coeffs_[i], " * ", exprs_[i]->ToString());
+      } else {
+        absl::StrAppend(&s, " - ", -coeffs_[i], " * ", exprs_[i]->ToString());
+      }
+    }
+  }
+  // If there are no terms, just print the offset.
+  if (first_printed) {
+    return absl::StrCat(offset_);
+  }
+
+  // If there is an offset, print it.
+  if (offset_ != 0) {
+    if (offset_ > 0) {
+      absl::StrAppend(&s, " + ", offset_);
+    } else {
+      absl::StrAppend(&s, " - ", -offset_);
+    }
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+std::string IntWeightedSum::DebugString() const {
+  return absl::StrCat("IntWeightedSum([",
+                      absl::StrJoin(exprs_, ", ",
+                                    [](std::string* out, LinearExpr* expr) {
+                                      absl::StrAppend(out, expr->DebugString());
+                                    }),
+                      "], [", absl::StrJoin(coeffs_, ", "), "], ", offset_,
+                      ")");
+}
+
+FloatAffine::FloatAffine(LinearExpr* expr, double coeff, double offset)
     : expr_(expr), coeff_(coeff), offset_(offset) {}
 
 void FloatAffine::VisitAsFloat(FloatExprVisitor* lin, double c) {
@@ -273,158 +446,154 @@ std::string FloatAffine::DebugString() const {
                       ", coeff=", coeff_, ", offset=", offset_, ")");
 }
 
-IntLinExpr* IntLinExpr::Sum(const std::vector<IntExprOrValue>& exprs) {
-  return Sum(exprs, 0);
-}
-
-IntLinExpr* IntLinExpr::Sum(const std::vector<IntExprOrValue>& exprs,
-                            int64_t cst) {
-  std::vector<IntLinExpr*> lin_exprs;
-  for (const IntExprOrValue& choice : exprs) {
-    if (choice.expr != nullptr) {
-      lin_exprs.push_back(choice.expr);
-    } else {
-      cst += choice.value;
-    }
+BoundedLinearExpression* LinearExpr::Eq(ExprOrValue other) {
+  if (other.double_value != 0.0) return nullptr;
+  if (other.expr != nullptr) {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    lin.AddToProcess(other.expr, -1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(vars, coeffs, offset, Domain(0));
+  } else {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(vars, coeffs, offset,
+                                       Domain(other.int_value));
   }
-  if (lin_exprs.empty()) return new IntConstant(cst);
-  if (lin_exprs.size() == 1) return Affine(lin_exprs[0], 1, cst);
-  return new IntSum(lin_exprs, cst);
 }
 
-IntLinExpr* IntLinExpr::WeightedSum(const std::vector<IntExprOrValue>& exprs,
-                                    const std::vector<int64_t>& coeffs) {
-  return WeightedSum(exprs, coeffs, 0);
-}
-
-IntLinExpr* IntLinExpr::WeightedSum(const std::vector<IntExprOrValue>& exprs,
-                                    const std::vector<int64_t>& coeffs,
-                                    int64_t cst) {
-  std::vector<IntLinExpr*> lin_exprs;
-  std::vector<int64_t> lin_coeffs;
-  for (int i = 0; i < exprs.size(); ++i) {
-    if (exprs[i].expr != nullptr) {
-      lin_exprs.push_back(exprs[i].expr);
-      lin_coeffs.push_back(coeffs[i]);
-    } else {
-      cst += exprs[i].value * coeffs[i];
-    }
+BoundedLinearExpression* LinearExpr::Ne(ExprOrValue other) {
+  if (other.double_value != 0.0) return nullptr;
+  if (other.expr != nullptr) {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    lin.AddToProcess(other.expr, -1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(vars, coeffs, offset,
+                                       Domain(0).Complement());
+  } else {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(vars, coeffs, offset,
+                                       Domain(other.int_value).Complement());
   }
-  if (lin_exprs.empty()) return new IntConstant(cst);
-  if (lin_exprs.size() == 1) {
-    return IntLinExpr::Affine(lin_exprs[0], lin_coeffs[0], cst);
+}
+
+BoundedLinearExpression* LinearExpr::Le(ExprOrValue other) {
+  if (other.double_value != 0.0) return nullptr;
+  if (other.expr != nullptr) {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    lin.AddToProcess(other.expr, -1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset, Domain(std::numeric_limits<int64_t>::min(), 0));
+  } else {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset,
+        Domain(std::numeric_limits<int64_t>::min(), other.int_value));
   }
-  return new IntWeightedSum(lin_exprs, lin_coeffs, cst);
 }
 
-IntLinExpr* IntLinExpr::Term(IntLinExpr* expr, int64_t coeff) {
-  return Affine(expr, coeff, 0);
+BoundedLinearExpression* LinearExpr::Lt(ExprOrValue other) {
+  if (other.double_value != 0.0) return nullptr;
+  if (other.expr != nullptr) {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    lin.AddToProcess(other.expr, -1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset, Domain(std::numeric_limits<int64_t>::min(), -1));
+  } else {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset,
+        Domain(std::numeric_limits<int64_t>::min(), other.int_value - 1));
+  }
 }
 
-IntLinExpr* IntLinExpr::Affine(IntLinExpr* expr, int64_t coeff,
-                               int64_t offset) {
-  if (coeff == 1 && offset == 0) return expr;
-  if (coeff == 0) return new IntConstant(offset);
-  return new IntAffine(expr, coeff, offset);
+BoundedLinearExpression* LinearExpr::Ge(ExprOrValue other) {
+  if (other.double_value != 0.0) return nullptr;
+  if (other.expr != nullptr) {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    lin.AddToProcess(other.expr, -1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset, Domain(0, std::numeric_limits<int64_t>::max()));
+  } else {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset,
+        Domain(other.int_value, std::numeric_limits<int64_t>::max()));
+  }
 }
 
-IntLinExpr* IntLinExpr::Constant(int64_t value) {
-  return new IntConstant(value);
+BoundedLinearExpression* LinearExpr::Gt(ExprOrValue other) {
+  if (other.double_value != 0.0) return nullptr;
+  if (other.expr != nullptr) {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    lin.AddToProcess(other.expr, -1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset, Domain(1, std::numeric_limits<int64_t>::max()));
+  } else {
+    IntExprVisitor lin;
+    lin.AddToProcess(this, 1);
+    std::vector<BaseIntVar*> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset;
+    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+    return new BoundedLinearExpression(
+        vars, coeffs, offset,
+        Domain(other.int_value + 1, std::numeric_limits<int64_t>::max()));
+  }
 }
 
-IntLinExpr* IntLinExpr::IntAddCst(int64_t cst) {
-  if (cst == 0) return this;
-  return new IntAffine(this, 1, cst);
-}
-
-IntLinExpr* IntLinExpr::IntAdd(IntLinExpr* other) {
-  std::vector<IntLinExpr*> exprs;
-  exprs.push_back(this);
-  exprs.push_back(other);
-  return new IntSum(exprs, 0);
-}
-
-IntLinExpr* IntLinExpr::IntSubCst(int64_t cst) {
-  if (cst == 0) return this;
-  return new IntAffine(this, 1, -cst);
-}
-
-IntLinExpr* IntLinExpr::IntSub(IntLinExpr* other) {
-  std::vector<IntLinExpr*> exprs;
-  exprs.push_back(this);
-  exprs.push_back(other);
-  return new IntWeightedSum(exprs, {1, -1}, 0);
-}
-
-IntLinExpr* IntLinExpr::IntRSubCst(int64_t cst) {
-  return new IntAffine(this, -1, cst);
-}
-
-IntLinExpr* IntLinExpr::IntMulCst(int64_t cst) {
-  if (cst == 0) return new IntConstant(0);
-  if (cst == 1) return this;
-  return new IntAffine(this, cst, 0);
-}
-
-IntLinExpr* IntLinExpr::IntNeg() { return new IntAffine(this, -1, 0); }
-
-BoundedLinearExpression* IntLinExpr::Eq(IntLinExpr* other) {
-  return new BoundedLinearExpression(this, other, Domain(0));
-}
-
-BoundedLinearExpression* IntLinExpr::EqCst(int64_t cst) {
-  return new BoundedLinearExpression(this, Domain(cst));
-}
-
-BoundedLinearExpression* IntLinExpr::Ne(IntLinExpr* other) {
-  return new BoundedLinearExpression(this, other, Domain(0).Complement());
-}
-
-BoundedLinearExpression* IntLinExpr::NeCst(int64_t cst) {
-  return new BoundedLinearExpression(this, Domain(cst).Complement());
-}
-
-BoundedLinearExpression* IntLinExpr::Le(IntLinExpr* other) {
-  return new BoundedLinearExpression(
-      this, other, Domain(std::numeric_limits<int64_t>::min(), 0));
-}
-
-BoundedLinearExpression* IntLinExpr::LeCst(int64_t cst) {
-  return new BoundedLinearExpression(
-      this, Domain(std::numeric_limits<int64_t>::min(), cst));
-}
-
-BoundedLinearExpression* IntLinExpr::Lt(IntLinExpr* other) {
-  return new BoundedLinearExpression(
-      this, other, Domain(std::numeric_limits<int64_t>::min(), -1));
-}
-
-BoundedLinearExpression* IntLinExpr::LtCst(int64_t cst) {
-  return new BoundedLinearExpression(
-      this, Domain(std::numeric_limits<int64_t>::min(), cst - 1));
-}
-
-BoundedLinearExpression* IntLinExpr::Ge(IntLinExpr* other) {
-  return new BoundedLinearExpression(
-      this, other, Domain(0, std::numeric_limits<int64_t>::max()));
-}
-
-BoundedLinearExpression* IntLinExpr::GeCst(int64_t cst) {
-  return new BoundedLinearExpression(
-      this, Domain(cst, std::numeric_limits<int64_t>::max()));
-}
-
-BoundedLinearExpression* IntLinExpr::Gt(IntLinExpr* other) {
-  return new BoundedLinearExpression(
-      this, other, Domain(1, std::numeric_limits<int64_t>::max()));
-}
-
-BoundedLinearExpression* IntLinExpr::GtCst(int64_t cst) {
-  return new BoundedLinearExpression(
-      this, Domain(cst + 1, std::numeric_limits<int64_t>::max()));
-}
-
-void IntExprVisitor::AddToProcess(IntLinExpr* expr, int64_t coeff) {
+void IntExprVisitor::AddToProcess(LinearExpr* expr, int64_t coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
 
@@ -434,17 +603,18 @@ void IntExprVisitor::AddVarCoeff(BaseIntVar* var, int64_t coeff) {
   canonical_terms_[var] += coeff;
 }
 
-void IntExprVisitor::ProcessAll() {
+bool IntExprVisitor::ProcessAll() {
   while (!to_process_.empty()) {
     const auto [expr, coeff] = to_process_.back();
     to_process_.pop_back();
-    expr->VisitAsInt(this, coeff);
+    if (!expr->VisitAsInt(this, coeff)) return false;
   }
+  return true;
 }
 
-int64_t IntExprVisitor::Process(std::vector<BaseIntVar*>* vars,
-                                std::vector<int64_t>* coeffs) {
-  ProcessAll();
+bool IntExprVisitor::Process(std::vector<BaseIntVar*>* vars,
+                             std::vector<int64_t>* coeffs, int64_t* offset) {
+  if (!ProcessAll()) return false;
   vars->clear();
   coeffs->clear();
   for (const auto& [var, coeff] : canonical_terms_) {
@@ -452,20 +622,22 @@ int64_t IntExprVisitor::Process(std::vector<BaseIntVar*>* vars,
     vars->push_back(var);
     coeffs->push_back(coeff);
   }
-
-  return offset_;
+  *offset = offset_;
+  return true;
 }
 
-int64_t IntExprVisitor::Evaluate(IntLinExpr* expr,
-                                 const CpSolverResponse& solution) {
+bool IntExprVisitor::Evaluate(LinearExpr* expr,
+                              const CpSolverResponse& solution,
+                              int64_t* value) {
   AddToProcess(expr, 1);
-  ProcessAll();
-  int64_t value = offset_;
+  if (!ProcessAll()) return false;
+
+  *value = offset_;
   for (const auto& [var, coeff] : canonical_terms_) {
     if (coeff == 0) continue;
-    value += coeff * solution.solution(var->index());
+    *value += coeff * solution.solution(var->index());
   }
-  return value;
+  return true;
 }
 
 bool BaseIntVarComparator::operator()(const BaseIntVar* lhs,
@@ -477,27 +649,11 @@ BaseIntVar::BaseIntVar(int index, bool is_boolean)
     : index_(index),
       negated_(is_boolean ? new NotBooleanVariable(this) : nullptr) {}
 
-BoundedLinearExpression::BoundedLinearExpression(IntLinExpr* expr,
+BoundedLinearExpression::BoundedLinearExpression(std::vector<BaseIntVar*> vars,
+                                                 std::vector<int64_t> coeffs,
+                                                 int64_t offset,
                                                  const Domain& bounds)
-    : bounds_(bounds) {
-  IntExprVisitor lin;
-  lin.AddToProcess(expr, 1);
-  offset_ = lin.Process(&vars_, &coeffs_);
-}
-
-BoundedLinearExpression::BoundedLinearExpression(IntLinExpr* pos,
-                                                 IntLinExpr* neg,
-                                                 const Domain& bounds)
-    : bounds_(bounds) {
-  IntExprVisitor lin;
-  lin.AddToProcess(pos, 1);
-  lin.AddToProcess(neg, -1);
-  offset_ = lin.Process(&vars_, &coeffs_);
-}
-
-BoundedLinearExpression::BoundedLinearExpression(int64_t offset,
-                                                 const Domain& bounds)
-    : bounds_(bounds), offset_(offset) {}
+    : vars_(vars), coeffs_(coeffs), offset_(offset), bounds_(bounds) {}
 
 const Domain& BoundedLinearExpression::bounds() const { return bounds_; }
 const std::vector<BaseIntVar*>& BoundedLinearExpression::vars() const {

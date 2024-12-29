@@ -73,7 +73,6 @@ from ortools.util.python import sorted_interval_list
 # Import external types.
 Domain = sorted_interval_list.Domain
 LinearExpr = swig_helper.LinearExpr
-FloatLinearExpr = swig_helper.FloatLinearExpr
 BoundedLinearExpression = swig_helper.BoundedLinearExpression
 
 
@@ -159,7 +158,7 @@ VariableT = Union["IntVar", IntegralT]
 
 # We need to add 'IntVar' for pytype.
 LinearExprT = Union[LinearExpr, "IntVar", IntegralT]
-ObjLinearExprT = Union[FloatLinearExpr, NumberT]
+ObjLinearExprT = Union[LinearExpr, NumberT]
 
 ArcT = Tuple[IntegralT, IntegralT, LiteralT]
 _IndexOrSeries = Union[pd.Index, pd.Series]
@@ -795,7 +794,17 @@ class CpModel:
     ) -> Constraint:
         """Adds the constraint: `linear_expr` in `domain`."""
         if isinstance(linear_expr, LinearExpr):
-            return self.add(BoundedLinearExpression(linear_expr, domain))
+            flat_expr = swig_helper.CanonicalIntExpression(linear_expr)
+            if not flat_expr.ok:
+                raise TypeError(
+                    "linear expression contains floating point coefficients or"
+                    f" constants: {linear_expr}"
+                )
+            return self.add(
+                BoundedLinearExpression(
+                    flat_expr.vars, flat_expr.coeffs, flat_expr.offset, domain
+                )
+            )
         if isinstance(linear_expr, IntegralTypes):
             if not domain.contains(int(linear_expr)):
                 return self.add_bool_or([])  # Evaluate to false.
@@ -2123,11 +2132,13 @@ class CpModel:
             result.coeffs.append(mult)
             return result
 
-        ble = BoundedLinearExpression(linear_expr, Domain.all_values())
-        result.offset = ble.offset
-        for var in ble.vars:
+        flat_expr = swig_helper.CanonicalIntExpression(linear_expr)
+        if not flat_expr.ok:
+            raise ValueError(f"Failed to parse linear expression: {linear_expr}")
+        result.offset = flat_expr.offset
+        for var in flat_expr.vars:
             result.vars.append(var.index)
-        for coeff in ble.coeffs:
+        for coeff in flat_expr.coeffs:
             result.coeffs.append(coeff * mult)
         return result
 
@@ -2137,27 +2148,27 @@ class CpModel:
         if isinstance(obj, IntegralTypes):
             self.__model.objective.offset = int(obj)
             self.__model.objective.scaling_factor = 1.0
-        elif isinstance(obj, FloatLinearExpr):
+        elif isinstance(obj, LinearExpr):
             if obj.is_integer():
-                ble = BoundedLinearExpression(obj, Domain.all_values())
-                for var in ble.vars:
+                int_obj = swig_helper.CanonicalIntExpression(obj)
+                for var in int_obj.vars:
                     self.__model.objective.vars.append(var.index)
                 if minimize:
                     self.__model.objective.scaling_factor = 1.0
-                    self.__model.objective.offset = ble.offset
-                    self.__model.objective.coeffs.extend(ble.coeffs)
+                    self.__model.objective.offset = int_obj.offset
+                    self.__model.objective.coeffs.extend(int_obj.coeffs)
                 else:
                     self.__model.objective.scaling_factor = -1.0
-                    self.__model.objective.offset = -ble.offset
-                    for c in ble.coeffs:
+                    self.__model.objective.offset = -int_obj.offset
+                    for c in int_obj.coeffs:
                         self.__model.objective.coeffs.append(-c)
             else:
-                flat_obj = swig_helper.CanonicalFloatExpression(obj)
-                for var in flat_obj.vars:
+                float_obj = swig_helper.CanonicalFloatExpression(obj)
+                for var in float_obj.vars:
                     self.__model.floating_point_objective.vars.append(var.index)
-                self.__model.floating_point_objective.coeffs.extend(flat_obj.coeffs)
+                self.__model.floating_point_objective.coeffs.extend(float_obj.coeffs)
                 self.__model.floating_point_objective.maximize = not minimize
-                self.__model.floating_point_objective.offset = flat_obj.offset
+                self.__model.floating_point_objective.offset = float_obj.offset
         else:
             raise TypeError("TypeError: " + str(obj) + " is not a valid objective")
 
