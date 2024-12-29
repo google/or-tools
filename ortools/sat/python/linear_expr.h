@@ -481,22 +481,20 @@ class Literal {
  public:
   virtual ~Literal() = default;
   virtual int index() const = 0;
-  virtual Literal* negated() = 0;
+  virtual Literal* negated() const = 0;
 };
 
 // A class to hold a variable index.
 class BaseIntVar : public IntLinExpr, public Literal {
  public:
-  explicit BaseIntVar(int index)
-      : index_(index), is_boolean_(false), negated_(nullptr) {
+  explicit BaseIntVar(int index) : index_(index), negated_(nullptr) {
     DCHECK_GE(index, 0);
   }
-  BaseIntVar(int index, bool is_boolean)
-      : index_(index), is_boolean_(is_boolean), negated_(nullptr) {
-    DCHECK_GE(index, 0);
-  }
+  BaseIntVar(int index, bool is_boolean);
 
-  ~BaseIntVar() override = default;
+  ~BaseIntVar() override {
+    if (negated_ != nullptr) delete negated_;
+  }
 
   int index() const override { return index_; }
 
@@ -509,7 +507,7 @@ class BaseIntVar : public IntLinExpr, public Literal {
   }
 
   std::string ToString() const override {
-    if (is_boolean_) {
+    if (negated_ != nullptr) {
       return absl::StrCat("BooleanBaseIntVar(", index_, ")");
     } else {
       return absl::StrCat("BaseIntVar(", index_, ")");
@@ -518,12 +516,12 @@ class BaseIntVar : public IntLinExpr, public Literal {
 
   std::string DebugString() const override {
     return absl::StrCat("BaseIntVar(index=", index_,
-                        ", is_boolean=", is_boolean_, ")");
+                        ", is_boolean=", negated_ != nullptr, ")");
   }
 
-  Literal* negated() override;
+  Literal* negated() const override { return negated_; }
 
-  bool is_boolean() const { return is_boolean_; }
+  bool is_boolean() const { return negated_ != nullptr; }
 
   bool operator<(const BaseIntVar& other) const {
     return index_ < other.index_;
@@ -531,9 +529,13 @@ class BaseIntVar : public IntLinExpr, public Literal {
 
  protected:
   const int index_;
-  bool is_boolean_;
-  Literal* negated_;
+  Literal* const negated_;
 };
+
+template <typename H>
+H AbslHashValue(H h, const BaseIntVar* i) {
+  return H::combine(std::move(h), i->index());
+}
 
 // A class to hold a negated variable index.
 class NotBooleanVariable : public IntLinExpr, public Literal {
@@ -557,7 +559,7 @@ class NotBooleanVariable : public IntLinExpr, public Literal {
     return absl::StrCat("not(", var_->ToString(), ")");
   }
 
-  Literal* negated() override { return var_; }
+  Literal* negated() const override { return var_; }
 
   std::string DebugString() const override {
     return absl::StrCat("NotBooleanVariable(index=", var_->index(), ")");
@@ -566,13 +568,6 @@ class NotBooleanVariable : public IntLinExpr, public Literal {
  private:
   BaseIntVar* var_;
 };
-
-inline Literal* BaseIntVar::negated() {
-  if (negated_ == nullptr) {
-    negated_ = new NotBooleanVariable(this);
-  }
-  return negated_;
-}
 
 }  // namespace python
 }  // namespace sat

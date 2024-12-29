@@ -340,29 +340,29 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("__str__", &FloatLinearExpr::ToString)
       .def("__repr__", &FloatLinearExpr::DebugString)
       .def("is_integer", &FloatLinearExpr::is_integer)
-      .def("__add__", &FloatLinearExpr::FloatAddCst,
+      .def("__add__", &FloatLinearExpr::FloatAddCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &FloatLinearExpr::FloatAdd,
+      .def("__add__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__radd__", &FloatLinearExpr::FloatAddCst,
+      .def("__radd__", &FloatLinearExpr::FloatAddCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &FloatLinearExpr::FloatAdd,
+      .def("__radd__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__sub__", &FloatLinearExpr::FloatSub,
+      .def("__sub__", &FloatLinearExpr::FloatSub, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__sub__", &FloatLinearExpr::FloatSubCst,
+      .def("__sub__", &FloatLinearExpr::FloatSubCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSub,
+      .def("__rsub__", &FloatLinearExpr::FloatRSub, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSubCst,
+      .def("__rsub__", &FloatLinearExpr::FloatRSubCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__mul__", &FloatLinearExpr::FloatMulCst,
+      .def("__mul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &FloatLinearExpr::FloatMulCst,
+      .def("__rmul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__neg__", &FloatLinearExpr::FloatNeg,
            py::return_value_policy::automatic, py::keep_alive<0, 1>());
@@ -428,60 +428,65 @@ PYBIND11_MODULE(swig_helper, m) {
                   "Returns a constant linear expression.",
                   py::return_value_policy::automatic)
       .def("is_integer", &IntLinExpr::is_integer)
-      .def("__add__", &IntLinExpr::IntAddCst,
+      .def("__add__", &IntLinExpr::IntAddCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &FloatLinearExpr::FloatAddCst,
+      .def("__add__", &FloatLinearExpr::FloatAddCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &IntLinExpr::IntAdd, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
-      .def("__add__", &FloatLinearExpr::FloatAdd,
+      .def("__add__", &IntLinExpr::IntAdd, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__radd__", &IntLinExpr::IntAddCst,
+      .def("__add__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
+      .def("__radd__", &IntLinExpr::IntAddCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__radd__", &FloatLinearExpr::FloatAddCst,
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &FloatLinearExpr::FloatAdd,
+      .def("__radd__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__sub__", &IntLinExpr::IntSubCst,
+      .def("__sub__", &IntLinExpr::IntSubCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &FloatLinearExpr::FloatSubCst,
+      .def("__sub__", &FloatLinearExpr::FloatSubCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &FloatLinearExpr::FloatSubCst,
+      .def("__sub__", &FloatLinearExpr::FloatSubCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &IntLinExpr::IntSub, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
-      .def("__sub__", &FloatLinearExpr::FloatSub,
+      .def("__sub__", &IntLinExpr::IntSub, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__rsub__", &IntLinExpr::IntRSubCst,
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSubCst,
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSub,
+      .def("__sub__", &FloatLinearExpr::FloatSub, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__mul__", &IntLinExpr::IntMulCst,
+      .def("__rsub__", &IntLinExpr::IntRSubCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &IntLinExpr::IntMulCst,
+      .def("__rsub__", &FloatLinearExpr::FloatRSubCst, arg("cst"),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__rsub__", &FloatLinearExpr::FloatRSub, arg("cst"),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
+      .def("__mul__", &IntLinExpr::IntMulCst, arg("cst"),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__rmul__", &IntLinExpr::IntMulCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__neg__", &IntLinExpr::IntNeg, py::return_value_policy::automatic,
            py::keep_alive<0, 1>())
-      .def("__mul__", &FloatLinearExpr::FloatMulCst,
+      .def("__mul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &FloatLinearExpr::FloatMulCst,
+      .def("__rmul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__eq__", &IntLinExpr::Eq, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
+      .def("__eq__", &IntLinExpr::Eq, arg("other").none(false),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
       .def("__eq__", &IntLinExpr::EqCst, py::return_value_policy::automatic,
            py::keep_alive<0, 1>())
-      .def("__ne__", &IntLinExpr::Ne, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
+      .def("__ne__", &IntLinExpr::Ne, arg("other").none(false),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
       .def("__ne__", &IntLinExpr::NeCst, py::return_value_policy::automatic,
            py::keep_alive<0, 1>())
-      .def("__lt__", &IntLinExpr::Lt, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
+      .def("__lt__", &IntLinExpr::Lt, arg("other").none(false),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
       .def(
           "__lt__",
           [](IntLinExpr* expr, int64_t bound) {
@@ -491,8 +496,9 @@ PYBIND11_MODULE(swig_helper, m) {
             return expr->LtCst(bound);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__le__", &IntLinExpr::Le, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
+      .def("__le__", &IntLinExpr::Le, arg("other").none(false),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
       .def(
           "__le__",
           [](IntLinExpr* expr, int64_t bound) {
@@ -504,8 +510,9 @@ PYBIND11_MODULE(swig_helper, m) {
           py::return_value_policy::automatic,
 
           py::keep_alive<0, 1>())
-      .def("__gt__", &IntLinExpr::Gt, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
+      .def("__gt__", &IntLinExpr::Gt, arg("other").none(false),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
       .def(
           "__gt__",
           [](IntLinExpr* expr, int64_t bound) {
@@ -515,8 +522,9 @@ PYBIND11_MODULE(swig_helper, m) {
             return expr->GtCst(bound);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__ge__", &IntLinExpr::Ge, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
+      .def("__ge__", &IntLinExpr::Ge, arg("other").none(false),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           py::keep_alive<0, 2>())
       .def(
           "__ge__",
           [](IntLinExpr* expr, int64_t bound) {
@@ -684,11 +692,9 @@ PYBIND11_MODULE(swig_helper, m) {
     It is only valid if the variable has a Boolean domain (0 or 1).
 
     Note that this method is nilpotent: `x.negated().negated() == x`.          
-          )doc",
-           py::return_value_policy::automatic, py::keep_alive<1, 0>())
+          )doc")
       .def("__invert__", &Literal::negated,
-           "Returns the negation of the current literal.",
-           py::return_value_policy::automatic)
+           "Returns the negation of the current literal.")
       .def("__bool__",
            [](Literal* /*self*/) {
              throw_error(PyExc_NotImplementedError,
@@ -696,9 +702,17 @@ PYBIND11_MODULE(swig_helper, m) {
                          "not implemented.");
            })
       // PEP8 Compatibility.
-      .def("Not", &Literal::negated, py::return_value_policy::automatic)
+      .def("Not", &Literal::negated)
       .def("Index", &Literal::index);
 
+  // Memory management:
+  // - The BaseIntVar owns the NotBooleanVariable.
+  // - The NotBooleanVariable is created at the same time as the base variable
+  //   when the variable is boolean.
+  // - The negated() methods return an internal reference to the negated
+  //   object. That means memory of the negated variable is onwed by the C++
+  //   layer, but a reference is kept in python to link the lifetime of the
+  //   negated variable to the base variable.
   py::class_<BaseIntVar, PyBaseIntVar, IntLinExpr, Literal>(m, "BaseIntVar")
       .def(py::init<int>())
       .def(py::init<int, bool>())
@@ -718,7 +732,7 @@ PYBIND11_MODULE(swig_helper, m) {
             return self->negated();
           },
           "Returns the negation of the current Boolean variable.",
-          py::return_value_policy::automatic, py::keep_alive<1, 0>())
+          py::return_value_policy::reference_internal)
       .def(
           "__invert__",
           [](BaseIntVar* self) {
@@ -729,7 +743,7 @@ PYBIND11_MODULE(swig_helper, m) {
             return self->negated();
           },
           "Returns the negation of the current Boolean variable.",
-          py::return_value_policy::automatic, py::keep_alive<1, 0>())
+          py::return_value_policy::reference_internal)
       // PEP8 Compatibility.
       .def(
           "Not",
@@ -740,8 +754,11 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return self->negated();
           },
-          py::return_value_policy::automatic, py::keep_alive<1, 0>());
+          py::return_value_policy::reference_internal);
 
+  // Memory management:
+  // - Do we need a reference_internal (that add a py::keep_alive<1, 0>() rule)
+  //   or just a reference ?
   py::class_<NotBooleanVariable, IntLinExpr, Literal>(m, "NotBooleanVariable")
       .def(py::init<BaseIntVar*>())
       .def_property_readonly("index", &NotBooleanVariable::index,
@@ -750,13 +767,13 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("__repr__", &NotBooleanVariable::DebugString)
       .def("negated", &NotBooleanVariable::negated,
            "Returns the negation of the current Boolean variable.",
-           py::return_value_policy::automatic)
+           py::return_value_policy::reference_internal)
       .def("__invert__", &NotBooleanVariable::negated,
            "Returns the negation of the current Boolean variable.",
-           py::return_value_policy::automatic)
+           py::return_value_policy::reference_internal)
       .def("Not", &NotBooleanVariable::negated,
            "Returns the negation of the current Boolean variable.",
-           py::return_value_policy::automatic);
+           py::return_value_policy::reference_internal);
 
   py::class_<BoundedLinearExpression>(m, "BoundedLinearExpression")
       .def(py::init<IntLinExpr*, const Domain&>())
