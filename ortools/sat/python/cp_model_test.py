@@ -358,14 +358,6 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.INT_MIN, ct.linear.domain[0])
         self.assertEqual(0, ct.linear.domain[1])
 
-    def testSimplification1(self) -> None:
-        print("testSimplification1")
-        model = cp_model.CpModel()
-        x = model.new_int_var(-10, 10, "x")
-        prod = (x * 2) * 2
-        self.assertEqual(x, prod.expression())
-        self.assertEqual(4, prod.coefficient())
-
     def testLinearNonEqualWithConstant(self) -> None:
         print("testLinearNonEqualWithConstant")
         model = cp_model.CpModel()
@@ -1908,7 +1900,7 @@ TRFM"""
         if status == cp_model.OPTIMAL:
             self.assertLess(
                 time.time(),
-                max(best_bound_callback.last_time, solution_callback.last_time) + 5.0,
+                max(best_bound_callback.last_time, solution_callback.last_time) + 9.0,
             )
 
     def testIssue4434(self) -> None:

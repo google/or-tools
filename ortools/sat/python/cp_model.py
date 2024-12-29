@@ -2410,7 +2410,9 @@ class CpSolver:
         if self.best_bound_callback is not None:
             self.__solve_wrapper.add_best_bound_callback(self.best_bound_callback)
 
-        self.__response_wrapper = self.__solve_wrapper.solve(model.proto)
+        self.__response_wrapper = (
+            self.__solve_wrapper.solve_and_return_response_wrapper(model.proto)
+        )
 
         if solution_callback is not None:
             self.__solve_wrapper.clear_solution_callback(solution_callback)
