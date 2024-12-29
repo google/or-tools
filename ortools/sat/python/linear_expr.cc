@@ -153,7 +153,7 @@ double FloatExprVisitor::Process(FloatLinearExpr* expr,
   vars->clear();
   coeffs->clear();
   for (const auto& [var, coeff] : canonical_terms_) {
-    if (coeff == 0) continue;
+    if (coeff == 0.0) continue;
     vars->push_back(var);
     coeffs->push_back(coeff);
   }
@@ -472,6 +472,10 @@ bool BaseIntVarComparator::operator()(const BaseIntVar* lhs,
                                       const BaseIntVar* rhs) const {
   return lhs->index() < rhs->index();
 }
+
+BaseIntVar::BaseIntVar(int index, bool is_boolean)
+    : index_(index),
+      negated_(is_boolean ? new NotBooleanVariable(this) : nullptr) {}
 
 BoundedLinearExpression::BoundedLinearExpression(IntLinExpr* expr,
                                                  const Domain& bounds)

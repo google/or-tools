@@ -1687,6 +1687,17 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertLen(model.proto.constraints, 13)
 
+    def testCompareWithNone(self) -> None:
+        print("testCompareWithNone")
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 10, "x")
+        self.assertRaises(TypeError, x.__eq__, None)
+        self.assertRaises(TypeError, x.__ne__, None)
+        self.assertRaises(TypeError, x.__lt__, None)
+        self.assertRaises(TypeError, x.__le__, None)
+        self.assertRaises(TypeError, x.__gt__, None)
+        self.assertRaises(TypeError, x.__ge__, None)
+
     def testIssue4376SatModel(self) -> None:
         print("testIssue4376SatModel")
         letters: str = "BCFLMRT"
