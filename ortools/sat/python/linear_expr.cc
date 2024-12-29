@@ -44,7 +44,7 @@ LinearExpr* LinearExpr::Sum(const std::vector<LinearExpr*>& exprs) {
   }
 }
 
-LinearExpr* LinearExpr::Sum(const std::vector<ExprOrValue>& exprs) {
+LinearExpr* LinearExpr::MixedSum(const std::vector<ExprOrValue>& exprs) {
   std::vector<LinearExpr*> lin_exprs;
   int64_t int_offset = 0;
   double double_offset = 0.0;
@@ -84,17 +84,8 @@ LinearExpr* LinearExpr::Sum(const std::vector<ExprOrValue>& exprs) {
   }
 }
 
-LinearExpr* LinearExpr::WeightedSum(const std::vector<LinearExpr*>& exprs,
-                                    const std::vector<double>& coeffs) {
-  if (exprs.empty()) return new FloatConstant(0.0);
-  if (exprs.size() == 1) {
-    return new FloatAffine(exprs[0], coeffs[0], 0.0);
-  }
-  return new FloatWeightedSum(exprs, coeffs, 0.0);
-}
-
-LinearExpr* LinearExpr::WeightedSum(const std::vector<LinearExpr*>& exprs,
-                                    const std::vector<int64_t>& coeffs) {
+LinearExpr* LinearExpr::WeightedSumInt(const std::vector<LinearExpr*>& exprs,
+                                       const std::vector<int64_t>& coeffs) {
   if (exprs.empty()) return new IntConstant(0);
   if (exprs.size() == 1) {
     return new IntAffine(exprs[0], coeffs[0], 0);
@@ -102,30 +93,17 @@ LinearExpr* LinearExpr::WeightedSum(const std::vector<LinearExpr*>& exprs,
   return new IntWeightedSum(exprs, coeffs, 0);
 }
 
-LinearExpr* LinearExpr::WeightedSum(const std::vector<ExprOrValue>& exprs,
-                                    const std::vector<double>& coeffs) {
-  std::vector<LinearExpr*> lin_exprs;
-  std::vector<double> lin_coeffs;
-  double cst = 0.0;
-  for (int i = 0; i < exprs.size(); ++i) {
-    if (exprs[i].expr != nullptr) {
-      lin_exprs.push_back(exprs[i].expr);
-      lin_coeffs.push_back(coeffs[i]);
-    } else {
-      cst += coeffs[i] *
-             (exprs[i].double_value + static_cast<double>(exprs[i].int_value));
-    }
+LinearExpr* LinearExpr::WeightedSumDouble(const std::vector<LinearExpr*>& exprs,
+                                          const std::vector<double>& coeffs) {
+  if (exprs.empty()) return new FloatConstant(0.0);
+  if (exprs.size() == 1) {
+    return new FloatAffine(exprs[0], coeffs[0], 0.0);
   }
-
-  if (lin_exprs.empty()) return new FloatConstant(cst);
-  if (lin_exprs.size() == 1) {
-    return new FloatAffine(lin_exprs[0], lin_coeffs[0], cst);
-  }
-  return new FloatWeightedSum(lin_exprs, lin_coeffs, cst);
+  return new FloatWeightedSum(exprs, coeffs, 0.0);
 }
 
-LinearExpr* LinearExpr::WeightedSum(const std::vector<ExprOrValue>& exprs,
-                                    const std::vector<int64_t>& coeffs) {
+LinearExpr* LinearExpr::MixedWeightedSumInt(
+    const std::vector<ExprOrValue>& exprs, const std::vector<int64_t>& coeffs) {
   std::vector<LinearExpr*> lin_exprs;
   std::vector<int64_t> lin_coeffs;
   int64_t int_cst = 0;
@@ -162,31 +140,54 @@ LinearExpr* LinearExpr::WeightedSum(const std::vector<ExprOrValue>& exprs,
   return new IntWeightedSum(lin_exprs, lin_coeffs, int_cst);
 }
 
-LinearExpr* LinearExpr::Term(LinearExpr* expr, double coeff) {
-  return new FloatAffine(expr, coeff, 0.0);
+LinearExpr* LinearExpr::MixedWeightedSumDouble(
+    const std::vector<ExprOrValue>& exprs, const std::vector<double>& coeffs) {
+  std::vector<LinearExpr*> lin_exprs;
+  std::vector<double> lin_coeffs;
+  double cst = 0.0;
+  for (int i = 0; i < exprs.size(); ++i) {
+    if (exprs[i].expr != nullptr) {
+      lin_exprs.push_back(exprs[i].expr);
+      lin_coeffs.push_back(coeffs[i]);
+    } else {
+      cst += coeffs[i] *
+             (exprs[i].double_value + static_cast<double>(exprs[i].int_value));
+    }
+  }
+
+  if (lin_exprs.empty()) return new FloatConstant(cst);
+  if (lin_exprs.size() == 1) {
+    return new FloatAffine(lin_exprs[0], lin_coeffs[0], cst);
+  }
+  return new FloatWeightedSum(lin_exprs, lin_coeffs, cst);
 }
 
-LinearExpr* LinearExpr::Term(LinearExpr* expr, int64_t coeff) {
+LinearExpr* LinearExpr::TermInt(LinearExpr* expr, int64_t coeff) {
   return new IntAffine(expr, coeff, 0);
 }
 
-LinearExpr* LinearExpr::Affine(LinearExpr* expr, double coeff, double offset) {
-  if (coeff == 1.0 && offset == 0.0) return expr;
-  return new FloatAffine(expr, coeff, offset);
+LinearExpr* LinearExpr::TermDouble(LinearExpr* expr, double coeff) {
+  return new FloatAffine(expr, coeff, 0.0);
 }
 
-LinearExpr* LinearExpr::Affine(LinearExpr* expr, int64_t coeff,
-                               int64_t offset) {
+LinearExpr* LinearExpr::AffineInt(LinearExpr* expr, int64_t coeff,
+                                  int64_t offset) {
   if (coeff == 1 && offset == 0) return expr;
   return new IntAffine(expr, coeff, offset);
 }
 
-LinearExpr* LinearExpr::Constant(double value) {
-  return new FloatConstant(value);
+LinearExpr* LinearExpr::AffineDouble(LinearExpr* expr, double coeff,
+                                     double offset) {
+  if (coeff == 1.0 && offset == 0.0) return expr;
+  return new FloatAffine(expr, coeff, offset);
 }
 
-LinearExpr* LinearExpr::Constant(int64_t value) {
+LinearExpr* LinearExpr::ConstantInt(int64_t value) {
   return new IntConstant(value);
+}
+
+LinearExpr* LinearExpr::ConstantDouble(double value) {
+  return new FloatConstant(value);
 }
 
 LinearExpr* LinearExpr::Add(LinearExpr* expr) {
