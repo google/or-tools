@@ -30,25 +30,23 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(bool, assignment_maximize_cost, false,
           "Negate costs so a max-cost assignment is found.");
-ABSL_FLAG(bool, assignment_optimize_layout, true,
-          "Optimize graph layout for speed.");
 
 namespace operations_research {
 
 template <typename GraphType>
-class LinearSumAssignment;
-
-template <typename GraphType>
 class DimacsAssignmentParser {
  public:
+  using NodeIndex = GraphType::NodeIndex;
+  using ArcIndex = GraphType::ArcIndex;
+  using CostValue = LinearSumAssignment<GraphType>::CostValueT;
+
   explicit DimacsAssignmentParser(absl::string_view filename)
-      : filename_(filename), graph_builder_(nullptr), assignment_(nullptr) {}
+      : filename_(filename), graph_(nullptr), assignment_(nullptr) {}
 
   // Reads an assignment problem description from the given file in
   // DIMACS format and returns a LinearSumAssignment object representing
@@ -95,7 +93,7 @@ class DimacsAssignmentParser {
 
   ErrorTrackingState state_;
 
-  AnnotatedGraphBuildManager<GraphType>* graph_builder_;
+  std::unique_ptr<GraphType> graph_;
 
   LinearSumAssignment<GraphType>* assignment_;
 };
@@ -122,8 +120,7 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(
   }
 
   state_.num_arcs = num_arcs;
-  graph_builder_ = new AnnotatedGraphBuildManager<GraphType>(
-      num_nodes, num_arcs, absl::GetFlag(FLAGS_assignment_optimize_layout));
+  graph_ = std::make_unique<GraphType>(num_nodes, num_arcs);
 }
 
 template <typename GraphType>
@@ -146,7 +143,7 @@ void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string& line) {
 
 template <typename GraphType>
 void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
-  if (graph_builder_ == nullptr) {
+  if (graph_ == nullptr) {
     state_.bad = true;
     state_.reason =
         "Problem specification line must precede any arc specification.";
@@ -167,7 +164,7 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
     state_.reason = "Syntax error in arc descriptor.";
     state_.bad_line.reset(new std::string(line));
   }
-  ArcIndex arc = graph_builder_->AddArc(tail - 1, head - 1);
+  ArcIndex arc = graph_->AddArc(tail - 1, head - 1);
   assignment_->SetArcCost(
       arc, absl::GetFlag(FLAGS_assignment_maximize_cost) ? -cost : cost);
 }
@@ -241,23 +238,17 @@ LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
     *error_message = *error_message + ": \"" + *state_.bad_line + "\"";
     return nullptr;
   }
-  if (graph_builder_ == nullptr) {
+  if (graph_ == nullptr) {
     *error_message = "empty graph description";
     return nullptr;
   }
-  std::unique_ptr<PermutationCycleHandler<ArcIndex> > cycle_handler(
-      assignment_->ArcAnnotationCycleHandler());
-  GraphType* graph = graph_builder_->Graph(cycle_handler.get());
-  if (graph == nullptr) {
-    *error_message = "unable to create compact static graph";
-    return nullptr;
-  }
-  assignment_->SetGraph(graph);
+  graph_->Build();
+  assignment_->SetGraph(graph_.get());
   *error_message = "";
   // Return a handle on the graph to the caller so the caller can free
   // the graph's memory, because the LinearSumAssignment object does
   // not take ownership of the graph and hence will not free it.
-  *graph_handle = graph;
+  *graph_handle = graph_.release();
   return assignment_;
 }
 

@@ -38,6 +38,7 @@
 
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/map_util.h"
@@ -549,7 +550,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // For each touched card, compare against all others to compute the
   // delta in term of cost. We use a bitset to avoid counting twice
   // between two cards appearing in the local search move.
-  int ComputeNewCost(const std::vector<int>& touched_cards) {
+  int ComputeNewCost(absl::Span<const int> touched_cards) {
     ClearBitset();
     int cost_delta = 0;
     for (int i = 0; i < touched_cards.size(); ++i) {

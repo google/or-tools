@@ -15,11 +15,17 @@
 
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
-#include "ortools/graph/max_flow.h"
+#include "ortools/graph/generic_max_flow.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/min_cost_flow.h"
 
 namespace operations_research {
+
+using Graph = ::util::ReverseArcListGraph<>;
+using NodeIndex = Graph::NodeIndex;
+using ArcIndex = Graph::ArcIndex;
+using CostValue = GenericMinCostFlow<Graph>::CostValue;
+using FlowQuantity = GenericMinCostFlow<Graph>::FlowQuantity;
 
 // ----- Min Cost Flow -----
 
@@ -34,8 +40,8 @@ void MinCostFlowOn4x4Matrix() {
                                                      {125, 95, 90, 105},
                                                      {45, 110, 95, 115}};
   const CostValue kExpectedCost = 275;
-  StarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
-  MinCostFlow min_cost_flow(&graph);
+  Graph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
+  GenericMinCostFlow<Graph> min_cost_flow(&graph);
   for (NodeIndex source = 0; source < kNumSources; ++source) {
     for (NodeIndex target = 0; target < kNumTargets; ++target) {
       ArcIndex arc = graph.AddArc(source, kNumSources + target);
@@ -66,14 +72,14 @@ void MaxFeasibleFlow() {
   const FlowQuantity kCapacity[kNumArcs] = {5, 8, 5, 3, 4, 5, 6, 6, 4};
   const FlowQuantity kExpectedFlow[kNumArcs] = {1, 1, 5, 3, 1, 1, 0, 6, 4};
   const FlowQuantity kExpectedTotalFlow = 10;
-  StarGraph graph(kNumNodes, kNumArcs);
-  MaxFlow max_flow(&graph, 0, kNumNodes - 1);
+  Graph graph(kNumNodes, kNumArcs);
+  GenericMaxFlow<Graph> max_flow(&graph, 0, kNumNodes - 1);
   for (int i = 0; i < kNumArcs; ++i) {
     ArcIndex arc = graph.AddArc(kTail[i], kHead[i]);
     max_flow.SetArcCapacity(arc, kCapacity[i]);
   }
   CHECK(max_flow.Solve());
-  CHECK_EQ(MaxFlow::OPTIMAL, max_flow.status());
+  CHECK_EQ(MaxFlowStatusClass::OPTIMAL, max_flow.status());
   FlowQuantity total_flow = max_flow.GetOptimalFlow();
   CHECK_EQ(total_flow, kExpectedTotalFlow);
   for (int i = 0; i < kNumArcs; ++i) {
