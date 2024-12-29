@@ -136,9 +136,15 @@ class ResponseWrapper {
 
   double UserTime() const { return response_.user_time(); }
 
-  int64_t Value(IntLinExpr* expr) const {
+  int64_t Value(LinearExpr* expr) const {
     IntExprVisitor visitor;
-    return visitor.Evaluate(expr, response_);
+    int64_t value;
+    if (!visitor.Evaluate(expr, response_, &value)) {
+      LOG(ERROR) << "Failed to evaluate linear expression: "
+                 << expr->DebugString();
+      return -1;
+    }
+    return value;
   }
 
   int64_t FixedValue(int64_t value) const { return value; }
@@ -154,7 +160,7 @@ void throw_error(PyObject* py_exception, const std::string& message) {
   throw py::error_already_set();
 }
 
-const char* kIntLinExprClassDoc = R"doc(
+const char* kLinearExprClassDoc = R"doc(
   Holds an integer linear expression.
 
   A linear expression is built from integer constants and variables.
@@ -211,9 +217,15 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("WallTime", &SolutionCallback::WallTime)
       .def(
           "Value",
-          [](const SolutionCallback& callback, IntLinExpr* expr) {
+          [](const SolutionCallback& callback, LinearExpr* expr) {
             IntExprVisitor visitor;
-            return visitor.Evaluate(expr, callback.Response());
+            int64_t value;
+            if (!visitor.Evaluate(expr, callback.Response(), &value)) {
+              throw_error(PyExc_TypeError,
+                          absl::StrCat("Failed to evaluate linear expression: ",
+                                       expr->DebugString()));
+            }
+            return value;
           },
           "Returns the value of a linear expression after solve.")
       .def(
@@ -293,390 +305,352 @@ PYBIND11_MODULE(swig_helper, m) {
       .def_static("write_model_to_file", &CpSatHelper::WriteModelToFile,
                   arg("model_proto"), arg("filename"));
 
-  py::class_<FloatExprOrValue>(m, "FloatExprOrValue")
-      .def(py::init<FloatLinearExpr*>())
+  py::class_<ExprOrValue>(m, "ExprOrValue")
+      .def(py::init<int64_t>())  // Needs to be before the double init.
       .def(py::init<double>())
-      .def_readonly("value", &FloatExprOrValue::value)
-      .def_readonly("expr", &FloatExprOrValue::expr);
+      .def(py::init<LinearExpr*>())
+      .def_readonly("double_value", &ExprOrValue::double_value)
+      .def_readonly("expr", &ExprOrValue::expr)
+      .def_readonly("int_value", &ExprOrValue::int_value);
 
-  py::implicitly_convertible<FloatLinearExpr*, FloatExprOrValue>();
-  py::implicitly_convertible<double, FloatExprOrValue>();
+  py::implicitly_convertible<LinearExpr*, ExprOrValue>();
+  py::implicitly_convertible<double, ExprOrValue>();
+  py::implicitly_convertible<int64_t, ExprOrValue>();
 
-  py::class_<FloatLinearExpr>(m, "FloatLinearExpr")
-      .def(py::init<>())
-      .def_static("sum",
-                  py::overload_cast<const std::vector<FloatExprOrValue>&>(
-                      &FloatLinearExpr::Sum),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+  py::class_<LinearExpr>(m, "LinearExpr", kLinearExprClassDoc)
       .def_static(
           "sum",
-          py::overload_cast<const std::vector<FloatExprOrValue>&, double>(
-              &FloatLinearExpr::Sum),
+          py::overload_cast<const std::vector<LinearExpr*>&>(&LinearExpr::Sum),
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "sum",
+          py::overload_cast<const std::vector<ExprOrValue>&>(&LinearExpr::Sum),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("weighted_sum",
-                  py::overload_cast<const std::vector<FloatExprOrValue>&,
-                                    const std::vector<double>&>(
-                      &FloatLinearExpr::WeightedSum),
+                  py::overload_cast<const std::vector<LinearExpr*>&,
+                                    const std::vector<int64_t>&>(
+                      &LinearExpr::WeightedSum),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("weighted_sum",
-                  py::overload_cast<const std::vector<FloatExprOrValue>&,
-                                    const std::vector<double>&, double>(
-                      &FloatLinearExpr::WeightedSum),
+                  py::overload_cast<const std::vector<LinearExpr*>&,
+                                    const std::vector<double>&>(
+                      &LinearExpr::WeightedSum),
+                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("weighted_sum",
+                  py::overload_cast<const std::vector<ExprOrValue>&,
+                                    const std::vector<int64_t>&>(
+                      &LinearExpr::WeightedSum),
+                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("weighted_sum",
+                  py::overload_cast<const std::vector<ExprOrValue>&,
+                                    const std::vector<double>&>(
+                      &LinearExpr::WeightedSum),
+                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "Sum",
+          py::overload_cast<const std::vector<LinearExpr*>&>(&LinearExpr::Sum),
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "Sum",
+          py::overload_cast<const std::vector<ExprOrValue>&>(&LinearExpr::Sum),
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("WeightedSum",
+                  py::overload_cast<const std::vector<ExprOrValue>&,
+                                    const std::vector<double>&>(
+                      &LinearExpr::WeightedSum),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("WeightedSum",
-                  py::overload_cast<const std::vector<FloatExprOrValue>&,
-                                    const std::vector<double>&>(
-                      &FloatLinearExpr::WeightedSum),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("term", &FloatLinearExpr::Term, arg("expr"), arg("coeff"),
-                  "Returns expr * coeff.", py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static("affine", &FloatLinearExpr::Affine, arg("expr"), arg("coeff"),
-                  arg("offset"), "Returns expr * coeff + offset.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("constant", FloatLinearExpr::Constant, arg("value"),
-                  "Returns a constant linear expression.",
-                  py::return_value_policy::automatic)
-      .def("__str__", &FloatLinearExpr::ToString)
-      .def("__repr__", &FloatLinearExpr::DebugString)
-      .def("is_integer", &FloatLinearExpr::is_integer)
-      .def("__add__", &FloatLinearExpr::FloatAddCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__radd__", &FloatLinearExpr::FloatAddCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__sub__", &FloatLinearExpr::FloatSub, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__sub__", &FloatLinearExpr::FloatSubCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSub, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSubCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__mul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__neg__", &FloatLinearExpr::FloatNeg,
-           py::return_value_policy::automatic, py::keep_alive<0, 1>());
-
-  py::class_<FloatAffine, FloatLinearExpr>(m, "FloatAffine")
-      .def(py::init<FloatLinearExpr*, double, double>())
-      .def_property_readonly("expression", &FloatAffine::expression)
-      .def_property_readonly("coefficient", &FloatAffine::coefficient)
-      .def_property_readonly("offset", &FloatAffine::offset);
-
-  py::class_<CanonicalFloatExpression>(m, "CanonicalFloatExpression")
-      .def(py::init<FloatLinearExpr*>())
-      .def_property_readonly("vars", &CanonicalFloatExpression::vars)
-      .def_property_readonly("coeffs", &CanonicalFloatExpression::coeffs)
-      .def_property_readonly("offset", &CanonicalFloatExpression::offset);
-
-  py::class_<IntExprOrValue>(m, "IntExprOrValue")
-      .def(py::init<IntLinExpr*>())
-      .def(py::init<int64_t>())
-      .def_readonly("value", &IntExprOrValue::value)
-      .def_readonly("expr", &IntExprOrValue::expr);
-
-  py::implicitly_convertible<IntLinExpr*, IntExprOrValue>();
-  py::implicitly_convertible<int64_t, IntExprOrValue>();
-
-  py::class_<IntLinExpr, FloatLinearExpr>(m, "LinearExpr", kIntLinExprClassDoc)
-      .def(py::init<>())
-      .def_static("sum",
-                  py::overload_cast<const std::vector<IntExprOrValue>&>(
-                      &IntLinExpr::Sum),
-                  "Returns sum(exprs)", py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static(
-          "sum",
-          py::overload_cast<const std::vector<IntExprOrValue>&, int64_t>(
-              &IntLinExpr::Sum),
-          "Returns sum(exprs) + cst", py::return_value_policy::automatic,
-          py::keep_alive<0, 1>())
-      .def_static("weighted_sum",
-                  py::overload_cast<const std::vector<IntExprOrValue>&,
+                  py::overload_cast<const std::vector<ExprOrValue>&,
                                     const std::vector<int64_t>&>(
-                      &IntLinExpr::WeightedSum),
-                  "Returns sum(exprs[i] * coeffs[i]",
+                      &LinearExpr::WeightedSum),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("weighted_sum",
-                  py::overload_cast<const std::vector<IntExprOrValue>&,
-                                    const std::vector<int64_t>&, int64_t>(
-                      &IntLinExpr::WeightedSum),
-                  "Returns sum(exprs[i] * coeffs[i]) + cst",
+      .def_static("term",
+                  py::overload_cast<LinearExpr*, int64_t>(&LinearExpr::Term),
+                  arg("expr"), arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("weighted_sum",
-                  py::overload_cast<const std::vector<FloatExprOrValue>&,
-                                    const std::vector<double>&>(
-                      &FloatLinearExpr::WeightedSum),
+      .def_static("term",
+                  py::overload_cast<LinearExpr*, double>(&LinearExpr::Term),
+                  arg("expr"), arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("term", &IntLinExpr::Term, arg("expr"), arg("coeff"),
-                  "Returns expr * coeff.", py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static("affine", &IntLinExpr::Affine, arg("expr"), arg("coeff"),
-                  arg("offset"), "Returns expr * coeff.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("constant", IntLinExpr::Constant, arg("value"),
-                  "Returns a constant linear expression.",
+      .def_static(
+          "affine",
+          py::overload_cast<LinearExpr*, double, double>(&LinearExpr::Affine),
+          arg("expr"), arg("coeff"), arg("offset"),
+          "Returns expr * coeff + offset.", py::return_value_policy::automatic,
+          py::keep_alive<0, 1>())
+      .def_static(
+          "affine",
+          py::overload_cast<LinearExpr*, int64_t, int64_t>(&LinearExpr::Affine),
+          arg("expr"), arg("coeff"), arg("offset"),
+          "Returns expr * coeff + offset.", py::return_value_policy::automatic,
+          py::keep_alive<0, 1>())
+      .def_static("constant", py::overload_cast<double>(&LinearExpr::Constant),
+                  arg("value"), "Returns a constant linear expression.",
                   py::return_value_policy::automatic)
-      .def("is_integer", &IntLinExpr::is_integer)
-      .def("__add__", &IntLinExpr::IntAddCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &FloatLinearExpr::FloatAddCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &IntLinExpr::IntAdd, arg("other").none(false),
+      .def_static("constant", py::overload_cast<int64_t>(&LinearExpr::Constant),
+                  arg("value"), "Returns a constant linear expression.",
+                  py::return_value_policy::automatic)
+      .def("__str__", &LinearExpr::ToString)
+      .def("__repr__", &LinearExpr::DebugString)
+      .def("is_integer", &LinearExpr::IsInteger)
+      .def("__add__", &LinearExpr::Add, arg("other"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__add__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
+      .def("__add__", &LinearExpr::AddInt, arg("cst"),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__add__", &LinearExpr::AddDouble, arg("cst"),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__radd__", &LinearExpr::AddInt, arg("cst"),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__radd__", &LinearExpr::AddDouble, arg("cst"),
+           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__sub__", &LinearExpr::Sub, arg("other"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__radd__", &IntLinExpr::IntAddCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &FloatLinearExpr::FloatAddCst,
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &FloatLinearExpr::FloatAdd, arg("other").none(false),
+      .def("__rsub__", &LinearExpr::RSub, arg("other"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__sub__", &IntLinExpr::IntSubCst, arg("cst"),
+      .def("__mul__", py::overload_cast<double>(&LinearExpr::Mul), arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &FloatLinearExpr::FloatSubCst, arg("cst"),
+      .def("__mul__", py::overload_cast<int64_t>(&LinearExpr::Mul), arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &FloatLinearExpr::FloatSubCst, arg("cst"),
+      .def("__rmul__", py::overload_cast<double>(&LinearExpr::Mul), arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &IntLinExpr::IntSub, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__sub__", &FloatLinearExpr::FloatSub, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__rsub__", &IntLinExpr::IntRSubCst, arg("cst"),
+      .def("__rmul__", py::overload_cast<int64_t>(&LinearExpr::Mul), arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSubCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &FloatLinearExpr::FloatRSub, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__mul__", &IntLinExpr::IntMulCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &IntLinExpr::IntMulCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__neg__", &IntLinExpr::IntNeg, py::return_value_policy::automatic,
+      .def("__neg__", &LinearExpr::Neg, py::return_value_policy::automatic,
            py::keep_alive<0, 1>())
-      .def("__mul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &FloatLinearExpr::FloatMulCst, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__eq__", &IntLinExpr::Eq, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__eq__", &IntLinExpr::EqCst, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>())
-      .def("__ne__", &IntLinExpr::Ne, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__ne__", &IntLinExpr::NeCst, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>())
-      .def("__lt__", &IntLinExpr::Lt, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
       .def(
-          "__lt__",
-          [](IntLinExpr* expr, int64_t bound) {
-            if (bound == std::numeric_limits<int64_t>::min()) {
-              throw_error(PyExc_ArithmeticError, "< INT_MIN is not supported");
+          "__eq__",
+          [](LinearExpr* expr, ExprOrValue rhs) {
+            if (rhs.int_value == std::numeric_limits<int64_t>::max() ||
+                rhs.int_value == std::numeric_limits<int64_t>::min()) {
+              throw_error(PyExc_ValueError,
+                          "== INT_MIN or INT_MAX is not supported");
             }
-            return expr->LtCst(bound);
+            BoundedLinearExpression* result = expr->Eq(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraint only accepts integer values "
+                          "and coefficients.");
+            }
+            return result;
           },
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__le__", &IntLinExpr::Le, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
+          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+          py::keep_alive<0, 2>())
+      .def(
+          "__ne__",
+          [](LinearExpr* expr, ExprOrValue rhs) {
+            BoundedLinearExpression* result = expr->Ne(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraint only accepts integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+          py::keep_alive<0, 2>())
       .def(
           "__le__",
-          [](IntLinExpr* expr, int64_t bound) {
-            if (bound == std::numeric_limits<int64_t>::min()) {
+          [](LinearExpr* expr, ExprOrValue rhs) {
+            if (rhs.int_value == std::numeric_limits<int64_t>::min()) {
               throw_error(PyExc_ArithmeticError, "<= INT_MIN is not supported");
             }
-            return expr->LeCst(bound);
-          },
-          py::return_value_policy::automatic,
-
-          py::keep_alive<0, 1>())
-      .def("__gt__", &IntLinExpr::Gt, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def(
-          "__gt__",
-          [](IntLinExpr* expr, int64_t bound) {
-            if (bound == std::numeric_limits<int64_t>::max()) {
-              throw_error(PyExc_ArithmeticError, "> INT_MAX is not supported");
+            BoundedLinearExpression* result = expr->Le(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraint only accepts integer values "
+                          "and coefficients.");
             }
-            return expr->GtCst(bound);
+            return result;
           },
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__ge__", &IntLinExpr::Ge, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
+          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+          py::keep_alive<0, 2>())
+      .def(
+          "__lt__",
+          [](LinearExpr* expr, ExprOrValue rhs) {
+            if (rhs.int_value == std::numeric_limits<int64_t>::min()) {
+              throw_error(PyExc_ArithmeticError, "< INT_MIN is not supported");
+            }
+            BoundedLinearExpression* result = expr->Lt(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraint only accepts integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+          py::keep_alive<0, 2>())
       .def(
           "__ge__",
-          [](IntLinExpr* expr, int64_t bound) {
-            if (bound == std::numeric_limits<int64_t>::max()) {
+          [](LinearExpr* expr, ExprOrValue rhs) {
+            if (rhs.int_value == std::numeric_limits<int64_t>::max()) {
               throw_error(PyExc_ArithmeticError, ">= INT_MAX is not supported");
             }
-            return expr->GeCst(bound);
+            BoundedLinearExpression* result = expr->Ge(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraint only accepts integer values "
+                          "and coefficients.");
+            }
+            return result;
           },
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
-
+          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+          py::keep_alive<0, 2>())
+      .def(
+          "__gt__",
+          [](LinearExpr* expr, ExprOrValue rhs) {
+            if (rhs.int_value == std::numeric_limits<int64_t>::max()) {
+              throw_error(PyExc_ArithmeticError, "> INT_MAX is not supported");
+            }
+            BoundedLinearExpression* result = expr->Gt(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraint only accepts integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+          py::keep_alive<0, 2>())
       .def("__div__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling / on a linear expression is not supported, "
                          "please use CpModel.add_division_equality");
            })
       .def("__div__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling / on a linear expression is not supported, "
                          "please use CpModel.add_division_equality");
            })
       .def("__truediv__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling // on a linear expression is not supported, "
                          "please use CpModel.add_division_equality");
            })
       .def("__truediv__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling // on a linear expression is not supported, "
                          "please use CpModel.add_division_equality");
            })
       .def("__mod__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling %% on a linear expression is not supported, "
                          "please use CpModel.add_modulo_equality");
            })
       .def("__mod__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling %% on a linear expression is not supported, "
                          "please use CpModel.add_modulo_equality");
            })
       .def("__pow__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling ** on a linear expression is not supported, "
                          "please use CpModel.add_multiplication_equality");
            })
       .def("__pow__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling ** on a linear expression is not supported, "
                          "please use CpModel.add_multiplication_equality");
            })
       .def("__lshift__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(
                  PyExc_NotImplementedError,
                  "calling left shift on a linear expression is not supported");
            })
       .def("__lshift__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(
                  PyExc_NotImplementedError,
                  "calling left shift on a linear expression is not supported");
            })
       .def("__rshift__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(
                  PyExc_NotImplementedError,
                  "calling right shift on a linear expression is not supported");
            })
       .def("__rshift__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(
                  PyExc_NotImplementedError,
                  "calling right shift on a linear expression is not supported");
            })
       .def("__and__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling and on a linear expression is not supported");
            })
       .def("__and__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling and on a linear expression is not supported");
            })
       .def("__or__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling or on a linear expression is not supported");
            })
       .def("__or__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling or on a linear expression is not supported");
            })
       .def("__xor__",
-           [](IntLinExpr* /*self*/, IntLinExpr* /*other*/) {
+           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling xor on a linear expression is not supported");
            })
       .def("__xor__",
-           [](IntLinExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, int64_t /*cst*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling xor on a linear expression is not supported");
            })
       .def("__abs__",
-           [](IntLinExpr* /*self*/) {
+           [](LinearExpr* /*self*/) {
              throw_error(
                  PyExc_NotImplementedError,
                  "calling abs() on a linear expression is not supported, "
                  "please use CpModel.add_abs_equality");
            })
-      .def("__bool__",
-           [](IntLinExpr* /*self*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "Evaluating a LinearExpr instance as a Boolean is "
-                         "not implemented.");
-           })
-      .def_static("Sum",
-                  py::overload_cast<const std::vector<IntExprOrValue>&>(
-                      &IntLinExpr::Sum),
-                  "Returns sum(exprs)", py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static(
-          "Sum",
-          py::overload_cast<const std::vector<IntExprOrValue>&, int64_t>(
-              &IntLinExpr::Sum),
-          "Returns sum(exprs) + cst", py::return_value_policy::automatic,
-          py::keep_alive<0, 1>())
-      .def_static("WeightedSum",
-                  py::overload_cast<const std::vector<IntExprOrValue>&,
-                                    const std::vector<int64_t>&>(
-                      &IntLinExpr::WeightedSum),
-                  "Returns sum(exprs[i] * coeffs[i]",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("WeightedSum",
-                  py::overload_cast<const std::vector<FloatExprOrValue>&,
-                                    const std::vector<double>&>(
-                      &FloatLinearExpr::WeightedSum),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("Term", &IntLinExpr::Term, arg("expr"), arg("coeff"),
-                  "Returns expr * coeff.", py::return_value_policy::automatic);
+      .def("__bool__", [](LinearExpr* /*self*/) {
+        throw_error(PyExc_NotImplementedError,
+                    "Evaluating a LinearExpr instance as a Boolean is "
+                    "not implemented.");
+      });
 
-  py::class_<IntAffine, IntLinExpr>(m, "IntAffine")
-      .def(py::init<IntLinExpr*, int64_t, int64_t>())
+  py::class_<FloatAffine, LinearExpr>(m, "FloatAffine")
+      .def(py::init<LinearExpr*, double, double>())
+      .def_property_readonly("expression", &FloatAffine::expression)
+      .def_property_readonly("coefficient", &FloatAffine::coefficient)
+      .def_property_readonly("offset", &FloatAffine::offset);
+
+  py::class_<CanonicalFloatExpression>(m, "CanonicalFloatExpression")
+      .def(py::init<LinearExpr*>())
+      .def_property_readonly("vars", &CanonicalFloatExpression::vars)
+      .def_property_readonly("coeffs", &CanonicalFloatExpression::coeffs)
+      .def_property_readonly("offset", &CanonicalFloatExpression::offset);
+
+  py::class_<CanonicalIntExpression>(m, "CanonicalIntExpression")
+      .def(py::init<LinearExpr*>())
+      .def_property_readonly("vars", &CanonicalIntExpression::vars)
+      .def_property_readonly("coeffs", &CanonicalIntExpression::coeffs)
+      .def_property_readonly("offset", &CanonicalIntExpression::offset)
+      .def_property_readonly("ok", &CanonicalIntExpression::ok);
+
+  py::class_<IntAffine, LinearExpr>(m, "IntAffine")
+      .def(py::init<LinearExpr*, int64_t, int64_t>())
       .def_property_readonly("expression", &IntAffine::expression)
       .def_property_readonly("coefficient", &IntAffine::coefficient)
       .def_property_readonly("offset", &IntAffine::offset);
@@ -713,7 +687,7 @@ PYBIND11_MODULE(swig_helper, m) {
   //   object. That means memory of the negated variable is onwed by the C++
   //   layer, but a reference is kept in python to link the lifetime of the
   //   negated variable to the base variable.
-  py::class_<BaseIntVar, PyBaseIntVar, IntLinExpr, Literal>(m, "BaseIntVar")
+  py::class_<BaseIntVar, PyBaseIntVar, LinearExpr, Literal>(m, "BaseIntVar")
       .def(py::init<int>())
       .def(py::init<int, bool>())
       .def_property_readonly("index", &BaseIntVar::index,
@@ -759,7 +733,7 @@ PYBIND11_MODULE(swig_helper, m) {
   // Memory management:
   // - Do we need a reference_internal (that add a py::keep_alive<1, 0>() rule)
   //   or just a reference ?
-  py::class_<NotBooleanVariable, IntLinExpr, Literal>(m, "NotBooleanVariable")
+  py::class_<NotBooleanVariable, LinearExpr, Literal>(m, "NotBooleanVariable")
       .def(py::init<BaseIntVar*>())
       .def_property_readonly("index", &NotBooleanVariable::index,
                              "The index of the variable in the model.")
@@ -776,8 +750,8 @@ PYBIND11_MODULE(swig_helper, m) {
            py::return_value_policy::reference_internal);
 
   py::class_<BoundedLinearExpression>(m, "BoundedLinearExpression")
-      .def(py::init<IntLinExpr*, const Domain&>())
-      .def(py::init<int64_t, const Domain&>())
+      .def(py::init<std::vector<BaseIntVar*>, std::vector<int64_t>, int64_t,
+                    Domain>())
       .def_property_readonly("bounds", &BoundedLinearExpression::bounds)
       .def_property_readonly("vars", &BoundedLinearExpression::vars)
       .def_property_readonly("coeffs", &BoundedLinearExpression::coeffs)

@@ -1151,7 +1151,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(str(x != y), "(x - y) != 0")
         self.assertEqual(
             "0 <= x <= 10",
-            str(cp_model.BoundedLinearExpression(x, cp_model.Domain(0, 10))),
+            str(cp_model.BoundedLinearExpression([x], [1], 0, cp_model.Domain(0, 10))),
         )
         b = model.new_bool_var("b")
         self.assertEqual(str(cp_model.LinearExpr.term(b.negated(), 3)), "(3 * not(b))")
@@ -1167,7 +1167,7 @@ class CpModelTest(absltest.TestCase):
         z = model.new_int_var(0, 3, "z")
         self.assertEqual(repr(x), "x(0..4)")
         self.assertEqual(repr(x * 2), "IntAffine(expr=x(0..4), coeff=2, offset=0)")
-        self.assertEqual(repr(x + y), "IntSum(x(0..4), y(0..3), 0)")
+        self.assertEqual(repr(x + y), "BinaryAdd(x(0..4), y(0..3))")
         self.assertEqual(
             repr(cp_model.LinearExpr.sum([x, y, z])),
             "IntSum(x(0..4), y(0..3), z(0..3), 0)",
