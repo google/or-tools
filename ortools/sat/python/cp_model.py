@@ -312,8 +312,9 @@ def rebuild_from_linear_expression_proto(
     if num_elements == 0:
         return proto.offset
     elif num_elements == 1:
-        return (
-            IntVar(model, proto.vars[0], False, None) * proto.coeffs[0] + proto.offset
+        var = IntVar(model, proto.vars[0], False, None)
+        return LinearExpr.affine(
+            var, proto.coeffs[0], proto.offset
         )  # pytype: disable=bad-return-type
     else:
         variables = []
