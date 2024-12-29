@@ -714,7 +714,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/graph:ebert_graph",
+        "//ortools/graph",
         "//ortools/graph:linear_assignment",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
@@ -727,7 +727,7 @@ cc_library(
     hdrs = ["parse_dimacs_assignment.h"],
     deps = [
         "//ortools/base",
-        "//ortools/graph:ebert_graph",
+        "//ortools/graph",
         "//ortools/graph:linear_assignment",
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
@@ -743,7 +743,7 @@ cc_binary(
         "//ortools/algorithms:hungarian",
         "//ortools/base",
         "//ortools/base:timer",
-        "//ortools/graph:ebert_graph",
+        "//ortools/graph",
         "//ortools/graph:linear_assignment",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings:str_format",
@@ -796,7 +796,7 @@ cc_binary(
     srcs = ["linear_assignment_api.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph:ebert_graph",
+        "//ortools/graph",
         "//ortools/graph:linear_assignment",
     ],
 )
@@ -807,7 +807,7 @@ cc_test(
     srcs = ["linear_assignment_api.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph:ebert_graph",
+        "//ortools/graph",
         "//ortools/graph:linear_assignment",
     ],
 )
@@ -818,7 +818,7 @@ cc_binary(
     srcs = ["flow_api.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph:ebert_graph",
+        "//ortools/graph",
         "//ortools/graph:max_flow",
         "//ortools/graph:min_cost_flow",
     ],
@@ -830,7 +830,7 @@ cc_test(
     srcs = ["flow_api.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph:ebert_graph",
+        "//ortools/graph",
         "//ortools/graph:max_flow",
         "//ortools/graph:min_cost_flow",
     ],
