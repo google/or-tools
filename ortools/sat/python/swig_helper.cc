@@ -394,18 +394,18 @@ PYBIND11_MODULE(swig_helper, m) {
                                     const std::vector<double>&>(
                       &LinearExpr::WeightedSum),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("Term",
-                  py::overload_cast<LinearExpr*, int64_t>(&LinearExpr::Term),
-                  arg("expr"), arg("coeff"), "Returns expr * coeff.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("Term",
-                  py::overload_cast<LinearExpr*, double>(&LinearExpr::Term),
-                  arg("expr"), arg("coeff"), "Returns expr * coeff.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "Term", py::overload_cast<LinearExpr*, int64_t>(&LinearExpr::Term),
+          arg("expr").none(false), arg("coeff"), "Returns expr * coeff.",
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "Term", py::overload_cast<LinearExpr*, double>(&LinearExpr::Term),
+          arg("expr").none(false), arg("coeff"), "Returns expr * coeff.",
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__str__", &LinearExpr::ToString)
       .def("__repr__", &LinearExpr::DebugString)
       .def("is_integer", &LinearExpr::IsInteger)
-      .def("__add__", &LinearExpr::Add, arg("other"),
+      .def("__add__", &LinearExpr::Add, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
       .def("__add__", &LinearExpr::AddInt, arg("cst"),
@@ -416,34 +416,76 @@ PYBIND11_MODULE(swig_helper, m) {
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__radd__", &LinearExpr::AddDouble, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &LinearExpr::Sub, arg("other"),
+      .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
-      .def("__rsub__", &LinearExpr::RSub, arg("other"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__mul__", py::overload_cast<double>(&LinearExpr::Mul), arg("cst"),
+      .def("__sub__", &LinearExpr::SubInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__mul__", py::overload_cast<int64_t>(&LinearExpr::Mul), arg("cst"),
+      .def("__sub__", &LinearExpr::SubDouble, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", py::overload_cast<double>(&LinearExpr::Mul), arg("cst"),
+      .def("__rsub__", &LinearExpr::RSubInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", py::overload_cast<int64_t>(&LinearExpr::Mul), arg("cst"),
+      .def("__rsub__", &LinearExpr::RSubDouble, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__mul__", py::overload_cast<int64_t>(&LinearExpr::MulInt),
+           arg("cst"), py::return_value_policy::automatic,
+           py::keep_alive<0, 1>())
+      .def("__mul__", py::overload_cast<double>(&LinearExpr::MulDouble),
+           arg("cst"), py::return_value_policy::automatic,
+           py::keep_alive<0, 1>())
+      .def("__rmul__", py::overload_cast<int64_t>(&LinearExpr::MulInt),
+           arg("cst"), py::return_value_policy::automatic,
+           py::keep_alive<0, 1>())
+      .def("__rmul__", py::overload_cast<double>(&LinearExpr::MulDouble),
+           arg("cst"), py::return_value_policy::automatic,
+           py::keep_alive<0, 1>())
       .def("__neg__", &LinearExpr::Neg, py::return_value_policy::automatic,
            py::keep_alive<0, 1>())
       .def(
           "__eq__",
-          [](LinearExpr* expr, ExprOrValue rhs) {
-            if (rhs.int_value == std::numeric_limits<int64_t>::max() ||
-                rhs.int_value == std::numeric_limits<int64_t>::min()) {
-              throw_error(PyExc_ValueError,
-                          "== INT_MIN or INT_MAX is not supported");
+          [](LinearExpr* expr, LinearExpr* rhs) {
+            if (rhs == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints do not accept None as argument.");
             }
             BoundedLinearExpression* result = expr->Eq(rhs);
             if (result == nullptr) {
               throw_error(PyExc_TypeError,
-                          "Linear constraint only accepts integer values "
+                          "Linear constraints only accept integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+          py::keep_alive<0, 2>())
+      .def(
+          "__eq__",
+          [](LinearExpr* expr, int64_t rhs) {
+            if (rhs == std::numeric_limits<int64_t>::max() ||
+                rhs == std::numeric_limits<int64_t>::min()) {
+              throw_error(PyExc_ValueError,
+                          "== INT_MIN or INT_MAX is not supported");
+            }
+            BoundedLinearExpression* result = expr->EqCst(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints only accept integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def(
+          "__ne__",
+          [](LinearExpr* expr, LinearExpr* rhs) {
+            if (rhs == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints do not accept None as argument.");
+            }
+            BoundedLinearExpression* result = expr->Ne(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints only accept integer values "
                           "and coefficients.");
             }
             return result;
@@ -452,11 +494,27 @@ PYBIND11_MODULE(swig_helper, m) {
           py::keep_alive<0, 2>())
       .def(
           "__ne__",
-          [](LinearExpr* expr, ExprOrValue rhs) {
-            BoundedLinearExpression* result = expr->Ne(rhs);
+          [](LinearExpr* expr, int64_t rhs) {
+            BoundedLinearExpression* result = expr->NeCst(rhs);
             if (result == nullptr) {
               throw_error(PyExc_TypeError,
-                          "Linear constraint only accepts integer values "
+                          "Linear constraints only accept integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def(
+          "__le__",
+          [](LinearExpr* expr, LinearExpr* rhs) {
+            if (rhs == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints do not accept None as argument.");
+            }
+            BoundedLinearExpression* result = expr->Le(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints only accept integer values "
                           "and coefficients.");
             }
             return result;
@@ -465,14 +523,30 @@ PYBIND11_MODULE(swig_helper, m) {
           py::keep_alive<0, 2>())
       .def(
           "__le__",
-          [](LinearExpr* expr, ExprOrValue rhs) {
-            if (rhs.int_value == std::numeric_limits<int64_t>::min()) {
+          [](LinearExpr* expr, int64_t rhs) {
+            if (rhs == std::numeric_limits<int64_t>::min()) {
               throw_error(PyExc_ArithmeticError, "<= INT_MIN is not supported");
             }
-            BoundedLinearExpression* result = expr->Le(rhs);
+            BoundedLinearExpression* result = expr->LeCst(rhs);
             if (result == nullptr) {
               throw_error(PyExc_TypeError,
-                          "Linear constraint only accepts integer values "
+                          "Linear constraints only accept integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def(
+          "__lt__",
+          [](LinearExpr* expr, LinearExpr* rhs) {
+            if (rhs == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints do not accept None as argument.");
+            }
+            BoundedLinearExpression* result = expr->Lt(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints only accept integer values "
                           "and coefficients.");
             }
             return result;
@@ -481,14 +555,30 @@ PYBIND11_MODULE(swig_helper, m) {
           py::keep_alive<0, 2>())
       .def(
           "__lt__",
-          [](LinearExpr* expr, ExprOrValue rhs) {
-            if (rhs.int_value == std::numeric_limits<int64_t>::min()) {
+          [](LinearExpr* expr, int64_t rhs) {
+            if (rhs == std::numeric_limits<int64_t>::min()) {
               throw_error(PyExc_ArithmeticError, "< INT_MIN is not supported");
             }
-            BoundedLinearExpression* result = expr->Lt(rhs);
+            BoundedLinearExpression* result = expr->LtCst(rhs);
             if (result == nullptr) {
               throw_error(PyExc_TypeError,
-                          "Linear constraint only accepts integer values "
+                          "Linear constraints only accept integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def(
+          "__ge__",
+          [](LinearExpr* expr, LinearExpr* rhs) {
+            if (rhs == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints do not accept None as argument.");
+            }
+            BoundedLinearExpression* result = expr->Ge(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints only accept integer values "
                           "and coefficients.");
             }
             return result;
@@ -497,14 +587,30 @@ PYBIND11_MODULE(swig_helper, m) {
           py::keep_alive<0, 2>())
       .def(
           "__ge__",
-          [](LinearExpr* expr, ExprOrValue rhs) {
-            if (rhs.int_value == std::numeric_limits<int64_t>::max()) {
+          [](LinearExpr* expr, int64_t rhs) {
+            if (rhs == std::numeric_limits<int64_t>::max()) {
               throw_error(PyExc_ArithmeticError, ">= INT_MAX is not supported");
             }
-            BoundedLinearExpression* result = expr->Ge(rhs);
+            BoundedLinearExpression* result = expr->GeCst(rhs);
             if (result == nullptr) {
               throw_error(PyExc_TypeError,
-                          "Linear constraint only accepts integer values "
+                          "Linear constraints only accept integer values "
+                          "and coefficients.");
+            }
+            return result;
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def(
+          "__gt__",
+          [](LinearExpr* expr, LinearExpr* rhs) {
+            if (rhs == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints do not accept None as argument.");
+            }
+            BoundedLinearExpression* result = expr->Gt(rhs);
+            if (result == nullptr) {
+              throw_error(PyExc_TypeError,
+                          "Linear constraints only accept integer values "
                           "and coefficients.");
             }
             return result;
@@ -513,20 +619,19 @@ PYBIND11_MODULE(swig_helper, m) {
           py::keep_alive<0, 2>())
       .def(
           "__gt__",
-          [](LinearExpr* expr, ExprOrValue rhs) {
-            if (rhs.int_value == std::numeric_limits<int64_t>::max()) {
+          [](LinearExpr* expr, int64_t rhs) {
+            if (rhs == std::numeric_limits<int64_t>::max()) {
               throw_error(PyExc_ArithmeticError, "> INT_MAX is not supported");
             }
-            BoundedLinearExpression* result = expr->Gt(rhs);
+            BoundedLinearExpression* result = expr->GtCst(rhs);
             if (result == nullptr) {
               throw_error(PyExc_TypeError,
-                          "Linear constraint only accepts integer values "
+                          "Linear constraints only accept integer values "
                           "and coefficients.");
             }
             return result;
           },
-          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-          py::keep_alive<0, 2>())
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__div__",
            [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
              throw_error(PyExc_NotImplementedError,

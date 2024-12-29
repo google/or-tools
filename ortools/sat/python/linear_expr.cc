@@ -189,8 +189,8 @@ LinearExpr* LinearExpr::Constant(int64_t value) {
   return new IntConstant(value);
 }
 
-LinearExpr* LinearExpr::Add(LinearExpr* other) {
-  return new BinaryAdd(this, other);
+LinearExpr* LinearExpr::Add(LinearExpr* expr) {
+  return new BinaryAdd(this, expr);
 }
 
 LinearExpr* LinearExpr::AddInt(int64_t cst) {
@@ -203,38 +203,38 @@ LinearExpr* LinearExpr::AddDouble(double cst) {
   return new FloatAffine(this, 1.0, cst);
 }
 
-LinearExpr* LinearExpr::Sub(ExprOrValue other) {
-  if (other.expr != nullptr) {
-    return new IntWeightedSum({this, other.expr}, {1, -1}, 0);
-  } else if (other.double_value != 0.0) {
-    return new FloatAffine(this, 1.0, -other.double_value);
-  } else if (other.int_value != 0) {
-    return new IntAffine(this, 1, -other.int_value);
-  } else {
-    return this;
-  }
+LinearExpr* LinearExpr::Sub(LinearExpr* expr) {
+  return new IntWeightedSum({this, expr}, {1, -1}, 0);
 }
 
-LinearExpr* LinearExpr::RSub(ExprOrValue other) {
-  if (other.expr != nullptr) {
-    return new IntWeightedSum({this, other.expr}, {-1, 1}, 0);
-  } else if (other.double_value != 0.0) {
-    return new FloatAffine(this, -1.0, other.double_value);
-  } else {
-    return new IntAffine(this, -1, other.int_value);
-  }
+LinearExpr* LinearExpr::SubInt(int64_t cst) {
+  if (cst == 0) return this;
+  return new IntAffine(this, 1, -cst);
 }
 
-LinearExpr* LinearExpr::Mul(double cst) {
-  if (cst == 0.0) return new IntConstant(0);
-  if (cst == 1.0) return this;
-  return new FloatAffine(this, cst, 0.0);
+LinearExpr* LinearExpr::SubDouble(double cst) {
+  if (cst == 0.0) return this;
+  return new FloatAffine(this, 1.0, -cst);
 }
 
-LinearExpr* LinearExpr::Mul(int64_t cst) {
+LinearExpr* LinearExpr::RSubInt(int64_t cst) {
+  return new IntAffine(this, -1, cst);
+}
+
+LinearExpr* LinearExpr::RSubDouble(double cst) {
+  return new FloatAffine(this, -1.0, cst);
+}
+
+LinearExpr* LinearExpr::MulInt(int64_t cst) {
   if (cst == 0) return new IntConstant(0);
   if (cst == 1) return this;
   return new IntAffine(this, cst, 0);
+}
+
+LinearExpr* LinearExpr::MulDouble(double cst) {
+  if (cst == 0.0) return new IntConstant(0);
+  if (cst == 1.0) return this;
+  return new FloatAffine(this, cst, 0.0);
 }
 
 LinearExpr* LinearExpr::Neg() { return new IntAffine(this, -1, 0); }
@@ -449,152 +449,142 @@ std::string FloatAffine::DebugString() const {
   return absl::StrCat("FloatAffine(expr=", expr_->DebugString(),
                       ", coeff=", coeff_, ", offset=", offset_, ")");
 }
-
-BoundedLinearExpression* LinearExpr::Eq(ExprOrValue other) {
-  if (other.double_value != 0.0) return nullptr;
-  if (other.expr != nullptr) {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    lin.AddToProcess(other.expr, -1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(vars, coeffs, offset, Domain(0));
-  } else {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(vars, coeffs, offset,
-                                       Domain(other.int_value));
-  }
+BoundedLinearExpression* LinearExpr::Eq(LinearExpr* rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  lin.AddToProcess(rhs, -1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(vars, coeffs, offset, Domain(0));
 }
 
-BoundedLinearExpression* LinearExpr::Ne(ExprOrValue other) {
-  if (other.double_value != 0.0) return nullptr;
-  if (other.expr != nullptr) {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    lin.AddToProcess(other.expr, -1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(vars, coeffs, offset,
-                                       Domain(0).Complement());
-  } else {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(vars, coeffs, offset,
-                                       Domain(other.int_value).Complement());
-  }
+BoundedLinearExpression* LinearExpr::EqCst(int64_t rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(vars, coeffs, offset, Domain(rhs));
 }
 
-BoundedLinearExpression* LinearExpr::Le(ExprOrValue other) {
-  if (other.double_value != 0.0) return nullptr;
-  if (other.expr != nullptr) {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    lin.AddToProcess(other.expr, -1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset, Domain(std::numeric_limits<int64_t>::min(), 0));
-  } else {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset,
-        Domain(std::numeric_limits<int64_t>::min(), other.int_value));
-  }
+BoundedLinearExpression* LinearExpr::Ne(LinearExpr* rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  lin.AddToProcess(rhs, -1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(vars, coeffs, offset,
+                                     Domain(0).Complement());
 }
 
-BoundedLinearExpression* LinearExpr::Lt(ExprOrValue other) {
-  if (other.double_value != 0.0) return nullptr;
-  if (other.expr != nullptr) {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    lin.AddToProcess(other.expr, -1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset, Domain(std::numeric_limits<int64_t>::min(), -1));
-  } else {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset,
-        Domain(std::numeric_limits<int64_t>::min(), other.int_value - 1));
-  }
+BoundedLinearExpression* LinearExpr::NeCst(int64_t rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(vars, coeffs, offset,
+                                     Domain(rhs).Complement());
 }
 
-BoundedLinearExpression* LinearExpr::Ge(ExprOrValue other) {
-  if (other.double_value != 0.0) return nullptr;
-  if (other.expr != nullptr) {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    lin.AddToProcess(other.expr, -1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset, Domain(0, std::numeric_limits<int64_t>::max()));
-  } else {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset,
-        Domain(other.int_value, std::numeric_limits<int64_t>::max()));
-  }
+BoundedLinearExpression* LinearExpr::Le(LinearExpr* rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  lin.AddToProcess(rhs, -1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset, Domain(std::numeric_limits<int64_t>::min(), 0));
 }
 
-BoundedLinearExpression* LinearExpr::Gt(ExprOrValue other) {
-  if (other.double_value != 0.0) return nullptr;
-  if (other.expr != nullptr) {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    lin.AddToProcess(other.expr, -1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset, Domain(1, std::numeric_limits<int64_t>::max()));
-  } else {
-    IntExprVisitor lin;
-    lin.AddToProcess(this, 1);
-    std::vector<BaseIntVar*> vars;
-    std::vector<int64_t> coeffs;
-    int64_t offset;
-    if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
-    return new BoundedLinearExpression(
-        vars, coeffs, offset,
-        Domain(other.int_value + 1, std::numeric_limits<int64_t>::max()));
-  }
+BoundedLinearExpression* LinearExpr::LeCst(int64_t rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset, Domain(std::numeric_limits<int64_t>::min(), rhs));
+}
+
+BoundedLinearExpression* LinearExpr::Lt(LinearExpr* rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  lin.AddToProcess(rhs, -1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset, Domain(std::numeric_limits<int64_t>::min(), -1));
+}
+
+BoundedLinearExpression* LinearExpr::LtCst(int64_t rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset,
+      Domain(std::numeric_limits<int64_t>::min(), rhs - 1));
+}
+
+BoundedLinearExpression* LinearExpr::Ge(LinearExpr* rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  lin.AddToProcess(rhs, -1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset, Domain(0, std::numeric_limits<int64_t>::max()));
+}
+
+BoundedLinearExpression* LinearExpr::GeCst(int64_t rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset, Domain(rhs, std::numeric_limits<int64_t>::max()));
+}
+
+BoundedLinearExpression* LinearExpr::Gt(LinearExpr* rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  lin.AddToProcess(rhs, -1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset, Domain(1, std::numeric_limits<int64_t>::max()));
+}
+
+BoundedLinearExpression* LinearExpr::GtCst(int64_t rhs) {
+  IntExprVisitor lin;
+  lin.AddToProcess(this, 1);
+  std::vector<BaseIntVar*> vars;
+  std::vector<int64_t> coeffs;
+  int64_t offset;
+  if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
+  return new BoundedLinearExpression(
+      vars, coeffs, offset,
+      Domain(rhs + 1, std::numeric_limits<int64_t>::max()));
 }
 
 void IntExprVisitor::AddToProcess(LinearExpr* expr, int64_t coeff) {
