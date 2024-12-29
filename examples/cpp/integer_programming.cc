@@ -88,6 +88,7 @@ void RunAllExamples() {
   RunIntegerProgrammingExample("GLPK");
   RunIntegerProgrammingExample("CPLEX");
   RunIntegerProgrammingExample("XPRESS");
+  RunIntegerProgrammingExample("MOSEK");
 }
 }  // namespace operations_research
 

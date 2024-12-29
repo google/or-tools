@@ -424,6 +424,7 @@ message MPModelRequest {
     XPRESS_LINEAR_PROGRAMMING =
         101;                        // Commercial, needs a valid license. NOLINT
     CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid license. NOLINT
+    MOSEK_LINEAR_PROGRAMMING = 110; // Commercial, needs a valid license. NOLINT
     HIGHS_LINEAR_PROGRAMMING = 15;
 
     SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for MIP models.
@@ -434,6 +435,8 @@ message MPModelRequest {
         102;  // Commercial, needs a valid license. NOLINT
     CPLEX_MIXED_INTEGER_PROGRAMMING =
         11;  // Commercial, needs a valid license. NOLINT
+    MOSEK_MIXED_INTEGER_PROGRAMMING =
+        112;  // Commercial, needs a valid license. NOLINT
     HIGHS_MIXED_INTEGER_PROGRAMMING = 16;
     BOP_INTEGER_PROGRAMMING = 12;
 

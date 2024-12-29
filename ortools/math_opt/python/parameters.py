@@ -76,6 +76,8 @@ class SolverType(enum.Enum):
         QPs are unimplemented).
       SANTORINI: The Santorini Solver (first party). Supports MIP. Experimental,
         do not use in production.
+      MOSEK: Mosek solver (third party). Supports LP, MIP, conic quadratic.
+        Requires a license.
     """
 
     GSCIP = math_opt_parameters_pb2.SOLVER_TYPE_GSCIP
@@ -89,6 +91,7 @@ class SolverType(enum.Enum):
     SCS = math_opt_parameters_pb2.SOLVER_TYPE_SCS
     HIGHS = math_opt_parameters_pb2.SOLVER_TYPE_HIGHS
     SANTORINI = math_opt_parameters_pb2.SOLVER_TYPE_SANTORINI
+    MOSEK = math_opt_parameters_pb2.SOLVER_TYPE_MOSEK
 
 
 def solver_type_from_proto(

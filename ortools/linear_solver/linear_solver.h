@@ -237,6 +237,8 @@ class MPSolver {
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
     COPT_LINEAR_PROGRAMMING = 103,
     COPT_MIXED_INTEGER_PROGRAMMING = 104,
+    MOSEK_LINEAR_PROGRAMMING = 203,
+    MOSEK_MIXED_INTEGER_PROGRAMMING = 204,
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -273,6 +275,8 @@ class MPSolver {
    *   - GUROBI_MIXED_INTEGER_PROGRAMMING or GUROBI or GUROBI_MIP
    *   - CPLEX_LINEAR_PROGRAMMING or CPLEX_LP
    *   - CPLEX_MIXED_INTEGER_PROGRAMMING or CPLEX or CPLEX_MIP
+   *   - MOSEK_LINEAR_PROGRAMMING or MOSEK_LP
+   *   - MOSEK_MIXED_INTEGER_PROGRAMMING or MOSEK or MOSEK_MIP
    *   - XPRESS_LINEAR_PROGRAMMING or XPRESS_LP
    *   - XPRESS_MIXED_INTEGER_PROGRAMMING or XPRESS or XPRESS_MIP
    *   - GLPK_LINEAR_PROGRAMMING or GLPK_LP
@@ -889,6 +893,7 @@ class MPSolver {
   friend class CBCInterface;
   friend class SCIPInterface;
   friend class GurobiInterface;
+  friend class MosekInterface;
   friend class CplexInterface;
   friend class XpressInterface;
   friend class SLMInterface;
@@ -1236,6 +1241,7 @@ class MPVariable {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class MosekInterface;
   friend class XpressInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
@@ -1382,6 +1388,7 @@ class MPConstraint {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
+  friend class MosekInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
