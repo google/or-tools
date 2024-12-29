@@ -62,21 +62,22 @@ class LinearExpr {
   virtual std::string DebugString() const { return "LinearExpr()"; }
 
   static LinearExpr* Sum(const std::vector<LinearExpr*>& exprs);
-  static LinearExpr* Sum(const std::vector<ExprOrValue>& exprs);
-  static LinearExpr* WeightedSum(const std::vector<LinearExpr*>& exprs,
-                                 const std::vector<int64_t>& coeffs);
-  static LinearExpr* WeightedSum(const std::vector<LinearExpr*>& exprs,
-                                 const std::vector<double>& coeffs);
-  static LinearExpr* WeightedSum(const std::vector<ExprOrValue>& exprs,
-                                 const std::vector<int64_t>& coeffs);
-  static LinearExpr* WeightedSum(const std::vector<ExprOrValue>& exprs,
-                                 const std::vector<double>& coeffs);
-  static LinearExpr* Term(LinearExpr* expr, int64_t coeff);
-  static LinearExpr* Term(LinearExpr* expr, double coeff);
-  static LinearExpr* Affine(LinearExpr* expr, int64_t coeff, int64_t offset);
-  static LinearExpr* Affine(LinearExpr* expr, double coeff, double offset);
-  static LinearExpr* Constant(int64_t value);
-  static LinearExpr* Constant(double value);
+  static LinearExpr* MixedSum(const std::vector<ExprOrValue>& exprs);
+  static LinearExpr* WeightedSumInt(const std::vector<LinearExpr*>& exprs,
+                                    const std::vector<int64_t>& coeffs);
+  static LinearExpr* WeightedSumDouble(const std::vector<LinearExpr*>& exprs,
+                                       const std::vector<double>& coeffs);
+  static LinearExpr* MixedWeightedSumInt(const std::vector<ExprOrValue>& exprs,
+                                         const std::vector<int64_t>& coeffs);
+  static LinearExpr* MixedWeightedSumDouble(
+      const std::vector<ExprOrValue>& exprs, const std::vector<double>& coeffs);
+  static LinearExpr* TermInt(LinearExpr* expr, int64_t coeff);
+  static LinearExpr* TermDouble(LinearExpr* expr, double coeff);
+  static LinearExpr* AffineInt(LinearExpr* expr, int64_t coeff, int64_t offset);
+  static LinearExpr* AffineDouble(LinearExpr* expr, double coeff,
+                                  double offset);
+  static LinearExpr* ConstantInt(int64_t value);
+  static LinearExpr* ConstantDouble(double value);
 
   LinearExpr* Add(LinearExpr* expr);
   LinearExpr* AddInt(int64_t cst);
