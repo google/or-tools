@@ -112,7 +112,7 @@ void Solve(const std::string& input, absl::string_view params_str,
     absl::StrAppend(
         &sol_string, "=obj= ",
         RoundTripDoubleFormat(convergence_information->primal_objective()),
-                    "\n");
+        "\n");
     for (int64_t i = 0; i < result.primal_solution.size(); ++i) {
       std::string name;
       if (qp.variable_names.has_value()) {

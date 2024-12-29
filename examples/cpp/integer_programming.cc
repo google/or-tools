@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
@@ -88,6 +89,7 @@ void RunAllExamples() {
   RunIntegerProgrammingExample("GLPK");
   RunIntegerProgrammingExample("CPLEX");
   RunIntegerProgrammingExample("XPRESS");
+  RunIntegerProgrammingExample("HIGHS");
 }
 }  // namespace operations_research
 

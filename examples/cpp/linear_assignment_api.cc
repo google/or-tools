@@ -11,15 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/linear_assignment.h"
 
 namespace operations_research {
+
+using NodeIndex = int32_t;
+using ArcIndex = int32_t;
+using CostValue = int64_t;
+using Graph = ::util::ListGraph<NodeIndex, ArcIndex>;
 
 // Test assignment on a 4x4 matrix. Example taken from
 // http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
@@ -34,8 +40,8 @@ void AssignmentOn4x4Matrix() {
                                                      {45, 110, 95, 115}};
   const CostValue kExpectedCost =
       kCost[0][3] + kCost[1][2] + kCost[2][1] + kCost[3][0];
-  ForwardStarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
-  LinearSumAssignment<ForwardStarGraph> assignment(graph, kNumSources);
+  Graph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
+  LinearSumAssignment<Graph, CostValue> assignment(graph, kNumSources);
   for (NodeIndex source = 0; source < kNumSources; ++source) {
     for (NodeIndex target = 0; target < kNumTargets; ++target) {
       ArcIndex arc = graph.AddArc(source, kNumSources + target);
@@ -52,8 +58,8 @@ void AnotherAssignment() {
   std::vector<std::vector<int>> matrice(
       {{8, 7, 9, 9}, {5, 2, 7, 8}, {6, 1, 4, 9}, {2, 3, 2, 6}});
   const int kSize = matrice.size();
-  ForwardStarGraph graph(2 * kSize, kSize * kSize);
-  LinearSumAssignment<ForwardStarGraph> assignment(graph, kSize);
+  Graph graph(2 * kSize, kSize * kSize);
+  LinearSumAssignment<Graph, CostValue> assignment(graph, kSize);
   for (int i = 0; i < kSize; ++i) {
     CHECK_EQ(kSize, matrice[i].size());
     for (int j = 0; j < kSize; ++j) {

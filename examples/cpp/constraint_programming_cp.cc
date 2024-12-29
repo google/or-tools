@@ -43,7 +43,8 @@ void RunConstraintProgrammingExample() {
 
   solver.NewSearch(db);
   while (solver.NextSolution()) {
-    LOG(INFO) << "Solution" << ": x = " << x->Value() << "; y = " << y->Value()
+    LOG(INFO) << "Solution"
+              << ": x = " << x->Value() << "; y = " << y->Value()
               << "; z = " << z->Value();
   }
   solver.EndSearch();

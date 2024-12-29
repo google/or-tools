@@ -21,19 +21,15 @@
 #include <cstdio>
 #include <string>
 
-#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/base/options.h"
 #include "ortools/graph/linear_assignment.h"
 
 namespace operations_research {
-
-template <typename GraphType>
-class LinearSumAssignment;
 
 // Given a LinearSumAssignment object representing an assignment problem
 // description, outputs the problem in DIMACS format in the output file.
@@ -42,13 +38,6 @@ class LinearSumAssignment;
 template <typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
-    const TailArrayManager<GraphType>& tail_array_manager,
-    absl::string_view output_filename);
-
-template <typename GraphType>
-void PrintDimacsAssignmentProblem(
-    const LinearSumAssignment<GraphType>& assignment,
-    const TailArrayManager<GraphType>& tail_array_manager,
     absl::string_view output_filename) {
   File* output;
   CHECK_OK(file::Open(output_filename, "w", &output, file::Defaults()));
@@ -64,11 +53,7 @@ void PrintDimacsAssignmentProblem(
     CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
   }
 
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
-
-  for (typename GraphType::ArcIterator arc_it(assignment.Graph()); arc_it.Ok();
-       arc_it.Next()) {
-    ArcIndex arc = arc_it.Index();
+  for (const auto& arc : graph.AllForwardArcs()) {
     output_line = absl::StrFormat("a %d %d %d\n", graph.Tail(arc) + 1,
                                   graph.Head(arc) + 1, assignment.ArcCost(arc));
     CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
