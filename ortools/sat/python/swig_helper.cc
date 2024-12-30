@@ -481,7 +481,7 @@ PYBIND11_MODULE(swig_helper, m) {
           [](LinearExpr* lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max() ||
                 rhs == std::numeric_limits<int64_t>::min()) {
-              throw_error(PyExc_ValueError,
+              throw_error(PyExc_ArithmeticError,
                           "== INT_MIN or INT_MAX is not supported");
             }
             return CheckBoundedLinearExpression(lhs->EqCst(rhs), lhs);
@@ -660,7 +660,7 @@ PYBIND11_MODULE(swig_helper, m) {
       .def_property_readonly("coefficient", &IntAffine::coefficient)
       .def_property_readonly("offset", &IntAffine::offset);
 
-  py::class_<Literal>(m, "Literal", kLiteralClassDoc)
+  py::class_<Literal, LinearExpr>(m, "Literal", kLiteralClassDoc)
       .def_property_readonly("index", &Literal::index,
                              "The index of the literal in the model.")
       .def("negated", &Literal::negated,
@@ -693,7 +693,7 @@ PYBIND11_MODULE(swig_helper, m) {
   //   object. That means memory of the negated variable is onwed by the C++
   //   layer, but a reference is kept in python to link the lifetime of the
   //   negated variable to the base variable.
-  py::class_<BaseIntVar, PyBaseIntVar, LinearExpr, Literal>(m, "BaseIntVar")
+  py::class_<BaseIntVar, PyBaseIntVar, Literal>(m, "BaseIntVar")
       .def(py::init<int>())        // Integer variable.
       .def(py::init<int, bool>())  // Potential Boolean variable.
       .def_property_readonly("index", &BaseIntVar::index,
@@ -717,7 +717,7 @@ PYBIND11_MODULE(swig_helper, m) {
           "__invert__",
           [](BaseIntVar* self) {
             if (!self->is_boolean()) {
-              throw_error(PyExc_ValueError,
+              throw_error(PyExc_TypeError,
                           "negated() is only supported for Boolean variables.");
             }
             return self->negated();
@@ -729,7 +729,7 @@ PYBIND11_MODULE(swig_helper, m) {
           "Not",
           [](BaseIntVar* self) {
             if (!self->is_boolean()) {
-              throw_error(PyExc_ValueError,
+              throw_error(PyExc_TypeError,
                           "negated() is only supported for Boolean variables.");
             }
             return self->negated();
@@ -739,7 +739,7 @@ PYBIND11_MODULE(swig_helper, m) {
   // Memory management:
   // - Do we need a reference_internal (that add a py::keep_alive<1, 0>() rule)
   //   or just a reference ?
-  py::class_<NotBooleanVariable, LinearExpr, Literal>(m, "NotBooleanVariable")
+  py::class_<NotBooleanVariable, Literal>(m, "NotBooleanVariable")
       .def(py::init<BaseIntVar*>())
       .def_property_readonly("index", &NotBooleanVariable::index,
                              "The index of the variable in the model.")
