@@ -173,57 +173,44 @@ class CanonicalIntExpression {
   bool ok_;
 };
 
-class BinaryAdd : public LinearExpr {
+// A class to hold a sum of linear expressions, and optional integer and
+// double offsets.
+class SumArray : public LinearExpr {
  public:
-  BinaryAdd(LinearExpr* lhs, LinearExpr* rhs) : lhs_(lhs), rhs_(rhs) {}
-  ~BinaryAdd() override = default;
-
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
-    lin->AddToProcess(lhs_, c);
-    lin->AddToProcess(rhs_, c);
-  }
+  explicit SumArray(const std::vector<LinearExpr*>& exprs,
+                    int64_t int_offset = 0, double double_offset = 0.0)
+      : exprs_(exprs.begin(), exprs.end()),
+        int_offset_(int_offset),
+        double_offset_(double_offset) {}
+  ~SumArray() override = default;
 
   bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
-    lin->AddToProcess(lhs_, c);
-    lin->AddToProcess(rhs_, c);
+    if (double_offset_ != 0.0) return false;
+    for (int i = 0; i < exprs_.size(); ++i) {
+      lin->AddToProcess(exprs_[i], c);
+    }
+    lin->AddConstant(int_offset_ * c);
     return true;
-  }
-
-  std::string ToString() const override {
-    return absl::StrCat("(", lhs_->ToString(), " + ", rhs_->ToString(), ")");
-  }
-
-  std::string DebugString() const override {
-    return absl::StrCat("BinaryAdd(", lhs_->DebugString(), ", ",
-                        rhs_->DebugString(), ")");
-  }
-
- private:
-  LinearExpr* lhs_;
-  LinearExpr* rhs_;
-};
-
-// A class to hold a sum of floating point linear expressions.
-class FloatSum : public LinearExpr {
- public:
-  FloatSum(const std::vector<LinearExpr*>& exprs, double offset)
-      : exprs_(exprs.begin(), exprs.end()), offset_(offset) {}
-  ~FloatSum() override = default;
-
-  bool VisitAsInt(IntExprVisitor* /*lin*/, int64_t /*c*/) override {
-    return false;
   }
 
   void VisitAsFloat(FloatExprVisitor* lin, double c) override {
     for (int i = 0; i < exprs_.size(); ++i) {
       lin->AddToProcess(exprs_[i], c);
     }
-    lin->AddConstant(offset_ * c);
+    if (int_offset_ != 0) {
+      lin->AddConstant(int_offset_ * c);
+    } else if (double_offset_ != 0.0) {
+      lin->AddConstant(double_offset_ * c);
+    }
   }
 
   std::string ToString() const override {
     if (exprs_.empty()) {
-      return absl::StrCat(offset_);
+      if (double_offset_ != 0.0) {
+        return absl::StrCat(double_offset_);
+      } else {
+        return absl::StrCat(int_offset_);
+      }
     }
     std::string s = "(";
     for (int i = 0; i < exprs_.size(); ++i) {
@@ -232,11 +219,18 @@ class FloatSum : public LinearExpr {
       }
       absl::StrAppend(&s, exprs_[i]->ToString());
     }
-    if (offset_ != 0.0) {
-      if (offset_ > 0.0) {
-        absl::StrAppend(&s, " + ", offset_);
+    if (double_offset_ != 0.0) {
+      if (double_offset_ > 0.0) {
+        absl::StrAppend(&s, " + ", double_offset_);
       } else {
-        absl::StrAppend(&s, " - ", -offset_);
+        absl::StrAppend(&s, " - ", -double_offset_);
+      }
+    }
+    if (int_offset_ != 0) {
+      if (int_offset_ > 0) {
+        absl::StrAppend(&s, " + ", int_offset_);
+      } else {
+        absl::StrAppend(&s, " - ", -int_offset_);
       }
     }
     absl::StrAppend(&s, ")");
@@ -244,77 +238,25 @@ class FloatSum : public LinearExpr {
   }
 
   std::string DebugString() const override {
-    return absl::StrCat("FloatSum(",
-                        absl::StrJoin(exprs_, ", ",
-                                      [](std::string* out, LinearExpr* expr) {
-                                        absl::StrAppend(out,
-                                                        expr->DebugString());
-                                      }),
-                        ", ", offset_, ")");
-  }
-
- private:
-  const absl::FixedArray<LinearExpr*, 2> exprs_;
-  double offset_;
-};
-
-// A class to hold a sum of integer linear expressions.
-class IntSum : public LinearExpr {
- public:
-  IntSum(const std::vector<LinearExpr*>& exprs, int64_t offset)
-      : exprs_(exprs.begin(), exprs.end()), offset_(offset) {}
-  ~IntSum() override = default;
-
-  bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin->AddToProcess(exprs_[i], c);
+    std::string s = absl::StrCat(
+        "SumArray(",
+        absl::StrJoin(exprs_, ", ", [](std::string* out, LinearExpr* expr) {
+          absl::StrAppend(out, expr->DebugString());
+        }));
+    if (int_offset_ != 0) {
+      absl::StrAppend(&s, ", int_offset=", int_offset_);
     }
-    lin->AddConstant(offset_ * c);
-    return true;
-  }
-
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin->AddToProcess(exprs_[i], c);
-    }
-    lin->AddConstant(offset_ * c);
-  }
-
-  std::string ToString() const override {
-    if (exprs_.empty()) {
-      return absl::StrCat(offset_);
-    }
-    std::string s = "(";
-    for (int i = 0; i < exprs_.size(); ++i) {
-      if (i > 0) {
-        absl::StrAppend(&s, " + ");
-      }
-      absl::StrAppend(&s, exprs_[i]->ToString());
-    }
-    if (offset_ != 0) {
-      if (offset_ > 0) {
-        absl::StrAppend(&s, " + ", offset_);
-      } else {
-        absl::StrAppend(&s, " - ", -offset_);
-      }
+    if (double_offset_ != 0.0) {
+      absl::StrAppend(&s, ", double_offset=", double_offset_);
     }
     absl::StrAppend(&s, ")");
     return s;
   }
 
-  std::string DebugString() const override {
-    return absl::StrCat("IntSum(",
-                        absl::StrJoin(exprs_, ", ",
-                                      [](std::string* out, LinearExpr* expr) {
-                                        absl::StrAppend(out,
-                                                        expr->DebugString());
-                                      }),
-                        ", ", offset_, ")");
-  }
-
  private:
   const absl::FixedArray<LinearExpr*, 2> exprs_;
-  int64_t offset_;
+  const int64_t int_offset_;
+  const double double_offset_;
 };
 
 // A class to hold a weighted sum of floating point linear expressions.

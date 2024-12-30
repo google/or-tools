@@ -23,6 +23,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/python/linear_expr.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/cast.h"
@@ -40,6 +41,13 @@ namespace python {
 
 using ::py::arg;
 
+void throw_error(PyObject* py_exception, const std::string& message) {
+  PyErr_SetString(py_exception, message.c_str());
+  throw py::error_already_set();
+}
+
+// A trampoline class to override the OnSolutionCallback method to acquire the
+// GIL.
 class PySolutionCallback : public SolutionCallback {
  public:
   using SolutionCallback::SolutionCallback; /* Inherit constructors */
@@ -55,11 +63,6 @@ class PySolutionCallback : public SolutionCallback {
     );
   }
 };
-
-void throw_error(PyObject* py_exception, const std::string& message) {
-  PyErr_SetString(py_exception, message.c_str());
-  throw py::error_already_set();
-}
 
 // A trampoline class to override the __str__ and __repr__ methods.
 class PyBaseIntVar : public BaseIntVar {
@@ -97,7 +100,7 @@ class ResponseWrapper {
     if (index >= 0) {
       return response_.solution(index) != 0;
     } else {
-      return response_.solution(-index - 1) == 0;
+      return response_.solution(NegatedRef(index)) == 0;
     }
   }
 
@@ -191,10 +194,68 @@ const char* kLinearExprClassDoc = R"doc(
   model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
   ```)doc";
 
+const char* kLiteralClassDoc = R"doc(
+  Holds a Boolean literal.
+
+  A literal is a Boolean variable or its negation.
+
+  Literals are used in CP-SAT models in constraints and in the
+  objective:
+
+  * You can define literal as in:
+
+  ```
+  b1 = model.new_bool_var()
+  b2 = model.new_bool_var()
+  # Simple Boolean constraint.
+  model.add_bool_or(b1, b2.negated())
+  # We can use the ~ operator to negate a literal.
+  model.add_bool_or(b1, ~b2)
+  # Enforcement literals must be literals.
+  x = model.new_int_var(0, 10, 'x')
+  model.add(x == 5).only_enforced_if(~b1)
+  ```
+
+  * Literals can be used directly in linear constraints or in the objective:
+
+  ```
+  model.minimize(b1  + 2 * ~b2)
+  ```)doc";
+
+// Checks that the result is not null and throws an error if it is.
+BoundedLinearExpression* CheckBoundedLinearExpression(
+    BoundedLinearExpression* result, LinearExpr* lhs,
+    LinearExpr* rhs = nullptr) {
+  if (result == nullptr) {
+    if (rhs == nullptr) {
+      throw_error(PyExc_TypeError,
+                  absl::StrCat("Linear constraints only accept integer values "
+                               "and coefficients: ",
+                               lhs->DebugString()));
+    } else {
+      throw_error(
+          PyExc_TypeError,
+          absl::StrCat("Linear constraints only accept integer values "
+                       "and coefficients: ",
+                       lhs->DebugString(), " and ", rhs->DebugString()));
+    }
+  }
+  return result;
+}
+
+void RaiseIfNone(LinearExpr* expr) {
+  if (expr == nullptr) {
+    throw_error(PyExc_TypeError,
+                "Linear constraints do not accept None as argument.");
+  }
+}
+
 PYBIND11_MODULE(swig_helper, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
   py::module::import("ortools.util.python.sorted_interval_list");
 
+  // We keep the CamelCase name for the SolutionCallback class to be compatible
+  // with the pre PEP8 python code.
   py::class_<SolutionCallback, PySolutionCallback>(m, "SolutionCallback")
       .def(py::init<>())
       .def("OnSolutionCallback", &SolutionCallback::OnSolutionCallback)
@@ -234,17 +295,12 @@ PYBIND11_MODULE(swig_helper, m) {
       .def(
           "BooleanValue",
           [](const SolutionCallback& callback, Literal* lit) {
-            const int index = lit->index();
-            if (index >= 0) {
-              return callback.Response().solution(index) != 0;
-            } else {
-              return callback.Response().solution(-index - 1) == 0;
-            }
+            return callback.SolutionBooleanValue(lit->index());
           },
-          "Returns the boolean value of a literal after solve.")
+          "Returns the Boolean value of a literal after solve.")
       .def(
           "BooleanValue", [](const SolutionCallback&, bool lit) { return lit; },
-          "Returns the boolean value of a literal after solve.");
+          "Returns the Boolean value of a literal after solve.");
 
   py::class_<ResponseWrapper>(m, "ResponseWrapper")
       .def(py::init<const CpSolverResponse&>())
@@ -356,6 +412,7 @@ PYBIND11_MODULE(swig_helper, m) {
       .def_static("constant", &LinearExpr::ConstantDouble, arg("value"),
                   "Returns a constant linear expression.",
                   py::return_value_policy::automatic)
+      // Pre PEP8 compatibility layer.
       .def_static("Sum", &LinearExpr::Sum, arg("exprs"),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("Sum", &LinearExpr::MixedSum, arg("exprs"),
@@ -372,9 +429,13 @@ PYBIND11_MODULE(swig_helper, m) {
       .def_static("Term", &LinearExpr::TermDouble, arg("expr").none(false),
                   arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      // Methods.
       .def("__str__", &LinearExpr::ToString)
       .def("__repr__", &LinearExpr::DebugString)
       .def("is_integer", &LinearExpr::IsInteger)
+      // Operators.
+      // Note that we keep the 3 APIS (expr, int, double) instead of using an
+      // ExprOrValue argument as this is more efficient.
       .def("__add__", &LinearExpr::Add, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
@@ -409,294 +470,154 @@ PYBIND11_MODULE(swig_helper, m) {
            py::keep_alive<0, 1>())
       .def(
           "__eq__",
-          [](LinearExpr* expr, LinearExpr* rhs) {
-            if (rhs == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints do not accept None as argument.");
-            }
-            BoundedLinearExpression* result = expr->Eq(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+          [](LinearExpr* lhs, LinearExpr* rhs) {
+            RaiseIfNone(rhs);
+            return CheckBoundedLinearExpression(lhs->Eq(rhs), lhs, rhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
           "__eq__",
-          [](LinearExpr* expr, int64_t rhs) {
+          [](LinearExpr* lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max() ||
                 rhs == std::numeric_limits<int64_t>::min()) {
               throw_error(PyExc_ValueError,
                           "== INT_MIN or INT_MAX is not supported");
             }
-            BoundedLinearExpression* result = expr->EqCst(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+            return CheckBoundedLinearExpression(lhs->EqCst(rhs), lhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__ne__",
-          [](LinearExpr* expr, LinearExpr* rhs) {
-            if (rhs == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints do not accept None as argument.");
-            }
-            BoundedLinearExpression* result = expr->Ne(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+          [](LinearExpr* lhs, LinearExpr* rhs) {
+            RaiseIfNone(rhs);
+            return CheckBoundedLinearExpression(lhs->Ne(rhs), lhs, rhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
           "__ne__",
-          [](LinearExpr* expr, int64_t rhs) {
-            BoundedLinearExpression* result = expr->NeCst(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+          [](LinearExpr* lhs, int64_t rhs) {
+            return CheckBoundedLinearExpression(lhs->NeCst(rhs), lhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__le__",
-          [](LinearExpr* expr, LinearExpr* rhs) {
-            if (rhs == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints do not accept None as argument.");
-            }
-            BoundedLinearExpression* result = expr->Le(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+          [](LinearExpr* lhs, LinearExpr* rhs) {
+            RaiseIfNone(rhs);
+            return CheckBoundedLinearExpression(lhs->Le(rhs), lhs, rhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
           "__le__",
-          [](LinearExpr* expr, int64_t rhs) {
+          [](LinearExpr* lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::min()) {
               throw_error(PyExc_ArithmeticError, "<= INT_MIN is not supported");
             }
-            BoundedLinearExpression* result = expr->LeCst(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+            return CheckBoundedLinearExpression(lhs->LeCst(rhs), lhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__lt__",
-          [](LinearExpr* expr, LinearExpr* rhs) {
-            if (rhs == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints do not accept None as argument.");
-            }
-            BoundedLinearExpression* result = expr->Lt(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+          [](LinearExpr* lhs, LinearExpr* rhs) {
+            RaiseIfNone(rhs);
+            return CheckBoundedLinearExpression(lhs->Lt(rhs), lhs, rhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
           "__lt__",
-          [](LinearExpr* expr, int64_t rhs) {
+          [](LinearExpr* lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::min()) {
               throw_error(PyExc_ArithmeticError, "< INT_MIN is not supported");
             }
-            BoundedLinearExpression* result = expr->LtCst(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+            return CheckBoundedLinearExpression(lhs->LtCst(rhs), lhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__ge__",
-          [](LinearExpr* expr, LinearExpr* rhs) {
-            if (rhs == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints do not accept None as argument.");
-            }
-            BoundedLinearExpression* result = expr->Ge(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+          [](LinearExpr* lhs, LinearExpr* rhs) {
+            RaiseIfNone(rhs);
+            return CheckBoundedLinearExpression(lhs->Ge(rhs), lhs, rhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
           "__ge__",
-          [](LinearExpr* expr, int64_t rhs) {
+          [](LinearExpr* lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max()) {
               throw_error(PyExc_ArithmeticError, ">= INT_MAX is not supported");
             }
-            BoundedLinearExpression* result = expr->GeCst(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+            return CheckBoundedLinearExpression(lhs->GeCst(rhs), lhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__gt__",
-          [](LinearExpr* expr, LinearExpr* rhs) {
-            if (rhs == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints do not accept None as argument.");
-            }
-            BoundedLinearExpression* result = expr->Gt(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+          [](LinearExpr* lhs, LinearExpr* rhs) {
+            RaiseIfNone(rhs);
+            return CheckBoundedLinearExpression(lhs->Gt(rhs), lhs, rhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
           "__gt__",
-          [](LinearExpr* expr, int64_t rhs) {
+          [](LinearExpr* lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max()) {
               throw_error(PyExc_ArithmeticError, "> INT_MAX is not supported");
             }
-            BoundedLinearExpression* result = expr->GtCst(rhs);
-            if (result == nullptr) {
-              throw_error(PyExc_TypeError,
-                          "Linear constraints only accept integer values "
-                          "and coefficients.");
-            }
-            return result;
+            return CheckBoundedLinearExpression(lhs->GtCst(rhs), lhs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      // Disable other operators as they are not supported.
       .def("__div__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "calling / on a linear expression is not supported, "
-                         "please use CpModel.add_division_equality");
-           })
-      .def("__div__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling / on a linear expression is not supported, "
                          "please use CpModel.add_division_equality");
            })
       .def("__truediv__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "calling // on a linear expression is not supported, "
-                         "please use CpModel.add_division_equality");
-           })
-      .def("__truediv__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling // on a linear expression is not supported, "
                          "please use CpModel.add_division_equality");
            })
       .def("__mod__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "calling %% on a linear expression is not supported, "
-                         "please use CpModel.add_modulo_equality");
-           })
-      .def("__mod__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling %% on a linear expression is not supported, "
                          "please use CpModel.add_modulo_equality");
            })
       .def("__pow__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "calling ** on a linear expression is not supported, "
-                         "please use CpModel.add_multiplication_equality");
-           })
-      .def("__pow__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling ** on a linear expression is not supported, "
                          "please use CpModel.add_multiplication_equality");
            })
       .def("__lshift__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(
-                 PyExc_NotImplementedError,
-                 "calling left shift on a linear expression is not supported");
-           })
-      .def("__lshift__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(
                  PyExc_NotImplementedError,
                  "calling left shift on a linear expression is not supported");
            })
       .def("__rshift__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(
-                 PyExc_NotImplementedError,
-                 "calling right shift on a linear expression is not supported");
-           })
-      .def("__rshift__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(
                  PyExc_NotImplementedError,
                  "calling right shift on a linear expression is not supported");
            })
       .def("__and__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "calling and on a linear expression is not supported");
-           })
-      .def("__and__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling and on a linear expression is not supported");
            })
       .def("__or__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "calling or on a linear expression is not supported");
-           })
-      .def("__or__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling or on a linear expression is not supported");
            })
       .def("__xor__",
-           [](LinearExpr* /*self*/, LinearExpr* /*other*/) {
-             throw_error(PyExc_NotImplementedError,
-                         "calling xor on a linear expression is not supported");
-           })
-      .def("__xor__",
-           [](LinearExpr* /*self*/, int64_t /*cst*/) {
+           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
              throw_error(PyExc_NotImplementedError,
                          "calling xor on a linear expression is not supported");
            })
@@ -710,15 +631,10 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("__bool__", [](LinearExpr* /*self*/) {
         throw_error(PyExc_NotImplementedError,
                     "Evaluating a LinearExpr instance as a Boolean is "
-                    "not implemented.");
+                    "not supported.");
       });
 
-  py::class_<FloatAffine, LinearExpr>(m, "FloatAffine")
-      .def(py::init<LinearExpr*, double, double>())
-      .def_property_readonly("expression", &FloatAffine::expression)
-      .def_property_readonly("coefficient", &FloatAffine::coefficient)
-      .def_property_readonly("offset", &FloatAffine::offset);
-
+  // Expose Internal classes, mostly for testing.
   py::class_<CanonicalFloatExpression>(m, "CanonicalFloatExpression")
       .def(py::init<LinearExpr*>())
       .def_property_readonly("vars", &CanonicalFloatExpression::vars)
@@ -732,15 +648,21 @@ PYBIND11_MODULE(swig_helper, m) {
       .def_property_readonly("offset", &CanonicalIntExpression::offset)
       .def_property_readonly("ok", &CanonicalIntExpression::ok);
 
+  py::class_<FloatAffine, LinearExpr>(m, "FloatAffine")
+      .def(py::init<LinearExpr*, double, double>())
+      .def_property_readonly("expression", &FloatAffine::expression)
+      .def_property_readonly("coefficient", &FloatAffine::coefficient)
+      .def_property_readonly("offset", &FloatAffine::offset);
+
   py::class_<IntAffine, LinearExpr>(m, "IntAffine")
       .def(py::init<LinearExpr*, int64_t, int64_t>())
       .def_property_readonly("expression", &IntAffine::expression)
       .def_property_readonly("coefficient", &IntAffine::coefficient)
       .def_property_readonly("offset", &IntAffine::offset);
 
-  py::class_<Literal>(m, "Literal")
+  py::class_<Literal>(m, "Literal", kLiteralClassDoc)
       .def_property_readonly("index", &Literal::index,
-                             "The index of the variable in the model.")
+                             "The index of the literal in the model.")
       .def("negated", &Literal::negated,
            R"doc(
     Returns the negation of a literal (a Boolean variable or its negation).
@@ -755,8 +677,8 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("__bool__",
            [](Literal* /*self*/) {
              throw_error(PyExc_NotImplementedError,
-                         "Evaluating a Literal instance as a Boolean is "
-                         "not implemented.");
+                         "Evaluating a Literal as a Boolean valueis "
+                         "not supported.");
            })
       // PEP8 Compatibility.
       .def("Not", &Literal::negated)
@@ -765,18 +687,19 @@ PYBIND11_MODULE(swig_helper, m) {
   // Memory management:
   // - The BaseIntVar owns the NotBooleanVariable.
   // - The NotBooleanVariable is created at the same time as the base variable
-  //   when the variable is boolean.
+  //   when the variable is Boolean, and is deleted when the base variable is
+  //   deleted.
   // - The negated() methods return an internal reference to the negated
   //   object. That means memory of the negated variable is onwed by the C++
   //   layer, but a reference is kept in python to link the lifetime of the
   //   negated variable to the base variable.
   py::class_<BaseIntVar, PyBaseIntVar, LinearExpr, Literal>(m, "BaseIntVar")
-      .def(py::init<int>())
-      .def(py::init<int, bool>())
+      .def(py::init<int>())        // Integer variable.
+      .def(py::init<int, bool>())  // Potential Boolean variable.
       .def_property_readonly("index", &BaseIntVar::index,
                              "The index of the variable in the model.")
       .def_property_readonly("is_boolean", &BaseIntVar::is_boolean,
-                             "Whether the variable is boolean.")
+                             "Whether the variable is Boolean.")
       .def("__str__", &BaseIntVar::ToString)
       .def("__repr__", &BaseIntVar::DebugString)
       .def(
@@ -784,7 +707,7 @@ PYBIND11_MODULE(swig_helper, m) {
           [](BaseIntVar* self) {
             if (!self->is_boolean()) {
               throw_error(PyExc_TypeError,
-                          "negated() is only supported for boolean variables.");
+                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
@@ -795,7 +718,7 @@ PYBIND11_MODULE(swig_helper, m) {
           [](BaseIntVar* self) {
             if (!self->is_boolean()) {
               throw_error(PyExc_ValueError,
-                          "negated() is only supported for boolean variables.");
+                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
@@ -807,7 +730,7 @@ PYBIND11_MODULE(swig_helper, m) {
           [](BaseIntVar* self) {
             if (!self->is_boolean()) {
               throw_error(PyExc_ValueError,
-                          "negated() is only supported for boolean variables.");
+                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
@@ -848,7 +771,7 @@ PYBIND11_MODULE(swig_helper, m) {
                     absl::StrCat("Evaluating a BoundedLinearExpression '",
                                  self.ToString(),
                                  "'instance as a Boolean is "
-                                 "not implemented.")
+                                 "not supported.")
                         .c_str());
         return false;
       });

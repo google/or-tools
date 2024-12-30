@@ -1167,10 +1167,10 @@ class CpModelTest(absltest.TestCase):
         z = model.new_int_var(0, 3, "z")
         self.assertEqual(repr(x), "x(0..4)")
         self.assertEqual(repr(x * 2), "IntAffine(expr=x(0..4), coeff=2, offset=0)")
-        self.assertEqual(repr(x + y), "BinaryAdd(x(0..4), y(0..3))")
+        self.assertEqual(repr(x + y), "SumArray(x(0..4), y(0..3))")
         self.assertEqual(
             repr(cp_model.LinearExpr.sum([x, y, z])),
-            "IntSum(x(0..4), y(0..3), z(0..3), 0)",
+            "SumArray(x(0..4), y(0..3), z(0..3))",
         )
         self.assertEqual(
             repr(cp_model.LinearExpr.weighted_sum([x, y, 2], [1, 2, 3])),

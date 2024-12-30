@@ -40,7 +40,7 @@ LinearExpr* LinearExpr::Sum(const std::vector<LinearExpr*>& exprs) {
   } else if (exprs.size() == 1) {
     return exprs[0];
   } else {
-    return new IntSum(exprs, 0);
+    return new SumArray(exprs);
   }
 }
 
@@ -70,7 +70,7 @@ LinearExpr* LinearExpr::MixedSum(const std::vector<ExprOrValue>& exprs) {
     } else if (lin_exprs.size() == 1) {
       return new IntAffine(lin_exprs[0], 1, int_offset);
     } else {
-      return new IntSum(lin_exprs, int_offset);
+      return new SumArray(lin_exprs, int_offset);
     }
   } else {  // General floating point case.
     double_offset += static_cast<double>(int_offset);
@@ -79,7 +79,7 @@ LinearExpr* LinearExpr::MixedSum(const std::vector<ExprOrValue>& exprs) {
     } else if (lin_exprs.size() == 1) {
       return new FloatAffine(lin_exprs[0], 1.0, double_offset);
     } else {
-      return new FloatSum(lin_exprs, double_offset);
+      return new SumArray(lin_exprs, 0, double_offset);
     }
   }
 }
@@ -191,7 +191,7 @@ LinearExpr* LinearExpr::ConstantDouble(double value) {
 }
 
 LinearExpr* LinearExpr::Add(LinearExpr* expr) {
-  return new BinaryAdd(this, expr);
+  return new SumArray({this, expr});
 }
 
 LinearExpr* LinearExpr::AddInt(int64_t cst) {

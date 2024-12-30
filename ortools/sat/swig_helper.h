@@ -58,9 +58,9 @@ class SolutionCallback {
 
   double BestObjectiveBound() const;
 
-  int64_t SolutionIntegerValue(int index);
+  int64_t SolutionIntegerValue(int index) const;
 
-  bool SolutionBooleanValue(int index);
+  bool SolutionBooleanValue(int index) const;
 
   // Stops the search.
   void StopSearch();
