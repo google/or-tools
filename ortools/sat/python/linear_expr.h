@@ -431,15 +431,15 @@ class IntConstant : public LinearExpr {
 };
 
 // A Boolean literal (a Boolean variable or its negation).
-class Literal {
+class Literal : public LinearExpr {
  public:
-  virtual ~Literal() = default;
+  ~Literal() override = default;
   virtual int index() const = 0;
   virtual Literal* negated() const = 0;
 };
 
 // A class to hold a variable index.
-class BaseIntVar : public LinearExpr, public Literal {
+class BaseIntVar : public Literal {
  public:
   explicit BaseIntVar(int index) : index_(index), negated_(nullptr) {
     DCHECK_GE(index, 0);
@@ -493,7 +493,7 @@ H AbslHashValue(H h, const BaseIntVar* i) {
 }
 
 // A class to hold a negated variable index.
-class NotBooleanVariable : public LinearExpr, public Literal {
+class NotBooleanVariable : public Literal {
  public:
   explicit NotBooleanVariable(BaseIntVar* var) : var_(var) {}
   ~NotBooleanVariable() override = default;

@@ -173,6 +173,28 @@ class CpModelTest(absltest.TestCase):
         cst = model.new_constant(5)
         self.assertEqual("5", str(cst))
 
+    def testLiteral(self) -> None:
+        print("testLiteral")
+        model = cp_model.CpModel()
+        x = model.new_bool_var("x")
+        self.assertEqual("x", str(x))
+        self.assertEqual("not(x)", str(~x))
+        self.assertEqual("not(x)", str(x.negated()))
+        self.assertEqual(x.negated().negated(), x)
+        self.assertEqual(x.negated().negated().index, x.index)
+        y = model.new_int_var(0, 1, "y")
+        self.assertEqual("y", str(y))
+        self.assertEqual("not(y)", str(~y))
+        zero = model.new_constant(0)
+        self.assertEqual("0", str(zero))
+        self.assertEqual("not(0)", str(~zero))
+        one = model.new_constant(1)
+        self.assertEqual("1", str(one))
+        self.assertEqual("not(1)", str(~one))
+        z = model.new_int_var(0, 2, "z")
+        self.assertRaises(TypeError, z.negated)
+        self.assertRaises(TypeError, z.__invert__)
+
     def testNegation(self) -> None:
         print("testNegation")
         model = cp_model.CpModel()
@@ -519,6 +541,13 @@ class CpModelTest(absltest.TestCase):
         print("testSumWithApi")
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 2, "x%i" % i) for i in range(100)]
+        self.assertEqual(cp_model.LinearExpr.sum([x[0]]), x[0])
+        self.assertEqual(cp_model.LinearExpr.sum([x[0], 0]), x[0])
+        self.assertEqual(cp_model.LinearExpr.sum([x[0], 0.0]), x[0])
+        self.assertEqual(
+            repr(cp_model.LinearExpr.sum([x[0], 2])),
+            repr(cp_model.LinearExpr.affine(x[0], 1, 2)),
+        )
         model.add(cp_model.LinearExpr.sum(x) <= 1)
         model.maximize(x[99])
         solver = cp_model.CpSolver()
@@ -1599,12 +1628,18 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, solver.solve(model))
         solution = solver.values(x)
         self.assertTrue((solution.values == [0, 5, 0]).all())
+        self.assertRaises(TypeError, x.apply, lambda x: ~x)
 
     def testBoolVarSeries(self) -> None:
         print("testBoolVarSeries")
         df = pd.DataFrame([1, -1, 1], columns=["coeffs"])
         model = cp_model.CpModel()
         x = model.new_bool_var_series(name="x", index=df.index)
+        _ = x.apply(lambda x: ~x)
+        y = model.new_int_var_series(
+            name="y", index=df.index, lower_bounds=0, upper_bounds=1
+        )
+        _ = y.apply(lambda x: ~x)
         model.minimize(df.coeffs.dot(x))
         solver = cp_model.CpSolver()
         self.assertEqual(cp_model.OPTIMAL, solver.solve(model))
