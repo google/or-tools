@@ -78,12 +78,12 @@ double SolutionCallback::BestObjectiveBound() const {
   return response_.best_objective_bound();
 }
 
-int64_t SolutionCallback::SolutionIntegerValue(int index) {
+int64_t SolutionCallback::SolutionIntegerValue(int index) const {
   return index >= 0 ? response_.solution(index)
                     : -response_.solution(-index - 1);
 }
 
-bool SolutionCallback::SolutionBooleanValue(int index) {
+bool SolutionCallback::SolutionBooleanValue(int index) const {
   return index >= 0 ? response_.solution(index) != 0
                     : response_.solution(-index - 1) == 0;
 }
