@@ -312,15 +312,27 @@ def rebuild_from_linear_expression_proto(
     if num_elements == 0:
         return proto.offset
     elif num_elements == 1:
-        var = IntVar(model, proto.vars[0], False, None)
+        var_proto = model.variables[proto.vars[0]]
+        is_boolean = var_proto.domain[0] >= 0 and var_proto.domain[1] <= 1
+        var = IntVar(model, proto.vars[0], is_boolean, None)
         return LinearExpr.affine(
             var, proto.coeffs[0], proto.offset
         )  # pytype: disable=bad-return-type
     else:
         variables = []
         for index in proto.vars:
-            variables.append(IntVar(model, index, False, None))
-        return LinearExpr.weighted_sum(variables, proto.coeffs, proto.offset)
+            var_proto = model.variables[index]
+            is_boolean = var_proto.domain[0] >= 0 and var_proto.domain[1] <= 1
+            var = IntVar(model, index, is_boolean, None)
+            variables.append(var)
+        if proto.offset != 0:
+            coeffs = []
+            coeffs.extend(proto.coeffs)
+            coeffs.append(1)
+            variables.append(proto.offset)
+            return LinearExpr.weighted_sum(variables, coeffs)
+        else:
+            return LinearExpr.weighted_sum(variables, proto.coeffs)
 
 
 class Constraint:
