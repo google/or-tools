@@ -380,18 +380,54 @@ PYBIND11_MODULE(swig_helper, m) {
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("sum", &LinearExpr::MixedSum, arg("exprs"),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("weighted_sum", &LinearExpr::WeightedSumInt, arg("exprs"),
-                  arg("coeffs"), py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static("weighted_sum", &LinearExpr::WeightedSumDouble, arg("exprs"),
-                  arg("coeffs"), py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static("weighted_sum", &LinearExpr::MixedWeightedSumInt,
-                  arg("exprs"), arg("coeffs"),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("weighted_sum", &LinearExpr::MixedWeightedSumDouble,
-                  arg("exprs"), arg("coeffs"),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "weighted_sum",
+          [](const std::vector<LinearExpr*>& exprs,
+             const std::vector<int64_t>& coeffs) {
+            if (exprs.size() != coeffs.size()) {
+              throw_error(
+                  PyExc_ValueError,
+                  "The number of expressions and coefficients must match.");
+            }
+            return LinearExpr::WeightedSumInt(exprs, coeffs);
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "weighted_sum",
+          [](const std::vector<LinearExpr*>& exprs,
+             const std::vector<double>& coeffs) {
+            if (exprs.size() != coeffs.size()) {
+              throw_error(
+                  PyExc_ValueError,
+                  "The number of expressions and coefficients must match.");
+            }
+            return LinearExpr::WeightedSumDouble(exprs, coeffs);
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "weighted_sum",
+          [](const std::vector<ExprOrValue>& exprs,
+             const std::vector<int64_t>& coeffs) {
+            if (exprs.size() != coeffs.size()) {
+              throw_error(
+                  PyExc_ValueError,
+                  "The number of expressions and coefficients must match.");
+            }
+            return LinearExpr::MixedWeightedSumInt(exprs, coeffs);
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "weighted_sum",
+          [](const std::vector<ExprOrValue>& exprs,
+             const std::vector<double>& coeffs) {
+            if (exprs.size() != coeffs.size()) {
+              throw_error(
+                  PyExc_ValueError,
+                  "The number of expressions and coefficients must match.");
+            }
+            return LinearExpr::MixedWeightedSumDouble(exprs, coeffs);
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
       // Make sure to keep the order of the overloads: int before float as an
       // an integer value will be silently converted to a float.
       .def_static("term", &LinearExpr::TermInt, arg("expr").none(false),
@@ -417,12 +453,30 @@ PYBIND11_MODULE(swig_helper, m) {
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("Sum", &LinearExpr::MixedSum, arg("exprs"),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("WeightedSum", &LinearExpr::MixedWeightedSumInt, arg("exprs"),
-                  arg("coeffs"), py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static("WeightedSum", &LinearExpr::MixedWeightedSumDouble,
-                  arg("exprs"), arg("coeffs"),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "WeightedSum",
+          [](const std::vector<ExprOrValue>& exprs,
+             const std::vector<int64_t>& coeffs) {
+            if (exprs.size() != coeffs.size()) {
+              throw_error(
+                  PyExc_ValueError,
+                  "The number of expressions and coefficients must match.");
+            }
+            return LinearExpr::MixedWeightedSumInt(exprs, coeffs);
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "WeightedSum",
+          [](const std::vector<ExprOrValue>& exprs,
+             const std::vector<double>& coeffs) {
+            if (exprs.size() != coeffs.size()) {
+              throw_error(
+                  PyExc_ValueError,
+                  "The number of expressions and coefficients must match.");
+            }
+            return LinearExpr::MixedWeightedSumDouble(exprs, coeffs);
+          },
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("Term", &LinearExpr::TermInt, arg("expr").none(false),
                   arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())

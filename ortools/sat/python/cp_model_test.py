@@ -18,7 +18,9 @@ import time
 from absl.testing import absltest
 import pandas as pd
 
+from ortools.sat import cp_model_pb2
 from ortools.sat.python import cp_model
+from ortools.sat.python import swig_helper
 
 
 class SolutionCounter(cp_model.CpSolverSolutionCallback):
@@ -568,6 +570,42 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(1.0, solver.objective_value)
         for i in range(100):
             self.assertEqual(solver.value(x[i]), 1 if i == 99 else 0)
+        self.assertRaises(
+            ValueError,
+            cp_model.LinearExpr.weighted_sum,
+            [x[0]],
+            [1, 2],
+        )
+        self.assertRaises(
+            ValueError,
+            cp_model.LinearExpr.weighted_sum,
+            [x[0]],
+            [1.1, 2.2],
+        )
+        self.assertRaises(
+            ValueError,
+            cp_model.LinearExpr.weighted_sum,
+            [x[0], 3, 5],
+            [1, 2],
+        )
+        self.assertRaises(
+            ValueError,
+            cp_model.LinearExpr.weighted_sum,
+            [x[0], 2.2, 3],
+            [1.1, 2.2],
+        )
+        self.assertRaises(
+            ValueError,
+            cp_model.LinearExpr.WeightedSum,
+            [x[0]],
+            [1, 2],
+        )
+        self.assertRaises(
+            ValueError,
+            cp_model.LinearExpr.WeightedSum,
+            [x[0]],
+            [1.1, 2.2],
+        )
 
     def testAllDifferent(self) -> None:
         print("testAllDifferent")
@@ -1065,6 +1103,35 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(x.index, start_expr.index)
         self.assertEqual(size_expr, 2)
         self.assertEqual(str(end_expr), "(x + 2)")
+
+    def testRebuildFromLinearExpressionProto(self) -> None:
+        print("testRebuildFromLinearExpressionProto")
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = model.new_int_var(0, 1, "y")
+        z = model.new_int_var(0, 5, "z")
+        i = model.new_interval_var(x, y, z, "i")
+        self.assertEqual(i.start_expr(), x)
+        self.assertEqual(i.size_expr(), y)
+        self.assertEqual(i.end_expr(), z)
+        self.assertEqual(~i.size_expr(), ~y)
+        self.assertRaises(TypeError, i.start_expr().negated)
+
+        proto = cp_model_pb2.LinearExpressionProto()
+        proto.vars.append(x.index)
+        proto.coeffs.append(1)
+        proto.vars.append(y.index)
+        proto.coeffs.append(2)
+        proto.offset = 2
+        expr = cp_model.rebuild_from_linear_expression_proto(model.proto, proto)
+        canonical_expr = swig_helper.CanonicalIntExpression(expr)
+        self.assertEqual(canonical_expr.vars[0], x)
+        self.assertEqual(canonical_expr.vars[1], y)
+        self.assertEqual(canonical_expr.coeffs[0], 1)
+        self.assertEqual(canonical_expr.coeffs[1], 2)
+        self.assertEqual(canonical_expr.offset, 2)
+        self.assertEqual(~canonical_expr.vars[1], ~y)
+        self.assertRaises(TypeError, canonical_expr.vars[0].negated)
 
     def testAbsentInterval(self) -> None:
         print("testInterval")
