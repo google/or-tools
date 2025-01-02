@@ -202,7 +202,6 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_scip": [
-            "lpi_glop.cpp",
             "scip_callback.cc",
             "scip_interface.cc",
         ],
@@ -312,9 +311,9 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_scip": [
-            ":scip_with_glop",
             "//ortools/gscip:legacy_scip_params",
             "//ortools/linear_solver/proto_solver:scip_proto_solver",
+            "@scip",
         ],
         "//conditions:default": [],
     }),
@@ -341,21 +340,6 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
-    ],
-)
-
-copy_file(
-    name = "lpi_glop",
-    src = "@scip//:src/lpi/lpi_glop.cpp",
-    out = "lpi_glop.cpp",
-)
-
-cc_library(
-    name = "scip_with_glop",
-    srcs = ["lpi_glop.cpp"],
-    deps = [
-        "//ortools/glop:lp_solver",
-        "@scip",
     ],
 )
 

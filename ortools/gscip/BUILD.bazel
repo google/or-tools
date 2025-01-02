@@ -66,10 +66,10 @@ cc_library(
     hdrs = ["legacy_scip_params.h"],
     deps = [
         "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@scip",
     ],
 )
 
@@ -92,7 +92,6 @@ cc_library(
         "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "//ortools/port:proto_utils",
         "//ortools/util:status_macros",
         "@com_google_absl//absl/cleanup",
@@ -101,6 +100,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@scip",
     ],
 )
 
@@ -111,8 +111,8 @@ cc_library(
     deps = [
         ":gscip",
         "//ortools/base:status_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status",
+        "@scip",
     ],
 )
 
@@ -123,9 +123,9 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@scip",
     ],
 )
 
