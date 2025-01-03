@@ -51,7 +51,7 @@ void SimpleMaxFlowProgram() {
   // [END solve]
 
   // [START print_solution]
-  if (status == MaxFlow::OPTIMAL) {
+  if (status == SimpleMaxFlow::OPTIMAL) {
     LOG(INFO) << "Max flow: " << max_flow.OptimalFlow();
     LOG(INFO) << "";
     LOG(INFO) << "  Arc    Flow / Capacity";
