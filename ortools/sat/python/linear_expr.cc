@@ -93,8 +93,8 @@ LinearExpr* LinearExpr::WeightedSumInt(const std::vector<LinearExpr*>& exprs,
   return new IntWeightedSum(exprs, coeffs, 0);
 }
 
-LinearExpr* LinearExpr::WeightedSumDouble(const std::vector<LinearExpr*>& exprs,
-                                          const std::vector<double>& coeffs) {
+LinearExpr* LinearExpr::WeightedSumFloat(const std::vector<LinearExpr*>& exprs,
+                                         const std::vector<double>& coeffs) {
   if (exprs.empty()) return new FloatConstant(0.0);
   if (exprs.size() == 1) {
     return new FloatAffine(exprs[0], coeffs[0], 0.0);
@@ -140,7 +140,7 @@ LinearExpr* LinearExpr::MixedWeightedSumInt(
   return new IntWeightedSum(lin_exprs, lin_coeffs, int_cst);
 }
 
-LinearExpr* LinearExpr::MixedWeightedSumDouble(
+LinearExpr* LinearExpr::MixedWeightedSumFloat(
     const std::vector<ExprOrValue>& exprs, const std::vector<double>& coeffs) {
   std::vector<LinearExpr*> lin_exprs;
   std::vector<double> lin_coeffs;
@@ -166,7 +166,7 @@ LinearExpr* LinearExpr::TermInt(LinearExpr* expr, int64_t coeff) {
   return new IntAffine(expr, coeff, 0);
 }
 
-LinearExpr* LinearExpr::TermDouble(LinearExpr* expr, double coeff) {
+LinearExpr* LinearExpr::TermFloat(LinearExpr* expr, double coeff) {
   return new FloatAffine(expr, coeff, 0.0);
 }
 
@@ -176,8 +176,8 @@ LinearExpr* LinearExpr::AffineInt(LinearExpr* expr, int64_t coeff,
   return new IntAffine(expr, coeff, offset);
 }
 
-LinearExpr* LinearExpr::AffineDouble(LinearExpr* expr, double coeff,
-                                     double offset) {
+LinearExpr* LinearExpr::AffineFloat(LinearExpr* expr, double coeff,
+                                    double offset) {
   if (coeff == 1.0 && offset == 0.0) return expr;
   return new FloatAffine(expr, coeff, offset);
 }
@@ -186,7 +186,7 @@ LinearExpr* LinearExpr::ConstantInt(int64_t value) {
   return new IntConstant(value);
 }
 
-LinearExpr* LinearExpr::ConstantDouble(double value) {
+LinearExpr* LinearExpr::ConstantFloat(double value) {
   return new FloatConstant(value);
 }
 
@@ -199,7 +199,7 @@ LinearExpr* LinearExpr::AddInt(int64_t cst) {
   return new IntAffine(this, 1, cst);
 }
 
-LinearExpr* LinearExpr::AddDouble(double cst) {
+LinearExpr* LinearExpr::AddFloat(double cst) {
   if (cst == 0.0) return this;
   return new FloatAffine(this, 1.0, cst);
 }
@@ -213,7 +213,7 @@ LinearExpr* LinearExpr::SubInt(int64_t cst) {
   return new IntAffine(this, 1, -cst);
 }
 
-LinearExpr* LinearExpr::SubDouble(double cst) {
+LinearExpr* LinearExpr::SubFloat(double cst) {
   if (cst == 0.0) return this;
   return new FloatAffine(this, 1.0, -cst);
 }
@@ -222,7 +222,7 @@ LinearExpr* LinearExpr::RSubInt(int64_t cst) {
   return new IntAffine(this, -1, cst);
 }
 
-LinearExpr* LinearExpr::RSubDouble(double cst) {
+LinearExpr* LinearExpr::RSubFloat(double cst) {
   return new FloatAffine(this, -1.0, cst);
 }
 
@@ -232,7 +232,7 @@ LinearExpr* LinearExpr::MulInt(int64_t cst) {
   return new IntAffine(this, cst, 0);
 }
 
-LinearExpr* LinearExpr::MulDouble(double cst) {
+LinearExpr* LinearExpr::MulFloat(double cst) {
   if (cst == 0.0) return new IntConstant(0);
   if (cst == 1.0) return this;
   return new FloatAffine(this, cst, 0.0);

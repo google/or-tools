@@ -401,7 +401,7 @@ PYBIND11_MODULE(swig_helper, m) {
                   PyExc_ValueError,
                   "The number of expressions and coefficients must match.");
             }
-            return LinearExpr::WeightedSumDouble(exprs, coeffs);
+            return LinearExpr::WeightedSumFloat(exprs, coeffs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static(
@@ -425,7 +425,7 @@ PYBIND11_MODULE(swig_helper, m) {
                   PyExc_ValueError,
                   "The number of expressions and coefficients must match.");
             }
-            return LinearExpr::MixedWeightedSumDouble(exprs, coeffs);
+            return LinearExpr::MixedWeightedSumFloat(exprs, coeffs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       // Make sure to keep the order of the overloads: int before float as an
@@ -433,19 +433,19 @@ PYBIND11_MODULE(swig_helper, m) {
       .def_static("term", &LinearExpr::TermInt, arg("expr").none(false),
                   arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("term", &LinearExpr::TermDouble, arg("expr").none(false),
+      .def_static("term", &LinearExpr::TermFloat, arg("expr").none(false),
                   arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("affine", &LinearExpr::AffineInt, arg("expr").none(false),
                   arg("coeff"), arg("offset"), "Returns expr * coeff + offset.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("affine", &LinearExpr::AffineDouble, arg("expr").none(false),
+      .def_static("affine", &LinearExpr::AffineFloat, arg("expr").none(false),
                   arg("coeff"), arg("offset"), "Returns expr * coeff + offset.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("constant", &LinearExpr::ConstantInt, arg("value"),
                   "Returns a constant linear expression.",
                   py::return_value_policy::automatic)
-      .def_static("constant", &LinearExpr::ConstantDouble, arg("value"),
+      .def_static("constant", &LinearExpr::ConstantFloat, arg("value"),
                   "Returns a constant linear expression.",
                   py::return_value_policy::automatic)
       // Pre PEP8 compatibility layer.
@@ -474,13 +474,13 @@ PYBIND11_MODULE(swig_helper, m) {
                   PyExc_ValueError,
                   "The number of expressions and coefficients must match.");
             }
-            return LinearExpr::MixedWeightedSumDouble(exprs, coeffs);
+            return LinearExpr::MixedWeightedSumFloat(exprs, coeffs);
           },
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("Term", &LinearExpr::TermInt, arg("expr").none(false),
                   arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("Term", &LinearExpr::TermDouble, arg("expr").none(false),
+      .def_static("Term", &LinearExpr::TermFloat, arg("expr").none(false),
                   arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       // Methods.
@@ -495,30 +495,30 @@ PYBIND11_MODULE(swig_helper, m) {
            py::keep_alive<0, 2>())
       .def("__add__", &LinearExpr::AddInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &LinearExpr::AddDouble, arg("cst"),
+      .def("__add__", &LinearExpr::AddFloat, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__radd__", &LinearExpr::AddInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &LinearExpr::AddDouble, arg("cst"),
+      .def("__radd__", &LinearExpr::AddFloat, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
       .def("__sub__", &LinearExpr::SubInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &LinearExpr::SubDouble, arg("cst"),
+      .def("__sub__", &LinearExpr::SubFloat, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__rsub__", &LinearExpr::RSubInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &LinearExpr::RSubDouble, arg("cst"),
+      .def("__rsub__", &LinearExpr::RSubFloat, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__mul__", &LinearExpr::MulInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__mul__", &LinearExpr::MulDouble, arg("cst"),
+      .def("__mul__", &LinearExpr::MulFloat, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__rmul__", &LinearExpr::MulInt, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &LinearExpr::MulDouble, arg("cst"),
+      .def("__rmul__", &LinearExpr::MulFloat, arg("cst"),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__neg__", &LinearExpr::Neg, py::return_value_policy::automatic,
            py::keep_alive<0, 1>())
@@ -724,7 +724,7 @@ PYBIND11_MODULE(swig_helper, m) {
     This method implements the logical negation of a Boolean variable.
     It is only valid if the variable has a Boolean domain (0 or 1).
 
-    Note that this method is nilpotent: `x.negated().negated() == x`.          
+    Note that this method is nilpotent: `x.negated().negated() == x`.
           )doc")
       .def("__invert__", &Literal::negated,
            "Returns the negation of the current literal.")
