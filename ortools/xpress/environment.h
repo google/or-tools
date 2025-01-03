@@ -492,6 +492,9 @@ extern std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRS
 extern std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb;
 extern std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub;
 extern std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef;
+extern std::function<int(XPRSprob prob, int* status, double x[], int first, int last)> XPRSgetsolution;
+extern std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals;
+extern std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts;
 extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSdelrows;
 extern std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], const int start[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSaddcols;
@@ -514,6 +517,7 @@ extern std::function<int(XPRSprob prob, double x[], double slack[])> XPRSgetmips
 extern std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[])> XPRSchgobj;
 extern std::function<int(XPRSprob prob, int row, int col, double coef)> XPRSchgcoef;
 extern std::function<int(XPRSprob prob, int ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef;
+extern std::function<int(XPRSprob prob, XPRSint64 ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef64;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rhs[])> XPRSchgrhs;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rng[])> XPRSchgrhsrange;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[], const char rowtype[])> XPRSchgrowtype;
@@ -522,6 +526,8 @@ extern std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob
 extern std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage;
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize;
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize;
+extern std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int* solstatus)> XPRSoptimize;
+
 // clang-format on
 
 }  // namespace operations_research

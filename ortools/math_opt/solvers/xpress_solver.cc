@@ -256,7 +256,7 @@ absl::Status XpressSolver::CallXpressSolve(
     const SolveParametersProto& parameters) {
   // Enable screen output right before solve
   if (parameters.enable_output()) {
-    RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_OUTPUTLOG, 1))
+    RETURN_IF_ERROR(xpress_->SetIntControl(XPRS_OUTPUTLOG, 1))
         << "Unable to enable XPRESS logs";
   }
   // Solve
@@ -275,7 +275,7 @@ absl::Status XpressSolver::CallXpressSolve(
   }
   // Disable screen output right after solve
   if (parameters.enable_output()) {
-    RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_OUTPUTLOG, 0))
+    RETURN_IF_ERROR(xpress_->SetIntControl(XPRS_OUTPUTLOG, 0))
         << "Unable to disable XPRESS logs";
   }
   return absl::OkStatus();
@@ -285,17 +285,20 @@ absl::Status XpressSolver::SetLpIterLimits(
     const SolveParametersProto& parameters) {
   // If the user has set no limits, we still have to reset the limits
   // explicitly to their default values, else the parameters could be kept
-  // between solves. XPRESS default value for XPRS_LPITERLIMIT is 2147483647
-  int lp_iter_limit = parameters.has_iteration_limit()
-                          ? parameters.iteration_limit()
-                          : 2147483647;
-  // XPRESS default value for XPRS_BARITERLIMIT is 500
-  int bar_iter_limit =
-      parameters.has_iteration_limit() ? parameters.iteration_limit() : 500;
-  RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_LPITERLIMIT, lp_iter_limit))
-      << "Could not set XPRS_LPITERLIMIT";
-  RETURN_IF_ERROR(xpress_->SetIntAttr(XPRS_BARITERLIMIT, bar_iter_limit))
-      << "Could not set XPRS_BARITERLIMIT";
+  // between solves.
+  if (parameters.has_iteration_limit()) {
+    RETURN_IF_ERROR(
+        xpress_->SetIntControl(XPRS_LPITERLIMIT, parameters.iteration_limit()))
+        << "Could not set XPRS_LPITERLIMIT";
+    RETURN_IF_ERROR(
+        xpress_->SetIntControl(XPRS_BARITERLIMIT, parameters.iteration_limit()))
+        << "Could not set XPRS_BARITERLIMIT";
+  } else {
+    RETURN_IF_ERROR(xpress_->ResetIntControl(XPRS_LPITERLIMIT))
+        << "Could not reset XPRS_LPITERLIMIT to its default value";
+    RETURN_IF_ERROR(xpress_->ResetIntControl(XPRS_BARITERLIMIT))
+        << "Could not reset XPRS_BARITERLIMIT to its default value";
+  }
   return absl::OkStatus();
 }
 
@@ -371,7 +374,8 @@ absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetLpSolution(
 
 bool XpressSolver::isFeasible() const {
   if (is_mip_) {
-    return xpress_status_ == XPRS_MIP_OPTIMAL;
+    return xpress_status_ == XPRS_MIP_OPTIMAL ||
+           xpress_status_ == XPRS_MIP_SOLUTION;
   } else {
     return xpress_status_ == XPRS_LP_OPTIMAL ||
            xpress_status_ == XPRS_LP_UNFINISHED;

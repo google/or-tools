@@ -30,6 +30,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -48,8 +49,11 @@ class Xpress {
 
   ~Xpress();
 
+  absl::StatusOr<int> GetIntControl(int control) const;
+  absl::Status SetIntControl(int control, int value);
+  absl::Status ResetIntControl(int control); // reset to default value
+
   absl::StatusOr<int> GetIntAttr(int attribute) const;
-  absl::Status SetIntAttr(int attribute, int value);
 
   absl::StatusOr<double> GetDoubleAttr(int attribute) const;
 
@@ -106,6 +110,9 @@ class Xpress {
   absl::Status ToStatus(
       int xprs_err,
       absl::StatusCode code = absl::StatusCode::kInvalidArgument) const;
+
+  std::map<int, int> int_control_defaults_;
+  void initIntControlDefaults();
 };
 
 }  // namespace operations_research::math_opt
