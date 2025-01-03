@@ -65,30 +65,29 @@ class LinearExpr {
   static LinearExpr* MixedSum(const std::vector<ExprOrValue>& exprs);
   static LinearExpr* WeightedSumInt(const std::vector<LinearExpr*>& exprs,
                                     const std::vector<int64_t>& coeffs);
-  static LinearExpr* WeightedSumDouble(const std::vector<LinearExpr*>& exprs,
-                                       const std::vector<double>& coeffs);
+  static LinearExpr* WeightedSumFloat(const std::vector<LinearExpr*>& exprs,
+                                      const std::vector<double>& coeffs);
   static LinearExpr* MixedWeightedSumInt(const std::vector<ExprOrValue>& exprs,
                                          const std::vector<int64_t>& coeffs);
-  static LinearExpr* MixedWeightedSumDouble(
+  static LinearExpr* MixedWeightedSumFloat(
       const std::vector<ExprOrValue>& exprs, const std::vector<double>& coeffs);
   static LinearExpr* TermInt(LinearExpr* expr, int64_t coeff);
-  static LinearExpr* TermDouble(LinearExpr* expr, double coeff);
+  static LinearExpr* TermFloat(LinearExpr* expr, double coeff);
   static LinearExpr* AffineInt(LinearExpr* expr, int64_t coeff, int64_t offset);
-  static LinearExpr* AffineDouble(LinearExpr* expr, double coeff,
-                                  double offset);
+  static LinearExpr* AffineFloat(LinearExpr* expr, double coeff, double offset);
   static LinearExpr* ConstantInt(int64_t value);
-  static LinearExpr* ConstantDouble(double value);
+  static LinearExpr* ConstantFloat(double value);
 
   LinearExpr* Add(LinearExpr* expr);
   LinearExpr* AddInt(int64_t cst);
-  LinearExpr* AddDouble(double cst);
+  LinearExpr* AddFloat(double cst);
   LinearExpr* Sub(LinearExpr* expr);
   LinearExpr* SubInt(int64_t cst);
-  LinearExpr* SubDouble(double cst);
+  LinearExpr* SubFloat(double cst);
   LinearExpr* RSubInt(int64_t cst);
-  LinearExpr* RSubDouble(double cst);
+  LinearExpr* RSubFloat(double cst);
   LinearExpr* MulInt(int64_t cst);
-  LinearExpr* MulDouble(double cst);
+  LinearExpr* MulFloat(double cst);
   LinearExpr* Neg();
 
   BoundedLinearExpression* Eq(LinearExpr* rhs);
