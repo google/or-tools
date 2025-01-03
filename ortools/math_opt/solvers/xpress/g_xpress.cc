@@ -65,7 +65,6 @@ absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(
   CHECK(correctlyLoaded);
   XPRSprob model;
   CHECK_EQ(kXpressOk, XPRScreateprob(&model));
-  DCHECK(model != nullptr);  // should not be NULL if status=0
   CHECK_EQ(kXpressOk, XPRSaddcbmessage(model, printXpressMessage, nullptr, 0));
   return absl::WrapUnique(new Xpress(model));
 }
