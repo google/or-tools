@@ -1163,7 +1163,7 @@ def main(_) -> None:
 
     # Create the solver and solve the model.
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
+    # solver.parameters.log_search_progress = True  # Uncomment to see the logs.
     solver.parameters.num_workers = 16
     solver.parameters.max_time_in_seconds = 30.0
     status = solver.solve(model)

@@ -238,7 +238,6 @@ def sequences_in_no_overlap_sample_sat():
 
     # Solves the model model.
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
     status = solver.solve(model)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
