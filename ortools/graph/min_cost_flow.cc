@@ -27,6 +27,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 #include "ortools/graph/max_flow.h"
@@ -319,8 +320,9 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
   const ArcIndex num_arcs_in_max_flow = graph_->num_arcs() + num_extra_arcs;
   const NodeIndex source = num_nodes_in_max_flow - 2;
   const NodeIndex sink = num_nodes_in_max_flow - 1;
-  StarGraph checker_graph(num_nodes_in_max_flow, num_arcs_in_max_flow);
-  MaxFlow checker(&checker_graph, source, sink);
+  using CheckerGraph = ::util::ReverseArcListGraph<>;
+  CheckerGraph checker_graph(num_nodes_in_max_flow, num_arcs_in_max_flow);
+  GenericMaxFlow<CheckerGraph> checker(&checker_graph, source, sink);
   // Copy graph_ to checker_graph.
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
     const ArcIndex new_arc =
