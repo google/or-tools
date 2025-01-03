@@ -510,11 +510,11 @@ cc_test(
         ":generic_max_flow",
         ":graph",
         ":graphs",
-        "@com_google_absl//absl/random:bit_gen_ref",
         "//ortools/base",
         "//ortools/base:gmock_main",
         "//ortools/linear_solver",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
         "@com_google_benchmark//:benchmark",
@@ -616,7 +616,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random:distributions",
-        "@com_google_benchmark//:benchmark",        
+        "@com_google_benchmark//:benchmark",
     ],
 )
 

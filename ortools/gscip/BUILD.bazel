@@ -49,17 +49,6 @@ cc_library(
     ],
 )
 
-#cc_test(
-#    name = "gscip_parameters_test",
-#    srcs = ["gscip_parameters_test.cc"],
-#    deps = [
-#        ":gscip_cc_proto",
-#        ":gscip_parameters",
-#        "@com_google_absl//absl/time",
-#        "@com_google_googletest//:gtest_main",
-#    ],
-#)
-
 cc_library(
     name = "legacy_scip_params",
     srcs = ["legacy_scip_params.cc"],
