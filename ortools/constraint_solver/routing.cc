@@ -4778,10 +4778,11 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreateCPOperator<ExtendedSwapActiveOperator>();
   std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());
   for (const RoutingModel::Disjunction& disjunction : disjunctions_) {
-    // Only add disjunctions of cardinality 1, as
+    // Only add disjunctions of cardinality 1 and of size > 1, as
     // SwapActiveToShortestPathOperator and TwoOptWithShortestPathOperator only
-    // support DAGs.
-    if (disjunction.value.max_cardinality == 1) {
+    // support DAGs, and don't care about chain-DAGS.
+    if (disjunction.value.max_cardinality == 1 &&
+        disjunction.indices.size() > 1) {
       alternative_sets.push_back(disjunction.indices);
     }
   }
@@ -4789,6 +4790,7 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreateOperator<SwapActiveToShortestPathOperator>(
           alternative_sets,
           GetLocalSearchHomogeneousArcCostCallback(parameters));
+  // TODO(user): Consider having only one variant of 2Opt active.
   local_search_operators_[SHORTEST_PATH_TWO_OPT] =
       CreateOperator<TwoOptWithShortestPathOperator>(
           alternative_sets,
@@ -5000,6 +5002,11 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
   CP_ROUTING_PUSH_OPERATOR(TWO_OPT, two_opt);
   CP_ROUTING_PUSH_OPERATOR(OR_OPT, or_opt);
   CP_ROUTING_PUSH_OPERATOR(RELOCATE_EXPENSIVE_CHAIN, relocate_expensive_chain);
+  size_t max_alternative_set_size = 0;
+  for (const RoutingModel::Disjunction& disjunction : disjunctions_) {
+    max_alternative_set_size =
+        std::max(max_alternative_set_size, disjunction.indices.size());
+  }
   if (!disjunctions_.empty()) {
     CP_ROUTING_PUSH_OPERATOR(MAKE_INACTIVE, make_inactive);
     CP_ROUTING_PUSH_OPERATOR(MAKE_CHAIN_INACTIVE, make_chain_inactive);
@@ -5015,9 +5022,11 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE, swap_active);
     CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE_CHAIN, swap_active_chain);
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active);
-    CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_SWAP_ACTIVE,
-                             shortest_path_swap_active);
-    CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_TWO_OPT, shortest_path_two_opt);
+    if (max_alternative_set_size > 1) {
+      CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_SWAP_ACTIVE,
+                               shortest_path_swap_active);
+      CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_TWO_OPT, shortest_path_two_opt);
+    }
   }
   LocalSearchOperator* main_operator_group =
       ConcatenateOperators(search_parameters, operators);
