@@ -570,42 +570,19 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(1.0, solver.objective_value)
         for i in range(100):
             self.assertEqual(solver.value(x[i]), 1 if i == 99 else 0)
-        self.assertRaises(
-            ValueError,
-            cp_model.LinearExpr.weighted_sum,
-            [x[0]],
-            [1, 2],
-        )
-        self.assertRaises(
-            ValueError,
-            cp_model.LinearExpr.weighted_sum,
-            [x[0]],
-            [1.1, 2.2],
-        )
-        self.assertRaises(
-            ValueError,
-            cp_model.LinearExpr.weighted_sum,
-            [x[0], 3, 5],
-            [1, 2],
-        )
-        self.assertRaises(
-            ValueError,
-            cp_model.LinearExpr.weighted_sum,
-            [x[0], 2.2, 3],
-            [1.1, 2.2],
-        )
-        self.assertRaises(
-            ValueError,
-            cp_model.LinearExpr.WeightedSum,
-            [x[0]],
-            [1, 2],
-        )
-        self.assertRaises(
-            ValueError,
-            cp_model.LinearExpr.WeightedSum,
-            [x[0]],
-            [1.1, 2.2],
-        )
+
+        with self.assertRaises(ValueError):
+            cp_model.LinearExpr.weighted_sum([x[0]], [1, 2])
+        with self.assertRaises(ValueError):
+            cp_model.LinearExpr.weighted_sum([x[0]], [1.1, 2.2])
+        with self.assertRaises(ValueError):
+            cp_model.LinearExpr.weighted_sum([x[0], 3, 5], [1, 2])
+        with self.assertRaises(ValueError):
+            cp_model.LinearExpr.weighted_sum([x[0], 2.2, 3], [1.1, 2.2])
+        with self.assertRaises(ValueError):
+            cp_model.LinearExpr.WeightedSum([x[0]], [1, 2])
+        with self.assertRaises(ValueError):
+            cp_model.LinearExpr.WeightedSum([x[0]], [1.1, 2.2])
 
     def testAllDifferent(self) -> None:
         print("testAllDifferent")
@@ -643,7 +620,8 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].element.exprs, 4)
         self.assertEqual(0, model.proto.constraints[0].element.linear_index.vars[0])
         self.assertEqual(4, model.proto.constraints[0].element.linear_target.vars[0])
-        self.assertRaises(ValueError, model.add_element, x[0], [], x[4])
+        with self.assertRaises(ValueError):
+            model.add_element(x[0], [], x[4])
 
     def testFixedElement(self) -> None:
         print("testFixedElement")
@@ -691,7 +669,8 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].circuit.heads, 5)
         self.assertLen(model.proto.constraints[0].circuit.tails, 5)
         self.assertLen(model.proto.constraints[0].circuit.literals, 5)
-        self.assertRaises(ValueError, model.add_circuit, [])
+        with self.assertRaises(ValueError):
+            model.add_circuit([])
 
     def testMultipleCircuit(self) -> None:
         print("testMultipleCircuit")
@@ -706,7 +685,8 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].routes.heads, 5)
         self.assertLen(model.proto.constraints[0].routes.tails, 5)
         self.assertLen(model.proto.constraints[0].routes.literals, 5)
-        self.assertRaises(ValueError, model.add_multiple_circuit, [])
+        with self.assertRaises(ValueError):
+            model.add_multiple_circuit([])
 
     def testAllowedAssignments(self) -> None:
         print("testAllowedAssignments")
@@ -719,18 +699,16 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].table.exprs, 5)
         self.assertLen(model.proto.constraints[0].table.values, 15)
-        self.assertRaises(
-            TypeError,
-            model.add_allowed_assignments,
-            x,
-            [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
-        )
-        self.assertRaises(
-            ValueError,
-            model.add_allowed_assignments,
-            [],
-            [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
-        )
+        with self.assertRaises(TypeError):
+            model.add_allowed_assignments(
+                x,
+                [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
+            )
+        with self.assertRaises(ValueError):
+            model.add_allowed_assignments(
+                [],
+                [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
+            )
 
     def testForbiddenAssignments(self) -> None:
         print("testForbiddenAssignments")
@@ -770,31 +748,29 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].automaton.transition_label, 4)
         self.assertLen(model.proto.constraints[0].automaton.final_states, 2)
         self.assertEqual(0, model.proto.constraints[0].automaton.starting_state)
-        self.assertRaises(
-            TypeError,
-            model.add_automaton,
-            x,
-            0,
-            [2, 3],
-            [(0, 0, 0), (0, 1, 1), (2, 2), (2, 3, 3)],
-        )
-        self.assertRaises(
-            ValueError,
-            model.add_automaton,
-            [],
-            0,
-            [2, 3],
-            [(0, 0, 0), (0, 1, 1), (2, 3, 3)],
-        )
-        self.assertRaises(
-            ValueError,
-            model.add_automaton,
-            x,
-            0,
-            [],
-            [(0, 0, 0), (0, 1, 1), (2, 3, 3)],
-        )
-        self.assertRaises(ValueError, model.add_automaton, x, 0, [2, 3], [])
+        with self.assertRaises(TypeError):
+            model.add_automaton(
+                x,
+                0,
+                [2, 3],
+                [(0, 0, 0), (0, 1, 1), (2, 2), (2, 3, 3)],
+            )
+        with self.assertRaises(ValueError):
+            model.add_automaton(
+                [],
+                0,
+                [2, 3],
+                [(0, 0, 0), (0, 1, 1), (2, 3, 3)],
+            )
+        with self.assertRaises(ValueError):
+            model.add_automaton(
+                x,
+                0,
+                [],
+                [(0, 0, 0), (0, 1, 1), (2, 3, 3)],
+            )
+        with self.assertRaises(ValueError):
+            model.add_automaton(x, 0, [2, 3], [])
 
     def testInverse(self) -> None:
         print("testInverse")
@@ -995,9 +971,11 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].bool_or.literals, 5)
         model.add_bool_or([x[0], x[1], False])
         self.assertLen(model.proto.variables, 6)
-        self.assertRaises(TypeError, model.add_bool_or, [x[2], 2])
+        with self.assertRaises(TypeError):
+            model.add_bool_or([x[2], 2])
         y = model.new_int_var(0, 4, "y")
-        self.assertRaises(TypeError, model.add_bool_or, [y, False])
+        with self.assertRaises(TypeError):
+            model.add_bool_or([y, False])
 
     def testBoolOrListOrGet(self) -> None:
         print("testBoolOrListOrGet")
@@ -1153,13 +1131,12 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(1, j.index)
         self.assertEqual(2, k.index)
         self.assertEqual(3, l.index)
-        self.assertRaises(TypeError, model.new_optional_interval_var, 1, 2, 3, x, "x")
-        self.assertRaises(
-            TypeError, model.new_optional_interval_var, b + x, 2, 3, b, "x"
-        )
-        self.assertRaises(
-            TypeError, model.new_optional_interval_var, 1, 2, 3, b + 1, "x"
-        )
+        with self.assertRaises(TypeError):
+            model.new_optional_interval_var(1, 2, 3, x, "x")
+        with self.assertRaises(TypeError):
+            model.new_optional_interval_var(b + x, 2, 3, b, "x")
+        with self.assertRaises(TypeError):
+            model.new_optional_interval_var(1, 2, 3, b + 1, "x")
 
     def testNoOverlap(self) -> None:
         print("testNoOverlap")
@@ -1209,7 +1186,8 @@ class CpModelTest(absltest.TestCase):
         ct = model.add_cumulative(intervals, demands, capacity)
         self.assertEqual(10, ct.index)
         self.assertLen(ct.proto.cumulative.intervals, 10)
-        self.assertRaises(TypeError, model.add_cumulative, [intervals[0], 3], [2, 3], 3)
+        with self.assertRaises(TypeError):
+            model.add_cumulative([intervals[0], 3], [2, 3], 3)
 
     def testGetOrMakeIndexFromConstant(self) -> None:
         print("testGetOrMakeIndexFromConstant")

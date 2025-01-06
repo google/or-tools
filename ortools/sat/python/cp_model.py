@@ -721,7 +721,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError(f"name={name} is not a valid identifier")
+            raise ValueError(f"name={name!r} is not a valid identifier")
         if (
             isinstance(lower_bounds, IntegralTypes)
             and isinstance(upper_bounds, IntegralTypes)
@@ -775,7 +775,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError(f"name={name} is not a valid identifier")
+            raise ValueError(f"name={name!r} is not a valid identifier")
         return pd.Series(
             index=index,
             data=[
@@ -824,17 +824,9 @@ class CpModel:
             else:
                 return self.add_bool_and([])  # Evaluate to true.
         raise TypeError(
-            "not supported: CpModel.add_linear_expression_in_domain("
-            + str(linear_expr)
-            + " "
-            + str(type(linear_expr))
-            + " "
-            + str(linear_expr.is_integer())
-            + " "
-            + str(domain)
-            + " "
-            + str(type(domain))
-            + ")"
+            f"not supported: CpModel.add_linear_expression_in_domain({linear_expr} "
+            f" {type(linear_expr)} {linear_expr.is_integer()} {domain} "
+            f"{type(domain)}"
         )
 
     def add(self, ct: Union[BoundedLinearExpression, bool, np.bool_]) -> Constraint:
@@ -1642,7 +1634,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError(f"name={name} is not a valid identifier")
+            raise ValueError(f"name={name!r} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_linear_expr_series_and_validate_index(sizes, index)
@@ -1715,7 +1707,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError(f"name={name} is not a valid identifier")
+            raise ValueError(f"name={name!r} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_integral_series_and_validate_index(sizes, index)
@@ -1819,7 +1811,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError(f"name={name} is not a valid identifier")
+            raise ValueError(f"name={name!r} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_linear_expr_series_and_validate_index(sizes, index)
@@ -1913,7 +1905,7 @@ class CpModel:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError(f"name={name} is not a valid identifier")
+            raise ValueError(f"name={name!r} is not a valid identifier")
 
         starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
         sizes = _convert_to_integral_series_and_validate_index(sizes, index)
@@ -2857,7 +2849,8 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
         obj = self.objective_value
         print(
             f"Solution {self.__solution_count}, time ="
-            f" {current_time - self.__start_time:0.2f} s, objective = {obj}"
+            f" {current_time - self.__start_time:0.2f} s, objective = {obj}",
+            flush=True,
         )
         self.__solution_count += 1
 
@@ -2885,7 +2878,7 @@ class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
         )
         for v in self.__variables:
             print(f"  {v} = {self.value(v)}", end=" ")
-        print()
+        print(flush=True)
         self.__solution_count += 1
 
     @property
@@ -2912,7 +2905,7 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
         )
         for v in self.__variables:
             print(f"  {v} = {self.value(v)}", end=" ")
-        print()
+        print(flush=True)
         self.__solution_count += 1
 
     @property

@@ -35,9 +35,7 @@
 
 namespace py = pybind11;
 
-namespace operations_research {
-namespace sat {
-namespace python {
+namespace operations_research::sat::python {
 
 using ::py::arg;
 
@@ -70,18 +68,18 @@ class PyBaseIntVar : public BaseIntVar {
   using BaseIntVar::BaseIntVar; /* Inherit constructors */
 
   std::string ToString() const override {
-    PYBIND11_OVERRIDE_NAME(std::string,  // Return type (ret_type)
-                           BaseIntVar,   // Parent class (cname)
-                           "__str__",    // Name of method in Python (name)
-                           ToString,     // Name of function in C++ (fn)
+    PYBIND11_OVERRIDE_PURE_NAME(std::string,  // Return type (ret_type)
+                                BaseIntVar,   // Parent class (cname)
+                                "__str__",    // Name of method in Python (name)
+                                ToString,     // Name of function in C++ (fn)
     );
   }
 
   std::string DebugString() const override {
-    PYBIND11_OVERRIDE_NAME(std::string,  // Return type (ret_type)
-                           BaseIntVar,   // Parent class (cname)
-                           "__repr__",   // Name of method in Python (name)
-                           DebugString,  // Name of function in C++ (fn)
+    PYBIND11_OVERRIDE_PURE_NAME(std::string,  // Return type (ret_type)
+                                BaseIntVar,   // Parent class (cname)
+                                "__repr__",   // Name of method in Python (name)
+                                DebugString,  // Name of function in C++ (fn)
     );
   }
 };
@@ -163,8 +161,7 @@ class ResponseWrapper {
   const CpSolverResponse response_;
 };
 
-const char* kLinearExprClassDoc = R"doc(
-  Holds an integer linear expression.
+const char* kLinearExprClassDoc = R"doc(Holds an integer linear expression.
 
   A linear expression is built from integer constants and variables.
   For example, `x + 2 * (y - z + 1)`.
@@ -810,8 +807,8 @@ PYBIND11_MODULE(swig_helper, m) {
            py::return_value_policy::reference_internal);
 
   py::class_<BoundedLinearExpression>(m, "BoundedLinearExpression")
-      .def(py::init<std::vector<BaseIntVar*>, std::vector<int64_t>, int64_t,
-                    Domain>())
+      .def(py::init<std::vector<const BaseIntVar*>, std::vector<int64_t>,
+                    int64_t, Domain>())
       .def_property_readonly("bounds", &BoundedLinearExpression::bounds)
       .def_property_readonly("vars", &BoundedLinearExpression::vars)
       .def_property_readonly("coeffs", &BoundedLinearExpression::coeffs)
@@ -831,6 +828,4 @@ PYBIND11_MODULE(swig_helper, m) {
       });
 }  // NOLINT(readability/fn_size)
 
-}  // namespace python
-}  // namespace sat
-}  // namespace operations_research
+}  // namespace operations_research::sat::python

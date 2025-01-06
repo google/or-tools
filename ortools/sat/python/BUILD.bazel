@@ -23,6 +23,7 @@ cc_library(
     hdrs = ["linear_expr.h"],
     deps = [
         "//ortools/sat:cp_model_cc_proto",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:fixed_array",

@@ -196,6 +196,18 @@ TEST(CompressTuplesTest, NotPerfect) {
   EXPECT_EQ(tuples, expected_tuples);
 }
 
+TEST(CompressTuplesTest, BigInteger) {
+  const std::vector<int64_t> domain_sizes = {576460752303423490};
+  const std::vector<std::vector<int64_t>> original_tuples = {
+      {1},
+      {2},
+  };
+  std::vector<std::vector<int64_t>> tuples = original_tuples;
+  CompressTuples(domain_sizes, &tuples);
+
+  EXPECT_EQ(tuples, original_tuples);
+}
+
 TEST(FullyCompressTuplesTest, BasicTest) {
   const std::vector<int64_t> domain_sizes = {4, 4};
   std::vector<std::vector<int64_t>> tuples = {

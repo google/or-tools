@@ -359,12 +359,13 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   lp_reduced_cost_.assign(vars.size(), 0.0);
 
   if (!vars.empty()) {
-    const int max_index = NegationOf(vars.back()).value();
+    const IntegerVariable max_index = std::max(
+        NegationOf(vars.back()), integer_trail_->NumIntegerVariables() - 1);
     if (max_index >= expanded_lp_solution_.size()) {
-      expanded_lp_solution_.assign(max_index + 1, 0.0);
+      expanded_lp_solution_.assign(max_index.value() + 1, 0.0);
     }
     if (max_index >= expanded_reduced_costs_.size()) {
-      expanded_reduced_costs_.assign(max_index + 1, 0.0);
+      expanded_reduced_costs_.assign(max_index.value() + 1, 0.0);
     }
   }
 }
@@ -805,6 +806,17 @@ void LinearProgrammingConstraint::SetLevel(int level) {
     lp_solution_is_set_ = true;
     lp_solution_ = level_zero_lp_solution_;
     lp_solution_level_ = 0;
+    // Add the fixed variables. They might have been skipped when we did the
+    // linear relaxation of the model, but cut generators expect all variables
+    // to have an LP value.
+    if (expanded_lp_solution_.size() < integer_trail_->NumIntegerVariables()) {
+      expanded_lp_solution_.resize(integer_trail_->NumIntegerVariables());
+    }
+    for (IntegerVariable i(0); i < integer_trail_->NumIntegerVariables(); ++i) {
+      if (integer_trail_->IsFixed(i)) {
+        expanded_lp_solution_[i] = ToDouble(integer_trail_->LowerBound(i));
+      }
+    }
     for (int i = 0; i < lp_solution_.size(); i++) {
       const IntegerVariable var = extended_integer_variables_[i];
       expanded_lp_solution_[var] = lp_solution_[i];
@@ -1175,7 +1187,7 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
 // linear expression == rhs, we can use this to propagate more!
 //
 // TODO(user): Also propagate on -cut ? in practice we already do that in many
-// places were we try to generate the cut on -cut... But we coould do it sooner
+// places were we try to generate the cut on -cut... But we could do it sooner
 // and more cleanly here.
 bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
                                                 CutData* cut) {

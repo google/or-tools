@@ -25,11 +25,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sorted_interval_list.h"
 
-namespace operations_research {
-namespace sat {
-namespace python {
+namespace operations_research::sat::python {
 
 class BoundedLinearExpression;
 class CanonicalFloatExpression;
@@ -40,7 +39,7 @@ class LinearExpr;
 class BaseIntVar;
 class NotBooleanVariable;
 
-// A class to hold an linear expression or a constant.
+// A class to hold a pointer to a linear expression or a constant.
 struct ExprOrValue {
   explicit ExprOrValue(LinearExpr* e) : expr(e) {}
   explicit ExprOrValue(double v) : double_value(v) {}
@@ -51,56 +50,93 @@ struct ExprOrValue {
   int64_t int_value = 0;
 };
 
-// A linear expression that can be either integer or floating point.
+// Interface for a linear expression that can be either integer or floating
+// point.
 class LinearExpr {
  public:
   virtual ~LinearExpr() = default;
-  virtual void VisitAsFloat(FloatExprVisitor* /*lin*/, double /*c*/) = 0;
-  virtual bool VisitAsInt(IntExprVisitor* /*lin*/, int64_t /*c*/) = 0;
-  bool IsInteger();
-  virtual std::string ToString() const { return "LinearExpr"; }
-  virtual std::string DebugString() const { return "LinearExpr()"; }
+  virtual void VisitAsFloat(FloatExprVisitor& /*lin*/, double /*c*/) const = 0;
+  virtual bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const = 0;
+  bool IsInteger() const;
+  virtual std::string ToString() const = 0;
+  virtual std::string DebugString() const = 0;
 
+  // Returns a new LinearExpr that is the sum of the given expressions.
   static LinearExpr* Sum(const std::vector<LinearExpr*>& exprs);
+  // Returns a new LinearExpr that is the sum of the given expressions or
+  // constants.
   static LinearExpr* MixedSum(const std::vector<ExprOrValue>& exprs);
+  // Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* WeightedSumInt(const std::vector<LinearExpr*>& exprs,
                                     const std::vector<int64_t>& coeffs);
+  // Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* WeightedSumFloat(const std::vector<LinearExpr*>& exprs,
                                       const std::vector<double>& coeffs);
+  // Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* MixedWeightedSumInt(const std::vector<ExprOrValue>& exprs,
                                          const std::vector<int64_t>& coeffs);
+  // Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* MixedWeightedSumFloat(
       const std::vector<ExprOrValue>& exprs, const std::vector<double>& coeffs);
+  // returns expr * coeff.
   static LinearExpr* TermInt(LinearExpr* expr, int64_t coeff);
+  // returns expr * coeff.
   static LinearExpr* TermFloat(LinearExpr* expr, double coeff);
+  // returns expr * coeff + offset.
   static LinearExpr* AffineInt(LinearExpr* expr, int64_t coeff, int64_t offset);
+  // returns expr * coeff + offset.
   static LinearExpr* AffineFloat(LinearExpr* expr, double coeff, double offset);
+  // Returns a new LinearExpr that is the given constant.
   static LinearExpr* ConstantInt(int64_t value);
+  // Returns a new LinearExpr that is the given constant.
   static LinearExpr* ConstantFloat(double value);
 
+  // return (this) + (expr).
   LinearExpr* Add(LinearExpr* expr);
+  // return (this) + (cst).
   LinearExpr* AddInt(int64_t cst);
+  // return (this) + (cst).
   LinearExpr* AddFloat(double cst);
+  // return (this) - (expr).
   LinearExpr* Sub(LinearExpr* expr);
+  // return (this) - (cst).
   LinearExpr* SubInt(int64_t cst);
+  // return (this) - (cst).
   LinearExpr* SubFloat(double cst);
+  // return (cst) - (this).
   LinearExpr* RSubInt(int64_t cst);
+  // return (cst) - (this).
   LinearExpr* RSubFloat(double cst);
+  // return (this) * (cst).
   LinearExpr* MulInt(int64_t cst);
+  // return (this) * (cst).
   LinearExpr* MulFloat(double cst);
+  // return -(this).
   LinearExpr* Neg();
 
+  // returns (this) == (rhs).
   BoundedLinearExpression* Eq(LinearExpr* rhs);
+  // returns (this) == (rhs).
   BoundedLinearExpression* EqCst(int64_t rhs);
+  // returns (this) != (rhs).
   BoundedLinearExpression* Ne(LinearExpr* rhs);
+  // returns (this) != (rhs).
   BoundedLinearExpression* NeCst(int64_t rhs);
+  // returns (this) >= (rhs).
   BoundedLinearExpression* Ge(LinearExpr* rhs);
+  // returns (this) >= (rhs).
   BoundedLinearExpression* GeCst(int64_t rhs);
+  // returns (this) <= (rhs).
   BoundedLinearExpression* Le(LinearExpr* rhs);
+  // returns (this) <= (rhs).
   BoundedLinearExpression* LeCst(int64_t rhs);
+  // returns (this) < (rhs).
   BoundedLinearExpression* Lt(LinearExpr* rhs);
+  // returns (this) < (rhs).
   BoundedLinearExpression* LtCst(int64_t rhs);
+  // returns (this) > (rhs).
   BoundedLinearExpression* Gt(LinearExpr* rhs);
+  // returns (this) > (rhs).
   BoundedLinearExpression* GtCst(int64_t rhs);
 };
 
@@ -112,15 +148,16 @@ struct BaseIntVarComparator {
 // A visitor class to process a floating point linear expression.
 class FloatExprVisitor {
  public:
-  void AddToProcess(LinearExpr* expr, double coeff);
+  void AddToProcess(const LinearExpr* expr, double coeff);
   void AddConstant(double constant);
-  void AddVarCoeff(BaseIntVar* var, double coeff);
-  double Process(LinearExpr* expr, std::vector<BaseIntVar*>* vars,
+  void AddVarCoeff(const BaseIntVar* var, double coeff);
+  double Process(const LinearExpr* expr, std::vector<const BaseIntVar*>* vars,
                  std::vector<double>* coeffs);
 
  private:
-  std::vector<std::pair<LinearExpr*, double>> to_process_;
-  absl::btree_map<BaseIntVar*, double, BaseIntVarComparator> canonical_terms_;
+  std::vector<std::pair<const LinearExpr*, double>> to_process_;
+  absl::btree_map<const BaseIntVar*, double, BaseIntVarComparator>
+      canonical_terms_;
   double offset_ = 0;
 };
 
@@ -128,31 +165,32 @@ class FloatExprVisitor {
 class CanonicalFloatExpression {
  public:
   explicit CanonicalFloatExpression(LinearExpr* expr);
-  const std::vector<BaseIntVar*>& vars() const { return vars_; }
+  const std::vector<const BaseIntVar*>& vars() const { return vars_; }
   const std::vector<double>& coeffs() const { return coeffs_; }
   double offset() const { return offset_; }
 
  private:
-  std::vector<BaseIntVar*> vars_;
+  std::vector<const BaseIntVar*> vars_;
   std::vector<double> coeffs_;
-  double offset_;
+  double offset_ = 0;
 };
 
 // A visitor class to process an integer linear expression.
 class IntExprVisitor {
  public:
-  void AddToProcess(LinearExpr* expr, int64_t coeff);
+  void AddToProcess(const LinearExpr* expr, int64_t coeff);
   void AddConstant(int64_t constant);
-  void AddVarCoeff(BaseIntVar* var, int64_t coeff);
+  void AddVarCoeff(const BaseIntVar* var, int64_t coeff);
   bool ProcessAll();
-  bool Process(std::vector<BaseIntVar*>* vars, std::vector<int64_t>* coeffs,
-               int64_t* offset);
-  bool Evaluate(LinearExpr* expr, const CpSolverResponse& solution,
+  bool Process(std::vector<const BaseIntVar*>* vars,
+               std::vector<int64_t>* coeffs, int64_t* offset);
+  bool Evaluate(const LinearExpr* expr, const CpSolverResponse& solution,
                 int64_t* value);
 
  private:
-  std::vector<std::pair<LinearExpr*, int64_t>> to_process_;
-  absl::btree_map<BaseIntVar*, int64_t, BaseIntVarComparator> canonical_terms_;
+  std::vector<std::pair<const LinearExpr*, int64_t>> to_process_;
+  absl::btree_map<const BaseIntVar*, int64_t, BaseIntVarComparator>
+      canonical_terms_;
   int64_t offset_ = 0;
 };
 
@@ -160,53 +198,55 @@ class IntExprVisitor {
 class CanonicalIntExpression {
  public:
   explicit CanonicalIntExpression(LinearExpr* expr);
-  const std::vector<BaseIntVar*>& vars() const { return vars_; }
+  const std::vector<const BaseIntVar*>& vars() const { return vars_; }
   const std::vector<int64_t>& coeffs() const { return coeffs_; }
   int64_t offset() const { return offset_; }
   bool ok() const { return ok_; }
 
  private:
-  std::vector<BaseIntVar*> vars_;
+  std::vector<const BaseIntVar*> vars_;
   std::vector<int64_t> coeffs_;
-  int64_t offset_;
-  bool ok_;
+  int64_t offset_ = 0;
+  bool ok_ = true;
 };
 
 // A class to hold a sum of linear expressions, and optional integer and
-// double offsets.
+// double offsets (at most one of them can be non-zero, this is DCHECKed).
 class SumArray : public LinearExpr {
  public:
   explicit SumArray(const std::vector<LinearExpr*>& exprs,
                     int64_t int_offset = 0, double double_offset = 0.0)
       : exprs_(exprs.begin(), exprs.end()),
         int_offset_(int_offset),
-        double_offset_(double_offset) {}
+        double_offset_(double_offset) {
+    DCHECK(int_offset_ == 0 || double_offset_ == 0.0);
+  }
   ~SumArray() override = default;
 
-  bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
     if (double_offset_ != 0.0) return false;
     for (int i = 0; i < exprs_.size(); ++i) {
-      lin->AddToProcess(exprs_[i], c);
+      lin.AddToProcess(exprs_[i], c);
     }
-    lin->AddConstant(int_offset_ * c);
+    lin.AddConstant(int_offset_ * c);
     return true;
   }
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
     for (int i = 0; i < exprs_.size(); ++i) {
-      lin->AddToProcess(exprs_[i], c);
+      lin.AddToProcess(exprs_[i], c);
     }
     if (int_offset_ != 0) {
-      lin->AddConstant(int_offset_ * c);
+      lin.AddConstant(int_offset_ * c);
     } else if (double_offset_ != 0.0) {
-      lin->AddConstant(double_offset_ * c);
+      lin.AddConstant(double_offset_ * c);
     }
   }
 
   std::string ToString() const override {
     if (exprs_.empty()) {
       if (double_offset_ != 0.0) {
-        return absl::StrCat(double_offset_);
+        return absl::StrCat(RoundTripDoubleFormat(double_offset_));
       } else {
         return absl::StrCat(int_offset_);
       }
@@ -246,7 +286,8 @@ class SumArray : public LinearExpr {
       absl::StrAppend(&s, ", int_offset=", int_offset_);
     }
     if (double_offset_ != 0.0) {
-      absl::StrAppend(&s, ", double_offset=", double_offset_);
+      absl::StrAppend(
+          &s, ", double_offset=", RoundTripDoubleFormat(double_offset_));
     }
     absl::StrAppend(&s, ")");
     return s;
@@ -266,11 +307,11 @@ class FloatWeightedSum : public LinearExpr {
                    const std::vector<double>& coeffs, double offset);
   ~FloatWeightedSum() override = default;
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override;
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
   std::string ToString() const override;
   std::string DebugString() const override;
 
-  bool VisitAsInt(IntExprVisitor* /*lin*/, int64_t /*c*/) override {
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
     return false;
   }
 
@@ -290,18 +331,18 @@ class IntWeightedSum : public LinearExpr {
         offset_(offset) {}
   ~IntWeightedSum() override = default;
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
     for (int i = 0; i < exprs_.size(); ++i) {
-      lin->AddToProcess(exprs_[i], coeffs_[i] * c);
+      lin.AddToProcess(exprs_[i], coeffs_[i] * c);
     }
-    lin->AddConstant(offset_ * c);
+    lin.AddConstant(offset_ * c);
   }
 
-  bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
     for (int i = 0; i < exprs_.size(); ++i) {
-      lin->AddToProcess(exprs_[i], coeffs_[i] * c);
+      lin.AddToProcess(exprs_[i], coeffs_[i] * c);
     }
-    lin->AddConstant(offset_ * c);
+    lin.AddConstant(offset_ * c);
     return true;
   }
 
@@ -320,8 +361,8 @@ class FloatAffine : public LinearExpr {
   FloatAffine(LinearExpr* expr, double coeff, double offset);
   ~FloatAffine() override = default;
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override;
-  bool VisitAsInt(IntExprVisitor* /*lin*/, int64_t /*c*/) override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
     return false;
   }
   std::string ToString() const override;
@@ -344,15 +385,15 @@ class IntAffine : public LinearExpr {
       : expr_(expr), coeff_(coeff), offset_(offset) {}
   ~IntAffine() override = default;
 
-  bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
-    lin->AddToProcess(expr_, c * coeff_);
-    lin->AddConstant(offset_ * c);
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+    lin.AddToProcess(expr_, c * coeff_);
+    lin.AddConstant(offset_ * c);
     return true;
   }
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
-    lin->AddToProcess(expr_, c * coeff_);
-    lin->AddConstant(offset_ * c);
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
+    lin.AddToProcess(expr_, c * coeff_);
+    lin.AddConstant(offset_ * c);
   }
 
   std::string ToString() const override {
@@ -394,8 +435,8 @@ class FloatConstant : public LinearExpr {
   explicit FloatConstant(double value) : value_(value) {}
   ~FloatConstant() override = default;
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override;
-  bool VisitAsInt(IntExprVisitor* /*lin*/, int64_t /*c*/) override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
     return false;
   }
   std::string ToString() const override;
@@ -410,13 +451,13 @@ class IntConstant : public LinearExpr {
  public:
   explicit IntConstant(int64_t value) : value_(value) {}
   ~IntConstant() override = default;
-  bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
-    lin->AddConstant(value_ * c);
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+    lin.AddConstant(value_ * c);
     return true;
   }
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
-    lin->AddConstant(value_ * c);
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
+    lin.AddConstant(value_ * c);
   }
 
   std::string ToString() const override { return absl::StrCat(value_); }
@@ -451,13 +492,13 @@ class BaseIntVar : public Literal {
 
   int index() const override { return index_; }
 
-  bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
-    lin->AddVarCoeff(this, c);
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+    lin.AddVarCoeff(this, c);
     return true;
   }
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
-    lin->AddVarCoeff(this, c);
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
+    lin.AddVarCoeff(this, c);
   }
 
   std::string ToString() const override {
@@ -499,15 +540,15 @@ class NotBooleanVariable : public Literal {
 
   int index() const override { return -var_->index() - 1; }
 
-  bool VisitAsInt(IntExprVisitor* lin, int64_t c) override {
-    lin->AddVarCoeff(var_, -c);
-    lin->AddConstant(c);
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+    lin.AddVarCoeff(var_, -c);
+    lin.AddConstant(c);
     return true;
   }
 
-  void VisitAsFloat(FloatExprVisitor* lin, double c) override {
-    lin->AddVarCoeff(var_, -c);
-    lin->AddConstant(c);
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
+    lin.AddVarCoeff(var_, -c);
+    lin.AddConstant(c);
   }
 
   std::string ToString() const override {
@@ -521,20 +562,20 @@ class NotBooleanVariable : public Literal {
   }
 
  private:
-  BaseIntVar* var_;
+  BaseIntVar* const var_;
 };
 
 // A class to hold a linear expression with bounds.
 class BoundedLinearExpression {
  public:
-  BoundedLinearExpression(std::vector<BaseIntVar*> vars,
-                          std::vector<int64_t> coeffs, int64_t offset,
+  BoundedLinearExpression(const std::vector<const BaseIntVar*>& vars,
+                          const std::vector<int64_t>& coeffs, int64_t offset,
                           const Domain& bounds);
 
   ~BoundedLinearExpression() = default;
 
   const Domain& bounds() const;
-  const std::vector<BaseIntVar*>& vars() const;
+  const std::vector<const BaseIntVar*>& vars() const;
   const std::vector<int64_t>& coeffs() const;
   int64_t offset() const;
   std::string ToString() const;
@@ -542,14 +583,12 @@ class BoundedLinearExpression {
   bool CastToBool(bool* result) const;
 
  private:
-  std::vector<BaseIntVar*> vars_;
-  std::vector<int64_t> coeffs_;
+  const std::vector<const BaseIntVar*> vars_;
+  const std::vector<int64_t> coeffs_;
   int64_t offset_;
   const Domain bounds_;
 };
 
-}  // namespace python
-}  // namespace sat
-}  // namespace operations_research
+}  // namespace operations_research::sat::python
 
 #endif  // OR_TOOLS_SAT_PYTHON_LINEAR_EXPR_H_

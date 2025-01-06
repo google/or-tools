@@ -608,7 +608,7 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
 
     // By domination argument, we can fix to false everything but the minimum.
     if (singleton_literal_with_cost.size() > 1) {
-      std::sort(
+      std::stable_sort(
           singleton_literal_with_cost.begin(),
           singleton_literal_with_cost.end(),
           [](const std::pair<int, int64_t>& a,
@@ -1629,8 +1629,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         PossibleIntegerOverflow(*context_->working_model, lin->vars(),
                                 lin->coeffs(), lin->domain(0))) {
       context_->working_model->mutable_constraints()->RemoveLast();
-      // Re-add a new term with the constant factor.
-      ct->mutable_int_prod()->add_exprs()->set_offset(constant_factor);
+      // The constant factor will be handled by the creation of an affine
+      // relation below.
     } else {  // Replace with a linear equation.
       context_->UpdateNewConstraintsVariableUsage();
       context_->UpdateRuleStats("int_prod: linearize product by constant.");
