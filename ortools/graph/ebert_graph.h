@@ -1718,53 +1718,6 @@ class AnnotatedGraphBuildManager
             num_nodes, num_arcs, sort_arcs) {}
 };
 
-// Builds a directed line graph for 'graph' (see "directed line graph" in
-// http://en.wikipedia.org/wiki/Line_graph). Arcs of the original graph
-// become nodes and the new graph contains only nodes created from arcs in the
-// original graph (we use the notation (a->b) for these new nodes); the index
-// of the node (a->b) in the new graph is exactly the same as the index of the
-// arc a->b in the original graph.
-// An arc from node (a->b) to node (c->d) in the new graph is added if and only
-// if b == c in the original graph.
-// This method expects that 'line_graph' is an empty graph (it has no nodes
-// and no arcs).
-// Returns false on an error.
-template <typename GraphType>
-bool BuildLineGraph(const GraphType& graph, GraphType* const line_graph) {
-  if (line_graph == nullptr) {
-    LOG(DFATAL) << "line_graph must not be NULL";
-    return false;
-  }
-  if (line_graph->num_nodes() != 0) {
-    LOG(DFATAL) << "line_graph must be empty";
-    return false;
-  }
-  typedef typename GraphType::ArcIterator ArcIterator;
-  typedef typename GraphType::OutgoingArcIterator OutgoingArcIterator;
-  // Sizing then filling.
-  typename GraphType::ArcIndex num_arcs = 0;
-  for (ArcIterator arc_iterator(graph); arc_iterator.Ok();
-       arc_iterator.Next()) {
-    const typename GraphType::ArcIndex arc = arc_iterator.Index();
-    const typename GraphType::NodeIndex head = graph.Head(arc);
-    for (OutgoingArcIterator iterator(graph, head); iterator.Ok();
-         iterator.Next()) {
-      ++num_arcs;
-    }
-  }
-  line_graph->Reserve(graph.num_arcs(), num_arcs);
-  for (ArcIterator arc_iterator(graph); arc_iterator.Ok();
-       arc_iterator.Next()) {
-    const typename GraphType::ArcIndex arc = arc_iterator.Index();
-    const typename GraphType::NodeIndex head = graph.Head(arc);
-    for (OutgoingArcIterator iterator(graph, head); iterator.Ok();
-         iterator.Next()) {
-      line_graph->AddArc(arc, iterator.Index());
-    }
-  }
-  return true;
-}
-
 #undef DEFINE_STL_ITERATOR_FUNCTIONS
 
 }  // namespace operations_research

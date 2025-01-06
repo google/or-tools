@@ -17,13 +17,11 @@
 #include <random>
 #include <string>
 
-#include "absl/base/macros.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/base/macros.h"
 #include "ortools/util/permutation.h"
 
 namespace operations_research {
@@ -1090,90 +1088,6 @@ TEST(ForwardEbertGraphTest, ImpossibleBuildTailArray) {
   // rebuilding that optional tail array is impossible.
   g.SetHead(arc, 2);
   EXPECT_FALSE(g.BuildTailArray());
-}
-
-// Testing line graph creation.
-
-// Empty fixture templates to collect the types of graphs on which we want to
-// base the shortest paths template instances that we test.
-template <typename GraphType>
-class LineGraphDeathTest : public testing::Test {};
-template <typename GraphType>
-class LineGraphTest : public testing::Test {};
-
-typedef testing::Types<StarGraph, ForwardStarGraph>
-    GraphTypesForLineGraphTesting;
-
-TYPED_TEST_SUITE(LineGraphDeathTest, GraphTypesForLineGraphTesting);
-TYPED_TEST_SUITE(LineGraphTest, GraphTypesForLineGraphTesting);
-
-TYPED_TEST(LineGraphDeathTest, NullLineGraph) {
-  TypeParam graph;
-#ifndef NDEBUG
-  EXPECT_DEATH(BuildLineGraph<TypeParam>(graph, nullptr),
-               "line_graph must not be NULL");
-#else
-  EXPECT_FALSE(BuildLineGraph<TypeParam>(graph, nullptr));
-#endif
-}
-
-TYPED_TEST(LineGraphDeathTest, NonEmptyLineGraph) {
-  TypeParam graph;
-  TypeParam line_graph(1, 1);
-  line_graph.AddArc(0, 0);
-#ifndef NDEBUG
-  EXPECT_DEATH(BuildLineGraph<TypeParam>(graph, &line_graph),
-               "line_graph must be empty");
-#else
-  EXPECT_FALSE(BuildLineGraph<TypeParam>(graph, &line_graph));
-#endif
-}
-
-TYPED_TEST(LineGraphDeathTest, LineGraphOfEmptyGraph) {
-  TypeParam graph;
-  TypeParam line_graph;
-  EXPECT_TRUE(BuildLineGraph<TypeParam>(graph, &line_graph));
-  EXPECT_EQ(0, line_graph.num_nodes());
-  EXPECT_EQ(0, line_graph.num_arcs());
-}
-
-TYPED_TEST(LineGraphTest, LineGraphOfSingleton) {
-  TypeParam graph(1, 1);
-  graph.AddArc(0, 0);
-  TypeParam line_graph;
-  EXPECT_TRUE(BuildLineGraph<TypeParam>(graph, &line_graph));
-  EXPECT_EQ(1, line_graph.num_nodes());
-  EXPECT_EQ(1, line_graph.num_arcs());
-}
-
-TYPED_TEST(LineGraphTest, LineGraph) {
-  const NodeIndex kNodes = 4;
-  const ArcIndex kArcs[][2] = {{0, 1}, {0, 2}, {1, 2}, {2, 0}, {2, 3}};
-  const ArcIndex kExpectedLineArcs[][2] = {{0, 2}, {2, 3}, {3, 0}, {3, 1},
-                                           {2, 4}, {1, 4}, {1, 3}};
-  TypeParam graph(kNodes, ABSL_ARRAYSIZE(kArcs));
-  for (int i = 0; i < ABSL_ARRAYSIZE(kArcs); ++i) {
-    graph.AddArc(kArcs[i][0], kArcs[i][1]);
-  }
-  TypeParam line_graph;
-  EXPECT_TRUE(BuildLineGraph<TypeParam>(graph, &line_graph));
-  EXPECT_EQ(ABSL_ARRAYSIZE(kArcs), line_graph.num_nodes());
-  EXPECT_EQ(ABSL_ARRAYSIZE(kExpectedLineArcs), line_graph.num_arcs());
-  for (int i = 0; i < ABSL_ARRAYSIZE(kExpectedLineArcs); ++i) {
-    const NodeIndex expected_tail = kExpectedLineArcs[i][0];
-    const NodeIndex expected_head = kExpectedLineArcs[i][1];
-    bool found = false;
-    for (typename TypeParam::OutgoingArcIterator out_iterator(line_graph,
-                                                              expected_tail);
-         out_iterator.Ok(); out_iterator.Next()) {
-      const ArcIndex arc = out_iterator.Index();
-      if (line_graph.Head(arc) == expected_head) {
-        found = true;
-        break;
-      }
-    }
-    EXPECT_TRUE(found) << expected_tail << " " << expected_head;
-  }
 }
 
 template <typename GraphType, bool sort_arcs>
