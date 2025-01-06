@@ -633,9 +633,8 @@ TYPED_TEST(DebugStringEbertGraphTest, Test2) {
 template <typename GraphType>
 class DebugStringTestWithGraphBuildManager : public ::testing::Test {};
 
-typedef ::testing::Types<
-    EbertGraph<int16_t, int16_t>, ForwardEbertGraph<int16_t, int16_t>,
-    ForwardStaticGraph<int16_t, int16_t>, ForwardStaticGraph<int16_t, int32_t> >
+typedef ::testing::Types<EbertGraph<int16_t, int16_t>,
+                         ForwardEbertGraph<int16_t, int16_t> >
     GraphTypesForDebugStringTestWithGraphBuildManager;
 
 TYPED_TEST_SUITE(DebugStringTestWithGraphBuildManager,

@@ -44,16 +44,17 @@ list(FILTER CXX_SRCS EXCLUDE REGEX ".*/course_scheduling_run.cc") # missing prot
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/course_scheduling.cc") # missing proto
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/dimacs_assignment.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/dobble_ls.cc") # Too long
+list(FILTER CXX_SRCS EXCLUDE REGEX ".*/fap_*.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/frequency_assignment_problem.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/jobshop_sat.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/knapsack_2d_sat.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/mps_driver.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/multi_knapsack_sat.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/network_routing_sat.cc")
+list(FILTER CXX_SRCS EXCLUDE REGEX ".*/parse_dimacs_assignment.*")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdptw.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/shift_minimization_sat.cc")
-list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/strawberry_fields_with_column_generation.cc") # Too long
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/vector_bin_packing_solver.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/weighted_tardiness_sat.cc")

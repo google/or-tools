@@ -499,13 +499,13 @@ class NetworkRoutingSolver {
     const std::vector<PathDistance> distances(2 * count_arcs(), 1);
 
     for (const Demand& demand : demands_array_) {
-      PathContainer paths;
-      PathContainer::BuildInMemoryCompactPathContainer(&paths);
+      auto paths =
+          GenericPathContainer<Graph>::BuildInMemoryCompactPathContainer();
 
       ComputeOneToManyShortestPaths(graph_, distances, demand.source,
                                     {demand.destination}, &paths);
 
-      std::vector<int> path;
+      std::vector<Graph::NodeIndex> path;
       paths.GetPath(demand.source, demand.destination, &path);
       CHECK_GE(path.size(), 1);
       all_min_path_lengths_.push_back(path.size() - 1);
@@ -656,13 +656,14 @@ class NetworkRoutingSolver {
   }
 
  private:
+  using Graph = ::util::ListGraph<int, int>;
   int num_nodes() const { return graph_.num_nodes(); }
   int count_arcs() const { return arcs_data_.size() / 2; }
 
   std::vector<std::vector<int64_t>> arcs_data_;
   std::vector<int> arc_capacity_;
   std::vector<Demand> demands_array_;
-  util::ListGraph<int, int> graph_;
+  Graph graph_;
   std::vector<int64_t> all_min_path_lengths_;
   std::vector<std::vector<int>> capacity_;
   std::vector<std::vector<OnePath>> all_paths_;

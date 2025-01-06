@@ -724,6 +724,7 @@ cc_library(
 
 cc_library(
     name = "parse_dimacs_assignment",
+    srcs = ["parse_dimacs_assignment.cc"],
     hdrs = ["parse_dimacs_assignment.h"],
     deps = [
         "//ortools/base",
@@ -877,6 +878,7 @@ cc_test(
 # Frequency Assignment Problem
 cc_library(
     name = "fap_parser",
+    srcs = ["fap_parser.cc"],
     hdrs = ["fap_parser.h"],
     deps = [
         "//ortools/base",
@@ -890,6 +892,7 @@ cc_library(
 
 cc_library(
     name = "fap_model_printer",
+    srcs = ["fap_model_printer.cc"],
     hdrs = ["fap_model_printer.h"],
     deps = [
         ":fap_parser",
@@ -902,6 +905,7 @@ cc_library(
 
 cc_library(
     name = "fap_utilities",
+    srcs = ["fap_utilities.cc"],
     hdrs = ["fap_utilities.h"],
     deps = [
         ":fap_parser",

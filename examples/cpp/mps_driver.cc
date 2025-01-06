@@ -112,7 +112,11 @@ int main(int argc, char* argv[]) {
         continue;
       }
     } else {
-      ReadFileToProto(file_name, &model_proto);
+      const absl::Status status = ReadFileToProto(file_name, &model_proto);
+      if (!status.ok()) {
+        LOG(INFO) << status;
+        continue;
+      }
       MPModelProtoToLinearProgram(model_proto, &linear_program);
     }
     if (absl::GetFlag(FLAGS_mps_dump_problem)) {

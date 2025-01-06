@@ -33,17 +33,16 @@
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/util/filelineiter.h"
 
-ABSL_FLAG(bool, assignment_maximize_cost, false,
-          "Negate costs so a max-cost assignment is found.");
+ABSL_DECLARE_FLAG(bool, assignment_maximize_cost);
 
 namespace operations_research {
 
 template <typename GraphType>
 class DimacsAssignmentParser {
  public:
-  using NodeIndex = GraphType::NodeIndex;
-  using ArcIndex = GraphType::ArcIndex;
-  using CostValue = LinearSumAssignment<GraphType>::CostValueT;
+  using NodeIndex = typename GraphType::NodeIndex;
+  using ArcIndex = typename GraphType::ArcIndex;
+  using CostValue = typename LinearSumAssignment<GraphType>::CostValueT;
 
   explicit DimacsAssignmentParser(absl::string_view filename)
       : filename_(filename), graph_(nullptr), assignment_(nullptr) {}

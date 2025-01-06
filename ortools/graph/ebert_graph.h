@@ -32,10 +32,7 @@
 // those commonalities are mostly factored out into base classes as
 // described below. Despite the commonalities, however, each of the
 // three representations presents a somewhat different interface
-// because of their different underlying semantics. A quintessential
-// example is that the AddArc() method, very natural for the
-// EbertGraph representation, cannot exist for an inherently static
-// representation like ForwardStaticGraph.
+// because of their different underlying semantics.
 //
 // Many clients are expected to use the interfaces to the graph
 // objects directly, but some clients are parameterized by graph type
@@ -48,8 +45,7 @@
 // TailArrayManager<> template, which provides a uniform interface for
 // applications that need to map from arc indices to arc tail nodes,
 // accounting for the fact that such a mapping has to be requested
-// explicitly from the ForwardStaticGraph and ForwardStarGraph
-// representations.
+// explicitly from the ForwardStarGraph representation.
 //
 // There are two base class templates, StarGraphBase, and
 // EbertGraphBase; their purpose is to hold methods and data
@@ -60,11 +56,11 @@
 // not normally be instantiated by clients:
 //
 //                     (StarGraphBase)                       |
-//                       /         \                         |
-//                      /           \                        |
-//                     /             \                       |
-//                    /               \                      |
-//           (EbertGraphBase)     ForwardStaticGraph         |
+//                       /                                   |
+//                      /                                    |
+//                     /                                     |
+//                    /                                      |
+//           (EbertGraphBase)                                |
 //            /            \                                 |
 //           /              \                                |
 //      EbertGraph     ForwardEbertGraph                     |
@@ -151,21 +147,6 @@
 //                             + n * sizeof(ArcIndexType)
 //    plus a small constant when the array of arc tails is absent. Allocating
 //    the arc tail array adds another m * sizeof(NodeIndexType).
-//
-// The ForwardStaticGraph representation is restricted yet farther
-// than ForwardEbertGraph, with the benefit that it provides higher
-// performance to those applications that can use it.
-//  * As with ForwardEbertGraph, the presence of the array of arc
-//    tails is optional.
-//  * The outgoing adjacency list for each node is stored in a
-//    contiguous segment of the head_[] array, obviating the
-//    next_adjacent_arc_ structure entirely and ensuring good locality
-//    of reference for applications that iterate over outgoing
-//    adjacency lists.
-//  * The memory consumption is: m * sizeof(NodeIndexType)
-//                             + n * sizeof(ArcIndexType)
-//    plus a small constant when the array of arc tails is absent. Allocating
-//    the arc tail array adds another m * sizeof(NodeIndexType).
 
 #include <algorithm>
 #include <cstddef>
@@ -191,8 +172,6 @@ template <typename NodeIndexType, typename ArcIndexType>
 class EbertGraph;
 template <typename NodeIndexType, typename ArcIndexType>
 class ForwardEbertGraph;
-template <typename NodeIndexType, typename ArcIndexType>
-class ForwardStaticGraph;
 
 // Standard instantiation of ForwardEbertGraph (named 'ForwardStarGraph') of
 // EbertGraph (named 'StarGraph'); and relevant type shortcuts. Unless their use
@@ -206,10 +185,6 @@ typedef int64_t FlowQuantity;
 typedef int64_t CostValue;
 typedef EbertGraph<NodeIndex, ArcIndex> StarGraph;
 typedef ForwardEbertGraph<NodeIndex, ArcIndex> ForwardStarGraph;
-typedef ZVector<NodeIndex> NodeIndexArray;
-typedef ZVector<ArcIndex> ArcIndexArray;
-typedef ZVector<FlowQuantity> QuantityArray;
-typedef ZVector<CostValue> CostArray;
 
 // Adapt our old iteration style to support range-based for loops. Add typedefs
 // required by std::iterator_traits.
@@ -534,387 +509,6 @@ class StarGraphBase {
   inline DerivedGraph* ThisAsDerived() {
     return static_cast<DerivedGraph*>(this);
   }
-};
-
-template <typename NodeIndexType, typename ArcIndexType>
-class PermutationIndexComparisonByArcHead {
- public:
-  explicit PermutationIndexComparisonByArcHead(
-      const ZVector<NodeIndexType>& head)
-      : head_(head) {}
-
-  bool operator()(ArcIndexType a, ArcIndexType b) const {
-    return head_[a] < head_[b];
-  }
-
- private:
-  const ZVector<NodeIndexType>& head_;
-};
-
-template <typename NodeIndexType, typename ArcIndexType>
-class ABSL_DEPRECATED("Use `::util::StaticGraph<>` instead.") ForwardStaticGraph
-    : public StarGraphBase<NodeIndexType, ArcIndexType,
-                           ForwardStaticGraph<NodeIndexType, ArcIndexType> > {
-  typedef StarGraphBase<NodeIndexType, ArcIndexType,
-                        ForwardStaticGraph<NodeIndexType, ArcIndexType> >
-      Base;
-  friend class StarGraphBase<NodeIndexType, ArcIndexType,
-                             ForwardStaticGraph<NodeIndexType, ArcIndexType> >;
-
-  using Base::ArcDebugString;
-  using Base::NodeDebugString;
-
-  using Base::first_incident_arc_;
-  using Base::head_;
-  using Base::max_num_arcs_;
-  using Base::max_num_nodes_;
-  using Base::num_arcs_;
-  using Base::num_nodes_;
-
- public:
-#if !defined(SWIG)
-  using Base::end_arc_index;
-  using Base::Head;
-  using Base::IsNodeValid;
-
-  using Base::kFirstArc;
-  using Base::kFirstNode;
-  using Base::kNilArc;
-#endif  // SWIG
-
-  typedef NodeIndexType NodeIndex;
-  typedef ArcIndexType ArcIndex;
-
-// TODO(user): Configure SWIG to handle the
-// CycleHandlerForAnnotatedArcs class.
-#if !defined(SWIG)
-  class CycleHandlerForAnnotatedArcs
-      : public ArrayIndexCycleHandler<NodeIndexType, ArcIndexType> {
-    typedef ArrayIndexCycleHandler<NodeIndexType, ArcIndexType> Base;
-
-   public:
-    CycleHandlerForAnnotatedArcs(
-        PermutationCycleHandler<ArcIndexType>* annotation_handler,
-        NodeIndexType* data)
-        : ArrayIndexCycleHandler<NodeIndexType, ArcIndexType>(&data[kFirstArc]),
-          annotation_handler_(annotation_handler) {}
-
-    // This type is neither copyable nor movable.
-    CycleHandlerForAnnotatedArcs(const CycleHandlerForAnnotatedArcs&) = delete;
-    CycleHandlerForAnnotatedArcs& operator=(
-        const CycleHandlerForAnnotatedArcs&) = delete;
-
-    void SetTempFromIndex(ArcIndexType source) override {
-      Base::SetTempFromIndex(source);
-      annotation_handler_->SetTempFromIndex(source);
-    }
-
-    void SetIndexFromIndex(ArcIndexType source,
-                           ArcIndexType destination) const override {
-      Base::SetIndexFromIndex(source, destination);
-      annotation_handler_->SetIndexFromIndex(source, destination);
-    }
-
-    void SetIndexFromTemp(ArcIndexType destination) const override {
-      Base::SetIndexFromTemp(destination);
-      annotation_handler_->SetIndexFromTemp(destination);
-    }
-
-   private:
-    PermutationCycleHandler<ArcIndexType>* annotation_handler_;
-  };
-#endif  // SWIG
-
-  // Constructor for use by GraphBuilderFromArcs instances and direct
-  // clients that want to materialize a graph in one step.
-  // Materializing all at once is the only choice available with a
-  // static graph.
-  //
-  // Args:
-  //   sort_arcs_by_head: determines whether arcs incident to each tail
-  //     node are sorted by head node.
-  //   client_cycle_handler: if non-NULL, mediates the permutation of
-  //     arbitrary annotation data belonging to the client according
-  //     to the permutation applied to the arcs in forming the
-  //     graph. Two permutations may be composed to form the final one
-  //     that affects the arcs. First, the arcs are always permuted to
-  //     group them by tail node because ForwardStaticGraph requires
-  //     this. Second, if each node's outgoing arcs are sorted by head
-  //     node (according to sort_arcs_by_head), that sorting implies
-  //     an additional permutation on the arcs.
-  ForwardStaticGraph(
-      const NodeIndexType num_nodes, const ArcIndexType num_arcs,
-      const bool sort_arcs_by_head,
-      std::vector<std::pair<NodeIndexType, NodeIndexType> >* client_input_arcs,
-      // TODO(user): For some reason, SWIG breaks if the
-      // operations_research namespace is not explicit in the
-      // following argument declaration.
-      operations_research::PermutationCycleHandler<ArcIndexType>* const
-          client_cycle_handler) {
-    max_num_arcs_ = num_arcs;
-    num_arcs_ = num_arcs;
-    max_num_nodes_ = num_nodes;
-    // A more convenient name for a parameter required by style to be
-    // a pointer, because we modify its referent.
-    std::vector<std::pair<NodeIndexType, NodeIndexType> >& input_arcs =
-        *client_input_arcs;
-
-    // We coopt the first_incident_arc_ array as a node-indexed vector
-    // used for two purposes related to degree before setting up its
-    // final values. First, it counts the out-degree of each
-    // node. Second, it is reused to count the number of arcs outgoing
-    // from each node that have already been put in place from the
-    // given input_arcs. We reserve an extra entry as a sentinel at
-    // the end.
-    first_incident_arc_.Reserve(kFirstNode, kFirstNode + num_nodes);
-    first_incident_arc_.SetAll(0);
-    for (ArcIndexType arc = kFirstArc; arc < kFirstArc + num_arcs; ++arc) {
-      first_incident_arc_[kFirstNode + input_arcs[arc].first] += 1;
-      // Take this opportunity to see how many nodes are really
-      // mentioned in the arc list.
-      num_nodes_ = std::max(
-          num_nodes_, static_cast<NodeIndexType>(input_arcs[arc].first + 1));
-      num_nodes_ = std::max(
-          num_nodes_, static_cast<NodeIndexType>(input_arcs[arc].second + 1));
-    }
-    ArcIndexType next_arc = kFirstArc;
-    for (NodeIndexType node = 0; node < num_nodes; ++node) {
-      ArcIndexType degree = first_incident_arc_[kFirstNode + node];
-      first_incident_arc_[kFirstNode + node] = next_arc;
-      next_arc += degree;
-    }
-    DCHECK_EQ(num_arcs, next_arc);
-    head_.Reserve(kFirstArc, kFirstArc + num_arcs - 1);
-    std::unique_ptr<ArcIndexType[]> arc_permutation;
-    if (client_cycle_handler != nullptr) {
-      arc_permutation.reset(new ArcIndexType[end_arc_index()]);
-      for (ArcIndexType input_arc = 0; input_arc < num_arcs; ++input_arc) {
-        NodeIndexType tail = input_arcs[input_arc].first;
-        NodeIndexType head = input_arcs[input_arc].second;
-        ArcIndexType arc = first_incident_arc_[kFirstNode + tail];
-        // The head_ entry will get permuted into the right place
-        // later.
-        head_[kFirstArc + input_arc] = kFirstNode + head;
-        arc_permutation[kFirstArc + arc] = input_arc;
-        first_incident_arc_[kFirstNode + tail] += 1;
-      }
-    } else {
-      if (sizeof(input_arcs[0].first) >= sizeof(first_incident_arc_[0])) {
-        // We reuse the input_arcs[].first entries to hold our
-        // mapping to the head_ array. This allows us to spread out
-        // cache badness.
-        for (ArcIndexType input_arc = 0; input_arc < num_arcs; ++input_arc) {
-          NodeIndexType tail = input_arcs[input_arc].first;
-          ArcIndexType arc = first_incident_arc_[kFirstNode + tail];
-          first_incident_arc_[kFirstNode + tail] = arc + 1;
-          input_arcs[input_arc].first = static_cast<NodeIndexType>(arc);
-        }
-        for (ArcIndexType input_arc = 0; input_arc < num_arcs; ++input_arc) {
-          ArcIndexType arc =
-              static_cast<ArcIndexType>(input_arcs[input_arc].first);
-          NodeIndexType head = input_arcs[input_arc].second;
-          head_[kFirstArc + arc] = kFirstNode + head;
-        }
-      } else {
-        // We cannot reuse the input_arcs[].first entries so we map to
-        // the head_ array in a single loop.
-        for (ArcIndexType input_arc = 0; input_arc < num_arcs; ++input_arc) {
-          NodeIndexType tail = input_arcs[input_arc].first;
-          NodeIndexType head = input_arcs[input_arc].second;
-          ArcIndexType arc = first_incident_arc_[kFirstNode + tail];
-          first_incident_arc_[kFirstNode + tail] = arc + 1;
-          head_[kFirstArc + arc] = kFirstNode + head;
-        }
-      }
-    }
-    // Shift the entries in first_incident_arc_ to compensate for the
-    // counting each one has done through its incident arcs. Note that
-    // there is a special sentry element at the end of
-    // first_incident_arc_.
-    for (NodeIndexType node = kFirstNode + num_nodes; node > /* kFirstNode */ 0;
-         --node) {
-      first_incident_arc_[node] = first_incident_arc_[node - 1];
-    }
-    first_incident_arc_[kFirstNode] = kFirstArc;
-    if (sort_arcs_by_head) {
-      ArcIndexType begin = first_incident_arc_[kFirstNode];
-      if (client_cycle_handler != nullptr) {
-        for (NodeIndexType node = 0; node < num_nodes; ++node) {
-          ArcIndexType end = first_incident_arc_[node + 1];
-          std::sort(
-              &arc_permutation[begin], &arc_permutation[end],
-              PermutationIndexComparisonByArcHead<NodeIndexType, ArcIndexType>(
-                  head_));
-          begin = end;
-        }
-      } else {
-        for (NodeIndexType node = 0; node < num_nodes; ++node) {
-          ArcIndexType end = first_incident_arc_[node + 1];
-          // The second argument in the following has a strange index
-          // expression because ZVector claims that no index is valid
-          // unless it refers to an element in the vector. In particular
-          // an index one past the end is invalid.
-          ArcIndexType begin_index = (begin < num_arcs ? begin : begin - 1);
-          ArcIndexType begin_offset = (begin < num_arcs ? 0 : 1);
-          ArcIndexType end_index = (end > 0 ? end - 1 : end);
-          ArcIndexType end_offset = (end > 0 ? 1 : 0);
-          std::sort(&head_[begin_index] + begin_offset,
-                    &head_[end_index] + end_offset);
-          begin = end;
-        }
-      }
-    }
-    if (client_cycle_handler != nullptr && num_arcs > 0) {
-      // Apply the computed permutation if we haven't already.
-      CycleHandlerForAnnotatedArcs handler_for_constructor(
-          client_cycle_handler, &head_[kFirstArc] - kFirstArc);
-      // We use a permutation cycle handler to place the head array
-      // indices and permute the client's arc annotation data along
-      // with them.
-      PermutationApplier<ArcIndexType> permutation(&handler_for_constructor);
-      permutation.Apply(&arc_permutation[0], kFirstArc, end_arc_index());
-    }
-  }
-
-  // Returns the tail or start-node of arc.
-  NodeIndexType Tail(const ArcIndexType arc) const {
-    DCHECK(CheckArcValidity(arc));
-    DCHECK(CheckTailIndexValidity(arc));
-    return (*tail_)[arc];
-  }
-
-  // Returns true if arc is incoming to node.
-  bool IsIncoming(ArcIndexType arc, NodeIndexType node) const {
-    return Head(arc) == node;
-  }
-
-  // Utility function to check that an arc index is within the bounds.
-  // It is exported so that users of the ForwardStaticGraph class can use it.
-  // To be used in a DCHECK.
-  bool CheckArcBounds(const ArcIndexType arc) const {
-    return ((arc == kNilArc) || (arc >= kFirstArc && arc < max_num_arcs_));
-  }
-
-  // Utility function to check that an arc index is within the bounds AND
-  // different from kNilArc.
-  // It is exported so that users of the ForwardStaticGraph class can use it.
-  // To be used in a DCHECK.
-  bool CheckArcValidity(const ArcIndexType arc) const {
-    return ((arc != kNilArc) && (arc >= kFirstArc && arc < max_num_arcs_));
-  }
-
-  // Returns true if arc is a valid index into the (*tail_) array.
-  bool CheckTailIndexValidity(const ArcIndexType arc) const {
-    return ((tail_ != nullptr) && (arc >= kFirstArc) &&
-            (arc <= tail_->max_index()));
-  }
-
-  ArcIndexType NextOutgoingArc(const NodeIndexType node,
-                               ArcIndexType arc) const {
-    DCHECK(IsNodeValid(node));
-    DCHECK(CheckArcValidity(arc));
-    ++arc;
-    if (arc < first_incident_arc_[node + 1]) {
-      return arc;
-    } else {
-      return kNilArc;
-    }
-  }
-
-  // Returns a debug string containing all the information contained in the
-  // data structure in raw form.
-  std::string DebugString() const {
-    std::string result = "Arcs:(node) :\n";
-    for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
-      result += " " + ArcDebugString(arc) + ":(" + NodeDebugString(head_[arc]) +
-                ")\n";
-    }
-    result += "Node:First arc :\n";
-    for (NodeIndexType node = kFirstNode; node <= num_nodes_; ++node) {
-      result += " " + NodeDebugString(node) + ":" +
-                ArcDebugString(first_incident_arc_[node]) + "\n";
-    }
-    return result;
-  }
-
-  bool BuildTailArray() {
-    // If (*tail_) is already allocated, we have the invariant that
-    // its contents are canonical, so we do not need to do anything
-    // here in that case except return true.
-    if (tail_ == nullptr) {
-      if (!RepresentationClean()) {
-        // We have been asked to build the (*tail_) array, but we have
-        // no valid information from which to build it. The graph is
-        // in an unrecoverable, inconsistent state.
-        return false;
-      }
-      // Reallocate (*tail_) and rebuild its contents from the
-      // adjacency lists.
-      tail_.reset(new ZVector<NodeIndexType>);
-      tail_->Reserve(kFirstArc, max_num_arcs_ - 1);
-      typename Base::NodeIterator node_it(*this);
-      for (; node_it.Ok(); node_it.Next()) {
-        NodeIndexType node = node_it.Index();
-        typename Base::OutgoingArcIterator arc_it(*this, node);
-        for (; arc_it.Ok(); arc_it.Next()) {
-          (*tail_)[arc_it.Index()] = node;
-        }
-      }
-    }
-    DCHECK(TailArrayComplete());
-    return true;
-  }
-
-  void ReleaseTailArray() { tail_.reset(nullptr); }
-
-  // To be used in a DCHECK().
-  bool TailArrayComplete() const {
-    CHECK(tail_);
-    for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
-      CHECK(CheckTailIndexValidity(arc));
-      CHECK(IsNodeValid((*tail_)[arc]));
-    }
-    return true;
-  }
-
- private:
-  bool IsDirect() const { return true; }
-  bool RepresentationClean() const { return true; }
-  bool IsOutgoing(const NodeIndexType node,
-                  const ArcIndexType unused_arc) const {
-    return true;
-  }
-
-  // Returns the first arc in node's incidence list.
-  ArcIndexType FirstOutgoingOrOppositeIncomingArc(NodeIndexType node) const {
-    DCHECK(RepresentationClean());
-    DCHECK(IsNodeValid(node));
-    ArcIndexType result = first_incident_arc_[node];
-    return ((result != first_incident_arc_[node + 1]) ? result : kNilArc);
-  }
-
-  // Utility method that finds the next outgoing arc.
-  ArcIndexType FindNextOutgoingArc(ArcIndexType arc) const {
-    DCHECK(CheckArcBounds(arc));
-    return arc;
-  }
-
-  // Array of node indices, not always present. (*tail_)[i] contains
-  // the tail node of arc i. This array is not needed for normal graph
-  // traversal operations, but is used in optimizing the graph's
-  // layout so arcs are grouped by tail node, and can be used in one
-  // approach to serializing the graph.
-  //
-  // Invariants: At any time when we are not executing a method of
-  // this class, either tail_ == NULL or the tail_ array's contents
-  // are kept canonical. If tail_ != NULL, any method that modifies
-  // adjacency lists must also ensure (*tail_) is modified
-  // correspondingly. The converse does not hold: Modifications to
-  // (*tail_) are allowed without updating the adjacency lists. If
-  // such modifications take place, representation_clean_ must be set
-  // to false, of course, to indicate that the adjacency lists are no
-  // longer current.
-  std::unique_ptr<ZVector<NodeIndexType> > tail_;
 };
 
 // The index of the 'nil' node in the graph.
@@ -1911,12 +1505,6 @@ template <typename NodeIndexType, typename ArcIndexType>
 struct graph_traits<ForwardEbertGraph<NodeIndexType, ArcIndexType> > {
   static constexpr bool has_reverse_arcs = false;
   static constexpr bool is_dynamic = true;
-};
-
-template <typename NodeIndexType, typename ArcIndexType>
-struct graph_traits<ForwardStaticGraph<NodeIndexType, ArcIndexType> > {
-  static constexpr bool has_reverse_arcs = false;
-  static constexpr bool is_dynamic = false;
 };
 
 namespace or_internal {

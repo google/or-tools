@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <climits>
 #include <cstdint>
 #include <memory>
 #include <numeric>
@@ -18,21 +19,20 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/random/distributions.h"
 #include "benchmark/benchmark.h"
-#include "gtest/gtest.h"
 #include "isp/fiber/auto_design/utils/parallelizer.h"
-#include "ortools/base/gmock.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/threadlocal.h"
 #include "ortools/graph/bounded_dijkstra.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/shortest_paths.h"
 #include "ortools/graph/test_util.h"
 
 namespace operations_research {
 namespace {
 
-using Graph = StaticGraph<>;
+using Graph = ::util::StaticGraph<>;
 
 enum Implementation {
   BOUNDED_DIJKSTRA = 1,
@@ -106,8 +106,8 @@ std::vector<std::vector<uint32_t>> ManyToManyShortestPaths<SHORTEST_PATHS>(
     const Graph& graph, const std::vector<uint32_t>& arc_costs,
     const std::vector<int>& srcs, const std::vector<int>& dsts,
     int num_threads) {
-  PathContainer path_container;
-  PathContainer::BuildPathDistanceContainer(&path_container);
+  auto path_container =
+      GenericPathContainer<Graph>::BuildPathDistanceContainer();
   ComputeManyToManyShortestPathsWithMultipleThreads(
       graph, arc_costs, srcs, dsts, num_threads, &path_container);
   std::vector<std::vector<uint32_t>> distances(
