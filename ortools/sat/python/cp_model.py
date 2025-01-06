@@ -525,19 +525,19 @@ class IntervalVar:
     def __repr__(self):
         interval = self.__ct.interval
         if self.__ct.enforcement_literal:
-            return "%s(start = %s, size = %s, end = %s, is_present = %s)" % (
-                self.__ct.name,
-                short_expr_name(self.__model, interval.start),
-                short_expr_name(self.__model, interval.size),
-                short_expr_name(self.__model, interval.end),
-                short_name(self.__model, self.__ct.enforcement_literal[0]),
+            return (
+                f"{self.__ct.name}(start ="
+                f" {short_expr_name(self.__model, interval.start)}, size ="
+                f" {short_expr_name(self.__model, interval.size)}, end ="
+                f" {short_expr_name(self.__model, interval.end)}, is_present ="
+                f" {short_name(self.__model, self.__ct.enforcement_literal[0])})"
             )
         else:
-            return "%s(start = %s, size = %s, end = %s)" % (
-                self.__ct.name,
-                short_expr_name(self.__model, interval.start),
-                short_expr_name(self.__model, interval.size),
-                short_expr_name(self.__model, interval.end),
+            return (
+                f"{self.__ct.name}(start ="
+                f" {short_expr_name(self.__model, interval.start)}, size ="
+                f" {short_expr_name(self.__model, interval.size)}, end ="
+                f" {short_expr_name(self.__model, interval.end)})"
             )
 
     @property
@@ -2374,13 +2374,13 @@ class CpModel:
 
 @overload
 def expand_generator_or_tuple(
-    args: Union[Tuple[LiteralT, ...], Iterable[LiteralT]]
+    args: Union[Tuple[LiteralT, ...], Iterable[LiteralT]],
 ) -> Union[Iterable[LiteralT], LiteralT]: ...
 
 
 @overload
 def expand_generator_or_tuple(
-    args: Union[Tuple[LinearExprT, ...], Iterable[LinearExprT]]
+    args: Union[Tuple[LinearExprT, ...], Iterable[LinearExprT]],
 ) -> Union[Iterable[LinearExprT], LinearExprT]: ...
 
 
@@ -2856,8 +2856,8 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
         current_time = time.time()
         obj = self.objective_value
         print(
-            "Solution %i, time = %0.2f s, objective = %i"
-            % (self.__solution_count, current_time - self.__start_time, obj)
+            f"Solution {self.__solution_count}, time ="
+            f" {current_time - self.__start_time:0.2f} s, objective = {obj}"
         )
         self.__solution_count += 1
 
@@ -2880,11 +2880,11 @@ class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
         current_time = time.time()
         obj = self.objective_value
         print(
-            "Solution %i, time = %0.2f s, objective = %i"
-            % (self.__solution_count, current_time - self.__start_time, obj)
+            f"Solution {self.__solution_count}, time ="
+            f" {current_time - self.__start_time:0.2f} s, objective = {obj}"
         )
         for v in self.__variables:
-            print("  %s = %i" % (v, self.value(v)), end=" ")
+            print(f"  {v} = {self.value(v)}", end=" ")
         print()
         self.__solution_count += 1
 
@@ -2907,11 +2907,11 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
         """Called on each new solution."""
         current_time = time.time()
         print(
-            "Solution %i, time = %0.2f s"
-            % (self.__solution_count, current_time - self.__start_time)
+            f"Solution {self.__solution_count}, time ="
+            f" {current_time - self.__start_time:0.2f} s"
         )
         for v in self.__variables:
-            print("  %s = %i" % (v, self.value(v)), end=" ")
+            print(f"  {v} = {self.value(v)}", end=" ")
         print()
         self.__solution_count += 1
 
