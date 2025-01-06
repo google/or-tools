@@ -129,13 +129,17 @@ class XpressSolver : public SolverInterface {
   };
 
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
-      absl::Time start, const ModelSolveParametersProto& model_parameters);
+      absl::Time start, const ModelSolveParametersProto& model_parameters,
+      const SolveParametersProto& solve_parameters);
   absl::StatusOr<SolutionsAndClaims> GetSolutions(
-      const ModelSolveParametersProto& model_parameters);
+      const ModelSolveParametersProto& model_parameters,
+      const SolveParametersProto& solve_parameters);
   absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start) const;
 
-  absl::StatusOr<double> GetBestDualBound() const;
-  absl::StatusOr<double> GetBestPrimalBound() const;
+  absl::StatusOr<double> GetBestPrimalBound(
+      const SolveParametersProto& parameters) const;
+  absl::StatusOr<double> GetBestDualBound(
+      const SolveParametersProto& parameters) const;
 
   absl::StatusOr<TerminationProto> ConvertTerminationReason(
       SolutionClaims solution_claims, double best_primal_bound,
@@ -144,16 +148,19 @@ class XpressSolver : public SolverInterface {
   // Returns solution information appropriate and available for an LP (linear
   // constraints + linear objective, only).
   absl::StatusOr<SolutionsAndClaims> GetLpSolution(
-      const ModelSolveParametersProto& model_parameters);
+      const ModelSolveParametersProto& model_parameters,
+      const SolveParametersProto& solve_parameters);
   bool isFeasible() const;
 
   // return bool field should be true if a primal solution exists.
   absl::StatusOr<SolutionAndClaim<PrimalSolutionProto>>
   GetConvexPrimalSolutionIfAvailable(
-      const ModelSolveParametersProto& model_parameters) const;
+      const ModelSolveParametersProto& model_parameters,
+      const SolveParametersProto& solve_parameters) const;
   absl::StatusOr<SolutionAndClaim<DualSolutionProto>>
   GetConvexDualSolutionIfAvailable(
-      const ModelSolveParametersProto& model_parameters) const;
+      const ModelSolveParametersProto& model_parameters,
+      const SolveParametersProto& solve_parameters) const;
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable();
 
   absl::Status AddNewLinearConstraints(

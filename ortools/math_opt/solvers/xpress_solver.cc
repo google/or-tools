@@ -151,8 +151,8 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     char sense = XPRS_EQUAL;
     double rhs = 0.0;
     double rng = 0.0;
-    const bool lb_is_xprs_neg_inf = lb <= XPRS_MINUSINFINITY;
-    const bool ub_is_xprs_pos_inf = ub >= XPRS_PLUSINFINITY;
+    const bool lb_is_xprs_neg_inf = lb <= kMinusInf;
+    const bool ub_is_xprs_pos_inf = ub >= kPlusInf;
     if (lb_is_xprs_neg_inf && !ub_is_xprs_pos_inf) {
       sense = XPRS_LESS_EQUAL;
       rhs = ub;
@@ -232,8 +232,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
 
   RETURN_IF_ERROR(CallXpressSolve(parameters)) << "Error during XPRESS solve";
 
-  ASSIGN_OR_RETURN(SolveResultProto solve_result,
-                   ExtractSolveResultProto(start, model_parameters));
+  ASSIGN_OR_RETURN(
+      SolveResultProto solve_result,
+      ExtractSolveResultProto(start, model_parameters, parameters));
 
   return solve_result;
 }
@@ -303,16 +304,19 @@ absl::Status XpressSolver::SetLpIterLimits(
 }
 
 absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
-    absl::Time start, const ModelSolveParametersProto& model_parameters) {
+    absl::Time start, const ModelSolveParametersProto& model_parameters,
+    const SolveParametersProto& solve_parameters) {
   SolveResultProto result;
   ASSIGN_OR_RETURN(SolutionsAndClaims solution_and_claims,
-                   GetSolutions(model_parameters));
+                   GetSolutions(model_parameters, solve_parameters));
   for (SolutionProto& solution : solution_and_claims.solutions) {
     *result.add_solutions() = std::move(solution);
   }
   ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
-  ASSIGN_OR_RETURN(const double best_primal_bound, GetBestPrimalBound());
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
+  ASSIGN_OR_RETURN(const double best_primal_bound,
+                   GetBestPrimalBound(solve_parameters));
+  ASSIGN_OR_RETURN(const double best_dual_bound,
+                   GetBestDualBound(solve_parameters));
   auto solution_claims = solution_and_claims.solution_claims;
   ASSIGN_OR_RETURN(*result.mutable_termination(),
                    ConvertTerminationReason(solution_claims, best_primal_bound,
@@ -320,30 +324,46 @@ absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
   return result;
 }
 
-absl::StatusOr<double> XpressSolver::GetBestPrimalBound() const {
-  return xpress_->GetDoubleAttr(is_mip_ ? XPRS_MIPOBJVAL : XPRS_LPOBJVAL);
+absl::StatusOr<double> XpressSolver::GetBestPrimalBound(
+    const SolveParametersProto& parameters) const {
+  // TODO: handle MIP
+  if (parameters.lp_algorithm() == LP_ALGORITHM_PRIMAL_SIMPLEX &&
+          isFeasible() ||
+      xpress_status_ == XPRS_LP_OPTIMAL) {
+    return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
+  }
+  return is_maximize_ ? kMinusInf : kPlusInf;
 }
 
-absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
-  // TODO: setting LP primal value as best dual bound. Can this be improved?
-  return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
+absl::StatusOr<double> XpressSolver::GetBestDualBound(
+    const SolveParametersProto& parameters) const {
+  // TODO: handle MIP
+  if (parameters.lp_algorithm() == LP_ALGORITHM_DUAL_SIMPLEX && isFeasible() ||
+      xpress_status_ == XPRS_LP_OPTIMAL) {
+    return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
+  }
+  return is_maximize_ ? kPlusInf : kMinusInf;
 }
 
 absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetSolutions(
-    const ModelSolveParametersProto& model_parameters) {
+    const ModelSolveParametersProto& model_parameters,
+    const SolveParametersProto& solve_parameters) {
   if (is_mip_) {
     return absl::UnimplementedError("XpressSolver does not handle MIPs yet");
   } else {
-    return GetLpSolution(model_parameters);
+    return GetLpSolution(model_parameters, solve_parameters);
   }
 }
 
 absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetLpSolution(
-    const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(auto primal_solution_and_claim,
-                   GetConvexPrimalSolutionIfAvailable(model_parameters));
-  ASSIGN_OR_RETURN(auto dual_solution_and_claim,
-                   GetConvexDualSolutionIfAvailable(model_parameters));
+    const ModelSolveParametersProto& model_parameters,
+    const SolveParametersProto& solve_parameters) {
+  ASSIGN_OR_RETURN(
+      auto primal_solution_and_claim,
+      GetConvexPrimalSolutionIfAvailable(model_parameters, solve_parameters));
+  ASSIGN_OR_RETURN(
+      auto dual_solution_and_claim,
+      GetConvexDualSolutionIfAvailable(model_parameters, solve_parameters));
   ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable());
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists =
@@ -406,14 +426,15 @@ SolutionStatusProto XpressSolver::getLpSolutionStatus() const {
 
 absl::StatusOr<XpressSolver::SolutionAndClaim<PrimalSolutionProto>>
 XpressSolver::GetConvexPrimalSolutionIfAvailable(
-    const ModelSolveParametersProto& model_parameters) const {
+    const ModelSolveParametersProto& model_parameters,
+    const SolveParametersProto& solve_parameters) const {
   if (!isFeasible()) {
     return SolutionAndClaim<PrimalSolutionProto>{
         .solution = std::nullopt, .feasible_solution_exists = false};
   }
   PrimalSolutionProto primal_solution;
   primal_solution.set_feasibility_status(getLpSolutionStatus());
-  ASSIGN_OR_RETURN(const double sol_val, GetBestPrimalBound());
+  ASSIGN_OR_RETURN(const double sol_val, GetBestPrimalBound(solve_parameters));
   primal_solution.set_objective_value(sol_val);
   XpressVectorToSparseDoubleVector(xpress_->GetPrimalValues().value(),
                                    variables_map_,
@@ -428,7 +449,8 @@ XpressSolver::GetConvexPrimalSolutionIfAvailable(
 
 absl::StatusOr<XpressSolver::SolutionAndClaim<DualSolutionProto>>
 XpressSolver::GetConvexDualSolutionIfAvailable(
-    const ModelSolveParametersProto& model_parameters) const {
+    const ModelSolveParametersProto& model_parameters,
+    const SolveParametersProto& solve_parameters) const {
   if (!isFeasible()) {
     return SolutionAndClaim<DualSolutionProto>{
         .solution = std::nullopt, .feasible_solution_exists = false};
@@ -447,20 +469,12 @@ XpressSolver::GetConvexDualSolutionIfAvailable(
   XpressVectorToSparseDoubleVector(xprs_reduced_cost_values, variables_map_,
                                    *dual_solution.mutable_reduced_costs(),
                                    model_parameters.reduced_costs_filter());
-  ASSIGN_OR_RETURN(const double sol_val, GetBestPrimalBound());
+  ASSIGN_OR_RETURN(const double sol_val, GetBestDualBound(solve_parameters));
   dual_solution.set_objective_value(sol_val);
   dual_solution.set_feasibility_status(getLpSolutionStatus());
-  bool dual_feasible_solution_exists =
-      (dual_solution.feasibility_status() == SOLUTION_STATUS_FEASIBLE);
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
-  // const double best_dual_bound = is_maximize_ ? kMinusInf : kPlusInf;
-  if (dual_feasible_solution_exists || std::isfinite(best_dual_bound)) {
-    dual_feasible_solution_exists = true;
-  } else if (xpress_status_ == XPRS_LP_OPTIMAL) {
-    return absl::InternalError(
-        "Xpress status is XPRS_LP_OPTIMAL, but XPRS_BESTBOUND is "
-        "unavailable or infinite, and no dual feasible solution is returned");
-  }
+  ASSIGN_OR_RETURN(const double best_dual_bound,
+                   GetBestDualBound(solve_parameters));
+  bool dual_feasible_solution_exists = std::isfinite(best_dual_bound);
   return SolutionAndClaim<DualSolutionProto>{
       .solution = dual_solution,
       .feasible_solution_exists = dual_feasible_solution_exists};
