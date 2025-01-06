@@ -22,13 +22,14 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
 namespace python {
 
-bool LinearExpr::IsInteger() {
+bool LinearExpr::IsInteger() const {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
   return lin.ProcessAll();
@@ -240,21 +241,21 @@ LinearExpr* LinearExpr::MulFloat(double cst) {
 
 LinearExpr* LinearExpr::Neg() { return new IntAffine(this, -1, 0); }
 
-void FloatExprVisitor::AddToProcess(LinearExpr* expr, double coeff) {
+void FloatExprVisitor::AddToProcess(const LinearExpr* expr, double coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
 void FloatExprVisitor::AddConstant(double constant) { offset_ += constant; }
-void FloatExprVisitor::AddVarCoeff(BaseIntVar* var, double coeff) {
+void FloatExprVisitor::AddVarCoeff(const BaseIntVar* var, double coeff) {
   canonical_terms_[var] += coeff;
 }
-double FloatExprVisitor::Process(LinearExpr* expr,
-                                 std::vector<BaseIntVar*>* vars,
+double FloatExprVisitor::Process(const LinearExpr* expr,
+                                 std::vector<const BaseIntVar*>* vars,
                                  std::vector<double>* coeffs) {
   AddToProcess(expr, 1.0);
   while (!to_process_.empty()) {
     const auto [expr, coeff] = to_process_.back();
     to_process_.pop_back();
-    expr->VisitAsFloat(this, coeff);
+    expr->VisitAsFloat(*this, coeff);
   }
 
   vars->clear();
@@ -273,20 +274,20 @@ CanonicalFloatExpression::CanonicalFloatExpression(LinearExpr* expr) {
   offset_ = lin.Process(expr, &vars_, &coeffs_);
 }
 
-CanonicalIntExpression::CanonicalIntExpression(LinearExpr* expr) : ok_(true) {
+CanonicalIntExpression::CanonicalIntExpression(LinearExpr* expr) {
   IntExprVisitor lin;
   lin.AddToProcess(expr, 1);
   ok_ = lin.Process(&vars_, &coeffs_, &offset_);
 }
 
-void FloatConstant::VisitAsFloat(FloatExprVisitor* lin, double c) {
-  lin->AddConstant(value_ * c);
+void FloatConstant::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+  lin.AddConstant(value_ * c);
 }
 
 std::string FloatConstant::ToString() const { return absl::StrCat(value_); }
 
 std::string FloatConstant::DebugString() const {
-  return absl::StrCat("FloatConstant(", value_, ")");
+  return absl::StrCat("FloatConstant(", RoundTripDoubleFormat(value_), ")");
 }
 
 FloatWeightedSum::FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
@@ -302,11 +303,11 @@ FloatWeightedSum::FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
       coeffs_(coeffs.begin(), coeffs.end()),
       offset_(offset) {}
 
-void FloatWeightedSum::VisitAsFloat(FloatExprVisitor* lin, double c) {
+void FloatWeightedSum::VisitAsFloat(FloatExprVisitor& lin, double c) const {
   for (int i = 0; i < exprs_.size(); ++i) {
-    lin->AddToProcess(exprs_[i], coeffs_[i] * c);
+    lin.AddToProcess(exprs_[i], coeffs_[i] * c);
   }
-  lin->AddConstant(offset_ * c);
+  lin.AddConstant(offset_ * c);
 }
 
 std::string FloatWeightedSum::ToString() const {
@@ -423,9 +424,9 @@ std::string IntWeightedSum::DebugString() const {
 FloatAffine::FloatAffine(LinearExpr* expr, double coeff, double offset)
     : expr_(expr), coeff_(coeff), offset_(offset) {}
 
-void FloatAffine::VisitAsFloat(FloatExprVisitor* lin, double c) {
-  lin->AddToProcess(expr_, c * coeff_);
-  lin->AddConstant(offset_ * c);
+void FloatAffine::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+  lin.AddToProcess(expr_, c * coeff_);
+  lin.AddConstant(offset_ * c);
 }
 
 std::string FloatAffine::ToString() const {
@@ -454,7 +455,7 @@ BoundedLinearExpression* LinearExpr::Eq(LinearExpr* rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
   lin.AddToProcess(rhs, -1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -464,7 +465,7 @@ BoundedLinearExpression* LinearExpr::Eq(LinearExpr* rhs) {
 BoundedLinearExpression* LinearExpr::EqCst(int64_t rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -475,7 +476,7 @@ BoundedLinearExpression* LinearExpr::Ne(LinearExpr* rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
   lin.AddToProcess(rhs, -1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -486,7 +487,7 @@ BoundedLinearExpression* LinearExpr::Ne(LinearExpr* rhs) {
 BoundedLinearExpression* LinearExpr::NeCst(int64_t rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -498,7 +499,7 @@ BoundedLinearExpression* LinearExpr::Le(LinearExpr* rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
   lin.AddToProcess(rhs, -1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -509,7 +510,7 @@ BoundedLinearExpression* LinearExpr::Le(LinearExpr* rhs) {
 BoundedLinearExpression* LinearExpr::LeCst(int64_t rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -521,7 +522,7 @@ BoundedLinearExpression* LinearExpr::Lt(LinearExpr* rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
   lin.AddToProcess(rhs, -1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -532,7 +533,7 @@ BoundedLinearExpression* LinearExpr::Lt(LinearExpr* rhs) {
 BoundedLinearExpression* LinearExpr::LtCst(int64_t rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -545,7 +546,7 @@ BoundedLinearExpression* LinearExpr::Ge(LinearExpr* rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
   lin.AddToProcess(rhs, -1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -556,7 +557,7 @@ BoundedLinearExpression* LinearExpr::Ge(LinearExpr* rhs) {
 BoundedLinearExpression* LinearExpr::GeCst(int64_t rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -568,7 +569,7 @@ BoundedLinearExpression* LinearExpr::Gt(LinearExpr* rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
   lin.AddToProcess(rhs, -1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -579,7 +580,7 @@ BoundedLinearExpression* LinearExpr::Gt(LinearExpr* rhs) {
 BoundedLinearExpression* LinearExpr::GtCst(int64_t rhs) {
   IntExprVisitor lin;
   lin.AddToProcess(this, 1);
-  std::vector<BaseIntVar*> vars;
+  std::vector<const BaseIntVar*> vars;
   std::vector<int64_t> coeffs;
   int64_t offset;
   if (!lin.Process(&vars, &coeffs, &offset)) return nullptr;
@@ -588,13 +589,13 @@ BoundedLinearExpression* LinearExpr::GtCst(int64_t rhs) {
       Domain(rhs + 1, std::numeric_limits<int64_t>::max()));
 }
 
-void IntExprVisitor::AddToProcess(LinearExpr* expr, int64_t coeff) {
+void IntExprVisitor::AddToProcess(const LinearExpr* expr, int64_t coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
 
 void IntExprVisitor::AddConstant(int64_t constant) { offset_ += constant; }
 
-void IntExprVisitor::AddVarCoeff(BaseIntVar* var, int64_t coeff) {
+void IntExprVisitor::AddVarCoeff(const BaseIntVar* var, int64_t coeff) {
   canonical_terms_[var] += coeff;
 }
 
@@ -602,12 +603,12 @@ bool IntExprVisitor::ProcessAll() {
   while (!to_process_.empty()) {
     const auto [expr, coeff] = to_process_.back();
     to_process_.pop_back();
-    if (!expr->VisitAsInt(this, coeff)) return false;
+    if (!expr->VisitAsInt(*this, coeff)) return false;
   }
   return true;
 }
 
-bool IntExprVisitor::Process(std::vector<BaseIntVar*>* vars,
+bool IntExprVisitor::Process(std::vector<const BaseIntVar*>* vars,
                              std::vector<int64_t>* coeffs, int64_t* offset) {
   if (!ProcessAll()) return false;
   vars->clear();
@@ -621,7 +622,7 @@ bool IntExprVisitor::Process(std::vector<BaseIntVar*>* vars,
   return true;
 }
 
-bool IntExprVisitor::Evaluate(LinearExpr* expr,
+bool IntExprVisitor::Evaluate(const LinearExpr* expr,
                               const CpSolverResponse& solution,
                               int64_t* value) {
   AddToProcess(expr, 1);
@@ -644,14 +645,13 @@ BaseIntVar::BaseIntVar(int index, bool is_boolean)
     : index_(index),
       negated_(is_boolean ? new NotBooleanVariable(this) : nullptr) {}
 
-BoundedLinearExpression::BoundedLinearExpression(std::vector<BaseIntVar*> vars,
-                                                 std::vector<int64_t> coeffs,
-                                                 int64_t offset,
-                                                 const Domain& bounds)
+BoundedLinearExpression::BoundedLinearExpression(
+    const std::vector<const BaseIntVar*>& vars,
+    const std::vector<int64_t>& coeffs, int64_t offset, const Domain& bounds)
     : vars_(vars), coeffs_(coeffs), offset_(offset), bounds_(bounds) {}
 
 const Domain& BoundedLinearExpression::bounds() const { return bounds_; }
-const std::vector<BaseIntVar*>& BoundedLinearExpression::vars() const {
+const std::vector<const BaseIntVar*>& BoundedLinearExpression::vars() const {
   return vars_;
 }
 const std::vector<int64_t>& BoundedLinearExpression::coeffs() const {
@@ -731,14 +731,14 @@ std::string BoundedLinearExpression::ToString() const {
 }
 
 std::string BoundedLinearExpression::DebugString() const {
-  return absl::StrCat("BoundedLinearExpression(vars=[",
-                      absl::StrJoin(vars_, ", ",
-                                    [](std::string* out, BaseIntVar* var) {
-                                      absl::StrAppend(out, var->DebugString());
-                                    }),
-                      "], coeffs=[", absl::StrJoin(coeffs_, ", "),
-                      "], offset=", offset_, ", bounds=", bounds_.ToString(),
-                      ")");
+  return absl::StrCat(
+      "BoundedLinearExpression(vars=[",
+      absl::StrJoin(vars_, ", ",
+                    [](std::string* out, const BaseIntVar* var) {
+                      absl::StrAppend(out, var->DebugString());
+                    }),
+      "], coeffs=[", absl::StrJoin(coeffs_, ", "), "], offset=", offset_,
+      ", bounds=", bounds_.ToString(), ")");
 }
 
 bool BoundedLinearExpression::CastToBool(bool* result) const {

@@ -1302,7 +1302,10 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
       const IntegerVariable int_var = mapping->Integer(ref);
       lc.AddTerm(int_var, coeff);
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    LinearConstraint built_ct = lc.Build();
+    if (!PossibleOverflow(*integer_trail, built_ct)) {
+      relaxation->linear_constraints.push_back(std::move(built_ct));
+    }
   }
   if (rhs_domain_max < max_activity) {
     // And(ei) => terms <= rhs_domain_max
@@ -1319,7 +1322,10 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
       const IntegerVariable int_var = mapping->Integer(ref);
       lc.AddTerm(int_var, coeff);
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    LinearConstraint built_ct = lc.Build();
+    if (!PossibleOverflow(*integer_trail, built_ct)) {
+      relaxation->linear_constraints.push_back(std::move(built_ct));
+    }
   }
 }
 

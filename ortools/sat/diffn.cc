@@ -106,8 +106,14 @@ void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
   const IntegerVariable max_end_var =
       CreateVariableAtOrBelowMaxOf(y->Ends(), model);
 
-  // (max_end - min_start) >= capacity.
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  if (integer_trail->UpperBound(max_end_var) <
+      integer_trail->LowerBound(min_start_var)) {
+    // Trivial infeasible case, will be handled by the linear constraint
+    // from the interval.
+    return;
+  }
+  // (max_end - min_start) >= capacity.
   const AffineExpression capacity(model->Add(NewIntegerVariable(
       0, CapSub(integer_trail->UpperBound(max_end_var).value(),
                 integer_trail->LowerBound(min_start_var).value()))));

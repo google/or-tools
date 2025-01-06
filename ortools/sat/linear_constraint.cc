@@ -61,6 +61,7 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
       terms_.push_back({NegationOf(expr.var), -coeff * expr.coeff});
     }
   }
+  DCHECK(!ProdOverflow(coeff, expr.constant));
   offset_ += coeff * expr.constant;
 }
 
