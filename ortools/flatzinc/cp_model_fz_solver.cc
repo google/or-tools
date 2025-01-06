@@ -43,7 +43,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
-ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 50,
+ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
           "Default max value for unbounded integer variables.");
 
 namespace operations_research {
