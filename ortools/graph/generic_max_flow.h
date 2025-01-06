@@ -510,19 +510,6 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   mutable StatsGroup stats_;
 };
 
-#if !SWIG
-
-// Default instance MaxFlow that uses StarGraph. Note that we cannot just use a
-// typedef because of dependent code expecting MaxFlow to be a real class.
-// TODO(user): Modify this code and remove it.
-class MaxFlow : public GenericMaxFlow<StarGraph> {
- public:
-  MaxFlow(const StarGraph* graph, NodeIndex source, NodeIndex target)
-      : GenericMaxFlow(graph, source, target) {}
-};
-
-#endif  // SWIG
-
 template <typename Element, typename IntegerPriority>
 bool PriorityQueueWithRestrictedPush<Element, IntegerPriority>::IsEmpty()
     const {

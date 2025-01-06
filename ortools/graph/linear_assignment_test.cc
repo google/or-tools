@@ -103,11 +103,9 @@ class LinearSumAssignmentTestWithGraphBuilder : public ::testing::Test {};
 
 typedef ::testing::Types<
     EbertGraph<int16_t, int16_t>, ForwardEbertGraph<int16_t, int16_t>,
-    ForwardStaticGraph<int16_t, int16_t>, EbertGraph<int16_t, ArcIndex>,
-    ForwardEbertGraph<int16_t, ArcIndex>, ForwardStaticGraph<int16_t, ArcIndex>,
+    EbertGraph<int16_t, ArcIndex>, ForwardEbertGraph<int16_t, ArcIndex>,
     EbertGraph<NodeIndex, int16_t>, ForwardEbertGraph<NodeIndex, int16_t>,
-    ForwardStaticGraph<NodeIndex, int16_t>, StarGraph, ForwardStarGraph,
-    util::ListGraph<>, util::ReverseArcListGraph<>>
+    StarGraph, ForwardStarGraph, util::ListGraph<>, util::ReverseArcListGraph<>>
     GraphTypesForAssignmentTestingWithGraphBuilder;
 
 TYPED_TEST_SUITE(LinearSumAssignmentTestWithGraphBuilder,

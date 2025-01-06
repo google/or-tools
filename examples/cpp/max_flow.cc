@@ -26,7 +26,7 @@ using Graph = ::util::ReverseArcListGraph<>;
 using NodeIndex = Graph::NodeIndex;
 using ArcIndex = Graph::ArcIndex;
 using MaxFlowT = GenericMaxFlow<Graph>;
-using FlowQuantity = MaxFlow::FlowQuantityT;
+using FlowQuantity = MaxFlowT::FlowQuantityT;
 
 void SolveMaxFlow() {
   const int num_nodes = 5;

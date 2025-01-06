@@ -63,7 +63,7 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/graph/connected_components.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/routing/constraints.h"
 #include "ortools/routing/decision_builders.h"
@@ -88,6 +88,13 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/stats.h"
+
+namespace {
+using GraphNodeIndex = int32_t;
+using GraphArcIndex = int32_t;
+using Graph = ::util::ListGraph<GraphNodeIndex, GraphArcIndex>;
+using CostValue = int64_t;
+}  // namespace
 
 namespace operations_research {
 class Cross;
@@ -3573,8 +3580,8 @@ int64_t RoutingModel::ComputeLowerBound() {
     return 0;
   }
   const int num_nodes = Size() + vehicles_;
-  ForwardStarGraph graph(2 * num_nodes, num_nodes * num_nodes);
-  LinearSumAssignment<ForwardStarGraph> linear_sum_assignment(graph, num_nodes);
+  Graph graph(2 * num_nodes, num_nodes * num_nodes);
+  LinearSumAssignment<Graph> linear_sum_assignment(graph, num_nodes);
   // Adding arcs for non-end nodes, based on possible values of next variables.
   // Left nodes in the bipartite are indexed from 0 to num_nodes - 1; right
   // nodes are indexed from num_nodes to 2 * num_nodes - 1.
@@ -3590,8 +3597,8 @@ int64_t RoutingModel::ComputeLowerBound() {
       }
       // The index of a right node in the bipartite graph is the index
       // of the successor offset by the number of nodes.
-      const ArcIndex arc = graph.AddArc(tail, num_nodes + head);
-      const CostValue cost = GetHomogeneousCost(tail, head);
+      const GraphArcIndex arc = graph.AddArc(tail, num_nodes + head);
+      const ::CostValue cost = GetHomogeneousCost(tail, head);
       linear_sum_assignment.SetArcCost(arc, cost);
     }
   }
@@ -3599,7 +3606,8 @@ int64_t RoutingModel::ComputeLowerBound() {
   // Therefore we are creating fake assignments for end nodes, forced to point
   // to the equivalent start node with a cost of 0.
   for (int tail = Size(); tail < num_nodes; ++tail) {
-    const ArcIndex arc = graph.AddArc(tail, num_nodes + Start(tail - Size()));
+    const GraphArcIndex arc =
+        graph.AddArc(tail, num_nodes + Start(tail - Size()));
     linear_sum_assignment.SetArcCost(arc, 0);
   }
   if (linear_sum_assignment.ComputeAssignment()) {

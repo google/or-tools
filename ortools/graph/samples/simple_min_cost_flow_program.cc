@@ -14,6 +14,7 @@
 // [START program]
 // From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1
 // [START import]
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
