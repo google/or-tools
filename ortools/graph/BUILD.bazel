@@ -366,10 +366,8 @@ cc_test(
     srcs = ["ebert_graph_test.cc"],
     deps = [
         ":ebert_graph",
-        "//ortools/base",
         "//ortools/base:gmock_main",
         "//ortools/util:permutation",
-        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
         "@com_google_benchmark//:benchmark",
@@ -617,6 +615,17 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "line_graph_test",
+    srcs = ["line_graph_test.cc"],
+    deps = [
+        ":graph",
+        ":line_graph",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/base:core_headers",
+    ],
+)
+
 # Linear Assignment with full-featured interface and efficient
 # implementation.
 cc_library(
@@ -715,6 +724,12 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
+)
+
+cc_library(
+    name = "line_graph",
+    hdrs = ["line_graph.h"],
+    deps = ["@com_google_absl//absl/log"],
 )
 
 cc_test(
