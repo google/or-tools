@@ -32,386 +32,35 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
-import abc
-import dataclasses
 import math
 import numbers
 import typing
-from typing import Callable, List, Optional, Sequence, Tuple, Union, cast
+from typing import Callable, Optional, Union
 
 import numpy as np
-from numpy import typing as npt
 import pandas as pd
 
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver.python import model_builder_helper as mbh
 from ortools.linear_solver.python import model_builder_numbers as mbn
 
-
 # Custom types.
 NumberT = Union[int, float, numbers.Real, np.number]
 IntegerT = Union[int, numbers.Integral, np.integer]
-LinearExprT = Union["LinearExpr", NumberT]
-ConstraintT = Union["_BoundedLinearExpr", bool]
+LinearExprT = Union[mbh.LinearExpr, NumberT]
+ConstraintT = Union[mbh.BoundedLinearExpression, bool]
 _IndexOrSeries = Union[pd.Index, pd.Series]
-_VariableOrConstraint = Union["LinearConstraint", "Variable"]
+_VariableOrConstraint = Union["LinearConstraint", mbh.Variable]
 
 # Forward solve statuses.
+BoundedLinearExpression = mbh.BoundedLinearExpression
+LinearExpr = mbh.LinearExpr
 SolveStatus = mbh.SolveStatus
-
-# pylint: disable=protected-access
-
-
-class LinearExpr(metaclass=abc.ABCMeta):
-    """Holds an linear expression.
-
-    A linear expression is built from constants and variables.
-    For example, `x + 2.0 * (y - z + 1.0)`.
-
-    Linear expressions are used in Model models in constraints and in the
-    objective:
-
-    * You can define linear constraints as in:
-
-    ```
-    model.add(x + 2 * y <= 5.0)
-    model.add(sum(array_of_vars) == 5.0)
-    ```
-
-    * In Model, the objective is a linear expression:
-
-    ```
-    model.minimize(x + 2.0 * y + z)
-    ```
-
-    * For large arrays, using the LinearExpr class is faster that using the python
-    `sum()` function. You can create constraints and the objective from lists of
-    linear expressions or coefficients as follows:
-
-    ```
-    model.minimize(model_builder.LinearExpr.sum(expressions))
-    model.add(model_builder.LinearExpr.weighted_sum(expressions, coeffs) >= 0)
-    ```
-    """
-
-    @classmethod
-    def sum(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
-        cls, expressions: Sequence[LinearExprT], *, constant: NumberT = 0.0
-    ) -> LinearExprT:
-        """Creates `sum(expressions) + constant`.
-
-        It can perform simple simplifications and returns different objects,
-        including the input.
-
-        Args:
-          expressions: a sequence of linear expressions or constants.
-          constant: a numerical constant.
-
-        Returns:
-          a LinearExpr instance or a numerical constant.
-        """
-        checked_constant: np.double = mbn.assert_is_a_number(constant)
-        if not expressions:
-            return checked_constant
-        if len(expressions) == 1 and mbn.is_zero(checked_constant):
-            return expressions[0]
-
-        return LinearExpr.weighted_sum(
-            expressions, np.ones(len(expressions)), constant=checked_constant
-        )
-
-    @classmethod
-    def weighted_sum(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
-        cls,
-        expressions: Sequence[LinearExprT],
-        coefficients: Sequence[NumberT],
-        *,
-        constant: NumberT = 0.0,
-    ) -> Union[NumberT, "_LinearExpression"]:
-        """Creates `sum(expressions[i] * coefficients[i]) + constant`.
-
-        It can perform simple simplifications and returns different object,
-        including the input.
-
-        Args:
-          expressions: a sequence of linear expressions or constants.
-          coefficients: a sequence of numerical constants.
-          constant: a numerical constant.
-
-        Returns:
-          a _LinearExpression instance or a numerical constant.
-        """
-        if len(expressions) != len(coefficients):
-            raise ValueError(
-                "LinearExpr.weighted_sum: expressions and coefficients have"
-                " different lengths"
-            )
-        checked_constant: np.double = mbn.assert_is_a_number(constant)
-        if not expressions:
-            return checked_constant
-        return _sum_as_flat_linear_expression(
-            to_process=list(zip(expressions, coefficients)), offset=checked_constant
-        )
-
-    @classmethod
-    def term(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
-        cls,
-        expression: LinearExprT,
-        coefficient: NumberT,
-        *,
-        constant: NumberT = 0.0,
-    ) -> LinearExprT:
-        """Creates `expression * coefficient + constant`.
-
-        It can perform simple simplifications and returns different object,
-        including the input.
-        Args:
-          expression: a linear expression or a constant.
-          coefficient: a numerical constant.
-          constant: a numerical constant.
-
-        Returns:
-          a LinearExpr instance or a numerical constant.
-        """
-        checked_coefficient: np.double = mbn.assert_is_a_number(coefficient)
-        checked_constant: np.double = mbn.assert_is_a_number(constant)
-
-        if mbn.is_zero(checked_coefficient):
-            return checked_constant
-        if mbn.is_one(checked_coefficient) and mbn.is_zero(checked_constant):
-            return expression
-        if mbn.is_a_number(expression):
-            return np.double(expression) * checked_coefficient + checked_constant
-        if isinstance(expression, LinearExpr):
-            return _as_flat_linear_expression(
-                expression * checked_coefficient + checked_constant
-            )
-        raise TypeError(f"Unknown expression {expression!r} of type {type(expression)}")
-
-    def __hash__(self):
-        return object.__hash__(self)
-
-    def __add__(self, arg: LinearExprT) -> "_Sum":
-        return _Sum(self, arg)
-
-    def __radd__(self, arg: LinearExprT) -> "_Sum":
-        return self.__add__(arg)
-
-    def __sub__(self, arg: LinearExprT) -> "_Sum":
-        return _Sum(self, -arg)
-
-    def __rsub__(self, arg: LinearExprT) -> "_Sum":
-        return _Sum(-self, arg)
-
-    def __mul__(self, arg: NumberT) -> "_Product":
-        return _Product(self, arg)
-
-    def __rmul__(self, arg: NumberT) -> "_Product":
-        return self.__mul__(arg)
-
-    def __truediv__(self, coeff: NumberT) -> "_Product":
-        return self.__mul__(1.0 / coeff)
-
-    def __neg__(self) -> "_Product":
-        return _Product(self, -1)
-
-    def __bool__(self):
-        raise NotImplementedError(f"Cannot use a LinearExpr {self} as a Boolean value")
-
-    def __eq__(self, arg: LinearExprT) -> "BoundedLinearExpression":
-        return BoundedLinearExpression(self - arg, 0, 0)
-
-    def __ge__(self, arg: LinearExprT) -> "BoundedLinearExpression":
-        return BoundedLinearExpression(
-            self - arg, 0, math.inf
-        )  # pytype: disable=wrong-arg-types  # numpy-scalars
-
-    def __le__(self, arg: LinearExprT) -> "BoundedLinearExpression":
-        return BoundedLinearExpression(
-            self - arg, -math.inf, 0
-        )  # pytype: disable=wrong-arg-types  # numpy-scalars
-
-
-class Variable(LinearExpr):
-    """A variable (continuous or integral).
-
-    A Variable is an object that can take on any integer value within defined
-    ranges. Variables appear in constraint like:
-
-        x + y >= 5
-
-    Solving a model is equivalent to finding, for each variable, a single value
-    from the set of initial values (called the initial domain), such that the
-    model is feasible, or optimal if you provided an objective function.
-    """
-
-    def __init__(
-        self,
-        helper: mbh.ModelBuilderHelper,
-        lb: NumberT,
-        ub: Optional[NumberT],
-        is_integral: Optional[bool],
-        name: Optional[str],
-    ) -> None:
-        """See Model.new_var below."""
-        LinearExpr.__init__(self)
-        self.__helper: mbh.ModelBuilderHelper = helper
-        # Python do not support multiple __init__ methods.
-        # This method is only called from the Model class.
-        # We hack the parameter to support the two cases:
-        # case 1:
-        #     helper is a ModelBuilderHelper, lb is a double value, ub is a double
-        #     value, is_integral is a Boolean value, and name is a string.
-        # case 2:
-        #     helper is a ModelBuilderHelper, lb is an index (int), ub is None,
-        #     is_integral is None, and name is None.
-        if mbn.is_integral(lb) and ub is None and is_integral is None:
-            self.__index: np.int32 = np.int32(lb)
-            self.__helper: mbh.ModelBuilderHelper = helper
-        else:
-            index: np.int32 = helper.add_var()
-            self.__index: np.int32 = np.int32(index)
-            self.__helper: mbh.ModelBuilderHelper = helper
-            helper.set_var_lower_bound(index, lb)
-            helper.set_var_upper_bound(index, ub)
-            helper.set_var_integrality(index, is_integral)
-            if name:
-                helper.set_var_name(index, name)
-
-    @property
-    def index(self) -> np.int32:
-        """Returns the index of the variable in the helper."""
-        return self.__index
-
-    @property
-    def helper(self) -> mbh.ModelBuilderHelper:
-        """Returns the underlying ModelBuilderHelper."""
-        return self.__helper
-
-    def is_equal_to(self, other: LinearExprT) -> bool:
-        """Returns true if self == other in the python sense."""
-        if not isinstance(other, Variable):
-            return False
-        return self.index == other.index and self.helper == other.helper
-
-    def __str__(self) -> str:
-        return self.name
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-    @property
-    def name(self) -> str:
-        """Returns the name of the variable."""
-        var_name = self.__helper.var_name(self.__index)
-        if var_name:
-            return var_name
-        return f"variable#{self.index}"
-
-    @name.setter
-    def name(self, name: str) -> None:
-        """Sets the name of the variable."""
-        self.__helper.set_var_name(self.__index, name)
-
-    @property
-    def lower_bound(self) -> np.double:
-        """Returns the lower bound of the variable."""
-        return self.__helper.var_lower_bound(self.__index)
-
-    @lower_bound.setter
-    def lower_bound(self, bound: NumberT) -> None:
-        """Sets the lower bound of the variable."""
-        self.__helper.set_var_lower_bound(self.__index, bound)
-
-    @property
-    def upper_bound(self) -> np.double:
-        """Returns the upper bound of the variable."""
-        return self.__helper.var_upper_bound(self.__index)
-
-    @upper_bound.setter
-    def upper_bound(self, bound: NumberT) -> None:
-        """Sets the upper bound of the variable."""
-        self.__helper.set_var_upper_bound(self.__index, bound)
-
-    @property
-    def is_integral(self) -> bool:
-        """Returns whether the variable is integral."""
-        return self.__helper.var_is_integral(self.__index)
-
-    @is_integral.setter
-    def integrality(self, is_integral: bool) -> None:
-        """Sets the integrality of the variable."""
-        self.__helper.set_var_integrality(self.__index, is_integral)
-
-    @property
-    def objective_coefficient(self) -> NumberT:
-        return self.__helper.var_objective_coefficient(self.__index)
-
-    @objective_coefficient.setter
-    def objective_coefficient(self, coeff: NumberT) -> None:
-        self.__helper.set_var_objective_coefficient(self.__index, coeff)
-
-    def __eq__(self, arg: Optional[LinearExprT]) -> ConstraintT:
-        if arg is None:
-            return False
-        if isinstance(arg, Variable):
-            return VarEqVar(self, arg)
-        return BoundedLinearExpression(
-            self - arg, 0.0, 0.0
-        )  # pytype: disable=wrong-arg-types  # numpy-scalars
-
-    def __hash__(self):
-        return hash((self.__helper, self.__index))
-
-
-class _BoundedLinearExpr(metaclass=abc.ABCMeta):
-    """Interface for types that can build bounded linear (boolean) expressions.
-
-    Classes derived from _BoundedLinearExpr are used to build linear constraints
-    to be satisfied.
-
-      * BoundedLinearExpression: a linear expression with upper and lower bounds.
-      * VarEqVar: an equality comparison between two variables.
-    """
-
-    @abc.abstractmethod
-    def _add_linear_constraint(
-        self, helper: mbh.ModelBuilderHelper, name: str
-    ) -> "LinearConstraint":
-        """Creates a new linear constraint in the helper.
-
-        Args:
-          helper (mbh.ModelBuilderHelper): The helper to create the constraint.
-          name (str): The name of the linear constraint.
-
-        Returns:
-          LinearConstraint: A reference to the linear constraint in the helper.
-        """
-
-    @abc.abstractmethod
-    def _add_enforced_linear_constraint(
-        self,
-        helper: mbh.ModelBuilderHelper,
-        var: Variable,
-        value: bool,
-        name: str,
-    ) -> "EnforcedLinearConstraint":
-        """Creates a new enforced linear constraint in the helper.
-
-        Args:
-          helper (mbh.ModelBuilderHelper): The helper to create the constraint.
-          var (Variable): The indicator variable of the constraint.
-          value (bool): The indicator value of the constraint.
-          name (str): The name of the linear constraint.
-
-        Returns:
-          Enforced LinearConstraint: A reference to the linear constraint in the
-          helper.
-        """
+Variable = mbh.Variable
 
 
 def _add_linear_constraint_to_helper(
-    bounded_expr: Union[bool, _BoundedLinearExpr],
+    bounded_expr: Union[bool, mbh.BoundedLinearExpression],
     helper: mbh.ModelBuilderHelper,
     name: Optional[str],
 ):
@@ -448,14 +97,21 @@ def _add_linear_constraint_to_helper(
             helper.set_constraint_lower_bound(c.index, 1)
             helper.set_constraint_upper_bound(c.index, -1)
         return c
-    if isinstance(bounded_expr, _BoundedLinearExpr):
+    if isinstance(bounded_expr, mbh.BoundedLinearExpression):
+        c = LinearConstraint(helper)
         # pylint: disable=protected-access
-        return bounded_expr._add_linear_constraint(helper, name)
+        helper.add_terms_to_constraint(c.index, bounded_expr.vars, bounded_expr.coeffs)
+        helper.set_constraint_lower_bound(c.index, bounded_expr.lower_bound)
+        helper.set_constraint_upper_bound(c.index, bounded_expr.upper_bound)
+        # pylint: enable=protected-access
+        if name is not None:
+            helper.set_constraint_name(c.index, name)
+        return c
     raise TypeError("invalid type={}".format(type(bounded_expr)))
 
 
 def _add_enforced_linear_constraint_to_helper(
-    bounded_expr: Union[bool, _BoundedLinearExpr],
+    bounded_expr: Union[bool, mbh.BoundedLinearExpression],
     helper: mbh.ModelBuilderHelper,
     var: Variable,
     value: bool,
@@ -502,153 +158,20 @@ def _add_enforced_linear_constraint_to_helper(
             helper.set_enforced_constraint_lower_bound(c.index, 1)
             helper.set_enforced_constraint_upper_bound(c.index, -1)
         return c
-    if isinstance(bounded_expr, _BoundedLinearExpr):
-        # pylint: disable=protected-access
-        return bounded_expr._add_enforced_linear_constraint(helper, var, value, name)
-    raise TypeError("invalid type={}".format(type(bounded_expr)))
-
-
-@dataclasses.dataclass(repr=False, eq=False, frozen=True)
-class VarEqVar(_BoundedLinearExpr):
-    """Represents var == var."""
-
-    __slots__ = ("left", "right")
-
-    left: Variable
-    right: Variable
-
-    def __str__(self):
-        return f"{self.left} == {self.right}"
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __bool__(self) -> bool:
-        return hash(self.left) == hash(self.right)
-
-    def _add_linear_constraint(
-        self, helper: mbh.ModelBuilderHelper, name: str
-    ) -> "LinearConstraint":
-        c = LinearConstraint(helper)
-        helper.set_constraint_lower_bound(c.index, 0.0)
-        helper.set_constraint_upper_bound(c.index, 0.0)
-        # pylint: disable=protected-access
-        helper.add_term_to_constraint(c.index, self.left.index, 1.0)
-        helper.add_term_to_constraint(c.index, self.right.index, -1.0)
-        # pylint: enable=protected-access
-        helper.set_constraint_name(c.index, name)
-        return c
-
-    def _add_enforced_linear_constraint(
-        self,
-        helper: mbh.ModelBuilderHelper,
-        var: Variable,
-        value: bool,
-        name: str,
-    ) -> "EnforcedLinearConstraint":
-        """Adds an enforced linear constraint to the model."""
+    if isinstance(bounded_expr, mbh.BoundedLinearExpression):
         c = EnforcedLinearConstraint(helper)
         c.indicator_variable = var
         c.indicator_value = value
-        helper.set_enforced_constraint_lower_bound(c.index, 0.0)
-        helper.set_enforced_constraint_upper_bound(c.index, 0.0)
-        # pylint: disable=protected-access
-        helper.add_term_to_enforced_constraint(c.index, self.left.index, 1.0)
-        helper.add_term_to_enforced_constraint(c.index, self.right.index, -1.0)
-        # pylint: enable=protected-access
-        helper.set_enforced_constraint_name(c.index, name)
-        return c
-
-
-class BoundedLinearExpression(_BoundedLinearExpr):
-    """Represents a linear constraint: `lb <= linear expression <= ub`.
-
-    The only use of this class is to be added to the Model through
-    `Model.add(bounded expression)`, as in:
-
-        model.Add(x + 2 * y -1 >= z)
-    """
-
-    def __init__(self, expr: LinearExprT, lb: NumberT, ub: NumberT) -> None:
-        self.__expr: LinearExprT = expr
-        self.__lb: np.double = mbn.assert_is_a_number(lb)
-        self.__ub: np.double = mbn.assert_is_a_number(ub)
-
-    def __str__(self) -> str:
-        if self.__lb > -math.inf and self.__ub < math.inf:
-            if self.__lb == self.__ub:
-                return f"{self.__expr} == {self.__lb}"
-            else:
-                return f"{self.__lb} <= {self.__expr} <= {self.__ub}"
-        elif self.__lb > -math.inf:
-            return f"{self.__expr} >= {self.__lb}"
-        elif self.__ub < math.inf:
-            return f"{self.__expr} <= {self.__ub}"
-        else:
-            return f"{self.__expr} free"
-
-    def __repr__(self):
-        return self.__str__()
-
-    @property
-    def expression(self) -> LinearExprT:
-        return self.__expr
-
-    @property
-    def lower_bound(self) -> np.double:
-        return self.__lb
-
-    @property
-    def upper_bound(self) -> np.double:
-        return self.__ub
-
-    def __bool__(self) -> bool:
-        raise NotImplementedError(
-            f"Cannot use a BoundedLinearExpression {self} as a Boolean value"
+        helper.add_terms_to_enforced_constraint(
+            c.index, bounded_expr.vars, bounded_expr.coeffs
         )
-
-    def _add_linear_constraint(
-        self, helper: mbh.ModelBuilderHelper, name: Optional[str]
-    ) -> "LinearConstraint":
-        c = LinearConstraint(helper)
-        flat_expr = _as_flat_linear_expression(self.__expr)
-        # pylint: disable=protected-access
-        helper.add_terms_to_constraint(
-            c.index, flat_expr._variable_indices, flat_expr._coefficients
-        )
-        helper.set_constraint_lower_bound(c.index, self.__lb - flat_expr._offset)
-        helper.set_constraint_upper_bound(c.index, self.__ub - flat_expr._offset)
-        # pylint: enable=protected-access
+        helper.set_enforced_constraint_lower_bound(c.index, bounded_expr.lower_bound)
+        helper.set_enforced_constraint_upper_bound(c.index, bounded_expr.upper_bound)
         if name is not None:
             helper.set_constraint_name(c.index, name)
         return c
 
-    def _add_enforced_linear_constraint(
-        self,
-        helper: mbh.ModelBuilderHelper,
-        var: Variable,
-        value: bool,
-        name: Optional[str],
-    ) -> "EnforcedLinearConstraint":
-        """Adds an enforced linear constraint to the model."""
-        c = EnforcedLinearConstraint(helper)
-        c.indicator_variable = var
-        c.indicator_value = value
-        flat_expr = _as_flat_linear_expression(self.__expr)
-        # pylint: disable=protected-access
-        helper.add_terms_to_enforced_constraint(
-            c.index, flat_expr._variable_indices, flat_expr._coefficients
-        )
-        helper.set_enforced_constraint_lower_bound(
-            c.index, self.__lb - flat_expr._offset
-        )
-        helper.set_enforced_constraint_upper_bound(
-            c.index, self.__ub - flat_expr._offset
-        )
-        # pylint: enable=protected-access
-        if name is not None:
-            helper.set_enforced_constraint_name(c.index, name)
-        return c
+    raise TypeError("invalid type={}".format(type(bounded_expr)))
 
 
 class LinearConstraint:
@@ -682,6 +205,9 @@ class LinearConstraint:
             self.__index = index
         self.__helper: mbh.ModelBuilderHelper = helper
         self.__is_under_specified = is_under_specified
+
+    def __hash__(self):
+        return hash((self.__helper, self.__index))
 
     @property
     def index(self) -> IntegerT:
@@ -837,7 +363,7 @@ class EnforcedLinearConstraint:
         enforcement_var_index = (
             self.__helper.enforced_constraint_indicator_variable_index(self.__index)
         )
-        return Variable(self.__helper, enforcement_var_index, None, None, None)
+        return Variable(self.__helper, enforcement_var_index)
 
     @indicator_variable.setter
     def indicator_variable(self, var: "Variable") -> None:
@@ -984,15 +510,14 @@ class Model:
         """
         return _attribute_series(
             # pylint: disable=g-long-lambda
-            func=lambda c: _as_flat_linear_expression(
+            func=lambda c: mbh.FlatExpression(
                 # pylint: disable=g-complex-comprehension
-                sum(
-                    coeff * Variable(self.__helper, var_id, None, None, None)
-                    for var_id, coeff in zip(
-                        c.helper.constraint_var_indices(c.index),
-                        c.helper.constraint_coefficients(c.index),
-                    )
-                )
+                [
+                    Variable(self.__helper, var_id)
+                    for var_id in c.helper.constraint_var_indices(c.index)
+                ],
+                c.helper.constraint_coefficients(c.index),
+                0.0,
             ),
             values=self._get_linear_constraints(constraints),
         )
@@ -1221,11 +746,11 @@ class Model:
             data=[
                 # pylint: disable=g-complex-comprehension
                 Variable(
-                    helper=self.__helper,
-                    name=f"{name}[{i}]",
-                    lb=lower_bounds[i],
-                    ub=upper_bounds[i],
-                    is_integral=is_integrals[i],
+                    self.__helper,
+                    lower_bounds[i],
+                    upper_bounds[i],
+                    is_integrals[i],
+                    f"{name}[{i}]",
                 )
                 for i in index
             ],
@@ -1318,7 +843,7 @@ class Model:
 
     def var_from_index(self, index: IntegerT) -> Variable:
         """Rebuilds a variable object from the model and its index."""
-        return Variable(self.__helper, index, None, None, None)
+        return Variable(self.__helper, index)
 
     # Linear constraints.
 
@@ -1336,17 +861,13 @@ class Model:
         if mbn.is_a_number(linear_expr):
             self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
             self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
-        elif isinstance(linear_expr, Variable):
-            self.__helper.set_constraint_lower_bound(ct.index, lb)
-            self.__helper.set_constraint_upper_bound(ct.index, ub)
-            self.__helper.add_term_to_constraint(ct.index, linear_expr.index, 1.0)
         elif isinstance(linear_expr, LinearExpr):
-            flat_expr = _as_flat_linear_expression(linear_expr)
+            flat_expr = mbh.FlatExpression(linear_expr)
             # pylint: disable=protected-access
-            self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr._offset)
-            self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr._offset)
+            self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
+            self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
             self.__helper.add_terms_to_constraint(
-                ct.index, flat_expr._variable_indices, flat_expr._coefficients
+                ct.index, flat_expr.vars, flat_expr.coeffs
             )
         else:
             raise TypeError(
@@ -1381,8 +902,8 @@ class Model:
         you can check the if a constraint is under specified by reading the
         `LinearConstraint.is_under_specified` property.
         """
-        if isinstance(ct, _BoundedLinearExpr):
-            return ct._add_linear_constraint(self.__helper, name)
+        if isinstance(ct, mbh.BoundedLinearExpression):
+            return _add_linear_constraint_to_helper(ct, self.__helper, name)
         elif isinstance(ct, bool):
             return _add_linear_constraint_to_helper(ct, self.__helper, name)
         elif isinstance(ct, pd.Series):
@@ -1402,7 +923,7 @@ class Model:
         """Rebuilds a linear constraint object from the model and its index."""
         return LinearConstraint(self.__helper, index=index)
 
-    # EnforcedLinear constraints.
+    # Enforced Linear constraints.
 
     def add_enforced_linear_constraint(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
         self,
@@ -1422,18 +943,12 @@ class Model:
         if mbn.is_a_number(linear_expr):
             self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
             self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
-        elif isinstance(linear_expr, Variable):
-            self.__helper.set_constraint_lower_bound(ct.index, lb)
-            self.__helper.set_constraint_upper_bound(ct.index, ub)
-            self.__helper.add_term_to_constraint(ct.index, linear_expr.index, 1.0)
         elif isinstance(linear_expr, LinearExpr):
-            flat_expr = _as_flat_linear_expression(linear_expr)
+            flat_expr = mbh.FlatExpression(linear_expr)
             # pylint: disable=protected-access
-            self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr._offset)
-            self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr._offset)
-            self.__helper.add_terms_to_constraint(
-                ct.index, flat_expr._variable_indices, flat_expr._coefficients
-            )
+            self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
+            self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
+            self.__helper.add_terms_to_constraint(ct.index, flat_expr, flat_expr.coeffs)
         else:
             raise TypeError(
                 "Not supported:"
@@ -1472,8 +987,10 @@ class Model:
         you can check the if a constraint is always false (lb=inf, ub=-inf) by
         calling EnforcedLinearConstraint.is_always_false()
         """
-        if isinstance(ct, _BoundedLinearExpr):
-            return ct._add_enforced_linear_constraint(self.__helper, var, value, name)
+        if isinstance(ct, mbh.BoundedLinearExpression):  # IMPLEMENTME
+            return _add_enforced_linear_constraint_to_helper(
+                ct, self.__helper, var, value, name
+            )
         elif (
             isinstance(ct, bool)
             and isinstance(var, Variable)
@@ -1525,12 +1042,11 @@ class Model:
         elif isinstance(linear_expr, Variable):
             self.helper.set_var_objective_coefficient(linear_expr.index, 1.0)
         elif isinstance(linear_expr, LinearExpr):
-            flat_expr = _as_flat_linear_expression(linear_expr)
+            flat_expr = mbh.FlatExpression(linear_expr)
             # pylint: disable=protected-access
-            self.helper.set_objective_offset(flat_expr._offset)
-            self.helper.set_objective_coefficients(
-                flat_expr._variable_indices, flat_expr._coefficients
-            )
+            self.helper.set_objective_offset(flat_expr.offset)
+            var_indices = [var.index for var in flat_expr.vars]
+            self.helper.set_objective_coefficients(var_indices, flat_expr.coeffs)
         else:
             raise TypeError(f"Not supported: Model.minimize/maximize({linear_expr})")
 
@@ -1543,15 +1059,17 @@ class Model:
     def objective_offset(self, value: NumberT) -> None:
         self.__helper.set_objective_offset(value)
 
-    def objective_expression(self) -> "_LinearExpression":
+    def objective_expression(self) -> "LinearExpr":
         """Returns the expression to optimize."""
-        return _as_flat_linear_expression(
-            sum(
-                variable * self.__helper.var_objective_coefficient(variable.index)
-                for variable in self.get_variables()
-                if self.__helper.var_objective_coefficient(variable.index) != 0.0
-            )
-            + self.__helper.objective_offset()
+        variables: list[Variable] = []
+        coefficients: list[numbers.Real] = []
+        for variable in self.get_variables():
+            coeff = self.__helper.var_objective_coefficient(variable.index)
+            if coeff != 0.0:
+                variables.append(variable)
+                coefficients.append(coeff)
+        return mbh.FlatExpression(
+            variables, coefficients, self.__helper.objective_offset()
         )
 
     # Hints.
@@ -1712,15 +1230,8 @@ class Solver:
             return pd.NA
         if mbn.is_a_number(expr):
             return expr
-        elif isinstance(expr, Variable):
-            return self.__solve_helper.var_value(expr.index)
         elif isinstance(expr, LinearExpr):
-            flat_expr = _as_flat_linear_expression(expr)
-            return self.__solve_helper.expression_value(
-                flat_expr._variable_indices,
-                flat_expr._coefficients,
-                flat_expr._offset,
-            )
+            return self.__solve_helper.expression_value(expr)
         else:
             raise TypeError(f"Unknown expression {expr!r} of type {type(expr)}")
 
@@ -1742,7 +1253,7 @@ class Solver:
         if not self.__solve_helper.has_solution():
             return _attribute_series(func=lambda v: pd.NA, values=variables)
         return _attribute_series(
-            func=lambda v: self.__solve_helper.var_value(v.index),
+            func=lambda v: self.__solve_helper.variable_value(v.index),
             values=variables,
         )
 
@@ -1837,164 +1348,6 @@ class Solver:
     @property
     def user_time(self) -> np.double:
         return self.__solve_helper.user_time()
-
-
-# The maximum number of terms to display in a linear expression's repr.
-_MAX_LINEAR_EXPRESSION_REPR_TERMS = 5
-
-
-@dataclasses.dataclass(repr=False, eq=False, frozen=True)
-class _LinearExpression(LinearExpr):
-    """For variables x, an expression: offset + sum_{i in I} coeff_i * x_i."""
-
-    __slots__ = ("_variable_indices", "_coefficients", "_offset", "_helper")
-
-    _variable_indices: npt.NDArray[np.int32]
-    _coefficients: npt.NDArray[np.double]
-    _offset: float
-    _helper: Optional[mbh.ModelBuilderHelper]
-
-    @property
-    def variable_indices(self) -> npt.NDArray[np.int32]:
-        return self._variable_indices
-
-    @property
-    def coefficients(self) -> npt.NDArray[np.double]:
-        return self._coefficients
-
-    @property
-    def constant(self) -> float:
-        return self._offset
-
-    @property
-    def helper(self) -> Optional[mbh.ModelBuilderHelper]:
-        return self._helper
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        if self._helper is None:
-            return str(self._offset)
-
-        result = []
-        for index, coeff in zip(self.variable_indices, self.coefficients):
-            if len(result) >= _MAX_LINEAR_EXPRESSION_REPR_TERMS:
-                result.append(" + ...")
-                break
-            var_name = Variable(self._helper, index, None, None, None).name
-            if not result and mbn.is_one(coeff):
-                result.append(var_name)
-            elif not result and mbn.is_minus_one(coeff):
-                result.append(f"-{var_name}")
-            elif not result:
-                result.append(f"{coeff} * {var_name}")
-            elif mbn.is_one(coeff):
-                result.append(f" + {var_name}")
-            elif mbn.is_minus_one(coeff):
-                result.append(f" - {var_name}")
-            elif coeff > 0.0:
-                result.append(f" + {coeff} * {var_name}")
-            elif coeff < 0.0:
-                result.append(f" - {-coeff} * {var_name}")
-
-        if not result:
-            return f"{self.constant}"
-        if self.constant > 0:
-            result.append(f" + {self.constant}")
-        elif self.constant < 0:
-            result.append(f" - {-self.constant}")
-        return "".join(result)
-
-
-def _sum_as_flat_linear_expression(
-    to_process: List[Tuple[LinearExprT, float]], offset: float = 0.0
-) -> _LinearExpression:
-    """Creates a _LinearExpression as the sum of terms."""
-    indices = []
-    coeffs = []
-    helper = None
-    while to_process:  # Flatten AST of LinearTypes.
-        expr, coeff = to_process.pop()
-        if isinstance(expr, _Sum):
-            to_process.append((expr._left, coeff))
-            to_process.append((expr._right, coeff))
-        elif isinstance(expr, Variable):
-            indices.append([expr.index])
-            coeffs.append([coeff])
-            if helper is None:
-                helper = expr.helper
-        elif mbn.is_a_number(expr):
-            offset += coeff * cast(NumberT, expr)
-        elif isinstance(expr, _Product):
-            to_process.append((expr._expression, coeff * expr._coefficient))
-        elif isinstance(expr, _LinearExpression):
-            offset += coeff * expr._offset
-            if expr._helper is not None:
-                indices.append(expr.variable_indices)
-                coeffs.append(np.multiply(expr.coefficients, coeff))
-                if helper is None:
-                    helper = expr._helper
-        else:
-            raise TypeError(
-                "Unrecognized linear expression: " + str(expr) + f" {type(expr)}"
-            )
-
-    if helper is not None:
-        all_indices: npt.NDArray[np.int32] = np.concatenate(indices, axis=0)
-        all_coeffs: npt.NDArray[np.double] = np.concatenate(coeffs, axis=0)
-        sorted_indices, sorted_coefficients = helper.sort_and_regroup_terms(
-            all_indices, all_coeffs
-        )
-        return _LinearExpression(sorted_indices, sorted_coefficients, offset, helper)
-    else:
-        assert not indices
-        assert not coeffs
-        return _LinearExpression(
-            _variable_indices=np.zeros(dtype=np.int32, shape=[0]),
-            _coefficients=np.zeros(dtype=np.double, shape=[0]),
-            _offset=offset,
-            _helper=None,
-        )
-
-
-def _as_flat_linear_expression(base_expr: LinearExprT) -> _LinearExpression:
-    """Converts floats, ints and Linear objects to a LinearExpression."""
-    if isinstance(base_expr, _LinearExpression):
-        return base_expr
-    return _sum_as_flat_linear_expression(to_process=[(base_expr, 1.0)], offset=0.0)
-
-
-@dataclasses.dataclass(repr=False, eq=False, frozen=True)
-class _Sum(LinearExpr):
-    """Represents the (deferred) sum of two expressions."""
-
-    __slots__ = ("_left", "_right")
-
-    _left: LinearExprT
-    _right: LinearExprT
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return str(_as_flat_linear_expression(self))
-
-
-@dataclasses.dataclass(repr=False, eq=False, frozen=True)
-class _Product(LinearExpr):
-    """Represents the (deferred) product of an expression by a constant."""
-
-    __slots__ = ("_expression", "_coefficient")
-
-    _expression: LinearExpr
-    _coefficient: NumberT
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return str(_as_flat_linear_expression(self))
 
 
 def _get_index(obj: _IndexOrSeries) -> pd.Index:

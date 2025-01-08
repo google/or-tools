@@ -27,7 +27,7 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 
 %module(directors="1") operations_research_model_builder
 
-%extend operations_research::ModelBuilderHelper {
+%extend operations_research::mb::ModelBuilderHelper {
   std::string ExportToMpsString(bool obfuscate) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscate;
@@ -45,136 +45,137 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
     options.obfuscate = obfuscate;
     return $self->WriteToMpsFile(filename, options);
   }
-}  // Extend operations_research::ModelBuilderHelper
+}  // Extend operations_research::mb::ModelBuilderHelper
 
 %ignoreall
 
 %unignore operations_research;
+%unignore operations_research::mb;
 
 // Wrap the ModelBuilderHelper class.
-%unignore operations_research::ModelBuilderHelper;
-%unignore operations_research::ModelBuilderHelper::ModelBuilderHelper;
-%unignore operations_research::ModelBuilderHelper::~ModelBuilderHelper;
+%unignore operations_research::mb::ModelBuilderHelper;
+%unignore operations_research::mb::ModelBuilderHelper::ModelBuilderHelper;
+%unignore operations_research::mb::ModelBuilderHelper::~ModelBuilderHelper;
 
 // Var API.
-%unignore operations_research::ModelBuilderHelper::AddVar;
-%unignore operations_research::ModelBuilderHelper::VarIsIntegral;
-%unignore operations_research::ModelBuilderHelper::VarLowerBound;
-%unignore operations_research::ModelBuilderHelper::VarName;
-%unignore operations_research::ModelBuilderHelper::VarObjectiveCoefficient;
-%unignore operations_research::ModelBuilderHelper::VarUpperBound;
-%unignore operations_research::ModelBuilderHelper::SetVarIntegrality;
-%unignore operations_research::ModelBuilderHelper::SetVarLowerBound;
-%unignore operations_research::ModelBuilderHelper::SetVarName;
-%unignore operations_research::ModelBuilderHelper::SetVarObjectiveCoefficient;
-%unignore operations_research::ModelBuilderHelper::SetVarUpperBound;
+%unignore operations_research::mb::ModelBuilderHelper::AddVar;
+%unignore operations_research::mb::ModelBuilderHelper::VarIsIntegral;
+%unignore operations_research::mb::ModelBuilderHelper::VarLowerBound;
+%unignore operations_research::mb::ModelBuilderHelper::VarName;
+%unignore operations_research::mb::ModelBuilderHelper::VarObjectiveCoefficient;
+%unignore operations_research::mb::ModelBuilderHelper::VarUpperBound;
+%unignore operations_research::mb::ModelBuilderHelper::SetVarIntegrality;
+%unignore operations_research::mb::ModelBuilderHelper::SetVarLowerBound;
+%unignore operations_research::mb::ModelBuilderHelper::SetVarName;
+%unignore operations_research::mb::ModelBuilderHelper::SetVarObjectiveCoefficient;
+%unignore operations_research::mb::ModelBuilderHelper::SetVarUpperBound;
 
 // Linear Constraint API.
-%unignore operations_research::ModelBuilderHelper::AddConstraintTerm;
-%unignore operations_research::ModelBuilderHelper::AddLinearConstraint;
-%unignore operations_research::ModelBuilderHelper::ClearConstraintTerms;
-%unignore operations_research::ModelBuilderHelper::ConstraintCoefficients;
-%unignore operations_research::ModelBuilderHelper::ConstraintLowerBound;
-%unignore operations_research::ModelBuilderHelper::ConstraintName;
-%unignore operations_research::ModelBuilderHelper::ConstraintUpperBound;
-%unignore operations_research::ModelBuilderHelper::ConstraintVarIndices;
-%unignore operations_research::ModelBuilderHelper::SafeAddConstraintTerm;
-%unignore operations_research::ModelBuilderHelper::SetConstraintCoefficient;
-%unignore operations_research::ModelBuilderHelper::SetConstraintLowerBound;
-%unignore operations_research::ModelBuilderHelper::SetConstraintName;
-%unignore operations_research::ModelBuilderHelper::SetConstraintUpperBound;
+%unignore operations_research::mb::ModelBuilderHelper::AddConstraintTerm;
+%unignore operations_research::mb::ModelBuilderHelper::AddLinearConstraint;
+%unignore operations_research::mb::ModelBuilderHelper::ClearConstraintTerms;
+%unignore operations_research::mb::ModelBuilderHelper::ConstraintCoefficients;
+%unignore operations_research::mb::ModelBuilderHelper::ConstraintLowerBound;
+%unignore operations_research::mb::ModelBuilderHelper::ConstraintName;
+%unignore operations_research::mb::ModelBuilderHelper::ConstraintUpperBound;
+%unignore operations_research::mb::ModelBuilderHelper::ConstraintVarIndices;
+%unignore operations_research::mb::ModelBuilderHelper::SafeAddConstraintTerm;
+%unignore operations_research::mb::ModelBuilderHelper::SetConstraintCoefficient;
+%unignore operations_research::mb::ModelBuilderHelper::SetConstraintLowerBound;
+%unignore operations_research::mb::ModelBuilderHelper::SetConstraintName;
+%unignore operations_research::mb::ModelBuilderHelper::SetConstraintUpperBound;
 
 // Enforced Linear Constraints API.
-%unignore operations_research::ModelBuilderHelper::AddEnforcedConstraintTerm;
-%unignore operations_research::ModelBuilderHelper::AddEnforcedLinearConstraint;
-%unignore operations_research::ModelBuilderHelper::ClearEnforcedConstraintTerms;
-%unignore operations_research::ModelBuilderHelper::EnforcedConstraintCoefficients;
-%unignore operations_research::ModelBuilderHelper::EnforcedConstraintLowerBound;
-%unignore operations_research::ModelBuilderHelper::EnforcedConstraintName;
-%unignore operations_research::ModelBuilderHelper::EnforcedConstraintUpperBound;
-%unignore operations_research::ModelBuilderHelper::EnforcedConstraintVarIndices;
-%unignore operations_research::ModelBuilderHelper::EnforcedIndicatorValue;
-%unignore operations_research::ModelBuilderHelper::EnforcedIndicatorVariableIndex;
-%unignore operations_research::ModelBuilderHelper::IsEnforcedConstraint;
-%unignore operations_research::ModelBuilderHelper::SafeAddEnforcedConstraintTerm;
-%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintCoefficient;
-%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintLowerBound;
-%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintName;
-%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintUpperBound;
-%unignore operations_research::ModelBuilderHelper::SetEnforcedIndicatorValue;
-%unignore operations_research::ModelBuilderHelper::SetEnforcedIndicatorVariableIndex;
+%unignore operations_research::mb::ModelBuilderHelper::AddEnforcedConstraintTerm;
+%unignore operations_research::mb::ModelBuilderHelper::AddEnforcedLinearConstraint;
+%unignore operations_research::mb::ModelBuilderHelper::ClearEnforcedConstraintTerms;
+%unignore operations_research::mb::ModelBuilderHelper::EnforcedConstraintCoefficients;
+%unignore operations_research::mb::ModelBuilderHelper::EnforcedConstraintLowerBound;
+%unignore operations_research::mb::ModelBuilderHelper::EnforcedConstraintName;
+%unignore operations_research::mb::ModelBuilderHelper::EnforcedConstraintUpperBound;
+%unignore operations_research::mb::ModelBuilderHelper::EnforcedConstraintVarIndices;
+%unignore operations_research::mb::ModelBuilderHelper::EnforcedIndicatorValue;
+%unignore operations_research::mb::ModelBuilderHelper::EnforcedIndicatorVariableIndex;
+%unignore operations_research::mb::ModelBuilderHelper::IsEnforcedConstraint;
+%unignore operations_research::mb::ModelBuilderHelper::SafeAddEnforcedConstraintTerm;
+%unignore operations_research::mb::ModelBuilderHelper::SetEnforcedConstraintCoefficient;
+%unignore operations_research::mb::ModelBuilderHelper::SetEnforcedConstraintLowerBound;
+%unignore operations_research::mb::ModelBuilderHelper::SetEnforcedConstraintName;
+%unignore operations_research::mb::ModelBuilderHelper::SetEnforcedConstraintUpperBound;
+%unignore operations_research::mb::ModelBuilderHelper::SetEnforcedIndicatorValue;
+%unignore operations_research::mb::ModelBuilderHelper::SetEnforcedIndicatorVariableIndex;
 
 // Objective API.
-%unignore operations_research::ModelBuilderHelper::ClearObjective;
-%rename (Maximize) operations_research::ModelBuilderHelper::maximize;
-%unignore operations_research::ModelBuilderHelper::SetMaximize;
-%unignore operations_research::ModelBuilderHelper::ObjectiveOffset;
-%unignore operations_research::ModelBuilderHelper::SetObjectiveOffset;
+%unignore operations_research::mb::ModelBuilderHelper::ClearObjective;
+%rename (Maximize) operations_research::mb::ModelBuilderHelper::maximize;
+%unignore operations_research::mb::ModelBuilderHelper::SetMaximize;
+%unignore operations_research::mb::ModelBuilderHelper::ObjectiveOffset;
+%unignore operations_research::mb::ModelBuilderHelper::SetObjectiveOffset;
 
 // Hints
-%unignore operations_research::ModelBuilderHelper::ClearHints;
-%unignore operations_research::ModelBuilderHelper::AddHint;
+%unignore operations_research::mb::ModelBuilderHelper::ClearHints;
+%unignore operations_research::mb::ModelBuilderHelper::AddHint;
 
 // Model API.
-%rename (VariablesCount) operations_research::ModelBuilderHelper::num_variables;
-%rename (ConstraintsCount) operations_research::ModelBuilderHelper::num_constraints;
-%rename (Name) operations_research::ModelBuilderHelper::name;
-%unignore operations_research::ModelBuilderHelper::SetName;
-%unignore operations_research::ModelBuilderHelper::ReadModelFromProtoFile;
-%unignore operations_research::ModelBuilderHelper::WriteModelToProtoFile;
-%unignore operations_research::ModelBuilderHelper::ImportFromMpsString;
-%unignore operations_research::ModelBuilderHelper::ImportFromMpsFile;
-%unignore operations_research::ModelBuilderHelper::ImportFromLpString;
-%unignore operations_research::ModelBuilderHelper::ImportFromLpFile;
-%unignore operations_research::ModelBuilderHelper::WriteToMpsFile(std::string, bool);
-%unignore operations_research::ModelBuilderHelper::ExportToMpsString(bool);
-%unignore operations_research::ModelBuilderHelper::ExportToLpString(bool);
-%unignore operations_research::ModelBuilderHelper::OverwriteModel;
+%rename (VariablesCount) operations_research::mb::ModelBuilderHelper::num_variables;
+%rename (ConstraintsCount) operations_research::mb::ModelBuilderHelper::num_constraints;
+%rename (Name) operations_research::mb::ModelBuilderHelper::name;
+%unignore operations_research::mb::ModelBuilderHelper::SetName;
+%unignore operations_research::mb::ModelBuilderHelper::ReadModelFromProtoFile;
+%unignore operations_research::mb::ModelBuilderHelper::WriteModelToProtoFile;
+%unignore operations_research::mb::ModelBuilderHelper::ImportFromMpsString;
+%unignore operations_research::mb::ModelBuilderHelper::ImportFromMpsFile;
+%unignore operations_research::mb::ModelBuilderHelper::ImportFromLpString;
+%unignore operations_research::mb::ModelBuilderHelper::ImportFromLpFile;
+%unignore operations_research::mb::ModelBuilderHelper::WriteToMpsFile(std::string, bool);
+%unignore operations_research::mb::ModelBuilderHelper::ExportToMpsString(bool);
+%unignore operations_research::mb::ModelBuilderHelper::ExportToLpString(bool);
+%unignore operations_research::mb::ModelBuilderHelper::OverwriteModel;
 
 // Callbacks support.
-%feature("director") operations_research::MbLogCallback;
-%unignore operations_research::MbLogCallback;
-%unignore operations_research::MbLogCallback::~MbLogCallback;
-%unignore operations_research::MbLogCallback::NewMessage;
+%feature("director") operations_research::mb::MbLogCallback;
+%unignore operations_research::mb::MbLogCallback;
+%unignore operations_research::mb::MbLogCallback::~MbLogCallback;
+%unignore operations_research::mb::MbLogCallback::NewMessage;
 
 // Solver API.
-%unignore operations_research::ModelSolverHelper;
-%unignore operations_research::ModelSolverHelper::ModelSolverHelper(const std::string&);
-%unignore operations_research::ModelSolverHelper::SolverIsSupported;
-%unignore operations_research::ModelSolverHelper::Solve;
-%unignore operations_research::ModelSolverHelper::InterruptSolve;
-%rename (HasResponse) operations_research::ModelSolverHelper::has_response;
-%rename (HasSolution) operations_research::ModelSolverHelper::has_solution;
-%rename (Status) operations_research::ModelSolverHelper::status;
-%rename (ObjectiveValue) operations_research::ModelSolverHelper::objective_value;
-%rename (BestObjectiveBound) operations_research::ModelSolverHelper::best_objective_bound;
-%rename (VariableValue) operations_research::ModelSolverHelper::variable_value;
-%rename (ReducedCost) operations_research::ModelSolverHelper::reduced_cost;
-%rename (DualValue) operations_research::ModelSolverHelper::dual_value;
-%rename (Activity) operations_research::ModelSolverHelper::activity;
-%rename (StatusString) operations_research::ModelSolverHelper::status_string;
-%rename (WallTime) operations_research::ModelSolverHelper::wall_time;
-%rename (UserTime) operations_research::ModelSolverHelper::user_time;
-%unignore operations_research::ModelSolverHelper::EnableOutput;
-%unignore operations_research::ModelSolverHelper::ClearLogCallback;
-%unignore operations_research::ModelSolverHelper::SetLogCallbackFromDirectorClass;
-%unignore operations_research::ModelSolverHelper::SetTimeLimitInSeconds;
-%unignore operations_research::ModelSolverHelper::SetSolverSpecificParameters;
+%unignore operations_research::mb::ModelSolverHelper;
+%unignore operations_research::mb::ModelSolverHelper::ModelSolverHelper(const std::string&);
+%unignore operations_research::mb::ModelSolverHelper::SolverIsSupported;
+%unignore operations_research::mb::ModelSolverHelper::Solve;
+%unignore operations_research::mb::ModelSolverHelper::InterruptSolve;
+%rename (HasResponse) operations_research::mb::ModelSolverHelper::has_response;
+%rename (HasSolution) operations_research::mb::ModelSolverHelper::has_solution;
+%rename (Status) operations_research::mb::ModelSolverHelper::status;
+%rename (ObjectiveValue) operations_research::mb::ModelSolverHelper::objective_value;
+%rename (BestObjectiveBound) operations_research::mb::ModelSolverHelper::best_objective_bound;
+%rename (VariableValue) operations_research::mb::ModelSolverHelper::variable_value;
+%rename (ReducedCost) operations_research::mb::ModelSolverHelper::reduced_cost;
+%rename (DualValue) operations_research::mb::ModelSolverHelper::dual_value;
+%rename (Activity) operations_research::mb::ModelSolverHelper::activity;
+%rename (StatusString) operations_research::mb::ModelSolverHelper::status_string;
+%rename (WallTime) operations_research::mb::ModelSolverHelper::wall_time;
+%rename (UserTime) operations_research::mb::ModelSolverHelper::user_time;
+%unignore operations_research::mb::ModelSolverHelper::EnableOutput;
+%unignore operations_research::mb::ModelSolverHelper::ClearLogCallback;
+%unignore operations_research::mb::ModelSolverHelper::SetLogCallbackFromDirectorClass;
+%unignore operations_research::mb::ModelSolverHelper::SetTimeLimitInSeconds;
+%unignore operations_research::mb::ModelSolverHelper::SetSolverSpecificParameters;
 
-%unignore operations_research::SolveStatus;
-%unignore operations_research::OPTIMAL;
-%unignore operations_research::FEASIBLE;
-%unignore operations_research::INFEASIBLE;
-%unignore operations_research::UNBOUNDED;
-%unignore operations_research::ABNORMAL;
-%unignore operations_research::NOT_SOLVED;
-%unignore operations_research::MODEL_IS_VALID;
-%unignore operations_research::CANCELLED_BY_USER;
-%unignore operations_research::UNKNOWN_STATUS;
-%unignore operations_research::MODEL_INVALID;
-%unignore operations_research::INVALID_SOLVER_PARAMETERS;
-%unignore operations_research::SOLVER_TYPE_UNAVAILABLE;
-%unignore operations_research::INCOMPATIBLE_OPTIONS;
+%unignore operations_research::mb::SolveStatus;
+%unignore operations_research::mb::OPTIMAL;
+%unignore operations_research::mb::FEASIBLE;
+%unignore operations_research::mb::INFEASIBLE;
+%unignore operations_research::mb::UNBOUNDED;
+%unignore operations_research::mb::ABNORMAL;
+%unignore operations_research::mb::NOT_SOLVED;
+%unignore operations_research::mb::MODEL_IS_VALID;
+%unignore operations_research::mb::CANCELLED_BY_USER;
+%unignore operations_research::mb::UNKNOWN_STATUS;
+%unignore operations_research::mb::MODEL_INVALID;
+%unignore operations_research::mb::INVALID_SOLVER_PARAMETERS;
+%unignore operations_research::mb::SOLVER_TYPE_UNAVAILABLE;
+%unignore operations_research::mb::INCOMPATIBLE_OPTIONS;
 
 // For enums
 %include "ortools/linear_solver/wrappers/model_builder_helper.h"
