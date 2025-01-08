@@ -948,7 +948,8 @@ class Model:
             # pylint: disable=protected-access
             self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
             self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
-            self.__helper.add_terms_to_constraint(ct.index, flat_expr, flat_expr.coeffs)
+            self.__helper.add_terms_to_constraint(
+                ct.index, flat_expr.vars, flat_expr.coeffs)
         else:
             raise TypeError(
                 "Not supported:"
