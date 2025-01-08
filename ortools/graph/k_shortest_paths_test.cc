@@ -128,8 +128,9 @@ TEST(KShortestPathsYenTest, ReducesToShortestPath) {
   (void)graph.Build();
   std::vector<PathDistance> lengths{1, 1};
 
-  const KShortestPaths paths = YenKShortestPaths(graph, lengths, /*source=*/0,
-                                                 /*destination=*/2, /*k=*/1);
+  const KShortestPaths<StaticGraph<>> paths =
+      YenKShortestPaths(graph, lengths, /*source=*/0,
+                        /*destination=*/2, /*k=*/1);
   EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 1, 2}));
   EXPECT_THAT(paths.distances, ElementsAre(2));
 }
@@ -141,8 +142,9 @@ TEST(KShortestPathsYenTest, OnlyHasOnePath) {
   (void)graph.Build();
   std::vector<PathDistance> lengths{1, 1};
 
-  const KShortestPaths paths = YenKShortestPaths(graph, lengths, /*source=*/0,
-                                                 /*destination=*/2, /*k=*/10);
+  const KShortestPaths<StaticGraph<>> paths =
+      YenKShortestPaths(graph, lengths, /*source=*/0,
+                        /*destination=*/2, /*k=*/10);
   EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 1, 2}));
   EXPECT_THAT(paths.distances, ElementsAre(2));
 }
@@ -155,8 +157,9 @@ TEST(KShortestPathsYenTest, HasTwoPaths) {
   (void)graph.Build();
   std::vector<PathDistance> lengths{1, 30, 1};
 
-  const KShortestPaths paths = YenKShortestPaths(graph, lengths, /*source=*/0,
-                                                 /*destination=*/2, /*k=*/10);
+  const KShortestPaths<StaticGraph<>> paths =
+      YenKShortestPaths(graph, lengths, /*source=*/0,
+                        /*destination=*/2, /*k=*/10);
   EXPECT_THAT(paths.paths,
               ElementsAre(std::vector<int>{0, 1, 2}, std::vector<int>{0, 2}));
   EXPECT_THAT(paths.distances, ElementsAre(2, 30));
@@ -172,8 +175,9 @@ TEST(KShortestPathsYenTest, HasTwoPathsWithLongerPath) {
   (void)graph.Build();
   std::vector<PathDistance> lengths{1, 30, 1, 1, 1};
 
-  const KShortestPaths paths = YenKShortestPaths(graph, lengths, /*source=*/0,
-                                                 /*destination=*/4, /*k=*/10);
+  const KShortestPaths<StaticGraph<>> paths =
+      YenKShortestPaths(graph, lengths, /*source=*/0,
+                        /*destination=*/4, /*k=*/10);
   EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 1, 2, 3, 4},
                                        std::vector<int>{0, 4}));
   EXPECT_THAT(paths.distances, ElementsAre(4, 30));
@@ -190,8 +194,9 @@ TEST(KShortestPathsYenTest, ReturnsTheRightNumberOfPaths) {
   (void)graph.Build();
   std::vector<PathDistance> lengths{1, 1, 1, 1, 1};
 
-  const KShortestPaths paths = YenKShortestPaths(graph, lengths, /*source=*/0,
-                                                 /*destination=*/2, /*k=*/2);
+  const KShortestPaths<StaticGraph<>> paths =
+      YenKShortestPaths(graph, lengths, /*source=*/0,
+                        /*destination=*/2, /*k=*/2);
   EXPECT_THAT(paths.paths,
               ElementsAre(std::vector<int>{0, 2}, std::vector<int>{0, 1, 2}));
   EXPECT_THAT(paths.distances, ElementsAre(1, 2));

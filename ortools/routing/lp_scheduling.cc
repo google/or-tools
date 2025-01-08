@@ -42,7 +42,6 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/min_cost_flow.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/routing/parameters.pb.h"
@@ -3073,6 +3072,7 @@ int64_t ComputeBestVehicleToResourceAssignment(
       /*reserve_num_nodes*/ 2 + num_vehicles + num_resource_classes,
       /*reserve_num_arcs*/ num_vehicles + num_vehicles * num_resource_classes +
           num_resource_classes);
+  using ArcIndex = SimpleMinCostFlow::ArcIndex;
   const int source_index = num_vehicles + num_resource_classes;
   const int sink_index = source_index + 1;
   const auto flow_rc_index = [num_vehicles](int rc) {

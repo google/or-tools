@@ -62,7 +62,7 @@ void SimpleMinCostFlowProgram() {
   // [END solve]
 
   // [START print_solution]
-  if (status == MinCostFlow::OPTIMAL) {
+  if (status == SimpleMinCostFlow::OPTIMAL) {
     LOG(INFO) << "Minimum cost flow: " << min_cost_flow.OptimalCost();
     LOG(INFO) << "";
     LOG(INFO) << " Arc   Flow / Capacity  Cost";

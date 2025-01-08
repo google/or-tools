@@ -34,8 +34,6 @@
 
 %include "ortools/base/base.i"
 
-%import "ortools/graph/ebert_graph.h"
-
 %{
 #include "ortools/graph/assignment.h"
 #include "ortools/graph/max_flow.h"

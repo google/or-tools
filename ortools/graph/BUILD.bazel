@@ -101,7 +101,6 @@ cc_library(
     srcs = ["minimum_vertex_cover.cc"],
     hdrs = ["minimum_vertex_cover.h"],
     deps = [
-        ":ebert_graph",
         ":max_flow",
         "@com_google_absl//absl/log:check",
     ],
@@ -398,7 +397,6 @@ cc_test(
     srcs = ["shortest_paths_test.cc"],
     tags = ["noasan"],  # Times out occasionally in ASAN mode.
     deps = [
-        ":ebert_graph",
         ":graph",
         ":shortest_paths",
         ":strongly_connected_components",
@@ -471,7 +469,6 @@ cc_test(
     srcs = ["max_flow_test.cc"],
     data = ["//ortools/graph/testdata:max_flow_test1.pb.txt"],
     deps = [
-        ":ebert_graph",
         ":flow_problem_cc_proto",
         ":max_flow",
         "//ortools/base:gmock_main",
@@ -681,7 +678,6 @@ cc_library(
     srcs = ["dag_shortest_path.cc"],
     hdrs = ["dag_shortest_path.h"],
     deps = [
-        ":ebert_graph",
         ":graph",
         ":topologicalsorter",
         "@com_google_absl//absl/algorithm:container",

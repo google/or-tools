@@ -248,7 +248,6 @@ cc_library(
         "//ortools/graph",
         "//ortools/graph:christofides",
         "//ortools/graph:connected_components",
-        "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
         "//ortools/graph:min_cost_flow",
         "//ortools/lp_data",

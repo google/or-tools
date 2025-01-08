@@ -19,7 +19,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/path.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/util/file_util.h"
 
