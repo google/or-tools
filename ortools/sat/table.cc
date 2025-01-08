@@ -29,9 +29,12 @@ namespace sat {
 
 std::function<void(Model*)> LiteralTableConstraint(
     absl::Span<const std::vector<Literal>> literal_tuples,
-    const std::vector<Literal>& line_literals) {
-  return [=, literal_tuples = std::vector<std::vector<Literal>>(
-                 literal_tuples.begin(), literal_tuples.end())](Model* model) {
+    absl::Span<const Literal> line_literals) {
+  return [=,
+          line_literals =
+              std::vector<Literal>(line_literals.begin(), line_literals.end()),
+          literal_tuples = std::vector<std::vector<Literal>>(
+              literal_tuples.begin(), literal_tuples.end())](Model* model) {
     CHECK_EQ(literal_tuples.size(), line_literals.size());
     const int num_tuples = line_literals.size();
     if (num_tuples == 0) return;

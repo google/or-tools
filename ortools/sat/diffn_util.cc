@@ -107,21 +107,11 @@ absl::InlinedVector<Rectangle, 4> Rectangle::RegionDifference(
 }
 
 CompactVectorVector<int> GetOverlappingRectangleComponents(
-    absl::Span<const Rectangle> rectangles,
-    absl::Span<const int> active_rectangles) {
-  if (active_rectangles.empty()) return {};
-
-  std::vector<Rectangle> rectangles_to_process;
-  std::vector<int> rectangles_index;
-  rectangles_to_process.reserve(active_rectangles.size());
-  rectangles_index.reserve(active_rectangles.size());
-  for (const int r : active_rectangles) {
-    rectangles_to_process.push_back(rectangles[r]);
-    rectangles_index.push_back(r);
-  }
+    absl::Span<const Rectangle> rectangles) {
+  if (rectangles.empty()) return {};
 
   std::vector<std::pair<int, int>> intersections =
-      FindPartialRectangleIntersections(rectangles_to_process);
+      FindPartialRectangleIntersections(rectangles);
   const int num_intersections = intersections.size();
   intersections.reserve(num_intersections * 2 + 1);
   for (int i = 0; i < num_intersections; ++i) {
@@ -136,10 +126,9 @@ CompactVectorVector<int> GetOverlappingRectangleComponents(
   CompactVectorVector<int> result;
   for (int i = 0; i < components.size(); ++i) {
     absl::Span<const int> component = components[i];
-    if (component.size() == 1) continue;
     result.Add({});
     for (const int r : component) {
-      result.AppendToLastVector(rectangles_index[r]);
+      result.AppendToLastVector(r);
     }
   }
   return result;
@@ -591,8 +580,8 @@ std::vector<int> GetIntervalArticulationPoints(
 namespace {
 bool IsZeroOrPowerOfTwo(int value) { return (value & (value - 1)) == 0; }
 
-void AppendPairwiseRestriction(const ItemForPairwiseRestriction& item1,
-                               const ItemForPairwiseRestriction& item2,
+void AppendPairwiseRestriction(const ItemWithVariableSize& item1,
+                               const ItemWithVariableSize& item2,
                                std::vector<PairwiseRestriction>* result) {
   const int state =
       // box1 can be left of box2.
@@ -660,9 +649,8 @@ void AppendPairwiseRestriction(const ItemForPairwiseRestriction& item1,
 }
 }  // namespace
 
-void AppendPairwiseRestrictions(
-    absl::Span<const ItemForPairwiseRestriction> items,
-    std::vector<PairwiseRestriction>* result) {
+void AppendPairwiseRestrictions(absl::Span<const ItemWithVariableSize> items,
+                                std::vector<PairwiseRestriction>* result) {
   for (int i1 = 0; i1 + 1 < items.size(); ++i1) {
     for (int i2 = i1 + 1; i2 < items.size(); ++i2) {
       AppendPairwiseRestriction(items[i1], items[i2], result);
@@ -671,8 +659,8 @@ void AppendPairwiseRestrictions(
 }
 
 void AppendPairwiseRestrictions(
-    absl::Span<const ItemForPairwiseRestriction> items,
-    absl::Span<const ItemForPairwiseRestriction> other_items,
+    absl::Span<const ItemWithVariableSize> items,
+    absl::Span<const ItemWithVariableSize> other_items,
     std::vector<PairwiseRestriction>* result) {
   for (int i1 = 0; i1 < items.size(); ++i1) {
     for (int i2 = 0; i2 < other_items.size(); ++i2) {

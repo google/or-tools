@@ -38,12 +38,11 @@ std::vector<RectangleInRange> MakeItemsFromRectangles(
     absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random);
 
-std::vector<ItemForPairwiseRestriction>
-GenerateItemsRectanglesWithNoPairwiseConflict(
+std::vector<ItemWithVariableSize> GenerateItemsRectanglesWithNoPairwiseConflict(
     absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random);
 
-std::vector<ItemForPairwiseRestriction>
+std::vector<ItemWithVariableSize>
 GenerateItemsRectanglesWithNoPairwisePropagation(int num_rectangles,
                                                  double slack_factor,
                                                  absl::BitGenRef random);

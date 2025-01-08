@@ -42,7 +42,9 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "google/protobuf/arena.h"
 #include "google/protobuf/repeated_field.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -5836,9 +5838,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
 
   // Filter absent boxes.
   int new_size = 0;
-  std::vector<Rectangle> bounding_boxes, fixed_boxes;
+  std::vector<Rectangle> bounding_boxes, fixed_boxes, non_fixed_bounding_boxes;
   std::vector<RectangleInRange> non_fixed_boxes;
-  std::vector<int> active_boxes;
   absl::flat_hash_set<int> fixed_item_indexes;
   for (int i = 0; i < proto.x_intervals_size(); ++i) {
     const int x_interval_index = proto.x_intervals(i);
@@ -5877,7 +5878,6 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
          IntegerValue(context_->EndMax(x_interval_index)),
          IntegerValue(context_->StartMin(y_interval_index)),
          IntegerValue(context_->EndMax(y_interval_index))});
-    active_boxes.push_back(new_size);
     if (context_->IntervalIsConstant(x_interval_index) &&
         context_->IntervalIsConstant(y_interval_index) &&
         context_->SizeMax(x_interval_index) > 0 &&
@@ -5885,6 +5885,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       fixed_boxes.push_back(bounding_boxes.back());
       fixed_item_indexes.insert(new_size);
     } else {
+      non_fixed_bounding_boxes.push_back(bounding_boxes.back());
       non_fixed_boxes.push_back(
           {.box_index = new_size,
            .bounding_area = bounding_boxes.back(),
@@ -5909,15 +5910,25 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     }
   }
 
-  const CompactVectorVector<int> components = GetOverlappingRectangleComponents(
-      bounding_boxes, absl::MakeSpan(active_boxes));
-  // The result of GetOverlappingRectangleComponents() omit singleton components
-  // thus to check whether a graph is fully connected we must check also the
-  // size of the unique component.
-  const bool is_fully_connected =
-      (components.size() == 1 && components[0].size() == active_boxes.size()) ||
-      (active_boxes.size() <= 1);
-  if (!is_fully_connected) {
+  if (new_size < initial_num_boxes) {
+    context_->UpdateRuleStats("no_overlap_2d: removed inactive boxes");
+    ct->mutable_no_overlap_2d()->mutable_x_intervals()->Truncate(new_size);
+    ct->mutable_no_overlap_2d()->mutable_y_intervals()->Truncate(new_size);
+  }
+
+  if (new_size == 0) {
+    context_->UpdateRuleStats("no_overlap_2d: no boxes");
+    return RemoveConstraint(ct);
+  }
+
+  if (new_size == 1) {
+    context_->UpdateRuleStats("no_overlap_2d: only one box");
+    return RemoveConstraint(ct);
+  }
+
+  const CompactVectorVector<int> components =
+      GetOverlappingRectangleComponents(bounding_boxes);
+  if (components.size() > 1) {
     for (int i = 0; i < components.size(); ++i) {
       absl::Span<const int> boxes = components[i];
       if (boxes.size() <= 1) continue;
@@ -5962,22 +5973,6 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  if (new_size < initial_num_boxes) {
-    context_->UpdateRuleStats("no_overlap_2d: removed inactive boxes");
-    ct->mutable_no_overlap_2d()->mutable_x_intervals()->Truncate(new_size);
-    ct->mutable_no_overlap_2d()->mutable_y_intervals()->Truncate(new_size);
-  }
-
-  if (new_size == 0) {
-    context_->UpdateRuleStats("no_overlap_2d: no boxes");
-    return RemoveConstraint(ct);
-  }
-
-  if (new_size == 1) {
-    context_->UpdateRuleStats("no_overlap_2d: only one box");
-    return RemoveConstraint(ct);
-  }
-
   // We check if the fixed boxes are not overlapping so downstream code can
   // assume it to be true.
   if (!FindPartialRectangleIntersections(fixed_boxes).empty()) {
@@ -5985,7 +5980,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
         "Two fixed boxes in no_overlap_2d overlap");
   }
 
-  if (fixed_boxes.size() == active_boxes.size()) {
+  if (non_fixed_bounding_boxes.empty()) {
     context_->UpdateRuleStats("no_overlap_2d: all boxes are fixed");
     return RemoveConstraint(ct);
   }
@@ -6034,6 +6029,36 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       context_->UpdateRuleStats("no_overlap_2d: presolved fixed rectangles");
       return RemoveConstraint(ct);
     }
+  }
+  // If the non-fixed boxes are disjoint but connected by fixed boxes, we can
+  // split the constraint and duplicate the fixed boxes. To avoid duplicating
+  // too many fixed boxes, we do this after we we applied the presolve reducing
+  // their number to as few as possible.
+  const CompactVectorVector<int> non_fixed_components =
+      GetOverlappingRectangleComponents(non_fixed_bounding_boxes);
+  if (non_fixed_components.size() > 1) {
+    for (int i = 0; i < non_fixed_components.size(); ++i) {
+      // Note: we care about components of size 1 because they might be
+      // overlapping with the fixed boxes.
+      absl::Span<const int> indexes = non_fixed_components[i];
+
+      NoOverlap2DConstraintProto* new_no_overlap_2d =
+          context_->working_model->add_constraints()->mutable_no_overlap_2d();
+      for (const int idx : indexes) {
+        const int b = non_fixed_boxes[idx].box_index;
+        new_no_overlap_2d->add_x_intervals(proto.x_intervals(b));
+        new_no_overlap_2d->add_y_intervals(proto.y_intervals(b));
+      }
+      for (const int b : fixed_item_indexes) {
+        new_no_overlap_2d->add_x_intervals(proto.x_intervals(b));
+        new_no_overlap_2d->add_y_intervals(proto.y_intervals(b));
+      }
+    }
+    context_->UpdateNewConstraintsVariableUsage();
+    context_->UpdateRuleStats(
+        "no_overlap_2d: split into disjoint components duplicating fixed "
+        "boxes");
+    return RemoveConstraint(ct);
   }
   RunPropagatorsForConstraint(*ct);
   return new_size < initial_num_boxes;
@@ -9295,8 +9320,9 @@ void CpModelPresolver::DetectDuplicateColumns() {
     if (rep_to_dups[var].empty()) continue;
 
     // Since columns are the same, we can introduce a new variable = sum all
-    // columns. Note that we shouldn't have any overflow here by the
-    // precondition on our variable domains.
+    // columns. Note that the linear expression will not overflow, but the
+    // overflow check also requires that max_sum < int_max/2, which might
+    // happen.
     //
     // In the corner case where there is a lot of holes in the domain, and the
     // sum domain is too complex, we skip. Hopefully this should be rare.
@@ -9318,7 +9344,10 @@ void CpModelPresolver::DetectDuplicateColumns() {
     }
     const int new_var = context_->NewIntVarWithDefinition(
         domain, definition, /*append_constraint_to_mapping_model=*/true);
-    CHECK_NE(new_var, -1);
+    if (new_var == -1) {
+      context_->UpdateRuleStats("TODO duplicate: possible overflow");
+      continue;
+    }
 
     var_to_remove.push_back(var);
     CHECK_EQ(var_to_rep[var], -1);
@@ -14357,19 +14386,25 @@ void ApplyVariableMapping(absl::Span<int> mapping,
   }
 
   // Move the variable definitions.
-  std::vector<IntegerVariableProto> new_variables;
+  google::protobuf::RepeatedPtrField<IntegerVariableProto>
+      new_variables_storage;
+  google::protobuf::RepeatedPtrField<IntegerVariableProto>* new_variables;
+  if (proto->GetArena() == nullptr) {
+    new_variables = &new_variables_storage;
+  } else {
+    new_variables = google::protobuf::Arena::Create<
+        google::protobuf::RepeatedPtrField<IntegerVariableProto>>(
+        proto->GetArena());
+  }
   for (int i = 0; i < mapping.size(); ++i) {
     const int image = mapping[i];
     if (image < 0) continue;
-    if (image >= new_variables.size()) {
-      new_variables.resize(image + 1, IntegerVariableProto());
+    while (image >= new_variables->size()) {
+      new_variables->Add();
     }
-    new_variables[image].Swap(proto->mutable_variables(i));
+    (*new_variables)[image].Swap(proto->mutable_variables(i));
   }
-  proto->clear_variables();
-  for (IntegerVariableProto& proto_ref : new_variables) {
-    proto->add_variables()->Swap(&proto_ref);
-  }
+  proto->mutable_variables()->Swap(new_variables);
 
   // Check that all variables have a non-empty domain.
   for (const IntegerVariableProto& v : proto->variables()) {

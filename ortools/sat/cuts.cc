@@ -2382,7 +2382,7 @@ IntegerValue SumOfAllDiffLowerBounder::SumOfMinDomainValues() {
   int count = 0;
   IntegerValue sum = 0;
   for (const IntegerValue value : min_values_) {
-    sum += value;
+    sum = CapAddI(sum, value);
     if (++count >= expr_mins_.size()) return sum;
   }
   return sum;
@@ -2439,6 +2439,8 @@ void TryToGenerateAllDiffCut(
     std::string max_suffix;
     const IntegerValue required_max_sum =
         -negated_diff_maxes.GetBestLowerBound(max_suffix);
+    if (required_max_sum == std::numeric_limits<IntegerValue>::max()) continue;
+    DCHECK_LE(required_min_sum, required_max_sum);
     if (sum < ToDouble(required_min_sum) - kMinCutViolation ||
         sum > ToDouble(required_max_sum) + kMinCutViolation) {
       LinearConstraintBuilder cut(model, required_min_sum, required_max_sum);

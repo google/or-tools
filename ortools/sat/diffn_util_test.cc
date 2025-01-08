@@ -73,55 +73,47 @@ TEST(CenterToCenterDistanceTest, BasicTest) {
   EXPECT_EQ(CenterToCenterLInfinityDistance(a, b), 4.0);
 }
 
-TEST(GetOverlappingRectangleComponentsTest, NoComponents) {
-  EXPECT_TRUE(GetOverlappingRectangleComponents({}, {}).empty());
+TEST(GetOverlappingRectangleComponentsTest, Disconnected) {
+  EXPECT_TRUE(GetOverlappingRectangleComponents({}).empty());
   IntegerValue zero(0);
   IntegerValue two(2);
   IntegerValue four(4);
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, two, four}}, {})
-                  .empty());
-  std::vector<int> first = {0};
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, two, four}},
-                  absl::MakeSpan(first))
-                  .empty());
-  std::vector<int> both = {0, 1};
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, two, four}},
-                  absl::MakeSpan(both))
-                  .empty());
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, zero, two}},
-                  absl::MakeSpan(both))
-                  .empty());
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {zero, two, two, four}},
-                  absl::MakeSpan(both))
-                  .empty());
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {two, four, two, four}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {two, four, zero, two}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {zero, two, two, four}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
 }
 
 TEST(GetOverlappingRectangleComponentsTest, ComponentAndActive) {
-  EXPECT_TRUE(GetOverlappingRectangleComponents({}, {}).empty());
+  EXPECT_TRUE(GetOverlappingRectangleComponents({}).empty());
   IntegerValue zero(0);
   IntegerValue one(1);
   IntegerValue two(2);
   IntegerValue three(3);
   IntegerValue four(4);
 
-  std::vector<int> all = {0, 1, 2};
-  const auto& components = GetOverlappingRectangleComponents(
-      {{zero, two, zero, two}, {zero, two, one, three}, {zero, two, two, four}},
-      absl::MakeSpan(all));
-  ASSERT_EQ(1, components.size());
-  EXPECT_EQ(3, components[0].size());
-
-  std::vector<int> only_two = {0, 2};
-  EXPECT_TRUE(GetOverlappingRectangleComponents({{zero, two, zero, two},
+  EXPECT_THAT(GetOverlappingRectangleComponents({{zero, two, zero, two},
                                                  {zero, two, one, three},
-                                                 {zero, two, two, four}},
-                                                absl::MakeSpan(only_two))
-                  .empty());
+                                                 {zero, two, two, four}})
+                  .AsVectorOfSpan(),
+              UnorderedElementsAre(UnorderedElementsAre(0, 1, 2)));
+
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {zero, two, two, four}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
 }
 
 TEST(AnalyzeIntervalsTest, Random) {
@@ -1189,7 +1181,7 @@ TEST(FindPairwiseRestrictionsTest, Random) {
     const int num_rectangles = absl::Uniform(random, 1, 20);
     const std::vector<Rectangle> rectangles =
         GenerateNonConflictingRectangles(num_rectangles, random);
-    const std::vector<ItemForPairwiseRestriction> items =
+    const std::vector<ItemWithVariableSize> items =
         GenerateItemsRectanglesWithNoPairwiseConflict(
             rectangles, absl::Uniform(random, 0, 1.0), random);
     std::vector<PairwiseRestriction> results;
@@ -1206,7 +1198,7 @@ void BM_FindPairwiseRestrictions(benchmark::State& state) {
   // In the vast majority of the cases the propagator doesn't find any pairwise
   // condition to propagate. Thus we choose to benchmark for this particular
   // case.
-  const std::vector<ItemForPairwiseRestriction> items =
+  const std::vector<ItemWithVariableSize> items =
       GenerateItemsRectanglesWithNoPairwisePropagation(
           state.range(0), state.range(1) / 100.0, random);
   std::vector<PairwiseRestriction> results;

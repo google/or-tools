@@ -66,6 +66,8 @@ class IdentityMap {
 template <typename K = int, typename V = int>
 class CompactVectorVector {
  public:
+  using value_type = V;
+
   // Size of the "key" space, always in [0, size()).
   size_t size() const;
   bool empty() const;

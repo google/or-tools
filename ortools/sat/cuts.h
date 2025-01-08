@@ -727,6 +727,7 @@ class SumOfAllDiffLowerBounder {
   void Add(const AffineExpression& expr, int num_expr,
            const IntegerTrail& integer_trail);
 
+  // Return int_max if the sum overflows.
   IntegerValue SumOfMinDomainValues();
   IntegerValue SumOfDifferentMins();
   IntegerValue GetBestLowerBound(std::string& suffix);

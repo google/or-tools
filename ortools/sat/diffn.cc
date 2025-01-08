@@ -995,7 +995,7 @@ bool RectanglePairwisePropagator::Propagate() {
     if (!global_x_.IsPresent(b) || !global_y_.IsPresent(b)) continue;
     const IntegerValue x_size_max = global_x_.SizeMax(b);
     const IntegerValue y_size_max = global_y_.SizeMax(b);
-    ItemForPairwiseRestriction* box;
+    ItemWithVariableSize* box;
     if (x_size_max == 0) {
       if (y_size_max == 0) {
         box = &point_zero_area_boxes_.emplace_back();
@@ -1007,15 +1007,15 @@ bool RectanglePairwisePropagator::Propagate() {
     } else {
       box = &non_zero_area_boxes_.emplace_back();
     }
-    *box = ItemForPairwiseRestriction{.index = b,
-                                      .x = {.start_min = global_x_.StartMin(b),
-                                            .start_max = global_x_.StartMax(b),
-                                            .end_min = global_x_.EndMin(b),
-                                            .end_max = global_x_.EndMax(b)},
-                                      .y = {.start_min = global_y_.StartMin(b),
-                                            .start_max = global_y_.StartMax(b),
-                                            .end_min = global_y_.EndMin(b),
-                                            .end_max = global_y_.EndMax(b)}};
+    *box = ItemWithVariableSize{.index = b,
+                                .x = {.start_min = global_x_.StartMin(b),
+                                      .start_max = global_x_.StartMax(b),
+                                      .end_min = global_x_.EndMin(b),
+                                      .end_max = global_x_.EndMax(b)},
+                                .y = {.start_min = global_y_.StartMin(b),
+                                      .start_max = global_y_.StartMax(b),
+                                      .end_min = global_y_.EndMin(b),
+                                      .end_max = global_y_.EndMax(b)}};
   }
 
   std::vector<PairwiseRestriction> restrictions;
@@ -1041,7 +1041,7 @@ bool RectanglePairwisePropagator::Propagate() {
 }
 
 bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
-    absl::Span<const ItemForPairwiseRestriction> items,
+    absl::Span<const ItemWithVariableSize> items,
     std::vector<PairwiseRestriction>* restrictions) {
   const int max_pairs =
       params_->max_pairs_pairwise_reasoning_in_no_overlap_2d();
@@ -1059,8 +1059,8 @@ bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
 }
 
 bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
-    absl::Span<const ItemForPairwiseRestriction> items1,
-    absl::Span<const ItemForPairwiseRestriction> items2,
+    absl::Span<const ItemWithVariableSize> items1,
+    absl::Span<const ItemWithVariableSize> items2,
     std::vector<PairwiseRestriction>* restrictions) {
   const int max_pairs =
       params_->max_pairs_pairwise_reasoning_in_no_overlap_2d();

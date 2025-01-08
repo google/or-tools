@@ -178,13 +178,12 @@ std::vector<RectangleInRange> MakeItemsFromRectangles(
   return ranges;
 }
 
-std::vector<ItemForPairwiseRestriction>
-GenerateItemsRectanglesWithNoPairwiseConflict(
+std::vector<ItemWithVariableSize> GenerateItemsRectanglesWithNoPairwiseConflict(
     absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random) {
   const std::vector<RectangleInRange> range_items =
       MakeItemsFromRectangles(rectangles, slack_factor, random);
-  std::vector<ItemForPairwiseRestriction> items;
+  std::vector<ItemWithVariableSize> items;
   items.reserve(rectangles.size());
   for (int i = 0; i < range_items.size(); ++i) {
     const RectangleInRange& rec = range_items[i];
@@ -201,13 +200,13 @@ GenerateItemsRectanglesWithNoPairwiseConflict(
   return items;
 }
 
-std::vector<ItemForPairwiseRestriction>
+std::vector<ItemWithVariableSize>
 GenerateItemsRectanglesWithNoPairwisePropagation(int num_rectangles,
                                                  double slack_factor,
                                                  absl::BitGenRef random) {
   const std::vector<Rectangle> rectangles =
       GenerateNonConflictingRectangles(num_rectangles, random);
-  std::vector<ItemForPairwiseRestriction> items =
+  std::vector<ItemWithVariableSize> items =
       GenerateItemsRectanglesWithNoPairwiseConflict(rectangles, slack_factor,
                                                     random);
   bool done = false;

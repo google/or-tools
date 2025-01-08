@@ -1227,18 +1227,6 @@ TEST(IntegerTrailTest, AppendNewBounds) {
                           var, IntegerValue(9))));
 }
 
-TEST(FastDivisionTest, AllPossibleValues) {
-  for (int i = 1; i <= std::numeric_limits<uint16_t>::max(); ++i) {
-    const QuickSmallDivision div(i);
-    for (int j = 0; j <= std::numeric_limits<uint16_t>::max(); ++j) {
-      const uint16_t result = div.DivideByDivisor(j);
-      const uint16_t j_rounded_to_lowest_multiple = result * i;
-      CHECK_LE(j_rounded_to_lowest_multiple, j);
-      CHECK_GT(j_rounded_to_lowest_multiple + i, j);
-    }
-  }
-}
-
 static void BM_FloorRatio(benchmark::State& state) {
   IntegerValue divisor(654676436498);
   IntegerValue dividend(45454655155444);

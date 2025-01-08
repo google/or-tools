@@ -45,7 +45,7 @@ std::function<void(Model*)> AllDifferentBinary(
 // this will not remove already taken values from inside a domain, but it will
 // propagates more the domain bounds.
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable>& vars);
+    absl::Span<const IntegerVariable> vars);
 std::function<void(Model*)> AllDifferentOnBounds(
     const std::vector<AffineExpression>& expressions);
 

@@ -172,12 +172,12 @@ class RectanglePairwisePropagator : public PropagatorInterface {
 
   // Return false if a conflict is found.
   bool FindRestrictionsAndPropagateConflict(
-      absl::Span<const ItemForPairwiseRestriction> items,
+      absl::Span<const ItemWithVariableSize> items,
       std::vector<PairwiseRestriction>* restrictions);
 
   bool FindRestrictionsAndPropagateConflict(
-      absl::Span<const ItemForPairwiseRestriction> items1,
-      absl::Span<const ItemForPairwiseRestriction> items2,
+      absl::Span<const ItemWithVariableSize> items1,
+      absl::Span<const ItemWithVariableSize> items2,
       std::vector<PairwiseRestriction>* restrictions);
 
   bool PropagateTwoBoxes(const PairwiseRestriction& restriction);
@@ -191,10 +191,10 @@ class RectanglePairwisePropagator : public PropagatorInterface {
   int64_t num_pairwise_conflicts_ = 0;
   int64_t num_pairwise_propagations_ = 0;
 
-  std::vector<ItemForPairwiseRestriction> non_zero_area_boxes_;
-  std::vector<ItemForPairwiseRestriction> horizontal_zero_area_boxes_;
-  std::vector<ItemForPairwiseRestriction> vertical_zero_area_boxes_;
-  std::vector<ItemForPairwiseRestriction> point_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> non_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> horizontal_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> vertical_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> point_zero_area_boxes_;
 };
 
 }  // namespace sat

@@ -145,12 +145,8 @@ inline double CenterToCenterLInfinityDistance(const Rectangle& a,
 
 // Creates a graph when two nodes are connected iff their rectangles overlap.
 // Then partition into connected components.
-//
-// This method removes all singleton components. It will modify the
-// active_rectangle span in place.
 CompactVectorVector<int> GetOverlappingRectangleComponents(
-    absl::Span<const Rectangle> rectangles,
-    absl::Span<const int> active_rectangles);
+    absl::Span<const Rectangle> rectangles);
 
 // Visible for testing. The algo is in O(n^4) so shouldn't be used directly.
 // Returns true if there exist a bounding box with too much energy.
@@ -262,7 +258,7 @@ void GetOverlappingIntervalComponents(
 std::vector<int> GetIntervalArticulationPoints(
     std::vector<IndexedInterval>* intervals);
 
-struct ItemForPairwiseRestriction {
+struct ItemWithVariableSize {
   int index;
   struct Interval {
     IntegerValue start_min;
@@ -295,15 +291,14 @@ struct PairwiseRestriction {
 
 // Find pair of items that are either in conflict or could have their range
 // shrinked to avoid conflict.
-void AppendPairwiseRestrictions(
-    absl::Span<const ItemForPairwiseRestriction> items,
-    std::vector<PairwiseRestriction>* result);
+void AppendPairwiseRestrictions(absl::Span<const ItemWithVariableSize> items,
+                                std::vector<PairwiseRestriction>* result);
 
 // Same as above, but test `items` against `other_items` and append the
 // restrictions found to `result`.
 void AppendPairwiseRestrictions(
-    absl::Span<const ItemForPairwiseRestriction> items,
-    absl::Span<const ItemForPairwiseRestriction> other_items,
+    absl::Span<const ItemWithVariableSize> items,
+    absl::Span<const ItemWithVariableSize> other_items,
     std::vector<PairwiseRestriction>* result);
 
 // This class is used by the no_overlap_2d constraint to maintain the envelope

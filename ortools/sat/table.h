@@ -30,7 +30,7 @@ namespace sat {
 // literal_tuples matrix is true.
 std::function<void(Model*)> LiteralTableConstraint(
     absl::Span<const std::vector<Literal>> literal_tuples,
-    const std::vector<Literal>& line_literals);
+    absl::Span<const Literal> line_literals);
 
 }  // namespace sat
 }  // namespace operations_research

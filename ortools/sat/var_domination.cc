@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -227,7 +228,7 @@ bool VarDomination::EndFirstPhase() {
   // complexity is borned by this number times the number of entries in the
   // constraints. Still we should in most situation be a lot lower than that.
   const int kMaxInitialSize = 50;
-  std::vector<IntegerVariable> cropped_vars;
+  absl::btree_set<IntegerVariable> cropped_vars;
   util_intops::StrongVector<IntegerVariable, bool> is_cropped(
       num_vars_with_negation_, false);
 
@@ -261,12 +262,12 @@ bool VarDomination::EndFirstPhase() {
         buffer_.push_back(x);
         if (new_size >= kMaxInitialSize) {
           is_cropped[var] = true;
-          cropped_vars.push_back(var);
+          cropped_vars.insert(var);
         }
       }
     } else {
       is_cropped[var] = true;
-      cropped_vars.push_back(var);
+      cropped_vars.insert(var);
       for (int i = 0; i < 200; ++i) {
         const IntegerVariable x = to_scan[i];
         if (var_sig & ~block_down_signatures_[x]) continue;  // !included.

@@ -83,8 +83,9 @@ std::function<void(Model*)> AllDifferentOnBounds(
 }
 
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> vars) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     if (vars.empty()) return;
     std::vector<AffineExpression> expressions;
     expressions.reserve(vars.size());
