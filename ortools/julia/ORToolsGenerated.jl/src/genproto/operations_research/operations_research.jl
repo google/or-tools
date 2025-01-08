@@ -19,7 +19,7 @@ include("scheduling/scheduling.jl")
 include("glop/glop.jl")
 include("bop/bop.jl")
 include("packing/packing.jl")
-include("ortools/pdlp/pdlp.jl")
+include("pdlp/pdlp.jl")
 include("math_opt/math_opt.jl")
 
 end # module operations_research
