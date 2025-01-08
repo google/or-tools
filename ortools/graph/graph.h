@@ -169,6 +169,7 @@
 #include "absl/debugging/leak_check.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/constant_divisor.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/types.h"
@@ -2234,7 +2235,10 @@ class CompleteGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 
  public:
   // Builds a complete graph with num_nodes nodes.
-  explicit CompleteGraph(NodeIndexType num_nodes) {
+  explicit CompleteGraph(NodeIndexType num_nodes)
+      :  // If there are 0 or 1 nodes, the divisor is arbitrary. We pick 2 as 0
+         // and 1 are not supported by `ConstantDivisor`.
+        divisor_(num_nodes > 1 ? num_nodes : 2) {
     this->Reserve(num_nodes, num_nodes * num_nodes);
     this->FreezeCapacities();
     num_nodes_ = num_nodes;
@@ -2248,20 +2252,23 @@ class CompleteGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
                                                       ArcIndexType from) const;
   IntegerRange<NodeIndexType> operator[](NodeIndexType node) const;
+
+  const ::util::math::ConstantDivisor<std::make_unsigned_t<ArcIndexType>>
+      divisor_;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteGraph<NodeIndexType, ArcIndexType>::Head(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return arc % num_nodes_;
+  return arc % divisor_;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteGraph<NodeIndexType, ArcIndexType>::Tail(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return arc / num_nodes_;
+  return arc / divisor_;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -2316,7 +2323,12 @@ class CompleteBipartiteGraph
   // Indices of left nodes of the bipartite graph range from 0 to left_nodes-1;
   // indices of right nodes range from left_nodes to left_nodes+right_nodes-1.
   CompleteBipartiteGraph(NodeIndexType left_nodes, NodeIndexType right_nodes)
-      : left_nodes_(left_nodes), right_nodes_(right_nodes) {
+      : left_nodes_(left_nodes),
+        right_nodes_(right_nodes),
+        // If there are no right nodes, the divisor is arbitrary. We pick 2 as
+        // 0 and 1 are not supported by `ConstantDivisor`. We handle the case
+        // where `right_nodes` is 1 explicitly when dividing.
+        divisor_(right_nodes > 1 ? right_nodes : 2) {
     this->Reserve(left_nodes + right_nodes, left_nodes * right_nodes);
     this->FreezeCapacities();
     num_nodes_ = left_nodes + right_nodes;
@@ -2358,6 +2370,9 @@ class CompleteBipartiteGraph
  private:
   const NodeIndexType left_nodes_;
   const NodeIndexType right_nodes_;
+  // Note: only valid if `right_nodes_ > 1`.
+  const ::util::math::ConstantDivisor<std::make_unsigned_t<ArcIndexType>>
+      divisor_;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -2374,14 +2389,16 @@ template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::Head(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return left_nodes_ + arc % right_nodes_;
+  // See comment on `divisor_` in the constructor.
+  return right_nodes_ > 1 ? left_nodes_ + arc % divisor_ : left_nodes_;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::Tail(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return arc / right_nodes_;
+  // See comment on `divisor_` in the constructor.
+  return right_nodes_ > 1 ? arc / divisor_ : arc;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>

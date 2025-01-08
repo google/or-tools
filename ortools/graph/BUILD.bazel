@@ -48,6 +48,7 @@ cc_library(
     deps = [
         ":iterators",
         "//ortools/base",
+        "//ortools/base:constant_divisor",
         "@com_google_absl//absl/debugging:leak_check",
         "@com_google_absl//absl/types:span",
     ],
