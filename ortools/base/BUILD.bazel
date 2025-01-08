@@ -326,7 +326,7 @@ cc_library(
     name = "constant_divisor",
     srcs = ["constant_divisor.cc"],
     hdrs = ["constant_divisor.h"],
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/numeric:int128",
