@@ -323,6 +323,31 @@ cc_library(
 )
 
 cc_library(
+    name = "constant_divisor",
+    srcs = ["constant_divisor.cc"],
+    hdrs = ["constant_divisor.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:int128",
+    ],
+)
+
+cc_test(
+    name = "constant_divisor_test",
+    srcs = ["constant_divisor_test.cc"],
+    deps = [
+        ":constant_divisor",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "linked_hash_map",
     hdrs = ["linked_hash_map.h"],
     deps = [
