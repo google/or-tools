@@ -252,7 +252,7 @@ function build_python() {
     "ortools/linear_solver/python/model_builder_helper.pyi"
     "ortools/linear_solver/pywraplp.pyi"
     "ortools/pdlp/python/pdlp.pyi"
-    "ortools/sat/python/swig_helper.pyi"
+    "ortools/sat/python/cp_model_helper.pyi"
     "ortools/scheduling/python/rcpsp.pyi"
     "ortools/util/python/sorted_interval_list.pyi"
   )

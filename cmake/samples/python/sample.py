@@ -21,7 +21,7 @@ from ortools.constraint_solver import pywrapcp
 # from ortools.graph.python import min_cost_flow
 from ortools.linear_solver import pywraplp
 # from ortools.linear_solver import linear_solver_pb2
-# from ortools.sat.python import swig_helper
+# from ortools.sat.python import cp_model_helper
 # from ortools.sat.python import cp_model
 # from ortools.scheduling import rcpsp
 # from ortools.util.python import sorted_interval_list
