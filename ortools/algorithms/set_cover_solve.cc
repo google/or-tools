@@ -175,7 +175,7 @@ SubsetBoolVector ReadSolution(absl::string_view input_file,
   }
 }
 
-void WriteModel(const SetCoverModel& model, const std::string& output_file,
+void WriteModel(const SetCoverModel& model, absl::string_view output_file,
                 FileFormat output_format) {
   switch (output_format) {
     case FileFormat::ORLIB_SCP:
@@ -197,7 +197,7 @@ void WriteModel(const SetCoverModel& model, const std::string& output_file,
 }
 
 void WriteSolution(const SetCoverModel& model, const SubsetBoolVector& solution,
-                   const std::string& output_file, FileFormat output_format) {
+                   absl::string_view output_file, FileFormat output_format) {
   switch (output_format) {
     case FileFormat::TXT:
       WriteSetCoverSolutionText(model, solution, output_file);
