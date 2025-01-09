@@ -39,7 +39,7 @@ class LinearExpr;
 class BaseIntVar;
 class NotBooleanVariable;
 
-// A class to hold a pointer to a linear expression or a constant.
+/// A class to hold a pointer to a linear expression or a constant.
 struct ExprOrValue {
   explicit ExprOrValue(LinearExpr* e) : expr(e) {}
   explicit ExprOrValue(double v) : double_value(v) {}
@@ -50,8 +50,41 @@ struct ExprOrValue {
   int64_t int_value = 0;
 };
 
-// Interface for a linear expression that can be either integer or floating
-// point.
+/**
+Holds an integer or floating point linear expression.
+
+A linear expression is built from (integer or floating point) constants and
+variables. For example, `x + 2 * (y - z + 1)`.
+
+Linear expressions are used in CP-SAT models in constraints and in the
+objective.
+
+Note that constraints only accept linear expressions with integral coefficients
+and constants. On the other hand, The objective can be a linear expression with
+floating point coefficients and constants.
+
+You can define linear constraints as in:
+
+```
+  model.add(x + 2 * y <= 5)
+  model.add(sum(array_of_vars) == 5)
+```
+
+* In CP-SAT, the objective is a linear expression:
+
+```
+  model.minimize(x + 2 * y + z)
+```
+
+* For large arrays, using the LinearExpr class is faster that using the python
+  `sum()` function. You can create constraints and the objective from lists of
+  linear expressions or coefficients as follows:
+
+```
+  model.minimize(cp_model.LinearExpr.sum(expressions))
+  model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
+```
+*/
 class LinearExpr {
  public:
   virtual ~LinearExpr() = default;
@@ -61,91 +94,95 @@ class LinearExpr {
   virtual std::string ToString() const = 0;
   virtual std::string DebugString() const = 0;
 
-  // Returns a new LinearExpr that is the sum of the given expressions.
+  /**
+   * Returns a new LinearExpr that is the sum of the given expressions.
+   */
   static LinearExpr* Sum(const std::vector<LinearExpr*>& exprs);
-  // Returns a new LinearExpr that is the sum of the given expressions or
-  // constants.
+  /**
+   * Returns a new LinearExpr that is the sum of the given expressions or
+   * constants.
+   */
   static LinearExpr* MixedSum(const std::vector<ExprOrValue>& exprs);
-  // Returns the sum(exprs[i] * coeffs[i]).
+  /// Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* WeightedSumInt(const std::vector<LinearExpr*>& exprs,
                                     const std::vector<int64_t>& coeffs);
-  // Returns the sum(exprs[i] * coeffs[i]).
+  /// Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* WeightedSumFloat(const std::vector<LinearExpr*>& exprs,
                                       const std::vector<double>& coeffs);
-  // Returns the sum(exprs[i] * coeffs[i]).
+  /// Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* MixedWeightedSumInt(const std::vector<ExprOrValue>& exprs,
                                          const std::vector<int64_t>& coeffs);
-  // Returns the sum(exprs[i] * coeffs[i]).
+  /// Returns the sum(exprs[i] * coeffs[i]).
   static LinearExpr* MixedWeightedSumFloat(
       const std::vector<ExprOrValue>& exprs, const std::vector<double>& coeffs);
-  // returns expr * coeff.
+  /// Returns expr * coeff.
   static LinearExpr* TermInt(LinearExpr* expr, int64_t coeff);
-  // returns expr * coeff.
+  /// Returns expr * coeff.
   static LinearExpr* TermFloat(LinearExpr* expr, double coeff);
-  // returns expr * coeff + offset.
+  /// Returns expr * coeff + offset.
   static LinearExpr* AffineInt(LinearExpr* expr, int64_t coeff, int64_t offset);
-  // returns expr * coeff + offset.
+  /// Returns expr * coeff + offset.
   static LinearExpr* AffineFloat(LinearExpr* expr, double coeff, double offset);
-  // Returns a new LinearExpr that is the given constant.
+  /// Returns a new LinearExpr that is the given constant.
   static LinearExpr* ConstantInt(int64_t value);
-  // Returns a new LinearExpr that is the given constant.
+  /// Returns a new LinearExpr that is the given constant.
   static LinearExpr* ConstantFloat(double value);
 
-  // return (this) + (expr).
+  /// Returns (this) + (expr).
   LinearExpr* Add(LinearExpr* expr);
-  // return (this) + (cst).
+  /// Returns (this) + (cst).
   LinearExpr* AddInt(int64_t cst);
-  // return (this) + (cst).
+  /// Returns (this) + (cst).
   LinearExpr* AddFloat(double cst);
-  // return (this) - (expr).
+  /// Returns (this) - (expr).
   LinearExpr* Sub(LinearExpr* expr);
-  // return (this) - (cst).
+  /// Returns (this) - (cst).
   LinearExpr* SubInt(int64_t cst);
-  // return (this) - (cst).
+  /// Returns (this) - (cst).
   LinearExpr* SubFloat(double cst);
-  // return (cst) - (this).
+  /// Returns (cst) - (this).
   LinearExpr* RSubInt(int64_t cst);
-  // return (cst) - (this).
+  /// Returns (cst) - (this).
   LinearExpr* RSubFloat(double cst);
-  // return (this) * (cst).
+  /// Returns (this) * (cst).
   LinearExpr* MulInt(int64_t cst);
-  // return (this) * (cst).
+  /// Returns (this) * (cst).
   LinearExpr* MulFloat(double cst);
-  // return -(this).
+  /// Returns -(this).
   LinearExpr* Neg();
 
-  // returns (this) == (rhs).
+  /// Returns (this) == (rhs).
   BoundedLinearExpression* Eq(LinearExpr* rhs);
-  // returns (this) == (rhs).
+  /// Returns (this) == (rhs).
   BoundedLinearExpression* EqCst(int64_t rhs);
-  // returns (this) != (rhs).
+  /// Returns (this) != (rhs).
   BoundedLinearExpression* Ne(LinearExpr* rhs);
-  // returns (this) != (rhs).
+  /// Returns (this) != (rhs).
   BoundedLinearExpression* NeCst(int64_t rhs);
-  // returns (this) >= (rhs).
+  /// Returns (this) >= (rhs).
   BoundedLinearExpression* Ge(LinearExpr* rhs);
-  // returns (this) >= (rhs).
+  /// Returns (this) >= (rhs).
   BoundedLinearExpression* GeCst(int64_t rhs);
-  // returns (this) <= (rhs).
+  /// Returns (this) <= (rhs).
   BoundedLinearExpression* Le(LinearExpr* rhs);
-  // returns (this) <= (rhs).
+  /// Returns (this) <= (rhs).
   BoundedLinearExpression* LeCst(int64_t rhs);
-  // returns (this) < (rhs).
+  /// Returns (this) < (rhs).
   BoundedLinearExpression* Lt(LinearExpr* rhs);
-  // returns (this) < (rhs).
+  /// Returns (this) < (rhs).
   BoundedLinearExpression* LtCst(int64_t rhs);
-  // returns (this) > (rhs).
+  /// Returns (this) > (rhs).
   BoundedLinearExpression* Gt(LinearExpr* rhs);
-  // returns (this) > (rhs).
+  /// Returns (this) > (rhs).
   BoundedLinearExpression* GtCst(int64_t rhs);
 };
 
-// Compare the indices of variables.
+/// Compare the indices of variables.
 struct BaseIntVarComparator {
   bool operator()(const BaseIntVar* lhs, const BaseIntVar* rhs) const;
 };
 
-// A visitor class to process a floating point linear expression.
+/// A visitor class to process a floating point linear expression.
 class FloatExprVisitor {
  public:
   void AddToProcess(const LinearExpr* expr, double coeff);
@@ -161,7 +198,7 @@ class FloatExprVisitor {
   double offset_ = 0;
 };
 
-// A class to build a canonical floating point linear expression.
+/// A class to build a canonical floating point linear expression.
 class CanonicalFloatExpression {
  public:
   explicit CanonicalFloatExpression(LinearExpr* expr);
@@ -175,7 +212,7 @@ class CanonicalFloatExpression {
   double offset_ = 0;
 };
 
-// A visitor class to process an integer linear expression.
+/// A visitor class to process an integer linear expression.
 class IntExprVisitor {
  public:
   void AddToProcess(const LinearExpr* expr, int64_t coeff);
@@ -194,7 +231,7 @@ class IntExprVisitor {
   int64_t offset_ = 0;
 };
 
-// A class to build a canonical integer linear expression.
+/// A class to build a canonical integer linear expression.
 class CanonicalIntExpression {
  public:
   explicit CanonicalIntExpression(LinearExpr* expr);
@@ -210,8 +247,10 @@ class CanonicalIntExpression {
   bool ok_ = true;
 };
 
-// A class to hold a sum of linear expressions, and optional integer and
-// double offsets (at most one of them can be non-zero, this is DCHECKed).
+/**
+ * A class to hold a sum of linear expressions, and optional integer and
+ * double offsets (at most one of them can be non-zero, this is DCHECKed).
+ */
 class SumArray : public LinearExpr {
  public:
   explicit SumArray(const std::vector<LinearExpr*>& exprs,
@@ -299,7 +338,7 @@ class SumArray : public LinearExpr {
   const double double_offset_;
 };
 
-// A class to hold a weighted sum of floating point linear expressions.
+/** A class to hold a weighted sum of floating point linear expressions. */
 class FloatWeightedSum : public LinearExpr {
  public:
   FloatWeightedSum(const std::vector<LinearExpr*>& exprs, double offset);
@@ -321,7 +360,7 @@ class FloatWeightedSum : public LinearExpr {
   double offset_;
 };
 
-// A class to hold a weighted sum of integer linear expressions.
+/// A class to hold a weighted sum of integer linear expressions.
 class IntWeightedSum : public LinearExpr {
  public:
   IntWeightedSum(const std::vector<LinearExpr*>& exprs,
@@ -355,7 +394,7 @@ class IntWeightedSum : public LinearExpr {
   int64_t offset_;
 };
 
-// A class to hold float_exr * a = b.
+/// A class to hold linear_expr * a = b (a and b are floating point numbers).
 class FloatAffine : public LinearExpr {
  public:
   FloatAffine(LinearExpr* expr, double coeff, double offset);
@@ -378,7 +417,7 @@ class FloatAffine : public LinearExpr {
   double offset_;
 };
 
-// A class to hold int_exr * a = b.
+/// A class to hold linear_expr * a = b (a and b are integers).
 class IntAffine : public LinearExpr {
  public:
   IntAffine(LinearExpr* expr, int64_t coeff, int64_t offset)
@@ -429,7 +468,7 @@ class IntAffine : public LinearExpr {
   int64_t offset_;
 };
 
-// A class to hold a constant.
+/// A class to hold a floating point constant as a linear expression.
 class FloatConstant : public LinearExpr {
  public:
   explicit FloatConstant(double value) : value_(value) {}
@@ -446,7 +485,7 @@ class FloatConstant : public LinearExpr {
   double value_;
 };
 
-// A class to hold a constant.
+/// A class to hold an integer constant as a linear expression.
 class IntConstant : public LinearExpr {
  public:
   explicit IntConstant(int64_t value) : value_(value) {}
@@ -470,15 +509,57 @@ class IntConstant : public LinearExpr {
   int64_t value_;
 };
 
-// A Boolean literal (a Boolean variable or its negation).
+/**
+ * A class to hold a Boolean literal.
+ *
+ * A literal is a Boolean variable or its negation.
+ *
+ * Literals are used in CP-SAT models in constraints and in the objective.
+ *
+ * - You can define literal as in:
+ *
+ * ```
+ * b1 = model.new_bool_var()
+ * b2 = model.new_bool_var()
+ * # Simple Boolean constraint.
+ * model.add_bool_or(b1, b2.negated())
+ * # We can use the ~ operator to negate a literal.
+ * model.add_bool_or(b1, ~b2)
+ * # Enforcement literals must be literals.
+ * x = model.new_int_var(0, 10, 'x')
+ * model.add(x == 5).only_enforced_if(~b1)
+ * ```
+ *
+ * - Literals can be used directly in linear constraints or in the objective:
+ *
+ * ```
+ *     model.minimize(b1  + 2 * ~b2)
+ * ```
+ */
 class Literal : public LinearExpr {
  public:
   ~Literal() override = default;
+  /// Returns the index of the current literal.
   virtual int index() const = 0;
+
+  /**
+   * Returns the negation of a literal (a Boolean variable or its negation).
+   *
+   * This method implements the logical negation of a Boolean variable.
+   * It is only valid if the variable has a Boolean domain (0 or 1).
+   *
+   * Note that this method is nilpotent: `x.negated().negated() == x`.
+   *
+   * Returns:
+   *   The negation of the current literal.
+   */
   virtual Literal* negated() const = 0;
 };
 
-// A class to hold a variable index.
+/**
+ * A class to hold a variable index. It is the base class for Integer
+ * variables.
+ */
 class BaseIntVar : public Literal {
  public:
   explicit BaseIntVar(int index) : index_(index), negated_(nullptr) {
@@ -514,8 +595,10 @@ class BaseIntVar : public Literal {
                         ", is_boolean=", negated_ != nullptr, ")");
   }
 
+  /// Returns the negation of the current variable.
   Literal* negated() const override { return negated_; }
 
+  /// Returns true if the variable has a Boolean domain (0 or 1).
   bool is_boolean() const { return negated_ != nullptr; }
 
   bool operator<(const BaseIntVar& other) const {
@@ -532,7 +615,7 @@ H AbslHashValue(H h, const BaseIntVar* i) {
   return H::combine(std::move(h), i->index());
 }
 
-// A class to hold a negated variable index.
+/// A class to hold a negated variable index.
 class NotBooleanVariable : public Literal {
  public:
   explicit NotBooleanVariable(BaseIntVar* var) : var_(var) {}
@@ -555,6 +638,10 @@ class NotBooleanVariable : public Literal {
     return absl::StrCat("not(", var_->ToString(), ")");
   }
 
+  /**
+   * Returns the negation of the current literal, that is the original Boolean
+   * variable.
+   */
   Literal* negated() const override { return var_; }
 
   std::string DebugString() const override {
@@ -565,11 +652,11 @@ class NotBooleanVariable : public Literal {
   BaseIntVar* const var_;
 };
 
-// A class to hold a linear expression with bounds.
+//// A class to hold a linear expression with bounds.
 class BoundedLinearExpression {
  public:
-  BoundedLinearExpression(const std::vector<const BaseIntVar*>& vars,
-                          const std::vector<int64_t>& coeffs, int64_t offset,
+  BoundedLinearExpression(std::vector<const BaseIntVar*> vars,
+                          std::vector<int64_t> coeffs, int64_t offset,
                           const Domain& bounds);
 
   ~BoundedLinearExpression() = default;

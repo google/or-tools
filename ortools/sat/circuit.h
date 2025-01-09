@@ -244,10 +244,9 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads,
 // This just wraps CircuitPropagator. See the comment there to see what this
 // does. Note that any nodes with no outgoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
-void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
-                              const std::vector<int>& heads,
-                              const std::vector<Literal>& literals,
-                              Model* model,
+void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
+                              absl::Span<const int> heads,
+                              absl::Span<const Literal> literals, Model* model,
                               bool multiple_subcircuit_through_zero = false);
 
 // TODO(user): Change to a sparse API like for the function above.

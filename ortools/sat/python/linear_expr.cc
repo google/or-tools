@@ -646,9 +646,12 @@ BaseIntVar::BaseIntVar(int index, bool is_boolean)
       negated_(is_boolean ? new NotBooleanVariable(this) : nullptr) {}
 
 BoundedLinearExpression::BoundedLinearExpression(
-    const std::vector<const BaseIntVar*>& vars,
-    const std::vector<int64_t>& coeffs, int64_t offset, const Domain& bounds)
-    : vars_(vars), coeffs_(coeffs), offset_(offset), bounds_(bounds) {}
+    std::vector<const BaseIntVar*> vars, std::vector<int64_t> coeffs,
+    int64_t offset, const Domain& bounds)
+    : vars_(std::move(vars)),
+      coeffs_(std::move(coeffs)),
+      offset_(offset),
+      bounds_(bounds) {}
 
 const Domain& BoundedLinearExpression::bounds() const { return bounds_; }
 const std::vector<const BaseIntVar*>& BoundedLinearExpression::vars() const {

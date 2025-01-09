@@ -11,14 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <optional>
 #include <string>
+#include <utility>
 
 #include "absl/log/check.h"
 #include "gtest/gtest.h"  // IWYU pragma: keep
 #include "ortools/base/fuzztest.h"
 #include "ortools/base/path.h"  // IWYU pragma: keep
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
 namespace operations_research::sat {
@@ -76,10 +83,93 @@ void Solve(const CpModelProto& proto) {
       << "Presolve should not change feasibility";
 }
 
+fuzztest::Domain<IntegerVariableProto> CpVariableDomain() {
+  fuzztest::Domain<int64_t> bound_domain =
+      fuzztest::InRange<int64_t>(-std::numeric_limits<int64_t>::max() / 2,
+                                 std::numeric_limits<int64_t>::max() / 2);
+  fuzztest::Domain<std::pair<int64_t, int64_t>> complex_domain_gap_and_size =
+      fuzztest::PairOf(fuzztest::InRange<int64_t>(
+                           1, std::numeric_limits<int64_t>::max() / 2),
+                       fuzztest::InRange<int64_t>(
+                           0, std::numeric_limits<int64_t>::max() / 2));
+  fuzztest::Domain<IntegerVariableProto> var_domain = fuzztest::ReversibleMap(
+      [](int64_t bound1, int64_t bound2,
+         std::vector<std::pair<int64_t, int64_t>> complex_domain_segments) {
+        IntegerVariableProto var;
+        var.add_domain(std::min(bound1, bound2));
+        var.add_domain(std::max(bound1, bound2));
+
+        for (const auto& [gap, size] : complex_domain_segments) {
+          var.add_domain(CapAdd(var.domain(var.domain().size() - 1), gap));
+          var.add_domain(CapAdd(var.domain(var.domain().size() - 1), size));
+        }
+        return var;
+      },
+      [](IntegerVariableProto var) {
+        using Type = std::tuple<int64_t, int64_t,
+                                std::vector<std::pair<int64_t, int64_t>>>;
+        Type domain_inputs;
+        if (var.domain().size() < 2 || var.domain().size() % 2 != 0) {
+          return std::optional<Type>();
+        }
+        domain_inputs = {var.domain(0), var.domain(1), {}};
+        std::vector<std::pair<int64_t, int64_t>>& complex_domain_segments =
+            std::get<2>(domain_inputs);
+        for (int i = 2; i + 1 < var.domain().size(); i += 2) {
+          const int64_t gap = CapSub(var.domain(i), var.domain(i - 1));
+          const int64_t size = CapSub(var.domain(i + 1), var.domain(i));
+          if (gap <= 0 || size < 0) {
+            return std::optional<Type>();
+          }
+          complex_domain_segments.push_back({gap, size});
+        }
+        return std::optional<Type>(domain_inputs);
+      },
+      bound_domain, bound_domain,
+      fuzztest::VectorOf(complex_domain_gap_and_size));
+
+  return fuzztest::Filter(
+      [](IntegerVariableProto var) {
+        return var.domain(var.domain().size() - 1) <=
+               std::numeric_limits<int64_t>::max() / 2;
+      },
+      var_domain);
+}
+
+fuzztest::Domain<std::vector<IntegerVariableProto>>
+ModelProtoVariablesDomain() {
+  return fuzztest::Filter(
+      [](const std::vector<IntegerVariableProto>& vars) {
+        // Check if the variables in isolation doesn't make for a invalid model.
+        CpModelProto model;
+        for (const IntegerVariableProto& var : vars) {
+          *model.add_variables() = var;
+        }
+        return ValidateCpModel(model).empty();
+      },
+      fuzztest::VectorOf(CpVariableDomain()));
+}
+
 // Fuzzing repeats solve() 100 times, and timeout after 600s.
 // With a time limit of 4s, we should be fine.
 FUZZ_TEST(CpModelProtoFuzzer, Solve)
-    .WithDomains(/*proto:*/ fuzztest::Arbitrary<CpModelProto>())
+    .WithDomains(
+        fuzztest::Arbitrary<CpModelProto>()
+            .WithRepeatedProtobufField("variables", ModelProtoVariablesDomain())
+            .WithRepeatedProtobufField(
+                "constraints",
+                fuzztest::VectorOf(fuzztest::Arbitrary<ConstraintProto>()
+                                       .WithOneofAlwaysSet("constraint")
+                                       .WithFieldUnset("name")
+                                       .WithFieldUnset("dummy_constraint")))
+            .WithFieldUnset("name")
+            .WithFieldUnset("symmetry")
+            .WithProtobufField("objective",
+                               fuzztest::Arbitrary<CpObjectiveProto>()
+                                   .WithFieldUnset("scaling_was_exact")
+                                   .WithFieldUnset("integer_scaling_factor")
+                                   .WithFieldUnset("integer_before_offset")
+                                   .WithFieldUnset("integer_after_offset")))
     .WithSeeds([]() {
       return fuzztest::ReadFilesFromDirectory<CpModelProto>(GetTestDataDir());
     });

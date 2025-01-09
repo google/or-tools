@@ -3818,9 +3818,11 @@ cc_test(
     data = glob(["fuzz_testdata/*"]),
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_checker",
         ":cp_model_solver",
         "//ortools/base:fuzztest",
         "//ortools/base:path",
+        "//ortools/util:saturated_arithmetic",
         "@bazel_tools//tools/cpp/runfiles",
         "@com_google_absl//absl/log:check",
         "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",

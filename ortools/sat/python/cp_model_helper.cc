@@ -11,9 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file wraps the swig_helper.h classes in python using pybind11.
-#include "ortools/sat/swig_helper.h"
-
 #include <Python.h>
 
 #include <cstdint>
@@ -25,6 +22,8 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/python/linear_expr.h"
+#include "ortools/sat/python/linear_expr_doc.h"
+#include "ortools/sat/swig_helper.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/cast.h"
 #include "pybind11/functional.h"
@@ -161,64 +160,6 @@ class ResponseWrapper {
   const CpSolverResponse response_;
 };
 
-const char* kLinearExprClassDoc = R"doc(Holds an integer linear expression.
-
-  A linear expression is built from integer constants and variables.
-  For example, `x + 2 * (y - z + 1)`.
-
-  Linear expressions are used in CP-SAT models in constraints and in the
-  objective:
-
-  * You can define linear constraints as in:
-
-  ```
-  model.add(x + 2 * y <= 5)
-  model.add(sum(array_of_vars) == 5)
-  ```
-
-  * In CP-SAT, the objective is a linear expression:
-
-  ```
-  model.minimize(x + 2 * y + z)
-  ```
-
-  * For large arrays, using the LinearExpr class is faster that using the python
-  `sum()` function. You can create constraints and the objective from lists of
-  linear expressions or coefficients as follows:
-
-  ```
-  model.minimize(cp_model.LinearExpr.sum(expressions))
-  model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
-  ```)doc";
-
-const char* kLiteralClassDoc = R"doc(
-  Holds a Boolean literal.
-
-  A literal is a Boolean variable or its negation.
-
-  Literals are used in CP-SAT models in constraints and in the
-  objective:
-
-  * You can define literal as in:
-
-  ```
-  b1 = model.new_bool_var()
-  b2 = model.new_bool_var()
-  # Simple Boolean constraint.
-  model.add_bool_or(b1, b2.negated())
-  # We can use the ~ operator to negate a literal.
-  model.add_bool_or(b1, ~b2)
-  # Enforcement literals must be literals.
-  x = model.new_int_var(0, 10, 'x')
-  model.add(x == 5).only_enforced_if(~b1)
-  ```
-
-  * Literals can be used directly in linear constraints or in the objective:
-
-  ```
-  model.minimize(b1  + 2 * ~b2)
-  ```)doc";
-
 // Checks that the result is not null and throws an error if it is.
 BoundedLinearExpression* CheckBoundedLinearExpression(
     BoundedLinearExpression* result, LinearExpr* lhs,
@@ -247,7 +188,7 @@ void RaiseIfNone(LinearExpr* expr) {
   }
 }
 
-PYBIND11_MODULE(swig_helper, m) {
+PYBIND11_MODULE(cp_model_helper, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
   py::module::import("ortools.util.python.sorted_interval_list");
 
@@ -370,12 +311,15 @@ PYBIND11_MODULE(swig_helper, m) {
   py::implicitly_convertible<double, ExprOrValue>();
   py::implicitly_convertible<LinearExpr*, ExprOrValue>();
 
-  py::class_<LinearExpr>(m, "LinearExpr", kLinearExprClassDoc)
+  py::class_<LinearExpr>(m, "LinearExpr",
+                         DOC(operations_research, sat, python, LinearExpr))
       // We make sure to keep the order of the overloads: LinearExpr* before
       // ExprOrValue as this is faster to parse and type check.
       .def_static("sum", (&LinearExpr::Sum), arg("exprs"),
+                  DOC(operations_research, sat, python, LinearExpr, Sum),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("sum", &LinearExpr::MixedSum, arg("exprs"),
+                  DOC(operations_research, sat, python, LinearExpr, MixedSum),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static(
           "weighted_sum",
@@ -388,6 +332,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return LinearExpr::WeightedSumInt(exprs, coeffs);
           },
+          DOC(operations_research, sat, python, LinearExpr, WeightedSumInt),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static(
           "weighted_sum",
@@ -400,6 +345,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return LinearExpr::WeightedSumFloat(exprs, coeffs);
           },
+          DOC(operations_research, sat, python, LinearExpr, WeightedSumFloat),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static(
           "weighted_sum",
@@ -412,6 +358,8 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return LinearExpr::MixedWeightedSumInt(exprs, coeffs);
           },
+          DOC(operations_research, sat, python, LinearExpr,
+              MixedWeightedSumInt),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static(
           "weighted_sum",
@@ -424,27 +372,36 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return LinearExpr::MixedWeightedSumFloat(exprs, coeffs);
           },
+          DOC(operations_research, sat, python, LinearExpr,
+              MixedWeightedSumFloat),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       // Make sure to keep the order of the overloads: int before float as an
       // an integer value will be silently converted to a float.
       .def_static("term", &LinearExpr::TermInt, arg("expr").none(false),
-                  arg("coeff"), "Returns expr * coeff.",
+                  arg("coeff"),
+                  DOC(operations_research, sat, python, LinearExpr, TermInt),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("term", &LinearExpr::TermFloat, arg("expr").none(false),
-                  arg("coeff"), "Returns expr * coeff.",
+                  arg("coeff"),
+                  DOC(operations_research, sat, python, LinearExpr, TermFloat),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def_static("affine", &LinearExpr::AffineInt, arg("expr").none(false),
-                  arg("coeff"), arg("offset"), "Returns expr * coeff + offset.",
+                  arg("coeff"), arg("offset"),
+                  DOC(operations_research, sat, python, LinearExpr, AffineInt),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("affine", &LinearExpr::AffineFloat, arg("expr").none(false),
-                  arg("coeff"), arg("offset"), "Returns expr * coeff + offset.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("constant", &LinearExpr::ConstantInt, arg("value"),
-                  "Returns a constant linear expression.",
-                  py::return_value_policy::automatic)
-      .def_static("constant", &LinearExpr::ConstantFloat, arg("value"),
-                  "Returns a constant linear expression.",
-                  py::return_value_policy::automatic)
+      .def_static(
+          "affine", &LinearExpr::AffineFloat, arg("expr").none(false),
+          arg("coeff"), arg("offset"),
+          DOC(operations_research, sat, python, LinearExpr, AffineFloat),
+          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "constant", &LinearExpr::ConstantInt, arg("value"),
+          DOC(operations_research, sat, python, LinearExpr, ConstantInt),
+          py::return_value_policy::automatic)
+      .def_static(
+          "constant", &LinearExpr::ConstantFloat, arg("value"),
+          DOC(operations_research, sat, python, LinearExpr, ConstantFloat),
+          py::return_value_policy::automatic)
       // Pre PEP8 compatibility layer.
       .def_static("Sum", &LinearExpr::Sum, arg("exprs"),
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
@@ -483,41 +440,57 @@ PYBIND11_MODULE(swig_helper, m) {
       // Methods.
       .def("__str__", &LinearExpr::ToString)
       .def("__repr__", &LinearExpr::DebugString)
-      .def("is_integer", &LinearExpr::IsInteger)
+      .def("is_integer", &LinearExpr::IsInteger,
+           DOC(operations_research, sat, python, LinearExpr, IsInteger))
       // Operators.
-      // Note that we keep the 3 APIS (expr, int, double) instead of using an
-      // ExprOrValue argument as this is more efficient.
+      // Note that we keep the 3 APIS (expr, int, double) instead of using
+      // an ExprOrValue argument as this is more efficient.
       .def("__add__", &LinearExpr::Add, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
+           DOC(operations_research, sat, python, LinearExpr, Add),
            py::keep_alive<0, 2>())
       .def("__add__", &LinearExpr::AddInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__add__", &LinearExpr::AddFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddFloat),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__radd__", &LinearExpr::AddInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__radd__", &LinearExpr::AddFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Sub),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
       .def("__sub__", &LinearExpr::SubInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubInt),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__sub__", &LinearExpr::SubFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubFloat),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__rsub__", &LinearExpr::RSubInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubInt),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__rsub__", &LinearExpr::RSubFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubFloat),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__mul__", &LinearExpr::MulInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__mul__", &LinearExpr::MulFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__rmul__", &LinearExpr::MulInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__rmul__", &LinearExpr::MulFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat),
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def("__neg__", &LinearExpr::Neg, py::return_value_policy::automatic,
+           DOC(operations_research, sat, python, LinearExpr, Neg),
            py::keep_alive<0, 1>())
       .def(
           "__eq__",
@@ -525,6 +498,7 @@ PYBIND11_MODULE(swig_helper, m) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Eq(rhs), lhs, rhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, Eq),
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
@@ -537,6 +511,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return CheckBoundedLinearExpression(lhs->EqCst(rhs), lhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, EqCst),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__ne__",
@@ -544,6 +519,7 @@ PYBIND11_MODULE(swig_helper, m) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Ne(rhs), lhs, rhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, Ne),
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
@@ -551,6 +527,7 @@ PYBIND11_MODULE(swig_helper, m) {
           [](LinearExpr* lhs, int64_t rhs) {
             return CheckBoundedLinearExpression(lhs->NeCst(rhs), lhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, NeCst),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__le__",
@@ -558,6 +535,7 @@ PYBIND11_MODULE(swig_helper, m) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Le(rhs), lhs, rhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, Le),
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
@@ -568,6 +546,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return CheckBoundedLinearExpression(lhs->LeCst(rhs), lhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, LeCst),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__lt__",
@@ -575,6 +554,7 @@ PYBIND11_MODULE(swig_helper, m) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Lt(rhs), lhs, rhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, Lt),
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
@@ -585,6 +565,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return CheckBoundedLinearExpression(lhs->LtCst(rhs), lhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, LtCst),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__ge__",
@@ -592,6 +573,7 @@ PYBIND11_MODULE(swig_helper, m) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Ge(rhs), lhs, rhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, Ge),
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
@@ -602,6 +584,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return CheckBoundedLinearExpression(lhs->GeCst(rhs), lhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, GeCst),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       .def(
           "__gt__",
@@ -609,6 +592,7 @@ PYBIND11_MODULE(swig_helper, m) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Gt(rhs), lhs, rhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, Gt),
           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
           py::keep_alive<0, 2>())
       .def(
@@ -619,6 +603,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return CheckBoundedLinearExpression(lhs->GtCst(rhs), lhs);
           },
+          DOC(operations_research, sat, python, LinearExpr, GtCst),
           py::return_value_policy::automatic, py::keep_alive<0, 1>())
       // Disable other operators as they are not supported.
       .def("__div__",
@@ -647,15 +632,15 @@ PYBIND11_MODULE(swig_helper, m) {
            })
       .def("__lshift__",
            [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
-             throw_error(
-                 PyExc_NotImplementedError,
-                 "calling left shift on a linear expression is not supported");
+             throw_error(PyExc_NotImplementedError,
+                         "calling left shift on a linear expression is not "
+                         "supported");
            })
       .def("__rshift__",
            [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
-             throw_error(
-                 PyExc_NotImplementedError,
-                 "calling right shift on a linear expression is not supported");
+             throw_error(PyExc_NotImplementedError,
+                         "calling right shift on a linear expression is "
+                         "not supported");
            })
       .def("__and__",
            [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
@@ -686,45 +671,46 @@ PYBIND11_MODULE(swig_helper, m) {
       });
 
   // Expose Internal classes, mostly for testing.
-  py::class_<CanonicalFloatExpression>(m, "CanonicalFloatExpression")
+  py::class_<CanonicalFloatExpression>(
+      m, "CanonicalFloatExpression",
+      DOC(operations_research, sat, python, CanonicalFloatExpression))
       .def(py::init<LinearExpr*>())
       .def_property_readonly("vars", &CanonicalFloatExpression::vars)
       .def_property_readonly("coeffs", &CanonicalFloatExpression::coeffs)
       .def_property_readonly("offset", &CanonicalFloatExpression::offset);
 
-  py::class_<CanonicalIntExpression>(m, "CanonicalIntExpression")
+  py::class_<CanonicalIntExpression>(
+      m, "CanonicalIntExpression",
+      DOC(operations_research, sat, python, CanonicalIntExpression))
       .def(py::init<LinearExpr*>())
       .def_property_readonly("vars", &CanonicalIntExpression::vars)
       .def_property_readonly("coeffs", &CanonicalIntExpression::coeffs)
       .def_property_readonly("offset", &CanonicalIntExpression::offset)
       .def_property_readonly("ok", &CanonicalIntExpression::ok);
 
-  py::class_<FloatAffine, LinearExpr>(m, "FloatAffine")
+  py::class_<FloatAffine, LinearExpr>(
+      m, "FloatAffine", DOC(operations_research, sat, python, FloatAffine))
       .def(py::init<LinearExpr*, double, double>())
       .def_property_readonly("expression", &FloatAffine::expression)
       .def_property_readonly("coefficient", &FloatAffine::coefficient)
       .def_property_readonly("offset", &FloatAffine::offset);
 
-  py::class_<IntAffine, LinearExpr>(m, "IntAffine")
+  py::class_<IntAffine, LinearExpr>(
+      m, "IntAffine", DOC(operations_research, sat, python, IntAffine))
       .def(py::init<LinearExpr*, int64_t, int64_t>())
       .def_property_readonly("expression", &IntAffine::expression)
       .def_property_readonly("coefficient", &IntAffine::coefficient)
       .def_property_readonly("offset", &IntAffine::offset);
 
-  py::class_<Literal, LinearExpr>(m, "Literal", kLiteralClassDoc)
-      .def_property_readonly("index", &Literal::index,
-                             "The index of the literal in the model.")
+  py::class_<Literal, LinearExpr>(
+      m, "Literal", DOC(operations_research, sat, python, Literal))
+      .def_property_readonly(
+          "index", &Literal::index,
+          DOC(operations_research, sat, python, Literal, index))
       .def("negated", &Literal::negated,
-           R"doc(
-    Returns the negation of a literal (a Boolean variable or its negation).
-
-    This method implements the logical negation of a Boolean variable.
-    It is only valid if the variable has a Boolean domain (0 or 1).
-
-    Note that this method is nilpotent: `x.negated().negated() == x`.
-          )doc")
+           DOC(operations_research, sat, python, Literal, negated))
       .def("__invert__", &Literal::negated,
-           "Returns the negation of the current literal.")
+           DOC(operations_research, sat, python, Literal, negated))
       .def("__bool__",
            [](Literal* /*self*/) {
              throw_error(PyExc_NotImplementedError,
@@ -744,13 +730,16 @@ PYBIND11_MODULE(swig_helper, m) {
   //   object. That means memory of the negated variable is onwed by the C++
   //   layer, but a reference is kept in python to link the lifetime of the
   //   negated variable to the base variable.
-  py::class_<BaseIntVar, PyBaseIntVar, Literal>(m, "BaseIntVar")
+  py::class_<BaseIntVar, PyBaseIntVar, Literal>(
+      m, "BaseIntVar", DOC(operations_research, sat, python, BaseIntVar))
       .def(py::init<int>())        // Integer variable.
       .def(py::init<int, bool>())  // Potential Boolean variable.
-      .def_property_readonly("index", &BaseIntVar::index,
-                             "The index of the variable in the model.")
-      .def_property_readonly("is_boolean", &BaseIntVar::is_boolean,
-                             "Whether the variable is Boolean.")
+      .def_property_readonly(
+          "index", &BaseIntVar::index,
+          DOC(operations_research, sat, python, BaseIntVar, index))
+      .def_property_readonly(
+          "is_boolean", &BaseIntVar::is_boolean,
+          DOC(operations_research, sat, python, BaseIntVar, is_boolean))
       .def("__str__", &BaseIntVar::ToString)
       .def("__repr__", &BaseIntVar::DebugString)
       .def(
@@ -762,7 +751,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return self->negated();
           },
-          "Returns the negation of the current Boolean variable.",
+          DOC(operations_research, sat, python, BaseIntVar, negated),
           py::return_value_policy::reference_internal)
       .def(
           "__invert__",
@@ -773,7 +762,7 @@ PYBIND11_MODULE(swig_helper, m) {
             }
             return self->negated();
           },
-          "Returns the negation of the current Boolean variable.",
+          DOC(operations_research, sat, python, BaseIntVar, negated),
           py::return_value_policy::reference_internal)
       // PEP8 Compatibility.
       .def(
@@ -790,25 +779,31 @@ PYBIND11_MODULE(swig_helper, m) {
   // Memory management:
   // - Do we need a reference_internal (that add a py::keep_alive<1, 0>() rule)
   //   or just a reference ?
-  py::class_<NotBooleanVariable, Literal>(m, "NotBooleanVariable")
+  py::class_<NotBooleanVariable, Literal>(
+      m, "NotBooleanVariable",
+      DOC(operations_research, sat, python, NotBooleanVariable))
       .def(py::init<BaseIntVar*>())
-      .def_property_readonly("index", &NotBooleanVariable::index,
-                             "The index of the variable in the model.")
+      .def_property_readonly(
+          "index", &NotBooleanVariable::index,
+          DOC(operations_research, sat, python, NotBooleanVariable, index))
       .def("__str__", &NotBooleanVariable::ToString)
       .def("__repr__", &NotBooleanVariable::DebugString)
       .def("negated", &NotBooleanVariable::negated,
-           "Returns the negation of the current Boolean variable.",
+           DOC(operations_research, sat, python, NotBooleanVariable, negated),
            py::return_value_policy::reference_internal)
       .def("__invert__", &NotBooleanVariable::negated,
-           "Returns the negation of the current Boolean variable.",
+           DOC(operations_research, sat, python, NotBooleanVariable, negated),
            py::return_value_policy::reference_internal)
       .def("Not", &NotBooleanVariable::negated,
            "Returns the negation of the current Boolean variable.",
            py::return_value_policy::reference_internal);
 
-  py::class_<BoundedLinearExpression>(m, "BoundedLinearExpression")
+  py::class_<BoundedLinearExpression>(
+      m, "BoundedLinearExpression",
+      DOC(operations_research, sat, python, BoundedLinearExpression))
       .def(py::init<std::vector<const BaseIntVar*>, std::vector<int64_t>,
-                    int64_t, Domain>())
+                    int64_t, Domain>(),
+           py::keep_alive<1, 2>())
       .def_property_readonly("bounds", &BoundedLinearExpression::bounds)
       .def_property_readonly("vars", &BoundedLinearExpression::vars)
       .def_property_readonly("coeffs", &BoundedLinearExpression::coeffs)

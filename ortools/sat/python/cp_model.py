@@ -67,13 +67,13 @@ import pandas as pd
 from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
 from ortools.sat.python import cp_model_helper as cmh
-from ortools.sat.python import swig_helper
+from ortools.sat.python import cp_model_numbers as cmn
 from ortools.util.python import sorted_interval_list
 
 # Import external types.
 Domain = sorted_interval_list.Domain
-LinearExpr = swig_helper.LinearExpr
-BoundedLinearExpression = swig_helper.BoundedLinearExpression
+LinearExpr = cmh.LinearExpr
+BoundedLinearExpression = cmh.BoundedLinearExpression
 
 
 # The classes below allow linear expressions to be expressed naturally with the
@@ -152,8 +152,8 @@ NumberTypes = (
     np.double,
 )
 
-LiteralT = Union[swig_helper.Literal, IntegralT, bool]
-BoolVarT = swig_helper.Literal
+LiteralT = Union[cmh.Literal, IntegralT, bool]
+BoolVarT = cmh.Literal
 VariableT = Union["IntVar", IntegralT]
 
 # We need to add 'IntVar' for pytype.
@@ -215,7 +215,7 @@ def short_expr_name(
     return str(e)
 
 
-class IntVar(swig_helper.BaseIntVar):
+class IntVar(cmh.BaseIntVar):
     """An integer variable.
 
     An IntVar is an object that can take on any integer value within defined
@@ -246,10 +246,10 @@ class IntVar(swig_helper.BaseIntVar):
         # case 2:
         #     model is a CpModelProto, domain is an index (int), and name is None.
         if isinstance(domain, IntegralTypes) and name is None:
-            swig_helper.BaseIntVar.__init__(self, int(domain), is_boolean)
+            cmh.BaseIntVar.__init__(self, int(domain), is_boolean)
             self.__var = model.variables[domain]
         else:
-            swig_helper.BaseIntVar.__init__(self, len(model.variables), is_boolean)
+            cmh.BaseIntVar.__init__(self, len(model.variables), is_boolean)
             self.__var = model.variables.add()
             self.__var.domain.extend(
                 cast(sorted_interval_list.Domain, domain).flattened_intervals()
@@ -384,12 +384,12 @@ class Constraint:
           self.
         """
         for lit in expand_generator_or_tuple(boolvar):
-            if (cmh.is_boolean(lit) and lit) or (
+            if (cmn.is_boolean(lit) and lit) or (
                 isinstance(lit, IntegralTypes) and lit == 1
             ):
                 # Always true. Do nothing.
                 pass
-            elif (cmh.is_boolean(lit) and not lit) or (
+            elif (cmn.is_boolean(lit) and not lit) or (
                 isinstance(lit, IntegralTypes) and lit == 0
             ):
                 self.__constraint.enforcement_literal.append(
@@ -397,7 +397,7 @@ class Constraint:
                 )
             else:
                 self.__constraint.enforcement_literal.append(
-                    cast(swig_helper.Literal, lit).index
+                    cast(cmh.Literal, lit).index
                 )
         return self
 
@@ -584,7 +584,7 @@ def object_is_a_true_literal(literal: LiteralT) -> bool:
     if isinstance(literal, IntVar):
         proto = literal.proto
         return len(proto.domain) == 2 and proto.domain[0] == 1 and proto.domain[1] == 1
-    if isinstance(literal, swig_helper.NotBooleanVariable):
+    if isinstance(literal, cmh.NotBooleanVariable):
         proto = literal.negated().proto
         return len(proto.domain) == 2 and proto.domain[0] == 0 and proto.domain[1] == 0
     if isinstance(literal, IntegralTypes):
@@ -597,7 +597,7 @@ def object_is_a_false_literal(literal: LiteralT) -> bool:
     if isinstance(literal, IntVar):
         proto = literal.proto
         return len(proto.domain) == 2 and proto.domain[0] == 0 and proto.domain[1] == 0
-    if isinstance(literal, swig_helper.NotBooleanVariable):
+    if isinstance(literal, cmh.NotBooleanVariable):
         proto = literal.negated().proto
         return len(proto.domain) == 2 and proto.domain[0] == 1 and proto.domain[1] == 1
     if isinstance(literal, IntegralTypes):
@@ -807,7 +807,7 @@ class CpModel:
     ) -> Constraint:
         """Adds the constraint: `linear_expr` in `domain`."""
         if isinstance(linear_expr, LinearExpr):
-            flat_expr = swig_helper.CanonicalIntExpression(linear_expr)
+            flat_expr = cmh.CanonicalIntExpression(linear_expr)
             if not flat_expr.ok:
                 raise TypeError(
                     "linear expression contains floating point coefficients or"
@@ -849,14 +849,14 @@ class CpModel:
             model_ct.linear.coeffs.extend(ct.coeffs)
             model_ct.linear.domain.extend(
                 [
-                    cmh.capped_subtraction(x, ct.offset)
+                    cmn.capped_subtraction(x, ct.offset)
                     for x in ct.bounds.flattened_intervals()
                 ]
             )
             return result
-        if ct and cmh.is_boolean(ct):
+        if ct and cmn.is_boolean(ct):
             return self.add_bool_or([True])
-        if not ct and cmh.is_boolean(ct):
+        if not ct and cmn.is_boolean(ct):
             return self.add_bool_or([])  # Evaluate to false.
         raise TypeError("not supported: CpModel.add(" + str(ct) + ")")
 
@@ -2085,7 +2085,7 @@ class CpModel:
         if isinstance(arg, IntVar):
             self.assert_is_boolean_variable(arg)
             return arg.index
-        if isinstance(arg, swig_helper.NotBooleanVariable):
+        if isinstance(arg, cmh.NotBooleanVariable):
             self.assert_is_boolean_variable(arg.negated())
             return arg.index
         if isinstance(arg, IntegralTypes):
@@ -2093,9 +2093,9 @@ class CpModel:
                 return self.get_or_make_index_from_constant(1)
             if arg == ~True:  # -2
                 return self.get_or_make_index_from_constant(0)
-            arg = cmh.assert_is_zero_or_one(arg)
+            arg = cmn.assert_is_zero_or_one(arg)
             return self.get_or_make_index_from_constant(arg)
-        if cmh.is_boolean(arg):
+        if cmn.is_boolean(arg):
             return self.get_or_make_index_from_constant(int(arg))
         raise TypeError(f"not supported: model.get_or_make_boolean_index({arg})")
 
@@ -2137,7 +2137,7 @@ class CpModel:
             result.coeffs.append(mult)
             return result
 
-        flat_expr = swig_helper.CanonicalIntExpression(linear_expr)
+        flat_expr = cmh.CanonicalIntExpression(linear_expr)
         if not flat_expr.ok:
             raise ValueError(f"Failed to parse linear expression: {linear_expr}")
         result.offset = flat_expr.offset
@@ -2155,7 +2155,7 @@ class CpModel:
             self.__model.objective.scaling_factor = 1.0
         elif isinstance(obj, LinearExpr):
             if obj.is_integer():
-                int_obj = swig_helper.CanonicalIntExpression(obj)
+                int_obj = cmh.CanonicalIntExpression(obj)
                 for var in int_obj.vars:
                     self.__model.objective.vars.append(var.index)
                 if minimize:
@@ -2168,7 +2168,7 @@ class CpModel:
                     for c in int_obj.coeffs:
                         self.__model.objective.coeffs.append(-c)
             else:
-                float_obj = swig_helper.CanonicalFloatExpression(obj)
+                float_obj = cmh.CanonicalFloatExpression(obj)
                 for var in float_obj.vars:
                     self.__model.floating_point_objective.vars.append(var.index)
                 self.__model.floating_point_objective.coeffs.extend(float_obj.coeffs)
@@ -2229,11 +2229,11 @@ class CpModel:
 
     def model_stats(self) -> str:
         """Returns a string containing some model statistics."""
-        return swig_helper.CpSatHelper.model_stats(self.__model)
+        return cmh.CpSatHelper.model_stats(self.__model)
 
     def validate(self) -> str:
         """Returns a string indicating that the model is invalid."""
-        return swig_helper.CpSatHelper.validate_model(self.__model)
+        return cmh.CpSatHelper.validate_model(self.__model)
 
     def export_to_file(self, file: str) -> bool:
         """Write the model as a protocol buffer to 'file'.
@@ -2246,7 +2246,7 @@ class CpModel:
         Returns:
           True if the model was correctly written.
         """
-        return swig_helper.CpSatHelper.write_model_to_file(self.__model, file)
+        return cmh.CpSatHelper.write_model_to_file(self.__model, file)
 
     @overload
     def add_hint(self, var: IntVar, value: int) -> None: ...
@@ -2286,7 +2286,7 @@ class CpModel:
             var = self.__model.variables[x.index]
             if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
                 raise TypeError("TypeError: " + str(x) + " is not a boolean variable")
-        elif not isinstance(x, swig_helper.NotBooleanVariable):
+        elif not isinstance(x, cmh.NotBooleanVariable):
             raise TypeError("TypeError: " + str(x) + " is not a boolean variable")
 
     # Compatibility with pre PEP8
@@ -2398,13 +2398,13 @@ class CpSolver:
     """
 
     def __init__(self) -> None:
-        self.__response_wrapper: Optional[swig_helper.ResponseWrapper] = None
+        self.__response_wrapper: Optional[cmh.ResponseWrapper] = None
         self.parameters: sat_parameters_pb2.SatParameters = (
             sat_parameters_pb2.SatParameters()
         )
         self.log_callback: Optional[Callable[[str], None]] = None
         self.best_bound_callback: Optional[Callable[[float], None]] = None
-        self.__solve_wrapper: Optional[swig_helper.SolveWrapper] = None
+        self.__solve_wrapper: Optional[cmh.SolveWrapper] = None
         self.__lock: threading.Lock = threading.Lock()
 
     def solve(
@@ -2414,7 +2414,7 @@ class CpSolver:
     ) -> cp_model_pb2.CpSolverStatus:
         """Solves a problem and passes each solution to the callback if not null."""
         with self.__lock:
-            self.__solve_wrapper = swig_helper.SolveWrapper()
+            self.__solve_wrapper = cmh.SolveWrapper()
 
         self.__solve_wrapper.set_parameters(self.parameters)
         if solution_callback is not None:
@@ -2570,7 +2570,7 @@ class CpSolver:
         return self._checked_response.solution_info()
 
     @property
-    def _checked_response(self) -> swig_helper.ResponseWrapper:
+    def _checked_response(self) -> cmh.ResponseWrapper:
         """Checks solve() has been called, and returns a response wrapper."""
         if self.__response_wrapper is None:
             raise RuntimeError("solve() has not been called.")
@@ -2694,7 +2694,7 @@ class CpSolver:
 # pylint: enable=invalid-name
 
 
-class CpSolverSolutionCallback(swig_helper.SolutionCallback):
+class CpSolverSolutionCallback(cmh.SolutionCallback):
     """Solution callback.
 
     This class implements a callback that will be called at each new solution
@@ -2709,7 +2709,7 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
     """
 
     def __init__(self) -> None:
-        swig_helper.SolutionCallback.__init__(self)
+        cmh.SolutionCallback.__init__(self)
 
     def OnSolutionCallback(self) -> None:
         """Proxy for the same method in snake case."""
