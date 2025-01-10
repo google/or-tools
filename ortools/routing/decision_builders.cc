@@ -356,7 +356,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     if (rg_index_ < 0) {
       for (int v = 0; v < model_.vehicles(); ++v) {
         const int route_size = GetVehicleRouteSize(model_, v);
-        vehicle_info.emplace_back(v, route_size, false);
+        vehicle_info.push_back({v, route_size, false});
       }
       absl::c_sort(vehicle_info);
       vehicles_without_resource_assignment->resize(model_.vehicles());
@@ -389,8 +389,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
           num_vehicles_with_resource_assignment++;
         }
       }
-      vehicle_info.emplace_back(v, GetVehicleRouteSize(model_, v),
-                                needs_resource);
+      vehicle_info.push_back({v, GetVehicleRouteSize(model_, v),
+                                needs_resource});
     }
     absl::c_sort(vehicle_info);
     vehicles_with_resource_assignment->reserve(
