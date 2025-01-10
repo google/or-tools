@@ -295,7 +295,7 @@ LinearExpr* SumArguments(py::args expressions) {
   }
 }
 
-LinearExpr* WeightedSumArguments(py::list expressions, py::list coefficients) {
+LinearExpr* WeightedSumArguments(py::sequence expressions, py::sequence coefficients) {
   if (expressions.size() != coefficients.size()) {
     ThrowError(PyExc_ValueError,
                absl::StrCat("LinearExpr::weighted_sum() requires the same "
