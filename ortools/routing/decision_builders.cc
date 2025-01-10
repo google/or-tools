@@ -18,9 +18,11 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -183,6 +185,20 @@ void AppendRouteCumulAndBreakVarAndValues(
   vals.resize(new_num_values);
 }
 
+namespace {
+int GetVehicleRouteSize(const RoutingModel& model, int vehicle) {
+  int route_size = -1;
+  int64_t node = model.Start(vehicle);
+  while (node != model.End(vehicle)) {
+    route_size++;
+    DCHECK(model.NextVar(node)->Bound());
+    node = model.NextVar(node)->Value();
+  }
+  DCHECK_GE(route_size, 0);
+  return route_size;
+}
+}  // namespace
+
 class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromLocalDimensionCosts(
@@ -316,48 +332,81 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     return true;
   }
 
-  void DetermineVehiclesRequiringResourceAssignment(
+  inline void DetermineVehiclesRequiringResourceAssignment(
       std::vector<int>* vehicles_without_resource_assignment,
       std::vector<int>* vehicles_with_resource_assignment,
       util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>*
           used_resources_per_class) const {
-    vehicles_without_resource_assignment->clear();
-    vehicles_with_resource_assignment->clear();
-    used_resources_per_class->clear();
-    if (rg_index_ < 0) {
-      vehicles_without_resource_assignment->reserve(model_.vehicles());
-      for (int v = 0; v < model_.vehicles(); ++v) {
-        vehicles_without_resource_assignment->push_back(v);
+    DCHECK(vehicles_without_resource_assignment->empty());
+    DCHECK(vehicles_with_resource_assignment->empty());
+    DCHECK(used_resources_per_class->empty());
+    struct VehicleInfo {
+      int vehicle_index;
+      int route_size;
+      bool requires_resource;
+
+      bool operator<(const VehicleInfo& other) const {
+        return std::tie(route_size, vehicle_index) <
+               std::tie(other.route_size, other.vehicle_index);
       }
+    };
+
+    std::vector<VehicleInfo> vehicle_info;
+    vehicle_info.reserve(model_.vehicles());
+    if (rg_index_ < 0) {
+      for (int v = 0; v < model_.vehicles(); ++v) {
+        const int route_size = GetVehicleRouteSize(model_, v);
+        vehicle_info.emplace_back(v, route_size, false);
+      }
+      absl::c_sort(vehicle_info);
+      vehicles_without_resource_assignment->resize(model_.vehicles());
+      absl::c_transform(vehicle_info,
+                        vehicles_without_resource_assignment->begin(),
+                        [](const VehicleInfo& v) { return v.vehicle_index; });
       return;
     }
+
     DCHECK_NE(resource_group_, nullptr);
-    const int num_vehicles_req_res =
-        resource_group_->GetVehiclesRequiringAResource().size();
-    vehicles_without_resource_assignment->reserve(model_.vehicles() -
-                                                  num_vehicles_req_res);
-    vehicles_with_resource_assignment->reserve(num_vehicles_req_res);
     used_resources_per_class->resize(
         resource_group_->GetResourceClassesCount());
+    int num_vehicles_with_resource_assignment = 0;
     for (int v = 0; v < model_.vehicles(); ++v) {
-      if (!resource_group_->VehicleRequiresAResource(v)) {
-        vehicles_without_resource_assignment->push_back(v);
-      } else if (model_.NextVar(model_.Start(v))->Value() == model_.End(v) &&
-                 !model_.IsVehicleUsedWhenEmpty(v)) {
-        // No resource assignment required for this unused vehicle.
-        // TODO(user): Investigate if we should skip unused vehicles.
-        vehicles_without_resource_assignment->push_back(v);
-      } else if (model_.ResourceVar(v, rg_index_)->Bound()) {
-        vehicles_without_resource_assignment->push_back(v);
-        const int resource_idx = model_.ResourceVar(v, rg_index_)->Value();
-        DCHECK_GE(resource_idx, 0);
-        used_resources_per_class
-            ->at(resource_group_->GetResourceClassIndex(resource_idx))
-            .insert(resource_idx);
+      bool needs_resource = resource_group_->VehicleRequiresAResource(v);
+      if (needs_resource) {
+        if (model_.NextVar(model_.Start(v))->Value() == model_.End(v) &&
+            !model_.IsVehicleUsedWhenEmpty(v)) {
+          // No resource assignment required for this unused vehicle.
+          // TODO(user): Investigate if we should skip unused vehicles.
+          needs_resource = false;
+        } else if (model_.ResourceVar(v, rg_index_)->Bound()) {
+          needs_resource = false;
+          const int resource_idx = model_.ResourceVar(v, rg_index_)->Value();
+          DCHECK_GE(resource_idx, 0);
+          used_resources_per_class
+              ->at(resource_group_->GetResourceClassIndex(resource_idx))
+              .insert(resource_idx);
+        } else {
+          num_vehicles_with_resource_assignment++;
+        }
+      }
+      vehicle_info.emplace_back(v, GetVehicleRouteSize(model_, v),
+                                needs_resource);
+    }
+    absl::c_sort(vehicle_info);
+    vehicles_with_resource_assignment->reserve(
+        num_vehicles_with_resource_assignment);
+    vehicles_without_resource_assignment->reserve(
+        model_.vehicles() - num_vehicles_with_resource_assignment);
+    for (const VehicleInfo& v_info : vehicle_info) {
+      if (v_info.requires_resource) {
+        vehicles_with_resource_assignment->push_back(v_info.vehicle_index);
       } else {
-        vehicles_with_resource_assignment->push_back(v);
+        vehicles_without_resource_assignment->push_back(v_info.vehicle_index);
       }
     }
+    DCHECK_EQ(vehicles_without_resource_assignment->size() +
+                  vehicles_with_resource_assignment->size(),
+              model_.vehicles());
   }
 
   bool ComputeCumulAndBreakValuesForVehicle(
