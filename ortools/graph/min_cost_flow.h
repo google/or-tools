@@ -287,6 +287,11 @@ class SimpleMinCostFlow : public MinCostFlowBase {
                                          FlowQuantity capacity,
                                          CostValue unit_cost);
 
+  // Modifies the capacity of the given arc. The arc index must be non-negative
+  // (>= 0); it must be an index returned by a previous call to
+  // AddArcWithCapacityAndUnitCost().
+  void SetArcCapacity(ArcIndex arc, FlowQuantity capacity);
+
   // Sets the supply of the given node. The node index must be non-negative (>=
   // 0). Nodes implicitly created will have a default supply set to 0. A demand
   // is modeled as a negative supply.
@@ -683,11 +688,15 @@ extern template class GenericMinCostFlow<
     /*ArcFlowType=*/int16_t,
     /*ArcScaledCostType=*/int32_t>;
 
-// Default MinCostFlow instance that uses StarGraph.
-// New clients should use SimpleMinCostFlow if they can.
-class MinCostFlow : public GenericMinCostFlow<StarGraph> {
- public:
-  explicit MinCostFlow(const StarGraph* graph) : GenericMinCostFlow(graph) {}
+// TODO(b/385094969): Remove this alias after 2025-07-01 to give or-tools users
+// a grace period.
+struct MinCostFlow : public MinCostFlowBase {
+  template <typename = void>
+  MinCostFlow() {
+    static_assert(false,
+                  "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
+                  "`GenericMinCostFlow` with a specific graph type instead.");
+  }
 };
 
 #endif  // SWIG

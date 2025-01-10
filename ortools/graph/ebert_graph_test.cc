@@ -195,8 +195,7 @@ void TestEbertGraph(const GraphType& graph,
 template <typename GraphType>
 class DebugStringEbertGraphTest : public ::testing::Test {};
 
-typedef ::testing::Types<EbertGraph<int16_t, int16_t>,
-                         ForwardEbertGraph<int16_t, int16_t> >
+typedef ::testing::Types<EbertGraph<int16_t, int16_t> >
     EbertGraphTypesForDebugStringTesting;
 
 TYPED_TEST_SUITE(DebugStringEbertGraphTest,
@@ -294,20 +293,6 @@ TYPED_TEST(DebugStringEbertGraphTest, Test1) {
       " 1:5\n"
       " 2:4\n"
       " 3:NilArc\n";
-
-  TestEbertGraph(graph, kGraphArcList, kExpectedAdjacencyList,
-                 kExpectedIncomingArcList, kExpectedOutgoingArcList,
-                 kExpectedDebugString, kExpectedForwardDebugString, "");
-
-  // The graph representation is already built, but nothing forbids us from
-  // testing that it can be rebuilt. To test this for forward graphs, we must
-  // first collect arc tail information from the adjacency lists, because those
-  // lists are the only source of information from which we can rebuild a
-  // forward graph if we haven't maintained its optional arc tail information
-  // until now.
-  TailArrayManager<TypeParam> tail_array_manager(&graph);
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
-  graph.BuildRepresentation();
 
   TestEbertGraph(graph, kGraphArcList, kExpectedAdjacencyList,
                  kExpectedIncomingArcList, kExpectedOutgoingArcList,
@@ -442,8 +427,6 @@ TYPED_TEST(DebugStringEbertGraphTest, Test2) {
                  kExpectedIncomingArcList, kExpectedOutgoingArcList,
                  kExpectedDebugString, kExpectedForwardDebugString, "");
 
-  TailArrayManager<TypeParam> tail_array_manager(&graph);
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
   graph.GroupForwardArcsByFunctor(ArcFunctorByHead<TypeParam>(graph), nullptr);
 
   const std::string kGraphHeadGroupedArcList =
@@ -631,8 +614,7 @@ TYPED_TEST(DebugStringEbertGraphTest, Test2) {
 template <typename GraphType>
 class DebugStringTestWithGraphBuildManager : public ::testing::Test {};
 
-typedef ::testing::Types<EbertGraph<int16_t, int16_t>,
-                         ForwardEbertGraph<int16_t, int16_t> >
+typedef ::testing::Types<EbertGraph<int16_t, int16_t> >
     GraphTypesForDebugStringTestWithGraphBuildManager;
 
 TYPED_TEST_SUITE(DebugStringTestWithGraphBuildManager,
@@ -1017,8 +999,7 @@ TYPED_TEST(DebugStringTestWithGraphBuildManager, SortedArcsWithoutAnnotation) {
 template <typename GraphType>
 class TinyEbertGraphTest : public ::testing::Test {};
 
-typedef ::testing::Types<EbertGraph<int8_t, int8_t>,
-                         ForwardEbertGraph<int8_t, int8_t> >
+typedef ::testing::Types<EbertGraph<int8_t, int8_t> >
     TinyEbertGraphTypesForTesting;
 
 TYPED_TEST_SUITE(TinyEbertGraphTest, TinyEbertGraphTypesForTesting);
@@ -1035,9 +1016,8 @@ TYPED_TEST(TinyEbertGraphTest, CheckDeathOnBadBounds) {
 template <typename GraphType>
 class SmallEbertGraphTest : public ::testing::Test {};
 
-typedef ::testing::Types<
-    EbertGraph<int8_t, int8_t>, EbertGraph<int16_t, int16_t>,
-    ForwardEbertGraph<int8_t, int8_t>, ForwardEbertGraph<int16_t, int16_t> >
+typedef ::testing::Types<EbertGraph<int8_t, int8_t>,
+                         EbertGraph<int16_t, int16_t> >
     SmallEbertGraphTypesForTesting;
 
 TYPED_TEST_SUITE(SmallEbertGraphTest, SmallEbertGraphTypesForTesting);
@@ -1067,29 +1047,6 @@ TEST(EbertGraphTest, CheckBounds) {
   EXPECT_TRUE(g.CheckArcValidity(g.Opposite(SmallStarGraph::kMaxNumArcs - 1)));
 }
 
-TEST(ForwardEbertGraphTest, CheckBounds) {
-  typedef ForwardEbertGraph<int16_t, int16_t> SmallStarGraph;
-  SmallStarGraph g(SmallStarGraph::kMaxNumNodes, SmallStarGraph::kMaxNumArcs);
-  EXPECT_TRUE(g.CheckArcBounds(SmallStarGraph::kNilArc));
-  EXPECT_FALSE(g.CheckArcValidity(SmallStarGraph::kNilArc));
-  EXPECT_FALSE(g.CheckArcValidity(SmallStarGraph::kMaxNumArcs));
-  EXPECT_TRUE(g.CheckArcValidity(g.SmallStarGraph::kMaxNumArcs - 1));
-}
-
-TEST(ForwardEbertGraphTest, ImpossibleBuildTailArray) {
-  typedef ForwardEbertGraph<int16_t, int16_t> SmallStarGraph;
-  SmallStarGraph g(3, 3);
-  ArcIndex arc = g.AddArc(0, 1);
-  // The SetHead() method is the easiest way to dirty the representation.
-  // Alternatively, since this is a FRIEND_TEST of the EbertGraphBase<>
-  // template, we could just set g.representation_clean_ = false. Once the
-  // representation is dirty, the adjacency lists are invalid and we haven't
-  // bothered to allocate and maintain the optional array of arc tails, so
-  // rebuilding that optional tail array is impossible.
-  g.SetHead(arc, 2);
-  EXPECT_FALSE(g.BuildTailArray());
-}
-
 template <typename GraphType, bool sort_arcs>
 static void BM_RandomArcs(benchmark::State& state) {
   const int kRandomSeed = 0;
@@ -1110,10 +1067,8 @@ static void BM_RandomArcs(benchmark::State& state) {
 }
 
 BENCHMARK_TEMPLATE2(BM_RandomArcs, StarGraph, false);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ForwardStarGraph, false);
 
 BENCHMARK_TEMPLATE2(BM_RandomArcs, StarGraph, true);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ForwardStarGraph, true);
 
 template <typename GraphType, bool sort_arcs>
 static void BM_RandomAnnotatedArcs(benchmark::State& state) {
@@ -1139,10 +1094,8 @@ static void BM_RandomAnnotatedArcs(benchmark::State& state) {
 }
 
 BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, StarGraph, false);
-BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, ForwardStarGraph, false);
 
 BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, StarGraph, true);
-BENCHMARK_TEMPLATE2(BM_RandomAnnotatedArcs, ForwardStarGraph, true);
 
 template <typename GraphType>
 static void BM_AddRandomArcsAndDoNotRetrieveGraph(benchmark::State& state) {
@@ -1164,6 +1117,5 @@ static void BM_AddRandomArcsAndDoNotRetrieveGraph(benchmark::State& state) {
 }
 
 BENCHMARK_TEMPLATE(BM_AddRandomArcsAndDoNotRetrieveGraph, StarGraph);
-BENCHMARK_TEMPLATE(BM_AddRandomArcsAndDoNotRetrieveGraph, ForwardStarGraph);
 
 }  // namespace operations_research

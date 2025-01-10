@@ -1043,6 +1043,10 @@ SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::AddArcWithCapacityAndUnitCost(
   return arc;
 }
 
+void SimpleMinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity capacity) {
+  arc_capacity_[arc] = capacity;
+}
+
 SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::PermutedArc(ArcIndex arc) {
   return arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;
 }

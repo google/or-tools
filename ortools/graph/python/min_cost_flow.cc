@@ -29,11 +29,18 @@ PYBIND11_MODULE(min_cost_flow, m) {
            arg("head"), arg("capacity"), arg("unit_cost"));
   smcf.def(
       "add_arcs_with_capacity_and_unit_cost",
-      pybind11::vectorize(&SimpleMinCostFlow::AddArcWithCapacityAndUnitCost));
+      pybind11::vectorize(&SimpleMinCostFlow::AddArcWithCapacityAndUnitCost),
+      arg("tails"), arg("heads"), arg("capacities"), arg("unit_costs"));
+  smcf.def("set_arc_capacity", &SimpleMinCostFlow::SetArcCapacity, arg("arc"),
+           arg("capacity"));
+  smcf.def("set_arc_capacities",
+           pybind11::vectorize(&SimpleMinCostFlow::SetArcCapacity), arg("arcs"),
+           arg("capacities"));
   smcf.def("set_node_supply", &SimpleMinCostFlow::SetNodeSupply, arg("node"),
            arg("supply"));
   smcf.def("set_nodes_supplies",
-           pybind11::vectorize(&SimpleMinCostFlow::SetNodeSupply));
+           pybind11::vectorize(&SimpleMinCostFlow::SetNodeSupply), arg("nodes"),
+           arg("supplies"));
   smcf.def("num_nodes", &SimpleMinCostFlow::NumNodes);
   smcf.def("num_arcs", &SimpleMinCostFlow::NumArcs);
   smcf.def("tail", &SimpleMinCostFlow::Tail, arg("arc"));
@@ -47,7 +54,7 @@ PYBIND11_MODULE(min_cost_flow, m) {
   smcf.def("optimal_cost", &SimpleMinCostFlow::OptimalCost);
   smcf.def("maximum_flow", &SimpleMinCostFlow::MaximumFlow);
   smcf.def("flow", &SimpleMinCostFlow::Flow, arg("arc"));
-  smcf.def("flows", pybind11::vectorize(&SimpleMinCostFlow::Flow));
+  smcf.def("flows", pybind11::vectorize(&SimpleMinCostFlow::Flow), arg("arcs"));
 
   pybind11::enum_<SimpleMinCostFlow::Status>(smcf, "Status")
       .value("BAD_COST_RANGE", MinCostFlowBase::Status::BAD_COST_RANGE)

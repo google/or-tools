@@ -101,11 +101,10 @@ struct AssignmentProblemSetup {
 template <typename GraphType>
 class LinearSumAssignmentTestWithGraphBuilder : public ::testing::Test {};
 
-typedef ::testing::Types<
-    EbertGraph<int16_t, int16_t>, ForwardEbertGraph<int16_t, int16_t>,
-    EbertGraph<int16_t, ArcIndex>, ForwardEbertGraph<int16_t, ArcIndex>,
-    EbertGraph<NodeIndex, int16_t>, ForwardEbertGraph<NodeIndex, int16_t>,
-    StarGraph, ForwardStarGraph, util::ListGraph<>, util::ReverseArcListGraph<>>
+typedef ::testing::Types<EbertGraph<int16_t, int16_t>,
+                         EbertGraph<int16_t, ArcIndex>,
+                         EbertGraph<NodeIndex, int16_t>, StarGraph,
+                         util::ListGraph<>, util::ReverseArcListGraph<>>
     GraphTypesForAssignmentTestingWithGraphBuilder;
 
 TYPED_TEST_SUITE(LinearSumAssignmentTestWithGraphBuilder,
@@ -384,48 +383,13 @@ static ArcIndex CreateArcWithCost(
 template <typename GraphType>
 class LinearSumAssignmentTestWithDynamicGraph : public ::testing::Test {};
 
-typedef ::testing::Types<
-    EbertGraph<int16_t, int16_t>, ForwardEbertGraph<int16_t, int16_t>,
-    EbertGraph<int16_t, ArcIndex>, ForwardEbertGraph<NodeIndex, int16_t>,
-    EbertGraph<NodeIndex, ArcIndex>, ForwardEbertGraph<NodeIndex, ArcIndex>>
+typedef ::testing::Types<EbertGraph<int16_t, int16_t>,
+                         EbertGraph<int16_t, ArcIndex>,
+                         EbertGraph<NodeIndex, ArcIndex>>
     DynamicGraphTypesForAssignmentTesting;
 
 TYPED_TEST_SUITE(LinearSumAssignmentTestWithDynamicGraph,
                  DynamicGraphTypesForAssignmentTesting);
-
-TYPED_TEST(LinearSumAssignmentTestWithDynamicGraph, GraphLayoutTest) {
-  // A complete bipartite 3x3 graph (9 edges).
-  TypeParam g(6, 9);
-  LinearSumAssignment<TypeParam> a(g, 3);
-  // We add arcs in a higgledy-piggledy order, with costs that indicate the
-  // order the arcs should have after the layout is optimized.
-  CreateArcWithCost(0, 3, 1, &g, &a);  // in cycle [0]
-  CreateArcWithCost(2, 5, 9, &g, &a);  // in cycle [1 8 3]
-  CreateArcWithCost(1, 5, 6, &g, &a);  // in cycle [2 5]
-  CreateArcWithCost(0, 4, 2, &g, &a);  // in cycle [1 8 3]
-  CreateArcWithCost(1, 4, 5, &g, &a);  // in cycle [4]
-  CreateArcWithCost(0, 5, 3, &g, &a);  // in cycle [2 5]
-  CreateArcWithCost(2, 4, 8, &g, &a);  // in cycle [6 7]
-  CreateArcWithCost(2, 3, 7, &g, &a);  // in cycle [6 7]
-  CreateArcWithCost(1, 3, 4, &g, &a);  // in cycle [1 8 3]
-
-  EXPECT_TRUE(a.ComputeAssignment());
-  EXPECT_EQ(1 + 5 + 9, a.GetCost());
-
-  a.OptimizeGraphLayout(&g);
-  EXPECT_TRUE(a.ComputeAssignment());
-  EXPECT_EQ(1 + 5 + 9, a.GetCost());
-  // The optimized graph layout is supposed to group arcs by their tail nodes
-  // and sequence them within each group by their head nodes.
-  TailArrayManager<TypeParam> tail_array_manager(&g);
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
-  for (int i = 0; i < 9; ++i) {
-    EXPECT_EQ(i + 1, a.ArcCost(i));
-    EXPECT_EQ(i / 3, g.Tail(i));
-    EXPECT_EQ(3 + i % 3, g.Head(i));
-  }
-  tail_array_manager.ReleaseTailArrayIfForwardGraph();
-}
 
 // The EpsilonOptimal test and the PrecisionWarning test cannot be parameterized
 // by the type of the underlying graph because doing so is not supported by the
@@ -449,11 +413,11 @@ TEST(LinearSumAssignmentFriendTest, EpsilonOptimal) {
 #if LARGE
 TEST(LinearSumAssignmentPrecisionTest, PrecisionWarning) {
   const NodeIndex kNumLeftNodes = 10000000;
-  ForwardStarGraph g(2 * kNumLeftNodes, 2 * kNumLeftNodes);
-  LinearSumAssignment<ForwardStarGraph> a(g, kNumLeftNodes);
+  util::ListGraph<> g(2 * kNumLeftNodes, 2 * kNumLeftNodes);
+  LinearSumAssignment<util::ListGraph<>> a(g, kNumLeftNodes);
   int64_t node_count = 0;
-  for (NodeIndex left_node = ForwardStarGraph::kFirstNode;
-       node_count < kNumLeftNodes; ++node_count, ++left_node) {
+  for (NodeIndex left_node = 0; node_count < kNumLeftNodes;
+       ++node_count, ++left_node) {
     CreateArcWithCost(left_node, kNumLeftNodes + left_node, kNumLeftNodes, &g,
                       &a);
   }
@@ -592,11 +556,7 @@ void BM_ConstructRandomAssignmentProblem(benchmark::State& state) {
 }
 
 BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, StarGraph, false);
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarGraph,
-                    false);
 BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, StarGraph, true);
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarGraph,
-                    true);
 
 template <typename GraphType>
 void BM_ConstructRandomAssignmentProblemWithNewGraphApi(
@@ -632,16 +592,14 @@ void BM_SolveRandomAssignmentProblem(benchmark::State& state) {
       kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
   for (auto _ : state) {
     assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
+    EXPECT_EQ(65415697, assignment->GetCost());
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
                           kLeftNodes * kAverageDegree);
 }
 
 BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, StarGraph, false);
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarGraph, false);
 BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, StarGraph, true);
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarGraph, true);
 
 template <typename GraphType>
 void BM_SolveRandomAssignmentProblemWithNewGraphApi(benchmark::State& state) {
@@ -654,7 +612,7 @@ void BM_SolveRandomAssignmentProblemWithNewGraphApi(benchmark::State& state) {
       kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
   for (auto _ : state) {
     assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
+    EXPECT_EQ(65415697, assignment->GetCost());
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
                           kLeftNodes * kAverageDegree);
@@ -678,7 +636,7 @@ void BM_ConstructAndSolveRandomAssignmentProblem(benchmark::State& state) {
     ConstructRandomAssignment<GraphType, optimize_layout>(
         kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
     assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
+    EXPECT_EQ(65415697, assignment->GetCost());
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
                           kLeftNodes * kAverageDegree);
@@ -686,12 +644,8 @@ void BM_ConstructAndSolveRandomAssignmentProblem(benchmark::State& state) {
 
 BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem, StarGraph,
                     false);
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
-                    ForwardStarGraph, false);
 BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem, StarGraph,
                     true);
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
-                    ForwardStarGraph, true);
 
 template <typename GraphType>
 void BM_ConstructAndSolveRandomAssignmentProblemWithNewGraphApi(
@@ -705,7 +659,7 @@ void BM_ConstructAndSolveRandomAssignmentProblemWithNewGraphApi(
     ConstructRandomAssignmentForNewGraphApi<GraphType>(
         kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
     assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
+    EXPECT_EQ(65415697, assignment->GetCost());
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
                           kLeftNodes * kAverageDegree);

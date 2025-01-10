@@ -20,19 +20,8 @@
 // 30(6):513-519 (June 1987).
 // http://portal.acm.org/citation.cfm?id=214769
 //
-// In this file there are three representations that have much in
-// common. The general one, called simply EbertGraph, contains both
-// forward- and backward-star representations. The other, called
-// ForwardEbertGraph, contains only the forward-star representation of
-// the graph, and is appropriate for applications where the reverse
-// arcs are not needed.
-//
-// The point of including all the representations in this one file is
-// to capitalize, where possible, on the commonalities among them, and
-// those commonalities are mostly factored out into base classes as
-// described below. Despite the commonalities, however, each of the
-// three representations presents a somewhat different interface
-// because of their different underlying semantics.
+// This file defines a graph representation called EbertGraph, which contains
+// both forward- and backward-star representations.
 //
 // Many clients are expected to use the interfaces to the graph
 // objects directly, but some clients are parameterized by graph type
@@ -43,9 +32,7 @@
 // AnnotatedGraphBuildManager<> template, which provides a uniform
 // interface for building the various types of graphs; and the
 // TailArrayManager<> template, which provides a uniform interface for
-// applications that need to map from arc indices to arc tail nodes,
-// accounting for the fact that such a mapping has to be requested
-// explicitly from the ForwardStarGraph representation.
+// applications that need to map from arc indices to arc tail nodes.
 //
 // There are two base class templates, StarGraphBase, and
 // EbertGraphBase; their purpose is to hold methods and data
@@ -61,9 +48,9 @@
 //                     /                                     |
 //                    /                                      |
 //           (EbertGraphBase)                                |
-//            /            \                                 |
-//           /              \                                |
-//      EbertGraph     ForwardEbertGraph                     |
+//            /                                              |
+//           /                                               |
+//      EbertGraph                                           |
 //
 // In the general EbertGraph case, the graph is represented with three
 // arrays.
@@ -127,26 +114,6 @@
 //  * TODO(user) it is possible to implement arc deletion and garbage collection
 //    in an efficient (relatively) manner. For the time being we haven't seen an
 //    application for this.
-//
-// The ForwardEbertGraph representation is like the EbertGraph case described
-// above, with the following modifications:
-//  * The part of the head_[] array with negative indices is absent. In its
-//    place is a pointer tail_ which, if assigned, points to an array of tail
-//    nodes indexed by (nonnegative) arc index. In typical usage tail_ is NULL
-//    and the memory for the tail nodes need not be allocated.
-//  * The array of arc tails can be allocated as needed and populated from the
-//    adjacency lists of the graph.
-//  * Representing only the forward star of each node implies that the graph
-//    cannot be serialized directly nor rebuilt from scratch from just the head_
-//    array. Rebuilding from scratch requires constructing the array of arc
-//    tails from the adjacency lists first, and serialization can be done either
-//    by first constructing the array of arc tails from the adjacency lists, or
-//    by serializing directly from the adjacency lists.
-//  * The memory consumption is: m * sizeof(NodeIndexType)
-//                             + m * sizeof(ArcIndexType)
-//                             + n * sizeof(ArcIndexType)
-//    plus a small constant when the array of arc tails is absent. Allocating
-//    the arc tail array adds another m * sizeof(NodeIndexType).
 
 #include <algorithm>
 #include <cstddef>
@@ -170,21 +137,17 @@ namespace operations_research {
 // Forward declarations.
 template <typename NodeIndexType, typename ArcIndexType>
 class EbertGraph;
-template <typename NodeIndexType, typename ArcIndexType>
-class ForwardEbertGraph;
 
-// Standard instantiation of ForwardEbertGraph (named 'ForwardStarGraph') of
-// EbertGraph (named 'StarGraph'); and relevant type shortcuts. Unless their use
-// cases prevent them from doing so, users are encouraged to use StarGraph or
-// ForwardStarGraph according to whether or not they require reverse arcs to be
-// represented explicitly. Along with either graph representation, the other
-// type shortcuts here will often come in handy.
+// Standard instantiation of  EbertGraph (named 'StarGraph'); and relevant type
+// shortcuts. Unless their use cases prevent them from doing so, users are
+// encouraged to use StarGraph according to whether or not they require reverse
+// arcs to be represented explicitly. Along with either graph representation,
+// the other type shortcuts here will often come in handy.
 typedef int32_t NodeIndex;
 typedef int32_t ArcIndex;
 typedef int64_t FlowQuantity;
 typedef int64_t CostValue;
 typedef EbertGraph<NodeIndex, ArcIndex> StarGraph;
-typedef ForwardEbertGraph<NodeIndex, ArcIndex> ForwardStarGraph;
 
 // Adapt our old iteration style to support range-based for loops. Add typedefs
 // required by std::iterator_traits.
@@ -545,19 +508,14 @@ const ArcIndexType
     StarGraphBase<NodeIndexType, ArcIndexType, DerivedGraph>::kMaxNumArcs =
         std::numeric_limits<ArcIndexType>::max();
 
-// A template for the base class that holds the functionality that exists in
-// common between the EbertGraph<> template and the ForwardEbertGraph<>
-// template.
-//
 // This template is for internal use only, and this is enforced by making all
 // constructors for this class template protected. Clients should use one of the
 // two derived-class templates. Most clients will not even use those directly,
-// but will use the StarGraph and ForwardStarGraph typenames declared above.
+// but will use the StarGraph typenames declared above.
 //
 // The DerivedGraph template argument must be the type of the class (typically
 // itself built from a template) that:
-// 1. implements the full interface expected for either ForwardEbertGraph or
-//    EbertGraph, and
+// 1. implements the full interface expected for EbertGraph, and
 // 2. inherits from an instance of this template.
 // The base class needs access to some members of the derived class such as, for
 // example, NextOutgoingArc(), and it gets this access via the DerivedGraph
@@ -1207,288 +1165,6 @@ class ABSL_DEPRECATED("Use `::util::ListGraph<>` instead.") EbertGraph
   }
 };
 
-// A forward-star-only graph representation for greater efficiency in
-// those algorithms that don't need reverse arcs.
-template <typename NodeIndexType, typename ArcIndexType>
-class ABSL_DEPRECATED("Use `::util::ListGraph<>` instead.") ForwardEbertGraph
-    : public EbertGraphBase<NodeIndexType, ArcIndexType,
-                            ForwardEbertGraph<NodeIndexType, ArcIndexType> > {
-  typedef EbertGraphBase<NodeIndexType, ArcIndexType,
-                         ForwardEbertGraph<NodeIndexType, ArcIndexType> >
-      Base;
-  friend class EbertGraphBase<NodeIndexType, ArcIndexType,
-                              ForwardEbertGraph<NodeIndexType, ArcIndexType> >;
-  friend class StarGraphBase<NodeIndexType, ArcIndexType,
-                             ForwardEbertGraph<NodeIndexType, ArcIndexType> >;
-
-  using Base::ArcDebugString;
-  using Base::Initialize;
-  using Base::NextAdjacentArc;
-  using Base::NodeDebugString;
-
-  using Base::first_incident_arc_;
-  using Base::head_;
-  using Base::max_num_arcs_;
-  using Base::max_num_nodes_;
-  using Base::next_adjacent_arc_;
-  using Base::num_arcs_;
-  using Base::num_nodes_;
-  using Base::representation_clean_;
-
- public:
-#if !SWIG
-  using Base::Head;
-  using Base::IsNodeValid;
-
-  using Base::kFirstArc;
-  using Base::kFirstNode;
-  using Base::kNilArc;
-  using Base::kNilNode;
-#endif  // SWIG
-
-  typedef NodeIndexType NodeIndex;
-  typedef ArcIndexType ArcIndex;
-
-  ForwardEbertGraph() {}
-
-  ForwardEbertGraph(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs) {
-    Initialize(max_num_nodes, max_num_arcs);
-  }
-
-  ~ForwardEbertGraph() {}
-
-  // Utility function to check that an arc index is within the bounds.
-  // It is exported so that users of the ForwardEbertGraph class can use it.
-  // To be used in a DCHECK.
-  bool CheckArcBounds(const ArcIndexType arc) const {
-    return (arc == kNilArc) || (arc >= kFirstArc && arc < max_num_arcs_);
-  }
-
-  // Utility function to check that an arc index is within the bounds AND
-  // different from kNilArc.
-  // It is exported so that users of the ForwardEbertGraph class can use it.
-  // To be used in a DCHECK.
-  bool CheckArcValidity(const ArcIndexType arc) const {
-    return (arc != kNilArc) && (arc >= kFirstArc && arc < max_num_arcs_);
-  }
-
-  // Returns true if arc is a valid index into the (*tail_) array.
-  bool CheckTailIndexValidity(const ArcIndexType arc) const {
-    return (tail_ != nullptr) && (arc >= kFirstArc) &&
-           (arc <= tail_->max_index());
-  }
-
-  // Returns the tail or start-node of arc.
-  NodeIndexType Tail(const ArcIndexType arc) const {
-    DCHECK(CheckArcValidity(arc));
-    DCHECK(CheckTailIndexValidity(arc));
-    return (*tail_)[arc];
-  }
-
-  // Returns true if arc is incoming to node.
-  bool IsIncoming(ArcIndexType arc, NodeIndexType node) const {
-    return IsDirect(arc) && Head(arc) == node;
-  }
-
-  // Recreates the next_adjacent_arc_ and first_incident_arc_
-  // variables from the arrays head_ and tail_ in O(n + m) time. This
-  // is useful if the head_ and tail_ arrays have been sorted
-  // according to a given criterion, for example.
-  void BuildRepresentation() {
-    first_incident_arc_.SetAll(kNilArc);
-    DCHECK(TailArrayComplete());
-    for (ArcIndexType arc = kFirstArc; arc < max_num_arcs_; ++arc) {
-      DCHECK(CheckTailIndexValidity(arc));
-      Attach((*tail_)[arc], arc);
-    }
-    representation_clean_ = true;
-  }
-
-  bool BuildTailArray() {
-    // If (*tail_) is already allocated, we have the invariant that
-    // its contents are canonical, so we do not need to do anything
-    // here in that case except return true.
-    if (tail_ == nullptr) {
-      if (!representation_clean_) {
-        // We have been asked to build the (*tail_) array, but we have
-        // no valid information from which to build it. The graph is
-        // in an unrecoverable, inconsistent state.
-        return false;
-      }
-      // Reallocate (*tail_) and rebuild its contents from the
-      // adjacency lists.
-      tail_.reset(new ZVector<NodeIndexType>);
-      tail_->Reserve(kFirstArc, max_num_arcs_ - 1);
-      typename Base::NodeIterator node_it(*this);
-      for (; node_it.Ok(); node_it.Next()) {
-        NodeIndexType node = node_it.Index();
-        typename Base::OutgoingArcIterator arc_it(*this, node);
-        for (; arc_it.Ok(); arc_it.Next()) {
-          (*tail_)[arc_it.Index()] = node;
-        }
-      }
-    }
-    DCHECK(TailArrayComplete());
-    return true;
-  }
-
-  void ReleaseTailArray() { tail_.reset(nullptr); }
-
-  // To be used in a DCHECK().
-  bool TailArrayComplete() const {
-    CHECK(tail_);
-    for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
-      CHECK(CheckTailIndexValidity(arc));
-      CHECK(IsNodeValid((*tail_)[arc]));
-    }
-    return true;
-  }
-
-  // Returns a debug string containing all the information contained in the
-  // data structure in raw form.
-  std::string DebugString() const {
-    DCHECK(representation_clean_);
-    std::string result = "Arcs:(node, next arc) :\n";
-    for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
-      result += " " + ArcDebugString(arc) + ":(" + NodeDebugString(head_[arc]) +
-                "," + ArcDebugString(next_adjacent_arc_[arc]) + ")\n";
-    }
-    result += "Node:First arc :\n";
-    for (NodeIndexType node = kFirstNode; node < num_nodes_; ++node) {
-      result += " " + NodeDebugString(node) + ":" +
-                ArcDebugString(first_incident_arc_[node]) + "\n";
-    }
-    return result;
-  }
-
- private:
-  // Reserves space for the (*tail_) array.
-  //
-  // This method is separate from ReserveInternal() because our
-  // practice of making the (*tail_) array optional implies that the
-  // tail_ pointer might not be constructed when the ReserveInternal()
-  // method is called. Therefore we have this method also, and we
-  // ensure that it is called only when tail_ is guaranteed to have
-  // been initialized.
-  void ReserveTailArray(ArcIndexType new_max_num_arcs) {
-    if (tail_ != nullptr) {
-      // The (*tail_) values are already canonical, so we're just
-      // reserving additional space for new arcs that haven't been
-      // added yet.
-      if (tail_->Reserve(kFirstArc, new_max_num_arcs - 1)) {
-        for (ArcIndexType arc = tail_->max_index() + 1; arc < new_max_num_arcs;
-             ++arc) {
-          tail_->Set(arc, kNilNode);
-        }
-      }
-    }
-  }
-
-  // Reserves space for the arrays indexed by arc indices, except
-  // (*tail_) even if it is present. We cannot grow the (*tail_) array
-  // in this method because this method is called from
-  // Base::Reserve(), which in turn is called from the base template
-  // class constructor. That base class constructor is called on *this
-  // before tail_ is constructed. Hence when this method is called,
-  // tail_ might contain garbage. This method can safely refer only to
-  // fields of the base template class, not to fields of *this outside
-  // the base template class.
-  //
-  // The strange situation in which this method of a derived class can
-  // refer only to members of the base class arises because different
-  // derived classes use the data members of the base class in
-  // slightly different ways. The purpose of this derived class
-  // method, then, is only to encode the derived-class-specific
-  // conventions for how the derived class uses the data members of
-  // the base class.
-  //
-  // To be specific, the forward-star graph representation, lacking
-  // reverse arcs, allocates only the positive index range for the
-  // head_ and next_adjacent_arc_ arrays, while the general
-  // representation allocates space for both positive- and
-  // negative-indexed arcs (i.e., both forward and reverse arcs).
-  void ReserveInternal(NodeIndexType new_max_num_nodes,
-                       ArcIndexType new_max_num_arcs) {
-    head_.Reserve(kFirstArc, new_max_num_arcs - 1);
-    next_adjacent_arc_.Reserve(kFirstArc, new_max_num_arcs - 1);
-    for (ArcIndexType arc = max_num_arcs_; arc < new_max_num_arcs; ++arc) {
-      head_.Set(arc, kNilNode);
-      next_adjacent_arc_.Set(arc, kNilArc);
-    }
-    ReserveTailArray(new_max_num_arcs);
-  }
-
-  // Handles the part of AddArc() that is not in common wth other
-  // graph classes based on the EbertGraphBase template.
-  void RecordArc(ArcIndexType arc, NodeIndexType tail, NodeIndexType head) {
-    head_.Set(arc, head);
-    Attach(tail, arc);
-  }
-
-  // Using the SetTail() method implies that the BuildRepresentation()
-  // method must be called to restore consistency before the graph is
-  // used.
-  void SetTail(const ArcIndexType arc, const NodeIndexType tail) {
-    DCHECK(CheckTailIndexValidity(arc));
-    CHECK(tail_);
-    representation_clean_ = false;
-    tail_->Set(arc, tail);
-  }
-
-  // Utility method to attach a new arc.
-  void Attach(NodeIndexType tail, ArcIndexType arc) {
-    DCHECK(CheckArcValidity(arc));
-    DCHECK(IsNodeValid(tail));
-    next_adjacent_arc_.Set(arc, first_incident_arc_[tail]);
-    first_incident_arc_.Set(tail, arc);
-    const NodeIndexType head = head_[arc];
-    DCHECK(IsNodeValid(head));
-    // Because Attach() is a public method, keeping (*tail_) canonical
-    // requires us to record the new arc's tail here.
-    if (tail_ != nullptr) {
-      DCHECK(CheckTailIndexValidity(arc));
-      tail_->Set(arc, tail);
-    }
-  }
-
-  // Utility method that finds the next outgoing arc.
-  ArcIndexType FindNextOutgoingArc(ArcIndexType arc) const {
-    DCHECK(CheckArcBounds(arc));
-    return arc;
-  }
-
- private:
-  // Always returns true because for any ForwardEbertGraph, only
-  // direct arcs are represented, so all valid arc indices refer to
-  // arcs that are outgoing from their tail nodes.
-  bool IsOutgoing(const ArcIndex unused_arc,
-                  const NodeIndex unused_node) const {
-    return true;
-  }
-
-  // Always returns true because for any ForwardEbertGraph, only
-  // outgoing arcs are represented, so all valid arc indices refer to
-  // direct arcs.
-  bool IsDirect(const ArcIndex unused_arc) const { return true; }
-
-  // Array of node indices, not always present. (*tail_)[i] contains
-  // the tail node of arc i. This array is not needed for normal graph
-  // traversal operations, but is used in optimizing the graph's
-  // layout so arcs are grouped by tail node, and can be used in one
-  // approach to serializing the graph.
-  //
-  // Invariants: At any time when we are not executing a method of
-  // this class, either tail_ == NULL or the tail_ array's contents
-  // are kept canonical. If tail_ != NULL, any method that modifies
-  // adjacency lists must also ensure (*tail_) is modified
-  // correspondingly. The converse does not hold: Modifications to
-  // (*tail_) are allowed without updating the adjacency lists. If
-  // such modifications take place, representation_clean_ must be set
-  // to false, of course, to indicate that the adjacency lists are no
-  // longer current.
-  std::unique_ptr<ZVector<NodeIndexType> > tail_;
-};
-
 // Traits for EbertGraphBase types, for use in testing and clients
 // that work with both forward-only and forward/reverse graphs.
 //
@@ -1499,85 +1175,6 @@ template <typename GraphType>
 struct graph_traits {
   static constexpr bool has_reverse_arcs = true;
   static constexpr bool is_dynamic = true;
-};
-
-template <typename NodeIndexType, typename ArcIndexType>
-struct graph_traits<ForwardEbertGraph<NodeIndexType, ArcIndexType> > {
-  static constexpr bool has_reverse_arcs = false;
-  static constexpr bool is_dynamic = true;
-};
-
-namespace or_internal {
-
-// The TailArrayBuilder class template is not expected to be used by
-// clients. It is a helper for the TailArrayManager template.
-//
-// The TailArrayBuilder for graphs with reverse arcs does nothing.
-template <typename GraphType, bool has_reverse_arcs>
-struct TailArrayBuilder {
-  explicit TailArrayBuilder(GraphType* unused_graph) {}
-
-  bool BuildTailArray() const { return true; }
-};
-
-// The TailArrayBuilder for graphs without reverse arcs calls the
-// appropriate method on the graph from the TailArrayBuilder
-// constructor.
-template <typename GraphType>
-struct TailArrayBuilder<GraphType, false> {
-  explicit TailArrayBuilder(GraphType* graph) : graph_(graph) {}
-
-  bool BuildTailArray() const { return graph_->BuildTailArray(); }
-
-  GraphType* const graph_;
-};
-
-// The TailArrayReleaser class template is not expected to be used by
-// clients. It is a helper for the TailArrayManager template.
-//
-// The TailArrayReleaser for graphs with reverse arcs does nothing.
-template <typename GraphType, bool has_reverse_arcs>
-struct TailArrayReleaser {
-  explicit TailArrayReleaser(GraphType* unused_graph) {}
-
-  void ReleaseTailArray() const {}
-};
-
-// The TailArrayReleaser for graphs without reverse arcs calls the
-// appropriate method on the graph from the TailArrayReleaser
-// constructor.
-template <typename GraphType>
-struct TailArrayReleaser<GraphType, false> {
-  explicit TailArrayReleaser(GraphType* graph) : graph_(graph) {}
-
-  void ReleaseTailArray() const { graph_->ReleaseTailArray(); }
-
-  GraphType* const graph_;
-};
-
-}  // namespace or_internal
-
-template <typename GraphType>
-class TailArrayManager {
- public:
-  explicit TailArrayManager(GraphType* g) : graph_(g) {}
-
-  bool BuildTailArrayFromAdjacencyListsIfForwardGraph() const {
-    or_internal::TailArrayBuilder<GraphType,
-                                  graph_traits<GraphType>::has_reverse_arcs>
-        tail_array_builder(graph_);
-    return tail_array_builder.BuildTailArray();
-  }
-
-  void ReleaseTailArrayIfForwardGraph() const {
-    or_internal::TailArrayReleaser<GraphType,
-                                   graph_traits<GraphType>::has_reverse_arcs>
-        tail_array_releaser(graph_);
-    tail_array_releaser.ReleaseTailArray();
-  }
-
- private:
-  GraphType* graph_;
 };
 
 template <typename GraphType>
@@ -1687,11 +1284,8 @@ class GraphBuilderFromArcs<GraphType, true> {
   GraphType* Graph(PermutationCycleHandler<typename GraphType::ArcIndex>*
                        client_cycle_handler) {
     if (sort_arcs_) {
-      TailArrayManager<GraphType> tail_array_manager(graph_);
-      tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
       ArcFunctorOrderingByTailAndHead<GraphType> arc_ordering(*graph_);
       graph_->GroupForwardArcsByFunctor(arc_ordering, client_cycle_handler);
-      tail_array_manager.ReleaseTailArrayIfForwardGraph();
     }
     GraphType* result = graph_;
     delete this;

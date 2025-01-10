@@ -230,7 +230,8 @@ class LinearSumAssignment {
 
   // Constructor for the case in which we will build the graph
   // incrementally as we discover arc costs, as might be done with any
-  // of the dynamic graph representations such as StarGraph or ForwardStarGraph.
+  // of the dynamic graph representations such as `ReverseArcListGraph` or
+  // `ForwardStarGraph`.
   LinearSumAssignment(const GraphType& graph, NodeIndex num_left_nodes);
 
   // Constructor for the case in which the underlying graph cannot be built
@@ -265,21 +266,6 @@ class LinearSumAssignment {
   //
   operations_research::PermutationCycleHandler<typename GraphType::ArcIndex>*
   ArcAnnotationCycleHandler();
-
-  // Optimizes the layout of the graph for the access pattern our
-  // implementation will use.
-  //
-  // REQUIRES for LinearSumAssignment template instantiation if a call
-  // to the OptimizeGraphLayout() method is compiled: GraphType is a
-  // dynamic graph, i.e., one that implements the
-  // GroupForwardArcsByFunctor() member template method.
-  //
-  // If analogous optimization is needed for LinearSumAssignment
-  // instances based on static graphs, the graph layout should be
-  // constructed such that each node's outgoing arcs are sorted by
-  // head node index before the
-  // LinearSumAssignment<GraphType>::SetGraph() method is called.
-  void OptimizeGraphLayout(GraphType* graph);
 
   // Allows tests, iterators, etc., to inspect our underlying graph.
   inline const GraphType& Graph() const { return *graph_; }
@@ -1086,22 +1072,6 @@ PermutationCycleHandler<typename GraphType::ArcIndex>*
 LinearSumAssignment<GraphType, CostValue>::ArcAnnotationCycleHandler() {
   return new CostValueCycleHandler<typename GraphType::ArcIndex, CostValue>(
       &scaled_arc_cost_);
-}
-
-template <typename GraphType, typename CostValue>
-void LinearSumAssignment<GraphType, CostValue>::OptimizeGraphLayout(
-    GraphType* graph) {
-  // The graph argument is only to give us a non-const-qualified
-  // handle on the graph we already have. Any different graph is
-  // nonsense.
-  DCHECK_EQ(graph_, graph);
-  const ArcIndexOrderingByTailNode<GraphType> compare(*graph_);
-  CostValueCycleHandler<typename GraphType::ArcIndex, CostValue> cycle_handler(
-      &scaled_arc_cost_);
-  TailArrayManager<GraphType> tail_array_manager(graph);
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
-  graph->GroupForwardArcsByFunctor(compare, &cycle_handler);
-  tail_array_manager.ReleaseTailArrayIfForwardGraph();
 }
 
 template <typename GraphType, typename CostValue>
