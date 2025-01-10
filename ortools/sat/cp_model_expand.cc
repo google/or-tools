@@ -652,10 +652,14 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
       const int r_j = f_inverse[j];
       int r_j_i;
       if (context->HasVarValueEncoding(r_j, i, &r_j_i)) {
-        context->InsertVarValueEncoding(r_j_i, f_i, j);
+        if (!context->InsertVarValueEncoding(r_j_i, f_i, j)) {
+          return;
+        }
       } else {
         const int f_i_j = context->GetOrCreateVarValueEncoding(f_i, j);
-        context->InsertVarValueEncoding(f_i_j, r_j, i);
+        if (!context->InsertVarValueEncoding(f_i_j, r_j, i)) {
+          return;
+        }
       }
     }
   }

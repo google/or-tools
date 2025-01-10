@@ -2464,7 +2464,7 @@ void TryToGenerateAllDiffCut(
 }  // namespace
 
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<AffineExpression>& exprs, Model* model) {
+    absl::Span<const AffineExpression> exprs, Model* model) {
   CutGenerator result;
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
@@ -2476,37 +2476,38 @@ CutGenerator CreateAllDifferentCutGenerator(
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   Trail* trail = model->GetOrCreate<Trail>();
-  result.generate_cuts = [exprs, integer_trail, trail,
-                          model](LinearConstraintManager* manager) {
-    // These cuts work at all levels but the generator adds too many cuts on
-    // some instances and degrade the performance so we only use it at level
-    // 0.
-    if (trail->CurrentDecisionLevel() > 0) return true;
-    const auto& lp_values = manager->LpValues();
-    std::vector<std::pair<double, AffineExpression>> sorted_exprs;
-    for (const AffineExpression expr : exprs) {
-      if (integer_trail->LevelZeroLowerBound(expr) ==
-          integer_trail->LevelZeroUpperBound(expr)) {
-        continue;
-      }
-      sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
-    }
+  result.generate_cuts =
+      [exprs = std::vector<AffineExpression>(exprs.begin(), exprs.end()),
+       integer_trail, trail, model](LinearConstraintManager* manager) {
+        // These cuts work at all levels but the generator adds too many cuts on
+        // some instances and degrade the performance so we only use it at level
+        // 0.
+        if (trail->CurrentDecisionLevel() > 0) return true;
+        const auto& lp_values = manager->LpValues();
+        std::vector<std::pair<double, AffineExpression>> sorted_exprs;
+        for (const AffineExpression expr : exprs) {
+          if (integer_trail->LevelZeroLowerBound(expr) ==
+              integer_trail->LevelZeroUpperBound(expr)) {
+            continue;
+          }
+          sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
+        }
 
-    TopNCuts top_n_cuts(5);
-    std::sort(sorted_exprs.begin(), sorted_exprs.end(),
-              [](std::pair<double, AffineExpression>& a,
-                 const std::pair<double, AffineExpression>& b) {
-                return a.first < b.first;
-              });
-    TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values, top_n_cuts,
-                            model);
-    // Other direction.
-    std::reverse(sorted_exprs.begin(), sorted_exprs.end());
-    TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values, top_n_cuts,
-                            model);
-    top_n_cuts.TransferToManager(manager);
-    return true;
-  };
+        TopNCuts top_n_cuts(5);
+        std::sort(sorted_exprs.begin(), sorted_exprs.end(),
+                  [](std::pair<double, AffineExpression>& a,
+                     const std::pair<double, AffineExpression>& b) {
+                    return a.first < b.first;
+                  });
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                top_n_cuts, model);
+        // Other direction.
+        std::reverse(sorted_exprs.begin(), sorted_exprs.end());
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                top_n_cuts, model);
+        top_n_cuts.TransferToManager(manager);
+        return true;
+      };
   VLOG(2) << "Created all_diff cut generator of size: " << exprs.size();
   return result;
 }
@@ -2574,9 +2575,10 @@ double ComputeContribution(
 }
 }  // namespace
 
-CutGenerator CreateLinMaxCutGenerator(
-    const IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    const std::vector<IntegerVariable>& z_vars, Model* model) {
+CutGenerator CreateLinMaxCutGenerator(const IntegerVariable target,
+                                      absl::Span<const LinearExpression> exprs,
+                                      absl::Span<const IntegerVariable> z_vars,
+                                      Model* model) {
   CutGenerator result;
   std::vector<IntegerVariable> x_vars;
   result.vars = {target};
@@ -2593,55 +2595,58 @@ CutGenerator CreateLinMaxCutGenerator(
   result.vars.insert(result.vars.end(), x_vars.begin(), x_vars.end());
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  result.generate_cuts = [x_vars, z_vars, target, num_exprs, exprs,
-                          integer_trail,
-                          model](LinearConstraintManager* manager) {
-    const auto& lp_values = manager->LpValues();
-    util_intops::StrongVector<IntegerVariable, int> variable_partition(
-        lp_values.size(), -1);
-    util_intops::StrongVector<IntegerVariable, double>
-        variable_partition_contrib(lp_values.size(),
-                                   std::numeric_limits<double>::infinity());
-    for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
-      for (const IntegerVariable var : x_vars) {
-        const double contribution = ComputeContribution(
-            var, z_vars, exprs, lp_values, *integer_trail, expr_index);
-        const double prev_contribution = variable_partition_contrib[var];
-        if (contribution < prev_contribution) {
-          variable_partition[var] = expr_index;
-          variable_partition_contrib[var] = contribution;
+  result.generate_cuts =
+      [x_vars,
+       z_vars = std::vector<IntegerVariable>(z_vars.begin(), z_vars.end()),
+       target, num_exprs,
+       exprs = std::vector<LinearExpression>(exprs.begin(), exprs.end()),
+       integer_trail, model](LinearConstraintManager* manager) {
+        const auto& lp_values = manager->LpValues();
+        util_intops::StrongVector<IntegerVariable, int> variable_partition(
+            lp_values.size(), -1);
+        util_intops::StrongVector<IntegerVariable, double>
+            variable_partition_contrib(lp_values.size(),
+                                       std::numeric_limits<double>::infinity());
+        for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
+          for (const IntegerVariable var : x_vars) {
+            const double contribution = ComputeContribution(
+                var, z_vars, exprs, lp_values, *integer_trail, expr_index);
+            const double prev_contribution = variable_partition_contrib[var];
+            if (contribution < prev_contribution) {
+              variable_partition[var] = expr_index;
+              variable_partition_contrib[var] = contribution;
+            }
+          }
         }
-      }
-    }
 
-    LinearConstraintBuilder cut(model, /*lb=*/IntegerValue(0),
-                                /*ub=*/kMaxIntegerValue);
-    double violation = lp_values[target];
-    cut.AddTerm(target, IntegerValue(-1));
+        LinearConstraintBuilder cut(model, /*lb=*/IntegerValue(0),
+                                    /*ub=*/kMaxIntegerValue);
+        double violation = lp_values[target];
+        cut.AddTerm(target, IntegerValue(-1));
 
-    for (const IntegerVariable xi_var : x_vars) {
-      const int input_index = variable_partition[xi_var];
-      const LinearExpression& expr = exprs[input_index];
-      const IntegerValue coeff = GetCoefficientOfPositiveVar(xi_var, expr);
-      if (coeff != IntegerValue(0)) {
-        cut.AddTerm(xi_var, coeff);
-      }
-      violation -= ToDouble(coeff) * lp_values[xi_var];
-    }
-    for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
-      const IntegerVariable z_var = z_vars[expr_index];
-      const IntegerValue z_coeff = MPlusCoefficient(
-          x_vars, exprs, variable_partition, expr_index, *integer_trail);
-      if (z_coeff != IntegerValue(0)) {
-        cut.AddTerm(z_var, z_coeff);
-      }
-      violation -= ToDouble(z_coeff) * lp_values[z_var];
-    }
-    if (violation > 1e-2) {
-      manager->AddCut(cut.Build(), "LinMax");
-    }
-    return true;
-  };
+        for (const IntegerVariable xi_var : x_vars) {
+          const int input_index = variable_partition[xi_var];
+          const LinearExpression& expr = exprs[input_index];
+          const IntegerValue coeff = GetCoefficientOfPositiveVar(xi_var, expr);
+          if (coeff != IntegerValue(0)) {
+            cut.AddTerm(xi_var, coeff);
+          }
+          violation -= ToDouble(coeff) * lp_values[xi_var];
+        }
+        for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
+          const IntegerVariable z_var = z_vars[expr_index];
+          const IntegerValue z_coeff = MPlusCoefficient(
+              x_vars, exprs, variable_partition, expr_index, *integer_trail);
+          if (z_coeff != IntegerValue(0)) {
+            cut.AddTerm(z_var, z_coeff);
+          }
+          violation -= ToDouble(z_coeff) * lp_values[z_var];
+        }
+        if (violation > 1e-2) {
+          manager->AddCut(cut.Build(), "LinMax");
+        }
+        return true;
+      };
   return result;
 }
 
@@ -2736,7 +2741,7 @@ CutGenerator CreateMaxAffineCutGenerator(
 }
 
 CutGenerator CreateCliqueCutGenerator(
-    const std::vector<IntegerVariable>& base_variables, Model* model) {
+    absl::Span<const IntegerVariable> base_variables, Model* model) {
   // Filter base_variables to only keep the one with a literal view, and
   // do the conversion.
   std::vector<IntegerVariable> variables;

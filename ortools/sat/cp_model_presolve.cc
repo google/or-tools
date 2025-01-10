@@ -1806,9 +1806,19 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
                                             linear_for_true);
       context_->CanonicalizeLinearConstraint(constraint_for_false);
       context_->CanonicalizeLinearConstraint(constraint_for_true);
-      context_->UpdateRuleStats("int_prod: boolean affine term");
-      context_->UpdateNewConstraintsVariableUsage();
-      return RemoveConstraint(ct);
+      if (PossibleIntegerOverflow(*context_->working_model,
+                                  linear_for_false->vars(),
+                                  linear_for_false->coeffs()) ||
+          PossibleIntegerOverflow(*context_->working_model,
+                                  linear_for_true->vars(),
+                                  linear_for_true->coeffs())) {
+        context_->working_model->mutable_constraints()->RemoveLast();
+        context_->working_model->mutable_constraints()->RemoveLast();
+      } else {
+        context_->UpdateRuleStats("int_prod: boolean affine term");
+        context_->UpdateNewConstraintsVariableUsage();
+        return RemoveConstraint(ct);
+      }
     }
   }
 
@@ -13388,7 +13398,7 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
 }
 
 bool ImportModelAndDomainsWithBasicPresolveIntoContext(
-    const CpModelProto& in_model, const std::vector<Domain>& domains,
+    const CpModelProto& in_model, absl::Span<const Domain> domains,
     std::function<bool(int)> active_constraints, PresolveContext* context) {
   CHECK_EQ(domains.size(), in_model.variables_size());
   ModelCopy copier(context);

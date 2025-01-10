@@ -72,8 +72,11 @@ from ortools.util.python import sorted_interval_list
 
 # Import external types.
 Domain = sorted_interval_list.Domain
-LinearExpr = cmh.LinearExpr
 BoundedLinearExpression = cmh.BoundedLinearExpression
+FlatFloatExpr = cmh.FlatFloatExpr
+FlatIntExpr = cmh.FlatIntExpr
+LinearExpr = cmh.LinearExpr
+NotBooleanVariable = cmh.NotBooleanVariable
 
 
 # The classes below allow linear expressions to be expressed naturally with the
@@ -807,17 +810,13 @@ class CpModel:
     ) -> Constraint:
         """Adds the constraint: `linear_expr` in `domain`."""
         if isinstance(linear_expr, LinearExpr):
-            flat_expr = cmh.CanonicalIntExpression(linear_expr)
-            if not flat_expr.ok:
+            ble = BoundedLinearExpression(linear_expr, domain)
+            if not ble.ok:
                 raise TypeError(
-                    "linear expression contains floating point coefficients or"
-                    f" constants: {linear_expr}"
+                    "Cannot add a linear expression containing floating point"
+                    f" coefficients or constants: {linear_expr}"
                 )
-            return self.add(
-                BoundedLinearExpression(
-                    flat_expr.vars, flat_expr.coeffs, flat_expr.offset, domain
-                )
-            )
+            return self.add(ble)
         if isinstance(linear_expr, IntegralTypes):
             if not domain.contains(int(linear_expr)):
                 return self.add_bool_or([])  # Evaluate to false.
@@ -2132,14 +2131,8 @@ class CpModel:
             result.offset = int(linear_expr) * mult
             return result
 
-        if isinstance(linear_expr, IntVar):
-            result.vars.append(self.get_or_make_index(linear_expr))
-            result.coeffs.append(mult)
-            return result
-
-        flat_expr = cmh.CanonicalIntExpression(linear_expr)
-        if not flat_expr.ok:
-            raise ValueError(f"Failed to parse linear expression: {linear_expr}")
+        # Raises TypeError if linear_expr is not an integer.
+        flat_expr = cmh.FlatIntExpr(linear_expr)
         result.offset = flat_expr.offset
         for var in flat_expr.vars:
             result.vars.append(var.index)
@@ -2155,7 +2148,7 @@ class CpModel:
             self.__model.objective.scaling_factor = 1.0
         elif isinstance(obj, LinearExpr):
             if obj.is_integer():
-                int_obj = cmh.CanonicalIntExpression(obj)
+                int_obj = cmh.FlatIntExpr(obj)
                 for var in int_obj.vars:
                     self.__model.objective.vars.append(var.index)
                 if minimize:
@@ -2168,7 +2161,7 @@ class CpModel:
                     for c in int_obj.coeffs:
                         self.__model.objective.coeffs.append(-c)
             else:
-                float_obj = cmh.CanonicalFloatExpression(obj)
+                float_obj = cmh.FlatFloatExpr(obj)
                 for var in float_obj.vars:
                     self.__model.floating_point_objective.vars.append(var.index)
                 self.__model.floating_point_objective.coeffs.extend(float_obj.coeffs)

@@ -988,7 +988,7 @@ bool GraphsDefineSameConnectedComponents(
   return components1 == components2;
 }
 
-bool HasCycles(const std::vector<std::pair<int, int>>& graph) {
+bool HasCycles(absl::Span<const std::pair<int, int>> graph) {
   std::vector<std::vector<int>> view;
   for (const auto& [a, b] : graph) {
     if (view.size() <= std::max(a, b)) view.resize(std::max(a, b) + 1);
@@ -1107,7 +1107,7 @@ TEST(FindPartialIntersections, Random) {
 }
 
 void CheckFuzzedRectangles(
-    const std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t>>& tuples) {
+    absl::Span<const std::tuple<int64_t, int64_t, int64_t, int64_t>> tuples) {
   std::vector<Rectangle> rectangles;
   rectangles.reserve(tuples.size());
   for (const auto& [x_min, x_size, y_min, y_size] : tuples) {

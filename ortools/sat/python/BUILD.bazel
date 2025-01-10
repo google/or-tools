@@ -55,8 +55,8 @@ pybind_extension(
 )
 
 py_test(
-    name = "swig_helper_test",
-    srcs = ["swig_helper_test.py"],
+    name = "cp_model_helper_test",
+    srcs = ["cp_model_helper_test.py"],
     deps = [
         ":cp_model_helper",
         "//ortools/sat:cp_model_py_pb2",
@@ -108,5 +108,6 @@ py_test(
         ":cp_model",
         ":cp_model_helper",
         requirement("absl-py"),
+        requirement("numpy"),
     ],
 )

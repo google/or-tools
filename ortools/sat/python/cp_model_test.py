@@ -17,6 +17,7 @@ import sys
 import time
 
 from absl.testing import absltest
+import numpy as np
 import pandas as pd
 
 from ortools.sat import cp_model_pb2
@@ -514,6 +515,54 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(1.0, solver.objective_value)
         for i in range(100):
             self.assertEqual(solver.value(x[i]), 1 if i == 99 else 0)
+
+    def testSumParsing(self) -> None:
+        model = cp_model.CpModel()
+        x = [model.new_int_var(0, 2, "x%i" % i) for i in range(5)]
+        s1 = cp_model.LinearExpr.sum(x)
+        self.assertTrue(s1.is_integer())
+        flat_s1 = cp_model.FlatIntExpr(s1)
+        self.assertLen(flat_s1.vars, 5)
+        self.assertEqual(0, flat_s1.offset)
+
+        s2 = cp_model.LinearExpr.sum(x[0], x[2], x[4])
+        self.assertTrue(s2.is_integer())
+        flat_s2 = cp_model.FlatIntExpr(s2)
+        self.assertLen(flat_s2.vars, 3)
+        self.assertEqual(0, flat_s2.offset)
+
+        s3 = cp_model.LinearExpr.sum(x[0], x[2], 2, x[4], -4)
+        self.assertTrue(s3.is_integer())
+        flat_s3 = cp_model.FlatIntExpr(s3)
+        self.assertLen(flat_s3.vars, 3)
+        self.assertEqual(-2, flat_s3.offset)
+
+        s4 = cp_model.LinearExpr.sum(x[0], x[2], 2.5)
+        self.assertFalse(s4.is_integer())
+        flat_s4 = cp_model.FlatFloatExpr(s4)
+        self.assertLen(flat_s4.vars, 2)
+        self.assertEqual(2.5, flat_s4.offset)
+
+        s5 = cp_model.LinearExpr.sum(x[0], x[2], 2, 1.5)
+        self.assertFalse(s5.is_integer())
+        flat_s5 = cp_model.FlatFloatExpr(s5)
+        self.assertLen(flat_s5.vars, 2)
+        self.assertEqual(3.5, flat_s5.offset)
+
+        s6 = cp_model.LinearExpr.sum(x[0], x[2], np.int8(-1), np.int64(-4))
+        self.assertTrue(s6.is_integer())
+        flat_s6 = cp_model.FlatIntExpr(s6)
+        self.assertLen(flat_s6.vars, 2)
+        self.assertEqual(-5, flat_s6.offset)
+
+        s7 = cp_model.LinearExpr.sum(x[0], x[2], np.float64(2.0), np.float32(1.5))
+        self.assertFalse(s7.is_integer())
+        flat_s7 = cp_model.FlatFloatExpr(s7)
+        self.assertLen(flat_s7.vars, 2)
+        self.assertEqual(3.5, flat_s7.offset)
+
+        with self.assertRaises(TypeError):
+            cp_model.LinearExpr.sum(x[0], x[2], "foo")
 
     def testSumWithApi(self) -> None:
         model = cp_model.CpModel()
@@ -1043,7 +1092,7 @@ class CpModelTest(absltest.TestCase):
         proto.coeffs.append(2)
         proto.offset = 2
         expr = cp_model.rebuild_from_linear_expression_proto(model.proto, proto)
-        canonical_expr = cmh.CanonicalIntExpression(expr)
+        canonical_expr = cmh.FlatIntExpr(expr)
         self.assertEqual(canonical_expr.vars[0], x)
         self.assertEqual(canonical_expr.vars[1], y)
         self.assertEqual(canonical_expr.coeffs[0], 1)
@@ -1159,10 +1208,10 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(str(x != y), "(x - y) != 0")
         self.assertEqual(
             "0 <= x <= 10",
-            str(cp_model.BoundedLinearExpression([x], [1], 0, cp_model.Domain(0, 10))),
+            str(cp_model.BoundedLinearExpression(x, cp_model.Domain(0, 10))),
         )
         e1 = 2 * cp_model.LinearExpr.sum([x, y])
-        flat_e1 = cmh.CanonicalIntExpression(e1)
+        flat_e1 = cmh.FlatIntExpr(e1)
         self.assertEqual(str(e1), "(2 * (x + y))")
         self.assertEqual(flat_e1.vars, [x, y])
         self.assertEqual(flat_e1.coeffs, [2, 2])

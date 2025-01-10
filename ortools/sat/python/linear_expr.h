@@ -23,15 +23,13 @@
 #include "absl/container/fixed_array.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research::sat::python {
 
 class BoundedLinearExpression;
-class CanonicalFloatExpression;
+class FlatFloatExpr;
 class FloatExprVisitor;
 class LinearExpr;
 class IntExprVisitor;
@@ -39,52 +37,41 @@ class LinearExpr;
 class BaseIntVar;
 class NotBooleanVariable;
 
-/// A class to hold a pointer to a linear expression or a constant.
-struct ExprOrValue {
-  explicit ExprOrValue(LinearExpr* e) : expr(e) {}
-  explicit ExprOrValue(double v) : double_value(v) {}
-  explicit ExprOrValue(int64_t v) : int_value(v) {}
-
-  LinearExpr* expr = nullptr;
-  double double_value = 0.0;
-  int64_t int_value = 0;
-};
-
 /**
-Holds an integer or floating point linear expression.
-
-A linear expression is built from (integer or floating point) constants and
-variables. For example, `x + 2 * (y - z + 1)`.
-
-Linear expressions are used in CP-SAT models in constraints and in the
-objective.
-
-Note that constraints only accept linear expressions with integral coefficients
-and constants. On the other hand, The objective can be a linear expression with
-floating point coefficients and constants.
-
-You can define linear constraints as in:
-
-```
-  model.add(x + 2 * y <= 5)
-  model.add(sum(array_of_vars) == 5)
-```
-
-* In CP-SAT, the objective is a linear expression:
-
-```
-  model.minimize(x + 2 * y + z)
-```
-
-* For large arrays, using the LinearExpr class is faster that using the python
-  `sum()` function. You can create constraints and the objective from lists of
-  linear expressions or coefficients as follows:
-
-```
-  model.minimize(cp_model.LinearExpr.sum(expressions))
-  model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
-```
-*/
+ * A class to hold an integer or floating point linear expression.
+ *
+ * A linear expression is built from (integer or floating point) constants and
+ * variables. For example, `x + 2 * (y - z + 1)`.
+ *
+ * Linear expressions are used in CP-SAT models in constraints and in the
+ * objective.
+ *
+ * Note that constraints only accept linear expressions with integral
+ * coefficients and constants. On the other hand, The objective can be a linear
+ * expression with floating point coefficients and constants.
+ *
+ * You can define linear constraints as in:
+ *
+ * ```
+ * model.add(x + 2 * y <= 5)
+ * model.add(sum(array_of_vars) == 5)
+ * ```
+ *
+ * - In CP-SAT, the objective is a linear expression:
+ *
+ * ```
+ * model.minimize(x + 2 * y + z)
+ * ```
+ *
+ * - For large arrays, using the LinearExpr class is faster that using the
+ * python `sum()` function. You can create constraints and the objective from
+ * lists of linear expressions or coefficients as follows:
+ *
+ * ```
+ * model.minimize(cp_model.LinearExpr.sum(expressions))
+ * model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
+ * ```
+ */
 class LinearExpr {
  public:
   virtual ~LinearExpr() = default;
@@ -94,27 +81,6 @@ class LinearExpr {
   virtual std::string ToString() const = 0;
   virtual std::string DebugString() const = 0;
 
-  /**
-   * Returns a new LinearExpr that is the sum of the given expressions.
-   */
-  static LinearExpr* Sum(const std::vector<LinearExpr*>& exprs);
-  /**
-   * Returns a new LinearExpr that is the sum of the given expressions or
-   * constants.
-   */
-  static LinearExpr* MixedSum(const std::vector<ExprOrValue>& exprs);
-  /// Returns the sum(exprs[i] * coeffs[i]).
-  static LinearExpr* WeightedSumInt(const std::vector<LinearExpr*>& exprs,
-                                    const std::vector<int64_t>& coeffs);
-  /// Returns the sum(exprs[i] * coeffs[i]).
-  static LinearExpr* WeightedSumFloat(const std::vector<LinearExpr*>& exprs,
-                                      const std::vector<double>& coeffs);
-  /// Returns the sum(exprs[i] * coeffs[i]).
-  static LinearExpr* MixedWeightedSumInt(const std::vector<ExprOrValue>& exprs,
-                                         const std::vector<int64_t>& coeffs);
-  /// Returns the sum(exprs[i] * coeffs[i]).
-  static LinearExpr* MixedWeightedSumFloat(
-      const std::vector<ExprOrValue>& exprs, const std::vector<double>& coeffs);
   /// Returns expr * coeff.
   static LinearExpr* TermInt(LinearExpr* expr, int64_t coeff);
   /// Returns expr * coeff.
@@ -123,9 +89,9 @@ class LinearExpr {
   static LinearExpr* AffineInt(LinearExpr* expr, int64_t coeff, int64_t offset);
   /// Returns expr * coeff + offset.
   static LinearExpr* AffineFloat(LinearExpr* expr, double coeff, double offset);
-  /// Returns a new LinearExpr that is the given constant.
+  /// Returns a new LinearExpr that holds the given constant.
   static LinearExpr* ConstantInt(int64_t value);
-  /// Returns a new LinearExpr that is the given constant.
+  /// Returns a new LinearExpr that holds the given constant.
   static LinearExpr* ConstantFloat(double value);
 
   /// Returns (this) + (expr).
@@ -198,13 +164,31 @@ class FloatExprVisitor {
   double offset_ = 0;
 };
 
-/// A class to build a canonical floating point linear expression.
-class CanonicalFloatExpression {
+/**
+ * A flattened and optimized floating point linear expression.
+ *
+ * It flattens the linear expression passed to the constructorto a sum of
+ * products of variables and coefficients plus an offset. It can be used to
+ * cache complex expressions as parsing them is only done once.
+ */
+class FlatFloatExpr : public LinearExpr {
  public:
-  explicit CanonicalFloatExpression(LinearExpr* expr);
+  /// Builds a flattened floating point linear expression from the given
+  /// expression.
+  explicit FlatFloatExpr(LinearExpr* expr);
+  /// Returns the array of variables of the flattened expression.
   const std::vector<const BaseIntVar*>& vars() const { return vars_; }
+  /// Returns the array of coefficients of the flattened expression.
   const std::vector<double>& coeffs() const { return coeffs_; }
+  /// Returns the offset of the flattened expression.
   double offset() const { return offset_; }
+
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  std::string ToString() const override;
+  std::string DebugString() const override;
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
+    return false;
+  }
 
  private:
   std::vector<const BaseIntVar*> vars_;
@@ -231,14 +215,44 @@ class IntExprVisitor {
   int64_t offset_ = 0;
 };
 
-/// A class to build a canonical integer linear expression.
-class CanonicalIntExpression {
+/**
+ * A flattened and optimized integer linear expression.
+ *
+ * It flattens the linear expression passed to the constructorto a sum of
+ * products of variables and coefficients plus an offset. It can be used to
+ * cache complex expressions as parsing them is only done once.
+ */
+class FlatIntExpr : public LinearExpr {
  public:
-  explicit CanonicalIntExpression(LinearExpr* expr);
+  /// Builds a flattened integer linear expression from the given
+  /// expression.
+  explicit FlatIntExpr(LinearExpr* expr);
+  /// Returns the array of variables of the flattened expression.
   const std::vector<const BaseIntVar*>& vars() const { return vars_; }
+  /// Returns the array of coefficients of the flattened expression.
   const std::vector<int64_t>& coeffs() const { return coeffs_; }
+  /// Returns the offset of the flattened expression.
   int64_t offset() const { return offset_; }
+  /// Returns true if the expression is integer.
   bool ok() const { return ok_; }
+
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
+    for (int i = 0; i < vars_.size(); ++i) {
+      lin.AddVarCoeff(vars_[i], coeffs_[i] * c);
+    }
+    lin.AddConstant(offset_ * c);
+  }
+
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+    for (int i = 0; i < vars_.size(); ++i) {
+      lin.AddVarCoeff(vars_[i], coeffs_[i] * c);
+    }
+    lin.AddConstant(offset_ * c);
+    return true;
+  }
+
+  std::string ToString() const override;
+  std::string DebugString() const override;
 
  private:
   std::vector<const BaseIntVar*> vars_;
@@ -254,83 +268,13 @@ class CanonicalIntExpression {
 class SumArray : public LinearExpr {
  public:
   explicit SumArray(const std::vector<LinearExpr*>& exprs,
-                    int64_t int_offset = 0, double double_offset = 0.0)
-      : exprs_(exprs.begin(), exprs.end()),
-        int_offset_(int_offset),
-        double_offset_(double_offset) {
-    DCHECK(int_offset_ == 0 || double_offset_ == 0.0);
-  }
+                    int64_t int_offset = 0, double double_offset = 0.0);
   ~SumArray() override = default;
 
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
-    if (double_offset_ != 0.0) return false;
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin.AddToProcess(exprs_[i], c);
-    }
-    lin.AddConstant(int_offset_ * c);
-    return true;
-  }
-
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin.AddToProcess(exprs_[i], c);
-    }
-    if (int_offset_ != 0) {
-      lin.AddConstant(int_offset_ * c);
-    } else if (double_offset_ != 0.0) {
-      lin.AddConstant(double_offset_ * c);
-    }
-  }
-
-  std::string ToString() const override {
-    if (exprs_.empty()) {
-      if (double_offset_ != 0.0) {
-        return absl::StrCat(RoundTripDoubleFormat(double_offset_));
-      } else {
-        return absl::StrCat(int_offset_);
-      }
-    }
-    std::string s = "(";
-    for (int i = 0; i < exprs_.size(); ++i) {
-      if (i > 0) {
-        absl::StrAppend(&s, " + ");
-      }
-      absl::StrAppend(&s, exprs_[i]->ToString());
-    }
-    if (double_offset_ != 0.0) {
-      if (double_offset_ > 0.0) {
-        absl::StrAppend(&s, " + ", double_offset_);
-      } else {
-        absl::StrAppend(&s, " - ", -double_offset_);
-      }
-    }
-    if (int_offset_ != 0) {
-      if (int_offset_ > 0) {
-        absl::StrAppend(&s, " + ", int_offset_);
-      } else {
-        absl::StrAppend(&s, " - ", -int_offset_);
-      }
-    }
-    absl::StrAppend(&s, ")");
-    return s;
-  }
-
-  std::string DebugString() const override {
-    std::string s = absl::StrCat(
-        "SumArray(",
-        absl::StrJoin(exprs_, ", ", [](std::string* out, LinearExpr* expr) {
-          absl::StrAppend(out, expr->DebugString());
-        }));
-    if (int_offset_ != 0) {
-      absl::StrAppend(&s, ", int_offset=", int_offset_);
-    }
-    if (double_offset_ != 0.0) {
-      absl::StrAppend(
-          &s, ", double_offset=", RoundTripDoubleFormat(double_offset_));
-    }
-    absl::StrAppend(&s, ")");
-    return s;
-  }
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override;
+  std::string ToString() const override;
+  std::string DebugString() const override;
 
  private:
   const absl::FixedArray<LinearExpr*, 2> exprs_;
@@ -338,7 +282,7 @@ class SumArray : public LinearExpr {
   const double double_offset_;
 };
 
-/** A class to hold a weighted sum of floating point linear expressions. */
+/// A class to hold a weighted sum of floating point linear expressions.
 class FloatWeightedSum : public LinearExpr {
  public:
   FloatWeightedSum(const std::vector<LinearExpr*>& exprs, double offset);
@@ -364,26 +308,11 @@ class FloatWeightedSum : public LinearExpr {
 class IntWeightedSum : public LinearExpr {
  public:
   IntWeightedSum(const std::vector<LinearExpr*>& exprs,
-                 const std::vector<int64_t>& coeffs, int64_t offset)
-      : exprs_(exprs.begin(), exprs.end()),
-        coeffs_(coeffs.begin(), coeffs.end()),
-        offset_(offset) {}
+                 const std::vector<int64_t>& coeffs, int64_t offset);
   ~IntWeightedSum() override = default;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin.AddToProcess(exprs_[i], coeffs_[i] * c);
-    }
-    lin.AddConstant(offset_ * c);
-  }
-
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin.AddToProcess(exprs_[i], coeffs_[i] * c);
-    }
-    lin.AddConstant(offset_ * c);
-    return true;
-  }
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override;
 
   std::string ToString() const override;
   std::string DebugString() const override;
@@ -420,43 +349,14 @@ class FloatAffine : public LinearExpr {
 /// A class to hold linear_expr * a = b (a and b are integers).
 class IntAffine : public LinearExpr {
  public:
-  IntAffine(LinearExpr* expr, int64_t coeff, int64_t offset)
-      : expr_(expr), coeff_(coeff), offset_(offset) {}
+  IntAffine(LinearExpr* expr, int64_t coeff, int64_t offset);
   ~IntAffine() override = default;
 
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
-    lin.AddToProcess(expr_, c * coeff_);
-    lin.AddConstant(offset_ * c);
-    return true;
-  }
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override;
+  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
-    lin.AddToProcess(expr_, c * coeff_);
-    lin.AddConstant(offset_ * c);
-  }
-
-  std::string ToString() const override {
-    std::string s = "(";
-    if (coeff_ == 1) {
-      absl::StrAppend(&s, expr_->ToString());
-    } else if (coeff_ == -1) {
-      absl::StrAppend(&s, "-", expr_->ToString());
-    } else {
-      absl::StrAppend(&s, coeff_, " * ", expr_->ToString());
-    }
-    if (offset_ > 0) {
-      absl::StrAppend(&s, " + ", offset_);
-    } else if (offset_ < 0) {
-      absl::StrAppend(&s, " - ", -offset_);
-    }
-    absl::StrAppend(&s, ")");
-    return s;
-  }
-
-  std::string DebugString() const override {
-    return absl::StrCat("IntAffine(expr=", expr_->DebugString(),
-                        ", coeff=", coeff_, ", offset=", offset_, ")");
-  }
+  std::string ToString() const override;
+  std::string DebugString() const override;
 
   LinearExpr* expression() const { return expr_; }
   int64_t coefficient() const { return coeff_; }
@@ -490,13 +390,14 @@ class IntConstant : public LinearExpr {
  public:
   explicit IntConstant(int64_t value) : value_(value) {}
   ~IntConstant() override = default;
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
-    lin.AddConstant(value_ * c);
-    return true;
-  }
 
   void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
     lin.AddConstant(value_ * c);
+  }
+
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+    lin.AddConstant(value_ * c);
+    return true;
   }
 
   std::string ToString() const override { return absl::StrCat(value_); }
@@ -621,7 +522,14 @@ class NotBooleanVariable : public Literal {
   explicit NotBooleanVariable(BaseIntVar* var) : var_(var) {}
   ~NotBooleanVariable() override = default;
 
+  /// Returns the index of the current literal.
   int index() const override { return -var_->index() - 1; }
+
+  /**
+   * Returns the negation of the current literal, that is the original Boolean
+   * variable.
+   */
+  Literal* negated() const override { return var_; }
 
   bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
     lin.AddVarCoeff(var_, -c);
@@ -638,12 +546,6 @@ class NotBooleanVariable : public Literal {
     return absl::StrCat("not(", var_->ToString(), ")");
   }
 
-  /**
-   * Returns the negation of the current literal, that is the original Boolean
-   * variable.
-   */
-  Literal* negated() const override { return var_; }
-
   std::string DebugString() const override {
     return absl::StrCat("NotBooleanVariable(index=", var_->index(), ")");
   }
@@ -652,28 +554,38 @@ class NotBooleanVariable : public Literal {
   BaseIntVar* const var_;
 };
 
-//// A class to hold a linear expression with bounds.
+/// A class to hold a linear expression with bounds.
 class BoundedLinearExpression {
  public:
-  BoundedLinearExpression(std::vector<const BaseIntVar*> vars,
-                          std::vector<int64_t> coeffs, int64_t offset,
+  /// Creates a BoundedLinearExpression representing `expr in domain`.
+  BoundedLinearExpression(const LinearExpr* expr, const Domain& bounds);
+
+  /// Creates a BoundedLinearExpression representing `pos - neg in domain`.
+  BoundedLinearExpression(const LinearExpr* pos, const LinearExpr* neg,
                           const Domain& bounds);
 
   ~BoundedLinearExpression() = default;
 
+  /// Returns the bounds constraining the expression passed to the constructor.
   const Domain& bounds() const;
+  /// Returns the array of variables of the flattened expression.
   const std::vector<const BaseIntVar*>& vars() const;
+  /// Returns the array of coefficients of the flattened expression.
   const std::vector<int64_t>& coeffs() const;
+  /// Returns the offset of the flattened expression.
   int64_t offset() const;
+  /// Returns true if the bounded linear expression is valid.
+  bool ok() const;
   std::string ToString() const;
   std::string DebugString() const;
   bool CastToBool(bool* result) const;
 
  private:
-  const std::vector<const BaseIntVar*> vars_;
-  const std::vector<int64_t> coeffs_;
+  std::vector<const BaseIntVar*> vars_;
+  std::vector<int64_t> coeffs_;
   int64_t offset_;
   const Domain bounds_;
+  bool ok_ = true;
 };
 
 }  // namespace operations_research::sat::python

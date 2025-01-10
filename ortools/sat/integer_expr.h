@@ -445,7 +445,7 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
 // Weighted sum >= constant.
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
-    const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
+    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
     int64_t lower_bound) {
   // We just negate everything and use an <= constraints.
   std::vector<int64_t> negated_coeffs(coefficients.begin(), coefficients.end());

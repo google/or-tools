@@ -14,6 +14,7 @@
 #include "ortools/sat/timetable_edgefinding.h"
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -152,6 +153,9 @@ void TimeTableEdgeFinding::BuildTimeTable() {
 bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
   if (!demands_->CacheAllEnergyValues()) return true;
 
+  IntegerValue earliest_start_min = std::numeric_limits<IntegerValue>::max();
+  IntegerValue latest_end_max = std::numeric_limits<IntegerValue>::min();
+  IntegerValue maximum_demand_min = IntegerValue(0);
   // Initialize the data structures and build the free parts.
   // --------------------------------------------------------
   for (int t = 0; t < num_tasks_; ++t) {
@@ -160,6 +164,10 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
     const IntegerValue end_min = helper_->EndMin(t);
     const IntegerValue demand_min = demands_->DemandMin(t);
     IntegerValue mandatory_energy(0);
+
+    earliest_start_min = std::min(earliest_start_min, helper_->StartMin(t));
+    latest_end_max = std::max(latest_end_max, helper_->EndMax(t));
+    maximum_demand_min = std::max(maximum_demand_min, demand_min);
 
     if (start_max >= end_min) {
       size_free_[t] = helper_->SizeMin(t);
@@ -172,6 +180,12 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
     const IntegerValue min_energy = demands_->EnergyMin(t);
     energy_free_[t] = min_energy - mandatory_energy;
     DCHECK_GE(energy_free_[t], 0);
+  }
+
+  if (AtMinOrMaxInt64I(CapProdI(CapSubI(latest_end_max, earliest_start_min),
+                                maximum_demand_min))) {
+    // Avoid possible overflow.
+    return true;
   }
 
   // TODO(user): Is it possible to have a 'higher' mandatory profile using

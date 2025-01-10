@@ -60,7 +60,7 @@ class TestIntVar(cmh.BaseIntVar):
         return self._name
 
 
-class SwigHelperTest(absltest.TestCase):
+class CpModelHelperTest(absltest.TestCase):
 
     def tearDown(self) -> None:
         super().tearDown()

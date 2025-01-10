@@ -498,7 +498,7 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
 // Same as ImportModelWithBasicPresolveIntoContext() except that variable
 // domains are read from domains.
 bool ImportModelAndDomainsWithBasicPresolveIntoContext(
-    const CpModelProto& in_model, const std::vector<Domain>& domains,
+    const CpModelProto& in_model, absl::Span<const Domain> domains,
     std::function<bool(int)> active_constraints, PresolveContext* context);
 
 // Copies the non constraint, non variables part of the model.

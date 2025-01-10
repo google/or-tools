@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_PYTHON_LINEAR_EXPR_DOC_H_
 #define OR_TOOLS_SAT_PYTHON_LINEAR_EXPR_DOC_H_
 
+// NOLINTBEGIN
+
 /*
   This file contains docstrings for use in the Python bindings.
   Do not edit! They were automatically extracted by pybind11_mkdoc.
@@ -97,16 +99,19 @@ static const char* __doc_operations_research_sat_python_BaseIntVar_operator_lt =
 
 static const char*
     __doc_operations_research_sat_python_BoundedLinearExpression =
-        R"doc(/ A class to hold a linear expression with bounds.)doc";
+        R"doc(A class to hold a linear expression with bounds.)doc";
 
 static const char*
     __doc_operations_research_sat_python_BoundedLinearExpression_2 =
-        R"doc(/ A class to hold a linear expression with bounds.)doc";
+        R"doc(A class to hold a linear expression with bounds.)doc";
 
 static const char*
-    // NOLINTNEXTLINE(whitespace/line_length)
     __doc_operations_research_sat_python_BoundedLinearExpression_BoundedLinearExpression =
-        R"doc()doc";
+        R"doc(Creates a BoundedLinearExpression representing `expr in domain`.)doc";
+
+static const char*
+    __doc_operations_research_sat_python_BoundedLinearExpression_BoundedLinearExpression_2 =
+        R"doc(Creates a BoundedLinearExpression representing `pos - neg in domain`.)doc";
 
 static const char*
     __doc_operations_research_sat_python_BoundedLinearExpression_CastToBool =
@@ -145,86 +150,19 @@ static const char*
         R"doc()doc";
 
 static const char*
+    __doc_operations_research_sat_python_BoundedLinearExpression_ok =
+        R"doc()doc";
+
+static const char*
+    __doc_operations_research_sat_python_BoundedLinearExpression_ok_2 =
+        R"doc()doc";
+
+static const char*
     __doc_operations_research_sat_python_BoundedLinearExpression_vars =
         R"doc()doc";
 
 static const char*
     __doc_operations_research_sat_python_BoundedLinearExpression_vars_2 =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression =  // NOLINT
-    R"doc(A class to build a canonical floating point linear expression.)doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_2 =
-        R"doc(A class to build a canonical floating point linear expression.)doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_CanonicalFloatExpression =  // NOLINT
-    R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_coeffs =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_coeffs_2 =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_offset =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_offset_2 =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_vars =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalFloatExpression_vars_2 =
-        R"doc()doc";
-
-static const char* __doc_operations_research_sat_python_CanonicalIntExpression =
-    R"doc(A class to build a canonical integer linear expression.)doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_CanonicalIntExpression =  // NOLINT
-    R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_coeffs =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_coeffs_2 =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_offset =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_offset_2 =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_ok =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_ok_2 =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_vars =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_sat_python_CanonicalIntExpression_vars_2 =
         R"doc()doc";
 
 static const char* __doc_operations_research_sat_python_ExprOrValue =
@@ -248,6 +186,99 @@ static const char* __doc_operations_research_sat_python_ExprOrValue_expr =
     R"doc()doc";
 
 static const char* __doc_operations_research_sat_python_ExprOrValue_int_value =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr =
+    R"doc(A flattened and optimized floating point linear expression.
+
+It can be used to cache complex expressions as parsing them is only
+done once.)doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_2 =
+    R"doc(A flattened and optimized floating point linear expression.
+
+It can be used to cache complex expressions as parsing them is only
+done once.)doc";
+
+static const char*
+    __doc_operations_research_sat_python_FlatFloatExpr_DebugString =
+        R"doc()doc";
+
+static const char*
+    __doc_operations_research_sat_python_FlatFloatExpr_FlatFloatExpr =
+        R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_ToString =
+    R"doc()doc";
+
+static const char*
+    __doc_operations_research_sat_python_FlatFloatExpr_VisitAsFloat =
+        R"doc()doc";
+
+static const char*
+    __doc_operations_research_sat_python_FlatFloatExpr_VisitAsInt = R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_coeffs =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_coeffs_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_offset =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_offset_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_vars =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatFloatExpr_vars_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr =
+    R"doc(A flattened and optimized integer linear expression.
+
+It can be used to cache complex expressions as parsing them is only
+done once.)doc";
+
+static const char*
+    __doc_operations_research_sat_python_FlatIntExpr_DebugString = R"doc()doc";
+
+static const char*
+    __doc_operations_research_sat_python_FlatIntExpr_FlatIntExpr = R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_ToString =
+    R"doc()doc";
+
+static const char*
+    __doc_operations_research_sat_python_FlatIntExpr_VisitAsFloat = R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_VisitAsInt =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_coeffs =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_coeffs_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_offset =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_offset_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_ok =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_ok_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_vars =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_FlatIntExpr_vars_2 =
     R"doc()doc";
 
 static const char* __doc_operations_research_sat_python_FloatAffine =
@@ -508,7 +539,7 @@ static const char* __doc_operations_research_sat_python_IntWeightedSum_offset =
     R"doc()doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr =
-    R"doc(Holds an integer or floating point linear expression.
+    R"doc(A class to hold an integer or floating point linear expression.
 
 A linear expression is built from (integer or floating point)
 constants and variables. For example, `x + 2 * (y - z + 1)`.
@@ -527,15 +558,15 @@ model.add(x + 2 * y <= 5)
 model.add(sum(array_of_vars) == 5)
 ```
 
-In CP-SAT, the objective is a linear expression:
+- In CP-SAT, the objective is a linear expression:
 
 ```
 model.minimize(x + 2 * y + z)
 ```
 
-For large arrays, using the LinearExpr class is faster that using the
-python `sum()` function. You can create constraints and the objective
-from lists of linear expressions or coefficients as follows:
+- For large arrays, using the LinearExpr class is faster that using
+the python `sum()` function. You can create constraints and the
+objective from lists of linear expressions or coefficients as follows:
 
 ```
 model.minimize(cp_model.LinearExpr.sum(expressions))
@@ -543,7 +574,7 @@ model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
 ```)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_2 =
-    R"doc(Holds an integer or floating point linear expression.
+    R"doc(A class to hold an integer or floating point linear expression.
 
 A linear expression is built from (integer or floating point)
 constants and variables. For example, `x + 2 * (y - z + 1)`.
@@ -562,15 +593,15 @@ model.add(x + 2 * y <= 5)
 model.add(sum(array_of_vars) == 5)
 ```
 
-In CP-SAT, the objective is a linear expression:
+- In CP-SAT, the objective is a linear expression:
 
 ```
 model.minimize(x + 2 * y + z)
 ```
 
-For large arrays, using the LinearExpr class is faster that using the
-python `sum()` function. You can create constraints and the objective
-from lists of linear expressions or coefficients as follows:
+- For large arrays, using the LinearExpr class is faster that using
+the python `sum()` function. You can create constraints and the
+objective from lists of linear expressions or coefficients as follows:
 
 ```
 model.minimize(cp_model.LinearExpr.sum(expressions))
@@ -578,7 +609,7 @@ model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
 ```)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_3 =
-    R"doc(Holds an integer or floating point linear expression.
+    R"doc(A class to hold an integer or floating point linear expression.
 
 A linear expression is built from (integer or floating point)
 constants and variables. For example, `x + 2 * (y - z + 1)`.
@@ -597,15 +628,15 @@ model.add(x + 2 * y <= 5)
 model.add(sum(array_of_vars) == 5)
 ```
 
-In CP-SAT, the objective is a linear expression:
+- In CP-SAT, the objective is a linear expression:
 
 ```
 model.minimize(x + 2 * y + z)
 ```
 
-For large arrays, using the LinearExpr class is faster that using the
-python `sum()` function. You can create constraints and the objective
-from lists of linear expressions or coefficients as follows:
+- For large arrays, using the LinearExpr class is faster that using
+the python `sum()` function. You can create constraints and the
+objective from lists of linear expressions or coefficients as follows:
 
 ```
 model.minimize(cp_model.LinearExpr.sum(expressions))
@@ -744,7 +775,9 @@ static const char* __doc_operations_research_sat_python_Literal =
 A literal is a Boolean variable or its negation.
 
 Literals are used in CP-SAT models in constraints and in the
-objective: - You can define literal as in:
+objective.
+
+- You can define literal as in:
 
 ```
 b1 = model.new_bool_var()
@@ -848,5 +881,7 @@ static const char* __doc_operations_research_sat_python_SumArray_int_offset =
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
+
+// NOLINTEND
 
 #endif  // OR_TOOLS_SAT_PYTHON_LINEAR_EXPR_DOC_H_

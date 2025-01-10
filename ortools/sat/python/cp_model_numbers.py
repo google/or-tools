@@ -14,14 +14,12 @@
 """helpers methods for the cp_model module."""
 
 import numbers
-from typing import Any, Union
+from typing import Any
 import numpy as np
 
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
-INT32_MIN = -2147483648
-INT32_MAX = 2147483647
 
 
 def is_boolean(x: Any) -> bool:
@@ -33,33 +31,6 @@ def is_boolean(x: Any) -> bool:
     return False
 
 
-def is_zero(x: Any) -> bool:
-    """Checks if the x is 0 or 0.0."""
-    if isinstance(x, numbers.Integral):
-        return int(x) == 0
-    if isinstance(x, numbers.Real):
-        return float(x) == 0.0
-    return False
-
-
-def is_one(x: Any) -> bool:
-    """Checks if x is 1 or 1.0."""
-    if isinstance(x, numbers.Integral):
-        return int(x) == 1
-    if isinstance(x, numbers.Real):
-        return float(x) == 1.0
-    return False
-
-
-def is_minus_one(x: Any) -> bool:
-    """Checks if x is -1 or -1.0 ."""
-    if isinstance(x, numbers.Integral):
-        return int(x) == -1
-    if isinstance(x, numbers.Real):
-        return float(x) == -1.0
-    return False
-
-
 def assert_is_zero_or_one(x: Any) -> int:
     """Asserts that x is 0 or 1 and returns it as an int."""
     if not isinstance(x, numbers.Integral):
@@ -68,15 +39,6 @@ def assert_is_zero_or_one(x: Any) -> int:
     if x_as_int < 0 or x_as_int > 1:
         raise TypeError(f"Not a boolean: {x}")
     return x_as_int
-
-
-def assert_is_a_number(x: Any) -> Union[int, float]:
-    """Asserts that x is a number and returns it casted to an int or a float."""
-    if isinstance(x, numbers.Integral):
-        return int(x)
-    if isinstance(x, numbers.Real):
-        return float(x)
-    raise TypeError(f"Not a number: {x} of type {type(x)}")
 
 
 def to_capped_int64(v: int) -> int:

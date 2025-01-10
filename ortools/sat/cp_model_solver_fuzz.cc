@@ -32,6 +32,8 @@ namespace operations_research::sat {
 
 namespace {
 
+static constexpr int kMaxNumVars = 200;
+
 std::string GetTestDataDir() {
   return file::JoinPathRespectAbsolute(::testing::SrcDir(),
                                        "_main/ortools/sat/fuzz_testdata");
@@ -83,15 +85,12 @@ void Solve(const CpModelProto& proto) {
       << "Presolve should not change feasibility";
 }
 
-fuzztest::Domain<IntegerVariableProto> CpVariableDomain() {
-  fuzztest::Domain<int64_t> bound_domain =
-      fuzztest::InRange<int64_t>(-std::numeric_limits<int64_t>::max() / 2,
-                                 std::numeric_limits<int64_t>::max() / 2);
+fuzztest::Domain<IntegerVariableProto> CpVariableDomain(int64_t min,
+                                                        int64_t max) {
+  fuzztest::Domain<int64_t> bound_domain = fuzztest::InRange<int64_t>(min, max);
   fuzztest::Domain<std::pair<int64_t, int64_t>> complex_domain_gap_and_size =
-      fuzztest::PairOf(fuzztest::InRange<int64_t>(
-                           1, std::numeric_limits<int64_t>::max() / 2),
-                       fuzztest::InRange<int64_t>(
-                           0, std::numeric_limits<int64_t>::max() / 2));
+      fuzztest::PairOf(fuzztest::InRange<int64_t>(1, max),
+                       fuzztest::InRange<int64_t>(0, max));
   fuzztest::Domain<IntegerVariableProto> var_domain = fuzztest::ReversibleMap(
       [](int64_t bound1, int64_t bound2,
          std::vector<std::pair<int64_t, int64_t>> complex_domain_segments) {
@@ -129,9 +128,8 @@ fuzztest::Domain<IntegerVariableProto> CpVariableDomain() {
       fuzztest::VectorOf(complex_domain_gap_and_size));
 
   return fuzztest::Filter(
-      [](IntegerVariableProto var) {
-        return var.domain(var.domain().size() - 1) <=
-               std::numeric_limits<int64_t>::max() / 2;
+      [max](IntegerVariableProto var) {
+        return var.domain(var.domain().size() - 1) <= max;
       },
       var_domain);
 }
@@ -147,7 +145,107 @@ ModelProtoVariablesDomain() {
         }
         return ValidateCpModel(model).empty();
       },
-      fuzztest::VectorOf(CpVariableDomain()));
+      fuzztest::VectorOf(
+          CpVariableDomain(-std::numeric_limits<int64_t>::max() / 2,
+                           std::numeric_limits<int64_t>::max() / 2))
+          .WithMaxSize(kMaxNumVars));
+}
+
+fuzztest::Domain<LinearExpressionProto> LinearExprDomain() {
+  fuzztest::Domain<int64_t> offset_domain =
+      fuzztest::InRange<int64_t>(-std::numeric_limits<int64_t>::max() / 2,
+                                 std::numeric_limits<int64_t>::max() / 2);
+  fuzztest::Domain<std::pair<int64_t, int64_t>> variable_and_coefficient =
+      fuzztest::PairOf(
+          fuzztest::InRange<int64_t>(0, kMaxNumVars - 1),
+          fuzztest::InRange<int64_t>(-std::numeric_limits<int64_t>::max() / 2,
+                                     std::numeric_limits<int64_t>::max() / 2));
+  return fuzztest::ReversibleMap(
+      [](int64_t offset,
+         std::vector<std::pair<int64_t, int64_t>> variable_and_coefficient) {
+        LinearExpressionProto expr;
+        for (const auto& [var, coeff] : variable_and_coefficient) {
+          expr.add_vars(var);
+          expr.add_coeffs(coeff);
+        }
+        expr.set_offset(offset);
+        return expr;
+      },
+      [](LinearExpressionProto expr) {
+        using Type =
+            std::tuple<int64_t, std::vector<std::pair<int64_t, int64_t>>>;
+        Type expr_inputs;
+        expr_inputs = {expr.offset(), {}};
+        std::vector<std::pair<int64_t, int64_t>>& variable_and_coefficient =
+            std::get<1>(expr_inputs);
+        if (expr.vars_size() != expr.coeffs_size()) {
+          return std::optional<Type>();
+        }
+        for (int i = 0; i < expr.vars_size(); ++i) {
+          variable_and_coefficient.push_back({expr.vars(i), expr.coeffs(i)});
+        }
+        return std::optional<Type>(expr_inputs);
+      },
+      offset_domain, fuzztest::VectorOf(variable_and_coefficient));
+}
+
+fuzztest::Domain<LinearConstraintProto> LinearConstraintDomain() {
+  fuzztest::Domain<std::pair<int64_t, int64_t>> variable_and_coefficient =
+      fuzztest::PairOf(
+          fuzztest::InRange<int64_t>(0, kMaxNumVars - 1),
+          fuzztest::InRange<int64_t>(-std::numeric_limits<int64_t>::max() / 2,
+                                     std::numeric_limits<int64_t>::max() / 2));
+  return fuzztest::ReversibleMap(
+      [](IntegerVariableProto domain,
+         std::vector<std::pair<int64_t, int64_t>> variable_and_coefficient) {
+        LinearConstraintProto constraint;
+        for (const auto& [var, coeff] : variable_and_coefficient) {
+          constraint.add_vars(var);
+          constraint.add_coeffs(coeff);
+        }
+        *constraint.mutable_domain() = domain.domain();
+        return constraint;
+      },
+      [](LinearConstraintProto constraint) {
+        using Type = std::tuple<IntegerVariableProto,
+                                std::vector<std::pair<int64_t, int64_t>>>;
+        Type constraint_inputs = {IntegerVariableProto(), {}};
+        *std::get<0>(constraint_inputs).mutable_domain() = constraint.domain();
+        std::vector<std::pair<int64_t, int64_t>>& variable_and_coefficient =
+            std::get<1>(constraint_inputs);
+        if (constraint.vars_size() != constraint.coeffs_size() ||
+            constraint.vars().empty()) {
+          return std::optional<Type>();
+        }
+        for (int i = 0; i < constraint.vars_size(); ++i) {
+          variable_and_coefficient.push_back(
+              {constraint.vars(i), constraint.coeffs(i)});
+        }
+        return std::optional<Type>(constraint_inputs);
+      },
+      CpVariableDomain(std::numeric_limits<int64_t>::min(),
+                       std::numeric_limits<int64_t>::max()),
+      fuzztest::VectorOf(variable_and_coefficient));
+}
+
+fuzztest::Domain<IntervalConstraintProto> IntervalConstraintDomain() {
+  return fuzztest::Arbitrary<IntervalConstraintProto>()
+      .WithProtobufField("start", LinearExprDomain())
+      .WithProtobufField("end", LinearExprDomain())
+      .WithProtobufField("size", LinearExprDomain());
+}
+
+fuzztest::Domain<LinearArgumentProto> LinearArgumentDomain() {
+  return fuzztest::Arbitrary<LinearArgumentProto>()
+      .WithProtobufField("target", LinearExprDomain())
+      .WithRepeatedProtobufField("exprs",
+                                 fuzztest::VectorOf(LinearExprDomain()));
+}
+
+fuzztest::Domain<BoolArgumentProto> BoolArgumentDomain() {
+  return fuzztest::Arbitrary<BoolArgumentProto>().WithRepeatedInt32Field(
+      "literals", fuzztest::VectorOf(fuzztest::InRange<int32_t>(
+                      -kMaxNumVars, kMaxNumVars - 1)));
 }
 
 // Fuzzing repeats solve() 100 times, and timeout after 600s.
@@ -158,10 +256,23 @@ FUZZ_TEST(CpModelProtoFuzzer, Solve)
             .WithRepeatedProtobufField("variables", ModelProtoVariablesDomain())
             .WithRepeatedProtobufField(
                 "constraints",
-                fuzztest::VectorOf(fuzztest::Arbitrary<ConstraintProto>()
-                                       .WithOneofAlwaysSet("constraint")
-                                       .WithFieldUnset("name")
-                                       .WithFieldUnset("dummy_constraint")))
+                fuzztest::VectorOf(
+                    fuzztest::Arbitrary<ConstraintProto>()
+                        .WithOneofAlwaysSet("constraint")
+                        .WithFieldUnset("name")
+                        .WithFieldUnset("dummy_constraint")
+                        .WithProtobufField("bool_or", BoolArgumentDomain())
+                        .WithProtobufField("bool_and", BoolArgumentDomain())
+                        .WithProtobufField("at_most_one", BoolArgumentDomain())
+                        .WithProtobufField("exactly_one", BoolArgumentDomain())
+                        .WithProtobufField("bool_xor", BoolArgumentDomain())
+                        .WithProtobufField("int_div", LinearArgumentDomain())
+                        .WithProtobufField("int_mod", LinearArgumentDomain())
+                        .WithProtobufField("int_prod", LinearArgumentDomain())
+                        .WithProtobufField("lin_max", LinearArgumentDomain())
+                        .WithProtobufField("linear", LinearConstraintDomain())
+                        .WithProtobufField("interval",
+                                           IntervalConstraintDomain())))
             .WithFieldUnset("name")
             .WithFieldUnset("symmetry")
             .WithProtobufField("objective",
