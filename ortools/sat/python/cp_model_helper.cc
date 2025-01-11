@@ -31,6 +31,7 @@
 #include "pybind11/gil.h"
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
 #include "pybind11_protobuf/native_proto_caster.h"
 
@@ -189,8 +190,8 @@ void RaiseIfNone(LinearExpr* expr) {
   }
 }
 
-void ProcessExprArg(py::handle arg, LinearExpr*& expr, int64_t& int_value,
-                    double& float_value) {
+void ProcessExprArg(const py::handle& arg, LinearExpr*& expr,
+                    int64_t& int_value, double& float_value) {
   if (py::isinstance<LinearExpr>(arg)) {
     expr = arg.cast<LinearExpr*>();
   } else if (py::isinstance<py::int_>(arg)) {
@@ -211,7 +212,7 @@ void ProcessExprArg(py::handle arg, LinearExpr*& expr, int64_t& int_value,
   }
 }
 
-void ProcessConstantArg(py::handle arg, int64_t& int_value,
+void ProcessConstantArg(const py::handle& arg, int64_t& int_value,
                         double& float_value) {
   if (py::isinstance<py::int_>(arg)) {
     int_value = arg.cast<int64_t>();
@@ -237,13 +238,14 @@ LinearExpr* SumArguments(py::args expressions) {
   double float_offset = 0.0;
   bool has_floats = false;
 
-  const auto process_arg = [&](py::handle arg) {
+  const auto process_arg = [&](const py::handle& arg) -> void {
     int64_t int_value = 0;
     double float_value = 0.0;
     LinearExpr* expr = nullptr;
     ProcessExprArg(arg, expr, int_value, float_value);
     if (expr != nullptr) {
       linear_exprs.push_back(expr);
+      return;
     } else if (int_value != 0) {
       int_offset += int_value;
       float_offset += static_cast<double>(int_value);
@@ -256,13 +258,15 @@ LinearExpr* SumArguments(py::args expressions) {
   if (expressions.size() == 0) {
     return new IntConstant(0);
   } else if (expressions.size() == 1 &&
-             py::isinstance<py::iterable>(expressions[0])) {
+             py::isinstance<py::sequence>(expressions[0])) {
     // Normal list or tuple argument.
-    py::iterable elements = expressions[0].cast<py::iterable>();
+    py::sequence elements = expressions[0].cast<py::sequence>();
+    linear_exprs.reserve(elements.size());
     for (const py::handle& arg : elements) {
       process_arg(arg);
     }
   } else {  // Direct sum(x, y, 3, ..) without [].
+    linear_exprs.reserve(expressions.size());
     for (const py::handle arg : expressions) {
       process_arg(arg);
     }
@@ -295,7 +299,8 @@ LinearExpr* SumArguments(py::args expressions) {
   }
 }
 
-LinearExpr* WeightedSumArguments(py::sequence expressions, py::sequence coefficients) {
+LinearExpr* WeightedSumArguments(py::sequence expressions,
+                                 py::sequence coefficients) {
   if (expressions.size() != coefficients.size()) {
     ThrowError(PyExc_ValueError,
                absl::StrCat("LinearExpr::weighted_sum() requires the same "
@@ -306,6 +311,9 @@ LinearExpr* WeightedSumArguments(py::sequence expressions, py::sequence coeffici
   std::vector<LinearExpr*> linear_exprs;
   std::vector<int64_t> int_coeffs;
   std::vector<double> float_coeffs;
+  linear_exprs.reserve(expressions.size());
+  int_coeffs.reserve(expressions.size());
+  float_coeffs.reserve(expressions.size());
   int64_t int_offset = 0;
   double float_offset = 0.0;
   bool has_floats = false;
@@ -322,10 +330,11 @@ LinearExpr* WeightedSumArguments(py::sequence expressions, py::sequence coeffici
     ProcessConstantArg(coeff, int_mult, float_mult);
     has_floats |= float_mult != 0.0;
     has_floats |= float_value != 0.0;
-    if (expr != nullptr) {
+    if (expr != nullptr && (int_mult != 0 || float_mult != 0.0)) {
       linear_exprs.push_back(expr);
       int_coeffs.push_back(int_mult);
       float_coeffs.push_back(static_cast<double>(int_mult) + float_mult);
+      continue;
     } else if (int_value != 0) {
       int_offset += int_mult * int_value;
       float_offset += (float_mult + static_cast<double>(int_mult)) *
