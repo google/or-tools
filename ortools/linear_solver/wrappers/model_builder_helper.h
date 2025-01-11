@@ -43,16 +43,6 @@ class ModelBuilderHelper;
 class ModelSolverHelper;
 class Variable;
 
-// A class to hold an linear expression or a constant.
-struct ExprOrValue {
-  explicit ExprOrValue(LinearExpr* e) : expr(e) {}
-  explicit ExprOrValue(double v) : value(v) {}
-  explicit ExprOrValue(int64_t v) : value(static_cast<double>(v)) {}
-
-  LinearExpr* expr = nullptr;
-  double value = 0.0;
-};
-
 // A linear expression that can be either integer or floating point.
 class LinearExpr {
  public:
@@ -61,19 +51,9 @@ class LinearExpr {
   virtual std::string ToString() const = 0;
   virtual std::string DebugString() const = 0;
 
-  static LinearExpr* Sum(const std::vector<LinearExpr*>& exprs,
-                         double constant = 0.0);
-  static LinearExpr* MixedSum(const std::vector<ExprOrValue>& exprs,
-                              double offset = 0.0);
-  static LinearExpr* WeightedSum(const std::vector<LinearExpr*>& exprs,
-                                 const std::vector<double>& coeffs,
-                                 double constant = 0.0);
-  static LinearExpr* MixedWeightedSum(const std::vector<ExprOrValue>& exprs,
-                                      const std::vector<double>& coeffs,
-                                      double constant = 0.0);
   static LinearExpr* Term(LinearExpr* expr, double coeff);
   static LinearExpr* Affine(LinearExpr* expr, double coeff, double constant);
-  static double AffineCst(double value, double coeff, double constant);
+  static LinearExpr* AffineCst(double value, double coeff, double constant);
   static LinearExpr* Constant(double value);
 
   LinearExpr* Add(LinearExpr* expr);

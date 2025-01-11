@@ -949,7 +949,8 @@ class Model:
             self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
             self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
             self.__helper.add_terms_to_constraint(
-                ct.index, flat_expr.vars, flat_expr.coeffs)
+                ct.index, flat_expr.vars, flat_expr.coeffs
+            )
         else:
             raise TypeError(
                 "Not supported:"
@@ -988,7 +989,7 @@ class Model:
         you can check the if a constraint is always false (lb=inf, ub=-inf) by
         calling EnforcedLinearConstraint.is_always_false()
         """
-        if isinstance(ct, mbh.BoundedLinearExpression):  # IMPLEMENTME
+        if isinstance(ct, mbh.BoundedLinearExpression):
             return _add_enforced_linear_constraint_to_helper(
                 ct, self.__helper, var, value, name
             )

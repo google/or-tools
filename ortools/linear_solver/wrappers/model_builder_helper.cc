@@ -783,73 +783,6 @@ void ModelSolverHelper::SetSolverSpecificParameters(
 void ModelSolverHelper::EnableOutput(bool enabled) { solver_output_ = enabled; }
 
 // Expressions.
-
-LinearExpr* LinearExpr::Sum(const std::vector<LinearExpr*>& exprs,
-                            double constant) {
-  if (exprs.empty()) {
-    return new FixedValue(0.0);
-  } else if (exprs.size() == 1) {
-    return exprs[0];
-  } else {
-    return new SumArray(exprs, constant);
-  }
-}
-
-LinearExpr* LinearExpr::MixedSum(const std::vector<ExprOrValue>& exprs,
-                                 double constant) {
-  std::vector<LinearExpr*> lin_exprs;
-
-  for (const ExprOrValue& choice : exprs) {
-    if (choice.expr != nullptr) {
-      lin_exprs.push_back(choice.expr);
-    } else {
-      constant += choice.value;
-    }
-  }
-
-  // Special case: if there is only one term, return it.
-  if (constant == 0.0 && lin_exprs.size() == 1) {
-    return lin_exprs[0];
-  }
-
-  if (lin_exprs.empty()) {
-    return new FixedValue(constant);
-  } else if (lin_exprs.size() == 1) {
-    return new AffineExpr(lin_exprs[0], 1.0, constant);
-  } else {
-    return new SumArray(lin_exprs, constant);
-  }
-}
-
-LinearExpr* LinearExpr::WeightedSum(const std::vector<LinearExpr*>& exprs,
-                                    const std::vector<double>& coeffs,
-                                    double constant) {
-  if (exprs.empty()) return new FixedValue(0.0);
-  if (exprs.size() == 1) return Affine(exprs[0], coeffs[0], constant);
-  return new WeightedSumArray(exprs, coeffs, constant);
-}
-
-LinearExpr* LinearExpr::MixedWeightedSum(const std::vector<ExprOrValue>& exprs,
-                                         const std::vector<double>& coeffs,
-                                         double constant) {
-  std::vector<LinearExpr*> lin_exprs;
-  std::vector<double> lin_coeffs;
-  for (int i = 0; i < exprs.size(); ++i) {
-    if (exprs[i].expr != nullptr) {
-      lin_exprs.push_back(exprs[i].expr);
-      lin_coeffs.push_back(coeffs[i]);
-    } else {
-      constant += coeffs[i] * exprs[i].value;
-    }
-  }
-
-  if (lin_exprs.empty()) return new FixedValue(constant);
-  if (lin_exprs.size() == 1) {
-    return Affine(lin_exprs[0], lin_coeffs[0], constant);
-  }
-  return new WeightedSumArray(lin_exprs, lin_coeffs, constant);
-}
-
 LinearExpr* LinearExpr::Term(LinearExpr* expr, double coeff) {
   return new AffineExpr(expr, coeff, 0.0);
 }
@@ -860,8 +793,8 @@ LinearExpr* LinearExpr::Affine(LinearExpr* expr, double coeff,
   return new AffineExpr(expr, coeff, constant);
 }
 
-double LinearExpr::AffineCst(double value, double coeff, double constant) {
-  return value * coeff + constant;
+LinearExpr* LinearExpr::AffineCst(double value, double coeff, double constant) {
+  return new FixedValue(value * coeff + constant);
 }
 
 LinearExpr* LinearExpr::Constant(double value) { return new FixedValue(value); }

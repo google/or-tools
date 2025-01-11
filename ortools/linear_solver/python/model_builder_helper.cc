@@ -52,13 +52,15 @@ using ::operations_research::MPSolutionResponse;
 using ::operations_research::MPVariableProto;
 using ::operations_research::mb::AffineExpr;
 using ::operations_research::mb::BoundedLinearExpression;
-using ::operations_research::mb::ExprOrValue;
+using ::operations_research::mb::FixedValue;
 using ::operations_research::mb::FlatExpression;
 using ::operations_research::mb::LinearExpr;
 using ::operations_research::mb::ModelBuilderHelper;
 using ::operations_research::mb::ModelSolverHelper;
 using ::operations_research::mb::SolveStatus;
+using ::operations_research::mb::SumArray;
 using ::operations_research::mb::Variable;
+using ::operations_research::mb::WeightedSumArray;
 
 namespace py = pybind11;
 using ::py::arg;
@@ -166,26 +168,6 @@ std::vector<std::pair<int, double>> SortedGroupedTerms(
   return terms;
 }
 
-LinearExpr* SafeWeightedSum(const std::vector<LinearExpr*>& exprs,
-                            const std::vector<double>& coeffs,
-                            double constant = 0.0) {
-  if (exprs.size() != coeffs.size()) {
-    ThrowError(PyExc_ValueError,
-               "The number of expressions and coefficients must match.");
-  }
-  return LinearExpr::WeightedSum(exprs, coeffs, constant);
-}
-
-LinearExpr* SafeMixedWeightedSum(const std::vector<ExprOrValue>& exprs,
-                                 const std::vector<double>& coeffs,
-                                 double constant = 0.0) {
-  if (exprs.size() != coeffs.size()) {
-    ThrowError(PyExc_ValueError,
-               "The number of expressions and coefficients must match.");
-  }
-  return LinearExpr::MixedWeightedSum(exprs, coeffs, constant);
-}
-
 const char* kLinearExprClassDoc = R"doc(
 Holds an linear expression.
 
@@ -229,41 +211,126 @@ const char* kVarClassDoc = R"doc(A variable (continuous or integral).
   model is feasible, or optimal if you provided an objective function.
 )doc";
 
+void ProcessExprArg(const py::handle& arg, LinearExpr*& expr,
+                    double& float_value) {
+  if (py::isinstance<LinearExpr>(arg)) {
+    expr = arg.cast<LinearExpr*>();
+  } else {
+    float_value = arg.cast<double>();
+  }
+}
+
+LinearExpr* SumArguments(py::args args, const py::kwargs& kwargs) {
+  std::vector<LinearExpr*> linear_exprs;
+  double float_offset = 0.0;
+
+  const auto process_arg = [&](const py::handle& arg) -> void {
+    if (py::isinstance<LinearExpr>(arg)) {
+      linear_exprs.push_back(arg.cast<LinearExpr*>());
+    } else {
+      float_offset += arg.cast<double>();
+    }
+  };
+
+  if (args.size() == 0) {
+    return new FixedValue(0.0);
+  } else if (args.size() == 1 && py::isinstance<py::sequence>(args[0])) {
+    // Normal list or tuple argument.
+    py::sequence elements = args[0].cast<py::sequence>();
+    linear_exprs.reserve(elements.size());
+    for (const py::handle& arg : elements) {
+      process_arg(arg);
+    }
+  } else {  // Direct sum(x, y, 3, ..) without [].
+    linear_exprs.reserve(args.size());
+    for (const py::handle arg : args) {
+      process_arg(arg);
+    }
+  }
+
+  if (kwargs) {
+    for (const auto arg : kwargs) {
+      const std::string arg_name = std::string(py::str(arg.first));
+      if (arg_name == "constant") {
+        float_offset += arg.second.cast<double>();
+      } else {
+        ThrowError(PyExc_ValueError,
+                   absl::StrCat("Unknown keyword argument: ", arg_name));
+      }
+    }
+  }
+
+  if (linear_exprs.empty()) {
+    return new FixedValue(float_offset);
+  } else if (linear_exprs.size() == 1) {
+    if (float_offset == 0.0) {
+      return linear_exprs[0];
+    } else {
+      return new AffineExpr(linear_exprs[0], 1.0, float_offset);
+    }
+  } else {
+    return new SumArray(linear_exprs, float_offset);
+  }
+}
+
+LinearExpr* WeightedSumArguments(py::sequence expressions,
+                                 const std::vector<double>& coefficients,
+                                 double offset = 0.0) {
+  if (expressions.size() != coefficients.size()) {
+    ThrowError(PyExc_ValueError,
+               absl::StrCat("LinearExpr::weighted_sum() requires the same "
+                            "number of arguments and coefficients: ",
+                            expressions.size(), " != ", coefficients.size()));
+  }
+
+  std::vector<LinearExpr*> linear_exprs;
+  std::vector<double> coeffs;
+  linear_exprs.reserve(expressions.size());
+  coeffs.reserve(expressions.size());
+
+  for (int i = 0; i < expressions.size(); ++i) {
+    py::handle arg = expressions[i];
+    LinearExpr* expr = nullptr;
+    double value = 0.0;
+    ProcessExprArg(arg, expr, value);
+    if (expr != nullptr && coefficients[i] != 0.0) {
+      linear_exprs.push_back(expr);
+      coeffs.push_back(coefficients[i]);
+      continue;
+    } else if (value != 0.0) {
+      offset += coefficients[i] * value;
+    }
+  }
+
+  if (linear_exprs.empty()) {
+    return new FixedValue(offset);
+  } else if (linear_exprs.size() == 1) {
+    if (offset == 0.0 && coeffs[0] == 1.0) {
+      return linear_exprs[0];
+    } else {
+      return new AffineExpr(linear_exprs[0], coeffs[0], offset);
+    }
+  } else {
+    return new WeightedSumArray(linear_exprs, coeffs, offset);
+  }
+}
+
 PYBIND11_MODULE(model_builder_helper, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
-  py::class_<ExprOrValue>(m, "ExprOrValue")
-      .def(py::init<double>())
-      .def(py::init<int64_t>())
-      .def(py::init<LinearExpr*>())
-      .def_readonly("double_value", &ExprOrValue::value)
-      .def_readonly("expr", &ExprOrValue::expr);
-
-  py::implicitly_convertible<double, ExprOrValue>();
-  py::implicitly_convertible<int, ExprOrValue>();
-  py::implicitly_convertible<LinearExpr*, ExprOrValue>();
-
   py::class_<LinearExpr>(m, "LinearExpr", kLinearExprClassDoc)
-      // We make sure to keep the order of the overloads: LinearExpr* before
-      // ExprOrValue as this is faster to parse and type check.
-      .def_static("sum", (&LinearExpr::Sum), arg("exprs"), py::kw_only(),
-                  arg("constant") = 0.0, "Creates `sum(exprs) + constant`.",
+      .def_static("sum", &SumArguments,
+                  "Creates `sum(expressions) [+ constant]`.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("sum", &LinearExpr::MixedSum, arg("exprs"), py::kw_only(),
-                  arg("constant") = 0.0, "Creates `sum(exprs) + constant`.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("weighted_sum", &SafeWeightedSum, arg("exprs"), arg("coeffs"),
-                  py::kw_only(), arg("constant") = 0.0,
-                  "Creates `sum(expressions[i] * coefficients[i]) + constant`.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("weighted_sum", &SafeMixedWeightedSum, arg("exprs"),
-                  arg("coeffs"), py::kw_only(), arg("constant") = 0.0,
-                  "Creates `sum(expressions[i] * coefficients[i]) + constant`.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static(
+          "weighted_sum", &WeightedSumArguments,
+          "Creates `sum(expressions[i] * coefficients[i]) [+ constant]`.",
+          arg("expressions"), arg("coefficients"), py::kw_only(),
+          arg("constant") = 0.0, py::return_value_policy::automatic,
+          py::keep_alive<0, 1>())
       .def_static("term", &LinearExpr::Term, arg("expr").none(false),
                   arg("coeff"), "Returns expr * coeff.",
                   py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      // Compatibility layer.
       .def_static("term", &LinearExpr::Affine, arg("expr").none(false),
                   arg("coeff"), py::kw_only(), py::arg("constant"),
                   "Returns expr * coeff [+ constant].",
@@ -287,7 +354,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("__repr__", &LinearExpr::DebugString)
       // Operators.
       // Note that we keep the 3 APIS (expr, int, double) instead of using an
-      // ExprOrValue argument as this is more efficient.
+      // py::handle argument as this is more efficient.
       .def("__add__", &LinearExpr::Add, arg("other").none(false),
            py::return_value_policy::automatic, py::keep_alive<0, 1>(),
            py::keep_alive<0, 2>())
@@ -342,44 +409,44 @@ PYBIND11_MODULE(model_builder_helper, m) {
            py::return_value_policy::automatic, py::keep_alive<0, 1>())
       // Disable other operators as they are not supported.
       .def("__floordiv__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling // on a linear expression is not supported.");
            })
       .def("__mod__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling %% on a linear expression is not supported.");
            })
       .def("__pow__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling ** on a linear expression is not supported.");
            })
       .def("__lshift__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(
                  PyExc_NotImplementedError,
                  "calling left shift on a linear expression is not supported");
            })
       .def("__rshift__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(
                  PyExc_NotImplementedError,
                  "calling right shift on a linear expression is not supported");
            })
       .def("__and__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling and on a linear expression is not supported");
            })
       .def("__or__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling or on a linear expression is not supported");
            })
       .def("__xor__",
-           [](LinearExpr* /*self*/, ExprOrValue /*other*/) {
+           [](LinearExpr* /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling xor on a linear expression is not supported");
            })

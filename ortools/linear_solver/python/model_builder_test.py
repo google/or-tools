@@ -619,6 +619,7 @@ class LinearBaseErrorsTest(absltest.TestCase):
         with self.assertRaises(TypeError):
 
             class UnknownLinearType(mb.LinearExpr):
+
                 def __init__(self):
                     mb.LinearExpr.__init__(self)
 
