@@ -692,10 +692,9 @@ extern template class GenericMinCostFlow<
 // a grace period.
 struct MinCostFlow : public MinCostFlowBase {
   template <typename = void>
-  MinCostFlow() {
-    static_assert(false,
-                  "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
-                  "`GenericMinCostFlow` with a specific graph type instead.");
+   MinCostFlow() {
+    LOG(ERROR) << "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
+                  "`GenericMinCostFlow` with a specific graph type instead.";
   }
 };
 
