@@ -275,7 +275,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
         (3, 1, 0),
     ]
 
-    # daily demands for work shifts (morning, afternon, night) for each day
+    # daily demands for work shifts (morning, afternoon, night) for each day
     # of the week starting on Monday.
     weekly_cover_demands = [
         (2, 3, 1),  # Monday
