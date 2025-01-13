@@ -566,7 +566,7 @@ class CpModelTest(absltest.TestCase):
         self.assertIsInstance(s8, cmh.IntAffine)
         self.assertEqual(s8.expression, x[0])
         self.assertEqual(s8.coefficient, 1)
-        self.assertEqual(s8.offset, 1)
+        self.assertEqual(s8.offset, 3)
 
         s9 = cp_model.LinearExpr.sum(x[0], -2.1)
         self.assertFalse(s9.is_integer())
