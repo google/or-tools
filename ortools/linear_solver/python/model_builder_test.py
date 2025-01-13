@@ -31,7 +31,7 @@ from ortools.linear_solver.python import model_builder_helper as mbh
 
 def build_dict(expr: mb.LinearExprT) -> Dict[mbh.Variable, float]:
     res = {}
-    flat_expr = mbh.FlatExpression(expr)
+    flat_expr = mbh.FlatExpr(expr)
     print(f"expr = {expr} flat_expr = {flat_expr}", flush=True)
     for var, coeff in zip(flat_expr.vars, flat_expr.coeffs):
         print(f"process {var} * {coeff}", flush=True)
@@ -209,7 +209,7 @@ ENDATA
         t = model.new_int_var(3, 10, "t")
 
         e1 = mb.LinearExpr.sum([x, y, z])
-        flat_e1 = mbh.FlatExpression(e1)
+        flat_e1 = mbh.FlatExpr(e1)
         expected_vars = np.array([0, 1, 2], dtype=np.int32)
         np_testing.assert_array_equal(expected_vars, flat_e1.variable_indices())
         np_testing.assert_array_equal(
@@ -219,7 +219,7 @@ ENDATA
         self.assertEqual(e1.__str__(), "(x + y + z)")
 
         e2 = mb.LinearExpr.sum([e1, 4.0])
-        flat_e2 = mbh.FlatExpression(e2)
+        flat_e2 = mbh.FlatExpr(e2)
         np_testing.assert_array_equal(expected_vars, flat_e2.variable_indices())
         np_testing.assert_array_equal(
             np.array([1, 1, 1], dtype=np.double), flat_e2.coeffs
@@ -229,7 +229,7 @@ ENDATA
         self.assertEqual(flat_e2.__str__(), "x + y + z + 4")
 
         e3 = mb.LinearExpr.term(e2, 2)
-        flat_e3 = mbh.FlatExpression(e3)
+        flat_e3 = mbh.FlatExpr(e3)
         np_testing.assert_array_equal(expected_vars, flat_e3.variable_indices())
         np_testing.assert_array_equal(
             np.array([2, 2, 2], dtype=np.double), flat_e3.coeffs
@@ -239,7 +239,7 @@ ENDATA
         self.assertEqual(flat_e3.__str__(), "2 * x + 2 * y + 2 * z + 8")
 
         e4 = mb.LinearExpr.weighted_sum([x, t], [-1, 1], constant=2)
-        flat_e4 = mbh.FlatExpression(e4)
+        flat_e4 = mbh.FlatExpr(e4)
         np_testing.assert_array_equal(
             np.array([0, 3], dtype=np.int32), flat_e4.variable_indices()
         )
@@ -250,7 +250,7 @@ ENDATA
         self.assertEqual(e4.__str__(), "(-x + t + 2)")
 
         e4b = mb.LinearExpr.weighted_sum([e4 * 3], [1])
-        flat_e4b = mbh.FlatExpression(e4b)
+        flat_e4b = mbh.FlatExpr(e4b)
         np_testing.assert_array_equal(
             np.array([0, 3], dtype=np.int32), flat_e4b.variable_indices()
         )
@@ -261,7 +261,7 @@ ENDATA
         self.assertEqual(e4b.__str__(), "(3 * (-x + t + 2))")
 
         e5 = mb.LinearExpr.sum([e1, -3, e4])
-        flat_e5 = mbh.FlatExpression(e5)
+        flat_e5 = mbh.FlatExpr(e5)
         np_testing.assert_array_equal(
             np.array([1, 2, 3], dtype=np.int32), flat_e5.variable_indices()
         )
@@ -272,7 +272,7 @@ ENDATA
         self.assertEqual(flat_e5.__str__(), "y + z + t - 1")
 
         e6 = mb.LinearExpr.term(x, 2.0, constant=1.0)
-        flat_e6 = mbh.FlatExpression(e6)
+        flat_e6 = mbh.FlatExpr(e6)
         np_testing.assert_array_equal(
             np.array([0], dtype=np.int32), flat_e6.variable_indices()
         )
@@ -288,9 +288,35 @@ ENDATA
         e9 = mb.LinearExpr.term(x * 2 + 3, 1, constant=0)
         e10 = mb.LinearExpr.term(x, 2, constant=3)
         self.assertEqual(
-            str(mbh.FlatExpression(e9)),
-            str(mbh.FlatExpression(e10)),
+            str(mbh.FlatExpr(e9)),
+            str(mbh.FlatExpr(e10)),
         )
+
+        e10 = mb.LinearExpr.sum()
+        self.assertEqual(str(e10), "0")
+
+        e11 = mb.LinearExpr.sum(x)
+        self.assertIsInstance(e11, mb.Variable)
+        self.assertEqual(x.index, e11.index)
+
+        e12 = mb.LinearExpr.sum(-1.0, x, 1.0)
+        self.assertIsInstance(e12, mb.Variable)
+        self.assertEqual(x.index, e12.index)
+
+        e13 = mb.LinearExpr.sum(-1.0, x, constant=1.0)
+        self.assertIsInstance(e13, mb.Variable)
+        self.assertEqual(x.index, e13.index)
+
+        e14 = mb.LinearExpr.weighted_sum([x, t, 1.2], [1, -1, -1.0], constant=2)
+        flat_e14 = mbh.FlatExpr(e14)
+        np_testing.assert_array_equal(
+            np.array([0, 3], dtype=np.int32), flat_e14.variable_indices()
+        )
+        np_testing.assert_array_equal(
+            np.array([1, -1], dtype=np.double), flat_e14.coeffs
+        )
+        self.assertEqual(flat_e14.offset, 0.8)
+        self.assertEqual(e14.__str__(), "(x - t + 0.8)")
 
     def test_variables(self):
         model = mb.Model()
@@ -580,27 +606,27 @@ class LinearBaseTest(parameterized.TestCase):
         ),
         # LinearExpression
         dict(
-            testcase_name="FlatExpression(x.sum())",
-            expr=lambda x, y: mbh.FlatExpression(x.sum()),
+            testcase_name="FlatExpr(x.sum())",
+            expr=lambda x, y: mbh.FlatExpr(x.sum()),
             expected_str="x[0] + x[1] + x[2]",
         ),
         dict(
-            testcase_name="FlatExpression(FlatExpression(x.sum()))",
+            testcase_name="FlatExpr(FlatExpr(x.sum()))",
             # pylint: disable=g-long-lambda
-            expr=lambda x, y: mbh.FlatExpression(mbh.FlatExpression(x.sum())),
+            expr=lambda x, y: mbh.FlatExpr(mbh.FlatExpr(x.sum())),
             expected_str="x[0] + x[1] + x[2]",
         ),
         dict(
-            testcase_name="""FlatExpression(sum([
-            FlatExpression(x.sum()),
-            FlatExpression(x.sum()),
+            testcase_name="""FlatExpr(sum([
+            FlatExpr(x.sum()),
+            FlatExpr(x.sum()),
           ]))""",
             # pylint: disable=g-long-lambda
-            expr=lambda x, y: mbh.FlatExpression(
+            expr=lambda x, y: mbh.FlatExpr(
                 sum(
                     [
-                        mbh.FlatExpression(x.sum()),
-                        mbh.FlatExpression(x.sum()),
+                        mbh.FlatExpr(x.sum()),
+                        mbh.FlatExpr(x.sum()),
                     ]
                 )
             ),
@@ -610,7 +636,7 @@ class LinearBaseTest(parameterized.TestCase):
     def test_str(self, expr, expected_str):
         x = self.x
         y = self.y
-        self.assertEqual(str(mbh.FlatExpression(expr(x, y))), expected_str)
+        self.assertEqual(str(mbh.FlatExpr(expr(x, y))), expected_str)
 
 
 class LinearBaseErrorsTest(absltest.TestCase):
@@ -623,7 +649,7 @@ class LinearBaseErrorsTest(absltest.TestCase):
                 def __init__(self):
                     mb.LinearExpr.__init__(self)
 
-            mbh.FlatExpression(UnknownLinearType())
+            mbh.FlatExpr(UnknownLinearType())
 
     def test_division_by_zero(self):
         with self.assertRaises(ZeroDivisionError):
@@ -1483,8 +1509,8 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         expr2: mbh.LinearExpr,
     ) -> None:
         """Test that the two linear expressions are almost equal."""
-        flat_expr1 = mbh.FlatExpression(expr1)
-        flat_expr2 = mbh.FlatExpression(expr2)
+        flat_expr1 = mbh.FlatExpr(expr1)
+        flat_expr2 = mbh.FlatExpr(expr2)
         self.assertEqual(len(flat_expr1.vars), len(flat_expr2.vars))
         if len(flat_expr1.vars) > 0:  # pylint: disable=g-explicit-length-test
             self.assertSequenceEqual(flat_expr1.vars, flat_expr2.vars)
@@ -1511,7 +1537,6 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
         objective_expression = expression(x, y)
-        print(f"objective_expression: {objective_expression}")
         if is_maximize:
             model.maximize(objective_expression)
         else:
@@ -1529,7 +1554,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
 
         # Set and check for old objective.
         model.maximize(old_objective_expression)
-        flat_got_objective_expression = mbh.FlatExpression(model.objective_expression())
+        flat_got_objective_expression = mbh.FlatExpr(model.objective_expression())
         self.assertEmpty(flat_got_objective_expression.vars)
         self.assertEmpty(flat_got_objective_expression.coeffs)
         self.assertAlmostEqual(flat_got_objective_expression.offset, 1)
@@ -1553,7 +1578,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
-        objective_expression = mbh.FlatExpression(expression(x, y))
+        objective_expression = mbh.FlatExpr(expression(x, y))
         model.minimize(objective_expression)
         got_objective_expression = model.objective_expression()
         self.assertLinearExpressionAlmostEqual(
@@ -1572,7 +1597,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
-        objective_expression = mbh.FlatExpression(expression(x, y))
+        objective_expression = mbh.FlatExpr(expression(x, y))
         model.maximize(objective_expression)
         got_objective_expression = model.objective_expression()
         self.assertLinearExpressionAlmostEqual(

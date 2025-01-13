@@ -2443,6 +2443,21 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   const int result = NewBoolVar("reified precedence");
   reified_precedences_cache_[key] = result;
 
+  // Take care of hints.
+  if (hint_is_loaded_) {
+    std::optional<int64_t> time_i_hint = GetExpressionSolutionHint(time_i);
+    std::optional<int64_t> time_j_hint = GetExpressionSolutionHint(time_j);
+    std::optional<int64_t> active_i_hint = GetRefSolutionHint(active_i);
+    std::optional<int64_t> active_j_hint = GetRefSolutionHint(active_j);
+    if (time_i_hint.has_value() && time_j_hint.has_value() &&
+        active_i_hint.has_value() && active_j_hint.has_value()) {
+      const bool reified_hint = (active_i_hint.value() != 0) &&
+                                (active_j_hint.value() != 0) &&
+                                (time_i_hint.value() <= time_j_hint.value());
+      SetNewVariableHint(result, reified_hint);
+    }
+  }
+
   // result => (time_i <= time_j) && active_i && active_j.
   ConstraintProto* const lesseq = working_model->add_constraints();
   lesseq->add_enforcement_literal(result);

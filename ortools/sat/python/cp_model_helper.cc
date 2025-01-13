@@ -205,10 +205,17 @@ void ProcessExprArg(const py::handle& arg, LinearExpr*& expr,
       float_value = arg.cast<double>();
     }
   } else {
-    ThrowError(PyExc_TypeError,
-               absl::StrCat("LinearExpr::sum() only accept linear "
-                            "expressions and constants as argument: ",
-                            arg.cast<std::string>()));
+    try {
+      expr = arg.cast<LinearExpr*>();
+      ThrowError(PyExc_TypeError,
+                 absl::StrCat("LinearExpr::sum() only accept linear "
+                              "expressions and constants as argument: ",
+                              arg.cast<std::string>()));
+    } catch (py::cast_error& e) {
+      ThrowError(PyExc_TypeError,
+                 "LinearExpr::sum() only accept linear expressions and "
+                 "constants as argument.");
+    }
   }
 }
 
@@ -255,10 +262,7 @@ LinearExpr* SumArguments(py::args expressions) {
     }
   };
 
-  if (expressions.size() == 0) {
-    return new IntConstant(0);
-  } else if (expressions.size() == 1 &&
-             py::isinstance<py::sequence>(expressions[0])) {
+  if (expressions.size() == 1 && py::isinstance<py::sequence>(expressions[0])) {
     // Normal list or tuple argument.
     py::sequence elements = expressions[0].cast<py::sequence>();
     linear_exprs.reserve(elements.size());
@@ -339,7 +343,7 @@ LinearExpr* WeightedSumArguments(py::sequence expressions,
       int_offset += int_mult * int_value;
       float_offset += (float_mult + static_cast<double>(int_mult)) *
                       static_cast<double>(int_value);
-    } else if (float_value != 0.0) {
+    } else {
       float_offset +=
           (float_mult + static_cast<double>(int_mult)) * float_value;
     }

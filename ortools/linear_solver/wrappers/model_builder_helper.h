@@ -36,7 +36,7 @@ namespace mb {
 // Base implementation of linear expressions.
 
 class BoundedLinearExpression;
-class FlatExpression;
+class FlatExpr;
 class ExprVisitor;
 class LinearExpr;
 class ModelBuilderHelper;
@@ -114,14 +114,14 @@ class ExprEvaluator : public ExprVisitor {
 };
 
 // A flat linear expression sum(vars[i] * coeffs[i]) + offset
-class FlatExpression : public LinearExpr {
+class FlatExpr : public LinearExpr {
  public:
-  explicit FlatExpression(const LinearExpr* expr);
+  explicit FlatExpr(const LinearExpr* expr);
   // Flatten pos - neg.
-  FlatExpression(const LinearExpr* pos, const LinearExpr* neg);
-  FlatExpression(const std::vector<const Variable*>&,
-                 const std::vector<double>&, double);
-  explicit FlatExpression(double offset);
+  FlatExpr(const LinearExpr* pos, const LinearExpr* neg);
+  FlatExpr(const std::vector<const Variable*>&, const std::vector<double>&,
+           double);
+  explicit FlatExpr(double offset);
   const std::vector<const Variable*>& vars() const { return vars_; }
   std::vector<int> VarIndices() const;
   const std::vector<double>& coeffs() const { return coeffs_; }

@@ -53,7 +53,7 @@ using ::operations_research::MPVariableProto;
 using ::operations_research::mb::AffineExpr;
 using ::operations_research::mb::BoundedLinearExpression;
 using ::operations_research::mb::FixedValue;
-using ::operations_research::mb::FlatExpression;
+using ::operations_research::mb::FlatExpr;
 using ::operations_research::mb::LinearExpr;
 using ::operations_research::mb::ModelBuilderHelper;
 using ::operations_research::mb::ModelSolverHelper;
@@ -232,9 +232,7 @@ LinearExpr* SumArguments(py::args args, const py::kwargs& kwargs) {
     }
   };
 
-  if (args.size() == 0) {
-    return new FixedValue(0.0);
-  } else if (args.size() == 1 && py::isinstance<py::sequence>(args[0])) {
+  if (args.size() == 1 && py::isinstance<py::sequence>(args[0])) {
     // Normal list or tuple argument.
     py::sequence elements = args[0].cast<py::sequence>();
     linear_exprs.reserve(elements.size());
@@ -463,17 +461,17 @@ PYBIND11_MODULE(model_builder_helper, m) {
       });
 
   // Expose Internal classes, mostly for testing.
-  py::class_<FlatExpression, LinearExpr>(m, "FlatExpression")
+  py::class_<FlatExpr, LinearExpr>(m, "FlatExpr")
       .def(py::init<const LinearExpr*>())
       .def(py::init<const LinearExpr*, const LinearExpr*>())
       .def(py::init<const std::vector<const Variable*>&,
                     const std::vector<double>&, double>(),
            py::keep_alive<1, 2>())
       .def(py::init<double>())
-      .def_property_readonly("vars", &FlatExpression::vars)
-      .def("variable_indices", &FlatExpression::VarIndices)
-      .def_property_readonly("coeffs", &FlatExpression::coeffs)
-      .def_property_readonly("offset", &FlatExpression::offset);
+      .def_property_readonly("vars", &FlatExpr::vars)
+      .def("variable_indices", &FlatExpr::VarIndices)
+      .def_property_readonly("coeffs", &FlatExpr::coeffs)
+      .def_property_readonly("offset", &FlatExpr::offset);
 
   py::class_<AffineExpr, LinearExpr>(m, "AffineExpr")
       .def(py::init<LinearExpr*, double, double>())

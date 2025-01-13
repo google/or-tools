@@ -880,26 +880,26 @@ double ExprEvaluator::Evaluate() {
   return offset_;
 }
 
-FlatExpression::FlatExpression(const LinearExpr* expr) {
+FlatExpr::FlatExpr(const LinearExpr* expr) {
   ExprFlattener lin;
   lin.AddToProcess(expr, 1.0);
   offset_ = lin.Flatten(&vars_, &coeffs_);
 }
 
-FlatExpression::FlatExpression(const LinearExpr* pos, const LinearExpr* neg) {
+FlatExpr::FlatExpr(const LinearExpr* pos, const LinearExpr* neg) {
   ExprFlattener lin;
   lin.AddToProcess(pos, 1.0);
   lin.AddToProcess(neg, -1.0);
   offset_ = lin.Flatten(&vars_, &coeffs_);
 }
 
-FlatExpression::FlatExpression(const std::vector<const Variable*>& vars,
-                               const std::vector<double>& coeffs, double offset)
+FlatExpr::FlatExpr(const std::vector<const Variable*>& vars,
+                   const std::vector<double>& coeffs, double offset)
     : vars_(vars), coeffs_(coeffs), offset_(offset) {}
 
-FlatExpression::FlatExpression(double offset) : offset_(offset) {}
+FlatExpr::FlatExpr(double offset) : offset_(offset) {}
 
-std::vector<int> FlatExpression::VarIndices() const {
+std::vector<int> FlatExpr::VarIndices() const {
   std::vector<int> var_indices;
   var_indices.reserve(vars_.size());
   for (const Variable* var : vars_) {
@@ -908,23 +908,21 @@ std::vector<int> FlatExpression::VarIndices() const {
   return var_indices;
 }
 
-void FlatExpression::Visit(ExprVisitor& lin, double c) const {
+void FlatExpr::Visit(ExprVisitor& lin, double c) const {
   for (int i = 0; i < vars_.size(); ++i) {
     lin.AddVarCoeff(vars_[i], coeffs_[i] * c);
   }
-  if (offset_ != 0.0) {
-    lin.AddConstant(offset_ * c);
-  }
+  lin.AddConstant(offset_ * c);
 }
 
-std::string FlatExpression::ToString() const {
+std::string FlatExpr::ToString() const {
   if (vars_.empty()) {
     return absl::StrCat(offset_);
   }
   std::string s;
   int num_printed = 0;
   for (int i = 0; i < vars_.size(); ++i) {
-    if (coeffs_[i] == 0.0) continue;
+    DCHECK_NE(coeffs_[i], 0.0);
     ++num_printed;
     if (num_printed > 5) {
       absl::StrAppend(&s, " + ...");
@@ -966,9 +964,9 @@ std::string FlatExpression::ToString() const {
   return s;
 }
 
-std::string FlatExpression::DebugString() const {
+std::string FlatExpr::DebugString() const {
   std::string s = absl::StrCat(
-      "FlatExpression(",
+      "FlatExpr(",
       absl::StrJoin(vars_, ", ", [](std::string* out, const Variable* expr) {
         absl::StrAppend(out, expr->DebugString());
       }));
@@ -1217,7 +1215,7 @@ void Variable::SetObjectiveCoefficient(double coeff) {
 BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* expr,
                                                  double lower_bound,
                                                  double upper_bound) {
-  FlatExpression flat_expr(expr);
+  FlatExpr flat_expr(expr);
   vars_ = flat_expr.vars();
   coeffs_ = flat_expr.coeffs();
   lower_bound_ = lower_bound - flat_expr.offset();
@@ -1228,7 +1226,7 @@ BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* pos,
                                                  const LinearExpr* neg,
                                                  double lower_bound,
                                                  double upper_bound) {
-  FlatExpression flat_expr(pos, neg);
+  FlatExpr flat_expr(pos, neg);
   vars_ = flat_expr.vars();
   coeffs_ = flat_expr.coeffs();
   lower_bound_ = lower_bound - flat_expr.offset();
@@ -1238,7 +1236,7 @@ BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* pos,
 BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* expr,
                                                  int64_t lower_bound,
                                                  int64_t upper_bound) {
-  FlatExpression flat_expr(expr);
+  FlatExpr flat_expr(expr);
   vars_ = flat_expr.vars();
   coeffs_ = flat_expr.coeffs();
   lower_bound_ = lower_bound - flat_expr.offset();
@@ -1249,7 +1247,7 @@ BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* pos,
                                                  const LinearExpr* neg,
                                                  int64_t lower_bound,
                                                  int64_t upper_bound) {
-  FlatExpression flat_expr(pos, neg);
+  FlatExpr flat_expr(pos, neg);
   vars_ = flat_expr.vars();
   coeffs_ = flat_expr.coeffs();
   lower_bound_ = lower_bound - flat_expr.offset();

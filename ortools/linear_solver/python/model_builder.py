@@ -510,7 +510,7 @@ class Model:
         """
         return _attribute_series(
             # pylint: disable=g-long-lambda
-            func=lambda c: mbh.FlatExpression(
+            func=lambda c: mbh.FlatExpr(
                 # pylint: disable=g-complex-comprehension
                 [
                     Variable(self.__helper, var_id)
@@ -862,7 +862,7 @@ class Model:
             self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
             self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
         elif isinstance(linear_expr, LinearExpr):
-            flat_expr = mbh.FlatExpression(linear_expr)
+            flat_expr = mbh.FlatExpr(linear_expr)
             # pylint: disable=protected-access
             self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
             self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
@@ -944,7 +944,7 @@ class Model:
             self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
             self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
         elif isinstance(linear_expr, LinearExpr):
-            flat_expr = mbh.FlatExpression(linear_expr)
+            flat_expr = mbh.FlatExpr(linear_expr)
             # pylint: disable=protected-access
             self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
             self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
@@ -1044,7 +1044,7 @@ class Model:
         elif isinstance(linear_expr, Variable):
             self.helper.set_var_objective_coefficient(linear_expr.index, 1.0)
         elif isinstance(linear_expr, LinearExpr):
-            flat_expr = mbh.FlatExpression(linear_expr)
+            flat_expr = mbh.FlatExpr(linear_expr)
             # pylint: disable=protected-access
             self.helper.set_objective_offset(flat_expr.offset)
             var_indices = [var.index for var in flat_expr.vars]
@@ -1070,7 +1070,7 @@ class Model:
             if coeff != 0.0:
                 variables.append(variable)
                 coefficients.append(coeff)
-        return mbh.FlatExpression(
+        return mbh.FlatExpr(
             variables, coefficients, self.__helper.objective_offset()
         )
 
