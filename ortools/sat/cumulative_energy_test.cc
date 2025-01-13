@@ -43,6 +43,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -107,9 +108,8 @@ bool SolveUsingConstraint(const EnergyInstance& instance) {
   const AffineExpression capacity(
       model.Add(ConstantIntegerVariable(instance.capacity)));
 
-  SchedulingConstraintHelper* helper =
-      new SchedulingConstraintHelper(intervals, &model);
-  model.TakeOwnership(helper);
+  auto* repo = model.GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({}, helper, &model);
   demands_helper->OverrideLinearizedEnergies(energies);
@@ -298,9 +298,8 @@ bool TestOverloadCheckerPropagation(
   EXPECT_TRUE(precedences->Propagate());
 
   // Propagator responsible for filtering the capacity variable.
-  SchedulingConstraintHelper* helper =
-      new SchedulingConstraintHelper(interval_vars, &model);
-  model.TakeOwnership(helper);
+  auto* repo = model.GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(interval_vars);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -408,9 +407,8 @@ TEST(OverloadCheckerTest, OptionalTaskPropagatedToAbsent) {
   const IntervalVariable i1 =
       model.Add(NewOptionalInterval(0, 10, /*size=*/8, is_present));
 
-  SchedulingConstraintHelper* helper =
-      new SchedulingConstraintHelper({i1, i2}, &model);
-  model.TakeOwnership(helper);
+  auto* repo = model.GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({i1, i2});
   const AffineExpression cte(IntegerValue(2));
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({cte, cte}, helper, &model);
@@ -429,9 +427,8 @@ TEST(OverloadCheckerTest, OptionalTaskMissedPropagationCase) {
   const IntervalVariable i2 =
       model.Add(NewOptionalInterval(0, 10, /*size=*/8, is_present));
 
-  SchedulingConstraintHelper* helper =
-      new SchedulingConstraintHelper({i1, i2}, &model);
-  model.TakeOwnership(helper);
+  auto* repo = model.GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({i1, i2});
   const AffineExpression cte(IntegerValue(2));
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({cte, cte}, helper, &model);
@@ -513,9 +510,8 @@ bool TestIsAfterCumulative(absl::Span<const CumulativeTasks> tasks,
   EXPECT_TRUE(precedences->Propagate());
 
   // Propagator responsible for filtering the capacity variable.
-  SchedulingConstraintHelper* helper =
-      new SchedulingConstraintHelper(interval_vars, &model);
-  model.TakeOwnership(helper);
+  auto* repo = model.GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(interval_vars);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, &model);
   model.TakeOwnership(demands_helper);

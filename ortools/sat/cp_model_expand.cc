@@ -1763,13 +1763,15 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
   // selected or not. Enforce an exactly one between them.
   BoolArgumentProto* exactly_one =
       context->working_model->add_constraints()->mutable_exactly_one();
+  int exactly_one_hint_sum = 0;
 
   std::optional<int> table_is_active_literal = std::nullopt;
   // Process enforcement literals.
   if (ct->enforcement_literal().size() == 1) {
     table_is_active_literal = ct->enforcement_literal(0);
   } else if (ct->enforcement_literal().size() > 1) {
-    table_is_active_literal = context->NewBoolVar("table expansion");
+    table_is_active_literal =
+        context->NewBoolVarWithConjunction(ct->enforcement_literal());
 
     // Adds table_is_active <=> and(enforcement_literals).
     BoolArgumentProto* bool_or =
@@ -1780,8 +1782,14 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       bool_or->add_literals(NegatedRef(lit));
     }
   }
+  if (table_is_active_literal.has_value()) {
+    const int inactive_lit = NegatedRef(table_is_active_literal.value());
+    exactly_one->add_literals(inactive_lit);
+    exactly_one_hint_sum += context->LiteralSolutionHintIs(inactive_lit, true);
+  }
 
-  int64_t num_reused_variables = 0;
+  int num_reused_variables = 0;
+  std::vector<int> tuples_with_new_variable;
   std::vector<int> tuple_literals(compressed_table.size());
   for (int i = 0; i < compressed_table.size(); ++i) {
     bool create_new_var = true;
@@ -1798,12 +1806,37 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       create_new_var = false;
       tuple_literals[i] =
           context->GetOrCreateVarValueEncoding(vars[var_index], v);
+      exactly_one_hint_sum += context->SolutionHint(vars[var_index]) == v;
       break;
     }
     if (create_new_var) {
       tuple_literals[i] = context->NewBoolVar("table expansion");
+      tuples_with_new_variable.push_back(i);
     }
     exactly_one->add_literals(tuple_literals[i]);
+  }
+  // Set the hint of the `tuple_literals` for which new variables were created.
+  // If the existing `tuple_literals` hints do not sum to 1, set the hint of the
+  // first tuple which can be selected to true, and the others to false. A tuple
+  // T can be selected if, for each variable v, the hint of v is in the set of
+  // values T[v] (an empty set means "any value").
+  for (const int i : tuples_with_new_variable) {
+    if (exactly_one_hint_sum >= 1) {
+      context->SetNewVariableHint(tuple_literals[i], false);
+      continue;
+    }
+    bool tuple_literal_hint = true;
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      const auto& values = compressed_table[i][var_index];
+      if (!values.empty() &&
+          std::find(values.begin(), values.end(),
+                    context->SolutionHint(vars[var_index])) == values.end()) {
+        tuple_literal_hint = false;
+        break;
+      }
+    }
+    context->SetNewVariableHint(tuple_literals[i], tuple_literal_hint);
+    exactly_one_hint_sum += tuple_literal_hint;
   }
   if (num_reused_variables > 0) {
     context->UpdateRuleStats("table: reused literals");
@@ -1828,10 +1861,6 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
     }
     ProcessOneCompressedColumn(vars[var_index], tuple_literals, column,
                                table_is_active_literal, context);
-  }
-
-  if (table_is_active_literal.has_value()) {
-    exactly_one->add_literals(NegatedRef(table_is_active_literal.value()));
   }
 
   context->UpdateRuleStats("table: expanded positive constraint");

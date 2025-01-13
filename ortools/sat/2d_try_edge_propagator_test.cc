@@ -31,6 +31,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/no_overlap_2d_helper.h"
 
 namespace operations_research {
 namespace sat {
@@ -92,9 +93,10 @@ void CheckConflict(const RectangleInRange& box_to_propagate,
 class TryEdgeRectanglePropagatorForTest : public TryEdgeRectanglePropagator {
  public:
   TryEdgeRectanglePropagatorForTest(bool x_is_forward, bool y_is_forward,
-                                    SchedulingConstraintHelper* x,
-                                    SchedulingConstraintHelper* y, Model* model)
-      : TryEdgeRectanglePropagator(x_is_forward, y_is_forward, x, y, model) {}
+                                    NoOverlap2DConstraintHelper* helper,
+                                    Model* model)
+      : TryEdgeRectanglePropagator(x_is_forward, y_is_forward, false, helper,
+                                   model) {}
 
   bool ExplainAndPropagate(
       const std::vector<std::pair<int, std::optional<IntegerValue>>>&
@@ -127,19 +129,14 @@ class TryEdgeRectanglePropagatorForTest : public TryEdgeRectanglePropagator {
   }
 
  private:
-  static SchedulingConstraintHelper* GetHelperFromModel(Model* model) {
-    return model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({});
-  }
-
   Model model_;
   IntervalsRepository* repository_ = model_.GetOrCreate<IntervalsRepository>();
 
   std::vector<std::pair<int, std::optional<IntegerValue>>> propagations_;
 };
 
-std::pair<SchedulingConstraintHelper*, SchedulingConstraintHelper*>
-CreateHelper(Model* model,
-             absl::Span<const RectangleInRange> active_box_ranges) {
+NoOverlap2DConstraintHelper* CreateHelper(
+    Model* model, absl::Span<const RectangleInRange> active_box_ranges) {
   std::vector<IntervalVariable> x_intervals;
   std::vector<IntervalVariable> y_intervals;
   for (const RectangleInRange& active_box_range : active_box_ranges) {
@@ -160,10 +157,8 @@ CreateHelper(Model* model,
     x_intervals.push_back(x_interval);
     y_intervals.push_back(y_interval);
   }
-  return {
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(x_intervals),
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
-          y_intervals)};
+  return model->GetOrCreate<IntervalsRepository>()->GetOrCreate2DHelper(
+      x_intervals, y_intervals);
 }
 
 TEST(TryEdgeRectanglePropagatorTest, Simple) {
@@ -195,10 +190,9 @@ TEST(TryEdgeRectanglePropagatorTest, Simple) {
 
   {
     Model model;
-    auto [x_helper, y_helper] = CreateHelper(&model, active_box_ranges);
+    auto* helper = CreateHelper(&model, active_box_ranges);
 
-    TryEdgeRectanglePropagatorForTest propagator(true, true, x_helper, y_helper,
-                                                 &model);
+    TryEdgeRectanglePropagatorForTest propagator(true, true, helper, &model);
     propagator.Propagate();
     EXPECT_THAT(propagator.propagations(),
                 UnorderedElementsAre(Pair(2, IntegerValue(5))));
@@ -209,10 +203,9 @@ TEST(TryEdgeRectanglePropagatorTest, Simple) {
     active_box_ranges[2].bounding_area.x_min = 0;
     active_box_ranges[2].bounding_area.x_max = 5;
     Model model;
-    auto [x_helper, y_helper] = CreateHelper(&model, active_box_ranges);
+    auto* helper = CreateHelper(&model, active_box_ranges);
 
-    TryEdgeRectanglePropagatorForTest propagator(true, true, x_helper, y_helper,
-                                                 &model);
+    TryEdgeRectanglePropagatorForTest propagator(true, true, helper, &model);
     propagator.Propagate();
     EXPECT_THAT(propagator.propagations(),
                 UnorderedElementsAre(Pair(2, std::nullopt)));
@@ -233,10 +226,9 @@ TEST(TryEdgeRectanglePropagatorTest, NoConflictForFeasible) {
     const std::vector<RectangleInRange> input_in_range =
         MakeItemsFromRectangles(rectangles, 0.6, bit_gen);
     Model model;
-    auto [x_helper, y_helper] = CreateHelper(&model, input_in_range);
+    auto* helper = CreateHelper(&model, input_in_range);
 
-    TryEdgeRectanglePropagatorForTest propagator(true, true, x_helper, y_helper,
-                                                 &model);
+    TryEdgeRectanglePropagatorForTest propagator(true, true, helper, &model);
     propagator.Propagate();
     EXPECT_THAT(propagator.propagations(),
                 Each(Pair(_, Not(Eq(std::nullopt)))));
@@ -272,10 +264,9 @@ TEST(TryEdgeRectanglePropagatorTest, ValidatePropagationsWithConflicts) {
     const std::vector<RectangleInRange> input_in_range =
         MakeItemsFromRectangles(rectangles, 0.6, bit_gen);
     Model model;
-    auto [x_helper, y_helper] = CreateHelper(&model, input_in_range);
+    auto* helper = CreateHelper(&model, input_in_range);
 
-    TryEdgeRectanglePropagatorForTest propagator(true, true, x_helper, y_helper,
-                                                 &model);
+    TryEdgeRectanglePropagatorForTest propagator(true, true, helper, &model);
     propagator.Propagate();
   }
 }

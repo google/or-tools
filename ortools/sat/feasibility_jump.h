@@ -301,6 +301,8 @@ struct LsState {
   // constraint weighted by these weights.
   std::vector<int64_t> solution;
   std::vector<double> weights;
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+      base_solution;
 
   // Depending on the options, we use an exponentially decaying constraint
   // weight like for SAT activities.

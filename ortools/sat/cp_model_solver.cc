@@ -1551,8 +1551,9 @@ class LnsSolver : public SubSolver {
           if (absl::MakeSpan(solution_values) !=
               absl::MakeSpan(base_response.solution())) {
             new_solution = true;
-            shared_->response->NewSolution(solution_values, solution_info,
-                                           /*model=*/nullptr);
+            PushAndMaybeCombineSolution(
+                shared_->response, shared_->model_proto, solution_values,
+                solution_info, base_response.solution(), /*model=*/nullptr);
           }
         }
         if (!neighborhood.is_reduced &&
@@ -1561,19 +1562,6 @@ class LnsSolver : public SubSolver {
           shared_->response->NotifyThatImprovingProblemIsInfeasible(
               solution_info);
           shared_->time_limit->Stop();
-        }
-      }
-
-      if (new_solution && !base_response.solution().empty()) {
-        std::string combined_solution_info = solution_info;
-        std::optional<std::vector<int64_t>> combined_solution =
-            FindCombinedSolution(shared_->model_proto, solution_values,
-                                 base_response.solution(), shared_->response,
-                                 &combined_solution_info);
-        if (combined_solution.has_value()) {
-          shared_->response->NewSolution(combined_solution.value(),
-                                         combined_solution_info,
-                                         /*model=*/nullptr);
         }
       }
 

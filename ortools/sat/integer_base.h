@@ -383,6 +383,9 @@ struct ValueLiteralPair {
 
 std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
 
+DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
+const IntervalVariable kNoIntervalVariable(-1);
+
 // ============================================================================
 // Implementation.
 // ============================================================================

@@ -24,6 +24,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
 
 namespace operations_research {
@@ -73,6 +74,26 @@ std::optional<std::vector<int64_t>> FindCombinedSolution(
     }
   }
   return std::nullopt;
+}
+
+PushedSolutionPointers PushAndMaybeCombineSolution(
+    SharedResponseManager* response_manager, const CpModelProto& model_proto,
+    absl::Span<const int64_t> new_solution, const std::string& solution_info,
+    absl::Span<const int64_t> base_solution, Model* model) {
+  PushedSolutionPointers result = {nullptr, nullptr};
+  result.pushed_solution =
+      response_manager->NewSolution(new_solution, solution_info, model);
+  if (!base_solution.empty()) {
+    std::string combined_solution_info = solution_info;
+    std::optional<std::vector<int64_t>> combined_solution =
+        FindCombinedSolution(model_proto, new_solution, base_solution,
+                             response_manager, &combined_solution_info);
+    if (combined_solution.has_value()) {
+      result.improved_solution = response_manager->NewSolution(
+          combined_solution.value(), combined_solution_info, model);
+    }
+  }
+  return result;
 }
 
 }  // namespace sat

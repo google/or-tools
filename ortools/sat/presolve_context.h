@@ -676,7 +676,8 @@ class PresolveContext {
     return RefIsPositive(ref) ? var_hint : -var_hint;
   }
 
-  std::optional<int64_t> GetExpressionSolutionHint(const LinearExpressionProto& expr) {
+  std::optional<int64_t> GetExpressionSolutionHint(
+      const LinearExpressionProto& expr) {
     int64_t result = expr.offset();
     for (int i = 0; i < expr.vars().size(); ++i) {
       if (expr.coeffs(i) == 0) continue;

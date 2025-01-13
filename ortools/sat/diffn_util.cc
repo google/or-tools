@@ -45,7 +45,6 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/fixed_shape_binary_tree.h"
 #include "ortools/util/integer_pq.h"

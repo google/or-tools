@@ -267,9 +267,23 @@ bool DisjunctiveWithTwoItems::Propagate() {
   // interval forced absence? Same for the start-max.
   int task_before = 0;
   int task_after = 1;
-  if (helper_->StartMax(0) < helper_->EndMin(1)) {
+
+  const bool task_0_before_task_1 = helper_->StartMax(0) < helper_->EndMin(1);
+  const bool task_1_before_task_0 = helper_->StartMax(1) < helper_->EndMin(0);
+
+  if (task_0_before_task_1 && task_1_before_task_0 &&
+      helper_->IsPresent(task_before) && helper_->IsPresent(task_after)) {
+    helper_->ClearReason();
+    helper_->AddPresenceReason(task_before);
+    helper_->AddPresenceReason(task_after);
+    helper_->AddReasonForBeingBefore(task_before, task_after);
+    helper_->AddReasonForBeingBefore(task_after, task_before);
+    return helper_->ReportConflict();
+  }
+
+  if (task_0_before_task_1) {
     // Task 0 must be before task 1.
-  } else if (helper_->StartMax(1) < helper_->EndMin(0)) {
+  } else if (task_1_before_task_0) {
     // Task 1 must be before task 0.
     std::swap(task_before, task_after);
   } else {
@@ -320,7 +334,8 @@ int DisjunctiveWithTwoItems::RegisterWith(GenericLiteralWatcher* watcher) {
 
 template <bool time_direction>
 CombinedDisjunctive<time_direction>::CombinedDisjunctive(Model* model)
-    : helper_(model->GetOrCreate<AllIntervalsHelper>()) {
+    : helper_(model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          model->GetOrCreate<IntervalsRepository>()->AllIntervals())) {
   task_to_disjunctives_.resize(helper_->NumTasks());
 
   auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();

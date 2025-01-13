@@ -2440,7 +2440,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   const auto& it = reified_precedences_cache_.find(key);
   if (it != reified_precedences_cache_.end()) return it->second;
 
-  const int result = NewBoolVar("reified precedence");
+  const int result = NewBoolVar("");
   reified_precedences_cache_[key] = result;
 
   // Take care of hints.

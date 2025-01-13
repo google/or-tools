@@ -29,8 +29,8 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 
@@ -39,8 +39,7 @@ namespace sat {
 
 int TryEdgeRectanglePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  x_.WatchAllTasks(id);
-  y_.WatchAllTasks(id);
+  helper_.WatchAllBoxes(id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   return id;
 }
@@ -57,7 +56,7 @@ TryEdgeRectanglePropagator::~TryEdgeRectanglePropagator() {
 }
 
 void TryEdgeRectanglePropagator::PopulateActiveBoxRanges() {
-  const int num_boxes = x_.NumTasks();
+  const int num_boxes = helper_.NumBoxes();
   placed_boxes_.resize(num_boxes);
   active_box_ranges_.resize(num_boxes);
   is_active_.resize(num_boxes);
@@ -68,22 +67,20 @@ void TryEdgeRectanglePropagator::PopulateActiveBoxRanges() {
   changed_mandatory_.clear();
   changed_item_.clear();
   for (int box = 0; box < num_boxes; ++box) {
-    const bool inactive = (x_.SizeMin(box) == 0 || y_.SizeMin(box) == 0 ||
-                           !x_.IsPresent(box) || !y_.IsPresent(box));
+    bool inactive = !helper_.IsPresent(box);
+    RectangleInRange rec;
+    if (!inactive) {
+      rec = helper_.GetItemRangeForSizeMin(box);
+      if (rec.x_size == 0 || rec.y_size == 0) {
+        inactive = true;
+      }
+    }
     is_active_[box] = !inactive;
     if (inactive) {
       is_in_cache_[box] = false;
       has_mandatory_region_.Set(box, false);
       continue;
     }
-    const RectangleInRange rec = {
-        .box_index = box,
-        .bounding_area = {.x_min = x_.StartMin(box),
-                          .x_max = x_.StartMax(box) + x_.SizeMin(box),
-                          .y_min = y_.StartMin(box),
-                          .y_max = y_.StartMax(box) + y_.SizeMin(box)},
-        .x_size = x_.SizeMin(box),
-        .y_size = y_.SizeMin(box)};
     if (is_in_cache_[box] && rec == active_box_ranges_[box]) {
       DCHECK(mandatory_regions_[box] == rec.GetMandatoryRegion());
       DCHECK(has_mandatory_region_[box] ==
@@ -135,8 +132,10 @@ bool TryEdgeRectanglePropagator::CanPlace(
 }
 
 bool TryEdgeRectanglePropagator::Propagate() {
-  if (!x_.SynchronizeAndSetTimeDirection(x_is_forward_)) return false;
-  if (!y_.SynchronizeAndSetTimeDirection(y_is_forward_)) return false;
+  if (!helper_.SynchronizeAndSetDirection(
+          x_is_forward_after_swap_, y_is_forward_after_swap_, swap_x_and_y_)) {
+    return false;
+  }
 
   num_calls_++;
 
@@ -358,8 +357,8 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
         found_propagations) {
   for (const auto& [box_index, new_x_min] : found_propagations) {
     const RectangleInRange& box = active_box_ranges_[box_index];
-    x_.ClearReason();
-    y_.ClearReason();
+    helper_.ClearReason();
+
     const std::vector<int> minimum_problem_with_propagator =
         GetMinimumProblemWithPropagation(
             box_index, new_x_min.has_value()
@@ -374,61 +373,56 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
       const RectangleInRange& box_reason = active_box_ranges_[j];
       const int b = box_reason.box_index;
 
-      x_.AddStartMinReason(b, box_reason.bounding_area.x_min);
-      y_.AddStartMinReason(b, box_reason.bounding_area.y_min);
+      helper_.AddLeftMinReason(b, box_reason.bounding_area.x_min);
+      helper_.AddBottomMinReason(b, box_reason.bounding_area.y_min);
 
       if (j != box_index || !new_x_min.has_value()) {
         // We don't need to add to the reason the x_max for the box we are
         // pushing the x_min, except if we found a conflict.
-        x_.AddStartMaxReason(
+        helper_.AddLeftMaxReason(
             b, box_reason.bounding_area.x_max - box_reason.x_size);
       }
-      y_.AddStartMaxReason(b,
-                           box_reason.bounding_area.y_max - box_reason.y_size);
+      helper_.AddBottomMaxReason(
+          b, box_reason.bounding_area.y_max - box_reason.y_size);
 
-      x_.AddSizeMinReason(b);
-      y_.AddSizeMinReason(b);
-
-      x_.AddPresenceReason(b);
-      y_.AddPresenceReason(b);
+      helper_.AddSizeMinReason(b);
+      helper_.AddPresenceReason(b);
     }
-    x_.ImportOtherReasons(y_);
     if (new_x_min.has_value()) {
       num_propagations_++;
-      if (!x_.IncreaseStartMin(box.box_index, *new_x_min)) {
+      if (!helper_.IncreaseLeftMin(box_index, *new_x_min)) {
         return false;
       }
     } else {
       num_conflicts_++;
-      return x_.ReportConflict();
+      return helper_.ReportConflict();
     }
   }
   return true;
 }
 
-void CreateAndRegisterTryEdgePropagator(SchedulingConstraintHelper* x,
-                                        SchedulingConstraintHelper* y,
+void CreateAndRegisterTryEdgePropagator(NoOverlap2DConstraintHelper* helper,
                                         Model* model,
                                         GenericLiteralWatcher* watcher) {
   TryEdgeRectanglePropagator* try_edge_propagator =
-      new TryEdgeRectanglePropagator(true, true, x, y, model);
+      new TryEdgeRectanglePropagator(true, true, false, helper, model);
   watcher->SetPropagatorPriority(try_edge_propagator->RegisterWith(watcher), 5);
   model->TakeOwnership(try_edge_propagator);
 
   TryEdgeRectanglePropagator* try_edge_propagator_mirrored =
-      new TryEdgeRectanglePropagator(false, true, x, y, model);
+      new TryEdgeRectanglePropagator(false, true, false, helper, model);
   watcher->SetPropagatorPriority(
       try_edge_propagator_mirrored->RegisterWith(watcher), 5);
   model->TakeOwnership(try_edge_propagator_mirrored);
 
   TryEdgeRectanglePropagator* try_edge_propagator_swap =
-      new TryEdgeRectanglePropagator(true, true, y, x, model);
+      new TryEdgeRectanglePropagator(true, true, true, helper, model);
   watcher->SetPropagatorPriority(
       try_edge_propagator_swap->RegisterWith(watcher), 5);
   model->TakeOwnership(try_edge_propagator_swap);
 
   TryEdgeRectanglePropagator* try_edge_propagator_swap_mirrored =
-      new TryEdgeRectanglePropagator(false, true, y, x, model);
+      new TryEdgeRectanglePropagator(false, true, true, helper, model);
   watcher->SetPropagatorPriority(
       try_edge_propagator_swap_mirrored->RegisterWith(watcher), 5);
   model->TakeOwnership(try_edge_propagator_swap_mirrored);

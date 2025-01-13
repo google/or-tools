@@ -619,10 +619,12 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
   response->set_gap_integral(gap_integral_);
 }
 
-void SharedResponseManager::NewSolution(
-    absl::Span<const int64_t> solution_values, const std::string& solution_info,
-    Model* model) {
+std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
+                                   const std::string& solution_info,
+                                   Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> ret;
 
   // For SAT problems, we add the solution to the solution pool for retrieval
   // later.
@@ -631,7 +633,7 @@ void SharedResponseManager::NewSolution(
     solution.variable_values.assign(solution_values.begin(),
                                     solution_values.end());
     solution.info = solution_info;
-    solutions_.Add(solution);
+    ret = solutions_.Add(solution);
   } else {
     const int64_t objective_value =
         ComputeInnerObjective(*objective_or_null_, solution_values);
@@ -642,12 +644,12 @@ void SharedResponseManager::NewSolution(
                                     solution_values.end());
     solution.rank = objective_value;
     solution.info = solution_info;
-    solutions_.Add(solution);
+    ret = solutions_.Add(solution);
 
     // Ignore any non-strictly improving solution.
-    if (objective_value > inner_objective_upper_bound_) return;
+    if (objective_value > inner_objective_upper_bound_) return ret;
 
-    // Our inner_objective_lower_bound_ should be a globaly valid bound, until
+    // Our inner_objective_lower_bound_ should be a globally valid bound, until
     // the problem become infeasible (i.e the lb > ub) in which case the bound
     // is no longer globally valid. Here, because we have a strictly improving
     // solution, we shouldn't be in the infeasible setting yet.
@@ -758,6 +760,8 @@ void SharedResponseManager::NewSolution(
     CHECK_OK(file::SetTextProto(file, response, file::Defaults()));
   }
 #endif  // __PORTABLE_PLATFORM__
+
+  return ret;
 }
 
 bool SharedResponseManager::ProblemIsSolved() const {

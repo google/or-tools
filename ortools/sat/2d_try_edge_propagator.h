@@ -22,8 +22,8 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -35,22 +35,21 @@ namespace sat {
 // try to find the leftmost valid position that is compatible with all the
 // other boxes. If none is found, it will propagate a conflict. Otherwise, if
 // it is different from the current x_min, it will propagate the new x_min.
-void CreateAndRegisterTryEdgePropagator(SchedulingConstraintHelper* x,
-                                        SchedulingConstraintHelper* y,
+void CreateAndRegisterTryEdgePropagator(NoOverlap2DConstraintHelper* helper,
                                         Model* model,
                                         GenericLiteralWatcher* watcher);
 
 // Exposed for testing.
 class TryEdgeRectanglePropagator : public PropagatorInterface {
  public:
-  TryEdgeRectanglePropagator(bool x_is_forward, bool y_is_forward,
-                             SchedulingConstraintHelper* x,
-                             SchedulingConstraintHelper* y, Model* model)
-      : x_(*x),
-        y_(*y),
+  TryEdgeRectanglePropagator(bool x_is_forward_after_swap,
+                             bool y_is_forward_after_swap, bool swap_x_and_y,
+                             NoOverlap2DConstraintHelper* helper, Model* model)
+      : helper_(*helper),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        x_is_forward_(x_is_forward),
-        y_is_forward_(y_is_forward) {}
+        x_is_forward_after_swap_(x_is_forward_after_swap),
+        y_is_forward_after_swap_(y_is_forward_after_swap),
+        swap_x_and_y_(swap_x_and_y) {}
 
   ~TryEdgeRectanglePropagator() override;
 
@@ -90,11 +89,11 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
  private:
   void PopulateActiveBoxRanges();
 
-  SchedulingConstraintHelper& x_;
-  SchedulingConstraintHelper& y_;
+  NoOverlap2DConstraintHelper& helper_;
   SharedStatistics* shared_stats_;
-  bool x_is_forward_;
-  bool y_is_forward_;
+  bool x_is_forward_after_swap_;
+  bool y_is_forward_after_swap_;
+  bool swap_x_and_y_;
   std::vector<IntegerValue> cached_y_hint_;
 
   std::vector<IntegerValue> potential_x_positions_;

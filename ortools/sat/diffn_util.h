@@ -33,7 +33,7 @@
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
