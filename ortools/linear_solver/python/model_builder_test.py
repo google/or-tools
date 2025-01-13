@@ -313,7 +313,7 @@ ENDATA
             np.array([0, 3], dtype=np.int32), flat_e14.variable_indices()
         )
         np_testing.assert_array_equal(
-            np.array([-1, 1], dtype=np.double), flat_e14.coeffs
+            np.array([1, -1], dtype=np.double), flat_e14.coeffs
         )
         self.assertEqual(flat_e14.offset, 0.8)
         self.assertEqual(e14.__str__(), "(x - t + 0.8)")
