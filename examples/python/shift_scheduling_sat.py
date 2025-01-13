@@ -31,7 +31,7 @@ _PARAMS = flags.DEFINE_string(
 def negated_bounded_span(
     works: list[cp_model.BoolVarT], start: int, length: int
 ) -> list[cp_model.BoolVarT]:
-    """Filters an isolated sub-sequence of variables assined to True.
+    """Filters an isolated sub-sequence of variables assigned to True.
 
     Extract the span of Boolean variables [start, start + length), negate them,
     and if there is variables to the left/right of this span, surround the span by
