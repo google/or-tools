@@ -561,8 +561,92 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(flat_s7.vars, 2)
         self.assertEqual(3.5, flat_s7.offset)
 
+        s8 = cp_model.LinearExpr.sum(x[0], 3)
+        self.assertTrue(s8.is_integer())
+        self.assertIsInstance(s8, cmh.IntAffine)
+        self.assertEqual(s8.expression, x[0])
+        self.assertEqual(s8.coefficient, 1)
+        self.assertEqual(s8.offset, 1)
+
+        s9 = cp_model.LinearExpr.sum(x[0], -2.1)
+        self.assertFalse(s9.is_integer())
+        self.assertIsInstance(s9, cmh.FloatAffine)
+        self.assertEqual(s9.expression, x[0])
+        self.assertEqual(s9.coefficient, 1.0)
+        self.assertEqual(s9.offset, -2.1)
+
+        s10 = cp_model.LinearExpr.sum(x[0], 1, -1)
+        self.assertTrue(s10.is_integer())
+        self.assertIsInstance(s10, cp_model.IntVar)
+        self.assertEqual(s10, x[0])
+
+        s11 = cp_model.LinearExpr.sum(x[0])
+        self.assertTrue(s11.is_integer())
+        self.assertIsInstance(s11, cp_model.IntVar)
+        self.assertEqual(s11, x[0])
+
+        class FakeNpDTypeA:
+
+            def __init__(self):
+                self.dtype = 2
+                pass
+
+            def __str__(self):
+                return "FakeNpDTypeA"
+
+        class FakeNpDTypeB:
+
+            def __init__(self):
+                self.is_integer = False
+                pass
+
+            def __str__(self):
+                return "FakeNpDTypeB"
+
         with self.assertRaises(TypeError):
             cp_model.LinearExpr.sum(x[0], x[2], "foo")
+
+        with self.assertRaises(TypeError):
+            cp_model.LinearExpr.sum(x[0], x[2], FakeNpDTypeA())
+
+        with self.assertRaises(TypeError):
+            cp_model.LinearExpr.sum(x[0], x[2], FakeNpDTypeB())
+
+    def testWeightedSumParsing(self) -> None:
+        model = cp_model.CpModel()
+        x = [model.new_int_var(0, 2, "x%i" % i) for i in range(5)]
+        c = [1, -2, 2, 3, 0.0]
+        float_c = [1, -1.0, 2, 3, 0.0]
+
+        s1 = cp_model.LinearExpr.weighted_sum(x, c)
+        self.assertTrue(s1.is_integer())
+        flat_s1 = cp_model.FlatIntExpr(s1)
+        self.assertLen(flat_s1.vars, 4)
+        self.assertEqual(0, flat_s1.offset)
+
+        s2 = cp_model.LinearExpr.weighted_sum(x, float_c)
+        self.assertFalse(s2.is_integer())
+        flat_s2 = cp_model.FlatFloatExpr(s2)
+        self.assertLen(flat_s2.vars, 4)
+        self.assertEqual(0, flat_s2.offset)
+
+        s3 = cp_model.LinearExpr.weighted_sum(x + [2], c + [-1])
+        self.assertTrue(s3.is_integer())
+        flat_s3 = cp_model.FlatIntExpr(s3)
+        self.assertLen(flat_s3.vars, 4)
+        self.assertEqual(-2, flat_s3.offset)
+
+        s4 = cp_model.LinearExpr.weighted_sum(x + [2], float_c + [-1.0])
+        self.assertFalse(s4.is_integer())
+        flat_s4 = cp_model.FlatFloatExpr(s4)
+        self.assertLen(flat_s4.vars, 4)
+        self.assertEqual(-2, flat_s4.offset)
+
+        s5 = cp_model.LinearExpr.weighted_sum(x + [np.int16(2)], c + [-1])
+        self.assertTrue(s5.is_integer())
+        flat_s5 = cp_model.FlatIntExpr(s5)
+        self.assertLen(flat_s5.vars, 4)
+        self.assertEqual(-2, flat_s5.offset)
 
     def testSumWithApi(self) -> None:
         model = cp_model.CpModel()
