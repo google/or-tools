@@ -1070,9 +1070,7 @@ class Model:
             if coeff != 0.0:
                 variables.append(variable)
                 coefficients.append(coeff)
-        return mbh.FlatExpr(
-            variables, coefficients, self.__helper.objective_offset()
-        )
+        return mbh.FlatExpr(variables, coefficients, self.__helper.objective_offset())
 
     # Hints.
     def clear_hints(self):
