@@ -3174,7 +3174,6 @@ cc_test(
         ":integer_base",
         ":util",
         "//ortools/base",
-        "//ortools/base:fuzztest",
         "//ortools/base:gmock",
         "//ortools/graph:connected_components",
         "//ortools/graph:strongly_connected_components",
@@ -3871,24 +3870,6 @@ cc_test(
         "//ortools/util:time_limit",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "cp_model_solver_fuzz",
-    size = "large",
-    srcs = ["cp_model_solver_fuzz.cc"],
-    data = glob(["fuzz_testdata/*"]),
-    deps = [
-        ":cp_model_cc_proto",
-        ":cp_model_checker",
-        ":cp_model_solver",
-        "//ortools/base:fuzztest",
-        "//ortools/base:path",
-        "//ortools/util:saturated_arithmetic",
-        "@bazel_tools//tools/cpp/runfiles",
-        "@com_google_absl//absl/log:check",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
