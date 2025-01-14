@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,6 +26,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -36,8 +37,9 @@ namespace operations_research {
 namespace sat {
 
 std::function<void(Model*)> AllDifferentBinary(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> vars) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     // Fully encode all the given variables and construct a mapping value ->
     // List of literal each indicating that a given variable takes this value.
     //
@@ -81,8 +83,9 @@ std::function<void(Model*)> AllDifferentOnBounds(
 }
 
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> vars) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     if (vars.empty()) return;
     std::vector<AffineExpression> expressions;
     expressions.reserve(vars.size());
@@ -97,8 +100,9 @@ std::function<void(Model*)> AllDifferentOnBounds(
 }
 
 std::function<void(Model*)> AllDifferentAC(
-    const std::vector<IntegerVariable>& variables) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> variables) {
+  return [=, variables = std::vector<IntegerVariable>(
+                 variables.begin(), variables.end())](Model* model) {
     if (variables.size() < 3) return;
 
     AllDifferentConstraint* constraint = new AllDifferentConstraint(

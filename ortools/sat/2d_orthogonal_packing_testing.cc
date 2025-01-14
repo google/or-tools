@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,7 +25,7 @@
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {
@@ -178,13 +178,12 @@ std::vector<RectangleInRange> MakeItemsFromRectangles(
   return ranges;
 }
 
-std::vector<ItemForPairwiseRestriction>
-GenerateItemsRectanglesWithNoPairwiseConflict(
+std::vector<ItemWithVariableSize> GenerateItemsRectanglesWithNoPairwiseConflict(
     absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random) {
   const std::vector<RectangleInRange> range_items =
       MakeItemsFromRectangles(rectangles, slack_factor, random);
-  std::vector<ItemForPairwiseRestriction> items;
+  std::vector<ItemWithVariableSize> items;
   items.reserve(rectangles.size());
   for (int i = 0; i < range_items.size(); ++i) {
     const RectangleInRange& rec = range_items[i];
@@ -201,13 +200,13 @@ GenerateItemsRectanglesWithNoPairwiseConflict(
   return items;
 }
 
-std::vector<ItemForPairwiseRestriction>
+std::vector<ItemWithVariableSize>
 GenerateItemsRectanglesWithNoPairwisePropagation(int num_rectangles,
                                                  double slack_factor,
                                                  absl::BitGenRef random) {
   const std::vector<Rectangle> rectangles =
       GenerateNonConflictingRectangles(num_rectangles, random);
-  std::vector<ItemForPairwiseRestriction> items =
+  std::vector<ItemWithVariableSize> items =
       GenerateItemsRectanglesWithNoPairwiseConflict(rectangles, slack_factor,
                                                     random);
   bool done = false;

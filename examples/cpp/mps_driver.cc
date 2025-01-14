@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -112,7 +112,11 @@ int main(int argc, char* argv[]) {
         continue;
       }
     } else {
-      ReadFileToProto(file_name, &model_proto);
+      const absl::Status status = ReadFileToProto(file_name, &model_proto);
+      if (!status.ok()) {
+        LOG(INFO) << status;
+        continue;
+      }
       MPModelProtoToLinearProgram(model_proto, &linear_program);
     }
     if (absl::GetFlag(FLAGS_mps_dump_problem)) {

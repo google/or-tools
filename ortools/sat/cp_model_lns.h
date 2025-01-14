@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -32,8 +33,7 @@
 #include "google/protobuf/arena.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
-#include "ortools/sat/integer.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
@@ -45,6 +45,15 @@ namespace sat {
 
 // Neighborhood returned by Neighborhood generators.
 struct Neighborhood {
+  static constexpr int kDefaultArenaSizePerVariable = 128;
+
+  explicit Neighborhood(int num_variables_hint = 10)
+      : arena(std::make_unique<google::protobuf::Arena>(
+            google::protobuf::ArenaOptions(
+                {.start_block_size = static_cast<size_t>(
+                     kDefaultArenaSizePerVariable * num_variables_hint)}))),
+        delta(*google::protobuf::Arena::Create<CpModelProto>(arena.get())) {}
+
   // True if neighborhood generator was able to generate a neighborhood.
   bool is_generated = false;
 
@@ -59,7 +68,8 @@ struct Neighborhood {
   // The delta will contains all variables from the initial model, potentially
   // with updated domains.
   // It can contains new variables and new constraints, and solution hinting.
-  CpModelProto delta;
+  std::unique_ptr<google::protobuf::Arena> arena;
+  CpModelProto& delta;
 
   // Neighborhood Id. Used to identify the neighborhood by a generator.
   // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
@@ -106,17 +116,18 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   }
   void Synchronize() override;
 
+  int NumVariables() const { return model_proto_.variables().size(); }
+
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.
-  Neighborhood FixGivenVariables(
-      const CpSolverResponse& base_solution,
-      const absl::flat_hash_set<int>& variables_to_fix) const;
+  Neighborhood FixGivenVariables(const CpSolverResponse& base_solution,
+                                 const Bitset64<int>& variables_to_fix) const;
 
   // Returns the LNS fragment which will relax all inactive variables and all
   // variables in relaxed_variables.
   Neighborhood RelaxGivenVariables(
       const CpSolverResponse& initial_solution,
-      const std::vector<int>& relaxed_variables) const;
+      absl::Span<const int> relaxed_variables) const;
 
   // Returns a trivial model by fixing all active variables to the initial
   // solution values.
@@ -361,7 +372,11 @@ class NeighborhoodGenerator {
  public:
   NeighborhoodGenerator(absl::string_view name,
                         NeighborhoodGeneratorHelper const* helper)
-      : name_(name), helper_(*helper), difficulty_(0.5) {}
+      : name_(name),
+        helper_(*helper),
+        deterministic_limit_(
+            helper->Parameters().lns_initial_deterministic_limit()),
+        difficulty_(helper->Parameters().lns_initial_difficulty()) {}
   virtual ~NeighborhoodGenerator() = default;
 
   using ActiveRectangle = NeighborhoodGeneratorHelper::ActiveRectangle;
@@ -714,6 +729,19 @@ class RandomRectanglesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomRectanglesPackingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
+};
+
+// Only make sense for problems with no_overlap_2d constraints. This selects one
+// random rectangles and relax the closest rectangles to it.
+class RectanglesPackingRelaxOneNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RectanglesPackingRelaxOneNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -81,6 +82,11 @@ class SavedVariable {
   int ref_ = 0;
 };
 
+// If a floating point objective is present, scale it using the current domains
+// and transform it to an integer_objective.
+ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective(
+    const SatParameters& params, SolverLogger* logger, CpModelProto* proto);
+
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
@@ -114,6 +120,10 @@ class PresolveContext {
   // Its hint value will be the same as the value of the given clause.
   int NewBoolVarWithClause(absl::Span<const int> clause);
 
+  // Create a new bool var.
+  // Its hint value will be the same as the value of the given conjunction.
+  int NewBoolVarWithConjunction(absl::Span<const int> conjunction);
+
   // Some expansion code use constant literal to be simpler to write. This will
   // create a NewBoolVar() the first time, but later call will just returns it.
   int GetTrueLiteral();
@@ -136,6 +146,7 @@ class PresolveContext {
   int64_t FixedValue(int ref) const;
   bool DomainContains(int ref, int64_t value) const;
   Domain DomainOf(int ref) const;
+  absl::Span<const Domain> AllDomains() const { return domains_; }
 
   // Helper to query the state of an interval.
   bool IntervalIsConstant(int ct_ref) const;
@@ -154,6 +165,10 @@ class PresolveContext {
   int64_t MaxOf(const LinearExpressionProto& expr) const;
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
+
+  // This is faster than testing IsFixed() + FixedValue().
+  std::optional<int64_t> FixedValueOrNullopt(
+      const LinearExpressionProto& expr) const;
 
   // Accepts any proto with two parallel vector .vars() and .coeffs(), like
   // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware
@@ -219,7 +234,7 @@ class PresolveContext {
 
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
-    return domains[var].IsIncludedIn(domain);
+    return domains_[var].IsIncludedIn(domain);
   }
 
   // Returns true if this ref only appear in one constraint.
@@ -257,11 +272,22 @@ class PresolveContext {
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
   ABSL_MUST_USE_RESULT bool IntersectDomainWith(
-      int ref, const Domain& domain, bool* domain_modified = nullptr);
+      int ref, const Domain& domain, bool* domain_modified = nullptr) {
+    return IntersectDomainWithInternal(ref, domain, domain_modified,
+                                       /*update_hint=*/false);
+  }
+
+  ABSL_MUST_USE_RESULT bool IntersectDomainWithAndUpdateHint(
+      int ref, const Domain& domain, bool* domain_modified = nullptr) {
+    return IntersectDomainWithInternal(ref, domain, domain_modified,
+                                       /*update_hint=*/true);
+  }
 
   // Returns false if the 'lit' doesn't have the desired value in the domain.
   ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
   ABSL_MUST_USE_RESULT bool SetLiteralToTrue(int lit);
+  ABSL_MUST_USE_RESULT bool SetLiteralAndHintToFalse(int lit);
+  ABSL_MUST_USE_RESULT bool SetLiteralAndHintToTrue(int lit);
 
   // Same as IntersectDomainWith() but take a linear expression as input.
   // If this expression if of size > 1, this does nothing for now, so it will
@@ -372,6 +398,16 @@ class PresolveContext {
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();
 
+  // This is a bit hacky. Clear some fields. See call site.
+  //
+  // TODO(user): The ModelCopier should probably not depend on the full context
+  // it only need to read/write domains and call UpdateRuleStats(), so we might
+  // want to split that part out so that we can just initialize the full context
+  // later. Alternatively, we could just move more complex part of the context
+  // out, like the graph, the encoding, the affine representative, and so on to
+  // individual and easier to manage classes.
+  void ResetAfterCopy();
+
   // Clears the "rules" statistics.
   void ClearStats();
 
@@ -456,7 +492,6 @@ class PresolveContext {
   ABSL_MUST_USE_RESULT bool CanonicalizeOneObjectiveVariable(int var);
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
-  ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective();
 
   // When the objective is singleton, we can always restrict the domain of var
   // so that the current objective domain is non-constraining. Returns false
@@ -507,6 +542,10 @@ class PresolveContext {
     const auto it = objective_map_.find(var);
     return it == objective_map_.end() ? 0 : it->second;
   }
+
+  // Returns false if the variables in the objective with a positive (resp.
+  // negative) coefficient can freely decrease (resp. increase) within their
+  // domain (if we ignore the other constraints). Otherwise, returns true.
   bool ObjectiveDomainIsConstraining() const {
     return objective_domain_is_constraining_;
   }
@@ -587,6 +626,9 @@ class PresolveContext {
 
   // This should be called only once after InitializeNewDomains() to load
   // the hint, in order to maintain it as best as possible during presolve.
+  // Hint values outside the domain of their variable are adjusted to the
+  // nearest value in this domain. Missing hint values are completed when
+  // possible (e.g. for the model proto's fixed variables).
   void LoadSolutionHint();
 
   void PermuteHintValues(const SparsePermutation& perm);
@@ -597,20 +639,64 @@ class PresolveContext {
   bool HintIsLoaded() const { return hint_is_loaded_; }
   absl::Span<const int64_t> SolutionHint() const { return hint_; }
 
+  // Similar to SolutionHint() but make sure the value is within the current
+  // bounds of the variable.
+  int64_t ClampedSolutionHint(int var) {
+    int64_t value = hint_[var];
+    if (value > MaxOf(var)) {
+      value = MaxOf(var);
+    } else if (value < MinOf(var)) {
+      value = MinOf(var);
+    }
+    return value;
+  }
+
+  bool LiteralSolutionHint(int lit) const {
+    const int var = PositiveRef(lit);
+    return RefIsPositive(lit) ? hint_[var] : !hint_[var];
+  }
+
   bool LiteralSolutionHintIs(int lit, bool value) const {
     const int var = PositiveRef(lit);
     return hint_is_loaded_ && hint_has_value_[var] &&
            hint_[var] == (RefIsPositive(lit) ? value : !value);
   }
 
+  // If the given literal is already hinted, updates its hint.
+  // Otherwise do nothing.
   void UpdateLiteralSolutionHint(int lit, bool value) {
-    UpdateSolutionHint(PositiveRef(lit), RefIsPositive(lit) ? value : !value);
+    UpdateVarSolutionHint(PositiveRef(lit),
+                          RefIsPositive(lit) == value ? 1 : 0);
   }
 
-  // Updates the hint of an existing variable with an existing hint.
-  void UpdateSolutionHint(int var, int64_t value) {
-    CHECK(hint_is_loaded_);
-    CHECK(hint_has_value_[var]);
+  std::optional<int64_t> GetRefSolutionHint(int ref) {
+    const int var = PositiveRef(ref);
+    if (!VarHasSolutionHint(var)) return std::nullopt;
+    const int64_t var_hint = SolutionHint(var);
+    return RefIsPositive(ref) ? var_hint : -var_hint;
+  }
+
+  std::optional<int64_t> GetExpressionSolutionHint(
+      const LinearExpressionProto& expr) {
+    int64_t result = expr.offset();
+    for (int i = 0; i < expr.vars().size(); ++i) {
+      if (expr.coeffs(i) == 0) continue;
+      if (!VarHasSolutionHint(expr.vars(i))) return std::nullopt;
+      result += expr.coeffs(i) * SolutionHint(expr.vars(i));
+    }
+    return result;
+  }
+
+  void UpdateRefSolutionHint(int ref, int hint) {
+    UpdateVarSolutionHint(PositiveRef(ref), RefIsPositive(ref) ? hint : -hint);
+  }
+
+  // If the given variable is already hinted, updates its hint value.
+  // Otherwise, do nothing.
+  void UpdateVarSolutionHint(int var, int64_t value) {
+    DCHECK(RefIsPositive(var));
+    if (!hint_is_loaded_) return;
+    if (!hint_has_value_[var]) return;
     hint_[var] = value;
   }
 
@@ -621,6 +707,11 @@ class PresolveContext {
     hint_has_value_[var] = true;
     hint_[var] = value;
   }
+
+  // This is slow O(problem_size) but can be used to debug presolve, either by
+  // pinpointing the transition from feasible to infeasible or the other way
+  // around if for some reason the presolve drop constraint that it shouldn't.
+  bool DebugTestHintFeasibility();
 
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
@@ -695,6 +786,11 @@ class PresolveContext {
   bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
+  ABSL_MUST_USE_RESULT bool IntersectDomainWithInternal(int ref,
+                                                        const Domain& domain,
+                                                        bool* domain_modified,
+                                                        bool update_hint);
+
   SolverLogger* logger_;
   const SatParameters& params_;
   TimeLimit* time_limit_;
@@ -704,7 +800,7 @@ class PresolveContext {
   bool is_unsat_ = false;
 
   // The current domain of each variables.
-  std::vector<Domain> domains;
+  std::vector<Domain> domains_;
 
   // Parallel to domains.
   //

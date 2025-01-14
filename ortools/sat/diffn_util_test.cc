@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,12 +14,19 @@
 #include "ortools/sat/diffn_util.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
@@ -28,11 +35,15 @@
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
+#include "ortools/base/fuzztest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -44,55 +55,65 @@ using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-TEST(GetOverlappingRectangleComponentsTest, NoComponents) {
-  EXPECT_TRUE(GetOverlappingRectangleComponents({}, {}).empty());
+TEST(CenterToCenterDistanceTest, BasicTest) {
+  Rectangle a, b;
+  a.x_min = 0;
+  a.x_max = 2;
+  a.y_min = 0;
+  a.y_max = 2;
+  b.x_min = 0;
+  b.x_max = 10;
+  b.y_min = 0;
+  b.y_max = 10;
+
+  // This is just the distance between (1,1) and (5,5) which should be sqrt(32).
+  EXPECT_EQ(CenterToCenterL2Distance(a, b), std::sqrt(32));
+
+  // Now this is 4.
+  EXPECT_EQ(CenterToCenterLInfinityDistance(a, b), 4.0);
+}
+
+TEST(GetOverlappingRectangleComponentsTest, Disconnected) {
+  EXPECT_TRUE(GetOverlappingRectangleComponents({}).empty());
   IntegerValue zero(0);
   IntegerValue two(2);
   IntegerValue four(4);
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, two, four}}, {})
-                  .empty());
-  std::vector<int> first = {0};
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, two, four}},
-                  absl::MakeSpan(first))
-                  .empty());
-  std::vector<int> both = {0, 1};
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, two, four}},
-                  absl::MakeSpan(both))
-                  .empty());
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {two, four, zero, two}},
-                  absl::MakeSpan(both))
-                  .empty());
-  EXPECT_TRUE(GetOverlappingRectangleComponents(
-                  {{zero, two, zero, two}, {zero, two, two, four}},
-                  absl::MakeSpan(both))
-                  .empty());
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {two, four, two, four}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {two, four, zero, two}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {zero, two, two, four}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
 }
 
 TEST(GetOverlappingRectangleComponentsTest, ComponentAndActive) {
-  EXPECT_TRUE(GetOverlappingRectangleComponents({}, {}).empty());
+  EXPECT_TRUE(GetOverlappingRectangleComponents({}).empty());
   IntegerValue zero(0);
   IntegerValue one(1);
   IntegerValue two(2);
   IntegerValue three(3);
   IntegerValue four(4);
 
-  std::vector<int> all = {0, 1, 2};
-  const auto& components = GetOverlappingRectangleComponents(
-      {{zero, two, zero, two}, {zero, two, one, three}, {zero, two, two, four}},
-      absl::MakeSpan(all));
-  ASSERT_EQ(1, components.size());
-  EXPECT_EQ(3, components[0].size());
-
-  std::vector<int> only_two = {0, 2};
-  EXPECT_TRUE(GetOverlappingRectangleComponents({{zero, two, zero, two},
+  EXPECT_THAT(GetOverlappingRectangleComponents({{zero, two, zero, two},
                                                  {zero, two, one, three},
-                                                 {zero, two, two, four}},
-                                                absl::MakeSpan(only_two))
-                  .empty());
+                                                 {zero, two, two, four}})
+                  .AsVectorOfSpan(),
+              UnorderedElementsAre(UnorderedElementsAre(0, 1, 2)));
+
+  EXPECT_THAT(
+      GetOverlappingRectangleComponents(
+          {{zero, two, zero, two}, {zero, two, two, four}})
+          .AsVectorOfSpan(),
+      UnorderedElementsAre(UnorderedElementsAre(0), UnorderedElementsAre(1)));
 }
 
 TEST(AnalyzeIntervalsTest, Random) {
@@ -169,8 +190,6 @@ TEST(FilterBoxesThatAreTooLargeTest, BasicTest) {
 }
 
 TEST(ConstructOverlappingSetsTest, BasicTest) {
-  std::vector<std::vector<int>> result{{3}};  // To be sure we clear.
-
   //    --------------------0
   //    --------1   --------2
   //        ------------3
@@ -180,25 +199,30 @@ TEST(ConstructOverlappingSetsTest, BasicTest) {
                                          {2, IntegerValue(6), IntegerValue(10)},
                                          {3, IntegerValue(2), IntegerValue(8)},
                                          {4, IntegerValue(3), IntegerValue(6)}};
+  absl::c_sort(intervals, IndexedInterval::ComparatorByStart());
 
   // Note that the order is deterministic, but not sorted.
-  ConstructOverlappingSets(/*already_sorted=*/false, &intervals, &result);
-  EXPECT_THAT(result, ElementsAre(UnorderedElementsAre(0, 1, 3, 4),
-                                  UnorderedElementsAre(3, 0, 2)));
+  CompactVectorVector<int> result;
+  result.Add({0, 1, 2});  // To be sure we clear.
+  ConstructOverlappingSets(absl::MakeSpan(intervals), &result);
+  EXPECT_THAT(result.AsVectorOfSpan(),
+              ElementsAre(UnorderedElementsAre(0, 1, 3, 4),
+                          UnorderedElementsAre(3, 0, 2)));
 }
 
 TEST(ConstructOverlappingSetsTest, OneSet) {
-  std::vector<std::vector<int>> result{{3}};  // To be sure we clear.
-
   std::vector<IndexedInterval> intervals{
       {0, IntegerValue(0), IntegerValue(10)},
       {1, IntegerValue(1), IntegerValue(10)},
       {2, IntegerValue(2), IntegerValue(10)},
       {3, IntegerValue(3), IntegerValue(10)},
       {4, IntegerValue(4), IntegerValue(10)}};
+  absl::c_sort(intervals, IndexedInterval::ComparatorByStart());
 
-  ConstructOverlappingSets(/*already_sorted=*/false, &intervals, &result);
-  EXPECT_THAT(result, ElementsAre(ElementsAre(0, 1, 2, 3, 4)));
+  CompactVectorVector<int> result;
+  result.Add({0, 1, 2});  // To be sure we clear.
+  ConstructOverlappingSets(absl::MakeSpan(intervals), &result);
+  EXPECT_THAT(result.AsVectorOfSpan(), ElementsAre(ElementsAre(0, 1, 2, 3, 4)));
 }
 
 TEST(GetOverlappingIntervalComponentsTest, BasicTest) {
@@ -262,7 +286,7 @@ std::vector<IndexedInterval> GenerateRandomIntervalVector(
 }
 
 std::vector<std::vector<int>> GetOverlappingIntervalComponentsBruteForce(
-    const std::vector<IndexedInterval>& intervals) {
+    absl::Span<const IndexedInterval> intervals) {
   // Build the adjacency list.
   std::vector<std::vector<int>> adj(intervals.size());
   for (int i = 1; i < intervals.size(); ++i) {
@@ -284,15 +308,15 @@ std::vector<std::vector<int>> GetOverlappingIntervalComponentsBruteForce(
     components[component_indices[i]].push_back(i);
   }
   // Sort the components by start, like GetOverlappingIntervalComponents().
-  absl::c_sort(components, [&intervals](const std::vector<int>& c1,
-                                        const std::vector<int>& c2) {
-    CHECK(!c1.empty() && !c2.empty());
-    return intervals[c1[0]].start < intervals[c2[0]].start;
-  });
+  absl::c_sort(components,
+               [intervals](absl::Span<const int> c1, absl::Span<const int> c2) {
+                 CHECK(!c1.empty() && !c2.empty());
+                 return intervals[c1[0]].start < intervals[c2[0]].start;
+               });
   // Inside each component, the intervals should be sorted, too.
   // Moreover, we need to convert our indices to IntervalIndex.index.
   for (std::vector<int>& component : components) {
-    absl::c_sort(component, [&intervals](int i, int j) {
+    absl::c_sort(component, [intervals](int i, int j) {
       return IndexedInterval::ComparatorByStartThenEndThenIndex()(intervals[i],
                                                                   intervals[j]);
     });
@@ -481,6 +505,22 @@ TEST(RectangleTest, BasicTest) {
   Rectangle r2 = {.x_min = 1, .x_max = 3, .y_min = 1, .y_max = 3};
   EXPECT_EQ(r1.Intersect(r2),
             Rectangle({.x_min = 1, .x_max = 2, .y_min = 1, .y_max = 2}));
+}
+
+TEST(RectangleTest, LineAndPointWorksTest) {
+  const Rectangle vertical_line = {
+      .x_min = 1, .x_max = 1, .y_min = 0, .y_max = 10};
+  const Rectangle r1 = {.x_min = 0, .x_max = 3, .y_min = 1, .y_max = 3};
+  EXPECT_FALSE(vertical_line.IsDisjoint(r1));
+
+  const Rectangle horizontal_line = {
+      .x_min = 0, .x_max = 10, .y_min = 2, .y_max = 2};
+  EXPECT_FALSE(vertical_line.IsDisjoint(horizontal_line));
+
+  const Rectangle point = {.x_min = 1, .x_max = 1, .y_min = 2, .y_max = 2};
+  EXPECT_FALSE(r1.IsDisjoint(point));
+
+  EXPECT_TRUE(horizontal_line.IsDisjoint(point));
 }
 
 TEST(RectangleTest, RandomRegionDifferenceTest) {
@@ -689,7 +729,7 @@ void ReduceUntilDone(ProbingRectangle& ranges, absl::BitGen& random) {
 // detect a conflict even if there is one by looking only at those rectangles,
 // see the ProbingRectangleTest.CounterExample unit test for a concrete example.
 std::optional<Rectangle> FindRectangleWithEnergyTooLargeExhaustive(
-    const std::vector<RectangleInRange>& box_ranges) {
+    absl::Span<const RectangleInRange> box_ranges) {
   int num_boxes = box_ranges.size();
   std::vector<IntegerValue> x;
   x.reserve(num_boxes * 4);
@@ -887,6 +927,211 @@ TEST(ProbingRectangleTest, CounterExample) {
       FindRectangleWithEnergyTooLargeExhaustive(rectangles).has_value());
 }
 
+std::vector<std::pair<int, int>> GetAllIntersections(
+    absl::Span<const Rectangle> rectangles) {
+  std::vector<std::pair<int, int>> result;
+  for (int i = 0; i < rectangles.size(); ++i) {
+    for (int j = i + 1; j < rectangles.size(); ++j) {
+      if (!rectangles[i].IsDisjoint(rectangles[j])) {
+        result.push_back({i, j});
+      }
+    }
+  }
+  return result;
+}
+
+TEST(FindPartialIntersections, Simple) {
+  Rectangle r1 = {.x_min = 0, .x_max = 2, .y_min = 0, .y_max = 2};
+  Rectangle r2 = {.x_min = 1, .x_max = 3, .y_min = 1, .y_max = 3};
+  Rectangle r3 = {.x_min = 5, .x_max = 8, .y_min = 1, .y_max = 3};
+  EXPECT_THAT(FindPartialRectangleIntersections({r1, r2, r3}),
+              UnorderedElementsAre(
+                  testing::AnyOf(std::make_pair(1, 0), std::make_pair(0, 1))));
+}
+
+bool GraphsDefineSameConnectedComponents(
+    absl::Span<const std::pair<int, int>> graph1,
+    absl::Span<const std::pair<int, int>> graph2) {
+  int max = -1;
+  int max2 = -1;
+  for (const auto& [a, b] : graph1) {
+    max = std::max(max, a);
+    max = std::max(max, b);
+  }
+  for (const auto& [a, b] : graph2) {
+    max2 = std::max(max2, a);
+    max2 = std::max(max2, b);
+  }
+  if (max != max2) return false;
+  std::vector<std::vector<int>> view1(max + 1);
+  std::vector<std::vector<int>> view2(max + 1);
+  for (const auto& [a, b] : graph1) {
+    view1[a].push_back(b);
+    view1[b].push_back(a);
+  }
+  for (const auto& [a, b] : graph2) {
+    view2[a].push_back(b);
+    view2[b].push_back(a);
+  }
+  std::vector<std::vector<int>> components1;
+  std::vector<std::vector<int>> components2;
+  FindStronglyConnectedComponents(max + 1, view1, &components1);
+  FindStronglyConnectedComponents(max + 1, view2, &components2);
+  for (auto& v : components1) {
+    std::sort(v.begin(), v.end());
+  }
+  for (auto& v : components2) {
+    std::sort(v.begin(), v.end());
+  }
+  std::sort(components1.begin(), components1.end());
+  std::sort(components2.begin(), components2.end());
+  return components1 == components2;
+}
+
+bool HasCycles(absl::Span<const std::pair<int, int>> graph) {
+  std::vector<std::vector<int>> view;
+  for (const auto& [a, b] : graph) {
+    if (view.size() <= std::max(a, b)) view.resize(std::max(a, b) + 1);
+    view[a].push_back(b);
+    view[b].push_back(a);
+  }
+  absl::flat_hash_map<int, int> parent;
+  for (int i = 0; i < view.size(); ++i) {
+    if (parent.contains(i)) continue;
+    std::vector<int> stack;
+    stack.push_back(i);
+    parent[i] = -1;
+    while (!stack.empty()) {
+      const int node = stack.back();
+      stack.pop_back();
+      const int cur_parent = parent[node];
+      for (const int neighbor : view[node]) {
+        if (neighbor == cur_parent) continue;
+        stack.push_back(neighbor);
+        auto [found, _] = parent.insert({neighbor, node});
+        if (found->second != node) return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::string RenderRectGraph(std::optional<Rectangle> bb,
+                            absl::Span<const Rectangle> rectangles,
+                            absl::Span<const std::pair<int, int>> neighbours) {
+  std::stringstream ss;
+  ss << "  edge[headclip=false, tailclip=false, penwidth=30];\n";
+  for (auto [arc1, arc2] : neighbours) {
+    ss << "  " << arc1 << "->" << arc2 << " [color=\"black\"];\n";
+  }
+  return RenderDot(bb, rectangles, ss.str());
+}
+
+TEST(FindPartialIntersections, Random) {
+  absl::BitGen random;
+  constexpr int num_runs = 100;
+  for (int k = 0; k < num_runs; k++) {
+    std::vector<Rectangle> rectangles =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, random);
+
+    // We also test FindOneIntersectionIfPresent().
+    absl::c_sort(rectangles, [](const Rectangle& a, const Rectangle& b) {
+      return a.x_min < b.x_min;
+    });
+    EXPECT_EQ(FindOneIntersectionIfPresent(rectangles), std::nullopt);
+
+    const int num_to_grow = absl::Uniform(random, 0, 20);
+    for (int i = 0; i < num_to_grow; ++i) {
+      Rectangle& rec =
+          rectangles[absl::Uniform(random, size_t{0}, rectangles.size())];
+      rec = {.x_min = rec.x_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .x_max = rec.x_max + IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_min = rec.y_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_max = rec.y_max + IntegerValue(absl::Uniform(random, 0, 4))};
+    }
+    const int num_of_rectangle_with_area = rectangles.size();
+    const int num_points = absl::Uniform(random, 0, 5);
+    for (int i = 0; i < num_points; ++i) {
+      const IntegerValue x = absl::Uniform(random, 0, 100);
+      const IntegerValue y = absl::Uniform(random, 0, 100);
+      rectangles.push_back({.x_min = x, .x_max = x, .y_min = y, .y_max = y});
+    }
+    const int num_lines = absl::Uniform(random, 0, 5);
+    for (int i = 0; i < num_lines; ++i) {
+      const IntegerValue v = absl::Uniform(random, 0, 100);
+      const IntegerValue i1 = absl::Uniform(random, 0, 99);
+      const IntegerValue i2 = absl::Uniform(random, i1.value() + 1, 100);
+      if (absl::Bernoulli(random, 0.5)) {
+        rectangles.push_back(
+            {.x_min = i1, .x_max = i2, .y_min = v, .y_max = v});
+      } else {
+        rectangles.push_back(
+            {.x_min = v, .x_max = v, .y_min = i1, .y_max = i2});
+      }
+    }
+
+    const std::vector<std::pair<int, int>> naive_result =
+        GetAllIntersections(rectangles);
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(rectangles);
+    for (const auto& [i, j] : result) {
+      EXPECT_FALSE(rectangles[i].IsDisjoint(rectangles[j]));
+    }
+
+    EXPECT_TRUE(GraphsDefineSameConnectedComponents(naive_result, result))
+        << RenderRectGraph(std::nullopt, rectangles, result);
+    EXPECT_FALSE(HasCycles(result))
+        << RenderRectGraph(std::nullopt, rectangles, result);
+    if (k == 0) {
+      LOG(INFO) << RenderRectGraph(std::nullopt, rectangles, result);
+    }
+
+    // We also test FindOneIntersectionIfPresent().
+    std::sort(rectangles.begin(),
+              rectangles.begin() + num_of_rectangle_with_area,
+              [](const Rectangle& a, const Rectangle& b) {
+                return a.x_min < b.x_min;
+              });
+    absl::Span<const Rectangle> rectangles_with_area =
+        absl::MakeSpan(rectangles).subspan(0, num_of_rectangle_with_area);
+    if (FindPartialRectangleIntersections(rectangles_with_area).empty()) {
+      EXPECT_EQ(FindOneIntersectionIfPresent(rectangles_with_area),
+                std::nullopt);
+    } else {
+      auto opt_pair = FindOneIntersectionIfPresent(rectangles_with_area);
+      EXPECT_NE(opt_pair, std::nullopt);
+      EXPECT_FALSE(
+          rectangles[opt_pair->first].IsDisjoint(rectangles[opt_pair->second]));
+    }
+  }
+}
+
+void CheckFuzzedRectangles(
+    absl::Span<const std::tuple<int64_t, int64_t, int64_t, int64_t>> tuples) {
+  std::vector<Rectangle> rectangles;
+  rectangles.reserve(tuples.size());
+  for (const auto& [x_min, x_size, y_min, y_size] : tuples) {
+    rectangles.push_back({.x_min = x_min,
+                          .x_max = CapAdd(x_min, x_size),
+                          .y_min = y_min,
+                          .y_max = CapAdd(y_min, y_size)});
+  }
+  const std::vector<std::pair<int, int>> result =
+      FindPartialRectangleIntersections(rectangles);
+  for (const auto& [i, j] : result) {
+    CHECK(!rectangles[i].IsDisjoint(rectangles[j])) << i << " " << j;
+  }
+  const std::vector<std::pair<int, int>> naive_result =
+      GetAllIntersections(rectangles);
+  CHECK(GraphsDefineSameConnectedComponents(naive_result, result))
+      << RenderRectGraph(std::nullopt, rectangles, result);
+}
+
+FUZZ_TEST(FindPartialIntersections, CheckFuzzedRectangles)
+    .WithDomains(fuzztest::VectorOf(fuzztest::TupleOf(
+        fuzztest::Arbitrary<int64_t>(), fuzztest::NonNegative<int64_t>(),
+        fuzztest::Arbitrary<int64_t>(), fuzztest::NonNegative<int64_t>())));
+
 void BM_FindRectangles(benchmark::State& state) {
   absl::BitGen random;
   std::vector<std::vector<RectangleInRange>> problems;
@@ -934,7 +1179,7 @@ TEST(FindPairwiseRestrictionsTest, Random) {
     const int num_rectangles = absl::Uniform(random, 1, 20);
     const std::vector<Rectangle> rectangles =
         GenerateNonConflictingRectangles(num_rectangles, random);
-    const std::vector<ItemForPairwiseRestriction> items =
+    const std::vector<ItemWithVariableSize> items =
         GenerateItemsRectanglesWithNoPairwiseConflict(
             rectangles, absl::Uniform(random, 0, 1.0), random);
     std::vector<PairwiseRestriction> results;
@@ -951,7 +1196,7 @@ void BM_FindPairwiseRestrictions(benchmark::State& state) {
   // In the vast majority of the cases the propagator doesn't find any pairwise
   // condition to propagate. Thus we choose to benchmark for this particular
   // case.
-  const std::vector<ItemForPairwiseRestriction> items =
+  const std::vector<ItemWithVariableSize> items =
       GenerateItemsRectanglesWithNoPairwisePropagation(
           state.range(0), state.range(1) / 100.0, random);
   std::vector<PairwiseRestriction> results;
@@ -982,6 +1227,133 @@ BENCHMARK(BM_FindPairwiseRestrictions)
     ->ArgPair(200, 100)
     ->ArgPair(1000, 100)
     ->ArgPair(10000, 100);
+
+void BM_FindPartialIntersectionsSparse(benchmark::State& state) {
+  absl::BitGen random;
+  std::vector<std::vector<Rectangle>> problems;
+  static constexpr int kNumProblems = 10;
+  for (int i = 0; i < kNumProblems; i++) {
+    std::vector<Rectangle>& rectangles = problems.emplace_back(
+        GenerateNonConflictingRectangles(state.range(0), random));
+    const int num_to_grow = absl::Uniform(random, 0, 20);
+    for (int i = 0; i < num_to_grow; ++i) {
+      Rectangle& rec =
+          rectangles[absl::Uniform(random, size_t{0}, rectangles.size())];
+      rec = {.x_min = rec.x_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .x_max = rec.x_max + IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_min = rec.y_min - IntegerValue(absl::Uniform(random, 0, 4)),
+             .y_max = rec.y_max + IntegerValue(absl::Uniform(random, 0, 4))};
+    }
+  }
+  int idx = 0;
+  for (auto s : state) {
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(problems[idx]);
+    CHECK_LT(result.size(), state.range(0) * state.range(0));
+    ++idx;
+    if (idx == kNumProblems) idx = 0;
+  }
+}
+
+BENCHMARK(BM_FindPartialIntersectionsSparse)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(20)
+    ->Arg(30)
+    ->Arg(40)
+    ->Arg(80)
+    ->Arg(100)
+    ->Arg(200)
+    ->Arg(1000)
+    ->Arg(10000);
+
+std::vector<Rectangle> GeneratePathologicalCase(int num_rectangles) {
+  std::vector<Rectangle> rectangles;
+  for (int i = 0; i < num_rectangles / 2; ++i) {
+    rectangles.push_back({.x_min = 2 * i,
+                          .x_max = 2 * i + 1,
+                          .y_min = 0,
+                          .y_max = 2 * num_rectangles});
+    rectangles.push_back({
+        .x_min = 0,
+        .x_max = 2 * num_rectangles,
+        .y_min = 2 * i,
+        .y_max = 2 * i + 1,
+    });
+  }
+  return rectangles;
+}
+
+void BM_FindPartialIntersectionsPathological(benchmark::State& state) {
+  const std::vector<Rectangle> rectangles =
+      GeneratePathologicalCase(state.range(0));
+  for (auto s : state) {
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(rectangles);
+    CHECK_LT(result.size(), state.range(0) * state.range(0));
+  }
+}
+
+BENCHMARK(BM_FindPartialIntersectionsPathological)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(20)
+    ->Arg(30)
+    ->Arg(40)
+    ->Arg(80)
+    ->Arg(100)
+    ->Arg(200)
+    ->Arg(1000)
+    ->Arg(10000);
+
+std::vector<Rectangle> GenerateDenseCase(int num_rectangles) {
+  absl::BitGen random;
+  std::vector<Rectangle> rectangles;
+  for (int i = 0; i < num_rectangles; ++i) {
+    const IntegerValue x_min = absl::Uniform(random, 0, num_rectangles);
+    const IntegerValue y_min = absl::Uniform(random, 0, num_rectangles);
+    rectangles.push_back(
+        {.x_min = x_min,
+         .x_max = x_min + absl::Uniform(random, 1, num_rectangles),
+         .y_min = y_min,
+         .y_max = y_min + absl::Uniform(random, 1, num_rectangles)});
+  }
+  return rectangles;
+}
+
+void BM_FindPartialIntersectionsDense(benchmark::State& state) {
+  absl::BitGen random;
+  std::vector<std::vector<Rectangle>> problems;
+  static constexpr int kNumProblems = 10;
+  for (int i = 0; i < kNumProblems; i++) {
+    problems.push_back(GenerateDenseCase(state.range(0)));
+  }
+  int idx = 0;
+  for (auto s : state) {
+    const std::vector<std::pair<int, int>> result =
+        FindPartialRectangleIntersections(problems[idx]);
+    CHECK_LT(result.size(), state.range(0) * state.range(0));
+    ++idx;
+    if (idx == kNumProblems) idx = 0;
+  }
+}
+
+TEST(FindPartialIntersectionsDenseTest, Random) {
+  const std::vector<std::pair<int, int>> result =
+      FindPartialRectangleIntersections(GenerateDenseCase(20));
+}
+
+BENCHMARK(BM_FindPartialIntersectionsDense)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(20)
+    ->Arg(30)
+    ->Arg(40)
+    ->Arg(80)
+    ->Arg(100)
+    ->Arg(200)
+    ->Arg(1000)
+    ->Arg(10000);
 
 }  // namespace
 }  // namespace sat

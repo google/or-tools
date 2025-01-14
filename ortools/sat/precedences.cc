@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -38,6 +38,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -215,10 +216,13 @@ void PrecedenceRelations::Build() {
 
   // We will construct a graph with the current relation from all_relations_.
   // And use this to compute the "closure".
-  // Note that the non-determinism of the arcs order shouldn't matter.
   CHECK(arc_offsets_.empty());
   graph_.ReserveArcs(2 * root_relations_.size());
-  for (const auto [var_pair, negated_offset] : root_relations_) {
+  std::vector<
+      std::pair<std::pair<IntegerVariable, IntegerVariable>, IntegerValue>>
+      root_relations_sorted(root_relations_.begin(), root_relations_.end());
+  std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
+  for (const auto [var_pair, negated_offset] : root_relations_sorted) {
     // TODO(user): Support negative offset?
     //
     // Note that if we only have >= 0 ones, if we do have a cycle, we could

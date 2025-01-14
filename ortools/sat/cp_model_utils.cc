@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -640,6 +640,20 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
   if (shift != 0) {
     FillDomainInProto(ReadDomainFromProto(*linear).AdditionWith(Domain(-shift)),
                       linear);
+  }
+}
+
+void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
+                                          LinearConstraintProto* linear,
+                                          int64_t* offset) {
+  if (coeff == 0) return;
+  if (RefIsPositive(lit)) {
+    linear->add_vars(lit);
+    linear->add_coeffs(coeff);
+  } else {
+    linear->add_vars(NegatedRef(lit));
+    linear->add_coeffs(-coeff);
+    *offset += coeff;
   }
 }
 

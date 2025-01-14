@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -194,6 +194,18 @@ TEST(CompressTuplesTest, NotPerfect) {
       {kTableAnyValue, 2},
   };
   EXPECT_EQ(tuples, expected_tuples);
+}
+
+TEST(CompressTuplesTest, BigInteger) {
+  const std::vector<int64_t> domain_sizes = {576460752303423490};
+  const std::vector<std::vector<int64_t>> original_tuples = {
+      {1},
+      {2},
+  };
+  std::vector<std::vector<int64_t>> tuples = original_tuples;
+  CompressTuples(domain_sizes, &tuples);
+
+  EXPECT_EQ(tuples, original_tuples);
 }
 
 TEST(FullyCompressTuplesTest, BasicTest) {

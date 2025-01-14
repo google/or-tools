@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,8 +32,10 @@
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/pseudo_costs.h"
@@ -172,7 +174,7 @@ IntegerLiteral SplitDomainUsingBestSolutionValue(IntegerVariable var,
 //
 // Note that this function will create the associated literal if needed.
 std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model);
+    absl::Span<const IntegerVariable> vars, Model* model);
 
 // Choose the variable with most fractional LP value.
 std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model);
@@ -189,7 +191,7 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model);
 // with the lowest min has a value <= this min.
 std::function<BooleanOrIntegerLiteral()>
 UnassignedVarWithLowestMinAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model);
+    absl::Span<const IntegerVariable> vars, Model* model);
 
 // Set the first unassigned Literal/Variable to its value.
 //
@@ -201,8 +203,8 @@ struct BooleanOrIntegerVariable {
   IntegerVariable int_var = kNoIntegerVariable;
 };
 std::function<BooleanOrIntegerLiteral()> FollowHint(
-    const std::vector<BooleanOrIntegerVariable>& vars,
-    const std::vector<IntegerValue>& values, Model* model);
+    absl::Span<const BooleanOrIntegerVariable> vars,
+    absl::Span<const IntegerValue> values, Model* model);
 
 // Combines search heuristics in order: if the i-th one returns kNoLiteralIndex,
 // ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,

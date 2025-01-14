@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,7 +17,8 @@
 #include <functional>
 #include <vector>
 
-#include "ortools/sat/integer.h"
+#include "absl/types/span.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 
@@ -44,7 +45,7 @@ namespace sat {
 // variable, it can be passed as last argument.
 std::function<void(Model*)> Cumulative(
     const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);
 
 // Adds a simple cumulative constraint. See the comment of Cumulative() above
@@ -53,14 +54,14 @@ std::function<void(Model*)> Cumulative(
 // This constraint assumes that task demands and the resource capacity are fixed
 // to non-negative number.
 std::function<void(Model*)> CumulativeTimeDecomposition(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    absl::Span<const IntervalVariable> vars,
+    absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);
 
 // Another testing code, same assumptions as the CumulativeTimeDecomposition().
 std::function<void(Model*)> CumulativeUsingReservoir(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    absl::Span<const IntervalVariable> vars,
+    absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);
 
 }  // namespace sat

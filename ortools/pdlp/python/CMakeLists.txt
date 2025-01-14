@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,19 +18,15 @@ set_target_properties(pdlp_pybind11 PROPERTIES
 if(APPLE)
   set_target_properties(pdlp_pybind11 PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    LINK_FLAGS "-flat_namespace -undefined suppress"
-    )
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
 elseif(UNIX)
   set_target_properties(pdlp_pybind11 PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
-    )
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
 endif()
 target_link_libraries(pdlp_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_native_proto_caster
-  protobuf::libprotobuf
-)
+  protobuf::libprotobuf)
 target_include_directories(pdlp_pybind11 PRIVATE ${protobuf_SOURCE_DIR})
 add_library(${PROJECT_NAMESPACE}::pdlp_pybind11 ALIAS pdlp_pybind11)
 

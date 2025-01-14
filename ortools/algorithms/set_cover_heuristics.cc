@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,12 +14,16 @@
 #include "ortools/algorithms/set_cover_heuristics.h"
 
 #include <algorithm>
+#include <climits>
+#include <cstdint>
 #include <limits>
 #include <numeric>
 #include <utility>
 #include <vector>
 
+#include "absl/base/casts.h"
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
@@ -95,7 +99,7 @@ bool GreedySolutionGenerator::NextSolution() {
 }
 
 bool GreedySolutionGenerator::NextSolution(
-    const std::vector<SubsetIndex>& focus) {
+    absl::Span<const SubsetIndex> focus) {
   return NextSolution(focus, inv_->model()->subset_costs());
 }
 
@@ -218,26 +222,130 @@ class ComputationUsefulnessStats {
   SubsetToIntVector num_free_elements_;
 };
 
+namespace {
+// Clearly not the fastest radix sort, but its complexity is the right one.
+// Furthermore:
+// - it is as memory-safe as std::vectors can be (no pointers),
+// - no multiplication is performed,
+// - it is stable
+// - it handles the cases of signed and unsigned integers automatically,
+// - bounds on the keys are optional, or they can be computed automatically,
+// - based on those bounds, the number of passes is automatically computed,
+// - a payload is associated to each key, and it is sorted in the same way
+//   as the keys. This payload can be a vector of integers or a vector of
+//   pointers to larger objects.
+// TODO(user): Make it an independent library.
+// - add support for decreasing counting sort,
+// - make payloads optional,
+// - support floats and doubles,
+// - improve performance.
+// - use vectorized code.
+namespace internal {
+uint32_t RawBits(uint32_t x) { return x; }                           // NOLINT
+uint32_t RawBits(int x) { return absl::bit_cast<uint32_t>(x); }      // NOLINT
+uint32_t RawBits(float x) { return absl::bit_cast<uint32_t>(x); }    // NOLINT
+uint64_t RawBits(uint64_t x) { return x; }                           // NOLINT
+uint64_t RawBits(int64_t x) { return absl::bit_cast<uint64_t>(x); }  // NOLINT
+uint64_t RawBits(double x) { return absl::bit_cast<uint64_t>(x); }   // NOLINT
+
+inline uint32_t Bucket(uint32_t x, uint32_t shift, uint32_t radix) {
+  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
+  // NOMUTANTS -- a way to compute the remainder of a division when radix is a
+  // power of two.
+  return (RawBits(x) >> shift) & (radix - 1);
+}
+
+template <typename T>
+int NumBitsToRepresent(T value) {
+  DCHECK_LE(absl::countl_zero(RawBits(value)), sizeof(T) * CHAR_BIT);
+  return sizeof(T) * CHAR_BIT - absl::countl_zero(RawBits(value));
+}
+
+template <typename Key, typename Counter>
+void UpdateCounters(uint32_t radix, int shift, std::vector<Key>& keys,
+                    std::vector<Counter>& counts) {
+  std::fill(counts.begin(), counts.end(), 0);
+  DCHECK_EQ(counts[0], 0);
+  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
+  const auto num_keys = keys.size();
+  for (int64_t i = 0; i < num_keys; ++i) {
+    ++counts[Bucket(keys[i], shift, radix)];
+  }
+  // Now the counts will contain the sum of the sizes below and including each
+  // bucket.
+  for (uint64_t i = 1; i < radix; ++i) {
+    counts[i] += counts[i - 1];
+  }
+}
+
+template <typename Key, typename Payload, typename Counter>
+void IncreasingCountingSort(uint32_t radix, int shift, std::vector<Key>& keys,
+                            std::vector<Payload>& payloads,
+                            std::vector<Key>& scratch_keys,
+                            std::vector<Payload>& scratch_payloads,
+                            std::vector<Counter>& counts) {
+  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
+  UpdateCounters(radix, shift, keys, counts);
+  const auto num_keys = keys.size();
+  // In this order for stability.
+  for (int64_t i = num_keys - 1; i >= 0; --i) {
+    Counter& c = counts[Bucket(keys[i], shift, radix)];
+    scratch_keys[c - 1] = keys[i];
+    scratch_payloads[c - 1] = payloads[i];
+    --c;
+  }
+  std::swap(keys, scratch_keys);
+  std::swap(payloads, scratch_payloads);
+}
+}  // namespace internal
+
+template <typename Key, typename Payload>
+void RadixSort(int radix_log, std::vector<Key>& keys,
+               std::vector<Payload>& payloads, Key min_key, Key max_key) {
+  // range_log is the number of bits necessary to represent the max_key
+  // We could as well use max_key - min_key, but it is more expensive to
+  // compute.
+  const int range_log = internal::NumBitsToRepresent(max_key);
+  DCHECK_EQ(internal::NumBitsToRepresent(0), 0);
+  DCHECK_LE(internal::NumBitsToRepresent(std::numeric_limits<Key>::max()),
+            sizeof(Key) * CHAR_BIT);
+  const int radix = 1 << radix_log;  // By definition.
+  std::vector<uint32_t> counters(radix, 0);
+  std::vector<Key> scratch_keys(keys.size());
+  std::vector<Payload> scratch_payloads(payloads.size());
+  for (int shift = 0; shift < range_log; shift += radix_log) {
+    DCHECK_LE(1 << shift, max_key);
+    internal::IncreasingCountingSort(radix, shift, keys, payloads, scratch_keys,
+                                     scratch_payloads, counters);
+  }
+}
+}  // namespace
+
 std::vector<ElementIndex> GetUncoveredElementsSortedByDegree(
     const SetCoverInvariant* const inv) {
   const BaseInt num_elements = inv->model()->num_elements();
-  std::vector<ElementIndex> degree_sorted_elements;
+  std::vector<ElementIndex> degree_sorted_elements;  // payloads
   degree_sorted_elements.reserve(num_elements);
+  std::vector<BaseInt> keys;
+  keys.reserve(num_elements);
+  const SparseRowView& rows = inv->model()->rows();
+  BaseInt max_degree = 0;
   for (ElementIndex element : inv->model()->ElementRange()) {
     // Already covered elements should not be considered.
     if (inv->coverage()[element] != 0) continue;
     degree_sorted_elements.push_back(element);
+    const BaseInt size = rows[element].size();
+    max_degree = std::max(max_degree, size);
+    keys.push_back(size);
   }
-  const SparseRowView& rows = inv->model()->rows();
-  // Sort indices by degree i.e. the size of the row corresponding to an
-  // element.
-  // NOMUTANTS -- The code still works if the sort is removed.
-  std::sort(degree_sorted_elements.begin(), degree_sorted_elements.end(),
-            [&rows](const ElementIndex a, const ElementIndex b) {
-              if (rows[a].size() < rows[b].size()) return true;
-              if (rows[a].size() == rows[b].size()) return a < b;
-              return false;
-            });
+  RadixSort(11, keys, degree_sorted_elements, 1, max_degree);
+#ifndef NDEBUG
+  BaseInt prev_key = -1;
+  for (const auto key : keys) {
+    DCHECK_LE(prev_key, key);
+    prev_key = key;
+  }
+#endif
   return degree_sorted_elements;
 }
 
@@ -358,6 +466,7 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
   std::vector<ElementIndex> degree_sorted_elements =
       GetUncoveredElementsSortedByDegree(inv_);
   const SparseRowView& rows = inv_->model()->rows();
+  const SparseColumnView& columns = inv_->model()->columns();
   ComputationUsefulnessStats stats(inv_, false);
   for (const ElementIndex element : degree_sorted_elements) {
     // No need to cover an element that is already covered.
@@ -367,6 +476,12 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
     BaseInt best_subset_num_free_elts = 0;
     for (const SubsetIndex subset : rows[element]) {
       if (!in_focus[subset]) continue;
+      const Cost filtering_det =
+          Determinant(costs[subset], columns[subset].size(), best_subset_cost,
+                      best_subset_num_free_elts);
+      // If the ratio with the initial number elements is greater, we skip this
+      // subset.
+      if (filtering_det > 0) continue;
       const BaseInt num_free_elements = inv_->ComputeNumFreeElements(subset);
       stats.Update(subset, num_free_elements);
       const Cost det = Determinant(costs[subset], num_free_elements,

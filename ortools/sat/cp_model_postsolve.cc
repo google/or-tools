@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -214,7 +215,7 @@ namespace {
 
 // Note that if a domain is not fixed, we just take its Min() value.
 int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
-                                 const std::vector<Domain>& domains) {
+                                 absl::Span<const Domain> domains) {
   int64_t value = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
     const int ref = expr.vars(i);
@@ -226,7 +227,7 @@ int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
 }
 
 bool LinearExpressionIsFixed(const LinearExpressionProto& expr,
-                             const std::vector<Domain>& domains) {
+                             absl::Span<const Domain> domains) {
   for (const int var : expr.vars()) {
     if (!domains[var].IsFixed()) return false;
   }
@@ -335,7 +336,7 @@ void PostsolveIntProd(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
 void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
-                       const std::vector<int>& postsolve_mapping,
+                       absl::Span<const int> postsolve_mapping,
                        std::vector<int64_t>* solution) {
   CHECK_EQ(solution->size(), postsolve_mapping.size());
 
@@ -414,8 +415,8 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
 
 void FillTightenedDomainInResponse(const CpModelProto& original_model,
                                    const CpModelProto& mapping_proto,
-                                   const std::vector<int>& postsolve_mapping,
-                                   const std::vector<Domain>& search_domains,
+                                   absl::Span<const int> postsolve_mapping,
+                                   absl::Span<const Domain> search_domains,
                                    CpSolverResponse* response,
                                    SolverLogger* logger) {
   // The [0, num_vars) part will contain the tightened domains.

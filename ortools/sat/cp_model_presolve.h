@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -42,13 +43,14 @@ namespace sat {
 
 // Replaces all the instance of a variable i (and the literals referring to it)
 // by mapping[i]. The definition of variables i is also moved to its new index.
-// Variables with a negative mapping value are ignored and it is an error if
-// such variable is referenced anywhere (this is CHECKed).
+// If mapping[i] < 0 the variable can be ignored if possible. If it is not
+// possible, then we will use a new index for it (at the end) and the mapping
+// will be updated to reflect that.
 //
-// The image of the mapping should be dense in [0, new_num_variables), this is
-// also CHECKed.
-void ApplyVariableMapping(const std::vector<int>& mapping,
-                          const PresolveContext& context);
+// The image of the mapping should be dense in [0, reverse_mapping->size()).
+void ApplyVariableMapping(absl::Span<int> mapping,
+                          std::vector<int>* reverse_mapping,
+                          CpModelProto* proto);
 
 // Presolves the initial content of presolved_model.
 //
@@ -94,10 +96,9 @@ class CpModelPresolver {
   // A simple helper that logs the rules applied so far and return INFEASIBLE.
   CpSolverStatus InfeasibleStatus();
 
-  // At the end of presolve, the mapping model is initialized to contains all
-  // the variable from the original model + the one created during presolve
-  // expand. It also contains the tightened domains.
-  void InitializeMappingModelVariables();
+  // If there is a large proportion of fixed variables, remap the whole proto
+  // before we start the presolve.
+  bool MaybeRemoveFixedVariables(std::vector<int>* postsolve_mapping);
 
   // Runs the inner loop of the presolver.
   bool ProcessChangedVariables(std::vector<bool>* in_queue,
@@ -130,7 +131,7 @@ class CpModelPresolver {
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
   bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
-  bool PresolveLinMax(ConstraintProto* ct);
+  bool PresolveLinMax(int c, ConstraintProto* ct);
   bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
   bool PropagateAndReduceAffineMax(ConstraintProto* ct);
   bool PropagateAndReduceIntAbs(ConstraintProto* ct);
@@ -253,6 +254,10 @@ class CpModelPresolver {
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ConvertToBoolAnd();
 
+  // Sometimes an upper bound on the objective can reduce the domains of many
+  // variables. This "propagates" the objective like a normal linear constraint.
+  bool PropagateObjective();
+
   // Try to reformulate the objective in term of "base" variables. This is
   // mainly useful for core based approach where having more terms in the
   // objective (but with a same trivial lower bound) should help.
@@ -286,7 +291,7 @@ class CpModelPresolver {
   // this cannot happen by maybe taking the rhs into account?
   bool RemoveCommonPart(
       const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
-      const std::vector<std::pair<int, int64_t>>& block,
+      absl::Span<const std::pair<int, int64_t>> block,
       ActivityBoundHelper* helper);
 
   // Try to identify many linear constraints that share a common linear
@@ -414,7 +419,7 @@ class ModelCopy {
 
   // Setup new variables from a vector of domains.
   // Inactive variables will be fixed to their lower bound.
-  void CreateVariablesFromDomains(const std::vector<Domain>& domains);
+  void CreateVariablesFromDomains(absl::Span<const Domain> domains);
 
  private:
   // Overwrites the out_model to be unsat. Returns false.
@@ -440,12 +445,14 @@ class ModelCopy {
   bool CopyElement(const ConstraintProto& ct);
   bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
   bool CopyIntDiv(const ConstraintProto& ct, bool ignore_names);
+  bool CopyIntMod(const ConstraintProto& ct, bool ignore_names);
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyLinearExpression(const LinearExpressionProto& expr,
                             LinearExpressionProto* dst);
   bool CopyAutomaton(const ConstraintProto& ct);
   bool CopyTable(const ConstraintProto& ct);
   bool CopyAllDiff(const ConstraintProto& ct);
+  bool CopyLinMax(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify
@@ -465,7 +472,7 @@ class ModelCopy {
   // Temp vectors.
   std::vector<int> non_fixed_variables_;
   std::vector<int64_t> non_fixed_coefficients_;
-  absl::flat_hash_map<int, int> interval_mapping_;
+  std::vector<int64_t> interval_mapping_;
   int starting_constraint_index_ = 0;
 
   std::vector<int> temp_enforcement_literals_;
@@ -491,7 +498,7 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
 // Same as ImportModelWithBasicPresolveIntoContext() except that variable
 // domains are read from domains.
 bool ImportModelAndDomainsWithBasicPresolveIntoContext(
-    const CpModelProto& in_model, const std::vector<Domain>& domains,
+    const CpModelProto& in_model, absl::Span<const Domain> domains,
     std::function<bool(int)> active_constraints, PresolveContext* context);
 
 // Copies the non constraint, non variables part of the model.

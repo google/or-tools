@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -378,7 +378,7 @@ struct MatrixEntry {
 class SingletonUndo {
  public:
   // The type of a given operation.
-  typedef enum {
+  typedef enum : uint8_t {
     ZERO_COST_SINGLETON_COLUMN,
     SINGLETON_ROW,
     SINGLETON_COLUMN_IN_EQUALITY,
@@ -662,7 +662,7 @@ class DoubletonFreeColumnPreprocessor final : public Preprocessor {
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
-  enum RowChoice {
+  enum RowChoice : int {
     DELETED = 0,
     MODIFIED = 1,
     // This is just a constant for the number of rows in a doubleton column.
@@ -828,7 +828,7 @@ class DoubletonEqualityRowPreprocessor final : public Preprocessor {
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
-  enum ColChoice {
+  enum ColChoice : int {
     DELETED = 0,
     MODIFIED = 1,
     // For `for()` loops iterating over the ColChoice values and/or arrays.

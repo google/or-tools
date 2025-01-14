@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,17 +15,19 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <random>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
@@ -37,7 +39,8 @@ namespace sat {
 SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
       trail_(*model->GetOrCreate<Trail>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      ls_hints_(model->GetOrCreate<SharedLsSolutionRepository>()) {}
 
 void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   const int old_num_variables = activities_.size();
@@ -133,6 +136,7 @@ void SatDecisionPolicy::RephaseIfNeeded() {
       FlipCurrentPolarity();
       break;
     case 7:
+      if (UseLsSolutionAsInitialPolarity()) break;
       UseLongestAssignmentAsInitialPolarity();
       break;
   }
@@ -186,6 +190,25 @@ void SatDecisionPolicy::UseLongestAssignmentAsInitialPolarity() {
     var_polarity_[l.Variable()] = l.IsPositive();
   }
   best_partial_assignment_.clear();
+}
+
+bool SatDecisionPolicy::UseLsSolutionAsInitialPolarity() {
+  if (!parameters_.polarity_exploit_ls_hints()) return false;
+
+  if (ls_hints_->NumSolutions() == 0) return false;
+
+  // This is in term of proto variable.
+  // TODO(user): use cp_model_mapping. But this is not needed to experiment
+  // on pure sat problems.
+  std::shared_ptr<const SharedLsSolutionRepository::Solution> solution =
+      ls_hints_->GetRandomBiasedSolution(*random_);
+  if (solution->variable_values.size() != var_polarity_.size()) return false;
+
+  for (int i = 0; i < solution->variable_values.size(); ++i) {
+    var_polarity_[BooleanVariable(i)] = solution->variable_values[i] == 1;
+  }
+
+  return false;
 }
 
 void SatDecisionPolicy::FlipCurrentPolarity() {

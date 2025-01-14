@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -36,6 +36,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
@@ -108,6 +109,16 @@ bool EnforcementPropagator::Propagate(Trail* /*trail*/) {
     }
   }
   rev_stack_size_ = static_cast<int>(untrail_stack_.size());
+
+  // Compute the enforcement status of any constraint added at a positive level.
+  // This is only needed until we are back to level zero.
+  for (const EnforcementId id : ids_to_fix_until_next_root_level_) {
+    ChangeStatus(id, DebugStatus(id));
+  }
+  if (trail_.CurrentDecisionLevel() == 0) {
+    ids_to_fix_until_next_root_level_.clear();
+  }
+
   return true;
 }
 
@@ -224,6 +235,14 @@ EnforcementId EnforcementPropagator::Register(
       }
     }
   }
+
+  // Tricky: if we added something at a positive level, and its status is
+  // not CANNOT_PROPAGATE, then we might need to fix it on backtrack.
+  if (trail_.CurrentDecisionLevel() > 0 &&
+      statuses_[id] != EnforcementStatus::CANNOT_PROPAGATE) {
+    ids_to_fix_until_next_root_level_.push_back(id);
+  }
+
   return id;
 }
 

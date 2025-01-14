@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,10 +20,12 @@
 #include <cstdlib>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -38,7 +40,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/util.h"
@@ -226,7 +228,7 @@ bool VarDomination::EndFirstPhase() {
   // complexity is borned by this number times the number of entries in the
   // constraints. Still we should in most situation be a lot lower than that.
   const int kMaxInitialSize = 50;
-  std::vector<IntegerVariable> cropped_vars;
+  absl::btree_set<IntegerVariable> cropped_vars;
   util_intops::StrongVector<IntegerVariable, bool> is_cropped(
       num_vars_with_negation_, false);
 
@@ -260,12 +262,12 @@ bool VarDomination::EndFirstPhase() {
         buffer_.push_back(x);
         if (new_size >= kMaxInitialSize) {
           is_cropped[var] = true;
-          cropped_vars.push_back(var);
+          cropped_vars.insert(var);
         }
       }
     } else {
       is_cropped[var] = true;
-      cropped_vars.push_back(var);
+      cropped_vars.insert(var);
       for (int i = 0; i < 200; ++i) {
         const IntegerVariable x = to_scan[i];
         if (var_sig & ~block_down_signatures_[x]) continue;  // !included.
@@ -732,7 +734,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
     if (ub_limit == lb) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWith(var, Domain(lb)));
+      CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(lb)));
       continue;
     }
 
@@ -742,7 +744,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
     if (lb_limit == ub) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWith(var, Domain(ub)));
+      CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(ub)));
       continue;
     }
 
@@ -760,7 +762,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         }
         ++num_fixed_vars;
         context->UpdateRuleStats("dual: fix variable with multiple choices");
-        CHECK(context->IntersectDomainWith(var, Domain(value)));
+        CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(value)));
         continue;
       }
     }
@@ -783,7 +785,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                     .Max()
               : lb;
       context->UpdateRuleStats("dual: reduced domain");
-      CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
+      CHECK(context->IntersectDomainWithAndUpdateHint(var,
+                                                      Domain(new_lb, new_ub)));
     }
   }
   if (num_fixed_vars > 0) {
@@ -833,7 +836,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
       // If we have an enforcement literal then we can always add the
       // implication "not enforced" => var at its lower bound.
-      // If we also had enforced => fixed var, then var is in affine relation
+      // If we also have enforced => fixed var, then var is in affine relation
       // with the enforced literal and we can remove one variable.
       //
       // TODO(user): We can also deal with more than one enforcement.
@@ -848,8 +851,10 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                     context->deductions.ImpliedDomain(enf, positive_ref));
         if (implied.IsEmpty()) {
           context->UpdateRuleStats("dual: fix variable");
+          context->UpdateLiteralSolutionHint(enf, false);
           if (!context->SetLiteralToFalse(enf)) return false;
-          if (!context->IntersectDomainWith(positive_ref, Domain(bound))) {
+          if (!context->IntersectDomainWithAndUpdateHint(positive_ref,
+                                                         Domain(bound))) {
             return false;
           }
           continue;
@@ -858,7 +863,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // Corner case.
           if (implied.FixedValue() == bound) {
             context->UpdateRuleStats("dual: fix variable");
-            if (!context->IntersectDomainWith(positive_ref, implied)) {
+            if (!context->IntersectDomainWithAndUpdateHint(positive_ref,
+                                                           implied)) {
               return false;
             }
             continue;
@@ -871,6 +877,14 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           processed[PositiveRef(enf)] = true;
           processed[positive_ref] = true;
           context->UpdateRuleStats("dual: affine relation");
+          // The new affine relation added below can break the hint if hint(enf)
+          // is 0. In this case the only constraint blocking `ref` from
+          // decreasing [`ct` = enf => (var = implied)] does not apply. We can
+          // thus set the hint of `positive_ref` to `bound` to preserve the hint
+          // feasibility.
+          if (context->LiteralSolutionHintIs(enf, false)) {
+            context->UpdateRefSolutionHint(positive_ref, bound);
+          }
           if (RefIsPositive(enf)) {
             // positive_ref = enf * implied + (1 - enf) * bound.
             if (!context->StoreAffineRelation(
@@ -878,7 +892,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               return false;
             }
           } else {
-            // positive_ref = (1 - enf) * implied + enf * bound.
+            // enf_var = PositiveRef(enf).
+            // positive_ref = (1 - enf_var) * implied + enf_var * bound.
             if (!context->StoreAffineRelation(positive_ref, PositiveRef(enf),
                                               bound - implied.FixedValue(),
                                               implied.FixedValue())) {
@@ -894,6 +909,13 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           processed[PositiveRef(enf)] = true;
           processed[positive_ref] = true;
           context->UpdateRuleStats("dual: add implication");
+          // The new implication can break the hint if hint(enf) is 0 and
+          // hint(ref) is 1. In this case the only locking constraint `ct` does
+          // not apply and thus does not prevent decreasing the hint of ref in
+          // order to preserve the hint feasibility.
+          if (context->LiteralSolutionHintIs(enf, false)) {
+            context->UpdateLiteralSolutionHint(ref, false);
+          }
           context->AddImplication(NegatedRef(enf), NegatedRef(ref));
           context->UpdateNewConstraintsVariableUsage();
           continue;
@@ -916,6 +938,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                                .IntersectionWith(var_domain);
         if (rhs.IsEmpty()) {
           context->UpdateRuleStats("linear1: infeasible");
+          context->UpdateLiteralSolutionHint(ct.enforcement_literal(0), false);
           if (!context->SetLiteralToFalse(ct.enforcement_literal(0))) {
             return false;
           }
@@ -945,22 +968,51 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             // remove the constraint.
             if (rhs.IsFixed()) {
               if (encoding_lit == NegatedRef(ref)) continue;
+              // Extending `ct` = "not(ref) => encoding_lit" to an equality can
+              // break the hint only if hint(ref) = hint(encoding_lit) = 1. But
+              // in this case `ct` is actually not blocking ref from decreasing.
+              // We can thus set its hint to 0 to preserve the hint feasibility.
+              if (context->LiteralSolutionHintIs(encoding_lit, true)) {
+                context->UpdateLiteralSolutionHint(ref, false);
+              }
               context->StoreBooleanEqualityRelation(encoding_lit,
                                                     NegatedRef(ref));
             } else {
               if (encoding_lit == ref) continue;
+              // Extending `ct` = "not(ref) => not(encoding_lit)" to an equality
+              // can break the hint only if hint(encoding_lit) = 0 and hint(ref)
+              // = 1. But in this case `ct` is actually not blocking ref from
+              // decreasing. We can thus set its hint to 0 to preserve the hint
+              // feasibility.
+              if (context->LiteralSolutionHintIs(encoding_lit, false)) {
+                context->UpdateLiteralSolutionHint(ref, false);
+              }
               context->StoreBooleanEqualityRelation(encoding_lit, ref);
             }
             context->working_model->mutable_constraints(ct_index)->Clear();
             context->UpdateConstraintVariableUsage(ct_index);
             processed[PositiveRef(ref)] = true;
             processed[PositiveRef(var)] = true;
-            processed[PositiveRef(encoding_lit)] = true;
+            // `encoding_lit` was maybe a new variable added during this loop,
+            // so make sure we cannot go out-of-bound.
+            if (PositiveRef(encoding_lit) < processed.size()) {
+              processed[PositiveRef(encoding_lit)] = true;
+            }
             continue;
           }
 
           processed[PositiveRef(ref)] = true;
           processed[PositiveRef(var)] = true;
+          // The `new_ct` constraint `ref` => (`var` in `complement`) below can
+          // break the hint if hint(var) is not in `complement`. In this case,
+          // set the hint of `ref` to false. This should be safe since the only
+          // constraint blocking `ref` from decreasing is `ct` = not(ref) =>
+          // (`var` in `rhs`) -- which does not apply when `ref` is true.
+          const std::optional<int64_t> var_hint =
+              context->GetRefSolutionHint(var);
+          if (var_hint.has_value() && !complement.Contains(*var_hint)) {
+            context->UpdateLiteralSolutionHint(ref, false);
+          }
           ConstraintProto* new_ct = context->working_model->add_constraints();
           new_ct->add_enforcement_literal(ref);
           new_ct->mutable_linear()->add_vars(var);
@@ -1022,6 +1074,18 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               ++num_bool_in_near_duplicate_ct;
               processed[PositiveRef(ref)] = true;
               processed[PositiveRef(other_ref)] = true;
+              // If the two hints are different, and since both refs have an
+              // equivalent blocking constraint, then the constraint is actually
+              // not blocking the ref at 1 from decreasing. Hence we can set its
+              // hint to false to preserve the hint feasibility despite the new
+              // Boolean equality constraint.
+              if (context->VarHasSolutionHint(PositiveRef(ref)) &&
+                  context->VarHasSolutionHint(PositiveRef(other_ref)) &&
+                  context->LiteralSolutionHint(ref) !=
+                      context->LiteralSolutionHint(other_ref)) {
+                context->UpdateLiteralSolutionHint(ref, false);
+                context->UpdateLiteralSolutionHint(other_ref, false);
+              }
               context->StoreBooleanEqualityRelation(ref, other_ref);
 
               // We can delete one of the constraint since they are duplicate
@@ -1091,6 +1155,13 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
     processed[PositiveRef(a)] = true;
     processed[PositiveRef(b)] = true;
+    // If hint(a) is false we can always set it to hint(b) since this can only
+    // increase its value. If hint(a) is true then hint(b) must be true as well
+    // if the hint is feasible, due to the a => b constraint. Setting hint(a) to
+    // hint(b) is thus always safe.
+    if (context->VarHasSolutionHint(PositiveRef(b))) {
+      context->UpdateLiteralSolutionHint(a, context->LiteralSolutionHint(b));
+    }
     context->StoreBooleanEqualityRelation(a, b);
     context->UpdateRuleStats("dual: enforced equivalence");
   }
@@ -1395,6 +1466,46 @@ void MaybeUpdateLiteralHintFromDominance(PresolveContext& context, int lit,
   }
 }
 
+// Decrements the solution hint of `ref` by the minimum amount necessary to be
+// in `domain`, and increments the solution hint of one or more
+// `dominating_variables` by the same total amount (or less if it is not
+// possible to exactly match this amount).
+//
+// `domain` must be an interval with the same lower bound as `ref`'s current
+// domain D in `context`, and whose upper bound must be in D.
+void MaybeUpdateRefHintFromDominance(
+    PresolveContext& context, int ref, const Domain& domain,
+    const absl::Span<const IntegerVariable> dominating_variables) {
+  const std::optional<int64_t> ref_hint = context.GetRefSolutionHint(ref);
+  if (!ref_hint.has_value()) return;
+  // The quantity to subtract from the solution hint of `ref`. If the closest
+  // value of *ref_hint in `domain` is not *ref_hint then it is either the lower
+  // or upper bound of `domain`, which by hypothesis are in `ref`'s current
+  // domain D. Hence, in any case, this closest value is in D.
+  const int64_t ref_hint_delta = *ref_hint - domain.ClosestValue(*ref_hint);
+  // If it is 0 there is nothing to do. It might be negative if the solution
+  // hint is not initially feasible (in which case we can't fix it).
+  if (ref_hint_delta <= 0) return;
+
+  context.UpdateRefSolutionHint(ref, *ref_hint - ref_hint_delta);
+  int64_t remaining_delta = ref_hint_delta;
+  for (const IntegerVariable ivar : dominating_variables) {
+    const int dominating_ref = VarDomination::IntegerVariableToRef(ivar);
+    const std::optional<int64_t> dominating_ref_hint =
+        context.GetRefSolutionHint(dominating_ref);
+    if (!dominating_ref_hint.has_value()) continue;
+    const Domain& dominating_ref_domain = context.DomainOf(dominating_ref);
+    const int64_t new_dominating_ref_hint =
+        dominating_ref_domain.ValueAtOrBefore(*dominating_ref_hint +
+                                              remaining_delta);
+    // This might happen if the solution hint is not initially feasible.
+    if (!dominating_ref_domain.Contains(new_dominating_ref_hint)) continue;
+    context.UpdateRefSolutionHint(dominating_ref, new_dominating_ref_hint);
+    remaining_delta -= (new_dominating_ref_hint - *dominating_ref_hint);
+    if (remaining_delta == 0) break;
+  }
+}
+
 bool ProcessAtMostOne(
     absl::Span<const int> literals, const std::string& message,
     const VarDomination& var_domination,
@@ -1668,7 +1779,10 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         const int64_t lb = context->MinOf(current_ref);
         if (delta + coeff_magnitude > slack) {
           context->UpdateRuleStats("domination: fixed to lb.");
-          if (!context->IntersectDomainWith(current_ref, Domain(lb))) {
+          const Domain reduced_domain = Domain(lb);
+          MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
+                                          dominated_by);
+          if (!context->IntersectDomainWith(current_ref, reduced_domain)) {
             return false;
           }
 
@@ -1699,7 +1813,10 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         }
         if (new_ub < context->MaxOf(current_ref)) {
           context->UpdateRuleStats("domination: reduced ub.");
-          if (!context->IntersectDomainWith(current_ref, Domain(lb, new_ub))) {
+          const Domain reduced_domain = Domain(lb, new_ub);
+          MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
+                                          dominated_by);
+          if (!context->IntersectDomainWith(current_ref, reduced_domain)) {
             return false;
           }
 
@@ -1785,8 +1902,9 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           // TODO(user): It look like testing this is not really necessary.
           // The reduction done by this class seem to be order independent.
           bool ok = true;
-          for (const IntegerVariable dom :
-               var_domination.DominatingVariables(var)) {
+          const absl::Span<const IntegerVariable> dominating_vars =
+              var_domination.DominatingVariables(var);
+          for (const IntegerVariable dom : dominating_vars) {
             // Note that we assumed that a fixed point was reached before this
             // is called, so modified_domains should have been empty as we
             // entered this function. If not, the code is still correct, but we
@@ -1807,8 +1925,10 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             increase_is_forbidden[var] = true;
             context->UpdateRuleStats(
                 "domination: dual strenghtening using dominance");
-            if (!context->IntersectDomainWith(
-                    ref, Domain(context->MinOf(ref), lb))) {
+            const Domain reduced_domain = Domain(context->MinOf(ref), lb);
+            MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
+                                            dominating_vars);
+            if (!context->IntersectDomainWith(ref, reduced_domain)) {
               return false;
             }
 

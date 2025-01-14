@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,12 +19,10 @@
 #ifndef OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
 #define OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
 
-#include <map>
 #include <string>
 #include <vector>
 
 #include "absl/container/btree_map.h"
-#include "absl/strings/str_format.h"
 #include "examples/cpp/fap_parser.h"
 
 namespace operations_research {
@@ -35,6 +33,11 @@ class FapModelPrinter {
   FapModelPrinter(const absl::btree_map<int, FapVariable>& variables,
                   const std::vector<FapConstraint>& constraints,
                   absl::string_view objective, const std::vector<int>& values);
+
+  // This type is neither copyable nor movable.
+  FapModelPrinter(const FapModelPrinter&) = delete;
+  FapModelPrinter& operator=(const FapModelPrinter&) = delete;
+
   ~FapModelPrinter();
 
   void PrintFapObjective();
@@ -47,73 +50,7 @@ class FapModelPrinter {
   const std::vector<FapConstraint> constraints_;
   const std::string objective_;
   const std::vector<int> values_;
-  DISALLOW_COPY_AND_ASSIGN(FapModelPrinter);
 };
-
-FapModelPrinter::FapModelPrinter(const absl::btree_map<int, FapVariable>& variables,
-                                 const std::vector<FapConstraint>& constraints,
-                                 absl::string_view objective,
-                                 const std::vector<int>& values)
-    : variables_(variables),
-      constraints_(constraints),
-      objective_(objective),
-      values_(values) {}
-
-FapModelPrinter::~FapModelPrinter() {}
-
-void FapModelPrinter::PrintFapVariables() {
-  LOG(INFO) << "Variable File:";
-  for (const auto& it : variables_) {
-    std::string domain = "{";
-    for (const int value : it.second.domain) {
-      absl::StrAppendFormat(&domain, "%d ", value);
-    }
-    domain.append("}");
-
-    std::string hard = " ";
-    if (it.second.hard) {
-      hard = " hard";
-    }
-
-    LOG(INFO) << "Variable " << absl::StrFormat("%3d: ", it.first)
-              << absl::StrFormat("(degree: %2d) ", it.second.degree)
-              << absl::StrFormat("%3d", it.second.domain_index)
-              << absl::StrFormat("%3d", it.second.initial_position)
-              << absl::StrFormat("%3d", it.second.mobility_index)
-              << absl::StrFormat("%8d", it.second.mobility_cost)
-              << absl::StrFormat(" (%2d) ", it.second.domain_size) << domain
-              << hard;
-  }
-}
-
-void FapModelPrinter::PrintFapConstraints() {
-  LOG(INFO) << "Constraint File:";
-  for (const FapConstraint& ct : constraints_) {
-    std::string hard = " ";
-    if (ct.hard) {
-      hard = " hard";
-    }
-
-    LOG(INFO) << absl::StrFormat("%3d ", ct.variable1)
-              << absl::StrFormat("%3d ", ct.variable2) << ct.type << " "
-              << ct.operation << " " << absl::StrFormat("%3d", ct.value)
-              << absl::StrFormat("%3d", ct.weight_index)
-              << absl::StrFormat("%8d", ct.weight_cost) << hard;
-  }
-}
-
-void FapModelPrinter::PrintFapObjective() {
-  LOG(INFO) << "Objective: " << objective_;
-}
-
-void FapModelPrinter::PrintFapValues() {
-  LOG(INFO) << absl::StrFormat("Values(%d): ", values_.size());
-  std::string domain = " ";
-  for (const int value : values_) {
-    absl::StrAppendFormat(&domain, "%d ", value);
-  }
-  LOG(INFO) << domain;
-}
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_

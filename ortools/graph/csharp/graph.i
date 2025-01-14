@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,8 +26,6 @@
 %include "stdint.i"
 
 %include "ortools/base/base.i"
-
-%import "ortools/graph/ebert_graph.h"
 
 %{
 #include "ortools/graph/assignment.h"
@@ -89,6 +87,7 @@
 %unignore operations_research::SimpleMinCostFlow::SimpleMinCostFlow;
 %unignore operations_research::SimpleMinCostFlow::~SimpleMinCostFlow;
 %unignore operations_research::SimpleMinCostFlow::AddArcWithCapacityAndUnitCost;
+%unignore operations_research::SimpleMinCostFlow::SetArcCapacity;
 %unignore operations_research::SimpleMinCostFlow::SetNodeSupply;
 %unignore operations_research::SimpleMinCostFlow::Solve;
 %unignore operations_research::SimpleMinCostFlow::SolveMaxFlowWithMinCost;

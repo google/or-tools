@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -145,9 +145,9 @@ class SimpleRevFIFO {
  private:
   enum { CHUNK_SIZE = 16 };  // TODO(user): could be an extra template param
   struct Chunk {
-    T data_[CHUNK_SIZE];
-    const Chunk* const next_;
-    explicit Chunk(const Chunk* next) : next_(next) {}
+    T data[CHUNK_SIZE];
+    const Chunk* const next;
+    explicit Chunk(const Chunk* next) : next(next) {}
   };
 
  public:
@@ -160,9 +160,9 @@ class SimpleRevFIFO {
     T operator*() const { return *value_; }
     void operator++() {
       ++value_;
-      if (value_ == chunk_->data_ + CHUNK_SIZE) {
-        chunk_ = chunk_->next_;
-        value_ = chunk_ ? chunk_->data_ : nullptr;
+      if (value_ == chunk_->data + CHUNK_SIZE) {
+        chunk_ = chunk_->next;
+        value_ = chunk_ ? chunk_->data : nullptr;
       }
     }
 
@@ -182,7 +182,7 @@ class SimpleRevFIFO {
     } else {
       pos_.Decr(s);
     }
-    chunks_->data_[pos_.Value()] = val;
+    chunks_->data[pos_.Value()] = val;
   }
 
   /// Pushes the var on top if is not a duplicate of the current top object.
@@ -194,21 +194,21 @@ class SimpleRevFIFO {
 
   /// Returns the last item of the FIFO.
   const T* Last() const {
-    return chunks_ ? &chunks_->data_[pos_.Value()] : nullptr;
+    return chunks_ ? &chunks_->data[pos_.Value()] : nullptr;
   }
 
-  T* MutableLast() { return chunks_ ? &chunks_->data_[pos_.Value()] : nullptr; }
+  T* MutableLast() { return chunks_ ? &chunks_->data[pos_.Value()] : nullptr; }
 
   /// Returns the last value in the FIFO.
   const T& LastValue() const {
     DCHECK(chunks_);
-    return chunks_->data_[pos_.Value()];
+    return chunks_->data[pos_.Value()];
   }
 
   /// Sets the last value in the FIFO.
   void SetLastValue(const T& v) {
     DCHECK(Last());
-    chunks_->data_[pos_.Value()] = v;
+    chunks_->data[pos_.Value()] = v;
   }
 
  private:

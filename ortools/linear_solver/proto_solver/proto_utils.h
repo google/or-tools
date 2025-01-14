@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,11 +27,7 @@
 
 namespace operations_research {
 
-#if defined(PROTOBUF_INTERNAL_IMPL)
 using google::protobuf::Message;
-#else
-using google::protobuf::Message;
-#endif
 
 // Some SolveWithProto() returns a StatusOr<MPModelResponse>, this utility
 // just convert bad absl::StatusOr to a proper error in MPModelResponse.

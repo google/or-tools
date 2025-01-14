@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,10 +31,10 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph/max_flow.h"
+#include "ortools/graph/minimum_vertex_cover.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {
@@ -59,6 +59,14 @@ bool PresolveFixed2dRectangles(
   }
 
   const int original_num_boxes = fixed_boxes->size();
+
+  // The greedy algorithm is really fast. Run it first since it might greatly
+  // reduce the size of large trivial instances.
+  std::vector<Rectangle> empty_vec;
+  if (ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec)) {
+    changed = true;
+  }
+
   IntegerValue min_x_size = std::numeric_limits<IntegerValue>::max();
   IntegerValue min_y_size = std::numeric_limits<IntegerValue>::max();
 
@@ -164,15 +172,19 @@ bool PresolveFixed2dRectangles(
 
   // Now check if there is any space that cannot be occupied by any non-fixed
   // item.
-  std::vector<Rectangle> bounding_boxes;
-  bounding_boxes.reserve(non_fixed_boxes.size());
-  for (const RectangleInRange& box : non_fixed_boxes) {
-    bounding_boxes.push_back(box.bounding_area);
-  }
-  std::vector<Rectangle> empty_spaces =
-      FindEmptySpaces(bounding_box, std::move(bounding_boxes));
-  for (const Rectangle& r : empty_spaces) {
-    add_box(r);
+  // TODO(user): remove the limit of 1000 and reimplement FindEmptySpaces()
+  // using a sweep line algorithm.
+  if (non_fixed_boxes.size() < 1000) {
+    std::vector<Rectangle> bounding_boxes;
+    bounding_boxes.reserve(non_fixed_boxes.size());
+    for (const RectangleInRange& box : non_fixed_boxes) {
+      bounding_boxes.push_back(box.bounding_area);
+    }
+    std::vector<Rectangle> empty_spaces =
+        FindEmptySpaces(bounding_box, std::move(bounding_boxes));
+    for (const Rectangle& r : empty_spaces) {
+      add_box(r);
+    }
   }
 
   // Now look for gaps between objects that are too small to place anything.
@@ -1391,32 +1403,36 @@ bool ReduceNumberOfBoxesExactMandatory(
   std::vector<Rectangle> result = *mandatory_rectangles;
   std::vector<Rectangle> new_optional_rectangles = *optional_rectangles;
 
-  Rectangle mandatory_bounding_box = (*mandatory_rectangles)[0];
-  for (const Rectangle& box : *mandatory_rectangles) {
-    mandatory_bounding_box.GrowToInclude(box);
-  }
-  const std::vector<Rectangle> mandatory_empty_holes =
-      FindEmptySpaces(mandatory_bounding_box, *mandatory_rectangles);
-  const std::vector<std::vector<int>> mandatory_holes_components =
-      SplitInConnectedComponents(BuildNeighboursGraph(mandatory_empty_holes));
-
-  // Now for every connected component of the holes in the mandatory area, see
-  // if we can fill them with optional boxes.
-  std::vector<Rectangle> holes_in_component;
-  for (const std::vector<int>& component : mandatory_holes_components) {
-    holes_in_component.clear();
-    holes_in_component.reserve(component.size());
-    for (const int index : component) {
-      holes_in_component.push_back(mandatory_empty_holes[index]);
+  // This heuristic can be slow for very large problems, so gate it with a
+  // reasonable limit.
+  if (mandatory_rectangles->size() < 1000) {
+    Rectangle mandatory_bounding_box = (*mandatory_rectangles)[0];
+    for (const Rectangle& box : *mandatory_rectangles) {
+      mandatory_bounding_box.GrowToInclude(box);
     }
-    if (RegionIncludesOther(new_optional_rectangles, holes_in_component)) {
-      // Fill the hole.
-      result.insert(result.end(), holes_in_component.begin(),
-                    holes_in_component.end());
-      // We can modify `optional_rectangles` here since we know that if we
-      // remove a hole this function will return true.
-      new_optional_rectangles = PavedRegionDifference(
-          new_optional_rectangles, std::move(holes_in_component));
+    const std::vector<Rectangle> mandatory_empty_holes =
+        FindEmptySpaces(mandatory_bounding_box, *mandatory_rectangles);
+    const std::vector<std::vector<int>> mandatory_holes_components =
+        SplitInConnectedComponents(BuildNeighboursGraph(mandatory_empty_holes));
+
+    // Now for every connected component of the holes in the mandatory area, see
+    // if we can fill them with optional boxes.
+    std::vector<Rectangle> holes_in_component;
+    for (const std::vector<int>& component : mandatory_holes_components) {
+      holes_in_component.clear();
+      holes_in_component.reserve(component.size());
+      for (const int index : component) {
+        holes_in_component.push_back(mandatory_empty_holes[index]);
+      }
+      if (RegionIncludesOther(new_optional_rectangles, holes_in_component)) {
+        // Fill the hole.
+        result.insert(result.end(), holes_in_component.begin(),
+                      holes_in_component.end());
+        // We can modify `optional_rectangles` here since we know that if we
+        // remove a hole this function will return true.
+        new_optional_rectangles = PavedRegionDifference(
+            new_optional_rectangles, std::move(holes_in_component));
+      }
     }
   }
   const Neighbours neighbours = BuildNeighboursGraph(result);

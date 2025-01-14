@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,12 +27,10 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/stats.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {

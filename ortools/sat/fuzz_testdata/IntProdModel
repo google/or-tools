@@ -1,0 +1,19 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables {
+  domain: [ 10, 12 ]
+}
+variables {
+  domain: [ 2, 2 ]
+}
+variables {
+  domain: [ 0, 100 ]
+}
+constraints {
+  int_prod {
+    target { vars: 2 coeffs: 1 }
+    exprs { vars: 1 coeffs: 1 }
+    exprs { vars: 0 coeffs: 1 }
+  }
+}

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
-#include "absl/container/inlined_vector.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -35,6 +35,7 @@
 #include "ortools/graph/max_flow.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -402,7 +403,7 @@ bool OutgoingCutHelper::TryBlossomSubsetCut(
 }  // namespace
 
 void GenerateInterestingSubsets(int num_nodes,
-                                const std::vector<std::pair<int, int>>& arcs,
+                                absl::Span<const std::pair<int, int>> arcs,
                                 int stop_at_num_components,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets) {
@@ -461,7 +462,7 @@ void GenerateInterestingSubsets(int num_nodes,
                               /*node_limit=*/num_nodes);
 }
 
-void ExtractAllSubsetsFromForest(const std::vector<int>& parent,
+void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
                                  std::vector<int>* subset_data,
                                  std::vector<absl::Span<const int>>* subsets,
                                  int node_limit) {
@@ -515,7 +516,7 @@ void ExtractAllSubsetsFromForest(const std::vector<int>& parent,
 }
 
 std::vector<int> ComputeGomoryHuTree(
-    int num_nodes, const std::vector<ArcWithLpValue>& relevant_arcs) {
+    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs) {
   // Initialize the graph. Note that we use only arcs with a relevant lp
   // value, so this should be small in practice.
   SimpleMaxFlow max_flow;

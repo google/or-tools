@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,6 +30,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/util.h"
@@ -68,7 +69,7 @@ int NextSubsolverToSchedule(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 }
 
 void ClearSubsolversThatAreDone(
-    const std::vector<int>& num_in_flight_per_subsolvers,
+    absl::Span<const int> num_in_flight_per_subsolvers,
     std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
   for (int i = 0; i < subsolvers.size(); ++i) {
     if (subsolvers[i] == nullptr) continue;
@@ -82,7 +83,7 @@ void ClearSubsolversThatAreDone(
   }
 }
 
-void SynchronizeAll(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
+void SynchronizeAll(absl::Span<const std::unique_ptr<SubSolver>> subsolvers) {
   for (const auto& subsolver : subsolvers) {
     if (subsolver == nullptr) continue;
     subsolver->Synchronize();

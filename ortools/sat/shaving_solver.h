@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
@@ -51,7 +51,7 @@ class ObjectiveShavingSolver : public SubSolver {
  private:
   std::string Info();
 
-  bool ResetModel(int64_t task_id);
+  bool ResetAndSolveModel(int64_t task_id);
 
   // This is fixed at construction.
   SatParameters local_params_;
@@ -114,8 +114,8 @@ class VariablesShavingSolver : public SubSolver {
                                CpModelProto* shaving_proto)
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  bool ResetModel(int64_t task_id, State* state, Model* local_sat_model,
-                  CpModelProto* shaving_proto);
+  bool ResetAndSolveModel(int64_t task_id, State* state, Model* local_sat_model,
+                          CpModelProto* shaving_proto);
 
   // This is fixed at construction.
   SatParameters local_params_;

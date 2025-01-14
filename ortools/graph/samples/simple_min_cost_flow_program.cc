@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 // [START program]
 // From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1
 // [START import]
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -61,7 +62,7 @@ void SimpleMinCostFlowProgram() {
   // [END solve]
 
   // [START print_solution]
-  if (status == MinCostFlow::OPTIMAL) {
+  if (status == SimpleMinCostFlow::OPTIMAL) {
     LOG(INFO) << "Minimum cost flow: " << min_cost_flow.OptimalCost();
     LOG(INFO) << "";
     LOG(INFO) << " Arc   Flow / Capacity  Cost";

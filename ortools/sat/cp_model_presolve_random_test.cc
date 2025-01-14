@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -239,6 +239,7 @@ TEST_P(RandomPreprocessorTest, TestHintSurvivePresolve) {
   // We just check that the hint is correct.
   SatParameters params;
   params.set_debug_crash_on_bad_hint(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
   params.set_stop_after_first_solution(true);
   const CpSolverResponse with_hint = SolveWithParameters(model_proto, params);
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,7 +43,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
-ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 50,
+ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
           "Default max value for unbounded integer variables.");
 
 namespace operations_research {
@@ -1544,8 +1544,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       } else {
         m.parameters.add_subsolvers("default_lp");
         m.parameters.add_subsolvers(
-            m.proto.search_strategy().empty() ? "no_lp" : "fixed");
-        m.parameters.add_subsolvers("less_encoding");
+            m.proto.search_strategy().empty() ? "probing" : "fixed");
+        m.parameters.add_subsolvers("no_lp");
         m.parameters.add_subsolvers("max_lp");
         m.parameters.add_subsolvers("quick_restart");
       }

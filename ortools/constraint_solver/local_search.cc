@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,6 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <random>
 #include <string>
@@ -757,8 +756,9 @@ void PathOperator::InitializePathStarts() {
       base_sibling_alternatives_[j] = 0;
       if (IsInactive(base_nodes_[j]) || node_paths[base_nodes_[j]] == -1) {
         // Base node was made inactive or was moved to a new path, reposition
-        // the base node to the start of the path on which it was.
-        base_nodes_[j] = path_starts_[base_paths_[j]];
+        // the base node to its restart position.
+        base_nodes_[j] = GetBaseNodeRestartPosition(j);
+        base_paths_[j] = node_paths[base_nodes_[j]];
       } else {
         base_paths_[j] = node_paths[base_nodes_[j]];
       }
@@ -1924,7 +1924,7 @@ class NearestNeighbors {
   NearestNeighbors& operator=(const NearestNeighbors&) = delete;
 
   virtual ~NearestNeighbors() {}
-  void Initialize(const std::vector<int>& path);
+  void Initialize(absl::Span<const int> path);
   const std::vector<int>& Neighbors(int index) const;
 
   virtual std::string DebugString() const { return "NearestNeighbors"; }
@@ -1945,7 +1945,7 @@ NearestNeighbors::NearestNeighbors(Solver::IndexEvaluator3 evaluator,
       path_operator_(path_operator),
       size_(size) {}
 
-void NearestNeighbors::Initialize(const std::vector<int>& path) {
+void NearestNeighbors::Initialize(absl::Span<const int> path) {
   for (int node : path) {
     if (node < path_operator_.number_of_nexts()) ComputeNearest(node, path);
   }
@@ -3990,8 +3990,8 @@ class LocalSearchProfiler : public LocalSearchMonitor {
               absl::string_view name, int64_t num_neighbors,
               int64_t num_filtered_neighbors, int64_t num_accepted_neighbors,
               double duration_seconds,
-              double make_next_neighbor_duration_seconds,
-              double accept_neighbor_duration_seconds) {
+              double /*make_next_neighbor_duration_seconds*/,
+              double /*accept_neighbor_duration_seconds*/) {
             // TODO(user): Add make_next_neighbor_duration_seconds and
             // accept_neighbor_duration_seconds to stats.
             absl::StrAppendFormat(

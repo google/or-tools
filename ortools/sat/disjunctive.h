@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,18 +15,23 @@
 #define OR_TOOLS_SAT_DISJUNCTIVE_H_
 
 #include <algorithm>
-#include <functional>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/theta_tree.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -253,15 +258,6 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
   PropagationStatistics stats_;
 };
 
-// Singleton model class which is just a SchedulingConstraintHelper will all
-// the intervals.
-class AllIntervalsHelper : public SchedulingConstraintHelper {
- public:
-  explicit AllIntervalsHelper(Model* model)
-      : SchedulingConstraintHelper(
-            model->GetOrCreate<IntervalsRepository>()->AllIntervals(), model) {}
-};
-
 // This propagates the same things as DisjunctiveDetectablePrecedences, except
 // that it only sort the full set of intervals once and then work on a combined
 // set of disjunctives.
@@ -277,7 +273,7 @@ class CombinedDisjunctive : public PropagatorInterface {
   bool Propagate() final;
 
  private:
-  AllIntervalsHelper* helper_;
+  SchedulingConstraintHelper* helper_;
   std::vector<std::vector<int>> task_to_disjunctives_;
   std::vector<bool> task_is_added_;
   std::vector<TaskSet> task_sets_;

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -167,7 +167,9 @@
 
 #include "absl/base/port.h"
 #include "absl/debugging/leak_check.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/constant_divisor.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/types.h"
@@ -194,6 +196,7 @@ class BaseGraph {
   // that you define a typedef ... Graph; for readability.
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
+  static constexpr bool kHasNegativeReverseArcs = HasReverseArcs;
 
   BaseGraph()
       : num_nodes_(0),
@@ -2232,7 +2235,10 @@ class CompleteGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 
  public:
   // Builds a complete graph with num_nodes nodes.
-  explicit CompleteGraph(NodeIndexType num_nodes) {
+  explicit CompleteGraph(NodeIndexType num_nodes)
+      :  // If there are 0 or 1 nodes, the divisor is arbitrary. We pick 2 as 0
+         // and 1 are not supported by `ConstantDivisor`.
+        divisor_(num_nodes > 1 ? num_nodes : 2) {
     this->Reserve(num_nodes, num_nodes * num_nodes);
     this->FreezeCapacities();
     num_nodes_ = num_nodes;
@@ -2246,20 +2252,23 @@ class CompleteGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
                                                       ArcIndexType from) const;
   IntegerRange<NodeIndexType> operator[](NodeIndexType node) const;
+
+  const ::util::math::ConstantDivisor<std::make_unsigned_t<ArcIndexType>>
+      divisor_;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteGraph<NodeIndexType, ArcIndexType>::Head(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return arc % num_nodes_;
+  return arc % divisor_;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteGraph<NodeIndexType, ArcIndexType>::Tail(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return arc / num_nodes_;
+  return arc / divisor_;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -2314,12 +2323,22 @@ class CompleteBipartiteGraph
   // Indices of left nodes of the bipartite graph range from 0 to left_nodes-1;
   // indices of right nodes range from left_nodes to left_nodes+right_nodes-1.
   CompleteBipartiteGraph(NodeIndexType left_nodes, NodeIndexType right_nodes)
-      : left_nodes_(left_nodes), right_nodes_(right_nodes) {
+      : left_nodes_(left_nodes),
+        right_nodes_(right_nodes),
+        // If there are no right nodes, the divisor is arbitrary. We pick 2 as
+        // 0 and 1 are not supported by `ConstantDivisor`. We handle the case
+        // where `right_nodes` is 1 explicitly when dividing.
+        divisor_(right_nodes > 1 ? right_nodes : 2) {
     this->Reserve(left_nodes + right_nodes, left_nodes * right_nodes);
     this->FreezeCapacities();
     num_nodes_ = left_nodes + right_nodes;
     num_arcs_ = left_nodes * right_nodes;
   }
+
+  // Returns the arc index for the arc from `left` to `right`, where `left` is
+  // in `[0, left_nodes)` and `right` is in
+  // `[left_nodes, left_nodes + right_nodes)`.
+  ArcIndexType GetArc(NodeIndexType left_node, NodeIndexType right_node) const;
 
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
@@ -2333,9 +2352,11 @@ class CompleteBipartiteGraph
   class OutgoingArcIterator {
    public:
     OutgoingArcIterator(const CompleteBipartiteGraph& graph, NodeIndexType node)
-        : index_(graph.right_nodes_ * node),
-          limit_(node >= graph.left_nodes_ ? index_
-                                           : graph.right_nodes_ * (node + 1)) {}
+        : index_(static_cast<ArcIndexType>(graph.right_nodes_) * node),
+          limit_(node >= graph.left_nodes_
+                     ? index_
+                     : static_cast<ArcIndexType>(graph.right_nodes_) *
+                           (node + 1)) {}
 
     bool Ok() const { return index_ < limit_; }
     ArcIndexType Index() const { return index_; }
@@ -2349,20 +2370,35 @@ class CompleteBipartiteGraph
  private:
   const NodeIndexType left_nodes_;
   const NodeIndexType right_nodes_;
+  // Note: only valid if `right_nodes_ > 1`.
+  const ::util::math::ConstantDivisor<std::make_unsigned_t<ArcIndexType>>
+      divisor_;
 };
+
+template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::GetArc(
+    NodeIndexType left_node, NodeIndexType right_node) const {
+  DCHECK_LT(left_node, left_nodes_);
+  DCHECK_GE(right_node, left_nodes_);
+  DCHECK_LT(right_node, num_nodes_);
+  return left_node * static_cast<ArcIndexType>(right_nodes_) +
+         (right_node - left_nodes_);
+}
 
 template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::Head(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return left_nodes_ + arc % right_nodes_;
+  // See comment on `divisor_` in the constructor.
+  return right_nodes_ > 1 ? left_nodes_ + arc % divisor_ : left_nodes_;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::Tail(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return arc / right_nodes_;
+  // See comment on `divisor_` in the constructor.
+  return right_nodes_ > 1 ? arc / divisor_ : arc;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -2376,8 +2412,9 @@ IntegerRange<ArcIndexType>
 CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcs(
     NodeIndexType node) const {
   if (node < left_nodes_) {
-    return IntegerRange<ArcIndexType>(right_nodes_ * node,
-                                      right_nodes_ * (node + 1));
+    return IntegerRange<ArcIndexType>(
+        static_cast<ArcIndexType>(right_nodes_) * node,
+        static_cast<ArcIndexType>(right_nodes_) * (node + 1));
   } else {
     return IntegerRange<ArcIndexType>(0, 0);
   }
@@ -2388,7 +2425,8 @@ IntegerRange<ArcIndexType>
 CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
     NodeIndexType node, ArcIndexType from) const {
   if (node < left_nodes_) {
-    return IntegerRange<ArcIndexType>(from, right_nodes_ * (node + 1));
+    return IntegerRange<ArcIndexType>(
+        from, static_cast<ArcIndexType>(right_nodes_) * (node + 1));
   } else {
     return IntegerRange<ArcIndexType>(0, 0);
   }

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,7 +24,6 @@
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
@@ -458,6 +457,7 @@ TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
   params.set_cp_model_presolve(false);
   params.set_shared_tree_split_strategy(
       SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
+  params.set_shared_tree_balance_tolerance(0);
   model.Add(NewSatParameters(params));
   LoadVariables(model_builder.Build(), false, &model);
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();
@@ -493,6 +493,7 @@ TEST(SharedTreeManagerTest, BalancedSplitTest) {
   params.set_cp_model_presolve(false);
   params.set_shared_tree_split_strategy(
       SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
+  params.set_shared_tree_balance_tolerance(0);
   model.Add(NewSatParameters(params));
   LoadVariables(model_builder.Build(), false, &model);
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();
@@ -562,7 +563,7 @@ TEST(SharedTreeManagerTest, TrailSharing) {
   trail1.AddImplication(1, ProtoLiteral(1, 1));
   trail1.AddImplication(1, ProtoLiteral(1, 3));
   shared_tree_manager->SyncTree(trail1);
-  trail1.SetPhase(ProtoLiteral(2, 1));
+  trail1.AddPhase(ProtoLiteral(2, 1));
   shared_tree_manager->ReplaceTree(trail1);
   shared_tree_manager->ReplaceTree(trail2);
 

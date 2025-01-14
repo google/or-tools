@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -93,6 +93,10 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(symmetry_detection_deterministic_time_limit);
   TEST_IS_FINITE(variable_activity_decay);
 
+  TEST_IS_FINITE(lns_initial_difficulty);
+  TEST_IS_FINITE(lns_initial_deterministic_limit);
+  TEST_IN_RANGE(lns_initial_difficulty, 0.0, 1.0);
+
   TEST_POSITIVE(at_most_one_max_expansion_size);
 
   TEST_NOT_NAN(max_time_in_seconds);
@@ -106,6 +110,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(interleave_batch_size, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(shared_tree_open_leaves_per_worker, 1,
                 kMaxReasonableParallelism);
+  TEST_IN_RANGE(shared_tree_balance_tolerance, 0,
+                log2(kMaxReasonableParallelism));
 
   // TODO(user): Consider using annotations directly in the proto for these
   // validation. It is however not open sourced.
@@ -176,17 +182,19 @@ std::string ValidateParameters(const SatParameters& params) {
     }
   }
 
-  const auto strategies = GetNamedParameters(params);
-  for (const std::string& subsolver : params.subsolvers()) {
-    if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
-    if (!strategies.contains(subsolver)) {
-      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+  if (!params.subsolvers().empty() || !params.extra_subsolvers().empty()) {
+    const auto strategies = GetNamedParameters(params);
+    for (const std::string& subsolver : params.subsolvers()) {
+      if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
+      if (!strategies.contains(subsolver)) {
+        return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+      }
     }
-  }
 
-  for (const std::string& subsolver : params.extra_subsolvers()) {
-    if (!strategies.contains(subsolver)) {
-      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+    for (const std::string& subsolver : params.extra_subsolvers()) {
+      if (!strategies.contains(subsolver)) {
+        return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+      }
     }
   }
 

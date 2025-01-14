@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,14 +14,12 @@
 #include "ortools/sat/presolve_context.h"
 
 #include <cstdint>
-#include <string>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
@@ -683,10 +681,15 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 1, 1, 5, 7 ]
+    }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
   context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
   LinearExpressionProto expr1;
   expr1.add_vars(2);
   expr1.add_coeffs(1);
@@ -707,6 +710,7 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
   // 2 x (2 implications , 2 enforced linear) + bool_or.
   ASSERT_EQ(9, working_model.constraints_size());
   EXPECT_THAT(working_model.constraints(8), ::testing::EqualsProto(bool_or));
+  EXPECT_TRUE(context.DebugTestHintFeasibility());
 }
 
 TEST(PresolveContextTest, ExploitFixedDomainOverflow) {
@@ -733,7 +737,7 @@ TEST(PresolveContextTest, IntersectDomainWithConstant) {
 }
 
 // Most of the logic is already tested by the Domain() manipulation function,
-// we just test a simpel case here.
+// we just test a simple case here.
 TEST(PresolveContextTest, IntersectDomainWithAffineExpression) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
@@ -749,6 +753,25 @@ TEST(PresolveContextTest, IntersectDomainWithAffineExpression) {
   expr.set_offset(3);
   EXPECT_TRUE(context.IntersectDomainWith(expr, Domain(2, 3)));
   EXPECT_EQ(context.DomainOf(0), Domain(0, 1));
+}
+
+TEST(PresolveContextTest, IntersectDomainAndUpdateHint) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    solution_hint {
+      vars: [ 0 ]
+      values: [ 3 ]
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+
+  EXPECT_TRUE(context.IntersectDomainWithAndUpdateHint(0, Domain(5, 20)));
+
+  EXPECT_EQ(context.DomainOf(0), Domain(5, 10));
+  EXPECT_EQ(context.SolutionHint(0), 5);
 }
 
 TEST(PresolveContextTest, DomainSuperSetOf) {
@@ -888,7 +911,8 @@ TEST(PresolveContextTest, ObjectiveScalingMinimize) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  ASSERT_TRUE(context.ScaleFloatingPointObjective());
+  ASSERT_TRUE(ScaleFloatingPointObjective(context.params(), context.logger(),
+                                          &working_model));
   ASSERT_TRUE(working_model.has_objective());
   ASSERT_FALSE(working_model.has_floating_point_objective());
   const CpObjectiveProto& obj = working_model.objective();
@@ -912,7 +936,8 @@ TEST(PresolveContextTest, ObjectiveScalingMaximize) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  ASSERT_TRUE(context.ScaleFloatingPointObjective());
+  ASSERT_TRUE(ScaleFloatingPointObjective(context.params(), context.logger(),
+                                          &working_model));
   ASSERT_TRUE(working_model.has_objective());
   ASSERT_FALSE(working_model.has_floating_point_objective());
   const CpObjectiveProto& obj = working_model.objective();
@@ -1031,6 +1056,37 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraint) {
     }
   )pb");
   EXPECT_THAT(working_model.constraints(0), testing::EqualsProto(expected));
+}
+
+TEST(PresolveContextTest, LoadSolutionHint) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 5, 5 ] }
+    variables { domain: [ 0, 1 ] }
+    solution_hint {
+      vars: [ 0, 2 ]
+      values: [ 12, 0 ]
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+
+  EXPECT_TRUE(context.HintIsLoaded());
+  EXPECT_TRUE(context.VarHasSolutionHint(0));
+  EXPECT_TRUE(context.VarHasSolutionHint(1));  // From the fixed domain.
+  EXPECT_TRUE(context.VarHasSolutionHint(2));
+  EXPECT_EQ(context.SolutionHint(0), 10);  // Clamped to the domain.
+  EXPECT_EQ(context.SolutionHint(1), 5);   // From the fixed domain.
+  EXPECT_EQ(context.SolutionHint(2), 0);
+  EXPECT_EQ(context.GetRefSolutionHint(0), 10);
+  EXPECT_EQ(context.GetRefSolutionHint(NegatedRef(0)), -10);
+  EXPECT_FALSE(context.LiteralSolutionHint(2));
+  EXPECT_TRUE(context.LiteralSolutionHint(NegatedRef(2)));
+  EXPECT_TRUE(context.LiteralSolutionHintIs(2, false));
+  EXPECT_TRUE(context.LiteralSolutionHintIs(NegatedRef(2), true));
+  EXPECT_THAT(context.SolutionHint(), ::testing::ElementsAre(10, 5, 0));
 }
 
 }  // namespace

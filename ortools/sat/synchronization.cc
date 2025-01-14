@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -52,11 +52,9 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -80,14 +78,17 @@ void SharedLPSolutionRepository::NewLPSolution(
   if (lp_solution.empty()) return;
 
   // Add this solution to the pool.
-  SharedSolutionRepository<double>::Solution solution;
-  solution.variable_values = std::move(lp_solution);
+  auto solution =
+      std::make_shared<SharedSolutionRepository<double>::Solution>();
+  solution->variable_values = std::move(lp_solution);
 
   // We always prefer to keep the solution from the last synchronize batch.
-  absl::MutexLock mutex_lock(&mutex_);
-  solution.rank = -num_synchronization_;
-  ++num_added_;
-  new_solutions_.push_back(solution);
+  {
+    absl::MutexLock mutex_lock(&mutex_);
+    solution->rank = -num_synchronization_;
+    ++num_added_;
+    new_solutions_.push_back(solution);
+  }
 }
 
 void SharedIncompleteSolutionManager::AddSolution(
@@ -145,29 +146,12 @@ std::string SatProgressMessage(const std::string& event_or_solution_count,
 
 }  // namespace
 
-void FillSolveStatsInResponse(Model* model, CpSolverResponse* response) {
+void SharedResponseManager::FillSolveStatsInResponse(
+    Model* model, CpSolverResponse* response) {
   if (model == nullptr) return;
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
-  auto* integer_trail = model->Get<IntegerTrail>();
-  response->set_num_booleans(sat_solver->NumVariables());
-  response->set_num_branches(sat_solver->num_branches());
-  response->set_num_conflicts(sat_solver->num_failures());
-  response->set_num_binary_propagations(sat_solver->num_propagations());
-  response->set_num_restarts(sat_solver->num_restarts());
-
-  response->set_num_integers(
-      integer_trail == nullptr
-          ? 0
-          : integer_trail->NumIntegerVariables().value() / 2);
-  response->set_num_integer_propagations(
-      integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
-
-  // TODO(user): find a way to clear all stats fields that might be set by
-  // one of the callback.
-  response->set_num_lp_iterations(0);
-  for (const auto& set_stats :
-       model->GetOrCreate<CpSolverResponseStatisticCallbacks>()->callbacks) {
-    set_stats(response);
+  absl::MutexLock mutex_lock(&mutex_);
+  for (const auto& set_stats : statistics_postprocessors_) {
+    set_stats(model, response);
   }
 }
 
@@ -452,6 +436,12 @@ void SharedResponseManager::AddFinalResponsePostprocessor(
   final_postprocessors_.push_back(postprocessor);
 }
 
+void SharedResponseManager::AddStatisticsPostprocessor(
+    std::function<void(Model*, CpSolverResponse*)> postprocessor) {
+  absl::MutexLock mutex_lock(&mutex_);
+  statistics_postprocessors_.push_back(postprocessor);
+}
+
 int SharedResponseManager::AddSolutionCallback(
     std::function<void(const CpSolverResponse&)> callback) {
   absl::MutexLock mutex_lock(&mutex_);
@@ -559,17 +549,21 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
 
 CpSolverResponse SharedResponseManager::GetResponse() {
   absl::MutexLock mutex_lock(&mutex_);
-  CpSolverResponse result =
-      solutions_.NumSolutions() == 0
-          ? GetResponseInternal({}, "")
-          : GetResponseInternal(solutions_.GetSolution(0).variable_values,
-                                solutions_.GetSolution(0).info);
-
+  CpSolverResponse result;
+  if (solutions_.NumSolutions() == 0) {
+    result = GetResponseInternal({}, "");
+  } else {
+    std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+        solution = solutions_.GetSolution(0);
+    result = GetResponseInternal(solution->variable_values, solution->info);
+  }
   // If this is true, we postsolve and copy all of our solutions.
   if (parameters_.fill_additional_solutions_in_response()) {
     std::vector<int64_t> temp;
     for (int i = 0; i < solutions_.NumSolutions(); ++i) {
-      temp = solutions_.GetSolution(i).variable_values;
+      std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+          solution = solutions_.GetSolution(i);
+      temp = solution->variable_values;
       for (int i = solution_postprocessors_.size(); --i >= 0;) {
         solution_postprocessors_[i](&temp);
       }
@@ -625,10 +619,12 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
   response->set_gap_integral(gap_integral_);
 }
 
-void SharedResponseManager::NewSolution(
-    absl::Span<const int64_t> solution_values, const std::string& solution_info,
-    Model* model) {
+std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
+                                   const std::string& solution_info,
+                                   Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> ret;
 
   // For SAT problems, we add the solution to the solution pool for retrieval
   // later.
@@ -637,7 +633,7 @@ void SharedResponseManager::NewSolution(
     solution.variable_values.assign(solution_values.begin(),
                                     solution_values.end());
     solution.info = solution_info;
-    solutions_.Add(solution);
+    ret = solutions_.Add(solution);
   } else {
     const int64_t objective_value =
         ComputeInnerObjective(*objective_or_null_, solution_values);
@@ -648,12 +644,12 @@ void SharedResponseManager::NewSolution(
                                     solution_values.end());
     solution.rank = objective_value;
     solution.info = solution_info;
-    solutions_.Add(solution);
+    ret = solutions_.Add(solution);
 
     // Ignore any non-strictly improving solution.
-    if (objective_value > inner_objective_upper_bound_) return;
+    if (objective_value > inner_objective_upper_bound_) return ret;
 
-    // Our inner_objective_lower_bound_ should be a globaly valid bound, until
+    // Our inner_objective_lower_bound_ should be a globally valid bound, until
     // the problem become infeasible (i.e the lb > ub) in which case the bound
     // is no longer globally valid. Here, because we have a strictly improving
     // solution, we shouldn't be in the infeasible setting yet.
@@ -696,18 +692,21 @@ void SharedResponseManager::NewSolution(
       !callbacks_.empty()) {
     tmp_postsolved_response =
         GetResponseInternal(solution_values, solution_info);
-    FillSolveStatsInResponse(model, &tmp_postsolved_response);
+
+    // Same as FillSolveStatsInResponse() but since we already hold the mutex...
+    if (model != nullptr && !statistics_postprocessors_.empty()) {
+      for (const auto& set_stats : statistics_postprocessors_) {
+        set_stats(model, &tmp_postsolved_response);
+      }
+    }
   }
 
-  // TODO(user): Remove this code and the need for model in this function.
-  // Use search log callbacks instead.
   if (logger_->LoggingIsEnabled()) {
     std::string solution_message = solution_info;
-    if (model != nullptr) {
-      const int64_t num_bool = model->Get<Trail>()->NumVariables();
-      const int64_t num_fixed = model->Get<SatSolver>()->NumFixedVariables();
-      absl::StrAppend(&solution_message, " (fixed_bools=", num_fixed, "/",
-                      num_bool, ")");
+    if (tmp_postsolved_response.num_booleans() > 0) {
+      absl::StrAppend(&solution_message, " (fixed_bools=",
+                      tmp_postsolved_response.num_fixed_booleans(), "/",
+                      tmp_postsolved_response.num_booleans(), ")");
     }
 
     if (!search_log_callbacks_.empty()) {
@@ -761,6 +760,8 @@ void SharedResponseManager::NewSolution(
     CHECK_OK(file::SetTextProto(file, response, file::Defaults()));
   }
 #endif  // __PORTABLE_PLATFORM__
+
+  return ret;
 }
 
 bool SharedResponseManager::ProblemIsSolved() const {
@@ -887,9 +888,9 @@ SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
 }
 
 void SharedBoundsManager::ReportPotentialNewBounds(
-    const std::string& worker_name, const std::vector<int>& variables,
-    const std::vector<int64_t>& new_lower_bounds,
-    const std::vector<int64_t>& new_upper_bounds) {
+    const std::string& worker_name, absl::Span<const int> variables,
+    absl::Span<const int64_t> new_lower_bounds,
+    absl::Span<const int64_t> new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
   int num_improvements = 0;

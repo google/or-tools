@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,7 +35,7 @@
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
  public:
-  enum {
+  enum : int {
     DEFAULT = 0x0000,
     REMOVE_LINEFEED = DEFAULT,
     KEEP_LINEFEED = 0x0001,       // Terminating \n in result.

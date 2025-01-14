@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -119,7 +119,8 @@ class ShortestPathOnAlternatives {
 };
 
 // Reverses a sub-chain of a path and then replaces it with the shortest path on
-// the DAG formed by the sequence of its node alternatives.
+// the DAG formed by the sequence of its node alternatives. This operator will
+// only reverse chains with at least a node with multiple alternatives.
 class TwoOptWithShortestPathOperator : public PathOperator {
  public:
   TwoOptWithShortestPathOperator(
@@ -140,8 +141,24 @@ class TwoOptWithShortestPathOperator : public PathOperator {
   int64_t GetBaseNodeRestartPosition(int base_index) override {
     return (base_index == 0) ? StartNode(0) : BaseNode(0);
   }
+  // Necessary to have proper information about alternatives of current path.
+  bool RestartAtPathStartOnSynchronize() override { return true; }
 
  private:
+  void ResetIncrementalism() override { ResetChainStatus(); }
+  void OnNodeInitialization() override { ResetChainStatus(); }
+  void ResetChainStatus() {
+    chain_status_.start = -1;
+    chain_status_.end = -1;
+    chain_status_.has_alternatives = false;
+  }
+
+  struct ChainStatus {
+    int64_t start = -1;
+    int64_t end = -1;
+    bool has_alternatives = false;
+  };
+  ChainStatus chain_status_;
   ShortestPathOnAlternatives shortest_path_manager_;
   std::vector<int64_t> chain_;
 };

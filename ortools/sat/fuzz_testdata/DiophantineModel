@@ -1,0 +1,17 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables { domain: [ 1, 10000000 ] }
+variables { domain: [ 0, 10000000 ] }
+variables { domain: [ 0, 10000000 ] }
+constraints {
+  linear {
+    vars: [ 0, 1, 2 ]
+    coeffs: [ 31013, -41014, -51015 ]
+    domain: [ 0, 0 ]
+  }
+}
+objective {
+  vars: [ 0 ]
+  coeffs: [ 1 ]
+}

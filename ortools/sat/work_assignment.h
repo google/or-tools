@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,6 @@
 #include <sys/stat.h>
 
 #include <array>
-#include <cmath>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -38,8 +37,10 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/restart.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -102,6 +103,8 @@ class ProtoLiteral {
 // implications may be propagated.
 class ProtoTrail {
  public:
+  ProtoTrail();
+
   // Adds a new assigned level to the trail.
   void PushLevel(const ProtoLiteral& decision, IntegerValue objective_lb,
                  int node_id);
@@ -147,18 +150,25 @@ class ProtoTrail {
 
   const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
   void ClearTargetPhase() { target_phase_.clear(); }
-  void SetPhase(const ProtoLiteral& lit) {
-    if (implication_level_.contains(lit)) return;
-    target_phase_.push_back(lit);
+  // Appends a literal to the target phase, returns false if the phase is full.
+  bool AddPhase(const ProtoLiteral& lit) {
+    if (target_phase_.size() >= kMaxPhaseSize) return false;
+    if (!implication_level_.contains(lit)) {
+      target_phase_.push_back(lit);
+    }
+    return true;
   }
   void SetTargetPhase(absl::Span<const ProtoLiteral> phase) {
     ClearTargetPhase();
     for (const ProtoLiteral& lit : phase) {
-      SetPhase(lit);
+      if (!AddPhase(lit)) break;
     }
   }
 
  private:
+  // 256 ProtoLiterals take up 4KiB
+  static constexpr int kMaxPhaseSize = 256;
+
   std::vector<ProtoLiteral>& MutableImplications(int level) {
     return implications_[level - 1];
   }
@@ -309,6 +319,11 @@ class SharedTreeWorker {
   bool NextDecision(LiteralIndex* decision_index);
   void MaybeProposeSplit();
   bool ShouldReplaceSubtree();
+  bool FinishedMinRestarts() const {
+    return assigned_tree_.MaxLevel() > 0 &&
+           restart_policy_->NumRestarts() >=
+               parameters_->shared_tree_worker_min_restarts_per_subtree();
+  }
 
   // Add any implications to the clause database for the current level.
   // Return true if any new information was added.
@@ -335,14 +350,11 @@ class SharedTreeWorker {
   LevelZeroCallbackHelper* level_zero_callbacks_;
   RevIntRepository* reversible_int_repository_;
 
-  int64_t num_restarts_ = 0;
   int64_t num_trees_ = 0;
 
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
   std::vector<std::vector<Literal>> assigned_tree_implications_;
-  // How many restarts had happened when the current tree was assigned?
-  int64_t tree_assignment_restart_ = -1;
 
   // True if the last decision may split the assigned tree and has not yet been
   // proposed to the SharedTreeManager.
@@ -356,6 +368,7 @@ class SharedTreeWorker {
   // If a tree has worse LBD than the average over the last few trees we replace
   // the tree.
   RunningAverage assigned_tree_lbds_;
+  double earliest_replacement_dtime_ = 0;
 
   // Stores the trail index of the last implication added to assigned_tree_.
   int reversible_trail_index_ = 0;

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -183,9 +183,11 @@ class ResourceAssignmentConstraint : public Constraint {
     const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
         ignored_resources_per_class(resource_group_.GetResourceClassesCount());
     std::vector<std::vector<int64_t>> assignment_costs(model_.vehicles());
+    // TODO(user): Adjust the 'solve_duration_ratio' parameter.
     for (int v : resource_group_.GetVehiclesRequiringAResource()) {
       if (!ComputeVehicleToResourceClassAssignmentCosts(
-              v, resource_group_, ignored_resources_per_class, next, transit,
+              v, /*solve_duration_ratio=*/1.0, resource_group_,
+              ignored_resources_per_class, next, transit,
               /*optimize_vehicle_costs*/ false,
               model_.GetMutableLocalCumulLPOptimizer(dimension),
               model_.GetMutableLocalCumulMPOptimizer(dimension),

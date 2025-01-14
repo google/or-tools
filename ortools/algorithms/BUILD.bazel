@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -101,6 +101,7 @@ cc_library(
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -294,6 +295,7 @@ cc_library(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -305,6 +307,7 @@ cc_library(
         ":set_cover_cc_proto",
         ":set_cover_model",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
@@ -320,9 +323,10 @@ cc_library(
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base",
-        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/types:span",
     ],
@@ -348,13 +352,33 @@ cc_library(
     srcs = ["set_cover_reader.cc"],
     hdrs = ["set_cover_reader.h"],
     deps = [
+        ":set_cover_cc_proto",
         ":set_cover_model",
         "//ortools/base:file",
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_binary(
+    name = "set_cover_solve",
+    srcs = ["set_cover_solve.cc"],
+    deps = [
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        ":set_cover_reader",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
     ],
 )
 
@@ -557,12 +581,15 @@ cc_test(
     deps = [
         ":n_choose_k",
         "//ortools/base:dump_vars",
+        "//ortools/base:fuzztest",
         "//ortools/base:gmock_main",
+        "//ortools/base:mathutil",
         "//ortools/util:flat_matrix",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_benchmark//:benchmark",
     ],
 )

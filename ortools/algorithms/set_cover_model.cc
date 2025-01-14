@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,6 +28,7 @@
 #include "absl/random/discrete_distribution.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_format.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/base/logging.h"
 
@@ -119,11 +120,17 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
   // Number of elements in the generated model, using the above vector.
   BaseInt num_elements_covered(0);
 
+  // Maximum number of tries to generate a random element that is not yet in
+  // the subset, or a random subset that does not contain the element.
+  const int kMaxTries = 10;
+
   // Loop-local vector indicating whether the currently generated subset
   // contains an element.
-  ElementBoolVector subset_contains_element(num_elements, false);
-
+  ElementBoolVector subset_already_contains_element(num_elements, false);
   for (SubsetIndex subset(0); subset.value() < num_subsets; ++subset) {
+    LOG_EVERY_N_SEC(INFO, 5)
+        << absl::StrFormat("Generating subset %d (%.1f%%)", subset.value(),
+                           100.0 * subset.value() / num_subsets);
     const BaseInt cardinality =
         DiscreteAffine(bitgen, column_dist, min_column_size, column_scale);
     model.columns_[subset].reserve(cardinality);
@@ -136,22 +143,67 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
         element = ElementIndex(degree_dist(bitgen));
         CHECK_LT(element.value(), num_elements);
         ++num_tries;
-        if (num_tries > 10) {
-          return SetCoverModel();
-        }
-      } while (subset_contains_element[element]);
+      } while (num_tries < kMaxTries &&
+               subset_already_contains_element[element]);
       ++model.num_nonzeros_;
       model.columns_[subset].push_back(element);
-      subset_contains_element[element] = true;
+      subset_already_contains_element[element] = true;
       if (!contains_element[element]) {
         contains_element[element] = true;
         ++num_elements_covered;
       }
     }
     for (const ElementIndex element : model.columns_[subset]) {
-      subset_contains_element[element] = false;
+      subset_already_contains_element[element] = false;
     }
   }
+  LOG(INFO) << "Finished genreating the model with " << num_elements_covered
+            << " elements covered.";
+
+  // It can happen -- rarely in practice -- that some of the elements cannot be
+  // covered. Let's add them to randomly chosen subsets.
+  if (num_elements_covered != num_elements) {
+    LOG(INFO) << "Generated model with " << num_elements - num_elements_covered
+              << " elements that cannot be covered. Adding them to random "
+                 "subsets.";
+    SubsetBoolVector element_already_in_subset(num_subsets, false);
+    for (ElementIndex element(0); element.value() < num_elements; ++element) {
+      LOG_EVERY_N_SEC(INFO, 5) << absl::StrFormat(
+          "Generating subsets for element %d (%.1f%%)", element.value(),
+          100.0 * element.value() / num_elements);
+      if (!contains_element[element]) {
+        const BaseInt degree =
+            DiscreteAffine(bitgen, row_dist, min_row_size, row_scale);
+        std::vector<SubsetIndex> generated_subsets;
+        generated_subsets.reserve(degree);
+        for (BaseInt i = 0; i < degree; ++i) {
+          int num_tries = 0;
+          SubsetIndex subset_index;
+          // The method is the same as above.
+          do {
+            subset_index = SubsetIndex(DiscreteAffine(
+                bitgen, column_dist, min_column_size, column_scale));
+            ++num_tries;
+          } while (num_tries < kMaxTries &&
+                   element_already_in_subset[subset_index]);
+          ++model.num_nonzeros_;
+          model.columns_[subset_index].push_back(element);
+          element_already_in_subset[subset_index] = true;
+          generated_subsets.push_back(subset_index);
+        }
+        for (const SubsetIndex subset_index : generated_subsets) {
+          element_already_in_subset[subset_index] = false;
+        }
+        contains_element[element] = true;
+        ++num_elements_covered;
+      }
+    }
+    LOG(INFO) << "Finished generating subsets for elements that were not "
+                 "covered in the original model.";
+  }
+  LOG(INFO) << "Finished generating the model. There are "
+            << num_elements - num_elements_covered << " uncovered elements.";
+
   CHECK_EQ(num_elements_covered, num_elements);
 
   // TODO(user): if necessary, use a better distribution for the costs.
@@ -183,6 +235,7 @@ void SetCoverModel::UpdateAllSubsetsList() {
 }
 
 void SetCoverModel::AddEmptySubset(Cost cost) {
+  elements_in_subsets_are_sorted_ = false;
   subset_costs_.push_back(cost);
   columns_.push_back(SparseColumn());
   all_subsets_.push_back(SubsetIndex(num_subsets_));
@@ -194,6 +247,7 @@ void SetCoverModel::AddEmptySubset(Cost cost) {
 }
 
 void SetCoverModel::AddElementToLastSubset(BaseInt element) {
+  elements_in_subsets_are_sorted_ = false;
   columns_.back().push_back(ElementIndex(element));
   num_elements_ = std::max(num_elements_, element + 1);
   // No need to update the list all_subsets_.
@@ -206,6 +260,7 @@ void SetCoverModel::AddElementToLastSubset(ElementIndex element) {
 }
 
 void SetCoverModel::SetSubsetCost(BaseInt subset, Cost cost) {
+  elements_in_subsets_are_sorted_ = false;
   CHECK(std::isfinite(cost));
   DCHECK_GE(subset, 0);
   if (subset >= num_subsets()) {
@@ -223,6 +278,7 @@ void SetCoverModel::SetSubsetCost(SubsetIndex subset, Cost cost) {
 }
 
 void SetCoverModel::AddElementToSubset(BaseInt element, BaseInt subset) {
+  elements_in_subsets_are_sorted_ = false;
   if (subset >= num_subsets()) {
     num_subsets_ = subset + 1;
     subset_costs_.resize(num_subsets_, 0.0);
@@ -264,6 +320,13 @@ void SetCoverModel::ReserveNumElementsInSubset(ElementIndex num_elements,
   ReserveNumElementsInSubset(num_elements.value(), subset.value());
 }
 
+void SetCoverModel::SortElementsInSubsets() {
+  for (const SubsetIndex subset : SubsetRange()) {
+    std::sort(columns_[subset].begin(), columns_[subset].end());
+  }
+  elements_in_subsets_are_sorted_ = true;
+}
+
 void SetCoverModel::CreateSparseRowView() {
   if (row_view_is_valid_) {
     return;
@@ -287,6 +350,7 @@ void SetCoverModel::CreateSparseRowView() {
     }
   }
   row_view_is_valid_ = true;
+  elements_in_subsets_are_sorted_ = true;
 }
 
 bool SetCoverModel::ComputeFeasibility() const {
@@ -319,16 +383,22 @@ bool SetCoverModel::ComputeFeasibility() const {
   return true;
 }
 
-SetCoverProto SetCoverModel::ExportModelAsProto() {
+SetCoverProto SetCoverModel::ExportModelAsProto() const {
+  CHECK(elements_in_subsets_are_sorted_);
   SetCoverProto message;
   for (const SubsetIndex subset : SubsetRange()) {
+    LOG_EVERY_N_SEC(INFO, 5)
+        << absl::StrFormat("Exporting subset %d (%.1f%%)", subset.value(),
+                           100.0 * subset.value() / num_subsets());
     SetCoverProto::Subset* subset_proto = message.add_subset();
     subset_proto->set_cost(subset_costs_[subset]);
-    std::sort(columns_[subset].begin(), columns_[subset].end());
-    for (const ElementIndex element : columns_[subset]) {
+    SparseColumn column = columns_[subset];
+    std::sort(column.begin(), column.end());
+    for (const ElementIndex element : column) {
       subset_proto->add_element(element.value());
     }
   }
+  LOG(INFO) << "Finished exporting the model.";
   return message;
 }
 
@@ -397,7 +467,7 @@ class StatsAccumulator {
   }
 
   SetCoverModel::Stats ComputeStats() const {
-    const BaseInt n = count_;
+    const int64_t n = count_;
     // Since the code is used on a known number of values, we can compute the
     // standard deviation exactly, even if the values are not all stored.
     const double stddev =
@@ -431,12 +501,12 @@ SetCoverModel::Stats ComputeStats(std::vector<T> sizes) {
 template <typename T>
 std::vector<T> ComputeDeciles(std::vector<T> values) {
   const int kNumDeciles = 10;
-  std::vector<T> deciles;
-  deciles.reserve(kNumDeciles);
-  for (int i = 1; i <= kNumDeciles; ++i) {
-    const size_t point = values.size() * i / kNumDeciles - 1;
+  std::vector<T> deciles(kNumDeciles, T{0});
+  const double step = values.size() / kNumDeciles;
+  for (int i = 1; i < kNumDeciles; ++i) {
+    const size_t point = std::clamp<double>(i * step, 0, values.size() - 1);
     std::nth_element(values.begin(), values.begin() + point, values.end());
-    deciles.push_back(values[point]);
+    deciles[i] = values[point];
   }
   return deciles;
 }
@@ -448,7 +518,7 @@ SetCoverModel::Stats SetCoverModel::ComputeCostStats() {
 }
 
 SetCoverModel::Stats SetCoverModel::ComputeRowStats() {
-  std::vector<BaseInt> row_sizes(num_elements(), 0);
+  std::vector<int64_t> row_sizes(num_elements(), 0);
   for (const SparseColumn& column : columns_) {
     for (const ElementIndex element : column) {
       ++row_sizes[element.value()];
@@ -458,15 +528,15 @@ SetCoverModel::Stats SetCoverModel::ComputeRowStats() {
 }
 
 SetCoverModel::Stats SetCoverModel::ComputeColumnStats() {
-  std::vector<BaseInt> column_sizes(columns_.size());
+  std::vector<int64_t> column_sizes(columns_.size());
   for (const SubsetIndex subset : SubsetRange()) {
     column_sizes[subset.value()] = columns_[subset].size();
   }
   return ComputeStats(std::move(column_sizes));
 }
 
-std::vector<BaseInt> SetCoverModel::ComputeRowDeciles() const {
-  std::vector<BaseInt> row_sizes(num_elements(), 0);
+std::vector<int64_t> SetCoverModel::ComputeRowDeciles() const {
+  std::vector<int64_t> row_sizes(num_elements(), 0);
   for (const SparseColumn& column : columns_) {
     for (const ElementIndex element : column) {
       ++row_sizes[element.value()];
@@ -475,8 +545,8 @@ std::vector<BaseInt> SetCoverModel::ComputeRowDeciles() const {
   return ComputeDeciles(std::move(row_sizes));
 }
 
-std::vector<BaseInt> SetCoverModel::ComputeColumnDeciles() const {
-  std::vector<BaseInt> column_sizes(columns_.size());
+std::vector<int64_t> SetCoverModel::ComputeColumnDeciles() const {
+  std::vector<int64_t> column_sizes(columns_.size());
   for (const SubsetIndex subset : SubsetRange()) {
     column_sizes[subset.value()] = columns_[subset].size();
   }
@@ -487,16 +557,16 @@ namespace {
 // Returns the number of bytes needed to store x with a base-128 encoding.
 BaseInt Base128SizeInBytes(BaseInt x) {
   const uint64_t u = x == 0 ? 1 : static_cast<uint64_t>(x);
-  return (64 - absl::countl_zero(u) + 6) / 7;
+  return (std::numeric_limits<uint64_t>::digits - absl::countl_zero(u) + 6) / 7;
 }
 }  // namespace
 
 SetCoverModel::Stats SetCoverModel::ComputeColumnDeltaSizeStats() const {
   StatsAccumulator acc;
   for (const SparseColumn& column : columns_) {
-    BaseInt previous = 0;
+    int64_t previous = 0;
     for (const ElementIndex element : column) {
-      const BaseInt delta = element.value() - previous;
+      const int64_t delta = element.value() - previous;
       previous = element.value();
       acc.Register(Base128SizeInBytes(delta));
     }
@@ -507,9 +577,9 @@ SetCoverModel::Stats SetCoverModel::ComputeColumnDeltaSizeStats() const {
 SetCoverModel::Stats SetCoverModel::ComputeRowDeltaSizeStats() const {
   StatsAccumulator acc;
   for (const SparseRow& row : rows_) {
-    BaseInt previous = 0;
+    int64_t previous = 0;
     for (const SubsetIndex subset : row) {
-      const BaseInt delta = subset.value() - previous;
+      const int64_t delta = subset.value() - previous;
       previous = subset.value();
       acc.Register(Base128SizeInBytes(delta));
     }

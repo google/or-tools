@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -90,6 +90,29 @@ TEST(ReservoirExpandTest, NoOptionalAndInitiallyFeasible) {
       SolveAndCheck(initial_model, "", &solutions);
   EXPECT_EQ(OPTIMAL, response.status());
   EXPECT_EQ(27, solutions.size());
+}
+
+TEST(ReservoirExpandTest, SimpleSemaphore) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 10 }
+    variables { domain: 0 domain: 10 }
+    variables { domain: 0 domain: 1 }
+    constraints {
+      reservoir {
+        max_level: 2
+        time_exprs { vars: 0 coeffs: 1 }
+        time_exprs { vars: 1 coeffs: 1 }
+        active_literals: [ 2, 2 ]
+        level_changes { offset: -1 }
+        level_changes { offset: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+  EXPECT_EQ(187, solutions.size());
 }
 
 TEST(ReservoirExpandTest, GizaReport) {
@@ -355,6 +378,44 @@ TEST(ReservoirExpandTest, FalseActive) {
   )pb");
   const CpSolverResponse response = Solve(initial_model);
   EXPECT_EQ(OPTIMAL, response.status());
+}
+
+TEST(ReservoirExpandTest, ExpandReservoirUsingCircuitPreservesSolutionHint) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      reservoir {
+        max_level: 2
+        time_exprs { offset: 1 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 2 }
+        time_exprs { offset: 3 }
+        level_changes: { offset: -1 }
+        level_changes: { offset: -1 }
+        level_changes: { offset: 2 }
+        level_changes: { offset: -2 }
+        level_changes: { offset: 1 }
+        active_literals: 0
+        active_literals: 0
+        active_literals: 0
+        active_literals: 1
+        active_literals: 0
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 1, 0 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_expand_reservoir_using_circuit(true);
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  CpSolverResponse response = SolveWithParameters(initial_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
 TEST(IntModExpandTest, FzTest) {

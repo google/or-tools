@@ -1,15 +1,15 @@
 # OR-Tools code dependencies
 absl-py==2.1.0
 immutabledict==3.0.0
-numpy==2.1.1
-protobuf==5.28.3
+numpy==2.2.0
+protobuf==5.29.2
 requests==2.32.0
 scipy==1.14.1
 
 # OR-Tools build dependencies
 mypy==1.6.1
 mypy-protobuf==3.5.0
-virtualenv==20.24.6
+virtualenv==20.28.1
 black==24.8.0
 
 # Example dependencies
@@ -23,7 +23,7 @@ plotly==5.15.0
 jupyterlab==4.2.5
 notebook==7.2.2
 jupyter-server==2.14.2
-tornado==6.4.1
+tornado==6.4.2
 Pygments==2.15.0
 jsonschema==4.19.0
 jinja2==3.1.4

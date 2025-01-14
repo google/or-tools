@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,7 +31,7 @@ _PARAMS = flags.DEFINE_string(
 def negated_bounded_span(
     works: list[cp_model.BoolVarT], start: int, length: int
 ) -> list[cp_model.BoolVarT]:
-    """Filters an isolated sub-sequence of variables assined to True.
+    """Filters an isolated sub-sequence of variables assigned to True.
 
     Extract the span of Boolean variables [start, start + length), negate them,
     and if there is variables to the left/right of this span, surround the span by
@@ -275,7 +275,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
         (3, 1, 0),
     ]
 
-    # daily demands for work shifts (morning, afternon, night) for each day
+    # daily demands for work shifts (morning, afternoon, night) for each day
     # of the week starting on Monday.
     weekly_cover_demands = [
         (2, 3, 1),  # Monday

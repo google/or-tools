@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,22 +15,11 @@
 #define OR_TOOLS_SAT_CP_MODEL_LOADER_H_
 
 #include <cstdint>
-#include <functional>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_mapping.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/integer.h"
-#include "ortools/sat/intervals.h"
-#include "ortools/sat/linear_relaxation.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

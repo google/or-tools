@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,12 +28,14 @@
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
 namespace sat {
@@ -94,8 +96,8 @@ bool TestTimeTablingPropagation(absl::Span<const CumulativeTasks> tasks,
   // Propagate properly the other bounds of the intervals.
   EXPECT_TRUE(precedences->Propagate());
 
-  SchedulingConstraintHelper* helper = model.TakeOwnership(
-      new SchedulingConstraintHelper(interval_vars, &model));
+  auto* repo = model.GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(interval_vars);
   SchedulingDemandHelper* demands_helper =
       model.TakeOwnership(new SchedulingDemandHelper(demands, helper, &model));
 

@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -108,10 +108,10 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v28.3"
+    GIT_TAG "v29.2"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v28.3.patch"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v29.2.patch"
   )
   FetchContent_MakeAvailable(Protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -249,10 +249,10 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.8.1"
+    GIT_TAG        "v1.9.0"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.8.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.9.0.patch"
   )
   FetchContent_MakeAvailable(highs)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -305,8 +305,7 @@ if(BUILD_CoinUtils)
   FetchContent_Declare(
     CoinUtils
     GIT_REPOSITORY "https://github.com/Mizux/CoinUtils.git"
-    GIT_TAG "stable/2.11"
-    #GIT_TAG "cmake/2.11.6"
+    GIT_TAG "cmake/2.11.12"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/coinutils-2.11.patch")
@@ -324,8 +323,7 @@ if(BUILD_Osi)
   FetchContent_Declare(
     Osi
     GIT_REPOSITORY "https://github.com/Mizux/Osi.git"
-    GIT_TAG "stable/0.108"
-    #GIT_TAG "cmake/0.108.7"
+    GIT_TAG "cmake/0.108.11"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/osi-0.108.patch")
@@ -343,8 +341,7 @@ if(BUILD_Clp)
   FetchContent_Declare(
     Clp
     GIT_REPOSITORY "https://github.com/Mizux/Clp.git"
-    GIT_TAG "stable/1.17"
-    #GIT_TAG "cmake/1.17.7"
+    GIT_TAG "cmake/1.17.10"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/clp-1.17.patch")
@@ -362,8 +359,7 @@ if(BUILD_Cgl)
   FetchContent_Declare(
     Cgl
     GIT_REPOSITORY "https://github.com/Mizux/Cgl.git"
-    GIT_TAG "stable/0.60"
-    #GIT_TAG "cmake/0.60.5"
+    GIT_TAG "cmake/0.60.9"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/cgl-0.60.patch")
@@ -381,8 +377,7 @@ if(BUILD_Cbc)
   FetchContent_Declare(
     Cbc
     GIT_REPOSITORY "https://github.com/Mizux/Cbc.git"
-    GIT_TAG "stable/2.10"
-    #GIT_TAG "cmake/2.10.7"
+    GIT_TAG "cmake/2.10.12"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/cbc-2.10.patch")
@@ -436,7 +431,7 @@ if(BUILD_benchmark)
   FetchContent_Declare(
     benchmark
     GIT_REPOSITORY https://github.com/google/benchmark.git
-    GIT_TAG v1.8.4
+    GIT_TAG v1.9.1
     GIT_SHALLOW TRUE
     #PATCH_COMMAND git apply --ignore-whitespace ""
   )

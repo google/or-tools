@@ -1,0 +1,476 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables { domain: [0, 1024] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [1, 2] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [1, 2] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [1, 2] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [1, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 2] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [0, 512] }
+variables { domain: [0, 512] }
+variables { domain: [0, 512] }
+variables { domain: [0, 2048] }
+variables { domain: [0, 512] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+variables { domain: [0, 1] }
+constraints {
+  linear {
+    vars: [2, 1]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [3, 1]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  linear {
+    vars: [5, 4]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [6, 4]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 7]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 7]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  linear {
+    vars: [11, 10]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 10]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  linear {
+    vars: [3, 1, 13]
+    coeffs: [-1, 1, 1]
+    domain: [-1, -1]
+  }
+}
+constraints {
+  interval {
+    start { vars: [1] coeffs: [1] offset: 1 }
+    end { vars: [3] coeffs: [1] }
+    size { vars: [13] coeffs: [1] }
+  }
+}
+constraints {
+  linear {
+    vars: [1, 2, 14]
+    coeffs: [-1, 1, 1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  interval {
+    start { vars: [2] coeffs: [1] }
+    end { vars: [1] coeffs: [1] }
+    size { vars: [14] coeffs: [1] }
+  }
+}
+constraints {
+  linear {
+    vars: [6, 4, 15]
+    coeffs: [-1, 1, 1]
+    domain: [-1, -1]
+  }
+}
+constraints {
+  interval {
+    start { vars: [4] coeffs: [1] offset: 1 }
+    end { vars: [6] coeffs: [1] }
+    size { vars: [15] coeffs: [1] }
+  }
+}
+constraints {
+  linear {
+    vars: [4, 5, 16]
+    coeffs: [-1, 1, 1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  interval {
+    start { vars: [5] coeffs: [1] }
+    end { vars: [4] coeffs: [1] }
+    size { vars: [16] coeffs: [1] }
+  }
+}
+constraints {
+  linear {
+    vars: [9, 7, 17]
+    coeffs: [-1, 1, 1]
+    domain: [-1, -1]
+  }
+}
+constraints {
+  interval {
+    start { vars: [7] coeffs: [1] offset: 1 }
+    end { vars: [9] coeffs: [1] }
+    size { vars: [17] coeffs: [1] }
+  }
+}
+constraints {
+  linear {
+    vars: [7, 8, 18]
+    coeffs: [-1, 1, 1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  interval {
+    start { vars: [8] coeffs: [1] }
+    end { vars: [7] coeffs: [1] }
+    size { vars: [18] coeffs: [1] }
+  }
+}
+constraints {
+  linear {
+    vars: [12, 10, 19]
+    coeffs: [-1, 1, 1]
+    domain: [-1, -1]
+  }
+}
+constraints {
+  interval {
+    start { vars: [10] coeffs: [1] offset: 1 }
+    end { vars: [12] coeffs: [1] }
+    size { vars: [19] coeffs: [1] }
+  }
+}
+constraints {
+  linear {
+    vars: [10, 11, 20]
+    coeffs: [-1, 1, 1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  interval {
+    start { vars: [11] coeffs: [1] }
+    end { vars: [10] coeffs: [1] }
+    size { vars: [20] coeffs: [1] }
+  }
+}
+constraints {
+  interval {
+    start { vars: [1] coeffs: [1] }
+    end { vars: [1] coeffs: [1] offset: 1 }
+    size { offset: 1 }
+  }
+}
+constraints {
+  linear {
+    vars: [5, 1]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [6, 1]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  enforcement_literal: [-22]
+  linear {
+    vars: [4, 1]
+    coeffs: [1, -1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  enforcement_literal: [21]
+  interval {
+    start { vars: [1] coeffs: [1] }
+    end { vars: [1] coeffs: [1] offset: 1 }
+    size { offset: 1 }
+  }
+}
+constraints {
+  linear {
+    vars: [8, 1]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 1]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  enforcement_literal: [-23]
+  linear {
+    vars: [7, 1]
+    coeffs: [1, -1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  enforcement_literal: [22]
+  interval {
+    start { vars: [1] coeffs: [1] }
+    end { vars: [1] coeffs: [1] offset: 1 }
+    size { offset: 1 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [4] coeffs: [1] }
+    end { vars: [4] coeffs: [1] offset: 1 }
+    size { offset: 1 }
+  }
+}
+constraints {
+  linear {
+    vars: [11, 4]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 4]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  enforcement_literal: [-24]
+  linear {
+    vars: [10, 4]
+    coeffs: [1, -1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  enforcement_literal: [23]
+  interval {
+    start { vars: [4] coeffs: [1] }
+    end { vars: [4] coeffs: [1] offset: 1 }
+    size { offset: 1 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [7] coeffs: [1] }
+    end { vars: [7] coeffs: [1] offset: 1 }
+    size { offset: 1 }
+  }
+}
+constraints {
+  linear {
+    vars: [11, 7]
+    coeffs: [1, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 7]
+    coeffs: [1, -1]
+    domain: [1, 9223372036854775807]
+  }
+}
+constraints {
+  enforcement_literal: [-25]
+  linear {
+    vars: [10, 7]
+    coeffs: [1, -1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  enforcement_literal: [24]
+  interval {
+    start { vars: [7] coeffs: [1] }
+    end { vars: [7] coeffs: [1] offset: 1 }
+    size { offset: 1 }
+  }
+}
+constraints {
+  linear {
+    vars: [10]
+    coeffs: [1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [1]
+    coeffs: [1]
+    domain: [0, 0]
+  }
+}
+constraints {
+  linear {
+    vars: [25, 0]
+    coeffs: [2, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  cumulative {
+    capacity { vars: [25] coeffs: [1] }
+    intervals: [9, 13, 17, 21]
+    demands { offset: 2 }
+    demands { offset: 2 }
+    demands { offset: 2 }
+    demands { offset: 2 }
+  }
+}
+constraints {
+  linear {
+    vars: [26, 0]
+    coeffs: [2, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  cumulative {
+    capacity { vars: [26] coeffs: [1] }
+    intervals: [11, 15, 19, 23]
+    demands { offset: 2 }
+    demands { offset: 2 }
+    demands { offset: 2 }
+    demands { offset: 2 }
+  }
+}
+constraints {
+  linear {
+    vars: [27, 0]
+    coeffs: [2, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  cumulative {
+    capacity { vars: [27] coeffs: [1] }
+    intervals: [24]
+    demands { offset: 1 }
+  }
+}
+constraints {
+  linear {
+    vars: [28, 0]
+    coeffs: [1, -2]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  cumulative {
+    capacity { vars: [28] coeffs: [1] }
+    intervals: [28, 32, 37, 42]
+    demands { offset: 2 }
+    demands { offset: 2 }
+    demands { offset: 2 }
+    demands { offset: 2 }
+  }
+}
+constraints {
+  linear {
+    vars: [29, 0]
+    coeffs: [2, -1]
+    domain: [-9223372036854775808, 0]
+  }
+}
+constraints {
+  cumulative {
+    capacity { vars: [29] coeffs: [1] }
+    intervals: [33, 38]
+    demands { offset: 1 }
+    demands { offset: 1 }
+  }
+}
+constraints {
+  enforcement_literal: [30]
+  linear {
+    vars: [2, 3]
+    coeffs: [1, -1]
+    domain: [-1, -1]
+  }
+}
+constraints {
+  enforcement_literal: [31]
+  linear {
+    vars: [5, 6]
+    coeffs: [1, -1]
+    domain: [-1, -1]
+  }
+}
+constraints {
+  enforcement_literal: [32]
+  linear {
+    vars: [8, 9]
+    coeffs: [1, -1]
+    domain: [-1, -1]
+  }
+}
+constraints {
+  enforcement_literal: [33]
+  linear {
+    vars: [11, 12]
+    coeffs: [1, -1]
+    domain: [-1, -1]
+  }
+}
+objective {
+  vars: [0]
+  coeffs: [1]
+}
