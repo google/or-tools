@@ -69,5 +69,5 @@ tzdata==2023.3
     # via pandas
 urllib3==2.2.2
     # via requests
-virtualenv==20.24.6
+virtualenv==20.28.1
     # via -r bazel/ortools_requirements.in
