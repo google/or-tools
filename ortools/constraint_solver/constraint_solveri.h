@@ -1556,6 +1556,18 @@ class PathOperator : public IntVarLocalSearchOperator {
   bool ReverseChain(int64_t before_chain, int64_t after_chain,
                     int64_t* chain_last);
 
+  /// Swaps the nodes node1 and node2.
+  bool SwapNodes(int64_t node1, int64_t node2) {
+    if (IsPathEnd(node1) || IsPathEnd(node2) || IsPathStart(node1) ||
+        IsPathStart(node2)) {
+      return false;
+    }
+    if (node1 == node2) return false;
+    const int64_t prev_node1 = Prev(node1);
+    const bool ok = MoveChain(prev_node1, node1, Prev(node2));
+    return MoveChain(Prev(node2), node2, prev_node1) || ok;
+  }
+
   /// Insert the inactive node after destination.
   bool MakeActive(int64_t node, int64_t destination);
   /// Makes the nodes on the chain starting after before_chain and ending at
