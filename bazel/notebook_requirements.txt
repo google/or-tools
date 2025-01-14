@@ -333,7 +333,7 @@ uri-template==1.3.0
     # via jsonschema
 urllib3==2.2.2
     # via requests
-virtualenv==20.24.6
+virtualenv==20.28.1
     # via -r bazel/notebook_requirements.in
 wcwidth==0.2.6
     # via prompt-toolkit

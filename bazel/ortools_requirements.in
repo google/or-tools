@@ -9,7 +9,7 @@ scipy==1.14.1
 # OR-Tools build dependencies
 mypy==1.6.1
 mypy-protobuf==3.5.0
-virtualenv==20.24.6
+virtualenv==20.28.1
 black==24.8.0
 
 # Example dependencies
