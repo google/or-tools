@@ -174,6 +174,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
@@ -692,7 +693,7 @@ struct MinCostFlow : public MinCostFlowBase {
   template <typename = void>
   MinCostFlow() {
     LOG(FATAL) << "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
-                  "`GenericMinCostFlow` with a specific graph type instead.");
+                  "`GenericMinCostFlow` with a specific graph type instead.";
   }
 };
 

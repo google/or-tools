@@ -272,14 +272,6 @@ class BaseGraph {
   static const NodeIndexType kNilNode;
   static const ArcIndexType kNilArc;
 
-  // TODO(user): remove the public functions below. They are just here during
-  // the transition from the old ebert_graph api to this new graph api.
-  template <typename A, typename B>
-  void GroupForwardArcsByFunctor(const A& a, B* b) {
-    LOG(FATAL) << "Not supported";
-  }
-  ArcIndexType max_end_arc_index() const { return arc_capacity_; }
-
  protected:
   // Functions commented when defined because they are implementation details.
   void ComputeCumulativeSum(std::vector<ArcIndexType>* v);

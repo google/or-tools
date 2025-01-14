@@ -528,35 +528,6 @@ cc_test(
     ],
 )
 
-# Min Cost Flow with floating point flow.
-cc_library(
-    name = "fp_min_cost_flow",
-    srcs = ["fp_min_cost_flow.cc"],
-    hdrs = ["fp_min_cost_flow.h"],
-    deps = [
-        ":min_cost_flow",
-        "//ortools/util:fp_roundtrip_conv",
-        "//ortools/util:saturated_arithmetic",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-    ],
-)
-
-# cc_test(
-#     name = "fp_min_cost_flow_test",
-#     srcs = ["fp_min_cost_flow_test.cc"],
-#     deps = [
-#         ":fp_min_cost_flow",
-#         ":min_cost_flow",
-#         "//absl/base:no_destructor",
-#         "//ortools/base:gmock_main",
-#         "//ortools/util:fp_roundtrip_conv",
-#         "@com_google_absl//absl/base:log_severity",
-#         "@com_google_absl//absl/strings",
-#     ],
-# )
-
 # Flow-problem solver
 cc_binary(
     name = "solve_flow_model",
