@@ -78,7 +78,7 @@ IntervalVariable IntervalsRepository::CreateInterval(AffineExpression start,
 
 void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
     IntervalVariable a, IntervalVariable b) {
-  return CreateDisjunctivePrecedenceLiteral(
+  GetOrCreateDisjunctivePrecedenceLiteral(
       IntervalDefinition{.start = Start(a),
                          .end = End(a),
                          .size = Size(a),
@@ -93,9 +93,10 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
                                            : std::nullopt});
 }
 
-void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
+LiteralIndex IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteral(
     const IntervalDefinition& a, const IntervalDefinition& b) {
-  if (disjunctive_precedences_.contains({a, b})) return;
+  auto it = disjunctive_precedences_.find({a, b});
+  if (it != disjunctive_precedences_.end()) return it->second.Index();
 
   std::vector<Literal> enforcement_literals;
   if (a.is_present.has_value()) {
@@ -104,30 +105,36 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
   if (b.is_present.has_value()) {
     enforcement_literals.push_back(b.is_present.value());
   }
+
   if (sat_solver_->CurrentDecisionLevel() == 0) {
     int new_size = 0;
     for (const Literal l : enforcement_literals) {
       // We can ignore always absent interval, and skip the literal of the
       // interval that are now always present.
       if (assignment_.LiteralIsTrue(l)) continue;
-      if (assignment_.LiteralIsFalse(l)) return;
+      if (assignment_.LiteralIsFalse(l)) return kNoLiteralIndex;
       enforcement_literals[new_size++] = l;
     }
     enforcement_literals.resize(new_size);
   }
 
-  // task_a is always before task_b ?
+  // task_a is currently before task_b ?
+  // Lets not create a literal that will be propagated right away.
   if (integer_trail_->UpperBound(a.start) < integer_trail_->LowerBound(b.end)) {
-    AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start,
-                                   model_);
-    return;
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start,
+                                     model_);
+    }
+    return kNoLiteralIndex;
   }
 
-  // task_b is always before task_a ?
+  // task_b is before task_a ?
   if (integer_trail_->UpperBound(b.start) < integer_trail_->LowerBound(a.end)) {
-    AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start,
-                                   model_);
-    return;
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start,
+                                     model_);
+    }
+    return kNoLiteralIndex;
   }
 
   // Create a new literal.
@@ -137,9 +144,11 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
   disjunctive_precedences_.insert({{b, a}, a_before_b.Negated()});
 
   // Also insert it in precedences.
-  // TODO(user): also add the reverse like start_b + 1 <= end_a if negated?
-  precedences_.insert({{a.end, b.start}, a_before_b});
-  precedences_.insert({{b.end, a.start}, a_before_b.Negated()});
+  if (enforcement_literals.empty()) {
+    // TODO(user): also add the reverse like start_b + 1 <= end_a if negated?
+    precedences_.insert({{a.end, b.start}, a_before_b});
+    precedences_.insert({{b.end, a.start}, a_before_b.Negated()});
+  }
 
   enforcement_literals.push_back(a_before_b);
   AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start, model_);
@@ -154,6 +163,8 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
   for (const Literal l : enforcement_literals) {
     implications_->AddBinaryClause(l, a_before_b);
   }
+
+  return a_before_b;
 }
 
 bool IntervalsRepository::CreatePrecedenceLiteral(AffineExpression x,
@@ -216,6 +227,7 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
   SchedulingConstraintHelper* helper = new SchedulingConstraintHelper(
       std::move(starts), std::move(ends), std::move(sizes),
       std::move(reason_for_presence), model_);
+  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>());
   helper_repository_[variables] = helper;
   model_->TakeOwnership(helper);
   if (register_as_disjunctive_helper) {
@@ -232,7 +244,8 @@ NoOverlap2DConstraintHelper* IntervalsRepository::GetOrCreate2DHelper(
   if (it != no_overlap_2d_helper_repository_.end()) return it->second;
 
   NoOverlap2DConstraintHelper* helper = new NoOverlap2DConstraintHelper(
-      GetOrCreateHelper(x_variables), GetOrCreateHelper(y_variables));
+      GetOrCreateHelper(x_variables), GetOrCreateHelper(y_variables), model_);
+  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>());
   no_overlap_2d_helper_repository_[{x_variables, y_variables}] = helper;
   model_->TakeOwnership(helper);
   return helper;

@@ -75,7 +75,6 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
     minus_starts_.push_back(starts_[i].Negated());
   }
 
-  RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
   InitSortedVectors();
   if (!SynchronizeAndSetTimeDirection(true)) {
     model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();

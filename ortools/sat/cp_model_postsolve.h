@@ -53,8 +53,8 @@ void PostsolveResponse(int64_t num_variables_in_original_model,
 // tightened_variables field for more information on the caveats.
 void FillTightenedDomainInResponse(const CpModelProto& original_model,
                                    const CpModelProto& mapping_proto,
-                                   const std::vector<int>& postsolve_mapping,
-                                   const std::vector<Domain>& search_domains,
+                                   absl::Span<const int> postsolve_mapping,
+                                   absl::Span<const Domain> search_domains,
                                    CpSolverResponse* response,
                                    SolverLogger* logger);
 

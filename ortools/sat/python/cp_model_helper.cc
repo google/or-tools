@@ -16,8 +16,11 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
+#include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -148,7 +151,7 @@ class ResponseWrapper {
     IntExprVisitor visitor;
     int64_t value;
     if (!visitor.Evaluate(expr, response_, &value)) {
-      ThrowError(PyExc_TypeError,
+      ThrowError(PyExc_ValueError,
                  absl::StrCat("Failed to evaluate linear expression: ",
                               expr->DebugString()));
     }
@@ -190,52 +193,52 @@ void RaiseIfNone(LinearExpr* expr) {
   }
 }
 
-void ProcessExprArg(const py::handle& arg, LinearExpr*& expr,
-                    int64_t& int_value, double& float_value) {
+void ProcessExprArg(const py::handle& arg,
+                    absl::AnyInvocable<void(LinearExpr*)> on_linear_expr,
+                    absl::AnyInvocable<void(int64_t)> on_int_constant,
+                    absl::AnyInvocable<void(double)> on_float_constant) {
   if (py::isinstance<LinearExpr>(arg)) {
-    expr = arg.cast<LinearExpr*>();
+    on_linear_expr(arg.cast<LinearExpr*>());
   } else if (py::isinstance<py::int_>(arg)) {
-    int_value = arg.cast<int64_t>();
+    on_int_constant(arg.cast<int64_t>());
   } else if (py::isinstance<py::float_>(arg)) {
-    float_value = arg.cast<double>();
+    on_float_constant(arg.cast<double>());
   } else if (hasattr(arg, "dtype") && hasattr(arg, "is_integer")) {
     if (getattr(arg, "is_integer")().cast<bool>()) {
-      int_value = arg.cast<int64_t>();
+      on_int_constant(arg.cast<int64_t>());
     } else {
-      float_value = arg.cast<double>();
+      on_float_constant(arg.cast<double>());
     }
   } else {
-    try {
-      expr = arg.cast<LinearExpr*>();
-      ThrowError(PyExc_TypeError,
-                 absl::StrCat("LinearExpr::sum() only accept linear "
-                              "expressions and constants as argument: ",
-                              arg.cast<std::string>()));
-    } catch (py::cast_error& e) {
-      ThrowError(PyExc_TypeError,
-                 "LinearExpr::sum() only accept linear expressions and "
-                 "constants as argument.");
-    }
+    py::type objtype = py::type::of(arg);
+    const std::string type_name = objtype.attr("__name__").cast<std::string>();
+    ThrowError(PyExc_TypeError,
+               absl::StrCat("LinearExpr::sum() only accept linear "
+                            "expressions and constants as argument: '",
+                            absl::CEscape(type_name), "'"));
   }
 }
 
-void ProcessConstantArg(const py::handle& arg, int64_t& int_value,
-                        double& float_value) {
+void ProcessConstantArg(const py::handle& arg,
+                        absl::AnyInvocable<void(int64_t)> on_int_constant,
+                        absl::AnyInvocable<void(double)> on_float_constant) {
   if (py::isinstance<py::int_>(arg)) {
-    int_value = arg.cast<int64_t>();
+    on_int_constant(arg.cast<int64_t>());
   } else if (py::isinstance<py::float_>(arg)) {
-    float_value = arg.cast<double>();
+    on_float_constant(arg.cast<double>());
   } else if (hasattr(arg, "dtype") && hasattr(arg, "is_integer")) {
     if (getattr(arg, "is_integer")().cast<bool>()) {
-      int_value = arg.cast<int64_t>();
+      on_int_constant(arg.cast<int64_t>());
     } else {
-      float_value = arg.cast<double>();
+      on_float_constant(arg.cast<double>());
     }
   } else {
+    py::type objtype = py::type::of(arg);
+    const std::string type_name = objtype.attr("__name__").cast<std::string>();
     ThrowError(PyExc_TypeError,
-               absl::StrCat("LinearExpr::weighted_sum() only accept  constants "
-                            "as coefficients: ",
-                            arg.cast<std::string>()));
+               absl::StrCat("LinearExpr::weighted_sum() only accept constants "
+                            "as coefficients: '",
+                            absl::CEscape(type_name), "'"));
   }
 }
 
@@ -246,20 +249,15 @@ LinearExpr* SumArguments(py::args expressions) {
   bool has_floats = false;
 
   const auto process_arg = [&](const py::handle& arg) -> void {
-    int64_t int_value = 0;
-    double float_value = 0.0;
-    LinearExpr* expr = nullptr;
-    ProcessExprArg(arg, expr, int_value, float_value);
-    if (expr != nullptr) {
-      linear_exprs.push_back(expr);
-      return;
-    } else if (int_value != 0) {
-      int_offset += int_value;
-      float_offset += static_cast<double>(int_value);
-    } else if (float_value != 0.0) {
-      float_offset += float_value;
-      has_floats = true;
-    }
+    ProcessExprArg(
+        arg, [&](LinearExpr* expr) { linear_exprs.push_back(expr); },
+        [&](int64_t value) { int_offset += value; },
+        [&](double value) {
+          if (value != 0.0) {
+            float_offset += value;
+            has_floats = true;
+          }
+        });
   };
 
   if (expressions.size() == 1 && py::isinstance<py::sequence>(expressions[0])) {
@@ -274,6 +272,12 @@ LinearExpr* SumArguments(py::args expressions) {
     for (const py::handle arg : expressions) {
       process_arg(arg);
     }
+  }
+
+  // If there are floats, we add the int offset to the float offset.
+  if (has_floats) {
+    float_offset += static_cast<double>(int_offset);
+    int_offset = 0;
   }
 
   if (linear_exprs.empty()) {
@@ -323,30 +327,53 @@ LinearExpr* WeightedSumArguments(py::sequence expressions,
   bool has_floats = false;
 
   for (int i = 0; i < expressions.size(); ++i) {
-    py::handle arg = expressions[i];
-    py::handle coeff = coefficients[i];
-    LinearExpr* expr = nullptr;
-    int64_t int_value = 0;
-    double float_value = 0.0;
-    int64_t int_mult = 0;
-    double float_mult = 0.0;
-    ProcessExprArg(arg, expr, int_value, float_value);
-    ProcessConstantArg(coeff, int_mult, float_mult);
-    has_floats |= float_mult != 0.0;
-    has_floats |= float_value != 0.0;
-    if (expr != nullptr && (int_mult != 0 || float_mult != 0.0)) {
-      linear_exprs.push_back(expr);
-      int_coeffs.push_back(int_mult);
-      float_coeffs.push_back(static_cast<double>(int_mult) + float_mult);
-      continue;
-    } else if (int_value != 0) {
-      int_offset += int_mult * int_value;
-      float_offset += (float_mult + static_cast<double>(int_mult)) *
-                      static_cast<double>(int_value);
-    } else {
-      float_offset +=
-          (float_mult + static_cast<double>(int_mult)) * float_value;
-    }
+    auto on_expr = [&](LinearExpr* expr) {
+      ProcessConstantArg(
+          coefficients[i],
+          [&](int64_t value) {
+            if (value == 0) return;
+            linear_exprs.push_back(expr);
+            int_coeffs.push_back(value);
+            float_coeffs.push_back(static_cast<double>(value));
+          },
+          [&](double value) {
+            if (value == 0.0) return;
+            linear_exprs.push_back(expr);
+            float_coeffs.push_back(value);
+            has_floats = true;
+          });
+    };
+    auto on_int = [&](int64_t expr_value) {
+      if (expr_value == 0) return;
+      ProcessConstantArg(
+          coefficients[i],
+          [&](int64_t coeff_value) { int_offset += coeff_value * expr_value; },
+          [&](double coeff_value) {
+            has_floats = true;
+            float_offset += coeff_value * static_cast<double>(expr_value);
+          });
+    };
+    auto on_float = [&](double expr_value) {
+      if (expr_value == 0.0) return;
+      has_floats = true;
+      ProcessConstantArg(
+          coefficients[i],
+          [&](int64_t coeff_value) {
+            float_offset += static_cast<double>(coeff_value) * expr_value;
+          },
+          [&](double coeff_value) {
+            if (coeff_value == 0.0) return;
+            float_offset += coeff_value * expr_value;
+          });
+    };
+    ProcessExprArg(expressions[i], std::move(on_expr), std::move(on_int),
+                   std::move(on_float));
+  }
+
+  // Correct the float offset if there are int offsets.
+  if (has_floats) {
+    float_offset += static_cast<double>(int_offset);
+    int_offset = 0;
   }
 
   if (linear_exprs.empty()) {
@@ -376,8 +403,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
   py::module::import("ortools.util.python.sorted_interval_list");
 
-  // We keep the CamelCase name for the SolutionCallback class to be compatible
-  // with the pre PEP8 python code.
+  // We keep the CamelCase name for the SolutionCallback class to be
+  // compatible with the pre PEP8 python code.
   py::class_<SolutionCallback, PySolutionCallback>(m, "SolutionCallback")
       .def(py::init<>())
       .def("OnSolutionCallback", &SolutionCallback::OnSolutionCallback)
@@ -404,7 +431,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             IntExprVisitor visitor;
             int64_t value;
             if (!visitor.Evaluate(expr, callback.Response(), &value)) {
-              ThrowError(PyExc_TypeError,
+              ThrowError(PyExc_ValueError,
                          absl::StrCat("Failed to evaluate linear expression: ",
                                       expr->DebugString()));
             }
@@ -596,7 +623,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
           [](LinearExpr* lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max() ||
                 rhs == std::numeric_limits<int64_t>::min()) {
-              ThrowError(PyExc_ArithmeticError,
+              ThrowError(PyExc_ValueError,
                          "== INT_MIN or INT_MAX is not supported");
             }
             return CheckBoundedLinearExpression(lhs->EqCst(rhs), lhs);
@@ -761,15 +788,15 @@ PYBIND11_MODULE(cp_model_helper, m) {
       });
 
   // Expose Internal classes, mostly for testing.
-  py::class_<FlatFloatExpr>(
+  py::class_<FlatFloatExpr, LinearExpr>(
       m, "FlatFloatExpr", DOC(operations_research, sat, python, FlatFloatExpr))
       .def(py::init<LinearExpr*>(), py::keep_alive<1, 2>())
       .def_property_readonly("vars", &FlatFloatExpr::vars)
       .def_property_readonly("coeffs", &FlatFloatExpr::coeffs)
       .def_property_readonly("offset", &FlatFloatExpr::offset);
 
-  py::class_<FlatIntExpr>(m, "FlatIntExpr",
-                          DOC(operations_research, sat, python, FlatIntExpr))
+  py::class_<FlatIntExpr, LinearExpr>(
+      m, "FlatIntExpr", DOC(operations_research, sat, python, FlatIntExpr))
       .def(py::init([](LinearExpr* expr) {
              FlatIntExpr* result = new FlatIntExpr(expr);
              if (!result->ok()) {
@@ -877,7 +904,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
           py::return_value_policy::reference_internal);
 
   // Memory management:
-  // - Do we need a reference_internal (that add a py::keep_alive<1, 0>() rule)
+  // - Do we need a reference_internal (that add a py::keep_alive<1, 0>()
+  // rule)
   //   or just a reference ?
   py::class_<NotBooleanVariable, Literal>(
       m, "NotBooleanVariable",

@@ -1600,7 +1600,8 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64_t value) {
 inline std::function<void(Model*)> Implication(
     absl::Span<const Literal> enforcement_literals, IntegerLiteral i) {
   return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* sat_solver = model->GetOrCreate<SatSolver>();
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     if (i.bound <= integer_trail->LowerBound(i.var)) {
       // Always true! nothing to do.
     } else if (i.bound > integer_trail->UpperBound(i.var)) {
@@ -1609,7 +1610,7 @@ inline std::function<void(Model*)> Implication(
       for (const Literal literal : enforcement_literals) {
         clause.push_back(literal.Negated());
       }
-      model->Add(ClauseConstraint(clause));
+      sat_solver->AddClauseDuringSearch(clause);
     } else {
       // TODO(user): Double check what happen when we associate a trivially
       // true or false literal.
@@ -1618,7 +1619,7 @@ inline std::function<void(Model*)> Implication(
       for (const Literal literal : enforcement_literals) {
         clause.push_back(literal.Negated());
       }
-      model->Add(ClauseConstraint(clause));
+      sat_solver->AddClauseDuringSearch(clause);
     }
   };
 }

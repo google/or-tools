@@ -167,7 +167,7 @@ class FloatExprVisitor {
 /**
  * A flattened and optimized floating point linear expression.
  *
- * It flattens the linear expression passed to the constructorto a sum of
+ * It flattens the linear expression passed to the constructor to a sum of
  * products of variables and coefficients plus an offset. It can be used to
  * cache complex expressions as parsing them is only done once.
  */
@@ -218,7 +218,7 @@ class IntExprVisitor {
 /**
  * A flattened and optimized integer linear expression.
  *
- * It flattens the linear expression passed to the constructorto a sum of
+ * It flattens the linear expression passed to the constructor to a sum of
  * products of variables and coefficients plus an offset. It can be used to
  * cache complex expressions as parsing them is only done once.
  */
@@ -285,7 +285,6 @@ class SumArray : public LinearExpr {
 /// A class to hold a weighted sum of floating point linear expressions.
 class FloatWeightedSum : public LinearExpr {
  public:
-  FloatWeightedSum(const std::vector<LinearExpr*>& exprs, double offset);
   FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
                    const std::vector<double>& coeffs, double offset);
   ~FloatWeightedSum() override = default;

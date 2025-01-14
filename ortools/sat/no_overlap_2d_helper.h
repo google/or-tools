@@ -15,11 +15,13 @@
 #define OR_TOOLS_SAT_NO_OVERLAP_2D_HELPER_H_
 
 #include <utility>
+#include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
@@ -32,8 +34,14 @@ namespace sat {
 class NoOverlap2DConstraintHelper : public PropagatorInterface {
  public:
   NoOverlap2DConstraintHelper(SchedulingConstraintHelper* x_helper,
-                              SchedulingConstraintHelper* y_helper)
-      : axes_are_swapped_(false), x_helper_(x_helper), y_helper_(y_helper) {}
+                              SchedulingConstraintHelper* y_helper,
+                              Model* model)
+      : axes_are_swapped_(false),
+        x_helper_(x_helper),
+        y_helper_(y_helper),
+        watcher_(model->GetOrCreate<GenericLiteralWatcher>()) {}
+
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
   bool SynchronizeAndSetDirection(bool x_is_forward_after_swap,
                                   bool y_is_forward_after_swap,
@@ -61,10 +69,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
     y_helper_->ClearReason();
   }
 
-  void WatchAllBoxes(int id) {
-    x_helper_->WatchAllTasks(id);
-    y_helper_->WatchAllTasks(id);
-  }
+  void WatchAllBoxes(int id) { propagators_watching_.push_back(id); }
 
   // Propagate a relationship between two boxes (ie., first must be to the left
   // of the second, etc).
@@ -163,7 +168,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   int NumBoxes() const { return x_helper_->NumTasks(); }
 
-  bool Propagate() override { return true; }
+  bool Propagate() override;
 
   SchedulingConstraintHelper& x_helper() const { return *x_helper_; }
   SchedulingConstraintHelper& y_helper() const { return *y_helper_; }
@@ -172,6 +177,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   bool axes_are_swapped_;
   SchedulingConstraintHelper* x_helper_;
   SchedulingConstraintHelper* y_helper_;
+  GenericLiteralWatcher* watcher_;
+  std::vector<int> propagators_watching_;
 };
 
 }  // namespace sat

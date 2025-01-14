@@ -486,10 +486,12 @@ message SatParameters {
   // solver. Note that contrary to the precedence encoding, this easily support
   // variable demands.
   //
-  // WARNING: with this encoding, the constraint take a slighlty different
-  // meaning. The level must be within the reservoir for any permutation of the
-  // events. So we cannot have +100 and -100 at the same time if the maximum
-  // level is 10 (as autorized by the reservoir constraint).
+  // WARNING: with this encoding, the constraint takes a slightly different
+  // meaning. There must exist a permutation of the events occurring at the same
+  // time such that the level is within the reservoir after each of these events
+  // (in this permuted order). So we cannot have +100 and -100 at the same time
+  // if the level must be between 0 and 10 (as authorized by the reservoir
+  // constraint).
   optional bool expand_reservoir_using_circuit = 288 [default = false];
 
   // Encore cumulative with fixed demands and capacity as a reservoir

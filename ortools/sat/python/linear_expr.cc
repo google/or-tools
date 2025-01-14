@@ -156,8 +156,9 @@ void FlatFloatExpr::VisitAsFloat(FloatExprVisitor& lin, double c) const {
 
 std::string FlatFloatExpr::ToString() const {
   if (vars_.empty()) {
-    return absl::StrCat(offset_);
+    return absl::StrCat(RoundTripDoubleFormat(offset_));
   }
+
   std::string s = "(";
   bool first_printed = true;
   for (int i = 0; i < vars_.size(); ++i) {
@@ -169,7 +170,8 @@ std::string FlatFloatExpr::ToString() const {
       } else if (coeffs_[i] == -1.0) {
         absl::StrAppend(&s, "-", vars_[i]->ToString());
       } else {
-        absl::StrAppend(&s, coeffs_[i], " * ", vars_[i]->ToString());
+        absl::StrAppend(&s, RoundTripDoubleFormat(coeffs_[i]), " * ",
+                        vars_[i]->ToString());
       }
     } else {
       if (coeffs_[i] == 1.0) {
@@ -177,23 +179,25 @@ std::string FlatFloatExpr::ToString() const {
       } else if (coeffs_[i] == -1.0) {
         absl::StrAppend(&s, " - ", vars_[i]->ToString());
       } else if (coeffs_[i] > 0.0) {
-        absl::StrAppend(&s, " + ", coeffs_[i], " * ", vars_[i]->ToString());
+        absl::StrAppend(&s, " + ", RoundTripDoubleFormat(coeffs_[i]), " * ",
+                        vars_[i]->ToString());
       } else {
-        absl::StrAppend(&s, " - ", -coeffs_[i], " * ", vars_[i]->ToString());
+        absl::StrAppend(&s, " - ", RoundTripDoubleFormat(-coeffs_[i]), " * ",
+                        vars_[i]->ToString());
       }
     }
   }
   // If there are no terms, just print the offset.
   if (first_printed) {
-    return absl::StrCat(offset_);
+    return absl::StrCat(RoundTripDoubleFormat(offset_));
   }
 
   // If there is an offset, print it.
   if (offset_ != 0.0) {
     if (offset_ > 0.0) {
-      absl::StrAppend(&s, " + ", offset_);
+      absl::StrAppend(&s, " + ", RoundTripDoubleFormat(offset_));
     } else {
-      absl::StrAppend(&s, " - ", -offset_);
+      absl::StrAppend(&s, " - ", RoundTripDoubleFormat(-offset_));
     }
   }
   absl::StrAppend(&s, ")");
@@ -206,7 +210,13 @@ std::string FlatFloatExpr::DebugString() const {
                                     [](std::string* out, const LinearExpr* e) {
                                       absl::StrAppend(out, e->DebugString());
                                     }),
-                      "], [", absl::StrJoin(coeffs_, "], "), offset_, ")");
+                      "], [",
+                      absl::StrJoin(coeffs_, ", ",
+                                    [](std::string* out, double coeff) {
+                                      absl::StrAppend(
+                                          out, RoundTripDoubleFormat(coeff));
+                                    }),
+                      "], ", RoundTripDoubleFormat(offset_), ")");
 }
 
 FlatIntExpr::FlatIntExpr(LinearExpr* expr) {
@@ -219,6 +229,7 @@ std::string FlatIntExpr::ToString() const {
   if (vars_.empty()) {
     return absl::StrCat(offset_);
   }
+
   std::string s = "(";
   bool first_printed = true;
   for (int i = 0; i < vars_.size(); ++i) {
@@ -287,6 +298,7 @@ SumArray::SumArray(const std::vector<LinearExpr*>& exprs, int64_t int_offset,
       int_offset_(int_offset),
       double_offset_(double_offset) {
   DCHECK(int_offset_ == 0 || double_offset_ == 0.0);
+  DCHECK_GE(exprs_.size(), 2);
 }
 
 bool SumArray::VisitAsInt(IntExprVisitor& lin, int64_t c) const {
@@ -310,13 +322,8 @@ void SumArray::VisitAsFloat(FloatExprVisitor& lin, double c) const {
 }
 
 std::string SumArray::ToString() const {
-  if (exprs_.empty()) {
-    if (double_offset_ != 0.0) {
-      return absl::StrCat(RoundTripDoubleFormat(double_offset_));
-    } else {
-      return absl::StrCat(int_offset_);
-    }
-  }
+  DCHECK(!exprs_.empty());
+
   std::string s = "(";
   for (int i = 0; i < exprs_.size(); ++i) {
     if (i > 0) {
@@ -360,17 +367,13 @@ std::string SumArray::DebugString() const {
 }
 
 FloatWeightedSum::FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
-                                   double offset)
-    : exprs_(exprs.begin(), exprs.end()),
-      coeffs_(exprs.size(), 1),
-      offset_(offset) {}
-
-FloatWeightedSum::FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
                                    const std::vector<double>& coeffs,
                                    double offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(coeffs.begin(), coeffs.end()),
-      offset_(offset) {}
+      offset_(offset) {
+  DCHECK_GE(exprs_.size(), 2);
+}
 
 void FloatWeightedSum::VisitAsFloat(FloatExprVisitor& lin, double c) const {
   for (int i = 0; i < exprs_.size(); ++i) {
@@ -380,9 +383,6 @@ void FloatWeightedSum::VisitAsFloat(FloatExprVisitor& lin, double c) const {
 }
 
 std::string FloatWeightedSum::ToString() const {
-  if (exprs_.empty()) {
-    return absl::StrCat(offset_);
-  }
   std::string s = "(";
   bool first_printed = true;
   for (int i = 0; i < exprs_.size(); ++i) {
@@ -394,7 +394,8 @@ std::string FloatWeightedSum::ToString() const {
       } else if (coeffs_[i] == -1.0) {
         absl::StrAppend(&s, "-", exprs_[i]->ToString());
       } else {
-        absl::StrAppend(&s, coeffs_[i], " * ", exprs_[i]->ToString());
+        absl::StrAppend(&s, RoundTripDoubleFormat(coeffs_[i]), " * ",
+                        exprs_[i]->ToString());
       }
     } else {
       if (coeffs_[i] == 1.0) {
@@ -402,23 +403,25 @@ std::string FloatWeightedSum::ToString() const {
       } else if (coeffs_[i] == -1.0) {
         absl::StrAppend(&s, " - ", exprs_[i]->ToString());
       } else if (coeffs_[i] > 0.0) {
-        absl::StrAppend(&s, " + ", coeffs_[i], " * ", exprs_[i]->ToString());
+        absl::StrAppend(&s, " + ", RoundTripDoubleFormat(coeffs_[i]), " * ",
+                        exprs_[i]->ToString());
       } else {
-        absl::StrAppend(&s, " - ", -coeffs_[i], " * ", exprs_[i]->ToString());
+        absl::StrAppend(&s, " - ", RoundTripDoubleFormat(-coeffs_[i]), " * ",
+                        exprs_[i]->ToString());
       }
     }
   }
   // If there are no terms, just print the offset.
   if (first_printed) {
-    return absl::StrCat(offset_);
+    return absl::StrCat(RoundTripDoubleFormat(offset_));
   }
 
   // If there is an offset, print it.
   if (offset_ != 0.0) {
     if (offset_ > 0.0) {
-      absl::StrAppend(&s, " + ", offset_);
+      absl::StrAppend(&s, " + ", RoundTripDoubleFormat(offset_));
     } else {
-      absl::StrAppend(&s, " - ", -offset_);
+      absl::StrAppend(&s, " - ", RoundTripDoubleFormat(-offset_));
     }
   }
   absl::StrAppend(&s, ")");
@@ -431,7 +434,13 @@ std::string FloatWeightedSum::DebugString() const {
                                     [](std::string* out, const LinearExpr* e) {
                                       absl::StrAppend(out, e->DebugString());
                                     }),
-                      "], [", absl::StrJoin(coeffs_, "], "), offset_, ")");
+                      "], [",
+                      absl::StrJoin(coeffs_, ", ",
+                                    [](std::string* out, double coeff) {
+                                      absl::StrAppend(
+                                          out, RoundTripDoubleFormat(coeff));
+                                    }),
+                      RoundTripDoubleFormat(offset_), ")");
 }
 
 IntWeightedSum::IntWeightedSum(const std::vector<LinearExpr*>& exprs,
@@ -697,10 +706,7 @@ BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* expr,
     : bounds_(bounds) {
   IntExprVisitor lin;
   lin.AddToProcess(expr, 1);
-  if (!lin.Process(&vars_, &coeffs_, &offset_)) {
-    ok_ = false;
-    return;
-  }
+  ok_ = lin.Process(&vars_, &coeffs_, &offset_);
 }
 
 BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* pos,
@@ -710,10 +716,7 @@ BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* pos,
   IntExprVisitor lin;
   lin.AddToProcess(pos, 1);
   lin.AddToProcess(neg, -1);
-  if (!lin.Process(&vars_, &coeffs_, &offset_)) {
-    ok_ = false;
-    return;
-  }
+  ok_ = lin.Process(&vars_, &coeffs_, &offset_);
 }
 
 const Domain& BoundedLinearExpression::bounds() const { return bounds_; }

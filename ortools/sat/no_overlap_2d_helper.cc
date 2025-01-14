@@ -17,6 +17,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 
@@ -173,6 +174,34 @@ bool NoOverlap2DConstraintHelper::PropagateRelativePosition(
       return LeftBoxBeforeRightBoxOnFirstDimension(second, first, y_helper_,
                                                    x_helper_);
   }
+}
+
+bool NoOverlap2DConstraintHelper::Propagate() {
+  for (const int id : propagators_watching_) {
+    watcher_->CallOnNextPropagate(id);
+  }
+  if (!x_helper_->Propagate() || !y_helper_->Propagate()) return false;
+  return true;
+}
+
+void NoOverlap2DConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  const int num_boxes = NumBoxes();
+  for (int b = 0; b < num_boxes; ++b) {
+    if (x_helper_->IsOptional(b)) {
+      watcher->WatchLiteral(x_helper_->PresenceLiteral(b), id);
+    }
+    if (y_helper_->IsOptional(b)) {
+      watcher->WatchLiteral(y_helper_->PresenceLiteral(b), id);
+    }
+    watcher->WatchIntegerVariable(x_helper_->Sizes()[b].var, id);
+    watcher->WatchIntegerVariable(x_helper_->Starts()[b].var, id);
+    watcher->WatchIntegerVariable(x_helper_->Ends()[b].var, id);
+    watcher->WatchIntegerVariable(y_helper_->Sizes()[b].var, id);
+    watcher->WatchIntegerVariable(y_helper_->Starts()[b].var, id);
+    watcher->WatchIntegerVariable(y_helper_->Ends()[b].var, id);
+  }
+  watcher->SetPropagatorPriority(id, 0);
 }
 
 }  // namespace sat

@@ -150,8 +150,8 @@ class IntervalsRepository {
   // If such literal already exists this returns it.
   void CreateDisjunctivePrecedenceLiteral(IntervalVariable a,
                                           IntervalVariable b);
-  void CreateDisjunctivePrecedenceLiteral(const IntervalDefinition& a,
-                                          const IntervalDefinition& b);
+  LiteralIndex GetOrCreateDisjunctivePrecedenceLiteral(
+      const IntervalDefinition& a, const IntervalDefinition& b);
 
   // Creates a literal l <=> y >= x.
   // Returns true if such literal is "non-trivial" and was created.

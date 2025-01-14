@@ -731,7 +731,7 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
           }
         }
 
-        // TODO(Fdid): Also compare the second part of the precedence in
+        // TODO(user): Also compare the second part of the precedence in
         // PrecedenceIsBetter() and not just the interval before?
         if (best_helper == nullptr ||
             PrecedenceIsBetter(helper, a, best_helper, best_before)) {
@@ -744,16 +744,21 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
     }
 
     if (best_helper != nullptr) {
+      // If one of the task presence is undecided, start by making it present.
+      for (const int t : {best_before, best_after}) {
+        if (!best_helper->IsPresent(t)) {
+          VLOG(2) << "Presence: " << best_helper->TaskDebugString(t);
+          return BooleanOrIntegerLiteral(best_helper->PresenceLiteral(t));
+        }
+      }
+
       VLOG(2) << "New disjunctive precedence: "
               << best_helper->TaskDebugString(best_before) << " "
               << best_helper->TaskDebugString(best_after);
-      const IntervalDefinition a =
-          best_helper->GetIntervalDefinition(best_before);
-      const IntervalDefinition b =
-          best_helper->GetIntervalDefinition(best_after);
-      repo->CreateDisjunctivePrecedenceLiteral(a, b);
+      const auto a = best_helper->GetIntervalDefinition(best_before);
+      const auto b = best_helper->GetIntervalDefinition(best_after);
       return BooleanOrIntegerLiteral(
-          repo->GetPrecedenceLiteral(a.end, b.start));
+          repo->GetOrCreateDisjunctivePrecedenceLiteral(a, b));
     }
 
     return BooleanOrIntegerLiteral();

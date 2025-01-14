@@ -814,7 +814,7 @@ class CpModel:
             if not ble.ok:
                 raise TypeError(
                     "Cannot add a linear expression containing floating point"
-                    f" coefficients or constants: {linear_expr}"
+                    f" coefficients or constants: {type(linear_expr).__name__!r}"
                 )
             return self.add(ble)
         if isinstance(linear_expr, IntegralTypes):
@@ -823,9 +823,8 @@ class CpModel:
             else:
                 return self.add_bool_and([])  # Evaluate to true.
         raise TypeError(
-            f"not supported: CpModel.add_linear_expression_in_domain({linear_expr} "
-            f" {type(linear_expr)} {linear_expr.is_integer()} {domain} "
-            f"{type(domain)}"
+            "not supported:"
+            f" CpModel.add_linear_expression_in_domain({type(linear_expr).__name__!r})"
         )
 
     def add(self, ct: Union[BoundedLinearExpression, bool, np.bool_]) -> Constraint:
@@ -857,7 +856,7 @@ class CpModel:
             return self.add_bool_or([True])
         if not ct and cmn.is_boolean(ct):
             return self.add_bool_or([])  # Evaluate to false.
-        raise TypeError("not supported: CpModel.add(" + str(ct) + ")")
+        raise TypeError(f"not supported: CpModel.add({type(ct).__name__!r})")
 
     # General Integer Constraints.
 
@@ -1027,7 +1026,7 @@ class CpModel:
         arity: int = len(expressions)
         for one_tuple in tuples_list:
             if len(one_tuple) != arity:
-                raise TypeError("Tuple " + str(one_tuple) + " has the wrong arity")
+                raise TypeError(f"Tuple {one_tuple!r} has the wrong arity")
 
         # duck-typing (no explicit type checks here)
         try:
@@ -1036,7 +1035,7 @@ class CpModel:
         except ValueError as ex:
             raise TypeError(
                 "add_xxx_assignment: Not an integer or does not fit in an int64_t:"
-                f" {ex.args}"
+                f" {type(ex.args).__name__!r}"
             ) from ex
 
         return ct
@@ -1147,7 +1146,7 @@ class CpModel:
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
-                raise TypeError("Tuple " + str(t) + " has the wrong arity (!= 3)")
+                raise TypeError(f"Tuple {t!r} has the wrong arity (!= 3)")
             model_ct.automaton.transition_tail.append(t[0])
             model_ct.automaton.transition_label.append(t[1])
             model_ct.automaton.transition_head.append(t[2])
@@ -2077,7 +2076,9 @@ class CpModel:
             return arg.index
         if isinstance(arg, IntegralTypes):
             return self.get_or_make_index_from_constant(arg)
-        raise TypeError("NotSupported: model.get_or_make_index(" + str(arg) + ")")
+        raise TypeError(
+            f"NotSupported: model.get_or_make_index({type(arg).__name__!r})"
+        )
 
     def get_or_make_boolean_index(self, arg: LiteralT) -> int:
         """Returns an index from a boolean expression."""
@@ -2096,11 +2097,15 @@ class CpModel:
             return self.get_or_make_index_from_constant(arg)
         if cmn.is_boolean(arg):
             return self.get_or_make_index_from_constant(int(arg))
-        raise TypeError(f"not supported: model.get_or_make_boolean_index({arg})")
+        raise TypeError(
+            "not supported:" f" model.get_or_make_boolean_index({type(arg).__name__!r})"
+        )
 
     def get_interval_index(self, arg: IntervalVar) -> int:
         if not isinstance(arg, IntervalVar):
-            raise TypeError(f"NotSupported: model.get_interval_index({arg})")
+            raise TypeError(
+                f"NotSupported: model.get_interval_index({type(arg).__name__!r})"
+            )
         return arg.index
 
     def get_or_make_index_from_constant(self, value: IntegralT) -> int:
@@ -2168,7 +2173,9 @@ class CpModel:
                 self.__model.floating_point_objective.maximize = not minimize
                 self.__model.floating_point_objective.offset = float_obj.offset
         else:
-            raise TypeError("TypeError: " + str(obj) + " is not a valid objective")
+            raise TypeError(
+                f"TypeError: {type(obj).__name__!r} is not a valid objective"
+            )
 
     def minimize(self, obj: ObjLinearExprT):
         """Sets the objective of the model to minimize(obj)."""
@@ -2278,9 +2285,13 @@ class CpModel:
         if isinstance(x, IntVar):
             var = self.__model.variables[x.index]
             if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
-                raise TypeError("TypeError: " + str(x) + " is not a boolean variable")
+                raise TypeError(
+                    f"TypeError: {type(x).__name__!r} is not a boolean variable"
+                )
         elif not isinstance(x, cmh.NotBooleanVariable):
-            raise TypeError("TypeError: " + str(x) + " is not a boolean variable")
+            raise TypeError(
+                f"TypeError: {type(x).__name__!r}  is not a boolean variable"
+            )
 
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name
@@ -2938,7 +2949,7 @@ def _convert_to_integral_series_and_validate_index(
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError(f"invalid type={type(value_or_series)}")
+        raise TypeError(f"invalid type={type(value_or_series).__name__!r}")
 
 
 def _convert_to_linear_expr_series_and_validate_index(
@@ -2965,7 +2976,7 @@ def _convert_to_linear_expr_series_and_validate_index(
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError(f"invalid type={type(value_or_series)}")
+        raise TypeError(f"invalid type={type(value_or_series).__name__!r}")
 
 
 def _convert_to_literal_series_and_validate_index(
@@ -2992,4 +3003,4 @@ def _convert_to_literal_series_and_validate_index(
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError(f"invalid type={type(value_or_series)}")
+        raise TypeError(f"invalid type={type(value_or_series).__name__!r}")
