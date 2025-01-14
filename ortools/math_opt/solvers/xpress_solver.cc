@@ -330,6 +330,8 @@ absl::StatusOr<double> XpressSolver::GetBestPrimalBound(
   if (parameters.lp_algorithm() == LP_ALGORITHM_PRIMAL_SIMPLEX &&
           isFeasible() ||
       xpress_status_ == XPRS_LP_OPTIMAL) {
+    // When primal simplex algorithm is used, XPRESS uses LPOBJVAL to store the
+    // primal problem's objective value
     return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
   }
   return is_maximize_ ? kMinusInf : kPlusInf;
@@ -340,6 +342,8 @@ absl::StatusOr<double> XpressSolver::GetBestDualBound(
   // TODO: handle MIP
   if (parameters.lp_algorithm() == LP_ALGORITHM_DUAL_SIMPLEX && isFeasible() ||
       xpress_status_ == XPRS_LP_OPTIMAL) {
+    // When dual simplex algorithm is used, XPRESS uses LPOBJVAL to store the
+    // dual problem's objective value
     return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
   }
   return is_maximize_ ? kPlusInf : kMinusInf;
