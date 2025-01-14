@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <random>
 #include <string>
 #include <utility>
@@ -25,10 +26,11 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model_mapping.h"
-#include "ortools/sat/integer.h"
-#include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/integer_base.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
 
@@ -72,12 +74,12 @@ std::vector<double> GetLPRelaxationValues(
     return relaxation_values;
   }
 
-  const SharedSolutionRepository<double>::Solution lp_solution =
-      lp_solutions->GetRandomBiasedSolution(random);
+  std::shared_ptr<const SharedSolutionRepository<double>::Solution>
+      lp_solution = lp_solutions->GetRandomBiasedSolution(random);
 
-  for (int model_var = 0; model_var < lp_solution.variable_values.size();
+  for (int model_var = 0; model_var < lp_solution->variable_values.size();
        ++model_var) {
-    relaxation_values.push_back(lp_solution.variable_values[model_var]);
+    relaxation_values.push_back(lp_solution->variable_values[model_var]);
   }
   return relaxation_values;
 }
@@ -206,12 +208,12 @@ ReducedDomainNeighborhood GetRinsRensNeighborhood(
   if (response_manager != nullptr &&
       response_manager->SolutionsRepository().NumSolutions() > 0 &&
       three_out_of_four(random)) {  // Rins.
-    const std::vector<int64_t> solution =
-        response_manager->SolutionsRepository()
-            .GetRandomBiasedSolution(random)
-            .variable_values;
-    FillRinsNeighborhood(solution, relaxation_values, difficulty, random,
-                         reduced_domains);
+    std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+        solution =
+            response_manager->SolutionsRepository().GetRandomBiasedSolution(
+                random);
+    FillRinsNeighborhood(solution->variable_values, relaxation_values,
+                         difficulty, random, reduced_domains);
     reduced_domains.source_info = "rins_";
   } else {  // Rens.
     FillRensNeighborhood(relaxation_values, difficulty, random,

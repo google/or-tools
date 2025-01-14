@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1114,7 +1114,7 @@ bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
 
 bool PropagateLightweightVehicleBreaks(
     int path, DimensionValues& dimension_values,
-    const std::vector<std::pair<int64_t, int64_t>>& interbreaks) {
+    absl::Span<const std::pair<int64_t, int64_t>> interbreaks) {
   using Interval = DimensionValues::Interval;
   using VehicleBreak = DimensionValues::VehicleBreak;
   const int64_t total_travel = dimension_values.TravelSums(path).back();
@@ -2001,6 +2001,9 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
   if (may_use_optimizers_ && lp_optimizer_ != nullptr &&
       accepted_objective_value_ <= objective_max) {
     std::vector<int> paths_requiring_mp_optimizer;
+    // TODO(user): Further optimize the LPs when we find feasible-only
+    // solutions with the original time shares, if there's time left in the end.
+    int solve_duration_shares = dimension_values_.ChangedPaths().size();
     for (const int vehicle : dimension_values_.ChangedPaths()) {
       if (!FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
         continue;
@@ -2008,13 +2011,17 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       int64_t path_cost_with_lp = 0;
       const DimensionSchedulingStatus status =
           lp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-              vehicle, path_accessor_, /*resource=*/nullptr,
+              vehicle, /*solve_duration_ratio=*/1.0 / solve_duration_shares,
+              path_accessor_, /*resource=*/nullptr,
               filter_objective_cost_ ? &path_cost_with_lp : nullptr);
+      solve_duration_shares--;
       if (status == DimensionSchedulingStatus::INFEASIBLE) {
         return false;
       }
       // Replace previous path cost with the LP optimizer cost.
       if (filter_objective_cost_ &&
+          (status == DimensionSchedulingStatus::OPTIMAL ||
+           status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) &&
           path_cost_with_lp > cost_of_path_.Get(vehicle)) {
         CapSubFrom(cost_of_path_.Get(vehicle), &accepted_objective_value_);
         CapAddTo(path_cost_with_lp, &accepted_objective_value_);
@@ -2033,15 +2040,20 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
 
     DCHECK_LE(accepted_objective_value_, objective_max);
 
+    solve_duration_shares = paths_requiring_mp_optimizer.size();
     for (const int vehicle : paths_requiring_mp_optimizer) {
       int64_t path_cost_with_mp = 0;
-      if (mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-              vehicle, path_accessor_, /*resource=*/nullptr,
-              filter_objective_cost_ ? &path_cost_with_mp : nullptr) ==
-          DimensionSchedulingStatus::INFEASIBLE) {
+      const DimensionSchedulingStatus status =
+          mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+              vehicle, /*solve_duration_ratio=*/1.0 / solve_duration_shares,
+              path_accessor_, /*resource=*/nullptr,
+              filter_objective_cost_ ? &path_cost_with_mp : nullptr);
+      solve_duration_shares--;
+      if (status == DimensionSchedulingStatus::INFEASIBLE) {
         return false;
       }
       if (filter_objective_cost_ &&
+          status == DimensionSchedulingStatus::OPTIMAL &&
           path_cost_with_mp > cost_of_path_.Get(vehicle)) {
         CapSubFrom(cost_of_path_.Get(vehicle), &accepted_objective_value_);
         CapAddTo(path_cost_with_mp, &accepted_objective_value_);
@@ -2742,31 +2754,43 @@ bool LPCumulFilter::Accept(const Assignment* delta,
   if (!filter_objective_cost_) {
     // No need to compute the cost of the LP, only verify its feasibility.
     delta_cost_without_transit_ = 0;
-    const DimensionSchedulingStatus status = lp_optimizer_.ComputeCumuls(
+    DimensionSchedulingStatus status = lp_optimizer_.ComputeCumuls(
         next_accessor, {}, nullptr, nullptr, nullptr);
-    if (status == DimensionSchedulingStatus::OPTIMAL) return true;
-    if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
-        mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
-                                    nullptr) ==
-            DimensionSchedulingStatus::OPTIMAL) {
-      return true;
+    if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
+      status = mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
+                                           nullptr);
     }
-    return false;
+    DCHECK(status != DimensionSchedulingStatus::FEASIBLE)
+        << "FEASIBLE without filtering objective cost should be OPTIMAL";
+    return status == DimensionSchedulingStatus::OPTIMAL;
   }
 
-  const DimensionSchedulingStatus status =
+  DimensionSchedulingStatus status =
       lp_optimizer_.ComputeCumulCostWithoutFixedTransits(
           next_accessor, &delta_cost_without_transit_);
-  if (status == DimensionSchedulingStatus::INFEASIBLE) {
-    delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
-    return false;
-  }
-  if (delta_cost_without_transit_ > objective_max) return false;
 
-  if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
-      mp_optimizer_.ComputeCumulCostWithoutFixedTransits(
-          next_accessor, &delta_cost_without_transit_) !=
-          DimensionSchedulingStatus::OPTIMAL) {
+  if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY ||
+      status == DimensionSchedulingStatus::FEASIBLE) {
+    const DimensionSchedulingStatus lp_status = status;
+    int64_t mp_cost;
+    status = mp_optimizer_.ComputeCumulCostWithoutFixedTransits(next_accessor,
+                                                                &mp_cost);
+    if (lp_status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
+        status == DimensionSchedulingStatus::OPTIMAL) {
+      // TRICKY: If the MP is only feasible, the computed cost isn't a lower
+      // bound to the problem, so we keep the LP relaxation's lower bound
+      // found by Glop.
+      delta_cost_without_transit_ = mp_cost;
+    } else if (lp_status == DimensionSchedulingStatus::FEASIBLE &&
+               status != DimensionSchedulingStatus::INFEASIBLE) {
+      // TRICKY: Since feasible costs are not lower bounds, we keep the lowest
+      // of the costs between the LP-feasible and CP-SAT (feasible or optimal).
+      delta_cost_without_transit_ =
+          std::min(delta_cost_without_transit_, mp_cost);
+    }
+  }
+
+  if (status == DimensionSchedulingStatus::INFEASIBLE) {
     delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
     return false;
   }
@@ -2796,22 +2820,17 @@ void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
                 next_accessor, &synchronized_cost_without_transit_)
           : lp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
                                         nullptr);
-  if (status == DimensionSchedulingStatus::INFEASIBLE) {
-    // TODO(user): This should only happen if the LP solver times out.
-    // DCHECK the fail wasn't due to an infeasible model.
-    synchronized_cost_without_transit_ = 0;
-  }
   if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
     status = filter_objective_cost_
                  ? mp_optimizer_.ComputeCumulCostWithoutFixedTransits(
                        next_accessor, &synchronized_cost_without_transit_)
                  : mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr,
                                                nullptr, nullptr);
-    if (status != DimensionSchedulingStatus::OPTIMAL) {
-      // TODO(user): This should only happen if the MP solver times out.
-      // DCHECK the fail wasn't due to an infeasible model.
-      synchronized_cost_without_transit_ = 0;
-    }
+  }
+  if (status == DimensionSchedulingStatus::INFEASIBLE) {
+    // TODO(user): This should only happen if the LP/MIP solver times out.
+    // DCHECK the fail wasn't due to an infeasible model.
+    synchronized_cost_without_transit_ = 0;
   }
 }
 
@@ -2987,9 +3006,10 @@ bool ResourceGroupAssignmentFilter::FinalizeAcceptPath(
       continue;
     }
     if (!ComputeVehicleToResourceClassAssignmentCosts(
-            vehicle, resource_group_, ignored_resources_per_class_,
-            next_accessor, dimension_.transit_evaluator(vehicle),
-            filter_objective_cost_, lp_optimizer_, mp_optimizer_,
+            vehicle, /*solve_duration_ratio=*/1.0, resource_group_,
+            ignored_resources_per_class_, next_accessor,
+            dimension_.transit_evaluator(vehicle), filter_objective_cost_,
+            lp_optimizer_, mp_optimizer_,
             &delta_vehicle_to_resource_class_assignment_costs_[vehicle],
             nullptr, nullptr)) {
       return false;
@@ -3061,8 +3081,10 @@ void ResourceGroupAssignmentFilter::OnSynchronizePathFromStart(int64_t start) {
   // vehicle requiring resource assignment to keep track of whether or not a
   // given vehicle-to-resource-class assignment is possible by storing 0 or -1
   // in vehicle_to_resource_class_assignment_costs_.
+  // TODO(user): Adjust the 'solve_duration_ratio' below.
   if (!ComputeVehicleToResourceClassAssignmentCosts(
-          v, resource_group_, ignored_resources_per_class_, next_accessor,
+          v, /*solve_duration_ratio=*/1.0, resource_group_,
+          ignored_resources_per_class_, next_accessor,
           dimension_.transit_evaluator(v), filter_objective_cost_,
           lp_optimizer_, mp_optimizer_,
           &vehicle_to_resource_class_assignment_costs_[v], nullptr, nullptr)) {
@@ -3145,21 +3167,22 @@ ResourceGroupAssignmentFilter::ComputeRouteCumulCostWithoutResourceAssignment(
   int64_t route_cost = 0;
   const DimensionSchedulingStatus status =
       lp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-          vehicle, next_accessor, resource,
+          vehicle, /*solve_duration_ratio=*/1.0, next_accessor, resource,
           filter_objective_cost_ ? &route_cost : nullptr);
   switch (status) {
     case DimensionSchedulingStatus::INFEASIBLE:
       return -1;
     case DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY:
       if (mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-              vehicle, next_accessor, resource,
+              vehicle, /*solve_duration_ratio=*/1.0, next_accessor, resource,
               filter_objective_cost_ ? &route_cost : nullptr) ==
           DimensionSchedulingStatus::INFEASIBLE) {
         return -1;
       }
       break;
     default:
-      DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
+      DCHECK(status == DimensionSchedulingStatus::OPTIMAL ||
+             status == DimensionSchedulingStatus::FEASIBLE);
   }
   return route_cost;
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,18 +19,22 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
 
 std::function<void(Model*)> LiteralTableConstraint(
-    const std::vector<std::vector<Literal>>& literal_tuples,
-    const std::vector<Literal>& line_literals) {
-  return [=](Model* model) {
+    absl::Span<const std::vector<Literal>> literal_tuples,
+    absl::Span<const Literal> line_literals) {
+  return [=,
+          line_literals =
+              std::vector<Literal>(line_literals.begin(), line_literals.end()),
+          literal_tuples = std::vector<std::vector<Literal>>(
+              literal_tuples.begin(), literal_tuples.end())](Model* model) {
     CHECK_EQ(literal_tuples.size(), line_literals.size());
     const int num_tuples = line_literals.size();
     if (num_tuples == 0) return;

@@ -50,7 +50,7 @@ constraints {
   interval {
     start { vars: 1 coeffs: 1 }
     end { vars: 3 coeffs: 1 }
-    size { vars: 2 offset: 2 }
+    size { vars: 2 coeffs: 1 offset: 2 }
   }
 }
 constraints {

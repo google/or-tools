@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -70,7 +70,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/bounded_dijkstra.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/shortest_paths.h"
 
 namespace operations_research {
@@ -82,6 +81,7 @@ namespace operations_research {
 // The paths in `paths` start with `origin` and end at `destination`.
 //
 // If the computations are unsuccessful for any reason, the vectors are empty.
+template <class GraphType>
 struct KShortestPaths {
   // The paths are stored as vectors of nodes, like the other graph algorithms.
   // TODO(user): what about vectors of arcs? That might be faster
@@ -89,7 +89,7 @@ struct KShortestPaths {
   // user really needs it). It would also have the nice benefit of removing the
   // need for `distances` (compute it on the fly), with a reference to the graph
   // and the costs.
-  std::vector<std::vector<NodeIndex>> paths;
+  std::vector<std::vector<typename GraphType::NodeIndex>> paths;
   std::vector<PathDistance> distances;
 };
 
@@ -113,10 +113,10 @@ struct KShortestPaths {
 // Science. 17 (11): 712–716, 1971.
 // https://doi.org/10.1287%2Fmnsc.17.11.712
 template <class GraphType>
-KShortestPaths YenKShortestPaths(const GraphType& graph,
-                                 const std::vector<PathDistance>& arc_lengths,
-                                 NodeIndex source, NodeIndex destination,
-                                 unsigned k);
+KShortestPaths<GraphType> YenKShortestPaths(
+    const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
+    typename GraphType::NodeIndex source,
+    typename GraphType::NodeIndex destination, unsigned k);
 
 // End of the interface. Below is the implementation.
 
@@ -137,23 +137,26 @@ const PathDistance kDisconnectedDistance =
 // In a multigraph, this function returns an index for one of the edges between
 // the source and the destination.
 template <class GraphType>
-ArcIndex FindArcIndex(const GraphType& graph, const NodeIndex source,
-                      const NodeIndex destination) {
+typename GraphType::ArcIndex FindArcIndex(
+    const GraphType& graph, const typename GraphType::NodeIndex source,
+    const typename GraphType::NodeIndex destination) {
   const auto outgoing_arcs_iter = graph.OutgoingArcs(source);
-  const auto arc =
-      std::find_if(outgoing_arcs_iter.begin(), outgoing_arcs_iter.end(),
-                   [&graph, destination](const ArcIndex arc) {
-                     return graph.Head(arc) == destination;
-                   });
+  const auto arc = std::find_if(
+      outgoing_arcs_iter.begin(), outgoing_arcs_iter.end(),
+      [&graph, destination](const typename GraphType::ArcIndex arc) {
+        return graph.Head(arc) == destination;
+      });
   return (arc != outgoing_arcs_iter.end()) ? *arc : GraphType::kNilArc;
 }
 
 // Determines the shortest path from the given source and destination, returns a
 // tuple with the path (as a vector of node indices) and its cost.
 template <class GraphType>
-std::tuple<std::vector<NodeIndex>, PathDistance> ComputeShortestPath(
-    const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
-    const NodeIndex source, const NodeIndex destination) {
+std::tuple<std::vector<typename GraphType::NodeIndex>, PathDistance>
+ComputeShortestPath(const GraphType& graph,
+                    const std::vector<PathDistance>& arc_lengths,
+                    const typename GraphType::NodeIndex source,
+                    const typename GraphType::NodeIndex destination) {
   BoundedDijkstraWrapper<GraphType, PathDistance> dijkstra(&graph,
                                                            &arc_lengths);
   dijkstra.RunBoundedDijkstra(source, kMaxDistance);
@@ -165,25 +168,29 @@ std::tuple<std::vector<NodeIndex>, PathDistance> ComputeShortestPath(
     // This case only happens when some arcs have an infinite length (i.e.
     // larger than `kMaxDistance`): `BoundedDijkstraWrapper::NodePathTo` fails
     // to return a path, even empty.
-    return {std::vector<NodeIndex>{}, kDisconnectedDistance};
+    return {std::vector<typename GraphType::NodeIndex>{},
+            kDisconnectedDistance};
   }
 
-  if (std::vector<NodeIndex> path = std::move(dijkstra.NodePathTo(destination));
+  if (std::vector<typename GraphType::NodeIndex> path =
+          std::move(dijkstra.NodePathTo(destination));
       !path.empty()) {
     return {std::move(path), path_length};
   } else {
-    return {std::vector<NodeIndex>{}, kDisconnectedDistance};
+    return {std::vector<typename GraphType::NodeIndex>{},
+            kDisconnectedDistance};
   }
 }
 
 // Computes the total length of a path.
 template <class GraphType>
-PathDistance ComputePathLength(const GraphType& graph,
-                               const absl::Span<const PathDistance> arc_lengths,
-                               const absl::Span<const NodeIndex> path) {
+PathDistance ComputePathLength(
+    const GraphType& graph, const absl::Span<const PathDistance> arc_lengths,
+    const absl::Span<const typename GraphType::NodeIndex> path) {
   PathDistance distance = 0;
-  for (NodeIndex i = 0; i < path.size() - 1; ++i) {
-    const ArcIndex arc = internal::FindArcIndex(graph, path[i], path[i + 1]);
+  for (typename GraphType::NodeIndex i = 0; i < path.size() - 1; ++i) {
+    const typename GraphType::ArcIndex arc =
+        internal::FindArcIndex(graph, path[i], path[i + 1]);
     DCHECK_NE(arc, GraphType::kNilArc);
     distance += arc_lengths[arc];
   }
@@ -192,8 +199,11 @@ PathDistance ComputePathLength(const GraphType& graph,
 
 // Stores a path with a priority (typically, the distance), with a comparison
 // operator that operates on the priority.
+template <class GraphType>
 class PathWithPriority {
  public:
+  using NodeIndex = typename GraphType::NodeIndex;
+
   PathWithPriority(PathDistance priority, std::vector<NodeIndex> path)
       : path_(std::move(path)), priority_(priority) {}
   bool operator<(const PathWithPriority& other) const {
@@ -265,10 +275,12 @@ class UnderlyingContainerAdapter : public Container {
 //   spur paths, the cheapest being:
 //     S_1^2 = B - E - F - G - H
 template <class GraphType>
-KShortestPaths YenKShortestPaths(const GraphType& graph,
-                                 const std::vector<PathDistance>& arc_lengths,
-                                 NodeIndex source, NodeIndex destination,
-                                 unsigned k) {
+KShortestPaths<GraphType> YenKShortestPaths(
+    const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
+    typename GraphType::NodeIndex source,
+    typename GraphType::NodeIndex destination, unsigned k) {
+  using NodeIndex = typename GraphType::NodeIndex;
+
   CHECK_GT(internal::kDisconnectedDistance, internal::kMaxDistance);
 
   CHECK_GE(k, 0) << "k must be nonnegative. Input value: " << k;
@@ -289,7 +301,7 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
       << destination
       << ". Number of nodes in the input graph: " << graph.num_nodes();
 
-  KShortestPaths paths;
+  KShortestPaths<GraphType> paths;
 
   // First step: compute the shortest path.
   {
@@ -306,7 +318,7 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
 
   // Generate variant paths.
   internal::UnderlyingContainerAdapter<
-      std::priority_queue<internal::PathWithPriority>>
+      std::priority_queue<internal::PathWithPriority<GraphType>>>
       variant_path_queue;
 
   // One path has already been generated (the shortest one). Only k-1 more
@@ -364,7 +376,7 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
             previous_path.begin() + root_path.length());
         if (!has_same_prefix_as_root_path) continue;
 
-        const ArcIndex after_spur_node_arc =
+        const typename GraphType::ArcIndex after_spur_node_arc =
             internal::FindArcIndex(graph, previous_path[spur_node_position],
                                    previous_path[spur_node_position + 1]);
         VLOG(4) << "  after_spur_node_arc: " << graph.Tail(after_spur_node_arc)
@@ -417,8 +429,8 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
           // coincide at the spur node).
           const bool root_path_leads_to_spur_path = absl::c_any_of(
               graph.OutgoingArcs(root_path.back()),
-              [&graph, node_after_spur_in_spur_path =
-                           *(spur_path.begin() + 1)](const ArcIndex arc_index) {
+              [&graph, node_after_spur_in_spur_path = *(spur_path.begin() + 1)](
+                  const typename GraphType::ArcIndex arc_index) {
                 return graph.Head(arc_index) == node_after_spur_in_spur_path;
               });
           CHECK(root_path_leads_to_spur_path);
@@ -471,12 +483,12 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
         // filter by fingerprints? Due to the probability of error with
         // fingerprints, still use this slow-but-exact code, but after
         // filtering.
-        const bool is_new_path_already_known =
-            std::any_of(variant_path_queue.container().cbegin(),
-                        variant_path_queue.container().cend(),
-                        [&new_path](const internal::PathWithPriority& element) {
-                          return element.path() == new_path;
-                        });
+        const bool is_new_path_already_known = std::any_of(
+            variant_path_queue.container().cbegin(),
+            variant_path_queue.container().cend(),
+            [&new_path](const internal::PathWithPriority<GraphType>& element) {
+              return element.path() == new_path;
+            });
         if (is_new_path_already_known) continue;
 
         const PathDistance path_length =
@@ -498,7 +510,7 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
     // this iteration found no shorter one.
     if (variant_path_queue.empty()) break;
 
-    const internal::PathWithPriority& next_shortest_path =
+    const internal::PathWithPriority<GraphType>& next_shortest_path =
         variant_path_queue.top();
     VLOG(5) << "> New path generated: "
             << absl::StrJoin(next_shortest_path.path(), " - ") << " ("

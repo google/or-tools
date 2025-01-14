@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,17 +21,18 @@
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/util/zvector.h"
 
 namespace operations_research {
 
-void CheckPathDataPair(const PathContainer& container,
-                       const PathContainer& distance_container,
-                       PathDistance expected_distance,
-                       NodeIndex expected_predecessor, NodeIndex tail,
-                       NodeIndex head) {
+template <class GraphType>
+void CheckPathDataPair(
+    const GenericPathContainer<GraphType>& container,
+    const GenericPathContainer<GraphType>& distance_container,
+    PathDistance expected_distance,
+    typename GraphType::NodeIndex expected_predecessor,
+    typename GraphType::NodeIndex tail, typename GraphType::NodeIndex head) {
   EXPECT_EQ(expected_distance, container.GetDistance(tail, head));
   EXPECT_EQ(expected_distance, distance_container.GetDistance(tail, head));
   EXPECT_EQ(expected_predecessor,
@@ -39,7 +40,7 @@ void CheckPathDataPair(const PathContainer& container,
   EXPECT_DEATH(distance_container.GetPenultimateNodeInPath(tail, head),
                "Path not stored.");
   // Checking path between tail and head.
-  std::vector<NodeIndex> paths;
+  std::vector<typename GraphType::NodeIndex> paths;
   container.GetPath(tail, head, &paths);
   if (tail == head) {
     EXPECT_GE(1, paths.size());
@@ -48,7 +49,7 @@ void CheckPathDataPair(const PathContainer& container,
     }
   } else if (!paths.empty()) {
     EXPECT_EQ(tail, paths[0]);
-    NodeIndex current = head;
+    typename GraphType::NodeIndex current = head;
     for (int i = paths.size() - 1; i >= 0; --i) {
       EXPECT_EQ(current, paths[i]);
       current = container.GetPenultimateNodeInPath(tail, current);
@@ -59,14 +60,16 @@ void CheckPathDataPair(const PathContainer& container,
 }
 
 template <class GraphType>
-void CheckPathDataRow(const GraphType& graph, const PathContainer& container,
-                      const PathContainer& distance_container,
-                      const NodeIndex expected_paths[],
-                      const PathDistance expected_distances[], NodeIndex tail) {
+void CheckPathDataRow(const GraphType& graph,
+                      const GenericPathContainer<GraphType>& container,
+                      const GenericPathContainer<GraphType>& distance_container,
+                      const typename GraphType::NodeIndex expected_paths[],
+                      const PathDistance expected_distances[],
+                      typename GraphType::NodeIndex tail) {
   int index = tail * graph.num_nodes();
   for (typename GraphType::NodeIterator iterator(graph); iterator.Ok();
        iterator.Next()) {
-    const NodeIndex head(iterator.Index());
+    const typename GraphType::NodeIndex head(iterator.Index());
     CheckPathDataPair(container, distance_container, expected_distances[index],
                       expected_paths[index], tail, head);
     ++index;
@@ -74,12 +77,12 @@ void CheckPathDataRow(const GraphType& graph, const PathContainer& container,
 }
 
 template <class GraphType>
-void CheckPathDataRowFromGraph(const GraphType& graph,
-                               const PathContainer& container,
-                               const PathContainer& distance_container,
-                               const NodeIndex expected_paths[],
-                               const PathDistance expected_distances[],
-                               NodeIndex tail) {
+void CheckPathDataRowFromGraph(
+    const GraphType& graph, const GenericPathContainer<GraphType>& container,
+    const GenericPathContainer<GraphType>& distance_container,
+    const typename GraphType::NodeIndex expected_paths[],
+    const PathDistance expected_distances[],
+    typename GraphType::NodeIndex tail) {
   int index = tail * graph.num_nodes();
   for (typename GraphType::NodeIndex head : graph.AllNodes()) {
     CheckPathDataPair(container, distance_container, expected_distances[index],
@@ -89,41 +92,42 @@ void CheckPathDataRowFromGraph(const GraphType& graph,
 }
 
 template <class GraphType>
-void CheckPathData(const GraphType& graph, const PathContainer& container,
-                   const PathContainer& distance_container,
-                   const NodeIndex expected_paths[],
+void CheckPathData(const GraphType& graph,
+                   const GenericPathContainer<GraphType>& container,
+                   const GenericPathContainer<GraphType>& distance_container,
+                   const typename GraphType::NodeIndex expected_paths[],
                    const PathDistance expected_distances[]) {
   for (typename GraphType::NodeIterator iterator(graph); iterator.Ok();
        iterator.Next()) {
-    const NodeIndex tail(iterator.Index());
+    const typename GraphType::NodeIndex tail(iterator.Index());
     CheckPathDataRow(graph, container, distance_container, expected_paths,
                      expected_distances, tail);
   }
 }
 
 template <class GraphType>
-void CheckPathDataFromGraph(const GraphType& graph,
-                            const PathContainer& container,
-                            const PathContainer& distance_container,
-                            const NodeIndex expected_paths[],
-                            const PathDistance expected_distances[]) {
+void CheckPathDataFromGraph(
+    const GraphType& graph, const GenericPathContainer<GraphType>& container,
+    const GenericPathContainer<GraphType>& distance_container,
+    const typename GraphType::NodeIndex expected_paths[],
+    const PathDistance expected_distances[]) {
   for (typename GraphType::NodeIndex tail : graph.AllNodes()) {
     CheckPathDataRowFromGraph(graph, container, distance_container,
                               expected_paths, expected_distances, tail);
   }
 }
 
-#define BUILD_CONTAINERS()                                      \
-  PathContainer container;                                      \
-  PathContainer::BuildInMemoryCompactPathContainer(&container); \
-  PathContainer distance_container;                             \
-  PathContainer::BuildPathDistanceContainer(&distance_container)
+#define BUILD_CONTAINERS()                                                  \
+  auto container =                                                          \
+      GenericPathContainer<GraphType>::BuildInMemoryCompactPathContainer(); \
+  auto distance_container =                                                 \
+      GenericPathContainer<GraphType>::BuildPathDistanceContainer()
 
 template <class GraphType>
-void TestShortestPathsFromGraph(const GraphType& graph,
-                                const std::vector<PathDistance>& lengths,
-                                const NodeIndex expected_paths[],
-                                const PathDistance expected_distances[]) {
+void TestShortestPathsFromGraph(
+    const GraphType& graph, const std::vector<PathDistance>& lengths,
+    const typename GraphType::NodeIndex expected_paths[],
+    const PathDistance expected_distances[]) {
   const int kThreads = 32;
   const typename GraphType::NodeIndex source = 0;
   std::vector<typename GraphType::NodeIndex> some_nodes;
@@ -169,7 +173,7 @@ void TestShortestPathsFromGraph(const GraphType& graph,
   // Many-to-all shortest paths with duplicates.
   {
     BUILD_CONTAINERS();
-    std::vector<NodeIndex> sources(3, source);
+    std::vector<typename GraphType::NodeIndex> sources(3, source);
     ComputeManyToAllShortestPathsWithMultipleThreads(graph, lengths, sources,
                                                      kThreads, &container);
     ComputeManyToAllShortestPathsWithMultipleThreads(
@@ -234,28 +238,14 @@ void TestShortestPathsFromGraph(
 
 // Series of shortest paths tests on small graphs.
 
-// Empty fixture templates to collect the types of graphs on which
-// we want to base the shortest paths template instances that we
-// test.
-template <typename GraphType>
-class ShortestPathsDeathTest : public testing::Test {};
-template <typename GraphType>
-class ShortestPathsTest : public testing::Test {};
-
-typedef testing::Types<StarGraph, ForwardStarGraph>
-    EbertGraphTypesForShortestPathsTesting;
-
-TYPED_TEST_SUITE(ShortestPathsDeathTest,
-                 EbertGraphTypesForShortestPathsTesting);
-TYPED_TEST_SUITE(ShortestPathsTest, EbertGraphTypesForShortestPathsTesting);
-
 template <typename GraphType>
 class GraphShortestPathsDeathTest : public testing::Test {};
 template <typename GraphType>
 class GraphShortestPathsTest : public testing::Test {};
 
-typedef testing::Types<ListGraph<>, StaticGraph<>, ReverseArcListGraph<>,
-                       ReverseArcStaticGraph<>, ReverseArcMixedGraph<> >
+typedef testing::Types<
+    ::util::ListGraph<>, ::util::StaticGraph<>, ::util::ReverseArcListGraph<>,
+    ::util::ReverseArcStaticGraph<>, ::util::ReverseArcMixedGraph<>>
     GraphTypesForShortestPathsTesting;
 
 TYPED_TEST_SUITE(GraphShortestPathsDeathTest,
@@ -274,7 +264,7 @@ TYPED_TEST(GraphShortestPathsDeathTest, ShortestPathsEmptyGraph) {
 
 // Test on a disconnected graph (set of nodes pointing to themselves).
 TYPED_TEST(GraphShortestPathsDeathTest, ShortestPathsAllDisconnected) {
-  const typename TypeParam::NodeIndex kUnconnected = -1;
+  const typename TypeParam::NodeIndex kUnconnected = TypeParam::kNilNode;
   const int kNodes = 3;
   const typename TypeParam::NodeIndex kArcs[][2] = {{0, 0}, {1, 1}, {2, 2}};
   const PathDistance kArcLengths[] = {0, 0, 0};
@@ -349,8 +339,8 @@ TYPED_TEST(GraphShortestPathsDeathTest, MismatchedData) {
   graph.AddArc(0, 1);
   graph.AddArc(1, 0);
   std::vector<PathDistance> lengths = {0};
-  PathContainer container;
-  PathContainer::BuildInMemoryCompactPathContainer(&container);
+  auto container =
+      GenericPathContainer<TypeParam>::BuildInMemoryCompactPathContainer();
   EXPECT_DEATH(ComputeAllToAllShortestPathsWithMultipleThreads(graph, lengths,
                                                                1, &container),
                "Number of arcs in graph must match arc length vector size");
@@ -358,10 +348,13 @@ TYPED_TEST(GraphShortestPathsDeathTest, MismatchedData) {
 
 // Test the case where some sources are not strongly connected to themselves.
 TYPED_TEST(GraphShortestPathsDeathTest, SourceNotConnectedToItself) {
+  const typename TypeParam::NodeIndex kUnconnected = TypeParam::kNilNode;
   const int kNodes = 3;
   const typename TypeParam::NodeIndex kArcs[][2] = {{1, 2}, {2, 2}};
   const PathDistance kArcLengths[] = {1, 0};
-  const int kExpectedPaths[] = {-1, -1, -1, -1, -1, 1, -1, -1, 2};
+  const int kExpectedPaths[] = {kUnconnected, kUnconnected, kUnconnected,
+                                kUnconnected, kUnconnected, 1,
+                                kUnconnected, kUnconnected, 2};
   const PathDistance kExpectedDistances[] = {kDisconnectedPathDistance,
                                              kDisconnectedPathDistance,
                                              kDisconnectedPathDistance,
@@ -414,10 +407,10 @@ TYPED_TEST(GraphShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
       lengths.push_back(length);
     }
   }
-  typename TypeParam::NodeIndex prev_index = -1;
-  typename TypeParam::NodeIndex first_index = -1;
+  typename TypeParam::NodeIndex prev_index = TypeParam::kNilNode;
+  typename TypeParam::NodeIndex first_index = TypeParam::kNilNode;
   for (const typename TypeParam::NodeIndex node_index : graph.AllNodes()) {
-    if (prev_index != -1) {
+    if (prev_index != TypeParam::kNilNode) {
       graph.AddArc(prev_index, node_index);
       lengths.push_back(kConnectionArcLength);
     } else {
@@ -430,7 +423,7 @@ TYPED_TEST(GraphShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
   std::vector<typename TypeParam::ArcIndex> permutation;
   graph.Build(&permutation);
   util::Permute(permutation, &lengths);
-  std::vector<std::vector<typename TypeParam::NodeIndex> > components;
+  std::vector<std::vector<typename TypeParam::NodeIndex>> components;
   ::FindStronglyConnectedComponents(graph.num_nodes(), graph, &components);
   CHECK_EQ(1, components.size());
   CHECK_EQ(kSize, components[0].size());
@@ -441,18 +434,18 @@ TYPED_TEST(GraphShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
     sources[i] = absl::Uniform(randomizer, 0, graph.num_nodes());
   }
   const int kThreads = 10;
-  PathContainer container;
-  PathContainer::BuildInMemoryCompactPathContainer(&container);
+  auto container =
+      GenericPathContainer<TypeParam>::BuildInMemoryCompactPathContainer();
   ComputeManyToManyShortestPathsWithMultipleThreads(
       graph, lengths, sources, sources, kThreads, &container);
-  PathContainer distance_container;
-  PathContainer::BuildPathDistanceContainer(&distance_container);
+  auto distance_container =
+      GenericPathContainer<TypeParam>::BuildPathDistanceContainer();
   ComputeManyToManyShortestPathsWithMultipleThreads(
       graph, lengths, sources, sources, kThreads, &distance_container);
   for (int tail = 0; tail < sources.size(); ++tail) {
     for (int head = 0; head < sources.size(); ++head) {
-      EXPECT_NE(
-          -1, container.GetPenultimateNodeInPath(sources[tail], sources[head]));
+      EXPECT_NE(TypeParam::kNilNode, container.GetPenultimateNodeInPath(
+                                         sources[tail], sources[head]));
       EXPECT_NE(kDisconnectedPathDistance,
                 container.GetDistance(sources[tail], sources[head]));
       EXPECT_NE(kDisconnectedPathDistance,

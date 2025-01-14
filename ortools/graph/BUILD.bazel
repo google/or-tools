@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -32,22 +32,13 @@ config_setting(
     constraint_values = ["@platforms//os:windows"],
 )
 
-# Main Target
-cc_library(
-    name = "graphs",
-    hdrs = ["graphs.h"],
-    deps = [
-        ":ebert_graph",
-        ":graph",
-    ],
-)
-
 cc_library(
     name = "graph",
     hdrs = ["graph.h"],
     deps = [
         ":iterators",
         "//ortools/base",
+        "//ortools/base:constant_divisor",
         "@com_google_absl//absl/debugging:leak_check",
         "@com_google_absl//absl/types:span",
     ],
@@ -92,6 +83,27 @@ cc_test(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "minimum_vertex_cover",
+    srcs = ["minimum_vertex_cover.cc"],
+    hdrs = ["minimum_vertex_cover.h"],
+    deps = [
+        ":max_flow",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "minimum_vertex_cover_test",
+    srcs = ["minimum_vertex_cover_test.cc"],
+    deps = [
+        ":minimum_vertex_cover",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_benchmark//:benchmark",
     ],
 )
@@ -328,48 +340,21 @@ cc_test(
 cc_library(
     name = "ebert_graph",
     hdrs = ["ebert_graph.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:types",
-        "//ortools/util:permutation",
-        "//ortools/util:zvector",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_prod",
-    ],
-)
-
-cc_test(
-    name = "ebert_graph_test",
-    size = "small",
-    srcs = ["ebert_graph_test.cc"],
-    deps = [
-        ":ebert_graph",
-        "//ortools/base",
-        "//ortools/base:gmock_main",
-        "//ortools/util:permutation",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
-        "@com_google_benchmark//:benchmark",
-    ],
 )
 
 cc_library(
     name = "shortest_paths",
-    srcs = ["shortest_paths.cc"],
     hdrs = ["shortest_paths.h"],
     deps = [
-        ":ebert_graph",
-        ":graph",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/functional:bind_front",
-        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
@@ -377,15 +362,14 @@ cc_library(
 
 cc_test(
     name = "shortest_paths_test",
-    timeout = "eternal",
+    size = "enormous",
     srcs = ["shortest_paths_test.cc"],
     tags = ["noasan"],  # Times out occasionally in ASAN mode.
     deps = [
-        ":ebert_graph",
+        ":graph",
         ":shortest_paths",
         ":strongly_connected_components",
         "//ortools/base:gmock_main",
-        "//ortools/util:zvector",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
@@ -443,40 +427,56 @@ cc_library(
     srcs = ["max_flow.cc"],
     hdrs = ["max_flow.h"],
     deps = [
-        ":ebert_graph",
         ":flow_problem_cc_proto",
+        ":generic_max_flow",
         ":graph",
-        ":graphs",
-        "//ortools/base",
-        "//ortools/util:stats",
-        "//ortools/util:zvector",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
 cc_test(
     name = "max_flow_test",
-    size = "medium",
     srcs = ["max_flow_test.cc"],
     data = ["//ortools/graph/testdata:max_flow_test1.pb.txt"],
     deps = [
-        ":graph",
-        ":graphs",
+        ":flow_problem_cc_proto",
         ":max_flow",
-        "//ortools/base",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
-        "//ortools/linear_solver",
         "//ortools/util:file_util",
-        "@com_google_absl//absl/algorithm:container",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "generic_max_flow",
+    hdrs = ["generic_max_flow.h"],
+    deps = [
+        ":ebert_graph",
+        ":flow_problem_cc_proto",
+        "//ortools/base",
+        "//ortools/util:stats",
+        "//ortools/util:zvector",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "generic_max_flow_test",
+    size = "medium",
+    srcs = ["generic_max_flow_test.cc"],
+    deps = [
+        ":ebert_graph",
+        ":generic_max_flow",
+        ":graph",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/linear_solver",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
         "@com_google_benchmark//:benchmark",
-        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -492,18 +492,16 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        ":ebert_graph",
+        ":generic_max_flow",
         ":graph",
-        ":graphs",
-        ":max_flow",
-        "//ortools/base",
-        "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
-        "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
@@ -515,7 +513,6 @@ cc_test(
     srcs = ["min_cost_flow_test.cc"],
     deps = [
         ":ebert_graph",
-        ":graphs",
         ":min_cost_flow",
         "//ortools/base:gmock_main",
         "@com_google_absl//absl/log",
@@ -531,6 +528,35 @@ cc_test(
     ],
 )
 
+# Min Cost Flow with floating point flow.
+cc_library(
+    name = "fp_min_cost_flow",
+    srcs = ["fp_min_cost_flow.cc"],
+    hdrs = ["fp_min_cost_flow.h"],
+    deps = [
+        ":min_cost_flow",
+        "//ortools/util:fp_roundtrip_conv",
+        "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+# cc_test(
+#     name = "fp_min_cost_flow_test",
+#     srcs = ["fp_min_cost_flow_test.cc"],
+#     deps = [
+#         ":fp_min_cost_flow",
+#         ":min_cost_flow",
+#         "//absl/base:no_destructor",
+#         "//ortools/base:gmock_main",
+#         "//ortools/util:fp_roundtrip_conv",
+#         "@com_google_absl//absl/base:log_severity",
+#         "@com_google_absl//absl/strings",
+#     ],
+# )
+
 # Flow-problem solver
 cc_binary(
     name = "solve_flow_model",
@@ -542,6 +568,7 @@ cc_binary(
         ":min_cost_flow",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:path",
         "//ortools/base:status_macros",
         "//ortools/base:timer",
         "//ortools/util:filelineiter",
@@ -560,9 +587,8 @@ cc_library(
     srcs = ["assignment.cc"],
     hdrs = ["assignment.h"],
     deps = [
-        ":ebert_graph",
+        ":graph",
         ":linear_assignment",
-        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -572,8 +598,21 @@ cc_test(
     srcs = ["assignment_test.cc"],
     deps = [
         ":assignment",
-        ":ebert_graph",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "line_graph_test",
+    srcs = ["line_graph_test.cc"],
+    deps = [
+        ":graph",
+        ":line_graph",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/base:core_headers",
     ],
 )
 
@@ -585,13 +624,12 @@ cc_library(
     hdrs = ["linear_assignment.h"],
     deps = [
         ":ebert_graph",
+        ":iterators",
         "//ortools/base",
-        "//ortools/base:types",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_googletest//:gtest_prod",
     ],
 )
 
@@ -600,11 +638,11 @@ cc_test(
     size = "small",
     srcs = ["linear_assignment_test.cc"],
     deps = [
-        ":ebert_graph",
         ":graph",
         ":linear_assignment",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/types:span",
         "@com_google_benchmark//:benchmark",
@@ -634,7 +672,6 @@ cc_library(
     srcs = ["dag_shortest_path.cc"],
     hdrs = ["dag_shortest_path.h"],
     deps = [
-        ":ebert_graph",
         ":graph",
         ":topologicalsorter",
         "@com_google_absl//absl/algorithm:container",
@@ -677,6 +714,12 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
+)
+
+cc_library(
+    name = "line_graph",
+    hdrs = ["line_graph.h"],
+    deps = ["@com_google_absl//absl/log"],
 )
 
 cc_test(

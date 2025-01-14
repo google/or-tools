@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,6 +57,7 @@
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
@@ -73,6 +74,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/stat_tables.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -311,8 +313,7 @@ std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
 namespace {
 
 IntegerVariable GetOrCreateVariableWithTightBound(
-    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
-    Model* model) {
+    absl::Span<const std::pair<IntegerVariable, int64_t>> terms, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -336,7 +337,7 @@ IntegerVariable GetOrCreateVariableWithTightBound(
 }
 
 IntegerVariable GetOrCreateVariableLinkedToSumOf(
-    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
+    absl::Span<const std::pair<IntegerVariable, int64_t>> terms,
     bool lb_required, bool ub_required, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
@@ -700,7 +701,7 @@ void RegisterVariableBoundsLevelZeroExport(
   const std::string name = model->Name();
 
   auto broadcast_level_zero_bounds =
-      [=](const std::vector<IntegerVariable>& modified_vars) mutable {
+      [=](absl::Span<const IntegerVariable> modified_vars) mutable {
         // Inspect the modified IntegerVariables.
         for (const IntegerVariable& var : modified_vars) {
           const IntegerVariable positive_var = PositiveVariable(var);
@@ -873,7 +874,7 @@ void RegisterObjectiveBestBoundExport(
   const auto broadcast_objective_lower_bound =
       [objective_var, integer_trail, shared_response_manager, model,
        best_obj_lb =
-           kMinIntegerValue](const std::vector<IntegerVariable>&) mutable {
+           kMinIntegerValue](absl::Span<const IntegerVariable>) mutable {
         const IntegerValue objective_lb =
             integer_trail->LevelZeroLowerBound(objective_var);
         if (objective_lb > best_obj_lb) {
@@ -1027,7 +1028,7 @@ int RegisterClausesLevelZeroImport(int id,
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddBinaryClause(l1, l2)) {
+      if (!sat_solver->AddProblemClause({l1, l2})) {
         return false;
       }
     }
@@ -1267,7 +1268,9 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
     Prober* prober = model->GetOrCreate<Prober>();
-    prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
+    if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0)) {
+      return unsat();
+    }
     if (!model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
       return unsat();
@@ -1816,7 +1819,7 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
 // the model before presolve.
 void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
                                      CpModelProto mapping_proto,
-                                     const std::vector<int>& postsolve_mapping,
+                                     absl::Span<const int> postsolve_mapping,
                                      std::vector<int64_t>* solution) {
   WallTimer wall_timer;
   wall_timer.Start();
@@ -1861,7 +1864,7 @@ void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,
                               const CpModelProto& mapping_proto,
-                              const std::vector<int>& postsolve_mapping,
+                              absl::Span<const int> postsolve_mapping,
                               std::vector<int64_t>* solution) {
   if (params.debug_postsolve_with_full_solver()) {
     PostsolveResponseWithFullSolver(num_variable_in_original_model,
@@ -1927,6 +1930,21 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
     params->set_num_workers(num_cores);
   }
 
+  if (params->shared_tree_num_workers() == -1) {
+    int num_shared_tree_workers = 0;
+    if (params->num_workers() >= 16) {
+      if (model_proto.has_objective() ||
+          model_proto.has_floating_point_objective()) {
+        num_shared_tree_workers = (params->num_workers() - 8) / 2;
+      } else {
+        num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
+      }
+    }
+    SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+               num_shared_tree_workers);
+    params->set_shared_tree_num_workers(num_shared_tree_workers);
+  }
+
   // We currently only use the feasibility pump or rins/rens if it is enabled
   // and some other parameters are not on.
   //
@@ -1957,8 +1975,10 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       time_limit(global_model->GetOrCreate<ModelSharedTimeLimit>()),
       logger(global_model->GetOrCreate<SolverLogger>()),
       stats(global_model->GetOrCreate<SharedStatistics>()),
+      stat_tables(global_model->GetOrCreate<SharedStatTables>()),
       response(global_model->GetOrCreate<SharedResponseManager>()),
-      shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()) {
+      shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
+      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
 
   if (params.share_level_zero_bounds()) {
@@ -1990,6 +2010,31 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
   if (params.share_binary_clauses() && params.num_workers() > 1) {
     clauses = std::make_unique<SharedClausesManager>(always_synchronize,
                                                      absl::Seconds(1));
+  }
+}
+
+void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
+  // Note that we do not register the logger which is not a shared class.
+  local_model->Register<SharedResponseManager>(response);
+  local_model->Register<SharedLsSolutionRepository>(ls_hints);
+  local_model->Register<SharedTreeManager>(shared_tree_manager);
+  local_model->Register<SharedStatistics>(stats);
+  local_model->Register<SharedStatTables>(stat_tables);
+
+  // TODO(user): Use parameters and not the presence/absence of these class
+  // to decide when to use them.
+  if (lp_solutions != nullptr) {
+    local_model->Register<SharedLPSolutionRepository>(lp_solutions.get());
+  }
+  if (incomplete_solutions != nullptr) {
+    local_model->Register<SharedIncompleteSolutionManager>(
+        incomplete_solutions.get());
+  }
+  if (bounds != nullptr) {
+    local_model->Register<SharedBoundsManager>(bounds.get());
+  }
+  if (clauses != nullptr) {
+    local_model->Register<SharedClausesManager>(clauses.get());
   }
 }
 

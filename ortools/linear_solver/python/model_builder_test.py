@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Tests for ModelBuilder."""
 
 import math
 from typing import Any, Callable, Dict, Mapping, Union
@@ -28,15 +26,18 @@ import os
 from google.protobuf import text_format
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver.python import model_builder as mb
+from ortools.linear_solver.python import model_builder_helper as mbh
 
 
-def build_dict(expr: mb.LinearExprT) -> Dict[mb.Variable, float]:
+def build_dict(expr: mb.LinearExprT) -> Dict[mbh.Variable, float]:
     res = {}
-    for i, c in zip(expr.variable_indices, expr.coefficients):
-        if not c:
+    flat_expr = mbh.FlatExpr(expr)
+    print(f"expr = {expr} flat_expr = {flat_expr}", flush=True)
+    for var, coeff in zip(flat_expr.vars, flat_expr.coeffs):
+        print(f"process {var} * {coeff}", flush=True)
+        if not coeff:
             continue
-        var = mb.Variable(expr.helper, lb=i, ub=None, is_integral=None, name=None)
-        res[var] = c
+        res[var] = coeff
     return res
 
 
@@ -208,66 +209,75 @@ ENDATA
         t = model.new_int_var(3, 10, "t")
 
         e1 = mb.LinearExpr.sum([x, y, z])
+        flat_e1 = mbh.FlatExpr(e1)
         expected_vars = np.array([0, 1, 2], dtype=np.int32)
-        np_testing.assert_array_equal(expected_vars, e1.variable_indices)
+        np_testing.assert_array_equal(expected_vars, flat_e1.variable_indices())
         np_testing.assert_array_equal(
-            np.array([1, 1, 1], dtype=np.double), e1.coefficients
+            np.array([1, 1, 1], dtype=np.double), flat_e1.coeffs
         )
-        self.assertEqual(e1.constant, 0.0)
-        self.assertEqual(e1.__str__(), "x + y + z")
+        self.assertEqual(flat_e1.offset, 0.0)
+        self.assertEqual(e1.__str__(), "(x + y + z)")
 
         e2 = mb.LinearExpr.sum([e1, 4.0])
-        np_testing.assert_array_equal(expected_vars, e2.variable_indices)
+        flat_e2 = mbh.FlatExpr(e2)
+        np_testing.assert_array_equal(expected_vars, flat_e2.variable_indices())
         np_testing.assert_array_equal(
-            np.array([1, 1, 1], dtype=np.double), e2.coefficients
+            np.array([1, 1, 1], dtype=np.double), flat_e2.coeffs
         )
-        self.assertEqual(e2.constant, 4.0)
-        self.assertEqual(e2.__str__(), "x + y + z + 4.0")
+        self.assertEqual(flat_e2.offset, 4.0)
+        self.assertEqual(e2.__str__(), "((x + y + z) + 4)")
+        self.assertEqual(flat_e2.__str__(), "x + y + z + 4")
 
         e3 = mb.LinearExpr.term(e2, 2)
-        np_testing.assert_array_equal(expected_vars, e3.variable_indices)
+        flat_e3 = mbh.FlatExpr(e3)
+        np_testing.assert_array_equal(expected_vars, flat_e3.variable_indices())
         np_testing.assert_array_equal(
-            np.array([2, 2, 2], dtype=np.double), e3.coefficients
+            np.array([2, 2, 2], dtype=np.double), flat_e3.coeffs
         )
-        self.assertEqual(e3.constant, 8.0)
-        self.assertEqual(e3.__str__(), "2.0 * x + 2.0 * y + 2.0 * z + 8.0")
+        self.assertEqual(flat_e3.offset, 8.0)
+        self.assertEqual(e3.__str__(), "(2 * ((x + y + z) + 4))")
+        self.assertEqual(flat_e3.__str__(), "2 * x + 2 * y + 2 * z + 8")
 
         e4 = mb.LinearExpr.weighted_sum([x, t], [-1, 1], constant=2)
+        flat_e4 = mbh.FlatExpr(e4)
         np_testing.assert_array_equal(
-            np.array([0, 3], dtype=np.int32), e4.variable_indices
+            np.array([0, 3], dtype=np.int32), flat_e4.variable_indices()
         )
         np_testing.assert_array_equal(
-            np.array([-1, 1], dtype=np.double), e4.coefficients
+            np.array([-1, 1], dtype=np.double), flat_e4.coeffs
         )
-        self.assertEqual(e4.constant, 2.0)
-        self.assertEqual(e4.__str__(), "-x + t + 2.0")
+        self.assertEqual(flat_e4.offset, 2.0)
+        self.assertEqual(e4.__str__(), "(-x + t + 2)")
 
         e4b = mb.LinearExpr.weighted_sum([e4 * 3], [1])
+        flat_e4b = mbh.FlatExpr(e4b)
         np_testing.assert_array_equal(
-            np.array([0, 3], dtype=np.int32), e4b.variable_indices
+            np.array([0, 3], dtype=np.int32), flat_e4b.variable_indices()
         )
         np_testing.assert_array_equal(
-            np.array([-3, 3], dtype=np.double), e4b.coefficients
+            np.array([-3, 3], dtype=np.double), flat_e4b.coeffs
         )
-        self.assertEqual(e4b.constant, 6.0)
-        self.assertEqual(e4b.__str__(), "-3.0 * x + 3.0 * t + 6.0")
+        self.assertEqual(flat_e4b.offset, 6.0)
+        self.assertEqual(e4b.__str__(), "(3 * (-x + t + 2))")
 
         e5 = mb.LinearExpr.sum([e1, -3, e4])
+        flat_e5 = mbh.FlatExpr(e5)
         np_testing.assert_array_equal(
-            np.array([1, 2, 3], dtype=np.int32), e5.variable_indices
+            np.array([1, 2, 3], dtype=np.int32), flat_e5.variable_indices()
         )
         np_testing.assert_array_equal(
-            np.array([1, 1, 1], dtype=np.double), e5.coefficients
+            np.array([1, 1, 1], dtype=np.double), flat_e5.coeffs
         )
-        self.assertEqual(e5.constant, -1.0)
-        self.assertEqual(e5.__str__(), "y + z + t - 1.0")
+        self.assertEqual(flat_e5.offset, -1.0)
+        self.assertEqual(flat_e5.__str__(), "y + z + t - 1")
 
         e6 = mb.LinearExpr.term(x, 2.0, constant=1.0)
+        flat_e6 = mbh.FlatExpr(e6)
         np_testing.assert_array_equal(
-            np.array([0], dtype=np.int32), e6.variable_indices
+            np.array([0], dtype=np.int32), flat_e6.variable_indices()
         )
-        np_testing.assert_array_equal(np.array([2], dtype=np.double), e6.coefficients)
-        self.assertEqual(e6.constant, 1.0)
+        np_testing.assert_array_equal(np.array([2], dtype=np.double), flat_e6.coeffs)
+        self.assertEqual(flat_e6.offset, 1.0)
 
         e7 = mb.LinearExpr.term(x, 1.0, constant=0.0)
         self.assertEqual(x, e7)
@@ -278,9 +288,35 @@ ENDATA
         e9 = mb.LinearExpr.term(x * 2 + 3, 1, constant=0)
         e10 = mb.LinearExpr.term(x, 2, constant=3)
         self.assertEqual(
-            str(mb._as_flat_linear_expression(e9)),
-            str(mb._as_flat_linear_expression(e10)),
+            str(mbh.FlatExpr(e9)),
+            str(mbh.FlatExpr(e10)),
         )
+
+        e10 = mb.LinearExpr.sum()
+        self.assertEqual(str(e10), "0")
+
+        e11 = mb.LinearExpr.sum(x)
+        self.assertIsInstance(e11, mb.Variable)
+        self.assertEqual(x.index, e11.index)
+
+        e12 = mb.LinearExpr.sum(-1.0, x, 1.0)
+        self.assertIsInstance(e12, mb.Variable)
+        self.assertEqual(x.index, e12.index)
+
+        e13 = mb.LinearExpr.sum(-1.0, x, constant=1.0)
+        self.assertIsInstance(e13, mb.Variable)
+        self.assertEqual(x.index, e13.index)
+
+        e14 = mb.LinearExpr.weighted_sum([x, t, 1.2], [1, -1, -1.0], constant=2)
+        flat_e14 = mbh.FlatExpr(e14)
+        np_testing.assert_array_equal(
+            np.array([0, 3], dtype=np.int32), flat_e14.variable_indices()
+        )
+        np_testing.assert_array_equal(
+            np.array([1, -1], dtype=np.double), flat_e14.coeffs
+        )
+        self.assertEqual(flat_e14.offset, 0.8)
+        self.assertEqual(e14.__str__(), "(x - t + 0.8)")
 
     def test_variables(self):
         model = mb.Model()
@@ -377,14 +413,6 @@ ENDATA
         status = solver.solve(model)
         self.assertEqual(mb.SolveStatus.OPTIMAL, status)
 
-    def test_vareqvar(self):
-        model = mb.Model()
-        x = model.new_int_var(0.0, 4.0, "x")
-        y = model.new_int_var(0.0, 4.0, "y")
-        ct = x == y
-        self.assertEqual(ct.left.index, x.index)
-        self.assertEqual(ct.right.index, y.index)
-
     def test_create_false_ct(self):
         # Create the model.
         model = mb.Model()
@@ -424,7 +452,7 @@ class InternalHelperTest(absltest.TestCase):
     def test_anonymous_variables(self):
         helper = mb.Model().helper
         index = helper.add_var()
-        variable = mb.Variable(helper, index, None, None, None)
+        variable = mb.Variable(helper, index)
         self.assertEqual(variable.name, f"variable#{index}")
 
     def test_anonymous_constraints(self):
@@ -452,178 +480,176 @@ class LinearBaseTest(parameterized.TestCase):
         dict(
             testcase_name="x[0]",
             expr=lambda x, y: x[0],
-            expected_repr="x[0]",
+            expected_str="x[0]",
         ),
         dict(
             testcase_name="x[1]",
             expr=lambda x, y: x[1],
-            expected_repr="x[1]",
+            expected_str="x[1]",
         ),
         dict(
             testcase_name="x[2]",
             expr=lambda x, y: x[2],
-            expected_repr="x[2]",
+            expected_str="x[2]",
         ),
         dict(
             testcase_name="y[0]",
             expr=lambda x, y: y[0],
-            expected_repr="y[0]",
+            expected_str="y[0]",
         ),
         dict(
             testcase_name="y[4]",
             expr=lambda x, y: y[4],
-            expected_repr="y[4]",
+            expected_str="y[4]",
         ),
         # Sum
         dict(
             testcase_name="x[0] + 5",
             expr=lambda x, y: x[0] + 5,
-            expected_repr="x[0] + 5.0",
+            expected_str="x[0] + 5",
         ),
         dict(
             testcase_name="x[0] - 5",
             expr=lambda x, y: x[0] - 5,
-            expected_repr="x[0] - 5.0",
+            expected_str="x[0] - 5",
         ),
         dict(
             testcase_name="5 - x[0]",
             expr=lambda x, y: 5 - x[0],
-            expected_repr="-x[0] + 5.0",
+            expected_str="-x[0] + 5",
         ),
         dict(
             testcase_name="5 + x[0]",
             expr=lambda x, y: 5 + x[0],
-            expected_repr="x[0] + 5.0",
+            expected_str="x[0] + 5",
         ),
         dict(
             testcase_name="x[0] + y[0]",
             expr=lambda x, y: x[0] + y[0],
-            expected_repr="x[0] + y[0]",
+            expected_str="x[0] + y[0]",
         ),
         dict(
             testcase_name="x[0] + y[0] + 5",
             expr=lambda x, y: x[0] + y[0] + 5,
-            expected_repr="x[0] + y[0] + 5.0",
+            expected_str="x[0] + y[0] + 5",
         ),
         dict(
             testcase_name="5 + x[0] + y[0]",
             expr=lambda x, y: 5 + x[0] + y[0],
-            expected_repr="x[0] + y[0] + 5.0",
+            expected_str="x[0] + y[0] + 5",
         ),
         dict(
             testcase_name="5 + x[0] - x[0]",
             expr=lambda x, y: 5 + x[0] - x[0],
-            expected_repr="5.0",
+            expected_str="5",
         ),
         dict(
             testcase_name="5 + x[0] - y[0]",
             expr=lambda x, y: 5 + x[0] - y[0],
-            expected_repr="x[0] - y[0] + 5.0",
+            expected_str="x[0] - y[0] + 5",
         ),
         dict(
             testcase_name="x.sum()",
             expr=lambda x, y: x.sum(),
-            expected_repr="x[0] + x[1] + x[2]",
+            expected_str="x[0] + x[1] + x[2]",
         ),
         dict(
             testcase_name="x.add(y, fill_value=0).sum() + 5",
             expr=lambda x, y: x.add(y, fill_value=0).sum() + 5,
-            expected_repr="x[0] + x[1] + x[2] + y[0] + y[1] + ... + 5.0",
+            expected_str="x[0] + x[1] + x[2] + y[0] + y[1] + ... + 5",
         ),
         dict(
             testcase_name="sum(x, y + 5)",
             expr=lambda x, y: mb.LinearExpr.sum([x.sum(), y.sum() + 5]),
-            expected_repr="x[0] + x[1] + x[2] + y[0] + y[1] + ... + 5.0",
+            expected_str="x[0] + x[1] + x[2] + y[0] + y[1] + ... + 5",
         ),
         # Product
         dict(
             testcase_name="- x.sum()",
             expr=lambda x, y: -x.sum(),
-            expected_repr="-x[0] - x[1] - x[2]",
+            expected_str="-x[0] - x[1] - x[2]",
         ),
         dict(
             testcase_name="5 - x.sum()",
             expr=lambda x, y: 5 - x.sum(),
-            expected_repr="-x[0] - x[1] - x[2] + 5.0",
+            expected_str="-x[0] - x[1] - x[2] + 5",
         ),
         dict(
-            testcase_name="x.sum() / 2.0",
-            expr=lambda x, y: x.sum() / 2.0,
-            expected_repr="0.5 * x[0] + 0.5 * x[1] + 0.5 * x[2]",
+            testcase_name="x.sum() / 2",
+            expr=lambda x, y: x.sum() / 2,
+            expected_str="0.5 * x[0] + 0.5 * x[1] + 0.5 * x[2]",
         ),
         dict(
             testcase_name="(3 * x).sum()",
             expr=lambda x, y: (3 * x).sum(),
-            expected_repr="3.0 * x[0] + 3.0 * x[1] + 3.0 * x[2]",
+            expected_str="3 * x[0] + 3 * x[1] + 3 * x[2]",
         ),
         dict(
             testcase_name="(x * 3).sum()",
             expr=lambda x, y: (x * 3).sum(),
-            expected_repr="3.0 * x[0] + 3.0 * x[1] + 3.0 * x[2]",
+            expected_str="3 * x[0] + 3 * x[1] + 3 * x[2]",
         ),
         dict(
             testcase_name="x.sum() * 3",
             expr=lambda x, y: x.sum() * 3,
-            expected_repr="3.0 * x[0] + 3.0 * x[1] + 3.0 * x[2]",
+            expected_str="3 * x[0] + 3 * x[1] + 3 * x[2]",
         ),
         dict(
             testcase_name="3 * x.sum()",
             expr=lambda x, y: 3 * x.sum(),
-            expected_repr="3.0 * x[0] + 3.0 * x[1] + 3.0 * x[2]",
+            expected_str="3 * x[0] + 3 * x[1] + 3 * x[2]",
         ),
         dict(
             testcase_name="0 * x.sum() + y.sum()",
             expr=lambda x, y: 0 * x.sum() + y.sum(),
-            expected_repr="y[0] + y[1] + y[2] + y[3] + y[4]",
+            expected_str="y[0] + y[1] + y[2] + y[3] + y[4]",
         ),
         # LinearExpression
         dict(
-            testcase_name="_as_flat_linear_expression(x.sum())",
-            expr=lambda x, y: mb._as_flat_linear_expression(x.sum()),
-            expected_repr="x[0] + x[1] + x[2]",
+            testcase_name="FlatExpr(x.sum())",
+            expr=lambda x, y: mbh.FlatExpr(x.sum()),
+            expected_str="x[0] + x[1] + x[2]",
         ),
         dict(
-            testcase_name=(
-                "_as_flat_linear_expression(_as_flat_linear_expression(x.sum()))"
-            ),
+            testcase_name="FlatExpr(FlatExpr(x.sum()))",
             # pylint: disable=g-long-lambda
-            expr=lambda x, y: mb._as_flat_linear_expression(
-                mb._as_flat_linear_expression(x.sum())
-            ),
-            expected_repr="x[0] + x[1] + x[2]",
+            expr=lambda x, y: mbh.FlatExpr(mbh.FlatExpr(x.sum())),
+            expected_str="x[0] + x[1] + x[2]",
         ),
         dict(
-            testcase_name="""_as_flat_linear_expression(sum([
-            _as_flat_linear_expression(x.sum()),
-            _as_flat_linear_expression(x.sum()),
+            testcase_name="""FlatExpr(sum([
+            FlatExpr(x.sum()),
+            FlatExpr(x.sum()),
           ]))""",
             # pylint: disable=g-long-lambda
-            expr=lambda x, y: mb._as_flat_linear_expression(
+            expr=lambda x, y: mbh.FlatExpr(
                 sum(
                     [
-                        mb._as_flat_linear_expression(x.sum()),
-                        mb._as_flat_linear_expression(x.sum()),
+                        mbh.FlatExpr(x.sum()),
+                        mbh.FlatExpr(x.sum()),
                     ]
                 )
             ),
-            expected_repr="2.0 * x[0] + 2.0 * x[1] + 2.0 * x[2]",
+            expected_str="2 * x[0] + 2 * x[1] + 2 * x[2]",
         ),
     )
-    def test_repr(self, expr, expected_repr):
+    def test_str(self, expr, expected_str):
         x = self.x
         y = self.y
-        self.assertEqual(repr(expr(x, y)), expected_repr)
+        self.assertEqual(str(mbh.FlatExpr(expr(x, y))), expected_str)
 
 
 class LinearBaseErrorsTest(absltest.TestCase):
 
     def test_unknown_linear_type(self):
-        with self.assertRaisesRegex(TypeError, r"Unrecognized linear expression"):
+        with self.assertRaises(TypeError):
 
             class UnknownLinearType(mb.LinearExpr):
-                pass
 
-            mb._as_flat_linear_expression(UnknownLinearType())
+                def __init__(self):
+                    mb.LinearExpr.__init__(self)
+
+            mbh.FlatExpr(UnknownLinearType())
 
     def test_division_by_zero(self):
         with self.assertRaises(ZeroDivisionError):
@@ -632,7 +658,7 @@ class LinearBaseErrorsTest(absltest.TestCase):
             print(x / 0)
 
     def test_boolean_expression(self):
-        with self.assertRaisesRegex(NotImplementedError, r"Cannot use a LinearExpr"):
+        with self.assertRaisesRegex(NotImplementedError, r"instance as a Boolean"):
             model = mb.Model()
             x = model.new_var_series(name="x", index=pd.Index(range(1)))
             bool(x.sum())
@@ -688,28 +714,26 @@ class BoundedLinearBaseTest(parameterized.TestCase):
             lambda lhs, rhs: lhs >= rhs,
         ),
     )
-    def test_repr(self, lhs, rhs, op):
+    def test_str(self, lhs, rhs, op):
         x = self.x
         y = self.y
         l: mb.LinearExprT = lhs(x, y)
         r: mb.LinearExprT = rhs(x, y)
         result = op(l, r)
         if isinstance(l, mb.LinearExpr) or isinstance(r, mb.LinearExpr):
-            self.assertIsInstance(result, mb._BoundedLinearExpr)
-            self.assertIn("=", repr(result), msg="is one of ==, <=, or >=")
+            self.assertIsInstance(result, mbh.BoundedLinearExpression)
+            self.assertIn("=", str(result), msg="is one of ==, <=, or >=")
         else:
             self.assertIsInstance(result, bool)
 
     def test_doublesided_bounded_expressions(self):
         x = self.x
-        self.assertEqual(
-            "0.0 <= x[0] <= 1.0", repr(mb.BoundedLinearExpression(x[0], 0, 1))
-        )
+        self.assertEqual("0 <= x[0] <= 1", str(mb.BoundedLinearExpression(x[0], 0, 1)))
 
     def test_free_bounded_expressions(self):
         self.assertEqual(
-            "x[0] free",
-            repr(mb.BoundedLinearExpression(self.x[0], -math.inf, math.inf)),
+            "-inf <= x[0] <= inf",
+            str(mb.BoundedLinearExpression(self.x[0], -math.inf, math.inf)),
         )
 
     def test_var_eq_var_as_bool(self):
@@ -734,8 +758,16 @@ class BoundedLinearBaseTest(parameterized.TestCase):
 
 class BoundedLinearBaseErrorsTest(absltest.TestCase):
 
+    def test_single_var_bounded_linear_expression_as_bool(self):
+        with self.assertRaisesRegex(
+            NotImplementedError, "Evaluating a BoundedLinearExpression"
+        ):
+            model = mb.Model()
+            x = model.new_bool_var(name="x")
+            bool(mb.BoundedLinearExpression(x, 0, 1))
+
     def test_bounded_linear_expression_as_bool(self):
-        with self.assertRaisesRegex(NotImplementedError, "Boolean value"):
+        with self.assertRaisesRegex(TypeError, "incompatible constructor arguments"):
             model = mb.Model()
             x = model.new_var_series(name="x", index=pd.Index(range(1)))
             bool(mb.BoundedLinearExpression(x, 0, 1))
@@ -896,7 +928,7 @@ class ModelBuilderVariablesTest(parameterized.TestCase):
         self.assertLen(variables, len(index))
         self.assertLen(set(variables), len(index))
         for i in index:
-            self.assertEqual(repr(variables[i]), f"test_variable[{i}]")
+            self.assertEqual(variables[i].name, f"test_variable[{i}]")
 
     @parameterized.product(
         index=_variable_indices, bounds=_bounds, is_integer=_is_integer
@@ -1440,7 +1472,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             for expr, expr_term in zip(linear_constraint_expressions, expr_terms):
                 self.assertDictEqual(build_dict(expr), expr_term)
             self.assertSequenceAlmostEqual(
-                [expr._offset for expr in linear_constraint_expressions],
+                [expr.offset for expr in linear_constraint_expressions],
                 expression_offsets,
             )
 
@@ -1473,19 +1505,22 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
 
     def assertLinearExpressionAlmostEqual(
         self,
-        expr1: mb._LinearExpression,
-        expr2: mb._LinearExpression,
+        expr1: mbh.LinearExpr,
+        expr2: mbh.LinearExpr,
     ) -> None:
         """Test that the two linear expressions are almost equal."""
-        self.assertEqual(len(expr1.variable_indices), len(expr2.variable_indices))
-        if expr1.variable_indices:
-            self.assertSequenceEqual(expr1.variable_indices, expr2.variable_indices)
+        flat_expr1 = mbh.FlatExpr(expr1)
+        flat_expr2 = mbh.FlatExpr(expr2)
+        self.assertEqual(len(flat_expr1.vars), len(flat_expr2.vars))
+        if len(flat_expr1.vars) > 0:  # pylint: disable=g-explicit-length-test
+            self.assertSequenceEqual(flat_expr1.vars, flat_expr2.vars)
             self.assertSequenceAlmostEqual(
-                expr1.coefficients, expr2.coefficients, places=5
+                flat_expr1.coeffs, flat_expr2.coeffs, places=5
             )
         else:
-            self.assertEmpty(expr2.coefficients)
-        self.assertAlmostEqual(expr1._offset, expr2._offset)
+            self.assertEmpty(flat_expr1.coeffs)
+            self.assertEmpty(flat_expr2.coeffs)
+        self.assertAlmostEqual(flat_expr1.offset, flat_expr2.offset)
 
     @parameterized.product(
         expression=_expressions,
@@ -1501,7 +1536,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
-        objective_expression = mb._as_flat_linear_expression(expression(x, y))
+        objective_expression = expression(x, y)
         if is_maximize:
             model.maximize(objective_expression)
         else:
@@ -1515,14 +1550,14 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         model = mb.Model()
         x = model.new_var_series(name="x", index=pd.Index(range(3)))
         old_objective_expression = 1
-        new_objective_expression = mb._as_flat_linear_expression(x.sum() - 2.3)
+        new_objective_expression = x.sum() - 2.3
 
         # Set and check for old objective.
         model.maximize(old_objective_expression)
-        got_objective_expression = model.objective_expression()
-        for var_coeff in got_objective_expression.coefficients:
-            self.assertAlmostEqual(var_coeff, 0)
-        self.assertAlmostEqual(got_objective_expression._offset, 1)
+        flat_got_objective_expression = mbh.FlatExpr(model.objective_expression())
+        self.assertEmpty(flat_got_objective_expression.vars)
+        self.assertEmpty(flat_got_objective_expression.coeffs)
+        self.assertAlmostEqual(flat_got_objective_expression.offset, 1)
 
         # Set to a new objective and check that it is different.
         model.minimize(new_objective_expression)
@@ -1543,7 +1578,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
-        objective_expression = mb._as_flat_linear_expression(expression(x, y))
+        objective_expression = mbh.FlatExpr(expression(x, y))
         model.minimize(objective_expression)
         got_objective_expression = model.objective_expression()
         self.assertLinearExpressionAlmostEqual(
@@ -1562,7 +1597,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
-        objective_expression = mb._as_flat_linear_expression(expression(x, y))
+        objective_expression = mbh.FlatExpr(expression(x, y))
         model.maximize(objective_expression)
         got_objective_expression = model.objective_expression()
         self.assertLinearExpressionAlmostEqual(

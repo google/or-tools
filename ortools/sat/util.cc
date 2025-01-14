@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,17 +17,13 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
-#include <functional>
 #include <limits>
 #include <numeric>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
@@ -37,7 +33,6 @@
 #include "google/protobuf/descriptor.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -602,8 +597,8 @@ int64_t MaxBoundedSubsetSum::MaxIfAdded(int64_t candidate) const {
 }
 
 BasicKnapsackSolver::Result BasicKnapsackSolver::Solve(
-    const std::vector<Domain>& domains, const std::vector<int64_t>& coeffs,
-    const std::vector<int64_t>& costs, const Domain& rhs) {
+    absl::Span<const Domain> domains, absl::Span<const int64_t> coeffs,
+    absl::Span<const int64_t> costs, const Domain& rhs) {
   const int num_vars = domains.size();
   if (num_vars == 0) return {};
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -81,7 +81,8 @@ void SharedStatTables::AddTimingStat(const SubSolver& subsolver) {
 void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
   CpSolverResponse r;
-  FillSolveStatsInResponse(model, &r);
+  model->GetOrCreate<SharedResponseManager>()->FillSolveStatsInResponse(model,
+                                                                        &r);
   search_table_.push_back({FormatName(name), FormatCounter(r.num_booleans()),
                            FormatCounter(r.num_conflicts()),
                            FormatCounter(r.num_branches()),
@@ -239,7 +240,7 @@ void SharedStatTables::AddLnsStat(absl::string_view name,
   lns_table_.push_back(
       {FormatName(name), absl::StrCat(num_improving_calls, "/", num_calls),
        absl::StrFormat("%2.0f%%", 100 * fully_solved_proportion),
-       absl::StrFormat("%0.2f", difficulty),
+       absl::StrFormat("%0.2e", difficulty),
        absl::StrFormat("%0.2f", deterministic_limit)});
 }
 

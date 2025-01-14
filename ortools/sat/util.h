@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,15 +16,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log_streamer.h"
@@ -35,7 +36,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -66,6 +66,8 @@ class IdentityMap {
 template <typename K = int, typename V = int>
 class CompactVectorVector {
  public:
+  using value_type = V;
+
   // Size of the "key" space, always in [0, size()).
   size_t size() const;
   bool empty() const;
@@ -99,6 +101,12 @@ class CompactVectorVector {
   // second argument.
   template <typename Keys, typename Values>
   void ResetFromFlatMapping(Keys keys, Values values);
+
+  // Same as above but for any collections of std::pair<K, V>, or, more
+  // generally, any iterable collection of objects that have a `first` and a
+  // `second` members.
+  template <typename Collection>
+  void ResetFromPairs(const Collection& pairs, int minimum_num_nodes = 0);
 
   // Initialize this vector from the transpose of another.
   // IMPORTANT: This cannot be called with the vector itself.
@@ -509,9 +517,9 @@ class BasicKnapsackSolver {
     bool infeasible = false;
     std::vector<int64_t> solution;
   };
-  Result Solve(const std::vector<Domain>& domains,
-               const std::vector<int64_t>& coeffs,
-               const std::vector<int64_t>& costs, const Domain& rhs);
+  Result Solve(absl::Span<const Domain> domains,
+               absl::Span<const int64_t> coeffs,
+               absl::Span<const int64_t> costs, const Domain& rhs);
 
  private:
   Result InternalSolve(int64_t num_values, const Domain& rhs);
@@ -802,6 +810,50 @@ inline void CompactVectorVector<K, V>::ResetFromFlatMapping(Keys keys,
   buffer_.resize(keys.size());
   for (int i = 0; i < keys.size(); ++i) {
     buffer_[starts_[InternalKey(keys[i])]++] = values[i];
+  }
+
+  // Restore starts_.
+  for (int k = max_key - 1; k > 0; --k) {
+    starts_[k] = starts_[k - 1];
+  }
+  starts_[0] = 0;
+}
+
+// Similar to ResetFromFlatMapping().
+template <typename K, typename V>
+template <typename Collection>
+inline void CompactVectorVector<K, V>::ResetFromPairs(const Collection& pairs,
+                                                      int minimum_num_nodes) {
+  // Compute maximum index.
+  int max_key = minimum_num_nodes;
+  for (const auto& [key, _] : pairs) {
+    max_key = std::max(max_key, InternalKey(key) + 1);
+  }
+
+  if (pairs.empty()) {
+    clear();
+    sizes_.assign(minimum_num_nodes, 0);
+    starts_.assign(minimum_num_nodes, 0);
+    return;
+  }
+
+  // Compute sizes_;
+  sizes_.assign(max_key, 0);
+  for (const auto& [key, _] : pairs) {
+    sizes_[InternalKey(key)]++;
+  }
+
+  // Compute starts_;
+  starts_.assign(max_key, 0);
+  for (int k = 1; k < max_key; ++k) {
+    starts_[k] = starts_[k - 1] + sizes_[k - 1];
+  }
+
+  // Copy data and uses starts as temporary indices.
+  buffer_.resize(pairs.size());
+  for (int i = 0; i < pairs.size(); ++i) {
+    const auto& [key, value] = pairs[i];
+    buffer_[starts_[InternalKey(key)]++] = value;
   }
 
   // Restore starts_.

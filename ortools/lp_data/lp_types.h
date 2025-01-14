@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -72,8 +72,6 @@ DEFINE_STRONG_INT64_TYPE(EntryIndex);
 #endif
 
 static inline double ToDouble(double f) { return f; }
-
-static inline double ToDouble(long double f) { return static_cast<double>(f); }
 
 // The type Fractional denotes the type of numbers on which the computations are
 // performed. This is defined as double here, but it could as well be float,

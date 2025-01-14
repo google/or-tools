@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,6 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -26,7 +25,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -1226,18 +1225,6 @@ TEST(IntegerTrailTest, AppendNewBounds) {
   integer_trail->AppendNewBounds(&bounds);
   EXPECT_THAT(bounds, ElementsAre(IntegerLiteral::GreaterOrEqual(
                           var, IntegerValue(9))));
-}
-
-TEST(FastDivisionTest, AllPossibleValues) {
-  for (int i = 1; i <= std::numeric_limits<uint16_t>::max(); ++i) {
-    const QuickSmallDivision div(i);
-    for (int j = 0; j <= std::numeric_limits<uint16_t>::max(); ++j) {
-      const uint16_t result = div.DivideByDivisor(j);
-      const uint16_t j_rounded_to_lowest_multiple = result * i;
-      CHECK_LE(j_rounded_to_lowest_multiple, j);
-      CHECK_GT(j_rounded_to_lowest_multiple + i, j);
-    }
-  }
 }
 
 static void BM_FloorRatio(benchmark::State& state) {

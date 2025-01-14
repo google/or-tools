@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -78,12 +78,12 @@ double SolutionCallback::BestObjectiveBound() const {
   return response_.best_objective_bound();
 }
 
-int64_t SolutionCallback::SolutionIntegerValue(int index) {
+int64_t SolutionCallback::SolutionIntegerValue(int index) const {
   return index >= 0 ? response_.solution(index)
                     : -response_.solution(-index - 1);
 }
 
-bool SolutionCallback::SolutionBooleanValue(int index) {
+bool SolutionCallback::SolutionBooleanValue(int index) const {
   return index >= 0 ? response_.solution(index) != 0
                     : response_.solution(-index - 1) == 0;
 }
@@ -92,7 +92,8 @@ void SolutionCallback::StopSearch() {
   if (wrapper_ != nullptr) wrapper_->StopSearch();
 }
 
-operations_research::sat::CpSolverResponse SolutionCallback::Response() const {
+const operations_research::sat::CpSolverResponse& SolutionCallback::Response()
+    const {
   return response_;
 }
 

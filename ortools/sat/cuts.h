@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,11 +16,12 @@
 
 #include <stdint.h>
 
-#include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstdlib>
 #include <functional>
-#include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -32,8 +33,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -651,7 +654,7 @@ CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
 // cuts of the form described above if they are violated by lp solution. Note
 // that all the fixed variables are ignored while generating cuts.
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<AffineExpression>& exprs, Model* model);
+    absl::Span<const AffineExpression> exprs, Model* model);
 
 // Consider the Lin Max constraint with d expressions and n variables in the
 // form: target = max {exprs[k] = Sum (wki * xi + bk)}. k in {1,..,d}.
@@ -690,16 +693,17 @@ CutGenerator CreateAllDifferentCutGenerator(
 //
 // Note: This cut generator requires all expressions to contain only positive
 // vars.
-CutGenerator CreateLinMaxCutGenerator(
-    IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    const std::vector<IntegerVariable>& z_vars, Model* model);
+CutGenerator CreateLinMaxCutGenerator(IntegerVariable target,
+                                      absl::Span<const LinearExpression> exprs,
+                                      absl::Span<const IntegerVariable> z_vars,
+                                      Model* model);
 
 // Helper for the affine max constraint.
 //
 // This function will reset the bounds of the builder.
 bool BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
-    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    absl::Span<const std::pair<IntegerValue, IntegerValue>> affines,
     Model* model, LinearConstraintBuilder* builder);
 
 // By definition, the Max of affine functions is convex. The linear polytope is
@@ -715,7 +719,7 @@ CutGenerator CreateMaxAffineCutGenerator(
 // create a generator that will returns constraint of the form "at_most_one"
 // between such literals.
 CutGenerator CreateCliqueCutGenerator(
-    const std::vector<IntegerVariable>& base_variables, Model* model);
+    absl::Span<const IntegerVariable> base_variables, Model* model);
 
 // Utility class for the AllDiff cut generator.
 class SumOfAllDiffLowerBounder {
@@ -724,6 +728,7 @@ class SumOfAllDiffLowerBounder {
   void Add(const AffineExpression& expr, int num_expr,
            const IntegerTrail& integer_trail);
 
+  // Return int_max if the sum overflows.
   IntegerValue SumOfMinDomainValues();
   IntegerValue SumOfDifferentMins();
   IntegerValue GetBestLowerBound(std::string& suffix);

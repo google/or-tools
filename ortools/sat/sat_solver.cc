@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,7 +57,6 @@ namespace sat {
 SatSolver::SatSolver() : SatSolver(new Model()) {
   owned_model_.reset(model_);
   model_->Register<SatSolver>(this);
-  logger_ = model_->GetOrCreate<SolverLogger>();
 }
 
 SatSolver::SatSolver(Model* model)
@@ -161,7 +160,7 @@ bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
 
   // Let filter clauses if we are at level zero
   if (trail_->CurrentDecisionLevel() == 0) {
-    return AddProblemClause(literals, /*is_safe=*/false);
+    return AddProblemClause(literals);
   }
 
   const int index = trail_->Index();
@@ -201,47 +200,36 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
   return AddProblemClause({a, b, c});
 }
 
-// Note(user): we assume there is no duplicate literals in the clauses added
-// here if is_safe is true. Most of the code works, but some advanced algo might
-// be wrong/suboptimal if this is the case. So even when presolve is off we need
-// some "cleanup" to enforce this invariant. Alternatively we could have robut
-// algo in all the stack, but that seems a worse design.
-bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
-                                 bool is_safe) {
+// Note that we will do a bit of presolve here, which might not always be
+// necessary if we know we are already adding a "clean" clause with no
+// duplicates or literal equivalent to others. However, we found that it is
+// better to make sure we always have "clean" clause in the solver rather than
+// to over-optimize this. In particular, presolve might be disabled or
+// incomplete, so such unclean clause might find their way here.
+bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
+  DCHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
 
-  // Filter already assigned literals.
-  if (CurrentDecisionLevel() == 0) {
-    literals_scratchpad_.clear();
-    for (const Literal l : literals) {
-      if (trail_->Assignment().LiteralIsTrue(l)) return true;
-      if (trail_->Assignment().LiteralIsFalse(l)) continue;
-      literals_scratchpad_.push_back(l);
-    }
-  } else {
-    literals_scratchpad_.assign(literals.begin(), literals.end());
+  // Filter already assigned literals. Note that we also remap literal in case
+  // we discovered equivalence later in the search.
+  literals_scratchpad_.clear();
+  for (Literal l : literals) {
+    l = binary_implication_graph_->RepresentativeOf(l);
+    if (trail_->Assignment().LiteralIsTrue(l)) return true;
+    if (trail_->Assignment().LiteralIsFalse(l)) continue;
+    literals_scratchpad_.push_back(l);
   }
 
-  if (!is_safe) {
-    gtl::STLSortAndRemoveDuplicates(&literals_scratchpad_);
-    for (int i = 0; i + 1 < literals_scratchpad_.size(); ++i) {
-      if (literals_scratchpad_[i] == literals_scratchpad_[i + 1].Negated()) {
-        return true;
-      }
+  // A clause with l and not(l) is trivially true.
+  gtl::STLSortAndRemoveDuplicates(&literals_scratchpad_);
+  for (int i = 0; i + 1 < literals_scratchpad_.size(); ++i) {
+    if (literals_scratchpad_[i] == literals_scratchpad_[i + 1].Negated()) {
+      return true;
     }
   }
 
-  if (!AddProblemClauseInternal(literals_scratchpad_)) return false;
-
-  // Tricky: The PropagationIsDone() condition shouldn't change anything for a
-  // pure SAT problem, however in the CP-SAT context, calling Propagate() can
-  // tigger computation (like the LP) even if no domain changed since the last
-  // call. We do not want to do that.
-  if (!PropagationIsDone() && !Propagate()) {
-    return SetModelUnsat();
-  }
-  return true;
+  return AddProblemClauseInternal(literals_scratchpad_);
 }
 
 bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
@@ -278,6 +266,13 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
     }
   }
 
+  // Tricky: The PropagationIsDone() condition shouldn't change anything for a
+  // pure SAT problem, however in the CP-SAT context, calling Propagate() can
+  // tigger computation (like the LP) even if no domain changed since the last
+  // call. We do not want to do that.
+  if (!PropagationIsDone() && !Propagate()) {
+    return SetModelUnsat();
+  }
   return true;
 }
 
@@ -485,7 +480,7 @@ void SatSolver::SaveDebugAssignment() {
   }
 }
 
-void SatSolver::LoadDebugSolution(const std::vector<Literal>& solution) {
+void SatSolver::LoadDebugSolution(absl::Span<const Literal> solution) {
   debug_assignment_.Resize(num_variables_.value());
   for (BooleanVariable var(0); var < num_variables_; ++var) {
     if (!debug_assignment_.VariableIsAssigned(var)) continue;
@@ -526,7 +521,7 @@ bool SatSolver::ClauseIsValidUnderDebugAssignment(
 }
 
 bool SatSolver::PBConstraintIsValidUnderDebugAssignment(
-    const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const {
+    absl::Span<const LiteralWithCoeff> cst, const Coefficient rhs) const {
   Coefficient sum(0.0);
   for (LiteralWithCoeff term : cst) {
     if (term.literal.Variable() >= debug_assignment_.NumberOfVariables()) {
@@ -543,7 +538,7 @@ namespace {
 
 // Returns true iff 'b' is subsumed by 'a' (i.e 'a' is included in 'b').
 // This is slow and only meant to be used in DCHECKs.
-bool ClauseSubsumption(const std::vector<Literal>& a, SatClause* b) {
+bool ClauseSubsumption(absl::Span<const Literal> a, SatClause* b) {
   std::vector<Literal> superset(b->begin(), b->end());
   std::vector<Literal> subset(a.begin(), a.end());
   std::sort(superset.begin(), superset.end());
@@ -1067,7 +1062,7 @@ void SatSolver::Backtrack(int target_level) {
   last_decision_or_backtrack_trail_index_ = trail_->Index();
 }
 
-bool SatSolver::AddBinaryClauses(const std::vector<BinaryClause>& clauses) {
+bool SatSolver::AddBinaryClauses(absl::Span<const BinaryClause> clauses) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
   for (const BinaryClause c : clauses) {
@@ -1613,7 +1608,7 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   return unsat_assumptions;
 }
 
-void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
+void SatSolver::BumpReasonActivities(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   for (const Literal literal : literals) {
     const BooleanVariable var = literal.Variable();
@@ -1689,7 +1684,7 @@ void SatSolver::UpdateClauseActivityIncrement() {
   clause_activity_increment_ *= 1.0 / parameters_->clause_activity_decay();
 }
 
-bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
+bool SatSolver::IsConflictValid(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   if (literals.empty()) return false;
   const int highest_level = DecisionLevel(literals[0].Variable());
@@ -1700,7 +1695,7 @@ bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
   return true;
 }
 
-int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
+int SatSolver::ComputeBacktrackLevel(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_GT(CurrentDecisionLevel(), 0);
 
@@ -2198,7 +2193,7 @@ void SatSolver::ComputeFirstUIPConflict(
   }
 }
 
-void SatSolver::ComputeUnionOfReasons(const std::vector<Literal>& input,
+void SatSolver::ComputeUnionOfReasons(absl::Span<const Literal> input,
                                       std::vector<Literal>* literals) {
   tmp_mark_.ClearAndResize(num_variables_);
   literals->clear();

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,6 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/topologicalsorter.h"
 
@@ -109,7 +108,7 @@ std::vector<PathWithLength> KShortestPathsOnDag(
   const ShortestPathOnDagProblem problem =
       ReadProblem(num_nodes, arcs_with_length);
 
-  KShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_paths_on_dag(
+  KShortestPathsOnDagWrapper<GraphType> shortest_paths_on_dag(
       &problem.graph, &problem.arc_lengths, problem.topological_order,
       path_count);
   shortest_paths_on_dag.RunKShortestPathOnDag({source});
@@ -119,9 +118,9 @@ std::vector<PathWithLength> KShortestPathsOnDag(
   }
 
   std::vector<double> lengths = shortest_paths_on_dag.LengthsTo(destination);
-  std::vector<std::vector<ArcIndex>> arc_paths =
+  std::vector<std::vector<GraphType::ArcIndex>> arc_paths =
       shortest_paths_on_dag.ArcPathsTo(destination);
-  std::vector<std::vector<NodeIndex>> node_paths =
+  std::vector<std::vector<GraphType::NodeIndex>> node_paths =
       shortest_paths_on_dag.NodePathsTo(destination);
   std::vector<PathWithLength> paths;
   paths.reserve(lengths.size());

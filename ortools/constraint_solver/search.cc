@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -85,7 +85,10 @@ std::string SearchLog::DebugString() const { return "SearchLog"; }
 
 void SearchLog::EnterSearch() {
   const std::string buffer =
-      absl::StrFormat("Start search (%s)", MemoryUsage());
+      (!display_on_new_solutions_only_ && display_callback_ != nullptr)
+          ? absl::StrFormat("Start search (%s, %s)", MemoryUsage(),
+                            display_callback_())
+          : absl::StrFormat("Start search (%s)", MemoryUsage());
   OutputLine(buffer);
   timer_->Restart();
   min_right_depth_ = std::numeric_limits<int32_t>::max();
@@ -367,7 +370,8 @@ SearchMonitor* Solver::MakeSearchLog(
   std::vector<double> offsets(vars.size(), 0.0);
   return RevAlloc(new SearchLog(
       this, std::move(vars), opt_var->Name(), std::move(scaling_factors),
-      std::move(offsets), std::move(display_callback), true, branch_period));
+      std::move(offsets), std::move(display_callback),
+      /*display_on_new_solutions_only=*/true, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
@@ -4239,7 +4243,7 @@ BinaryGuidedLocalSearch<P>::BinaryGuidedLocalSearch(
                            reset_penalties_on_new_best_solution),
       objective_function_(std::move(objective_function)) {
   solver->SetGuidedLocalSearchPenaltyCallback(
-      [this](int64_t i, int64_t j, int64_t k) { return PenalizedValue(i, j); });
+      [this](int64_t i, int64_t j, int64_t) { return PenalizedValue(i, j); });
 }
 
 template <typename P>

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,9 +26,10 @@
 #include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
+#include "ortools/base/constant_divisor.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/2d_packing_brute_force.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 
@@ -404,16 +405,16 @@ void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
     candidates.Set(i);
   }
   for (int i = 1; i <= sqrt_bb_size; i++) {
-    const QuickSmallDivision div(i);
+    const ::util::math::ConstantDivisor<uint16_t> div(i);
     if (i > 1) {
-      candidates.Set(div.DivideByDivisor(bb_size.value()));
+      candidates.Set(bb_size.value() / div);
     }
     for (int k = 0; k < sizes.size(); k++) {
       IntegerValue size = sizes[k];
       if (2 * size > bb_size && size < bb_size) {
-        candidates.Set(div.DivideByDivisor(bb_size.value() - size.value() + 1));
+        candidates.Set((bb_size.value() - size.value() + 1) / div);
       } else if (2 * size < bb_size) {
-        candidates.Set(div.DivideByDivisor(size.value()));
+        candidates.Set(size.value() / div);
       }
     }
   }

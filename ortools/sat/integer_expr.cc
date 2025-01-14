@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,25 +17,21 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <functional>
 #include <limits>
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
-#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -554,10 +550,12 @@ bool LevelZeroEquality::Propagate() {
   return true;
 }
 
-MinPropagator::MinPropagator(const std::vector<IntegerVariable>& vars,
-                             IntegerVariable min_var,
+MinPropagator::MinPropagator(std::vector<AffineExpression> vars,
+                             AffineExpression min_var,
                              IntegerTrail* integer_trail)
-    : vars_(vars), min_var_(min_var), integer_trail_(integer_trail) {}
+    : vars_(std::move(vars)),
+      min_var_(min_var),
+      integer_trail_(integer_trail) {}
 
 bool MinPropagator::Propagate() {
   if (vars_.empty()) return true;
@@ -583,11 +581,11 @@ bool MinPropagator::Propagate() {
   // Propagation a)
   if (min > integer_trail_->LowerBound(min_var_)) {
     integer_reason_.clear();
-    for (const IntegerVariable var : vars_) {
-      integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, min));
+    for (const AffineExpression& var : vars_) {
+      integer_reason_.push_back(var.GreaterOrEqual(min));
     }
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(min_var_, min),
-                                 {}, integer_reason_)) {
+    if (!integer_trail_->SafeEnqueue(min_var_.GreaterOrEqual(min),
+                                     integer_reason_)) {
       return false;
     }
   }
@@ -602,15 +600,13 @@ bool MinPropagator::Propagate() {
       // The reason is that all the other interval start after current_min_ub.
       // And that min_ub has its current value.
       integer_reason_.push_back(min_ub_literal);
-      for (const IntegerVariable var : vars_) {
+      for (const AffineExpression& var : vars_) {
         if (var == vars_[last_possible_min_interval]) continue;
-        integer_reason_.push_back(
-            IntegerLiteral::GreaterOrEqual(var, current_min_ub + 1));
+        integer_reason_.push_back(var.GreaterOrEqual(current_min_ub + 1));
       }
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::LowerOrEqual(vars_[last_possible_min_interval],
-                                           current_min_ub),
-              {}, integer_reason_)) {
+      if (!integer_trail_->SafeEnqueue(
+              vars_[last_possible_min_interval].LowerOrEqual(current_min_ub),
+              integer_reason_)) {
         return false;
       }
     }
@@ -627,9 +623,11 @@ bool MinPropagator::Propagate() {
 
     // Almost the same as propagation b).
     integer_reason_.push_back(min_ub_literal);
-    for (const IntegerVariable var : vars_) {
-      integer_reason_.push_back(
-          IntegerLiteral::GreaterOrEqual(var, current_min_ub + 1));
+    for (const AffineExpression& var : vars_) {
+      IntegerLiteral lit = var.GreaterOrEqual(current_min_ub + 1);
+      if (lit != IntegerLiteral::TrueLiteral()) {
+        integer_reason_.push_back(lit);
+      }
     }
     return integer_trail_->ReportConflict(integer_reason_);
   }
@@ -639,15 +637,15 @@ bool MinPropagator::Propagate() {
 
 void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (const IntegerVariable& var : vars_) {
+  for (const AffineExpression& var : vars_) {
     watcher->WatchLowerBound(var, id);
   }
   watcher->WatchUpperBound(min_var_, id);
 }
 
-LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
+LinMinPropagator::LinMinPropagator(std::vector<LinearExpression> exprs,
                                    IntegerVariable min_var, Model* model)
-    : exprs_(exprs),
+    : exprs_(std::move(exprs)),
       min_var_(min_var),
       model_(model),
       integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}

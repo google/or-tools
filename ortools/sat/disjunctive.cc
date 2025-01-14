@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,6 +23,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
@@ -266,9 +267,23 @@ bool DisjunctiveWithTwoItems::Propagate() {
   // interval forced absence? Same for the start-max.
   int task_before = 0;
   int task_after = 1;
-  if (helper_->StartMax(0) < helper_->EndMin(1)) {
+
+  const bool task_0_before_task_1 = helper_->StartMax(0) < helper_->EndMin(1);
+  const bool task_1_before_task_0 = helper_->StartMax(1) < helper_->EndMin(0);
+
+  if (task_0_before_task_1 && task_1_before_task_0 &&
+      helper_->IsPresent(task_before) && helper_->IsPresent(task_after)) {
+    helper_->ClearReason();
+    helper_->AddPresenceReason(task_before);
+    helper_->AddPresenceReason(task_after);
+    helper_->AddReasonForBeingBefore(task_before, task_after);
+    helper_->AddReasonForBeingBefore(task_after, task_before);
+    return helper_->ReportConflict();
+  }
+
+  if (task_0_before_task_1) {
     // Task 0 must be before task 1.
-  } else if (helper_->StartMax(1) < helper_->EndMin(0)) {
+  } else if (task_1_before_task_0) {
     // Task 1 must be before task 0.
     std::swap(task_before, task_after);
   } else {
@@ -319,7 +334,8 @@ int DisjunctiveWithTwoItems::RegisterWith(GenericLiteralWatcher* watcher) {
 
 template <bool time_direction>
 CombinedDisjunctive<time_direction>::CombinedDisjunctive(Model* model)
-    : helper_(model->GetOrCreate<AllIntervalsHelper>()) {
+    : helper_(model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          model->GetOrCreate<IntervalsRepository>()->AllIntervals())) {
   task_to_disjunctives_.resize(helper_->NumTasks());
 
   auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
@@ -1555,6 +1571,14 @@ bool DisjunctiveEdgeFinding::Propagate() {
     if (window_.size() > 2 && !PropagateSubwindow(window_end)) {
       ++stats_.num_conflicts;
       return false;
+    }
+
+    // Corner case: The propagation of the previous window might have made the
+    // current task absent even if it wasn't at the loop beginning.
+    if (helper_->IsAbsent(presence_lit)) {
+      window_.clear();
+      window_end = kMinIntegerValue;
+      continue;
     }
 
     // Start of the next window.

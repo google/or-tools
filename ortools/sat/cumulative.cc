@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,10 +19,12 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
@@ -41,9 +43,10 @@ namespace sat {
 
 std::function<void(Model*)> Cumulative(
     const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper) {
-  return [=](Model* model) mutable {
+  return [=, demands = std::vector<AffineExpression>(
+                 demands.begin(), demands.end())](Model* model) mutable {
     auto* intervals = model->GetOrCreate<IntervalsRepository>();
     auto* encoder = model->GetOrCreate<IntegerEncoder>();
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -289,10 +292,12 @@ std::function<void(Model*)> Cumulative(
 }
 
 std::function<void(Model*)> CumulativeTimeDecomposition(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    absl::Span<const IntervalVariable> vars,
+    absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper) {
-  return [=](Model* model) {
+  return [=, vars = std::vector<IntervalVariable>(vars.begin(), vars.end()),
+          demands = std::vector<AffineExpression>(
+              demands.begin(), demands.end())](Model* model) {
     if (vars.empty()) return;
 
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -371,10 +376,12 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
 }
 
 std::function<void(Model*)> CumulativeUsingReservoir(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    absl::Span<const IntervalVariable> vars,
+    absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper) {
-  return [=](Model* model) {
+  return [=, vars = std::vector<IntervalVariable>(vars.begin(), vars.end()),
+          demands = std::vector<AffineExpression>(
+              demands.begin(), demands.end())](Model* model) {
     if (vars.empty()) return;
 
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();

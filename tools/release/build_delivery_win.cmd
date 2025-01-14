@@ -308,7 +308,7 @@ FOR %%v IN (8 9 10 11 12 13) DO (
       ortools\linear_solver\python\model_builder_helper.pyi
       ortools\linear_solver\pywraplp.pyi
       ortools\pdlp\python\pdlp.pyi
-      ortools\sat\python\swig_helper.pyi
+      ortools\sat\python\cp_model_helper.pyi
       ortools\scheduling\python\rcpsp.pyi
       ortools\util\python\sorted_interval_list.pyi
     ) DO (

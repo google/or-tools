@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_heuristics.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -38,8 +39,18 @@ using ::operations_research::GuidedLocalSearch;
 using ::operations_research::GuidedTabuSearch;
 using ::operations_research::LazyElementDegreeSolutionGenerator;
 using ::operations_research::RandomSolutionGenerator;
-using ::operations_research::ReadBeasleySetCoverProblem;
-using ::operations_research::ReadRailSetCoverProblem;
+using ::operations_research::ReadFimiDat;
+using ::operations_research::ReadOrlibRail;
+using ::operations_research::ReadOrlibScp;
+using ::operations_research::ReadSetCoverProto;
+using ::operations_research::ReadSetCoverSolutionProto;
+using ::operations_research::ReadSetCoverSolutionText;
+using ::operations_research::WriteOrlibRail;
+using ::operations_research::WriteOrlibScp;
+using ::operations_research::WriteSetCoverProto;
+using ::operations_research::WriteSetCoverSolutionProto;
+using ::operations_research::WriteSetCoverSolutionText;
+
 using ::operations_research::SetCoverDecision;
 using ::operations_research::SetCoverInvariant;
 using ::operations_research::SetCoverModel;
@@ -57,7 +68,7 @@ using ::py::arg;
 using ::py::make_iterator;
 
 std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
-    const std::vector<BaseInt>& ints) {
+    absl::Span<const BaseInt> ints) {
   std::vector<SubsetIndex> subs;
   std::transform(ints.begin(), ints.end(), subs.begin(),
                  [](int subset) -> SubsetIndex { return SubsetIndex(subset); });
@@ -65,7 +76,7 @@ std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
 }
 
 SubsetCostVector VectorDoubleToSubsetCostVector(
-    const std::vector<double>& doubles) {
+    absl::Span<const double> doubles) {
   SubsetCostVector costs(doubles.begin(), doubles.end());
   return costs;
 }
@@ -207,6 +218,7 @@ PYBIND11_MODULE(set_cover, m) {
           },
           arg("subset"), arg("cost"))
       .def("create_sparse_row_view", &SetCoverModel::CreateSparseRowView)
+      .def("sort_elements_in_subsets", &SetCoverModel::SortElementsInSubsets)
       .def("compute_feasibility", &SetCoverModel::ComputeFeasibility)
       .def(
           "reserve_num_subsets",
@@ -356,7 +368,7 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](TrivialSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            });
 
@@ -368,7 +380,7 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](RandomSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            });
 
@@ -380,13 +392,13 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](GreedySolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            })
       .def("next_solution",
            [](GreedySolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus,
-              const std::vector<double>& costs) -> bool {
+              absl::Span<const BaseInt> focus,
+              absl::Span<const double> costs) -> bool {
              return heuristic.NextSolution(
                  VectorIntToVectorSubsetIndex(focus),
                  VectorDoubleToSubsetCostVector(costs));
@@ -401,7 +413,7 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](ElementDegreeSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            })
       .def("next_solution",
@@ -427,8 +439,8 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](LazyElementDegreeSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus,
-              const std::vector<double>& costs) -> bool {
+              absl::Span<const BaseInt> focus,
+              absl::Span<const double> costs) -> bool {
              return heuristic.NextSolution(
                  VectorIntToVectorSubsetIndex(focus),
                  VectorDoubleToSubsetCostVector(costs));
@@ -462,7 +474,7 @@ PYBIND11_MODULE(set_cover, m) {
              return heuristic.NextSolution(num_iterations);
            })
       .def("next_solution",
-           [](GuidedLocalSearch& heuristic, const std::vector<BaseInt>& focus,
+           [](GuidedLocalSearch& heuristic, absl::Span<const BaseInt> focus,
               int num_iterations) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus),
                                            num_iterations);
@@ -540,7 +552,7 @@ PYBIND11_MODULE(set_cover, m) {
         return {cleared.begin(), cleared.end()};
       });
   m.def("clear_most_covered_elements",
-        [](const std::vector<BaseInt>& focus, BaseInt num_subsets,
+        [](absl::Span<const BaseInt> focus, BaseInt num_subsets,
            SetCoverInvariant* inv) -> std::vector<BaseInt> {
           const std::vector<SubsetIndex> cleared = ClearMostCoveredElements(
               VectorIntToVectorSubsetIndex(focus), num_subsets, inv);
@@ -548,8 +560,17 @@ PYBIND11_MODULE(set_cover, m) {
         });
 
   // set_cover_reader.h
-  m.def("read_beasly_set_cover_problem", &ReadBeasleySetCoverProblem);
-  m.def("read_rail_set_cover_problem", &ReadRailSetCoverProblem);
+  m.def("read_orlib_scp", &ReadOrlibScp);
+  m.def("read_orlib_rail", &ReadOrlibRail);
+  m.def("read_fimi_dat", &ReadFimiDat);
+  m.def("read_set_cover_proto", &ReadSetCoverProto);
+  m.def("write_orlib_scp", &WriteOrlibScp);
+  m.def("write_orlib_rail", &WriteOrlibRail);
+  m.def("write_set_cover_proto", &WriteSetCoverProto);
+  m.def("write_set_cover_solution_text", &WriteSetCoverSolutionText);
+  m.def("write_set_cover_solution_proto", &WriteSetCoverSolutionProto);
+  m.def("read_set_cover_solution_text", &ReadSetCoverSolutionText);
+  m.def("read_set_cover_solution_proto", &ReadSetCoverSolutionProto);
 
   // set_cover_lagrangian.h
   // TODO(user): add support for SetCoverLagrangian.

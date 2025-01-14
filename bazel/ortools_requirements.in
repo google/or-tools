@@ -1,15 +1,15 @@
 # OR-Tools code dependencies
 absl-py==2.1.0
 immutabledict==3.0.0
-numpy==2.1.1
-protobuf==5.28.3
+numpy==2.2.0
+protobuf==5.29.2
 requests==2.32.3
 scipy==1.14.1
 
 # OR-Tools build dependencies
 mypy==1.6.1
 mypy-protobuf==3.5.0
-virtualenv==20.24.6
+virtualenv==20.28.1
 black==24.8.0
 
 # Example dependencies

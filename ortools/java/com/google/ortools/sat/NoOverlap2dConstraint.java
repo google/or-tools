@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,14 +19,20 @@ import com.google.ortools.sat.NoOverlap2DConstraintProto;
 /**
  * Specialized NoOverlap2D constraint.
  *
- * <p>This constraint allows adding rectanles to the NoOverlap2D constraint incrementally.
+ * <p>This constraint allows adding rectangles to the NoOverlap2D constraint incrementally.
  */
 public class NoOverlap2dConstraint extends Constraint {
   public NoOverlap2dConstraint(CpModelProto.Builder builder) {
     super(builder);
   }
 
-  /// Adds a rectangle (xInterval, yInterval) to the constraint.
+  /**
+   * Adds a rectangle (xInterval, yInterval) to the constraint.
+   *
+   * @param xInterval the x interval of the rectangle.
+   * @param yInterval the y interval of the rectangle.
+   * @return this constraint
+   */
   public NoOverlap2dConstraint addRectangle(IntervalVar xInterval, IntervalVar yInterval) {
     NoOverlap2DConstraintProto.Builder noOverlap2d = getBuilder().getNoOverlap2DBuilder();
     noOverlap2d.addXIntervals(xInterval.getIndex());

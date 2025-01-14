@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,15 +21,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/dump_vars.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/graphs.h"
-#include "ortools/graph/max_flow.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/stats.h"
 
 // TODO(user): Remove these flags and expose the parameters in the API.
 // New clients, please do not use these flags!
@@ -39,8 +41,6 @@ ABSL_FLAG(bool, min_cost_flow_check_feasibility, true,
           "Check that the graph has enough capacity to send all supplies "
           "and serve all demands. Also check that the sum of supplies "
           "is equal to the sum of demands.");
-ABSL_FLAG(bool, min_cost_flow_check_balance, true,
-          "Check that the sum of supplies is equal to the sum of demands.");
 ABSL_FLAG(bool, min_cost_flow_check_result, true,
           "Check that the result is valid.");
 
@@ -53,15 +53,14 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
       alpha_(absl::GetFlag(FLAGS_min_cost_flow_alpha)),
       stats_("MinCostFlow"),
       check_feasibility_(absl::GetFlag(FLAGS_min_cost_flow_check_feasibility)) {
-  const NodeIndex max_num_nodes = Graphs<Graph>::NodeReservation(*graph_);
+  const NodeIndex max_num_nodes = graph_->node_capacity();
   if (max_num_nodes > 0) {
     first_admissible_arc_.assign(max_num_nodes, Graph::kNilArc);
     node_potential_.assign(max_num_nodes, 0);
     node_excess_.assign(max_num_nodes, 0);
     initial_node_excess_.assign(max_num_nodes, 0);
-    feasible_node_excess_.assign(max_num_nodes, 0);
   }
-  const ArcIndex max_num_arcs = Graphs<Graph>::ArcReservation(*graph_);
+  const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
     residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
     residual_arc_capacity_.SetAll(0);
@@ -128,47 +127,95 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::SetArcCapacity(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::SetArcFlow(
-    ArcIndex arc, ArcFlowType new_flow) {
-  DCHECK(IsArcValid(arc));
-  const FlowQuantity capacity = Capacity(arc);
-  DCHECK_GE(capacity, new_flow);
-  residual_arc_capacity_.Set(Opposite(arc), new_flow);
-  residual_arc_capacity_.Set(arc, capacity - new_flow);
-  status_ = NOT_SOLVED;
-  feasibility_checked_ = false;
-}
-
-template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType,
                         ArcScaledCostType>::CheckInputConsistency() {
-  FlowQuantity total_supply = 0;
-  uint64_t max_capacity = 0;  // uint64_t because it is positive and will be
-                              // used to check against FlowQuantity overflows.
-  for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
-    const uint64_t capacity =
-        static_cast<uint64_t>(residual_arc_capacity_[arc]);
-    max_capacity = std::max(capacity, max_capacity);
-  }
-  uint64_t total_flow = 0;  // uint64_t for the same reason as max_capacity.
+  const FlowQuantity kMaxFlow = std::numeric_limits<FlowQuantity>::max();
+
+  // First lets make sure supply == demand and the total supply/demand do not
+  // overflow.
+  FlowQuantity sum_of_supplies = 0;
+  FlowQuantity sum_of_demands = 0;
   for (NodeIndex node = 0; node < graph_->num_nodes(); ++node) {
     const FlowQuantity excess = node_excess_[node];
-    total_supply += excess;
     if (excess > 0) {
-      total_flow += excess;
-      if (std::numeric_limits<FlowQuantity>::max() <
-          max_capacity + total_flow) {
-        status_ = BAD_COST_RANGE;
-        LOG(ERROR) << "Input consistency error: max capacity + flow exceed "
-                   << "precision";
+      sum_of_supplies = CapAdd(sum_of_supplies, excess);
+      if (sum_of_supplies >= kMaxFlow) {
+        status_ = BAD_CAPACITY_RANGE;
+        LOG(ERROR) << "Input consistency error: sum of supplies overflow";
+        return false;
+      }
+    } else if (excess < 0) {
+      sum_of_demands = CapAdd(sum_of_demands, -excess);
+      if (sum_of_demands >= kMaxFlow) {
+        status_ = BAD_CAPACITY_RANGE;
+        LOG(ERROR) << "Input consistency error: sum of demands overflow";
         return false;
       }
     }
   }
-  if (total_supply != 0) {
+  if (sum_of_supplies != sum_of_demands) {
     status_ = UNBALANCED;
     LOG(ERROR) << "Input consistency error: unbalanced problem";
     return false;
+  }
+
+  std::vector<FlowQuantity> max_node_excess = node_excess_;
+  std::vector<FlowQuantity> min_node_excess = node_excess_;
+  for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
+    const FlowQuantity capacity = residual_arc_capacity_[arc];
+    CHECK_GE(capacity, 0);
+    if (capacity == 0) continue;
+    const int tail = graph_->Tail(arc);
+    const int head = graph_->Head(arc);
+    min_node_excess[tail] = CapSub(min_node_excess[tail], capacity);
+    max_node_excess[head] = CapAdd(max_node_excess[head], capacity);
+  }
+
+  const int num_nodes = graph_->num_nodes();
+  for (NodeIndex node = 0; node < num_nodes; ++node) {
+    if (max_node_excess[node] >= kMaxFlow ||
+        min_node_excess[node] <= -kMaxFlow) {
+      // Try to fix it.
+      // Some user just use arc with infinite capacity out of the source/sink.
+      // This is why we use CappedCapacity() for a name.
+      if (max_node_excess[node] < std::numeric_limits<ArcFlowType>::max()) {
+        // There is no point having an outgoing arc with more than this.
+        const ArcFlowType upper_bound =
+            std::max<ArcFlowType>(0, max_node_excess[node]);
+
+        // Adjust and recompute min_node_excess[node].
+        min_node_excess[node] = node_excess_[node];
+        for (OutgoingArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+          const int arc = it.Index();
+          residual_arc_capacity_[arc] =
+              std::min(residual_arc_capacity_[arc], upper_bound);
+          min_node_excess[node] =
+              CapSub(min_node_excess[node], residual_arc_capacity_[arc]);
+        }
+        if (min_node_excess[node] > -kMaxFlow) continue;
+      }
+      if (min_node_excess[node] > -std::numeric_limits<ArcFlowType>::max()) {
+        // There is no point having an incoming arc with more than this.
+        const ArcFlowType upper_bound =
+            std::max<ArcFlowType>(0, -min_node_excess[node]);
+
+        // Adjust and recompute max_node_excess[node].
+        max_node_excess[node] = node_excess_[node];
+        for (IncomingArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+          const int arc = it.Index();
+          residual_arc_capacity_[arc] =
+              std::min(residual_arc_capacity_[arc], upper_bound);
+          max_node_excess[node] =
+              CapAdd(max_node_excess[node], residual_arc_capacity_[arc]);
+        }
+        if (max_node_excess[node] < kMaxFlow) continue;
+      }
+
+      status_ = BAD_CAPACITY_RANGE;
+      LOG(ERROR) << "Maximum in or out flow of node + excess " << node
+                 << " overflow the FlowQuantity type (int64_t).";
+      return false;
+    }
   }
   return true;
 }
@@ -248,9 +295,8 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugString(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
-    CheckFeasibility(std::vector<NodeIndex>* const infeasible_supply_node,
-                     std::vector<NodeIndex>* const infeasible_demand_node) {
+bool GenericMinCostFlow<Graph, ArcFlowType,
+                        ArcScaledCostType>::CheckFeasibility() {
   SCOPED_TIME_STAT(&stats_);
   // Create a new graph, which is a copy of graph_, with the following
   // modifications:
@@ -262,7 +308,6 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
   // There are no supplies or demands or costs in the graph, as we will run
   // max-flow.
   // TODO(user): make it possible to share a graph by MaxFlow and MinCostFlow.
-  // For this it is necessary to make StarGraph resizable.
   feasibility_checked_ = false;
   ArcIndex num_extra_arcs = 0;
   for (NodeIndex node = 0; node < graph_->num_nodes(); ++node) {
@@ -274,10 +319,9 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
   const ArcIndex num_arcs_in_max_flow = graph_->num_arcs() + num_extra_arcs;
   const NodeIndex source = num_nodes_in_max_flow - 2;
   const NodeIndex sink = num_nodes_in_max_flow - 1;
-  StarGraph checker_graph(num_nodes_in_max_flow, num_arcs_in_max_flow);
-  MaxFlow checker(&checker_graph, source, sink);
-  checker.SetCheckInput(false);
-  checker.SetCheckResult(false);
+  using CheckerGraph = ::util::ReverseArcListGraph<>;
+  CheckerGraph checker_graph(num_nodes_in_max_flow, num_arcs_in_max_flow);
+  GenericMaxFlow<CheckerGraph> checker(&checker_graph, source, sink);
   // Copy graph_ to checker_graph.
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
     const ArcIndex new_arc =
@@ -310,47 +354,13 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
     return false;
   }
   const FlowQuantity optimal_max_flow = checker.GetOptimalFlow();
-  feasible_node_excess_.assign(checker_graph.num_nodes(), 0);
-  for (StarGraph::OutgoingArcIterator it(checker_graph, source); it.Ok();
-       it.Next()) {
-    const ArcIndex arc = it.Index();
-    const NodeIndex node = checker_graph.Head(arc);
-    const FlowQuantity flow = checker.Flow(arc);
-    feasible_node_excess_[node] = flow;
-    if (infeasible_supply_node != nullptr) {
-      infeasible_supply_node->push_back(node);
-    }
-  }
-  for (StarGraph::IncomingArcIterator it(checker_graph, sink); it.Ok();
-       it.Next()) {
-    const ArcIndex arc = it.Index();
-    const NodeIndex node = checker_graph.Tail(arc);
-    const FlowQuantity flow = checker.Flow(arc);
-    feasible_node_excess_[node] = -flow;
-    if (infeasible_demand_node != nullptr) {
-      infeasible_demand_node->push_back(node);
-    }
-  }
   feasibility_checked_ = true;
   return optimal_max_flow == total_supply;
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::MakeFeasible() {
-  if (!feasibility_checked_) {
-    return false;
-  }
-  for (NodeIndex node = 0; node < graph_->num_nodes(); ++node) {
-    const FlowQuantity excess = feasible_node_excess_[node];
-    node_excess_[node] = excess;
-    initial_node_excess_[node] = excess;
-  }
-  return true;
-}
-
-template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Flow(
-    ArcIndex arc) const {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Flow(
+    ArcIndex arc) const -> FlowQuantity {
   if (IsArcDirect(arc)) {
     return residual_arc_capacity_[Opposite(arc)];
   } else {
@@ -360,9 +370,8 @@ FlowQuantity GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Flow(
 
 // We use the equations given in the comment of residual_arc_capacity_.
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Capacity(
-    ArcIndex arc) const {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Capacity(
+    ArcIndex arc) const -> FlowQuantity {
   if (IsArcDirect(arc)) {
     return residual_arc_capacity_[arc] + residual_arc_capacity_[Opposite(arc)];
   } else {
@@ -371,32 +380,18 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Capacity(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-CostValue GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UnitCost(
-    ArcIndex arc) const {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UnitCost(
+    ArcIndex arc) const -> CostValue {
   DCHECK(IsArcValid(arc));
   DCHECK_EQ(uint64_t{1}, cost_scaling_factor_);
   return scaled_arc_unit_cost_[arc];
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Supply(
-    NodeIndex node) const {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Supply(
+    NodeIndex node) const -> FlowQuantity {
   DCHECK(graph_->IsNodeValid(node));
   return node_excess_[node];
-}
-
-template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::InitialSupply(
-    NodeIndex node) const {
-  return initial_node_excess_[node];
-}
-
-template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FeasibleSupply(
-    NodeIndex node) const {
-  return feasible_node_excess_[node];
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
@@ -420,16 +415,14 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsActive(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-CostValue
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ReducedCost(
-    ArcIndex arc) const {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ReducedCost(
+    ArcIndex arc) const -> CostValue {
   return FastReducedCost(arc, node_potential_[Tail(arc)]);
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-CostValue
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FastReducedCost(
-    ArcIndex arc, CostValue tail_potential) const {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FastReducedCost(
+    ArcIndex arc, CostValue tail_potential) const -> CostValue {
   DCHECK_EQ(node_potential_[Tail(arc)], tail_potential);
   DCHECK(graph_->IsNodeValid(Tail(arc)));
   DCHECK(graph_->IsNodeValid(Head(arc)));
@@ -443,26 +436,25 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FastReducedCost(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-typename GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ArcIndex
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
-    GetFirstOutgoingOrOppositeIncomingArc(NodeIndex node) const {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
+    GetFirstOutgoingOrOppositeIncomingArc(NodeIndex node) const -> ArcIndex {
   OutgoingOrOppositeIncomingArcIterator arc_it(*graph_, node);
   return arc_it.Index();
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
-  if (absl::GetFlag(FLAGS_min_cost_flow_check_balance) &&
-      !CheckInputConsistency()) {
+  if (!CheckInputConsistency()) {
     return false;
   }
-  if (check_feasibility_ && !CheckFeasibility(nullptr, nullptr)) {
+  if (check_feasibility_ && !CheckFeasibility()) {
     status_ = INFEASIBLE;
     return false;
   }
 
   status_ = NOT_SOLVED;
   node_potential_.assign(node_potential_.size(), 0);
+
   ResetFirstAdmissibleArcs();
   if (!ScaleCosts()) return false;
   if (!Optimize()) return false;
@@ -481,8 +473,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-CostValue
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GetOptimalCost() {
+auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GetOptimalCost()
+    -> CostValue {
   if (status_ != OPTIMAL) {
     return 0;
   }
@@ -982,13 +974,13 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 typename Graph::ArcIndex
 GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Opposite(
     ArcIndex arc) const {
-  return Graphs<Graph>::OppositeArc(*graph_, arc);
+  return graph_->OppositeArc(arc);
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsArcValid(
     ArcIndex arc) const {
-  return Graphs<Graph>::IsArcValid(*graph_, arc);
+  return graph_->IsArcValid(arc);
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
@@ -1002,7 +994,6 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsArcDirect(
 //
 // TODO(user): Move this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation?
-template class GenericMinCostFlow<StarGraph>;
 template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
@@ -1037,10 +1028,9 @@ void SimpleMinCostFlow::SetNodeSupply(NodeIndex node, FlowQuantity supply) {
   node_supply_[node] = supply;
 }
 
-ArcIndex SimpleMinCostFlow::AddArcWithCapacityAndUnitCost(NodeIndex tail,
-                                                          NodeIndex head,
-                                                          FlowQuantity capacity,
-                                                          CostValue unit_cost) {
+SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::AddArcWithCapacityAndUnitCost(
+    NodeIndex tail, NodeIndex head, FlowQuantity capacity,
+    CostValue unit_cost) {
   ResizeNodeVectors(std::max(tail, head));
   const ArcIndex arc = arc_tail_.size();
   arc_tail_.push_back(tail);
@@ -1050,7 +1040,11 @@ ArcIndex SimpleMinCostFlow::AddArcWithCapacityAndUnitCost(NodeIndex tail,
   return arc;
 }
 
-ArcIndex SimpleMinCostFlow::PermutedArc(ArcIndex arc) {
+void SimpleMinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity capacity) {
+  arc_capacity_[arc] = capacity;
+}
+
+SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::PermutedArc(ArcIndex arc) {
   return arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;
 }
 
@@ -1170,34 +1164,50 @@ SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
       arc_flow_[arc] = min_cost_flow.Flow(PermutedArc(arc));
     }
   }
+
   return min_cost_flow.status();
 }
 
-CostValue SimpleMinCostFlow::OptimalCost() const { return optimal_cost_; }
+SimpleMinCostFlow::CostValue SimpleMinCostFlow::OptimalCost() const {
+  return optimal_cost_;
+}
 
-FlowQuantity SimpleMinCostFlow::MaximumFlow() const { return maximum_flow_; }
+SimpleMinCostFlow::FlowQuantity SimpleMinCostFlow::MaximumFlow() const {
+  return maximum_flow_;
+}
 
-FlowQuantity SimpleMinCostFlow::Flow(ArcIndex arc) const {
+SimpleMinCostFlow::FlowQuantity SimpleMinCostFlow::Flow(ArcIndex arc) const {
   return arc_flow_[arc];
 }
 
-NodeIndex SimpleMinCostFlow::NumNodes() const { return node_supply_.size(); }
+SimpleMinCostFlow::SimpleMinCostFlow::NodeIndex SimpleMinCostFlow::NumNodes()
+    const {
+  return node_supply_.size();
+}
 
-ArcIndex SimpleMinCostFlow::NumArcs() const { return arc_tail_.size(); }
+SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::NumArcs() const {
+  return arc_tail_.size();
+}
 
-ArcIndex SimpleMinCostFlow::Tail(ArcIndex arc) const { return arc_tail_[arc]; }
+SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::Tail(ArcIndex arc) const {
+  return arc_tail_[arc];
+}
 
-ArcIndex SimpleMinCostFlow::Head(ArcIndex arc) const { return arc_head_[arc]; }
+SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::Head(ArcIndex arc) const {
+  return arc_head_[arc];
+}
 
-FlowQuantity SimpleMinCostFlow::Capacity(ArcIndex arc) const {
+SimpleMinCostFlow::FlowQuantity SimpleMinCostFlow::Capacity(
+    ArcIndex arc) const {
   return arc_capacity_[arc];
 }
 
-CostValue SimpleMinCostFlow::UnitCost(ArcIndex arc) const {
+SimpleMinCostFlow::CostValue SimpleMinCostFlow::UnitCost(ArcIndex arc) const {
   return arc_cost_[arc];
 }
 
-FlowQuantity SimpleMinCostFlow::Supply(NodeIndex node) const {
+SimpleMinCostFlow::FlowQuantity SimpleMinCostFlow::Supply(
+    NodeIndex node) const {
   return node_supply_[node];
 }
 

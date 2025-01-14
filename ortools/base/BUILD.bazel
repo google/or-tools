@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -320,6 +320,31 @@ cc_library(
     name = "iterator_adaptors",
     hdrs = ["iterator_adaptors.h"],
     deps = [":base"],
+)
+
+cc_library(
+    name = "constant_divisor",
+    srcs = ["constant_divisor.cc"],
+    hdrs = ["constant_divisor.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:int128",
+    ],
+)
+
+cc_test(
+    name = "constant_divisor_test",
+    srcs = ["constant_divisor_test.cc"],
+    deps = [
+        ":constant_divisor",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(

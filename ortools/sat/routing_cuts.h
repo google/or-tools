@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,14 +18,13 @@
 
 #include <functional>
 #include <limits>
-#include <optional>
 #include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 
@@ -50,7 +49,7 @@ namespace sat {
 // Note that this is mainly a "symmetric" case algo, but it does still work for
 // the asymmetric case.
 void GenerateInterestingSubsets(int num_nodes,
-                                const std::vector<std::pair<int, int>>& arcs,
+                                absl::Span<const std::pair<int, int>> arcs,
                                 int stop_at_num_components,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets);
@@ -69,7 +68,7 @@ void GenerateInterestingSubsets(int num_nodes,
 // TODO(user): This also allocate O(n) memory internally, we could reuse it from
 // call to call if needed.
 void ExtractAllSubsetsFromForest(
-    const std::vector<int>& parent, std::vector<int>* subset_data,
+    absl::Span<const int> parent, std::vector<int>* subset_data,
     std::vector<absl::Span<const int>>* subsets,
     int node_limit = std::numeric_limits<int>::max());
 
@@ -109,7 +108,7 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs);
 // Pairs Network Flow Analysis", Dan Gusfield, 1990,
 // https://ranger.uta.edu/~weems/NOTES5311/LAB/LAB2SPR21/gusfield.huGomory.pdf
 std::vector<int> ComputeGomoryHuTree(
-    int num_nodes, const std::vector<ArcWithLpValue>& relevant_arcs);
+    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs);
 
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the

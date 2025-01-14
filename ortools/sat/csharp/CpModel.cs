@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -299,9 +299,9 @@ public class CpModel
      * Adds and returns an empty circuit constraint.
      * </summary>
      *
-     * <remarks> A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node <c>i</c>
-     * is not in the path, then there must be a loop arc <c> i -> i</c> associated with a true
-     * literal. Otherwise this constraint will fail.
+     * <remarks> A circuit is a unique Hamiltonian cycle in a subgraph of the total graph. In case
+     * a node <c>i</c> is not in the cycle, then there must be a loop arc <c> i -> i</c>
+     * associated with a true literal. Otherwise this constraint will fail.
      * </remarks>
      */
     public CircuitConstraint AddCircuit()

@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -393,7 +393,7 @@ if(BUILD_MATH_OPT)
 endif()
 file(COPY
   ortools/sat/python/cp_model.py
-  ortools/sat/python/cp_model_helper.py
+  ortools/sat/python/cp_model_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 file(COPY
   ortools/sat/colab/flags.py
@@ -649,7 +649,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:routing_pybind11> ${PYTHON_PROJECT}/routing/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
+   $<TARGET_FILE:cp_model_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
   COMMAND ${CMAKE_COMMAND} -E copy
@@ -672,7 +672,7 @@ add_custom_command(
     model_builder_helper_pybind11
     math_opt_pybind11
     $<TARGET_NAME_IF_EXISTS:pdlp_pybind11>
-    swig_helper_pybind11
+    cp_model_helper_pybind11
     rcpsp_pybind11
     sorted_interval_list_pybind11
   WORKING_DIRECTORY python
@@ -712,7 +712,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.pywraprouting --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.model --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.cp_model_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp

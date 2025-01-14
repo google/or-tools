@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,6 +37,7 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -348,10 +349,31 @@ TEST(MinMaxTest, LevelZeroPropagation) {
   std::vector<IntegerVariable> vars{model.Add(NewIntegerVariable(4, 9)),
                                     model.Add(NewIntegerVariable(2, 7)),
                                     model.Add(NewIntegerVariable(3, 8))};
+  std::vector<LinearExpression> exprs;
+  for (const IntegerVariable var : vars) {
+    LinearExpression expr;
+    expr.vars.push_back(var);
+    expr.coeffs.push_back(1);
+    exprs.push_back(expr);
+  }
   const IntegerVariable min = model.Add(NewIntegerVariable(0, 10));
+  {
+    LinearExpression min_expr;
+    min_expr.vars.push_back(min);
+    min_expr.coeffs.push_back(1);
+    model.Add(IsEqualToMinOf(min_expr, exprs));
+  }
   const IntegerVariable max = model.Add(NewIntegerVariable(0, 10));
-  model.Add(IsEqualToMinOf(min, vars));
-  model.Add(IsEqualToMaxOf(max, vars));
+  {
+    // We negate everything to get a max.
+    LinearExpression max_expr;
+    max_expr.vars.push_back(max);
+    max_expr.coeffs.push_back(-1);
+    for (LinearExpression& ref : exprs) {
+      ref.coeffs[0] = -ref.coeffs[0];
+    }
+    model.Add(IsEqualToMinOf(max_expr, exprs));
+  }
 
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(min, 2, 7);
@@ -412,28 +434,30 @@ TEST(LinMinMaxTest, LevelZeroPropagation) {
   EXPECT_BOUNDS_EQ(vars[2], 5, 8);
 }
 
-TEST(MinTest, OnlyOnePossibleCandidate) {
+TEST(AffineMinTest, LevelZeroPropagation) {
   Model model;
-  std::vector<IntegerVariable> vars{model.Add(NewIntegerVariable(4, 7)),
-                                    model.Add(NewIntegerVariable(2, 9)),
-                                    model.Add(NewIntegerVariable(5, 8))};
-  const IntegerVariable min = model.Add(NewIntegerVariable(0, 10));
-  model.Add(IsEqualToMinOf(min, vars));
+  std::vector<AffineExpression> vars{model.Add(NewIntegerVariable(4, 9)),
+                                     model.Add(NewIntegerVariable(2, 7)),
+                                     model.Add(NewIntegerVariable(3, 8))};
+  const AffineExpression min = model.Add(NewIntegerVariable(-100, 100));
 
-  // So far everything is normal.
+  auto* constraint =
+      new MinPropagator(vars, min, model.GetOrCreate<IntegerTrail>());
+  constraint->RegisterWith(model.GetOrCreate<GenericLiteralWatcher>());
+  model.TakeOwnership(constraint);
+
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
-  EXPECT_BOUNDS_EQ(min, 2, 7);
+  EXPECT_EQ(integer_trail->LowerBound(min), 2);
 
-  // But now, if the min is known to be <= 3, the minimum variable is known! it
-  // has to be variable #1, so we can propagate its upper bound.
-  model.Add(LowerOrEqual(min, 3));
+  EXPECT_TRUE(integer_trail->Enqueue(min.LowerOrEqual(2)));
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
-  EXPECT_BOUNDS_EQ(min, 2, 3);
-  EXPECT_BOUNDS_EQ(vars[1], 2, 3);
+  EXPECT_EQ(integer_trail->UpperBound(min), 2);
 
-  // Test infeasibility.
-  model.Add(LowerOrEqual(min, 1));
-  EXPECT_EQ(SatSolver::INFEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
+  // Vars 1 is the only candidate.
+  EXPECT_EQ(integer_trail->UpperBound(vars[0]), 9);
+  EXPECT_EQ(integer_trail->UpperBound(vars[1]), 2);
+  EXPECT_EQ(integer_trail->UpperBound(vars[2]), 8);
 }
 
 TEST(LinMinTest, OnlyOnePossibleCandidate) {
@@ -452,7 +476,7 @@ TEST(LinMinTest, OnlyOnePossibleCandidate) {
   LinearExpression min_expr;
   min_expr.vars.push_back(min);
   min_expr.coeffs.push_back(1);
-  model.Add(IsEqualToMinOf(min_expr, exprs));
+  AddIsEqualToMinOf(min_expr, exprs, &model);
 
   // So far everything is normal.
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
@@ -507,7 +531,7 @@ TEST(LinMinTest, OnlyOnePossibleExpr) {
   LinearExpression min_expr;
   min_expr.vars.push_back(min);
   min_expr.coeffs.push_back(1);
-  model.Add(IsEqualToMinOf(min_expr, exprs));
+  AddIsEqualToMinOf(min_expr, exprs, &model);
 
   // So far everything is normal.
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());

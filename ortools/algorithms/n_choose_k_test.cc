@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,19 +16,26 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <random>
+#include <utility>
+#include <vector>
 
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
+//#include "ortools/base/fuzztest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/util/flat_matrix.h"
 
 namespace operations_research {
 namespace {
+//using ::fuzztest::NonNegative;
 using ::testing::HasSubstr;
 using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
@@ -44,11 +51,7 @@ TEST(NChooseKTest, TrivialErrorCases) {
                                           HasSubstr("n is negative")));
     EXPECT_THAT(NChooseK(x, -1), StatusIs(absl::StatusCode::kInvalidArgument,
                                           HasSubstr("k is negative")));
-    if (x != kint64max) {
-      EXPECT_THAT(NChooseK(x, x + 1),
-                  StatusIs(absl::StatusCode::kInvalidArgument,
-                           HasSubstr("greater than n")));
-    }
+    if (x != kint64max) EXPECT_THAT(NChooseK(x, x + 1), IsOkAndHolds(0));
     ASSERT_FALSE(HasFailure()) << DUMP_VARS(t, x);
   }
 }
@@ -244,6 +247,75 @@ TEST(NChooseKTest, ComparisonAgainstPascalTriangleForK5OrAbove) {
     }
   }
 }
+
+void MatchesLogCombinations(int n, int k) {
+  if (n < k) {
+    std::swap(k, n);
+  }
+  const auto exact = NChooseK(n, k);
+  const double log_approx = MathUtil::LogCombinations(n, k);
+  if (exact.ok()) {
+    // We accepted to compute the exact value, make sure that it matches the
+    // approximation.
+    ASSERT_NEAR(log(exact.value()), log_approx, 0.0001);
+  } else {
+    // We declined to compute the exact value, make sure that we had a good
+    // reason to, i.e. that the result did indeed overflow.
+    ASSERT_THAT(exact, StatusIs(absl::StatusCode::kInvalidArgument,
+                                HasSubstr("overflows int64")));
+    const double approx = exp(log_approx);
+    ASSERT_GE(std::nextafter(approx, std::numeric_limits<double>::infinity()),
+              std::numeric_limits<int64_t>::max())
+        << "we declined to compute the exact value of NChooseK(" << n << ", "
+        << k << "), but the log value is " << log_approx
+        << " (value: " << approx << "), which fits in int64_t";
+  }
+}
+/*
+FUZZ_TEST(NChooseKTest, MatchesLogCombinations)
+    // Ideally we'd test with `uint64_t`, but `LogCombinations` only accepts
+    // `int`.
+    .WithDomains(NonNegative<int>(), NonNegative<int>());
+*/
+template <int kMaxN, auto algo>
+void BM_NChooseK(benchmark::State& state) {
+  static constexpr int kNumInputs = 1000;
+  // Use deterministic random numbers to avoid noise.
+  std::mt19937 gen(42);
+  std::uniform_int_distribution<int64_t> random(0, kMaxN);
+  std::vector<std::pair<int64_t, int64_t>> inputs;
+  inputs.reserve(kNumInputs);
+  for (int i = 0; i < kNumInputs; ++i) {
+    int64_t n = random(gen);
+    int64_t k = random(gen);
+    if (n < k) {
+      std::swap(n, k);
+    }
+    inputs.emplace_back(n, k);
+  }
+  // Force the one-time, costly static initializations of NChooseK() to happen
+  // before the benchmark starts.
+  auto result = NChooseK(62, 31);
+  benchmark::DoNotOptimize(result);
+
+  // Start the benchmark.
+  for (auto _ : state) {
+    for (const auto [n, k] : inputs) {
+      auto result = algo(n, k);
+      benchmark::DoNotOptimize(result);
+    }
+  }
+  state.SetItemsProcessed(state.iterations() * kNumInputs);
+}
+// int32_t domain.
+BENCHMARK(BM_NChooseK<30, operations_research::NChooseK>);
+
+// int{32,64} domain.
+BENCHMARK(BM_NChooseK<60, operations_research::NChooseK>);
+
+// int{32,64,128} domain.
+BENCHMARK(BM_NChooseK<100, operations_research::NChooseK>);
+BENCHMARK(BM_NChooseK<100, MathUtil::LogCombinations>);
 
 }  // namespace
 }  // namespace operations_research

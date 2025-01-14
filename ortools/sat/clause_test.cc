@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <memory>
 #include <numeric>
-#include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -54,8 +53,14 @@ TEST(SatClauseTest, BasicAllocation) {
 }
 
 struct TestSatClause {
+#ifdef _MSC_VER
+  // MSVC doesn't allow to overflow at the word boundary.
+  unsigned int is_learned : 1;
+  unsigned int is_attached : 1;
+#else
   bool is_learned : 1;
   bool is_attached : 1;
+#endif
   unsigned int size : 30;
 
   // We test that Literal literals[0]; does not increase the size.
@@ -101,6 +106,16 @@ TEST(BinaryImplicationGraphTest, BasicUnsatSccTest) {
   graph->AddBinaryClause(Literal(-1).Negated(), Literal(+4));
   graph->AddBinaryClause(Literal(+4).Negated(), Literal(+1));
   EXPECT_FALSE(graph->DetectEquivalences());
+}
+
+TEST(BinaryImplicationGraphTest, IssueFoundOnMipLibTest) {
+  Model model;
+  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
+  model.GetOrCreate<SatSolver>()->SetNumVariables(10);
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, +2, -3, -4})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, +2, +3, +4, +5})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, -2, -3, +4, +5})));
+  EXPECT_TRUE(graph->DetectEquivalences());
 }
 
 TEST(BinaryImplicationGraphTest, DetectEquivalences) {

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,6 +42,7 @@
 #include "ortools/sat/diffn_cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
@@ -628,10 +629,10 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
 //
 // These property ensures that all other intervals ends before the start of
 // the makespan interval.
-std::optional<int> DetectMakespan(
-    const std::vector<IntervalVariable>& intervals,
-    const std::vector<AffineExpression>& demands,
-    const AffineExpression& capacity, Model* model) {
+std::optional<int> DetectMakespan(absl::Span<const IntervalVariable> intervals,
+                                  absl::Span<const AffineExpression> demands,
+                                  const AffineExpression& capacity,
+                                  Model* model) {
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
 
@@ -963,6 +964,15 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   //
   // TODO(user): In some cases, we could have only one task that can be
   // first.
+  IntegerValue max_for_overflow_check = std::max(-min_of_starts, max_of_ends);
+  if (makespan.has_value()) {
+    max_for_overflow_check = std::max(
+        max_for_overflow_check, integer_trail->UpperBound(makespan.value()));
+  }
+  if (ProdOverflow(max_for_overflow_check,
+                   integer_trail->UpperBound(capacity))) {
+    return;
+  }
   const AffineExpression span_start = min_of_starts;
   const AffineExpression span_end =
       makespan.has_value() ? makespan.value() : max_of_ends;
@@ -1122,10 +1132,10 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
 //
 // Add linking constraint to the CP solver
 // sum zi = 1 and for all i, zi => max = expr_i.
-void AppendLinMaxRelaxationPart2(
-    IntegerVariable target, const std::vector<Literal>& alternative_literals,
-    const std::vector<LinearExpression>& exprs, Model* model,
-    LinearRelaxation* relaxation) {
+void AppendLinMaxRelaxationPart2(IntegerVariable target,
+                                 absl::Span<const Literal> alternative_literals,
+                                 absl::Span<const LinearExpression> exprs,
+                                 Model* model, LinearRelaxation* relaxation) {
   const int num_exprs = exprs.size();
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
@@ -1297,7 +1307,10 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
       const IntegerVariable int_var = mapping->Integer(ref);
       lc.AddTerm(int_var, coeff);
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    LinearConstraint built_ct = lc.Build();
+    if (!PossibleOverflow(*integer_trail, built_ct)) {
+      relaxation->linear_constraints.push_back(std::move(built_ct));
+    }
   }
   if (rhs_domain_max < max_activity) {
     // And(ei) => terms <= rhs_domain_max
@@ -1314,7 +1327,10 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
       const IntegerVariable int_var = mapping->Integer(ref);
       lc.AddTerm(int_var, coeff);
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    LinearConstraint built_ct = lc.Build();
+    if (!PossibleOverflow(*integer_trail, built_ct)) {
+      relaxation->linear_constraints.push_back(std::move(built_ct));
+    }
   }
 }
 

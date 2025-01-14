@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,11 +17,13 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -33,6 +35,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -102,13 +105,13 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 
   // Internally, we often take the negation of a domain, and we also want to
   // have sentinel values greater than the min/max of a variable domain, so
-  // the domain must fall in [kint64min + 2, kint64max - 1].
+  // the domain must fall in [-kint64max / 2, kint64max / 2].
   const int64_t lb = proto.domain(0);
   const int64_t ub = proto.domain(proto.domain_size() - 1);
-  if (lb < std::numeric_limits<int64_t>::min() + 2 ||
-      ub > std::numeric_limits<int64_t>::max() - 1) {
+  if (lb < -std::numeric_limits<int64_t>::max() / 2 ||
+      ub > std::numeric_limits<int64_t>::max() / 2) {
     return absl::StrCat(
-        "var #", v, " domain do not fall in [kint64min + 2, kint64max - 1]. ",
+        "var #", v, " domain do not fall in [-kint64max / 2, kint64max / 2]. ",
         ProtobufShortDebugString(proto));
   }
 
@@ -358,8 +361,14 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
   // Detect potential overflow.
   Domain product_domain(1);
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
-    product_domain = product_domain.ContinuousMultiplicationBy(
-        {MinOfExpression(model, expr), MaxOfExpression(model, expr)});
+    const int64_t min_expr = MinOfExpression(model, expr);
+    const int64_t max_expr = MaxOfExpression(model, expr);
+    if (min_expr == 0 && max_expr == 0) {
+      // An overflow multiplied by zero is still invalid.
+      continue;
+    }
+    product_domain =
+        product_domain.ContinuousMultiplicationBy({min_expr, max_expr});
   }
 
   if (product_domain.Max() <= -std ::numeric_limits<int64_t>::max() ||
@@ -915,11 +924,6 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
                             " has a domain too large to be used in a"
                             " SELECT_MEDIAN_VALUE value selection strategy");
       }
-      if (PossibleIntegerOverflow(model, {ref}, {1})) {
-        // This will become an overflow if translated to an expr.
-        return absl::StrCat("Possible integer overflow in strategy: ",
-                            ProtobufShortDebugString(strategy));
-      }
     }
     for (const LinearExpressionProto& expr : strategy.exprs()) {
       for (const int var : expr.vars()) {
@@ -1022,9 +1026,6 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 }
 
 std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
-  if (!after_presolve && model.has_symmetry()) {
-    return "The symmetry field should be empty and reserved for internal use.";
-  }
   int64_t int128_overflow = 0;
   for (int v = 0; v < model.variables_size(); ++v) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
@@ -1414,24 +1415,13 @@ class ConstraintChecker {
     return true;
   }
 
-  bool IntervalsAreDisjoint(const IntervalConstraintProto& interval1,
-                            const IntervalConstraintProto& interval2) {
-    return IntervalEnd(interval1) <= IntervalStart(interval2) ||
-           IntervalEnd(interval2) <= IntervalStart(interval1);
-  }
-
-  bool IntervalIsEmpty(const IntervalConstraintProto& interval) {
-    return IntervalStart(interval) == IntervalEnd(interval);
-  }
-
   bool NoOverlap2DConstraintIsFeasible(const CpModelProto& model,
                                        const ConstraintProto& ct) {
     const auto& arg = ct.no_overlap_2d();
     // Those intervals from arg.x_intervals and arg.y_intervals where both
     // the x and y intervals are enforced.
-    std::vector<std::pair<const IntervalConstraintProto* const,
-                          const IntervalConstraintProto* const>>
-        enforced_intervals_xy;
+    bool has_zero_sizes = false;
+    std::vector<Rectangle> enforced_rectangles;
     {
       const int num_intervals = arg.x_intervals_size();
       CHECK_EQ(arg.y_intervals_size(), num_intervals);
@@ -1439,27 +1429,40 @@ class ConstraintChecker {
         const ConstraintProto& x = model.constraints(arg.x_intervals(i));
         const ConstraintProto& y = model.constraints(arg.y_intervals(i));
         if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y)) {
-          enforced_intervals_xy.push_back({&x.interval(), &y.interval()});
+          enforced_rectangles.push_back({.x_min = IntervalStart(x.interval()),
+                                         .x_max = IntervalEnd(x.interval()),
+                                         .y_min = IntervalStart(y.interval()),
+                                         .y_max = IntervalEnd(y.interval())});
+          const auto& rect = enforced_rectangles.back();
+          if (rect.x_min == rect.x_max || rect.y_min == rect.y_max) {
+            has_zero_sizes = true;
+          }
         }
       }
     }
-    const int num_enforced_intervals = enforced_intervals_xy.size();
-    for (int i = 0; i < num_enforced_intervals; ++i) {
-      for (int j = i + 1; j < num_enforced_intervals; ++j) {
-        const auto& xi = *enforced_intervals_xy[i].first;
-        const auto& yi = *enforced_intervals_xy[i].second;
-        const auto& xj = *enforced_intervals_xy[j].first;
-        const auto& yj = *enforced_intervals_xy[j].second;
-        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
-          VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
-                  << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
-                  << IntervalEnd(yi) << "]) and " << j << "(x=["
-                  << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
-                  << IntervalStart(yj) << ", " << IntervalEnd(yj)
-                  << "]) are not disjoint.";
-          return false;
-        }
+
+    std::optional<std::pair<int, int>> one_intersection;
+    if (!has_zero_sizes) {
+      absl::c_stable_sort(enforced_rectangles,
+                          [](const Rectangle& a, const Rectangle& b) {
+                            return a.x_min < b.x_min;
+                          });
+      one_intersection = FindOneIntersectionIfPresent(enforced_rectangles);
+    } else {
+      const std::vector<std::pair<int, int>> intersections =
+          FindPartialRectangleIntersections(enforced_rectangles);
+      if (!intersections.empty()) {
+        one_intersection = intersections[0];
       }
+    }
+
+    if (one_intersection != std::nullopt) {
+      VLOG(1) << "Rectangles " << one_intersection->first << "("
+              << enforced_rectangles[one_intersection->first] << ") and "
+              << one_intersection->second << "("
+              << enforced_rectangles[one_intersection->second]
+              << ") are not disjoint.";
+      return false;
     }
     return true;
   }
@@ -1632,18 +1635,43 @@ class ConstraintChecker {
     const int num_arcs = ct.routes().tails_size();
     int num_used_arcs = 0;
     int num_self_arcs = 0;
+
+    // Compute the number of nodes.
     int num_nodes = 0;
-    std::vector<int> tail_to_head;
+    for (int i = 0; i < num_arcs; ++i) {
+      num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
+      num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
+    }
+
+    std::vector<int> tail_to_head(num_nodes, -1);
+    std::vector<bool> has_incoming_arc(num_nodes, false);
+    std::vector<int> has_outgoing_arc(num_nodes, false);
     std::vector<int> depot_nexts;
     for (int i = 0; i < num_arcs; ++i) {
       const int tail = ct.routes().tails(i);
       const int head = ct.routes().heads(i);
-      num_nodes = std::max(num_nodes, 1 + tail);
-      num_nodes = std::max(num_nodes, 1 + head);
-      tail_to_head.resize(num_nodes, -1);
       if (LiteralIsTrue(ct.routes().literals(i))) {
+        // Check for loops.
+        if (tail != 0) {
+          if (has_outgoing_arc[tail]) {
+            VLOG(1) << "routes: node " << tail << "has two outgoing arcs";
+            return false;
+          }
+          has_outgoing_arc[tail] = true;
+        }
+        if (head != 0) {
+          if (has_incoming_arc[head]) {
+            VLOG(1) << "routes: node " << head << "has two incoming arcs";
+            return false;
+          }
+          has_incoming_arc[head] = true;
+        }
+
         if (tail == head) {
-          if (tail == 0) return false;
+          if (tail == 0) {
+            VLOG(1) << "Self loop on node 0 are forbidden.";
+            return false;
+          }
           ++num_self_arcs;
           continue;
         }
@@ -1651,7 +1679,7 @@ class ConstraintChecker {
         if (tail == 0) {
           depot_nexts.push_back(head);
         } else {
-          if (tail_to_head[tail] != -1) return false;
+          DCHECK_EQ(tail_to_head[tail], -1);
           tail_to_head[tail] = head;
         }
       }
@@ -1720,7 +1748,7 @@ class ConstraintChecker {
       current_level += delta.second;
       if (current_level < min_level || current_level > max_level) {
         VLOG(1) << "Reservoir level " << current_level
-                << " is out of bounds at time" << delta.first;
+                << " is out of bounds at time: " << delta.first;
         return false;
       }
     }
@@ -1764,9 +1792,9 @@ class ConstraintChecker {
             // This indicates that such a constraint was not added to the model.
             // It should probably be a validation error, but it is hard to
             // detect beforehand.
-            LOG(ERROR) << "Warning, an interval constraint was likely used "
-                          "without a corresponding linear constraint linking "
-                          "its start, size and end.";
+            VLOG(1) << "Warning, an interval constraint was likely used "
+                       "without a corresponding linear constraint linking "
+                       "its start, size and end.";
           }
           return false;
         }

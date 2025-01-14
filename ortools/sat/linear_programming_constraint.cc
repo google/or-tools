@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,7 +43,6 @@
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
 #include "ortools/glop/variables_info.h"
-#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
@@ -52,6 +51,7 @@
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
@@ -359,12 +359,13 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   lp_reduced_cost_.assign(vars.size(), 0.0);
 
   if (!vars.empty()) {
-    const int max_index = NegationOf(vars.back()).value();
+    const IntegerVariable max_index = std::max(
+        NegationOf(vars.back()), integer_trail_->NumIntegerVariables() - 1);
     if (max_index >= expanded_lp_solution_.size()) {
-      expanded_lp_solution_.assign(max_index + 1, 0.0);
+      expanded_lp_solution_.assign(max_index.value() + 1, 0.0);
     }
     if (max_index >= expanded_reduced_costs_.size()) {
-      expanded_reduced_costs_.assign(max_index + 1, 0.0);
+      expanded_reduced_costs_.assign(max_index.value() + 1, 0.0);
     }
   }
 }
@@ -805,6 +806,17 @@ void LinearProgrammingConstraint::SetLevel(int level) {
     lp_solution_is_set_ = true;
     lp_solution_ = level_zero_lp_solution_;
     lp_solution_level_ = 0;
+    // Add the fixed variables. They might have been skipped when we did the
+    // linear relaxation of the model, but cut generators expect all variables
+    // to have an LP value.
+    if (expanded_lp_solution_.size() < integer_trail_->NumIntegerVariables()) {
+      expanded_lp_solution_.resize(integer_trail_->NumIntegerVariables());
+    }
+    for (IntegerVariable i(0); i < integer_trail_->NumIntegerVariables(); ++i) {
+      if (integer_trail_->IsFixed(i)) {
+        expanded_lp_solution_[i] = ToDouble(integer_trail_->LowerBound(i));
+      }
+    }
     for (int i = 0; i < lp_solution_.size(); i++) {
       const IntegerVariable var = extended_integer_variables_[i];
       expanded_lp_solution_[var] = lp_solution_[i];
@@ -1175,7 +1187,7 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
 // linear expression == rhs, we can use this to propagate more!
 //
 // TODO(user): Also propagate on -cut ? in practice we already do that in many
-// places were we try to generate the cut on -cut... But we coould do it sooner
+// places were we try to generate the cut on -cut... But we could do it sooner
 // and more cleanly here.
 bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
                                                 CutData* cut) {
@@ -1659,8 +1671,9 @@ void LinearProgrammingConstraint::AddCGCuts() {
         IgnoreTrivialConstraintMultipliers(&tmp_cg_multipliers_);
         if (tmp_cg_multipliers_.size() <= 1) continue;
       }
-      tmp_integer_multipliers_ = ScaleMultipliers(
-          tmp_cg_multipliers_, /*take_objective_into_account=*/false, &scaling);
+      ScaleMultipliers(tmp_cg_multipliers_,
+                       /*take_objective_into_account=*/false, &scaling,
+                       &tmp_integer_multipliers_);
       if (scaling != 0) {
         if (AddCutFromConstraints("CG", tmp_integer_multipliers_)) {
           ++num_added;
@@ -2273,16 +2286,16 @@ void LinearProgrammingConstraint::IgnoreTrivialConstraintMultipliers(
   lp_multipliers->resize(new_size);
 }
 
-std::vector<std::pair<RowIndex, IntegerValue>>
-LinearProgrammingConstraint::ScaleMultipliers(
+void LinearProgrammingConstraint::ScaleMultipliers(
     absl::Span<const std::pair<RowIndex, double>> lp_multipliers,
-    bool take_objective_into_account, IntegerValue* scaling) const {
+    bool take_objective_into_account, IntegerValue* scaling,
+    std::vector<std::pair<RowIndex, IntegerValue>>* output) const {
   *scaling = 0;
 
-  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
+  output->clear();
   if (lp_multipliers.empty()) {
     // Empty linear combinaison.
-    return integer_multipliers;
+    return;
   }
 
   // TODO(user): we currently do not support scaling down, so we just abort
@@ -2291,7 +2304,7 @@ LinearProgrammingConstraint::ScaleMultipliers(
   if (ScalingCanOverflow(/*power=*/0, take_objective_into_account,
                          lp_multipliers, overflow_cap)) {
     ++num_scaling_issues_;
-    return integer_multipliers;
+    return;
   }
 
   // Note that we don't try to scale by more than 63 since in practice the
@@ -2319,16 +2332,15 @@ LinearProgrammingConstraint::ScaleMultipliers(
     const IntegerValue coeff(std::round(double_coeff * scaling_as_double));
     if (coeff != 0) {
       gcd = std::gcd(gcd, std::abs(coeff.value()));
-      integer_multipliers.push_back({row, coeff});
+      output->push_back({row, coeff});
     }
   }
   if (gcd > 1) {
     *scaling /= gcd;
-    for (auto& entry : integer_multipliers) {
+    for (auto& entry : *output) {
       entry.second /= gcd;
     }
   }
-  return integer_multipliers;
 }
 
 template <bool check_overflow>
@@ -2611,8 +2623,8 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
 
   IntegerValue scaling = 0;
   IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
-  tmp_integer_multipliers_ = ScaleMultipliers(
-      tmp_lp_multipliers_, take_objective_into_account, &scaling);
+  ScaleMultipliers(tmp_lp_multipliers_, take_objective_into_account, &scaling,
+                   &tmp_integer_multipliers_);
   if (scaling == 0) {
     VLOG(1) << simplex_.GetProblemStatus();
     VLOG(1) << "Issue while computing the exact LP reason. Aborting.";
@@ -2681,8 +2693,8 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
     tmp_lp_multipliers_.push_back({row, row_factors_[row.value()] * value});
   }
   IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
-  tmp_integer_multipliers_ = ScaleMultipliers(
-      tmp_lp_multipliers_, /*take_objective_into_account=*/false, &scaling);
+  ScaleMultipliers(tmp_lp_multipliers_, /*take_objective_into_account=*/false,
+                   &scaling, &tmp_integer_multipliers_);
   if (scaling == 0) {
     VLOG(1) << "Isse while computing the exact dual ray reason. Aborting.";
     return true;

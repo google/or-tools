@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,11 +32,13 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
@@ -137,7 +139,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
 
 void GenerateNoOverlap2dEnergyCut(
     absl::Span<const std::vector<LiteralValueValue>> energies,
-    absl::Span<int> rectangles, absl::string_view cut_name, Model* model,
+    absl::Span<const int> rectangles, absl::string_view cut_name, Model* model,
     LinearConstraintManager* manager, SchedulingConstraintHelper* x_helper,
     SchedulingConstraintHelper* y_helper,
     SchedulingDemandHelper* y_demands_helper) {
@@ -329,8 +331,10 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     if (!y_demands_helper->CacheAllEnergyValues()) return true;
 
     const int num_rectangles = x_helper->NumTasks();
-    std::vector<int> active_rectangles;
-    std::vector<Rectangle> cached_rectangles(num_rectangles);
+    std::vector<int> active_rectangles_indexes;
+    active_rectangles_indexes.reserve(num_rectangles);
+    std::vector<Rectangle> active_rectangles;
+    active_rectangles.reserve(num_rectangles);
     for (int rect = 0; rect < num_rectangles; ++rect) {
       if (y_helper->IsAbsent(rect) || y_helper->IsAbsent(rect)) continue;
       // We do not consider rectangles controlled by 2 different unassigned
@@ -344,24 +348,30 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
       // here, but for now this code is not in the hot spot, so better be
       // defensive and only do connected components on really disjoint
       // rectangles.
-      Rectangle& rectangle = cached_rectangles[rect];
+      active_rectangles_indexes.push_back(rect);
+      Rectangle& rectangle = active_rectangles.emplace_back();
       rectangle.x_min = x_helper->StartMin(rect);
       rectangle.x_max = x_helper->EndMax(rect);
       rectangle.y_min = y_helper->StartMin(rect);
       rectangle.y_max = y_helper->EndMax(rect);
-
-      active_rectangles.push_back(rect);
     }
 
     if (active_rectangles.size() <= 1) return true;
 
-    std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
-        cached_rectangles, absl::MakeSpan(active_rectangles));
+    const CompactVectorVector<int> components =
+        GetOverlappingRectangleComponents(active_rectangles);
 
     // Forward pass. No need to do a backward pass.
-    for (absl::Span<int> rectangles : components) {
-      if (rectangles.size() <= 1) continue;
+    std::vector<int> rectangles;
+    for (int i = 0; i < components.size(); ++i) {
+      absl::Span<const int> indexes = components[i];
+      if (indexes.size() <= 1) continue;
 
+      rectangles.clear();
+      rectangles.reserve(indexes.size());
+      for (const int index : indexes) {
+        rectangles.push_back(active_rectangles_indexes[index]);
+      }
       GenerateNoOverlap2dEnergyCut(energies, rectangles, "NoOverlap2dXEnergy",
                                    model, manager, x_helper, y_helper,
                                    y_demands_helper);
@@ -578,9 +588,11 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
     if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
 
     const int num_rectangles = x_helper->NumTasks();
-    std::vector<int> active_rectangles;
+    std::vector<int> active_rectangles_indexes;
+    active_rectangles_indexes.reserve(num_rectangles);
+    std::vector<Rectangle> active_rectangles;
+    active_rectangles.reserve(num_rectangles);
     std::vector<IntegerValue> cached_areas(num_rectangles);
-    std::vector<Rectangle> cached_rectangles(num_rectangles);
     for (int rect = 0; rect < num_rectangles; ++rect) {
       if (!y_helper->IsPresent(rect) || !y_helper->IsPresent(rect)) continue;
 
@@ -591,21 +603,28 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
       // here, but for now this code is not in the hot spot, so better be
       // defensive and only do connected components on really disjoint
       // rectangles.
-      Rectangle& rectangle = cached_rectangles[rect];
+      active_rectangles_indexes.push_back(rect);
+      Rectangle& rectangle = active_rectangles.emplace_back();
       rectangle.x_min = x_helper->StartMin(rect);
       rectangle.x_max = x_helper->EndMax(rect);
       rectangle.y_min = y_helper->StartMin(rect);
       rectangle.y_max = y_helper->EndMax(rect);
-
-      active_rectangles.push_back(rect);
     }
 
     if (active_rectangles.size() <= 1) return true;
 
-    std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
-        cached_rectangles, absl::MakeSpan(active_rectangles));
-    for (absl::Span<int> rectangles : components) {
-      if (rectangles.size() <= 1) continue;
+    const CompactVectorVector<int> components =
+        GetOverlappingRectangleComponents(active_rectangles);
+    std::vector<int> rectangles;
+    for (int i = 0; i < components.size(); ++i) {
+      absl::Span<const int> indexes = components[i];
+      if (indexes.size() <= 1) continue;
+
+      rectangles.clear();
+      rectangles.reserve(indexes.size());
+      for (const int index : indexes) {
+        rectangles.push_back(active_rectangles_indexes[index]);
+      }
 
       auto generate_cuts = [product_decomposer, manager, model, &rectangles](
                                absl::string_view cut_name,

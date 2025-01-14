@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,15 +26,16 @@
 
 #include "absl/base/attributes.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/strings/string_view.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
@@ -139,6 +140,8 @@ class EnforcementPropagator : public SatPropagator {
 
   std::vector<Literal> temp_literals_;
   std::vector<Literal> temp_reason_;
+
+  std::vector<EnforcementId> ids_to_fix_until_next_root_level_;
 };
 
 // Helper class to decide on the constraint propagation order.

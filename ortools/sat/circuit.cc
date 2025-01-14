@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,8 +21,10 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -33,9 +35,9 @@ namespace operations_research {
 namespace sat {
 
 CircuitPropagator::CircuitPropagator(const int num_nodes,
-                                     const std::vector<int>& tails,
-                                     const std::vector<int>& heads,
-                                     const std::vector<Literal>& literals,
+                                     absl::Span<const int> tails,
+                                     absl::Span<const int> heads,
+                                     absl::Span<const Literal> literals,
                                      Options options, Model* model)
     : num_nodes_(num_nodes),
       options_(options),
@@ -356,10 +358,9 @@ bool CircuitPropagator::Propagate() {
   return true;
 }
 
-NoCyclePropagator::NoCyclePropagator(int num_nodes,
-                                     const std::vector<int>& tails,
-                                     const std::vector<int>& heads,
-                                     const std::vector<Literal>& literals,
+NoCyclePropagator::NoCyclePropagator(int num_nodes, absl::Span<const int> tails,
+                                     absl::Span<const int> heads,
+                                     absl::Span<const Literal> literals,
                                      Model* model)
     : num_nodes_(num_nodes),
       trail_(model->GetOrCreate<Trail>()),
@@ -483,7 +484,7 @@ bool NoCyclePropagator::Propagate() {
 
 CircuitCoveringPropagator::CircuitCoveringPropagator(
     std::vector<std::vector<Literal>> graph,
-    const std::vector<int>& distinguished_nodes, Model* model)
+    absl::Span<const int> distinguished_nodes, Model* model)
     : graph_(std::move(graph)),
       num_nodes_(graph_.size()),
       trail_(model->GetOrCreate<Trail>()) {
@@ -626,8 +627,9 @@ bool CircuitCoveringPropagator::Propagate() {
 }
 
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal>>& graph) {
-  return [=](Model* model) {
+    absl::Span<const std::vector<Literal>> graph) {
+  return [=, graph = std::vector<std::vector<Literal>>(
+                 graph.begin(), graph.end())](Model* model) {
     const int n = graph.size();
     std::vector<Literal> exactly_one_constraint;
     exactly_one_constraint.reserve(n);
@@ -644,10 +646,9 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
   };
 }
 
-void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
-                              const std::vector<int>& heads,
-                              const std::vector<Literal>& literals,
-                              Model* model,
+void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
+                              absl::Span<const int> heads,
+                              absl::Span<const Literal> literals, Model* model,
                               bool multiple_subcircuit_through_zero) {
   const int num_arcs = tails.size();
   CHECK_GT(num_arcs, 0);
@@ -695,9 +696,13 @@ void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
 }
 
 std::function<void(Model*)> CircuitCovering(
-    const std::vector<std::vector<Literal>>& graph,
-    const std::vector<int>& distinguished_nodes) {
-  return [=](Model* model) {
+    absl::Span<const std::vector<Literal>> graph,
+    absl::Span<const int> distinguished_nodes) {
+  return [=,
+          distinguished_nodes = std::vector<int>(distinguished_nodes.begin(),
+                                                 distinguished_nodes.end()),
+          graph = std::vector<std::vector<Literal>>(
+              graph.begin(), graph.end())](Model* model) {
     CircuitCoveringPropagator* constraint =
         new CircuitCoveringPropagator(graph, distinguished_nodes, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());

@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -49,27 +49,16 @@ cc_library(
     ],
 )
 
-#cc_test(
-#    name = "gscip_parameters_test",
-#    srcs = ["gscip_parameters_test.cc"],
-#    deps = [
-#        ":gscip_cc_proto",
-#        ":gscip_parameters",
-#        "@com_google_absl//absl/time",
-#        "@com_google_googletest//:gtest_main",
-#    ],
-#)
-
 cc_library(
     name = "legacy_scip_params",
     srcs = ["legacy_scip_params.cc"],
     hdrs = ["legacy_scip_params.h"],
     deps = [
         "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@scip",
     ],
 )
 
@@ -92,7 +81,6 @@ cc_library(
         "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "//ortools/port:proto_utils",
         "//ortools/util:status_macros",
         "@com_google_absl//absl/cleanup",
@@ -101,6 +89,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@scip",
     ],
 )
 
@@ -111,8 +100,8 @@ cc_library(
     deps = [
         ":gscip",
         "//ortools/base:status_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status",
+        "@scip",
     ],
 )
 
@@ -123,9 +112,9 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@scip",
     ],
 )
 

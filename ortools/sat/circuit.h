@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,20 +15,18 @@
 #define OR_TOOLS_SAT_CIRCUIT_H_
 
 #include <functional>
-#include <memory>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
+#include "absl/types/span.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -53,9 +51,9 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 
   // The constraints take a sparse representation of a graph on [0, n). Each arc
   // being present when the given literal is true.
-  CircuitPropagator(int num_nodes, const std::vector<int>& tails,
-                    const std::vector<int>& heads,
-                    const std::vector<Literal>& literals, Options options,
+  CircuitPropagator(int num_nodes, absl::Span<const int> tails,
+                    absl::Span<const int> heads,
+                    absl::Span<const Literal> literals, Options options,
                     Model* model);
 
   // This type is neither copyable nor movable.
@@ -121,9 +119,9 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 // Enforce the fact that there is no cycle in the given directed graph.
 class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
  public:
-  NoCyclePropagator(int num_nodes, const std::vector<int>& tails,
-                    const std::vector<int>& heads,
-                    const std::vector<Literal>& literals, Model* model);
+  NoCyclePropagator(int num_nodes, absl::Span<const int> tails,
+                    absl::Span<const int> heads,
+                    absl::Span<const Literal> literals, Model* model);
 
   void SetLevel(int level) final;
   bool Propagate() final;
@@ -173,7 +171,7 @@ class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
 class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
  public:
   CircuitCoveringPropagator(std::vector<std::vector<Literal>> graph,
-                            const std::vector<int>& distinguished_nodes,
+                            absl::Span<const int> distinguished_nodes,
                             Model* model);
 
   void SetLevel(int level) final;
@@ -246,18 +244,17 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads,
 // This just wraps CircuitPropagator. See the comment there to see what this
 // does. Note that any nodes with no outgoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
-void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
-                              const std::vector<int>& heads,
-                              const std::vector<Literal>& literals,
-                              Model* model,
+void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
+                              absl::Span<const int> heads,
+                              absl::Span<const Literal> literals, Model* model,
                               bool multiple_subcircuit_through_zero = false);
 
 // TODO(user): Change to a sparse API like for the function above.
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal>>& graph);
+    absl::Span<const std::vector<Literal>> graph);
 std::function<void(Model*)> CircuitCovering(
-    const std::vector<std::vector<Literal>>& graph,
-    const std::vector<int>& distinguished_nodes);
+    absl::Span<const std::vector<Literal>> graph,
+    absl::Span<const int> distinguished_nodes);
 
 }  // namespace sat
 }  // namespace operations_research

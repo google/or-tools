@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,14 +29,10 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -110,16 +106,21 @@ class SatSolver {
   bool AddBinaryClause(Literal a, Literal b);
   bool AddTernaryClause(Literal a, Literal b, Literal c);
 
-  // Adds a clause to the problem. Returns false if the problem is detected to
-  // be UNSAT.
-  // If is_safe is false, we will do some basic presolving like removing
-  // duplicate literals.
+  // Adds a clause to the problem.
+  // Returns false if the problem is detected to be UNSAT.
   //
-  // TODO(user): Rename this to AddClause(), also get rid of the specialized
+  // This must only be called at level zero, use AddClauseDuringSearch() for
+  // adding clause at a positive level.
+  //
+  // We call this a "problem" clause just because we will never delete such
+  // clause unless it is proven to always be satisfied. So this can be called
+  // with the initial clause of a problem, but also infered clause that we
+  // don't want to delete.
+  //
+  // TODO(user): Rename this to AddClause() ? Also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
   // just end up calling this?
-  bool AddProblemClause(absl::Span<const Literal> literals,
-                        bool is_safe = true);
+  bool AddProblemClause(absl::Span<const Literal> literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
@@ -373,7 +374,7 @@ class SatSolver {
   // Functions to manage the set of learned binary clauses.
   // Only clauses added/learned when TrackBinaryClause() is true are managed.
   void TrackBinaryClauses(bool value) { track_binary_clauses_ = value; }
-  bool AddBinaryClauses(const std::vector<BinaryClause>& clauses);
+  bool AddBinaryClauses(absl::Span<const BinaryClause> clauses);
   const std::vector<BinaryClause>& NewlyAddedBinaryClauses();
   void ClearNewlyAddedBinaryClauses();
 
@@ -443,7 +444,7 @@ class SatSolver {
   // debug mode, and after this is called, all the learned clauses are tested to
   // satisfy this saved assignment.
   void SaveDebugAssignment();
-  void LoadDebugSolution(const std::vector<Literal>& solution);
+  void LoadDebugSolution(absl::Span<const Literal> solution);
 
   void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
@@ -522,7 +523,7 @@ class SatSolver {
   bool ClauseIsValidUnderDebugAssignment(
       absl::Span<const Literal> clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
-      const std::vector<LiteralWithCoeff>& cst, Coefficient rhs) const;
+      absl::Span<const LiteralWithCoeff> cst, Coefficient rhs) const;
 
   // Logs the given status if parameters_.log_search_progress() is true.
   // Also returns it.
@@ -657,7 +658,7 @@ class SatSolver {
   // Fills literals with all the literals in the reasons of the literals in the
   // given input. The output vector will have no duplicates and will not contain
   // the literals already present in the input.
-  void ComputeUnionOfReasons(const std::vector<Literal>& input,
+  void ComputeUnionOfReasons(absl::Span<const Literal> input,
                              std::vector<Literal>* literals);
 
   // Do the full pseudo-Boolean constraint analysis. This calls multiple
@@ -689,11 +690,11 @@ class SatSolver {
   // - This literal appears in the first position.
   // - All the other literals are of smaller decision level.
   // - There is no literal with a decision level of zero.
-  bool IsConflictValid(const std::vector<Literal>& literals);
+  bool IsConflictValid(absl::Span<const Literal> literals);
 
   // Given the learned clause after a conflict, this computes the correct
   // backtrack level to call Backtrack() with.
-  int ComputeBacktrackLevel(const std::vector<Literal>& literals);
+  int ComputeBacktrackLevel(absl::Span<const Literal> literals);
 
   // The LBD (Literal Blocks Distance) is the number of different decision
   // levels at which the literals of the clause were assigned. Note that we
@@ -717,7 +718,7 @@ class SatSolver {
 
   // Activity management for clauses. This work the same way at the ones for
   // variables, but with different parameters.
-  void BumpReasonActivities(const std::vector<Literal>& literals);
+  void BumpReasonActivities(absl::Span<const Literal> literals);
   void BumpClauseActivity(SatClause* clause);
   void RescaleClauseActivities(double scaling_factor);
   void UpdateClauseActivityIncrement();
@@ -897,8 +898,9 @@ inline std::function<void(Model*)> BooleanLinearConstraint(
 
 inline std::function<void(Model*)> CardinalityConstraint(
     int64_t lower_bound, int64_t upper_bound,
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (int i = 0; i < literals.size(); ++i) {
@@ -911,8 +913,9 @@ inline std::function<void(Model*)> CardinalityConstraint(
 }
 
 inline std::function<void(Model*)> ExactlyOneConstraint(
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
@@ -925,8 +928,9 @@ inline std::function<void(Model*)> ExactlyOneConstraint(
 }
 
 inline std::function<void(Model*)> AtMostOneConstraint(
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
@@ -941,8 +945,7 @@ inline std::function<void(Model*)> AtMostOneConstraint(
 inline std::function<void(Model*)> ClauseConstraint(
     absl::Span<const Literal> literals) {
   return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddProblemClause(literals,
-                                                      /*is_safe=*/false);
+    model->GetOrCreate<SatSolver>()->AddProblemClause(literals);
   };
 }
 
@@ -963,8 +966,9 @@ inline std::function<void(Model*)> Equality(Literal a, Literal b) {
 
 // r <=> (at least one literal is true). This is a reified clause.
 inline std::function<void(Model*)> ReifiedBoolOr(
-    const std::vector<Literal>& literals, Literal r) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals, Literal r) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<Literal> clause;
     for (const Literal l : literals) {
       model->Add(Implication(l, r));  // l => r.
@@ -997,8 +1001,9 @@ inline std::function<void(Model*)> EnforcedClause(
 //
 // Note(user): we could have called ReifiedBoolOr() with everything negated.
 inline std::function<void(Model*)> ReifiedBoolAnd(
-    const std::vector<Literal>& literals, Literal r) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals, Literal r) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<Literal> clause;
     for (const Literal l : literals) {
       model->Add(Implication(r, l));  // r => l.

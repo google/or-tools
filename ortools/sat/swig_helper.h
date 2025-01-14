@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -58,14 +58,14 @@ class SolutionCallback {
 
   double BestObjectiveBound() const;
 
-  int64_t SolutionIntegerValue(int index);
+  int64_t SolutionIntegerValue(int index) const;
 
-  bool SolutionBooleanValue(int index);
+  bool SolutionBooleanValue(int index) const;
 
   // Stops the search.
   void StopSearch();
 
-  operations_research::sat::CpSolverResponse Response() const;
+  const operations_research::sat::CpSolverResponse& Response() const;
 
   // We use mutable and non const methods to overcome SWIG difficulties.
   void SetWrapperClass(SolveWrapper* wrapper) const;

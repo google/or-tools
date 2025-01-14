@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -161,6 +161,8 @@ enum class DimensionSchedulingStatus {
   // An optimal solution was found, however constraints which were relaxed were
   // violated.
   RELAXED_OPTIMAL_ONLY,
+  // Only a feasible solution was found, optimality was not proven.
+  FEASIBLE,
   // A solution could not be found.
   INFEASIBLE
 };
@@ -169,7 +171,7 @@ class RoutingLinearSolverWrapper {
  public:
   static const int kNoConstraint = -1;
 
-  virtual ~RoutingLinearSolverWrapper() {}
+  virtual ~RoutingLinearSolverWrapper() = default;
   virtual void Clear() = 0;
   virtual int CreateNewPositiveVariable() = 0;
   virtual void SetVariableName(int index, absl::string_view name) = 0;
@@ -198,6 +200,13 @@ class RoutingLinearSolverWrapper {
 
   // This function is meant to override the parameters of the solver.
   virtual void SetParameters(const std::string& parameters) = 0;
+  // When solving a scheduling problem, this can be called to add hints that
+  // help the underlying solver:
+  // - nodes is the sequence of nodes in a route represented in the model.
+  // - schedule_variables is the sequence of variables used to represent the
+  //   time at which each node is scheduled.
+  virtual void AddRoute(absl::Span<const int64_t> nodes,
+                        absl::Span<const int> schedule_variables) = 0;
 
   // Returns if the model is empty or not.
   virtual bool ModelIsEmpty() const { return true; }
@@ -384,6 +393,7 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
   void AddProductConstraint(int /*product_var*/,
                             std::vector<int> /*vars*/) override {}
   void SetEnforcementLiteral(int /*ct*/, int /*condition*/) override {};
+  void AddRoute(absl::Span<const int64_t>, absl::Span<const int>) override{};
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
     lp_solver_.GetMutableParameters()->set_max_time_in_seconds(
         absl::ToDoubleSeconds(duration_limit));
@@ -396,8 +406,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     linear_program_.NotifyThatColumnsAreClean();
     VLOG(2) << linear_program_.Dump();
     const glop::ProblemStatus status = lp_solver_.Solve(linear_program_);
+    const bool feasible_only = status == glop::ProblemStatus::PRIMAL_FEASIBLE;
     if (status != glop::ProblemStatus::OPTIMAL &&
-        status != glop::ProblemStatus::IMPRECISE) {
+        status != glop::ProblemStatus::IMPRECISE && !feasible_only) {
       return DimensionSchedulingStatus::INFEASIBLE;
     }
     if (is_relaxation_) {
@@ -415,6 +426,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
       if (it == interval_list->end() || value < it->start) {
         return DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY;
       }
+    }
+    if (feasible_only && !linear_program_.objective_coefficients().empty()) {
+      return DimensionSchedulingStatus::FEASIBLE;
     }
     return DimensionSchedulingStatus::OPTIMAL;
   }
@@ -461,7 +475,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     parameters_.set_symmetry_level(0);
     parameters_.set_catch_sigint_signal(false);
     parameters_.set_mip_max_bound(1e8);
-    parameters_.set_search_branching(sat::SatParameters::LP_SEARCH);
+    parameters_.set_search_branching(sat::SatParameters::PORTFOLIO_SEARCH);
     parameters_.set_linearization_level(2);
     parameters_.set_cut_level(0);
     parameters_.set_use_absl_random(false);
@@ -471,6 +485,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     model_.Clear();
     response_.Clear();
     objective_coefficients_.clear();
+    schedule_variables_.clear();
   }
   int CreateNewPositiveVariable() override {
     const int index = model_.variables_size();
@@ -590,25 +605,57 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     DCHECK_LT(ct, model_.constraints_size());
     model_.mutable_constraints(ct)->add_enforcement_literal(condition);
   }
-  DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
-    parameters_.set_max_time_in_seconds(absl::ToDoubleSeconds(duration_limit));
-    VLOG(2) << ProtobufDebugString(model_);
-    if (hint_.vars_size() == model_.variables_size()) {
-      *model_.mutable_solution_hint() = hint_;
+  void AddRoute(absl::Span<const int64_t> nodes,
+                absl::Span<const int> schedule_variables) override {
+    DCHECK_EQ(nodes.size(), schedule_variables.size());
+    for (const int64_t node : nodes) {
+      if (node >= schedule_hint_.size()) schedule_hint_.resize(node + 1, 0);
     }
-    sat::Model model;
-    model.Add(sat::NewSatParameters(parameters_));
-    response_ = sat::SolveCpModel(model_, &model);
-    VLOG(2) << response_;
-    if (response_.status() == sat::CpSolverStatus::OPTIMAL ||
-        (response_.status() == sat::CpSolverStatus::FEASIBLE &&
-         !model_.has_floating_point_objective())) {
+    for (int n = 0; n < nodes.size(); ++n) {
+      schedule_variables_.push_back(
+          {.node = nodes[n], .cumul = schedule_variables[n]});
+    }
+  }
+  DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
+    const double max_time = absl::ToDoubleSeconds(duration_limit);
+    if (max_time <= 0.0) return DimensionSchedulingStatus::INFEASIBLE;
+    parameters_.set_max_time_in_seconds(max_time);
+    VLOG(2) << ProtobufDebugString(model_);
+    auto record_hint = [this]() {
       hint_.Clear();
       for (int i = 0; i < response_.solution_size(); ++i) {
         hint_.add_vars(i);
         hint_.add_values(response_.solution(i));
       }
+      for (const auto& [node, cumul] : schedule_variables_) {
+        schedule_hint_[node] = response_.solution(cumul);
+      }
+    };
+    model_.clear_solution_hint();
+    auto* hint = model_.mutable_solution_hint();
+    if (hint_.vars_size() == model_.variables_size()) {
+      *hint = hint_;
+    } else {
+      for (const auto& [node, cumul] : schedule_variables_) {
+        if (schedule_hint_[node] == 0) continue;
+        hint->add_vars(cumul);
+        hint->add_values(schedule_hint_[node]);
+      }
+    }
+    sat::Model model;
+    model.Add(sat::NewSatParameters(parameters_));
+    response_ = sat::SolveCpModel(model_, &model);
+    VLOG(2) << response_;
+    DCHECK_NE(response_.status(), sat::CpSolverStatus::MODEL_INVALID);
+    if (response_.status() == sat::CpSolverStatus::OPTIMAL ||
+        (response_.status() == sat::CpSolverStatus::FEASIBLE &&
+         !model_.has_floating_point_objective())) {
+      record_hint();
       return DimensionSchedulingStatus::OPTIMAL;
+    } else if (response_.status() == sat::CpSolverStatus::FEASIBLE) {
+      // TODO(user): Consider storing "feasible" solutions in a separate
+      // cache we use as hint when the "optimal" cache is empty.
+      return DimensionSchedulingStatus::FEASIBLE;
     }
     return DimensionSchedulingStatus::INFEASIBLE;
   }
@@ -636,6 +683,14 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
   sat::SatParameters parameters_;
   std::vector<double> objective_coefficients_;
   sat::PartialVariableAssignment hint_;
+  struct NodeAndCumul {
+    int64_t node;
+    int cumul;
+  };
+  // Stores node/cumul pairs of the routes in the current model.
+  std::vector<NodeAndCumul> schedule_variables_;
+  // Maps node to its last known value in any optimal solution.
+  std::vector<int64_t> schedule_hint_;
 };
 
 // Utility class used in Local/GlobalDimensionCumulOptimizer to set the linear
@@ -651,7 +706,8 @@ class DimensionCumulOptimizerCore {
   // Finds an optimal (or just feasible) solution for the route for the given
   // resource. If the resource is null, it is simply ignored.
   DimensionSchedulingStatus OptimizeSingleRouteWithResource(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       const Resource* resource, bool optimize_vehicle_costs,
       RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
@@ -662,7 +718,8 @@ class DimensionCumulOptimizerCore {
   // same model as in OptimizeSingleRouteWithResource() with the addition of
   // constraints for cumuls and breaks.
   DimensionSchedulingStatus ComputeSingleRouteSolutionCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       RoutingLinearSolverWrapper* solver,
       absl::Span<const int64_t> solution_cumul_values,
@@ -677,7 +734,8 @@ class DimensionCumulOptimizerCore {
   // If both 'resources' and 'resource_indices' are empty, computes the optimal
   // solution for the route itself (without added resource constraints).
   std::vector<DimensionSchedulingStatus> OptimizeSingleRouteWithResources(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       absl::Span<const Resource> resources,
@@ -711,7 +769,8 @@ class DimensionCumulOptimizerCore {
       std::vector<int64_t>* break_values);
 
   DimensionSchedulingStatus OptimizeAndPackSingleRoute(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       const Resource* resource, RoutingLinearSolverWrapper* solver,
       std::vector<int64_t>* cumul_values, std::vector<int64_t>* break_values);
@@ -786,7 +845,8 @@ class DimensionCumulOptimizerCore {
   // ends' cumuls, and then maximizes the starts' cumuls without increasing the
   // ends.
   DimensionSchedulingStatus PackRoutes(
-      std::vector<int> vehicles, RoutingLinearSolverWrapper* solver,
+      std::vector<int> vehicles, double solve_duration_ratio,
+      RoutingLinearSolverWrapper* solver,
       const glop::GlopParameters& packing_parameters);
 
   std::unique_ptr<CumulBoundsPropagator> propagator_;
@@ -842,19 +902,22 @@ class LocalDimensionCumulOptimizer {
   // and stores it in "optimal_cost" (if not null).
   // Returns true iff the route respects all constraints.
   DimensionSchedulingStatus ComputeRouteCumulCost(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       int64_t* optimal_cost);
 
   // Same as ComputeRouteCumulCost, but the cost computed does not contain
   // the part of the vehicle span cost due to fixed transits.
   DimensionSchedulingStatus ComputeRouteCumulCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::ResourceGroup::Resource* resource,
       int64_t* optimal_cost_without_transits);
 
   std::vector<DimensionSchedulingStatus>
   ComputeRouteCumulCostsForResourcesWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       absl::Span<const RoutingModel::ResourceGroup::Resource> resources,
       absl::Span<const int> resource_indices, bool optimize_vehicle_costs,
@@ -868,7 +931,8 @@ class LocalDimensionCumulOptimizer {
   // (if not null), and optimal_breaks, and returns true.
   // Returns false if the route is not feasible.
   DimensionSchedulingStatus ComputeRouteCumuls(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       const RoutingModel::ResourceGroup::Resource* resource,
       std::vector<int64_t>* optimal_cumuls,
@@ -877,7 +941,8 @@ class LocalDimensionCumulOptimizer {
   // Simple combination of ComputeRouteCumulCostWithoutFixedTransits() and
   // ComputeRouteCumuls().
   DimensionSchedulingStatus ComputeRouteCumulsAndCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       std::vector<int64_t>* optimal_cumuls,
       std::vector<int64_t>* optimal_breaks,
@@ -886,7 +951,8 @@ class LocalDimensionCumulOptimizer {
   // If feasible, computes the cost of a given route performed by a vehicle
   // defined by its cumuls and breaks.
   DimensionSchedulingStatus ComputeRouteSolutionCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       absl::Span<const int64_t> solution_cumul_values,
       absl::Span<const int64_t> solution_break_values, int64_t* solution_cost,
@@ -900,7 +966,8 @@ class LocalDimensionCumulOptimizer {
   // If 'resource' is non-null, the packed route must also respect its start/end
   // time window.
   DimensionSchedulingStatus ComputePackedRouteCumuls(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       const RoutingModel::ResourceGroup::Resource* resource,
       std::vector<int64_t>* packed_cumuls, std::vector<int64_t>* packed_breaks);
@@ -1001,7 +1068,8 @@ int64_t ComputeBestVehicleToResourceAssignment(
 // The cumul and break values corresponding to the assignment of each resource
 // are also set in cumul_values and break_values, if non-null.
 bool ComputeVehicleToResourceClassAssignmentCosts(
-    int v, const RoutingModel::ResourceGroup& resource_group,
+    int v, double solve_duration_ratio,
+    const RoutingModel::ResourceGroup& resource_group,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
                                     absl::flat_hash_set<int>>&
         ignored_resources_per_class,

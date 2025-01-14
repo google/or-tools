@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,15 +16,13 @@
 
 #include <cstdint>
 #include <functional>
-#include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
@@ -36,7 +34,7 @@ namespace sat {
 // encodes all the variables and simply enforces a <= 1 constraint on each
 // possible values.
 std::function<void(Model*)> AllDifferentBinary(
-    const std::vector<IntegerVariable>& vars);
+    absl::Span<const IntegerVariable> vars);
 
 // Enforces that the given tuple of variables takes different values.
 // Same as AllDifferentBinary() but use a different propagator that only enforce
@@ -47,7 +45,7 @@ std::function<void(Model*)> AllDifferentBinary(
 // this will not remove already taken values from inside a domain, but it will
 // propagates more the domain bounds.
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable>& vars);
+    absl::Span<const IntegerVariable> vars);
 std::function<void(Model*)> AllDifferentOnBounds(
     const std::vector<AffineExpression>& expressions);
 
@@ -62,7 +60,7 @@ std::function<void(Model*)> AllDifferentOnBounds(
 //
 // This will fully encode variables.
 std::function<void(Model*)> AllDifferentAC(
-    const std::vector<IntegerVariable>& variables);
+    absl::Span<const IntegerVariable> variables);
 
 // Implementation of AllDifferentAC().
 class AllDifferentConstraint : PropagatorInterface {

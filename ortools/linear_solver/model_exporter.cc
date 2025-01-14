@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,6 +30,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
@@ -166,8 +167,8 @@ class MPModelProtoExporter {
   // a name, and a value. If the line is not empty, then only the pair
   // (name, value) is appended. The number of columns, limited to 2 by the MPS
   // format is also taken care of.
-  void AppendMpsTermWithContext(const std::string& head_name,
-                                const std::string& name, double value,
+  void AppendMpsTermWithContext(absl::string_view head_name,
+                                absl::string_view name, double value,
                                 std::string* output);
 
   // Appends a new-line if two columns are already present on the MPS line.
@@ -179,7 +180,7 @@ class MPModelProtoExporter {
   // The sparse matrix must be passed as a vector of columns ('transpose').
   void AppendMpsColumns(
       bool integrality,
-      const std::vector<std::vector<std::pair<int, double>>>& transpose,
+      absl::Span<const std::vector<std::pair<int, double>>> transpose,
       std::string* output);
 
   // Appends a line describing the bound of a variablenew-line if two columns
@@ -692,9 +693,10 @@ void MPModelProtoExporter::AppendMpsLineHeaderWithNewLine(
   absl::StrAppend(output, "\n");
 }
 
-void MPModelProtoExporter::AppendMpsTermWithContext(
-    const std::string& head_name, const std::string& name, double value,
-    std::string* output) {
+void MPModelProtoExporter::AppendMpsTermWithContext(absl::string_view head_name,
+                                                    absl::string_view name,
+                                                    double value,
+                                                    std::string* output) {
   if (current_mps_column_ == 0) {
     AppendMpsLineHeader("", head_name, output);
   }
@@ -722,7 +724,7 @@ void MPModelProtoExporter::AppendNewLineIfTwoColumns(std::string* output) {
 
 void MPModelProtoExporter::AppendMpsColumns(
     bool integrality,
-    const std::vector<std::vector<std::pair<int, double>>>& transpose,
+    absl::Span<const std::vector<std::pair<int, double>>> transpose,
     std::string* output) {
   current_mps_column_ = 0;
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {

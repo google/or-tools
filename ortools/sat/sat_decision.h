@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,12 +18,12 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
@@ -133,6 +133,9 @@ class SatDecisionPolicy {
   void FlipCurrentPolarity();
   void RandomizeCurrentPolarity();
 
+  // This one returns false if there is no such solution to use.
+  bool UseLsSolutionAsInitialPolarity();
+
   // Adds the given variable to var_ordering_ or updates its priority if it is
   // already present.
   void PqInsertOrUpdate(BooleanVariable var);
@@ -141,6 +144,12 @@ class SatDecisionPolicy {
   const SatParameters& parameters_;
   const Trail& trail_;
   ModelRandomGenerator* random_;
+
+  // TODO(user): This is in term of proto indices. Ideally we would need
+  // CpModelMapping to map that to Booleans but this currently lead to cyclic
+  // dependencies. For now we just assume one to one correspondence for the
+  // first entries. This will only work on pure Boolean problems.
+  SharedLsSolutionRepository* ls_hints_;
 
   // Variable ordering (priority will be adjusted dynamically). queue_elements_
   // holds the elements used by var_ordering_ (it uses pointers).

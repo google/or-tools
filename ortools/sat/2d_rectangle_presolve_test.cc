@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -36,7 +36,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {
@@ -702,7 +702,7 @@ ShapePath TraceBoundary(
 
 std::string RenderShapes(std::optional<Rectangle> bb,
                          absl::Span<const Rectangle> rectangles,
-                         const std::vector<SingleShape>& shapes) {
+                         absl::Span<const SingleShape> shapes) {
   const std::vector<std::string> colors = {"black", "white",  "orange",
                                            "cyan",  "yellow", "purple"};
   std::stringstream ss;

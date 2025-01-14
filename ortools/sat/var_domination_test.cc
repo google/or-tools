@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,13 +13,11 @@
 
 #include "ortools/sat/var_domination.h"
 
-#include <string>
-
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -226,6 +224,9 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(NegationOf(Y)));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
   EXPECT_EQ(context.SolutionHint(0), 0);
@@ -272,6 +273,9 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(NegationOf(X)), ElementsAre(Y));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[1]");
   EXPECT_EQ(context.SolutionHint(0), 1);
@@ -315,10 +319,70 @@ TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.SolutionHint(0), 0);
   EXPECT_EQ(context.SolutionHint(1), 1);
+}
+
+// Objective: min(X + Y + 2Z)
+// Constraint: X + Y + Z <= 10
+// X, Y in [-10, 10], Z in [5, 10]
+//
+// Doing (X++, Z--) or (Y++, Z--) is always beneficial if possible.
+TEST(VarDominationTest, ExploitDominanceWithIntegerVariables) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ 5, 10 ]
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1, 2 ]
+      coeffs: [ 1, 1, 2 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 1, 1, 8 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  const IntegerVariable Z = VarDomination::RefToIntegerVariable(2);
+  EXPECT_THAT(var_dom.DominatingVariables(Z), ElementsAre(X, Y));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[-5]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0,10]");
+  EXPECT_EQ(context.DomainOf(2).ToString(), "[5]");
+  EXPECT_EQ(context.SolutionHint(0), -5);
+  EXPECT_EQ(context.SolutionHint(1), 10);
+  EXPECT_EQ(context.SolutionHint(2), 5);
 }
 
 // Objective: min(X + 2Y)
@@ -367,6 +431,70 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.SolutionHint(0), 1);
   EXPECT_EQ(context.SolutionHint(1), 0);
+}
+
+// Objective: min(X)
+// Constraint: -5 <= X + Y <= 5
+// Constraint: -15 <= Y + Z <= 15
+// X,Y in [-10, 10], Z in [-5, 5]
+//
+// Doing (X--, Y++) is always beneficial if possible.
+TEST(VarDominationTest, ExploitRemainingDominanceWithIntegerVariables) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ -10, 10 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ -5, 5 ]
+    }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ 1 ]
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ -5, 5 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ 1, 1 ]
+        domain: [ -15, 15 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 1, 2 ]
+    }
+  )pb");
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,-5]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[5,10]");
+  EXPECT_EQ(context.DomainOf(2).ToString(), "[5]");
+  EXPECT_EQ(context.SolutionHint(0), -5);
+  EXPECT_EQ(context.SolutionHint(1), 6);
+  EXPECT_EQ(context.SolutionHint(2), 5);
 }
 
 // X + Y + Z = 0
@@ -672,6 +800,45 @@ TEST(VarDominationTest, NegativeCoefficients) {
   EXPECT_THAT(var_dom.DominatingVariables(Z), IsEmpty());
 }
 
+TEST(DualBoundReductionTest, FixVariableToDomainBound) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ -10, 10 ] }
+    variables { domain: [ -10, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ -15, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: [ 0, 15 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ -5, 5 ]
+    }
+  )pb");
+  DualBoundStrengthening dual_bound_strengthening;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+  context.ReadObjectiveFromProto();
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
+  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[-10]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[10]");
+  EXPECT_EQ(context.SolutionHint(0), -10);
+  EXPECT_EQ(context.SolutionHint(1), 10);
+}
+
 // Bound propagation see nothing, but if we can remove feasible solution, from
 // this constraint point of view, all variables can freely increase or decrease
 // until zero (because the constraint is trivial above/below).
@@ -689,17 +856,27 @@ TEST(DualBoundReductionTest, BasicTest) {
         domain: [ -20, 20 ]
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 3, 4, 5 ]
+    }
   )pb");
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
+  context.LoadSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), 0);
+  EXPECT_EQ(context.SolutionHint(2), 0);
 }
 
 TEST(DualBoundReductionTest, CarefulWithHoles) {
@@ -721,13 +898,15 @@ TEST(DualBoundReductionTest, CarefulWithHoles) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-5,5]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-5,0][7]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[-6][3,5]");
 }
 
-// Here the infered bounds crosses, so we have multiple choices, we will fix
+// Here the inferred bounds crosses, so we have multiple choices, we will fix
 // to the lowest magnitude.
 TEST(DualBoundReductionTest, Choices) {
   CpModelProto model_proto = ParseTestProto(R"pb(
@@ -741,17 +920,76 @@ TEST(DualBoundReductionTest, Choices) {
         domain: [ -25, 25 ]
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 3, 4, 5 ]
+    }
   )pb");
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
+  context.LoadSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-2]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[2]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), -2);
+  EXPECT_EQ(context.SolutionHint(2), 2);
+}
+
+TEST(DualBoundReductionTest, AddImplication) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      # a => (b == c)
+      enforcement_literal: 0
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ -1, 1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 1 ]
+      values: [ 0, 1, 1 ]
+    }
+  )pb");
+  DualBoundStrengthening dual_bound_strengthening;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+  context.ReadObjectiveFromProto();
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
+  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
+  // not(a) => not(b) and not(a) => not(c) should be added.
+  ASSERT_EQ(context.working_model->constraints_size(), 3);
+  const ConstraintProto expected_constraint_proto1 =
+      ParseTestProto(R"pb(enforcement_literal: -1
+                          bool_and { literals: -2 })pb");
+  EXPECT_THAT(context.working_model->constraints(1),
+              EqualsProto(expected_constraint_proto1));
+  const ConstraintProto expected_constraint_proto2 =
+      ParseTestProto(R"pb(enforcement_literal: -1
+                          bool_and { literals: -3 })pb");
+  EXPECT_THAT(context.working_model->constraints(2),
+              EqualsProto(expected_constraint_proto2));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
+  EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");
+  EXPECT_EQ(context.SolutionHint(0), 0);
+  EXPECT_EQ(context.SolutionHint(1), 0);
+  EXPECT_EQ(context.SolutionHint(2), 0);
 }
 
 TEST(DualBoundReductionTest, EquivalenceDetection) {
@@ -777,20 +1015,27 @@ TEST(DualBoundReductionTest, EquivalenceDetection) {
         literals: [ 0, 2 ]  # a + c >= 0
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 1, 1 ]
+    }
   )pb");
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
+  context.LoadSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");
-
   // Equivalence between a and b.
   EXPECT_EQ(context.GetLiteralRepresentative(1), 0);
+  EXPECT_TRUE(context.LiteralSolutionHint(0));
 }
 
 }  // namespace

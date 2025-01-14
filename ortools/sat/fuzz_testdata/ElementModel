@@ -1,0 +1,17 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables { domain: [ 0, 5 ] }
+variables { domain: [ 0, 7 ] }
+constraints {
+  element {
+    linear_index { vars: 0 coeffs: 1 }
+    linear_target { vars: 1 coeffs: 1 }
+    exprs { offset: 1 }
+    exprs { offset: 2 }
+    exprs { offset: 3 }
+    exprs { offset: 4 }
+    exprs { offset: 5 }
+    exprs { offset: 6 }
+  }
+}

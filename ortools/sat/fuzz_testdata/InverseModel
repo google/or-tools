@@ -1,0 +1,17 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables { domain: [ 0, 3 ] }
+variables { domain: [ 0, 3 ] }
+variables { domain: [ 0, 3 ] }
+variables { domain: [ 0, 3 ] }
+variables { domain: [ 0, 3 ] }
+variables { domain: [ 0, 3 ] }
+variables { domain: [ 0, 3 ] }
+variables { domain: [ 0, 3 ] }
+constraints {
+  inverse {
+    f_direct: [ 0, 2, 4, 6 ],
+    f_inverse: [ 1, 3, 5, 7 ]
+  }
+}
