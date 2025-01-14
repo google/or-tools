@@ -209,6 +209,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
 
@@ -230,8 +231,7 @@ class LinearSumAssignment {
 
   // Constructor for the case in which we will build the graph
   // incrementally as we discover arc costs, as might be done with any
-  // of the dynamic graph representations such as `ReverseArcListGraph` or
-  // `ForwardStarGraph`.
+  // of the dynamic graph representations such as `ReverseArcListGraph`.
   LinearSumAssignment(const GraphType& graph, NodeIndex num_left_nodes);
 
   // Constructor for the case in which the underlying graph cannot be built
@@ -346,24 +346,10 @@ class LinearSumAssignment {
 
   std::string StatsString() const { return total_stats_.StatsString(); }
 
-  class BipartiteLeftNodeIterator {
-   public:
-    BipartiteLeftNodeIterator(const GraphType& graph, NodeIndex num_left_nodes)
-        : num_left_nodes_(num_left_nodes), node_iterator_(0) {}
-
-    explicit BipartiteLeftNodeIterator(const LinearSumAssignment& assignment)
-        : num_left_nodes_(assignment.NumLeftNodes()), node_iterator_(0) {}
-
-    NodeIndex Index() const { return node_iterator_; }
-
-    bool Ok() const { return node_iterator_ < num_left_nodes_; }
-
-    void Next() { ++node_iterator_; }
-
-   private:
-    const NodeIndex num_left_nodes_;
-    typename GraphType::NodeIndex node_iterator_;
-  };
+  // Returns the range of valid left node indices.
+  ::util::IntegerRange<NodeIndex> BipartiteLeftNodes() const {
+    return ::util::IntegerRange<NodeIndex>(0, num_left_nodes_);
+  }
 
   // Returns true if and only if the current pseudoflow is
   // epsilon-optimal. To be used in a DCHECK.
@@ -1119,9 +1105,7 @@ template <typename GraphType, typename CostValue>
 void LinearSumAssignment<GraphType,
                          CostValue>::InitializeActiveNodeContainer() {
   DCHECK(active_nodes_->Empty());
-  for (BipartiteLeftNodeIterator node_it(*graph_, num_left_nodes_);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex node = node_it.Index();
+  for (const NodeIndex node : BipartiteLeftNodes()) {
     if (IsActive(node)) {
       active_nodes_->Add(node);
     }
@@ -1141,9 +1125,7 @@ void LinearSumAssignment<GraphType,
 template <typename GraphType, typename CostValue>
 void LinearSumAssignment<GraphType, CostValue>::SaturateNegativeArcs() {
   total_excess_ = 0;
-  for (BipartiteLeftNodeIterator node_it(*graph_, num_left_nodes_);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex node = node_it.Index();
+  for (const NodeIndex node : BipartiteLeftNodes()) {
     if (IsActive(node)) {
       // This can happen in the first iteration when nothing is
       // matched yet.
@@ -1328,9 +1310,7 @@ bool LinearSumAssignment<GraphType, CostValue>::AllMatched() const {
 // Only for debugging.
 template <typename GraphType, typename CostValue>
 bool LinearSumAssignment<GraphType, CostValue>::EpsilonOptimal() const {
-  for (BipartiteLeftNodeIterator node_it(*graph_, num_left_nodes_);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex left_node = node_it.Index();
+  for (const NodeIndex left_node : BipartiteLeftNodes()) {
     // Get the implicit price of left_node and make sure the reduced
     // costs of left_node's incident arcs are in bounds.
     CostValue left_node_price = ImplicitPrice(left_node);
@@ -1452,8 +1432,8 @@ CostValue LinearSumAssignment<GraphType, CostValue>::GetCost() const {
   // an optimum assignment.
   DCHECK(success_);
   CostValue cost = 0;
-  for (BipartiteLeftNodeIterator node_it(*this); node_it.Ok(); node_it.Next()) {
-    cost += GetAssignmentCost(node_it.Index());
+  for (const NodeIndex node : BipartiteLeftNodes()) {
+    cost += GetAssignmentCost(node);
   }
   return cost;
 }

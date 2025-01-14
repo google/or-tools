@@ -56,7 +56,7 @@ void MinCostFlowOn4x4Matrix() {
     min_cost_flow.SetNodeSupply(kNumSources + target, -1);
   }
   CHECK(min_cost_flow.Solve());
-  CHECK_EQ(MinCostFlow::OPTIMAL, min_cost_flow.status());
+  CHECK_EQ(GenericMinCostFlow<Graph>::OPTIMAL, min_cost_flow.status());
   CostValue total_flow_cost = min_cost_flow.GetOptimalCost();
   CHECK_EQ(kExpectedCost, total_flow_cost);
 }

@@ -267,14 +267,13 @@ bool SimpleFloatingPointMinCostFlow::ScaleSupplyAndCapacity() {
     // When we have no flow on any node, we can simply scale with 2^0 = 1.
     log2_scale_ = 0;
   } else {
-    // Note that if max_nodes_in_or_out_flow is a denormal number (< 2^-970)
+    // Note that if max_nodes_in_or_out_flow is a very small number (< 2^-960)
     // then the following division can overflow. If this is the case we simply
     // replace the scale by the max possible value.
-    double scale_upper_bound = static_cast<double>(kMaxFlowQuantity) /
-                               max_nodes_in_or_out_flow.value();
-    if (!std::isfinite(scale_upper_bound)) {
-      scale_upper_bound = kMaxFPFlow;
-    }
+    const double scale_upper_bound =
+        std::min(std::numeric_limits<double>::max(),
+                 static_cast<double>(kMaxFlowQuantity) /
+                     max_nodes_in_or_out_flow.value());
     const double f = std::frexp(scale_upper_bound, &log2_scale_);
     // The result of std::frexp() is such that:
     //   2^(p-1) <= scale_upper_bound < 2^p

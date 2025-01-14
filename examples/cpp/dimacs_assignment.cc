@@ -103,10 +103,7 @@ CostValue BuildAndSolveHungarianInstance(
 
 template <typename GraphType>
 void DisplayAssignment(const LinearSumAssignment<GraphType>& assignment) {
-  for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
-           node_it(assignment);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex left_node = node_it.Index();
+  for (const auto left_node : assignment.BipartiteLeftNodes()) {
     const ArcIndex matching_arc = assignment.GetAssignmentArc(left_node);
     const NodeIndex right_node = assignment.Head(matching_arc);
     VLOG(5) << "assigned (" << left_node << ", " << right_node

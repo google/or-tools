@@ -228,10 +228,7 @@ template <typename GraphType>
 static void VerifyAssignment(
     const LinearSumAssignment<GraphType>& a,
     const typename GraphType::NodeIndex expected_right_side[]) {
-  for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
-           node_it(a);
-       node_it.Ok(); node_it.Next()) {
-    const typename GraphType::NodeIndex left_node = node_it.Index();
+  for (const typename GraphType::NodeIndex left_node : a.BipartiteLeftNodes()) {
     const typename GraphType::NodeIndex right_node = a.GetMate(left_node);
     EXPECT_EQ(expected_right_side[left_node], right_node);
   }
@@ -445,10 +442,7 @@ TEST_P(MacholWien, SolveHardProblem) {
     }
   }
   EXPECT_TRUE(assignment.ComputeAssignment());
-  for (LinearSumAssignment<Graph>::BipartiteLeftNodeIterator node_it(
-           assignment);
-       node_it.Ok(); node_it.Next()) {
-    const Graph::NodeIndex left_node = node_it.Index();
+  for (const Graph::NodeIndex left_node : assignment.BipartiteLeftNodes()) {
     const Graph::NodeIndex right_node = assignment.GetMate(left_node);
     EXPECT_EQ(2 * n - 1, left_node + right_node);
   }

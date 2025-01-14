@@ -174,7 +174,6 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
@@ -383,9 +382,9 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   bool scale_prices_ = true;
 };
 
-// Generic MinCostFlow that works with StarGraph and all the graphs handling
-// reverse arcs from graph.h, see the end of min_cost_flow.cc for the exact
-// types this class is compiled for.
+// Generic MinCostFlow that works with all the graphs handling reverse arcs from
+// graph.h, see the end of min_cost_flow.cc for the exact types this class is
+// compiled for.
 //
 // One can greatly decrease memory usage by using appropriately small integer
 // types:
@@ -675,7 +674,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 // Note: SWIG does not seem to understand explicit template specialization and
 // instantiation declarations.
 
-extern template class GenericMinCostFlow<StarGraph>;
 extern template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
@@ -692,9 +690,10 @@ extern template class GenericMinCostFlow<
 // a grace period.
 struct MinCostFlow : public MinCostFlowBase {
   template <typename = void>
-   MinCostFlow() {
-    LOG(ERROR) << "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
-                  "`GenericMinCostFlow` with a specific graph type instead.";
+  MinCostFlow() {
+    static_assert(false,
+                  "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
+                  "`GenericMinCostFlow` with a specific graph type instead.");
   }
 };
 

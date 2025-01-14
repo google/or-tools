@@ -22,15 +22,16 @@
 
 namespace operations_research {
 struct Arc {
-  std::pair<NodeIndex, NodeIndex> nodes;
-  FlowQuantity capacity;
-  FlowQuantity unit_cost;
+  std::pair<SimpleMinCostFlow::NodeIndex, SimpleMinCostFlow::NodeIndex> nodes;
+  SimpleMinCostFlow::FlowQuantity capacity;
+  SimpleMinCostFlow::FlowQuantity unit_cost;
 };
 
 void SolveMinCostFlow() {
   // Define supply of each node.
-  const std::vector<std::pair<NodeIndex, FlowQuantity> > supplies = {
-      {0, 20}, {1, 0}, {2, 0}, {3, -5}, {4, -15}};
+  const std::vector<
+      std::pair<SimpleMinCostFlow::NodeIndex, SimpleMinCostFlow::FlowQuantity> >
+      supplies = {{0, 20}, {1, 0}, {2, 0}, {3, -5}, {4, -15}};
 
   // Define each arc
   // Can't use std::tuple<NodeIndex, NodeIndex, FlowQuantity>
@@ -58,7 +59,7 @@ void SolveMinCostFlow() {
   if (status != SimpleMinCostFlow::OPTIMAL) {
     LOG(FATAL) << "Solving the max flow is not optimal!";
   }
-  FlowQuantity total_flow_cost = min_cost_flow.OptimalCost();
+  SimpleMinCostFlow::FlowQuantity total_flow_cost = min_cost_flow.OptimalCost();
   LOG(INFO) << "Minimum cost flow: " << total_flow_cost;
   LOG(INFO) << "";
   LOG(INFO) << "Arc   : Flow / Capacity / Cost";
