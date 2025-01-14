@@ -31,7 +31,7 @@ namespace operations_research {
 template <class P>
 std::string ProtobufDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
-  return message.GetTypeName();
+  return std::string(message.GetTypeName());
 #else   // defined(__PORTABLE_PLATFORM__)
   return message.DebugString();
 #endif  // !defined(__PORTABLE_PLATFORM__)
@@ -40,7 +40,7 @@ std::string ProtobufDebugString(const P& message) {
 template <class P>
 std::string ProtobufShortDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
-  return message.GetTypeName();
+  return std::string(message.GetTypeName());
 #else   // defined(__PORTABLE_PLATFORM__)
   return message.ShortDebugString();
 #endif  // !defined(__PORTABLE_PLATFORM__)
