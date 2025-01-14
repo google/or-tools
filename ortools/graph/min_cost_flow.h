@@ -691,8 +691,7 @@ extern template class GenericMinCostFlow<
 struct MinCostFlow : public MinCostFlowBase {
   template <typename = void>
   MinCostFlow() {
-    static_assert(false,
-                  "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
+    LOG(FATAL) << "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
                   "`GenericMinCostFlow` with a specific graph type instead.");
   }
 };
