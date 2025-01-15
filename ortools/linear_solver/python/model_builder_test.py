@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import sys
 from typing import Any, Callable, Dict, Mapping, Union
 
 from absl.testing import absltest
@@ -32,9 +33,7 @@ from ortools.linear_solver.python import model_builder_helper as mbh
 def build_dict(expr: mb.LinearExprT) -> Dict[mbh.Variable, float]:
     res = {}
     flat_expr = mbh.FlatExpr(expr)
-    print(f"expr = {expr} flat_expr = {flat_expr}", flush=True)
     for var, coeff in zip(flat_expr.vars, flat_expr.coeffs):
-        print(f"process {var} * {coeff}", flush=True)
         if not coeff:
             continue
         res[var] = coeff
@@ -45,6 +44,10 @@ class ModelBuilderTest(absltest.TestCase):
     # Number of decimal places to use for numerical tolerance for
     # checking primal, dual, objective values and other values.
     NUM_PLACES = 5
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        sys.stdout.flush()
 
     # pylint: disable=too-many-statements
     def run_minimal_linear_example(self, solver_name):
@@ -318,6 +321,49 @@ ENDATA
         self.assertEqual(flat_e14.offset, 0.8)
         self.assertEqual(e14.__str__(), "(x - t + 0.8)")
 
+        e15 = mb.LinearExpr.weighted_sum([1, x, 1], [1, 1, -1])
+        self.assertIsInstance(e15, mb.Variable)
+        self.assertEqual(x.index, e15.index)
+
+        e16 = mb.LinearExpr.affine(x, 1.0, 0.0)
+        self.assertIsInstance(e16, mb.Variable)
+        self.assertEqual(x.index, e16.index)
+
+        e17 = -x
+        self.assertIsInstance(e17, mb.AffineExpr)
+        self.assertEqual(str(e17), "(-x)")
+
+        e18 = mb.LinearExpr.affine(x, 1.0, -2.0)
+        self.assertIsInstance(e18, mb.AffineExpr)
+        self.assertEqual(str(e18), "(x - 2)")
+
+        e19 = mb.LinearExpr.weighted_sum([1, x, 1], [1, 1, -2])
+        self.assertIsInstance(e19, mb.AffineExpr)
+        self.assertEqual(str(e19), "(x - 1)")
+
+        e20 = mb.LinearExpr.affine(x, -2.0, 0.0)
+        self.assertIsInstance(e20, mb.AffineExpr)
+        self.assertEqual(str(e20), "(-2 * x)")
+
+        e21 = mb.LinearExpr.weighted_sum([1, x, 1], [1, 2, -1])
+        self.assertIsInstance(e21, mb.AffineExpr)
+        self.assertEqual(str(e21), "(2 * x)")
+
+        c1 = x == 2
+        self.assertEqual(str(c1), "x == 2")
+
+        c2 = -x == 3
+        self.assertEqual(str(c2), "-x == 3")
+
+        c3 = x + y == 3
+        self.assertEqual(str(c3), "(x + y) == 3")
+
+        c4 = -x + y == 3
+        self.assertEqual(str(c4), "(-x + y) == 3")
+
+        c5 = x - y == 3
+        self.assertEqual(str(c5), "(x - y) == 3")
+
     def test_variables(self):
         model = mb.Model()
         x = model.new_int_var(0.0, 4.0, "x")
@@ -330,6 +376,10 @@ ENDATA
         self.assertEqual(1.0, x.lower_bound)
         self.assertEqual(3.0, x.upper_bound)
         self.assertTrue(x.is_integral)
+        n1 = model.new_int_var(0, 4)
+        self.assertEqual(n1.name, "variable#1")
+        n2 = model.new_int_var(0, 4, None)
+        self.assertEqual(n2.name, "variable#2")
 
         # Tests the equality operator.
         y = model.new_int_var(0.0, 4.0, "y")
@@ -448,6 +498,10 @@ ENDATA
 
 
 class InternalHelperTest(absltest.TestCase):
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        sys.stdout.flush()
 
     def test_anonymous_variables(self):
         helper = mb.Model().helper
@@ -641,6 +695,10 @@ class LinearBaseTest(parameterized.TestCase):
 
 class LinearBaseErrorsTest(absltest.TestCase):
 
+    def tearDown(self) -> None:
+        super().tearDown()
+        sys.stdout.flush()
+
     def test_unknown_linear_type(self):
         with self.assertRaises(TypeError):
 
@@ -758,6 +816,10 @@ class BoundedLinearBaseTest(parameterized.TestCase):
 
 class BoundedLinearBaseErrorsTest(absltest.TestCase):
 
+    def tearDown(self) -> None:
+        super().tearDown()
+        sys.stdout.flush()
+
     def test_single_var_bounded_linear_expression_as_bool(self):
         with self.assertRaisesRegex(
             NotImplementedError, "Evaluating a BoundedLinearExpression"
@@ -774,6 +836,10 @@ class BoundedLinearBaseErrorsTest(absltest.TestCase):
 
 
 class ModelBuilderErrorsTest(absltest.TestCase):
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        sys.stdout.flush()
 
     def test_new_var_series_errors(self):
         with self.assertRaisesRegex(TypeError, r"Non-index object"):
@@ -1607,6 +1673,10 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
 
 class ModelBuilderProtoTest(absltest.TestCase):
 
+    def tearDown(self) -> None:
+        super().tearDown()
+        sys.stdout.flush()
+
     def test_export_to_proto(self):
         expected = linear_solver_pb2.MPModelProto()
         text_format.Parse(
@@ -1970,6 +2040,11 @@ class SolverTest(parameterized.TestCase):
 
 
 class ModelBuilderExamplesTest(absltest.TestCase):
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        sys.stdout.flush()
+
     def test_simple_problem(self):
         # max 5x1 + 4x2 + 3x3
         # s.t 2x1 + 3x2 +  x3 <= 5

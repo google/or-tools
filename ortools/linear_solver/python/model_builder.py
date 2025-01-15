@@ -53,7 +53,9 @@ _IndexOrSeries = Union[pd.Index, pd.Series]
 _VariableOrConstraint = Union["LinearConstraint", mbh.Variable]
 
 # Forward solve statuses.
+AffineExpr = mbh.AffineExpr
 BoundedLinearExpression = mbh.BoundedLinearExpression
+FlatExpr = mbh.FlatExpr
 LinearExpr = mbh.LinearExpr
 SolveStatus = mbh.SolveStatus
 Variable = mbh.Variable
@@ -107,7 +109,7 @@ def _add_linear_constraint_to_helper(
         if name is not None:
             helper.set_constraint_name(c.index, name)
         return c
-    raise TypeError("invalid type={}".format(type(bounded_expr)))
+    raise TypeError(f"invalid type={type(bounded_expr).__name__!r}")
 
 
 def _add_enforced_linear_constraint_to_helper(
@@ -171,7 +173,7 @@ def _add_enforced_linear_constraint_to_helper(
             helper.set_constraint_name(c.index, name)
         return c
 
-    raise TypeError("invalid type={}".format(type(bounded_expr)))
+    raise TypeError(f"invalid type={type(bounded_expr).__name__!r}")
 
 
 class LinearConstraint:
@@ -631,8 +633,10 @@ class Model:
         Returns:
           a variable whose domain is [lb, ub].
         """
-
-        return Variable(self.__helper, lb, ub, is_integer, name)
+        if name:
+            return Variable(self.__helper, lb, ub, is_integer, name)
+        else:
+            return Variable(self.__helper, lb, ub, is_integer)
 
     def new_int_var(
         self, lb: NumberT, ub: NumberT, name: Optional[str] = None
@@ -712,16 +716,15 @@ class Model:
         if not isinstance(index, pd.Index):
             raise TypeError("Non-index object is used as index")
         if not name.isidentifier():
-            raise ValueError("name={} is not a valid identifier".format(name))
+            raise ValueError(f"name={name!r} is not a valid identifier")
         if (
             mbn.is_a_number(lower_bounds)
             and mbn.is_a_number(upper_bounds)
             and lower_bounds > upper_bounds
         ):
             raise ValueError(
-                "lower_bound={} is greater than upper_bound={} for variable set={}".format(
-                    lower_bounds, upper_bounds, name
-                )
+                f"lower_bound={lower_bounds} is greater than"
+                f" upper_bound={upper_bounds} for variable set={name!r}"
             )
         if (
             isinstance(is_integral, bool)
@@ -733,10 +736,9 @@ class Model:
             and math.ceil(lower_bounds) > math.floor(upper_bounds)
         ):
             raise ValueError(
-                "ceil(lower_bound={})={}".format(lower_bounds, math.ceil(lower_bounds))
-                + " is greater than floor("
-                + "upper_bound={})={}".format(upper_bounds, math.floor(upper_bounds))
-                + " for variable set={}".format(name)
+                f"ceil(lower_bound={lower_bounds})={math.ceil(lower_bounds)}"
+                f" is greater than floor({upper_bounds}) = {math.floor(upper_bounds)}"
+                f" for variable set={name!r}"
             )
         lower_bounds = _convert_to_series_and_validate_index(lower_bounds, index)
         upper_bounds = _convert_to_series_and_validate_index(upper_bounds, index)
@@ -871,8 +873,8 @@ class Model:
             )
         else:
             raise TypeError(
-                f"Not supported: Model.add_linear_constraint({linear_expr})"
-                f" with type {type(linear_expr)}"
+                "Not supported:"
+                f" Model.add_linear_constraint({type(linear_expr).__name__!r})"
             )
         return ct
 
@@ -917,7 +919,7 @@ class Model:
                 ],
             )
         else:
-            raise TypeError("Not supported: Model.add(" + str(ct) + ")")
+            raise TypeError(f"Not supported: Model.add({type(ct).__name__!r})")
 
     def linear_constraint_from_index(self, index: IntegerT) -> LinearConstraint:
         """Rebuilds a linear constraint object from the model and its index."""
@@ -954,8 +956,7 @@ class Model:
         else:
             raise TypeError(
                 "Not supported:"
-                f" Model.add_enforced_linear_constraint({linear_expr}) with"
-                f" type {type(linear_expr)}"
+                f" Model.add_enforced_linear_constraint({type(linear_expr).__name__!r})"
             )
         return ct
 
@@ -1018,7 +1019,7 @@ class Model:
                 ],
             )
         else:
-            raise TypeError("Not supported: Model.add_enforced(" + str(ct) + ")")
+            raise TypeError(f"Not supported: Model.add_enforced({type(ct).__name__!r}")
 
     def enforced_linear_constraint_from_index(
         self, index: IntegerT
@@ -1050,7 +1051,10 @@ class Model:
             var_indices = [var.index for var in flat_expr.vars]
             self.helper.set_objective_coefficients(var_indices, flat_expr.coeffs)
         else:
-            raise TypeError(f"Not supported: Model.minimize/maximize({linear_expr})")
+            raise TypeError(
+                "Not supported:"
+                f" Model.minimize/maximize({type(linear_expr).__name__!r})"
+            )
 
     @property
     def objective_offset(self) -> np.double:
@@ -1233,7 +1237,7 @@ class Solver:
         elif isinstance(expr, LinearExpr):
             return self.__solve_helper.expression_value(expr)
         else:
-            raise TypeError(f"Unknown expression {expr!r} of type {type(expr)}")
+            raise TypeError(f"Unknown expression {type(expr).__name__!r}")
 
     def values(self, variables: _IndexOrSeries) -> pd.Series:
         """Returns the values of the input variables.
@@ -1401,7 +1405,7 @@ def _convert_to_series_and_validate_index(
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError("invalid type={}".format(type(value_or_series)))
+        raise TypeError("invalid type={type(value_or_series).__name!r}")
     return result
 
 
@@ -1429,7 +1433,7 @@ def _convert_to_var_series_and_validate_index(
         else:
             raise ValueError("index does not match")
     else:
-        raise TypeError("invalid type={}".format(type(var_or_series)))
+        raise TypeError("invalid type={type(value_or_series).__name!r}")
     return result
 
 
