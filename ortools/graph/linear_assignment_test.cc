@@ -13,18 +13,20 @@
 
 #include "ortools/graph/linear_assignment.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <random>
 #include <vector>
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/gmock.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 
 ABSL_DECLARE_FLAG(bool, assignment_stack_order);
@@ -33,64 +35,55 @@ namespace operations_research {
 
 using ::testing::Eq;
 
-template <typename AssignmentGraphType>
-static ArcIndex CreateArcWithCost(
-    NodeIndex tail, NodeIndex head, CostValue cost,
-    AnnotatedGraphBuildManager<AssignmentGraphType>* builder,
-    LinearSumAssignment<AssignmentGraphType>* assignment) {
-  const ArcIndex arc = builder->AddArc(tail, head);
-  assignment->SetArcCost(arc, cost);
-  return arc;
-}
-
 // A little package containing everything the AnnotatedGraphBuildManager-based
 // tests need to know about an assignment instance.
 template <typename GraphType>
 struct AssignmentProblemSetup {
+  using NodeIndex = typename GraphType::NodeIndex;
+  using ArcIndex = typename GraphType::ArcIndex;
+  using CostValue = int64_t;
+
   // The usual constructor, for normal tests where the graph is balanced.
-  AssignmentProblemSetup(NodeIndex num_left_nodes, ArcIndex num_arcs,
-                         bool optimize_layout)
-      : builder(new AnnotatedGraphBuildManager<GraphType>(
-            2 * num_left_nodes, num_arcs, optimize_layout)),
-        assignment_scoped(
-            new LinearSumAssignment<GraphType>(num_left_nodes, num_arcs)),
-        assignment(assignment_scoped.get()),
-        cycle_handler_scoped(assignment_scoped->ArcAnnotationCycleHandler()),
-        cycle_handler(cycle_handler_scoped.get()) {}
+  AssignmentProblemSetup(NodeIndex num_left_nodes, ArcIndex num_arcs)
+      : num_left_nodes(num_left_nodes),
+        graph(2 * num_left_nodes, num_arcs),
+        arc_costs(num_arcs) {}
 
   // A constructor with separate specification of the numbers of left and right
   // nodes, so the tests can set up graphs where the assignment solution is sure
   // to fail.
   AssignmentProblemSetup(NodeIndex num_left_nodes, NodeIndex num_right_nodes,
-                         ArcIndex num_arcs, bool optimize_layout)
-      : builder(new AnnotatedGraphBuildManager<GraphType>(
-            num_left_nodes + num_right_nodes, num_arcs, optimize_layout)),
-        assignment_scoped(
-            new LinearSumAssignment<GraphType>(num_left_nodes, num_arcs)),
-        assignment(assignment_scoped.get()),
-        cycle_handler_scoped(assignment_scoped->ArcAnnotationCycleHandler()),
-        cycle_handler(cycle_handler_scoped.get()) {}
+                         ArcIndex num_arcs)
+      : num_left_nodes(num_left_nodes),
+        graph(num_left_nodes + num_right_nodes, num_arcs),
+        arc_costs(num_arcs) {}
 
   // This type is neither copyable nor movable.
   AssignmentProblemSetup(const AssignmentProblemSetup&) = delete;
   AssignmentProblemSetup& operator=(const AssignmentProblemSetup&) = delete;
 
-  virtual ~AssignmentProblemSetup() { delete &assignment->Graph(); }
-
-  void Finalize() {
-    GraphType* graph = builder->Graph(cycle_handler);
-    ASSERT_TRUE(graph != nullptr);
-    assignment->SetGraph(graph);
+  ArcIndex CreateArcWithCost(NodeIndex tail, NodeIndex head, CostValue cost) {
+    const ArcIndex arc = graph.AddArc(tail, head);
+    arc_costs[arc] = cost;
+    return arc;
   }
 
-  AnnotatedGraphBuildManager<GraphType>* builder;
+  void Finalize() {
+    CHECK_EQ(graph.num_arcs(), arc_costs.size());
+    graph.Build(&arc_permutation);
+    util::Permute(arc_permutation, &arc_costs);
+    assignment = std::make_unique<LinearSumAssignment<GraphType, CostValue>>(
+        graph, num_left_nodes);
+    for (int arc = 0; arc < arc_costs.size(); ++arc) {
+      assignment->SetArcCost(arc, arc_costs[arc]);
+    }
+  }
 
-  std::unique_ptr<LinearSumAssignment<GraphType>> assignment_scoped;
-  LinearSumAssignment<GraphType>* assignment;  // to avoid ".get()" everywhere
-
-  std::unique_ptr<PermutationCycleHandler<typename GraphType::ArcIndex>>
-      cycle_handler_scoped;
-  PermutationCycleHandler<typename GraphType::ArcIndex>* cycle_handler;
+  const int num_left_nodes;
+  GraphType graph;
+  std::vector<CostValue> arc_costs;
+  std::unique_ptr<LinearSumAssignment<GraphType, CostValue>> assignment;
+  std::vector<ArcIndex> arc_permutation;
 };
 
 // A fixture template to collect the types of graphs on which we want to base
@@ -101,19 +94,16 @@ struct AssignmentProblemSetup {
 template <typename GraphType>
 class LinearSumAssignmentTestWithGraphBuilder : public ::testing::Test {};
 
-typedef ::testing::Types<
-    EbertGraph<int16_t, int16_t>, ForwardEbertGraph<int16_t, int16_t>,
-    EbertGraph<int16_t, ArcIndex>, ForwardEbertGraph<int16_t, ArcIndex>,
-    EbertGraph<NodeIndex, int16_t>, ForwardEbertGraph<NodeIndex, int16_t>,
-    StarGraph, ForwardStarGraph, util::ListGraph<>, util::ReverseArcListGraph<>>
+typedef ::testing::Types<util::ListGraph<>, util::ReverseArcListGraph<>,
+                         util::StaticGraph<>, util::ReverseArcStaticGraph<>>
     GraphTypesForAssignmentTestingWithGraphBuilder;
 
 TYPED_TEST_SUITE(LinearSumAssignmentTestWithGraphBuilder,
                  GraphTypesForAssignmentTestingWithGraphBuilder);
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching0) {
-  AssignmentProblemSetup<TypeParam> setup(1, 1, false);
-  CreateArcWithCost<TypeParam>(0, 1, 0, setup.builder, setup.assignment);
+  AssignmentProblemSetup<TypeParam> setup(1, 1);
+  setup.CreateArcWithCost(0, 1, 0);
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
   EXPECT_EQ(0, setup.assignment->GetCost());
@@ -121,112 +111,112 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching0) {
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching1) {
   // A problem instance containing a node with no incident arcs.
-  AssignmentProblemSetup<TypeParam> setup(2, 1, false);
+  AssignmentProblemSetup<TypeParam> setup(2, 1);
   // We need the graph to include an arc that mentions the largest-indexed node
   // in order to get better test coverage. Without that node used in an arc,
   // infeasibility is detected very early because the number of nodes in the
   // graph isn't twice the stated number of left-side nodes. With that node
   // mentioned, the number of nodes in the graph alone is not enough to
   // establish infeasibility, so more code runs.
-  CreateArcWithCost<TypeParam>(1, 3, 0, setup.builder, setup.assignment);
+  setup.CreateArcWithCost(1, 3, 0);
   setup.Finalize();
   EXPECT_FALSE(setup.assignment->ComputeAssignment());
 }
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching2) {
-  AssignmentProblemSetup<TypeParam> setup(2, 4, false);
-  CreateArcWithCost<TypeParam>(0, 2, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 3, 2, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 2, 3, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 3, 4, setup.builder, setup.assignment);
+  AssignmentProblemSetup<TypeParam> setup(2, 4);
+  setup.CreateArcWithCost(0, 2, 0);
+  setup.CreateArcWithCost(0, 3, 2);
+  setup.CreateArcWithCost(1, 2, 3);
+  setup.CreateArcWithCost(1, 3, 4);
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
   EXPECT_EQ(4, setup.assignment->GetCost());
 }
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching3) {
-  AssignmentProblemSetup<TypeParam> setup(4, 10, false);
+  AssignmentProblemSetup<TypeParam> setup(4, 10);
   // Create arcs with tail nodes out of order to ensure that we test a case in
   // which the cost values must be nontrivially permuted if a static graph is
   // the underlying representation.
-  CreateArcWithCost<TypeParam>(0, 5, 19, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 6, 47, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 7, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 4, 41, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 4, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 5, 15, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 7, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 4, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 6, 13, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 7, 41, setup.builder, setup.assignment);
+  setup.CreateArcWithCost(0, 5, 19);
+  setup.CreateArcWithCost(0, 6, 47);
+  setup.CreateArcWithCost(0, 7, 0);
+  setup.CreateArcWithCost(1, 4, 41);
+  setup.CreateArcWithCost(2, 4, 60);
+  setup.CreateArcWithCost(2, 5, 15);
+  setup.CreateArcWithCost(2, 7, 60);
+  setup.CreateArcWithCost(3, 4, 0);
+  setup.CreateArcWithCost(1, 6, 13);
+  setup.CreateArcWithCost(1, 7, 41);
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
   EXPECT_EQ(0 + 13 + 15 + 0, setup.assignment->GetCost());
 }
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching4) {
-  AssignmentProblemSetup<TypeParam> setup(4, 10, false);
-  CreateArcWithCost<TypeParam>(0, 4, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 4, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 5, 15, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 7, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 4, 41, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 6, 13, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 7, 41, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 5, 19, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 6, 47, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 7, 0, setup.builder, setup.assignment);
+  AssignmentProblemSetup<TypeParam> setup(4, 10);
+  setup.CreateArcWithCost(0, 4, 0);
+  setup.CreateArcWithCost(1, 4, 60);
+  setup.CreateArcWithCost(1, 5, 15);
+  setup.CreateArcWithCost(1, 7, 60);
+  setup.CreateArcWithCost(2, 4, 41);
+  setup.CreateArcWithCost(2, 6, 13);
+  setup.CreateArcWithCost(2, 7, 41);
+  setup.CreateArcWithCost(3, 5, 19);
+  setup.CreateArcWithCost(3, 6, 47);
+  setup.CreateArcWithCost(3, 7, 0);
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
   EXPECT_EQ(0 + 13 + 15 + 0, setup.assignment->GetCost());
 }
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching5) {
-  AssignmentProblemSetup<TypeParam> setup(4, 10, false);
-  CreateArcWithCost<TypeParam>(0, 4, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 5, 15, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 7, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 4, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 4, 41, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 6, 13, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 7, 41, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 5, 19, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 6, 47, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 7, 0, setup.builder, setup.assignment);
+  AssignmentProblemSetup<TypeParam> setup(4, 10);
+  setup.CreateArcWithCost(0, 4, 60);
+  setup.CreateArcWithCost(0, 5, 15);
+  setup.CreateArcWithCost(0, 7, 60);
+  setup.CreateArcWithCost(1, 4, 0);
+  setup.CreateArcWithCost(2, 4, 41);
+  setup.CreateArcWithCost(2, 6, 13);
+  setup.CreateArcWithCost(2, 7, 41);
+  setup.CreateArcWithCost(3, 5, 19);
+  setup.CreateArcWithCost(3, 6, 47);
+  setup.CreateArcWithCost(3, 7, 0);
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
   EXPECT_EQ(0 + 13 + 15 + 0, setup.assignment->GetCost());
 }
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching6) {
-  AssignmentProblemSetup<TypeParam> setup(4, 10, false);
-  CreateArcWithCost<TypeParam>(0, 4, 41, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 6, 13, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 7, 41, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 4, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 5, 15, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 7, 60, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 4, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 5, 19, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 6, 47, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 7, 0, setup.builder, setup.assignment);
+  AssignmentProblemSetup<TypeParam> setup(4, 10);
+  setup.CreateArcWithCost(0, 4, 41);
+  setup.CreateArcWithCost(0, 6, 13);
+  setup.CreateArcWithCost(0, 7, 41);
+  setup.CreateArcWithCost(1, 4, 60);
+  setup.CreateArcWithCost(1, 5, 15);
+  setup.CreateArcWithCost(1, 7, 60);
+  setup.CreateArcWithCost(2, 4, 0);
+  setup.CreateArcWithCost(3, 5, 19);
+  setup.CreateArcWithCost(3, 6, 47);
+  setup.CreateArcWithCost(3, 7, 0);
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
   EXPECT_EQ(0 + 13 + 15 + 0, setup.assignment->GetCost());
 }
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, ZeroCostArcs) {
-  AssignmentProblemSetup<TypeParam> setup(4, 10, false);
-  CreateArcWithCost<TypeParam>(0, 4, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 6, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(0, 7, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 4, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 5, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(1, 7, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(2, 4, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 5, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 6, 0, setup.builder, setup.assignment);
-  CreateArcWithCost<TypeParam>(3, 7, 0, setup.builder, setup.assignment);
+  AssignmentProblemSetup<TypeParam> setup(4, 10);
+  setup.CreateArcWithCost(0, 4, 0);
+  setup.CreateArcWithCost(0, 6, 0);
+  setup.CreateArcWithCost(0, 7, 0);
+  setup.CreateArcWithCost(1, 4, 0);
+  setup.CreateArcWithCost(1, 5, 0);
+  setup.CreateArcWithCost(1, 7, 0);
+  setup.CreateArcWithCost(2, 4, 0);
+  setup.CreateArcWithCost(3, 5, 0);
+  setup.CreateArcWithCost(3, 6, 0);
+  setup.CreateArcWithCost(3, 7, 0);
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
   EXPECT_EQ(0, setup.assignment->GetCost());
@@ -235,13 +225,11 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, ZeroCostArcs) {
 // A helper function template for checking that we got the optimum assignment we
 // expected.
 template <typename GraphType>
-static void VerifyAssignment(const LinearSumAssignment<GraphType>& a,
-                             const NodeIndex expected_right_side[]) {
-  for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
-           node_it(a);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex left_node = node_it.Index();
-    const NodeIndex right_node = a.GetMate(left_node);
+static void VerifyAssignment(
+    const LinearSumAssignment<GraphType>& a,
+    const typename GraphType::NodeIndex expected_right_side[]) {
+  for (const typename GraphType::NodeIndex left_node : a.BipartiteLeftNodes()) {
+    const typename GraphType::NodeIndex right_node = a.GetMate(left_node);
     EXPECT_EQ(expected_right_side[left_node], right_node);
   }
 }
@@ -256,16 +244,15 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, OptimumMatching7) {
                                                       {125, 95, 90, 105},
                                                       {45, 110, 95, 115}};
   AssignmentProblemSetup<TypeParam> setup(kMatrixHeight,
-                                          kMatrixHeight * kMatrixWidth, false);
+                                          kMatrixHeight * kMatrixWidth);
   for (int i = 0; i < kMatrixHeight; ++i) {
     for (int j = 0; j < kMatrixWidth; ++j) {
-      CreateArcWithCost<TypeParam>(i, j + kMatrixHeight, kCost[i][j],
-                                   setup.builder, setup.assignment);
+      setup.CreateArcWithCost(i, j + kMatrixHeight, kCost[i][j]);
     }
   }
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
-  const NodeIndex kExpectedAssignment[] = {7, 6, 5, 4};
+  const typename TypeParam::NodeIndex kExpectedAssignment[] = {7, 6, 5, 4};
   VerifyAssignment(*setup.assignment, kExpectedAssignment);
   EXPECT_EQ(80 + 55 + 95 + 45, setup.assignment->GetCost());
 }
@@ -284,13 +271,13 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder,
                                                       {-125, -95, -90, -105},
                                                       {-45, -110, -95, -115}};
   AssignmentProblemSetup<TypeParam> setup(kMatrixHeight,
-                                          kMatrixHeight * kMatrixWidth, false);
+                                          kMatrixHeight * kMatrixWidth);
   // Index of the arc we will remember and modify.
-  ArcIndex cost_100_arc = TypeParam::kNilArc;
+  typename TypeParam::ArcIndex cost_100_arc = TypeParam::kNilArc;
   for (int i = 0; i < kMatrixHeight; ++i) {
     for (int j = 0; j < kMatrixWidth; ++j) {
-      ArcIndex new_arc = CreateArcWithCost(i, j + kMatrixHeight, kCost[i][j],
-                                           setup.builder, setup.assignment);
+      typename TypeParam::ArcIndex new_arc =
+          setup.CreateArcWithCost(i, j + kMatrixHeight, kCost[i][j]);
       if (kCost[i][j] == 100) {
         cost_100_arc = new_arc;
       }
@@ -298,7 +285,7 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder,
   }
   setup.Finalize();
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
-  const NodeIndex kExpectedAssignment1[] = {6, 7, 4, 5};
+  const typename TypeParam::NodeIndex kExpectedAssignment1[] = {6, 7, 4, 5};
   VerifyAssignment(*setup.assignment, kExpectedAssignment1);
   EXPECT_EQ(-75 + -65 + -125 + -110, setup.assignment->GetCost());
 
@@ -308,71 +295,72 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder,
   ASSERT_EQ(100, setup.assignment->ArcCost(cost_100_arc));
   setup.assignment->SetArcCost(cost_100_arc, -85);
   EXPECT_TRUE(setup.assignment->ComputeAssignment());
-  const NodeIndex kExpectedAssignment2[] = {6, 5, 4, 7};
+  const typename TypeParam::NodeIndex kExpectedAssignment2[] = {6, 5, 4, 7};
   VerifyAssignment(*setup.assignment, kExpectedAssignment2);
   EXPECT_EQ(-75 + -85 + -125 + -115, setup.assignment->GetCost());
 }
 
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, InfeasibleProblems) {
   // No arcs in the graph at all.
-  AssignmentProblemSetup<TypeParam> setup0(1, 1, false);
+  AssignmentProblemSetup<TypeParam> setup0(1, 0);
   setup0.Finalize();
   EXPECT_FALSE(setup0.assignment->ComputeAssignment());
 
   // Unbalanced graph: 4 nodes on the left, 2 on the right.
-  AssignmentProblemSetup<TypeParam> setup1(4, 2, 4, false);
-  CreateArcWithCost<TypeParam>(0, 4, 0, setup1.builder, setup1.assignment);
-  CreateArcWithCost<TypeParam>(1, 4, 2, setup1.builder, setup1.assignment);
-  CreateArcWithCost<TypeParam>(2, 5, 3, setup1.builder, setup1.assignment);
-  CreateArcWithCost<TypeParam>(3, 5, 4, setup1.builder, setup1.assignment);
+  AssignmentProblemSetup<TypeParam> setup1(4, 2, 4);
+  setup1.CreateArcWithCost(0, 4, 0);
+  setup1.CreateArcWithCost(1, 4, 2);
+  setup1.CreateArcWithCost(2, 5, 3);
+  setup1.CreateArcWithCost(3, 5, 4);
   setup1.Finalize();
   EXPECT_FALSE(setup1.assignment->ComputeAssignment());
 
   // Unbalanced graph: 2 nodes on the left, 4 on the right.
-  AssignmentProblemSetup<TypeParam> setup2(2, 4, 4, false);
-  CreateArcWithCost<TypeParam>(0, 2, 0, setup2.builder, setup2.assignment);
-  CreateArcWithCost<TypeParam>(1, 3, 2, setup2.builder, setup2.assignment);
-  CreateArcWithCost<TypeParam>(0, 4, 3, setup2.builder, setup2.assignment);
-  CreateArcWithCost<TypeParam>(1, 5, 4, setup2.builder, setup2.assignment);
+  AssignmentProblemSetup<TypeParam> setup2(2, 4, 4);
+  setup2.CreateArcWithCost(0, 2, 0);
+  setup2.CreateArcWithCost(1, 3, 2);
+  setup2.CreateArcWithCost(0, 4, 3);
+  setup2.CreateArcWithCost(1, 5, 4);
   setup2.Finalize();
   EXPECT_FALSE(setup2.assignment->ComputeAssignment());
 
   // Balanced graph with no perfect matching.
-  AssignmentProblemSetup<TypeParam> setup3(3, 5, false);
-  CreateArcWithCost<TypeParam>(0, 3, 0, setup3.builder, setup3.assignment);
-  CreateArcWithCost<TypeParam>(1, 3, 2, setup3.builder, setup3.assignment);
-  CreateArcWithCost<TypeParam>(2, 3, 3, setup3.builder, setup3.assignment);
-  CreateArcWithCost<TypeParam>(0, 4, 4, setup3.builder, setup3.assignment);
-  CreateArcWithCost<TypeParam>(0, 5, 5, setup3.builder, setup3.assignment);
+  AssignmentProblemSetup<TypeParam> setup3(3, 5);
+  setup3.CreateArcWithCost(0, 3, 0);
+  setup3.CreateArcWithCost(1, 3, 2);
+  setup3.CreateArcWithCost(2, 3, 3);
+  setup3.CreateArcWithCost(0, 4, 4);
+  setup3.CreateArcWithCost(0, 5, 5);
   setup3.Finalize();
   EXPECT_FALSE(setup3.assignment->ComputeAssignment());
 
   // Another balanced graph with no perfect matching, but with plenty
   // of in/out degree for each node.
-  AssignmentProblemSetup<TypeParam> setup4(5, 12, false);
-  CreateArcWithCost<TypeParam>(0, 5, 0, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(0, 6, 2, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(1, 5, 3, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(1, 6, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(2, 5, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(2, 6, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(3, 7, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(3, 8, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(3, 9, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(4, 7, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(4, 8, 4, setup4.builder, setup4.assignment);
-  CreateArcWithCost<TypeParam>(4, 9, 4, setup4.builder, setup4.assignment);
+  AssignmentProblemSetup<TypeParam> setup4(5, 12);
+  setup4.CreateArcWithCost(0, 5, 0);
+  setup4.CreateArcWithCost(0, 6, 2);
+  setup4.CreateArcWithCost(1, 5, 3);
+  setup4.CreateArcWithCost(1, 6, 4);
+  setup4.CreateArcWithCost(2, 5, 4);
+  setup4.CreateArcWithCost(2, 6, 4);
+  setup4.CreateArcWithCost(3, 7, 4);
+  setup4.CreateArcWithCost(3, 8, 4);
+  setup4.CreateArcWithCost(3, 9, 4);
+  setup4.CreateArcWithCost(4, 7, 4);
+  setup4.CreateArcWithCost(4, 8, 4);
+  setup4.CreateArcWithCost(4, 9, 4);
   setup4.Finalize();
   EXPECT_FALSE(setup4.assignment->ComputeAssignment());
 }
 
 // A helper function template for setting up assignment problems based on
-// dynamic graph types without an interposed GraphBuildManager.
-template <typename DynamicGraphType, typename AssignmentGraphType>
-static ArcIndex CreateArcWithCost(
-    NodeIndex tail, NodeIndex head, CostValue cost, DynamicGraphType* graph,
-    LinearSumAssignment<AssignmentGraphType>* assignment) {
-  ArcIndex arc = graph->AddArc(tail, head);
+// dynamic graph types without a need to `Build()`.
+template <typename GraphType>
+static typename GraphType::ArcIndex CreateArcWithCost(
+    typename GraphType::NodeIndex tail, typename GraphType::NodeIndex head,
+    int64_t cost, GraphType* graph,
+    LinearSumAssignment<GraphType, int64_t>* assignment) {
+  typename GraphType::ArcIndex arc = graph->AddArc(tail, head);
   assignment->SetArcCost(arc, cost);
   return arc;
 }
@@ -384,56 +372,19 @@ static ArcIndex CreateArcWithCost(
 template <typename GraphType>
 class LinearSumAssignmentTestWithDynamicGraph : public ::testing::Test {};
 
-typedef ::testing::Types<
-    EbertGraph<int16_t, int16_t>, ForwardEbertGraph<int16_t, int16_t>,
-    EbertGraph<int16_t, ArcIndex>, ForwardEbertGraph<NodeIndex, int16_t>,
-    EbertGraph<NodeIndex, ArcIndex>, ForwardEbertGraph<NodeIndex, ArcIndex>>
+typedef ::testing::Types<::util::ListGraph<>>
     DynamicGraphTypesForAssignmentTesting;
 
 TYPED_TEST_SUITE(LinearSumAssignmentTestWithDynamicGraph,
                  DynamicGraphTypesForAssignmentTesting);
-
-TYPED_TEST(LinearSumAssignmentTestWithDynamicGraph, GraphLayoutTest) {
-  // A complete bipartite 3x3 graph (9 edges).
-  TypeParam g(6, 9);
-  LinearSumAssignment<TypeParam> a(g, 3);
-  // We add arcs in a higgledy-piggledy order, with costs that indicate the
-  // order the arcs should have after the layout is optimized.
-  CreateArcWithCost(0, 3, 1, &g, &a);  // in cycle [0]
-  CreateArcWithCost(2, 5, 9, &g, &a);  // in cycle [1 8 3]
-  CreateArcWithCost(1, 5, 6, &g, &a);  // in cycle [2 5]
-  CreateArcWithCost(0, 4, 2, &g, &a);  // in cycle [1 8 3]
-  CreateArcWithCost(1, 4, 5, &g, &a);  // in cycle [4]
-  CreateArcWithCost(0, 5, 3, &g, &a);  // in cycle [2 5]
-  CreateArcWithCost(2, 4, 8, &g, &a);  // in cycle [6 7]
-  CreateArcWithCost(2, 3, 7, &g, &a);  // in cycle [6 7]
-  CreateArcWithCost(1, 3, 4, &g, &a);  // in cycle [1 8 3]
-
-  EXPECT_TRUE(a.ComputeAssignment());
-  EXPECT_EQ(1 + 5 + 9, a.GetCost());
-
-  a.OptimizeGraphLayout(&g);
-  EXPECT_TRUE(a.ComputeAssignment());
-  EXPECT_EQ(1 + 5 + 9, a.GetCost());
-  // The optimized graph layout is supposed to group arcs by their tail nodes
-  // and sequence them within each group by their head nodes.
-  TailArrayManager<TypeParam> tail_array_manager(&g);
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
-  for (int i = 0; i < 9; ++i) {
-    EXPECT_EQ(i + 1, a.ArcCost(i));
-    EXPECT_EQ(i / 3, g.Tail(i));
-    EXPECT_EQ(3 + i % 3, g.Head(i));
-  }
-  tail_array_manager.ReleaseTailArrayIfForwardGraph();
-}
 
 // The EpsilonOptimal test and the PrecisionWarning test cannot be parameterized
 // by the type of the underlying graph because doing so is not supported by the
 // FRIEND_TEST() macro used in the LinearSumAssignment class template to grant
 // these tests access to private methods of LinearSumAssignment.
 TEST(LinearSumAssignmentFriendTest, EpsilonOptimal) {
-  StarGraph g(4, 4);
-  LinearSumAssignment<StarGraph> a(g, 2);
+  ::util::ListGraph<> g(4, 4);
+  LinearSumAssignment<::util::ListGraph<>> a(g, 2);
   CreateArcWithCost(0, 2, 0, &g, &a);
   CreateArcWithCost(0, 3, 2, &g, &a);
   CreateArcWithCost(1, 2, 3, &g, &a);
@@ -449,11 +400,11 @@ TEST(LinearSumAssignmentFriendTest, EpsilonOptimal) {
 #if LARGE
 TEST(LinearSumAssignmentPrecisionTest, PrecisionWarning) {
   const NodeIndex kNumLeftNodes = 10000000;
-  ForwardStarGraph g(2 * kNumLeftNodes, 2 * kNumLeftNodes);
-  LinearSumAssignment<ForwardStarGraph> a(g, kNumLeftNodes);
+  util::ListGraph<> g(2 * kNumLeftNodes, 2 * kNumLeftNodes);
+  LinearSumAssignment<util::ListGraph<>> a(g, kNumLeftNodes);
   int64_t node_count = 0;
-  for (NodeIndex left_node = ForwardStarGraph::kFirstNode;
-       node_count < kNumLeftNodes; ++node_count, ++left_node) {
+  for (NodeIndex left_node = 0; node_count < kNumLeftNodes;
+       ++node_count, ++left_node) {
     CreateArcWithCost(left_node, kNumLeftNodes + left_node, kNumLeftNodes, &g,
                       &a);
   }
@@ -465,7 +416,9 @@ TEST(LinearSumAssignmentPrecisionTest, PrecisionWarning) {
 #endif  // LARGE
 
 class MacholWien
-    : public ::testing::TestWithParam<::testing::tuple<NodeIndex, bool>> {};
+    : public ::testing::TestWithParam<
+          ::testing::tuple<::util::CompleteBipartiteGraph<>::NodeIndex, bool>> {
+};
 
 // The following test computes assignments on the instances described in:
 // Robert E. Machol and Michael Wien, "Errata: A Hard Assignment Problem",
@@ -478,22 +431,19 @@ class MacholWien
 // list flag.
 TEST_P(MacholWien, SolveHardProblem) {
   using Graph = ::util::CompleteBipartiteGraph<>;
-  NodeIndex n = ::testing::get<0>(GetParam());
+  Graph::NodeIndex n = ::testing::get<0>(GetParam());
   absl::SetFlag(&FLAGS_assignment_stack_order, ::testing::get<1>(GetParam()));
   Graph graph(n, n);
   LinearSumAssignment<Graph> assignment(graph, n);
-  for (NodeIndex i = 0; i < n; ++i) {
-    for (NodeIndex j = 0; j < n; ++j) {
-      const ArcIndex arc = graph.GetArc(i, n + j);
+  for (Graph::NodeIndex i = 0; i < n; ++i) {
+    for (Graph::NodeIndex j = 0; j < n; ++j) {
+      const Graph::ArcIndex arc = graph.GetArc(i, n + j);
       assignment.SetArcCost(arc, i * j);
     }
   }
   EXPECT_TRUE(assignment.ComputeAssignment());
-  for (LinearSumAssignment<Graph>::BipartiteLeftNodeIterator node_it(
-           assignment);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex left_node = node_it.Index();
-    const NodeIndex right_node = assignment.GetMate(left_node);
+  for (const Graph::NodeIndex left_node : assignment.BipartiteLeftNodes()) {
+    const Graph::NodeIndex right_node = assignment.GetMate(left_node);
     EXPECT_EQ(2 * n - 1, left_node + right_node);
   }
 }
@@ -516,48 +466,23 @@ INSTANTIATE_TEST_CASE_P(MacholWienProblems, MacholWien,
                                            ::testing::Bool()));
 #endif  // LARGE
 
-// Helper function for random-assignment benchmarks.
-template <typename GraphType, bool optimize_layout>
-void ConstructRandomAssignment(
-    const int left_nodes, const int average_degree, const int cost_limit,
-    std::unique_ptr<GraphType>* graph,
-    std::unique_ptr<LinearSumAssignment<GraphType>>* assignment) {
-  const int kNodes = 2 * left_nodes;
-  const int kArcs = left_nodes * average_degree;
-  const int kRandomSeed = 0;
-  std::mt19937 randomizer(kRandomSeed);
-  AnnotatedGraphBuildManager<GraphType>* builder =
-      new AnnotatedGraphBuildManager<GraphType>(kNodes, kArcs, optimize_layout);
-  assignment->reset(new LinearSumAssignment<GraphType>(left_nodes, kArcs));
-  for (int i = 0; i < kArcs; ++i) {
-    const int left = absl::Uniform(randomizer, 0, left_nodes);
-    const int right = left_nodes + absl::Uniform(randomizer, 0, left_nodes);
-    const CostValue cost = absl::Uniform(randomizer, 0, cost_limit);
-    CreateArcWithCost(left, right, cost, builder, assignment->get());
-  }
-  std::unique_ptr<PermutationCycleHandler<ArcIndex>> cycle_handler(
-      assignment->get()->ArcAnnotationCycleHandler());
-  graph->reset(builder->Graph(cycle_handler.get()));
-  assignment->get()->SetGraph(graph->get());
-}
-
 // Same as ConstructRandomAssignment, but for the new API.
 template <typename GraphType>
 void ConstructRandomAssignmentForNewGraphApi(
     const int left_nodes, const int average_degree, const int cost_limit,
     std::unique_ptr<GraphType>* graph,
-    std::unique_ptr<LinearSumAssignment<GraphType>>* assignment) {
+    std::unique_ptr<LinearSumAssignment<GraphType, int64_t>>* assignment) {
   const int kNodes = 2 * left_nodes;
   const int kArcs = left_nodes * average_degree;
   const int kRandomSeed = 0;
   std::mt19937 randomizer(kRandomSeed);
-  std::vector<CostValue> arc_costs;
+  std::vector<int64_t> arc_costs;
   arc_costs.reserve(kArcs);
   graph->reset(new GraphType(kNodes, kArcs));
   for (int i = 0; i < kArcs; ++i) {
     const int left = absl::Uniform(randomizer, 0, left_nodes);
     const int right = left_nodes + absl::Uniform(randomizer, 0, left_nodes);
-    const CostValue cost = absl::Uniform(randomizer, 0, cost_limit);
+    const int64_t cost = absl::Uniform(randomizer, 0, cost_limit);
     graph->get()->AddArc(left, right);
     arc_costs.push_back(cost);
   }
@@ -569,44 +494,21 @@ void ConstructRandomAssignmentForNewGraphApi(
 
   // Create the assignment.
   assignment->reset(
-      new LinearSumAssignment<GraphType>(*(graph->get()), left_nodes));
+      new LinearSumAssignment<GraphType, int64_t>(*(graph->get()), left_nodes));
   for (int arc = 0; arc < kArcs; ++arc) {
     assignment->get()->SetArcCost(arc, arc_costs[arc]);
   }
 }
-
-// Benchmark function for assignment-problem construction only, no solution.
-template <typename GraphType, bool optimize_layout>
-void BM_ConstructRandomAssignmentProblem(benchmark::State& state) {
-  const int kLeftNodes = 10000;
-  const int kAverageDegree = 250;
-  const CostValue kCostLimit = 1000000;
-  for (auto _ : state) {
-    std::unique_ptr<GraphType> graph;
-    std::unique_ptr<LinearSumAssignment<GraphType>> assignment;
-    ConstructRandomAssignment<GraphType, optimize_layout>(
-        kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
-                          kLeftNodes * kAverageDegree);
-}
-
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, StarGraph, false);
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarGraph,
-                    false);
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, StarGraph, true);
-BENCHMARK_TEMPLATE2(BM_ConstructRandomAssignmentProblem, ForwardStarGraph,
-                    true);
 
 template <typename GraphType>
 void BM_ConstructRandomAssignmentProblemWithNewGraphApi(
     benchmark::State& state) {
   const int kLeftNodes = 10000;
   const int kAverageDegree = 250;
-  const CostValue kCostLimit = 1000000;
+  const int64_t kCostLimit = 1000000;
   for (auto _ : state) {
     std::unique_ptr<GraphType> graph;
-    std::unique_ptr<LinearSumAssignment<GraphType>> assignment;
+    std::unique_ptr<LinearSumAssignment<GraphType, int64_t>> assignment;
     ConstructRandomAssignmentForNewGraphApi<GraphType>(
         kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
   }
@@ -619,42 +521,18 @@ BENCHMARK_TEMPLATE(BM_ConstructRandomAssignmentProblemWithNewGraphApi,
 BENCHMARK_TEMPLATE(BM_ConstructRandomAssignmentProblemWithNewGraphApi,
                    util::StaticGraph<>);
 
-// Benchmark function for assignment-problem solution only, with
-// problem-construction timing excluded.
-template <typename GraphType, bool optimize_layout>
-void BM_SolveRandomAssignmentProblem(benchmark::State& state) {
-  const int kLeftNodes = 10000;
-  const int kAverageDegree = 250;
-  const CostValue kCostLimit = 1000000;
-  std::unique_ptr<GraphType> graph;
-  std::unique_ptr<LinearSumAssignment<GraphType>> assignment;
-  ConstructRandomAssignment<GraphType, optimize_layout>(
-      kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
-  for (auto _ : state) {
-    assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
-                          kLeftNodes * kAverageDegree);
-}
-
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, StarGraph, false);
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarGraph, false);
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, StarGraph, true);
-BENCHMARK_TEMPLATE2(BM_SolveRandomAssignmentProblem, ForwardStarGraph, true);
-
 template <typename GraphType>
 void BM_SolveRandomAssignmentProblemWithNewGraphApi(benchmark::State& state) {
   const int kLeftNodes = 10000;
   const int kAverageDegree = 250;
-  const CostValue kCostLimit = 1000000;
+  const int64_t kCostLimit = 1000000;
   std::unique_ptr<GraphType> graph;
-  std::unique_ptr<LinearSumAssignment<GraphType>> assignment;
+  std::unique_ptr<LinearSumAssignment<GraphType, int64_t>> assignment;
   ConstructRandomAssignmentForNewGraphApi<GraphType>(
       kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
   for (auto _ : state) {
     assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
+    EXPECT_EQ(65415697, assignment->GetCost());
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
                           kLeftNodes * kAverageDegree);
@@ -664,48 +542,20 @@ BENCHMARK_TEMPLATE(BM_SolveRandomAssignmentProblemWithNewGraphApi,
                    util::ListGraph<>);
 BENCHMARK_TEMPLATE(BM_SolveRandomAssignmentProblemWithNewGraphApi,
                    util::StaticGraph<>);
-
-// Benchmark function for assignment-problem construction and solution, with
-// problem-construction timing included.
-template <typename GraphType, bool optimize_layout>
-void BM_ConstructAndSolveRandomAssignmentProblem(benchmark::State& state) {
-  const int kLeftNodes = 10000;
-  const int kAverageDegree = 250;
-  const CostValue kCostLimit = 1000000;
-  for (auto _ : state) {
-    std::unique_ptr<GraphType> graph;
-    std::unique_ptr<LinearSumAssignment<GraphType>> assignment;
-    ConstructRandomAssignment<GraphType, optimize_layout>(
-        kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
-    assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
-                          kLeftNodes * kAverageDegree);
-}
-
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem, StarGraph,
-                    false);
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
-                    ForwardStarGraph, false);
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem, StarGraph,
-                    true);
-BENCHMARK_TEMPLATE2(BM_ConstructAndSolveRandomAssignmentProblem,
-                    ForwardStarGraph, true);
 
 template <typename GraphType>
 void BM_ConstructAndSolveRandomAssignmentProblemWithNewGraphApi(
     benchmark::State& state) {
   const int kLeftNodes = 10000;
   const int kAverageDegree = 250;
-  const CostValue kCostLimit = 1000000;
+  const int64_t kCostLimit = 1000000;
   for (auto _ : state) {
     std::unique_ptr<GraphType> graph;
-    std::unique_ptr<LinearSumAssignment<GraphType>> assignment;
+    std::unique_ptr<LinearSumAssignment<GraphType, int64_t>> assignment;
     ConstructRandomAssignmentForNewGraphApi<GraphType>(
         kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
     assignment->ComputeAssignment();
-    EXPECT_EQ(65849286, assignment->GetCost());
+    EXPECT_EQ(65415697, assignment->GetCost());
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
                           kLeftNodes * kAverageDegree);

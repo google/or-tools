@@ -130,12 +130,10 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/flow_problem.pb.h"
-#include "ortools/graph/graphs.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
 
@@ -573,7 +571,7 @@ GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph, NodeIndex source,
   SCOPED_TIME_STAT(&stats_);
   DCHECK(graph->IsNodeValid(source));
   DCHECK(graph->IsNodeValid(sink));
-  const NodeIndex max_num_nodes = Graphs<Graph>::NodeReservation(*graph_);
+  const NodeIndex max_num_nodes = graph_->node_capacity();
   if (max_num_nodes > 0) {
     // We will initialize them in InitializePreflow(), so no need for memset.
     //
@@ -584,7 +582,7 @@ GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph, NodeIndex source,
     first_admissible_arc_ = std::make_unique<ArcIndex[]>(max_num_nodes);
     bfs_queue_.reserve(max_num_nodes);
   }
-  const ArcIndex max_num_arcs = Graphs<Graph>::ArcReservation(*graph_);
+  const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
     if constexpr (Graph::kHasNegativeReverseArcs) {
       residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
@@ -767,7 +765,7 @@ void GenericMaxFlow<Graph>::InitializePreflow() {
   // TODO(user): Ebert graph has an issue with nodes with no arcs, so we
   // use max_num_nodes here to resize vectors.
   const NodeIndex num_nodes = graph_->num_nodes();
-  const NodeIndex max_num_nodes = Graphs<Graph>::NodeReservation(*graph_);
+  const NodeIndex max_num_nodes = graph_->node_capacity();
 
   // InitializePreflow() clears the whole flow that could have been computed
   // by a previous Solve(). This is not optimal in terms of complexity.
@@ -1165,9 +1163,7 @@ template <typename Graph>
 void GenericMaxFlow<Graph>::RefineWithGlobalUpdate() {
   SCOPED_TIME_STAT(&stats_);
 
-  // TODO(user): This should be graph_->num_nodes(), but ebert graph does not
-  // have a correct size if the highest index nodes have no arcs.
-  const NodeIndex num_nodes = Graphs<Graph>::NodeReservation(*graph_);
+  const NodeIndex num_nodes = graph_->num_nodes();
   std::vector<int> skip_active_node;
 
   // Usually SaturateOutgoingArcsFromSource() will saturate all the arcs from
@@ -1304,7 +1300,7 @@ void GenericMaxFlow<Graph>::Relabel(NodeIndex node) {
 
 template <typename Graph>
 typename Graph::ArcIndex GenericMaxFlow<Graph>::Opposite(ArcIndex arc) const {
-  return Graphs<Graph>::OppositeArc(*graph_, arc);
+  return graph_->OppositeArc(arc);
 }
 
 template <typename Graph>
@@ -1314,7 +1310,7 @@ bool GenericMaxFlow<Graph>::IsArcDirect(ArcIndex arc) const {
 
 template <typename Graph>
 bool GenericMaxFlow<Graph>::IsArcValid(ArcIndex arc) const {
-  return Graphs<Graph>::IsArcValid(*graph_, arc);
+  return graph_->IsArcValid(arc);
 }
 
 template <typename Graph>

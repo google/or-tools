@@ -69,7 +69,7 @@ void AssignmentMinFlow() {
   // [END solve]
 
   // [START print_solution]
-  if (status == MinCostFlow::OPTIMAL) {
+  if (status == SimpleMinCostFlow::OPTIMAL) {
     LOG(INFO) << "Total cost: " << min_cost_flow.OptimalCost();
     LOG(INFO) << "";
     for (std::size_t i = 0; i < min_cost_flow.NumArcs(); ++i) {

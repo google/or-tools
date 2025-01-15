@@ -46,10 +46,9 @@ void PrintDimacsAssignmentProblem(
       absl::StrFormat("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
   CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
 
-  for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
-           node_it(assignment);
-       node_it.Ok(); node_it.Next()) {
-    output_line = absl::StrFormat("n %d\n", node_it.Index() + 1);
+  for (const typename GraphType::NodeIndex left_node :
+       assignment.BipartiteLeftNodes()) {
+    output_line = absl::StrFormat("n %d\n", left_node + 1);
     CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
   }
 

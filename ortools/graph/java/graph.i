@@ -34,8 +34,6 @@
 
 %include "ortools/base/base.i"
 
-%import "ortools/graph/ebert_graph.h"
-
 %{
 #include "ortools/graph/assignment.h"
 #include "ortools/graph/max_flow.h"
@@ -102,6 +100,7 @@
 %unignore operations_research::SimpleMinCostFlow::~SimpleMinCostFlow;
 %rename (addArcWithCapacityAndUnitCost)
     operations_research::SimpleMinCostFlow::AddArcWithCapacityAndUnitCost;
+%rename (setArcCapacity) operations_research::SimpleMinCostFlow::SetArcCapacity;
 %rename (setNodeSupply) operations_research::SimpleMinCostFlow::SetNodeSupply;
 %rename (solve) operations_research::SimpleMinCostFlow::Solve;
 %rename (solveMaxFlowWithMinCost)

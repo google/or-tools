@@ -106,7 +106,7 @@ setup(
         '@PYTHON_PROJECT@.sat':['*.pyi'],
         '@PYTHON_PROJECT@.sat.colab':['*.pyi', 'py.typed'],
         '@PYTHON_PROJECT@.sat.python':[
-            '$<TARGET_FILE_NAME:swig_helper_pybind11>',
+            '$<TARGET_FILE_NAME:cp_model_helper_pybind11>',
             '*.pyi',
             'py.typed'
         ],

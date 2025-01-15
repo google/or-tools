@@ -121,7 +121,9 @@ class SharedSolutionRepository {
   // right away. One must call Synchronize for this to happen. In order to be
   // deterministic, this will keep all solutions until Synchronize() is called,
   // so we need to be careful not to generate too many solutions at once.
-  void Add(Solution solution);
+  //
+  // Returns a shared pointer to the solution that was stored in the repository.
+  std::shared_ptr<const Solution> Add(Solution solution);
 
   // Updates the current pool of solution with the one recently added. Note that
   // we use a stable ordering of solutions, so the final pool will be
@@ -355,9 +357,11 @@ class SharedResponseManager {
 
   // Reads the new solution from the response and update our state. For an
   // optimization problem, we only do something if the solution is strictly
-  // improving.
-  void NewSolution(absl::Span<const int64_t> solution_values,
-                   const std::string& solution_info, Model* model = nullptr);
+  // improving. Returns a shared pointer to the solution that was potentially
+  // stored in the repository.
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+  NewSolution(absl::Span<const int64_t> solution_values,
+              const std::string& solution_info, Model* model = nullptr);
 
   // Changes the solution to reflect the fact that the "improving" problem is
   // infeasible. This means that if we have a solution, we have proven
@@ -903,15 +907,17 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
 }
 
 template <typename ValueType>
-void SharedSolutionRepository<ValueType>::Add(Solution solution) {
-  if (num_solutions_to_keep_ <= 0) return;
+std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
+SharedSolutionRepository<ValueType>::Add(Solution solution) {
   std::shared_ptr<Solution> solution_ptr =
       std::make_shared<Solution>(std::move(solution));
+  if (num_solutions_to_keep_ <= 0) return std::move(solution_ptr);
   {
     absl::MutexLock mutex_lock(&mutex_);
     ++num_added_;
-    new_solutions_.push_back(std::move(solution_ptr));
+    new_solutions_.push_back(solution_ptr);
   }
+  return solution_ptr;
 }
 
 template <typename ValueType>

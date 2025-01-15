@@ -174,7 +174,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
@@ -287,6 +287,11 @@ class SimpleMinCostFlow : public MinCostFlowBase {
                                          FlowQuantity capacity,
                                          CostValue unit_cost);
 
+  // Modifies the capacity of the given arc. The arc index must be non-negative
+  // (>= 0); it must be an index returned by a previous call to
+  // AddArcWithCapacityAndUnitCost().
+  void SetArcCapacity(ArcIndex arc, FlowQuantity capacity);
+
   // Sets the supply of the given node. The node index must be non-negative (>=
   // 0). Nodes implicitly created will have a default supply set to 0. A demand
   // is modeled as a negative supply.
@@ -378,9 +383,9 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   bool scale_prices_ = true;
 };
 
-// Generic MinCostFlow that works with StarGraph and all the graphs handling
-// reverse arcs from graph.h, see the end of min_cost_flow.cc for the exact
-// types this class is compiled for.
+// Generic MinCostFlow that works with all the graphs handling reverse arcs from
+// graph.h, see the end of min_cost_flow.cc for the exact types this class is
+// compiled for.
 //
 // One can greatly decrease memory usage by using appropriately small integer
 // types:
@@ -670,7 +675,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 // Note: SWIG does not seem to understand explicit template specialization and
 // instantiation declarations.
 
-extern template class GenericMinCostFlow<StarGraph>;
 extern template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
@@ -683,11 +687,14 @@ extern template class GenericMinCostFlow<
     /*ArcFlowType=*/int16_t,
     /*ArcScaledCostType=*/int32_t>;
 
-// Default MinCostFlow instance that uses StarGraph.
-// New clients should use SimpleMinCostFlow if they can.
-class MinCostFlow : public GenericMinCostFlow<StarGraph> {
- public:
-  explicit MinCostFlow(const StarGraph* graph) : GenericMinCostFlow(graph) {}
+// TODO(b/385094969): Remove this alias after 2025-07-01 to give or-tools users
+// a grace period.
+struct MinCostFlow : public MinCostFlowBase {
+  template <typename = void>
+  MinCostFlow() {
+    LOG(FATAL) << "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
+                  "`GenericMinCostFlow` with a specific graph type instead.";
+  }
 };
 
 #endif  // SWIG

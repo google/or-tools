@@ -654,7 +654,7 @@ CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
 // cuts of the form described above if they are violated by lp solution. Note
 // that all the fixed variables are ignored while generating cuts.
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<AffineExpression>& exprs, Model* model);
+    absl::Span<const AffineExpression> exprs, Model* model);
 
 // Consider the Lin Max constraint with d expressions and n variables in the
 // form: target = max {exprs[k] = Sum (wki * xi + bk)}. k in {1,..,d}.
@@ -693,9 +693,10 @@ CutGenerator CreateAllDifferentCutGenerator(
 //
 // Note: This cut generator requires all expressions to contain only positive
 // vars.
-CutGenerator CreateLinMaxCutGenerator(
-    IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    const std::vector<IntegerVariable>& z_vars, Model* model);
+CutGenerator CreateLinMaxCutGenerator(IntegerVariable target,
+                                      absl::Span<const LinearExpression> exprs,
+                                      absl::Span<const IntegerVariable> z_vars,
+                                      Model* model);
 
 // Helper for the affine max constraint.
 //
@@ -718,7 +719,7 @@ CutGenerator CreateMaxAffineCutGenerator(
 // create a generator that will returns constraint of the form "at_most_one"
 // between such literals.
 CutGenerator CreateCliqueCutGenerator(
-    const std::vector<IntegerVariable>& base_variables, Model* model);
+    absl::Span<const IntegerVariable> base_variables, Model* model);
 
 // Utility class for the AllDiff cut generator.
 class SumOfAllDiffLowerBounder {
@@ -727,6 +728,7 @@ class SumOfAllDiffLowerBounder {
   void Add(const AffineExpression& expr, int num_expr,
            const IntegerTrail& integer_trail);
 
+  // Return int_max if the sum overflows.
   IntegerValue SumOfMinDomainValues();
   IntegerValue SumOfDifferentMins();
   IntegerValue GetBestLowerBound(std::string& suffix);

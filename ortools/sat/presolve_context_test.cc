@@ -681,10 +681,15 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 1, 1, 5, 7 ]
+    }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
   context.UpdateNewConstraintsVariableUsage();
+  context.LoadSolutionHint();
   LinearExpressionProto expr1;
   expr1.add_vars(2);
   expr1.add_coeffs(1);
@@ -705,6 +710,7 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
   // 2 x (2 implications , 2 enforced linear) + bool_or.
   ASSERT_EQ(9, working_model.constraints_size());
   EXPECT_THAT(working_model.constraints(8), ::testing::EqualsProto(bool_or));
+  EXPECT_TRUE(context.DebugTestHintFeasibility());
 }
 
 TEST(PresolveContextTest, ExploitFixedDomainOverflow) {

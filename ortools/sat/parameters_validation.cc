@@ -182,17 +182,19 @@ std::string ValidateParameters(const SatParameters& params) {
     }
   }
 
-  const auto strategies = GetNamedParameters(params);
-  for (const std::string& subsolver : params.subsolvers()) {
-    if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
-    if (!strategies.contains(subsolver)) {
-      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+  if (!params.subsolvers().empty() || !params.extra_subsolvers().empty()) {
+    const auto strategies = GetNamedParameters(params);
+    for (const std::string& subsolver : params.subsolvers()) {
+      if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
+      if (!strategies.contains(subsolver)) {
+        return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+      }
     }
-  }
 
-  for (const std::string& subsolver : params.extra_subsolvers()) {
-    if (!strategies.contains(subsolver)) {
-      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+    for (const std::string& subsolver : params.extra_subsolvers()) {
+      if (!strategies.contains(subsolver)) {
+        return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+      }
     }
   }
 

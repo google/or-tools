@@ -109,6 +109,16 @@ bool EnforcementPropagator::Propagate(Trail* /*trail*/) {
     }
   }
   rev_stack_size_ = static_cast<int>(untrail_stack_.size());
+
+  // Compute the enforcement status of any constraint added at a positive level.
+  // This is only needed until we are back to level zero.
+  for (const EnforcementId id : ids_to_fix_until_next_root_level_) {
+    ChangeStatus(id, DebugStatus(id));
+  }
+  if (trail_.CurrentDecisionLevel() == 0) {
+    ids_to_fix_until_next_root_level_.clear();
+  }
+
   return true;
 }
 
@@ -225,6 +235,14 @@ EnforcementId EnforcementPropagator::Register(
       }
     }
   }
+
+  // Tricky: if we added something at a positive level, and its status is
+  // not CANNOT_PROPAGATE, then we might need to fix it on backtrack.
+  if (trail_.CurrentDecisionLevel() > 0 &&
+      statuses_[id] != EnforcementStatus::CANNOT_PROPAGATE) {
+    ids_to_fix_until_next_root_level_.push_back(id);
+  }
+
   return id;
 }
 

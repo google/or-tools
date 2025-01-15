@@ -380,6 +380,44 @@ TEST(ReservoirExpandTest, FalseActive) {
   EXPECT_EQ(OPTIMAL, response.status());
 }
 
+TEST(ReservoirExpandTest, ExpandReservoirUsingCircuitPreservesSolutionHint) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      reservoir {
+        max_level: 2
+        time_exprs { offset: 1 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 2 }
+        time_exprs { offset: 3 }
+        level_changes: { offset: -1 }
+        level_changes: { offset: -1 }
+        level_changes: { offset: 2 }
+        level_changes: { offset: -2 }
+        level_changes: { offset: 1 }
+        active_literals: 0
+        active_literals: 0
+        active_literals: 0
+        active_literals: 1
+        active_literals: 0
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 1, 0 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_expand_reservoir_using_circuit(true);
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  CpSolverResponse response = SolveWithParameters(initial_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 TEST(IntModExpandTest, FzTest) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { name: 'x' domain: 50 domain: 60 }

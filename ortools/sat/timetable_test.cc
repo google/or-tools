@@ -35,6 +35,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
 namespace sat {
@@ -95,8 +96,8 @@ bool TestTimeTablingPropagation(absl::Span<const CumulativeTasks> tasks,
   // Propagate properly the other bounds of the intervals.
   EXPECT_TRUE(precedences->Propagate());
 
-  SchedulingConstraintHelper* helper = model.TakeOwnership(
-      new SchedulingConstraintHelper(interval_vars, &model));
+  auto* repo = model.GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(interval_vars);
   SchedulingDemandHelper* demands_helper =
       model.TakeOwnership(new SchedulingDemandHelper(demands, helper, &model));
 

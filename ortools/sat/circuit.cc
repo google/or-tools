@@ -646,10 +646,9 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
   };
 }
 
-void LoadSubcircuitConstraint(int num_nodes, const std::vector<int>& tails,
-                              const std::vector<int>& heads,
-                              const std::vector<Literal>& literals,
-                              Model* model,
+void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
+                              absl::Span<const int> heads,
+                              absl::Span<const Literal> literals, Model* model,
                               bool multiple_subcircuit_through_zero) {
   const int num_arcs = tails.size();
   CHECK_GT(num_arcs, 0);

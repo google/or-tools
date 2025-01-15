@@ -30,7 +30,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/graphs.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
@@ -116,7 +115,7 @@ void GenericMinCostFlowTester(
     graph.AddArc(tail[arc], head[arc]);
   }
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
   EXPECT_TRUE(permutation.empty());
 
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
@@ -151,7 +150,7 @@ void GenericMinCostFlowTester(
 template <typename Graph>
 class GenericMinCostFlowTest : public ::testing::Test {};
 
-typedef ::testing::Types<StarGraph, util::ReverseArcListGraph<>,
+typedef ::testing::Types<util::ReverseArcListGraph<>,
                          util::ReverseArcStaticGraph<>,
                          util::ReverseArcMixedGraph<>>
     GraphTypes;
@@ -248,7 +247,7 @@ TYPED_TEST(GenericMinCostFlowTest, Small4x4Matrix) {
     }
   }
   std::vector<ArcIndex> permutation;
-  Graphs<TypeParam>::Build(&graph, &permutation);
+  graph.Build(&permutation);
   EXPECT_TRUE(permutation.empty());
 
   GenericMinCostFlow<TypeParam> min_cost_flow(&graph);
@@ -642,7 +641,7 @@ void FullRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
   Graph graph;
   GenerateCompleteGraph(num_sources, num_targets, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateAssignmentSupply(num_sources, num_targets, &supply);
@@ -668,7 +667,7 @@ void PartialRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
   Graph graph;
   GeneratePartialRandomGraph(num_sources, num_targets, kDegree, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateAssignmentSupply(num_sources, num_targets, &supply);
@@ -718,7 +717,7 @@ void PartialRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   Graph graph;
   GeneratePartialRandomGraph(num_sources, num_targets, kDegree, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateRandomSupply(num_sources, num_targets, kSupplyGens, kSupplyRange,
@@ -756,7 +755,7 @@ void FullRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   Graph graph;
   GenerateCompleteGraph(num_sources, num_targets, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateRandomSupply(num_sources, num_targets, kSupplyGens, kSupplyRange,
@@ -787,16 +786,16 @@ void FullRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   FLOW_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)         \
   FLOW_ONLY_TEST_SG(test_name, size, expected_cost1, expected_cost2)
 
-#define LP_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)        \
-  TEST(LPMinCostFlowTest, test_name##size) {                                 \
-    test_name<StarGraph>(SolveMinCostFlowWithLP, size, size, expected_cost1, \
-                         expected_cost2);                                    \
+#define LP_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)          \
+  TEST(LPMinCostFlowTest, test_name##size) {                                   \
+    test_name<util::ReverseArcListGraph<>>(SolveMinCostFlowWithLP, size, size, \
+                                           expected_cost1, expected_cost2);    \
   }
 
-#define FLOW_ONLY_TEST(test_name, size, expected_cost1, expected_cost2) \
-  TEST(MinCostFlowTest, test_name##size) {                              \
-    test_name<StarGraph>(SolveMinCostFlow, size, size, expected_cost1,  \
-                         expected_cost2);                               \
+#define FLOW_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)     \
+  TEST(MinCostFlowTest, test_name##size) {                                  \
+    test_name<util::ReverseArcListGraph<>>(SolveMinCostFlow, size, size,    \
+                                           expected_cost1, expected_cost2); \
   }
 
 #define FLOW_ONLY_TEST_SG(test_name, size, expected_cost1, expected_cost2)    \
@@ -930,7 +929,7 @@ void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
       graph.AddArc(/*tail=*/kNumChannels + 1 + j, /*head=*/0);
     }
     std::vector<typename Graph::ArcIndex> permutation;
-    Graphs<Graph>::Build(&graph, &permutation);
+    graph.Build(&permutation);
     // To spare memory, we added arcs in the right order, so that no permutation
     // is needed. See graph.h.
     CHECK(permutation.empty());
@@ -974,14 +973,11 @@ void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
 BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<
           util::ReverseArcStaticGraph<uint16_t, int32_t>, int16_t, int32_t,
           /*kNumChannels=*/20000, /*kNumUsers=*/20000>);
-// We also benchmark with default parameter types and StarGraph for reference.
+// We also benchmark with default parameter types for reference.
 // We use fewer channels and users to avoid running out of memory.
 BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<
           ::util::ReverseArcListGraph<>, int64_t, int64_t,
           /*kNumChannels=*/5000, /*kNumUsers=*/5000>);
-BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<StarGraph, int64_t, int64_t,
-                                               /*kNumChannels=*/5000,
-                                               /*kNumUsers=*/5000>);
 
 }  // namespace
 }  // namespace operations_research

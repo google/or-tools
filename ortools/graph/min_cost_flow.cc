@@ -30,7 +30,6 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/graphs.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/stats.h"
 
@@ -54,14 +53,14 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
       alpha_(absl::GetFlag(FLAGS_min_cost_flow_alpha)),
       stats_("MinCostFlow"),
       check_feasibility_(absl::GetFlag(FLAGS_min_cost_flow_check_feasibility)) {
-  const NodeIndex max_num_nodes = Graphs<Graph>::NodeReservation(*graph_);
+  const NodeIndex max_num_nodes = graph_->node_capacity();
   if (max_num_nodes > 0) {
     first_admissible_arc_.assign(max_num_nodes, Graph::kNilArc);
     node_potential_.assign(max_num_nodes, 0);
     node_excess_.assign(max_num_nodes, 0);
     initial_node_excess_.assign(max_num_nodes, 0);
   }
-  const ArcIndex max_num_arcs = Graphs<Graph>::ArcReservation(*graph_);
+  const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
     residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
     residual_arc_capacity_.SetAll(0);
@@ -309,7 +308,6 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
   // There are no supplies or demands or costs in the graph, as we will run
   // max-flow.
   // TODO(user): make it possible to share a graph by MaxFlow and MinCostFlow.
-  // For this it is necessary to make StarGraph resizable.
   feasibility_checked_ = false;
   ArcIndex num_extra_arcs = 0;
   for (NodeIndex node = 0; node < graph_->num_nodes(); ++node) {
@@ -976,13 +974,13 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 typename Graph::ArcIndex
 GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Opposite(
     ArcIndex arc) const {
-  return Graphs<Graph>::OppositeArc(*graph_, arc);
+  return graph_->OppositeArc(arc);
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsArcValid(
     ArcIndex arc) const {
-  return Graphs<Graph>::IsArcValid(*graph_, arc);
+  return graph_->IsArcValid(arc);
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
@@ -996,7 +994,6 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsArcDirect(
 //
 // TODO(user): Move this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation?
-template class GenericMinCostFlow<StarGraph>;
 template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
@@ -1041,6 +1038,10 @@ SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::AddArcWithCapacityAndUnitCost(
   arc_capacity_.push_back(capacity);
   arc_cost_.push_back(unit_cost);
   return arc;
+}
+
+void SimpleMinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity capacity) {
+  arc_capacity_[arc] = capacity;
 }
 
 SimpleMinCostFlow::ArcIndex SimpleMinCostFlow::PermutedArc(ArcIndex arc) {

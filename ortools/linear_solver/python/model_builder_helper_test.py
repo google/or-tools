@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for model_builder_helper."""
-
 import gzip
 import os
 import threading
@@ -97,7 +95,7 @@ class PywrapModelBuilderHelperTest(absltest.TestCase):
             linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL,
         )
         self.assertAlmostEqual(solver.objective_value(), 1.0)
-        self.assertAlmostEqual(solver.var_value(0), 1.0)
+        self.assertAlmostEqual(solver.variable_value(0), 1.0)
         values = solver.variable_values()
         self.assertEqual(1, len(values))
         self.assertAlmostEqual(1.0, values[0])

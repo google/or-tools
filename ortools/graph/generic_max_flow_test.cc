@@ -33,7 +33,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/graphs.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
@@ -58,7 +57,7 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
     graph.AddArc(tail[i], head[i]);
   }
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   GenericMaxFlow<Graph> max_flow(&graph, 0, num_nodes - 1);
   for (typename Graph::ArcIndex arc = 0; arc < num_arcs; ++arc) {
@@ -69,7 +68,8 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
   }
   EXPECT_TRUE(max_flow.Solve());
   if (max_flow.status() == GenericMaxFlow<Graph>::OPTIMAL) {
-    const FlowQuantity total_flow = max_flow.GetOptimalFlow();
+    const typename GenericMaxFlow<Graph>::FlowQuantityT total_flow =
+        max_flow.GetOptimalFlow();
     EXPECT_EQ(expected_total_flow, total_flow);
     for (int arc = 0; arc < num_arcs; ++arc) {
       const int image = arc < permutation.size() ? permutation[arc] : arc;
@@ -80,13 +80,13 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
 
   // Tests the min-cut functions.
   if (expected_source_min_cut != nullptr) {
-    std::vector<NodeIndex> cut;
+    std::vector<typename Graph::NodeIndex> cut;
     max_flow.GetSourceSideMinCut(&cut);
     std::sort(cut.begin(), cut.end());
     EXPECT_THAT(*expected_source_min_cut, WhenSorted(ContainerEq(cut)));
   }
   if (expected_sink_min_cut != nullptr) {
-    std::vector<NodeIndex> cut;
+    std::vector<typename Graph::NodeIndex> cut;
     max_flow.GetSinkSideMinCut(&cut);
     std::sort(cut.begin(), cut.end());
     EXPECT_THAT(*expected_sink_min_cut, WhenSorted(ContainerEq(cut)));
@@ -98,7 +98,7 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
 template <typename Graph>
 class GenericMaxFlowTest : public ::testing::Test {};
 
-typedef ::testing::Types<StarGraph, util::ReverseArcListGraph<>,
+typedef ::testing::Types<util::ReverseArcListGraph<>,
                          util::ReverseArcStaticGraph<>,
                          util::ReverseArcMixedGraph<>>
     GraphTypes;
@@ -176,6 +176,7 @@ TYPED_TEST(GenericMaxFlowTest, HugeCapacity) {
 }
 
 TYPED_TEST(GenericMaxFlowTest, FlowQuantityOverflowLimitCase) {
+  using FlowQuantity = typename GenericMaxFlow<TypeParam>::FlowQuantityT;
   const FlowQuantity kCapacityMax = std::numeric_limits<FlowQuantity>::max();
   const FlowQuantity kHalfLow = kCapacityMax / 2;
   const FlowQuantity kHalfHigh = kCapacityMax - kHalfLow;
@@ -197,6 +198,7 @@ TYPED_TEST(GenericMaxFlowTest, FlowQuantityOverflowLimitCase) {
 }
 
 TYPED_TEST(GenericMaxFlowTest, FlowQuantityOverflow) {
+  using FlowQuantity = typename GenericMaxFlow<TypeParam>::FlowQuantityT;
   const FlowQuantity kCapacityMax = std::numeric_limits<FlowQuantity>::max();
   const int kNumNodes = 4;
   const int kNumArcs = 4;
@@ -394,7 +396,7 @@ void FullAssignment(std::optional<FlowQuantity> unused,
                     typename Graph::NodeIndex num_heads) {
   Graph graph;
   GenerateCompleteGraph(num_tails, num_heads, &graph);
-  Graphs<Graph>::Build(&graph);
+  graph.Build();
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
   std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
       &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
@@ -470,7 +472,7 @@ void PartialRandomFlow(std::optional<FlowQuantity> expected_flow,
   GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
 
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
   arc_capacity.resize(graph.num_arcs(), 0);  // In case Build() adds more arcs.
   util::Permute(permutation, &arc_capacity);
 
@@ -518,7 +520,7 @@ void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
   GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
 
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
   arc_capacity.resize(graph.num_arcs(), 0);  // In case Build() adds more arcs.
   util::Permute(permutation, &arc_capacity);
 
@@ -554,11 +556,7 @@ void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
   TEST(MaxFlowListGraphTest, test_name##size) {                                \
     test_name<util::ReverseArcListGraph<>>(std::nullopt, SolveMaxFlow, size,   \
                                            size);                              \
-  }                                                                            \
-  TEST(MaxFlowStarGraphTest, test_name##size) {                                \
-    test_name<StarGraph>(std::nullopt, SolveMaxFlow, size, size);              \
   }
-
 // These are absl::BitGen random test, so they will always work on different
 // graphs.
 LP_AND_FLOW_TEST(FullAssignment, 300);
@@ -604,22 +602,18 @@ static void BM_FullRandomFlow(benchmark::State& state) {
 }
 
 // Note that these benchmark include the graph creation and generation...
-BENCHMARK_TEMPLATE(BM_FullRandomAssignment, StarGraph);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcMixedGraph<>);
 
-BENCHMARK_TEMPLATE(BM_PartialRandomFlow, StarGraph);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcMixedGraph<>);
 
-BENCHMARK_TEMPLATE(BM_FullRandomFlow, StarGraph);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcMixedGraph<>);
 
-BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, StarGraph);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcMixedGraph<>);

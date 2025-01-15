@@ -15,18 +15,314 @@
 #define OR_TOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
 
 #include <atomic>
+#include <cstdint>
 #include <functional>
-#include <limits>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/fixed_array.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
-#include "ortools/util/logging.h"
 #include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
+namespace mb {
+
+// Base implementation of linear expressions.
+
+class BoundedLinearExpression;
+class FlatExpr;
+class ExprVisitor;
+class LinearExpr;
+class ModelBuilderHelper;
+class ModelSolverHelper;
+class Variable;
+
+// A linear expression that can be either integer or floating point.
+class LinearExpr {
+ public:
+  virtual ~LinearExpr() = default;
+  virtual void Visit(ExprVisitor& /*lin*/, double /*c*/) const = 0;
+  virtual std::string ToString() const = 0;
+  virtual std::string DebugString() const = 0;
+
+  static LinearExpr* Term(LinearExpr* expr, double coeff);
+  static LinearExpr* Affine(LinearExpr* expr, double coeff, double constant);
+  static LinearExpr* AffineCst(double value, double coeff, double constant);
+  static LinearExpr* Constant(double value);
+
+  LinearExpr* Add(LinearExpr* expr);
+  LinearExpr* AddFloat(double cst);
+  LinearExpr* Sub(LinearExpr* expr);
+  LinearExpr* SubFloat(double cst);
+  LinearExpr* RSubFloat(double cst);
+  LinearExpr* MulFloat(double cst);
+  LinearExpr* Neg();
+
+  BoundedLinearExpression* Eq(LinearExpr* rhs);
+  BoundedLinearExpression* EqCst(double rhs);
+  BoundedLinearExpression* Ge(LinearExpr* rhs);
+  BoundedLinearExpression* GeCst(double rhs);
+  BoundedLinearExpression* Le(LinearExpr* rhs);
+  BoundedLinearExpression* LeCst(double rhs);
+};
+
+// Compare the indices of variables.
+struct VariableComparator {
+  bool operator()(const Variable* lhs, const Variable* rhs) const;
+};
+
+// A visitor class to parse a floating point linear expression.
+class ExprVisitor {
+ public:
+  virtual ~ExprVisitor() = default;
+  void AddToProcess(const LinearExpr* expr, double coeff);
+  void AddConstant(double constant);
+  virtual void AddVarCoeff(const Variable* var, double coeff) = 0;
+  void Clear();
+
+ protected:
+  std::vector<std::pair<const LinearExpr*, double>> to_process_;
+  double offset_ = 0;
+};
+
+class ExprFlattener : public ExprVisitor {
+ public:
+  ~ExprFlattener() override = default;
+  void AddVarCoeff(const Variable* var, double coeff) override;
+  double Flatten(std::vector<const Variable*>* vars,
+                 std::vector<double>* coeffs);
+
+ private:
+  absl::btree_map<const Variable*, double, VariableComparator> canonical_terms_;
+};
+
+class ExprEvaluator : public ExprVisitor {
+ public:
+  explicit ExprEvaluator(ModelSolverHelper* helper) : helper_(helper) {}
+  ~ExprEvaluator() override = default;
+  void AddVarCoeff(const Variable* var, double coeff) override;
+  double Evaluate();
+
+ private:
+  ModelSolverHelper* helper_;
+};
+
+// A flat linear expression sum(vars[i] * coeffs[i]) + offset
+class FlatExpr : public LinearExpr {
+ public:
+  explicit FlatExpr(const LinearExpr* expr);
+  // Flatten pos - neg.
+  FlatExpr(const LinearExpr* pos, const LinearExpr* neg);
+  FlatExpr(const std::vector<const Variable*>&, const std::vector<double>&,
+           double);
+  explicit FlatExpr(double offset);
+  const std::vector<const Variable*>& vars() const { return vars_; }
+  std::vector<int> VarIndices() const;
+  const std::vector<double>& coeffs() const { return coeffs_; }
+  double offset() const { return offset_; }
+
+  void Visit(ExprVisitor& lin, double c) const override;
+  std::string ToString() const override;
+  std::string DebugString() const override;
+
+ private:
+  std::vector<const Variable*> vars_;
+  std::vector<double> coeffs_;
+  double offset_;
+};
+
+// A class to hold a sum of linear expressions, and optional integer and
+// double offsets.
+class SumArray : public LinearExpr {
+ public:
+  explicit SumArray(const std::vector<LinearExpr*>& exprs, double offset)
+      : exprs_(exprs.begin(), exprs.end()), offset_(offset) {}
+  ~SumArray() override = default;
+
+  void Visit(ExprVisitor& lin, double c) const override {
+    for (int i = 0; i < exprs_.size(); ++i) {
+      lin.AddToProcess(exprs_[i], c);
+    }
+    if (offset_ != 0.0) {
+      lin.AddConstant(offset_ * c);
+    }
+  }
+
+  std::string ToString() const override {
+    if (exprs_.empty()) {
+      if (offset_ != 0.0) {
+        return absl::StrCat(offset_);
+      }
+    }
+    std::string s = "(";
+    for (int i = 0; i < exprs_.size(); ++i) {
+      if (i > 0) {
+        absl::StrAppend(&s, " + ");
+      }
+      absl::StrAppend(&s, exprs_[i]->ToString());
+    }
+    if (offset_ != 0.0) {
+      if (offset_ > 0.0) {
+        absl::StrAppend(&s, " + ", offset_);
+      } else {
+        absl::StrAppend(&s, " - ", -offset_);
+      }
+    }
+    absl::StrAppend(&s, ")");
+    return s;
+  }
+
+  std::string DebugString() const override {
+    std::string s = absl::StrCat(
+        "SumArray(",
+        absl::StrJoin(exprs_, ", ", [](std::string* out, LinearExpr* expr) {
+          absl::StrAppend(out, expr->DebugString());
+        }));
+    if (offset_ != 0.0) {
+      absl::StrAppend(&s, ", offset=", offset_);
+    }
+    absl::StrAppend(&s, ")");
+    return s;
+  }
+
+ private:
+  const absl::FixedArray<LinearExpr*, 2> exprs_;
+  const double offset_;
+};
+
+// A class to hold a weighted sum of floating point linear expressions.
+class WeightedSumArray : public LinearExpr {
+ public:
+  WeightedSumArray(const std::vector<LinearExpr*>& exprs,
+                   const std::vector<double>& coeffs, double offset);
+  ~WeightedSumArray() override = default;
+
+  void Visit(ExprVisitor& lin, double c) const override;
+  std::string ToString() const override;
+  std::string DebugString() const override;
+
+ private:
+  const absl::FixedArray<LinearExpr*, 2> exprs_;
+  const absl::FixedArray<double, 2> coeffs_;
+  double offset_;
+};
+
+// A class to hold linear_expr * a = b.
+class AffineExpr : public LinearExpr {
+ public:
+  AffineExpr(LinearExpr* expr, double coeff, double offset);
+  ~AffineExpr() override = default;
+
+  void Visit(ExprVisitor& lin, double c) const override;
+
+  std::string ToString() const override;
+  std::string DebugString() const override;
+
+  LinearExpr* expression() const { return expr_; }
+  double coefficient() const { return coeff_; }
+  double offset() const { return offset_; }
+
+ private:
+  LinearExpr* expr_;
+  double coeff_;
+  double offset_;
+};
+
+// A class to hold a fixed value.
+class FixedValue : public LinearExpr {
+ public:
+  explicit FixedValue(double value) : value_(value) {}
+  ~FixedValue() override = default;
+
+  void Visit(ExprVisitor& lin, double c) const override;
+
+  std::string ToString() const override;
+  std::string DebugString() const override;
+
+ private:
+  double value_;
+};
+
+// A class to hold a variable index.
+class Variable : public LinearExpr {
+ public:
+  Variable(ModelBuilderHelper* helper, int index);
+  Variable(ModelBuilderHelper* helper, double lb, double ub, bool is_integral);
+  Variable(ModelBuilderHelper* helper, double lb, double ub, bool is_integral,
+           const std::string& name);
+  Variable(ModelBuilderHelper* helper, int64_t lb, int64_t ub,
+           bool is_integral);
+  Variable(ModelBuilderHelper* helper, int64_t lb, int64_t ub, bool is_integral,
+           const std::string& name);
+  ~Variable() override {}
+
+  ModelBuilderHelper* helper() const { return helper_; }
+  int index() const { return index_; }
+  std::string name() const;
+  void SetName(const std::string& name);
+  double lower_bounds() const;
+  void SetLowerBound(double lb);
+  double upper_bound() const;
+  void SetUpperBound(double ub);
+  bool is_integral() const;
+  void SetIsIntegral(bool is_integral);
+  double objective_coefficient() const;
+  void SetObjectiveCoefficient(double coeff);
+
+  void Visit(ExprVisitor& lin, double c) const override {
+    lin.AddVarCoeff(this, c);
+  }
+
+  std::string ToString() const override;
+
+  std::string DebugString() const override;
+
+  bool operator<(const Variable& other) const { return index_ < other.index_; }
+
+ protected:
+  ModelBuilderHelper* helper_;
+  int index_;
+};
+
+template <typename H>
+H AbslHashValue(H h, const Variable* i) {
+  return H::combine(std::move(h), i->index());
+}
+
+// A class to hold a linear expression with bounds.
+class BoundedLinearExpression {
+ public:
+  BoundedLinearExpression(const LinearExpr* expr, double lower_bound,
+                          double upper_bound);
+  BoundedLinearExpression(const LinearExpr* pos, const LinearExpr* neg,
+                          double lower_bound, double upper_bound);
+  BoundedLinearExpression(const LinearExpr* expr, int64_t lower_bound,
+                          int64_t upper_bound);
+  BoundedLinearExpression(const LinearExpr* pos, const LinearExpr* neg,
+                          int64_t lower_bound, int64_t upper_bound);
+
+  ~BoundedLinearExpression() = default;
+
+  double lower_bound() const;
+  double upper_bound() const;
+  const std::vector<const Variable*>& vars() const;
+  const std::vector<double>& coeffs() const;
+  std::string ToString() const;
+  std::string DebugString() const;
+  bool CastToBool(bool* result) const;
+
+ private:
+  std::vector<const Variable*> vars_;
+  std::vector<double> coeffs_;
+  double lower_bound_;
+  double upper_bound_;
+};
 
 // The arguments of the functions defined below must follow these rules
 // to be wrapped by SWIG correctly:
@@ -189,6 +485,7 @@ class ModelSolverHelper {
   double objective_value() const;
   double best_objective_bound() const;
   double variable_value(int var_index) const;
+  double expression_value(LinearExpr* expr) const;
   double reduced_cost(int var_index) const;
   double dual_value(int ct_index) const;
   double activity(int ct_index);
@@ -216,8 +513,10 @@ class ModelSolverHelper {
   std::optional<const MPModelProto*> model_of_last_solve_;
   std::vector<double> activities_;
   bool solver_output_ = false;
+  mutable ExprEvaluator evaluator_;
 };
 
+}  // namespace mb
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_

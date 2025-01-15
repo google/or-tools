@@ -23,7 +23,7 @@ py_binary(
         "//ortools/graph/python:linear_sum_assignment.so",
         "//ortools/graph/python:max_flow.so",
         "//ortools/graph/python:min_cost_flow.so",
-        "//ortools/sat/python:swig_helper.so",
+        "//ortools/sat/python:cp_model_helper.so",
     ],
     tags = ["manual"],
     deps = [
@@ -32,7 +32,7 @@ py_binary(
         "//ortools/sat/colab:flags",
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
-        "//ortools/sat/python:cp_model_helper",
+        "//ortools/sat/python:cp_model_numbers",
         requirement("notebook"),
         requirement("svgwrite"),
         requirement("plotly"),

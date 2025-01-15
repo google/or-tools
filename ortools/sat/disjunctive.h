@@ -258,15 +258,6 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
   PropagationStatistics stats_;
 };
 
-// Singleton model class which is just a SchedulingConstraintHelper will all
-// the intervals.
-class AllIntervalsHelper : public SchedulingConstraintHelper {
- public:
-  explicit AllIntervalsHelper(Model* model)
-      : SchedulingConstraintHelper(
-            model->GetOrCreate<IntervalsRepository>()->AllIntervals(), model) {}
-};
-
 // This propagates the same things as DisjunctiveDetectablePrecedences, except
 // that it only sort the full set of intervals once and then work on a combined
 // set of disjunctives.
@@ -282,7 +273,7 @@ class CombinedDisjunctive : public PropagatorInterface {
   bool Propagate() final;
 
  private:
-  AllIntervalsHelper* helper_;
+  SchedulingConstraintHelper* helper_;
   std::vector<std::vector<int>> task_to_disjunctives_;
   std::vector<bool> task_is_added_;
   std::vector<TaskSet> task_sets_;

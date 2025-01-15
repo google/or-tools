@@ -415,8 +415,8 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
 
 void FillTightenedDomainInResponse(const CpModelProto& original_model,
                                    const CpModelProto& mapping_proto,
-                                   const std::vector<int>& postsolve_mapping,
-                                   const std::vector<Domain>& search_domains,
+                                   absl::Span<const int> postsolve_mapping,
+                                   absl::Span<const Domain> search_domains,
                                    CpSolverResponse* response,
                                    SolverLogger* logger) {
   // The [0, num_vars) part will contain the tightened domains.

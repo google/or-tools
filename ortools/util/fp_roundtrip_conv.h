@@ -26,7 +26,7 @@
 
 namespace operations_research {
 
-// True if the plateform supports `double` to std::to_chars().
+// True if the platform supports `double` to std::to_chars().
 //
 // std::to_chars() for double is not yet supported on Emscripten, Android and
 // iOS; they only implement std::to_chars() for integers.

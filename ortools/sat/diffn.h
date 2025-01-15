@@ -24,11 +24,14 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/intervals.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -37,11 +40,9 @@ namespace sat {
 // Propagates using a box energy reasoning.
 class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
  public:
-  NonOverlappingRectanglesEnergyPropagator(SchedulingConstraintHelper* x,
-                                           SchedulingConstraintHelper* y,
+  NonOverlappingRectanglesEnergyPropagator(NoOverlap2DConstraintHelper* helper,
                                            Model* model)
-      : x_(*x),
-        y_(*y),
+      : helper_(*helper),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         orthogonal_packing_checker_(*random_, shared_stats_) {}
@@ -65,8 +66,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
   bool BuildAndReportEnergyTooLarge(absl::Span<const RectangleInRange> ranges);
 
-  SchedulingConstraintHelper& x_;
-  SchedulingConstraintHelper& y_;
+  NoOverlap2DConstraintHelper& helper_;
   ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_;
   OrthogonalPackingInfeasibilityDetector orthogonal_packing_checker_;
@@ -98,22 +98,18 @@ class NonOverlappingRectanglesDisjunctivePropagator
     : public PropagatorInterface {
  public:
   // The slow_propagators select which disjunctive algorithms to propagate.
-  NonOverlappingRectanglesDisjunctivePropagator(SchedulingConstraintHelper* x,
-                                                SchedulingConstraintHelper* y,
-                                                Model* model);
+  NonOverlappingRectanglesDisjunctivePropagator(
+      NoOverlap2DConstraintHelper* helper, Model* model);
   ~NonOverlappingRectanglesDisjunctivePropagator() override;
 
   bool Propagate() final;
   void Register(int fast_priority, int slow_priority);
 
  private:
-  bool PropagateOnXWhenOnlyTwoBoxes();
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      bool fast_propagation, SchedulingConstraintHelper* x,
-      SchedulingConstraintHelper* y);
+      bool fast_propagation);
 
-  SchedulingConstraintHelper& global_x_;
-  SchedulingConstraintHelper& global_y_;
+  NoOverlap2DConstraintHelper* helper_;
   SchedulingConstraintHelper x_;
 
   GenericLiteralWatcher* watcher_;
@@ -143,6 +139,7 @@ class NonOverlappingRectanglesDisjunctivePropagator
   DisjunctiveNotLast backward_not_last_;
   DisjunctiveEdgeFinding forward_edge_finding_;
   DisjunctiveEdgeFinding backward_edge_finding_;
+  DisjunctiveWithTwoItems disjunctive_with_two_items_;
 
   NonOverlappingRectanglesDisjunctivePropagator(
       const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
@@ -153,10 +150,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
 // Propagator that compares the boxes pairwise.
 class RectanglePairwisePropagator : public PropagatorInterface {
  public:
-  RectanglePairwisePropagator(SchedulingConstraintHelper* x,
-                              SchedulingConstraintHelper* y, Model* model)
-      : global_x_(*x),
-        global_y_(*y),
+  RectanglePairwisePropagator(NoOverlap2DConstraintHelper* helper, Model* model)
+      : helper_(helper),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         params_(model->GetOrCreate<SatParameters>()) {}
 
@@ -172,18 +167,17 @@ class RectanglePairwisePropagator : public PropagatorInterface {
 
   // Return false if a conflict is found.
   bool FindRestrictionsAndPropagateConflict(
-      absl::Span<const ItemForPairwiseRestriction> items,
+      absl::Span<const ItemWithVariableSize> items,
       std::vector<PairwiseRestriction>* restrictions);
 
   bool FindRestrictionsAndPropagateConflict(
-      absl::Span<const ItemForPairwiseRestriction> items1,
-      absl::Span<const ItemForPairwiseRestriction> items2,
+      absl::Span<const ItemWithVariableSize> items1,
+      absl::Span<const ItemWithVariableSize> items2,
       std::vector<PairwiseRestriction>* restrictions);
 
   bool PropagateTwoBoxes(const PairwiseRestriction& restriction);
 
-  SchedulingConstraintHelper& global_x_;
-  SchedulingConstraintHelper& global_y_;
+  NoOverlap2DConstraintHelper* helper_;
   SharedStatistics* shared_stats_;
   const SatParameters* params_;
 
@@ -191,10 +185,10 @@ class RectanglePairwisePropagator : public PropagatorInterface {
   int64_t num_pairwise_conflicts_ = 0;
   int64_t num_pairwise_propagations_ = 0;
 
-  std::vector<ItemForPairwiseRestriction> non_zero_area_boxes_;
-  std::vector<ItemForPairwiseRestriction> horizontal_zero_area_boxes_;
-  std::vector<ItemForPairwiseRestriction> vertical_zero_area_boxes_;
-  std::vector<ItemForPairwiseRestriction> point_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> non_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> horizontal_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> vertical_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> point_zero_area_boxes_;
 };
 
 }  // namespace sat

@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/max_flow.h"
 
 namespace operations_research {
@@ -31,7 +30,7 @@ std::vector<bool> BipartiteMinimumVertexCover(
   // alternating matched/unmatched edges to find a minimum vertex cover.
   SimpleMaxFlow max_flow;
   const int num_left = left_to_right_arcs.size();
-  std::vector<ArcIndex> arcs;
+  std::vector<SimpleMaxFlow::ArcIndex> arcs;
   for (int i = 0; i < num_left; ++i) {
     for (const int right_node : left_to_right_arcs[i]) {
       DCHECK_GE(right_node, num_left);
@@ -56,7 +55,7 @@ std::vector<bool> BipartiteMinimumVertexCover(
   }
   CHECK(max_flow.Solve(source, sink) == SimpleMaxFlow::OPTIMAL);
   std::vector<int> maximum_matching(num_left + num_right, -1);
-  for (const ArcIndex arc : arcs) {
+  for (const SimpleMaxFlow::ArcIndex arc : arcs) {
     if (max_flow.Flow(arc) > 0) {
       maximum_matching[max_flow.Tail(arc)] = max_flow.Head(arc);
       maximum_matching[max_flow.Head(arc)] = max_flow.Tail(arc);

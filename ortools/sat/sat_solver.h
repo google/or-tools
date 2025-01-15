@@ -444,7 +444,7 @@ class SatSolver {
   // debug mode, and after this is called, all the learned clauses are tested to
   // satisfy this saved assignment.
   void SaveDebugAssignment();
-  void LoadDebugSolution(const std::vector<Literal>& solution);
+  void LoadDebugSolution(absl::Span<const Literal> solution);
 
   void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
@@ -523,7 +523,7 @@ class SatSolver {
   bool ClauseIsValidUnderDebugAssignment(
       absl::Span<const Literal> clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
-      const std::vector<LiteralWithCoeff>& cst, Coefficient rhs) const;
+      absl::Span<const LiteralWithCoeff> cst, Coefficient rhs) const;
 
   // Logs the given status if parameters_.log_search_progress() is true.
   // Also returns it.
@@ -658,7 +658,7 @@ class SatSolver {
   // Fills literals with all the literals in the reasons of the literals in the
   // given input. The output vector will have no duplicates and will not contain
   // the literals already present in the input.
-  void ComputeUnionOfReasons(const std::vector<Literal>& input,
+  void ComputeUnionOfReasons(absl::Span<const Literal> input,
                              std::vector<Literal>* literals);
 
   // Do the full pseudo-Boolean constraint analysis. This calls multiple
@@ -898,8 +898,9 @@ inline std::function<void(Model*)> BooleanLinearConstraint(
 
 inline std::function<void(Model*)> CardinalityConstraint(
     int64_t lower_bound, int64_t upper_bound,
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (int i = 0; i < literals.size(); ++i) {
@@ -965,8 +966,9 @@ inline std::function<void(Model*)> Equality(Literal a, Literal b) {
 
 // r <=> (at least one literal is true). This is a reified clause.
 inline std::function<void(Model*)> ReifiedBoolOr(
-    const std::vector<Literal>& literals, Literal r) {
-  return [=](Model* model) {
+    absl::Span<const Literal> literals, Literal r) {
+  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
+             Model* model) {
     std::vector<Literal> clause;
     for (const Literal l : literals) {
       model->Add(Implication(l, r));  // l => r.

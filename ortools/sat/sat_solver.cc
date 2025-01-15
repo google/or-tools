@@ -480,7 +480,7 @@ void SatSolver::SaveDebugAssignment() {
   }
 }
 
-void SatSolver::LoadDebugSolution(const std::vector<Literal>& solution) {
+void SatSolver::LoadDebugSolution(absl::Span<const Literal> solution) {
   debug_assignment_.Resize(num_variables_.value());
   for (BooleanVariable var(0); var < num_variables_; ++var) {
     if (!debug_assignment_.VariableIsAssigned(var)) continue;
@@ -521,7 +521,7 @@ bool SatSolver::ClauseIsValidUnderDebugAssignment(
 }
 
 bool SatSolver::PBConstraintIsValidUnderDebugAssignment(
-    const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const {
+    absl::Span<const LiteralWithCoeff> cst, const Coefficient rhs) const {
   Coefficient sum(0.0);
   for (LiteralWithCoeff term : cst) {
     if (term.literal.Variable() >= debug_assignment_.NumberOfVariables()) {
@@ -2193,7 +2193,7 @@ void SatSolver::ComputeFirstUIPConflict(
   }
 }
 
-void SatSolver::ComputeUnionOfReasons(const std::vector<Literal>& input,
+void SatSolver::ComputeUnionOfReasons(absl::Span<const Literal> input,
                                       std::vector<Literal>* literals) {
   tmp_mark_.ClearAndResize(num_variables_);
   literals->clear();

@@ -37,6 +37,7 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -232,6 +233,7 @@ void FeasibilityJumpSolver::ResetCurrentSolution(
   const double range_ratio =
       params_.feasibility_jump_var_perburbation_range_ratio();
   std::vector<int64_t>& solution = state_->solution;
+  state_->base_solution = nullptr;
 
   // Resize the solution if needed.
   solution.resize(num_variables);
@@ -387,6 +389,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
               solution = shared_response_->SolutionsRepository()
                              .GetRandomBiasedSolution(random_);
           state_->solution = solution->variable_values;
+          state_->base_solution = solution;
           ++state_->num_solutions_imported;
         } else {
           if (!first_time) {
@@ -489,9 +492,17 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     if (DoSomeLinearIterations() && DoSomeGeneralIterations()) {
       // Checks for infeasibility induced by the non supported constraints.
       if (SolutionIsFeasible(linear_model_->model_proto(), state_->solution)) {
-        shared_response_->NewSolution(
-            state_->solution, absl::StrCat(name(), "_", state_->options.name(),
-                                           "(", OneLineStats(), ")"));
+        auto pointers = PushAndMaybeCombineSolution(
+            shared_response_, linear_model_->model_proto(), state_->solution,
+            absl::StrCat(name(), "_", state_->options.name(), "(",
+                         OneLineStats(), ")"),
+            state_->base_solution == nullptr
+                ? absl::Span<const int64_t>()
+                : state_->base_solution->variable_values,
+            /*model=*/nullptr);
+        // If we pushed a new solution, we use it as a new "base" so that we
+        // will have a smaller delta on the next solution we find.
+        state_->base_solution = pointers.pushed_solution;
       } else {
         shared_response_->LogMessage(name(), "infeasible solution. Aborting.");
         model_is_supported_ = false;

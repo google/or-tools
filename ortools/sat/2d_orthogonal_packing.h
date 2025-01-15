@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
+#include "ortools/base/constant_divisor.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
@@ -281,10 +282,7 @@ class RoundingDualFeasibleFunction {
  public:
   // `max_x` must fit in a uint16_t and `k` in [0, max_x/2].
   RoundingDualFeasibleFunction(IntegerValue max_x, IntegerValue k)
-      : div_(k.value()),
-        max_x_(max_x),
-        c_k_(div_.DivideByDivisor(max_x_.value())),
-        k_(k) {
+      : div_(k.value()), max_x_(max_x), c_k_(max_x_.value() / div_), k_(k) {
     DCHECK_GT(k, 0);
     DCHECK_LE(2 * k, max_x_);
     DCHECK_LE(max_x_, std::numeric_limits<uint16_t>::max());
@@ -296,11 +294,11 @@ class RoundingDualFeasibleFunction {
     DCHECK_LE(x, max_x_);
 
     if (2 * x > max_x_) {
-      return 2 * (c_k_ - div_.DivideByDivisor(max_x_.value() - x.value()));
+      return 2 * (c_k_ - (max_x_.value() - x.value()) / div_);
     } else if (2 * x == max_x_) {
       return c_k_;
     } else {
-      return 2 * div_.DivideByDivisor(x.value());
+      return 2 * (x.value() / div_);
     }
   }
 
@@ -309,7 +307,7 @@ class RoundingDualFeasibleFunction {
   IntegerValue LowestInverse(IntegerValue y) const;
 
  private:
-  const QuickSmallDivision div_;
+  const ::util::math::ConstantDivisor<uint16_t> div_;
   const IntegerValue max_x_;
   const IntegerValue c_k_;
   const IntegerValue k_;

@@ -58,8 +58,8 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
   const ReservoirConstraintProto& reservoir = reservoir_ct->reservoir();
   const int num_events = reservoir.time_exprs_size();
 
-  // The encoding will create a circuit constraint and on integer variable per
-  // events representing the level a that event time.
+  // The encoding will create a circuit constraint, and one integer variable per
+  // event (representing the level at that event time).
   CircuitConstraintProto* circuit =
       context->working_model->add_constraints()->mutable_circuit();
 
@@ -70,16 +70,94 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
   std::vector<int> level_vars(num_events);
   for (int i = 0; i < num_events; ++i) {
     level_vars[i] = context->NewIntVar(Domain(var_min, var_max));
+    if (context->HintIsLoaded()) {
+      // The hint of active events is set later.
+      context->SetNewVariableHint(level_vars[i], 0);
+    }
+  }
+
+  // The hints of the active events, in the order they should appear in the
+  // circuit. The hints are collected first, and sorted later.
+  struct ReservoirEventHint {
+    int index;  // In the reservoir constraint.
+    int64_t time;
+    int64_t level_change;
+  };
+  std::vector<ReservoirEventHint> active_event_hints;
+  bool has_complete_hint = false;
+  if (context->HintIsLoaded()) {
+    has_complete_hint = true;
+    for (int i = 0; i < num_events && has_complete_hint; ++i) {
+      if (context->VarHasSolutionHint(
+              PositiveRef(reservoir.active_literals(i)))) {
+        if (context->LiteralSolutionHint(reservoir.active_literals(i))) {
+          const std::optional<int64_t> time_hint =
+              context->GetExpressionSolutionHint(reservoir.time_exprs(i));
+          const std::optional<int64_t> change_hint =
+              context->GetExpressionSolutionHint(reservoir.level_changes(i));
+          if (time_hint.has_value() && change_hint.has_value()) {
+            active_event_hints.push_back(
+                {i, time_hint.value(), change_hint.value()});
+          } else {
+            has_complete_hint = false;
+          }
+        }
+      } else {
+        has_complete_hint = false;
+      }
+    }
+  }
+  // Update the `level_vars` hints by computing the level at each active event.
+  if (has_complete_hint) {
+    std::sort(active_event_hints.begin(), active_event_hints.end(),
+              [](const ReservoirEventHint& a, const ReservoirEventHint& b) {
+                return a.time < b.time;
+              });
+    int64_t current_level = 0;
+    for (int i = 0; i < active_event_hints.size(); ++i) {
+      int j = i;
+      // Adjust the order of the events occurring at the same time, in the
+      // circuit, so that, at each node, the level is between `var_min` and
+      // `var_max`. For instance, if e1 = {t, +1} and e2 = {t, -1}, and if
+      // `current_level` = 0, `var_min` = -1 and `var_max` = 0, then e2 must
+      // occur before e1.
+      while (j < active_event_hints.size() &&
+             active_event_hints[j].time == active_event_hints[i].time &&
+             (current_level + active_event_hints[j].level_change < var_min ||
+              current_level + active_event_hints[j].level_change > var_max)) {
+        ++j;
+      }
+      if (j < active_event_hints.size() &&
+          active_event_hints[j].time == active_event_hints[i].time) {
+        if (i != j) std::swap(active_event_hints[i], active_event_hints[j]);
+        current_level += active_event_hints[i].level_change;
+        context->UpdateVarSolutionHint(level_vars[active_event_hints[i].index],
+                                       current_level);
+      } else {
+        has_complete_hint = false;
+        break;
+      }
+    }
   }
 
   // For the corner case where all events are absent, we need a potential
   // self-arc on the start/end circuit node.
   {
+    const int all_inactive = context->NewBoolVar("reservoir expansion");
     circuit->add_tails(num_events);
     circuit->add_heads(num_events);
-    circuit->add_literals(context->NewBoolVar("reservoir expansion"));
+    circuit->add_literals(all_inactive);
+    if (has_complete_hint) {
+      context->SetNewVariableHint(all_inactive, active_event_hints.empty());
+    }
   }
 
+  // The index of each event in `active_event_hints`, or -1 if the event's
+  // "active" hint is false.
+  std::vector<int> active_event_hint_index(num_events, -1);
+  for (int i = 0; i < active_event_hints.size(); ++i) {
+    active_event_hint_index[active_event_hints[i].index] = i;
+  }
   for (int i = 0; i < num_events; ++i) {
     if (!reservoir.active_literals().empty()) {
       // Add self arc to represent absence.
@@ -96,6 +174,11 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       circuit->add_tails(num_events);
       circuit->add_heads(i);
       circuit->add_literals(start_var);
+      if (has_complete_hint) {
+        context->SetNewVariableHint(start_var,
+                                    !active_event_hints.empty() &&
+                                        active_event_hints.front().index == i);
+      }
 
       // Add enforced linear for demand.
       {
@@ -112,9 +195,15 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       }
 
       // Circuit ends at i, no extra constraint there.
+      const int end_var = context->NewBoolVar("reservoir expansion");
       circuit->add_tails(i);
       circuit->add_heads(num_events);
-      circuit->add_literals(context->NewBoolVar("reservoir expansion"));
+      circuit->add_literals(end_var);
+      if (has_complete_hint) {
+        context->SetNewVariableHint(end_var,
+                                    !active_event_hints.empty() &&
+                                        active_event_hints.back().index == i);
+      }
     }
 
     for (int j = 0; j < num_events; ++j) {
@@ -134,6 +223,13 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       circuit->add_tails(i);
       circuit->add_heads(j);
       circuit->add_literals(arc_i_j);
+      if (has_complete_hint) {
+        const int hint_i_index = active_event_hint_index[i];
+        const int hint_j_index = active_event_hint_index[j];
+        context->SetNewVariableHint(arc_i_j,
+                                    hint_i_index != -1 && hint_j_index != -1 &&
+                                        hint_j_index == hint_i_index + 1);
+      }
 
       // Add enforced linear for time.
       {
@@ -333,6 +429,19 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
 
         // not(active) => new_var == 0.
         context->AddImplyInDomain(NegatedRef(active), new_var, Domain(0));
+
+        if (context->HintIsLoaded() &&
+            context->VarHasSolutionHint(PositiveRef(active))) {
+          if (context->LiteralSolutionHint(active)) {
+            const std::optional<int64_t> demand_hint =
+                context->GetExpressionSolutionHint(demand);
+            if (demand_hint.has_value()) {
+              context->SetNewVariableHint(new_var, demand_hint.value());
+            }
+          } else {
+            context->SetNewVariableHint(new_var, 0);
+          }
+        }
       }
     }
     sum->add_domain(reservoir.min_level());
@@ -652,10 +761,14 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
       const int r_j = f_inverse[j];
       int r_j_i;
       if (context->HasVarValueEncoding(r_j, i, &r_j_i)) {
-        context->InsertVarValueEncoding(r_j_i, f_i, j);
+        if (!context->InsertVarValueEncoding(r_j_i, f_i, j)) {
+          return;
+        }
       } else {
         const int f_i_j = context->GetOrCreateVarValueEncoding(f_i, j);
-        context->InsertVarValueEncoding(f_i_j, r_j, i);
+        if (!context->InsertVarValueEncoding(f_i_j, r_j, i)) {
+          return;
+        }
       }
     }
   }
@@ -1759,13 +1872,15 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
   // selected or not. Enforce an exactly one between them.
   BoolArgumentProto* exactly_one =
       context->working_model->add_constraints()->mutable_exactly_one();
+  int exactly_one_hint_sum = 0;
 
   std::optional<int> table_is_active_literal = std::nullopt;
   // Process enforcement literals.
   if (ct->enforcement_literal().size() == 1) {
     table_is_active_literal = ct->enforcement_literal(0);
   } else if (ct->enforcement_literal().size() > 1) {
-    table_is_active_literal = context->NewBoolVar("table expansion");
+    table_is_active_literal =
+        context->NewBoolVarWithConjunction(ct->enforcement_literal());
 
     // Adds table_is_active <=> and(enforcement_literals).
     BoolArgumentProto* bool_or =
@@ -1776,8 +1891,14 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       bool_or->add_literals(NegatedRef(lit));
     }
   }
+  if (table_is_active_literal.has_value()) {
+    const int inactive_lit = NegatedRef(table_is_active_literal.value());
+    exactly_one->add_literals(inactive_lit);
+    exactly_one_hint_sum += context->LiteralSolutionHintIs(inactive_lit, true);
+  }
 
-  int64_t num_reused_variables = 0;
+  int num_reused_variables = 0;
+  std::vector<int> tuples_with_new_variable;
   std::vector<int> tuple_literals(compressed_table.size());
   for (int i = 0; i < compressed_table.size(); ++i) {
     bool create_new_var = true;
@@ -1794,12 +1915,37 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       create_new_var = false;
       tuple_literals[i] =
           context->GetOrCreateVarValueEncoding(vars[var_index], v);
+      exactly_one_hint_sum += context->SolutionHint(vars[var_index]) == v;
       break;
     }
     if (create_new_var) {
       tuple_literals[i] = context->NewBoolVar("table expansion");
+      tuples_with_new_variable.push_back(i);
     }
     exactly_one->add_literals(tuple_literals[i]);
+  }
+  // Set the hint of the `tuple_literals` for which new variables were created.
+  // If the existing `tuple_literals` hints do not sum to 1, set the hint of the
+  // first tuple which can be selected to true, and the others to false. A tuple
+  // T can be selected if, for each variable v, the hint of v is in the set of
+  // values T[v] (an empty set means "any value").
+  for (const int i : tuples_with_new_variable) {
+    if (exactly_one_hint_sum >= 1) {
+      context->SetNewVariableHint(tuple_literals[i], false);
+      continue;
+    }
+    bool tuple_literal_hint = true;
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      const auto& values = compressed_table[i][var_index];
+      if (!values.empty() &&
+          std::find(values.begin(), values.end(),
+                    context->SolutionHint(vars[var_index])) == values.end()) {
+        tuple_literal_hint = false;
+        break;
+      }
+    }
+    context->SetNewVariableHint(tuple_literals[i], tuple_literal_hint);
+    exactly_one_hint_sum += tuple_literal_hint;
   }
   if (num_reused_variables > 0) {
     context->UpdateRuleStats("table: reused literals");
@@ -1824,10 +1970,6 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
     }
     ProcessOneCompressedColumn(vars[var_index], tuple_literals, column,
                                table_is_active_literal, context);
-  }
-
-  if (table_is_active_literal.has_value()) {
-    exactly_one->add_literals(NegatedRef(table_is_active_literal.value()));
   }
 
   context->UpdateRuleStats("table: expanded positive constraint");

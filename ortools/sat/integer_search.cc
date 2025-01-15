@@ -47,6 +47,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -730,7 +731,7 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
           }
         }
 
-        // TODO(Fdid): Also compare the second part of the precedence in
+        // TODO(user): Also compare the second part of the precedence in
         // PrecedenceIsBetter() and not just the interval before?
         if (best_helper == nullptr ||
             PrecedenceIsBetter(helper, a, best_helper, best_before)) {
@@ -743,13 +744,21 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
     }
 
     if (best_helper != nullptr) {
+      // If one of the task presence is undecided, start by making it present.
+      for (const int t : {best_before, best_after}) {
+        if (!best_helper->IsPresent(t)) {
+          VLOG(2) << "Presence: " << best_helper->TaskDebugString(t);
+          return BooleanOrIntegerLiteral(best_helper->PresenceLiteral(t));
+        }
+      }
+
       VLOG(2) << "New disjunctive precedence: "
               << best_helper->TaskDebugString(best_before) << " "
               << best_helper->TaskDebugString(best_after);
-      const IntervalVariable a = best_helper->IntervalVariables()[best_before];
-      const IntervalVariable b = best_helper->IntervalVariables()[best_after];
-      repo->CreateDisjunctivePrecedenceLiteral(a, b);
-      return BooleanOrIntegerLiteral(repo->GetPrecedenceLiteral(a, b));
+      const auto a = best_helper->GetIntervalDefinition(best_before);
+      const auto b = best_helper->GetIntervalDefinition(best_after);
+      return BooleanOrIntegerLiteral(
+          repo->GetOrCreateDisjunctivePrecedenceLiteral(a, b));
     }
 
     return BooleanOrIntegerLiteral();
@@ -874,9 +883,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
           CHECK_LT(helper->StartMin(t), helper->EndMin(s));
 
           // skip if we already have a literal created and assigned to false.
-          const IntervalVariable a = helper->IntervalVariables()[s];
-          const IntervalVariable b = helper->IntervalVariables()[t];
-          const LiteralIndex existing = repo->GetPrecedenceLiteral(a, b);
+          const LiteralIndex existing = repo->GetPrecedenceLiteral(
+              helper->Ends()[s], helper->Starts()[t]);
           if (existing != kNoLiteralIndex) {
             // It shouldn't be able to be true here otherwise we will have s and
             // t disjoint.
@@ -899,7 +907,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             }
 
             // It shouldn't be able to fail since s can be before t.
-            CHECK(repo->CreatePrecedenceLiteral(a, b));
+            CHECK(repo->CreatePrecedenceLiteral(helper->Ends()[s],
+                                                helper->Starts()[t]));
           }
 
           // Branch on that precedence.
@@ -950,10 +959,11 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
     if (best_helper != nullptr) {
       VLOG(2) << "New precedence: " << best_helper->TaskDebugString(best_before)
               << " " << best_helper->TaskDebugString(best_after);
-      const IntervalVariable a = best_helper->IntervalVariables()[best_before];
-      const IntervalVariable b = best_helper->IntervalVariables()[best_after];
-      repo->CreatePrecedenceLiteral(a, b);
-      return BooleanOrIntegerLiteral(repo->GetPrecedenceLiteral(a, b));
+      const AffineExpression end_a = best_helper->Ends()[best_before];
+      const AffineExpression start_b = best_helper->Starts()[best_after];
+      repo->CreatePrecedenceLiteral(end_a, start_b);
+      return BooleanOrIntegerLiteral(
+          repo->GetPrecedenceLiteral(end_a, start_b));
     }
 
     return BooleanOrIntegerLiteral();

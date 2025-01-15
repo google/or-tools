@@ -209,6 +209,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
 
@@ -230,7 +231,7 @@ class LinearSumAssignment {
 
   // Constructor for the case in which we will build the graph
   // incrementally as we discover arc costs, as might be done with any
-  // of the dynamic graph representations such as StarGraph or ForwardStarGraph.
+  // of the dynamic graph representations such as `ReverseArcListGraph`.
   LinearSumAssignment(const GraphType& graph, NodeIndex num_left_nodes);
 
   // Constructor for the case in which the underlying graph cannot be built
@@ -265,21 +266,6 @@ class LinearSumAssignment {
   //
   operations_research::PermutationCycleHandler<typename GraphType::ArcIndex>*
   ArcAnnotationCycleHandler();
-
-  // Optimizes the layout of the graph for the access pattern our
-  // implementation will use.
-  //
-  // REQUIRES for LinearSumAssignment template instantiation if a call
-  // to the OptimizeGraphLayout() method is compiled: GraphType is a
-  // dynamic graph, i.e., one that implements the
-  // GroupForwardArcsByFunctor() member template method.
-  //
-  // If analogous optimization is needed for LinearSumAssignment
-  // instances based on static graphs, the graph layout should be
-  // constructed such that each node's outgoing arcs are sorted by
-  // head node index before the
-  // LinearSumAssignment<GraphType>::SetGraph() method is called.
-  void OptimizeGraphLayout(GraphType* graph);
 
   // Allows tests, iterators, etc., to inspect our underlying graph.
   inline const GraphType& Graph() const { return *graph_; }
@@ -360,24 +346,10 @@ class LinearSumAssignment {
 
   std::string StatsString() const { return total_stats_.StatsString(); }
 
-  class BipartiteLeftNodeIterator {
-   public:
-    BipartiteLeftNodeIterator(const GraphType& graph, NodeIndex num_left_nodes)
-        : num_left_nodes_(num_left_nodes), node_iterator_(0) {}
-
-    explicit BipartiteLeftNodeIterator(const LinearSumAssignment& assignment)
-        : num_left_nodes_(assignment.NumLeftNodes()), node_iterator_(0) {}
-
-    NodeIndex Index() const { return node_iterator_; }
-
-    bool Ok() const { return node_iterator_ < num_left_nodes_; }
-
-    void Next() { ++node_iterator_; }
-
-   private:
-    const NodeIndex num_left_nodes_;
-    typename GraphType::NodeIndex node_iterator_;
-  };
+  // Returns the range of valid left node indices.
+  ::util::IntegerRange<NodeIndex> BipartiteLeftNodes() const {
+    return ::util::IntegerRange<NodeIndex>(0, num_left_nodes_);
+  }
 
   // Returns true if and only if the current pseudoflow is
   // epsilon-optimal. To be used in a DCHECK.
@@ -976,7 +948,7 @@ LinearSumAssignment<GraphType, CostValue>::LinearSumAssignment(
       price_(num_left_nodes, 2 * num_left_nodes - 1),
       matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
-      scaled_arc_cost_(graph.max_end_arc_index(), 0),
+      scaled_arc_cost_(graph.arc_capacity(), 0),
       active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
                         ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())
@@ -1089,22 +1061,6 @@ LinearSumAssignment<GraphType, CostValue>::ArcAnnotationCycleHandler() {
 }
 
 template <typename GraphType, typename CostValue>
-void LinearSumAssignment<GraphType, CostValue>::OptimizeGraphLayout(
-    GraphType* graph) {
-  // The graph argument is only to give us a non-const-qualified
-  // handle on the graph we already have. Any different graph is
-  // nonsense.
-  DCHECK_EQ(graph_, graph);
-  const ArcIndexOrderingByTailNode<GraphType> compare(*graph_);
-  CostValueCycleHandler<typename GraphType::ArcIndex, CostValue> cycle_handler(
-      &scaled_arc_cost_);
-  TailArrayManager<GraphType> tail_array_manager(graph);
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
-  graph->GroupForwardArcsByFunctor(compare, &cycle_handler);
-  tail_array_manager.ReleaseTailArrayIfForwardGraph();
-}
-
-template <typename GraphType, typename CostValue>
 CostValue LinearSumAssignment<GraphType, CostValue>::NewEpsilon(
     const CostValue current_epsilon) const {
   return std::max(current_epsilon / alpha_, kMinEpsilon);
@@ -1149,9 +1105,7 @@ template <typename GraphType, typename CostValue>
 void LinearSumAssignment<GraphType,
                          CostValue>::InitializeActiveNodeContainer() {
   DCHECK(active_nodes_->Empty());
-  for (BipartiteLeftNodeIterator node_it(*graph_, num_left_nodes_);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex node = node_it.Index();
+  for (const NodeIndex node : BipartiteLeftNodes()) {
     if (IsActive(node)) {
       active_nodes_->Add(node);
     }
@@ -1171,9 +1125,7 @@ void LinearSumAssignment<GraphType,
 template <typename GraphType, typename CostValue>
 void LinearSumAssignment<GraphType, CostValue>::SaturateNegativeArcs() {
   total_excess_ = 0;
-  for (BipartiteLeftNodeIterator node_it(*graph_, num_left_nodes_);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex node = node_it.Index();
+  for (const NodeIndex node : BipartiteLeftNodes()) {
     if (IsActive(node)) {
       // This can happen in the first iteration when nothing is
       // matched yet.
@@ -1358,9 +1310,7 @@ bool LinearSumAssignment<GraphType, CostValue>::AllMatched() const {
 // Only for debugging.
 template <typename GraphType, typename CostValue>
 bool LinearSumAssignment<GraphType, CostValue>::EpsilonOptimal() const {
-  for (BipartiteLeftNodeIterator node_it(*graph_, num_left_nodes_);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex left_node = node_it.Index();
+  for (const NodeIndex left_node : BipartiteLeftNodes()) {
     // Get the implicit price of left_node and make sure the reduced
     // costs of left_node's incident arcs are in bounds.
     CostValue left_node_price = ImplicitPrice(left_node);
@@ -1482,8 +1432,8 @@ CostValue LinearSumAssignment<GraphType, CostValue>::GetCost() const {
   // an optimum assignment.
   DCHECK(success_);
   CostValue cost = 0;
-  for (BipartiteLeftNodeIterator node_it(*this); node_it.Ok(); node_it.Next()) {
-    cost += GetAssignmentCost(node_it.Index());
+  for (const NodeIndex node : BipartiteLeftNodes()) {
+    cost += GetAssignmentCost(node);
   }
   return cost;
 }

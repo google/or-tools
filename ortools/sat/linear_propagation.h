@@ -140,6 +140,8 @@ class EnforcementPropagator : public SatPropagator {
 
   std::vector<Literal> temp_literals_;
   std::vector<Literal> temp_reason_;
+
+  std::vector<EnforcementId> ids_to_fix_until_next_root_level_;
 };
 
 // Helper class to decide on the constraint propagation order.

@@ -109,28 +109,6 @@ inline bool AtMinOrMaxInt64I(IntegerValue t) {
   return AtMinOrMaxInt64(t.value());
 }
 
-// Helper for dividing several small integers by the same value. Note that there
-// is no point using this class is the divisor is a compile-time constant, since
-// the compiler should be smart enough to do this automatically.
-// Building a `QuickSmallDivision` object costs an integer division, but each
-// call to `DivideByDivisor` will only do an integer multiplication and a shift.
-//
-// This class always return the exact value of the division for all possible
-// values of `dividend` and `divisor`.
-class QuickSmallDivision {
- public:
-  explicit QuickSmallDivision(uint16_t divisor)
-      : inverse_((1ull << 48) / divisor + 1) {}
-
-  uint16_t DivideByDivisor(uint16_t dividend) const {
-    return static_cast<uint16_t>((inverse_ * static_cast<uint64_t>(dividend)) >>
-                                 48);
-  }
-
- private:
-  uint64_t inverse_;
-};
-
 // Returns dividend - FloorRatio(dividend, divisor) * divisor;
 //
 // This function is around the same speed than the computation above, but it
@@ -404,6 +382,9 @@ struct ValueLiteralPair {
 };
 
 std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
+
+DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
+const IntervalVariable kNoIntervalVariable(-1);
 
 // ============================================================================
 // Implementation.

@@ -30,8 +30,8 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/theta_tree.h"
 #include "ortools/sat/util.h"
@@ -77,7 +77,7 @@ CumulativeEnergyConstraint::CumulativeEnergyConstraint(
 
 void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  helper_->WatchAllTasks(id, watcher);
+  helper_->WatchAllTasks(id);
   watcher->SetPropagatorPriority(id, 2);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
@@ -430,7 +430,7 @@ CumulativeDualFeasibleEnergyConstraint::
 void CumulativeDualFeasibleEnergyConstraint::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  helper_->WatchAllTasks(id, watcher);
+  helper_->WatchAllTasks(id);
   watcher->SetPropagatorPriority(id, 3);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
