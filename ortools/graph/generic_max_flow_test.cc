@@ -32,6 +32,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/flow_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
 
@@ -98,7 +99,7 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
 template <typename Graph>
 class GenericMaxFlowTest : public ::testing::Test {};
 
-typedef ::testing::Types<util::ReverseArcListGraph<>,
+typedef ::testing::Types<util::FlowGraph<>, util::ReverseArcListGraph<>,
                          util::ReverseArcStaticGraph<>,
                          util::ReverseArcMixedGraph<>>
     GraphTypes;
@@ -556,7 +557,11 @@ void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
   TEST(MaxFlowListGraphTest, test_name##size) {                                \
     test_name<util::ReverseArcListGraph<>>(std::nullopt, SolveMaxFlow, size,   \
                                            size);                              \
+  }                                                                            \
+  TEST(MaxFlowNewGraphTest, test_name##size) {                                 \
+    test_name<util::FlowGraph<>>(std::nullopt, SolveMaxFlow, size, size);      \
   }
+
 // These are absl::BitGen random test, so they will always work on different
 // graphs.
 LP_AND_FLOW_TEST(FullAssignment, 300);
@@ -602,18 +607,22 @@ static void BM_FullRandomFlow(benchmark::State& state) {
 }
 
 // Note that these benchmark include the graph creation and generation...
+BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcMixedGraph<>);
 
+BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcMixedGraph<>);
 
+BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcMixedGraph<>);
 
+BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcStaticGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcMixedGraph<>);
