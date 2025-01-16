@@ -692,7 +692,7 @@ struct MinCostFlow : public MinCostFlowBase {
   template <typename = void>
   MinCostFlow() {
     LOG(FATAL) << "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
-                  "`GenericMinCostFlow` with a specific graph type instead.");
+                  "`GenericMinCostFlow` with a specific graph type instead.";
   }
 };
 
