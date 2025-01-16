@@ -95,6 +95,7 @@ std::function<int(XPRSprob prob, int ncols, const int colind[], const double obj
 std::function<int(XPRSprob prob, int row, int col, double coef)> XPRSchgcoef = nullptr;
 std::function<int(XPRSprob prob, int ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef = nullptr;
 std::function<int(XPRSprob prob, XPRSint64 ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef64 = nullptr;
+std::function<int(XPRSprob prob, int ncoefs, const int objqcol1[], const int objqcol2[], const double objqcoef[])> XPRSchgmqobj = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rhs[])> XPRSchgrhs = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rng[])> XPRSchgrhsrange = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const char rowtype[])> XPRSchgrowtype = nullptr;
@@ -164,6 +165,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSchgcoef, "XPRSchgcoef");
   xpress_dynamic_library->GetFunction(&XPRSchgmcoef, "XPRSchgmcoef");
   xpress_dynamic_library->GetFunction(&XPRSchgmcoef64, "XPRSchgmcoef64");
+  xpress_dynamic_library->GetFunction(&XPRSchgmqobj, "XPRSchgmqobj");
   xpress_dynamic_library->GetFunction(&XPRSchgrhs, "XPRSchgrhs");
   xpress_dynamic_library->GetFunction(&XPRSchgrhsrange, "XPRSchgrhsrange");
   xpress_dynamic_library->GetFunction(&XPRSchgrowtype, "XPRSchgrowtype");

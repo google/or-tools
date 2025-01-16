@@ -26,11 +26,11 @@
 #define OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -51,7 +51,7 @@ class Xpress {
 
   absl::StatusOr<int> GetIntControl(int control) const;
   absl::Status SetIntControl(int control, int value);
-  absl::Status ResetIntControl(int control); // reset to default value
+  absl::Status ResetIntControl(int control);  // reset to default value
 
   absl::StatusOr<int> GetIntAttr(int attribute) const;
 
@@ -71,9 +71,12 @@ class Xpress {
                           absl::Span<const double> rhs,
                           absl::Span<const double> rng);
 
-  absl::Status SetObjective(bool maximize, double offset,
-                            absl::Span<const int> colind,
-                            absl::Span<const double> values);
+  absl::Status SetObjectiveSense(bool maximize);
+  absl::Status SetLinearObjective(double offset, absl::Span<const int> colind,
+                                  absl::Span<const double> values);
+  absl::Status SetQuadraticObjective(absl::Span<const int> colind1,
+                                     absl::Span<const int> colind2,
+                                     absl::Span<const double> coefficients);
 
   absl::Status ChgCoeffs(absl::Span<const int> cind, absl::Span<const int> vind,
                          absl::Span<const double> val);

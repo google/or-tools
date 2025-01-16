@@ -62,7 +62,7 @@ absl::Status CheckParameters(const SolveParametersProto& parameters) {
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .integer_variables = SupportType::kNotSupported,
     .multi_objectives = SupportType::kNotSupported,
-    .quadratic_objectives = SupportType::kNotSupported,
+    .quadratic_objectives = SupportType::kSupported,
     .quadratic_constraints = SupportType::kNotSupported,
     .second_order_cone_constraints = SupportType::kNotSupported,
     .sos1_constraints = SupportType::kNotSupported,
@@ -176,15 +176,37 @@ absl::Status XpressSolver::AddNewLinearConstraints(
 }
 
 absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
+  // Sense
+  RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
+  is_maximize_ = objective.maximize();
+  // Linear terms
   std::vector<int> index;
   index.reserve(objective.linear_coefficients().ids_size());
   for (const int64_t id : objective.linear_coefficients().ids()) {
     index.push_back(variables_map_.at(id));
   }
-  RETURN_IF_ERROR(
-      xpress_->SetObjective(objective.maximize(), objective.offset(), index,
-                            objective.linear_coefficients().values()));
-  is_maximize_ = objective.maximize();
+  RETURN_IF_ERROR(xpress_->SetLinearObjective(
+      objective.offset(), index, objective.linear_coefficients().values()));
+  // Quadratic terms
+  const int num_terms = objective.quadratic_coefficients().row_ids().size();
+  if (num_terms > 0) {
+    std::vector<int> first_var_index(num_terms);
+    std::vector<int> second_var_index(num_terms);
+    std::vector<double> coefficients(num_terms);
+    for (int k = 0; k < num_terms; ++k) {
+      const int64_t row_id = objective.quadratic_coefficients().row_ids(k);
+      const int64_t column_id =
+          objective.quadratic_coefficients().column_ids(k);
+      first_var_index[k] = variables_map_.at(row_id);
+      second_var_index[k] = variables_map_.at(column_id);
+      // XPRESS supposes a 1/2 implicit multiplier to quadratic terms (see doc)
+      // We have to multiply it by 2 for diagonal terms
+      double m = first_var_index[k] == second_var_index[k] ? 2 : 1;
+      coefficients[k] = objective.quadratic_coefficients().coefficients(k) * m;
+    }
+    RETURN_IF_ERROR(xpress_->SetQuadraticObjective(
+        first_var_index, second_var_index, coefficients));
+  }
   return absl::OkStatus();
 }
 
@@ -540,14 +562,15 @@ absl::Status XpressSolver::SetXpressStartingBasis(const BasisProto& basis) {
 }
 
 absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
-  BasisProto basis;
-
   std::vector<int> xprs_variable_basis_status;
   std::vector<int> xprs_constraint_basis_status;
-  RETURN_IF_ERROR(xpress_->GetBasis(xprs_constraint_basis_status,
-                                    xprs_variable_basis_status))
-      << "Unable to retrieve basis from XPRESS";
+  if (!xpress_
+           ->GetBasis(xprs_constraint_basis_status, xprs_variable_basis_status)
+           .ok()) {
+    return std::nullopt;
+  }
 
+  BasisProto basis;
   // Variable basis
   for (auto [variable_id, xprs_variable_index] : variables_map_) {
     basis.mutable_variable_status()->add_ids(variable_id);

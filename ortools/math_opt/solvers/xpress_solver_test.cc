@@ -184,7 +184,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 QpTestParameters GetXpressQpTestParameters() {
   return QpTestParameters(SolverType::kXpress, SolveParameters(),
-                          /*qp_support=*/QpSupportType::kNoQpSupport,
+                          /*qp_support=*/QpSupportType::kConvexQp,
                           /*supports_incrementalism_not_modifying_qp=*/false,
                           /*supports_qp_incrementalism=*/false,
                           /*use_integer_variables=*/false);

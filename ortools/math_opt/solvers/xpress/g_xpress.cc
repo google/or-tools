@@ -135,13 +135,14 @@ absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,
                               rhs.data(), rng.data(), NULL, NULL, NULL));
 }
 
-absl::Status Xpress::SetObjective(bool maximize, double offset,
-                                  const absl::Span<const int> colind,
-                                  const absl::Span<const double> values) {
-  RETURN_IF_ERROR(ToStatus(XPRSchgobjsense(
-      xpress_model_, maximize ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE)))
-      << "Failed to change objective sense in XPRESS";
+absl::Status Xpress::SetObjectiveSense(bool maximize) {
+  return ToStatus(XPRSchgobjsense(
+      xpress_model_, maximize ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
+}
 
+absl::Status Xpress::SetLinearObjective(
+    double offset, const absl::Span<const int> colind,
+    const absl::Span<const double> coefficients) {
   static int indexes[1] = {-1};
   double xprs_values[1] = {-offset};
   RETURN_IF_ERROR(ToStatus(XPRSchgobj(xpress_model_, 1, indexes, xprs_values)))
@@ -149,7 +150,15 @@ absl::Status Xpress::SetObjective(bool maximize, double offset,
 
   const int n_cols = static_cast<int>(colind.size());
   return ToStatus(
-      XPRSchgobj(xpress_model_, n_cols, colind.data(), values.data()));
+      XPRSchgobj(xpress_model_, n_cols, colind.data(), coefficients.data()));
+}
+
+absl::Status Xpress::SetQuadraticObjective(
+    const absl::Span<const int> colind1, const absl::Span<const int> colind2,
+    const absl::Span<const double> coefficients) {
+  const int ncoefs = static_cast<int>(coefficients.size());
+  return ToStatus(XPRSchgmqobj(xpress_model_, ncoefs, colind1.data(),
+                               colind2.data(), coefficients.data()));
 }
 
 absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
@@ -205,7 +214,6 @@ absl::Status Xpress::ResetIntControl(int control) {
       "Default value unknown for control " + std::to_string(control) +
       ", consider adding it to Xpress::initIntControlDefaults");
 }
-
 
 absl::StatusOr<int> Xpress::GetIntAttr(int attribute) const {
   int result;
