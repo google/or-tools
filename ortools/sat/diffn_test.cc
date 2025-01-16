@@ -21,6 +21,7 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
@@ -57,9 +58,9 @@ int CountAllTwoBoxesSolutions(int n) {
                               model.Add(NewIntegerVariable(0, n)), size)));
   }
 
-  // The cumulative relaxation adds extra variables that are not complextly
+  // The cumulative relaxation adds extra variables that are not completely
   // fixed. So to not count too many solution with our code here, we disable
-  // that. Note that alternativelly, we could have used the cp_model.proto API
+  // that. Note that alternatively, we could have used the cp_model.proto API
   // to do the same, and that should works even with this on.
   AddNonOverlappingRectangles(x, y, &model);
 
@@ -72,6 +73,12 @@ int CountAllTwoBoxesSolutions(int n) {
   auto end_value = [repository, integer_trail](IntervalVariable i) {
     return integer_trail->LowerBound(repository->End(i)).value();
   };
+  auto rectangle = [&start_value, &end_value, x, y](int r) {
+    return Rectangle{.x_min = start_value(x[r]),
+                     .x_max = end_value(x[r]),
+                     .y_min = start_value(y[r]),
+                     .y_max = end_value(y[r])};
+  };
   while (true) {
     const SatSolver::Status status =
         SolveIntegerProblemWithLazyEncoding(&model);
@@ -79,10 +86,7 @@ int CountAllTwoBoxesSolutions(int n) {
 
     // Display the first few solutions.
     if (num_solutions_found < 30) {
-      LOG(INFO) << "R1: " << start_value(x[0]) << "," << start_value(y[0])
-                << " " << end_value(x[0]) << "," << end_value(y[0])
-                << " R2: " << start_value(x[1]) << "," << start_value(y[1])
-                << " " << end_value(x[1]) << "," << end_value(y[1]);
+      LOG(INFO) << "R1: " << rectangle(0) << " R2: " << rectangle(1);
     }
 
     num_solutions_found++;
