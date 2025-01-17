@@ -45,6 +45,8 @@ CpSolverResponse SolveAndCheck(
   SatParameters params;
   params.set_enumerate_all_solutions(true);
   params.set_keep_all_feasible_solutions_in_presolve(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  params.set_log_search_progress(true);
   if (!extra_parameters.empty()) {
     params.MergeFromString(extra_parameters);
   }
@@ -516,6 +518,35 @@ TEST(IntModExpandTest, VariableMod) {
   EXPECT_EQ(32, found_solutions.size());
 }
 
+TEST(IntModExpansionTest, ExpandIntModPreservesSolutionHint) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 30 ] }
+    variables { domain: [ 1, 10 ] }
+    constraints {
+      int_mod {
+        target { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ 1 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 5, 26, 7 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  CpSolverResponse response = SolveWithParameters(initial_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 TEST(IntProdExpandTest, LeftCase) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { name: 'x' domain: -50 domain: -40 domain: 10 domain: 20 }
@@ -668,6 +699,37 @@ TEST(IntProdExpandTest, TestLargerAffineProd) {
   EXPECT_EQ(solutions, expected);
 }
 
+TEST(IntProdExpansionTest, ExpandNonBinaryIntProdPreservesSolutionHint) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 100 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      int_prod {
+        target { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ 1 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 60, 3, 4, 5 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  CpSolverResponse response = SolveWithParameters(initial_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 TEST(ElementExpandTest, ConstantArray) {
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ -1, 5 ] }
@@ -718,6 +780,10 @@ TEST(AutomatonExpandTest, NonogramRule) {
         transition_label: [ 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0 ],
         vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
       }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      values: [ 0, 0, 1, 1, 1, 0, 1, 1, 0, 1 ]
     }
   )pb");
   absl::btree_set<std::vector<int>> found_solutions;
@@ -795,6 +861,10 @@ TEST(AutomatonExpandTest, Bug1753_2) {
         vars: 2
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 0, 1 ]
+    }
   )pb");
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
@@ -866,6 +936,10 @@ TEST(AutomatonExpandTest, LoopingAutomatonMultipleFinalStates) {
         vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      values: [ 1, 2, 1, 2, 1, 2, 1, 2, 1, 2 ]
+    }
   )pb");
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
@@ -921,6 +995,10 @@ TEST(AutomatonExpandTest, LoopingAutomatonMultipleFinalStatesNegatedVariables) {
         exprs { vars: 9 coeffs: 1 }
       }
     }
+    solution_hint {
+      vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      values: [ 1, -2, 1, 2, 1, 2, 1, 2, 1, 2 ]
+    }
   )pb");
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
@@ -964,6 +1042,10 @@ TEST(AutomatonExpandTest, AnotherAutomaton) {
         transition_label: [ 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2 ],
         vars: [ 0, 1, 2, 3, 4, 5, 6 ],
       }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3, 4, 5, 6 ]
+      values: [ 1, 1, 1, 2, 2, 2, 1 ]
     }
   )pb");
   absl::btree_set<std::vector<int>> found_solutions;
@@ -1837,6 +1919,38 @@ TEST(LinMaxExpansionTest, GoldenTest) {
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }
 
+TEST(LinMaxExpansionTest, ExpandLinMaxPreservesSolutionHint) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 4 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    constraints {
+      lin_max {
+        target { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ 1 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 3, 2, 3, 3 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_max_lin_max_size_for_expansion(10);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  CpSolverResponse response = SolveWithParameters(initial_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansion) {
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -1902,6 +2016,142 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansion) {
 
   // We should properly complete the hint and choose the bucket [4, 6].
   EXPECT_THAT(context.SolutionHint(), ::testing::ElementsAre(1, 5, 0, 1, 0));
+  EXPECT_TRUE(context.DebugTestHintFeasibility());
+}
+
+TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansionWithInteger) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 0, 2, 4, 6, 8, 10 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 1, 5 ]
+    }
+  )pb");
+  Model model;
+  model.GetOrCreate<SatParameters>()
+      ->set_encode_complex_linear_constraint_with_integer(true);
+  PresolveContext context(&model, &initial_model, nullptr);
+
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+
+  FinalExpansionForLinearConstraint(&context);
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 2, 4, 6, 8, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1 ]
+      values: [ 1, 5 ]
+    }
+  )pb");
+  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
+
+  // We should properly complete the hint with the new slack variable.
+  EXPECT_THAT(context.SolutionHint(), ::testing::ElementsAre(1, 5, 6));
+  EXPECT_TRUE(context.DebugTestHintFeasibility());
+}
+
+TEST(FinalExpansionForLinearConstraintTest,
+     ComplexLinearExpansionWithEnforcementLiterals) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 6 ] }
+    variables { domain: [ 0, 6 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 2, -4 ]
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 0, 2, 4, 6 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 1, 5, 1, 0 ]
+    }
+  )pb");
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_enumerate_all_solutions(true);
+  PresolveContext context(&model, &initial_model, nullptr);
+
+  context.InitializeNewDomains();
+  context.LoadSolutionHint();
+
+  FinalExpansionForLinearConstraint(&context);
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 6 ] }
+    variables { domain: [ 0, 6 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {}
+    constraints { bool_or { literals: [ -3, 3, 4, 5 ] } }
+    constraints {
+      enforcement_literal: 4
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 0, 2 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 5
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 4, 6 ]
+      }
+    }
+    constraints { bool_or { literals: -3 literals: 3 literals: 6 } }
+    constraints {
+      enforcement_literal: -3
+      bool_and { literals: -7 }
+    }
+    constraints {
+      enforcement_literal: 3
+      bool_and { literals: -7 }
+    }
+    constraints {
+      enforcement_literal: -7
+      bool_and { literals: -5 }
+    }
+    constraints {
+      enforcement_literal: -7
+      bool_and { literals: -6 }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 1, 5, 1, 0 ]
+    }
+  )pb");
+  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
+
+  // We should properly complete the hint and choose the bucket [4, 6], as well
+  // as set the new linear_is_enforced hint to true.
+  EXPECT_THAT(context.SolutionHint(),
+              ::testing::ElementsAre(1, 5, 1, 0, 0, 1, 1));
+  EXPECT_TRUE(context.DebugTestHintFeasibility());
 }
 
 }  // namespace

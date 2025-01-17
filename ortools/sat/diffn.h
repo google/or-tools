@@ -107,7 +107,7 @@ class NonOverlappingRectanglesDisjunctivePropagator
 
  private:
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      bool fast_propagation);
+      bool fast_propagation, absl::Span<const int> boxes);
 
   NoOverlap2DConstraintHelper* helper_;
   SchedulingConstraintHelper x_;

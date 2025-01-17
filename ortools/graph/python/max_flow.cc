@@ -19,7 +19,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-using ::operations_research::NodeIndex;
 using ::operations_research::SimpleMaxFlow;
 using ::pybind11::arg;
 
@@ -44,12 +43,12 @@ PYBIND11_MODULE(max_flow, m) {
   smf.def("flow", &SimpleMaxFlow::Flow, arg("arc"));
   smf.def("flows", pybind11::vectorize(&SimpleMaxFlow::Flow));
   smf.def("get_source_side_min_cut", [](SimpleMaxFlow* smf) {
-    std::vector<NodeIndex> result;
+    std::vector<SimpleMaxFlow::NodeIndex> result;
     smf->GetSourceSideMinCut(&result);
     return result;
   });
   smf.def("get_sink_side_min_cut", [](SimpleMaxFlow* smf) {
-    std::vector<NodeIndex> result;
+    std::vector<SimpleMaxFlow::NodeIndex> result;
     smf->GetSinkSideMinCut(&result);
     return result;
   });

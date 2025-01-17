@@ -24,6 +24,7 @@
 #include <numeric>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -34,6 +35,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
@@ -5567,7 +5569,8 @@ void AddImplication(int lhs, int rhs, CpModelProto* proto,
 template <typename ClauseContainer>
 void ExtractClauses(bool merge_into_bool_and,
                     absl::Span<const int> index_mapping,
-                    const ClauseContainer& container, CpModelProto* proto) {
+                    const ClauseContainer& container, CpModelProto* proto,
+                    std::string_view debug_name = "") {
   // We regroup the "implication" into bool_and to have a more concise proto and
   // also for nicer information about the number of binary clauses.
   //
@@ -5593,6 +5596,9 @@ void ExtractClauses(bool merge_into_bool_and,
 
     // bool_or.
     ConstraintProto* ct = proto->add_constraints();
+    if (!debug_name.empty()) {
+      ct->set_name(std::string(debug_name));
+    }
     ct->mutable_bool_or()->mutable_literals()->Reserve(clause.size());
     for (const Literal l : clause) {
       const int var = index_mapping[l.Variable().value()];
@@ -7846,8 +7852,10 @@ bool CpModelPresolver::PresolvePureSatPart() {
   }
 
   // Add the sat_postsolver clauses to mapping_model.
+  const std::string name =
+      absl::GetFlag(FLAGS_cp_model_debug_postsolve) ? "sat_postsolver" : "";
   ExtractClauses(/*merge_into_bool_and=*/false, new_to_old_index,
-                 sat_postsolver, context_->mapping_model);
+                 sat_postsolver, context_->mapping_model, name);
   return true;
 }
 

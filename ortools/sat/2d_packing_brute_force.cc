@@ -14,19 +14,18 @@
 #include "ortools/sat/2d_packing_brute_force.h"
 
 #include <algorithm>
-#include <array>
 #include <limits>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -143,13 +142,13 @@ bool BruteForceOrthogonalPackingImpl(
     std::pair<IntegerValue, IntegerValue> bounding_box_size,
     IntegerValue smallest_x, IntegerValue smallest_y,
     absl::Span<Rectangle> item_positions, Bitset64<int>& placed_item_indexes,
-    absl::Span<const absl::InlinedVector<PotentialPositionForItem, 16>>
+    const CompactVectorVector<int, PotentialPositionForItem>&
         potential_item_positions,
     IntegerValue slack) {
   const auto add_position_if_valid =
       [&item_positions, bounding_box_size, &sizes_x, &sizes_y,
        &placed_item_indexes](
-          absl::InlinedVector<PotentialPositionForItem, 16>& positions, int i,
+          CompactVectorVector<int, PotentialPositionForItem>& positions, int i,
           IntegerValue x, IntegerValue y) {
         const Rectangle rect = {.x_min = x,
                                 .x_max = x + sizes_x[i],
@@ -157,11 +156,14 @@ bool BruteForceOrthogonalPackingImpl(
                                 .y_max = y + sizes_y[i]};
         if (ShouldPlaceItemAtPosition(i, rect, bounding_box_size,
                                       item_positions, placed_item_indexes)) {
-          positions.push_back({x, y, false});
+          positions.AppendToLastVector({x, y, false});
         }
       };
 
   const int num_items = sizes_x.size();
+  CompactVectorVector<int, PotentialPositionForItem> new_potential_positions;
+  new_potential_positions.reserve(num_items,
+                                  3 * potential_item_positions.num_entries());
   bool has_unplaced_item = false;
   for (int i = 0; i < num_items; ++i) {
     if (placed_item_indexes[i]) {
@@ -261,48 +263,31 @@ bool BruteForceOrthogonalPackingImpl(
       // (like the point in the left boundary in the example above) but we will
       // detect that by testing each item one by one. Importantly, we only pass
       // valid positions down to the next search level.
-      std::array<absl::InlinedVector<PotentialPositionForItem, 16>,
-                 kMaxProblemSize>
-          new_potential_positions_storage;
-      absl::Span<absl::InlinedVector<PotentialPositionForItem, 16>>
-          new_potential_positions(new_potential_positions_storage.data(),
-                                  num_items);
-      for (const int k : placed_item_indexes) {
-        if (k == i) {
-          continue;
-        }
-
-        const bool add_below =
-            // We only add points below this one...
-            item_positions[k].y_max <= item_position.y_max &&
-            // ...and where we can fit at least the smallest element.
-            item_position.x_max + smallest_x <= bounding_box_size.first &&
-            item_positions[k].y_max + smallest_y <= bounding_box_size.second;
-        const bool add_left =
-            item_positions[k].x_max <= item_position.x_max &&
-            item_positions[k].x_max + smallest_x <= bounding_box_size.first &&
-            item_position.y_max + smallest_y <= bounding_box_size.second;
-        for (int j = 0; j < num_items; ++j) {
-          if (k == j || placed_item_indexes[j]) {
-            continue;
-          }
-          if (add_below) {
-            add_position_if_valid(new_potential_positions[j], j,
-                                  item_position.x_max, item_positions[k].y_max);
-          }
-          if (add_left) {
-            add_position_if_valid(new_potential_positions[j], j,
-                                  item_positions[k].x_max, item_position.y_max);
-          }
-        }
-      }
+      new_potential_positions.clear();
       bool is_unfeasible = false;
       for (int j = 0; j < num_items; ++j) {
-        // No positions to attribute to the item we just placed.
-        if (i == j || placed_item_indexes[j]) {
+        // We will find all potential positions for the j-th item.
+        new_potential_positions.Add({});
+        // No need to attribute potential positions to already placed items
+        // (including the one we just placed).
+        if (placed_item_indexes[j]) {
           continue;
         }
-        // First copy previously valid positions that remain valid.
+        DCHECK_NE(i, j);
+        // Add the new "potential positions" derived from the new item.
+        for (const int k : placed_item_indexes) {
+          DCHECK_NE(j, k);
+          if (k == i) {
+            continue;
+          }
+
+          add_position_if_valid(new_potential_positions, j, item_position.x_max,
+                                item_positions[k].y_max);
+          add_position_if_valid(new_potential_positions, j,
+                                item_positions[k].x_max, item_position.y_max);
+        }
+
+        // Then copy previously valid positions that remain valid.
         for (const PotentialPositionForItem& original_position :
              potential_item_positions[j]) {
           if (!original_position.GetRectangle(sizes_x[j], sizes_y[j])
@@ -319,14 +304,14 @@ bool BruteForceOrthogonalPackingImpl(
             // have to retest those positions down in the search tree.
             PotentialPositionForItem position = original_position;
             position.already_explored = true;
-            new_potential_positions[j].push_back(position);
+            new_potential_positions.AppendToLastVector(position);
           } else {
-            new_potential_positions[j].push_back(original_position);
+            new_potential_positions.AppendToLastVector(original_position);
           }
         }
-        add_position_if_valid(new_potential_positions[j], j,
+        add_position_if_valid(new_potential_positions, j,
                               item_positions[i].x_max, 0);
-        add_position_if_valid(new_potential_positions[j], j, 0,
+        add_position_if_valid(new_potential_positions, j, 0,
                               item_positions[i].y_max);
         if (new_potential_positions[j].empty()) {
           // After placing the item i, there is no valid place to choose for the
@@ -380,27 +365,21 @@ bool BruteForceOrthogonalPackingNoPreprocessing(
                      std::make_tuple(b.size_x * b.size_y, b.index);
             });
 
-  std::array<IntegerValue, kMaxProblemSize> new_sizes_x_storage,
-      new_sizes_y_storage;
-  absl::Span<IntegerValue> new_sizes_x(new_sizes_x_storage.data(), num_items);
-  absl::Span<IntegerValue> new_sizes_y(new_sizes_y_storage.data(), num_items);
-  std::array<absl::InlinedVector<PotentialPositionForItem, 16>, kMaxProblemSize>
-      potential_item_positions_storage;
-  absl::Span<absl::InlinedVector<PotentialPositionForItem, 16>>
-      potential_item_positions(potential_item_positions_storage.data(),
-                               num_items);
+  std::vector<IntegerValue> new_sizes_x(num_items);
+  std::vector<IntegerValue> new_sizes_y(num_items);
+  CompactVectorVector<int, PotentialPositionForItem> potential_item_positions;
+  potential_item_positions.reserve(num_items, num_items);
   for (int i = 0; i < num_items; ++i) {
     new_sizes_x[i] = items[i].size_x;
     new_sizes_y[i] = items[i].size_y;
-    potential_item_positions[i].push_back({0, 0, false});
+    potential_item_positions.Add({PotentialPositionForItem{0, 0, false}});
   }
-  std::array<Rectangle, kMaxProblemSize> item_positions_storage;
-  absl::Span<Rectangle> item_positions(item_positions_storage.data(),
-                                       num_items);
+  std::vector<Rectangle> item_positions(num_items);
   Bitset64<int> placed_item_indexes(num_items);
   const bool found_solution = BruteForceOrthogonalPackingImpl(
       new_sizes_x, new_sizes_y, bounding_box_size, smallest_x, smallest_y,
-      item_positions, placed_item_indexes, potential_item_positions, slack);
+      absl::MakeSpan(item_positions), placed_item_indexes,
+      potential_item_positions, slack);
   if (!found_solution) {
     return false;
   }
@@ -651,13 +630,12 @@ BruteForceResult BruteForceOrthogonalPacking(
   }
   CHECK_LE(num_items, kMaxProblemSize);
 
-  std::array<PermutableItem, kMaxProblemSize> items_storage;
-  absl::Span<PermutableItem> items(items_storage.data(), num_items);
+  std::vector<PermutableItem> items(num_items);
   for (int i = 0; i < num_items; ++i) {
     items[i] = {
         .size_x = sizes_x[i], .size_y = sizes_y[i], .index = i, .position = {}};
   }
-  absl::Span<PermutableItem> post_processed_items = items;
+  absl::Span<PermutableItem> post_processed_items = absl::MakeSpan(items);
   std::pair<IntegerValue, IntegerValue> post_processed_bounding_box_size =
       bounding_box_size;
   const bool post_processed =

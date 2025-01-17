@@ -1171,29 +1171,19 @@ class Exchange : public PathOperator {
 };
 
 bool Exchange::MakeNeighbor() {
-  const auto do_move = [this](int64_t node1, int64_t node2) {
-    if (IsPathEnd(node1) || IsPathEnd(node2) || IsPathStart(node1) ||
-        IsPathStart(node2)) {
-      return false;
-    }
-    if (node1 == node2) return false;
-    const int64_t prev_node1 = Prev(node1);
-    const bool ok = MoveChain(prev_node1, node1, Prev(node2));
-    return MoveChain(Prev(node2), node2, prev_node1) || ok;
-  };
   const int64_t node0 = BaseNode(0);
   if (HasNeighbors()) {
     const auto [neighbor, outgoing] = GetNeighborForBaseNode(0);
     if (neighbor < 0 || IsInactive(neighbor)) return false;
     if (outgoing) {
       // Exchange node0's next with 'neighbor'.
-      return do_move(Next(node0), neighbor);
+      return SwapNodes(Next(node0), neighbor);
     }
     DCHECK(!IsPathStart(node0)) << "Path starts have no incoming neighbors.";
     // Exchange node0's prev with 'neighbor'.
-    return do_move(Prev(node0), neighbor);
+    return SwapNodes(Prev(node0), neighbor);
   }
-  return do_move(Next(node0), Next(BaseNode(1)));
+  return SwapNodes(Next(node0), Next(BaseNode(1)));
 }
 
 // ----- Cross -----

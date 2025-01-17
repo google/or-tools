@@ -948,7 +948,7 @@ LinearSumAssignment<GraphType, CostValue>::LinearSumAssignment(
       price_(num_left_nodes, 2 * num_left_nodes - 1),
       matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
-      scaled_arc_cost_(graph.max_end_arc_index(), 0),
+      scaled_arc_cost_(graph.arc_capacity(), 0),
       active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
                         ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())

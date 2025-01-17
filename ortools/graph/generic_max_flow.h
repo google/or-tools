@@ -124,6 +124,7 @@
 #define OR_TOOLS_GRAPH_GENERIC_MAX_FLOW_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
@@ -229,13 +230,12 @@ class MaxFlowStatusClass {
 //    reverse can have a positive initial capacity. This can lead to twice fewer
 //    arcs and a faster algo if the "user graph" as a lot of reverse arcs
 //    already.
-template <typename Graph>
+template <typename Graph, typename FlowType = int64_t>
 class GenericMaxFlow : public MaxFlowStatusClass {
  public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
-  // TODO(b/385094969): This should be a template parameter.
-  typedef FlowQuantity FlowQuantityT;
+  typedef FlowType FlowQuantityT;
 
   // The height of a node never excess 2 times the number of node, so we
   // use the same type as a Node index.
@@ -273,20 +273,20 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   //
   // Note that this will be ignored for self-arc, so do not be surprised if you
   // get zero when reading the capacity of a self-arc back.
-  void SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity);
+  void SetArcCapacity(ArcIndex arc, FlowType new_capacity);
 
   // Returns true if a maximum flow was solved.
   bool Solve();
 
   // Returns the total flow found by the algorithm.
-  FlowQuantity GetOptimalFlow() const { return node_excess_[sink_]; }
+  FlowType GetOptimalFlow() const { return node_excess_[sink_]; }
 
   // Returns the current flow on the given arc.
   //
   // Note that on a couple (arc, opposite_arc) the flow only goes in one
   // direction (where it is positive) and the other direction will have the
   // negation of that flow.
-  FlowQuantity Flow(ArcIndex arc) const {
+  FlowType Flow(ArcIndex arc) const {
     if constexpr (Graph::kHasNegativeReverseArcs) {
       if (IsArcDirect(arc)) return residual_arc_capacity_[Opposite(arc)];
       return -residual_arc_capacity_[arc];
@@ -295,7 +295,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   }
 
   // Returns the initial capacity of an arc.
-  FlowQuantity Capacity(ArcIndex arc) const {
+  FlowType Capacity(ArcIndex arc) const {
     if constexpr (Graph::kHasNegativeReverseArcs) {
       if (!IsArcDirect(arc)) return 0;
       return residual_arc_capacity_[arc] +
@@ -401,19 +401,19 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
   // Tries to saturate all the outgoing arcs from the source that can reach the
   // sink. Most of the time, we can do that in one go, except when more flow
-  // than kMaxFlowQuantity can be pushed out of the source in which case we
-  // have to be careful. Returns true if some flow was pushed.
+  // than kMaxFlowQuantity can be pushed out of the source in which case we have
+  // to be careful. Returns true if some flow was pushed.
   bool SaturateOutgoingArcsFromSource();
 
   // Pushes flow on arc,  i.e. consumes flow on residual_arc_capacity_[arc],
   // and consumes -flow on residual_arc_capacity_[Opposite(arc)]. Updates
   // node_excess_ at the tail and head of arc accordingly.
-  void PushFlow(FlowQuantity flow, NodeIndex tail, ArcIndex arc);
+  void PushFlow(FlowType flow, NodeIndex tail, ArcIndex arc);
 
   // Same as PushFlow() but with a cached node_excess_.data(), this is faster
   // in hot loop as we remove bound checking and the pointer is constant.
-  void FastPushFlow(FlowQuantity flow, NodeIndex tail, ArcIndex arc,
-                    FlowQuantity* node_excess);
+  void FastPushFlow(FlowType flow, NodeIndex tail, ArcIndex arc,
+                    FlowType* node_excess);
 
   // Relabels a node, i.e. increases its height by the minimum necessary amount.
   // This version of Relabel is relaxed in a way such that if an admissible arc
@@ -435,14 +435,14 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   void ComputeReachableNodes(NodeIndex start, std::vector<NodeIndex>* result);
 
   // Maximum manageable flow.
-  static constexpr FlowQuantity kMaxFlowQuantity =
-      std::numeric_limits<FlowQuantity>::max();
+  static constexpr FlowType kMaxFlowQuantity =
+      std::numeric_limits<FlowType>::max();
 
   // A pointer to the graph passed as argument.
   const Graph* graph_;
 
   // An array representing the excess for each node in graph_.
-  std::unique_ptr<FlowQuantity[]> node_excess_;
+  std::unique_ptr<FlowType[]> node_excess_;
 
   // An array representing the height function for each node in graph_. For a
   // given node, this is a lower bound on the shortest path length from this
@@ -473,12 +473,12 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // Using these facts enables one to only maintain residual_arc_capacity_,
   // instead of both capacity and flow, for each direct and indirect arc. This
   // reduces the amount of memory for this information by a factor 2.
-  ZVector<FlowQuantity> residual_arc_capacity_;
+  ZVector<FlowType> residual_arc_capacity_;
 
   // The initial capacity as set by SetArcCapacity(), unused if
   // `Graph::kNegativeReverseArcs`, as we can always recover the initial
   // capacity from the residual capacities of an arc and its reverse.
-  std::unique_ptr<FlowQuantity[]> initial_capacity_;
+  std::unique_ptr<FlowType[]> initial_capacity_;
 
   // An array representing the first admissible arc for each node in graph_.
   std::unique_ptr<ArcIndex[]> first_admissible_arc_;
@@ -560,9 +560,10 @@ Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::PopBack(
   return element;
 }
 
-template <typename Graph>
-GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph, NodeIndex source,
-                                      NodeIndex sink)
+template <typename Graph, typename FlowType>
+GenericMaxFlow<Graph, FlowType>::GenericMaxFlow(const Graph* graph,
+                                                NodeIndex source,
+                                                NodeIndex sink)
     : graph_(graph),
       residual_arc_capacity_(),
       source_(source),
@@ -577,7 +578,7 @@ GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph, NodeIndex source,
     //
     // TODO(user): Unfortunately std/absl::make_unique_for_overwrite is not
     // yet available in open-source.
-    node_excess_ = std::make_unique<FlowQuantity[]>(max_num_nodes);
+    node_excess_ = std::make_unique<FlowType[]>(max_num_nodes);
     node_potential_ = std::make_unique<NodeHeight[]>(max_num_nodes);
     first_admissible_arc_ = std::make_unique<ArcIndex[]>(max_num_nodes);
     bfs_queue_.reserve(max_num_nodes);
@@ -588,16 +589,16 @@ GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph, NodeIndex source,
       residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
     } else {
       // We will need to store the initial capacity in this case.
-      initial_capacity_ = std::make_unique<FlowQuantity[]>(max_num_arcs);
+      initial_capacity_ = std::make_unique<FlowType[]>(max_num_arcs);
       residual_arc_capacity_.Reserve(0, max_num_arcs - 1);
     }
     residual_arc_capacity_.SetAll(0);
   }
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::SetArcCapacity(ArcIndex arc,
-                                           FlowQuantity new_capacity) {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::SetArcCapacity(ArcIndex arc,
+                                                     FlowType new_capacity) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_LE(0, new_capacity);
   DCHECK(IsArcDirect(arc));
@@ -618,19 +619,20 @@ void GenericMaxFlow<Graph>::SetArcCapacity(ArcIndex arc,
   }
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::GetSourceSideMinCut(
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::GetSourceSideMinCut(
     std::vector<NodeIndex>* result) {
   ComputeReachableNodes<false>(source_, result);
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::GetSinkSideMinCut(std::vector<NodeIndex>* result) {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::GetSinkSideMinCut(
+    std::vector<NodeIndex>* result) {
   ComputeReachableNodes<true>(sink_, result);
 }
 
-template <typename Graph>
-bool GenericMaxFlow<Graph>::CheckResult() const {
+template <typename Graph, typename FlowType>
+bool GenericMaxFlow<Graph, FlowType>::CheckResult() const {
   SCOPED_TIME_STAT(&stats_);
   if (node_excess_[source_] != -node_excess_[sink_]) {
     LOG(DFATAL) << "-node_excess_[source_] = " << -node_excess_[source_]
@@ -648,8 +650,8 @@ bool GenericMaxFlow<Graph>::CheckResult() const {
   }
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
     const ArcIndex opposite = Opposite(arc);
-    const FlowQuantity direct_capacity = residual_arc_capacity_[arc];
-    const FlowQuantity opposite_capacity = residual_arc_capacity_[opposite];
+    const FlowType direct_capacity = residual_arc_capacity_[arc];
+    const FlowType opposite_capacity = residual_arc_capacity_[opposite];
     if (direct_capacity < 0) {
       LOG(DFATAL) << "residual_arc_capacity_[" << arc
                   << "] = " << direct_capacity << " < 0";
@@ -676,8 +678,8 @@ bool GenericMaxFlow<Graph>::CheckResult() const {
   return true;
 }
 
-template <typename Graph>
-bool GenericMaxFlow<Graph>::AugmentingPathExists() const {
+template <typename Graph, typename FlowType>
+bool GenericMaxFlow<Graph, FlowType>::AugmentingPathExists() const {
   SCOPED_TIME_STAT(&stats_);
 
   // We simply compute the reachability from the source in the residual graph.
@@ -703,8 +705,9 @@ bool GenericMaxFlow<Graph>::AugmentingPathExists() const {
   return is_reached[sink_];
 }
 
-template <typename Graph>
-bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
+template <typename Graph, typename FlowType>
+bool GenericMaxFlow<Graph, FlowType>::CheckRelabelPrecondition(
+    NodeIndex node) const {
   DCHECK(IsActive(node));
   for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcs(node)) {
     DCHECK(!IsAdmissible(node, arc, node_potential_.data()))
@@ -713,9 +716,9 @@ bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
   return true;
 }
 
-template <typename Graph>
-std::string GenericMaxFlow<Graph>::DebugString(absl::string_view context,
-                                               ArcIndex arc) const {
+template <typename Graph, typename FlowType>
+std::string GenericMaxFlow<Graph, FlowType>::DebugString(
+    absl::string_view context, ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
   return absl::StrFormat(
@@ -729,8 +732,8 @@ std::string GenericMaxFlow<Graph>::DebugString(absl::string_view context,
       node_potential_[head], node_excess_[tail], node_excess_[head]);
 }
 
-template <typename Graph>
-bool GenericMaxFlow<Graph>::Solve() {
+template <typename Graph, typename FlowType>
+bool GenericMaxFlow<Graph, FlowType>::Solve() {
   status_ = NOT_SOLVED;
   InitializePreflow();
 
@@ -758,8 +761,8 @@ bool GenericMaxFlow<Graph>::Solve() {
   return true;
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::InitializePreflow() {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::InitializePreflow() {
   SCOPED_TIME_STAT(&stats_);
 
   // TODO(user): Ebert graph has an issue with nodes with no arcs, so we
@@ -807,8 +810,8 @@ void GenericMaxFlow<Graph>::InitializePreflow() {
 // potentials because of the way we cancel flow on cycle. However, we only call
 // that at the end of the algorithm, or just before a GlobalUpdate() that will
 // restore the precondition on the node potentials.
-template <typename Graph>
-void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::PushFlowExcessBackToSource() {
   SCOPED_TIME_STAT(&stats_);
   const NodeIndex num_nodes = graph_->num_nodes();
 
@@ -877,7 +880,7 @@ void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
     visited[node] = true;
     index_branch.push_back(arc_stack.size() - 1);
     for (const ArcIndex arc : graph_->OutgoingArcs(node)) {
-      const FlowQuantity flow = Flow(arc);
+      const FlowType flow = Flow(arc);
       const NodeIndex head = Head(arc);
       if (flow > 0 && !stored[head]) {
         if (!visited[head]) {
@@ -895,11 +898,11 @@ void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
 
           // Compute the maximum flow that can be canceled on the cycle and the
           // min index such that arc_stack[index_branch[i]] will be saturated.
-          FlowQuantity flow_on_cycle = flow;
+          FlowType flow_on_cycle = flow;
           int first_saturated_index = index_branch.size();
           for (int i = index_branch.size() - 1; i >= cycle_begin; --i) {
             const ArcIndex arc_on_cycle = arc_stack[index_branch[i]];
-            if (const FlowQuantity arc_flow = Flow(arc_on_cycle);
+            if (const FlowType arc_flow = Flow(arc_on_cycle);
                 arc_flow <= flow_on_cycle) {
               flow_on_cycle = arc_flow;
               first_saturated_index = i;
@@ -907,7 +910,7 @@ void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
           }
 
           // This is just here for a DCHECK() below.
-          const FlowQuantity excess = node_excess_[head];
+          const FlowType excess = node_excess_[head];
 
           // Cancel the flow on the cycle, and set visited[node] = false for
           // the node that will be backtracked over.
@@ -949,10 +952,10 @@ void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
     const NodeIndex node = reverse_topological_order[i];
     if (node_excess_[node] == 0) continue;
     for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcs(node)) {
-      const FlowQuantity flow = Flow(arc);
+      const FlowType flow = Flow(arc);
       if (flow < 0) {
         DCHECK_GT(residual_arc_capacity_[arc], 0);
-        const FlowQuantity to_push = std::min(node_excess_[node], -flow);
+        const FlowType to_push = std::min(node_excess_[node], -flow);
         PushFlow(to_push, node, arc);
         if (node_excess_[node] == 0) break;
       }
@@ -962,8 +965,8 @@ void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
   DCHECK_EQ(-node_excess_[source_], node_excess_[sink_]);
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::GlobalUpdate() {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::GlobalUpdate() {
   SCOPED_TIME_STAT(&stats_);
   bfs_queue_.clear();
   int queue_index = 0;
@@ -972,7 +975,7 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
   node_in_bfs_queue_[sink_] = true;
 
   // We cache this as this is a hot-loop and we don't want bound checking.
-  FlowQuantity* const node_excess = node_excess_.get();
+  FlowType* const node_excess = node_excess_.get();
 
   // We do a BFS in the reverse residual graph, starting from the sink.
   // Because all the arcs from the source are saturated (except in
@@ -1015,7 +1018,7 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
         // Note(user): I haven't seen this anywhere in the literature.
         // TODO(user): Investigate more and maybe write a publication :)
         if (node_excess[head] > 0) {
-          const FlowQuantity flow =
+          const FlowType flow =
               std::min(node_excess[head], residual_arc_capacity_[opposite_arc]);
           FastPushFlow(flow, head, opposite_arc, node_excess);
 
@@ -1062,8 +1065,8 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
   }
 }
 
-template <typename Graph>
-bool GenericMaxFlow<Graph>::SaturateOutgoingArcsFromSource() {
+template <typename Graph, typename FlowType>
+bool GenericMaxFlow<Graph, FlowType>::SaturateOutgoingArcsFromSource() {
   SCOPED_TIME_STAT(&stats_);
   const NodeIndex num_nodes = graph_->num_nodes();
 
@@ -1074,18 +1077,17 @@ bool GenericMaxFlow<Graph>::SaturateOutgoingArcsFromSource() {
 
   bool flow_pushed = false;
   for (const ArcIndex arc : graph_->OutgoingArcs(source_)) {
-    const FlowQuantity flow = residual_arc_capacity_[arc];
+    const FlowType flow = residual_arc_capacity_[arc];
 
     // This is a special IsAdmissible() condition for the source.
     if (flow == 0 || node_potential_[Head(arc)] >= num_nodes) continue;
 
     // We are careful in case the sum of the flow out of the source is greater
     // than kMaxFlowQuantity to avoid overflow.
-    const FlowQuantity current_flow_out_of_source = -node_excess_[source_];
+    const FlowType current_flow_out_of_source = -node_excess_[source_];
     DCHECK_GE(flow, 0) << flow;
     DCHECK_GE(current_flow_out_of_source, 0) << current_flow_out_of_source;
-    const FlowQuantity capped_flow =
-        kMaxFlowQuantity - current_flow_out_of_source;
+    const FlowType capped_flow = kMaxFlowQuantity - current_flow_out_of_source;
     if (capped_flow < flow) {
       // We push as much flow as we can so the current flow on the network will
       // be kMaxFlowQuantity.
@@ -1104,9 +1106,9 @@ bool GenericMaxFlow<Graph>::SaturateOutgoingArcsFromSource() {
   return flow_pushed;
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::PushFlow(FlowQuantity flow, NodeIndex tail,
-                                     ArcIndex arc) {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::PushFlow(FlowType flow, NodeIndex tail,
+                                               ArcIndex arc) {
   SCOPED_TIME_STAT(&stats_);
 
   // Update the residual capacity of the arc and its opposite arc.
@@ -1127,10 +1129,10 @@ void GenericMaxFlow<Graph>::PushFlow(FlowQuantity flow, NodeIndex tail,
   node_excess_[Head(arc)] += flow;
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::FastPushFlow(FlowQuantity flow, NodeIndex tail,
-                                         ArcIndex arc,
-                                         FlowQuantity* node_excess) {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::FastPushFlow(FlowType flow,
+                                                   NodeIndex tail, ArcIndex arc,
+                                                   FlowType* node_excess) {
   SCOPED_TIME_STAT(&stats_);
 
   DCHECK_NE(flow, 0);
@@ -1143,8 +1145,8 @@ void GenericMaxFlow<Graph>::FastPushFlow(FlowQuantity flow, NodeIndex tail,
   node_excess[Head(arc)] += flow;
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::InitializeActiveNodeContainer() {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::InitializeActiveNodeContainer() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsEmptyActiveNodeContainer());
   const NodeIndex num_nodes = graph_->num_nodes();
@@ -1159,8 +1161,8 @@ void GenericMaxFlow<Graph>::InitializeActiveNodeContainer() {
   }
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::RefineWithGlobalUpdate() {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::RefineWithGlobalUpdate() {
   SCOPED_TIME_STAT(&stats_);
 
   const NodeIndex num_nodes = graph_->num_nodes();
@@ -1227,13 +1229,13 @@ void GenericMaxFlow<Graph>::RefineWithGlobalUpdate() {
   }
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::Discharge(const NodeIndex node) {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::Discharge(const NodeIndex node) {
   SCOPED_TIME_STAT(&stats_);
   const NodeIndex num_nodes = graph_->num_nodes();
 
   // We cache this as this is a hot-loop and we don't want bound checking.
-  FlowQuantity* const node_excess = node_excess_.get();
+  FlowType* const node_excess = node_excess_.get();
   NodeHeight* const node_potentials = node_potential_.get();
   ArcIndex* const first_admissible_arc = first_admissible_arc_.get();
 
@@ -1250,7 +1252,7 @@ void GenericMaxFlow<Graph>::Discharge(const NodeIndex node) {
           // push the sink_, but that is handled properly in Refine().
           PushActiveNode(head);
         }
-        const FlowQuantity delta =
+        const FlowType delta =
             std::min(node_excess[node], residual_arc_capacity_[arc]);
         FastPushFlow(delta, node, arc, node_excess);
         if (node_excess[node] == 0) {
@@ -1267,8 +1269,8 @@ void GenericMaxFlow<Graph>::Discharge(const NodeIndex node) {
   }
 }
 
-template <typename Graph>
-void GenericMaxFlow<Graph>::Relabel(NodeIndex node) {
+template <typename Graph, typename FlowType>
+void GenericMaxFlow<Graph, FlowType>::Relabel(NodeIndex node) {
   SCOPED_TIME_STAT(&stats_);
   // Because we use a relaxed version, this is no longer true if the
   // first_admissible_arc_[node] was not actually the first arc!
@@ -1298,24 +1300,25 @@ void GenericMaxFlow<Graph>::Relabel(NodeIndex node) {
   first_admissible_arc_[node] = first_admissible_arc;
 }
 
-template <typename Graph>
-typename Graph::ArcIndex GenericMaxFlow<Graph>::Opposite(ArcIndex arc) const {
+template <typename Graph, typename FlowType>
+typename Graph::ArcIndex GenericMaxFlow<Graph, FlowType>::Opposite(
+    ArcIndex arc) const {
   return graph_->OppositeArc(arc);
 }
 
-template <typename Graph>
-bool GenericMaxFlow<Graph>::IsArcDirect(ArcIndex arc) const {
+template <typename Graph, typename FlowType>
+bool GenericMaxFlow<Graph, FlowType>::IsArcDirect(ArcIndex arc) const {
   return IsArcValid(arc) && arc >= 0;
 }
 
-template <typename Graph>
-bool GenericMaxFlow<Graph>::IsArcValid(ArcIndex arc) const {
+template <typename Graph, typename FlowType>
+bool GenericMaxFlow<Graph, FlowType>::IsArcValid(ArcIndex arc) const {
   return graph_->IsArcValid(arc);
 }
 
-template <typename Graph>
+template <typename Graph, typename FlowType>
 template <bool reverse>
-void GenericMaxFlow<Graph>::ComputeReachableNodes(
+void GenericMaxFlow<Graph, FlowType>::ComputeReachableNodes(
     NodeIndex start, std::vector<NodeIndex>* result) {
   // If start is not a valid node index, it can reach only itself.
   // Note(user): This is needed because source and sink are given independently
@@ -1346,8 +1349,8 @@ void GenericMaxFlow<Graph>::ComputeReachableNodes(
   *result = bfs_queue_;
 }
 
-template <typename Graph>
-FlowModelProto GenericMaxFlow<Graph>::CreateFlowModel() {
+template <typename Graph, typename FlowType>
+FlowModelProto GenericMaxFlow<Graph, FlowType>::CreateFlowModel() {
   FlowModelProto model;
   model.set_problem_type(FlowModelProto::MAX_FLOW);
   for (int n = 0; n < graph_->num_nodes(); ++n) {
