@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -47,6 +48,7 @@ bool PresolveFixed2dRectangles(
   // `fixed_boxes`.
   bool changed = false;
 
+  DCHECK(FindPartialRectangleIntersections(*fixed_boxes).empty());
   IntegerValue original_area = 0;
   std::vector<Rectangle> fixed_boxes_copy;
   if (VLOG_IS_ON(1)) {
@@ -78,6 +80,8 @@ bool PresolveFixed2dRectangles(
     min_x_size = std::min(min_x_size, box.x_size);
     min_y_size = std::min(min_y_size, box.y_size);
   }
+  DCHECK_GT(min_x_size, 0);
+  DCHECK_GT(min_y_size, 0);
 
   // Fixed items are only useful to constraint where the non-fixed items can be
   // placed. This means in particular that any part of a fixed item outside the
@@ -85,6 +89,8 @@ bool PresolveFixed2dRectangles(
   int new_size = 0;
   while (new_size < fixed_boxes->size()) {
     Rectangle& rectangle = (*fixed_boxes)[new_size];
+    DCHECK_GT(rectangle.SizeX(), 0);
+    DCHECK_GT(rectangle.SizeY(), 0);
     if (rectangle.x_min < bounding_box.x_min) {
       rectangle.x_min = bounding_box.x_min;
       changed = true;
@@ -1438,6 +1444,10 @@ bool ReduceNumberOfBoxesExactMandatory(
   const Neighbours neighbours = BuildNeighboursGraph(result);
   std::vector<SingleShape> shapes = BoxesToShapes(result, neighbours);
 
+  std::vector<Rectangle> original_result;
+  if (DEBUG_MODE) {
+    original_result = result;
+  }
   result.clear();
   for (SingleShape& shape : shapes) {
     // This is the function that applies the algorithm described in [1].
@@ -1445,6 +1455,9 @@ bool ReduceNumberOfBoxesExactMandatory(
         CutShapeIntoRectangles(std::move(shape));
     result.insert(result.end(), cut_rectangles.begin(), cut_rectangles.end());
   }
+  DCHECK(RegionIncludesOther(original_result, result) &&
+         RegionIncludesOther(result, original_result));
+
   // It is possible that the algorithm actually increases the number of boxes.
   // See the "Problematic2" test.
   if (result.size() >= mandatory_rectangles->size()) return false;

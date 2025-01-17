@@ -866,7 +866,6 @@ double ExprFlattener::Flatten(std::vector<const Variable*>* vars,
 }
 
 void ExprEvaluator::AddVarCoeff(const Variable* var, double coeff) {
-  if (coeff == 0.0) return;
   offset_ += coeff * helper_->variable_value(var->index());
 }
 

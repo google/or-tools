@@ -24,6 +24,7 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/declare.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -42,6 +43,8 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
+
+ABSL_DECLARE_FLAG(bool, cp_model_debug_postsolve);
 
 namespace operations_research {
 namespace sat {

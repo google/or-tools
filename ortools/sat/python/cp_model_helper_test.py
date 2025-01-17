@@ -334,9 +334,9 @@ class CpModelHelperTest(absltest.TestCase):
         e3 = y * 5.2
         self.assertFalse(e3.is_integer())
         self.assertEqual(str(e3), "(5.2 * y)")
-        e4 = -2.2 * y
+        e4 = -2.25 * y
         self.assertFalse(e4.is_integer())
-        self.assertEqual(str(e4), "(-2.2 * y)")
+        self.assertEqual(str(e4), "(-2.25 * y)")
         e5 = x - 1.1
         self.assertFalse(e5.is_integer())
         self.assertEqual(str(e5), "(x - 1.1)")
@@ -354,12 +354,12 @@ class CpModelHelperTest(absltest.TestCase):
         e9 = cmh.LinearExpr.sum([x, y, z, 1.5])
         self.assertFalse(e9.is_integer())
         self.assertEqual(str(e9), "(x + y + z + 1.5)")
-        e10 = cmh.LinearExpr.weighted_sum([x, y, z], [1.0, 2.2, 3.3])
+        e10 = cmh.LinearExpr.weighted_sum([x, y, z], [1.0, 2.25, 5.5])
         self.assertFalse(e10.is_integer())
-        self.assertEqual(str(e10), "(x + 2.2 * y + 3.3 * z)")
-        e11 = cmh.LinearExpr.weighted_sum([x, y, z, 1.5], [1.0, 2.2, 3.3, -1])
+        self.assertEqual(str(e10), "(x + 2.25 * y + 5.5 * z)")
+        e11 = cmh.LinearExpr.weighted_sum([x, y, z, 1.5], [1.0, 2.25, 5.5, -1])
         self.assertFalse(e11.is_integer())
-        self.assertEqual(str(e11), "(x + 2.2 * y + 3.3 * z - 1.5)")
+        self.assertEqual(str(e11), "(x + 2.25 * y + 5.5 * z - 1.5)")
         e12 = (x + 2) * 3.1
         self.assertFalse(e12.is_integer())
         self.assertEqual(str(e12), "(3.1 * (x + 2))")
