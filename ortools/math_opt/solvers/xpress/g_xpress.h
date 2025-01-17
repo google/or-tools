@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -81,13 +81,14 @@ class Xpress {
   absl::Status ChgCoeffs(absl::Span<const int> cind, absl::Span<const int> vind,
                          absl::Span<const double> val);
 
-  absl::StatusOr<int> LpOptimizeAndGetStatus(std::string flags);
-  absl::StatusOr<int> MipOptimizeAndGetStatus();
+  absl::Status LpOptimize(std::string flags);
+  absl::Status MipOptimize();
   absl::Status PostSolve();
 
   void Terminate();
 
   absl::StatusOr<std::vector<double>> GetPrimalValues() const;
+  absl::StatusOr<int> GetDualStatus() const;
   absl::StatusOr<std::vector<double>> GetConstraintDuals() const;
   absl::StatusOr<std::vector<double>> GetReducedCostValues() const;
   absl::Status GetBasis(std::vector<int>& rowBasis,

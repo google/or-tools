@@ -421,6 +421,11 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_ROWS 1001
 #define XPRS_SIMPLEXITER 1009
 #define XPRS_BARITER 5001
+#define XPRS_SOLSTATUS_NOTFOUND 0
+#define XPRS_SOLSTATUS_OPTIMAL 1
+#define XPRS_SOLSTATUS_FEASIBLE 2
+#define XPRS_SOLSTATUS_INFEASIBLE 3
+#define XPRS_SOLSTATUS_UNBOUNDED 4
 #define XPRS_LPSTATUS 1010
 #define XPRS_MIPSTATUS 1011
 #define XPRS_NODES 1013
@@ -438,6 +443,9 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_MIP_INFEAS 5
 #define XPRS_MIP_OPTIMAL 6
 #define XPRS_MIP_UNBOUNDED 7
+#define XPRS_ALG_DUAL 2
+#define XPRS_ALG_PRIMAL 3
+#define XPRS_ALG_BARRIER 4
 #define XPRS_OBJ_MINIMIZE 1
 #define XPRS_OBJ_MAXIMIZE -1
 // ***************************************************************************

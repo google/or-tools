@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -169,27 +169,15 @@ absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
                                  colind.data(), values.data()));
 }
 
-absl::StatusOr<int> Xpress::LpOptimizeAndGetStatus(std::string flags) {
-  RETURN_IF_ERROR(ToStatus(XPRSlpoptimize(xpress_model_, flags.c_str())))
-      << "XPRESS LP solve failed";
-  int xpress_status;
-  RETURN_IF_ERROR(
-      ToStatus(XPRSgetintattrib(xpress_model_, XPRS_LPSTATUS, &xpress_status)))
-      << "Could not get XPRESS status";
-  return xpress_status;
+absl::Status Xpress::LpOptimize(std::string flags) {
+  return ToStatus(XPRSlpoptimize(xpress_model_, flags.c_str()));
 }
 absl::Status Xpress::PostSolve() {
   return ToStatus(XPRSpostsolve(xpress_model_));
 }
 
-absl::StatusOr<int> Xpress::MipOptimizeAndGetStatus() {
-  RETURN_IF_ERROR(ToStatus(XPRSmipoptimize(xpress_model_, nullptr)))
-      << "XPRESS MIP solve failed";
-  int xpress_status;
-  RETURN_IF_ERROR(
-      ToStatus(XPRSgetintattrib(xpress_model_, XPRS_MIPSTATUS, &xpress_status)))
-      << "Could not get XPRESS status";
-  return xpress_status;
+absl::Status Xpress::MipOptimize() {
+  return ToStatus(XPRSmipoptimize(xpress_model_, nullptr));
 }
 
 void Xpress::Terminate() { XPRSinterrupt(xpress_model_, XPRS_STOP_USER); };
@@ -251,11 +239,22 @@ int Xpress::GetNumberOfVariables() const {
   return n;
 }
 
+absl::StatusOr<int> Xpress::GetDualStatus() const {
+  int status = 0;
+  double values[1];
+  // Even though we do not need the values, we have to fetch them, otherwise
+  // we'd get a segmentation fault
+  RETURN_IF_ERROR(ToStatus(XPRSgetduals(xpress_model_, &status, values, 0, 0)))
+      << "Failed to retrieve dual status from XPRESS";
+  return status;
+}
+
 absl::StatusOr<std::vector<double>> Xpress::GetConstraintDuals() const {
   int nCons = GetNumberOfConstraints();
   double values[nCons];
+  int status;
   RETURN_IF_ERROR(
-      ToStatus(XPRSgetduals(xpress_model_, nullptr, values, 0, nCons - 1)))
+      ToStatus(XPRSgetduals(xpress_model_, &status, values, 0, nCons - 1)))
       << "Failed to retrieve duals from XPRESS";
   std::vector<double> result(values, values + nCons);
   return result;

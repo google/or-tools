@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -261,17 +261,35 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   return solve_result;
 }
 
-inline std::string GetOptimizationFlags(
+std::string XpressSolver::GetOptimizationFlags(
     const SolveParametersProto& parameters) {
   switch (parameters.lp_algorithm()) {
     case LP_ALGORITHM_PRIMAL_SIMPLEX:
+      lp_algorithm_ = LP_ALGORITHM_PRIMAL_SIMPLEX;
       return "p";
     case LP_ALGORITHM_DUAL_SIMPLEX:
+      lp_algorithm_ = LP_ALGORITHM_DUAL_SIMPLEX;
       return "d";
     case LP_ALGORITHM_BARRIER:
+      lp_algorithm_ = LP_ALGORITHM_BARRIER;
       return "b";
     default:
       // this makes XPRESS use default algorithm (XPRS_DEFAULTALG)
+      // but we have to figure out what it is for solution processing
+      auto default_alg = xpress_->GetIntControl(XPRS_DEFAULTALG);
+      switch (default_alg.value_or(-1)) {
+        case XPRS_ALG_PRIMAL:
+          lp_algorithm_ = LP_ALGORITHM_PRIMAL_SIMPLEX;
+          break;
+        case XPRS_ALG_DUAL:
+          lp_algorithm_ = LP_ALGORITHM_DUAL_SIMPLEX;
+          break;
+        case XPRS_ALG_BARRIER:
+          lp_algorithm_ = LP_ALGORITHM_BARRIER;
+          break;
+        default:
+          lp_algorithm_ = LP_ALGORITHM_UNSPECIFIED;
+      }
       return "";
   }
 }
@@ -284,16 +302,19 @@ absl::Status XpressSolver::CallXpressSolve(
   }
   // Solve
   if (is_mip_) {
-    ASSIGN_OR_RETURN(xpress_status_, xpress_->MipOptimizeAndGetStatus());
+    RETURN_IF_ERROR(xpress_->MipOptimize());
+    ASSIGN_OR_RETURN(xpress_mip_status_, xpress_->GetIntAttr(XPRS_MIPSTATUS));
   } else {
     RETURN_IF_ERROR(SetLpIterLimits(parameters))
         << "Could not set iteration limits.";
-    ASSIGN_OR_RETURN(xpress_status_, xpress_->LpOptimizeAndGetStatus(
-                                         GetOptimizationFlags(parameters)));
+    RETURN_IF_ERROR(xpress_->LpOptimize(GetOptimizationFlags(parameters)));
+    ASSIGN_OR_RETURN(int primal_status, xpress_->GetIntAttr(XPRS_LPSTATUS));
+    ASSIGN_OR_RETURN(int dual_status, xpress_->GetDualStatus());
+    xpress_lp_status_ = {primal_status, dual_status};
   }
   // Post-solve
-  if (!(is_mip_ ? (xpress_status_ == XPRS_MIP_OPTIMAL)
-                : (xpress_status_ == XPRS_LP_OPTIMAL))) {
+  if (!(is_mip_ ? (xpress_mip_status_ == XPRS_MIP_OPTIMAL)
+                : (xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL))) {
     RETURN_IF_ERROR(xpress_->PostSolve()) << "Post-solve failed in XPRESS";
   }
   // Disable screen output right after solve
@@ -349,9 +370,8 @@ absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
 absl::StatusOr<double> XpressSolver::GetBestPrimalBound(
     const SolveParametersProto& parameters) const {
   // TODO: handle MIP
-  if (parameters.lp_algorithm() == LP_ALGORITHM_PRIMAL_SIMPLEX &&
-          isFeasible() ||
-      xpress_status_ == XPRS_LP_OPTIMAL) {
+  if (lp_algorithm_ == LP_ALGORITHM_PRIMAL_SIMPLEX && isPrimalFeasible() ||
+      xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL) {
     // When primal simplex algorithm is used, XPRESS uses LPOBJVAL to store the
     // primal problem's objective value
     return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
@@ -362,8 +382,8 @@ absl::StatusOr<double> XpressSolver::GetBestPrimalBound(
 absl::StatusOr<double> XpressSolver::GetBestDualBound(
     const SolveParametersProto& parameters) const {
   // TODO: handle MIP
-  if (parameters.lp_algorithm() == LP_ALGORITHM_DUAL_SIMPLEX && isFeasible() ||
-      xpress_status_ == XPRS_LP_OPTIMAL) {
+  if (lp_algorithm_ == LP_ALGORITHM_DUAL_SIMPLEX && isPrimalFeasible() ||
+      xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL) {
     // When dual simplex algorithm is used, XPRESS uses LPOBJVAL to store the
     // dual problem's objective value
     return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
@@ -390,7 +410,7 @@ absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetLpSolution(
   ASSIGN_OR_RETURN(
       auto dual_solution_and_claim,
       GetConvexDualSolutionIfAvailable(model_parameters, solve_parameters));
-  ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable());
+  ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable(solve_parameters));
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists =
           primal_solution_and_claim.feasible_solution_exists,
@@ -418,18 +438,31 @@ absl::StatusOr<XpressSolver::SolutionsAndClaims> XpressSolver::GetLpSolution(
   return solution_and_claims;
 }
 
-bool XpressSolver::isFeasible() const {
+bool XpressSolver::isPrimalFeasible() const {
   if (is_mip_) {
-    return xpress_status_ == XPRS_MIP_OPTIMAL ||
-           xpress_status_ == XPRS_MIP_SOLUTION;
+    return xpress_mip_status_ == XPRS_MIP_OPTIMAL ||
+           xpress_mip_status_ == XPRS_MIP_SOLUTION;
   } else {
-    return xpress_status_ == XPRS_LP_OPTIMAL ||
-           xpress_status_ == XPRS_LP_UNFINISHED;
+    return xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL ||
+           xpress_lp_status_.primal_status == XPRS_LP_UNFINISHED;
   }
 }
 
+bool XpressSolver::isDualFeasible(
+    const SolveParametersProto& solve_parameters) const {
+  if (is_mip_) {
+    return isPrimalFeasible();
+  }
+  return xpress_lp_status_.dual_status == XPRS_SOLSTATUS_OPTIMAL ||
+         xpress_lp_status_.dual_status == XPRS_SOLSTATUS_FEASIBLE ||
+         // When using dual simplex algorithm, if we interrupt it, dual_status
+         // is "not found" even if there is a solution. Using the following
+         // as a workaround for now
+         (lp_algorithm_ == LP_ALGORITHM_DUAL_SIMPLEX && isPrimalFeasible());
+}
+
 SolutionStatusProto XpressSolver::getLpSolutionStatus() const {
-  switch (xpress_status_) {
+  switch (xpress_lp_status_.primal_status) {
     case XPRS_LP_OPTIMAL:
     case XPRS_LP_UNFINISHED:
       // TODO: XPRESS returns XPRS_LP_UNFINISHED even if it found no solution
@@ -454,7 +487,7 @@ absl::StatusOr<XpressSolver::SolutionAndClaim<PrimalSolutionProto>>
 XpressSolver::GetConvexPrimalSolutionIfAvailable(
     const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) const {
-  if (!isFeasible()) {
+  if (!isPrimalFeasible()) {
     return SolutionAndClaim<PrimalSolutionProto>{
         .solution = std::nullopt, .feasible_solution_exists = false};
   }
@@ -477,7 +510,7 @@ absl::StatusOr<XpressSolver::SolutionAndClaim<DualSolutionProto>>
 XpressSolver::GetConvexDualSolutionIfAvailable(
     const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) const {
-  if (!isFeasible()) {
+  if (!isDualFeasible(solve_parameters)) {
     return SolutionAndClaim<DualSolutionProto>{
         .solution = std::nullopt, .feasible_solution_exists = false};
   }
@@ -500,7 +533,7 @@ XpressSolver::GetConvexDualSolutionIfAvailable(
   dual_solution.set_feasibility_status(getLpSolutionStatus());
   ASSIGN_OR_RETURN(const double best_dual_bound,
                    GetBestDualBound(solve_parameters));
-  bool dual_feasible_solution_exists = std::isfinite(best_dual_bound);
+  bool dual_feasible_solution_exists = isDualFeasible(solve_parameters);
   return SolutionAndClaim<DualSolutionProto>{
       .solution = dual_solution,
       .feasible_solution_exists = dual_feasible_solution_exists};
@@ -561,7 +594,8 @@ absl::Status XpressSolver::SetXpressStartingBasis(const BasisProto& basis) {
                                    xpress_var_basis_status);
 }
 
-absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
+absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable(
+    const SolveParametersProto& parameters) {
   std::vector<int> xprs_variable_basis_status;
   std::vector<int> xprs_constraint_basis_status;
   if (!xpress_
@@ -598,13 +632,9 @@ absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable() {
   }
 
   // Dual basis
-  basis.set_basic_dual_feasibility(SOLUTION_STATUS_UNDETERMINED);
-  if (xpress_status_ == XPRS_LP_OPTIMAL) {
-    basis.set_basic_dual_feasibility(SOLUTION_STATUS_FEASIBLE);
-  } else if (xpress_status_ == XPRS_LP_UNBOUNDED) {
-    basis.set_basic_dual_feasibility(SOLUTION_STATUS_INFEASIBLE);
-  }
-
+  basis.set_basic_dual_feasibility(isDualFeasible(parameters)
+                                       ? SOLUTION_STATUS_FEASIBLE
+                                       : SOLUTION_STATUS_INFEASIBLE);
   return basis;
 }
 
@@ -648,7 +678,7 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
     SolutionClaims solution_claims, double best_primal_bound,
     double best_dual_bound) const {
   if (!is_mip_) {
-    switch (xpress_status_) {
+    switch (xpress_lp_status_.primal_status) {
       case XPRS_LP_UNSTARTED:
         return TerminateForReason(
             is_maximize_, TERMINATION_REASON_OTHER_ERROR,
@@ -685,8 +715,9 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
                                   "Problem contains quadratic data, which is "
                                   "not convex (XPRS_LP_NONCONVEX)");
       default:
-        return absl::InternalError(absl::StrCat(
-            "Missing Xpress LP status code case: ", xpress_status_));
+        return absl::InternalError(
+            absl::StrCat("Missing Xpress LP status code case: ",
+                         xpress_lp_status_.primal_status));
     }
   } else {
     return absl::UnimplementedError("XpressSolver does not handle MIPs yet");

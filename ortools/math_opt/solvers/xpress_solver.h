@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,6 +57,7 @@ class XpressSolver : public SolverInterface {
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
       const SolveInterrupter* interrupter) override;
+  std::string GetOptimizationFlags(const SolveParametersProto& parameters);
   absl::Status CallXpressSolve(const SolveParametersProto& parameters);
 
   // Updates the problem (not implemented yet)
@@ -97,16 +98,13 @@ class XpressSolver : public SolverInterface {
   static constexpr double kPlusInf = XPRS_PLUSINFINITY;
   static constexpr double kMinusInf = XPRS_MINUSINFINITY;
 
-  // Data associated with each linear constraint. With it we know if the
-  // underlying representation is either:
-  //   linear_terms <= upper_bound (if lower bound <= -INFINITY)
-  //   linear_terms >= lower_bound (if upper bound >= INFINTY)
-  //   linear_terms == xxxxx_bound (if upper_bound == lower_bound)
-  //   linear_term - slack == 0 (with slack bounds equal to xxxxx_bound)
+  static bool isFinite(double value) {
+    return value < kPlusInf && value > kMinusInf;
+  }
+
+  // Data associated with each linear constraint
   struct LinearConstraintData {
     XpressLinearConstraintIndex constraint_index = kUnspecifiedConstraint;
-    // only valid for true ranged constraints.
-    XpressVariableIndex slack_index = kUnspecifiedIndex;
     double lower_bound = kMinusInf;
     double upper_bound = kPlusInf;
   };
@@ -150,7 +148,8 @@ class XpressSolver : public SolverInterface {
   absl::StatusOr<SolutionsAndClaims> GetLpSolution(
       const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
-  bool isFeasible() const;
+  bool isPrimalFeasible() const;
+  bool isDualFeasible(const SolveParametersProto& solve_parameters) const;
 
   // return bool field should be true if a primal solution exists.
   absl::StatusOr<SolutionAndClaim<PrimalSolutionProto>>
@@ -161,7 +160,8 @@ class XpressSolver : public SolverInterface {
   GetConvexDualSolutionIfAvailable(
       const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters) const;
-  absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable();
+  absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable(
+      const SolveParametersProto& parameters);
 
   absl::Status AddNewLinearConstraints(
       const LinearConstraintsProto& constraints);
@@ -211,7 +211,15 @@ class XpressSolver : public SolverInterface {
 
   bool is_mip_ = false;
   bool is_maximize_ = false;
-  int xpress_status_ = 0;
+
+  struct LpStatus {
+    int primal_status = 0;
+    int dual_status = 0;
+  };
+  LpStatus xpress_lp_status_;
+  LPAlgorithmProto lp_algorithm_ = LP_ALGORITHM_UNSPECIFIED;
+
+  int xpress_mip_status_ = 0;
 };
 
 }  // namespace operations_research::math_opt
