@@ -24,7 +24,6 @@
 #include "ortools/math_opt/solver_tests/invalid_input_tests.h"
 #include "ortools/math_opt/solver_tests/logical_constraint_tests.h"
 #include "ortools/math_opt/solver_tests/lp_incomplete_solve_tests.h"
-#include "ortools/math_opt/solver_tests/lp_initial_basis_tests.h"
 #include "ortools/math_opt/solver_tests/lp_model_solve_parameters_tests.h"
 #include "ortools/math_opt/solver_tests/lp_parameter_tests.h"
 #include "ortools/math_opt/solver_tests/lp_tests.h"
@@ -193,7 +192,8 @@ INSTANTIATE_TEST_SUITE_P(XpressSimpleQpTest, SimpleQpTest,
                          testing::Values(GetXpressQpTestParameters()));
 INSTANTIATE_TEST_SUITE_P(XpressIncrementalQpTest, IncrementalQpTest,
                          testing::Values(GetXpressQpTestParameters()));
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QpDualsTest);
+INSTANTIATE_TEST_SUITE_P(XpressQpDualsTest, QpDualsTest,
+                         testing::Values(GetXpressQpTestParameters()));
 
 QcTestParameters GetXpressQcTestParameters() {
   return QcTestParameters(SolverType::kXpress, SolveParameters(),
