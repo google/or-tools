@@ -1,22 +1,17 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:latest AS env
-# note: Almalinux:8 based image with
+FROM quay.io/pypa/musllinux_1_2_x86_64:latest AS env
 # CMake 3.31.2 and SWIG 4.3.0 already installed
 
-RUN dnf -y update \
-&& dnf -y install \
- curl wget \
- git patch \
- which pkgconfig autoconf libtool \
- make gcc-c++ \
- redhat-lsb openssl-devel pcre2-devel \
- zlib-devel unzip zip \
-&& dnf clean all \
-&& rm -rf /var/cache/dnf
-ENTRYPOINT ["/usr/bin/bash", "-c"]
-CMD ["/usr/bin/bash"]
+# Install system build dependencies
+ENV PATH=/usr/local/bin:$PATH
+RUN apk add --no-cache git build-base linux-headers xfce4-dev-tools
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["/bin/sh"]
 
-ENV TZ=America/Los_Angeles
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+## Python
+#RUN apk add --no-cache python3-dev py3-pip py3-wheel py3-virtualenv \
+# py3-numpy py3-pandas py3-matplotlib
+#RUN rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED \
+#&& python3 -m pip install absl-py mypy mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##
@@ -37,14 +32,14 @@ RUN git clone -b "${GIT_BRANCH}" --single-branch "$GIT_URL" /project \
 && git reset --hard "${GIT_SHA1}"
 WORKDIR /project
 
-COPY build-manylinux.sh .
-RUN chmod a+x "build-manylinux.sh"
+COPY build-musllinux.sh .
+RUN chmod a+x "build-musllinux.sh"
 
 FROM devel AS build
 ENV PLATFORM x86_64
 ARG PYTHON_VERSION
 ENV PYTHON_VERSION ${PYTHON_VERSION:-3}
-RUN ./build-manylinux.sh build
+RUN ./build-musllinux.sh build
 
 FROM build as test
-RUN ./build-manylinux.sh test
+RUN ./build-musllinux.sh test

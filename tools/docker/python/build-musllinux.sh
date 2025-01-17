@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build all the wheel artifacts for the platforms supported by manylinux2014 and
+# Build all the wheel artifacts for the platforms supported by musllinux_1_2 and
 # export them to the specified location.
 set -exo pipefail
 
@@ -107,7 +107,6 @@ function build_wheel() {
 
 function check_wheel() {
   assert_defined BUILD_DIR
-  assert_defined VENV_DIR
   # Check the wheel artifact
   # Arguments:
   #   $1 the python root directory
@@ -115,10 +114,6 @@ function check_wheel() {
     echo "$0 called with an illegal number of parameters"
     exit 1
   fi
-
-  # shellcheck source=/dev/null
-  source "${VENV_DIR}/bin/activate"
-  pip install -U auditwheel
 
   # Check mypy files
   declare -a MYPY_FILES=(
@@ -148,15 +143,12 @@ function check_wheel() {
   for FILE in *.whl; do
     # if no files found do nothing
     [[ -e "$FILE" ]] || continue
-    python -m auditwheel show "$FILE" || true
-    python -m auditwheel -v repair --plat "manylinux_2_28_$PLATFORM" "$FILE" -w "$export_root"
-    #python -m auditwheel -v repair --plat manylinux_2_28_x86_64 "$FILE" -w "$export_root"
-    #python -m auditwheel -v repair --plat manylinux_2_28_aarch64 "$FILE" -w "$export_root"
+    auditwheel show "$FILE" || true
+    auditwheel -v repair --plat "musllinux_1_2_$PLATFORM" "$FILE" -w "$export_root"
+    #auditwheel -v repair --plat musllinux_1_2_x86_64 "$FILE" -w "$export_root"
+    #auditwheel -v repair --plat musllinux_1_2_aarch64 "$FILE" -w "$export_root"
   done
   popd
-
-  # Restore environment
-  deactivate
 }
 
 function test_wheel() {
@@ -214,7 +206,7 @@ function test_wheel() {
 }
 
 function build() {
-  # For each python platform provided by manylinux, build and test artifacts.
+  # For each python platform provided by musllinux, build and test artifacts.
   for PYROOT in /opt/python/cp"${PYTHON_VERSION}"*-cp"${PYTHON_VERSION}"*; do
     # shellcheck disable=SC2155
     PYTAG=$(basename "$PYROOT")
@@ -234,7 +226,7 @@ function build() {
 }
 
 function tests() {
-  # For each python platform provided by manylinux, build and test artifacts.
+  # For each python platform provided by musllinux, build and test artifacts.
   for PYROOT in /opt/python/cp"${PYTHON_VERSION}"*-cp"${PYTHON_VERSION}"*; do
     # shellcheck disable=SC2155
     PYTAG=$(basename "$PYROOT")
@@ -263,7 +255,7 @@ function main() {
   assert_defined PYTHON_VERSION
 
   # Setup
-  declare -a SKIPS=( "pp37-pypy37_pp73" )
+  declare -a SKIPS=( "cp36-cp36m" "cp37-cp37m" )
 
   case ${1} in
     build)

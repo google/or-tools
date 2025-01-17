@@ -33,25 +33,25 @@ help:
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
 	@echo -e "${BOLD}PYTHON TARGETS${RESET}"
-	@echo -e "\t${BOLD}python${RESET}: Build alpine and manylinux2014 python 'ortools' wheel packages (3.8+)."
+	@echo -e "\t${BOLD}python${RESET}: Build musllinux and manylinux python 'ortools' wheel packages (3.8+)."
 	@echo -e "\t${BOLD}python_<platform>${RESET}: Build all python 'ortools' wheel packages (3.8+) for a specific platform."
 	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.8+) for a specific platform."
 	@echo -e "\t${BOLD}python_<target>_<step>${RESET}: Build python 'ortools' wheel packages (3.8+) for a specific target."
 	@echo -e "\t${BOLD}save_python_<target>${RESET}: Save python 'ortools' image."
-	@echo -e "\t${BOLD}clean_python_<target>${RESET}: Clean manylinux2014 and alpine python 'ortools' wheel packages."
+	@echo -e "\t${BOLD}clean_python_<target>${RESET}: Clean manylinux and musllinux python 'ortools' wheel packages."
 	@echo -e "\t${BOLD}sh_python_<target>${RESET}: Run a container using the python 'ortools' image."
 	@echo
 	@echo -e "\t${BOLD}<platform>${RESET}:"
 	@echo -e "\t\t${BOLD}amd64${RESET}"
-	@echo -e "\t\t${BOLD}arm64v8${RESET}"
+	@echo -e "\t\t${BOLD}arm64${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<target>${RESET}:"
 	@echo -e "\t\t${BOLD}<platform>_<distro>${RESET}"
 	@echo -e "\t\t${BOLD}<platform>_manylinux_cp<version>${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
-	@echo -e "\t\t${BOLD}alpine${RESET} (latest)"
-	@echo -e "\t\t${BOLD}manylinux${RESET} (manylinux2014)"
+	@echo -e "\t\t${BOLD}musllinux${RESET} (musllinux_1_2)"
+	@echo -e "\t\t${BOLD}manylinux${RESET} (manylinux_2_28)"
 	@echo
 	@echo -e "\t${BOLD}<version>${RESET}:"
 	@echo -e "\t\t${BOLD}38${RESET} Python3.8"
@@ -68,7 +68,7 @@ help:
 	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo -e "\t\t${BOLD}export${RESET}"
 	@echo -e "\te.g. 'make python_amd64_manylinux_cp39_export'"
-	@echo -e "\te.g. 'make python_arm64v8_alpine_export'"
+	@echo -e "\te.g. 'make python_arm64_musllinux_export'"
 	@echo
 	@echo
 	@echo -e "${BOLD}ARCHIVE TARGETS${RESET}"
@@ -187,8 +187,8 @@ test_delivery: test_archives
 # $* stem
 # $< first prerequist
 # $@ target name
-PYTHON_PLATFORMS := amd64 arm64v8
-PYTHON_DISTROS := manylinux alpine
+PYTHON_PLATFORMS := amd64 arm64
+PYTHON_DISTROS := manylinux musllinux
 PYTHON_STAGES := env devel build test
 
 export:
@@ -230,9 +230,8 @@ python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manyli
 
 .PHONY: save_python_$1_manylinux_cp$2_$3
 save_python_$1_manylinux_cp$2_$3: cache/python/docker_$1_manylinux_cp$2_$3.tar
-cache/python/docker_$1_manylinux_cp$2_$3.tar: python_$1_manylinux_cp$2_$3
+cache/python/docker_$1_manylinux_cp$2_$3.tar: python_$1_manylinux_cp$2_$3 | cache/python
 	@rm -f $$@
-	mkdir -p cache/python/
 	docker save ${IMAGE}:$$< -o $$@
 
 .PHONY: clean_python_$1_manylinux_cp$2_$3
@@ -266,7 +265,7 @@ python_$1_manylinux_cp$2_export: python_$1_manylinux_cp$2_build
 endef
 
 $(foreach version,${PYTHON_VERSIONS},$(eval $(call manylinux_outer,amd64,${version})))
-$(foreach version,${PYTHON_VERSIONS},$(eval $(call manylinux_outer,arm64v8,${version})))
+$(foreach version,${PYTHON_VERSIONS},$(eval $(call manylinux_outer,arm64,${version})))
 
 # Merge
 define manylinux_merge =
@@ -281,41 +280,45 @@ clean_python_$1_manylinux_$2: $(addprefix clean_python_$1_manylinux_cp, $(addsuf
 endef
 
 $(foreach stage,${PYTHON_STAGES} export,$(eval $(call manylinux_merge,amd64,${stage})))
-$(foreach stage,${PYTHON_STAGES} export,$(eval $(call manylinux_merge,arm64v8,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call manylinux_merge,arm64,${stage})))
 
-## ALPINE ##
-export/python/alpine: | export/python
+## MUSLLINUX ##
+export/python/musllinux: | export/python
 	-mkdir -p $@
 
-define alpine_loop =
-#$$(info alpine_loop: PLATFORM:'$1' STAGE:'$2')
+export/python/musllinux/build-musllinux.sh: python/build-musllinux.sh | export/python/musllinux
+	cp $< $@
 
-.PHONY: python_$1_alpine_$2
-python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
+define musllinux_inner =
+#$$(info musllinux_inner: PLATFORM:'$1' VERSION:'$2' STAGE:'$3')
+
+.PHONY: python_$1_musllinux_cp$2_$3
+python_$1_musllinux_cp$2_$3: python/$1/musllinux.Dockerfile | export/python/musllinux/build-musllinux.sh
 	@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
-	${DOCKER_BUILD_CMD} \
+	${DOCKER_BUILDX_CMD} --platform linux/$1 \
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
  --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
- --target=$2 \
+ --build-arg PYTHON_VERSION=$2 \
+ --target=$3 \
  -f $$< \
- export/python/alpine
+ export/python/musllinux
 
-.PHONY: save_python_$1_alpine_$2
-save_python_$1_alpine_$2: cache/python/docker_$1_alpine_$2.tar
-cache/python/docker_$1_alpine_$2.tar: python_$1_alpine_$2 | cache/python
+.PHONY: save_python_$1_musllinux_cp$2_$3
+save_python_$1_musllinux_cp$2_$3: cache/python/docker_$1_musllinux_cp$2_$3.tar
+cache/python/docker_$1_musllinux_cp$2_$3.tar: python_$1_musllinux_cp$2_$3 | cache/python
 	@rm -f $$@
 	docker save ${IMAGE}:$$< -o $$@
 
-.PHONY: clean_python_$1_alpine_$2
-clean_python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
-	docker image rm -f ${IMAGE}:python_$1_alpine_$2 2>/dev/null
-	rm -f cache/python/docker_$1_alpine_$2.tar
+.PHONY: clean_python_$1_musllinux_cp$2_$3
+clean_python_$1_musllinux_cp$2_$3: python/$1/musllinux.Dockerfile | export/python/musllinux/build-musllinux.sh
+	docker image rm -f ${IMAGE}:python_$1_musllinux_cp$2_$3 2>/dev/null
+	rm -f cache/python/docker_$1_musllinux_cp$2_$3.tar
 
 # Debug purpose
-.PHONY: sh_python_$1_alpine_$2
-sh_python_$1_alpine_$2: python_$1_alpine_$2
+.PHONY: sh_python_$1_musllinux_cp$2_$3
+sh_python_$1_musllinux_cp$2_$3: python_$1_musllinux_cp$2_$3
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it \
@@ -323,18 +326,38 @@ sh_python_$1_alpine_$2: python_$1_alpine_$2
  ${IMAGE}:$$<
 endef
 
-$(foreach stage,${PYTHON_STAGES},$(eval $(call alpine_loop,amd64,${stage})))
-$(foreach stage,${PYTHON_STAGES},$(eval $(call alpine_loop,arm64v8,${stage})))
+define musllinux_outer =
+#$$(info musllinux_outer: PLATFORM: '$1' VERSION: '$2')
 
-alpine_export_targets =  $(addprefix python_, $(addsuffix _alpine_export, ${PYTHON_PLATFORMS}))
-.PHONY: ${alpine_export_targets}
-${alpine_export_targets}: python_%_alpine_export: python_%_alpine_build | export
+$$(foreach stage,${PYTHON_STAGES},$$(eval $$(call musllinux_inner,$1,$2,$${stage})))
+
+.PHONY: python_$1_musllinux_cp$2_export
+python_$1_musllinux_cp$2_export: python_$1_musllinux_cp$2_build
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it \
- --name ortools_$< \
- ${IMAGE}:$< \
+ --name ortools_$$< \
+ ${IMAGE}:$$< \
  "cp build*/python/dist/*.whl /export/python"
+endef
+
+$(foreach version,${PYTHON_VERSIONS},$(eval $(call musllinux_outer,amd64,${version})))
+$(foreach version,${PYTHON_VERSIONS},$(eval $(call musllinux_outer,arm64,${version})))
+
+# Merge
+define musllinux_merge =
+#$$(info musllinux_merge: PLATFORM:'$1' STAGE:'$2')
+
+.PHONY: python_$1_musllinux_$2
+python_$1_musllinux_$2: $(addprefix python_$1_musllinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
+.PHONY: save_python_$1_musllinux_$2
+save_python_$1_musllinux_$2: $(addprefix save_python_$1_musllinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
+.PHONY: clean_python_$1_musllinux_$2
+clean_python_$1_musllinux_$2: $(addprefix clean_python_$1_musllinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
+endef
+
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call musllinux_merge,amd64,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call musllinux_merge,arm64,${stage})))
 
 ## MERGE DISTRO ##
 define python_distro_merge =
@@ -349,7 +372,7 @@ clean_python_$1_$2: $(addprefix clean_python_$1_, $(addsuffix _$2, ${PYTHON_DIST
 endef
 
 $(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_distro_merge,amd64,${stage})))
-$(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_distro_merge,arm64v8,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_distro_merge,arm64,${stage})))
 
 ## MERGE PLATFORM ##
 define clean_python_platform =
