@@ -510,10 +510,6 @@ absl::StatusOr<XpressSolver::SolutionAndClaim<DualSolutionProto>>
 XpressSolver::GetConvexDualSolutionIfAvailable(
     const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) const {
-  if (!isDualFeasible(solve_parameters)) {
-    return SolutionAndClaim<DualSolutionProto>{
-        .solution = std::nullopt, .feasible_solution_exists = false};
-  }
   DualSolutionProto dual_solution;
   ASSIGN_OR_RETURN(const std::vector<double> xprs_constraint_duals,
                    xpress_->GetConstraintDuals());
