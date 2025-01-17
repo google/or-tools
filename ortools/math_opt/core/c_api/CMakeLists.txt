@@ -13,7 +13,6 @@
 
 set(NAME ${PROJECT_NAME}_math_opt_core_c_api)
 add_library(${NAME} OBJECT)
-
 target_sources(${NAME} PRIVATE solver.h solver.cc)
 set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
