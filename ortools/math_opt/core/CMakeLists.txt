@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+add_subdirectory(c_api)
+
 file(GLOB _SRCS "*.h" "*.cc")
-list(APPEND _SRCS "${CMAKE_CURRENT_SOURCE_DIR}/c_api/solver.cc")
+#list(APPEND _SRCS "${CMAKE_CURRENT_SOURCE_DIR}/c_api/solver.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
 
 set(NAME ${PROJECT_NAME}_math_opt_core)

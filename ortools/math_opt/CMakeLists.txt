@@ -29,6 +29,7 @@ set(NAME ${PROJECT_NAME}_math_opt)
 add_library(${NAME} OBJECT)
 target_sources(${NAME} PUBLIC
   $<TARGET_OBJECTS:${NAME}_core>
+  $<TARGET_OBJECTS:${NAME}_core_c_api>
   $<TARGET_OBJECTS:${NAME}_cpp>
   $<TARGET_OBJECTS:${NAME}_io>
   $<TARGET_OBJECTS:${NAME}_labs>
