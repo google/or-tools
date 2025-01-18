@@ -114,16 +114,6 @@ class TimeRecorder(cp_model.CpSolverSolutionCallback):
         return self.__last_time
 
 
-class RaiseException(cp_model.CpSolverSolutionCallback):
-
-    def __init__(self, msg: str) -> None:
-        super().__init__()
-        self.__msg = msg
-
-    def on_solution_callback(self) -> None:
-        raise ValueError(self.__msg)
-
-
 class LogToString:
     """Record log in a string."""
 
@@ -1214,7 +1204,7 @@ class CpModelTest(absltest.TestCase):
         proto.vars.append(y.index)
         proto.coeffs.append(2)
         proto.offset = 2
-        expr = cp_model.rebuild_from_linear_expression_proto(model.proto, proto)
+        expr = model.rebuild_from_linear_expression_proto(proto)
         canonical_expr = cmh.FlatIntExpr(expr)
         self.assertEqual(canonical_expr.vars[0], x)
         self.assertEqual(canonical_expr.vars[1], y)
@@ -1364,6 +1354,8 @@ class CpModelTest(absltest.TestCase):
         y = model.new_int_var(0, 3, "y")
         z = model.new_int_var(0, 3, "z")
         self.assertEqual(repr(x), "x(0..4)")
+        self.assertEqual(repr(x * 0), "IntConstant(0)")
+        self.assertEqual(repr(x * 0.0), "IntConstant(0)")
         self.assertEqual(repr(x * 2), "IntAffine(expr=x(0..4), coeff=2, offset=0)")
         self.assertEqual(repr(x + y), "SumArray(x(0..4), y(0..3))")
         self.assertEqual(
@@ -2003,6 +1995,8 @@ TRFM"""
         max_width = 10
 
         horizon = sum(t[0] for t in jobs)
+        num_jobs = len(jobs)
+        all_jobs = range(num_jobs)
 
         intervals = []
         intervals0 = []
@@ -2012,16 +2006,16 @@ TRFM"""
         ends = []
         demands = []
 
-        for i, job in enumerate(jobs):
+        for i in all_jobs:
             # Create main interval.
             start = model.new_int_var(0, horizon, f"start_{i}")
-            duration, width = job
+            duration = jobs[i][0]
             end = model.new_int_var(0, horizon, f"end_{i}")
             interval = model.new_interval_var(start, duration, end, f"interval_{i}")
             starts.append(start)
             intervals.append(interval)
             ends.append(end)
-            demands.append(width)
+            demands.append(jobs[i][1])
 
             # Create an optional copy of interval to be executed on machine 0.
             performed_on_m0 = model.new_bool_var(f"perform_{i}_on_m0")
@@ -2097,100 +2091,129 @@ TRFM"""
         self.assertIsNotNone(expr_ne)
         self.assertIsNotNone(expr_ge)
 
-    def testRaisePythonExceptionInCallback(self) -> None:
+    def testInPlaceSumModifications(self) -> None:
         model = cp_model.CpModel()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
+        y = [model.new_int_var(0, 10, f"y{i}") for i in range(5)]
+        e1 = sum(x)
+        self.assertIsInstance(e1, cmh.SumArray)
+        self.assertEqual(e1.int_offset, 0)
+        self.assertEqual(e1.double_offset, 0)
+        self.assertEqual(e1.num_exprs, 5)
+        e1_str = str(e1)
+        _ = e1 + y[0]
+        _ = sum(y) + e1
+        self.assertEqual(e1_str, str(e1))
 
-        jobs = [
-            [3, 3],  # [duration, width]
-            [2, 5],
-            [1, 3],
-            [3, 7],
-            [7, 3],
-            [2, 2],
-            [2, 2],
-            [5, 5],
-            [10, 2],
-            [4, 3],
-            [2, 6],
-            [1, 2],
-            [6, 8],
-            [4, 5],
-            [3, 7],
-        ]
+        e2 = sum(x) - 2 - y[0] - 0.1
+        e2_str = str(e2)
+        self.assertIsInstance(e2, cmh.SumArray)
+        self.assertEqual(e2.int_offset, -2)
+        self.assertEqual(e2.double_offset, -0.1)
+        self.assertEqual(e2.num_exprs, 6)
+        _ = e2 + 2.5
+        self.assertEqual(str(e2), e2_str)
 
-        max_width = 10
+        e3 = 1.2 + sum(x) + 0.3
+        self.assertIsInstance(e3, cmh.SumArray)
+        self.assertEqual(e3.int_offset, 0)
+        self.assertEqual(e3.double_offset, 1.5)
+        self.assertEqual(e3.num_exprs, 5)
 
-        horizon = sum(t[0] for t in jobs)
+    def testLargeSum(self) -> None:
+        model = cp_model.CpModel()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(100000)]
+        model.add(sum(x) == 10)
 
-        intervals = []
-        intervals0 = []
-        intervals1 = []
-        performed = []
-        starts = []
-        ends = []
-        demands = []
+    def testSimplification1(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (x * 2) * 2
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
 
-        for i, job in enumerate(jobs):
-            # Create main interval.
-            start = model.new_int_var(0, horizon, f"start_{i}")
-            duration, width = job
-            end = model.new_int_var(0, horizon, f"end_{i}")
-            interval = model.new_interval_var(start, duration, end, f"interval_{i}")
-            starts.append(start)
-            intervals.append(interval)
-            ends.append(end)
-            demands.append(width)
+    def testSimplification2(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (x * 2)
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
 
-            # Create an optional copy of interval to be executed on machine 0.
-            performed_on_m0 = model.new_bool_var(f"perform_{i}_on_m0")
-            performed.append(performed_on_m0)
-            start0 = model.new_int_var(0, horizon, f"start_{i}_on_m0")
-            end0 = model.new_int_var(0, horizon, f"end_{i}_on_m0")
-            interval0 = model.new_optional_interval_var(
-                start0, duration, end0, performed_on_m0, f"interval_{i}_on_m0"
-            )
-            intervals0.append(interval0)
+    def testSimplification3(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (2 * x) * 2
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
 
-            # Create an optional copy of interval to be executed on machine 1.
-            start1 = model.new_int_var(0, horizon, f"start_{i}_on_m1")
-            end1 = model.new_int_var(0, horizon, f"end_{i}_on_m1")
-            interval1 = model.new_optional_interval_var(
-                start1,
-                duration,
-                end1,
-                ~performed_on_m0,
-                f"interval_{i}_on_m1",
-            )
-            intervals1.append(interval1)
+    def testSimplification4(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (2 * x)
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
 
-            # We only propagate the constraint if the tasks is performed on the
-            # machine.
-            model.add(start0 == start).only_enforce_if(performed_on_m0)
-            model.add(start1 == start).only_enforce_if(~performed_on_m0)
+    def testSimplification5(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (x + 1)
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
 
-        # Width constraint (modeled as a cumulative)
-        model.add_cumulative(intervals, demands, max_width)
+    def testSimplification6(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (x + 1) * 2
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
 
-        # Choose which machine to perform the jobs on.
-        model.add_no_overlap(intervals0)
-        model.add_no_overlap(intervals1)
+    def testSimplification7(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (x - 1)
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(-2, prod.offset)
 
-        # Objective variable.
-        makespan = model.new_int_var(0, horizon, "makespan")
-        model.add_max_equality(makespan, ends)
-        model.minimize(makespan)
+    def testSimplification8(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (x - 1) * 2
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(-2, prod.offset)
 
-        # Symmetry breaking.
-        model.add(performed[0] == 0)
+    def testSimplification9(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (1 - x)
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(-2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
 
-        solver = cp_model.CpSolver()
-        solver.parameters.log_search_progress = True
-        solver.parameters.num_workers = 1
-        msg: str = "this is my test message"
-        callback = RaiseException(msg)
-
-        with self.assertRaisesRegex(ValueError, msg):
-            solver.solve(model, callback)
+    def testSimplification10(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (1 - x) * 2
+        self.assertIsInstance(prod, cmh.IntAffine)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(-2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
 
 
 if __name__ == "__main__":

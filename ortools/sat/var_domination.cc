@@ -975,8 +975,10 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               if (context->LiteralSolutionHintIs(encoding_lit, true)) {
                 context->UpdateLiteralSolutionHint(ref, false);
               }
-              context->StoreBooleanEqualityRelation(encoding_lit,
-                                                    NegatedRef(ref));
+              if (!context->StoreBooleanEqualityRelation(encoding_lit,
+                                                         NegatedRef(ref))) {
+                return false;
+              }
             } else {
               if (encoding_lit == ref) continue;
               // Extending `ct` = "not(ref) => not(encoding_lit)" to an equality
@@ -987,7 +989,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               if (context->LiteralSolutionHintIs(encoding_lit, false)) {
                 context->UpdateLiteralSolutionHint(ref, false);
               }
-              context->StoreBooleanEqualityRelation(encoding_lit, ref);
+              if (!context->StoreBooleanEqualityRelation(encoding_lit, ref)) {
+                return false;
+              }
             }
             context->working_model->mutable_constraints(ct_index)->Clear();
             context->UpdateConstraintVariableUsage(ct_index);
@@ -1069,6 +1073,19 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           TransformLinearWithSpecialBoolean(other_ct, other_ref,
                                             &other_temp_data);
           if (temp_data == other_temp_data) {
+            // Corner case: We just discovered l => ct and not(l) => ct.
+            // So ct must just always be true. And since that was the only
+            // blocking constraint for l, we can just set l to an arbitrary
+            // value.
+            if (ref == NegatedRef(other_ref)) {
+              context->UpdateRuleStats(
+                  "dual: detected l => ct and not(l) => ct with unused l!");
+              if (!context->IntersectDomainWithAndUpdateHint(ref, Domain(0))) {
+                return false;
+              }
+              continue;
+            }
+
             // We have a true equality. The two ref can be made equivalent.
             if (!processed[PositiveRef(other_ref)]) {
               ++num_bool_in_near_duplicate_ct;
@@ -1086,7 +1103,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                 context->UpdateLiteralSolutionHint(ref, false);
                 context->UpdateLiteralSolutionHint(other_ref, false);
               }
-              context->StoreBooleanEqualityRelation(ref, other_ref);
+              if (!context->StoreBooleanEqualityRelation(ref, other_ref)) {
+                return false;
+              }
 
               // We can delete one of the constraint since they are duplicate
               // now.
@@ -1162,7 +1181,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     if (context->VarHasSolutionHint(PositiveRef(b))) {
       context->UpdateLiteralSolutionHint(a, context->LiteralSolutionHint(b));
     }
-    context->StoreBooleanEqualityRelation(a, b);
+    if (!context->StoreBooleanEqualityRelation(a, b)) return false;
     context->UpdateRuleStats("dual: enforced equivalence");
   }
 

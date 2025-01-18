@@ -63,14 +63,12 @@ class SolutionCallback {
   bool SolutionBooleanValue(int index) const;
 
   // Stops the search.
-  void StopSearch() const;
+  void StopSearch();
 
   const operations_research::sat::CpSolverResponse& Response() const;
 
   // We use mutable and non const methods to overcome SWIG difficulties.
   void SetWrapperClass(SolveWrapper* wrapper) const;
-
-  SolveWrapper* wrapper() const { return wrapper_; }
 
   bool HasResponse() const;
 

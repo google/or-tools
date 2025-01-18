@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_PYTHON_LINEAR_EXPR_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -72,94 +73,100 @@ class NotBooleanVariable;
  * model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
  * ```
  */
-class LinearExpr {
+class LinearExpr : public std::enable_shared_from_this<LinearExpr> {
  public:
   virtual ~LinearExpr() = default;
-  virtual void VisitAsFloat(FloatExprVisitor& /*lin*/, double /*c*/) const = 0;
-  virtual bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const = 0;
-  bool IsInteger() const;
+  virtual void VisitAsFloat(FloatExprVisitor& /*lin*/, double /*c*/) = 0;
+  virtual bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) = 0;
+  bool IsInteger();
   virtual std::string ToString() const = 0;
   virtual std::string DebugString() const = 0;
 
   /// Returns expr * coeff.
-  static LinearExpr* TermInt(LinearExpr* expr, int64_t coeff);
+  static std::shared_ptr<LinearExpr> TermInt(std::shared_ptr<LinearExpr> expr,
+                                             int64_t coeff);
   /// Returns expr * coeff.
-  static LinearExpr* TermFloat(LinearExpr* expr, double coeff);
+  static std::shared_ptr<LinearExpr> TermFloat(std::shared_ptr<LinearExpr> expr,
+                                               double coeff);
   /// Returns expr * coeff + offset.
-  static LinearExpr* AffineInt(LinearExpr* expr, int64_t coeff, int64_t offset);
+  static std::shared_ptr<LinearExpr> AffineInt(std::shared_ptr<LinearExpr> expr,
+                                               int64_t coeff, int64_t offset);
   /// Returns expr * coeff + offset.
-  static LinearExpr* AffineFloat(LinearExpr* expr, double coeff, double offset);
+  static std::shared_ptr<LinearExpr> AffineFloat(
+      std::shared_ptr<LinearExpr> expr, double coeff, double offset);
   /// Returns a new LinearExpr that holds the given constant.
-  static LinearExpr* ConstantInt(int64_t value);
+  static std::shared_ptr<LinearExpr> ConstantInt(int64_t value);
   /// Returns a new LinearExpr that holds the given constant.
-  static LinearExpr* ConstantFloat(double value);
+  static std::shared_ptr<LinearExpr> ConstantFloat(double value);
 
   /// Returns (this) + (expr).
-  LinearExpr* Add(LinearExpr* expr);
+  std::shared_ptr<LinearExpr> Add(std::shared_ptr<LinearExpr> expr);
   /// Returns (this) + (cst).
-  LinearExpr* AddInt(int64_t cst);
+  std::shared_ptr<LinearExpr> AddInt(int64_t cst);
   /// Returns (this) + (cst).
-  LinearExpr* AddFloat(double cst);
+  std::shared_ptr<LinearExpr> AddFloat(double cst);
   /// Returns (this) - (expr).
-  LinearExpr* Sub(LinearExpr* expr);
+  std::shared_ptr<LinearExpr> Sub(std::shared_ptr<LinearExpr> expr);
   /// Returns (this) - (cst).
-  LinearExpr* SubInt(int64_t cst);
+  std::shared_ptr<LinearExpr> SubInt(int64_t cst);
   /// Returns (this) - (cst).
-  LinearExpr* SubFloat(double cst);
+  std::shared_ptr<LinearExpr> SubFloat(double cst);
   /// Returns (cst) - (this).
-  LinearExpr* RSubInt(int64_t cst);
+  std::shared_ptr<LinearExpr> RSubInt(int64_t cst);
   /// Returns (cst) - (this).
-  LinearExpr* RSubFloat(double cst);
+  std::shared_ptr<LinearExpr> RSubFloat(double cst);
   /// Returns (this) * (cst).
-  LinearExpr* MulInt(int64_t cst);
+  std::shared_ptr<LinearExpr> MulInt(int64_t cst);
   /// Returns (this) * (cst).
-  LinearExpr* MulFloat(double cst);
+  std::shared_ptr<LinearExpr> MulFloat(double cst);
   /// Returns -(this).
-  LinearExpr* Neg();
+  std::shared_ptr<LinearExpr> Neg();
 
   /// Returns (this) == (rhs).
-  BoundedLinearExpression* Eq(LinearExpr* rhs);
+  std::shared_ptr<BoundedLinearExpression> Eq(std::shared_ptr<LinearExpr> rhs);
   /// Returns (this) == (rhs).
-  BoundedLinearExpression* EqCst(int64_t rhs);
+  std::shared_ptr<BoundedLinearExpression> EqCst(int64_t rhs);
   /// Returns (this) != (rhs).
-  BoundedLinearExpression* Ne(LinearExpr* rhs);
+  std::shared_ptr<BoundedLinearExpression> Ne(std::shared_ptr<LinearExpr> rhs);
   /// Returns (this) != (rhs).
-  BoundedLinearExpression* NeCst(int64_t rhs);
+  std::shared_ptr<BoundedLinearExpression> NeCst(int64_t rhs);
   /// Returns (this) >= (rhs).
-  BoundedLinearExpression* Ge(LinearExpr* rhs);
+  std::shared_ptr<BoundedLinearExpression> Ge(std::shared_ptr<LinearExpr> rhs);
   /// Returns (this) >= (rhs).
-  BoundedLinearExpression* GeCst(int64_t rhs);
+  std::shared_ptr<BoundedLinearExpression> GeCst(int64_t rhs);
   /// Returns (this) <= (rhs).
-  BoundedLinearExpression* Le(LinearExpr* rhs);
+  std::shared_ptr<BoundedLinearExpression> Le(std::shared_ptr<LinearExpr> rhs);
   /// Returns (this) <= (rhs).
-  BoundedLinearExpression* LeCst(int64_t rhs);
+  std::shared_ptr<BoundedLinearExpression> LeCst(int64_t rhs);
   /// Returns (this) < (rhs).
-  BoundedLinearExpression* Lt(LinearExpr* rhs);
+  std::shared_ptr<BoundedLinearExpression> Lt(std::shared_ptr<LinearExpr> rhs);
   /// Returns (this) < (rhs).
-  BoundedLinearExpression* LtCst(int64_t rhs);
+  std::shared_ptr<BoundedLinearExpression> LtCst(int64_t rhs);
   /// Returns (this) > (rhs).
-  BoundedLinearExpression* Gt(LinearExpr* rhs);
+  std::shared_ptr<BoundedLinearExpression> Gt(std::shared_ptr<LinearExpr> rhs);
   /// Returns (this) > (rhs).
-  BoundedLinearExpression* GtCst(int64_t rhs);
+  std::shared_ptr<BoundedLinearExpression> GtCst(int64_t rhs);
 };
 
 /// Compare the indices of variables.
 struct BaseIntVarComparator {
-  bool operator()(const BaseIntVar* lhs, const BaseIntVar* rhs) const;
+  bool operator()(std::shared_ptr<BaseIntVar> lhs,
+                  std::shared_ptr<BaseIntVar> rhs) const;
 };
 
 /// A visitor class to process a floating point linear expression.
 class FloatExprVisitor {
  public:
-  void AddToProcess(const LinearExpr* expr, double coeff);
+  void AddToProcess(std::shared_ptr<LinearExpr> expr, double coeff);
   void AddConstant(double constant);
-  void AddVarCoeff(const BaseIntVar* var, double coeff);
-  double Process(const LinearExpr* expr, std::vector<const BaseIntVar*>* vars,
+  void AddVarCoeff(std::shared_ptr<BaseIntVar> var, double coeff);
+  double Process(std::shared_ptr<LinearExpr> expr,
+                 std::vector<std::shared_ptr<BaseIntVar>>* vars,
                  std::vector<double>* coeffs);
 
  private:
-  std::vector<std::pair<const LinearExpr*, double>> to_process_;
-  absl::btree_map<const BaseIntVar*, double, BaseIntVarComparator>
+  std::vector<std::pair<std::shared_ptr<LinearExpr>, double>> to_process_;
+  absl::btree_map<std::shared_ptr<BaseIntVar>, double, BaseIntVarComparator>
       canonical_terms_;
   double offset_ = 0;
 };
@@ -175,23 +182,23 @@ class FlatFloatExpr : public LinearExpr {
  public:
   /// Builds a flattened floating point linear expression from the given
   /// expression.
-  explicit FlatFloatExpr(LinearExpr* expr);
+  explicit FlatFloatExpr(std::shared_ptr<LinearExpr> expr);
   /// Returns the array of variables of the flattened expression.
-  const std::vector<const BaseIntVar*>& vars() const { return vars_; }
+  const std::vector<std::shared_ptr<BaseIntVar>>& vars() const { return vars_; }
   /// Returns the array of coefficients of the flattened expression.
   const std::vector<double>& coeffs() const { return coeffs_; }
   /// Returns the offset of the flattened expression.
   double offset() const { return offset_; }
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
   std::string ToString() const override;
   std::string DebugString() const override;
-  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) override {
     return false;
   }
 
  private:
-  std::vector<const BaseIntVar*> vars_;
+  std::vector<std::shared_ptr<BaseIntVar>> vars_;
   std::vector<double> coeffs_;
   double offset_ = 0;
 };
@@ -199,18 +206,18 @@ class FlatFloatExpr : public LinearExpr {
 /// A visitor class to process an integer linear expression.
 class IntExprVisitor {
  public:
-  void AddToProcess(const LinearExpr* expr, int64_t coeff);
+  void AddToProcess(std::shared_ptr<LinearExpr> expr, int64_t coeff);
   void AddConstant(int64_t constant);
-  void AddVarCoeff(const BaseIntVar* var, int64_t coeff);
+  void AddVarCoeff(std::shared_ptr<BaseIntVar> var, int64_t coeff);
   bool ProcessAll();
-  bool Process(std::vector<const BaseIntVar*>* vars,
+  bool Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
                std::vector<int64_t>* coeffs, int64_t* offset);
-  bool Evaluate(const LinearExpr* expr, const CpSolverResponse& solution,
-                int64_t* value);
+  bool Evaluate(std::shared_ptr<LinearExpr> expr,
+                const CpSolverResponse& solution, int64_t* value);
 
  private:
-  std::vector<std::pair<const LinearExpr*, int64_t>> to_process_;
-  absl::btree_map<const BaseIntVar*, int64_t, BaseIntVarComparator>
+  std::vector<std::pair<std::shared_ptr<LinearExpr>, int64_t>> to_process_;
+  absl::btree_map<std::shared_ptr<BaseIntVar>, int64_t, BaseIntVarComparator>
       canonical_terms_;
   int64_t offset_ = 0;
 };
@@ -226,9 +233,9 @@ class FlatIntExpr : public LinearExpr {
  public:
   /// Builds a flattened integer linear expression from the given
   /// expression.
-  explicit FlatIntExpr(LinearExpr* expr);
+  explicit FlatIntExpr(std::shared_ptr<LinearExpr> expr);
   /// Returns the array of variables of the flattened expression.
-  const std::vector<const BaseIntVar*>& vars() const { return vars_; }
+  const std::vector<std::shared_ptr<BaseIntVar>>& vars() const { return vars_; }
   /// Returns the array of coefficients of the flattened expression.
   const std::vector<int64_t>& coeffs() const { return coeffs_; }
   /// Returns the offset of the flattened expression.
@@ -236,14 +243,14 @@ class FlatIntExpr : public LinearExpr {
   /// Returns true if the expression is integer.
   bool ok() const { return ok_; }
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override {
     for (int i = 0; i < vars_.size(); ++i) {
       lin.AddVarCoeff(vars_[i], coeffs_[i] * c);
     }
     lin.AddConstant(offset_ * c);
   }
 
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) override {
     for (int i = 0; i < vars_.size(); ++i) {
       lin.AddVarCoeff(vars_[i], coeffs_[i] * c);
     }
@@ -255,7 +262,7 @@ class FlatIntExpr : public LinearExpr {
   std::string DebugString() const override;
 
  private:
-  std::vector<const BaseIntVar*> vars_;
+  std::vector<std::shared_ptr<BaseIntVar>> vars_;
   std::vector<int64_t> coeffs_;
   int64_t offset_ = 0;
   bool ok_ = true;
@@ -263,42 +270,49 @@ class FlatIntExpr : public LinearExpr {
 
 /**
  * A class to hold a sum of linear expressions, and optional integer and
- * double offsets (at most one of them can be non-zero, this is DCHECKed).
+ * double offsets.
  */
 class SumArray : public LinearExpr {
  public:
-  explicit SumArray(const std::vector<LinearExpr*>& exprs,
+  explicit SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
                     int64_t int_offset = 0, double double_offset = 0.0);
   ~SumArray() override = default;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override;
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) override;
   std::string ToString() const override;
   std::string DebugString() const override;
 
+  void AddInPlace(std::shared_ptr<LinearExpr> expr);
+  void AddIntInPlace(int64_t cst) { int_offset_ += cst; }
+  void AddFloatInPlace(double cst) { double_offset_ += cst; }
+  int num_exprs() const { return exprs_.size(); }
+  int64_t int_offset() const { return int_offset_; }
+  double double_offset() const { return double_offset_; }
+
  private:
-  const absl::FixedArray<LinearExpr*, 2> exprs_;
-  const int64_t int_offset_;
-  const double double_offset_;
+  std::vector<std::shared_ptr<LinearExpr>> exprs_;
+  int64_t int_offset_;
+  double double_offset_;
 };
 
 /// A class to hold a weighted sum of floating point linear expressions.
 class FloatWeightedSum : public LinearExpr {
  public:
-  FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
+  FloatWeightedSum(const std::vector<std::shared_ptr<LinearExpr>>& exprs,
                    const std::vector<double>& coeffs, double offset);
   ~FloatWeightedSum() override = default;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
   std::string ToString() const override;
   std::string DebugString() const override;
 
-  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) override {
     return false;
   }
 
  private:
-  const absl::FixedArray<LinearExpr*, 2> exprs_;
+  const absl::FixedArray<std::shared_ptr<LinearExpr>, 2> exprs_;
   const absl::FixedArray<double, 2> coeffs_;
   double offset_;
 };
@@ -306,18 +320,18 @@ class FloatWeightedSum : public LinearExpr {
 /// A class to hold a weighted sum of integer linear expressions.
 class IntWeightedSum : public LinearExpr {
  public:
-  IntWeightedSum(const std::vector<LinearExpr*>& exprs,
+  IntWeightedSum(const std::vector<std::shared_ptr<LinearExpr>>& exprs,
                  const std::vector<int64_t>& coeffs, int64_t offset);
   ~IntWeightedSum() override = default;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override;
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) override;
 
   std::string ToString() const override;
   std::string DebugString() const override;
 
  private:
-  const absl::FixedArray<LinearExpr*, 2> exprs_;
+  const absl::FixedArray<std::shared_ptr<LinearExpr>, 2> exprs_;
   const absl::FixedArray<int64_t, 2> coeffs_;
   int64_t offset_;
 };
@@ -325,22 +339,22 @@ class IntWeightedSum : public LinearExpr {
 /// A class to hold linear_expr * a = b (a and b are floating point numbers).
 class FloatAffine : public LinearExpr {
  public:
-  FloatAffine(LinearExpr* expr, double coeff, double offset);
+  FloatAffine(std::shared_ptr<LinearExpr> expr, double coeff, double offset);
   ~FloatAffine() override = default;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
-  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) override {
     return false;
   }
   std::string ToString() const override;
   std::string DebugString() const override;
 
-  LinearExpr* expression() const { return expr_; }
+  std::shared_ptr<LinearExpr> expression() const { return expr_; }
   double coefficient() const { return coeff_; }
   double offset() const { return offset_; }
 
  private:
-  LinearExpr* expr_;
+  std::shared_ptr<LinearExpr> expr_;
   double coeff_;
   double offset_;
 };
@@ -348,21 +362,30 @@ class FloatAffine : public LinearExpr {
 /// A class to hold linear_expr * a = b (a and b are integers).
 class IntAffine : public LinearExpr {
  public:
-  IntAffine(LinearExpr* expr, int64_t coeff, int64_t offset);
+  IntAffine(std::shared_ptr<LinearExpr> expr, int64_t coeff, int64_t offset);
   ~IntAffine() override = default;
 
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override;
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) override;
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
 
   std::string ToString() const override;
   std::string DebugString() const override;
 
-  LinearExpr* expression() const { return expr_; }
+  /// Returns the linear expression.
+  std::shared_ptr<LinearExpr> expression() const { return expr_; }
+  /// Returns the coefficient.
   int64_t coefficient() const { return coeff_; }
+  /// Returns the offset.
   int64_t offset() const { return offset_; }
 
+  std::shared_ptr<LinearExpr> AddInt(int64_t cst);
+  std::shared_ptr<LinearExpr> SubInt(int64_t cst);
+  std::shared_ptr<LinearExpr> RSubInt(int64_t cst);
+  std::shared_ptr<LinearExpr> MulInt(int64_t cst);
+  std::shared_ptr<LinearExpr> Neg();
+
  private:
-  LinearExpr* expr_;
+  std::shared_ptr<LinearExpr> expr_;
   int64_t coeff_;
   int64_t offset_;
 };
@@ -373,8 +396,8 @@ class FloatConstant : public LinearExpr {
   explicit FloatConstant(double value) : value_(value) {}
   ~FloatConstant() override = default;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override;
-  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) const override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
+  bool VisitAsInt(IntExprVisitor& /*lin*/, int64_t /*c*/) override {
     return false;
   }
   std::string ToString() const override;
@@ -390,11 +413,11 @@ class IntConstant : public LinearExpr {
   explicit IntConstant(int64_t value) : value_(value) {}
   ~IntConstant() override = default;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override {
     lin.AddConstant(value_ * c);
   }
 
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) override {
     lin.AddConstant(value_ * c);
     return true;
   }
@@ -428,7 +451,7 @@ class IntConstant : public LinearExpr {
  * # Enforcement literals must be literals.
  * x = model.new_int_var(0, 10, 'x')
  * model.add(x == 5).only_enforced_if(~b1)
- * ```
+ * ```y
  *
  * - Literals can be used directly in linear constraints or in the objective:
  *
@@ -453,7 +476,7 @@ class Literal : public LinearExpr {
    * Returns:
    *   The negation of the current literal.
    */
-  virtual Literal* negated() const = 0;
+  virtual std::shared_ptr<Literal> negated() = 0;
 };
 
 /**
@@ -462,24 +485,26 @@ class Literal : public LinearExpr {
  */
 class BaseIntVar : public Literal {
  public:
-  explicit BaseIntVar(int index) : index_(index), negated_(nullptr) {
+  explicit BaseIntVar(int index) : index_(index), is_boolean_(false) {
     DCHECK_GE(index, 0);
   }
   BaseIntVar(int index, bool is_boolean);
 
-  ~BaseIntVar() override {
-    if (negated_ != nullptr) delete negated_;
-  }
+  ~BaseIntVar() override = default;
 
   int index() const override { return index_; }
 
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
-    lin.AddVarCoeff(this, c);
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) override {
+    std::shared_ptr<BaseIntVar> var =
+        std::static_pointer_cast<BaseIntVar>(shared_from_this());
+    lin.AddVarCoeff(var, c);
     return true;
   }
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
-    lin.AddVarCoeff(this, c);
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override {
+    std::shared_ptr<BaseIntVar> var =
+        std::static_pointer_cast<BaseIntVar>(shared_from_this());
+    lin.AddVarCoeff(var, c);
   }
 
   std::string ToString() const override {
@@ -496,10 +521,10 @@ class BaseIntVar : public Literal {
   }
 
   /// Returns the negation of the current variable.
-  Literal* negated() const override { return negated_; }
+  std::shared_ptr<Literal> negated() override;
 
   /// Returns true if the variable has a Boolean domain (0 or 1).
-  bool is_boolean() const { return negated_ != nullptr; }
+  bool is_boolean() const { return is_boolean_; }
 
   bool operator<(const BaseIntVar& other) const {
     return index_ < other.index_;
@@ -507,60 +532,54 @@ class BaseIntVar : public Literal {
 
  protected:
   const int index_;
-  Literal* const negated_;
+  const bool is_boolean_;
+  std::shared_ptr<Literal> negated_;
 };
 
 template <typename H>
-H AbslHashValue(H h, const BaseIntVar* i) {
+H AbslHashValue(H h, std::shared_ptr<BaseIntVar> i) {
   return H::combine(std::move(h), i->index());
 }
 
 /// A class to hold a negated variable index.
 class NotBooleanVariable : public Literal {
  public:
-  explicit NotBooleanVariable(BaseIntVar* var) : var_(var) {}
+  explicit NotBooleanVariable(std::shared_ptr<BaseIntVar> var) : var_(var) {}
   ~NotBooleanVariable() override = default;
 
   /// Returns the index of the current literal.
-  int index() const override { return -var_->index() - 1; }
+  int index() const override;
+
+  bool ok() const { return !var_.expired(); }
 
   /**
    * Returns the negation of the current literal, that is the original Boolean
    * variable.
    */
-  Literal* negated() const override { return var_; }
+  std::shared_ptr<Literal> negated() override;
 
-  bool VisitAsInt(IntExprVisitor& lin, int64_t c) const override {
-    lin.AddVarCoeff(var_, -c);
-    lin.AddConstant(c);
-    return true;
-  }
+  bool VisitAsInt(IntExprVisitor& lin, int64_t c) override;
 
-  void VisitAsFloat(FloatExprVisitor& lin, double c) const override {
-    lin.AddVarCoeff(var_, -c);
-    lin.AddConstant(c);
-  }
+  void VisitAsFloat(FloatExprVisitor& lin, double c) override;
 
-  std::string ToString() const override {
-    return absl::StrCat("not(", var_->ToString(), ")");
-  }
+  std::string ToString() const override;
 
-  std::string DebugString() const override {
-    return absl::StrCat("NotBooleanVariable(index=", var_->index(), ")");
-  }
+  std::string DebugString() const override;
 
  private:
-  BaseIntVar* const var_;
+  std::weak_ptr<BaseIntVar> var_;
 };
 
 /// A class to hold a linear expression with bounds.
 class BoundedLinearExpression {
  public:
   /// Creates a BoundedLinearExpression representing `expr in domain`.
-  BoundedLinearExpression(const LinearExpr* expr, const Domain& bounds);
+  BoundedLinearExpression(std::shared_ptr<LinearExpr> expr,
+                          const Domain& bounds);
 
   /// Creates a BoundedLinearExpression representing `pos - neg in domain`.
-  BoundedLinearExpression(const LinearExpr* pos, const LinearExpr* neg,
+  BoundedLinearExpression(std::shared_ptr<LinearExpr> pos,
+                          std::shared_ptr<LinearExpr> neg,
                           const Domain& bounds);
 
   ~BoundedLinearExpression() = default;
@@ -568,7 +587,7 @@ class BoundedLinearExpression {
   /// Returns the bounds constraining the expression passed to the constructor.
   const Domain& bounds() const;
   /// Returns the array of variables of the flattened expression.
-  const std::vector<const BaseIntVar*>& vars() const;
+  const std::vector<std::shared_ptr<BaseIntVar>>& vars() const;
   /// Returns the array of coefficients of the flattened expression.
   const std::vector<int64_t>& coeffs() const;
   /// Returns the offset of the flattened expression.
@@ -580,7 +599,7 @@ class BoundedLinearExpression {
   bool CastToBool(bool* result) const;
 
  private:
-  std::vector<const BaseIntVar*> vars_;
+  std::vector<std::shared_ptr<BaseIntVar>> vars_;
   std::vector<int64_t> coeffs_;
   int64_t offset_;
   const Domain bounds_;

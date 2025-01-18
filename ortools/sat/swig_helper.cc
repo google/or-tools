@@ -88,7 +88,7 @@ bool SolutionCallback::SolutionBooleanValue(int index) const {
                     : response_.solution(-index - 1) == 0;
 }
 
-void SolutionCallback::StopSearch() const {
+void SolutionCallback::StopSearch() {
   if (wrapper_ != nullptr) wrapper_->StopSearch();
 }
 

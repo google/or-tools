@@ -810,7 +810,9 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // that they are not overlapping.
   const bool backtrack_since_last_call = !rev_is_in_dive_;
   watcher_->SetUntilNextBacktrack(&rev_is_in_dive_);
-  if (backtrack_since_last_call) {
+  if (backtrack_since_last_call ||
+      last_helper_inprocessing_count_ != helper_->InProcessingCount()) {
+    last_helper_inprocessing_count_ = helper_->InProcessingCount();
     const int num_tasks = helper_->NumBoxes();
     already_checked_fixed_boxes_.ClearAndResize(num_tasks);
   }
@@ -869,8 +871,15 @@ bool RectanglePairwisePropagator::Propagate() {
     horizontal_zero_area_boxes_.clear();
     vertical_zero_area_boxes_.clear();
     point_zero_area_boxes_.clear();
-    non_zero_area_boxes_.clear();
-    for (int b : helper_->connected_components()[component_index]) {
+    fixed_non_zero_area_boxes_.clear();
+    non_fixed_non_zero_area_boxes_.clear();
+    fixed_non_zero_area_rectangles_.clear();
+    absl::flat_hash_set<int> component_boxes = {
+        helper_->connected_components()[component_index].begin(),
+        helper_->connected_components()[component_index].end()};
+    for (auto task : helper_->x_helper().TaskByIncreasingStartMin()) {
+      const int b = task.task_index;
+      if (!component_boxes.contains(b)) continue;
       if (!helper_->IsPresent(b)) continue;
       const auto [x_size_max, y_size_max] = helper_->GetBoxSizesMax(b);
       ItemWithVariableSize* box;
@@ -883,21 +892,45 @@ bool RectanglePairwisePropagator::Propagate() {
       } else if (y_size_max == 0) {
         box = &horizontal_zero_area_boxes_.emplace_back();
       } else {
-        box = &non_zero_area_boxes_.emplace_back();
+        if (helper_->IsFixed(b)) {
+          box = &fixed_non_zero_area_boxes_.emplace_back();
+          fixed_non_zero_area_rectangles_.push_back(
+              helper_->GetItemRangeForSizeMin(b).bounding_area);
+        } else {
+          box = &non_fixed_non_zero_area_boxes_.emplace_back();
+        }
       }
       *box = helper_->GetItemWithVariableSize(b);
     }
 
-    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(non_zero_area_boxes_,
-                                                         &restrictions));
+    // The only thing to propagate between two fixed boxes is a conflict, and we
+    // can detect those in O(N*log(N)) time.
+    const std::optional<std::pair<int, int>> fixed_conflict =
+        FindOneIntersectionIfPresent(fixed_non_zero_area_rectangles_);
+
+    if (fixed_conflict.has_value()) {
+      return helper_->ReportConflictFromTwoBoxes(
+          fixed_non_zero_area_boxes_[fixed_conflict->first].index,
+          fixed_non_zero_area_boxes_[fixed_conflict->second].index);
+    }
+    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+        non_fixed_non_zero_area_boxes_, fixed_non_zero_area_boxes_,
+        &restrictions));
+
+    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+        fixed_non_zero_area_boxes_, non_fixed_non_zero_area_boxes_,
+        &restrictions));
 
     // Check zero area boxes against non-zero area boxes.
-    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
-        non_zero_area_boxes_, horizontal_zero_area_boxes_, &restrictions));
-    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
-        non_zero_area_boxes_, vertical_zero_area_boxes_, &restrictions));
-    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
-        non_zero_area_boxes_, point_zero_area_boxes_, &restrictions));
+    for (auto& non_zero_area_boxes :
+         {fixed_non_zero_area_boxes_, non_fixed_non_zero_area_boxes_}) {
+      RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+          non_zero_area_boxes, horizontal_zero_area_boxes_, &restrictions));
+      RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+          non_zero_area_boxes, vertical_zero_area_boxes_, &restrictions));
+      RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+          non_zero_area_boxes, point_zero_area_boxes_, &restrictions));
+    }
 
     // Check vertical zero area boxes against horizontal zero area boxes.
     RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(

@@ -1192,6 +1192,7 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log",
@@ -1722,9 +1723,7 @@ cc_library(
         ":sat_base",
         ":scheduling_helpers",
         ":util",
-        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/log",
-        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
 )

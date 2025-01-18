@@ -126,6 +126,7 @@ class NonOverlappingRectanglesDisjunctivePropagator
   // know they are no conflict between them.
   bool rev_is_in_dive_ = false;
   Bitset64<int> already_checked_fixed_boxes_;
+  int last_helper_inprocessing_count_ = -1;
 
   absl::flat_hash_set<absl::Span<const int>> reduced_overlapping_boxes_;
   std::vector<absl::Span<const int>> boxes_to_propagate_;
@@ -185,7 +186,9 @@ class RectanglePairwisePropagator : public PropagatorInterface {
   int64_t num_pairwise_conflicts_ = 0;
   int64_t num_pairwise_propagations_ = 0;
 
-  std::vector<ItemWithVariableSize> non_zero_area_boxes_;
+  std::vector<Rectangle> fixed_non_zero_area_rectangles_;
+  std::vector<ItemWithVariableSize> fixed_non_zero_area_boxes_;
+  std::vector<ItemWithVariableSize> non_fixed_non_zero_area_boxes_;
   std::vector<ItemWithVariableSize> horizontal_zero_area_boxes_;
   std::vector<ItemWithVariableSize> vertical_zero_area_boxes_;
   std::vector<ItemWithVariableSize> point_zero_area_boxes_;

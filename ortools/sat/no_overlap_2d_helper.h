@@ -200,6 +200,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
     return connected_components_;
   }
 
+  int InProcessingCount() const { return inprocessing_count_; }
+
  private:
   void Reset(absl::Span<const Rectangle> fixed_boxes,
              absl::Span<const int> non_fixed_box_indexes);
@@ -212,6 +214,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   Model* model_;
   GenericLiteralWatcher* watcher_;
   std::vector<int> propagators_watching_;
+  int inprocessing_count_ = 0;
 };
 
 }  // namespace sat

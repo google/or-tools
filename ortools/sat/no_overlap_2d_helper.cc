@@ -186,6 +186,7 @@ bool NoOverlap2DConstraintHelper::PropagateRelativePosition(
 void NoOverlap2DConstraintHelper::Reset(
     absl::Span<const Rectangle> fixed_boxes,
     absl::Span<const int> non_fixed_box_indexes) {
+  inprocessing_count_++;
   std::vector<AffineExpression> x_starts;
   std::vector<AffineExpression> x_ends;
   std::vector<AffineExpression> x_sizes;
@@ -275,7 +276,7 @@ void NoOverlap2DConstraintHelper::Reset(
                            << old_num_boxes -
                                   connected_components_.num_entries();
   }
-  VLOG_EVERY_N_SEC(1, 2) << "No overlap 2d helper inprocessing: "
+  VLOG_EVERY_N_SEC(1, 2) << "No_overlap_2d helper inprocessing: "
                          << connected_components_.size() << " components and "
                          << connected_components_.num_entries() << " boxes";
 
@@ -309,6 +310,9 @@ bool NoOverlap2DConstraintHelper::Propagate() {
     non_fixed_boxes.reserve(num_boxes);
     bool has_zero_area_boxes = false;
     for (int box_index = 0; box_index < num_boxes; ++box_index) {
+      if (x_helper_->IsAbsent(box_index) || y_helper_->IsAbsent(box_index)) {
+        continue;
+      }
       if (x_helper_->SizeMin(box_index) == 0 ||
           y_helper_->SizeMin(box_index) == 0) {
         has_zero_area_boxes = true;

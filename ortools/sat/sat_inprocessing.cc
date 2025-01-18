@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
@@ -1194,6 +1195,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
 
   need_to_be_updated_.clear();
   in_need_to_be_updated_.resize(num_variables);
+  DCHECK(absl::c_find(in_need_to_be_updated_, true) ==
+         in_need_to_be_updated_.end());
   queue_.Reserve(num_variables);
   for (BooleanVariable v(0); v < num_variables; ++v) {
     if (assignment_.VariableIsAssigned(v)) continue;
@@ -1231,7 +1234,6 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
       // Currently we never re-add top if we just processed it.
       if (v != top) UpdatePriorityQueue(v);
     }
-    in_need_to_be_updated_.clear();
     need_to_be_updated_.clear();
   }
 
