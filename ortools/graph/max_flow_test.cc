@@ -60,7 +60,8 @@ TEST(SimpleMaxFlowTest, EmptyWithInvalidSourceAndSink) {
 
 TEST(SimpleMaxFlowTest, TrivialGraphWithMaxCapacity) {
   SimpleMaxFlow max_flow;
-  const FlowQuantity kCapacityMax = std::numeric_limits<FlowQuantity>::max();
+  const SimpleMaxFlow::FlowQuantity kCapacityMax =
+      std::numeric_limits<SimpleMaxFlow::FlowQuantity>::max();
   EXPECT_EQ(0, max_flow.AddArcWithCapacity(0, 1, kCapacityMax));
   EXPECT_EQ(SimpleMaxFlow::OPTIMAL, max_flow.Solve(1, 0));
   EXPECT_EQ(0, max_flow.OptimalFlow());

@@ -45,6 +45,18 @@ cc_library(
 )
 
 cc_library(
+    name = "flow_graph",
+    hdrs = ["flow_graph.h"],
+    deps = [
+        ":graph",
+        ":iterators",
+        "//ortools/base:stl_util",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "bfs",
     hdrs = ["bfs.h"],
     deps = [
@@ -456,7 +468,6 @@ cc_library(
         "//ortools/base",
         "//ortools/util:stats",
         "//ortools/util:zvector",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -467,6 +478,7 @@ cc_test(
     srcs = ["generic_max_flow_test.cc"],
     deps = [
         ":ebert_graph",
+        ":flow_graph",
         ":generic_max_flow",
         ":graph",
         "//ortools/base",
@@ -533,18 +545,20 @@ cc_binary(
     name = "solve_flow_model",
     srcs = ["solve_flow_model.cc"],
     deps = [
+        ":flow_graph",
         ":flow_problem_cc_proto",
+        ":generic_max_flow",
         ":graph",
-        ":max_flow",
         ":min_cost_flow",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:path",
-        "//ortools/base:status_macros",
         "//ortools/base:timer",
+        "//ortools/util:file_util",
         "//ortools/util:filelineiter",
         "//ortools/util:stats",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],

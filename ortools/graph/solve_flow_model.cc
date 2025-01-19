@@ -21,13 +21,15 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/status/status.h"
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -37,17 +39,24 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/options.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
+#include "ortools/graph/flow_graph.h"
 #include "ortools/graph/flow_problem.pb.h"
+#include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/max_flow.h"
 #include "ortools/graph/min_cost_flow.h"
+#include "ortools/util/file_util.h"
 #include "ortools/util/filelineiter.h"
 #include "ortools/util/stats.h"
 
 ABSL_FLAG(std::string, input, "", "Input file of the problem.");
 ABSL_FLAG(std::string, output_dimacs, "", "Output problem as a dimacs file.");
+ABSL_FLAG(std::string, output_proto, "", "Output problem as a flow proto.");
+ABSL_FLAG(bool, use_flow_graph, true, "Use special kind of graph.");
+ABSL_FLAG(bool, sort_heads, false, "Sort outgoing arcs by head.");
+ABSL_FLAG(bool, detect_reverse_arcs, true, "Detect reverse arcs.");
 
 namespace operations_research {
 
@@ -194,6 +203,8 @@ void SolveMinCostFlow(const FlowModelProto& flow_model, double* loading_time,
   }
   std::vector<Graph::ArcIndex> permutation;
   graph.Build(&permutation);
+  absl::PrintF("%d,", graph.num_nodes());
+  absl::PrintF("%d,", graph.num_arcs());
 
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
   for (int i = 0; i < flow_model.arcs_size(); ++i) {
@@ -220,29 +231,32 @@ void SolveMinCostFlow(const FlowModelProto& flow_model, double* loading_time,
 }
 
 // Loads a FlowModelProto proto into the MaxFlow class and solves it.
-void SolveMaxFlow(const FlowModelProto& flow_model, double* loading_time,
-                  double* solving_time) {
+template <typename GraphType>
+void SolveMaxFlow(
+    const FlowModelProto& flow_model, double* loading_time,
+    double* solving_time,
+    std::function<void(GraphType* graph)> configure_graph_options = nullptr) {
   WallTimer timer;
   timer.Start();
 
-  // Compute the number of nodes.
-  int64_t num_nodes = 0;
-  for (int i = 0; i < flow_model.arcs_size(); ++i) {
-    num_nodes = std::max(num_nodes, flow_model.arcs(i).tail() + 1);
-    num_nodes = std::max(num_nodes, flow_model.arcs(i).head() + 1);
-  }
-
   // Build the graph.
-  Graph graph(num_nodes, flow_model.arcs_size());
+  GraphType graph(flow_model.nodes_size(), flow_model.arcs_size());
   for (int i = 0; i < flow_model.arcs_size(); ++i) {
     graph.AddArc(flow_model.arcs(i).tail(), flow_model.arcs(i).head());
   }
-  std::vector<Graph::ArcIndex> permutation;
+  std::vector<typename GraphType::ArcIndex> permutation;
+
+  if (configure_graph_options != nullptr) {
+    configure_graph_options(&graph);
+  }
   graph.Build(&permutation);
 
+  absl::PrintF("%d,", graph.num_nodes());
+  absl::PrintF("%d,", graph.num_arcs());
+
   // Find source & sink.
-  Graph::NodeIndex source = -1;
-  Graph::NodeIndex sink = -1;
+  typename GraphType::NodeIndex source = -1;
+  typename GraphType::NodeIndex sink = -1;
   CHECK_EQ(2, flow_model.nodes_size());
   for (int i = 0; i < flow_model.nodes_size(); ++i) {
     if (flow_model.nodes(i).supply() > 0) {
@@ -256,9 +270,10 @@ void SolveMaxFlow(const FlowModelProto& flow_model, double* loading_time,
   CHECK_NE(sink, -1);
 
   // Create the max flow instance and set the arc capacities.
-  GenericMaxFlow<Graph> max_flow(&graph, source, sink);
+  GenericMaxFlow<GraphType> max_flow(&graph, source, sink);
   for (int i = 0; i < flow_model.arcs_size(); ++i) {
-    const Graph::ArcIndex image = i < permutation.size() ? permutation[i] : i;
+    const typename GraphType::ArcIndex image =
+        i < permutation.size() ? permutation[i] : i;
     max_flow.SetArcCapacity(image, flow_model.arcs(i).capacity());
   }
 
@@ -268,7 +283,7 @@ void SolveMaxFlow(const FlowModelProto& flow_model, double* loading_time,
 
   timer.Start();
   CHECK(max_flow.Solve());
-  CHECK_EQ(GenericMaxFlow<Graph>::OPTIMAL, max_flow.status());
+  CHECK_EQ(GenericMaxFlow<GraphType>::OPTIMAL, max_flow.status());
   *solving_time = timer.Get();
   absl::PrintF("%f,", *solving_time);
   absl::PrintF("%d", max_flow.GetOptimalFlow());
@@ -301,7 +316,8 @@ int main(int argc, char** argv) {
   TimeDistribution solving_time_distribution("Solving time summary");
 
   absl::PrintF(
-      "file_name, parsing_time, loading_time, solving_time, optimal_cost\n");
+      "file_name, parsing_time, num_nodes, num_arcs,loading_time, "
+      "solving_time, optimal_cost\n");
   for (int i = 0; i < file_list.size(); ++i) {
     const std::string file_name = file_list[i];
     absl::PrintF("%s,", file::Basename(file_name));
@@ -310,17 +326,29 @@ int main(int argc, char** argv) {
     // Parse the input as a proto.
     double parsing_time = 0;
     operations_research::FlowModelProto proto;
-    if (absl::EndsWith(file_name, ".bin")) {
+    if (absl::EndsWith(file_name, ".bin") ||
+        absl::EndsWith(file_name, ".bin.gz")) {
       ScopedWallTime timer(&parsing_time);
-      std::string raw_data;
-      CHECK_OK(file::GetContents(file_name, &raw_data, file::Defaults()));
-      proto.ParseFromString(raw_data);
+      if (absl::EndsWith(file_name, "gz")) {
+        std::string raw_data;
+        CHECK_OK(file::GetContents(file_name, &raw_data, file::Defaults()));
+        CHECK_OK(StringToProto(raw_data, &proto));
+      } else {
+        CHECK_OK(file::GetBinaryProto(file_name, &proto, file::Defaults()));
+      }
     } else {
       ScopedWallTime timer(&parsing_time);
       if (!ConvertDimacsToFlowModel(file_name, &proto)) continue;
     }
     absl::PrintF("%f,", parsing_time);
     fflush(stdout);
+
+    if (!absl::GetFlag(FLAGS_output_proto).empty()) {
+      LOG(INFO) << "Dumping binary proto to '"
+                << absl::GetFlag(FLAGS_output_proto) << "'.";
+      CHECK_OK(file::SetBinaryProto(absl::GetFlag(FLAGS_output_proto), proto,
+                                    file::Defaults()));
+    }
 
     // TODO(user): improve code to convert many files.
     if (!absl::GetFlag(FLAGS_output_dimacs).empty()) {
@@ -344,7 +372,18 @@ int main(int argc, char** argv) {
         SolveMinCostFlow(proto, &loading_time, &solving_time);
         break;
       case FlowModelProto::MAX_FLOW:
-        SolveMaxFlow(proto, &loading_time, &solving_time);
+        if (absl::GetFlag(FLAGS_use_flow_graph)) {
+          SolveMaxFlow<util::FlowGraph<>>(
+              proto, &loading_time, &solving_time,
+              [](util::FlowGraph<>* graph) {
+                graph->SetDetectReverse(
+                    absl::GetFlag(FLAGS_detect_reverse_arcs));
+                graph->SetSortByHead(absl::GetFlag(FLAGS_sort_heads));
+              });
+        } else {
+          SolveMaxFlow<util::ReverseArcStaticGraph<>>(proto, &loading_time,
+                                                      &solving_time);
+        }
         break;
       default:
         LOG(ERROR) << "Problem type not supported: " << proto.problem_type();

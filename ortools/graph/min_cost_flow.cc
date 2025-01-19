@@ -53,6 +53,9 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
       alpha_(absl::GetFlag(FLAGS_min_cost_flow_alpha)),
       stats_("MinCostFlow"),
       check_feasibility_(absl::GetFlag(FLAGS_min_cost_flow_check_feasibility)) {
+  // This class assumes we have negative reverse arcs.
+  static_assert(Graph::kHasNegativeReverseArcs);
+
   const NodeIndex max_num_nodes = graph_->node_capacity();
   if (max_num_nodes > 0) {
     first_admissible_arc_.assign(max_num_nodes, Graph::kNilArc);

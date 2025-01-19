@@ -79,6 +79,8 @@
 // It is however possible to do so for the outgoing arcs and the opposite
 // incoming arcs. It is why the OutgoingOrOppositeIncomingArcs() and
 // OutgoingArcs() iterations are more efficient than the IncomingArcs() one.
+// TODO(b/385094969): Once we no longer use `Next()/Ok()` for iterators, we can
+// get rid of `limit_`, which will make iteration much more efficient.
 //
 // If you know the graph size in advance, this already set the number of nodes,
 // reserve space for the arcs and check in DEBUG mode that you don't go over the
@@ -188,7 +190,7 @@ class SVector;
 // Note: The type can be unsigned, except for the graphs with reverse arcs
 // where the ArcIndexType must be signed, but not necessarily the NodeIndexType.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t,
-          bool HasReverseArcs = false>
+          bool HasNegativeReverseArcs = false>
 class BaseGraph {
  public:
   // Typedef so you can use Graph::NodeIndex and Graph::ArcIndex to be generic
@@ -196,7 +198,7 @@ class BaseGraph {
   // that you define a typedef ... Graph; for readability.
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
-  static constexpr bool kHasNegativeReverseArcs = HasReverseArcs;
+  static constexpr bool kHasNegativeReverseArcs = HasNegativeReverseArcs;
 
   BaseGraph()
       : num_nodes_(0),
@@ -231,7 +233,7 @@ class BaseGraph {
   // Returns true if the given arc is a valid arc of the graph.
   // Note that the arc validity range changes for graph with reverse arcs.
   bool IsArcValid(ArcIndexType arc) const {
-    return (HasReverseArcs ? -num_arcs_ : 0) <= arc && arc < num_arcs_;
+    return (HasNegativeReverseArcs ? -num_arcs_ : 0) <= arc && arc < num_arcs_;
   }
 
   // Capacity reserved for future nodes, always >= num_nodes_.
@@ -960,46 +962,54 @@ class SVector {
 
 // BaseGraph implementation ----------------------------------------------------
 
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
-IntegerRange<NodeIndexType>
-BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::AllNodes() const {
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
+IntegerRange<NodeIndexType> BaseGraph<
+    NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::AllNodes() const {
   return IntegerRange<NodeIndexType>(0, num_nodes_);
 }
 
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
 IntegerRange<ArcIndexType>
-BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::AllForwardArcs() const {
+BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::AllForwardArcs()
+    const {
   return IntegerRange<ArcIndexType>(0, num_arcs_);
 }
 
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
 const NodeIndexType
-    BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::kNilNode =
+    BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::kNilNode =
         std::numeric_limits<NodeIndexType>::max();
 
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
 const ArcIndexType
-    BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::kNilArc =
+    BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::kNilArc =
         std::numeric_limits<ArcIndexType>::max();
 
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
-NodeIndexType
-BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::node_capacity() const {
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
+NodeIndexType BaseGraph<NodeIndexType, ArcIndexType,
+                        HasNegativeReverseArcs>::node_capacity() const {
   // TODO(user): Is it needed? remove completely? return the real capacities
   // at the cost of having a different implementation for each graphs?
   return node_capacity_ > num_nodes_ ? node_capacity_ : num_nodes_;
 }
 
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
-ArcIndexType
-BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::arc_capacity() const {
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
+ArcIndexType BaseGraph<NodeIndexType, ArcIndexType,
+                       HasNegativeReverseArcs>::arc_capacity() const {
   // TODO(user): Same questions as the ones in node_capacity().
   return arc_capacity_ > num_arcs_ ? arc_capacity_ : num_arcs_;
 }
 
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
 void BaseGraph<NodeIndexType, ArcIndexType,
-               HasReverseArcs>::FreezeCapacities() {
+               HasNegativeReverseArcs>::FreezeCapacities() {
   // TODO(user): Only define this in debug mode at the cost of having a lot
   // of ifndef NDEBUG all over the place? remove the function completely ?
   const_capacities_ = true;
@@ -1009,8 +1019,9 @@ void BaseGraph<NodeIndexType, ArcIndexType,
 
 // Computes the cumulative sum of the entry in v. We only use it with
 // in/out degree distribution, hence the Check() at the end.
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
-void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
+void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
     ComputeCumulativeSum(std::vector<ArcIndexType>* v) {
   ArcIndexType sum = 0;
   for (int i = 0; i < num_nodes_; ++i) {
@@ -1026,8 +1037,9 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
 // - Put the head of the new arc #i in (*head)[i].
 // - Put in start[i] the index of the first arc with tail >= i.
 // - Update "permutation" to reflect the change, unless it is NULL.
-template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
-void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
+template <typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
+void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
     BuildStartAndForwardHead(SVector<NodeIndexType>* head,
                              std::vector<ArcIndexType>* start,
                              std::vector<ArcIndexType>* permutation) {
