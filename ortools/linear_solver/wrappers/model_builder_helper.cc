@@ -1083,10 +1083,12 @@ void AffineExpr::Visit(ExprVisitor& lin, double c) {
 }
 
 std::shared_ptr<LinearExpr> AffineExpr::AddFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
   return LinearExpr::Affine(expr_, coeff_, offset_ + cst);
 }
 
 std::shared_ptr<LinearExpr> AffineExpr::SubFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
   return LinearExpr::Affine(expr_, coeff_, offset_ - cst);
 }
 
@@ -1095,6 +1097,8 @@ std::shared_ptr<LinearExpr> AffineExpr::RSubFloat(double cst) {
 }
 
 std::shared_ptr<LinearExpr> AffineExpr::MulFloat(double cst) {
+  if (cst == 0.0) return std::make_shared<FixedValue>(0);
+  if (cst == 1.0) return shared_from_this();
   return LinearExpr::Affine(expr_, coeff_ * cst, offset_ * cst);
 }
 

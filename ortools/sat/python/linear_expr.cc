@@ -611,10 +611,12 @@ std::string IntAffine::DebugString() const {
 }
 
 std::shared_ptr<LinearExpr> IntAffine::AddInt(int64_t cst) {
+  if (cst == 0) return shared_from_this();
   return LinearExpr::AffineInt(expr_, coeff_, offset_ + cst);
 }
 
 std::shared_ptr<LinearExpr> IntAffine::SubInt(int64_t cst) {
+  if (cst == 0) return shared_from_this();
   return LinearExpr::AffineInt(expr_, coeff_, offset_ - cst);
 }
 
@@ -623,6 +625,8 @@ std::shared_ptr<LinearExpr> IntAffine::RSubInt(int64_t cst) {
 }
 
 std::shared_ptr<LinearExpr> IntAffine::MulInt(int64_t cst) {
+  if (cst == 0) return std::make_shared<IntConstant>(0);
+  if (cst == 1) return shared_from_this();
   return LinearExpr::AffineInt(expr_, coeff_ * cst, offset_ * cst);
 }
 
