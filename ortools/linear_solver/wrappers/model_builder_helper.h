@@ -35,6 +35,7 @@
 namespace operations_research {
 namespace mb {
 
+#if !defined(SWIG)
 // Base implementation of linear expressions.
 
 class BoundedLinearExpression;
@@ -348,6 +349,8 @@ class BoundedLinearExpression {
   double upper_bound_;
 };
 
+#endif  // !defined(SWIG)
+
 // The arguments of the functions defined below must follow these rules
 // to be wrapped by SWIG correctly:
 // 1) Their types must include the full operations_research::
@@ -509,7 +512,9 @@ class ModelSolverHelper {
   double objective_value() const;
   double best_objective_bound() const;
   double variable_value(int var_index) const;
+  #if !defined(SWIG)
   double expression_value(std::shared_ptr<LinearExpr> expr) const;
+  #endif  // !defined(SWIG)
   double reduced_cost(int var_index) const;
   double dual_value(int ct_index) const;
   double activity(int ct_index);
