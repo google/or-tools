@@ -2596,6 +2596,9 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
       params_, average_primal, average_dual, POINT_TYPE_AVERAGE_ITERATE,
       &first_convergence_info, nullptr);
 
+  // NOTE: Even though the objective gap sometimes is reduced by feasibility
+  // polishing, it is usually increased, and an experiment (on MIPLIB2017)
+  // shows that this test reduces the iteration count by 3-4% on average.
   if (!ObjectiveGapMet(optimality_criteria, first_convergence_info)) {
     if (params_.verbosity_level() >= 2) {
       SOLVER_LOG(&preprocess_solver_->Logger(),
