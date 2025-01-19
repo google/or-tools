@@ -764,7 +764,7 @@ std::shared_ptr<Literal> BaseIntVar::negated() {
 
 int NotBooleanVariable::index() const {
   std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
   return -var->index() - 1;
 }
 
@@ -774,13 +774,13 @@ int NotBooleanVariable::index() const {
  */
 std::shared_ptr<Literal> NotBooleanVariable::negated() {
   std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
   return var;
 }
 
 bool NotBooleanVariable::VisitAsInt(IntExprVisitor& lin, int64_t c) {
   std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
   lin.AddVarCoeff(var, -c);
   lin.AddConstant(c);
   return true;
@@ -788,20 +788,20 @@ bool NotBooleanVariable::VisitAsInt(IntExprVisitor& lin, int64_t c) {
 
 void NotBooleanVariable::VisitAsFloat(FloatExprVisitor& lin, double c) {
   std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
   lin.AddVarCoeff(var, -c);
   lin.AddConstant(c);
 }
 
 std::string NotBooleanVariable::ToString() const {
   std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
   return absl::StrCat("not(", var->ToString(), ")");
 }
 
 std::string NotBooleanVariable::DebugString() const {
   std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
   return absl::StrCat("NotBooleanVariable(index=", var->index(), ")");
 }
 

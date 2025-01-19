@@ -429,9 +429,6 @@ class VariableList:
             raise ValueError("Index out of bounds.")
         return self.__var_list[index]
 
-    def num_variables(self) -> int:
-        return len(self.__var_list)
-
     def rebuild_expr(
         self,
         proto: cp_model_pb2.LinearExpressionProto,

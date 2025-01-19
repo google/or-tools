@@ -568,95 +568,36 @@ PYBIND11_MODULE(cp_model_helper, m) {
           },
           DOC(operations_research, sat, python, LinearExpr, IsInteger))
       // Operators.
-      // Note that we keep the 3 APIS (expr, int, double) instead of using
-      // an ExprOrValue argument as this is more efficient.
-      .def(
-          "__add__",
-          [](std::shared_ptr<LinearExpr> expr,
-             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            return expr->Add(other);
-          },
-          arg("other").none(false),
-          DOC(operations_research, sat, python, LinearExpr, Add))
-      .def(
-          "__add__",
-          [](std::shared_ptr<LinearExpr> expr, int64_t cst)
-              -> std::shared_ptr<LinearExpr> { return expr->AddInt(cst); },
-          arg("cst"), DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def(
-          "__add__",
-          [](std::shared_ptr<LinearExpr> expr, double cst)
-              -> std::shared_ptr<LinearExpr> { return expr->AddFloat(cst); },
-          arg("cst"),
-          DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def(
-          "__radd__",
-          [](std::shared_ptr<LinearExpr> expr, int64_t cst)
-              -> std::shared_ptr<LinearExpr> { return expr->AddInt(cst); },
-          arg("cst"), DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def(
-          "__radd__",
-          [](std::shared_ptr<LinearExpr> expr, double cst)
-              -> std::shared_ptr<LinearExpr> { return expr->AddFloat(cst); },
-          arg("cst"),
-          DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def(
-          "__sub__",
-          [](std::shared_ptr<LinearExpr> expr,
-             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            return expr->Sub(other);
-          },
-          arg("other").none(false),
-          DOC(operations_research, sat, python, LinearExpr, Sub))
-      .def(
-          "__sub__",
-          [](std::shared_ptr<LinearExpr> expr, int64_t cst)
-              -> std::shared_ptr<LinearExpr> { return expr->SubInt(cst); },
-          arg("cst"), DOC(operations_research, sat, python, LinearExpr, SubInt))
-      .def(
-          "__sub__",
-          [](std::shared_ptr<LinearExpr> expr, double cst)
-              -> std::shared_ptr<LinearExpr> { return expr->SubFloat(cst); },
-          arg("cst"),
-          DOC(operations_research, sat, python, LinearExpr, SubFloat))
-      .def(
-          "__rsub__",
-          [](std::shared_ptr<LinearExpr> expr, int64_t cst)
-              -> std::shared_ptr<LinearExpr> { return expr->RSubInt(cst); },
-          arg("cst"),
-          DOC(operations_research, sat, python, LinearExpr, RSubInt))
-      .def(
-          "__rsub__",
-          [](std::shared_ptr<LinearExpr> expr, double cst)
-              -> std::shared_ptr<LinearExpr> { return expr->RSubFloat(cst); },
-          arg("cst"),
-          DOC(operations_research, sat, python, LinearExpr, RSubFloat))
-      .def(
-          "__mul__",
-          [](std::shared_ptr<LinearExpr> expr, int64_t cst)
-              -> std::shared_ptr<LinearExpr> { return expr->MulInt(cst); },
-          arg("cst"), DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def(
-          "__mul__",
-          [](std::shared_ptr<LinearExpr> expr, double cst)
-              -> std::shared_ptr<LinearExpr> { return expr->MulFloat(cst); },
-          arg("cst"),
-          DOC(operations_research, sat, python, LinearExpr, MulFloat))
-      .def(
-          "__rmul__",
-          [](std::shared_ptr<LinearExpr> expr, int64_t cst)
-              -> std::shared_ptr<LinearExpr> { return expr->MulInt(cst); },
-          arg("cst"), DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def(
-          "__rmul__",
-          [](std::shared_ptr<LinearExpr> expr, double cst)
-              -> std::shared_ptr<LinearExpr> { return expr->MulFloat(cst); },
-          arg("cst"),
-          DOC(operations_research, sat, python, LinearExpr, MulFloat))
-      .def(
-          "__neg__",
-          [](std::shared_ptr<LinearExpr> expr) { return expr->Neg(); },
-          DOC(operations_research, sat, python, LinearExpr, Neg))
+      .def("__add__", &LinearExpr::Add, arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Add))
+      .def("__add__", &LinearExpr::AddInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def("__add__", &LinearExpr::AddFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def("__radd__", &LinearExpr::AddInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def("__radd__", &LinearExpr::AddFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Sub))
+      .def("__sub__", &LinearExpr::SubInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubInt))
+      .def("__sub__", &LinearExpr::SubFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubFloat))
+      .def("__rsub__", &LinearExpr::RSubInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubInt))
+      .def("__rsub__", &LinearExpr::RSubFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubFloat))
+      .def("__mul__", &LinearExpr::MulInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt))
+      .def("__mul__", &LinearExpr::MulFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat))
+      .def("__rmul__", &LinearExpr::MulInt, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt))
+      .def("__rmul__", &LinearExpr::MulFloat, arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat))
+      .def("__neg__", &LinearExpr::Neg,
+           DOC(operations_research, sat, python, LinearExpr, Neg))
       .def(
           "__eq__",
           [](std::shared_ptr<LinearExpr> lhs, std::shared_ptr<LinearExpr> rhs) {
@@ -874,7 +815,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->AddInt(cst);
           },
-          arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__add__",
@@ -916,7 +856,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->AddFloat(cst);
           },
-          arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__sub__",
@@ -945,7 +884,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->SubInt(cst);
           },
-          arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, SubInt))
       .def(
           "__sub__",
@@ -959,7 +897,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->SubFloat(cst);
           },
-          arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, SubFloat))
       .def_property_readonly("num_exprs", &SumArray::num_exprs)
       .def_property_readonly("int_offset", &SumArray::int_offset)
@@ -972,6 +909,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def_property_readonly("coefficient", &FloatAffine::coefficient)
       .def_property_readonly("offset", &FloatAffine::offset);
 
+  // We adding an operator like __add__(int), we need to add all overloads,
+  // otherwise they are not found.
   py::class_<IntAffine, std::shared_ptr<IntAffine>, LinearExpr>(
       m, "IntAffine", DOC(operations_research, sat, python, IntAffine))
       .def(py::init<std::shared_ptr<LinearExpr>, int64_t, int64_t>())
@@ -1070,13 +1009,15 @@ PYBIND11_MODULE(cp_model_helper, m) {
           },
           DOC(operations_research, sat, python, BaseIntVar, negated))
       // PEP8 Compatibility.
-      .def("Not", [](std::shared_ptr<BaseIntVar> self) {
-        if (!self->is_boolean()) {
-          ThrowError(PyExc_TypeError,
-                     "negated() is only supported for Boolean variables.");
-        }
-        return self->negated();
-      });
+      .def("Not",
+           [](std::shared_ptr<BaseIntVar> self) {
+             if (!self->is_boolean()) {
+               ThrowError(PyExc_TypeError,
+                          "negated() is only supported for Boolean variables.");
+             }
+             return self->negated();
+           })
+      .def("Index", &BaseIntVar::index);
 
   py::class_<NotBooleanVariable, std::shared_ptr<NotBooleanVariable>, Literal>(
       m, "NotBooleanVariable",
@@ -1140,6 +1081,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             return not_var->negated();
           },
           DOC(operations_research, sat, python, NotBooleanVariable, negated));
+
   py::class_<BoundedLinearExpression, std::shared_ptr<BoundedLinearExpression>>(
       m, "BoundedLinearExpression",
       DOC(operations_research, sat, python, BoundedLinearExpression))

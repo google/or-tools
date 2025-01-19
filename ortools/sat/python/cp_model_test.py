@@ -614,6 +614,14 @@ class CpModelTest(absltest.TestCase):
             "FlatFloatExpr([x0(0..2), x2(0..2)], [1, -1], -3)",
         )
 
+        s13 = cp_model.LinearExpr.sum(2)
+        self.assertEqual(str(s13), "2")
+        self.assertEqual(repr(s13), "IntConstant(2)")
+
+        s14 = cp_model.LinearExpr.sum(2.5)
+        self.assertEqual(str(s14), "2.5")
+        self.assertEqual(repr(s14), "FloatConstant(2.5)")
+
         class FakeNpDTypeA:
 
             def __init__(self):
@@ -676,6 +684,12 @@ class CpModelTest(absltest.TestCase):
         flat_s5 = cp_model.FlatIntExpr(s5)
         self.assertLen(flat_s5.vars, 4)
         self.assertEqual(-2, flat_s5.offset)
+
+        s6 = cp_model.LinearExpr.weighted_sum([2], [1])
+        self.assertEqual(repr(s6), "IntConstant(2)")
+
+        s7 = cp_model.LinearExpr.weighted_sum([2], [1.25])
+        self.assertEqual(repr(s7), "FloatConstant(2.5)")
 
     def testSumWithApi(self) -> None:
         model = cp_model.CpModel()
@@ -1203,16 +1217,24 @@ class CpModelTest(absltest.TestCase):
         proto.coeffs.append(1)
         proto.vars.append(y.index)
         proto.coeffs.append(2)
+        expr1 = model.rebuild_from_linear_expression_proto(proto)
+        canonical_expr1 = cmh.FlatIntExpr(expr1)
+        self.assertEqual(canonical_expr1.vars[0], x)
+        self.assertEqual(canonical_expr1.vars[1], y)
+        self.assertEqual(canonical_expr1.coeffs[0], 1)
+        self.assertEqual(canonical_expr1.coeffs[1], 2)
+        self.assertEqual(canonical_expr1.offset, 0)
+        self.assertEqual(~canonical_expr1.vars[1], ~y)
+        self.assertRaises(TypeError, canonical_expr1.vars[0].negated)
+
         proto.offset = 2
-        expr = model.rebuild_from_linear_expression_proto(proto)
-        canonical_expr = cmh.FlatIntExpr(expr)
-        self.assertEqual(canonical_expr.vars[0], x)
-        self.assertEqual(canonical_expr.vars[1], y)
-        self.assertEqual(canonical_expr.coeffs[0], 1)
-        self.assertEqual(canonical_expr.coeffs[1], 2)
-        self.assertEqual(canonical_expr.offset, 2)
-        self.assertEqual(~canonical_expr.vars[1], ~y)
-        self.assertRaises(TypeError, canonical_expr.vars[0].negated)
+        expr2 = model.rebuild_from_linear_expression_proto(proto)
+        canonical_expr2 = cmh.FlatIntExpr(expr2)
+        self.assertEqual(canonical_expr2.vars[0], x)
+        self.assertEqual(canonical_expr2.vars[1], y)
+        self.assertEqual(canonical_expr2.coeffs[0], 1)
+        self.assertEqual(canonical_expr2.coeffs[1], 2)
+        self.assertEqual(canonical_expr2.offset, 2)
 
     def testAbsentInterval(self) -> None:
         model = cp_model.CpModel()
@@ -1354,9 +1376,18 @@ class CpModelTest(absltest.TestCase):
         y = model.new_int_var(0, 3, "y")
         z = model.new_int_var(0, 3, "z")
         self.assertEqual(repr(x), "x(0..4)")
+        self.assertEqual(repr(x + 0), "x(0..4)")
+        self.assertEqual(repr(x + 0.0), "x(0..4)")
+        self.assertEqual(repr(x - 0), "x(0..4)")
+        self.assertEqual(repr(x - 0.0), "x(0..4)")
+        self.assertEqual(repr(x * 1), "x(0..4)")
+        self.assertEqual(repr(x * 1.0), "x(0..4)")
         self.assertEqual(repr(x * 0), "IntConstant(0)")
         self.assertEqual(repr(x * 0.0), "IntConstant(0)")
         self.assertEqual(repr(x * 2), "IntAffine(expr=x(0..4), coeff=2, offset=0)")
+        self.assertEqual(
+            repr(x + 1.5), "FloatAffine(expr=x(0..4), coeff=1, offset=1.5)"
+        )
         self.assertEqual(repr(x + y), "SumArray(x(0..4), y(0..3))")
         self.assertEqual(
             repr(cp_model.LinearExpr.sum([x, y, z])),
@@ -1369,6 +1400,8 @@ class CpModelTest(absltest.TestCase):
         i = model.new_interval_var(x, 2, y, "i")
         self.assertEqual(repr(i), "i(start = x, size = 2, end = y)")
         b = model.new_bool_var("b")
+        self.assertEqual(repr(b), "b(0..1)")
+        self.assertEqual(repr(~b), "NotBooleanVariable(index=3)")
         x1 = model.new_int_var(0, 4, "x1")
         y1 = model.new_int_var(0, 3, "y1")
         j = model.new_optional_interval_var(x1, 2, y1, b, "j")
@@ -1761,6 +1794,14 @@ class CpModelTest(absltest.TestCase):
         solution = solver.values(x)
         self.assertTrue((solution.values == [0, 5, 0]).all())
         self.assertRaises(TypeError, x.apply, lambda x: ~x)
+        y = model.new_int_var_series(
+            name="y", index=df.index, lower_bounds=-1, upper_bounds=1
+        )
+        self.assertRaises(TypeError, y.apply, lambda x: ~x)
+        z = model.new_int_var_series(
+            name="y", index=df.index, lower_bounds=0, upper_bounds=1
+        )
+        _ = z.apply(lambda x: ~x)
 
     def testBoolVarSeries(self) -> None:
         df = pd.DataFrame([1, -1, 1], columns=["coeffs"])
