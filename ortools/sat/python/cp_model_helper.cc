@@ -43,8 +43,6 @@ namespace py = pybind11;
 
 namespace operations_research::sat::python {
 
-using ::py::arg;
-
 void ThrowError(PyObject* py_exception, const std::string& message) {
   PyErr_SetString(py_exception, message.c_str());
   throw py::error_already_set();
@@ -428,9 +426,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("ObjectiveValue", &SolutionCallback::ObjectiveValue)
       .def("Response", &SolutionCallback::Response)
       .def("SolutionBooleanValue", &SolutionCallback::SolutionBooleanValue,
-           arg("index"))
+           py::arg("index"))
       .def("SolutionIntegerValue", &SolutionCallback::SolutionIntegerValue,
-           arg("index"))
+           py::arg("index"))
       .def("StopSearch", &SolutionCallback::StopSearch)
       .def("UserTime", &SolutionCallback::UserTime)
       .def("WallTime", &SolutionCallback::WallTime)
@@ -463,8 +461,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
 
   py::class_<ResponseWrapper>(m, "ResponseWrapper")
       .def("best_objective_bound", &ResponseWrapper::BestObjectiveBound)
-      .def("boolean_value", &ResponseWrapper::BooleanValue, arg("lit"))
-      .def("boolean_value", &ResponseWrapper::FixedBooleanValue, arg("lit"))
+      .def("boolean_value", &ResponseWrapper::BooleanValue, py::arg("lit"))
+      .def("boolean_value", &ResponseWrapper::FixedBooleanValue, py::arg("lit"))
       .def("deterministic_time", &ResponseWrapper::DeterministicTime)
       .def("num_binary_propagations", &ResponseWrapper::NumBinaryPropagations)
       .def("num_booleans", &ResponseWrapper::NumBooleans)
@@ -480,20 +478,21 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("sufficient_assumptions_for_infeasibility",
            &ResponseWrapper::SufficientAssumptionsForInfeasibility)
       .def("user_time", &ResponseWrapper::UserTime)
-      .def("value", &ResponseWrapper::Value, arg("expr"))
-      .def("value", &ResponseWrapper::FixedValue, arg("value"))
+      .def("value", &ResponseWrapper::Value, py::arg("expr"))
+      .def("value", &ResponseWrapper::FixedValue, py::arg("value"))
       .def("wall_time", &ResponseWrapper::WallTime);
 
   py::class_<SolveWrapper>(m, "SolveWrapper")
       .def(py::init<>())
       .def("add_log_callback", &SolveWrapper::AddLogCallback,
-           arg("log_callback"))
+           py::arg("log_callback"))
       .def("add_solution_callback", &SolveWrapper::AddSolutionCallback,
-           arg("callback"))
+           py::arg("callback"))
       .def("clear_solution_callback", &SolveWrapper::ClearSolutionCallback)
       .def("add_best_bound_callback", &SolveWrapper::AddBestBoundCallback,
-           arg("best_bound_callback"))
-      .def("set_parameters", &SolveWrapper::SetParameters, arg("parameters"))
+           py::arg("best_bound_callback"))
+      .def("set_parameters", &SolveWrapper::SetParameters,
+           py::arg("parameters"))
       .def("solve",
            [](SolveWrapper* solve_wrapper,
               const CpModelProto& model_proto) -> CpSolverResponse {
@@ -509,49 +508,50 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("stop_search", &SolveWrapper::StopSearch);
 
   py::class_<CpSatHelper>(m, "CpSatHelper")
-      .def_static("model_stats", &CpSatHelper::ModelStats, arg("model_proto"))
+      .def_static("model_stats", &CpSatHelper::ModelStats,
+                  py::arg("model_proto"))
       .def_static("solver_response_stats", &CpSatHelper::SolverResponseStats,
-                  arg("response"))
+                  py::arg("response"))
       .def_static("validate_model", &CpSatHelper::ValidateModel,
-                  arg("model_proto"))
+                  py::arg("model_proto"))
       .def_static("variable_domain", &CpSatHelper::VariableDomain,
-                  arg("variable_proto"))
+                  py::arg("variable_proto"))
       .def_static("write_model_to_file", &CpSatHelper::WriteModelToFile,
-                  arg("model_proto"), arg("filename"));
+                  py::arg("model_proto"), py::arg("filename"));
 
   py::class_<LinearExpr, std::shared_ptr<LinearExpr>>(
       m, "LinearExpr", DOC(operations_research, sat, python, LinearExpr))
       .def_static("sum", &SumArguments, "Returns the sum(expressions).")
-      .def_static("weighted_sum", &WeightedSumArguments, arg("expressions"),
-                  arg("coefficients"),
+      .def_static("weighted_sum", &WeightedSumArguments, py::arg("expressions"),
+                  py::arg("coefficients"),
                   "Returns the sum of (expressions[i] * coefficients[i])")
-      .def_static("term", &LinearExpr::TermInt, arg("expr").none(false),
-                  arg("coeff"),
+      .def_static("term", &LinearExpr::TermInt, py::arg("expr").none(false),
+                  py::arg("coeff"),
                   DOC(operations_research, sat, python, LinearExpr, TermInt))
-      .def_static("term", &LinearExpr::TermFloat, arg("expr").none(false),
-                  arg("coeff"),
+      .def_static("term", &LinearExpr::TermFloat, py::arg("expr").none(false),
+                  py::arg("coeff"),
                   DOC(operations_research, sat, python, LinearExpr, TermFloat))
-      .def_static("affine", &LinearExpr::AffineInt, arg("expr").none(false),
-                  arg("coeff"), arg("offset"),
+      .def_static("affine", &LinearExpr::AffineInt, py::arg("expr").none(false),
+                  py::arg("coeff"), py::arg("offset"),
                   DOC(operations_research, sat, python, LinearExpr, AffineInt))
       .def_static(
-          "affine", &LinearExpr::AffineFloat, arg("expr").none(false),
-          arg("coeff"), arg("offset"),
+          "affine", &LinearExpr::AffineFloat, py::arg("expr").none(false),
+          py::arg("coeff"), py::arg("offset"),
           DOC(operations_research, sat, python, LinearExpr, AffineFloat))
       .def_static(
-          "constant", &LinearExpr::ConstantInt, arg("value"),
+          "constant", &LinearExpr::ConstantInt, py::arg("value"),
           DOC(operations_research, sat, python, LinearExpr, ConstantInt))
       .def_static(
-          "constant", &LinearExpr::ConstantFloat, arg("value"),
+          "constant", &LinearExpr::ConstantFloat, py::arg("value"),
           DOC(operations_research, sat, python, LinearExpr, ConstantFloat))
       // Pre PEP8 compatibility layer.
       .def_static("Sum", &SumArguments)
-      .def_static("WeightedSum", &WeightedSumArguments, arg("expressions"),
-                  arg("coefficients"))
-      .def_static("Term", &LinearExpr::TermInt, arg("expr").none(false),
-                  arg("coeff"), "Returns expr * coeff.")
-      .def_static("Term", &LinearExpr::TermFloat, arg("expr").none(false),
-                  arg("coeff"), "Returns expr * coeff.")
+      .def_static("WeightedSum", &WeightedSumArguments, py::arg("expressions"),
+                  py::arg("coefficients"))
+      .def_static("Term", &LinearExpr::TermInt, py::arg("expr").none(false),
+                  py::arg("coeff"), "Returns expr * coeff.")
+      .def_static("Term", &LinearExpr::TermFloat, py::arg("expr").none(false),
+                  py::arg("coeff"), "Returns expr * coeff.")
       // Methods.
       .def("__str__",
            [](std::shared_ptr<LinearExpr> expr) -> std::string {
@@ -568,33 +568,33 @@ PYBIND11_MODULE(cp_model_helper, m) {
           },
           DOC(operations_research, sat, python, LinearExpr, IsInteger))
       // Operators.
-      .def("__add__", &LinearExpr::Add, arg("other").none(false),
+      .def("__add__", &LinearExpr::Add, py::arg("other").none(false),
            DOC(operations_research, sat, python, LinearExpr, Add))
-      .def("__add__", &LinearExpr::AddInt, arg("cst"),
+      .def("__add__", &LinearExpr::AddInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def("__add__", &LinearExpr::AddFloat, arg("cst"),
+      .def("__add__", &LinearExpr::AddFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def("__radd__", &LinearExpr::AddInt, arg("cst"),
+      .def("__radd__", &LinearExpr::AddInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def("__radd__", &LinearExpr::AddFloat, arg("cst"),
+      .def("__radd__", &LinearExpr::AddFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
+      .def("__sub__", &LinearExpr::Sub, py::arg("other").none(false),
            DOC(operations_research, sat, python, LinearExpr, Sub))
-      .def("__sub__", &LinearExpr::SubInt, arg("cst"),
+      .def("__sub__", &LinearExpr::SubInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, SubInt))
-      .def("__sub__", &LinearExpr::SubFloat, arg("cst"),
+      .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, SubFloat))
-      .def("__rsub__", &LinearExpr::RSubInt, arg("cst"),
+      .def("__rsub__", &LinearExpr::RSubInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, RSubInt))
-      .def("__rsub__", &LinearExpr::RSubFloat, arg("cst"),
+      .def("__rsub__", &LinearExpr::RSubFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, RSubFloat))
-      .def("__mul__", &LinearExpr::MulInt, arg("cst"),
+      .def("__mul__", &LinearExpr::MulInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def("__mul__", &LinearExpr::MulFloat, arg("cst"),
+      .def("__mul__", &LinearExpr::MulFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulFloat))
-      .def("__rmul__", &LinearExpr::MulInt, arg("cst"),
+      .def("__rmul__", &LinearExpr::MulInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def("__rmul__", &LinearExpr::MulFloat, arg("cst"),
+      .def("__rmul__", &LinearExpr::MulFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulFloat))
       .def("__neg__", &LinearExpr::Neg,
            DOC(operations_research, sat, python, LinearExpr, Neg))
@@ -801,7 +801,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->Add(other);
           },
-          arg("other").none(false),
+          py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Add))
       .def(
           "__add__",
@@ -828,7 +828,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->AddFloat(cst);
           },
-          arg("other").none(false),
+          py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__radd__",
@@ -842,7 +842,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->AddInt(cst);
           },
-          arg("other").none(false),
+          py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__radd__",
@@ -870,7 +870,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->Sub(other);
           },
-          arg("other").none(false),
+          py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Sub))
       .def(
           "__sub__",
@@ -914,35 +914,35 @@ PYBIND11_MODULE(cp_model_helper, m) {
   py::class_<IntAffine, std::shared_ptr<IntAffine>, LinearExpr>(
       m, "IntAffine", DOC(operations_research, sat, python, IntAffine))
       .def(py::init<std::shared_ptr<LinearExpr>, int64_t, int64_t>())
-      .def("__add__", &LinearExpr::Add, arg("other").none(false),
+      .def("__add__", &LinearExpr::Add, py::arg("other").none(false),
            DOC(operations_research, sat, python, LinearExpr, Add))
-      .def("__add__", &IntAffine::AddInt, arg("cst"),
+      .def("__add__", &IntAffine::AddInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def("__add__", &LinearExpr::AddFloat, arg("cst"),
+      .def("__add__", &LinearExpr::AddFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def("__radd__", &LinearExpr::Add, arg("other").none(false),
+      .def("__radd__", &LinearExpr::Add, py::arg("other").none(false),
            DOC(operations_research, sat, python, LinearExpr, Add))
-      .def("__radd__", &IntAffine::AddInt, arg("cst"),
+      .def("__radd__", &IntAffine::AddInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def("__radd__", &LinearExpr::AddFloat, arg("cst"),
+      .def("__radd__", &LinearExpr::AddFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
+      .def("__sub__", &LinearExpr::Sub, py::arg("other").none(false),
            DOC(operations_research, sat, python, LinearExpr, Sub))
-      .def("__sub__", &IntAffine::SubInt, arg("cst"),
+      .def("__sub__", &IntAffine::SubInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, SubInt))
-      .def("__sub__", &LinearExpr::SubFloat, arg("cst"),
+      .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, SubFloat))
-      .def("__rsub__", &IntAffine::RSubInt, arg("cst"),
+      .def("__rsub__", &IntAffine::RSubInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, RSubInt))
-      .def("__rsub__", &LinearExpr::SubFloat, arg("cst"),
+      .def("__rsub__", &LinearExpr::SubFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, RSubFloat))
-      .def("__mul__", &IntAffine::MulInt, arg("cst"),
+      .def("__mul__", &IntAffine::MulInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def("__mul__", &LinearExpr::MulFloat, arg("cst"),
+      .def("__mul__", &LinearExpr::MulFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulFloat))
-      .def("__rmul__", &IntAffine::MulInt, arg("cst"),
+      .def("__rmul__", &IntAffine::MulInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def("__rmul__", &LinearExpr::MulFloat, arg("cst"),
+      .def("__rmul__", &LinearExpr::MulFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, MulFloat))
       .def("__neg__", &IntAffine::Neg,
            DOC(operations_research, sat, python, LinearExpr, Neg))
