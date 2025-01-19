@@ -134,6 +134,26 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
     const Domain rhs = ReadDomainFromProto(ct.linear());
     if (!rhs.Contains(fixed_activity)) {
       SetEnforcementLiteralToFalse(ct, domains);
+    } else {
+      // The constraint is satisfied, if there is any enforcement that are
+      // not fixed yet, we need to fix them.
+      //
+      // Tricky: We sometime push two constraints for postsolve:
+      // 1/ l      =>   A
+      // 2/ not(l) =>   B
+      // if B is true, it is better to fix `l` so that the constraint 2/ is
+      // enforced. This way we should have no problem when processing 1/
+      //
+      // TODO(user): This is a bit hacky, if we need to postsolve both
+      // constraints at once, it might be cleaner to do that in a single
+      // postsolve operation. However this allows us to reuse normal constraints
+      // for the postsolve specification, which is nice.
+      for (const int enf : ct.enforcement_literal()) {
+        Domain& d = (*domains)[PositiveRef(enf)];
+        if (!d.IsFixed()) {
+          d = Domain(RefIsPositive(enf) ? 1 : 0);
+        }
+      }
     }
     return;
   }

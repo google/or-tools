@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -30,99 +31,112 @@ namespace operations_research {
 namespace sat {
 namespace python {
 
-bool LinearExpr::IsInteger() const {
+bool LinearExpr::IsInteger() {
   IntExprVisitor lin;
-  lin.AddToProcess(this, 1);
+  lin.AddToProcess(shared_from_this(), 1);
   return lin.ProcessAll();
 }
 
-LinearExpr* LinearExpr::TermInt(LinearExpr* expr, int64_t coeff) {
-  return new IntAffine(expr, coeff, 0);
+std::shared_ptr<LinearExpr> LinearExpr::TermInt(
+    std::shared_ptr<LinearExpr> expr, int64_t coeff) {
+  return std::make_shared<IntAffine>(expr, coeff, 0);
 }
 
-LinearExpr* LinearExpr::TermFloat(LinearExpr* expr, double coeff) {
-  return new FloatAffine(expr, coeff, 0.0);
+std::shared_ptr<LinearExpr> LinearExpr::TermFloat(
+    std::shared_ptr<LinearExpr> expr, double coeff) {
+  return std::make_shared<FloatAffine>(expr, coeff, 0.0);
 }
 
-LinearExpr* LinearExpr::AffineInt(LinearExpr* expr, int64_t coeff,
-                                  int64_t offset) {
+std::shared_ptr<LinearExpr> LinearExpr::AffineInt(
+    std::shared_ptr<LinearExpr> expr, int64_t coeff, int64_t offset) {
   if (coeff == 1 && offset == 0) return expr;
-  return new IntAffine(expr, coeff, offset);
+  return std::make_shared<IntAffine>(expr, coeff, offset);
 }
 
-LinearExpr* LinearExpr::AffineFloat(LinearExpr* expr, double coeff,
-                                    double offset) {
+std::shared_ptr<LinearExpr> LinearExpr::AffineFloat(
+    std::shared_ptr<LinearExpr> expr, double coeff, double offset) {
   if (coeff == 1.0 && offset == 0.0) return expr;
-  return new FloatAffine(expr, coeff, offset);
+  return std::make_shared<FloatAffine>(expr, coeff, offset);
 }
 
-LinearExpr* LinearExpr::ConstantInt(int64_t value) {
-  return new IntConstant(value);
+std::shared_ptr<LinearExpr> LinearExpr::ConstantInt(int64_t value) {
+  return std::make_shared<IntConstant>(value);
 }
 
-LinearExpr* LinearExpr::ConstantFloat(double value) {
-  return new FloatConstant(value);
+std::shared_ptr<LinearExpr> LinearExpr::ConstantFloat(double value) {
+  return std::make_shared<FloatConstant>(value);
 }
 
-LinearExpr* LinearExpr::Add(LinearExpr* expr) {
-  return new SumArray({this, expr});
+std::shared_ptr<LinearExpr> LinearExpr::Add(std::shared_ptr<LinearExpr> expr) {
+  std::vector<std::shared_ptr<LinearExpr>> exprs;
+  exprs.push_back(shared_from_this());
+  exprs.push_back(expr);
+  return std::make_shared<SumArray>(exprs);
 }
 
-LinearExpr* LinearExpr::AddInt(int64_t cst) {
-  if (cst == 0) return this;
-  return new IntAffine(this, 1, cst);
+std::shared_ptr<LinearExpr> LinearExpr::AddInt(int64_t cst) {
+  if (cst == 0) return shared_from_this();
+  return std::make_shared<IntAffine>(shared_from_this(), 1, cst);
 }
 
-LinearExpr* LinearExpr::AddFloat(double cst) {
-  if (cst == 0.0) return this;
-  return new FloatAffine(this, 1.0, cst);
+std::shared_ptr<LinearExpr> LinearExpr::AddFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
+  return std::make_shared<FloatAffine>(shared_from_this(), 1.0, cst);
 }
 
-LinearExpr* LinearExpr::Sub(LinearExpr* expr) {
-  return new IntWeightedSum({this, expr}, {1, -1}, 0);
+std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> expr) {
+  std::vector<std::shared_ptr<LinearExpr>> exprs;
+  exprs.push_back(shared_from_this());
+  exprs.push_back(expr);
+  const std::vector<int64_t> coeffs = {1, -1};
+  return std::make_shared<IntWeightedSum>(exprs, coeffs, 0);
 }
 
-LinearExpr* LinearExpr::SubInt(int64_t cst) {
-  if (cst == 0) return this;
-  return new IntAffine(this, 1, -cst);
+std::shared_ptr<LinearExpr> LinearExpr::SubInt(int64_t cst) {
+  if (cst == 0) return shared_from_this();
+  return std::make_shared<IntAffine>(shared_from_this(), 1, -cst);
 }
 
-LinearExpr* LinearExpr::SubFloat(double cst) {
-  if (cst == 0.0) return this;
-  return new FloatAffine(this, 1.0, -cst);
+std::shared_ptr<LinearExpr> LinearExpr::SubFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
+  return std::make_shared<FloatAffine>(shared_from_this(), 1.0, -cst);
 }
 
-LinearExpr* LinearExpr::RSubInt(int64_t cst) {
-  return new IntAffine(this, -1, cst);
+std::shared_ptr<LinearExpr> LinearExpr::RSubInt(int64_t cst) {
+  return std::make_shared<IntAffine>(shared_from_this(), -1, cst);
 }
 
-LinearExpr* LinearExpr::RSubFloat(double cst) {
-  return new FloatAffine(this, -1.0, cst);
+std::shared_ptr<LinearExpr> LinearExpr::RSubFloat(double cst) {
+  return std::make_shared<FloatAffine>(shared_from_this(), -1.0, cst);
 }
 
-LinearExpr* LinearExpr::MulInt(int64_t cst) {
-  if (cst == 0) return new IntConstant(0);
-  if (cst == 1) return this;
-  return new IntAffine(this, cst, 0);
+std::shared_ptr<LinearExpr> LinearExpr::MulInt(int64_t cst) {
+  if (cst == 0) return std::make_shared<IntConstant>(0);
+  if (cst == 1) return shared_from_this();
+  return std::make_shared<IntAffine>(shared_from_this(), cst, 0);
 }
 
-LinearExpr* LinearExpr::MulFloat(double cst) {
-  if (cst == 0.0) return new IntConstant(0);
-  if (cst == 1.0) return this;
-  return new FloatAffine(this, cst, 0.0);
+std::shared_ptr<LinearExpr> LinearExpr::MulFloat(double cst) {
+  if (cst == 0.0) return std::make_shared<IntConstant>(0);
+  if (cst == 1.0) return shared_from_this();
+  return std::make_shared<FloatAffine>(shared_from_this(), cst, 0.0);
 }
 
-LinearExpr* LinearExpr::Neg() { return new IntAffine(this, -1, 0); }
+std::shared_ptr<LinearExpr> LinearExpr::Neg() {
+  return std::make_shared<IntAffine>(shared_from_this(), -1, 0);
+}
 
-void FloatExprVisitor::AddToProcess(const LinearExpr* expr, double coeff) {
+void FloatExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
+                                    double coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
 void FloatExprVisitor::AddConstant(double constant) { offset_ += constant; }
-void FloatExprVisitor::AddVarCoeff(const BaseIntVar* var, double coeff) {
+void FloatExprVisitor::AddVarCoeff(std::shared_ptr<BaseIntVar> var,
+                                   double coeff) {
   canonical_terms_[var] += coeff;
 }
-double FloatExprVisitor::Process(const LinearExpr* expr,
-                                 std::vector<const BaseIntVar*>* vars,
+double FloatExprVisitor::Process(std::shared_ptr<LinearExpr> expr,
+                                 std::vector<std::shared_ptr<BaseIntVar>>* vars,
                                  std::vector<double>* coeffs) {
   AddToProcess(expr, 1.0);
   while (!to_process_.empty()) {
@@ -142,12 +156,12 @@ double FloatExprVisitor::Process(const LinearExpr* expr,
   return offset_;
 }
 
-FlatFloatExpr::FlatFloatExpr(LinearExpr* expr) {
+FlatFloatExpr::FlatFloatExpr(std::shared_ptr<LinearExpr> expr) {
   FloatExprVisitor lin;
   offset_ = lin.Process(expr, &vars_, &coeffs_);
 }
 
-void FlatFloatExpr::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+void FlatFloatExpr::VisitAsFloat(FloatExprVisitor& lin, double c) {
   for (int i = 0; i < vars_.size(); ++i) {
     lin.AddVarCoeff(vars_[i], coeffs_[i] * c);
   }
@@ -205,21 +219,21 @@ std::string FlatFloatExpr::ToString() const {
 }
 
 std::string FlatFloatExpr::DebugString() const {
-  return absl::StrCat("FlatFloatExpr([",
-                      absl::StrJoin(vars_, ", ",
-                                    [](std::string* out, const LinearExpr* e) {
-                                      absl::StrAppend(out, e->DebugString());
-                                    }),
-                      "], [",
-                      absl::StrJoin(coeffs_, ", ",
-                                    [](std::string* out, double coeff) {
-                                      absl::StrAppend(
-                                          out, RoundTripDoubleFormat(coeff));
-                                    }),
-                      "], ", RoundTripDoubleFormat(offset_), ")");
+  return absl::StrCat(
+      "FlatFloatExpr([",
+      absl::StrJoin(vars_, ", ",
+                    [](std::string* out, std::shared_ptr<LinearExpr> e) {
+                      absl::StrAppend(out, e->DebugString());
+                    }),
+      "], [",
+      absl::StrJoin(coeffs_, ", ",
+                    [](std::string* out, double coeff) {
+                      absl::StrAppend(out, RoundTripDoubleFormat(coeff));
+                    }),
+      "], ", RoundTripDoubleFormat(offset_), ")");
 }
 
-FlatIntExpr::FlatIntExpr(LinearExpr* expr) {
+FlatIntExpr::FlatIntExpr(std::shared_ptr<LinearExpr> expr) {
   IntExprVisitor lin;
   lin.AddToProcess(expr, 1);
   ok_ = lin.Process(&vars_, &coeffs_, &offset_);
@@ -276,13 +290,13 @@ std::string FlatIntExpr::DebugString() const {
   return absl::StrCat(
       "FlatIntExpr([",
       absl::StrJoin(vars_, ", ",
-                    [](std::string* out, const BaseIntVar* var) {
+                    [](std::string* out, std::shared_ptr<BaseIntVar> var) {
                       absl::StrAppend(out, var->DebugString());
                     }),
       "], [", absl::StrJoin(coeffs_, ", "), "], ", offset_, ")");
 }
 
-void FloatConstant::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+void FloatConstant::VisitAsFloat(FloatExprVisitor& lin, double c) {
   lin.AddConstant(value_ * c);
 }
 
@@ -292,16 +306,19 @@ std::string FloatConstant::DebugString() const {
   return absl::StrCat("FloatConstant(", RoundTripDoubleFormat(value_), ")");
 }
 
-SumArray::SumArray(const std::vector<LinearExpr*>& exprs, int64_t int_offset,
-                   double double_offset)
-    : exprs_(exprs.begin(), exprs.end()),
+SumArray::SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
+                   int64_t int_offset, double double_offset)
+    : exprs_(std::move(exprs)),
       int_offset_(int_offset),
       double_offset_(double_offset) {
-  DCHECK(int_offset_ == 0 || double_offset_ == 0.0);
   DCHECK_GE(exprs_.size(), 2);
 }
 
-bool SumArray::VisitAsInt(IntExprVisitor& lin, int64_t c) const {
+void SumArray::AddInPlace(std::shared_ptr<LinearExpr> expr) {
+  exprs_.push_back(std::move(expr));
+}
+
+bool SumArray::VisitAsInt(IntExprVisitor& lin, int64_t c) {
   if (double_offset_ != 0.0) return false;
   for (int i = 0; i < exprs_.size(); ++i) {
     lin.AddToProcess(exprs_[i], c);
@@ -310,13 +327,14 @@ bool SumArray::VisitAsInt(IntExprVisitor& lin, int64_t c) const {
   return true;
 }
 
-void SumArray::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+void SumArray::VisitAsFloat(FloatExprVisitor& lin, double c) {
   for (int i = 0; i < exprs_.size(); ++i) {
     lin.AddToProcess(exprs_[i], c);
   }
   if (int_offset_ != 0) {
     lin.AddConstant(int_offset_ * c);
-  } else if (double_offset_ != 0.0) {
+  }
+  if (double_offset_ != 0.0) {
     lin.AddConstant(double_offset_ * c);
   }
 }
@@ -352,9 +370,10 @@ std::string SumArray::ToString() const {
 std::string SumArray::DebugString() const {
   std::string s = absl::StrCat(
       "SumArray(",
-      absl::StrJoin(exprs_, ", ", [](std::string* out, LinearExpr* expr) {
-        absl::StrAppend(out, expr->DebugString());
-      }));
+      absl::StrJoin(exprs_, ", ",
+                    [](std::string* out, std::shared_ptr<LinearExpr> expr) {
+                      absl::StrAppend(out, expr->DebugString());
+                    }));
   if (int_offset_ != 0) {
     absl::StrAppend(&s, ", int_offset=", int_offset_);
   }
@@ -366,16 +385,16 @@ std::string SumArray::DebugString() const {
   return s;
 }
 
-FloatWeightedSum::FloatWeightedSum(const std::vector<LinearExpr*>& exprs,
-                                   const std::vector<double>& coeffs,
-                                   double offset)
+FloatWeightedSum::FloatWeightedSum(
+    const std::vector<std::shared_ptr<LinearExpr>>& exprs,
+    const std::vector<double>& coeffs, double offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(coeffs.begin(), coeffs.end()),
       offset_(offset) {
   DCHECK_GE(exprs_.size(), 2);
 }
 
-void FloatWeightedSum::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+void FloatWeightedSum::VisitAsFloat(FloatExprVisitor& lin, double c) {
   for (int i = 0; i < exprs_.size(); ++i) {
     lin.AddToProcess(exprs_[i], coeffs_[i] * c);
   }
@@ -429,35 +448,35 @@ std::string FloatWeightedSum::ToString() const {
 }
 
 std::string FloatWeightedSum::DebugString() const {
-  return absl::StrCat("FloatWeightedSum([",
-                      absl::StrJoin(exprs_, ", ",
-                                    [](std::string* out, const LinearExpr* e) {
-                                      absl::StrAppend(out, e->DebugString());
-                                    }),
-                      "], [",
-                      absl::StrJoin(coeffs_, ", ",
-                                    [](std::string* out, double coeff) {
-                                      absl::StrAppend(
-                                          out, RoundTripDoubleFormat(coeff));
-                                    }),
-                      RoundTripDoubleFormat(offset_), ")");
+  return absl::StrCat(
+      "FloatWeightedSum([",
+      absl::StrJoin(exprs_, ", ",
+                    [](std::string* out, std::shared_ptr<LinearExpr> e) {
+                      absl::StrAppend(out, e->DebugString());
+                    }),
+      "], [",
+      absl::StrJoin(coeffs_, ", ",
+                    [](std::string* out, double coeff) {
+                      absl::StrAppend(out, RoundTripDoubleFormat(coeff));
+                    }),
+      RoundTripDoubleFormat(offset_), ")");
 }
 
-IntWeightedSum::IntWeightedSum(const std::vector<LinearExpr*>& exprs,
-                               const std::vector<int64_t>& coeffs,
-                               int64_t offset)
+IntWeightedSum::IntWeightedSum(
+    const std::vector<std::shared_ptr<LinearExpr>>& exprs,
+    const std::vector<int64_t>& coeffs, int64_t offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(coeffs.begin(), coeffs.end()),
       offset_(offset) {}
 
-void IntWeightedSum::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+void IntWeightedSum::VisitAsFloat(FloatExprVisitor& lin, double c) {
   for (int i = 0; i < exprs_.size(); ++i) {
     lin.AddToProcess(exprs_[i], coeffs_[i] * c);
   }
   lin.AddConstant(offset_ * c);
 }
 
-bool IntWeightedSum::VisitAsInt(IntExprVisitor& lin, int64_t c) const {
+bool IntWeightedSum::VisitAsInt(IntExprVisitor& lin, int64_t c) {
   for (int i = 0; i < exprs_.size(); ++i) {
     lin.AddToProcess(exprs_[i], coeffs_[i] * c);
   }
@@ -512,19 +531,20 @@ std::string IntWeightedSum::ToString() const {
 }
 
 std::string IntWeightedSum::DebugString() const {
-  return absl::StrCat("IntWeightedSum([",
-                      absl::StrJoin(exprs_, ", ",
-                                    [](std::string* out, LinearExpr* expr) {
-                                      absl::StrAppend(out, expr->DebugString());
-                                    }),
-                      "], [", absl::StrJoin(coeffs_, ", "), "], ", offset_,
-                      ")");
+  return absl::StrCat(
+      "IntWeightedSum([",
+      absl::StrJoin(exprs_, ", ",
+                    [](std::string* out, std::shared_ptr<LinearExpr> expr) {
+                      absl::StrAppend(out, expr->DebugString());
+                    }),
+      "], [", absl::StrJoin(coeffs_, ", "), "], ", offset_, ")");
 }
 
-FloatAffine::FloatAffine(LinearExpr* expr, double coeff, double offset)
+FloatAffine::FloatAffine(std::shared_ptr<LinearExpr> expr, double coeff,
+                         double offset)
     : expr_(expr), coeff_(coeff), offset_(offset) {}
 
-void FloatAffine::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+void FloatAffine::VisitAsFloat(FloatExprVisitor& lin, double c) {
   lin.AddToProcess(expr_, c * coeff_);
   lin.AddConstant(offset_ * c);
 }
@@ -552,16 +572,17 @@ std::string FloatAffine::DebugString() const {
                       ", coeff=", coeff_, ", offset=", offset_, ")");
 }
 
-IntAffine::IntAffine(LinearExpr* expr, int64_t coeff, int64_t offset)
+IntAffine::IntAffine(std::shared_ptr<LinearExpr> expr, int64_t coeff,
+                     int64_t offset)
     : expr_(expr), coeff_(coeff), offset_(offset) {}
 
-bool IntAffine::VisitAsInt(IntExprVisitor& lin, int64_t c) const {
+bool IntAffine::VisitAsInt(IntExprVisitor& lin, int64_t c) {
   lin.AddToProcess(expr_, c * coeff_);
   lin.AddConstant(offset_ * c);
   return true;
 }
 
-void IntAffine::VisitAsFloat(FloatExprVisitor& lin, double c) const {
+void IntAffine::VisitAsFloat(FloatExprVisitor& lin, double c) {
   lin.AddToProcess(expr_, c * coeff_);
   lin.AddConstant(offset_ * c);
 }
@@ -589,69 +610,105 @@ std::string IntAffine::DebugString() const {
                       ", coeff=", coeff_, ", offset=", offset_, ")");
 }
 
-BoundedLinearExpression* LinearExpr::Eq(LinearExpr* rhs) {
-  return new BoundedLinearExpression(this, rhs, Domain(0));
+std::shared_ptr<LinearExpr> IntAffine::AddInt(int64_t cst) {
+  if (cst == 0) return shared_from_this();
+  return LinearExpr::AffineInt(expr_, coeff_, offset_ + cst);
 }
 
-BoundedLinearExpression* LinearExpr::EqCst(int64_t rhs) {
-  return new BoundedLinearExpression(this, Domain(rhs));
+std::shared_ptr<LinearExpr> IntAffine::SubInt(int64_t cst) {
+  if (cst == 0) return shared_from_this();
+  return LinearExpr::AffineInt(expr_, coeff_, offset_ - cst);
 }
 
-BoundedLinearExpression* LinearExpr::Ne(LinearExpr* rhs) {
-  return new BoundedLinearExpression(this, rhs, Domain(0).Complement());
+std::shared_ptr<LinearExpr> IntAffine::RSubInt(int64_t cst) {
+  return LinearExpr::AffineInt(expr_, -coeff_, cst - offset_);
 }
 
-BoundedLinearExpression* LinearExpr::NeCst(int64_t rhs) {
-  return new BoundedLinearExpression(this, Domain(rhs).Complement());
+std::shared_ptr<LinearExpr> IntAffine::MulInt(int64_t cst) {
+  if (cst == 0) return std::make_shared<IntConstant>(0);
+  if (cst == 1) return shared_from_this();
+  return LinearExpr::AffineInt(expr_, coeff_ * cst, offset_ * cst);
 }
 
-BoundedLinearExpression* LinearExpr::Le(LinearExpr* rhs) {
-  return new BoundedLinearExpression(
-      this, rhs, Domain(std::numeric_limits<int64_t>::min(), 0));
+std::shared_ptr<LinearExpr> IntAffine::Neg() {
+  return LinearExpr::AffineInt(expr_, -coeff_, -offset_);
 }
 
-BoundedLinearExpression* LinearExpr::LeCst(int64_t rhs) {
-  return new BoundedLinearExpression(
-      this, Domain(std::numeric_limits<int64_t>::min(), rhs));
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Eq(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs,
+                                                   Domain(0));
 }
 
-BoundedLinearExpression* LinearExpr::Lt(LinearExpr* rhs) {
-  return new BoundedLinearExpression(
-      this, rhs, Domain(std::numeric_limits<int64_t>::min(), -1));
+std::shared_ptr<BoundedLinearExpression> LinearExpr::EqCst(int64_t rhs) {
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(),
+                                                   Domain(rhs));
 }
 
-BoundedLinearExpression* LinearExpr::LtCst(int64_t rhs) {
-  return new BoundedLinearExpression(
-      this, Domain(std::numeric_limits<int64_t>::min(), rhs - 1));
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Ne(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs,
+                                                   Domain(0).Complement());
 }
 
-BoundedLinearExpression* LinearExpr::Ge(LinearExpr* rhs) {
-  return new BoundedLinearExpression(
-      this, rhs, Domain(0, std::numeric_limits<int64_t>::max()));
+std::shared_ptr<BoundedLinearExpression> LinearExpr::NeCst(int64_t rhs) {
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(),
+                                                   Domain(rhs).Complement());
 }
 
-BoundedLinearExpression* LinearExpr::GeCst(int64_t rhs) {
-  return new BoundedLinearExpression(
-      this, Domain(rhs, std::numeric_limits<int64_t>::max()));
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Le(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), rhs, Domain(std::numeric_limits<int64_t>::min(), 0));
 }
 
-BoundedLinearExpression* LinearExpr::Gt(LinearExpr* rhs) {
-  return new BoundedLinearExpression(
-      this, rhs, Domain(1, std::numeric_limits<int64_t>::max()));
+std::shared_ptr<BoundedLinearExpression> LinearExpr::LeCst(int64_t rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), Domain(std::numeric_limits<int64_t>::min(), rhs));
 }
 
-BoundedLinearExpression* LinearExpr::GtCst(int64_t rhs) {
-  return new BoundedLinearExpression(
-      this, Domain(rhs + 1, std::numeric_limits<int64_t>::max()));
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Lt(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), rhs, Domain(std::numeric_limits<int64_t>::min(), -1));
 }
 
-void IntExprVisitor::AddToProcess(const LinearExpr* expr, int64_t coeff) {
+std::shared_ptr<BoundedLinearExpression> LinearExpr::LtCst(int64_t rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), Domain(std::numeric_limits<int64_t>::min(), rhs - 1));
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Ge(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), rhs, Domain(0, std::numeric_limits<int64_t>::max()));
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::GeCst(int64_t rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), Domain(rhs, std::numeric_limits<int64_t>::max()));
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Gt(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), rhs, Domain(1, std::numeric_limits<int64_t>::max()));
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::GtCst(int64_t rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), Domain(rhs + 1, std::numeric_limits<int64_t>::max()));
+}
+
+void IntExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
+                                  int64_t coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
 
 void IntExprVisitor::AddConstant(int64_t constant) { offset_ += constant; }
 
-void IntExprVisitor::AddVarCoeff(const BaseIntVar* var, int64_t coeff) {
+void IntExprVisitor::AddVarCoeff(std::shared_ptr<BaseIntVar> var,
+                                 int64_t coeff) {
   canonical_terms_[var] += coeff;
 }
 
@@ -664,7 +721,7 @@ bool IntExprVisitor::ProcessAll() {
   return true;
 }
 
-bool IntExprVisitor::Process(std::vector<const BaseIntVar*>* vars,
+bool IntExprVisitor::Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
                              std::vector<int64_t>* coeffs, int64_t* offset) {
   if (!ProcessAll()) return false;
   vars->clear();
@@ -678,7 +735,7 @@ bool IntExprVisitor::Process(std::vector<const BaseIntVar*>* vars,
   return true;
 }
 
-bool IntExprVisitor::Evaluate(const LinearExpr* expr,
+bool IntExprVisitor::Evaluate(std::shared_ptr<LinearExpr> expr,
                               const CpSolverResponse& solution,
                               int64_t* value) {
   AddToProcess(expr, 1);
@@ -692,26 +749,77 @@ bool IntExprVisitor::Evaluate(const LinearExpr* expr,
   return true;
 }
 
-bool BaseIntVarComparator::operator()(const BaseIntVar* lhs,
-                                      const BaseIntVar* rhs) const {
+bool BaseIntVarComparator::operator()(std::shared_ptr<BaseIntVar> lhs,
+                                      std::shared_ptr<BaseIntVar> rhs) const {
   return lhs->index() < rhs->index();
 }
 
 BaseIntVar::BaseIntVar(int index, bool is_boolean)
-    : index_(index),
-      negated_(is_boolean ? new NotBooleanVariable(this) : nullptr) {}
+    : index_(index), is_boolean_(is_boolean) {}
 
-BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* expr,
-                                                 const Domain& bounds)
+std::shared_ptr<Literal> BaseIntVar::negated() {
+  if (negated_ == nullptr) {
+    std::shared_ptr<BaseIntVar> self =
+        std::static_pointer_cast<BaseIntVar>(shared_from_this());
+    negated_ = std::make_shared<NotBooleanVariable>(self);
+  }
+  return negated_;
+}
+
+int NotBooleanVariable::index() const {
+  std::shared_ptr<BaseIntVar> var = var_.lock();
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
+  return -var->index() - 1;
+}
+
+/**
+ * Returns the negation of the current literal, that is the original Boolean
+ * variable.
+ */
+std::shared_ptr<Literal> NotBooleanVariable::negated() {
+  std::shared_ptr<BaseIntVar> var = var_.lock();
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
+  return var;
+}
+
+bool NotBooleanVariable::VisitAsInt(IntExprVisitor& lin, int64_t c) {
+  std::shared_ptr<BaseIntVar> var = var_.lock();
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
+  lin.AddVarCoeff(var, -c);
+  lin.AddConstant(c);
+  return true;
+}
+
+void NotBooleanVariable::VisitAsFloat(FloatExprVisitor& lin, double c) {
+  std::shared_ptr<BaseIntVar> var = var_.lock();
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
+  lin.AddVarCoeff(var, -c);
+  lin.AddConstant(c);
+}
+
+std::string NotBooleanVariable::ToString() const {
+  std::shared_ptr<BaseIntVar> var = var_.lock();
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
+  return absl::StrCat("not(", var->ToString(), ")");
+}
+
+std::string NotBooleanVariable::DebugString() const {
+  std::shared_ptr<BaseIntVar> var = var_.lock();
+  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
+  return absl::StrCat("NotBooleanVariable(index=", var->index(), ")");
+}
+
+BoundedLinearExpression::BoundedLinearExpression(
+    std::shared_ptr<LinearExpr> expr, const Domain& bounds)
     : bounds_(bounds) {
   IntExprVisitor lin;
   lin.AddToProcess(expr, 1);
   ok_ = lin.Process(&vars_, &coeffs_, &offset_);
 }
 
-BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* pos,
-                                                 const LinearExpr* neg,
-                                                 const Domain& bounds)
+BoundedLinearExpression::BoundedLinearExpression(
+    std::shared_ptr<LinearExpr> pos, std::shared_ptr<LinearExpr> neg,
+    const Domain& bounds)
     : bounds_(bounds) {
   IntExprVisitor lin;
   lin.AddToProcess(pos, 1);
@@ -720,7 +828,8 @@ BoundedLinearExpression::BoundedLinearExpression(const LinearExpr* pos,
 }
 
 const Domain& BoundedLinearExpression::bounds() const { return bounds_; }
-const std::vector<const BaseIntVar*>& BoundedLinearExpression::vars() const {
+const std::vector<std::shared_ptr<BaseIntVar>>& BoundedLinearExpression::vars()
+    const {
   return vars_;
 }
 const std::vector<int64_t>& BoundedLinearExpression::coeffs() const {
@@ -807,7 +916,7 @@ std::string BoundedLinearExpression::DebugString() const {
   return absl::StrCat(
       "BoundedLinearExpression(vars=[",
       absl::StrJoin(vars_, ", ",
-                    [](std::string* out, const BaseIntVar* var) {
+                    [](std::string* out, std::shared_ptr<BaseIntVar> var) {
                       absl::StrAppend(out, var->DebugString());
                     }),
       "], coeffs=[", absl::StrJoin(coeffs_, ", "), "], offset=", offset_,

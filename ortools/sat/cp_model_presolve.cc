@@ -24,6 +24,7 @@
 #include <numeric>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -34,6 +35,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
@@ -5567,7 +5569,8 @@ void AddImplication(int lhs, int rhs, CpModelProto* proto,
 template <typename ClauseContainer>
 void ExtractClauses(bool merge_into_bool_and,
                     absl::Span<const int> index_mapping,
-                    const ClauseContainer& container, CpModelProto* proto) {
+                    const ClauseContainer& container, CpModelProto* proto,
+                    std::string_view debug_name = "") {
   // We regroup the "implication" into bool_and to have a more concise proto and
   // also for nicer information about the number of binary clauses.
   //
@@ -5593,6 +5596,9 @@ void ExtractClauses(bool merge_into_bool_and,
 
     // bool_or.
     ConstraintProto* ct = proto->add_constraints();
+    if (!debug_name.empty()) {
+      ct->set_name(std::string(debug_name));
+    }
     ct->mutable_bool_or()->mutable_literals()->Reserve(clause.size());
     for (const Literal l : clause) {
       const int var = index_mapping[l.Variable().value()];
@@ -7846,8 +7852,10 @@ bool CpModelPresolver::PresolvePureSatPart() {
   }
 
   // Add the sat_postsolver clauses to mapping_model.
+  const std::string name =
+      absl::GetFlag(FLAGS_cp_model_debug_postsolve) ? "sat_postsolver" : "";
   ExtractClauses(/*merge_into_bool_and=*/false, new_to_old_index,
-                 sat_postsolver, context_->mapping_model);
+                 sat_postsolver, context_->mapping_model, name);
   return true;
 }
 
@@ -9903,7 +9911,7 @@ void CpModelPresolver::DetectDifferentVariables() {
         process_difference(ct.linear().vars(0), ct.linear().vars(1),
                            ReadDomainFromProto(ct.linear()));
       } else if (ct.linear().coeffs(0) == -1) {
-        process_difference(ct.linear().vars(1), ct.linear().vars(0),
+        process_difference(ct.linear().vars(0), ct.linear().vars(1),
                            ReadDomainFromProto(ct.linear()).Negation());
       }
     }
@@ -9989,7 +9997,7 @@ void CpModelPresolver::DetectDifferentVariables() {
             process_difference(ct1.linear().vars(0), ct1.linear().vars(1),
                                std::move(union_of_domain));
           } else if (ct1.linear().coeffs(0) == -1) {
-            process_difference(ct1.linear().vars(1), ct1.linear().vars(0),
+            process_difference(ct1.linear().vars(0), ct1.linear().vars(1),
                                union_of_domain.Negation());
           }
         }
@@ -11525,6 +11533,10 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
 
   context_->UpdateRuleStats("variables: removable enforcement literal");
   absl::c_sort(constraint_indices_to_remove);  // For determinism
+
+  // Note(user): Only one constraint should be enough given how the postsolve
+  // work. However that will not work for the case where we postsolve by solving
+  // the mapping model (debug_postsolve_with_full_solver:true).
   for (const int c : constraint_indices_to_remove) {
     context_->NewMappingConstraint(context_->working_model->constraints(c),
                                    __FILE__, __LINE__);
@@ -12101,6 +12113,9 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     }
   }
 
+  // See below. This is used for the mapping constraint.
+  int64_t special_value = 0;
+
   // This must be done after we removed all the constraint containing var.
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   if (is_fully_encoded) {
@@ -12111,35 +12126,40 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     }
     PresolveExactlyOne(new_ct);
   } else {
-    // If all literal are false, then var must take one of the other values.
-    // Note that this one must be first in the mapping model, so that if any
-    // of the literal was true, var was assigned to the correct value.
-    ConstraintProto* mapping_ct =
-        context_->NewMappingConstraint(__FILE__, __LINE__);
-    mapping_ct->mutable_linear()->add_vars(var);
-    mapping_ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(other_values, mapping_ct->mutable_linear());
-
+    // Add an at most one.
     for (const int64_t value : encoded_values) {
-      const int literal = context_->GetOrCreateVarValueEncoding(var, value);
-      mapping_ct->add_enforcement_literal(NegatedRef(literal));
-      new_ct->mutable_at_most_one()->add_literals(literal);
+      new_ct->mutable_at_most_one()->add_literals(
+          context_->GetOrCreateVarValueEncoding(var, value));
     }
     PresolveAtMostOne(new_ct);
+
+    // Pick a "special_value" that our variable can take when all the bi are
+    // false.
+    special_value = other_values.SmallestValue();
   }
   if (context_->ModelIsUnsat()) return;
 
-  // Add enough constraints to the mapping model to recover a valid value
-  // for var when all the booleans are fixed.
+  // To simplify the postsolve, we output a single constraint to infer X from
+  // the bi:  X = sum bi * (Vi - special_value) + special_value
+  ConstraintProto* mapping_ct =
+      context_->NewMappingConstraint(__FILE__, __LINE__);
+  mapping_ct->mutable_linear()->add_vars(var);
+  mapping_ct->mutable_linear()->add_coeffs(1);
+  int64_t offset = special_value;
   for (const int64_t value : encoded_values) {
-    const int enf = context_->GetOrCreateVarValueEncoding(var, value);
-    ConstraintProto* ct = context_->NewMappingConstraint(__FILE__, __LINE__);
-    ct->add_enforcement_literal(enf);
-    ct->mutable_linear()->add_vars(var);
-    ct->mutable_linear()->add_coeffs(1);
-    ct->mutable_linear()->add_domain(value);
-    ct->mutable_linear()->add_domain(value);
+    const int literal = context_->GetOrCreateVarValueEncoding(var, value);
+    const int coeff = (value - special_value);
+    if (RefIsPositive(literal)) {
+      mapping_ct->mutable_linear()->add_vars(literal);
+      mapping_ct->mutable_linear()->add_coeffs(-coeff);
+    } else {
+      offset += coeff;
+      mapping_ct->mutable_linear()->add_vars(PositiveRef(literal));
+      mapping_ct->mutable_linear()->add_coeffs(coeff);
+    }
   }
+  mapping_ct->mutable_linear()->add_domain(offset);
+  mapping_ct->mutable_linear()->add_domain(offset);
 
   context_->UpdateNewConstraintsVariableUsage();
   context_->MarkVariableAsRemoved(var);

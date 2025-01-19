@@ -243,8 +243,40 @@ NoOverlap2DConstraintHelper* IntervalsRepository::GetOrCreate2DHelper(
       no_overlap_2d_helper_repository_.find({x_variables, y_variables});
   if (it != no_overlap_2d_helper_repository_.end()) return it->second;
 
+  std::vector<AffineExpression> x_starts;
+  std::vector<AffineExpression> x_ends;
+  std::vector<AffineExpression> x_sizes;
+  std::vector<LiteralIndex> x_reason_for_presence;
+
+  for (const IntervalVariable i : x_variables) {
+    if (IsOptional(i)) {
+      x_reason_for_presence.push_back(PresenceLiteral(i).Index());
+    } else {
+      x_reason_for_presence.push_back(kNoLiteralIndex);
+    }
+    x_sizes.push_back(Size(i));
+    x_starts.push_back(Start(i));
+    x_ends.push_back(End(i));
+  }
+  std::vector<AffineExpression> y_starts;
+  std::vector<AffineExpression> y_ends;
+  std::vector<AffineExpression> y_sizes;
+  std::vector<LiteralIndex> y_reason_for_presence;
+
+  for (const IntervalVariable i : y_variables) {
+    if (IsOptional(i)) {
+      y_reason_for_presence.push_back(PresenceLiteral(i).Index());
+    } else {
+      y_reason_for_presence.push_back(kNoLiteralIndex);
+    }
+    y_sizes.push_back(Size(i));
+    y_starts.push_back(Start(i));
+    y_ends.push_back(End(i));
+  }
   NoOverlap2DConstraintHelper* helper = new NoOverlap2DConstraintHelper(
-      GetOrCreateHelper(x_variables), GetOrCreateHelper(y_variables), model_);
+      std::move(x_starts), std::move(x_ends), std::move(x_sizes),
+      std::move(x_reason_for_presence), std::move(y_starts), std::move(y_ends),
+      std::move(y_sizes), std::move(y_reason_for_presence), model_);
   helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>());
   no_overlap_2d_helper_repository_[{x_variables, y_variables}] = helper;
   model_->TakeOwnership(helper);

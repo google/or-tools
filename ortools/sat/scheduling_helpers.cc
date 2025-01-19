@@ -209,6 +209,7 @@ bool SchedulingConstraintHelper::ResetFromSubset(
   current_time_direction_ = other.current_time_direction_;
 
   const int num_tasks = tasks.size();
+  CHECK_LE(num_tasks, capacity_);
   starts_.resize(num_tasks);
   ends_.resize(num_tasks);
   minus_ends_.resize(num_tasks);

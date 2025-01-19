@@ -91,6 +91,8 @@ class CpModelPresolver {
   // Visible for testing.
   void RemoveEmptyConstraints();
   void DetectDuplicateColumns();
+  // Detects variable that must take different values.
+  void DetectDifferentVariables();
 
  private:
   // A simple helper that logs the rules applied so far and return INFEASIBLE.
@@ -202,9 +204,6 @@ class CpModelPresolver {
       const CpModelMapping* mapping = nullptr,
       BinaryImplicationGraph* implication_graph = nullptr,
       Trail* trail = nullptr);
-
-  // Detects variable that must take different values.
-  void DetectDifferentVariables();
 
   // Detects if a linear constraint is "included" in another one, and do
   // related presolve.

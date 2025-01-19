@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,8 +42,6 @@
 namespace py = pybind11;
 
 namespace operations_research::sat::python {
-
-using ::py::arg;
 
 void ThrowError(PyObject* py_exception, const std::string& message) {
   PyErr_SetString(py_exception, message.c_str());
@@ -98,7 +97,7 @@ class ResponseWrapper {
 
   double BestObjectiveBound() const { return response_.best_objective_bound(); }
 
-  bool BooleanValue(Literal* lit) const {
+  bool BooleanValue(std::shared_ptr<Literal> lit) const {
     const int index = lit->index();
     if (index >= 0) {
       return response_.solution(index) != 0;
@@ -147,7 +146,7 @@ class ResponseWrapper {
 
   double UserTime() const { return response_.user_time(); }
 
-  int64_t Value(LinearExpr* expr) const {
+  int64_t Value(std::shared_ptr<LinearExpr> expr) const {
     IntExprVisitor visitor;
     int64_t value;
     if (!visitor.Evaluate(expr, response_, &value)) {
@@ -167,9 +166,10 @@ class ResponseWrapper {
 };
 
 // Checks that the result is not null and throws an error if it is.
-BoundedLinearExpression* CheckBoundedLinearExpression(
-    BoundedLinearExpression* result, LinearExpr* lhs,
-    LinearExpr* rhs = nullptr) {
+std::shared_ptr<BoundedLinearExpression> CheckBoundedLinearExpression(
+    std::shared_ptr<BoundedLinearExpression> result,
+    std::shared_ptr<LinearExpr> lhs,
+    std::shared_ptr<LinearExpr> rhs = nullptr) {
   if (!result->ok()) {
     if (rhs == nullptr) {
       ThrowError(PyExc_TypeError,
@@ -186,19 +186,20 @@ BoundedLinearExpression* CheckBoundedLinearExpression(
   return result;
 }
 
-void RaiseIfNone(LinearExpr* expr) {
+void RaiseIfNone(std::shared_ptr<LinearExpr> expr) {
   if (expr == nullptr) {
     ThrowError(PyExc_TypeError,
                "Linear constraints do not accept None as argument.");
   }
 }
 
-void ProcessExprArg(const py::handle& arg,
-                    absl::AnyInvocable<void(LinearExpr*)> on_linear_expr,
-                    absl::AnyInvocable<void(int64_t)> on_int_constant,
-                    absl::AnyInvocable<void(double)> on_float_constant) {
+void ProcessExprArg(
+    const py::handle& arg,
+    absl::AnyInvocable<void(std::shared_ptr<LinearExpr>)> on_linear_expr,
+    absl::AnyInvocable<void(int64_t)> on_int_constant,
+    absl::AnyInvocable<void(double)> on_float_constant) {
   if (py::isinstance<LinearExpr>(arg)) {
-    on_linear_expr(arg.cast<LinearExpr*>());
+    on_linear_expr(arg.cast<std::shared_ptr<LinearExpr>>());
   } else if (py::isinstance<py::int_>(arg)) {
     on_int_constant(arg.cast<int64_t>());
   } else if (py::isinstance<py::float_>(arg)) {
@@ -242,15 +243,16 @@ void ProcessConstantArg(const py::handle& arg,
   }
 }
 
-LinearExpr* SumArguments(py::args expressions) {
-  std::vector<LinearExpr*> linear_exprs;
+std::shared_ptr<LinearExpr> SumArguments(py::args expressions) {
+  std::vector<std::shared_ptr<LinearExpr>> linear_exprs;
   int64_t int_offset = 0;
   double float_offset = 0.0;
   bool has_floats = false;
 
   const auto process_arg = [&](const py::handle& arg) -> void {
     ProcessExprArg(
-        arg, [&](LinearExpr* expr) { linear_exprs.push_back(expr); },
+        arg,
+        [&](std::shared_ptr<LinearExpr> expr) { linear_exprs.push_back(expr); },
         [&](int64_t value) { int_offset += value; },
         [&](double value) {
           if (value != 0.0) {
@@ -282,33 +284,34 @@ LinearExpr* SumArguments(py::args expressions) {
 
   if (linear_exprs.empty()) {
     if (has_floats) {
-      return new FloatConstant(float_offset);
+      return std::make_shared<FloatConstant>(float_offset);
     } else {
-      return new IntConstant(int_offset);
+      return std::make_shared<IntConstant>(int_offset);
     }
   } else if (linear_exprs.size() == 1) {
     if (has_floats) {
       if (float_offset == 0.0) {
         return linear_exprs[0];
       } else {
-        return new FloatAffine(linear_exprs[0], 1.0, float_offset);
+        return std::make_shared<FloatAffine>(linear_exprs[0], 1.0,
+                                             float_offset);
       }
     } else if (int_offset != 0) {
-      return new IntAffine(linear_exprs[0], 1, int_offset);
+      return std::make_shared<IntAffine>(linear_exprs[0], 1, int_offset);
     } else {
       return linear_exprs[0];
     }
   } else {
     if (has_floats) {
-      return new SumArray(linear_exprs, 0, float_offset);
+      return std::make_shared<SumArray>(linear_exprs, 0, float_offset);
     } else {
-      return new SumArray(linear_exprs, int_offset, 0.0);
+      return std::make_shared<SumArray>(linear_exprs, int_offset, 0.0);
     }
   }
 }
 
-LinearExpr* WeightedSumArguments(py::sequence expressions,
-                                 py::sequence coefficients) {
+std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
+                                                 py::sequence coefficients) {
   if (expressions.size() != coefficients.size()) {
     ThrowError(PyExc_ValueError,
                absl::StrCat("LinearExpr::weighted_sum() requires the same "
@@ -316,7 +319,7 @@ LinearExpr* WeightedSumArguments(py::sequence expressions,
                             expressions.size(), " != ", coefficients.size()));
   }
 
-  std::vector<LinearExpr*> linear_exprs;
+  std::vector<std::shared_ptr<LinearExpr>> linear_exprs;
   std::vector<int64_t> int_coeffs;
   std::vector<double> float_coeffs;
   linear_exprs.reserve(expressions.size());
@@ -327,7 +330,7 @@ LinearExpr* WeightedSumArguments(py::sequence expressions,
   bool has_floats = false;
 
   for (int i = 0; i < expressions.size(); ++i) {
-    auto on_expr = [&](LinearExpr* expr) {
+    auto on_expr = [&](std::shared_ptr<LinearExpr> expr) {
       ProcessConstantArg(
           coefficients[i],
           [&](int64_t value) {
@@ -378,23 +381,27 @@ LinearExpr* WeightedSumArguments(py::sequence expressions,
 
   if (linear_exprs.empty()) {
     if (has_floats) {
-      return new FloatConstant(float_offset);
+      return std::make_shared<FloatConstant>(float_offset);
     } else {
-      return new IntConstant(int_offset);
+      return std::make_shared<IntConstant>(int_offset);
     }
   } else if (linear_exprs.size() == 1) {
     if (has_floats) {
-      return new FloatAffine(linear_exprs[0], float_coeffs[0], float_offset);
+      return std::make_shared<FloatAffine>(linear_exprs[0], float_coeffs[0],
+                                           float_offset);
     } else if (int_offset != 0 || int_coeffs[0] != 1) {
-      return new IntAffine(linear_exprs[0], int_coeffs[0], int_offset);
+      return std::make_shared<IntAffine>(linear_exprs[0], int_coeffs[0],
+                                         int_offset);
     } else {
       return linear_exprs[0];
     }
   } else {
     if (has_floats) {
-      return new FloatWeightedSum(linear_exprs, float_coeffs, float_offset);
+      return std::make_shared<FloatWeightedSum>(linear_exprs, float_coeffs,
+                                                float_offset);
     } else {
-      return new IntWeightedSum(linear_exprs, int_coeffs, int_offset);
+      return std::make_shared<IntWeightedSum>(linear_exprs, int_coeffs,
+                                              int_offset);
     }
   }
 }
@@ -419,15 +426,16 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("ObjectiveValue", &SolutionCallback::ObjectiveValue)
       .def("Response", &SolutionCallback::Response)
       .def("SolutionBooleanValue", &SolutionCallback::SolutionBooleanValue,
-           arg("index"))
+           py::arg("index"))
       .def("SolutionIntegerValue", &SolutionCallback::SolutionIntegerValue,
-           arg("index"))
+           py::arg("index"))
       .def("StopSearch", &SolutionCallback::StopSearch)
       .def("UserTime", &SolutionCallback::UserTime)
       .def("WallTime", &SolutionCallback::WallTime)
       .def(
           "Value",
-          [](const SolutionCallback& callback, LinearExpr* expr) {
+          [](const SolutionCallback& callback,
+             std::shared_ptr<LinearExpr> expr) {
             IntExprVisitor visitor;
             int64_t value;
             if (!visitor.Evaluate(expr, callback.Response(), &value)) {
@@ -443,7 +451,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "Returns the value of a linear expression after solve.")
       .def(
           "BooleanValue",
-          [](const SolutionCallback& callback, Literal* lit) {
+          [](const SolutionCallback& callback, std::shared_ptr<Literal> lit) {
             return callback.SolutionBooleanValue(lit->index());
           },
           "Returns the Boolean value of a literal after solve.")
@@ -453,8 +461,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
 
   py::class_<ResponseWrapper>(m, "ResponseWrapper")
       .def("best_objective_bound", &ResponseWrapper::BestObjectiveBound)
-      .def("boolean_value", &ResponseWrapper::BooleanValue, arg("lit"))
-      .def("boolean_value", &ResponseWrapper::FixedBooleanValue, arg("lit"))
+      .def("boolean_value", &ResponseWrapper::BooleanValue, py::arg("lit"))
+      .def("boolean_value", &ResponseWrapper::FixedBooleanValue, py::arg("lit"))
       .def("deterministic_time", &ResponseWrapper::DeterministicTime)
       .def("num_binary_propagations", &ResponseWrapper::NumBinaryPropagations)
       .def("num_booleans", &ResponseWrapper::NumBooleans)
@@ -470,20 +478,21 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("sufficient_assumptions_for_infeasibility",
            &ResponseWrapper::SufficientAssumptionsForInfeasibility)
       .def("user_time", &ResponseWrapper::UserTime)
-      .def("value", &ResponseWrapper::Value, arg("expr"))
-      .def("value", &ResponseWrapper::FixedValue, arg("value"))
+      .def("value", &ResponseWrapper::Value, py::arg("expr"))
+      .def("value", &ResponseWrapper::FixedValue, py::arg("value"))
       .def("wall_time", &ResponseWrapper::WallTime);
 
   py::class_<SolveWrapper>(m, "SolveWrapper")
       .def(py::init<>())
       .def("add_log_callback", &SolveWrapper::AddLogCallback,
-           arg("log_callback"))
+           py::arg("log_callback"))
       .def("add_solution_callback", &SolveWrapper::AddSolutionCallback,
-           arg("callback"))
+           py::arg("callback"))
       .def("clear_solution_callback", &SolveWrapper::ClearSolutionCallback)
       .def("add_best_bound_callback", &SolveWrapper::AddBestBoundCallback,
-           arg("best_bound_callback"))
-      .def("set_parameters", &SolveWrapper::SetParameters, arg("parameters"))
+           py::arg("best_bound_callback"))
+      .def("set_parameters", &SolveWrapper::SetParameters,
+           py::arg("parameters"))
       .def("solve",
            [](SolveWrapper* solve_wrapper,
               const CpModelProto& model_proto) -> CpSolverResponse {
@@ -499,128 +508,106 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("stop_search", &SolveWrapper::StopSearch);
 
   py::class_<CpSatHelper>(m, "CpSatHelper")
-      .def_static("model_stats", &CpSatHelper::ModelStats, arg("model_proto"))
+      .def_static("model_stats", &CpSatHelper::ModelStats,
+                  py::arg("model_proto"))
       .def_static("solver_response_stats", &CpSatHelper::SolverResponseStats,
-                  arg("response"))
+                  py::arg("response"))
       .def_static("validate_model", &CpSatHelper::ValidateModel,
-                  arg("model_proto"))
+                  py::arg("model_proto"))
       .def_static("variable_domain", &CpSatHelper::VariableDomain,
-                  arg("variable_proto"))
+                  py::arg("variable_proto"))
       .def_static("write_model_to_file", &CpSatHelper::WriteModelToFile,
-                  arg("model_proto"), arg("filename"));
+                  py::arg("model_proto"), py::arg("filename"));
 
-  py::class_<LinearExpr>(m, "LinearExpr",
-                         DOC(operations_research, sat, python, LinearExpr))
-      .def_static("sum", &SumArguments, py::return_value_policy::automatic,
-                  "Returns the sum(expressions).", py::keep_alive<0, 1>())
-      .def_static("weighted_sum", &WeightedSumArguments, arg("expressions"),
-                  arg("coefficients"),
-                  "Returns the sum of (expressions[i] * coefficients[i])",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("term", &LinearExpr::TermInt, arg("expr").none(false),
-                  arg("coeff"),
-                  DOC(operations_research, sat, python, LinearExpr, TermInt),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("term", &LinearExpr::TermFloat, arg("expr").none(false),
-                  arg("coeff"),
-                  DOC(operations_research, sat, python, LinearExpr, TermFloat),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("affine", &LinearExpr::AffineInt, arg("expr").none(false),
-                  arg("coeff"), arg("offset"),
-                  DOC(operations_research, sat, python, LinearExpr, AffineInt),
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+  py::class_<LinearExpr, std::shared_ptr<LinearExpr>>(
+      m, "LinearExpr", DOC(operations_research, sat, python, LinearExpr))
+      .def_static("sum", &SumArguments, "Returns the sum(expressions).")
+      .def_static("weighted_sum", &WeightedSumArguments, py::arg("expressions"),
+                  py::arg("coefficients"),
+                  "Returns the sum of (expressions[i] * coefficients[i])")
+      .def_static("term", &LinearExpr::TermInt, py::arg("expr").none(false),
+                  py::arg("coeff"),
+                  DOC(operations_research, sat, python, LinearExpr, TermInt))
+      .def_static("term", &LinearExpr::TermFloat, py::arg("expr").none(false),
+                  py::arg("coeff"),
+                  DOC(operations_research, sat, python, LinearExpr, TermFloat))
+      .def_static("affine", &LinearExpr::AffineInt, py::arg("expr").none(false),
+                  py::arg("coeff"), py::arg("offset"),
+                  DOC(operations_research, sat, python, LinearExpr, AffineInt))
       .def_static(
-          "affine", &LinearExpr::AffineFloat, arg("expr").none(false),
-          arg("coeff"), arg("offset"),
-          DOC(operations_research, sat, python, LinearExpr, AffineFloat),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+          "affine", &LinearExpr::AffineFloat, py::arg("expr").none(false),
+          py::arg("coeff"), py::arg("offset"),
+          DOC(operations_research, sat, python, LinearExpr, AffineFloat))
       .def_static(
-          "constant", &LinearExpr::ConstantInt, arg("value"),
-          DOC(operations_research, sat, python, LinearExpr, ConstantInt),
-          py::return_value_policy::automatic)
+          "constant", &LinearExpr::ConstantInt, py::arg("value"),
+          DOC(operations_research, sat, python, LinearExpr, ConstantInt))
       .def_static(
-          "constant", &LinearExpr::ConstantFloat, arg("value"),
-          DOC(operations_research, sat, python, LinearExpr, ConstantFloat),
-          py::return_value_policy::automatic)
+          "constant", &LinearExpr::ConstantFloat, py::arg("value"),
+          DOC(operations_research, sat, python, LinearExpr, ConstantFloat))
       // Pre PEP8 compatibility layer.
-      .def_static("Sum", &SumArguments, py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static("WeightedSum", &WeightedSumArguments, arg("expressions"),
-                  arg("coefficients"), py::return_value_policy::automatic,
-                  py::keep_alive<0, 1>())
-      .def_static("Term", &LinearExpr::TermInt, arg("expr").none(false),
-                  arg("coeff"), "Returns expr * coeff.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("Term", &LinearExpr::TermFloat, arg("expr").none(false),
-                  arg("coeff"), "Returns expr * coeff.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def_static("Sum", &SumArguments)
+      .def_static("WeightedSum", &WeightedSumArguments, py::arg("expressions"),
+                  py::arg("coefficients"))
+      .def_static("Term", &LinearExpr::TermInt, py::arg("expr").none(false),
+                  py::arg("coeff"), "Returns expr * coeff.")
+      .def_static("Term", &LinearExpr::TermFloat, py::arg("expr").none(false),
+                  py::arg("coeff"), "Returns expr * coeff.")
       // Methods.
-      .def("__str__", &LinearExpr::ToString)
-      .def("__repr__", &LinearExpr::DebugString)
-      .def("is_integer", &LinearExpr::IsInteger,
-           DOC(operations_research, sat, python, LinearExpr, IsInteger))
+      .def("__str__",
+           [](std::shared_ptr<LinearExpr> expr) -> std::string {
+             return expr->ToString();
+           })
+      .def("__repr__",
+           [](std::shared_ptr<LinearExpr> expr) -> std::string {
+             return expr->DebugString();
+           })
+      .def(
+          "is_integer",
+          [](std::shared_ptr<LinearExpr> expr) -> bool {
+            return expr->IsInteger();
+          },
+          DOC(operations_research, sat, python, LinearExpr, IsInteger))
       // Operators.
-      // Note that we keep the 3 APIS (expr, int, double) instead of using
-      // an ExprOrValue argument as this is more efficient.
-      .def("__add__", &LinearExpr::Add, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           DOC(operations_research, sat, python, LinearExpr, Add),
-           py::keep_alive<0, 2>())
-      .def("__add__", &LinearExpr::AddInt, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddInt),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__add__", &LinearExpr::AddFloat, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddFloat),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &LinearExpr::AddInt, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddInt),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &LinearExpr::AddFloat, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddInt),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
-           DOC(operations_research, sat, python, LinearExpr, Sub),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__sub__", &LinearExpr::SubInt, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, SubInt),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &LinearExpr::SubFloat, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, SubFloat),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &LinearExpr::RSubInt, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, RSubInt),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &LinearExpr::RSubFloat, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, RSubFloat),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__mul__", &LinearExpr::MulInt, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulInt),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__mul__", &LinearExpr::MulFloat, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulFloat),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &LinearExpr::MulInt, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulInt),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &LinearExpr::MulFloat, arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulFloat),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__neg__", &LinearExpr::Neg, py::return_value_policy::automatic,
-           DOC(operations_research, sat, python, LinearExpr, Neg),
-           py::keep_alive<0, 1>())
+      .def("__add__", &LinearExpr::Add, py::arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Add))
+      .def("__add__", &LinearExpr::AddInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def("__add__", &LinearExpr::AddFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def("__radd__", &LinearExpr::AddInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def("__radd__", &LinearExpr::AddFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def("__sub__", &LinearExpr::Sub, py::arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Sub))
+      .def("__sub__", &LinearExpr::SubInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubInt))
+      .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubFloat))
+      .def("__rsub__", &LinearExpr::RSubInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubInt))
+      .def("__rsub__", &LinearExpr::RSubFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubFloat))
+      .def("__mul__", &LinearExpr::MulInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt))
+      .def("__mul__", &LinearExpr::MulFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat))
+      .def("__rmul__", &LinearExpr::MulInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt))
+      .def("__rmul__", &LinearExpr::MulFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat))
+      .def("__neg__", &LinearExpr::Neg,
+           DOC(operations_research, sat, python, LinearExpr, Neg))
       .def(
           "__eq__",
-          [](LinearExpr* lhs, LinearExpr* rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, std::shared_ptr<LinearExpr> rhs) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Eq(rhs), lhs, rhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, Eq),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-          py::keep_alive<0, 2>())
+          DOC(operations_research, sat, python, LinearExpr, Eq))
       .def(
           "__eq__",
-          [](LinearExpr* lhs, int64_t rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max() ||
                 rhs == std::numeric_limits<int64_t>::min()) {
               ThrowError(PyExc_ValueError,
@@ -628,208 +615,345 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return CheckBoundedLinearExpression(lhs->EqCst(rhs), lhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, EqCst),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+          DOC(operations_research, sat, python, LinearExpr, EqCst))
       .def(
           "__ne__",
-          [](LinearExpr* lhs, LinearExpr* rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, std::shared_ptr<LinearExpr> rhs) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Ne(rhs), lhs, rhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, Ne),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-          py::keep_alive<0, 2>())
+          DOC(operations_research, sat, python, LinearExpr, Ne))
       .def(
           "__ne__",
-          [](LinearExpr* lhs, int64_t rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, int64_t rhs) {
             return CheckBoundedLinearExpression(lhs->NeCst(rhs), lhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, NeCst),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+          DOC(operations_research, sat, python, LinearExpr, NeCst))
       .def(
           "__le__",
-          [](LinearExpr* lhs, LinearExpr* rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, std::shared_ptr<LinearExpr> rhs) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Le(rhs), lhs, rhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, Le),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-          py::keep_alive<0, 2>())
+          DOC(operations_research, sat, python, LinearExpr, Le))
       .def(
           "__le__",
-          [](LinearExpr* lhs, int64_t rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::min()) {
               ThrowError(PyExc_ArithmeticError, "<= INT_MIN is not supported");
             }
             return CheckBoundedLinearExpression(lhs->LeCst(rhs), lhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, LeCst),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+          DOC(operations_research, sat, python, LinearExpr, LeCst))
       .def(
           "__lt__",
-          [](LinearExpr* lhs, LinearExpr* rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, std::shared_ptr<LinearExpr> rhs) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Lt(rhs), lhs, rhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, Lt),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-          py::keep_alive<0, 2>())
+          DOC(operations_research, sat, python, LinearExpr, Lt))
       .def(
           "__lt__",
-          [](LinearExpr* lhs, int64_t rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::min()) {
               ThrowError(PyExc_ArithmeticError, "< INT_MIN is not supported");
             }
             return CheckBoundedLinearExpression(lhs->LtCst(rhs), lhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, LtCst),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+          DOC(operations_research, sat, python, LinearExpr, LtCst))
       .def(
           "__ge__",
-          [](LinearExpr* lhs, LinearExpr* rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, std::shared_ptr<LinearExpr> rhs) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Ge(rhs), lhs, rhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, Ge),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-          py::keep_alive<0, 2>())
+          DOC(operations_research, sat, python, LinearExpr, Ge))
       .def(
           "__ge__",
-          [](LinearExpr* lhs, int64_t rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max()) {
               ThrowError(PyExc_ArithmeticError, ">= INT_MAX is not supported");
             }
             return CheckBoundedLinearExpression(lhs->GeCst(rhs), lhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, GeCst),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+          DOC(operations_research, sat, python, LinearExpr, GeCst))
       .def(
           "__gt__",
-          [](LinearExpr* lhs, LinearExpr* rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, std::shared_ptr<LinearExpr> rhs) {
             RaiseIfNone(rhs);
             return CheckBoundedLinearExpression(lhs->Gt(rhs), lhs, rhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, Gt),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-          py::keep_alive<0, 2>())
+          DOC(operations_research, sat, python, LinearExpr, Gt))
       .def(
           "__gt__",
-          [](LinearExpr* lhs, int64_t rhs) {
+          [](std::shared_ptr<LinearExpr> lhs, int64_t rhs) {
             if (rhs == std::numeric_limits<int64_t>::max()) {
               ThrowError(PyExc_ArithmeticError, "> INT_MAX is not supported");
             }
             return CheckBoundedLinearExpression(lhs->GtCst(rhs), lhs);
           },
-          DOC(operations_research, sat, python, LinearExpr, GtCst),
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
+          DOC(operations_research, sat, python, LinearExpr, GtCst))
       // Disable other operators as they are not supported.
       .def("__div__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling / on a linear expression is not supported, "
                         "please use CpModel.add_division_equality");
            })
       .def("__truediv__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling // on a linear expression is not supported, "
                         "please use CpModel.add_division_equality");
            })
       .def("__mod__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling %% on a linear expression is not supported, "
                         "please use CpModel.add_modulo_equality");
            })
       .def("__pow__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling ** on a linear expression is not supported, "
                         "please use CpModel.add_multiplication_equality");
            })
       .def("__lshift__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling left shift on a linear expression is not "
                         "supported");
            })
       .def("__rshift__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling right shift on a linear expression is "
                         "not supported");
            })
       .def("__and__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling and on a linear expression is not supported");
            })
       .def("__or__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling or on a linear expression is not supported");
            })
       .def("__xor__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling xor on a linear expression is not supported");
            })
       .def("__abs__",
-           [](LinearExpr* /*self*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/) {
              ThrowError(
                  PyExc_NotImplementedError,
                  "calling abs() on a linear expression is not supported, "
                  "please use CpModel.add_abs_equality");
            })
-      .def("__bool__", [](LinearExpr* /*self*/) {
+      .def("__bool__", [](std::shared_ptr<LinearExpr> /*self*/) {
         ThrowError(PyExc_NotImplementedError,
                    "Evaluating a LinearExpr instance as a Boolean is "
                    "not supported.");
       });
 
   // Expose Internal classes, mostly for testing.
-  py::class_<FlatFloatExpr, LinearExpr>(
+  py::class_<FlatFloatExpr, std::shared_ptr<FlatFloatExpr>, LinearExpr>(
       m, "FlatFloatExpr", DOC(operations_research, sat, python, FlatFloatExpr))
-      .def(py::init<LinearExpr*>(), py::keep_alive<1, 2>())
+      .def(py::init<std::shared_ptr<LinearExpr>>())
       .def_property_readonly("vars", &FlatFloatExpr::vars)
       .def_property_readonly("coeffs", &FlatFloatExpr::coeffs)
       .def_property_readonly("offset", &FlatFloatExpr::offset);
 
-  py::class_<FlatIntExpr, LinearExpr>(
+  py::class_<FlatIntExpr, std::shared_ptr<FlatIntExpr>, LinearExpr>(
       m, "FlatIntExpr", DOC(operations_research, sat, python, FlatIntExpr))
-      .def(py::init([](LinearExpr* expr) {
-             FlatIntExpr* result = new FlatIntExpr(expr);
-             if (!result->ok()) {
-               ThrowError(
-                   PyExc_TypeError,
-                   absl::StrCat("Tried to build a FlatIntExpr from a linear "
-                                "expression with "
-                                "floating point coefficients or constants:  ",
-                                expr->DebugString()));
-             }
-             return result;
-           }),
-           py::keep_alive<1, 2>())
+      .def(py::init([](std::shared_ptr<LinearExpr> expr) {
+        FlatIntExpr* result = new FlatIntExpr(expr);
+        if (!result->ok()) {
+          ThrowError(PyExc_TypeError,
+                     absl::StrCat("Tried to build a FlatIntExpr from a linear "
+                                  "expression with "
+                                  "floating point coefficients or constants:  ",
+                                  expr->DebugString()));
+        }
+        return result;
+      }))
       .def_property_readonly("vars", &FlatIntExpr::vars)
       .def_property_readonly("coeffs", &FlatIntExpr::coeffs)
       .def_property_readonly("offset", &FlatIntExpr::offset)
       .def_property_readonly("ok", &FlatIntExpr::ok);
 
-  py::class_<FloatAffine, LinearExpr>(
+  py::class_<SumArray, std::shared_ptr<SumArray>, LinearExpr>(
+      m, "SumArray", DOC(operations_research, sat, python, SumArray))
+      .def(
+          py::init<std::vector<std::shared_ptr<LinearExpr>>, int64_t, double>())
+      .def(
+          "__add__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddInPlace(other);
+              return expr;
+            }
+            return expr->Add(other);
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, Add))
+      .def(
+          "__add__",
+          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddIntInPlace(cst);
+              return expr;
+            }
+            return expr->AddInt(cst);
+          },
+          DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def(
+          "__add__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddFloatInPlace(cst);
+              return expr;
+            }
+            return expr->AddFloat(cst);
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def(
+          "__radd__",
+          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddIntInPlace(cst);
+              return expr;
+            }
+            return expr->AddInt(cst);
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def(
+          "__radd__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddFloatInPlace(cst);
+              return expr;
+            }
+            return expr->AddFloat(cst);
+          },
+          DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def(
+          "__sub__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddInPlace(other->Neg());
+              return expr;
+            }
+            return expr->Sub(other);
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, Sub))
+      .def(
+          "__sub__",
+          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddIntInPlace(-cst);
+              return expr;
+            }
+            return expr->SubInt(cst);
+          },
+          DOC(operations_research, sat, python, LinearExpr, SubInt))
+      .def(
+          "__sub__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddFloatInPlace(-cst);
+              return expr;
+            }
+            return expr->SubFloat(cst);
+          },
+          DOC(operations_research, sat, python, LinearExpr, SubFloat))
+      .def_property_readonly("num_exprs", &SumArray::num_exprs)
+      .def_property_readonly("int_offset", &SumArray::int_offset)
+      .def_property_readonly("double_offset", &SumArray::double_offset);
+
+  py::class_<FloatAffine, std::shared_ptr<FloatAffine>, LinearExpr>(
       m, "FloatAffine", DOC(operations_research, sat, python, FloatAffine))
-      .def(py::init<LinearExpr*, double, double>(), py::keep_alive<1, 2>())
+      .def(py::init<std::shared_ptr<LinearExpr>, double, double>())
       .def_property_readonly("expression", &FloatAffine::expression)
       .def_property_readonly("coefficient", &FloatAffine::coefficient)
       .def_property_readonly("offset", &FloatAffine::offset);
 
-  py::class_<IntAffine, LinearExpr>(
+  // We adding an operator like __add__(int), we need to add all overloads,
+  // otherwise they are not found.
+  py::class_<IntAffine, std::shared_ptr<IntAffine>, LinearExpr>(
       m, "IntAffine", DOC(operations_research, sat, python, IntAffine))
-      .def(py::init<LinearExpr*, int64_t, int64_t>(), py::keep_alive<1, 2>())
-      .def_property_readonly("expression", &IntAffine::expression)
-      .def_property_readonly("coefficient", &IntAffine::coefficient)
-      .def_property_readonly("offset", &IntAffine::offset);
+      .def(py::init<std::shared_ptr<LinearExpr>, int64_t, int64_t>())
+      .def("__add__", &LinearExpr::Add, py::arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Add))
+      .def("__add__", &IntAffine::AddInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def("__add__", &LinearExpr::AddFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def("__radd__", &LinearExpr::Add, py::arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Add))
+      .def("__radd__", &IntAffine::AddInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def("__radd__", &LinearExpr::AddFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def("__sub__", &LinearExpr::Sub, py::arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, Sub))
+      .def("__sub__", &IntAffine::SubInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubInt))
+      .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, SubFloat))
+      .def("__rsub__", &IntAffine::RSubInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubInt))
+      .def("__rsub__", &LinearExpr::SubFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, RSubFloat))
+      .def("__mul__", &IntAffine::MulInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt))
+      .def("__mul__", &LinearExpr::MulFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat))
+      .def("__rmul__", &IntAffine::MulInt, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulInt))
+      .def("__rmul__", &LinearExpr::MulFloat, py::arg("cst"),
+           DOC(operations_research, sat, python, LinearExpr, MulFloat))
+      .def("__neg__", &IntAffine::Neg,
+           DOC(operations_research, sat, python, LinearExpr, Neg))
+      .def_property_readonly("expression", &IntAffine::expression,
+                             "Returns the linear expression.")
+      .def_property_readonly("coefficient", &IntAffine::coefficient,
+                             "Returns the coefficient.")
+      .def_property_readonly("offset", &IntAffine::offset,
+                             "Returns the offset.");
 
-  py::class_<Literal, LinearExpr>(
+  py::class_<Literal, std::shared_ptr<Literal>, LinearExpr>(
       m, "Literal", DOC(operations_research, sat, python, Literal))
       .def_property_readonly(
           "index", &Literal::index,
@@ -839,7 +963,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("__invert__", &Literal::negated,
            DOC(operations_research, sat, python, Literal, negated))
       .def("__bool__",
-           [](Literal* /*self*/) {
+           [](std::shared_ptr<Literal> /*self*/) {
              ThrowError(PyExc_NotImplementedError,
                         "Evaluating a Literal as a Boolean valueis "
                         "not supported.");
@@ -849,15 +973,10 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("Index", &Literal::index);
 
   // Memory management:
-  // - The BaseIntVar owns the NotBooleanVariable.
-  // - The NotBooleanVariable is created at the same time as the base variable
-  //   when the variable is Boolean, and is deleted when the base variable is
-  //   deleted.
-  // - The negated() methods return an internal reference to the negated
-  //   object. That means memory of the negated variable is onwed by the C++
-  //   layer, but a reference is kept in python to link the lifetime of the
-  //   negated variable to the base variable.
-  py::class_<BaseIntVar, PyBaseIntVar, Literal>(
+  // - The BaseIntVar owns the NotBooleanVariable and keeps a shared_ptr to it.
+  // - The NotBooleanVariable is created on demand, and is deleted when the base
+  //   variable is deleted. It holds a weak_ptr to the base variable.
+  py::class_<BaseIntVar, PyBaseIntVar, std::shared_ptr<BaseIntVar>, Literal>(
       m, "BaseIntVar", DOC(operations_research, sat, python, BaseIntVar))
       .def(py::init<int>())        // Integer variable.
       .def(py::init<int, bool>())  // Potential Boolean variable.
@@ -871,66 +990,104 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("__repr__", &BaseIntVar::DebugString)
       .def(
           "negated",
-          [](BaseIntVar* self) {
+          [](std::shared_ptr<BaseIntVar> self) {
             if (!self->is_boolean()) {
               ThrowError(PyExc_TypeError,
                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
-          DOC(operations_research, sat, python, BaseIntVar, negated),
-          py::return_value_policy::reference_internal)
+          DOC(operations_research, sat, python, BaseIntVar, negated))
       .def(
           "__invert__",
-          [](BaseIntVar* self) {
+          [](std::shared_ptr<BaseIntVar> self) {
             if (!self->is_boolean()) {
               ThrowError(PyExc_TypeError,
                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
-          DOC(operations_research, sat, python, BaseIntVar, negated),
-          py::return_value_policy::reference_internal)
+          DOC(operations_research, sat, python, BaseIntVar, negated))
       // PEP8 Compatibility.
-      .def(
-          "Not",
-          [](BaseIntVar* self) {
-            if (!self->is_boolean()) {
-              ThrowError(PyExc_TypeError,
-                         "negated() is only supported for Boolean variables.");
-            }
-            return self->negated();
-          },
-          py::return_value_policy::reference_internal);
+      .def("Not",
+           [](std::shared_ptr<BaseIntVar> self) {
+             if (!self->is_boolean()) {
+               ThrowError(PyExc_TypeError,
+                          "negated() is only supported for Boolean variables.");
+             }
+             return self->negated();
+           })
+      .def("Index", &BaseIntVar::index);
 
-  // Memory management:
-  // - Do we need a reference_internal (that add a py::keep_alive<1, 0>()
-  // rule)
-  //   or just a reference ?
-  py::class_<NotBooleanVariable, Literal>(
+  py::class_<NotBooleanVariable, std::shared_ptr<NotBooleanVariable>, Literal>(
       m, "NotBooleanVariable",
       DOC(operations_research, sat, python, NotBooleanVariable))
       .def_property_readonly(
-          "index", &NotBooleanVariable::index,
+          "index",
+          [](std::shared_ptr<NotBooleanVariable> not_var) -> int {
+            if (!not_var->ok()) {
+              ThrowError(PyExc_ReferenceError,
+                         "The base variable is not valid.");
+            }
+            return not_var->index();
+          },
           DOC(operations_research, sat, python, NotBooleanVariable, index))
-      .def("__str__", &NotBooleanVariable::ToString)
-      .def("__repr__", &NotBooleanVariable::DebugString)
-      .def("negated", &NotBooleanVariable::negated,
-           DOC(operations_research, sat, python, NotBooleanVariable, negated),
-           py::return_value_policy::reference_internal)
-      .def("__invert__", &NotBooleanVariable::negated,
-           DOC(operations_research, sat, python, NotBooleanVariable, negated),
-           py::return_value_policy::reference_internal)
-      .def("Not", &NotBooleanVariable::negated,
-           "Returns the negation of the current Boolean variable.",
-           py::return_value_policy::reference_internal);
+      .def("__str__",
+           [](std::shared_ptr<NotBooleanVariable> not_var) -> std::string {
+             if (!not_var->ok()) {
+               ThrowError(PyExc_ReferenceError,
+                          "The base variable is not valid.");
+             }
+             return not_var->ToString();
+           })
+      .def("__repr__",
+           [](std::shared_ptr<NotBooleanVariable> not_var) -> std::string {
+             if (!not_var->ok()) {
+               ThrowError(PyExc_ReferenceError,
+                          "The base variable is not valid.");
+             }
+             return not_var->DebugString();
+           })
+      .def(
+          "negated",
+          [](std::shared_ptr<NotBooleanVariable> not_var)
+              -> std::shared_ptr<Literal> {
+            if (!not_var->ok()) {
+              ThrowError(PyExc_ReferenceError,
+                         "The base variable is not valid.");
+            }
+            return not_var->negated();
+          },
+          DOC(operations_research, sat, python, NotBooleanVariable, negated))
+      .def(
+          "__invert__",
+          [](std::shared_ptr<NotBooleanVariable> not_var)
+              -> std::shared_ptr<Literal> {
+            if (!not_var->ok()) {
+              ThrowError(PyExc_ReferenceError,
+                         "The base variable is not valid.");
+            }
+            return not_var->negated();
+          },
+          DOC(operations_research, sat, python, NotBooleanVariable, negated))
+      .def(
+          "Not",
+          [](std::shared_ptr<NotBooleanVariable> not_var)
+              -> std::shared_ptr<Literal> {
+            if (!not_var->ok()) {
+              ThrowError(PyExc_ReferenceError,
+                         "The base variable is not valid.");
+            }
+            return not_var->negated();
+          },
+          DOC(operations_research, sat, python, NotBooleanVariable, negated));
 
-  py::class_<BoundedLinearExpression>(
+  py::class_<BoundedLinearExpression, std::shared_ptr<BoundedLinearExpression>>(
       m, "BoundedLinearExpression",
       DOC(operations_research, sat, python, BoundedLinearExpression))
-      .def(py::init<const LinearExpr*, Domain>(), py::keep_alive<1, 2>())
-      .def(py::init<const LinearExpr*, const LinearExpr*, Domain>(),
-           py::keep_alive<1, 2>(), py::keep_alive<1, 3>())
+      .def(py::init<const std::shared_ptr<LinearExpr>, Domain>())
+      .def(py::init<const std::shared_ptr<LinearExpr>,
+                    const std::shared_ptr<LinearExpr>, Domain>())
       .def_property_readonly("bounds", &BoundedLinearExpression::bounds)
       .def_property_readonly("vars", &BoundedLinearExpression::vars)
       .def_property_readonly("coeffs", &BoundedLinearExpression::coeffs)

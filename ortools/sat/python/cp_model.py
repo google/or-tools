@@ -306,38 +306,6 @@ class IntVar(cmh.BaseIntVar):
     # pylint: enable=invalid-name
 
 
-def rebuild_from_linear_expression_proto(
-    model: cp_model_pb2.CpModelProto,
-    proto: cp_model_pb2.LinearExpressionProto,
-) -> LinearExprT:
-    """Recreate a LinearExpr from a LinearExpressionProto."""
-    num_elements = len(proto.vars)
-    if num_elements == 0:
-        return proto.offset
-    elif num_elements == 1:
-        var_proto = model.variables[proto.vars[0]]
-        is_boolean = var_proto.domain[0] >= 0 and var_proto.domain[1] <= 1
-        var = IntVar(model, proto.vars[0], is_boolean, None)
-        return LinearExpr.affine(
-            var, proto.coeffs[0], proto.offset
-        )  # pytype: disable=bad-return-type
-    else:
-        variables = []
-        for index in proto.vars:
-            var_proto = model.variables[index]
-            is_boolean = var_proto.domain[0] >= 0 and var_proto.domain[1] <= 1
-            var = IntVar(model, index, is_boolean, None)
-            variables.append(var)
-        if proto.offset != 0:
-            coeffs = []
-            coeffs.extend(proto.coeffs)
-            coeffs.append(1)
-            variables.append(proto.offset)
-            return LinearExpr.weighted_sum(variables, coeffs)
-        else:
-            return LinearExpr.weighted_sum(variables, proto.coeffs)
-
-
 class Constraint:
     """Base class for constraints.
 
@@ -446,6 +414,49 @@ class Constraint:
     # pylint: enable=invalid-name
 
 
+class VariableList:
+    """Stores all integer variables of the model."""
+
+    def __init__(self) -> None:
+        self.__var_list: list[IntVar] = []
+
+    def store(self, var: IntVar) -> None:
+        assert var.index == len(self.__var_list)
+        self.__var_list.append(var)
+
+    def query(self, index: int) -> IntVar:
+        if index < 0 or index >= len(self.__var_list):
+            raise ValueError("Index out of bounds.")
+        return self.__var_list[index]
+
+    def rebuild_expr(
+        self,
+        proto: cp_model_pb2.LinearExpressionProto,
+    ) -> LinearExprT:
+        """Recreate a LinearExpr from a LinearExpressionProto."""
+        num_elements = len(proto.vars)
+        if num_elements == 0:
+            return proto.offset
+        elif num_elements == 1:
+            var = self.query(proto.vars[0])
+            return LinearExpr.affine(
+                var, proto.coeffs[0], proto.offset
+            )  # pytype: disable=bad-return-type
+        else:
+            variables = []
+            for var_index in range(len(proto.vars)):
+                var = self.query(var_index)
+                variables.append(var)
+            if proto.offset != 0:
+                coeffs = []
+                coeffs.extend(proto.coeffs)
+                coeffs.append(1)
+                variables.append(proto.offset)
+                return LinearExpr.weighted_sum(variables, coeffs)
+            else:
+                return LinearExpr.weighted_sum(variables, proto.coeffs)
+
+
 class IntervalVar:
     """Represents an Interval variable.
 
@@ -470,6 +481,7 @@ class IntervalVar:
     def __init__(
         self,
         model: cp_model_pb2.CpModelProto,
+        var_list: VariableList,
         start: Union[cp_model_pb2.LinearExpressionProto, int],
         size: Optional[cp_model_pb2.LinearExpressionProto],
         end: Optional[cp_model_pb2.LinearExpressionProto],
@@ -477,6 +489,7 @@ class IntervalVar:
         name: Optional[str],
     ) -> None:
         self.__model: cp_model_pb2.CpModelProto = model
+        self.__var_list: VariableList = var_list
         self.__index: int
         self.__ct: cp_model_pb2.ConstraintProto
         # As with the IntVar::__init__ method, we hack the __init__ method to
@@ -550,19 +563,13 @@ class IntervalVar:
         return self.__ct.name
 
     def start_expr(self) -> LinearExprT:
-        return rebuild_from_linear_expression_proto(
-            self.__model, self.__ct.interval.start
-        )
+        return self.__var_list.rebuild_expr(self.__ct.interval.start)
 
     def size_expr(self) -> LinearExprT:
-        return rebuild_from_linear_expression_proto(
-            self.__model, self.__ct.interval.size
-        )
+        return self.__var_list.rebuild_expr(self.__ct.interval.size)
 
     def end_expr(self) -> LinearExprT:
-        return rebuild_from_linear_expression_proto(
-            self.__model, self.__ct.interval.end
-        )
+        return self.__var_list.rebuild_expr(self.__ct.interval.end)
 
     # Pre PEP8 compatibility.
     # pylint: disable=invalid-name
@@ -620,6 +627,7 @@ class CpModel:
     def __init__(self) -> None:
         self.__model: cp_model_pb2.CpModelProto = cp_model_pb2.CpModelProto()
         self.__constant_map: Dict[IntegralT, int] = {}
+        self.__var_list: VariableList = VariableList()
 
     # Naming.
     @property
@@ -635,6 +643,20 @@ class CpModel:
         self.__model.name = name
 
     # Integer variable.
+
+    def _store_int_var(self, var: IntVar) -> IntVar:
+        """Appends an integer variable to the list of variables."""
+        self.__var_list.store(var)
+        return var
+
+    def _query_int_var(self, index: int) -> IntVar:
+        return self.__var_list.query(index)
+
+    def rebuild_from_linear_expression_proto(
+        self,
+        proto: cp_model_pb2.LinearExpressionProto,
+    ) -> LinearExpr:
+        return self.__var_list.rebuild_expr(proto)
 
     def new_int_var(self, lb: IntegralT, ub: IntegralT, name: str) -> IntVar:
         """Create an integer variable with domain [lb, ub].
@@ -652,11 +674,13 @@ class CpModel:
           a variable whose domain is [lb, ub].
         """
         domain_is_boolean = lb >= 0 and ub <= 1
-        return IntVar(
-            self.__model,
-            sorted_interval_list.Domain(lb, ub),
-            domain_is_boolean,
-            name,
+        return self._store_int_var(
+            IntVar(
+                self.__model,
+                sorted_interval_list.Domain(lb, ub),
+                domain_is_boolean,
+                name,
+            )
         )
 
     def new_int_var_from_domain(
@@ -676,21 +700,20 @@ class CpModel:
             a variable whose domain is the given domain.
         """
         domain_is_boolean = domain.min() >= 0 and domain.max() <= 1
-        return IntVar(self.__model, domain, domain_is_boolean, name)
+        return self._store_int_var(
+            IntVar(self.__model, domain, domain_is_boolean, name)
+        )
 
     def new_bool_var(self, name: str) -> IntVar:
         """Creates a 0-1 variable with the given name."""
-        return IntVar(self.__model, sorted_interval_list.Domain(0, 1), True, name)
+        return self._store_int_var(
+            IntVar(self.__model, sorted_interval_list.Domain(0, 1), True, name)
+        )
 
     def new_constant(self, value: IntegralT) -> IntVar:
         """Declares a constant integer."""
-        domain_is_boolean = value == 0 or value == 1
-        return IntVar(
-            self.__model,
-            self.get_or_make_index_from_constant(value),
-            domain_is_boolean,
-            None,
-        )
+        index: int = self.get_or_make_index_from_constant(value)
+        return self._query_int_var(index)
 
     def new_int_var_series(
         self,
@@ -745,13 +768,15 @@ class CpModel:
             index=index,
             data=[
                 # pylint: disable=g-complex-comprehension
-                IntVar(
-                    model=self.__model,
-                    name=f"{name}[{i}]",
-                    domain=sorted_interval_list.Domain(
-                        lower_bounds[i], upper_bounds[i]
-                    ),
-                    is_boolean=lower_bounds[i] >= 0 and upper_bounds[i] <= 1,
+                self._store_int_var(
+                    IntVar(
+                        model=self.__model,
+                        name=f"{name}[{i}]",
+                        domain=sorted_interval_list.Domain(
+                            lower_bounds[i], upper_bounds[i]
+                        ),
+                        is_boolean=lower_bounds[i] >= 0 and upper_bounds[i] <= 1,
+                    )
                 )
                 for i in index
             ],
@@ -783,11 +808,13 @@ class CpModel:
             index=index,
             data=[
                 # pylint: disable=g-complex-comprehension
-                IntVar(
-                    model=self.__model,
-                    name=f"{name}[{i}]",
-                    domain=sorted_interval_list.Domain(0, 1),
-                    is_boolean=True,
+                self._store_int_var(
+                    IntVar(
+                        model=self.__model,
+                        name=f"{name}[{i}]",
+                        domain=sorted_interval_list.Domain(0, 1),
+                        is_boolean=True,
+                    )
                 )
                 for i in index
             ],
@@ -1595,7 +1622,15 @@ class CpModel:
             raise TypeError(
                 "cp_model.new_interval_var: end must be 1-var affine or constant."
             )
-        return IntervalVar(self.__model, start_expr, size_expr, end_expr, None, name)
+        return IntervalVar(
+            self.__model,
+            self.__var_list,
+            start_expr,
+            size_expr,
+            end_expr,
+            None,
+            name,
+        )
 
     def new_interval_var_series(
         self,
@@ -1672,7 +1707,15 @@ class CpModel:
             raise TypeError(
                 "cp_model.new_interval_var: start must be affine or constant."
             )
-        return IntervalVar(self.__model, start_expr, size_expr, end_expr, None, name)
+        return IntervalVar(
+            self.__model,
+            self.__var_list,
+            start_expr,
+            size_expr,
+            end_expr,
+            None,
+            name,
+        )
 
     def new_fixed_size_interval_var_series(
         self,
@@ -1767,7 +1810,13 @@ class CpModel:
                 "cp_model.new_interval_var: end must be affine or constant."
             )
         return IntervalVar(
-            self.__model, start_expr, size_expr, end_expr, is_present_index, name
+            self.__model,
+            self.__var_list,
+            start_expr,
+            size_expr,
+            end_expr,
+            is_present_index,
+            name,
         )
 
     def new_optional_interval_var_series(
@@ -1861,6 +1910,7 @@ class CpModel:
         is_present_index = self.get_or_make_boolean_index(is_present)
         return IntervalVar(
             self.__model,
+            self.__var_list,
             start_expr,
             size_expr,
             end_expr,
@@ -2010,37 +2060,32 @@ class CpModel:
         """Reset the model, and creates a new one from a CpModelProto instance."""
         clone = CpModel()
         clone.proto.CopyFrom(self.proto)
-        clone.rebuild_constant_map()
+        clone.rebuild_var_and_constant_map()
         return clone
 
-    def rebuild_constant_map(self):
+    def rebuild_var_and_constant_map(self):
         """Internal method used during model cloning."""
         for i, var in enumerate(self.__model.variables):
             if len(var.domain) == 2 and var.domain[0] == var.domain[1]:
                 self.__constant_map[var.domain[0]] = i
+            is_boolean = (
+                len(var.domain) == 2 and var.domain[0] >= 0 and var.domain[1] <= 1
+            )
+            self.__var_list.store(IntVar(self.__model, i, is_boolean, None))
 
     def get_bool_var_from_proto_index(self, index: int) -> IntVar:
         """Returns an already created Boolean variable from its index."""
-        if index < 0 or index >= len(self.__model.variables):
+        result = self._query_int_var(index)
+        if not result.is_boolean:
             raise ValueError(
-                f"get_bool_var_from_proto_index: out of bound index {index}"
+                f"get_bool_var_from_proto_index: index {index} does not reference a"
+                " boolean variable"
             )
-        var = self.__model.variables[index]
-        if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
-            raise ValueError(
-                f"get_bool_var_from_proto_index: index {index} does not reference"
-                + " a Boolean variable"
-            )
-
-        return IntVar(self.__model, index, True, None)
+        return result
 
     def get_int_var_from_proto_index(self, index: int) -> IntVar:
         """Returns an already created integer variable from its index."""
-        if index < 0 or index >= len(self.__model.variables):
-            raise ValueError(
-                f"get_int_var_from_proto_index: out of bound index {index}"
-            )
-        return IntVar(self.__model, index, False, None)
+        return self._query_int_var(index)
 
     def get_interval_var_from_proto_index(self, index: int) -> IntervalVar:
         """Returns an already created interval variable from its index."""
@@ -2055,7 +2100,7 @@ class CpModel:
                 " reference an" + " interval variable"
             )
 
-        return IntervalVar(self.__model, index, None, None, None, None)
+        return IntervalVar(self.__model, self.__var_list, index, None, None, None, None)
 
     # Helpers.
 
@@ -2111,18 +2156,9 @@ class CpModel:
     def get_or_make_index_from_constant(self, value: IntegralT) -> int:
         if value in self.__constant_map:
             return self.__constant_map[value]
-        index = len(self.__model.variables)
-        self.__model.variables.add(domain=[value, value])
-        self.__constant_map[value] = index
-        return index
-
-    def var_index_to_var_proto(
-        self, var_index: int
-    ) -> cp_model_pb2.IntegerVariableProto:
-        if var_index >= 0:
-            return self.__model.variables[var_index]
-        else:
-            return self.__model.variables[-var_index - 1]
+        constant_var = self.new_int_var(value, value, "")
+        self.__constant_map[value] = constant_var.index
+        return constant_var.index
 
     def parse_linear_expression(
         self, linear_expr: LinearExprT, negate: bool = False

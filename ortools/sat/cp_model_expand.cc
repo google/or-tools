@@ -537,6 +537,38 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     return;
   }
 
+  bool has_complete_hint = false;
+  bool enforced_hint = true;
+  int64_t expr_hint = 0;
+  int64_t mod_expr_hint = 0;
+  int64_t target_expr_hint = 0;
+  if (context->HintIsLoaded()) {
+    has_complete_hint = true;
+    for (const int lit : ct->enforcement_literal()) {
+      if (!context->VarHasSolutionHint(PositiveRef(lit))) {
+        has_complete_hint = false;
+        break;
+      }
+      enforced_hint = enforced_hint && context->LiteralSolutionHint(lit);
+    }
+    if (has_complete_hint && enforced_hint) {
+      has_complete_hint = false;
+      std::optional<int64_t> hint = context->GetExpressionSolutionHint(expr);
+      if (hint.has_value()) {
+        expr_hint = hint.value();
+        hint = context->GetExpressionSolutionHint(mod_expr);
+        if (hint.has_value()) {
+          mod_expr_hint = hint.value();
+          hint = context->GetExpressionSolutionHint(target_expr);
+          if (hint.has_value()) {
+            target_expr_hint = hint.value();
+            has_complete_hint = true;
+          }
+        }
+      }
+    }
+  }
+
   // Create a new constraint with the same enforcement as ct.
   auto new_enforced_constraint = [&]() {
     ConstraintProto* new_ct = context->working_model->add_constraints();
@@ -548,6 +580,13 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   const int div_var = context->NewIntVar(
       context->DomainSuperSetOf(expr).PositiveDivisionBySuperset(
           context->DomainSuperSetOf(mod_expr)));
+  if (has_complete_hint) {
+    if (enforced_hint) {
+      context->SetNewVariableHint(div_var, expr_hint / mod_expr_hint);
+    } else {
+      context->SetNewVariableHint(div_var, context->MinOf(div_var));
+    }
+  }
   LinearExpressionProto div_expr;
   div_expr.add_vars(div_var);
   div_expr.add_coeffs(1);
@@ -565,6 +604,13 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
           .IntersectionWith(context->DomainSuperSetOf(expr).AdditionWith(
               context->DomainSuperSetOf(target_expr).Negation()));
   const int prod_var = context->NewIntVar(prod_domain);
+  if (has_complete_hint) {
+    if (enforced_hint) {
+      context->SetNewVariableHint(prod_var, expr_hint - target_expr_hint);
+    } else {
+      context->SetNewVariableHint(prod_var, context->MinOf(prod_var));
+    }
+  }
   LinearExpressionProto prod_expr;
   prod_expr.add_vars(prod_var);
   prod_expr.add_coeffs(1);
@@ -599,6 +645,16 @@ void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
         context->DomainSuperSetOf(left).ContinuousMultiplicationBy(
             context->DomainSuperSetOf(right));
     const int new_var = context->NewIntVar(new_domain);
+    if (context->HintIsLoaded()) {
+      const std::optional<int64_t> left_hint =
+          context->GetExpressionSolutionHint(left);
+      const std::optional<int64_t> right_hint =
+          context->GetExpressionSolutionHint(right);
+      if (left_hint.has_value() && right_hint.has_value()) {
+        context->SetNewVariableHint(new_var,
+                                    left_hint.value() * right_hint.value());
+      }
+    }
     LinearArgumentProto* const int_prod =
         context->working_model->add_constraints()->mutable_int_prod();
     *int_prod->add_exprs() = left;
@@ -785,7 +841,7 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
   // affine_max where there is only one variable present in all the expressions.
   if (ExpressionsContainsOnlyOneVar(ct->lin_max().exprs())) return;
 
-  // We will create 2 * num_exprs constraints for target = max(a1, .., an).
+  // We will create 2 * num_exprs constraints for target = max(a1, ..., an).
 
   // First.
   // - target >= ai
@@ -799,18 +855,48 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
     context->CanonicalizeLinearConstraint(new_ct);
   }
 
-  // Second, for each expr, create a new boolean bi, and add bi => target >= ai
+  // Second, for each expr, create a new boolean bi, and add bi => target <= ai
   // With exactly_one(bi)
+  std::vector<bool> enforcement_hints;
+  if (context->HintIsLoaded()) {
+    const std::optional<int64_t> target_hint =
+        context->GetExpressionSolutionHint(ct->lin_max().target());
+    if (target_hint.has_value()) {
+      int enforcement_hint_sum = 0;
+      enforcement_hints.reserve(num_exprs);
+      for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+        const std::optional<int64_t> expr_hint =
+            context->GetExpressionSolutionHint(expr);
+        if (!expr_hint.has_value()) {
+          enforcement_hints.clear();
+          break;
+        }
+        if (enforcement_hint_sum == 0) {
+          const bool hint = target_hint.value() <= expr_hint.value();
+          enforcement_hints.push_back(hint);
+          enforcement_hint_sum += hint;
+        } else {
+          enforcement_hints.push_back(false);
+        }
+      }
+    }
+  }
   std::vector<int> enforcement_literals;
   enforcement_literals.reserve(num_exprs);
   if (num_exprs == 2) {
     const int new_bool = context->NewBoolVar("lin max expansion");
+    if (!enforcement_hints.empty()) {
+      context->SetNewVariableHint(new_bool, enforcement_hints[0]);
+    }
     enforcement_literals.push_back(new_bool);
     enforcement_literals.push_back(NegatedRef(new_bool));
   } else {
     ConstraintProto* exactly_one = context->working_model->add_constraints();
     for (int i = 0; i < num_exprs; ++i) {
       const int new_bool = context->NewBoolVar("lin max expansion");
+      if (!enforcement_hints.empty()) {
+        context->SetNewVariableHint(new_bool, enforcement_hints[i]);
+      }
       exactly_one->mutable_exactly_one()->add_literals(new_bool);
       enforcement_literals.push_back(new_bool);
     }
@@ -1074,6 +1160,32 @@ void AddImplyInReachableValues(int literal,
   }
 }
 
+std::vector<int64_t> GetAutomatonStateHints(ConstraintProto* ct,
+                                            PresolveContext* context) {
+  if (!context->HintIsLoaded()) return {};
+
+  const AutomatonConstraintProto& proto = ct->automaton();
+  absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transitions;
+  for (int i = 0; i < proto.transition_tail_size(); ++i) {
+    transitions[{proto.transition_tail(i), proto.transition_label(i)}] =
+        proto.transition_head(i);
+  }
+
+  int64_t current_state = proto.starting_state();
+  std::vector<int64_t> state_hints;
+  state_hints.push_back(current_state);
+  for (int i = 0; i < proto.exprs_size(); ++i) {
+    const std::optional<int64_t> label_hint =
+        context->GetExpressionSolutionHint(proto.exprs(i));
+    if (!label_hint.has_value()) return {};
+    const auto it = transitions.find({current_state, label_hint.value()});
+    if (it == transitions.end()) return {};
+    current_state = it->second;
+    state_hints.push_back(current_state);
+  }
+  return state_hints;
+}
+
 void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   AutomatonConstraintProto& proto = *ct->mutable_automaton();
 
@@ -1100,16 +1212,19 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   // We will model at each time step the current automaton state using Boolean
   // variables. We will have n+1 time step. At time zero, we start in the
   // initial state, and at time n we should be in one of the final states. We
-  // don't need to create Booleans at at time when there is just one possible
+  // don't need to create Booleans at times when there is just one possible
   // state (like at time zero).
   absl::flat_hash_map<int64_t, int> encoding;
   absl::flat_hash_map<int64_t, int> in_encoding;
   absl::flat_hash_map<int64_t, int> out_encoding;
   bool removed_values = false;
 
+  const std::vector<int64_t> state_hints = GetAutomatonStateHints(ct, context);
+  DCHECK(state_hints.empty() || state_hints.size() == proto.exprs_size() + 1);
+
   const int n = proto.exprs_size();
   for (int time = 0; time < n; ++time) {
-    // All these vector have the same size. We will use them to enforce a
+    // All these vectors have the same size. We will use them to enforce a
     // local table constraint representing one step of the automaton at the
     // given time.
     std::vector<int64_t> in_states;
@@ -1204,6 +1319,9 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       out_encoding.clear();
       if (states.size() == 2) {
         const int var = context->NewBoolVar("automaton expansion");
+        if (!state_hints.empty()) {
+          context->SetNewVariableHint(var, state_hints[time + 1] == states[0]);
+        }
         out_encoding[states[0]] = var;
         out_encoding[states[1]] = NegatedRef(var);
       } else if (states.size() > 2) {
@@ -1253,6 +1371,10 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
           }
 
           out_encoding[state] = context->NewBoolVar("automaton expansion");
+          if (!state_hints.empty()) {
+            context->SetNewVariableHint(out_encoding[state],
+                                        state_hints[time + 1] == state);
+          }
         }
       }
     }
@@ -1313,9 +1435,16 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     //
     // TODO(user): Call and use the same heuristics as the table constraint to
     // expand this small table with 3 columns (i.e. compress, negate, etc...).
+    const int64_t label_hint =
+        context->GetExpressionSolutionHint(proto.exprs(time)).value_or(0);
     std::vector<int> tuple_literals;
     if (num_tuples == 2) {
       const int bool_var = context->NewBoolVar("automaton expansion");
+      if (!state_hints.empty()) {
+        context->SetNewVariableHint(
+            bool_var,
+            state_hints[time] == in_states[0] && label_hint == labels[0]);
+      }
       tuple_literals.push_back(bool_var);
       tuple_literals.push_back(NegatedRef(bool_var));
     } else {
@@ -1334,6 +1463,11 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
           tuple_literal = out_encoding[out_states[i]];
         } else {
           tuple_literal = context->NewBoolVar("automaton expansion");
+          if (!state_hints.empty()) {
+            context->SetNewVariableHint(
+                tuple_literal,
+                state_hints[time] == in_states[i] && label_hint == labels[i]);
+          }
         }
 
         tuple_literals.push_back(tuple_literal);
@@ -2240,27 +2374,27 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
 
   // If we have a hint for all variables of this linear constraint, finds in
   // which bucket it fall.
+  int64_t expr_hint = 0;
   int hint_bucket = -1;
-  bool set_hint_of_bucket_variables = false;
+  bool has_complete_hint = false;
   if (context->HintIsLoaded()) {
-    set_hint_of_bucket_variables = true;
-    int64_t hint_activity = 0;
+    has_complete_hint = true;
     const int num_terms = ct->linear().vars().size();
     const absl::Span<const int64_t> hint = context->SolutionHint();
     for (int i = 0; i < num_terms; ++i) {
       const int var = ct->linear().vars(i);
       DCHECK_LT(var, hint.size());
       if (!context->VarHasSolutionHint(var)) {
-        set_hint_of_bucket_variables = false;
+        has_complete_hint = false;
         break;
       }
-      hint_activity += ct->linear().coeffs(i) * hint[var];
+      expr_hint += ct->linear().coeffs(i) * hint[var];
     }
-    if (set_hint_of_bucket_variables) {
+    if (has_complete_hint) {
       for (int i = 0; i < ct->linear().domain_size(); i += 2) {
         const int64_t lb = ct->linear().domain(i);
         const int64_t ub = ct->linear().domain(i + 1);
-        if (hint_activity >= lb && hint_activity <= ub) {
+        if (expr_hint >= lb && expr_hint <= ub) {
           hint_bucket = i;
           break;
         }
@@ -2276,6 +2410,9 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     // expr \in rhs to expr - slack = 0
     const Domain rhs = ReadDomainFromProto(ct->linear());
     const int slack = context->NewIntVar(rhs);
+    if (has_complete_hint) {
+      context->SetNewVariableHint(slack, expr_hint);
+    }
     ct->mutable_linear()->add_vars(slack);
     ct->mutable_linear()->add_coeffs(-1);
     ct->mutable_linear()->clear_domain();
@@ -2285,12 +2422,11 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     // Boolean encoding.
     int single_bool;
     BoolArgumentProto* clause = nullptr;
-    std::vector<int> domain_literals;
     if (ct->enforcement_literal().empty() && ct->linear().domain_size() == 4) {
       // We cover the special case of no enforcement and two choices by creating
       // a single Boolean.
       single_bool = context->NewBoolVar("complex linear expansion");
-      if (set_hint_of_bucket_variables) {
+      if (has_complete_hint) {
         context->SetNewVariableHint(single_bool, hint_bucket == 0);
       }
     } else {
@@ -2304,6 +2440,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     const std::vector<int> enforcement_literals(
         ct->enforcement_literal().begin(), ct->enforcement_literal().end());
     ct->mutable_enforcement_literal()->Clear();
+    std::vector<int> domain_literals;
     for (int i = 0; i < ct->linear().domain_size(); i += 2) {
       const int64_t lb = ct->linear().domain(i);
       const int64_t ub = ct->linear().domain(i + 1);
@@ -2311,7 +2448,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       int subdomain_literal;
       if (clause != nullptr) {
         subdomain_literal = context->NewBoolVar("complex linear expansion");
-        if (set_hint_of_bucket_variables) {
+        if (has_complete_hint) {
           context->SetNewVariableHint(subdomain_literal, hint_bucket == i);
         }
         clause->add_literals(subdomain_literal);
@@ -2345,6 +2482,21 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
           maintain_linear_is_enforced->add_literals(NegatedRef(e_lit));
         }
         maintain_linear_is_enforced->add_literals(linear_is_enforced);
+        if (context->HintIsLoaded()) {
+          bool has_complete_enforced_hint = true;
+          bool linear_is_enforced_hint = true;
+          for (const int e_lit : enforcement_literals) {
+            if (!context->VarHasSolutionHint(PositiveRef(e_lit))) {
+              has_complete_enforced_hint = false;
+              break;
+            }
+            linear_is_enforced_hint &= context->LiteralSolutionHint(e_lit);
+          }
+          if (has_complete_enforced_hint) {
+            context->SetNewVariableHint(linear_is_enforced,
+                                        linear_is_enforced_hint);
+          }
+        }
       }
 
       for (const int lit : domain_literals) {

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_NO_OVERLAP_2D_HELPER_H_
 #define OR_TOOLS_SAT_NO_OVERLAP_2D_HELPER_H_
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -22,7 +23,9 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -33,13 +36,31 @@ namespace sat {
 // to share pre-computed data between the two propagators.
 class NoOverlap2DConstraintHelper : public PropagatorInterface {
  public:
-  NoOverlap2DConstraintHelper(SchedulingConstraintHelper* x_helper,
-                              SchedulingConstraintHelper* y_helper,
+  NoOverlap2DConstraintHelper(std::vector<AffineExpression> x_starts,
+                              std::vector<AffineExpression> x_ends,
+                              std::vector<AffineExpression> x_sizes,
+                              std::vector<LiteralIndex> x_reason_for_presence,
+                              std::vector<AffineExpression> y_starts,
+                              std::vector<AffineExpression> y_ends,
+                              std::vector<AffineExpression> y_sizes,
+                              std::vector<LiteralIndex> y_reason_for_presence,
                               Model* model)
       : axes_are_swapped_(false),
-        x_helper_(x_helper),
-        y_helper_(y_helper),
-        watcher_(model->GetOrCreate<GenericLiteralWatcher>()) {}
+        x_helper_(std::make_unique<SchedulingConstraintHelper>(
+            x_starts, x_ends, x_sizes, x_reason_for_presence, model)),
+        y_helper_(std::make_unique<SchedulingConstraintHelper>(
+            y_starts, y_ends, y_sizes, y_reason_for_presence, model)),
+        model_(model),
+        watcher_(model->GetOrCreate<GenericLiteralWatcher>()) {
+    const int num_boxes = x_helper_->NumTasks();
+    connected_components_.reserve(1, num_boxes);
+    connected_components_.Add({});
+    for (int i = 0; i < x_helper_->NumTasks(); ++i) {
+      if (!x_helper_->IsAbsent(i) && !y_helper_->IsAbsent(i)) {
+        connected_components_.AppendToLastVector(i);
+      }
+    }
+  }
 
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -170,15 +191,30 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   bool Propagate() override;
 
+  // Note that the helpers are only valid until the next call to
+  // Propagate().
   SchedulingConstraintHelper& x_helper() const { return *x_helper_; }
   SchedulingConstraintHelper& y_helper() const { return *y_helper_; }
 
+  const CompactVectorVector<int>& connected_components() const {
+    return connected_components_;
+  }
+
+  int InProcessingCount() const { return inprocessing_count_; }
+
  private:
+  void Reset(absl::Span<const Rectangle> fixed_boxes,
+             absl::Span<const int> non_fixed_box_indexes);
+
+  CompactVectorVector<int> connected_components_;
+
   bool axes_are_swapped_;
-  SchedulingConstraintHelper* x_helper_;
-  SchedulingConstraintHelper* y_helper_;
+  std::unique_ptr<SchedulingConstraintHelper> x_helper_;
+  std::unique_ptr<SchedulingConstraintHelper> y_helper_;
+  Model* model_;
   GenericLiteralWatcher* watcher_;
   std::vector<int> propagators_watching_;
+  int inprocessing_count_ = 0;
 };
 
 }  // namespace sat
