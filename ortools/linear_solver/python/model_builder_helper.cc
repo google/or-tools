@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -63,7 +64,6 @@ using ::operations_research::mb::Variable;
 using ::operations_research::mb::WeightedSumArray;
 
 namespace py = pybind11;
-using ::py::arg;
 
 void ThrowError(PyObject* py_exception, const std::string& message) {
   PyErr_SetString(py_exception, message.c_str());
@@ -211,38 +211,30 @@ const char* kVarClassDoc = R"doc(A variable (continuous or integral).
   model is feasible, or optimal if you provided an objective function.
 )doc";
 
-void ProcessExprArg(const py::handle& arg, LinearExpr*& expr,
-                    double& float_value) {
-  if (py::isinstance<LinearExpr>(arg)) {
-    expr = arg.cast<LinearExpr*>();
-  } else {
-    float_value = arg.cast<double>();
-  }
-}
-
-LinearExpr* SumArguments(py::args args, const py::kwargs& kwargs) {
-  std::vector<LinearExpr*> linear_exprs;
+std::shared_ptr<LinearExpr> SumArguments(py::args args,
+                                         const py::kwargs& kwargs) {
+  std::vector<std::shared_ptr<LinearExpr>> linear_exprs;
   double float_offset = 0.0;
-
-  const auto process_arg = [&](const py::handle& arg) -> void {
-    if (py::isinstance<LinearExpr>(arg)) {
-      linear_exprs.push_back(arg.cast<LinearExpr*>());
-    } else {
-      float_offset += arg.cast<double>();
-    }
-  };
 
   if (args.size() == 1 && py::isinstance<py::sequence>(args[0])) {
     // Normal list or tuple argument.
     py::sequence elements = args[0].cast<py::sequence>();
     linear_exprs.reserve(elements.size());
     for (const py::handle& arg : elements) {
-      process_arg(arg);
+      if (py::isinstance<LinearExpr>(arg)) {
+        linear_exprs.push_back(arg.cast<std::shared_ptr<LinearExpr>>());
+      } else {
+        float_offset += arg.cast<double>();
+      }
     }
   } else {  // Direct sum(x, y, 3, ..) without [].
     linear_exprs.reserve(args.size());
     for (const py::handle arg : args) {
-      process_arg(arg);
+      if (py::isinstance<LinearExpr>(arg)) {
+        linear_exprs.push_back(arg.cast<std::shared_ptr<LinearExpr>>());
+      } else {
+        float_offset += arg.cast<double>();
+      }
     }
   }
 
@@ -259,21 +251,21 @@ LinearExpr* SumArguments(py::args args, const py::kwargs& kwargs) {
   }
 
   if (linear_exprs.empty()) {
-    return new FixedValue(float_offset);
+    return std::make_shared<FixedValue>(float_offset);
   } else if (linear_exprs.size() == 1) {
     if (float_offset == 0.0) {
       return linear_exprs[0];
     } else {
-      return new AffineExpr(linear_exprs[0], 1.0, float_offset);
+      return std::make_shared<AffineExpr>(linear_exprs[0], 1.0, float_offset);
     }
   } else {
-    return new SumArray(linear_exprs, float_offset);
+    return std::make_shared<SumArray>(linear_exprs, float_offset);
   }
 }
 
-LinearExpr* WeightedSumArguments(py::sequence expressions,
-                                 const std::vector<double>& coefficients,
-                                 double offset = 0.0) {
+std::shared_ptr<LinearExpr> WeightedSumArguments(
+    py::sequence expressions, const std::vector<double>& coefficients,
+    double offset = 0.0) {
   if (expressions.size() != coefficients.size()) {
     ThrowError(PyExc_ValueError,
                absl::StrCat("LinearExpr::weighted_sum() requires the same "
@@ -281,205 +273,269 @@ LinearExpr* WeightedSumArguments(py::sequence expressions,
                             expressions.size(), " != ", coefficients.size()));
   }
 
-  std::vector<LinearExpr*> linear_exprs;
+  std::vector<std::shared_ptr<LinearExpr>> linear_exprs;
   std::vector<double> coeffs;
   linear_exprs.reserve(expressions.size());
   coeffs.reserve(expressions.size());
 
   for (int i = 0; i < expressions.size(); ++i) {
     py::handle arg = expressions[i];
-    LinearExpr* expr = nullptr;
-    double value = 0.0;
-    ProcessExprArg(arg, expr, value);
-    if (expr != nullptr && coefficients[i] != 0.0) {
-      linear_exprs.push_back(expr);
-      coeffs.push_back(coefficients[i]);
-      continue;
-    } else if (value != 0.0) {
-      offset += coefficients[i] * value;
+    std::shared_ptr<LinearExpr> expr = nullptr;
+    if (py::isinstance<LinearExpr>(arg)) {
+      if (coefficients[i] != 0.0) {
+        linear_exprs.push_back(arg.cast<std::shared_ptr<LinearExpr>>());
+        coeffs.push_back(coefficients[i]);
+      }
+    } else {
+      offset += arg.cast<double>() * coefficients[i];
     }
   }
 
   if (linear_exprs.empty()) {
-    return new FixedValue(offset);
+    return std::make_shared<FixedValue>(offset);
   } else if (linear_exprs.size() == 1) {
-    if (offset == 0.0 && coeffs[0] == 1.0) {
-      return linear_exprs[0];
-    } else {
-      return new AffineExpr(linear_exprs[0], coeffs[0], offset);
-    }
+    return LinearExpr::Affine(linear_exprs[0], coeffs[0], offset);
   } else {
-    return new WeightedSumArray(linear_exprs, coeffs, offset);
+    return std::make_shared<WeightedSumArray>(linear_exprs, coeffs, offset);
   }
 }
 
 PYBIND11_MODULE(model_builder_helper, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
-  py::class_<LinearExpr>(m, "LinearExpr", kLinearExprClassDoc)
+  py::class_<LinearExpr, std::shared_ptr<LinearExpr>>(m, "LinearExpr",
+                                                      kLinearExprClassDoc)
       .def_static("sum", &SumArguments,
-                  "Creates `sum(expressions) [+ constant]`.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
+                  "Creates `sum(expressions) [+ constant]`.")
       .def_static(
           "weighted_sum", &WeightedSumArguments,
           "Creates `sum(expressions[i] * coefficients[i]) [+ constant]`.",
-          arg("expressions"), arg("coefficients"), py::kw_only(),
-          arg("constant") = 0.0, py::return_value_policy::automatic,
-          py::keep_alive<0, 1>())
-      .def_static("term", &LinearExpr::Term, arg("expr").none(false),
-                  arg("coeff"), "Returns expr * coeff.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("term", &LinearExpr::Affine, arg("expr").none(false),
-                  arg("coeff"), py::kw_only(), py::arg("constant"),
-                  "Returns expr * coeff [+ constant].",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("term", &LinearExpr::AffineCst, arg("value"), arg("coeff"),
-                  py::kw_only(), py::arg("constant"),
-                  "Returns value * coeff [+ constant].",
-                  py::return_value_policy::automatic)
-      .def_static("affine", &LinearExpr::Affine, arg("expr").none(false),
-                  arg("coeff"), arg("constant") = 0.0,
-                  "Returns expr * coeff + constant.",
-                  py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def_static("affine", &LinearExpr::AffineCst, arg("value"), arg("coeff"),
-                  arg("constant") = 0.0, "Returns value * coeff + constant.",
-                  py::return_value_policy::automatic)
-      .def_static("constant", &LinearExpr::Constant, arg("value"),
-                  "Returns a constant linear expression.",
-                  py::return_value_policy::automatic)
+          py::arg("expressions"), py::arg("coefficients"), py::kw_only(),
+          py::arg("constant") = 0.0)
+      .def_static("term", &LinearExpr::Term, py::arg("expr").none(false),
+                  py::arg("coeff"), "Returns expr * coeff.")
+      .def_static("term", &LinearExpr::Affine, py::arg("expr").none(false),
+                  py::arg("coeff"), py::kw_only(), py::arg("constant"),
+                  "Returns expr * coeff [+ constant].")
+      .def_static("term", &LinearExpr::AffineCst, py::arg("value"),
+                  py::arg("coeff"), py::kw_only(), py::arg("constant"),
+                  "Returns value * coeff [+ constant].")
+      .def_static("affine", &LinearExpr::Affine, py::arg("expr").none(false),
+                  py::arg("coeff"), py::arg("constant") = 0.0,
+                  "Returns expr * coeff + constant.")
+      .def_static("affine", &LinearExpr::AffineCst, py::arg("value"),
+                  py::arg("coeff"), py::arg("constant") = 0.0,
+                  "Returns value * coeff + constant.")
+      .def_static("constant", &LinearExpr::Constant, py::arg("value"),
+                  "Returns a constant linear expression.")
       // Methods.
       .def("__str__", &LinearExpr::ToString)
       .def("__repr__", &LinearExpr::DebugString)
       // Operators.
-      // Note that we keep the 3 APIS (expr, int, double) instead of using an
-      // py::handle argument as this is more efficient.
-      .def("__add__", &LinearExpr::Add, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__add__", &LinearExpr::AddFloat, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__radd__", &LinearExpr::AddFloat, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__sub__", &LinearExpr::Sub, arg("other").none(false),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__sub__", &LinearExpr::SubFloat, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rsub__", &LinearExpr::RSubFloat, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__mul__", &LinearExpr::MulFloat, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__rmul__", &LinearExpr::MulFloat, arg("cst"),
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def(
-          "__truediv__",
-          [](LinearExpr* self, double cst) {
-            if (cst == 0.0) {
-              ThrowError(PyExc_ZeroDivisionError,
-                         "Division by zero is not supported.");
-            }
-            return self->MulFloat(1.0 / cst);
-          },
-          py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__neg__", &LinearExpr::Neg, py::return_value_policy::automatic,
-           py::keep_alive<0, 1>())
+      .def("__add__", &LinearExpr::Add, py::arg("other").none(false))
+      .def("__add__", &LinearExpr::AddFloat, py::arg("cst"))
+      .def("__radd__", &LinearExpr::AddFloat, py::arg("cst"))
+      .def("__sub__", &LinearExpr::Sub, py::arg("other").none(false))
+      .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"))
+      .def("__rsub__", &LinearExpr::RSubFloat, py::arg("cst"))
+      .def("__mul__", &LinearExpr::MulFloat, py::arg("cst"))
+      .def("__rmul__", &LinearExpr::MulFloat, py::arg("cst"))
+      .def("__truediv__",
+           [](std::shared_ptr<LinearExpr> self, double cst) {
+             if (cst == 0.0) {
+               ThrowError(PyExc_ZeroDivisionError,
+                          "Division by zero is not supported.");
+             }
+             return self->MulFloat(1.0 / cst);
+           })
+      .def("__neg__", &LinearExpr::Neg)
       // Comparison operators.
-      .def("__eq__", &LinearExpr::Eq, arg("other").none(false),
-           "Creates the constraint `self == other`.",
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__eq__", &LinearExpr::EqCst, arg("cst"),
-           "Creates the constraint `self == cst`.",
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__le__", &LinearExpr::Le, arg("other").none(false),
-           "Creates the constraint `self <= other`.",
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__le__", &LinearExpr::LeCst, arg("cst"),
-           "Creates the constraint `self <= cst`.",
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
-      .def("__ge__", &LinearExpr::Ge, arg("other").none(false),
-           "Creates the constraint `self >= other`.",
-           py::return_value_policy::automatic, py::keep_alive<0, 1>(),
-           py::keep_alive<0, 2>())
-      .def("__ge__", &LinearExpr::GeCst, arg("cst"),
-           "Creates the constraint `self >= cst`.",
-           py::return_value_policy::automatic, py::keep_alive<0, 1>())
+      .def("__eq__", &LinearExpr::Eq, py::arg("other").none(false),
+           "Creates the constraint `self == other`.")
+      .def("__eq__", &LinearExpr::EqCst, py::arg("cst"),
+           "Creates the constraint `self == cst`.")
+      .def("__le__", &LinearExpr::Le, py::arg("other").none(false),
+           "Creates the constraint `self <= other`.")
+      .def("__le__", &LinearExpr::LeCst, py::arg("cst"),
+           "Creates the constraint `self <= cst`.")
+      .def("__ge__", &LinearExpr::Ge, py::arg("other").none(false),
+           "Creates the constraint `self >= other`.")
+      .def("__ge__", &LinearExpr::GeCst, py::arg("cst"),
+           "Creates the constraint `self >= cst`.")
       // Disable other operators as they are not supported.
       .def("__floordiv__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling // on a linear expression is not supported.");
            })
       .def("__mod__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling %% on a linear expression is not supported.");
            })
       .def("__pow__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling ** on a linear expression is not supported.");
            })
       .def("__lshift__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(
                  PyExc_NotImplementedError,
                  "calling left shift on a linear expression is not supported");
            })
       .def("__rshift__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(
                  PyExc_NotImplementedError,
                  "calling right shift on a linear expression is not supported");
            })
       .def("__and__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling and on a linear expression is not supported");
            })
       .def("__or__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling or on a linear expression is not supported");
            })
       .def("__xor__",
-           [](LinearExpr* /*self*/, py::handle /*other*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/, py::handle /*other*/) {
              ThrowError(PyExc_NotImplementedError,
                         "calling xor on a linear expression is not supported");
            })
       .def("__abs__",
-           [](LinearExpr* /*self*/) {
+           [](std::shared_ptr<LinearExpr> /*self*/) {
              ThrowError(
                  PyExc_NotImplementedError,
                  "calling abs() on a linear expression is not supported.");
            })
-      .def("__bool__", [](LinearExpr* /*self*/) {
+      .def("__bool__", [](std::shared_ptr<LinearExpr> /*self*/) {
         ThrowError(PyExc_NotImplementedError,
                    "Evaluating a LinearExpr instance as a Boolean is "
                    "not supported.");
       });
 
   // Expose Internal classes, mostly for testing.
-  py::class_<FlatExpr, LinearExpr>(m, "FlatExpr")
-      .def(py::init<const LinearExpr*>())
-      .def(py::init<const LinearExpr*, const LinearExpr*>())
-      .def(py::init<const std::vector<const Variable*>&,
-                    const std::vector<double>&, double>(),
-           py::keep_alive<1, 2>())
+  py::class_<FlatExpr, std::shared_ptr<FlatExpr>, LinearExpr>(m, "FlatExpr")
+      .def(py::init<std::shared_ptr<LinearExpr>>())
+      .def(py::init<std::shared_ptr<LinearExpr>, std::shared_ptr<LinearExpr>>())
+      .def(py::init<const std::vector<std::shared_ptr<Variable>>&,
+                    const std::vector<double>&, double>())
       .def(py::init<double>())
       .def_property_readonly("vars", &FlatExpr::vars)
       .def("variable_indices", &FlatExpr::VarIndices)
       .def_property_readonly("coeffs", &FlatExpr::coeffs)
       .def_property_readonly("offset", &FlatExpr::offset);
 
-  py::class_<AffineExpr, LinearExpr>(m, "AffineExpr")
-      .def(py::init<LinearExpr*, double, double>())
+  py::class_<SumArray, std::shared_ptr<SumArray>, LinearExpr>(
+      m, "SumArray", "Holds a sum of linear expressions, and constants.")
+      .def(py::init<std::vector<std::shared_ptr<LinearExpr>>, double>())
+      .def(
+          "__add__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddInPlace(other);
+              return expr;
+            }
+            return expr->Add(other);
+          },
+          py::arg("other").none(false),
+          "Returns the sum of `self` and `other`.")
+      .def(
+          "__add__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddFloatInPlace(cst);
+              return expr;
+            }
+            return expr->AddFloat(cst);
+          },
+          py::arg("cst"), "Returns `self` + `cst`.")
+      .def("__radd__", &LinearExpr::Add, py::arg("other").none(false),
+           "Returns `self` + `other`.")
+      .def(
+          "__radd__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddFloatInPlace(cst);
+              return expr;
+            }
+            return expr->AddFloat(cst);
+          },
+          py::arg("cst"), "Returns `self` + `cst`.")
+      .def(
+          "__sub__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddInPlace(other->Neg());
+              return expr;
+            }
+            return expr->Sub(other);
+          },
+          py::arg("other").none(false), "Returns `self` - `other`.")
+      .def(
+          "__sub__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            if (num_uses == 4) {
+              expr->AddFloatInPlace(-cst);
+              return expr;
+            }
+            return expr->SubFloat(cst);
+          },
+          py::arg("cst"), "Returns `self` - `cst`.")
+      .def_property_readonly(
+          "num_exprs", &SumArray::num_exprs,
+          "Returns the number of linear expressions in the sum.")
+      .def_property_readonly("offset", &SumArray::offset,
+                             "Returns the offset of the sum.");
+
+  py::class_<AffineExpr, std::shared_ptr<AffineExpr>, LinearExpr>(m,
+                                                                  "AffineExpr")
+      .def(py::init<std::shared_ptr<LinearExpr>, double, double>())
+      .def("__add__", &AffineExpr::Add, py::arg("other").none(false),
+           "Returns `self` + `other`.")
+      .def("__add__", &AffineExpr::AddFloat, py::arg("cst"),
+           "Returns `self` + `cst`.")
+      .def("__radd__", &AffineExpr::Add, py::arg("other").none(false),
+           "Returns `self` + `other`.")
+      .def("__radd__", &AffineExpr::AddFloat, py::arg("cst"),
+           "Returns `self` + `cst`.")
+      .def("__sub__", &AffineExpr::Sub, py::arg("other").none(false),
+           "Returns `self` - `other`.")
+      .def("__sub__", &AffineExpr::SubFloat, py::arg("cst"),
+           "Returns `self` - `cst`.")
+      .def("__rsub__", &AffineExpr::RSubFloat, py::arg("cst"),
+           "Returns `cst` - `self`.")
+      .def("__mul__", &AffineExpr::MulFloat, py::arg("cst"),
+           "Returns `self` * `cst`.")
+      .def("__rmul__", &AffineExpr::MulFloat, py::arg("cst"),
+           "Returns `self` * `cst`.")
+      .def("__neg__", &AffineExpr::Neg, "Returns -`self`.")
       .def_property_readonly("expression", &AffineExpr ::expression)
       .def_property_readonly("coefficient", &AffineExpr::coefficient)
       .def_property_readonly("offset", &AffineExpr::offset);
 
-  py::class_<Variable, LinearExpr>(m, "Variable", kVarClassDoc)
+  py::class_<Variable, std::shared_ptr<Variable>, LinearExpr>(m, "Variable",
+                                                              kVarClassDoc)
       .def(py::init<ModelBuilderHelper*, int>())
       .def(py::init<ModelBuilderHelper*, double, double, bool>())
       .def(py::init<ModelBuilderHelper*, double, double, bool, std::string>())
@@ -505,11 +561,14 @@ PYBIND11_MODULE(model_builder_helper, m) {
         return absl::HashOf(std::make_tuple(self.helper(), self.index()));
       });
 
-  py::class_<BoundedLinearExpression>(m, "BoundedLinearExpression")
-      .def(py::init<const LinearExpr*, double, double>())
-      .def(py::init<const LinearExpr*, const LinearExpr*, double, double>())
-      .def(py::init<const LinearExpr*, int64_t, int64_t>())
-      .def(py::init<const LinearExpr*, const LinearExpr*, int64_t, int64_t>())
+  py::class_<BoundedLinearExpression, std::shared_ptr<BoundedLinearExpression>>(
+      m, "BoundedLinearExpression")
+      .def(py::init<std::shared_ptr<LinearExpr>, double, double>())
+      .def(py::init<std::shared_ptr<LinearExpr>, std::shared_ptr<LinearExpr>,
+                    double, double>())
+      .def(py::init<std::shared_ptr<LinearExpr>, int64_t, int64_t>())
+      .def(py::init<std::shared_ptr<LinearExpr>, std::shared_ptr<LinearExpr>,
+                    int64_t, int64_t>())
       .def_property_readonly("vars", &BoundedLinearExpression::vars)
       .def_property_readonly("coeffs", &BoundedLinearExpression::coeffs)
       .def_property_readonly("lower_bound",
@@ -531,7 +590,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("__str__", &BoundedLinearExpression::ToString)
       .def("__repr__", &BoundedLinearExpression::DebugString);
 
-  m.def("to_mpmodel_proto", &ToMPModelProto, arg("helper"));
+  m.def("to_mpmodel_proto", &ToMPModelProto, py::arg("helper"));
 
   py::class_<MPModelExportOptions>(m, "MPModelExportOptions")
       .def(py::init<>())
@@ -545,26 +604,26 @@ PYBIND11_MODULE(model_builder_helper, m) {
   py::class_<ModelBuilderHelper>(m, "ModelBuilderHelper")
       .def(py::init<>())
       .def("overwrite_model", &ModelBuilderHelper::OverwriteModel,
-           arg("other_helper"))
+           py::arg("other_helper"))
       .def("export_to_mps_string", &ModelBuilderHelper::ExportToMpsString,
-           arg("options") = MPModelExportOptions())
+           py::arg("options") = MPModelExportOptions())
       .def("export_to_lp_string", &ModelBuilderHelper::ExportToLpString,
-           arg("options") = MPModelExportOptions())
+           py::arg("options") = MPModelExportOptions())
       .def("write_to_mps_file", &ModelBuilderHelper::WriteToMpsFile,
-           arg("filename"), arg("options") = MPModelExportOptions())
+           py::arg("filename"), py::arg("options") = MPModelExportOptions())
       .def("read_model_from_proto_file",
-           &ModelBuilderHelper::ReadModelFromProtoFile, arg("filename"))
+           &ModelBuilderHelper::ReadModelFromProtoFile, py::arg("filename"))
       .def("write_model_to_proto_file",
-           &ModelBuilderHelper::WriteModelToProtoFile, arg("filename"))
+           &ModelBuilderHelper::WriteModelToProtoFile, py::arg("filename"))
       .def("import_from_mps_string", &ModelBuilderHelper::ImportFromMpsString,
-           arg("mps_string"))
+           py::arg("mps_string"))
       .def("import_from_mps_file", &ModelBuilderHelper::ImportFromMpsFile,
-           arg("mps_file"))
+           py::arg("mps_file"))
 #if defined(USE_LP_PARSER)
       .def("import_from_lp_string", &ModelBuilderHelper::ImportFromLpString,
-           arg("lp_string"))
+           py::arg("lp_string"))
       .def("import_from_lp_file", &ModelBuilderHelper::ImportFromLpFile,
-           arg("lp_file"))
+           py::arg("lp_file"))
 #else
             .def("import_from_lp_string", [](const std::string& lp_string) {
               LOG(INFO) << "Parsing LP string is not compiled in";
@@ -588,9 +647,9 @@ PYBIND11_MODULE(model_builder_helper, m) {
                 constraint_upper_bounds, constraint_matrix,
                 helper->mutable_model());
           },
-          arg("variable_lower_bound"), arg("variable_upper_bound"),
-          arg("objective_coefficients"), arg("constraint_lower_bounds"),
-          arg("constraint_upper_bounds"), arg("constraint_matrix"))
+          py::arg("variable_lower_bound"), py::arg("variable_upper_bound"),
+          py::arg("objective_coefficients"), py::arg("constraint_lower_bounds"),
+          py::arg("constraint_upper_bounds"), py::arg("constraint_matrix"))
       .def("add_var", &ModelBuilderHelper::AddVar)
       .def("add_var_array",
            [](ModelBuilderHelper* helper, std::vector<size_t> shape, double lb,
@@ -651,14 +710,14 @@ PYBIND11_MODULE(model_builder_helper, m) {
              return result;
            })
       .def("set_var_lower_bound", &ModelBuilderHelper::SetVarLowerBound,
-           arg("var_index"), arg("lb"))
+           py::arg("var_index"), py::arg("lb"))
       .def("set_var_upper_bound", &ModelBuilderHelper::SetVarUpperBound,
-           arg("var_index"), arg("ub"))
+           py::arg("var_index"), py::arg("ub"))
       .def("set_var_integrality", &ModelBuilderHelper::SetVarIntegrality,
-           arg("var_index"), arg("is_integer"))
+           py::arg("var_index"), py::arg("is_integer"))
       .def("set_var_objective_coefficient",
-           &ModelBuilderHelper::SetVarObjectiveCoefficient, arg("var_index"),
-           arg("coeff"))
+           &ModelBuilderHelper::SetVarObjectiveCoefficient,
+           py::arg("var_index"), py::arg("coeff"))
       .def("set_objective_coefficients",
            [](ModelBuilderHelper* helper, const std::vector<int>& indices,
               const std::vector<double>& coefficients) {
@@ -667,29 +726,29 @@ PYBIND11_MODULE(model_builder_helper, m) {
                helper->SetVarObjectiveCoefficient(i, c);
              }
            })
-      .def("set_var_name", &ModelBuilderHelper::SetVarName, arg("var_index"),
-           arg("name"))
+      .def("set_var_name", &ModelBuilderHelper::SetVarName,
+           py::arg("var_index"), py::arg("name"))
       .def("var_lower_bound", &ModelBuilderHelper::VarLowerBound,
-           arg("var_index"))
+           py::arg("var_index"))
       .def("var_upper_bound", &ModelBuilderHelper::VarUpperBound,
-           arg("var_index"))
+           py::arg("var_index"))
       .def("var_is_integral", &ModelBuilderHelper::VarIsIntegral,
-           arg("var_index"))
+           py::arg("var_index"))
       .def("var_objective_coefficient",
-           &ModelBuilderHelper::VarObjectiveCoefficient, arg("var_index"))
-      .def("var_name", &ModelBuilderHelper::VarName, arg("var_index"))
+           &ModelBuilderHelper::VarObjectiveCoefficient, py::arg("var_index"))
+      .def("var_name", &ModelBuilderHelper::VarName, py::arg("var_index"))
       .def("add_linear_constraint", &ModelBuilderHelper::AddLinearConstraint)
       .def("set_constraint_lower_bound",
-           &ModelBuilderHelper::SetConstraintLowerBound, arg("ct_index"),
-           arg("lb"))
+           &ModelBuilderHelper::SetConstraintLowerBound, py::arg("ct_index"),
+           py::arg("lb"))
       .def("set_constraint_upper_bound",
-           &ModelBuilderHelper::SetConstraintUpperBound, arg("ct_index"),
-           arg("ub"))
+           &ModelBuilderHelper::SetConstraintUpperBound, py::arg("ct_index"),
+           py::arg("ub"))
       .def("add_term_to_constraint", &ModelBuilderHelper::AddConstraintTerm,
-           arg("ct_index"), arg("var_index"), arg("coeff"))
+           py::arg("ct_index"), py::arg("var_index"), py::arg("coeff"))
       .def("add_terms_to_constraint",
            [](ModelBuilderHelper* helper, int ct_index,
-              const std::vector<const Variable*>& vars,
+              const std::vector<std::shared_ptr<Variable>>& vars,
               const std::vector<double>& coefficients) {
              for (int i = 0; i < vars.size(); ++i) {
                helper->AddConstraintTerm(ct_index, vars[i]->index(),
@@ -697,39 +756,39 @@ PYBIND11_MODULE(model_builder_helper, m) {
              }
            })
       .def("safe_add_term_to_constraint",
-           &ModelBuilderHelper::SafeAddConstraintTerm, arg("ct_index"),
-           arg("var_index"), arg("coeff"))
+           &ModelBuilderHelper::SafeAddConstraintTerm, py::arg("ct_index"),
+           py::arg("var_index"), py::arg("coeff"))
       .def("set_constraint_name", &ModelBuilderHelper::SetConstraintName,
-           arg("ct_index"), arg("name"))
+           py::arg("ct_index"), py::arg("name"))
       .def("set_constraint_coefficient",
-           &ModelBuilderHelper::SetConstraintCoefficient, arg("ct_index"),
-           arg("var_index"), arg("coeff"))
+           &ModelBuilderHelper::SetConstraintCoefficient, py::arg("ct_index"),
+           py::arg("var_index"), py::arg("coeff"))
       .def("constraint_lower_bound", &ModelBuilderHelper::ConstraintLowerBound,
-           arg("ct_index"))
+           py::arg("ct_index"))
       .def("constraint_upper_bound", &ModelBuilderHelper::ConstraintUpperBound,
-           arg("ct_index"))
+           py::arg("ct_index"))
       .def("constraint_name", &ModelBuilderHelper::ConstraintName,
-           arg("ct_index"))
+           py::arg("ct_index"))
       .def("constraint_var_indices", &ModelBuilderHelper::ConstraintVarIndices,
-           arg("ct_index"))
+           py::arg("ct_index"))
       .def("constraint_coefficients",
-           &ModelBuilderHelper::ConstraintCoefficients, arg("ct_index"))
+           &ModelBuilderHelper::ConstraintCoefficients, py::arg("ct_index"))
       .def("add_enforced_linear_constraint",
            &ModelBuilderHelper::AddEnforcedLinearConstraint)
       .def("is_enforced_linear_constraint",
            &ModelBuilderHelper::IsEnforcedConstraint)
       .def("set_enforced_constraint_lower_bound",
            &ModelBuilderHelper::SetEnforcedConstraintLowerBound,
-           arg("ct_index"), arg("lb"))
+           py::arg("ct_index"), py::arg("lb"))
       .def("set_enforced_constraint_upper_bound",
            &ModelBuilderHelper::SetEnforcedConstraintUpperBound,
-           arg("ct_index"), arg("ub"))
+           py::arg("ct_index"), py::arg("ub"))
       .def("add_term_to_enforced_constraint",
-           &ModelBuilderHelper::AddEnforcedConstraintTerm, arg("ct_index"),
-           arg("var_index"), arg("coeff"))
+           &ModelBuilderHelper::AddEnforcedConstraintTerm, py::arg("ct_index"),
+           py::arg("var_index"), py::arg("coeff"))
       .def("add_terms_to_enforced_constraint",
            [](ModelBuilderHelper* helper, int ct_index,
-              const std::vector<const Variable*>& vars,
+              const std::vector<std::shared_ptr<Variable>>& vars,
               const std::vector<double>& coefficients) {
              for (int i = 0; i < vars.size(); ++i) {
                helper->AddEnforcedConstraintTerm(ct_index, vars[i]->index(),
@@ -737,47 +796,53 @@ PYBIND11_MODULE(model_builder_helper, m) {
              }
            })
       .def("safe_add_term_to_enforced_constraint",
-           &ModelBuilderHelper::SafeAddEnforcedConstraintTerm, arg("ct_index"),
-           arg("var_index"), arg("coeff"))
+           &ModelBuilderHelper::SafeAddEnforcedConstraintTerm,
+           py::arg("ct_index"), py::arg("var_index"), py::arg("coeff"))
       .def("set_enforced_constraint_name",
-           &ModelBuilderHelper::SetEnforcedConstraintName, arg("ct_index"),
-           arg("name"))
+           &ModelBuilderHelper::SetEnforcedConstraintName, py::arg("ct_index"),
+           py::arg("name"))
       .def("set_enforced_constraint_coefficient",
            &ModelBuilderHelper::SetEnforcedConstraintCoefficient,
-           arg("ct_index"), arg("var_index"), arg("coeff"))
+           py::arg("ct_index"), py::arg("var_index"), py::arg("coeff"))
       .def("enforced_constraint_lower_bound",
-           &ModelBuilderHelper::EnforcedConstraintLowerBound, arg("ct_index"))
+           &ModelBuilderHelper::EnforcedConstraintLowerBound,
+           py::arg("ct_index"))
       .def("enforced_constraint_upper_bound",
-           &ModelBuilderHelper::EnforcedConstraintUpperBound, arg("ct_index"))
+           &ModelBuilderHelper::EnforcedConstraintUpperBound,
+           py::arg("ct_index"))
       .def("enforced_constraint_name",
-           &ModelBuilderHelper::EnforcedConstraintName, arg("ct_index"))
+           &ModelBuilderHelper::EnforcedConstraintName, py::arg("ct_index"))
       .def("enforced_constraint_var_indices",
-           &ModelBuilderHelper::EnforcedConstraintVarIndices, arg("ct_index"))
+           &ModelBuilderHelper::EnforcedConstraintVarIndices,
+           py::arg("ct_index"))
       .def("enforced_constraint_coefficients",
-           &ModelBuilderHelper::EnforcedConstraintCoefficients, arg("ct_index"))
+           &ModelBuilderHelper::EnforcedConstraintCoefficients,
+           py::arg("ct_index"))
       .def("set_enforced_constraint_indicator_variable_index",
            &ModelBuilderHelper::SetEnforcedIndicatorVariableIndex,
-           arg("ct_index"), arg("var_index"))
+           py::arg("ct_index"), py::arg("var_index"))
       .def("set_enforced_constraint_indicator_value",
-           &ModelBuilderHelper::SetEnforcedIndicatorValue, arg("ct_index"),
-           arg("positive"))
+           &ModelBuilderHelper::SetEnforcedIndicatorValue, py::arg("ct_index"),
+           py::arg("positive"))
       .def("enforced_constraint_indicator_variable_index",
-           &ModelBuilderHelper::EnforcedIndicatorVariableIndex, arg("ct_index"))
+           &ModelBuilderHelper::EnforcedIndicatorVariableIndex,
+           py::arg("ct_index"))
       .def("enforced_constraint_indicator_value",
-           &ModelBuilderHelper::EnforcedIndicatorValue, arg("ct_index"))
+           &ModelBuilderHelper::EnforcedIndicatorValue, py::arg("ct_index"))
       .def("num_variables", &ModelBuilderHelper::num_variables)
       .def("num_constraints", &ModelBuilderHelper::num_constraints)
       .def("name", &ModelBuilderHelper::name)
-      .def("set_name", &ModelBuilderHelper::SetName, arg("name"))
+      .def("set_name", &ModelBuilderHelper::SetName, py::arg("name"))
       .def("clear_objective", &ModelBuilderHelper::ClearObjective)
       .def("maximize", &ModelBuilderHelper::maximize)
-      .def("set_maximize", &ModelBuilderHelper::SetMaximize, arg("maximize"))
+      .def("set_maximize", &ModelBuilderHelper::SetMaximize,
+           py::arg("maximize"))
       .def("set_objective_offset", &ModelBuilderHelper::SetObjectiveOffset,
-           arg("offset"))
+           py::arg("offset"))
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset)
       .def("clear_hints", &ModelBuilderHelper::ClearHints)
-      .def("add_hint", &ModelBuilderHelper::AddHint, arg("var_index"),
-           arg("var_value"));
+      .def("add_hint", &ModelBuilderHelper::AddHint, py::arg("var_index"),
+           py::arg("var_value"));
 
   py::enum_<SolveStatus>(m, "SolveStatus")
       .value("OPTIMAL", SolveStatus::OPTIMAL)
@@ -799,7 +864,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
   py::class_<ModelSolverHelper>(m, "ModelSolverHelper")
       .def(py::init<const std::string&>())
       .def("solver_is_supported", &ModelSolverHelper::SolverIsSupported)
-      .def("solve", &ModelSolverHelper::Solve, arg("model"),
+      .def("solve", &ModelSolverHelper::Solve, py::arg("model"),
            // The GIL is released during the solve to allow Python threads to do
            // other things in parallel, e.g., log and interrupt.
            py::call_guard<py::gil_scoped_release>())
@@ -829,11 +894,11 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("set_log_callback", &ModelSolverHelper::SetLogCallback)
       .def("clear_log_callback", &ModelSolverHelper::ClearLogCallback)
       .def("set_time_limit_in_seconds",
-           &ModelSolverHelper::SetTimeLimitInSeconds, arg("limit"))
+           &ModelSolverHelper::SetTimeLimitInSeconds, py::arg("limit"))
       .def("set_solver_specific_parameters",
            &ModelSolverHelper::SetSolverSpecificParameters,
-           arg("solver_specific_parameters"))
-      .def("enable_output", &ModelSolverHelper::EnableOutput, arg("output"))
+           py::arg("solver_specific_parameters"))
+      .def("enable_output", &ModelSolverHelper::EnableOutput, py::arg("output"))
       .def("has_solution", &ModelSolverHelper::has_solution)
       .def("has_response", &ModelSolverHelper::has_response)
       .def("response", &ModelSolverHelper::response)
@@ -844,18 +909,20 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("objective_value", &ModelSolverHelper::objective_value)
       .def("best_objective_bound", &ModelSolverHelper::best_objective_bound)
       .def("variable_value", &ModelSolverHelper::variable_value,
-           arg("var_index"))
+           py::arg("var_index"))
       .def("expression_value",
-           [](const ModelSolverHelper& helper, LinearExpr* expr) {
+           [](const ModelSolverHelper& helper,
+              std::shared_ptr<LinearExpr> expr) {
              if (!helper.has_response()) {
                throw std::logic_error(
                    "Accessing a solution value when none has been found.");
              }
              return helper.expression_value(expr);
            })
-      .def("reduced_cost", &ModelSolverHelper::reduced_cost, arg("var_index"))
-      .def("dual_value", &ModelSolverHelper::dual_value, arg("ct_index"))
-      .def("activity", &ModelSolverHelper::activity, arg("ct_index"))
+      .def("reduced_cost", &ModelSolverHelper::reduced_cost,
+           py::arg("var_index"))
+      .def("dual_value", &ModelSolverHelper::dual_value, py::arg("ct_index"))
+      .def("activity", &ModelSolverHelper::activity, py::arg("ct_index"))
       .def("variable_values",
            [](const ModelSolverHelper& helper) {
              if (!helper.has_response()) {

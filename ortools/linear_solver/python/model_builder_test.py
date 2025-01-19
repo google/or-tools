@@ -2243,6 +2243,127 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         self.assertEqual(z.index, ct.indicator_variable.index)
         self.assertFalse(ct.indicator_value)
 
+    def testInPlaceSumModifications(self) -> None:
+        model = mb.Model()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
+        y = [model.new_int_var(0, 10, f"y{i}") for i in range(5)]
+        e1 = sum(x)
+        self.assertIsInstance(e1, mbh.SumArray)
+        self.assertEqual(e1.offset, 0)
+        self.assertEqual(e1.num_exprs, 5)
+        e1_str = str(e1)
+        _ = e1 + y[0]
+        _ = sum(y) + e1
+        self.assertEqual(e1_str, str(e1))
+
+        e2 = sum(x) - 2 - y[0] - 0.1
+        e2_str = str(e2)
+        self.assertIsInstance(e2, mbh.SumArray)
+        self.assertEqual(e2.offset, -2.1)
+        self.assertEqual(e2.num_exprs, 6)
+        _ = e2 + 2.5
+        self.assertEqual(str(e2), e2_str)
+
+        e3 = 1.2 + sum(x) + 0.3
+        self.assertIsInstance(e3, mbh.SumArray)
+        self.assertEqual(e3.offset, 1.5)
+        self.assertEqual(e3.num_exprs, 5)
+
+    def testLargeSum(self) -> None:
+        model = mb.Model()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(100000)]
+        model.add(sum(x) == 10)
+
+    def testSimplification1(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (x * 2) * 2
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
+
+    def testSimplification2(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (x * 2)
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
+
+    def testSimplification3(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (2 * x) * 2
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
+
+    def testSimplification4(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (2 * x)
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(4, prod.coefficient)
+        self.assertEqual(0, prod.offset)
+
+    def testSimplification5(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (x + 1)
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
+
+    def testSimplification6(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (x + 1) * 2
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
+
+    def testSimplification7(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (x - 1)
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(-2, prod.offset)
+
+    def testSimplification8(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (x - 1) * 2
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(2, prod.coefficient)
+        self.assertEqual(-2, prod.offset)
+
+    def testSimplification9(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = 2 * (1 - x)
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(-2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
+
+    def testSimplification10(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod = (1 - x) * 2
+        self.assertIsInstance(prod, mbh.AffineExpr)
+        self.assertEqual(x, prod.expression)
+        self.assertEqual(-2, prod.coefficient)
+        self.assertEqual(2, prod.offset)
+
 
 if __name__ == "__main__":
     absltest.main()
