@@ -14,9 +14,11 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
 #define OR_TOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -43,70 +45,75 @@ class ModelBuilderHelper;
 class ModelSolverHelper;
 class Variable;
 
-// A linear expression that can be either integer or floating point.
-class LinearExpr {
+// A linear expression that containing variables and constants.
+class LinearExpr : public std::enable_shared_from_this<LinearExpr> {
  public:
   virtual ~LinearExpr() = default;
-  virtual void Visit(ExprVisitor& /*lin*/, double /*c*/) const = 0;
+  virtual void Visit(ExprVisitor& /*lin*/, double /*c*/) = 0;
   virtual std::string ToString() const = 0;
   virtual std::string DebugString() const = 0;
 
-  static LinearExpr* Term(LinearExpr* expr, double coeff);
-  static LinearExpr* Affine(LinearExpr* expr, double coeff, double constant);
-  static LinearExpr* AffineCst(double value, double coeff, double constant);
-  static LinearExpr* Constant(double value);
+  static std::shared_ptr<LinearExpr> Term(std::shared_ptr<LinearExpr> expr,
+                                          double coeff);
+  static std::shared_ptr<LinearExpr> Affine(std::shared_ptr<LinearExpr> expr,
+                                            double coeff, double constant);
+  static std::shared_ptr<LinearExpr> AffineCst(double value, double coeff,
+                                               double constant);
+  static std::shared_ptr<LinearExpr> Constant(double value);
 
-  LinearExpr* Add(LinearExpr* expr);
-  LinearExpr* AddFloat(double cst);
-  LinearExpr* Sub(LinearExpr* expr);
-  LinearExpr* SubFloat(double cst);
-  LinearExpr* RSubFloat(double cst);
-  LinearExpr* MulFloat(double cst);
-  LinearExpr* Neg();
+  std::shared_ptr<LinearExpr> Add(std::shared_ptr<LinearExpr> expr);
+  std::shared_ptr<LinearExpr> AddFloat(double cst);
+  std::shared_ptr<LinearExpr> Sub(std::shared_ptr<LinearExpr> expr);
+  std::shared_ptr<LinearExpr> SubFloat(double cst);
+  std::shared_ptr<LinearExpr> RSubFloat(double cst);
+  std::shared_ptr<LinearExpr> MulFloat(double cst);
+  std::shared_ptr<LinearExpr> Neg();
 
-  BoundedLinearExpression* Eq(LinearExpr* rhs);
-  BoundedLinearExpression* EqCst(double rhs);
-  BoundedLinearExpression* Ge(LinearExpr* rhs);
-  BoundedLinearExpression* GeCst(double rhs);
-  BoundedLinearExpression* Le(LinearExpr* rhs);
-  BoundedLinearExpression* LeCst(double rhs);
+  std::shared_ptr<BoundedLinearExpression> Eq(std::shared_ptr<LinearExpr> rhs);
+  std::shared_ptr<BoundedLinearExpression> EqCst(double rhs);
+  std::shared_ptr<BoundedLinearExpression> Ge(std::shared_ptr<LinearExpr> rhs);
+  std::shared_ptr<BoundedLinearExpression> GeCst(double rhs);
+  std::shared_ptr<BoundedLinearExpression> Le(std::shared_ptr<LinearExpr> rhs);
+  std::shared_ptr<BoundedLinearExpression> LeCst(double rhs);
 };
 
 // Compare the indices of variables.
 struct VariableComparator {
-  bool operator()(const Variable* lhs, const Variable* rhs) const;
+  bool operator()(std::shared_ptr<Variable> lhs,
+                  std::shared_ptr<Variable> rhs) const;
 };
 
 // A visitor class to parse a floating point linear expression.
 class ExprVisitor {
  public:
   virtual ~ExprVisitor() = default;
-  void AddToProcess(const LinearExpr* expr, double coeff);
+  void AddToProcess(std::shared_ptr<LinearExpr> expr, double coeff);
   void AddConstant(double constant);
-  virtual void AddVarCoeff(const Variable* var, double coeff) = 0;
+  virtual void AddVarCoeff(std::shared_ptr<Variable> var, double coeff) = 0;
   void Clear();
 
  protected:
-  std::vector<std::pair<const LinearExpr*, double>> to_process_;
+  std::vector<std::pair<std::shared_ptr<LinearExpr>, double>> to_process_;
   double offset_ = 0;
 };
 
 class ExprFlattener : public ExprVisitor {
  public:
   ~ExprFlattener() override = default;
-  void AddVarCoeff(const Variable* var, double coeff) override;
-  double Flatten(std::vector<const Variable*>* vars,
+  void AddVarCoeff(std::shared_ptr<Variable> var, double coeff) override;
+  double Flatten(std::vector<std::shared_ptr<Variable>>* vars,
                  std::vector<double>* coeffs);
 
  private:
-  absl::btree_map<const Variable*, double, VariableComparator> canonical_terms_;
+  absl::btree_map<std::shared_ptr<Variable>, double, VariableComparator>
+      canonical_terms_;
 };
 
 class ExprEvaluator : public ExprVisitor {
  public:
   explicit ExprEvaluator(ModelSolverHelper* helper) : helper_(helper) {}
   ~ExprEvaluator() override = default;
-  void AddVarCoeff(const Variable* var, double coeff) override;
+  void AddVarCoeff(std::shared_ptr<Variable> var, double coeff) override;
   double Evaluate();
 
  private:
@@ -116,23 +123,23 @@ class ExprEvaluator : public ExprVisitor {
 // A flat linear expression sum(vars[i] * coeffs[i]) + offset
 class FlatExpr : public LinearExpr {
  public:
-  explicit FlatExpr(const LinearExpr* expr);
+  explicit FlatExpr(std::shared_ptr<LinearExpr> expr);
   // Flatten pos - neg.
-  FlatExpr(const LinearExpr* pos, const LinearExpr* neg);
-  FlatExpr(const std::vector<const Variable*>&, const std::vector<double>&,
-           double);
+  FlatExpr(std::shared_ptr<LinearExpr> pos, std::shared_ptr<LinearExpr> neg);
+  FlatExpr(const std::vector<std::shared_ptr<Variable>>&,
+           const std::vector<double>&, double);
   explicit FlatExpr(double offset);
-  const std::vector<const Variable*>& vars() const { return vars_; }
+  const std::vector<std::shared_ptr<Variable>>& vars() const { return vars_; }
   std::vector<int> VarIndices() const;
   const std::vector<double>& coeffs() const { return coeffs_; }
   double offset() const { return offset_; }
 
-  void Visit(ExprVisitor& lin, double c) const override;
+  void Visit(ExprVisitor& lin, double c) override;
   std::string ToString() const override;
   std::string DebugString() const override;
 
  private:
-  std::vector<const Variable*> vars_;
+  std::vector<std::shared_ptr<Variable>> vars_;
   std::vector<double> coeffs_;
   double offset_;
 };
@@ -141,11 +148,12 @@ class FlatExpr : public LinearExpr {
 // double offsets.
 class SumArray : public LinearExpr {
  public:
-  explicit SumArray(const std::vector<LinearExpr*>& exprs, double offset)
-      : exprs_(exprs.begin(), exprs.end()), offset_(offset) {}
+  explicit SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
+                    double offset)
+      : exprs_(std::move(exprs)), offset_(offset) {}
   ~SumArray() override = default;
 
-  void Visit(ExprVisitor& lin, double c) const override {
+  void Visit(ExprVisitor& lin, double c) override {
     for (int i = 0; i < exprs_.size(); ++i) {
       lin.AddToProcess(exprs_[i], c);
     }
@@ -181,9 +189,10 @@ class SumArray : public LinearExpr {
   std::string DebugString() const override {
     std::string s = absl::StrCat(
         "SumArray(",
-        absl::StrJoin(exprs_, ", ", [](std::string* out, LinearExpr* expr) {
-          absl::StrAppend(out, expr->DebugString());
-        }));
+        absl::StrJoin(exprs_, ", ",
+                      [](std::string* out, std::shared_ptr<LinearExpr> expr) {
+                        absl::StrAppend(out, expr->DebugString());
+                      }));
     if (offset_ != 0.0) {
       absl::StrAppend(&s, ", offset=", offset_);
     }
@@ -191,24 +200,29 @@ class SumArray : public LinearExpr {
     return s;
   }
 
+  void AddInPlace(std::shared_ptr<LinearExpr> expr) { exprs_.push_back(expr); }
+  void AddFloatInPlace(double cst) { offset_ += cst; }
+  int num_exprs() const { return exprs_.size(); }
+  double offset() const { return offset_; }
+
  private:
-  const absl::FixedArray<LinearExpr*, 2> exprs_;
-  const double offset_;
+  std::vector<std::shared_ptr<LinearExpr>> exprs_;
+  double offset_;
 };
 
 // A class to hold a weighted sum of floating point linear expressions.
 class WeightedSumArray : public LinearExpr {
  public:
-  WeightedSumArray(const std::vector<LinearExpr*>& exprs,
+  WeightedSumArray(const std::vector<std::shared_ptr<LinearExpr>>& exprs,
                    const std::vector<double>& coeffs, double offset);
   ~WeightedSumArray() override = default;
 
-  void Visit(ExprVisitor& lin, double c) const override;
+  void Visit(ExprVisitor& lin, double c) override;
   std::string ToString() const override;
   std::string DebugString() const override;
 
  private:
-  const absl::FixedArray<LinearExpr*, 2> exprs_;
+  const absl::FixedArray<std::shared_ptr<LinearExpr>, 2> exprs_;
   const absl::FixedArray<double, 2> coeffs_;
   double offset_;
 };
@@ -216,20 +230,26 @@ class WeightedSumArray : public LinearExpr {
 // A class to hold linear_expr * a = b.
 class AffineExpr : public LinearExpr {
  public:
-  AffineExpr(LinearExpr* expr, double coeff, double offset);
+  AffineExpr(std::shared_ptr<LinearExpr> expr, double coeff, double offset);
   ~AffineExpr() override = default;
 
-  void Visit(ExprVisitor& lin, double c) const override;
+  void Visit(ExprVisitor& lin, double c) override;
 
   std::string ToString() const override;
   std::string DebugString() const override;
 
-  LinearExpr* expression() const { return expr_; }
+  std::shared_ptr<LinearExpr> expression() const { return expr_; }
   double coefficient() const { return coeff_; }
   double offset() const { return offset_; }
 
+  std::shared_ptr<LinearExpr> AddFloat(double cst);
+  std::shared_ptr<LinearExpr> SubFloat(double cst);
+  std::shared_ptr<LinearExpr> RSubFloat(double cst);
+  std::shared_ptr<LinearExpr> MulFloat(double cst);
+  std::shared_ptr<LinearExpr> Neg();
+
  private:
-  LinearExpr* expr_;
+  std::shared_ptr<LinearExpr> expr_;
   double coeff_;
   double offset_;
 };
@@ -240,7 +260,7 @@ class FixedValue : public LinearExpr {
   explicit FixedValue(double value) : value_(value) {}
   ~FixedValue() override = default;
 
-  void Visit(ExprVisitor& lin, double c) const override;
+  void Visit(ExprVisitor& lin, double c) override;
 
   std::string ToString() const override;
   std::string DebugString() const override;
@@ -275,8 +295,10 @@ class Variable : public LinearExpr {
   double objective_coefficient() const;
   void SetObjectiveCoefficient(double coeff);
 
-  void Visit(ExprVisitor& lin, double c) const override {
-    lin.AddVarCoeff(this, c);
+  void Visit(ExprVisitor& lin, double c) override {
+    std::shared_ptr<Variable> var =
+        std::static_pointer_cast<Variable>(shared_from_this());
+    lin.AddVarCoeff(var, c);
   }
 
   std::string ToString() const override;
@@ -291,34 +313,36 @@ class Variable : public LinearExpr {
 };
 
 template <typename H>
-H AbslHashValue(H h, const Variable* i) {
+H AbslHashValue(H h, std::shared_ptr<Variable> i) {
   return H::combine(std::move(h), i->index());
 }
 
 // A class to hold a linear expression with bounds.
 class BoundedLinearExpression {
  public:
-  BoundedLinearExpression(const LinearExpr* expr, double lower_bound,
+  BoundedLinearExpression(std::shared_ptr<LinearExpr> expr, double lower_bound,
                           double upper_bound);
-  BoundedLinearExpression(const LinearExpr* pos, const LinearExpr* neg,
-                          double lower_bound, double upper_bound);
-  BoundedLinearExpression(const LinearExpr* expr, int64_t lower_bound,
+  BoundedLinearExpression(std::shared_ptr<LinearExpr> pos,
+                          std::shared_ptr<LinearExpr> neg, double lower_bound,
+                          double upper_bound);
+  BoundedLinearExpression(std::shared_ptr<LinearExpr> expr, int64_t lower_bound,
                           int64_t upper_bound);
-  BoundedLinearExpression(const LinearExpr* pos, const LinearExpr* neg,
-                          int64_t lower_bound, int64_t upper_bound);
+  BoundedLinearExpression(std::shared_ptr<LinearExpr> pos,
+                          std::shared_ptr<LinearExpr> neg, int64_t lower_bound,
+                          int64_t upper_bound);
 
   ~BoundedLinearExpression() = default;
 
   double lower_bound() const;
   double upper_bound() const;
-  const std::vector<const Variable*>& vars() const;
+  const std::vector<std::shared_ptr<Variable>>& vars() const;
   const std::vector<double>& coeffs() const;
   std::string ToString() const;
   std::string DebugString() const;
   bool CastToBool(bool* result) const;
 
  private:
-  std::vector<const Variable*> vars_;
+  std::vector<std::shared_ptr<Variable>> vars_;
   std::vector<double> coeffs_;
   double lower_bound_;
   double upper_bound_;
@@ -485,7 +509,7 @@ class ModelSolverHelper {
   double objective_value() const;
   double best_objective_bound() const;
   double variable_value(int var_index) const;
-  double expression_value(LinearExpr* expr) const;
+  double expression_value(std::shared_ptr<LinearExpr> expr) const;
   double reduced_cost(int var_index) const;
   double dual_value(int ct_index) const;
   double activity(int ct_index);
