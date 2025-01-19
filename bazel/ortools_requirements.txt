@@ -5,9 +5,9 @@
 #    bazel run //bazel:ortools_requirements.update
 #
 absl-py==2.0.0
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 black==24.3.0
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 certifi==2024.7.4
     # via requests
 charset-normalizer==3.3.2
@@ -21,24 +21,24 @@ filelock==3.12.2
 idna==3.7
     # via requests
 immutabledict==3.0.0
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 mypy==1.6.1
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 mypy-extensions==1.0.0
     # via
     #   black
     #   mypy
 mypy-protobuf==3.5.0
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 numpy==1.26.4
     # via
-    #   -r bazel/ortools_requirements.in
+    #   -r ortools_requirements.in
     #   pandas
     #   scipy
 packaging==23.1
     # via black
 pandas==2.1.2
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 pathspec==0.11.1
     # via black
 platformdirs==3.10.0
@@ -47,20 +47,20 @@ platformdirs==3.10.0
     #   virtualenv
 protobuf==5.26.1
     # via
-    #   -r bazel/ortools_requirements.in
+    #   -r ortools_requirements.in
     #   mypy-protobuf
 python-dateutil==2.8.2
     # via pandas
 pytz==2022.7.1
     # via pandas
 requests==2.32.0
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 scipy==1.11.3
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 six==1.16.0
     # via python-dateutil
 svgwrite==1.4.3
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 types-protobuf==4.24.0.0
     # via mypy-protobuf
 typing-extensions==4.8.0
@@ -69,5 +69,5 @@ tzdata==2023.3
     # via pandas
 urllib3==2.2.2
     # via requests
-virtualenv==20.24.6
-    # via -r bazel/ortools_requirements.in
+virtualenv==20.26.6
+    # via -r ortools_requirements.in
