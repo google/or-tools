@@ -23,6 +23,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/solution_crush.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -771,7 +772,7 @@ TEST(PresolveContextTest, IntersectDomainAndUpdateHint) {
   EXPECT_TRUE(context.IntersectDomainWithAndUpdateHint(0, Domain(5, 20)));
 
   EXPECT_EQ(context.DomainOf(0), Domain(5, 10));
-  EXPECT_EQ(context.SolutionHint(0), 5);
+  EXPECT_EQ(context.solution_crush().SolutionHint(0), 5);
 }
 
 TEST(PresolveContextTest, DomainSuperSetOf) {
@@ -1073,20 +1074,21 @@ TEST(PresolveContextTest, LoadSolutionHint) {
   context.InitializeNewDomains();
   context.LoadSolutionHint();
 
-  EXPECT_TRUE(context.HintIsLoaded());
-  EXPECT_TRUE(context.VarHasSolutionHint(0));
-  EXPECT_TRUE(context.VarHasSolutionHint(1));  // From the fixed domain.
-  EXPECT_TRUE(context.VarHasSolutionHint(2));
-  EXPECT_EQ(context.SolutionHint(0), 10);  // Clamped to the domain.
-  EXPECT_EQ(context.SolutionHint(1), 5);   // From the fixed domain.
-  EXPECT_EQ(context.SolutionHint(2), 0);
-  EXPECT_EQ(context.GetRefSolutionHint(0), 10);
-  EXPECT_EQ(context.GetRefSolutionHint(NegatedRef(0)), -10);
-  EXPECT_FALSE(context.LiteralSolutionHint(2));
-  EXPECT_TRUE(context.LiteralSolutionHint(NegatedRef(2)));
-  EXPECT_TRUE(context.LiteralSolutionHintIs(2, false));
-  EXPECT_TRUE(context.LiteralSolutionHintIs(NegatedRef(2), true));
-  EXPECT_THAT(context.SolutionHint(), ::testing::ElementsAre(10, 5, 0));
+  SolutionCrush& crush = context.solution_crush();
+  EXPECT_TRUE(crush.HintIsLoaded());
+  EXPECT_TRUE(crush.VarHasSolutionHint(0));
+  EXPECT_TRUE(crush.VarHasSolutionHint(1));  // From the fixed domain.
+  EXPECT_TRUE(crush.VarHasSolutionHint(2));
+  EXPECT_EQ(crush.SolutionHint(0), 10);  // Clamped to the domain.
+  EXPECT_EQ(crush.SolutionHint(1), 5);   // From the fixed domain.
+  EXPECT_EQ(crush.SolutionHint(2), 0);
+  EXPECT_EQ(crush.GetRefSolutionHint(0), 10);
+  EXPECT_EQ(crush.GetRefSolutionHint(NegatedRef(0)), -10);
+  EXPECT_FALSE(crush.LiteralSolutionHint(2));
+  EXPECT_TRUE(crush.LiteralSolutionHint(NegatedRef(2)));
+  EXPECT_TRUE(crush.LiteralSolutionHintIs(2, false));
+  EXPECT_TRUE(crush.LiteralSolutionHintIs(NegatedRef(2), true));
+  EXPECT_THAT(crush.SolutionHint(), ::testing::ElementsAre(10, 5, 0));
 }
 
 }  // namespace

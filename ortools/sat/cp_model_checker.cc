@@ -1442,18 +1442,15 @@ class ConstraintChecker {
     }
 
     std::optional<std::pair<int, int>> one_intersection;
-    if (!has_zero_sizes) {
-      absl::c_stable_sort(enforced_rectangles,
-                          [](const Rectangle& a, const Rectangle& b) {
-                            return a.x_min < b.x_min;
-                          });
-      one_intersection = FindOneIntersectionIfPresent(enforced_rectangles);
+    absl::c_stable_sort(enforced_rectangles,
+                        [](const Rectangle& a, const Rectangle& b) {
+                          return a.x_min < b.x_min;
+                        });
+    if (has_zero_sizes) {
+      one_intersection =
+          FindOneIntersectionIfPresentWithZeroArea(enforced_rectangles);
     } else {
-      const std::vector<std::pair<int, int>> intersections =
-          FindPartialRectangleIntersections(enforced_rectangles);
-      if (!intersections.empty()) {
-        one_intersection = intersections[0];
-      }
+      one_intersection = FindOneIntersectionIfPresent(enforced_rectangles);
     }
 
     if (one_intersection != std::nullopt) {

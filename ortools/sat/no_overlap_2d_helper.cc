@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/2d_rectangle_presolve.h"
@@ -85,6 +87,15 @@ void ClearAndAddMandatoryOverlapReason(int box1, int box2,
 
 bool NoOverlap2DConstraintHelper::ReportConflictFromTwoBoxes(int box1,
                                                              int box2) {
+  DCHECK_NE(box1, box2);
+  if (DEBUG_MODE) {
+    std::vector<PairwiseRestriction> restrictions;
+    AppendPairwiseRestrictions({GetItemWithVariableSize(box1)},
+                               {GetItemWithVariableSize(box2)}, &restrictions);
+    DCHECK_EQ(restrictions.size(), 1);
+    DCHECK(restrictions[0].type ==
+           PairwiseRestriction::PairwiseRestrictionType::CONFLICT);
+  }
   ClearAndAddMandatoryOverlapReason(box1, box2, x_helper_.get());
   ClearAndAddMandatoryOverlapReason(box1, box2, y_helper_.get());
   x_helper_->ImportOtherReasons(*y_helper_);

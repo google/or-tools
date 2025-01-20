@@ -29,13 +29,13 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/solution_crush.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
@@ -634,83 +634,7 @@ class PresolveContext {
   // possible (e.g. for the model proto's fixed variables).
   void LoadSolutionHint();
 
-  void PermuteHintValues(const SparsePermutation& perm);
-
-  // Solution hint accessors.
-  bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }
-  int64_t SolutionHint(int var) const { return hint_[var]; }
-  bool HintIsLoaded() const { return hint_is_loaded_; }
-  absl::Span<const int64_t> SolutionHint() const { return hint_; }
-
-  // Similar to SolutionHint() but make sure the value is within the current
-  // bounds of the variable.
-  int64_t ClampedSolutionHint(int var) {
-    int64_t value = hint_[var];
-    if (value > MaxOf(var)) {
-      value = MaxOf(var);
-    } else if (value < MinOf(var)) {
-      value = MinOf(var);
-    }
-    return value;
-  }
-
-  bool LiteralSolutionHint(int lit) const {
-    const int var = PositiveRef(lit);
-    return RefIsPositive(lit) ? hint_[var] : !hint_[var];
-  }
-
-  bool LiteralSolutionHintIs(int lit, bool value) const {
-    const int var = PositiveRef(lit);
-    return hint_is_loaded_ && hint_has_value_[var] &&
-           hint_[var] == (RefIsPositive(lit) ? value : !value);
-  }
-
-  // If the given literal is already hinted, updates its hint.
-  // Otherwise do nothing.
-  void UpdateLiteralSolutionHint(int lit, bool value) {
-    UpdateVarSolutionHint(PositiveRef(lit),
-                          RefIsPositive(lit) == value ? 1 : 0);
-  }
-
-  std::optional<int64_t> GetRefSolutionHint(int ref) {
-    const int var = PositiveRef(ref);
-    if (!VarHasSolutionHint(var)) return std::nullopt;
-    const int64_t var_hint = SolutionHint(var);
-    return RefIsPositive(ref) ? var_hint : -var_hint;
-  }
-
-  std::optional<int64_t> GetExpressionSolutionHint(
-      const LinearExpressionProto& expr) {
-    int64_t result = expr.offset();
-    for (int i = 0; i < expr.vars().size(); ++i) {
-      if (expr.coeffs(i) == 0) continue;
-      if (!VarHasSolutionHint(expr.vars(i))) return std::nullopt;
-      result += expr.coeffs(i) * SolutionHint(expr.vars(i));
-    }
-    return result;
-  }
-
-  void UpdateRefSolutionHint(int ref, int hint) {
-    UpdateVarSolutionHint(PositiveRef(ref), RefIsPositive(ref) ? hint : -hint);
-  }
-
-  // If the given variable is already hinted, updates its hint value.
-  // Otherwise, do nothing.
-  void UpdateVarSolutionHint(int var, int64_t value) {
-    DCHECK(RefIsPositive(var));
-    if (!hint_is_loaded_) return;
-    if (!hint_has_value_[var]) return;
-    hint_[var] = value;
-  }
-
-  // Allows to set the hint of a newly created variable.
-  void SetNewVariableHint(int var, int64_t value) {
-    CHECK(hint_is_loaded_);
-    CHECK(!hint_has_value_[var]);
-    hint_has_value_[var] = true;
-    hint_[var] = value;
-  }
-
+  SolutionCrush& solution_crush() { return solution_crush_; }
   // This is slow O(problem_size) but can be used to debug presolve, either by
   // pinpointing the transition from feasible to infeasible or the other way
   // around if for some reason the presolve drop constraint that it shouldn't.
@@ -805,13 +729,7 @@ class PresolveContext {
   // The current domain of each variables.
   std::vector<Domain> domains_;
 
-  // Parallel to domains.
-  //
-  // This contains all the hinted value or zero if the hint wasn't specified.
-  // We try to maintain this as we create new variable.
-  bool hint_is_loaded_ = false;
-  std::vector<bool> hint_has_value_;
-  std::vector<int64_t> hint_;
+  SolutionCrush solution_crush_;
 
   // Internal representation of the objective. During presolve, we first load
   // the objective in this format in order to have more efficient substitution

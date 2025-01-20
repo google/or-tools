@@ -50,6 +50,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/solution_crush.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
@@ -933,10 +934,11 @@ std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
 void UpdateHintAfterFixingBoolToBreakSymmetry(
     PresolveContext* context, int var, bool fixed_value,
     absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
-  if (!context->VarHasSolutionHint(var)) {
+  SolutionCrush& crush = context->solution_crush();
+  if (!crush.VarHasSolutionHint(var)) {
     return;
   }
-  const int64_t hinted_value = context->SolutionHint(var);
+  const int64_t hinted_value = crush.SolutionHint(var);
   if (hinted_value == static_cast<int64_t>(fixed_value)) {
     return;
   }
@@ -948,8 +950,8 @@ void UpdateHintAfterFixingBoolToBreakSymmetry(
   bool found_target = false;
   int target_var;
   for (int v : orbit) {
-    if (context->VarHasSolutionHint(v) &&
-        context->SolutionHint(v) == static_cast<int64_t>(fixed_value)) {
+    if (crush.VarHasSolutionHint(v) &&
+        crush.SolutionHint(v) == static_cast<int64_t>(fixed_value)) {
       found_target = true;
       target_var = v;
       break;
@@ -964,11 +966,11 @@ void UpdateHintAfterFixingBoolToBreakSymmetry(
   const std::vector<int> generator_idx =
       TracePoint(target_var, schrier_vector, generators);
   for (const int i : generator_idx) {
-    context->PermuteHintValues(*generators[i]);
+    crush.PermuteHintValues(*generators[i]);
   }
 
-  DCHECK(context->VarHasSolutionHint(var));
-  DCHECK_EQ(context->SolutionHint(var), fixed_value);
+  DCHECK(crush.VarHasSolutionHint(var));
+  DCHECK_EQ(crush.SolutionHint(var), fixed_value);
 }
 
 }  // namespace
@@ -1250,7 +1252,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       const int var = can_be_fixed_to_false[i];
       if (orbits[var] == orbit_index) ++num_in_orbit;
       context->UpdateRuleStats("symmetry: fixed to false in general orbit");
-      if (context->VarHasSolutionHint(var) && context->SolutionHint(var) == 1 &&
+      SolutionCrush& crush = context->solution_crush();
+      if (crush.VarHasSolutionHint(var) && crush.SolutionHint(var) == 1 &&
           var_can_be_true_per_orbit[orbits[var]] != -1) {
         // We are breaking the symmetry in a way that makes the hint invalid.
         // We want `var` to be false, so we would naively pick a symmetry to

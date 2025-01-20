@@ -114,6 +114,16 @@ class TimeRecorder(cp_model.CpSolverSolutionCallback):
         return self.__last_time
 
 
+class RaiseException(cp_model.CpSolverSolutionCallback):
+
+    def __init__(self, msg: str) -> None:
+        super().__init__()
+        self.__msg = msg
+
+    def on_solution_callback(self) -> None:
+        raise ValueError(self.__msg)
+
+
 class LogToString:
     """Record log in a string."""
 
@@ -2036,8 +2046,6 @@ TRFM"""
         max_width = 10
 
         horizon = sum(t[0] for t in jobs)
-        num_jobs = len(jobs)
-        all_jobs = range(num_jobs)
 
         intervals = []
         intervals0 = []
@@ -2047,16 +2055,16 @@ TRFM"""
         ends = []
         demands = []
 
-        for i in all_jobs:
+        for i, job in enumerate(jobs):
             # Create main interval.
             start = model.new_int_var(0, horizon, f"start_{i}")
-            duration = jobs[i][0]
+            duration, width = job
             end = model.new_int_var(0, horizon, f"end_{i}")
             interval = model.new_interval_var(start, duration, end, f"interval_{i}")
             starts.append(start)
             intervals.append(interval)
             ends.append(end)
-            demands.append(jobs[i][1])
+            demands.append(width)
 
             # Create an optional copy of interval to be executed on machine 0.
             performed_on_m0 = model.new_bool_var(f"perform_{i}_on_m0")
@@ -2131,6 +2139,101 @@ TRFM"""
         self.assertIsNotNone(expr_eq)
         self.assertIsNotNone(expr_ne)
         self.assertIsNotNone(expr_ge)
+
+    def testRaisePythonExceptionInCallback(self) -> None:
+        model = cp_model.CpModel()
+
+        jobs = [
+            [3, 3],  # [duration, width]
+            [2, 5],
+            [1, 3],
+            [3, 7],
+            [7, 3],
+            [2, 2],
+            [2, 2],
+            [5, 5],
+            [10, 2],
+            [4, 3],
+            [2, 6],
+            [1, 2],
+            [6, 8],
+            [4, 5],
+            [3, 7],
+        ]
+
+        max_width = 10
+
+        horizon = sum(t[0] for t in jobs)
+
+        intervals = []
+        intervals0 = []
+        intervals1 = []
+        performed = []
+        starts = []
+        ends = []
+        demands = []
+
+        for i, job in enumerate(jobs):
+            # Create main interval.
+            start = model.new_int_var(0, horizon, f"start_{i}")
+            duration, width = job
+            end = model.new_int_var(0, horizon, f"end_{i}")
+            interval = model.new_interval_var(start, duration, end, f"interval_{i}")
+            starts.append(start)
+            intervals.append(interval)
+            ends.append(end)
+            demands.append(width)
+
+            # Create an optional copy of interval to be executed on machine 0.
+            performed_on_m0 = model.new_bool_var(f"perform_{i}_on_m0")
+            performed.append(performed_on_m0)
+            start0 = model.new_int_var(0, horizon, f"start_{i}_on_m0")
+            end0 = model.new_int_var(0, horizon, f"end_{i}_on_m0")
+            interval0 = model.new_optional_interval_var(
+                start0, duration, end0, performed_on_m0, f"interval_{i}_on_m0"
+            )
+            intervals0.append(interval0)
+
+            # Create an optional copy of interval to be executed on machine 1.
+            start1 = model.new_int_var(0, horizon, f"start_{i}_on_m1")
+            end1 = model.new_int_var(0, horizon, f"end_{i}_on_m1")
+            interval1 = model.new_optional_interval_var(
+                start1,
+                duration,
+                end1,
+                ~performed_on_m0,
+                f"interval_{i}_on_m1",
+            )
+            intervals1.append(interval1)
+
+            # We only propagate the constraint if the tasks is performed on the
+            # machine.
+            model.add(start0 == start).only_enforce_if(performed_on_m0)
+            model.add(start1 == start).only_enforce_if(~performed_on_m0)
+
+        # Width constraint (modeled as a cumulative)
+        model.add_cumulative(intervals, demands, max_width)
+
+        # Choose which machine to perform the jobs on.
+        model.add_no_overlap(intervals0)
+        model.add_no_overlap(intervals1)
+
+        # Objective variable.
+        makespan = model.new_int_var(0, horizon, "makespan")
+        model.add_max_equality(makespan, ends)
+        model.minimize(makespan)
+
+        # Symmetry breaking.
+        model.add(performed[0] == 0)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.log_search_progress = True
+        solver.parameters.num_workers = 1
+        msg: str = "this is my test message"
+        callback = RaiseException(msg)
+
+        with self.assertRaisesRegex(ValueError, msg):
+            solver.solve(model, callback)
 
     def testInPlaceSumModifications(self) -> None:
         model = cp_model.CpModel()

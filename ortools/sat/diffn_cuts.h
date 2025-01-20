@@ -22,6 +22,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
@@ -30,8 +31,7 @@ namespace sat {
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
-    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
-    Model* model);
+    NoOverlap2DConstraintHelper* helper, Model* model);
 
 // Energetic cuts for the no_overlap_2d constraint.
 //
@@ -57,7 +57,7 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 
 // Base event type for scheduling cuts.
 struct DiffnBaseEvent {
-  DiffnBaseEvent(int t, SchedulingConstraintHelper* x_helper);
+  DiffnBaseEvent(int t, const SchedulingConstraintHelper* x_helper);
 
   // Cache of the intervals bound on the x direction.
   IntegerValue x_start_min;
@@ -84,7 +84,7 @@ struct DiffnBaseEvent {
 //       capacity_max.
 //   For a no_overlap_2d constraint, y the other dimension of the rect.
 struct DiffnCtEvent : DiffnBaseEvent {
-  DiffnCtEvent(int t, SchedulingConstraintHelper* x_helper);
+  DiffnCtEvent(int t, const SchedulingConstraintHelper* x_helper);
 
   // The lp value of the end of the x interval.
   AffineExpression x_end;

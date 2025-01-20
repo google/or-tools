@@ -35,7 +35,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -115,19 +114,7 @@ int PresolveContext::NewIntVarWithDefinition(
     UpdateNewConstraintsVariableUsage();
   }
 
-  // We only fill the hint of the new variable if all the variable involved
-  // in its definition have a value.
-  if (hint_is_loaded_) {
-    int64_t new_value = 0;
-    for (const auto [var, coeff] : definition) {
-      CHECK_GE(var, 0);
-      CHECK_LE(var, hint_.size());
-      if (!hint_has_value_[var]) return new_var;
-      new_value += coeff * hint_[var];
-    }
-    hint_has_value_[new_var] = true;
-    hint_[new_var] = new_value;
-  }
+  solution_crush_.SetVarToLinearExpression(new_var, definition);
   return new_var;
 }
 
@@ -138,52 +125,14 @@ int PresolveContext::NewBoolVar(absl::string_view source) {
 
 int PresolveContext::NewBoolVarWithClause(absl::Span<const int> clause) {
   const int new_var = NewBoolVar("with clause");
-  if (hint_is_loaded_) {
-    int new_hint = 0;
-    bool all_have_hint = true;
-    for (const int literal : clause) {
-      const int var = PositiveRef(literal);
-      if (!hint_has_value_[var]) {
-        all_have_hint = false;
-        break;
-      }
-      if (hint_[var] == (RefIsPositive(literal) ? 1 : 0)) {
-        new_hint = 1;
-        break;
-      }
-    }
-    // Leave the `new_var` hint unassigned if any literal is not hinted.
-    if (all_have_hint) {
-      hint_has_value_[new_var] = true;
-      hint_[new_var] = new_hint;
-    }
-  }
+  solution_crush_.SetVarToClause(new_var, clause);
   return new_var;
 }
 
 int PresolveContext::NewBoolVarWithConjunction(
     absl::Span<const int> conjunction) {
   const int new_var = NewBoolVar("with conjunction");
-  if (hint_is_loaded_) {
-    int new_hint = 1;
-    bool all_have_hint = true;
-    for (const int literal : conjunction) {
-      const int var = PositiveRef(literal);
-      if (!hint_has_value_[var]) {
-        all_have_hint = false;
-        break;
-      }
-      if (hint_[var] == (RefIsPositive(literal) ? 0 : 1)) {
-        new_hint = 0;
-        break;
-      }
-    }
-    // Leave the `new_var` hint unassigned if any literal is not hinted.
-    if (all_have_hint) {
-      hint_has_value_[new_var] = true;
-      hint_[new_var] = new_hint;
-    }
-  }
+  solution_crush_.SetVarToConjunction(new_var, conjunction);
   return new_var;
 }
 
@@ -589,18 +538,10 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWithInternal(
                      domain.ToString()));
   }
 
-  if (update_hint && VarHasSolutionHint(var)) {
-    UpdateVarSolutionHint(var, domains_[var].ClosestValue(SolutionHint(var)));
+  // TODO(user): always update the hint, remove the `update_hint` argument.
+  if (update_hint) {
+    solution_crush_.UpdateVarToDomain(var, domains_[var]);
   }
-
-#ifdef CHECK_HINT
-  if (working_model->has_solution_hint() && HintIsLoaded() &&
-      !domains_[var].Contains(hint_[var])) {
-    LOG(FATAL) << "Hint with value " << hint_[var]
-               << " infeasible when changing domain of " << var << " to "
-               << domains_[var];
-  }
-#endif
 
   // Propagate the domain of the representative right away.
   // Note that the recursive call should only by one level deep.
@@ -745,8 +686,9 @@ void PresolveContext::AddVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (working_model->has_solution_hint() && HintIsLoaded() &&
-      !ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (working_model->has_solution_hint() && solution_crush_.HintIsLoaded() &&
+      !ConstraintIsFeasible(*working_model, ct,
+                            solution_crush_.SolutionHint())) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -802,8 +744,9 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (working_model->has_solution_hint() && HintIsLoaded() &&
-      !ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (working_model->has_solution_hint() && solution_crush_.HintIsLoaded() &&
+      !ConstraintIsFeasible(*working_model, ct,
+                            solution_crush_.SolutionHint())) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -1136,12 +1079,6 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   return true;
 }
 
-void PresolveContext::PermuteHintValues(const SparsePermutation& perm) {
-  CHECK(hint_is_loaded_);
-  perm.ApplyToDenseCollection(hint_);
-  perm.ApplyToDenseCollection(hint_has_value_);
-}
-
 bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
                                           int64_t offset,
                                           bool debug_no_recursion) {
@@ -1150,28 +1087,11 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   DCHECK_NE(coeff, 0);
   if (is_unsat_) return false;
 
-  if (hint_is_loaded_) {
-    if (!hint_has_value_[var_y] && hint_has_value_[var_x]) {
-      hint_has_value_[var_y] = true;
-      hint_[var_y] = (hint_[var_x] - offset) / coeff;
-      if (hint_[var_y] * coeff + offset != hint_[var_x]) {
-        // TODO(user): Do we implement a rounding to closest instead of
-        // routing towards 0.
-        UpdateRuleStats(
-            "Warning: hint didn't satisfy affine relation and was corrected");
-      }
-    }
+  if (!solution_crush_.MaybeSetVarToAffineEquationSolution(var_x, var_y, coeff,
+                                                           offset)) {
+    UpdateRuleStats(
+        "Warning: hint didn't satisfy affine relation and was corrected");
   }
-
-#ifdef CHECK_HINT
-  const int64_t vx = hint_[var_x];
-  const int64_t vy = hint_[var_y];
-  if (working_model->has_solution_hint() && HintIsLoaded() &&
-      vx != vy * coeff + offset) {
-    LOG(FATAL) << "Affine relation incompatible with hint: " << vx
-               << " != " << vy << " * " << coeff << " + " << offset;
-  }
-#endif
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
   // fixed but that is not propagated to var_x or var_y and this causes issues.
@@ -1419,7 +1339,7 @@ void PresolveContext::ResetAfterCopy() {
   var_to_constraints_.clear();
   var_to_num_linear1_.clear();
   objective_map_.clear();
-  hint_.clear();
+  DCHECK(!solution_crush_.HintIsLoaded());
 }
 
 // Create the internal structure for any new variables in working_model.
@@ -1447,40 +1367,35 @@ void PresolveContext::InitializeNewDomains() {
   }
 
   // We resize the hint too even if not loaded.
-  hint_.resize(new_size, 0);
-  hint_has_value_.resize(new_size, false);
+  solution_crush_.Resize(new_size);
 }
 
 void PresolveContext::LoadSolutionHint() {
-  CHECK(!hint_is_loaded_);
-  hint_is_loaded_ = true;
+  absl::flat_hash_map<int, int64_t> hint_values;
   if (working_model->has_solution_hint()) {
     const auto hint_proto = working_model->solution_hint();
-    const int num_terms = hint_proto.vars().size();
     int num_changes = 0;
-    for (int i = 0; i < num_terms; ++i) {
+    for (int i = 0; i < hint_proto.vars().size(); ++i) {
       const int var = hint_proto.vars(i);
       if (!RefIsPositive(var)) break;  // Abort. Shouldn't happen.
-      if (var < hint_.size()) {
-        hint_has_value_[var] = true;
-        const int64_t hint_value = hint_proto.values(i);
-        hint_[var] = DomainOf(var).ClosestValue(hint_value);
-        if (hint_[var] != hint_value) {
-          ++num_changes;
-        }
+      const int64_t hint_value = hint_proto.values(i);
+      const int64_t clamped_hint_value = DomainOf(var).ClosestValue(hint_value);
+      if (clamped_hint_value != hint_value) {
+        ++num_changes;
       }
+      hint_values[var] = clamped_hint_value;
     }
     if (num_changes > 0) {
       UpdateRuleStats("hint: moved var hint within its domain.", num_changes);
     }
-    for (int i = 0; i < hint_.size(); ++i) {
-      if (hint_has_value_[i]) continue;
-      if (IsFixed(i)) {
-        hint_has_value_[i] = true;
-        hint_[i] = FixedValue(i);
+    for (int i = 0; i < working_model->variables().size(); ++i) {
+      if (!hint_values.contains(i) && IsFixed(i)) {
+        hint_values[i] = FixedValue(i);
       }
     }
   }
+  solution_crush_.Resize(working_model->variables().size());
+  solution_crush_.LoadSolution(hint_values);
 }
 
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
@@ -1541,9 +1456,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   } else {
     UpdateRuleStats("variables with 2 values: create encoding literal");
     max_literal = NewBoolVar("var with 2 values");
-    if (hint_is_loaded_ && hint_has_value_[var]) {
-      SetNewVariableHint(max_literal, hint_[var] == var_max ? 1 : 0);
-    }
+    solution_crush_.MaybeSetLiteralToValueEncoding(max_literal, var, var_max);
     min_literal = NegatedRef(max_literal);
     var_map[var_min] = SavedLiteral(min_literal);
     var_map[var_max] = SavedLiteral(max_literal);
@@ -1742,15 +1655,7 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
   eq_half_encoding_.insert({{literal, var}, value});
   neq_half_encoding_.insert({{NegatedRef(literal), var}, value});
 
-  if (hint_is_loaded_) {
-    const int bool_var = PositiveRef(literal);
-    DCHECK(RefIsPositive(var));
-    if (!hint_has_value_[bool_var] && hint_has_value_[var]) {
-      const int64_t bool_value = hint_[var] == value ? 1 : 0;
-      hint_has_value_[bool_var] = true;
-      hint_[bool_var] = RefIsPositive(literal) ? bool_value : 1 - bool_value;
-    }
-  }
+  solution_crush_.MaybeSetLiteralToValueEncoding(literal, var, value);
   return true;
 }
 
@@ -2443,20 +2348,8 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   const int result = NewBoolVar("");
   reified_precedences_cache_[key] = result;
 
-  // Take care of hints.
-  if (hint_is_loaded_) {
-    std::optional<int64_t> time_i_hint = GetExpressionSolutionHint(time_i);
-    std::optional<int64_t> time_j_hint = GetExpressionSolutionHint(time_j);
-    std::optional<int64_t> active_i_hint = GetRefSolutionHint(active_i);
-    std::optional<int64_t> active_j_hint = GetRefSolutionHint(active_j);
-    if (time_i_hint.has_value() && time_j_hint.has_value() &&
-        active_i_hint.has_value() && active_j_hint.has_value()) {
-      const bool reified_hint = (active_i_hint.value() != 0) &&
-                                (active_j_hint.value() != 0) &&
-                                (time_i_hint.value() <= time_j_hint.value());
-      SetNewVariableHint(result, reified_hint);
-    }
-  }
+  solution_crush_.SetVarToReifiedPrecedenceLiteral(result, time_i, time_j,
+                                                   active_i, active_j);
 
   // result => (time_i <= time_j) && active_i && active_j.
   ConstraintProto* const lesseq = working_model->add_constraints();
@@ -2869,8 +2762,9 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
 
 bool PresolveContext::DebugTestHintFeasibility() {
   WriteVariableDomainsToProto();
-  if (hint_.size() != working_model->variables().size()) return false;
-  return SolutionIsFeasible(*working_model, hint_);
+  const absl::Span<const int64_t> hint = solution_crush_.SolutionHint();
+  if (hint.size() != working_model->variables().size()) return false;
+  return SolutionIsFeasible(*working_model, hint);
 }
 
 }  // namespace sat

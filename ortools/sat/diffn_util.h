@@ -268,6 +268,14 @@ struct ItemWithVariableSize {
   };
   Interval x;
   Interval y;
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const ItemWithVariableSize& item) {
+    absl::Format(&sink, "Item %v: [(%v..%v)-(%v..%v)] x [(%v..%v)-(%v..%v)]",
+                 item.index, item.x.start_min, item.x.start_max, item.x.end_min,
+                 item.x.end_max, item.y.start_min, item.y.start_max,
+                 item.y.end_min, item.y.end_max);
+  }
 };
 
 struct PairwiseRestriction {
@@ -702,11 +710,17 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
 // This function is faster that the FindPartialRectangleIntersections() if one
 // only want to know if there is at least one intersection. It is in O(N log N).
 //
-// IMPORTANT: this assumes rectangles are already sorted by their x_min.
+// IMPORTANT: this assumes rectangles are already sorted by their x_min and does
+// not support degenerate rectangles with zero area.
 //
 // If a pair {i, j} is returned, we will have i < j, and no intersection in
 // the subset of rectanges in [0, j).
 std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
+    absl::Span<const Rectangle> rectangles);
+
+// Same as FindOneIntersectionIfPresent() but supports degenerate rectangles
+// with zero area.
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresentWithZeroArea(
     absl::Span<const Rectangle> rectangles);
 
 }  // namespace sat
