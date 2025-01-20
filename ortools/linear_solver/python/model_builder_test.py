@@ -2364,6 +2364,41 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         self.assertEqual(-2, prod.coefficient)
         self.assertEqual(2, prod.offset)
 
+    def testSimplification11(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        y = model.new_int_var(-10, 10, "y")
+        prod = (x + y) * 0
+        self.assertEqual(repr(prod), "FixedValue(0)")
+        s = x + y
+        self.assertIs(s, s + 0.0)
+        self.assertIs(s, s - 0.0)
+
+        affine = x + 2
+        self.assertIs(affine, affine + 0.0)
+        self.assertIs(affine, affine - 0.0)
+        self.assertIs(affine, affine * 1.0)
+
+    def testSimplification12(self):
+        model = mb.Model()
+        x = model.new_int_var(-10, 10, "x")
+        prod1 = 2 * x - 0.0
+        self.assertEqual(
+            repr(prod1),
+            "AffineExpr(expr=Variable(index=0, lb=-10, ub=10, is_integral=1,"
+            " name='x'), coeff=2, offset=0)",
+        )
+
+        prod2 = 2 * x - 1.0
+        self.assertEqual(
+            repr(prod2),
+            "AffineExpr(expr=Variable(index=0, lb=-10, ub=10, is_integral=1,"
+            " name='x'), coeff=2, offset=-1)",
+        )
+
+        prod3 = 2 * x * 0.0
+        self.assertEqual(repr(prod3), "FixedValue(0)")
+
 
 if __name__ == "__main__":
     absltest.main()
