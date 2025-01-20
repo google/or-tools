@@ -71,9 +71,9 @@ absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(
 
 absl::Status Xpress::SetProbName(const std::string& name) {
   std::string truncated = name;
-  int maxLength = GetIntAttr(XPRS_MAXPROBNAMELENGTH).value_or(INT_MAX);
-  if (truncated.length() > maxLength) {
-    truncated = truncated.substr(0, maxLength);
+  auto maxLength = GetIntAttr(XPRS_MAXPROBNAMELENGTH);
+  if (truncated.length() > maxLength.value_or(INT_MAX)) {
+    truncated = truncated.substr(0, maxLength.value_or(INT_MAX));
   }
   return ToStatus(XPRSsetprobname(xpress_model_, truncated.c_str()));
 }
