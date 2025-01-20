@@ -70,7 +70,6 @@ std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRSgetrhsr
 std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb = nullptr;
 std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub = nullptr;
 std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef = nullptr;
-std::function<int(XPRSprob prob, int* status, double x[], int first, int last)> XPRSgetsolution = nullptr;
 std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals = nullptr;
 std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts = nullptr;
 std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows = nullptr;
@@ -141,7 +140,6 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetlb, "XPRSgetlb");
   xpress_dynamic_library->GetFunction(&XPRSgetub, "XPRSgetub");
   xpress_dynamic_library->GetFunction(&XPRSgetcoef, "XPRSgetcoef");
-  xpress_dynamic_library->GetFunction(&XPRSgetsolution, "XPRSgetsolution");
   xpress_dynamic_library->GetFunction(&XPRSgetduals, "XPRSgetduals");
   xpress_dynamic_library->GetFunction(&XPRSgetredcosts, "XPRSgetredcosts");
   xpress_dynamic_library->GetFunction(&XPRSaddrows, "XPRSaddrows");
