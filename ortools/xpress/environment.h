@@ -430,6 +430,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_MIPSTATUS 1011
 #define XPRS_NODES 1013
 #define XPRS_COLS 1018
+#define XPRS_MAXPROBNAMELENGTH 1158
 #define XPRS_LP_UNSTARTED 0
 #define XPRS_LP_OPTIMAL 1
 #define XPRS_LP_INFEAS 2
@@ -479,6 +480,7 @@ extern std::function<int(char* buffer, int maxbytes)> XPRSgetlicerrmsg;
 extern std::function<int(int* p_i, char* p_c)> XPRSlicense;
 extern std::function<int(char* banner)> XPRSgetbanner;
 extern std::function<int(char* version)> XPRSgetversion;
+extern std::function<int(XPRSprob prob, const char* probname)> XPRSsetprobname;
 extern std::function<int(XPRSprob prob, int control)> XPRSsetdefaultcontrol;
 extern std::function<int(XPRSprob prob, int reason)> XPRSinterrupt;
 extern std::function<int(XPRSprob prob, int control, int value)> XPRSsetintcontrol;

@@ -46,6 +46,7 @@ class Xpress {
   // Creates a new Xpress
   static absl::StatusOr<std::unique_ptr<Xpress>> New(
       const std::string& model_name);
+  absl::Status SetProbName(const std::string& name);
 
   ~Xpress();
 
@@ -70,6 +71,12 @@ class Xpress {
   absl::Status AddConstrs(absl::Span<const char> sense,
                           absl::Span<const double> rhs,
                           absl::Span<const double> rng);
+  absl::Status AddConstrs(absl::Span<const char> rowtype,
+                          absl::Span<const double> rhs,
+                          absl::Span<const double> rng,
+                          absl::Span<const int> start,
+                          absl::Span<const int> colind,
+                          absl::Span<const double> rowcoef);
 
   absl::Status SetObjectiveSense(bool maximize);
   absl::Status SetLinearObjective(double offset, absl::Span<const int> colind,
@@ -82,15 +89,17 @@ class Xpress {
                          absl::Span<const double> val);
 
   absl::Status LpOptimize(std::string flags);
+  // Fetch LP solution (primals, duals, and reduced costs)
+  // The user is responsible for ensuring that the three vectors are of correct
+  // size (nVars, nCons, and nVars respectively)
+  absl::Status GetLpSol(absl::Span<double> primals, absl::Span<double> duals,
+                        absl::Span<double> reducedCosts);
   absl::Status MipOptimize();
   absl::Status PostSolve();
 
   void Terminate();
 
-  absl::StatusOr<std::vector<double>> GetPrimalValues() const;
   absl::StatusOr<int> GetDualStatus() const;
-  absl::StatusOr<std::vector<double>> GetConstraintDuals() const;
-  absl::StatusOr<std::vector<double>> GetReducedCostValues() const;
   absl::Status GetBasis(std::vector<int>& rowBasis,
                         std::vector<int>& colBasis) const;
   absl::Status SetStartingBasis(std::vector<int>& rowBasis,

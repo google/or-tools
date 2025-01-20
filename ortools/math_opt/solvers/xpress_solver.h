@@ -57,8 +57,6 @@ class XpressSolver : public SolverInterface {
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
       const SolveInterrupter* interrupter) override;
-  std::string GetOptimizationFlags(const SolveParametersProto& parameters);
-  absl::Status CallXpressSolve(const SolveParametersProto& parameters);
 
   // Updates the problem (not implemented yet)
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
@@ -87,9 +85,6 @@ class XpressSolver : public SolverInterface {
   using XpressLinearConstraintIndex = int;
   using XpressQuadraticConstraintIndex = int;
   using XpressSosConstraintIndex = int;
-  // A collection of other constraints (e.g., norm, max, indicator) supported by
-  // Xpress. All general constraints share the same index set. See for more
-  // detail: https://www.xpress.com/documentation/9.5/refman/constraints.html.
   using XpressGeneralConstraintIndex = int;
   using XpressAnyConstraintIndex = int;
 
@@ -109,67 +104,38 @@ class XpressSolver : public SolverInterface {
     double upper_bound = kPlusInf;
   };
 
-  struct SolutionClaims {
-    bool primal_feasible_solution_exists = false;
-    bool dual_feasible_solution_exists = false;
-  };
-
-  struct SolutionsAndClaims {
-    // TODO: simplify this structure or change it
-    std::vector<SolutionProto> solutions;
-    SolutionClaims solution_claims;
-  };
-
-  template <typename SolutionType>
-  struct SolutionAndClaim {
-    std::optional<SolutionType> solution;
-    bool feasible_solution_exists = false;
-  };
-
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
-  absl::StatusOr<SolutionsAndClaims> GetSolutions(
+  absl::StatusOr<SolutionProto> GetSolution(
       const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
   absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start) const;
 
-  absl::StatusOr<double> GetBestPrimalBound(
-      const SolveParametersProto& parameters) const;
-  absl::StatusOr<double> GetBestDualBound(
-      const SolveParametersProto& parameters) const;
+  absl::StatusOr<double> GetBestPrimalBound() const;
+  absl::StatusOr<double> GetBestDualBound() const;
 
   absl::StatusOr<TerminationProto> ConvertTerminationReason(
-      SolutionClaims solution_claims, double best_primal_bound,
-      double best_dual_bound) const;
+      double best_primal_bound, double best_dual_bound) const;
 
-  // Returns solution information appropriate and available for an LP (linear
-  // constraints + linear objective, only).
-  absl::StatusOr<SolutionsAndClaims> GetLpSolution(
+  absl::StatusOr<SolutionProto> GetLpSolution(
       const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
   bool isPrimalFeasible() const;
-  bool isDualFeasible(const SolveParametersProto& solve_parameters) const;
+  bool isDualFeasible() const;
 
-  // return bool field should be true if a primal solution exists.
-  absl::StatusOr<SolutionAndClaim<PrimalSolutionProto>>
-  GetConvexPrimalSolutionIfAvailable(
-      const ModelSolveParametersProto& model_parameters,
-      const SolveParametersProto& solve_parameters) const;
-  absl::StatusOr<SolutionAndClaim<DualSolutionProto>>
-  GetConvexDualSolutionIfAvailable(
-      const ModelSolveParametersProto& model_parameters,
-      const SolveParametersProto& solve_parameters) const;
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable(
       const SolveParametersProto& parameters);
 
-  absl::Status AddNewLinearConstraints(
-      const LinearConstraintsProto& constraints);
+  absl::Status AddNewLinearConstraints(const LinearConstraintsProto& cts);
   absl::Status AddNewVariables(const VariablesProto& new_variables);
   absl::Status AddSingleObjective(const ObjectiveProto& objective);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
 
   absl::Status LoadModel(const ModelProto& input_model);
+
+  std::string GetLpOptimizationFlags(const SolveParametersProto& parameters);
+  absl::Status CallXpressSolve(const SolveParametersProto& parameters);
 
   // Fills in result with the values in xpress_values aided by the index
   // conversion from map which should be either variables_map_ or
@@ -182,11 +148,6 @@ class XpressSolver : public SolverInterface {
       const SparseVectorFilterProto& filter) const;
 
   const std::unique_ptr<Xpress> xpress_;
-
-  // Note that we use linked_hash_map for the indices of the xpress_model_
-  // variables and linear constraints to ensure that iteration over the map
-  // maintains their insertion order (and, thus, the order in which they appear
-  // in the model).
 
   // Internal correspondence from variable proto IDs to Xpress-numbered
   // variables.
@@ -201,13 +162,10 @@ class XpressSolver : public SolverInterface {
     return index.constraint_index;
   }
   SolutionStatusProto getLpSolutionStatus() const;
+  SolutionStatusProto getDualSolutionStatus() const;
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
   absl::Status SetXpressStartingBasis(const BasisProto& basis);
   absl::Status SetLpIterLimits(const SolveParametersProto& parameters);
-
-  // Fields to track the number of Xpress variables and constraints. These
-  // quantities are updated immediately after adding or removing to the model,
-  // so it is correct even if XPRESS C API has not yet been called.
 
   bool is_mip_ = false;
   bool is_maximize_ = false;

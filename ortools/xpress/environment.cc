@@ -48,6 +48,7 @@ std::function<int(char* buffer, int maxbytes)> XPRSgetlicerrmsg = nullptr;
 std::function<int(int* p_i, char* p_c)> XPRSlicense = nullptr;
 std::function<int(char* banner)> XPRSgetbanner = nullptr;
 std::function<int(char* version)> XPRSgetversion = nullptr;
+std::function<int(XPRSprob prob, const char* probname)> XPRSsetprobname = nullptr;
 std::function<int(XPRSprob prob, int control)> XPRSsetdefaultcontrol = nullptr;
 std::function<int(XPRSprob prob, int reason)> XPRSinterrupt = nullptr;
 std::function<int(XPRSprob prob, int control, int value)> XPRSsetintcontrol = nullptr;
@@ -119,6 +120,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSlicense, "XPRSlicense");
   xpress_dynamic_library->GetFunction(&XPRSgetbanner, "XPRSgetbanner");
   xpress_dynamic_library->GetFunction(&XPRSgetversion, "XPRSgetversion");
+  xpress_dynamic_library->GetFunction(&XPRSsetprobname, "XPRSsetprobname");
   xpress_dynamic_library->GetFunction(&XPRSsetdefaultcontrol, "XPRSsetdefaultcontrol");
   xpress_dynamic_library->GetFunction(&XPRSinterrupt, "XPRSinterrupt");
   xpress_dynamic_library->GetFunction(&XPRSsetintcontrol, "XPRSsetintcontrol");

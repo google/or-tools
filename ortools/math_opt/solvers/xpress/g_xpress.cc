@@ -69,6 +69,15 @@ absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(
   return absl::WrapUnique(new Xpress(model));
 }
 
+absl::Status Xpress::SetProbName(const std::string& name) {
+  std::string truncated = name;
+  int maxLength = GetIntAttr(XPRS_MAXPROBNAMELENGTH).value_or(INT_MAX);
+  if (truncated.length() > maxLength) {
+    truncated = truncated.substr(0, maxLength);
+  }
+  return ToStatus(XPRSsetprobname(xpress_model_, truncated.c_str()));
+}
+
 void XPRS_CC Xpress::printXpressMessage(XPRSprob prob, void* data,
                                         const char* sMsg, int nLen,
                                         int nMsgLvl) {
@@ -135,6 +144,30 @@ absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,
                               rhs.data(), rng.data(), NULL, NULL, NULL));
 }
 
+absl::Status Xpress::AddConstrs(const absl::Span<const char> rowtype,
+                                const absl::Span<const double> rhs,
+                                const absl::Span<const double> rng,
+                                const absl::Span<const int> start,
+                                const absl::Span<const int> colind,
+                                const absl::Span<const double> rowcoef) {
+  const int num_cons = static_cast<int>(rowtype.size());
+  if (rhs.size() != num_cons) {
+    return absl::InvalidArgumentError(
+        "RHS must have one element per constraint.");
+  }
+  if (start.size() != num_cons) {
+    return absl::InvalidArgumentError(
+        "START must have one element per constraint.");
+  }
+  if (colind.size() != rowcoef.size()) {
+    return absl::InvalidArgumentError(
+        "COLIND and ROWCOEF must be of the same size.");
+  }
+  return ToStatus(XPRSaddrows(xpress_model_, num_cons, 0, rowtype.data(),
+                              rhs.data(), rng.data(), start.data(),
+                              colind.data(), rowcoef.data()));
+}
+
 absl::Status Xpress::SetObjectiveSense(bool maximize) {
   return ToStatus(XPRSchgobjsense(
       xpress_model_, maximize ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
@@ -172,6 +205,14 @@ absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
 absl::Status Xpress::LpOptimize(std::string flags) {
   return ToStatus(XPRSlpoptimize(xpress_model_, flags.c_str()));
 }
+
+absl::Status Xpress::GetLpSol(absl::Span<double> primals,
+                              absl::Span<double> duals,
+                              absl::Span<double> reducedCosts) {
+  return ToStatus(XPRSgetlpsol(xpress_model_, primals.data(), nullptr,
+                               duals.data(), reducedCosts.data()));
+}
+
 absl::Status Xpress::PostSolve() {
   return ToStatus(XPRSpostsolve(xpress_model_));
 }
@@ -217,16 +258,6 @@ absl::StatusOr<double> Xpress::GetDoubleAttr(int attribute) const {
   return result;
 }
 
-absl::StatusOr<std::vector<double>> Xpress::GetPrimalValues() const {
-  int nVars = GetNumberOfVariables();
-  XPRSgetintattrib(xpress_model_, XPRS_COLS, &nVars);
-  std::vector<double> values(nVars);
-  RETURN_IF_ERROR(ToStatus(
-      XPRSgetsolution(xpress_model_, nullptr, values.data(), 0, nVars - 1)))
-      << "Error getting Xpress LP solution";
-  return values;
-}
-
 int Xpress::GetNumberOfConstraints() const {
   int n;
   XPRSgetintattrib(xpress_model_, XPRS_ROWS, &n);
@@ -247,26 +278,6 @@ absl::StatusOr<int> Xpress::GetDualStatus() const {
   RETURN_IF_ERROR(ToStatus(XPRSgetduals(xpress_model_, &status, values, 0, 0)))
       << "Failed to retrieve dual status from XPRESS";
   return status;
-}
-
-absl::StatusOr<std::vector<double>> Xpress::GetConstraintDuals() const {
-  int nCons = GetNumberOfConstraints();
-  double values[nCons];
-  int status;
-  RETURN_IF_ERROR(
-      ToStatus(XPRSgetduals(xpress_model_, &status, values, 0, nCons - 1)))
-      << "Failed to retrieve duals from XPRESS";
-  std::vector<double> result(values, values + nCons);
-  return result;
-}
-absl::StatusOr<std::vector<double>> Xpress::GetReducedCostValues() const {
-  int nVars = GetNumberOfVariables();
-  double values[nVars];
-  RETURN_IF_ERROR(
-      ToStatus(XPRSgetredcosts(xpress_model_, nullptr, values, 0, nVars - 1)))
-      << "Failed to retrieve LP solution from XPRESS";
-  std::vector<double> result(values, values + nVars);
-  return result;
 }
 
 absl::Status Xpress::GetBasis(std::vector<int>& rowBasis,
