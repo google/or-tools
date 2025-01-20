@@ -37,13 +37,14 @@ RUN git clone -b "${GIT_BRANCH}" --single-branch "$GIT_URL" /project \
 && git reset --hard "${GIT_SHA1}"
 WORKDIR /project
 
+# Copy build script and setup env
+ENV PLATFORM x86_64
+ARG PYTHON_VERSION
+ENV PYTHON_VERSION ${PYTHON_VERSION:-3}
 COPY build-manylinux.sh .
 RUN chmod a+x "build-manylinux.sh"
 
 FROM devel AS build
-ENV PLATFORM x86_64
-ARG PYTHON_VERSION
-ENV PYTHON_VERSION ${PYTHON_VERSION:-3}
 RUN ./build-manylinux.sh build
 
 FROM build as test
