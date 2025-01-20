@@ -1024,7 +1024,7 @@ void SchedulingDemandHelper::AddEnergyMinInWindowReason(
   }
 }
 
-void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
+void AddIntegerVariableFromIntervals(const SchedulingConstraintHelper* helper,
                                      Model* model,
                                      std::vector<IntegerVariable>* vars) {
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();

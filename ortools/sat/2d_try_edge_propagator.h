@@ -37,7 +37,8 @@ namespace sat {
 // it is different from the current x_min, it will propagate the new x_min.
 void CreateAndRegisterTryEdgePropagator(NoOverlap2DConstraintHelper* helper,
                                         Model* model,
-                                        GenericLiteralWatcher* watcher);
+                                        GenericLiteralWatcher* watcher,
+                                        int priority);
 
 // Exposed for testing.
 class TryEdgeRectanglePropagator : public PropagatorInterface {

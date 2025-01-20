@@ -771,7 +771,7 @@ inline void SchedulingConstraintHelper::AddEnergyMinInIntervalReason(
 }
 
 // Cuts helpers.
-void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
+void AddIntegerVariableFromIntervals(const SchedulingConstraintHelper* helper,
                                      Model* model,
                                      std::vector<IntegerVariable>* vars);
 

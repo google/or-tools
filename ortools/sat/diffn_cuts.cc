@@ -37,6 +37,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
@@ -53,7 +54,8 @@ const double kMinCutViolation = 1e-4;
 
 }  // namespace
 
-DiffnBaseEvent::DiffnBaseEvent(int t, SchedulingConstraintHelper* x_helper)
+DiffnBaseEvent::DiffnBaseEvent(int t,
+                               const SchedulingConstraintHelper* x_helper)
     : x_start_min(x_helper->StartMin(t)),
       x_start_max(x_helper->StartMax(t)),
       x_end_min(x_helper->EndMin(t)),
@@ -61,7 +63,7 @@ DiffnBaseEvent::DiffnBaseEvent(int t, SchedulingConstraintHelper* x_helper)
       x_size_min(x_helper->SizeMin(t)) {}
 
 struct DiffnEnergyEvent : DiffnBaseEvent {
-  DiffnEnergyEvent(int t, SchedulingConstraintHelper* x_helper)
+  DiffnEnergyEvent(int t, const SchedulingConstraintHelper* x_helper)
       : DiffnBaseEvent(t, x_helper) {}
 
   // We need this for linearizing the energy in some cases.
@@ -385,7 +387,7 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
   return result;
 }
 
-DiffnCtEvent::DiffnCtEvent(int t, SchedulingConstraintHelper* x_helper)
+DiffnCtEvent::DiffnCtEvent(int t, const SchedulingConstraintHelper* x_helper)
     : DiffnBaseEvent(t, x_helper) {}
 
 std::string DiffnCtEvent::DebugString() const {
@@ -573,28 +575,30 @@ void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
 
 // TODO(user): Use demands_helper and decomposed energy.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
-    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
-    Model* model) {
+    NoOverlap2DConstraintHelper* helper, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
-  AddIntegerVariableFromIntervals(y_helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(&helper->x_helper(), model, &result.vars);
+  AddIntegerVariableFromIntervals(&helper->y_helper(), model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();
-  result.generate_cuts = [x_helper, y_helper, product_decomposer,
+  result.generate_cuts = [helper, product_decomposer,
                           model](LinearConstraintManager* manager) {
-    if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-    if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+    if (!helper->SynchronizeAndSetDirection(true, true, false)) {
+      return false;
+    }
 
-    const int num_rectangles = x_helper->NumTasks();
+    const int num_rectangles = helper->NumBoxes();
     std::vector<int> active_rectangles_indexes;
     active_rectangles_indexes.reserve(num_rectangles);
     std::vector<Rectangle> active_rectangles;
     active_rectangles.reserve(num_rectangles);
     std::vector<IntegerValue> cached_areas(num_rectangles);
+    const SchedulingConstraintHelper* x_helper = &helper->x_helper();
+    const SchedulingConstraintHelper* y_helper = &helper->y_helper();
     for (int rect = 0; rect < num_rectangles; ++rect) {
-      if (!y_helper->IsPresent(rect) || !y_helper->IsPresent(rect)) continue;
+      if (!helper->IsPresent(rect)) continue;
 
       cached_areas[rect] = x_helper->SizeMin(rect) * y_helper->SizeMin(rect);
       if (cached_areas[rect] == 0) continue;
@@ -626,12 +630,12 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
         rectangles.push_back(active_rectangles_indexes[index]);
       }
 
-      auto generate_cuts = [product_decomposer, manager, model, &rectangles](
-                               absl::string_view cut_name,
-                               SchedulingConstraintHelper* x_helper,
-                               SchedulingConstraintHelper* y_helper) {
+      auto generate_cuts = [product_decomposer, manager, model, helper,
+                            &rectangles](absl::string_view cut_name) {
         std::vector<DiffnCtEvent> events;
 
+        const SchedulingConstraintHelper* x_helper = &helper->x_helper();
+        const SchedulingConstraintHelper* y_helper = &helper->y_helper();
         const auto& lp_values = manager->LpValues();
         for (const int rect : rectangles) {
           DiffnCtEvent event(rect, x_helper);
@@ -654,14 +658,22 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
             /*skip_low_sizes=*/false, model, manager);
       };
 
-      if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-      if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
-      generate_cuts("NoOverlap2dXCompletionTime", x_helper, y_helper);
-      generate_cuts("NoOverlap2dYCompletionTime", y_helper, x_helper);
-      if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
-      if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
-      generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
-      generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
+      if (!helper->SynchronizeAndSetDirection(true, true, false)) {
+        return false;
+      }
+      generate_cuts("NoOverlap2dXCompletionTime");
+      if (!helper->SynchronizeAndSetDirection(true, true, true)) {
+        return false;
+      }
+      generate_cuts("NoOverlap2dYCompletionTime");
+      if (!helper->SynchronizeAndSetDirection(false, false, false)) {
+        return false;
+      }
+      generate_cuts("NoOverlap2dXCompletionTimeMirror");
+      if (!helper->SynchronizeAndSetDirection(false, false, true)) {
+        return false;
+      }
+      generate_cuts("NoOverlap2dYCompletionTimeMirror");
     }
     return true;
   };

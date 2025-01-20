@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -1808,7 +1809,7 @@ struct Rectangle32 {
 // Requires that rectangles are sorted by x_min and that sizes on both
 // dimensions are > 0.
 std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
-    absl::Span<Rectangle32> rectangles, int y_max) {
+    absl::Span<const Rectangle32> rectangles, int32_t y_max) {
   // We are going to use a sweep line algorithm to find the intersections.
   // First, we sort the rectangles by their x coordinates, then consider a sweep
   // line that goes from the left to the right. See the comment on the
@@ -1847,11 +1848,16 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
   return arcs;
 }
 
-std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
+namespace {
+struct PostProcessedResult {
+  std::vector<Rectangle32> rectangles_sorted_by_x_min;
+  std::pair<int32_t, int32_t> bounding_box;  // Always starting at (0,0).
+};
+
+PostProcessedResult ConvertToRectangle32WithNonZeroSizes(
     absl::Span<const Rectangle> rectangles) {
-  // This function preprocess the data and calls
-  // FindPartialRectangleIntersectionsImpl() to actually solve the problem
-  // using a sweep line algorithm. The preprocessing consists of the following:
+  // This function is a preprocessing function for algorithms that find overlap
+  // between rectangles. It does the following:
   //  - It converts the arbitrary int64_t coordinates into a small integer by
   //    sorting the possible values and assigning them consecutive integers.
   //  - It grows zero size intervals to make them size one. This simplifies
@@ -1987,6 +1993,7 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
     prev_event = event;
     prev_x = x;
   }
+  const int max_x_index = cur_index + 1;
 
   std::vector<Rectangle32> sorted_rectangles32;
   sorted_rectangles32.reserve(rectangles.size());
@@ -1997,23 +2004,22 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
     }
   }
 
-  gtl::STLClearObject(&x_events);
-  return FindPartialRectangleIntersectionsImpl(
-      absl::MakeSpan(sorted_rectangles32), max_y_index);
+  return {sorted_rectangles32, {max_x_index, max_y_index}};
 }
-
-std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
-    absl::Span<const Rectangle> rectangles) {
-  DCHECK(
-      absl::c_is_sorted(rectangles, [](const Rectangle& a, const Rectangle& b) {
-        return a.x_min < b.x_min;
-      }));
+template <typename RectangleT>
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresentImpl(
+    absl::Span<const RectangleT> rectangles) {
+  using CoordinateType = std::decay_t<decltype(RectangleT::x_min)>;
+  DCHECK(absl::c_is_sorted(rectangles,
+                           [](const RectangleT& a, const RectangleT& b) {
+                             return a.x_min < b.x_min;
+                           }));
 
   // Set of box intersection the sweep line. We only store y_min, other
   // coordinates can be accessed via rectangles[index].coordinate.
   struct Element {
     mutable int index;
-    IntegerValue y_min;
+    CoordinateType y_min;
     bool operator<(const Element& other) const { return y_min < other.y_min; }
   };
 
@@ -2022,9 +2028,9 @@ std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
   absl::btree_set<Element> interval_set;
 
   for (int i = 0; i < rectangles.size(); ++i) {
-    const IntegerValue x = rectangles[i].x_min;
-    const IntegerValue y_min = rectangles[i].y_min;
-    const IntegerValue y_max = rectangles[i].y_max;
+    const CoordinateType x = rectangles[i].x_min;
+    const CoordinateType y_min = rectangles[i].y_min;
+    const CoordinateType y_max = rectangles[i].y_max;
 
     // TODO(user): We can handle that, but it require some changes below.
     DCHECK_LE(y_min, y_max);
@@ -2055,7 +2061,8 @@ std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
           it = interval_set.erase(it_before);
         } else {
           DCHECK_LE(it_before->y_min, y_min);
-          const IntegerValue y_max_before = rectangles[it_before->index].y_max;
+          const CoordinateType y_max_before =
+              rectangles[it_before->index].y_max;
           if (y_max_before > y_min) {
             // Intersection.
             return {{it_before->index, i}};
@@ -2084,6 +2091,31 @@ std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
   }
 
   return {};
+}
+
+}  // namespace
+
+std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
+    absl::Span<const Rectangle> rectangles) {
+  auto postprocessed = ConvertToRectangle32WithNonZeroSizes(rectangles);
+  return FindPartialRectangleIntersectionsImpl(
+      postprocessed.rectangles_sorted_by_x_min,
+      postprocessed.bounding_box.second);
+}
+
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
+    absl::Span<const Rectangle> rectangles) {
+  return FindOneIntersectionIfPresentImpl(rectangles);
+}
+
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresentWithZeroArea(
+    absl::Span<const Rectangle> rectangles) {
+  auto postprocessed = ConvertToRectangle32WithNonZeroSizes(rectangles);
+  std::optional<std::pair<int, int>> result = FindOneIntersectionIfPresentImpl(
+      absl::MakeConstSpan(postprocessed.rectangles_sorted_by_x_min));
+  if (!result.has_value()) return {};
+  return {{postprocessed.rectangles_sorted_by_x_min[result->first].index,
+           postprocessed.rectangles_sorted_by_x_min[result->second].index}};
 }
 
 }  // namespace sat

@@ -94,6 +94,22 @@ proto_library(
     srcs = ["cp_model.proto"],
 )
 
+cc_library(
+    name = "2d_mandatory_overlap_propagator",
+    srcs = ["2d_mandatory_overlap_propagator.cc"],
+    hdrs = ["2d_mandatory_overlap_propagator.h"],
+    deps = [
+        ":diffn_util",
+        ":integer",
+        ":model",
+        ":no_overlap_2d_helper",
+        ":scheduling_helpers",
+        ":synchronization",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     deps = [":cp_model_proto"],
@@ -765,6 +781,7 @@ cc_library(
         ":presolve_util",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":solution_crush",
         ":util",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
@@ -798,12 +815,30 @@ cc_test(
         ":cp_model_utils",
         ":model",
         ":presolve_context",
+        ":solution_crush",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
-        "//ortools/base:types",
         "//ortools/util:affine_relation",
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "solution_crush",
+    srcs = [
+        "solution_crush.cc",
+    ],
+    hdrs = ["solution_crush.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":sat_parameters_cc_proto",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -873,6 +908,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":simplification",
+        ":solution_crush",
         ":util",
         ":var_domination",
         "//ortools/base",
@@ -975,6 +1011,7 @@ cc_library(
         ":cp_model_utils",
         ":presolve_context",
         ":sat_parameters_cc_proto",
+        ":solution_crush",
         ":util",
         "//ortools/base",
         "//ortools/base:stl_util",
@@ -1436,6 +1473,7 @@ cc_library(
         ":integer_base",
         ":presolve_context",
         ":presolve_util",
+        ":solution_crush",
         ":util",
         "//ortools/algorithms:dynamic_partition",
         "//ortools/base",
@@ -1723,7 +1761,9 @@ cc_library(
         ":sat_base",
         ":scheduling_helpers",
         ":util",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -2283,6 +2323,7 @@ cc_library(
         ":intervals",
         ":linear_constraint",
         ":model",
+        ":no_overlap_2d_helper",
         ":precedences",
         ":presolve_util",
         ":routing_cuts",
@@ -2290,6 +2331,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":scheduling_cuts",
+        ":scheduling_helpers",
         ":util",
         "//ortools/base",
         "//ortools/base:mathutil",
@@ -2665,6 +2707,7 @@ cc_library(
         ":linear_constraint",
         ":linear_constraint_manager",
         ":model",
+        ":no_overlap_2d_helper",
         ":sat_base",
         ":scheduling_helpers",
         ":util",
@@ -3204,6 +3247,7 @@ cc_library(
     srcs = ["diffn.cc"],
     hdrs = ["diffn.h"],
     deps = [
+        ":2d_mandatory_overlap_propagator",
         ":2d_orthogonal_packing",
         ":2d_try_edge_propagator",
         ":cumulative_energy",
@@ -3632,6 +3676,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":solution_crush",
         ":symmetry_util",
         ":util",
         "//ortools/algorithms:binary_search",

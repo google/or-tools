@@ -336,11 +336,6 @@ NewOptionalIntervalWithVariableSize(int64_t min_start, int64_t max_end,
   };
 }
 
-// Cuts helpers.
-void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
-                                     Model* model,
-                                     std::vector<IntegerVariable>* vars);
-
 void AppendVariablesFromCapacityAndDemands(
     const AffineExpression& capacity, SchedulingDemandHelper* demands_helper,
     Model* model, std::vector<IntegerVariable>* vars);

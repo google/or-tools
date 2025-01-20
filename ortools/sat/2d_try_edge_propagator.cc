@@ -301,6 +301,9 @@ std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
   }
 
   // Now gather the data per box to make easier to use the set cover solver API.
+  // TODO(user): skip the boxes that are fixed at level zero. They do not
+  // contribute to the size of the explanation (so we shouldn't minimize their
+  // number) and make the SetCover problem harder to solve.
   std::vector<std::vector<int>> conflicting_position_per_box(
       active_box_ranges_.size(), std::vector<int>());
   for (int i = 0; i < conflicts_per_x_and_y_.size(); ++i) {
@@ -403,28 +406,30 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
 
 void CreateAndRegisterTryEdgePropagator(NoOverlap2DConstraintHelper* helper,
                                         Model* model,
-                                        GenericLiteralWatcher* watcher) {
+                                        GenericLiteralWatcher* watcher,
+                                        int priority) {
   TryEdgeRectanglePropagator* try_edge_propagator =
       new TryEdgeRectanglePropagator(true, true, false, helper, model);
-  watcher->SetPropagatorPriority(try_edge_propagator->RegisterWith(watcher), 5);
+  watcher->SetPropagatorPriority(try_edge_propagator->RegisterWith(watcher),
+                                 priority);
   model->TakeOwnership(try_edge_propagator);
 
   TryEdgeRectanglePropagator* try_edge_propagator_mirrored =
       new TryEdgeRectanglePropagator(false, true, false, helper, model);
   watcher->SetPropagatorPriority(
-      try_edge_propagator_mirrored->RegisterWith(watcher), 5);
+      try_edge_propagator_mirrored->RegisterWith(watcher), priority);
   model->TakeOwnership(try_edge_propagator_mirrored);
 
   TryEdgeRectanglePropagator* try_edge_propagator_swap =
       new TryEdgeRectanglePropagator(true, true, true, helper, model);
   watcher->SetPropagatorPriority(
-      try_edge_propagator_swap->RegisterWith(watcher), 5);
+      try_edge_propagator_swap->RegisterWith(watcher), priority);
   model->TakeOwnership(try_edge_propagator_swap);
 
   TryEdgeRectanglePropagator* try_edge_propagator_swap_mirrored =
       new TryEdgeRectanglePropagator(false, true, true, helper, model);
   watcher->SetPropagatorPriority(
-      try_edge_propagator_swap_mirrored->RegisterWith(watcher), 5);
+      try_edge_propagator_swap_mirrored->RegisterWith(watcher), priority);
   model->TakeOwnership(try_edge_propagator_swap_mirrored);
 }
 

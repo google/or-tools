@@ -30,6 +30,7 @@
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/2d_try_edge_propagator.h"
 #include "ortools/sat/cumulative_energy.h"
@@ -153,6 +154,12 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
   NoOverlap2DConstraintHelper* no_overlap_helper =
       repository->GetOrCreate2DHelper(x, y);
 
+  GenericLiteralWatcher* const watcher =
+      model->GetOrCreate<GenericLiteralWatcher>();
+
+  CreateAndRegisterMandatoryOverlapPropagator(no_overlap_helper, model, watcher,
+                                              3);
+
   NonOverlappingRectanglesDisjunctivePropagator* constraint =
       new NonOverlappingRectanglesDisjunctivePropagator(no_overlap_helper,
                                                         model);
@@ -161,8 +168,6 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
 
   RectanglePairwisePropagator* pairwise_propagator =
       new RectanglePairwisePropagator(no_overlap_helper, model);
-  GenericLiteralWatcher* const watcher =
-      model->GetOrCreate<GenericLiteralWatcher>();
   watcher->SetPropagatorPriority(pairwise_propagator->RegisterWith(watcher), 4);
   model->TakeOwnership(pairwise_propagator);
 
@@ -213,7 +218,7 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
   }
 
   if (params.use_try_edge_reasoning_in_no_overlap_2d()) {
-    CreateAndRegisterTryEdgePropagator(no_overlap_helper, model, watcher);
+    CreateAndRegisterTryEdgePropagator(no_overlap_helper, model, watcher, 5);
   }
 }
 
@@ -606,15 +611,22 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   SchedulingConstraintHelper* x = &helper_->x_helper();
   SchedulingConstraintHelper* y = &helper_->y_helper();
 
-  const absl::flat_hash_set<int> requested_boxes_set(requested_boxes.begin(),
-                                                     requested_boxes.end());
+  // Optimization: we only initialize the set if we don't have all task here.
+  absl::flat_hash_set<int> requested_boxes_set;
+  if (requested_boxes.size() != helper_->NumBoxes()) {
+    requested_boxes_set = {requested_boxes.begin(), requested_boxes.end()};
+  }
+
   // Compute relevant boxes, the one with a mandatory part on y. Because we will
   // need to sort it this way, we consider them by increasing start max.
   const auto temp = y->TaskByIncreasingNegatedStartMax();
   auto fixed_boxes = already_checked_fixed_boxes_.view();
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
-    if (!requested_boxes_set.contains(box)) continue;
+    if (requested_boxes.size() != helper_->NumBoxes() &&
+        !requested_boxes_set.contains(box)) {
+      continue;
+    }
 
     // By definition, fixed boxes are always present.
     // Doing this check optimize a bit the case where we have many fixed boxes.
@@ -874,12 +886,7 @@ bool RectanglePairwisePropagator::Propagate() {
     fixed_non_zero_area_boxes_.clear();
     non_fixed_non_zero_area_boxes_.clear();
     fixed_non_zero_area_rectangles_.clear();
-    absl::flat_hash_set<int> component_boxes = {
-        helper_->connected_components()[component_index].begin(),
-        helper_->connected_components()[component_index].end()};
-    for (auto task : helper_->x_helper().TaskByIncreasingStartMin()) {
-      const int b = task.task_index;
-      if (!component_boxes.contains(b)) continue;
+    for (int b : helper_->connected_components()[component_index]) {
       if (!helper_->IsPresent(b)) continue;
       const auto [x_size_max, y_size_max] = helper_->GetBoxSizesMax(b);
       ItemWithVariableSize* box;
@@ -903,16 +910,10 @@ bool RectanglePairwisePropagator::Propagate() {
       *box = helper_->GetItemWithVariableSize(b);
     }
 
-    // The only thing to propagate between two fixed boxes is a conflict, and we
-    // can detect those in O(N*log(N)) time.
-    const std::optional<std::pair<int, int>> fixed_conflict =
-        FindOneIntersectionIfPresent(fixed_non_zero_area_rectangles_);
+    // We ignore pairs of two fixed boxes. The only thing to propagate between
+    // two fixed boxes is a conflict and it should already have been taken care
+    // of by the MandatoryOverlapPropagator propagator.
 
-    if (fixed_conflict.has_value()) {
-      return helper_->ReportConflictFromTwoBoxes(
-          fixed_non_zero_area_boxes_[fixed_conflict->first].index,
-          fixed_non_zero_area_boxes_[fixed_conflict->second].index);
-    }
     RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
         non_fixed_non_zero_area_boxes_, fixed_non_zero_area_boxes_,
         &restrictions));

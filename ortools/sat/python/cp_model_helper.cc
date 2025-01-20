@@ -14,8 +14,10 @@
 #include <Python.h>
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,21 +50,36 @@ void ThrowError(PyObject* py_exception, const std::string& message) {
   throw py::error_already_set();
 }
 
+// We extend the SolverWrapper class to keep track of the local error already
+// set.
+class ExtSolveWrapper : public SolveWrapper {
+ public:
+  mutable std::optional<py::error_already_set> local_error_already_set_;
+};
+
 // A trampoline class to override the OnSolutionCallback method to acquire the
 // GIL.
 class PySolutionCallback : public SolutionCallback {
  public:
   using SolutionCallback::SolutionCallback; /* Inherit constructors */
-
   void OnSolutionCallback() const override {
     ::py::gil_scoped_acquire acquire;
-    PYBIND11_OVERRIDE_PURE(
-        void,               /* Return type */
-        SolutionCallback,   /* Parent class */
-        OnSolutionCallback, /* Name of function */
-        /* This function has no arguments. The trailing comma
-           in the previous line is needed for some compilers */
-    );
+    try {
+      PYBIND11_OVERRIDE_PURE(
+          void,               /* Return type */
+          SolutionCallback,   /* Parent class */
+          OnSolutionCallback, /* Name of function */
+          /* This function has no arguments. The trailing comma
+             in the previous line is needed for some compilers */
+      );
+    } catch (py::error_already_set& e) {
+      // We assume this code is serialized as the gil is held.
+      ExtSolveWrapper* solve_wrapper = static_cast<ExtSolveWrapper*>(wrapper());
+      if (!solve_wrapper->local_error_already_set_.has_value()) {
+        solve_wrapper->local_error_already_set_ = e;
+      }
+      StopSearch();
+    }
   }
 };
 
@@ -266,13 +283,13 @@ std::shared_ptr<LinearExpr> SumArguments(py::args expressions) {
     // Normal list or tuple argument.
     py::sequence elements = expressions[0].cast<py::sequence>();
     linear_exprs.reserve(elements.size());
-    for (const py::handle& arg : elements) {
-      process_arg(arg);
+    for (const py::handle& expr : elements) {
+      process_arg(expr);
     }
   } else {  // Direct sum(x, y, 3, ..) without [].
     linear_exprs.reserve(expressions.size());
-    for (const py::handle arg : expressions) {
-      process_arg(arg);
+    for (const py::handle expr : expressions) {
+      process_arg(expr);
     }
   }
 
@@ -482,28 +499,80 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("value", &ResponseWrapper::FixedValue, py::arg("value"))
       .def("wall_time", &ResponseWrapper::WallTime);
 
-  py::class_<SolveWrapper>(m, "SolveWrapper")
+  py::class_<ExtSolveWrapper>(m, "SolveWrapper")
       .def(py::init<>())
-      .def("add_log_callback", &SolveWrapper::AddLogCallback,
-           py::arg("log_callback"))
+      .def(
+          "add_log_callback",
+          [](ExtSolveWrapper* solve_wrapper,
+             std::function<void(const std::string&)> log_callback) {
+            std::function<void(const std::string&)> safe_log_callback =
+                [solve_wrapper, log_callback](std::string message) -> void {
+              ::py::gil_scoped_acquire acquire;
+              try {
+                log_callback(message);
+              } catch (py::error_already_set& e) {
+                // We assume this code is serialized as the gil is held.
+                if (!solve_wrapper->local_error_already_set_.has_value()) {
+                  solve_wrapper->local_error_already_set_ = e;
+                }
+                solve_wrapper->StopSearch();
+              }
+            };
+            solve_wrapper->AddLogCallback(safe_log_callback);
+          },
+          py::arg("log_callback").none(false))
       .def("add_solution_callback", &SolveWrapper::AddSolutionCallback,
            py::arg("callback"))
       .def("clear_solution_callback", &SolveWrapper::ClearSolutionCallback)
-      .def("add_best_bound_callback", &SolveWrapper::AddBestBoundCallback,
-           py::arg("best_bound_callback"))
+      .def(
+          "add_best_bound_callback",
+          [](ExtSolveWrapper* solve_wrapper,
+             std::function<void(double)> best_bound_callback) {
+            std::function<void(double)> safe_best_bound_callback =
+                [solve_wrapper, best_bound_callback](double bound) -> void {
+              ::py::gil_scoped_acquire acquire;
+              try {
+                best_bound_callback(bound);
+              } catch (py::error_already_set& e) {
+                // We assume this code is serialized as the gil is held.
+                if (!solve_wrapper->local_error_already_set_.has_value()) {
+                  solve_wrapper->local_error_already_set_ = e;
+                }
+                solve_wrapper->StopSearch();
+              }
+            };
+            solve_wrapper->AddBestBoundCallback(safe_best_bound_callback);
+          },
+          py::arg("best_bound_callback").none(false))
       .def("set_parameters", &SolveWrapper::SetParameters,
            py::arg("parameters"))
       .def("solve",
-           [](SolveWrapper* solve_wrapper,
+           [](ExtSolveWrapper* solve_wrapper,
               const CpModelProto& model_proto) -> CpSolverResponse {
-             ::pybind11::gil_scoped_release release;
-             return solve_wrapper->Solve(model_proto);
+             const auto result = [&]() -> CpSolverResponse {
+               ::py::gil_scoped_release release;
+               return solve_wrapper->Solve(model_proto);
+             }();
+             if (solve_wrapper->local_error_already_set_.has_value()) {
+               solve_wrapper->local_error_already_set_->restore();
+               solve_wrapper->local_error_already_set_.reset();
+               throw py::error_already_set();
+             }
+             return result;
            })
       .def("solve_and_return_response_wrapper",
-           [](SolveWrapper* solve_wrapper,
+           [](ExtSolveWrapper* solve_wrapper,
               const CpModelProto& model_proto) -> ResponseWrapper {
-             ::py::gil_scoped_release release;
-             return ResponseWrapper(solve_wrapper->Solve(model_proto));
+             const auto result = [&]() -> ResponseWrapper {
+               ::py::gil_scoped_release release;
+               return ResponseWrapper(solve_wrapper->Solve(model_proto));
+             }();
+             if (solve_wrapper->local_error_already_set_.has_value()) {
+               solve_wrapper->local_error_already_set_->restore();
+               solve_wrapper->local_error_already_set_.reset();
+               throw py::error_already_set();
+             }
+             return result;
            })
       .def("stop_search", &SolveWrapper::StopSearch);
 

@@ -2015,7 +2015,8 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansion) {
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 
   // We should properly complete the hint and choose the bucket [4, 6].
-  EXPECT_THAT(context.SolutionHint(), ::testing::ElementsAre(1, 5, 0, 1, 0));
+  EXPECT_THAT(context.solution_crush().SolutionHint(),
+              ::testing::ElementsAre(1, 5, 0, 1, 0));
   EXPECT_TRUE(context.DebugTestHintFeasibility());
 }
 
@@ -2064,7 +2065,8 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansionWithInteger) {
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 
   // We should properly complete the hint with the new slack variable.
-  EXPECT_THAT(context.SolutionHint(), ::testing::ElementsAre(1, 5, 6));
+  EXPECT_THAT(context.solution_crush().SolutionHint(),
+              ::testing::ElementsAre(1, 5, 6));
   EXPECT_TRUE(context.DebugTestHintFeasibility());
 }
 
@@ -2149,7 +2151,7 @@ TEST(FinalExpansionForLinearConstraintTest,
 
   // We should properly complete the hint and choose the bucket [4, 6], as well
   // as set the new linear_is_enforced hint to true.
-  EXPECT_THAT(context.SolutionHint(),
+  EXPECT_THAT(context.solution_crush().SolutionHint(),
               ::testing::ElementsAre(1, 5, 1, 0, 0, 1, 1));
   EXPECT_TRUE(context.DebugTestHintFeasibility());
 }
