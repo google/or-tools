@@ -19,6 +19,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <random>
 #include <string>
 #include <vector>
@@ -69,7 +70,7 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
   }
   EXPECT_TRUE(max_flow.Solve());
   if (max_flow.status() == GenericMaxFlow<Graph>::OPTIMAL) {
-    const typename GenericMaxFlow<Graph>::FlowQuantityT total_flow =
+    const typename GenericMaxFlow<Graph>::FlowSumType total_flow =
         max_flow.GetOptimalFlow();
     EXPECT_EQ(expected_total_flow, total_flow);
     for (int arc = 0; arc < num_arcs; ++arc) {
@@ -177,7 +178,7 @@ TYPED_TEST(GenericMaxFlowTest, HugeCapacity) {
 }
 
 TYPED_TEST(GenericMaxFlowTest, FlowQuantityOverflowLimitCase) {
-  using FlowQuantity = typename GenericMaxFlow<TypeParam>::FlowQuantityT;
+  using FlowQuantity = typename GenericMaxFlow<TypeParam>::FlowSumType;
   const FlowQuantity kCapacityMax = std::numeric_limits<FlowQuantity>::max();
   const FlowQuantity kHalfLow = kCapacityMax / 2;
   const FlowQuantity kHalfHigh = kCapacityMax - kHalfLow;
@@ -199,7 +200,7 @@ TYPED_TEST(GenericMaxFlowTest, FlowQuantityOverflowLimitCase) {
 }
 
 TYPED_TEST(GenericMaxFlowTest, FlowQuantityOverflow) {
-  using FlowQuantity = typename GenericMaxFlow<TypeParam>::FlowQuantityT;
+  using FlowQuantity = typename GenericMaxFlow<TypeParam>::FlowSumType;
   const FlowQuantity kCapacityMax = std::numeric_limits<FlowQuantity>::max();
   const int kNumNodes = 4;
   const int kNumArcs = 4;
@@ -262,6 +263,79 @@ TYPED_TEST(GenericMaxFlowTest, FlowOnDisconnectedGraph2) {
             MaxFlowTester<TypeParam>(
                 kNumNodes, kNumArcs, kTail, kHead, kCapacity, kExpectedFlow,
                 kExpectedTotalFlow, &source_cut, &sink_cut));
+}
+
+// Using a custom type should allow to verify that we didn't forget a conversion
+// somewhere.
+//
+// TODO(user): Unfortunately, there is no open-source version of strong int
+// supporting uint16_t...
+struct StrongUint16 {
+  constexpr StrongUint16() : v(0) {}
+  constexpr StrongUint16(int v) : v(v) {}
+
+  explicit operator int64_t() const { return static_cast<int64_t>(v); }
+
+  StrongUint16 operator-() const { return StrongUint16(-v); }
+  void operator+=(StrongUint16 o) { v += o.v; }
+  void operator-=(StrongUint16 o) { v -= o.v; }
+
+  uint16_t v;
+};
+std::ostream& operator<<(std::ostream& os, StrongUint16 a) { return os << a.v; }
+constexpr StrongUint16 operator+(StrongUint16 a, StrongUint16 b) {
+  return StrongUint16(a.v + b.v);
+}
+constexpr StrongUint16 operator-(StrongUint16 a, StrongUint16 b) {
+  return StrongUint16(a.v - b.v);
+}
+constexpr bool operator<=(StrongUint16 a, StrongUint16 b) { return a.v <= b.v; }
+constexpr bool operator>=(StrongUint16 a, StrongUint16 b) { return a.v >= b.v; }
+constexpr bool operator>(StrongUint16 a, StrongUint16 b) { return a.v > b.v; }
+constexpr bool operator<(StrongUint16 a, StrongUint16 b) { return a.v < b.v; }
+constexpr bool operator==(StrongUint16 a, StrongUint16 b) { return a.v == b.v; }
+
+// This is a bit hacky, but we need to define the overload in the std namespace.
+}  // namespace
+}  // namespace operations_research
+namespace std {
+template <>
+struct numeric_limits<operations_research::StrongUint16> {
+  static constexpr operations_research::StrongUint16 max() {
+    return operations_research::StrongUint16(numeric_limits<uint16_t>::max());
+  }
+};
+}  // namespace std
+namespace operations_research {
+namespace {
+
+TYPED_TEST(GenericMaxFlowTest, SmallFlowTypes) {
+  absl::BitGen random;
+  const int num_nodes = 1'000;
+  const int num_arcs = num_nodes * num_nodes;
+
+  // Lets generate and build a random graph.
+  // We should have more than enough arc to make it fully connected.
+  TypeParam graph(num_nodes, num_arcs);
+  for (int arc = 0; arc < num_arcs; ++arc) {
+    graph.AddArc(absl::Uniform(random, 0, num_nodes),
+                 absl::Uniform(random, 0, num_nodes));
+  }
+  graph.Build();
+
+  typedef GenericMaxFlow<TypeParam, StrongUint16, int64_t> MaxFlowA;
+  typedef GenericMaxFlow<TypeParam, int64_t, int64_t> MaxFlowB;
+  MaxFlowA max_flow_A(&graph, /*source=*/0, /*sink=*/num_nodes - 1);
+  MaxFlowB max_flow_B(&graph, /*source=*/0, /*sink=*/num_nodes - 1);
+  for (int arc = 0; arc < num_arcs; ++arc) {
+    const uint16_t capa =
+        absl::Uniform(random, 0, std::numeric_limits<uint16_t>::max() / 2);
+    max_flow_A.SetArcCapacity(arc, capa);
+    max_flow_B.SetArcCapacity(arc, capa);
+  }
+  EXPECT_EQ(max_flow_A.Solve(), MaxFlowA::OPTIMAL);
+  EXPECT_EQ(max_flow_B.Solve(), MaxFlowB::OPTIMAL);
+  EXPECT_EQ(max_flow_A.GetOptimalFlow(), max_flow_B.GetOptimalFlow());
 }
 
 template <typename Graph>

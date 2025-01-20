@@ -184,14 +184,6 @@ class GenericPathContainer {
   std::unique_ptr<Impl> container_;
 };
 
-// TODO(b/385094969): Remove this alias when all clients are migrated.
-class LegacyIgnoredGraphType {
- public:
-  using NodeIndex = int32_t;
-  static constexpr NodeIndex kNilNode = std::numeric_limits<NodeIndex>::max();
-};
-using PathContainer = GenericPathContainer<LegacyIgnoredGraphType>;
-
 // Utility function which returns a vector containing all nodes of a graph.
 template <class GraphType>
 void GetGraphNodes(const GraphType& graph,
