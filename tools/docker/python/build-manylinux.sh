@@ -144,14 +144,15 @@ function check_wheel() {
   done
 
   # Check all generated wheel packages
+  ROOT_DIR=$(pwd)
   pushd "${BUILD_DIR}/python/dist"
   for FILE in *.whl; do
     # if no files found do nothing
     [[ -e "$FILE" ]] || continue
     python -m auditwheel show "$FILE" || true
-    python -m auditwheel -v repair --plat "manylinux_2_28_$PLATFORM" "$FILE" -w "$export_root"
-    #python -m auditwheel -v repair --plat manylinux_2_28_x86_64 "$FILE" -w "$export_root"
-    #python -m auditwheel -v repair --plat manylinux_2_28_aarch64 "$FILE" -w "$export_root"
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${ROOT_DIR}/${BUILD_DIR}/lib64" python -m auditwheel repair --plat "manylinux_2_28_$PLATFORM" "$FILE" -w .
+    #python -m auditwheel -v repair --plat manylinux_2_28_x86_64 "$FILE" -w .
+    #python -m auditwheel -v repair --plat manylinux_2_28_aarch64 "$FILE" -w .
   done
   popd
 
