@@ -981,6 +981,7 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],

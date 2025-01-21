@@ -89,9 +89,10 @@ int PresolveContext::NewIntVarWithDefinition(
 
   // Create new linear constraint new_var = definition.
   // TODO(user): When we encounter overflow (rare), we still create a variable.
-  auto* new_linear = append_constraint_to_mapping_model
-                         ? mapping_model->add_constraints()->mutable_linear()
-                         : working_model->add_constraints()->mutable_linear();
+  auto* new_linear =
+      append_constraint_to_mapping_model
+          ? NewMappingConstraint(__FILE__, __LINE__)->mutable_linear()
+          : working_model->add_constraints()->mutable_linear();
   for (const auto [var, coeff] : definition) {
     new_linear->add_vars(var);
     new_linear->add_coeffs(coeff);
@@ -2345,11 +2346,17 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   const auto& it = reified_precedences_cache_.find(key);
   if (it != reified_precedences_cache_.end()) return it->second;
 
-  const int result = NewBoolVar("");
+  const int result = NewBoolVar("precedences");
   reified_precedences_cache_[key] = result;
 
   solution_crush_.SetVarToReifiedPrecedenceLiteral(result, time_i, time_j,
                                                    active_i, active_j);
+
+  if (!IsFixed(time_i) && !IsFixed(time_j)) {
+    DCHECK(!PossibleIntegerOverflow(*working_model,
+                                    {time_i.vars(0), time_j.vars(0)},
+                                    {-time_i.coeffs(0), time_j.coeffs(0)}));
+  }
 
   // result => (time_i <= time_j) && active_i && active_j.
   ConstraintProto* const lesseq = working_model->add_constraints();

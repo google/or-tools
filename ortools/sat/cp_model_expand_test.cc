@@ -701,7 +701,8 @@ TEST(IntProdExpandTest, TestLargerAffineProd) {
 
 TEST(IntProdExpansionTest, ExpandNonBinaryIntProdPreservesSolutionHint) {
   CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 100 ] }
+    variables { domain: [ 0, 500 ] }
+    variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
@@ -711,6 +712,7 @@ TEST(IntProdExpansionTest, ExpandNonBinaryIntProdPreservesSolutionHint) {
         exprs { vars: 1 coeffs: 1 }
         exprs { vars: 2 coeffs: 1 }
         exprs { vars: 3 coeffs: 1 }
+        exprs { vars: 4 coeffs: 1 }
       }
     }
     objective {
@@ -718,8 +720,8 @@ TEST(IntProdExpansionTest, ExpandNonBinaryIntProdPreservesSolutionHint) {
       coeffs: [ 1 ]
     }
     solution_hint {
-      vars: [ 0, 1, 2, 3 ]
-      values: [ 60, 3, 4, 5 ]
+      vars: [ 0, 1, 2, 3, 4 ]
+      values: [ 360, 3, 4, 5, 6 ]
     }
   )pb");
 

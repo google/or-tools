@@ -420,11 +420,11 @@ class VariableList:
     def __init__(self) -> None:
         self.__var_list: list[IntVar] = []
 
-    def store(self, var: IntVar) -> None:
+    def append(self, var: IntVar) -> None:
         assert var.index == len(self.__var_list)
         self.__var_list.append(var)
 
-    def query(self, index: int) -> IntVar:
+    def get(self, index: int) -> IntVar:
         if index < 0 or index >= len(self.__var_list):
             raise ValueError("Index out of bounds.")
         return self.__var_list[index]
@@ -438,14 +438,14 @@ class VariableList:
         if num_elements == 0:
             return proto.offset
         elif num_elements == 1:
-            var = self.query(proto.vars[0])
+            var = self.get(proto.vars[0])
             return LinearExpr.affine(
                 var, proto.coeffs[0], proto.offset
             )  # pytype: disable=bad-return-type
         else:
             variables = []
             for var_index in range(len(proto.vars)):
-                var = self.query(var_index)
+                var = self.get(var_index)
                 variables.append(var)
             if proto.offset != 0:
                 coeffs = []
@@ -644,13 +644,13 @@ class CpModel:
 
     # Integer variable.
 
-    def _store_int_var(self, var: IntVar) -> IntVar:
+    def _append_int_var(self, var: IntVar) -> IntVar:
         """Appends an integer variable to the list of variables."""
-        self.__var_list.store(var)
+        self.__var_list.append(var)
         return var
 
-    def _query_int_var(self, index: int) -> IntVar:
-        return self.__var_list.query(index)
+    def _get_int_var(self, index: int) -> IntVar:
+        return self.__var_list.get(index)
 
     def rebuild_from_linear_expression_proto(
         self,
@@ -674,7 +674,7 @@ class CpModel:
           a variable whose domain is [lb, ub].
         """
         domain_is_boolean = lb >= 0 and ub <= 1
-        return self._store_int_var(
+        return self._append_int_var(
             IntVar(
                 self.__model,
                 sorted_interval_list.Domain(lb, ub),
@@ -700,20 +700,20 @@ class CpModel:
             a variable whose domain is the given domain.
         """
         domain_is_boolean = domain.min() >= 0 and domain.max() <= 1
-        return self._store_int_var(
+        return self._append_int_var(
             IntVar(self.__model, domain, domain_is_boolean, name)
         )
 
     def new_bool_var(self, name: str) -> IntVar:
         """Creates a 0-1 variable with the given name."""
-        return self._store_int_var(
+        return self._append_int_var(
             IntVar(self.__model, sorted_interval_list.Domain(0, 1), True, name)
         )
 
     def new_constant(self, value: IntegralT) -> IntVar:
         """Declares a constant integer."""
         index: int = self.get_or_make_index_from_constant(value)
-        return self._query_int_var(index)
+        return self._get_int_var(index)
 
     def new_int_var_series(
         self,
@@ -768,7 +768,7 @@ class CpModel:
             index=index,
             data=[
                 # pylint: disable=g-complex-comprehension
-                self._store_int_var(
+                self._append_int_var(
                     IntVar(
                         model=self.__model,
                         name=f"{name}[{i}]",
@@ -808,7 +808,7 @@ class CpModel:
             index=index,
             data=[
                 # pylint: disable=g-complex-comprehension
-                self._store_int_var(
+                self._append_int_var(
                     IntVar(
                         model=self.__model,
                         name=f"{name}[{i}]",
@@ -2063,6 +2063,12 @@ class CpModel:
         clone.rebuild_var_and_constant_map()
         return clone
 
+    def __copy__(self):
+        return self.clone()
+
+    def __deepcopy__(self, memo):
+        return self.clone()
+
     def rebuild_var_and_constant_map(self):
         """Internal method used during model cloning."""
         for i, var in enumerate(self.__model.variables):
@@ -2071,11 +2077,11 @@ class CpModel:
             is_boolean = (
                 len(var.domain) == 2 and var.domain[0] >= 0 and var.domain[1] <= 1
             )
-            self.__var_list.store(IntVar(self.__model, i, is_boolean, None))
+            self.__var_list.append(IntVar(self.__model, i, is_boolean, None))
 
     def get_bool_var_from_proto_index(self, index: int) -> IntVar:
         """Returns an already created Boolean variable from its index."""
-        result = self._query_int_var(index)
+        result = self._get_int_var(index)
         if not result.is_boolean:
             raise ValueError(
                 f"get_bool_var_from_proto_index: index {index} does not reference a"
@@ -2085,7 +2091,7 @@ class CpModel:
 
     def get_int_var_from_proto_index(self, index: int) -> IntVar:
         """Returns an already created integer variable from its index."""
-        return self._query_int_var(index)
+        return self._get_int_var(index)
 
     def get_interval_var_from_proto_index(self, index: int) -> IntervalVar:
         """Returns an already created interval variable from its index."""
