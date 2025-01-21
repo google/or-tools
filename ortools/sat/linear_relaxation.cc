@@ -1299,9 +1299,10 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
     // <=> Sum_i (~ei * (rhs_domain_min - min_activity)) + terms >=
     // rhs_domain_min
     LinearConstraintBuilder lc(model, rhs_domain_min, kMaxIntegerValue);
+    const IntegerValue term = CapSubI(rhs_domain_min, min_activity);
+    if (AtMinOrMaxInt64I(term) && !enforcing_literals.empty()) return;
     for (const Literal& literal : enforcing_literals) {
-      CHECK(
-          lc.AddLiteralTerm(literal.Negated(), rhs_domain_min - min_activity));
+      CHECK(lc.AddLiteralTerm(literal.Negated(), term));
     }
     for (int i = 0; i < ct.linear().vars_size(); i++) {
       const int ref = ct.linear().vars(i);
@@ -1319,9 +1320,10 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
     // <=> Sum_i (~ei * (rhs_domain_max - max_activity)) + terms <=
     // rhs_domain_max
     LinearConstraintBuilder lc(model, kMinIntegerValue, rhs_domain_max);
+    const IntegerValue term = CapSubI(rhs_domain_max, max_activity);
+    if (AtMinOrMaxInt64I(term) && !enforcing_literals.empty()) return;
     for (const Literal& literal : enforcing_literals) {
-      CHECK(
-          lc.AddLiteralTerm(literal.Negated(), rhs_domain_max - max_activity));
+      CHECK(lc.AddLiteralTerm(literal.Negated(), term));
     }
     for (int i = 0; i < ct.linear().vars_size(); i++) {
       const int ref = ct.linear().vars(i);

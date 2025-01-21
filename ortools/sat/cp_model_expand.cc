@@ -56,7 +56,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
                                  int64_t sum_of_negative_demand,
                                  ConstraintProto* reservoir_ct,
                                  PresolveContext* context) {
-  SolutionCrush& crush = context->solution_crush();
   const ReservoirConstraintProto& reservoir = reservoir_ct->reservoir();
   const int num_events = reservoir.time_exprs_size();
 
@@ -72,73 +71,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
   std::vector<int> level_vars(num_events);
   for (int i = 0; i < num_events; ++i) {
     level_vars[i] = context->NewIntVar(Domain(var_min, var_max));
-    if (crush.HintIsLoaded()) {
-      // The hint of active events is set later.
-      crush.SetNewVariableHint(level_vars[i], 0);
-    }
-  }
-
-  // The hints of the active events, in the order they should appear in the
-  // circuit. The hints are collected first, and sorted later.
-  struct ReservoirEventHint {
-    int index;  // In the reservoir constraint.
-    int64_t time;
-    int64_t level_change;
-  };
-  std::vector<ReservoirEventHint> active_event_hints;
-  bool has_complete_hint = false;
-  if (crush.HintIsLoaded()) {
-    has_complete_hint = true;
-    for (int i = 0; i < num_events && has_complete_hint; ++i) {
-      if (crush.VarHasSolutionHint(PositiveRef(reservoir.active_literals(i)))) {
-        if (crush.LiteralSolutionHint(reservoir.active_literals(i))) {
-          const std::optional<int64_t> time_hint =
-              crush.GetExpressionSolutionHint(reservoir.time_exprs(i));
-          const std::optional<int64_t> change_hint =
-              crush.GetExpressionSolutionHint(reservoir.level_changes(i));
-          if (time_hint.has_value() && change_hint.has_value()) {
-            active_event_hints.push_back(
-                {i, time_hint.value(), change_hint.value()});
-          } else {
-            has_complete_hint = false;
-          }
-        }
-      } else {
-        has_complete_hint = false;
-      }
-    }
-  }
-  // Update the `level_vars` hints by computing the level at each active event.
-  if (has_complete_hint) {
-    std::sort(active_event_hints.begin(), active_event_hints.end(),
-              [](const ReservoirEventHint& a, const ReservoirEventHint& b) {
-                return a.time < b.time;
-              });
-    int64_t current_level = 0;
-    for (int i = 0; i < active_event_hints.size(); ++i) {
-      int j = i;
-      // Adjust the order of the events occurring at the same time, in the
-      // circuit, so that, at each node, the level is between `var_min` and
-      // `var_max`. For instance, if e1 = {t, +1} and e2 = {t, -1}, and if
-      // `current_level` = 0, `var_min` = -1 and `var_max` = 0, then e2 must
-      // occur before e1.
-      while (j < active_event_hints.size() &&
-             active_event_hints[j].time == active_event_hints[i].time &&
-             (current_level + active_event_hints[j].level_change < var_min ||
-              current_level + active_event_hints[j].level_change > var_max)) {
-        ++j;
-      }
-      if (j < active_event_hints.size() &&
-          active_event_hints[j].time == active_event_hints[i].time) {
-        if (i != j) std::swap(active_event_hints[i], active_event_hints[j]);
-        current_level += active_event_hints[i].level_change;
-        crush.UpdateVarSolutionHint(level_vars[active_event_hints[i].index],
-                                    current_level);
-      } else {
-        has_complete_hint = false;
-        break;
-      }
-    }
   }
 
   // For the corner case where all events are absent, we need a potential
@@ -148,17 +80,8 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
     circuit->add_tails(num_events);
     circuit->add_heads(num_events);
     circuit->add_literals(all_inactive);
-    if (has_complete_hint) {
-      crush.SetNewVariableHint(all_inactive, active_event_hints.empty());
-    }
   }
 
-  // The index of each event in `active_event_hints`, or -1 if the event's
-  // "active" hint is false.
-  std::vector<int> active_event_hint_index(num_events, -1);
-  for (int i = 0; i < active_event_hints.size(); ++i) {
-    active_event_hint_index[active_event_hints[i].index] = i;
-  }
   for (int i = 0; i < num_events; ++i) {
     if (!reservoir.active_literals().empty()) {
       // Add self arc to represent absence.
@@ -175,11 +98,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       circuit->add_tails(num_events);
       circuit->add_heads(i);
       circuit->add_literals(start_var);
-      if (has_complete_hint) {
-        crush.SetNewVariableHint(start_var,
-                                 !active_event_hints.empty() &&
-                                     active_event_hints.front().index == i);
-      }
 
       // Add enforced linear for demand.
       {
@@ -200,11 +118,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       circuit->add_tails(i);
       circuit->add_heads(num_events);
       circuit->add_literals(end_var);
-      if (has_complete_hint) {
-        crush.SetNewVariableHint(end_var,
-                                 !active_event_hints.empty() &&
-                                     active_event_hints.back().index == i);
-      }
     }
 
     for (int j = 0; j < num_events; ++j) {
@@ -224,13 +137,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       circuit->add_tails(i);
       circuit->add_heads(j);
       circuit->add_literals(arc_i_j);
-      if (has_complete_hint) {
-        const int hint_i_index = active_event_hint_index[i];
-        const int hint_j_index = active_event_hint_index[j];
-        crush.SetNewVariableHint(arc_i_j, hint_i_index != -1 &&
-                                              hint_j_index != -1 &&
-                                              hint_j_index == hint_i_index + 1);
-      }
 
       // Add enforced linear for time.
       {
@@ -261,6 +167,8 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       }
     }
   }
+  context->solution_crush().SetReservoirCircuitVars(reservoir, var_min, var_max,
+                                                    level_vars, *circuit);
 
   reservoir_ct->Clear();
   context->UpdateRuleStats("reservoir: expanded using circuit.");
@@ -337,6 +245,9 @@ void ExpandReservoirUsingPrecedences(bool max_level_is_constraining,
 
     // Canonicalize the newly created constraint.
     context->CanonicalizeLinearConstraint(new_cumul);
+
+    DCHECK(!PossibleIntegerOverflow(*context->working_model, new_linear->vars(),
+                                    new_linear->coeffs()));
   }
 
   reservoir_ct->Clear();
@@ -539,39 +450,6 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     return;
   }
 
-  bool has_complete_hint = false;
-  bool enforced_hint = true;
-  int64_t expr_hint = 0;
-  int64_t mod_expr_hint = 0;
-  int64_t target_expr_hint = 0;
-  SolutionCrush& crush = context->solution_crush();
-  if (crush.HintIsLoaded()) {
-    has_complete_hint = true;
-    for (const int lit : ct->enforcement_literal()) {
-      if (!crush.VarHasSolutionHint(PositiveRef(lit))) {
-        has_complete_hint = false;
-        break;
-      }
-      enforced_hint = enforced_hint && crush.LiteralSolutionHint(lit);
-    }
-    if (has_complete_hint && enforced_hint) {
-      has_complete_hint = false;
-      std::optional<int64_t> hint = crush.GetExpressionSolutionHint(expr);
-      if (hint.has_value()) {
-        expr_hint = hint.value();
-        hint = crush.GetExpressionSolutionHint(mod_expr);
-        if (hint.has_value()) {
-          mod_expr_hint = hint.value();
-          hint = crush.GetExpressionSolutionHint(target_expr);
-          if (hint.has_value()) {
-            target_expr_hint = hint.value();
-            has_complete_hint = true;
-          }
-        }
-      }
-    }
-  }
-
   // Create a new constraint with the same enforcement as ct.
   auto new_enforced_constraint = [&]() {
     ConstraintProto* new_ct = context->working_model->add_constraints();
@@ -583,13 +461,6 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   const int div_var = context->NewIntVar(
       context->DomainSuperSetOf(expr).PositiveDivisionBySuperset(
           context->DomainSuperSetOf(mod_expr)));
-  if (has_complete_hint) {
-    if (enforced_hint) {
-      crush.SetNewVariableHint(div_var, expr_hint / mod_expr_hint);
-    } else {
-      crush.SetNewVariableHint(div_var, context->MinOf(div_var));
-    }
-  }
   LinearExpressionProto div_expr;
   div_expr.add_vars(div_var);
   div_expr.add_coeffs(1);
@@ -607,13 +478,6 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
           .IntersectionWith(context->DomainSuperSetOf(expr).AdditionWith(
               context->DomainSuperSetOf(target_expr).Negation()));
   const int prod_var = context->NewIntVar(prod_domain);
-  if (has_complete_hint) {
-    if (enforced_hint) {
-      crush.SetNewVariableHint(prod_var, expr_hint - target_expr_hint);
-    } else {
-      crush.SetNewVariableHint(prod_var, context->MinOf(prod_var));
-    }
-  }
   LinearExpressionProto prod_expr;
   prod_expr.add_vars(prod_var);
   prod_expr.add_coeffs(1);
@@ -633,15 +497,18 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   AddLinearExpressionToLinearConstraint(prod_expr, -1, lin);
   AddLinearExpressionToLinearConstraint(target_expr, -1, lin);
 
+  context->solution_crush().SetIntModExpandedVars(*ct, div_var, prod_var,
+                                                  context->MinOf(div_var),
+                                                  context->MinOf(prod_var));
   ct->Clear();
   context->UpdateRuleStats("int_mod: expanded");
 }
 
 void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
   CHECK_GT(ct->int_prod().exprs_size(), 2);
-  SolutionCrush& crush = context->solution_crush();
   std::deque<LinearExpressionProto> terms(
       {ct->int_prod().exprs().begin(), ct->int_prod().exprs().end()});
+  std::vector<int> new_vars;
   while (terms.size() > 2) {
     const LinearExpressionProto& left = terms[0];
     const LinearExpressionProto& right = terms[1];
@@ -649,16 +516,7 @@ void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
         context->DomainSuperSetOf(left).ContinuousMultiplicationBy(
             context->DomainSuperSetOf(right));
     const int new_var = context->NewIntVar(new_domain);
-    if (crush.HintIsLoaded()) {
-      const std::optional<int64_t> left_hint =
-          crush.GetExpressionSolutionHint(left);
-      const std::optional<int64_t> right_hint =
-          crush.GetExpressionSolutionHint(right);
-      if (left_hint.has_value() && right_hint.has_value()) {
-        crush.SetNewVariableHint(new_var,
-                                 left_hint.value() * right_hint.value());
-      }
-    }
+    new_vars.push_back(new_var);
     LinearArgumentProto* const int_prod =
         context->working_model->add_constraints()->mutable_int_prod();
     *int_prod->add_exprs() = left;
@@ -666,8 +524,7 @@ void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
     int_prod->mutable_target()->add_vars(new_var);
     int_prod->mutable_target()->add_coeffs(1);
     terms.pop_front();
-    terms.pop_front();
-    terms.push_back(int_prod->target());
+    terms.front() = int_prod->target();
   }
 
   LinearArgumentProto* const final_int_prod =
@@ -676,6 +533,7 @@ void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
   *final_int_prod->add_exprs() = terms[1];
   *final_int_prod->mutable_target() = ct->int_prod().target();
 
+  context->solution_crush().SetIntProdExpandedVars(ct->int_prod(), new_vars);
   context->UpdateRuleStats(absl::StrCat(
       "int_prod: expanded int_prod with arity ", ct->int_prod().exprs_size()));
   ct->Clear();

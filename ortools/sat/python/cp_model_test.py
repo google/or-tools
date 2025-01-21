@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import itertools
 import sys
 import time
@@ -1730,15 +1731,37 @@ class CpModelTest(absltest.TestCase):
         lin = model.add(x + y <= 10)
 
         new_model = model.clone()
-        copy_b = new_model.get_bool_var_from_proto_index(b.index)
-        copy_x = new_model.get_int_var_from_proto_index(x.index)
-        copy_y = new_model.get_int_var_from_proto_index(y.index)
-        copy_i = new_model.get_interval_var_from_proto_index(i.index)
+        clone_b = new_model.get_bool_var_from_proto_index(b.index)
+        clone_x = new_model.get_int_var_from_proto_index(x.index)
+        clone_y = new_model.get_int_var_from_proto_index(y.index)
+        clone_i = new_model.get_interval_var_from_proto_index(i.index)
+
+        self.assertEqual(b.index, clone_b.index)
+        self.assertEqual(x.index, clone_x.index)
+        self.assertEqual(y.index, clone_y.index)
+        self.assertEqual(i.index, clone_i.index)
+
+        model_copy = copy.copy(model)
+        copy_b = model_copy.get_bool_var_from_proto_index(b.index)
+        copy_x = model_copy.get_int_var_from_proto_index(x.index)
+        copy_y = model_copy.get_int_var_from_proto_index(y.index)
+        copy_i = model_copy.get_interval_var_from_proto_index(i.index)
 
         self.assertEqual(b.index, copy_b.index)
         self.assertEqual(x.index, copy_x.index)
         self.assertEqual(y.index, copy_y.index)
         self.assertEqual(i.index, copy_i.index)
+
+        model_deepcopy = copy.deepcopy(model)
+        deepcopy_b = model_deepcopy.get_bool_var_from_proto_index(b.index)
+        deepcopy_x = model_deepcopy.get_int_var_from_proto_index(x.index)
+        deepcopy_y = model_deepcopy.get_int_var_from_proto_index(y.index)
+        deepcopy_i = model_deepcopy.get_interval_var_from_proto_index(i.index)
+
+        self.assertEqual(b.index, deepcopy_b.index)
+        self.assertEqual(x.index, deepcopy_x.index)
+        self.assertEqual(y.index, deepcopy_y.index)
+        self.assertEqual(i.index, deepcopy_i.index)
 
         with self.assertRaises(ValueError):
             new_model.get_bool_var_from_proto_index(-1)

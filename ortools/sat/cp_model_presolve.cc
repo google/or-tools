@@ -2478,7 +2478,14 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   // instead of adding a reduced version of it each time a new singleton
   // variable appear in the same constraint later. That would work but would
   // also force the postsolve to take search decisions...
-  *context_->NewMappingConstraint(__FILE__, __LINE__) = *ct;
+  if (absl::GetFlag(FLAGS_cp_model_debug_postsolve)) {
+    auto* new_ct = context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
+    const std::string name = new_ct->name();
+    *new_ct = *ct;
+    new_ct->set_name(absl::StrCat(ct->name(), " copy ", name));
+  } else {
+    *context_->NewMappingConstraint(*ct, __FILE__, __LINE__) = *ct;
+  }
 
   int new_size = 0;
   for (int i = 0; i < num_vars; ++i) {

@@ -966,7 +966,7 @@ void UpdateHintAfterFixingBoolToBreakSymmetry(
   const std::vector<int> generator_idx =
       TracePoint(target_var, schrier_vector, generators);
   for (const int i : generator_idx) {
-    crush.PermuteHintValues(*generators[i]);
+    crush.PermuteVariables(*generators[i]);
   }
 
   DCHECK(crush.VarHasSolutionHint(var));

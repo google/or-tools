@@ -18,6 +18,7 @@
 #include <limits>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -354,6 +355,30 @@ void PostsolveIntProd(const ConstraintProto& ct, std::vector<Domain>* domains) {
   (*domains)[target.vars(0)] = Domain(target_value);
 }
 
+namespace {
+void CheckPostsolveFixedVariables(const ConstraintProto& ct,
+                                  absl::Span<const Domain> domains) {
+  if (DEBUG_MODE) {
+    for (const int var : UsedVariables(ct)) {
+      DCHECK(domains[PositiveRef(var)].IsFixed())
+          << "Variable " << PositiveRef(var)
+          << " is not fixed after postsolve for constraint: \""
+          << ProtobufShortDebugString(ct)
+          << "\" with domain: " << domains[PositiveRef(var)] << ".";
+    }
+  }
+}
+
+void ArbitrarilyFixVariables(const ConstraintProto& ct,
+                             absl::Span<Domain> domains) {
+  for (const int var : UsedVariables(ct)) {
+    if (!domains[PositiveRef(var)].IsFixed()) {
+      domains[PositiveRef(var)] = Domain(domains[PositiveRef(var)].Min());
+    }
+  }
+}
+}  // namespace
+
 void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        absl::Span<const int> postsolve_mapping,
@@ -392,7 +417,11 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         break;
       }
     }
-    if (constraint_can_be_ignored) continue;
+    if (constraint_can_be_ignored) {
+      ArbitrarilyFixVariables(ct, absl::MakeSpan(domains));
+      CheckPostsolveFixedVariables(ct, domains);
+      continue;
+    }
 
     switch (ct.constraint_case()) {
       case ConstraintProto::kBoolOr:
@@ -422,6 +451,7 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         LOG(FATAL) << "Unsupported constraint: "
                    << ProtobufShortDebugString(ct);
     }
+    CheckPostsolveFixedVariables(ct, domains);
   }
 
   // Fill the response.

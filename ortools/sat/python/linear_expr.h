@@ -567,6 +567,10 @@ class NotBooleanVariable : public Literal {
   std::string DebugString() const override;
 
  private:
+  // We keep a weak ptr to the base variable to avoid a circular dependency.
+  // The base variable holds a shared pointer to the negated variable.
+  // Any call to a risky method is checked at the pybind11 level to raise a
+  // python exception before the call is made.
   std::weak_ptr<BaseIntVar> var_;
 };
 
