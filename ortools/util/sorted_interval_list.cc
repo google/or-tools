@@ -64,6 +64,16 @@ std::string IntervalsAsString(const Intervals& intervals) {
   return result;
 }
 
+void SortAndRemoveInvalidIntervals(
+    absl::InlinedVector<ClosedInterval, 1>* intervals) {
+  intervals->erase(std::remove_if(intervals->begin(), intervals->end(),
+                                  [](const ClosedInterval& interval) {
+                                    return interval.start > interval.end;
+                                  }),
+                   intervals->end());
+  std::sort(intervals->begin(), intervals->end());
+}
+
 // Transforms a sorted list of intervals in a sorted DISJOINT list for which
 // IntervalsAreSortedAndNonAdjacent() would return true.
 void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
@@ -163,7 +173,7 @@ Domain Domain::FromValues(std::vector<int64_t> values) {
 Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   Domain result;
   result.intervals_.assign(intervals.begin(), intervals.end());
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  SortAndRemoveInvalidIntervals(&result.intervals_);
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
@@ -176,7 +186,7 @@ Domain Domain::FromFlatSpanOfIntervals(
   for (int i = 0; i < flat_intervals.size(); i += 2) {
     result.intervals_.push_back({flat_intervals[i], flat_intervals[i + 1]});
   }
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  SortAndRemoveInvalidIntervals(&result.intervals_);
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
@@ -196,7 +206,7 @@ Domain Domain::FromVectorIntervals(
       result.intervals_.push_back({interval[0], interval[1]});
     }
   }
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  SortAndRemoveInvalidIntervals(&result.intervals_);
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
