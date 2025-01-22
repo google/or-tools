@@ -26,7 +26,7 @@ bazel_dep(name = "googletest", version = "1.15.2", repo_name = "com_google_googl
 bazel_dep(name = "highs", version = "1.9.0")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "protobuf", version = "29.2", repo_name = "com_google_protobuf")
-bazel_dep(name = "pybind11_abseil", version = "202402.0", repo_name = "org_pybind11_abseil")
+bazel_dep(name = "pybind11_abseil", version = "202402.0")
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
 bazel_dep(name = "pybind11_protobuf", version = "0.0.0-20240524-1d7a729")
 bazel_dep(name = "re2", version = "2024-07-02", repo_name = "com_google_re2")

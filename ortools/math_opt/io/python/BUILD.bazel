@@ -25,8 +25,8 @@ pybind_extension(
             "//ortools/math_opt:model_update_cc_proto",
             "//ortools/math_opt:result_cc_proto",
             "//ortools/math_opt/io:mps_converter",
-            "@org_pybind11_abseil//pybind11_abseil:import_status_module",
-            "@org_pybind11_abseil//pybind11_abseil:status_casters",
+            "@pybind11_abseil//pybind11_abseil:import_status_module",
+            "@pybind11_abseil//pybind11_abseil:status_casters",
             "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
         ],
 )
