@@ -160,8 +160,9 @@ message NoOverlap2DConstraintProto {
 // this constraint. Moreover, intervals of size zero are ignored.
 //
 // All demands must not contain any negative value in their domains. This is
-// checked at validation. The capacity can currently contains negative values,
-// but it will be propagated to >= 0 right away.
+// checked at validation. Even if there are no intervals, this constraint
+// implicit enforces capacity >= 0. In other words, a negative capacity is
+// considered valid but always infeasible.
 message CumulativeConstraintProto {
   LinearExpressionProto capacity = 1;
   repeated int32 intervals = 2;

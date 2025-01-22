@@ -337,24 +337,14 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
           lin->add_coeffs(1);
           AddLinearExpressionToLinearConstraint(demand, -1, lin);
           context->CanonicalizeLinearConstraint(demand_ct);
+          context->solution_crush().SetVarToLinearExpressionIf(new_var, demand,
+                                                               active);
         }
 
         // not(active) => new_var == 0.
         context->AddImplyInDomain(NegatedRef(active), new_var, Domain(0));
-
-        SolutionCrush& crush = context->solution_crush();
-        if (crush.HintIsLoaded() &&
-            crush.VarHasSolutionHint(PositiveRef(active))) {
-          if (crush.LiteralSolutionHint(active)) {
-            const std::optional<int64_t> demand_hint =
-                crush.GetExpressionSolutionHint(demand);
-            if (demand_hint.has_value()) {
-              crush.SetNewVariableHint(new_var, demand_hint.value());
-            }
-          } else {
-            crush.SetNewVariableHint(new_var, 0);
-          }
-        }
+        context->solution_crush().SetVarToValueIf(new_var, 0,
+                                                  NegatedRef(active));
       }
     }
     sum->add_domain(reservoir.min_level());
@@ -504,8 +494,8 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("int_mod: expanded");
 }
 
-void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
-  CHECK_GT(ct->int_prod().exprs_size(), 2);
+void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
+  if (ct->int_prod().exprs_size() <= 2) return;
   std::deque<LinearExpressionProto> terms(
       {ct->int_prod().exprs().begin(), ct->int_prod().exprs().end()});
   std::vector<int> new_vars;
@@ -537,54 +527,6 @@ void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats(absl::StrCat(
       "int_prod: expanded int_prod with arity ", ct->int_prod().exprs_size()));
   ct->Clear();
-}
-
-// TODO(user): Move this into the presolve instead?
-void ExpandIntProdWithBoolean(int bool_ref,
-                              const LinearExpressionProto& int_expr,
-                              const LinearExpressionProto& product_expr,
-                              PresolveContext* context) {
-  ConstraintProto* const one = context->working_model->add_constraints();
-  one->add_enforcement_literal(bool_ref);
-  one->mutable_linear()->add_domain(0);
-  one->mutable_linear()->add_domain(0);
-  AddLinearExpressionToLinearConstraint(int_expr, 1, one->mutable_linear());
-  AddLinearExpressionToLinearConstraint(product_expr, -1,
-                                        one->mutable_linear());
-
-  ConstraintProto* const zero = context->working_model->add_constraints();
-  zero->add_enforcement_literal(NegatedRef(bool_ref));
-  zero->mutable_linear()->add_domain(0);
-  zero->mutable_linear()->add_domain(0);
-  AddLinearExpressionToLinearConstraint(product_expr, 1,
-                                        zero->mutable_linear());
-}
-
-void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
-  const LinearArgumentProto& int_prod = ct->int_prod();
-  if (int_prod.exprs_size() > 2) {
-    ExpandNonBinaryIntProd(ct, context);
-    return;
-  }
-  if (int_prod.exprs_size() != 2) return;
-  const LinearExpressionProto& a = int_prod.exprs(0);
-  const LinearExpressionProto& b = int_prod.exprs(1);
-  const LinearExpressionProto& p = int_prod.target();
-  int literal;
-  const bool a_is_literal = context->ExpressionIsALiteral(a, &literal);
-  const bool b_is_literal = context->ExpressionIsALiteral(b, &literal);
-
-  // We expand if exactly one of {a, b} is a literal. If both are literals, it
-  // will be presolved into a better version.
-  if (a_is_literal && !b_is_literal) {
-    ExpandIntProdWithBoolean(literal, b, p, context);
-    ct->Clear();
-    context->UpdateRuleStats("int_prod: expanded product with Boolean var");
-  } else if (b_is_literal) {
-    ExpandIntProdWithBoolean(literal, a, p, context);
-    ct->Clear();
-    context->UpdateRuleStats("int_prod: expanded product with Boolean var");
-  }
 }
 
 void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
@@ -719,47 +661,16 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
 
   // Second, for each expr, create a new boolean bi, and add bi => target <= ai
   // With exactly_one(bi)
-  SolutionCrush& crush = context->solution_crush();
-  std::vector<bool> enforcement_hints;
-  if (crush.HintIsLoaded()) {
-    const std::optional<int64_t> target_hint =
-        crush.GetExpressionSolutionHint(ct->lin_max().target());
-    if (target_hint.has_value()) {
-      int enforcement_hint_sum = 0;
-      enforcement_hints.reserve(num_exprs);
-      for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-        const std::optional<int64_t> expr_hint =
-            crush.GetExpressionSolutionHint(expr);
-        if (!expr_hint.has_value()) {
-          enforcement_hints.clear();
-          break;
-        }
-        if (enforcement_hint_sum == 0) {
-          const bool hint = target_hint.value() <= expr_hint.value();
-          enforcement_hints.push_back(hint);
-          enforcement_hint_sum += hint;
-        } else {
-          enforcement_hints.push_back(false);
-        }
-      }
-    }
-  }
   std::vector<int> enforcement_literals;
   enforcement_literals.reserve(num_exprs);
   if (num_exprs == 2) {
     const int new_bool = context->NewBoolVar("lin max expansion");
-    if (!enforcement_hints.empty()) {
-      crush.SetNewVariableHint(new_bool, enforcement_hints[0]);
-    }
     enforcement_literals.push_back(new_bool);
     enforcement_literals.push_back(NegatedRef(new_bool));
   } else {
     ConstraintProto* exactly_one = context->working_model->add_constraints();
     for (int i = 0; i < num_exprs; ++i) {
       const int new_bool = context->NewBoolVar("lin max expansion");
-      if (!enforcement_hints.empty()) {
-        crush.SetNewVariableHint(new_bool, enforcement_hints[i]);
-      }
       exactly_one->mutable_exactly_one()->add_literals(new_bool);
       enforcement_literals.push_back(new_bool);
     }
@@ -776,6 +687,8 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
     context->CanonicalizeLinearConstraint(new_ct);
   }
 
+  context->solution_crush().SetLinMaxExpandedVars(ct->lin_max(),
+                                                  enforcement_literals);
   context->UpdateRuleStats("lin_max: expanded lin_max");
   ct->Clear();
 }
@@ -1023,33 +936,6 @@ void AddImplyInReachableValues(int literal,
   }
 }
 
-std::vector<int64_t> GetAutomatonStateHints(ConstraintProto* ct,
-                                            PresolveContext* context) {
-  SolutionCrush& crush = context->solution_crush();
-  if (!crush.HintIsLoaded()) return {};
-
-  const AutomatonConstraintProto& proto = ct->automaton();
-  absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transitions;
-  for (int i = 0; i < proto.transition_tail_size(); ++i) {
-    transitions[{proto.transition_tail(i), proto.transition_label(i)}] =
-        proto.transition_head(i);
-  }
-
-  int64_t current_state = proto.starting_state();
-  std::vector<int64_t> state_hints;
-  state_hints.push_back(current_state);
-  for (int i = 0; i < proto.exprs_size(); ++i) {
-    const std::optional<int64_t> label_hint =
-        crush.GetExpressionSolutionHint(proto.exprs(i));
-    if (!label_hint.has_value()) return {};
-    const auto it = transitions.find({current_state, label_hint.value()});
-    if (it == transitions.end()) return {};
-    current_state = it->second;
-    state_hints.push_back(current_state);
-  }
-  return state_hints;
-}
-
 void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   AutomatonConstraintProto& proto = *ct->mutable_automaton();
 
@@ -1082,12 +968,10 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   absl::flat_hash_map<int64_t, int> in_encoding;
   absl::flat_hash_map<int64_t, int> out_encoding;
   bool removed_values = false;
-  SolutionCrush& crush = context->solution_crush();
-
-  const std::vector<int64_t> state_hints = GetAutomatonStateHints(ct, context);
-  DCHECK(state_hints.empty() || state_hints.size() == proto.exprs_size() + 1);
 
   const int n = proto.exprs_size();
+  std::vector<SolutionCrush::StateVar> new_state_vars;
+  std::vector<SolutionCrush::TransitionVar> new_transition_vars;
   for (int time = 0; time < n; ++time) {
     // All these vectors have the same size. We will use them to enforce a
     // local table constraint representing one step of the automaton at the
@@ -1184,9 +1068,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       out_encoding.clear();
       if (states.size() == 2) {
         const int var = context->NewBoolVar("automaton expansion");
-        if (!state_hints.empty()) {
-          crush.SetNewVariableHint(var, state_hints[time + 1] == states[0]);
-        }
+        new_state_vars.push_back({var, time + 1, states[0]});
         out_encoding[states[0]] = var;
         out_encoding[states[1]] = NegatedRef(var);
       } else if (states.size() > 2) {
@@ -1236,10 +1118,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
           }
 
           out_encoding[state] = context->NewBoolVar("automaton expansion");
-          if (!state_hints.empty()) {
-            crush.SetNewVariableHint(out_encoding[state],
-                                     state_hints[time + 1] == state);
-          }
+          new_state_vars.push_back({out_encoding[state], time + 1, state});
         }
       }
     }
@@ -1300,15 +1179,10 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     //
     // TODO(user): Call and use the same heuristics as the table constraint to
     // expand this small table with 3 columns (i.e. compress, negate, etc...).
-    const int64_t label_hint =
-        crush.GetExpressionSolutionHint(proto.exprs(time)).value_or(0);
     std::vector<int> tuple_literals;
     if (num_tuples == 2) {
       const int bool_var = context->NewBoolVar("automaton expansion");
-      if (!state_hints.empty()) {
-        crush.SetNewVariableHint(bool_var, state_hints[time] == in_states[0] &&
-                                               label_hint == labels[0]);
-      }
+      new_transition_vars.push_back({bool_var, time, in_states[0], labels[0]});
       tuple_literals.push_back(bool_var);
       tuple_literals.push_back(NegatedRef(bool_var));
     } else {
@@ -1327,11 +1201,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
           tuple_literal = out_encoding[out_states[i]];
         } else {
           tuple_literal = context->NewBoolVar("automaton expansion");
-          if (!state_hints.empty()) {
-            crush.SetNewVariableHint(
-                tuple_literal,
-                state_hints[time] == in_states[i] && label_hint == labels[i]);
-          }
+          new_transition_vars.push_back(
+              {tuple_literal, time, in_states[i], labels[i]});
         }
 
         tuple_literals.push_back(tuple_literal);
@@ -1353,6 +1224,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     out_encoding.clear();
   }
 
+  context->solution_crush().SetAutomatonExpandedVars(proto, new_state_vars,
+                                                     new_transition_vars);
   if (removed_values) {
     context->UpdateRuleStats("automaton: reduced variable domains");
   }
@@ -1870,8 +1743,6 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
   // selected or not. Enforce an exactly one between them.
   BoolArgumentProto* exactly_one =
       context->working_model->add_constraints()->mutable_exactly_one();
-  int exactly_one_hint_sum = 0;
-  SolutionCrush& crush = context->solution_crush();
 
   std::optional<int> table_is_active_literal = std::nullopt;
   // Process enforcement literals.
@@ -1890,10 +1761,12 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       bool_or->add_literals(NegatedRef(lit));
     }
   }
+  std::vector<int> existing_row_literals;
+  std::vector<SolutionCrush::TableRowLiteral> new_row_literals;
   if (table_is_active_literal.has_value()) {
     const int inactive_lit = NegatedRef(table_is_active_literal.value());
     exactly_one->add_literals(inactive_lit);
-    exactly_one_hint_sum += crush.LiteralSolutionHintIs(inactive_lit, true);
+    existing_row_literals.push_back(inactive_lit);
   }
 
   int num_reused_variables = 0;
@@ -1914,37 +1787,14 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       create_new_var = false;
       tuple_literals[i] =
           context->GetOrCreateVarValueEncoding(vars[var_index], v);
-      exactly_one_hint_sum += crush.SolutionHint(vars[var_index]) == v;
+      existing_row_literals.push_back(tuple_literals[i]);
       break;
     }
     if (create_new_var) {
       tuple_literals[i] = context->NewBoolVar("table expansion");
-      tuples_with_new_variable.push_back(i);
+      new_row_literals.push_back({tuple_literals[i], compressed_table[i]});
     }
     exactly_one->add_literals(tuple_literals[i]);
-  }
-  // Set the hint of the `tuple_literals` for which new variables were created.
-  // If the existing `tuple_literals` hints do not sum to 1, set the hint of the
-  // first tuple which can be selected to true, and the others to false. A tuple
-  // T can be selected if, for each variable v, the hint of v is in the set of
-  // values T[v] (an empty set means "any value").
-  for (const int i : tuples_with_new_variable) {
-    if (exactly_one_hint_sum >= 1) {
-      crush.SetNewVariableHint(tuple_literals[i], false);
-      continue;
-    }
-    bool tuple_literal_hint = true;
-    for (int var_index = 0; var_index < num_vars; ++var_index) {
-      const auto& values = compressed_table[i][var_index];
-      if (!values.empty() &&
-          std::find(values.begin(), values.end(),
-                    crush.SolutionHint(vars[var_index])) == values.end()) {
-        tuple_literal_hint = false;
-        break;
-      }
-    }
-    crush.SetNewVariableHint(tuple_literals[i], tuple_literal_hint);
-    exactly_one_hint_sum += tuple_literal_hint;
   }
   if (num_reused_variables > 0) {
     context->UpdateRuleStats("table: reused literals");
@@ -1971,6 +1821,8 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
                                table_is_active_literal, context);
   }
 
+  context->solution_crush().SetTableExpandedVars(vars, existing_row_literals,
+                                                 new_row_literals);
   context->UpdateRuleStats("table: expanded positive constraint");
 }
 
@@ -2237,37 +2089,6 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
   if (ct->linear().domain().size() <= 2) return;
   if (ct->linear().vars().size() == 1) return;
 
-  // If we have a hint for all variables of this linear constraint, finds in
-  // which bucket it fall.
-  int64_t expr_hint = 0;
-  int hint_bucket = -1;
-  bool has_complete_hint = false;
-  SolutionCrush& crush = context->solution_crush();
-  if (crush.HintIsLoaded()) {
-    has_complete_hint = true;
-    const int num_terms = ct->linear().vars().size();
-    const absl::Span<const int64_t> hint = crush.SolutionHint();
-    for (int i = 0; i < num_terms; ++i) {
-      const int var = ct->linear().vars(i);
-      DCHECK_LT(var, hint.size());
-      if (!crush.VarHasSolutionHint(var)) {
-        has_complete_hint = false;
-        break;
-      }
-      expr_hint += ct->linear().coeffs(i) * hint[var];
-    }
-    if (has_complete_hint) {
-      for (int i = 0; i < ct->linear().domain_size(); i += 2) {
-        const int64_t lb = ct->linear().domain(i);
-        const int64_t ub = ct->linear().domain(i + 1);
-        if (expr_hint >= lb && expr_hint <= ub) {
-          hint_bucket = i;
-          break;
-        }
-      }
-    }
-  }
-
   const SatParameters& params = context->params();
   if (params.encode_complex_linear_constraint_with_integer()) {
     // Integer encoding.
@@ -2276,9 +2097,8 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     // expr \in rhs to expr - slack = 0
     const Domain rhs = ReadDomainFromProto(ct->linear());
     const int slack = context->NewIntVar(rhs);
-    if (has_complete_hint) {
-      crush.SetNewVariableHint(slack, expr_hint);
-    }
+    context->solution_crush().SetVarToLinearExpression(
+        slack, ct->linear().vars(), ct->linear().coeffs());
     ct->mutable_linear()->add_vars(slack);
     ct->mutable_linear()->add_coeffs(-1);
     ct->mutable_linear()->clear_domain();
@@ -2292,9 +2112,6 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       // We cover the special case of no enforcement and two choices by creating
       // a single Boolean.
       single_bool = context->NewBoolVar("complex linear expansion");
-      if (has_complete_hint) {
-        crush.SetNewVariableHint(single_bool, hint_bucket == 0);
-      }
     } else {
       clause = context->working_model->add_constraints()->mutable_bool_or();
       for (const int ref : ct->enforcement_literal()) {
@@ -2314,9 +2131,6 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       int subdomain_literal;
       if (clause != nullptr) {
         subdomain_literal = context->NewBoolVar("complex linear expansion");
-        if (has_complete_hint) {
-          crush.SetNewVariableHint(subdomain_literal, hint_bucket == i);
-        }
         clause->add_literals(subdomain_literal);
         domain_literals.push_back(subdomain_literal);
       } else {
@@ -2331,6 +2145,8 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       new_ct->add_enforcement_literal(subdomain_literal);
       FillDomainInProto(Domain(lb, ub), new_ct->mutable_linear());
     }
+    context->solution_crush().SetLinearWithComplexDomainExpandedVars(
+        ct->linear(), domain_literals);
 
     // Make sure all booleans are tights when enumerating all solutions.
     if (context->params().enumerate_all_solutions() &&
@@ -2348,21 +2164,8 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
           maintain_linear_is_enforced->add_literals(NegatedRef(e_lit));
         }
         maintain_linear_is_enforced->add_literals(linear_is_enforced);
-        if (crush.HintIsLoaded()) {
-          bool has_complete_enforced_hint = true;
-          bool linear_is_enforced_hint = true;
-          for (const int e_lit : enforcement_literals) {
-            if (!crush.VarHasSolutionHint(PositiveRef(e_lit))) {
-              has_complete_enforced_hint = false;
-              break;
-            }
-            linear_is_enforced_hint &= crush.LiteralSolutionHint(e_lit);
-          }
-          if (has_complete_enforced_hint) {
-            crush.SetNewVariableHint(linear_is_enforced,
-                                     linear_is_enforced_hint);
-          }
-        }
+        context->solution_crush().SetVarToConjunction(linear_is_enforced,
+                                                      enforcement_literals);
       }
 
       for (const int lit : domain_literals) {

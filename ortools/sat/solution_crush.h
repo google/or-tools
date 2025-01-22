@@ -15,11 +15,13 @@
 #define OR_TOOLS_SAT_SOLUTION_CRUSH_H_
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
@@ -135,6 +137,11 @@ class SolutionCrush {
   void SetVarToLinearExpression(
       int var, absl::Span<const std::pair<int, int64_t>> linear);
 
+  // Sets the value of `var` to the value of the given linear expression.
+  // The two spans must have the same size.
+  void SetVarToLinearExpression(int var, absl::Span<const int> vars,
+                                absl::Span<const int64_t> coeffs);
+
   // Sets the value of `var` to 1 if the value of at least one literal in
   // `clause` is equal to 1 (or to 0 otherwise). `clause` must be a list of
   // literal indices.
@@ -162,9 +169,19 @@ class SolutionCrush {
   // Sets the value of `var` to `value` if the value of `condition_lit` is true.
   void SetVarToValueIf(int var, int64_t value, int condition_lit);
 
+  // Sets the value of `var` to the value `expr` if the value of `condition_lit`
+  // is true.
+  void SetVarToLinearExpressionIf(int var, const LinearExpressionProto& expr,
+                                  int condition_lit);
+
   // Sets the value of `literal` to `value` if the value of `condition_lit` is
   // true.
   void SetLiteralToValueIf(int literal, bool value, int condition_lit);
+
+  // Sets the value of `var` to `value_if_true` if the value of all the
+  // `condition_lits` literals is true, and to `value_if_false` otherwise.
+  void SetVarToConditionalValue(int var, absl::Span<const int> condition_lits,
+                                int64_t value_if_true, int64_t value_if_false);
 
   // If one literal does not have a value, and the other one does, sets the
   // value of the latter to the value of the former. If both literals have a
@@ -197,11 +214,23 @@ class SolutionCrush {
       int ref, int64_t min_value, int64_t max_value,
       absl::Span<const std::pair<int, Domain>> dominating_refs);
 
-  // Sets the value of `var_y` so that "`var_x`'s value = `var_y`'s value
-  // * `coeff` + `offset`". Does nothing if `var_y` already has a value.
-  // Returns whether the update was successful.
-  bool MaybeSetVarToAffineEquationSolution(int var_x, int var_y, int64_t coeff,
-                                           int64_t offset);
+  // If `var`'s value != `value` finds another variable in the orbit of `var`
+  // that can take that value, and permute the solution (using the symmetry
+  // `generators`) so that this other variable is at position var. If no other
+  // variable can be found, does nothing.
+  void MaybeUpdateVarWithSymmetriesToValue(
+      int var, bool value,
+      absl::Span<const std::unique_ptr<SparsePermutation>> generators);
+
+  // Sets the value of the i-th variable in `vars` so that the given constraint
+  // "dotproduct(coeffs, vars values) = rhs" is satisfied, if all the other
+  // variables have a value. i is equal to `var_index` if set. Otherwise it is
+  // the index of the variable without a value (if there is not exactly one,
+  // this method does nothing).
+  void SetVarToLinearConstraintSolution(std::optional<int> var_index,
+                                        absl::Span<const int> vars,
+                                        absl::Span<const int64_t> coeffs,
+                                        int64_t rhs);
 
   // Sets the value of the variables in `level_vars` and in `circuit` if all the
   // variables in `reservoir` have a value. This assumes that there is one level
@@ -240,7 +269,61 @@ class SolutionCrush {
   void SetIntProdExpandedVars(const LinearArgumentProto& int_prod,
                               absl::Span<const int> prod_vars);
 
-  void PermuteVariables(const SparsePermutation& permutation);
+  // Sets the value of `enforcement_lits` if all the variables in `lin_max`
+  // have a value, assuming that the `lin_max` constraint "target = max(x_0,
+  // x_1, ..., x_(n-1))" is expanded into "enforcement_lits[i] => target <= x_i"
+  // constraints, with at most one enforcement value equal to true.
+  // `enforcement_lits` must have as many elements as `lin_max`.
+  void SetLinMaxExpandedVars(const LinearArgumentProto& lin_max,
+                             absl::Span<const int> enforcement_lits);
+
+  // Represents `var` = "automaton is in state `state` at time `time`".
+  struct StateVar {
+    int var;
+    int time;
+    int64_t state;
+  };
+
+  // Represents `var` = "automaton takes the transition labeled
+  // `transition_label` from state `transition_tail` at time `time`".
+  struct TransitionVar {
+    int var;
+    int time;
+    int64_t transition_tail;
+    int64_t transition_label;
+  };
+
+  // Sets the value of `state_vars` and `transition_vars` if all the variables
+  // in `automaton` have a value.
+  void SetAutomatonExpandedVars(
+      const AutomatonConstraintProto& automaton,
+      absl::Span<const StateVar> state_vars,
+      absl::Span<const TransitionVar> transition_vars);
+
+  // Represents `lit` = "for all i, the value of the i-th column var of a table
+  // constraint is in the `var_values`[i] set (unless this set is empty).".
+  struct TableRowLiteral {
+    int lit;
+    // TODO(user): use a vector of (var, value) pairs instead?
+    std::vector<absl::InlinedVector<int64_t, 2>> var_values;
+  };
+
+  // Sets the value of the `new_row_lits` literals if all the variables in
+  // `column_vars` and `existing_row_lits` have a value. For each `row_lits`,
+  // `column_values` must have the same size as `column_vars`. This method
+  // assumes that exactly one of `existing_row_lits` and `new_row_lits` must be
+  // true.
+  void SetTableExpandedVars(absl::Span<const int> column_vars,
+                            absl::Span<const int> existing_row_lits,
+                            absl::Span<const TableRowLiteral> new_row_lits);
+
+  // Sets the value of `bucket_lits` if all the variables in `linear` have a
+  // value, assuming that they are expanded from the complex linear constraint
+  // (i.e. one whose domain has two or more intervals). The value of
+  // `bucket_lits`[i] is set to 1 iff the value of the linear expression is in
+  // the i-th interval of the domain.
+  void SetLinearWithComplexDomainExpandedVars(
+      const LinearConstraintProto& linear, absl::Span<const int> bucket_lits);
 
  private:
   void SetVarHint(int var, int64_t value) {
@@ -251,6 +334,8 @@ class SolutionCrush {
   void SetLiteralHint(int lit, bool value) {
     SetVarHint(PositiveRef(lit), RefIsPositive(lit) == value ? 1 : 0);
   }
+
+  void PermuteVariables(const SparsePermutation& permutation);
 
   // This contains all the hinted value or zero if the hint wasn't specified.
   // We try to maintain this as we create new variable.

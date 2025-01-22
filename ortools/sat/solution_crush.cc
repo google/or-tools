@@ -15,7 +15,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <optional>
+#ifdef CHECK_HINT
+#include <sstream>
+#include <string>
+#endif
 #include <utility>
 #include <vector>
 
@@ -23,9 +28,11 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -64,17 +71,32 @@ void SolutionCrush::SetVarToLinearExpression(
     int new_var, absl::Span<const std::pair<int, int64_t>> linear) {
   // We only fill the hint of the new variable if all the variable involved
   // in its definition have a value.
-  if (hint_is_loaded_) {
-    int64_t new_value = 0;
-    for (const auto [var, coeff] : linear) {
-      CHECK_GE(var, 0);
-      CHECK_LE(var, hint_.size());
-      if (!hint_has_value_[var]) return;
-      new_value += coeff * hint_[var];
-    }
-    hint_has_value_[new_var] = true;
-    hint_[new_var] = new_value;
+  if (!hint_is_loaded_) return;
+  int64_t new_value = 0;
+  for (const auto [var, coeff] : linear) {
+    CHECK_GE(var, 0);
+    CHECK_LE(var, hint_.size());
+    if (!hint_has_value_[var]) return;
+    new_value += coeff * hint_[var];
   }
+  SetVarHint(new_var, new_value);
+}
+
+void SolutionCrush::SetVarToLinearExpression(int new_var,
+                                             absl::Span<const int> vars,
+                                             absl::Span<const int64_t> coeffs) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  if (!hint_is_loaded_) return;
+  int64_t new_value = 0;
+  for (int i = 0; i < vars.size(); ++i) {
+    const int var = vars[i];
+    const int64_t coeff = coeffs[i];
+    CHECK_GE(var, 0);
+    CHECK_LE(var, hint_.size());
+    if (!hint_has_value_[var]) return;
+    new_value += coeff * hint_[var];
+  }
+  SetVarHint(new_var, new_value);
 }
 
 void SolutionCrush::SetVarToClause(int new_var, absl::Span<const int> clause) {
@@ -158,11 +180,37 @@ void SolutionCrush::SetVarToValueIf(int var, int64_t value, int condition_lit) {
       Domain(RefIsPositive(condition_lit) ? 0 : 1));
 }
 
+void SolutionCrush::SetVarToLinearExpressionIf(
+    int var, const LinearExpressionProto& expr, int condition_lit) {
+  if (!hint_is_loaded_) return;
+  if (!VarHasSolutionHint(PositiveRef(condition_lit))) return;
+  if (!LiteralSolutionHint(condition_lit)) return;
+  const std::optional<int64_t> expr_value = GetExpressionSolutionHint(expr);
+  if (expr_value.has_value()) {
+    SetVarHint(var, expr_value.value());
+  }
+}
+
 void SolutionCrush::SetLiteralToValueIf(int literal, bool value,
                                         int condition_lit) {
   SetLiteralToValueIfLinearConstraintViolated(
       literal, value, {{PositiveRef(condition_lit), 1}},
       Domain(RefIsPositive(condition_lit) ? 0 : 1));
+}
+
+void SolutionCrush::SetVarToConditionalValue(
+    int var, absl::Span<const int> condition_lits, int64_t value_if_true,
+    int64_t value_if_false) {
+  if (!hint_is_loaded_) return;
+  bool condition_value = true;
+  for (const int condition_lit : condition_lits) {
+    if (!VarHasSolutionHint(PositiveRef(condition_lit))) return;
+    if (!LiteralSolutionHint(condition_lit)) {
+      condition_value = false;
+      break;
+    }
+  }
+  SetVarHint(var, condition_value ? value_if_true : value_if_false);
 }
 
 void SolutionCrush::MakeLiteralsEqual(int lit1, int lit2) {
@@ -207,6 +255,42 @@ void SolutionCrush::UpdateLiteralsWithDominance(int lit, int dominating_lit) {
   }
 }
 
+void SolutionCrush::MaybeUpdateVarWithSymmetriesToValue(
+    int var, bool value,
+    absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
+  if (!hint_is_loaded_) return;
+  if (!VarHasSolutionHint(var)) return;
+  if (SolutionHint(var) == static_cast<int64_t>(value)) return;
+
+  std::vector<int> schrier_vector;
+  std::vector<int> orbit;
+  GetSchreierVectorAndOrbit(var, generators, &schrier_vector, &orbit);
+
+  bool found_target = false;
+  int target_var;
+  for (int v : orbit) {
+    if (VarHasSolutionHint(v) &&
+        SolutionHint(v) == static_cast<int64_t>(value)) {
+      found_target = true;
+      target_var = v;
+      break;
+    }
+  }
+  if (!found_target) {
+    VLOG(1) << "Couldn't transform hint properly";
+    return;
+  }
+
+  const std::vector<int> generator_idx =
+      TracePoint(target_var, schrier_vector, generators);
+  for (const int i : generator_idx) {
+    PermuteVariables(*generators[i]);
+  }
+
+  DCHECK(VarHasSolutionHint(var));
+  DCHECK_EQ(SolutionHint(var), value);
+}
+
 void SolutionCrush::UpdateRefsWithDominance(
     int ref, int64_t min_value, int64_t max_value,
     absl::Span<const std::pair<int, Domain>> dominating_refs) {
@@ -237,30 +321,39 @@ void SolutionCrush::UpdateRefsWithDominance(
   }
 }
 
-bool SolutionCrush::MaybeSetVarToAffineEquationSolution(int var_x, int var_y,
-                                                        int64_t coeff,
-                                                        int64_t offset) {
-  if (hint_is_loaded_) {
-    if (!hint_has_value_[var_y] && hint_has_value_[var_x]) {
-      hint_has_value_[var_y] = true;
-      hint_[var_y] = (hint_[var_x] - offset) / coeff;
-      if (hint_[var_y] * coeff + offset != hint_[var_x]) {
-        // TODO(user): Do we implement a rounding to closest instead of
-        // routing towards 0.
-        return false;
+void SolutionCrush::SetVarToLinearConstraintSolution(
+    std::optional<int> var_index, absl::Span<const int> vars,
+    absl::Span<const int64_t> coeffs, int64_t rhs) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  DCHECK(!var_index.has_value() || var_index.value() < vars.size());
+  if (!hint_is_loaded_) return;
+  int64_t term_value = rhs;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (VarHasSolutionHint(vars[i])) {
+      if (i != var_index) {
+        term_value -= SolutionHint(vars[i]) * coeffs[i];
       }
+    } else if (!var_index.has_value()) {
+      var_index = i;
+    } else if (var_index.value() != i) {
+      return;
     }
   }
+  if (!var_index.has_value()) return;
+  SetVarHint(vars[var_index.value()], term_value / coeffs[var_index.value()]);
 
 #ifdef CHECK_HINT
-  const int64_t vx = hint_[var_x];
-  const int64_t vy = hint_[var_y];
-  if (model_has_hint_ && hint_is_loaded_ && vx != vy * coeff + offset) {
-    LOG(FATAL) << "Affine relation incompatible with hint: " << vx
-               << " != " << vy << " * " << coeff << " + " << offset;
+  if (term_value % coeffs[var_index.value()] != 0) {
+    std::stringstream lhs;
+    for (int i = 0; i < vars.size(); ++i) {
+      lhs << (i == var_index ? "x" : std::to_string(SolutionHint(vars[i])));
+      lhs << " * " << coeffs[i];
+      if (i < vars.size() - 1) lhs << " + ";
+    }
+    LOG(FATAL) << "Linear constraint incompatible with solution: " << lhs
+               << " != " << rhs;
   }
 #endif
-  return true;
 }
 
 void SolutionCrush::SetReservoirCircuitVars(
@@ -415,6 +508,113 @@ void SolutionCrush::SetIntProdExpandedVars(const LinearArgumentProto& int_prod,
     if (!hint.has_value()) return;
     last_prod_hint *= hint.value();
     SetVarHint(prod_vars[i - 1], last_prod_hint);
+  }
+}
+
+void SolutionCrush::SetLinMaxExpandedVars(
+    const LinearArgumentProto& lin_max,
+    absl::Span<const int> enforcement_lits) {
+  if (!hint_is_loaded_) return;
+  DCHECK_EQ(enforcement_lits.size(), lin_max.exprs_size());
+  const std::optional<int64_t> target_hint =
+      GetExpressionSolutionHint(lin_max.target());
+  if (!target_hint.has_value()) return;
+  int enforcement_hint_sum = 0;
+  for (int i = 0; i < enforcement_lits.size(); ++i) {
+    const std::optional<int64_t> expr_hint =
+        GetExpressionSolutionHint(lin_max.exprs(i));
+    if (!expr_hint.has_value()) return;
+    if (enforcement_hint_sum == 0) {
+      const bool hint = target_hint.value() <= expr_hint.value();
+      SetLiteralHint(enforcement_lits[i], hint);
+      enforcement_hint_sum += hint;
+    } else {
+      SetLiteralHint(enforcement_lits[i], false);
+    }
+  }
+}
+
+void SolutionCrush::SetAutomatonExpandedVars(
+    const AutomatonConstraintProto& automaton,
+    absl::Span<const StateVar> state_vars,
+    absl::Span<const TransitionVar> transition_vars) {
+  if (!hint_is_loaded_) return;
+  absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transitions;
+  for (int i = 0; i < automaton.transition_tail_size(); ++i) {
+    transitions[{automaton.transition_tail(i), automaton.transition_label(i)}] =
+        automaton.transition_head(i);
+  }
+
+  std::vector<int64_t> label_hints;
+  std::vector<int64_t> state_hints;
+  int64_t current_state = automaton.starting_state();
+  state_hints.push_back(current_state);
+  for (int i = 0; i < automaton.exprs_size(); ++i) {
+    const std::optional<int64_t> label_hint =
+        GetExpressionSolutionHint(automaton.exprs(i));
+    if (!label_hint.has_value()) return;
+    label_hints.push_back(label_hint.value());
+
+    const auto it = transitions.find({current_state, label_hint.value()});
+    if (it == transitions.end()) return;
+    current_state = it->second;
+    state_hints.push_back(current_state);
+  }
+
+  for (const auto& [var, time, state] : state_vars) {
+    SetVarHint(var, state_hints[time] == state);
+  }
+  for (const auto& [var, time, transition_tail, transition_label] :
+       transition_vars) {
+    SetVarHint(var, state_hints[time] == transition_tail &&
+                        label_hints[time] == transition_label);
+  }
+}
+
+void SolutionCrush::SetTableExpandedVars(
+    absl::Span<const int> column_vars, absl::Span<const int> existing_row_lits,
+    absl::Span<const TableRowLiteral> new_row_lits) {
+  if (!hint_is_loaded_) return;
+  int hint_sum = 0;
+  for (const int lit : existing_row_lits) {
+    if (!VarHasSolutionHint(PositiveRef(lit))) return;
+    hint_sum += LiteralSolutionHint(lit);
+  }
+  const int num_vars = column_vars.size();
+  for (const auto& [lit, var_values] : new_row_lits) {
+    if (hint_sum >= 1) {
+      SetLiteralHint(lit, false);
+      continue;
+    }
+    bool row_hint = true;
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      const auto& values = var_values[var_index];
+      if (!values.empty() &&
+          std::find(values.begin(), values.end(),
+                    SolutionHint(column_vars[var_index])) == values.end()) {
+        row_hint = false;
+        break;
+      }
+    }
+    SetLiteralHint(lit, row_hint);
+    hint_sum += row_hint;
+  }
+}
+
+void SolutionCrush::SetLinearWithComplexDomainExpandedVars(
+    const LinearConstraintProto& linear, absl::Span<const int> bucket_lits) {
+  if (!hint_is_loaded_) return;
+  int64_t expr_hint = 0;
+  for (int i = 0; i < linear.vars_size(); ++i) {
+    const int var = linear.vars(i);
+    if (!VarHasSolutionHint(var)) return;
+    expr_hint += linear.coeffs(i) * hint_[var];
+  }
+  DCHECK_LE(bucket_lits.size(), linear.domain_size() / 2);
+  for (int i = 0; i < bucket_lits.size(); ++i) {
+    const int64_t lb = linear.domain(2 * i);
+    const int64_t ub = linear.domain(2 * i + 1);
+    SetLiteralHint(bucket_lits[i], expr_hint >= lb && expr_hint <= ub);
   }
 }
 

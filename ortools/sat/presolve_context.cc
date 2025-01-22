@@ -1088,11 +1088,10 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   DCHECK_NE(coeff, 0);
   if (is_unsat_) return false;
 
-  if (!solution_crush_.MaybeSetVarToAffineEquationSolution(var_x, var_y, coeff,
-                                                           offset)) {
-    UpdateRuleStats(
-        "Warning: hint didn't satisfy affine relation and was corrected");
-  }
+  // Sets var_y's value to the solution of
+  //   "var_x's value - coeff * var_y's value = offset".
+  solution_crush_.SetVarToLinearConstraintSolution(1, {var_x, var_y},
+                                                   {1, -coeff}, offset);
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
   // fixed but that is not propagated to var_x or var_y and this causes issues.
