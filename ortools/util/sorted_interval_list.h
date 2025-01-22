@@ -131,12 +131,18 @@ class Domain {
 
   /**
    * Creates a domain from the union of an unsorted list of intervals.
+   *
+   * Note that invalid intervals (start > end) will log a DFATAL error and will
+   * be ignored.
    */
   static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
   /**
    * Same as FromIntervals() for a flattened representation (start, end,
    * start, end, ...).
+   *
+   * Note that invalid intervals (start > end) will log a DFATAL error and will
+   * be ignored.
    */
   static Domain FromFlatSpanOfIntervals(
       absl::Span<const int64_t> flat_intervals);
@@ -144,7 +150,13 @@ class Domain {
   /**
    * This method is available in Python, Java and .NET. It allows
    * building a Domain object from a list of intervals (long[][] in Java and
-   * .NET, [[0, 2], [5, 5], [8, 10]] in python).
+   * .NET, [[0, 2], [5], [8, 10]] in python).
+   *
+   * Note that the intervals can be defined with a single value (i.e. [5]), or
+   * two increasing values (i.e. [8, 10]).
+   *
+   * Invalid intervals (start > end) will log a DFATAL error and will be
+   * ignored.
    */
   static Domain FromVectorIntervals(
       const std::vector<std::vector<int64_t> >& intervals);
@@ -153,6 +165,9 @@ class Domain {
    * This method is available in Python, Java and .NET. It allows
    * building a Domain object from a flattened list of intervals
    * (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).
+   *
+   * Note that invalid intervals (start > end) will log a DFATAL error and will
+   * be ignored.
    */
   static Domain FromFlatIntervals(const std::vector<int64_t>& flat_intervals);
 
