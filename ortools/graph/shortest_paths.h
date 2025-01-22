@@ -30,28 +30,30 @@
 // computation.
 //
 // Also included are classes to store path data resulting from shortest path
-// computations (cf. PathContainer).
+// computations (cf. GenericPathContainer).
 //
 // Usage example computing all-pair shortest paths on a graph:
-//     StaticGraph graph(...,...);
+//     StaticGraph<> graph(...,...);
 //     std::vector<uint32_t> arc_lengths(...,...);
 //     ... populate graph and arc lengths ...
-//     PathContainer container;
-//     PathContainer::BuildInMemoryCompactPathContainer(&container);
+//     GenericPathContainer<StaticGraph<>> container =
+//       GenericPathContainer<
+//         StaticGraph<>>::BuildInMemoryCompactPathContainer();
 //     ComputeAllToAllShortestPathsWithMultipleThreads(graph,
 //                                                     arc_lengths,
 //                                                     /*num_threads=*/4,
 //                                                     &container);
 //
 // Usage example computing shortest paths between a subset of graph nodes:
-//     StaticGraph graph(...,...);
+//     StaticGraph<> graph(...,...);
 //     std::vector<uint32_t> arc_lengths(...,...);
 //     ... populate graph and arc lengths ...
 //     vector<NodeIndex> sources;
 //     vector<NodeIndex> sinks;
 //     ... fill sources and sinks ...
-//     PathContainer container;
-//     PathContainer::BuildInMemoryCompactPathContainer(&container);
+//     GenericPathContainer<StaticGraph<>> container =
+//       GenericPathContainer<
+//         StaticGraph<>>::BuildInMemoryCompactPathContainer();
 //     ComputeManyToManyShortestPathsWithMultipleThreads(graph,
 //                                                       arc_lengths,
 //                                                       sources,
@@ -98,14 +100,15 @@ class PathContainerImpl;
 // Container class storing paths and distances along the paths. It is used in
 // shortest path computation functions to store resulting shortest paths.
 // Usage example iterating on the path between nodes `from` and `to`:
-//     PathContainer path_container;
-//     PathContainer::BuildInMemoryCompactPathContainer(&path_container);
+//     GenericPathContainer<StaticGraph<>> container =
+//       GenericPathContainer<
+//         StaticGraph<>>::BuildInMemoryCompactPathContainer();
 //     // ... fill up container ...
-//     const PathContainer::NodeIndex from =...;
-//     PathContainer::NodeIndex to =...;
+//     const GenericPathContainer::NodeIndex from =...;
+//     GenericPathContainer::NodeIndex to =...;
 //     while (to != from) {
 //       LOG(INFO) << to;
-//       to = path_container.GetPenultimateNodeInPath(from, to);
+//       to = container.GetPenultimateNodeInPath(from, to);
 //     }
 template <class GraphType>
 class GenericPathContainer {
