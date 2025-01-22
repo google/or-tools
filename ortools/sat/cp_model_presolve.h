@@ -33,6 +33,7 @@
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/solution_crush.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -329,6 +330,7 @@ class CpModelPresolver {
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
+  SolutionCrush& solution_crush_;
   SolverLogger* logger_;
   TimeLimit* time_limit_;
 

@@ -505,10 +505,7 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
         // hint(enforcement) = 0. But in this case the `enforcement` hint can be
         // increased to 1 to preserve the hint feasibility.
         const int implied_literal = ct->bool_and().literals(0);
-        SolutionCrush& crush = context_->solution_crush();
-        if (crush.LiteralSolutionHintIs(implied_literal, true)) {
-          crush.UpdateLiteralSolutionHint(enforcement, true);
-        }
+        solution_crush_.SetLiteralToValueIf(enforcement, true, implied_literal);
         context_->StoreBooleanEqualityRelation(enforcement, implied_literal);
       }
     }
@@ -2332,10 +2329,8 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
             }
             continue;
           }
-          SolutionCrush& crush = context_->solution_crush();
-          crush.UpdateVarSolutionHint(
-              ct->linear().vars(i),
-              crush.LiteralSolutionHint(indicator) ? other_value : best_value);
+          solution_crush_.SetVarToConditionalValue(
+              ct->linear().vars(i), {indicator}, other_value, best_value);
           if (RefIsPositive(indicator)) {
             if (!context_->StoreAffineRelation(ct->linear().vars(i), indicator,
                                                other_value - best_value,
@@ -2965,34 +2960,6 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   return false;
 }
 
-namespace {
-// Set the hint in `context` for the variable in `equality` that has no hint, if
-// there is exactly one. Otherwise do nothing.
-void MaybeComputeMissingHint(SolutionCrush& crush,
-                             const LinearConstraintProto& equality) {
-  DCHECK(equality.domain_size() == 2 &&
-         equality.domain(0) == equality.domain(1));
-  if (!crush.HintIsLoaded()) return;
-  int term_with_missing_hint = -1;
-  int64_t missing_term_value = equality.domain(0);
-  for (int i = 0; i < equality.vars_size(); ++i) {
-    if (crush.VarHasSolutionHint(equality.vars(i))) {
-      missing_term_value -=
-          crush.SolutionHint(equality.vars(i)) * equality.coeffs(i);
-    } else if (term_with_missing_hint == -1) {
-      term_with_missing_hint = i;
-    } else {
-      // More than one variable has a missing hint.
-      return;
-    }
-  }
-  if (term_with_missing_hint == -1) return;
-  crush.SetNewVariableHint(
-      equality.vars(term_with_missing_hint),
-      missing_term_value / equality.coeffs(term_with_missing_hint));
-}
-}  // namespace
-
 bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (ct->linear().vars().size() <= 1) return false;
@@ -3120,9 +3087,11 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
   // and from the hints of `new_variables[k']`, with k' > k.
   const int num_constraints = context_->working_model->constraints_size();
   for (int i = 0; i < num_replaced_variables; ++i) {
-    MaybeComputeMissingHint(
-        context_->solution_crush(),
-        context_->working_model->constraints(num_constraints - 1 - i).linear());
+    const LinearConstraintProto& linear =
+        context_->working_model->constraints(num_constraints - 1 - i).linear();
+    DCHECK(linear.domain_size() == 2 && linear.domain(0) == linear.domain(1));
+    solution_crush_.SetVarToLinearConstraintSolution(
+        std::nullopt, linear.vars(), linear.coeffs(), linear.domain(0));
   }
 
   if (VLOG_IS_ON(2)) {
@@ -3956,21 +3925,8 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
       if (fixed) {
         context_->UpdateRuleStats("linear: tightened into equality");
         // Compute a new `var` hint so that the lhs of `ct` is equal to `rhs`.
-        SolutionCrush& crush = context_->solution_crush();
-        int64_t var_hint = rhs.FixedValue();
-        bool var_hint_is_valid = true;
-        for (int j = 0; j < num_vars; ++j) {
-          if (j == i) continue;
-          const int term_var = ct->linear().vars(j);
-          if (!crush.VarHasSolutionHint(term_var)) {
-            var_hint_is_valid = false;
-            break;
-          }
-          var_hint -= crush.SolutionHint(term_var) * ct->linear().coeffs(j);
-        }
-        if (var_hint_is_valid) {
-          crush.UpdateRefSolutionHint(var, var_hint / var_coeff);
-        }
+        solution_crush_.SetVarToLinearConstraintSolution(
+            i, ct->linear().vars(), ct->linear().coeffs(), rhs.FixedValue());
         FillDomainInProto(rhs, ct->mutable_linear());
         negated_rhs = rhs.Negation();
 
@@ -9706,11 +9662,8 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
       // increase the objective value thanks to the `skip` test above -- the
       // objective domain is non-constraining, but this only guarantees that
       // singleton variables can freely *decrease* the objective).
-      SolutionCrush& crush = context_->solution_crush();
-      if (crush.LiteralSolutionHint(a) != crush.LiteralSolutionHint(b)) {
-        crush.UpdateLiteralSolutionHint(a, true);
-        crush.UpdateLiteralSolutionHint(b, true);
-      }
+      solution_crush_.UpdateLiteralsToFalseIfDifferent(NegatedRef(a),
+                                                       NegatedRef(b));
       context_->StoreBooleanEqualityRelation(a, b);
 
       // We can also remove duplicate constraint now. It will be done later but
@@ -11912,15 +11865,8 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
       // only guarantees that `var` can freely *decrease* the objective). The
       // code below ensures this (`value2` is the 'cheapest' value the implied
       // domain, and `value1` the cheapest value in the variable's domain).
-      bool enforcing_hint = true;
-      SolutionCrush& crush = context_->solution_crush();
-      for (const int enforcement_lit : ct.enforcement_literal()) {
-        if (crush.LiteralSolutionHintIs(enforcement_lit, false)) {
-          enforcing_hint = false;
-          break;
-        }
-      }
-      crush.UpdateVarSolutionHint(var, enforcing_hint ? value2 : value1);
+      solution_crush_.SetVarToConditionalValue(var, ct.enforcement_literal(),
+                                               value2, value1);
       return (void)context_->IntersectDomainWith(
           var, Domain::FromValues({value1, value2}));
     }
@@ -13020,7 +12966,8 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
   }
 
   // Constraint is false?
-  if (implied.IntersectionWith(new_rhs).IsEmpty()) {
+  const Domain tight_domain = implied.IntersectionWith(new_rhs);
+  if (tight_domain.IsEmpty()) {
     if (ct.enforcement_literal().empty()) return false;
     temp_literals_.clear();
     for (const int literal : ct.enforcement_literal()) {
@@ -13051,7 +12998,7 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
                               non_fixed_variables_.end());
   linear->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
                                 non_fixed_coefficients_.end());
-  FillDomainInProto(new_rhs, linear);
+  FillDomainInProto(tight_domain, linear);
   return true;
 }
 
@@ -13689,6 +13636,7 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
                                    std::vector<int>* postsolve_mapping)
     : postsolve_mapping_(postsolve_mapping),
       context_(context),
+      solution_crush_(context->solution_crush()),
       logger_(context->logger()),
       time_limit_(context->time_limit()),
       interval_representative_(context->working_model->constraints_size(),
@@ -13896,7 +13844,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
       }
     }
 
-    if (!context_->solution_crush().HintIsLoaded()) {
+    if (!solution_crush_.HintIsLoaded()) {
       context_->LoadSolutionHint();
     }
     ExpandCpModelAndCanonicalizeConstraints();

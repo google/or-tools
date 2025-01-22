@@ -423,6 +423,20 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
   return "";
 }
 
+void AppendToOverflowValidator(const LinearExpressionProto& input,
+                               LinearExpressionProto* output,
+                               int64_t prod = 1) {
+  output->mutable_vars()->Add(input.vars().begin(), input.vars().end());
+  for (const int64_t coeff : input.coeffs()) {
+    output->add_coeffs(coeff * prod);
+  }
+
+  // We add the absolute value to be sure that future computation will not
+  // overflow depending on the order they are performed in.
+  output->set_offset(
+      CapAdd(std::abs(output->offset()), std::abs(input.offset())));
+}
+
 std::string ValidateElementConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
   const ElementConstraintProto& element = ct.element();
@@ -484,10 +498,7 @@ std::string ValidateElementConstraint(const CpModelProto& model,
     for (const LinearExpressionProto& expr : element.exprs()) {
       RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
       LinearExpressionProto overflow_detection = ct.element().linear_target();
-      for (int i = 0; i < expr.vars_size(); ++i) {
-        overflow_detection.add_vars(expr.vars(i));
-        overflow_detection.add_coeffs(-expr.coeffs(i));
-      }
+      AppendToOverflowValidator(expr, &overflow_detection, -1);
       overflow_detection.set_offset(overflow_detection.offset() -
                                     expr.offset());
       if (PossibleIntegerOverflow(model, overflow_detection.vars(),
@@ -647,17 +658,6 @@ std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
   return ValidateGraphInput(/*is_route=*/true, ct.routes());
 }
 
-void AppendToOverflowValidator(const LinearExpressionProto& input,
-                               LinearExpressionProto* output) {
-  output->mutable_vars()->Add(input.vars().begin(), input.vars().end());
-  output->mutable_coeffs()->Add(input.coeffs().begin(), input.coeffs().end());
-
-  // We add the absolute value to be sure that future computation will not
-  // overflow depending on the order they are performed in.
-  output->set_offset(
-      CapAdd(std::abs(output->offset()), std::abs(input.offset())));
-}
-
 std::string ValidateIntervalConstraint(const CpModelProto& model,
                                        const ConstraintProto& ct) {
   if (ct.enforcement_literal().size() > 1) {
@@ -705,7 +705,7 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
            "variable are currently not supported.";
   }
   RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end()));
-  AppendToOverflowValidator(arg.end(), &for_overflow_validation);
+  AppendToOverflowValidator(arg.end(), &for_overflow_validation, -1);
 
   if (PossibleIntegerOverflow(model, for_overflow_validation.vars(),
                               for_overflow_validation.coeffs(),
@@ -1484,6 +1484,7 @@ class ConstraintChecker {
   bool CumulativeConstraintIsFeasible(const CpModelProto& model,
                                       const ConstraintProto& ct) {
     const int64_t capacity = LinearExpressionValue(ct.cumulative().capacity());
+    if (capacity < 0) return false;
     const int num_intervals = ct.cumulative().intervals_size();
     std::vector<std::pair<int64_t, int64_t>> events;
     for (int i = 0; i < num_intervals; ++i) {

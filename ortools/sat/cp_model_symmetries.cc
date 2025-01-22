@@ -931,48 +931,6 @@ std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
   return out;
 }
 
-void UpdateHintAfterFixingBoolToBreakSymmetry(
-    PresolveContext* context, int var, bool fixed_value,
-    absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
-  SolutionCrush& crush = context->solution_crush();
-  if (!crush.VarHasSolutionHint(var)) {
-    return;
-  }
-  const int64_t hinted_value = crush.SolutionHint(var);
-  if (hinted_value == static_cast<int64_t>(fixed_value)) {
-    return;
-  }
-
-  std::vector<int> schrier_vector;
-  std::vector<int> orbit;
-  GetSchreierVectorAndOrbit(var, generators, &schrier_vector, &orbit);
-
-  bool found_target = false;
-  int target_var;
-  for (int v : orbit) {
-    if (crush.VarHasSolutionHint(v) &&
-        crush.SolutionHint(v) == static_cast<int64_t>(fixed_value)) {
-      found_target = true;
-      target_var = v;
-      break;
-    }
-  }
-  if (!found_target) {
-    context->UpdateRuleStats(
-        "hint: couldn't transform infeasible hint properly");
-    return;
-  }
-
-  const std::vector<int> generator_idx =
-      TracePoint(target_var, schrier_vector, generators);
-  for (const int i : generator_idx) {
-    crush.PermuteVariables(*generators[i]);
-  }
-
-  DCHECK(crush.VarHasSolutionHint(var));
-  DCHECK_EQ(crush.SolutionHint(var), fixed_value);
-}
-
 }  // namespace
 
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
@@ -1252,9 +1210,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       const int var = can_be_fixed_to_false[i];
       if (orbits[var] == orbit_index) ++num_in_orbit;
       context->UpdateRuleStats("symmetry: fixed to false in general orbit");
-      SolutionCrush& crush = context->solution_crush();
-      if (crush.VarHasSolutionHint(var) && crush.SolutionHint(var) == 1 &&
-          var_can_be_true_per_orbit[orbits[var]] != -1) {
+      if (var_can_be_true_per_orbit[orbits[var]] != -1) {
         // We are breaking the symmetry in a way that makes the hint invalid.
         // We want `var` to be false, so we would naively pick a symmetry to
         // enforce that. But that will be wrong if we do this twice: after we
@@ -1263,8 +1219,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         // of those, and picking the wrong one would risk making the first one
         // true again. Since this is a AMO, fixing the one that is true doesn't
         // have this problem.
-        UpdateHintAfterFixingBoolToBreakSymmetry(
-            context, var_can_be_true_per_orbit[orbits[var]], true, generators);
+        context->solution_crush().MaybeUpdateVarWithSymmetriesToValue(
+            var_can_be_true_per_orbit[orbits[var]], true, generators);
       }
       if (!context->SetLiteralToFalse(var)) return false;
     }
