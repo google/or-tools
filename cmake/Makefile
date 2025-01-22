@@ -658,7 +658,7 @@ cache/%/docker_$1.tar: %_$1
 sh_targets_toolchain_$1 = $(addprefix sh_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: $$(sh_targets_toolchain_$1)
 $$(sh_targets_toolchain_$1): sh_toolchain_%_$1: %_$1
-	${DOCKER_RUN_CMD} -it --name ${IMAGE}_toolchain_$$*_$1 ${IMAGE}:toolchain_$$*_$1
+	${DOCKER_RUN_CMD} -it --name ${PROJECT}_toolchain_$$*_$1 ${IMAGE}:toolchain_$$*_$1
 
 #$$(info Create targets: clean_toolchain_$1 $(addprefix clean_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))).)
 clean_targets_toolchain_$1 = $(addprefix clean_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
@@ -700,7 +700,7 @@ cache/web/docker_$1.tar: web_$1
 #$$(info Create target: sh_web_$1 (debug).)
 .PHONY: sh_web_$1
 sh_web_$1: web_$1
-	${DOCKER_RUN_CMD} -it --name ${IMAGE}_web_$1 ${IMAGE}:web_$1
+	${DOCKER_RUN_CMD} -it --name ${PROJECT}_web_$1 ${IMAGE}:web_$1
 
 #$$(info Create target: clean_web_$1.)
 .PHONY: clean_web_$1
