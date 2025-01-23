@@ -495,9 +495,13 @@ SolutionStatusProto XpressSolver::getDualSolutionStatus() const {
     case XPRS_SOLSTATUS_FEASIBLE:
       return SOLUTION_STATUS_FEASIBLE;
     case XPRS_SOLSTATUS_INFEASIBLE:
-      // when primal is unbounded, XPRESS returns unbounded for dual also
-    case XPRS_SOLSTATUS_UNBOUNDED:
       return SOLUTION_STATUS_INFEASIBLE;
+    case XPRS_SOLSTATUS_UNBOUNDED:
+      // when primal is unbounded, XPRESS returns unbounded for dual also (known
+      // issue). this is a temporary workaround
+      return (xpress_lp_status_.primal_status == XPRS_LP_UNBOUNDED)
+                 ? SOLUTION_STATUS_INFEASIBLE
+                 : SOLUTION_STATUS_UNDETERMINED;
     case XPRS_SOLSTATUS_NOTFOUND:
       return SOLUTION_STATUS_UNDETERMINED;
     default:
