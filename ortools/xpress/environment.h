@@ -420,19 +420,55 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_OBJSENSE 2008
 #define XPRS_ROWS 1001
 #define XPRS_SIMPLEXITER 1009
+#define XPRS_BARITER 5001
+#define XPRS_SOLSTATUS_NOTFOUND 0
+#define XPRS_SOLSTATUS_OPTIMAL 1
+#define XPRS_SOLSTATUS_FEASIBLE 2
+#define XPRS_SOLSTATUS_INFEASIBLE 3
+#define XPRS_SOLSTATUS_UNBOUNDED 4
 #define XPRS_LPSTATUS 1010
 #define XPRS_MIPSTATUS 1011
 #define XPRS_NODES 1013
 #define XPRS_COLS 1018
+#define XPRS_MAXPROBNAMELENGTH 1158
+#define XPRS_LP_UNSTARTED 0
 #define XPRS_LP_OPTIMAL 1
 #define XPRS_LP_INFEAS 2
+#define XPRS_LP_CUTOFF 3
+#define XPRS_LP_UNFINISHED 4
 #define XPRS_LP_UNBOUNDED 5
+#define XPRS_LP_CUTOFF_IN_DUAL 6
+#define XPRS_LP_UNSOLVED 7
+#define XPRS_LP_NONCONVEX 8
 #define XPRS_MIP_SOLUTION 4
 #define XPRS_MIP_INFEAS 5
 #define XPRS_MIP_OPTIMAL 6
 #define XPRS_MIP_UNBOUNDED 7
+#define XPRS_ALG_DUAL 2
+#define XPRS_ALG_PRIMAL 3
+#define XPRS_ALG_BARRIER 4
 #define XPRS_OBJ_MINIMIZE 1
 #define XPRS_OBJ_MAXIMIZE -1
+// ***************************************************************************
+// * variable types                                                          *
+// ***************************************************************************
+#define XPRS_INTEGER 'I'
+#define XPRS_CONTINUOUS 'C'
+// ***************************************************************************
+// * constraint types                                                        *
+// ***************************************************************************
+#define XPRS_LESS_EQUAL 'L'
+#define XPRS_GREATER_EQUAL 'G'
+#define XPRS_EQUAL 'E'
+#define XPRS_RANGE 'R'
+#define XPRS_NONBINDING 'N'
+// ***************************************************************************
+// * basis status                                                            *
+// ***************************************************************************
+#define XPRS_AT_LOWER 0
+#define XPRS_BASIC 1
+#define XPRS_AT_UPPER 2
+#define XPRS_FREE_SUPER 3
 
 // Let's not reformat for rest of the file.
 // clang-format off
@@ -444,6 +480,7 @@ extern std::function<int(char* buffer, int maxbytes)> XPRSgetlicerrmsg;
 extern std::function<int(int* p_i, char* p_c)> XPRSlicense;
 extern std::function<int(char* banner)> XPRSgetbanner;
 extern std::function<int(char* version)> XPRSgetversion;
+extern std::function<int(XPRSprob prob, const char* probname)> XPRSsetprobname;
 extern std::function<int(XPRSprob prob, int control)> XPRSsetdefaultcontrol;
 extern std::function<int(XPRSprob prob, int reason)> XPRSinterrupt;
 extern std::function<int(XPRSprob prob, int control, int value)> XPRSsetintcontrol;
@@ -465,6 +502,8 @@ extern std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRS
 extern std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb;
 extern std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub;
 extern std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef;
+extern std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals;
+extern std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts;
 extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSdelrows;
 extern std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], const int start[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSaddcols;
@@ -487,6 +526,8 @@ extern std::function<int(XPRSprob prob, double x[], double slack[])> XPRSgetmips
 extern std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[])> XPRSchgobj;
 extern std::function<int(XPRSprob prob, int row, int col, double coef)> XPRSchgcoef;
 extern std::function<int(XPRSprob prob, int ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef;
+extern std::function<int(XPRSprob prob, XPRSint64 ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef64;
+extern std::function<int(XPRSprob prob, int ncoefs, const int objqcol1[], const int objqcol2[], const double objqcoef[])> XPRSchgmqobj;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rhs[])> XPRSchgrhs;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rng[])> XPRSchgrhsrange;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[], const char rowtype[])> XPRSchgrowtype;
@@ -495,6 +536,8 @@ extern std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob
 extern std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage;
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize;
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize;
+extern std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int* solstatus)> XPRSoptimize;
+
 // clang-format on
 
 }  // namespace operations_research
