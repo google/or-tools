@@ -6,7 +6,7 @@
 #FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
 # Use dnf
 FROM quay.io/pypa/manylinux_2_28_aarch64:latest AS env
-# note: CMake 3.30.5 and SWIG 4.2.1 are already installed
+# note: CMake 3.31.2 and SWIG 4.3.0 are already installed
 
 #############
 ##  SETUP  ##
