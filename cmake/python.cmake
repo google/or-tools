@@ -550,8 +550,9 @@ add_custom_command(
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:${need_unix_re2_lib},copy,true>
+    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
     $<${need_unix_re2_lib}:$<TARGET_SONAME_FILE:re2::re2>>
+    $<${need_windows_re2_lib}:$<TARGET_FILE:re2::re2>>
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
