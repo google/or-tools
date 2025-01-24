@@ -2381,6 +2381,7 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
     const Literal current = stack[j];
     if (!implies_something[current]) continue;
 
+    work_done_in_mark_descendants_ += implications_[current].size();
     for (const Literal l : implications_[current]) {
       if (!is_marked[l] && !is_redundant[l]) {
         is_marked_.SetUnsafe(is_marked, l);
@@ -2390,6 +2391,7 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
 
     if (current.Index() >= amo_size) continue;
     for (const int start : at_most_ones_[current]) {
+      work_done_in_mark_descendants_ += AtMostOne(start).size();
       for (const Literal l : AtMostOne(start)) {
         if (l == current) continue;
         if (!is_marked[l.NegatedIndex()] && !is_redundant[l.NegatedIndex()]) {

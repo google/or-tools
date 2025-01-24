@@ -736,7 +736,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
     if (ub_limit == lb) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(lb)));
+      CHECK(context->IntersectDomainWith(var, Domain(lb)));
       continue;
     }
 
@@ -746,7 +746,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
     if (lb_limit == ub) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(ub)));
+      CHECK(context->IntersectDomainWith(var, Domain(ub)));
       continue;
     }
 
@@ -764,7 +764,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         }
         ++num_fixed_vars;
         context->UpdateRuleStats("dual: fix variable with multiple choices");
-        CHECK(context->IntersectDomainWithAndUpdateHint(var, Domain(value)));
+        CHECK(context->IntersectDomainWith(var, Domain(value)));
         continue;
       }
     }
@@ -787,8 +787,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                     .Max()
               : lb;
       context->UpdateRuleStats("dual: reduced domain");
-      CHECK(context->IntersectDomainWithAndUpdateHint(var,
-                                                      Domain(new_lb, new_ub)));
+      CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
     }
   }
   if (num_fixed_vars > 0) {
@@ -853,9 +852,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                     context->deductions.ImpliedDomain(enf, positive_ref));
         if (implied.IsEmpty()) {
           context->UpdateRuleStats("dual: fix variable");
-          if (!context->SetLiteralAndHintToFalse(enf)) return false;
-          if (!context->IntersectDomainWithAndUpdateHint(positive_ref,
-                                                         Domain(bound))) {
+          if (!context->SetLiteralToFalse(enf)) return false;
+          if (!context->IntersectDomainWith(positive_ref, Domain(bound))) {
             return false;
           }
           continue;
@@ -864,8 +862,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // Corner case.
           if (implied.FixedValue() == bound) {
             context->UpdateRuleStats("dual: fix variable");
-            if (!context->IntersectDomainWithAndUpdateHint(positive_ref,
-                                                           implied)) {
+            if (!context->IntersectDomainWith(positive_ref, implied)) {
               return false;
             }
             continue;
@@ -935,7 +932,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                                .IntersectionWith(var_domain);
         if (rhs.IsEmpty()) {
           context->UpdateRuleStats("linear1: infeasible");
-          if (!context->SetLiteralAndHintToFalse(ct.enforcement_literal(0))) {
+          if (!context->SetLiteralToFalse(ct.enforcement_literal(0))) {
             return false;
           }
           processed[PositiveRef(ref)] = true;
@@ -1069,7 +1066,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             if (ref == NegatedRef(other_ref)) {
               context->UpdateRuleStats(
                   "dual: detected l => ct and not(l) => ct with unused l!");
-              if (!context->IntersectDomainWithAndUpdateHint(ref, Domain(0))) {
+              if (!context->IntersectDomainWith(ref, Domain(0))) {
                 return false;
               }
               continue;

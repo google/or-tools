@@ -229,8 +229,8 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
   EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(NegationOf(Y)));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 0);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 0);
 }
 
 // 2X - Y >= 0
@@ -278,8 +278,8 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   EXPECT_THAT(var_dom.DominatingVariables(NegationOf(X)), ElementsAre(Y));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[1]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 1);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 1);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 1);
 }
 
 // X + 2Y >= 0
@@ -324,8 +324,8 @@ TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
   EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 0);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 1);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 1);
 }
 
 // Objective: min(X + Y + 2Z)
@@ -380,9 +380,9 @@ TEST(VarDominationTest, ExploitDominanceWithIntegerVariables) {
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-5]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,10]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[5]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), -5);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 10);
-  EXPECT_EQ(context.solution_crush().SolutionHint(2), 5);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], -5);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 10);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[2], 5);
 }
 
 // Objective: min(X + 2Y)
@@ -429,8 +429,8 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
               EqualsProto(expected_constraint_proto));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 1);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 0);
 }
 
 // Objective: min(X)
@@ -492,9 +492,9 @@ TEST(VarDominationTest, ExploitRemainingDominanceWithIntegerVariables) {
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,-5]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[5,10]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[5]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), -5);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 6);
-  EXPECT_EQ(context.solution_crush().SolutionHint(2), 5);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], -5);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 6);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[2], 5);
 }
 
 // X + Y + Z = 0
@@ -835,8 +835,8 @@ TEST(DualBoundReductionTest, FixVariableToDomainBound) {
 
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[10]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), -10);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 10);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], -10);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 10);
 }
 
 // Bound propagation see nothing, but if we can remove feasible solution, from
@@ -874,9 +874,9 @@ TEST(DualBoundReductionTest, BasicTest) {
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 0);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 0);
-  EXPECT_EQ(context.solution_crush().SolutionHint(2), 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[2], 0);
 }
 
 TEST(DualBoundReductionTest, CarefulWithHoles) {
@@ -938,9 +938,9 @@ TEST(DualBoundReductionTest, Choices) {
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-2]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[2]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 0);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), -2);
-  EXPECT_EQ(context.solution_crush().SolutionHint(2), 2);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], -2);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[2], 2);
 }
 
 TEST(DualBoundReductionTest, AddImplication) {
@@ -987,9 +987,9 @@ TEST(DualBoundReductionTest, AddImplication) {
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 0);
-  EXPECT_EQ(context.solution_crush().SolutionHint(1), 0);
-  EXPECT_EQ(context.solution_crush().SolutionHint(2), 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 0);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[2], 0);
 }
 
 TEST(DualBoundReductionTest, EquivalenceDetection) {
@@ -1035,7 +1035,7 @@ TEST(DualBoundReductionTest, EquivalenceDetection) {
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");
   // Equivalence between a and b.
   EXPECT_EQ(context.GetLiteralRepresentative(1), 0);
-  EXPECT_TRUE(context.solution_crush().LiteralSolutionHint(0));
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
 }
 
 }  // namespace

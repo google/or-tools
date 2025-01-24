@@ -171,6 +171,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
 
 bool Inprocessing::InprocessingRound() {
   DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
+  if (sat_solver_->ModelIsUnsat()) return false;
   WallTimer wall_timer;
   wall_timer.Start();
 

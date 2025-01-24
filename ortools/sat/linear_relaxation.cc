@@ -1712,10 +1712,6 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 
   IntervalsRepository* intervals_repository =
       m->GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* x_helper =
-      intervals_repository->GetOrCreateHelper(x_intervals);
-  SchedulingConstraintHelper* y_helper =
-      intervals_repository->GetOrCreateHelper(y_intervals);
   NoOverlap2DConstraintHelper* no_overlap_helper =
       intervals_repository->GetOrCreate2DHelper(x_intervals, y_intervals);
 
@@ -1750,23 +1746,17 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 
   if (!has_variable_part) return;
 
-  SchedulingDemandHelper* x_demands_helper =
-      intervals_repository->GetOrCreateDemandHelper(y_helper,
-                                                    x_helper->Sizes());
-  SchedulingDemandHelper* y_demands_helper =
-      intervals_repository->GetOrCreateDemandHelper(x_helper,
-                                                    y_helper->Sizes());
-
   std::vector<std::vector<LiteralValueValue>> energies;
-  const int num_rectangles = x_helper->NumTasks();
+  const int num_rectangles = no_overlap_helper->NumBoxes();
   auto* product_decomposer = m->GetOrCreate<ProductDecomposer>();
   for (int i = 0; i < num_rectangles; ++i) {
     energies.push_back(product_decomposer->TryToDecompose(
-        x_helper->Sizes()[i], y_helper->Sizes()[i]));
+        no_overlap_helper->x_helper().Sizes()[i],
+        no_overlap_helper->y_helper().Sizes()[i]));
   }
 
-  relaxation->cut_generators.push_back(CreateNoOverlap2dEnergyCutGenerator(
-      x_helper, y_helper, x_demands_helper, y_demands_helper, energies, m));
+  relaxation->cut_generators.push_back(
+      CreateNoOverlap2dEnergyCutGenerator(no_overlap_helper, energies, m));
 }
 
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,

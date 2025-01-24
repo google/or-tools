@@ -152,6 +152,63 @@ bool AddLinearConstraintMultiple(int64_t factor, const ConstraintProto& to_add,
 bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
 
+// Same as a vector<T> or hash_map<int, T> where the index are in [0, size),
+// but optimized for the case where only a few entries are touched before the
+// vector need to be reset to zero and used again.
+//
+// TODO(user): Maybe a SparseBitset + sparse clear is better. But this is a
+// worth alternative to test IMO.
+template <typename T>
+class VectorWithSparseUsage {
+ public:
+  // Taking a view allow to cache the never changing addresses.
+  class View {
+   public:
+    View(int* i, int* pi, T* pv)
+        : index_to_position_(i),
+          position_to_index_(pi),
+          position_to_value_(pv) {}
+
+    T& operator[](int index) {
+      const int p = index_to_position_[index];
+      if (p < size_ && index == position_to_index_[p]) {
+        // [index] was already called.
+        return position_to_value_[p];
+      }
+
+      // First call.
+      index_to_position_[index] = size_;
+      position_to_index_[size_] = index;
+      position_to_value_[size_] = 0;
+      return position_to_value_[size_++];
+    }
+
+   private:
+    int size_ = 0;
+    int* const index_to_position_;
+    int* const position_to_index_;
+    T* const position_to_value_;
+  };
+
+  // This reserve the size for using indices in [0, size).
+  View ClearedView(int size) {
+    index_to_position_.resize(size);
+    position_to_index_.resize(size);
+    position_to_value_.resize(size);
+    return View(index_to_position_.data(), position_to_index_.data(),
+                position_to_value_.data());
+  }
+
+ private:
+  // We never need to clear this. We can detect stale positions if
+  // position_to_index_[index_to_position_[index]] is inconsistent.
+  std::vector<int> index_to_position_;
+
+  // Only the beginning [0, num touched indices) is used here.
+  std::vector<int> position_to_index_;
+  std::vector<T> position_to_value_;
+};
+
 // Try to get more precise min/max activity of a linear constraints using
 // at most ones from the model. This is heuristic based but should be relatively
 // fast.
@@ -184,7 +241,7 @@ class ActivityBoundHelper {
   //
   // Important: We shouldn't have duplicates or a lit and NegatedRef(lit)
   // appearing both.
-
+  //
   // Note: the result of this function is not exact (it uses an heuristic to
   // detect AMOs), but it does not depend on the order of the input terms, so
   // passing an input in non-deterministic order is fine.
@@ -273,8 +330,7 @@ class ActivityBoundHelper {
   std::vector<TermWithIndex> to_sort_;
 
   // We partition the set of term into disjoint at most one.
-  absl::flat_hash_map<int, int> used_amo_to_dense_index_;
-  absl::flat_hash_map<int, int64_t> amo_sums_;
+  VectorWithSparseUsage<int64_t> amo_sums_;
   std::vector<int> partition_;
   std::vector<int64_t> max_by_partition_;
   std::vector<int64_t> second_max_by_partition_;

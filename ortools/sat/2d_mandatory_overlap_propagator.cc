@@ -49,7 +49,7 @@ MandatoryOverlapPropagator::~MandatoryOverlapPropagator() {
 }
 
 bool MandatoryOverlapPropagator::Propagate() {
-  if (!helper_.SynchronizeAndSetDirection(true, true, false)) return false;
+  if (!helper_.SynchronizeAndSetDirection()) return false;
 
   mandatory_regions_.clear();
   mandatory_regions_index_.clear();

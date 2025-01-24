@@ -38,6 +38,7 @@ bool NoOverlap2DConstraintHelper::SynchronizeAndSetDirection(
     bool swap_x_and_y) {
   if (axes_are_swapped_ != swap_x_and_y) {
     std::swap(x_helper_, y_helper_);
+    std::swap(x_demands_helper_, y_demands_helper_);
     axes_are_swapped_ = !axes_are_swapped_;
   }
   if (!x_helper_->SynchronizeAndSetTimeDirection(x_is_forward_after_swap))
@@ -45,6 +46,22 @@ bool NoOverlap2DConstraintHelper::SynchronizeAndSetDirection(
   if (!y_helper_->SynchronizeAndSetTimeDirection(y_is_forward_after_swap))
     return false;
   return true;
+}
+
+SchedulingDemandHelper& NoOverlap2DConstraintHelper::x_demands_helper() {
+  if (x_demands_helper_ == nullptr) {
+    x_demands_helper_ = std::make_unique<SchedulingDemandHelper>(
+        x_helper_->Sizes(), y_helper_.get(), model_);
+  }
+  return *x_demands_helper_;
+}
+
+SchedulingDemandHelper& NoOverlap2DConstraintHelper::y_demands_helper() {
+  if (y_demands_helper_ == nullptr) {
+    y_demands_helper_ = std::make_unique<SchedulingDemandHelper>(
+        y_helper_->Sizes(), x_helper_.get(), model_);
+  }
+  return *y_demands_helper_;
 }
 
 RectangleInRange NoOverlap2DConstraintHelper::GetItemRangeForSizeMin(
@@ -249,10 +266,7 @@ void NoOverlap2DConstraintHelper::Reset(
   active_bounding_boxes.reserve(new_num_boxes);
   active_box_indexes.reserve(new_num_boxes);
   for (int box : non_fixed_box_indexes) {
-    active_bounding_boxes.push_back({.x_min = x_helper_->StartMin(box),
-                                     .x_max = x_helper_->EndMax(box),
-                                     .y_min = y_helper_->StartMin(box),
-                                     .y_max = y_helper_->EndMax(box)});
+    active_bounding_boxes.push_back(GetBoundingRectangle(box));
     active_box_indexes.push_back({box, false});
   }
   for (int box = 0; box < fixed_boxes.size(); ++box) {
@@ -297,6 +311,8 @@ void NoOverlap2DConstraintHelper::Reset(
   y_helper_ = std::make_unique<SchedulingConstraintHelper>(
       std::move(y_starts), std::move(y_ends), std::move(y_sizes),
       std::move(y_reason_for_presence), model_);
+  x_demands_helper_ = nullptr;
+  y_demands_helper_ = nullptr;
 }
 
 bool NoOverlap2DConstraintHelper::Propagate() {
@@ -306,7 +322,7 @@ bool NoOverlap2DConstraintHelper::Propagate() {
   if (!x_helper_->Propagate() || !y_helper_->Propagate()) return false;
 
   if (x_helper_->CurrentDecisionLevel() == 0) {
-    SynchronizeAndSetDirection(true, true, false);
+    SynchronizeAndSetDirection();
     int num_boxes = NumBoxes();
 
     // Subtle: it is tempting to run this logic once for every connected
@@ -330,10 +346,7 @@ bool NoOverlap2DConstraintHelper::Propagate() {
       }
       if (IsOptional(box_index) || !IsFixed(box_index)) {
         non_fixed_boxes.push_back(
-            {.bounding_area = {.x_min = x_helper_->StartMin(box_index),
-                               .x_max = x_helper_->EndMax(box_index),
-                               .y_min = y_helper_->StartMin(box_index),
-                               .y_max = y_helper_->EndMax(box_index)},
+            {.bounding_area = GetBoundingRectangle(box_index),
              .x_size = x_helper_->SizeMin(box_index),
              .y_size = y_helper_->SizeMin(box_index)});
         non_fixed_box_indexes.push_back(box_index);

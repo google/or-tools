@@ -756,7 +756,7 @@ TEST(PresolveContextTest, IntersectDomainWithAffineExpression) {
   EXPECT_EQ(context.DomainOf(0), Domain(0, 1));
 }
 
-TEST(PresolveContextTest, IntersectDomainAndUpdateHint) {
+TEST(PresolveContextTest, IntersectDomainWithUpdatesHint) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -769,10 +769,10 @@ TEST(PresolveContextTest, IntersectDomainAndUpdateHint) {
   context.InitializeNewDomains();
   context.LoadSolutionHint();
 
-  EXPECT_TRUE(context.IntersectDomainWithAndUpdateHint(0, Domain(5, 20)));
+  EXPECT_TRUE(context.IntersectDomainWith(0, Domain(5, 20)));
 
   EXPECT_EQ(context.DomainOf(0), Domain(5, 10));
-  EXPECT_EQ(context.solution_crush().SolutionHint(0), 5);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 5);
 }
 
 TEST(PresolveContextTest, DomainSuperSetOf) {
@@ -1074,21 +1074,14 @@ TEST(PresolveContextTest, LoadSolutionHint) {
   context.InitializeNewDomains();
   context.LoadSolutionHint();
 
-  SolutionCrush& crush = context.solution_crush();
-  EXPECT_TRUE(crush.HintIsLoaded());
-  EXPECT_TRUE(crush.VarHasSolutionHint(0));
-  EXPECT_TRUE(crush.VarHasSolutionHint(1));  // From the fixed domain.
-  EXPECT_TRUE(crush.VarHasSolutionHint(2));
-  EXPECT_EQ(crush.SolutionHint(0), 10);  // Clamped to the domain.
-  EXPECT_EQ(crush.SolutionHint(1), 5);   // From the fixed domain.
-  EXPECT_EQ(crush.SolutionHint(2), 0);
-  EXPECT_EQ(crush.GetRefSolutionHint(0), 10);
-  EXPECT_EQ(crush.GetRefSolutionHint(NegatedRef(0)), -10);
-  EXPECT_FALSE(crush.LiteralSolutionHint(2));
-  EXPECT_TRUE(crush.LiteralSolutionHint(NegatedRef(2)));
-  EXPECT_TRUE(crush.LiteralSolutionHintIs(2, false));
-  EXPECT_TRUE(crush.LiteralSolutionHintIs(NegatedRef(2), true));
-  EXPECT_THAT(crush.SolutionHint(), ::testing::ElementsAre(10, 5, 0));
+  context.solution_crush().StoreSolutionAsHint(working_model);
+  // All hints should be clamped to their respective domains, and new hints
+  // should be added for the fixed variables.
+  PartialVariableAssignment expected_solution_hint =
+      ParseTestProto(R"pb(vars: [ 0, 1, 2 ]
+                          values: [ 10, 5, 0 ])pb");
+  EXPECT_THAT(working_model.solution_hint(),
+              testing::EqualsProto(expected_solution_hint));
 }
 
 }  // namespace
