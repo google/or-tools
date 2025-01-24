@@ -37,6 +37,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -1034,8 +1035,12 @@ void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* implications = m->GetOrCreate<BinaryImplicationGraph>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
-  m->Add(AtMostOneConstraint(mapping->Literals(ct.at_most_one().literals())));
+  if (!implications->AddAtMostOne(
+          mapping->Literals(ct.at_most_one().literals()))) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+  }
 }
 
 void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {

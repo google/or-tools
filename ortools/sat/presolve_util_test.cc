@@ -508,6 +508,22 @@ TEST(FindSingleLinearDifferenceTest, OkNotSamePosition) {
   EXPECT_EQ(coeff2, 3);
 }
 
+TEST(VectorWithSparseUsageTest, RandomTest) {
+  absl::BitGen random;
+  VectorWithSparseUsage<int> to_test;
+  for (int num_test = 0; num_test < 20; ++num_test) {
+    const int size = absl::Uniform(random, 0, 1000);
+    auto view = to_test.ClearedView(size);
+    std::vector<int> reference(size, 0);
+    for (int j = 0; j < size; ++j) {
+      const int index = absl::Uniform(random, 0, size);
+      reference[index] += 1;
+      view[index] += 1;
+      ASSERT_EQ(view[index], reference[index]);
+    }
+  }
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

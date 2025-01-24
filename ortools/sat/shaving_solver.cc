@@ -28,6 +28,7 @@
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/connected_components.h"
+#include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_solver_helpers.h"

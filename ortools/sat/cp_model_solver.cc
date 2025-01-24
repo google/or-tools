@@ -55,6 +55,7 @@
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
@@ -817,8 +818,6 @@ void RestrictObjectiveUsingHint(CpModelProto* model_proto) {
 bool SolutionHintIsCompleteAndFeasible(
     const CpModelProto& model_proto, SolverLogger* logger = nullptr,
     SharedResponseManager* manager = nullptr) {
-  if (!model_proto.has_solution_hint()) return false;
-
   int num_active_variables = 0;
   int num_hinted_variables = 0;
   for (int var = 0; var < model_proto.variables_size(); ++var) {
@@ -889,7 +888,7 @@ bool SolutionHintIsCompleteAndFeasible(
     return false;
   }
   if (is_feasible) {
-    if (manager != nullptr) {
+    if (manager != nullptr && !solution.empty()) {
       // Add it to the pool right away! Note that we already have a log in this
       // case, so we don't log anything more.
       manager->NewSolution(solution, "complete_hint", nullptr);

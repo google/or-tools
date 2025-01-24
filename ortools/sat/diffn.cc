@@ -248,7 +248,7 @@ NonOverlappingRectanglesEnergyPropagator::
 bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   // TODO(user): double-check/revisit the algo for box of variable sizes.
   const int num_boxes = helper_.NumBoxes();
-  if (!helper_.SynchronizeAndSetDirection(true, true, false)) return false;
+  if (!helper_.SynchronizeAndSetDirection()) return false;
 
   Rectangle bounding_box = {.x_min = std::numeric_limits<IntegerValue>::max(),
                             .x_max = std::numeric_limits<IntegerValue>::min(),
@@ -872,7 +872,7 @@ RectanglePairwisePropagator::~RectanglePairwisePropagator() {
 }
 
 bool RectanglePairwisePropagator::Propagate() {
-  if (!helper_->SynchronizeAndSetDirection(true, true, false)) return false;
+  if (!helper_->SynchronizeAndSetDirection()) return false;
 
   num_calls_++;
   std::vector<PairwiseRestriction> restrictions;

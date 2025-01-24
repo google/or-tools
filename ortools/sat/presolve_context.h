@@ -103,28 +103,30 @@ class PresolveContext {
         random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Helpers to adds new variables to the presolved model.
-  //
-  // TODO(user): We should control more how this is called so we can update
-  // a solution hint accordingly.
+
+  // Creates a new integer variable with the given domain.
+  // WARNING: this does not set any hint value for the new variable.
   int NewIntVar(const Domain& domain);
+
+  // Creates a new Boolean variable.
+  // WARNING: this does not set any hint value for the new variable.
   int NewBoolVar(absl::string_view source);
 
-  // This should replace NewIntVar() eventually in order to be able to crush
-  // primal solution or just update the hint.
-  //
-  // By default this also create the linking constraint new_var = definition.
-  // Returns -1 if we couldn't create the definition due to overflow.
+  // Creates a new integer variable with the given domain and definition.
+  // By default this also creates the linking constraint new_var = definition.
+  // Its hint value is set to the value of the definition. Returns -1 if we
+  // couldn't create the definition due to overflow.
   int NewIntVarWithDefinition(
       const Domain& domain,
       absl::Span<const std::pair<int, int64_t>> definition,
       bool append_constraint_to_mapping_model = false);
 
-  // Create a new bool var.
-  // Its hint value will be the same as the value of the given clause.
+  // Creates a new bool var.
+  // Its hint value is set to the value of the given clause.
   int NewBoolVarWithClause(absl::Span<const int> clause);
 
-  // Create a new bool var.
-  // Its hint value will be the same as the value of the given conjunction.
+  // Creates a new bool var.
+  // Its hint value is set to the value of the given conjunction.
   int NewBoolVarWithConjunction(absl::Span<const int> conjunction);
 
   // Some expansion code use constant literal to be simpler to write. This will
@@ -275,22 +277,11 @@ class PresolveContext {
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
   ABSL_MUST_USE_RESULT bool IntersectDomainWith(
-      int ref, const Domain& domain, bool* domain_modified = nullptr) {
-    return IntersectDomainWithInternal(ref, domain, domain_modified,
-                                       /*update_hint=*/false);
-  }
-
-  ABSL_MUST_USE_RESULT bool IntersectDomainWithAndUpdateHint(
-      int ref, const Domain& domain, bool* domain_modified = nullptr) {
-    return IntersectDomainWithInternal(ref, domain, domain_modified,
-                                       /*update_hint=*/true);
-  }
+      int ref, const Domain& domain, bool* domain_modified = nullptr);
 
   // Returns false if the 'lit' doesn't have the desired value in the domain.
   ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
   ABSL_MUST_USE_RESULT bool SetLiteralToTrue(int lit);
-  ABSL_MUST_USE_RESULT bool SetLiteralAndHintToFalse(int lit);
-  ABSL_MUST_USE_RESULT bool SetLiteralAndHintToTrue(int lit);
 
   // Same as IntersectDomainWith() but take a linear expression as input.
   // If this expression if of size > 1, this does nothing for now, so it will
@@ -712,11 +703,6 @@ class PresolveContext {
   // Returns false if this make the problem infeasible.
   bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
-
-  ABSL_MUST_USE_RESULT bool IntersectDomainWithInternal(int ref,
-                                                        const Domain& domain,
-                                                        bool* domain_modified,
-                                                        bool update_hint);
 
   SolverLogger* logger_;
   const SatParameters& params_;

@@ -311,77 +311,54 @@ void GenerateNoOverlap2dEnergyCut(
 }
 
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
-    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
-    SchedulingDemandHelper* x_demands_helper,
-    SchedulingDemandHelper* y_demands_helper,
+    NoOverlap2DConstraintHelper* helper,
     absl::Span<const std::vector<LiteralValueValue>> energies, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
-  AddIntegerVariableFromIntervals(y_helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(&helper->x_helper(), model, &result.vars);
+  AddIntegerVariableFromIntervals(&helper->y_helper(), model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
-  result.generate_cuts = [x_helper, y_helper, x_demands_helper,
-                          y_demands_helper, model,
+  result.generate_cuts = [helper, model,
                           energies =
                               std::vector<std::vector<LiteralValueValue>>(
                                   energies.begin(), energies.end())](
                              LinearConstraintManager* manager) {
-    if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-    if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+    if (!helper->SynchronizeAndSetDirection(true, true, false)) return false;
+    SchedulingDemandHelper* x_demands_helper = &helper->x_demands_helper();
+    SchedulingDemandHelper* y_demands_helper = &helper->y_demands_helper();
     if (!x_demands_helper->CacheAllEnergyValues()) return true;
     if (!y_demands_helper->CacheAllEnergyValues()) return true;
 
-    const int num_rectangles = x_helper->NumTasks();
-    std::vector<int> active_rectangles_indexes;
-    active_rectangles_indexes.reserve(num_rectangles);
-    std::vector<Rectangle> active_rectangles;
-    active_rectangles.reserve(num_rectangles);
-    for (int rect = 0; rect < num_rectangles; ++rect) {
-      if (y_helper->IsAbsent(rect) || y_helper->IsAbsent(rect)) continue;
-      // We do not consider rectangles controlled by 2 different unassigned
-      // enforcement literals.
-      if (!x_helper->IsPresent(rect) && !y_helper->IsPresent(rect) &&
-          x_helper->PresenceLiteral(rect) != y_helper->PresenceLiteral(rect)) {
-        continue;
-      }
-
-      // TODO(user): It might be possible/better to use some shifted value
-      // here, but for now this code is not in the hot spot, so better be
-      // defensive and only do connected components on really disjoint
-      // rectangles.
-      active_rectangles_indexes.push_back(rect);
-      Rectangle& rectangle = active_rectangles.emplace_back();
-      rectangle.x_min = x_helper->StartMin(rect);
-      rectangle.x_max = x_helper->EndMax(rect);
-      rectangle.y_min = y_helper->StartMin(rect);
-      rectangle.y_max = y_helper->EndMax(rect);
-    }
-
-    if (active_rectangles.size() <= 1) return true;
-
-    const CompactVectorVector<int> components =
-        GetOverlappingRectangleComponents(active_rectangles);
-
-    // Forward pass. No need to do a backward pass.
+    const int num_rectangles = helper->NumBoxes();
     std::vector<int> rectangles;
-    for (int i = 0; i < components.size(); ++i) {
-      absl::Span<const int> indexes = components[i];
-      if (indexes.size() <= 1) continue;
-
+    rectangles.reserve(num_rectangles);
+    for (const auto& component :
+         helper->connected_components().AsVectorOfSpan()) {
       rectangles.clear();
-      rectangles.reserve(indexes.size());
-      for (const int index : indexes) {
-        rectangles.push_back(active_rectangles_indexes[index]);
-      }
-      GenerateNoOverlap2dEnergyCut(energies, rectangles, "NoOverlap2dXEnergy",
-                                   model, manager, x_helper, y_helper,
-                                   y_demands_helper);
-      GenerateNoOverlap2dEnergyCut(energies, rectangles, "NoOverlap2dYEnergy",
-                                   model, manager, y_helper, x_helper,
-                                   x_demands_helper);
-    }
+      for (const int rect : component) {
+        if (helper->IsAbsent(rect)) continue;
+        // We do not consider rectangles controlled by 2 different unassigned
+        // enforcement literals.
+        if (!helper->x_helper().IsPresent(rect) &&
+            !helper->y_helper().IsPresent(rect) &&
+            helper->x_helper().PresenceLiteral(rect) !=
+                helper->y_helper().PresenceLiteral(rect)) {
+          continue;
+        }
 
+        rectangles.push_back(rect);
+      }
+
+      if (rectangles.size() <= 1) continue;
+
+      GenerateNoOverlap2dEnergyCut(energies, rectangles, "NoOverlap2dXEnergy",
+                                   model, manager, &helper->x_helper(),
+                                   &helper->y_helper(), y_demands_helper);
+      GenerateNoOverlap2dEnergyCut(energies, rectangles, "NoOverlap2dYEnergy",
+                                   model, manager, &helper->y_helper(),
+                                   &helper->x_helper(), x_demands_helper);
+    }
     return true;
   };
   return result;
@@ -585,49 +562,25 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
   auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();
   result.generate_cuts = [helper, product_decomposer,
                           model](LinearConstraintManager* manager) {
-    if (!helper->SynchronizeAndSetDirection(true, true, false)) {
+    if (!helper->SynchronizeAndSetDirection()) {
       return false;
     }
 
     const int num_rectangles = helper->NumBoxes();
-    std::vector<int> active_rectangles_indexes;
-    active_rectangles_indexes.reserve(num_rectangles);
-    std::vector<Rectangle> active_rectangles;
-    active_rectangles.reserve(num_rectangles);
-    std::vector<IntegerValue> cached_areas(num_rectangles);
+    std::vector<int> rectangles;
+    rectangles.reserve(num_rectangles);
     const SchedulingConstraintHelper* x_helper = &helper->x_helper();
     const SchedulingConstraintHelper* y_helper = &helper->y_helper();
-    for (int rect = 0; rect < num_rectangles; ++rect) {
-      if (!helper->IsPresent(rect)) continue;
-
-      cached_areas[rect] = x_helper->SizeMin(rect) * y_helper->SizeMin(rect);
-      if (cached_areas[rect] == 0) continue;
-
-      // TODO(user): It might be possible/better to use some shifted value
-      // here, but for now this code is not in the hot spot, so better be
-      // defensive and only do connected components on really disjoint
-      // rectangles.
-      active_rectangles_indexes.push_back(rect);
-      Rectangle& rectangle = active_rectangles.emplace_back();
-      rectangle.x_min = x_helper->StartMin(rect);
-      rectangle.x_max = x_helper->EndMax(rect);
-      rectangle.y_min = y_helper->StartMin(rect);
-      rectangle.y_max = y_helper->EndMax(rect);
-    }
-
-    if (active_rectangles.size() <= 1) return true;
-
-    const CompactVectorVector<int> components =
-        GetOverlappingRectangleComponents(active_rectangles);
-    std::vector<int> rectangles;
-    for (int i = 0; i < components.size(); ++i) {
-      absl::Span<const int> indexes = components[i];
-      if (indexes.size() <= 1) continue;
-
+    for (const auto& component :
+         helper->connected_components().AsVectorOfSpan()) {
       rectangles.clear();
-      rectangles.reserve(indexes.size());
-      for (const int index : indexes) {
-        rectangles.push_back(active_rectangles_indexes[index]);
+      if (component.size() <= 1) continue;
+      for (int rect : component) {
+        if (!helper->IsPresent(rect)) continue;
+        if (x_helper->SizeMin(rect) == 0 || y_helper->SizeMin(rect) == 0) {
+          continue;
+        }
+        rectangles.push_back(rect);
       }
 
       auto generate_cuts = [product_decomposer, manager, model, helper,

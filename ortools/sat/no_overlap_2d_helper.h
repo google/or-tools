@@ -64,9 +64,9 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   void RegisterWith(GenericLiteralWatcher* watcher);
 
-  bool SynchronizeAndSetDirection(bool x_is_forward_after_swap,
-                                  bool y_is_forward_after_swap,
-                                  bool swap_x_and_y);
+  bool SynchronizeAndSetDirection(bool x_is_forward_after_swap = true,
+                                  bool y_is_forward_after_swap = true,
+                                  bool swap_x_and_y = false);
 
   bool IsOptional(int index) const {
     return x_helper_->IsOptional(index) || y_helper_->IsOptional(index);
@@ -74,6 +74,17 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   bool IsPresent(int index) const {
     return x_helper_->IsPresent(index) && y_helper_->IsPresent(index);
+  }
+
+  bool IsAbsent(int index) const {
+    return x_helper_->IsAbsent(index) || y_helper_->IsAbsent(index);
+  }
+
+  Rectangle GetBoundingRectangle(int index) const {
+    return {.x_min = x_helper_->StartMin(index),
+            .x_max = x_helper_->EndMax(index),
+            .y_min = y_helper_->StartMin(index),
+            .y_max = y_helper_->EndMax(index)};
   }
 
   bool IsFixed(int index) const {
@@ -196,6 +207,9 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   SchedulingConstraintHelper& x_helper() const { return *x_helper_; }
   SchedulingConstraintHelper& y_helper() const { return *y_helper_; }
 
+  SchedulingDemandHelper& x_demands_helper();
+  SchedulingDemandHelper& y_demands_helper();
+
   const CompactVectorVector<int>& connected_components() const {
     return connected_components_;
   }
@@ -211,6 +225,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   bool axes_are_swapped_;
   std::unique_ptr<SchedulingConstraintHelper> x_helper_;
   std::unique_ptr<SchedulingConstraintHelper> y_helper_;
+  std::unique_ptr<SchedulingDemandHelper> x_demands_helper_;
+  std::unique_ptr<SchedulingDemandHelper> y_demands_helper_;
   Model* model_;
   GenericLiteralWatcher* watcher_;
   std::vector<int> propagators_watching_;

@@ -110,6 +110,43 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "cp_model_copy",
+    srcs = ["cp_model_copy.cc"],
+    hdrs = ["cp_model_copy.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":presolve_context",
+        ":sat_parameters_cc_proto",
+        "//ortools/base",
+        "//ortools/base:protobuf_util",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "cp_model_copy_test",
+    srcs = ["cp_model_copy_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_copy",
+        ":model",
+        ":presolve_context",
+        ":sat_parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/base:protobuf_util",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     deps = [":cp_model_proto"],
@@ -509,6 +546,7 @@ cc_library(
     hdrs = ["shaving_solver.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_copy",
         ":cp_model_lns",
         ":cp_model_presolve",
         ":cp_model_solver_helpers",
@@ -543,6 +581,7 @@ cc_library(
         ":combine_solutions",
         ":cp_model_cc_proto",
         ":cp_model_checker",
+        ":cp_model_copy",
         ":cp_model_lns",
         ":cp_model_loader",
         ":cp_model_mapping",
@@ -649,6 +688,7 @@ cc_library(
     deps = [
         ":all_different",
         ":circuit",
+        ":clause",
         ":cp_constraints",
         ":cp_model_cc_proto",
         ":cp_model_mapping",
@@ -3388,8 +3428,8 @@ cc_library(
     hdrs = ["cp_model_lns.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_copy",
         ":cp_model_mapping",
-        ":cp_model_presolve",
         ":cp_model_solver_helpers",
         ":cp_model_utils",
         ":diffn_util",

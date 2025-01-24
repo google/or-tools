@@ -22,15 +22,31 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
 
+// Transforms (or "crushes") solutions of the initial model into solutions of
+// the presolved model.
+//
+// Note that partial solution crushing is not a priority: as of Jan 2025, most
+// methods of this class do nothing if some solution values are missing to
+// perform their work. If one just want to complete a partial solution to a full
+// one for convenience, it should be relatively easy to first solve a
+// feasibility model where all hinted variables are fixed, and use the solution
+// to that problem as a starting hint.
+//
+// Note also that if the initial "solution" is incomplete or infeasible, the
+// crushed "solution" might contain values outside of the domain of their
+// variables. Consider for instance two constraints "b => v=1" and "!b => v=2",
+// presolved into "v = b+1", with SetVarToLinearConstraintSolution called to set
+// b's value from v's value. If the initial solution is infeasible, with v=0,
+// this will set b to -1, which is outside of its [0,1] domain.
 class SolutionCrush {
  public:
   SolutionCrush() = default;
@@ -41,6 +57,17 @@ class SolutionCrush {
   SolutionCrush& operator=(const SolutionCrush&) = delete;
   SolutionCrush& operator=(SolutionCrush&&) = delete;
 
+  bool SolutionIsLoaded() const { return solution_is_loaded_; }
+
+  // Visible for testing.
+  absl::Span<const int64_t> GetVarValues() const { return var_values_; }
+
+  // Sets the given values in the solution. `solution` must be a map from
+  // variable indices to variable values. This must be called only once, before
+  // any other method.
+  void LoadSolution(int num_vars,
+                    const absl::flat_hash_map<int, int64_t>& solution);
+
   // Resizes the solution to contain `new_size` variables. Does not change the
   // value of existing variables, and does not set any value for the new
   // variables.
@@ -48,99 +75,22 @@ class SolutionCrush {
   // the value of a new variable with one of them, call this method first.
   void Resize(int new_size);
 
-  // Sets the given values in the solution. `solution` must be a map from
-  // variable indices to variable values. This must be called only once, before
-  // any other method (besides `Resize`).
-  // TODO(user): revisit this near the end of the refactoring.
-  void LoadSolution(const absl::flat_hash_map<int, int64_t>& solution);
-
-  // Solution hint accessors.
-  bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }
-  int64_t SolutionHint(int var) const { return hint_[var]; }
-  bool HintIsLoaded() const { return hint_is_loaded_; }
-  absl::Span<const int64_t> SolutionHint() const { return hint_; }
-
-  // Similar to SolutionHint() but make sure the value is within the given
-  // domain.
-  int64_t ClampedSolutionHint(int var, const Domain& domain) {
-    int64_t value = hint_[var];
-    if (value > domain.Max()) {
-      value = domain.Max();
-    } else if (value < domain.Min()) {
-      value = domain.Min();
-    }
-    return value;
-  }
-
-  bool LiteralSolutionHint(int lit) const {
-    const int var = PositiveRef(lit);
-    return RefIsPositive(lit) ? hint_[var] : !hint_[var];
-  }
-
-  bool LiteralSolutionHintIs(int lit, bool value) const {
-    const int var = PositiveRef(lit);
-    return hint_is_loaded_ && hint_has_value_[var] &&
-           hint_[var] == (RefIsPositive(lit) ? value : !value);
-  }
-
-  // If the given literal is already hinted, updates its hint.
-  // Otherwise do nothing.
-  void UpdateLiteralSolutionHint(int lit, bool value) {
-    UpdateVarSolutionHint(PositiveRef(lit),
-                          RefIsPositive(lit) == value ? 1 : 0);
-  }
-
-  std::optional<int64_t> GetRefSolutionHint(int ref) {
-    const int var = PositiveRef(ref);
-    if (!VarHasSolutionHint(var)) return std::nullopt;
-    const int64_t var_hint = SolutionHint(var);
-    return RefIsPositive(ref) ? var_hint : -var_hint;
-  }
-
-  std::optional<int64_t> GetExpressionSolutionHint(
-      const LinearExpressionProto& expr) {
-    int64_t result = expr.offset();
-    for (int i = 0; i < expr.vars().size(); ++i) {
-      if (expr.coeffs(i) == 0) continue;
-      if (!VarHasSolutionHint(expr.vars(i))) return std::nullopt;
-      result += expr.coeffs(i) * SolutionHint(expr.vars(i));
-    }
-    return result;
-  }
-
-  void UpdateRefSolutionHint(int ref, int hint) {
-    UpdateVarSolutionHint(PositiveRef(ref), RefIsPositive(ref) ? hint : -hint);
-  }
-
-  // If the given variable is already hinted, updates its hint value.
-  // Otherwise, do nothing.
-  void UpdateVarSolutionHint(int var, int64_t value) {
-    DCHECK(RefIsPositive(var));
-    if (!hint_is_loaded_) return;
-    if (!hint_has_value_[var]) return;
-    hint_[var] = value;
-  }
-
-  // Allows to set the hint of a newly created variable.
-  void SetNewVariableHint(int var, int64_t value) {
-    CHECK(hint_is_loaded_);
-    CHECK(!hint_has_value_[var]);
-    SetVarHint(var, value);
-  }
-
   // Sets the value of `literal` to "`var`'s value == `value`". Does nothing if
   // `literal` already has a value.
   void MaybeSetLiteralToValueEncoding(int literal, int var, int64_t value);
 
-  // Sets the value of `var` to the value of the given linear expression.
-  // `linear` must be a list of (variable index, coefficient) pairs.
+  // Sets the value of `var` to the value of the given linear expression, if all
+  // the variables in this expression have a value. `linear` must be a list of
+  // (variable index, coefficient) pairs.
   void SetVarToLinearExpression(
-      int var, absl::Span<const std::pair<int, int64_t>> linear);
+      int var, absl::Span<const std::pair<int, int64_t>> linear,
+      int64_t offset = 0);
 
   // Sets the value of `var` to the value of the given linear expression.
   // The two spans must have the same size.
   void SetVarToLinearExpression(int var, absl::Span<const int> vars,
-                                absl::Span<const int64_t> coeffs);
+                                absl::Span<const int64_t> coeffs,
+                                int64_t offset = 0);
 
   // Sets the value of `var` to 1 if the value of at least one literal in
   // `clause` is equal to 1 (or to 0 otherwise). `clause` must be a list of
@@ -188,10 +138,10 @@ class SolutionCrush {
   // value, sets the value of `lit1` to the value of `lit2`.
   void MakeLiteralsEqual(int lit1, int lit2);
 
-  // Updates the value of the given variable to be within the given domain. The
-  // variable is updated to the closest value within the domain. `var` must
-  // already have a value.
-  void UpdateVarToDomain(int var, const Domain& domain);
+  // If `var` already has a value, updates it to be within the given domain.
+  // Otherwise, if the domain is fixed, sets the value of `var` to this fixed
+  // value. Otherwise does nothing.
+  void SetOrUpdateVarToDomain(int var, const Domain& domain);
 
   // Updates the value of the given literals to false if their current values
   // are different (or does nothing otherwise).
@@ -325,24 +275,55 @@ class SolutionCrush {
   void SetLinearWithComplexDomainExpandedVars(
       const LinearConstraintProto& linear, absl::Span<const int> bucket_lits);
 
+  // Stores the solution as a hint in the given model.
+  void StoreSolutionAsHint(CpModelProto& model) const;
+
  private:
-  void SetVarHint(int var, int64_t value) {
-    hint_has_value_[var] = true;
-    hint_[var] = value;
+  bool HasValue(int var) const { return var_has_value_[var]; }
+
+  int64_t GetVarValue(int var) const { return var_values_[var]; }
+
+  bool GetLiteralValue(int lit) const {
+    const int var = PositiveRef(lit);
+    return RefIsPositive(lit) ? GetVarValue(var) : !GetVarValue(var);
   }
 
-  void SetLiteralHint(int lit, bool value) {
-    SetVarHint(PositiveRef(lit), RefIsPositive(lit) == value ? 1 : 0);
+  std::optional<int64_t> GetRefValue(int ref) const {
+    const int var = PositiveRef(ref);
+    if (!HasValue(var)) return std::nullopt;
+    return RefIsPositive(ref) ? GetVarValue(var) : -GetVarValue(var);
+  }
+
+  std::optional<int64_t> GetExpressionValue(
+      const LinearExpressionProto& expr) const {
+    int64_t result = expr.offset();
+    for (int i = 0; i < expr.vars().size(); ++i) {
+      if (expr.coeffs(i) == 0) continue;
+      if (!HasValue(expr.vars(i))) return std::nullopt;
+      result += expr.coeffs(i) * GetVarValue(expr.vars(i));
+    }
+    return result;
+  }
+
+  void SetVarValue(int var, int64_t value) {
+    var_has_value_[var] = true;
+    var_values_[var] = value;
+  }
+
+  void SetLiteralValue(int lit, bool value) {
+    SetVarValue(PositiveRef(lit), RefIsPositive(lit) == value ? 1 : 0);
+  }
+
+  void SetRefValue(int ref, int value) {
+    SetVarValue(PositiveRef(ref), RefIsPositive(ref) ? value : -value);
   }
 
   void PermuteVariables(const SparsePermutation& permutation);
 
-  // This contains all the hinted value or zero if the hint wasn't specified.
-  // We try to maintain this as we create new variable.
-  bool model_has_hint_ = false;
-  bool hint_is_loaded_ = false;
-  std::vector<bool> hint_has_value_;
-  std::vector<int64_t> hint_;
+  bool solution_is_loaded_ = false;
+  std::vector<bool> var_has_value_;
+  // This contains all the solution values or zero if a solution is not loaded.
+  std::vector<int64_t> var_values_;
 };
 
 }  // namespace sat
