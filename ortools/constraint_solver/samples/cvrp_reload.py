@@ -298,6 +298,7 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         if assignment.Value(routing.NextVar(index)) == index:
             dropped.append(order)
     print(f'dropped orders: {dropped}')
+    dropped = []
     for reload in range(1, 6):
         index = manager.NodeToIndex(reload)
         if assignment.Value(routing.NextVar(index)) == index:
