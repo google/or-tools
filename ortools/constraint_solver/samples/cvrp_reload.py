@@ -306,6 +306,8 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
 
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
+        if routing.IsEnd(assignment.Value(routing.NextVar(index))):
+            continue
         plan_output = f'Route for vehicle {vehicle_id}:\n'
         distance = 0
         while not routing.IsEnd(index):
