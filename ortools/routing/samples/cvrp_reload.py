@@ -332,7 +332,6 @@ def print_solution(
     for vehicle_id in range(data["num_vehicles"]):
         index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
-        previous_index = None
         load_var = 0
         distance = 0
         while not routing.IsEnd(index):
@@ -350,7 +349,10 @@ def print_solution(
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
-        load_var += max(0,capacity_dimension.GetTransitValue(previous_index,index,vehicle_id))
+            # capacity dimension TransitVar is negative at reload stations during replenishment
+            # don't want to consider those values when calculating the total load of the route
+            # hence only considering the positive values
+            load_var += max(0,capacity_dimension.GetTransitValue(previous_index,index,vehicle_id))
         time_var = time_dimension.CumulVar(index)
         plan_output += (
             f" {manager.IndexToNode(index)} "
