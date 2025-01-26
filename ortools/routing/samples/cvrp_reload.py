@@ -317,6 +317,7 @@ def print_solution(
     total_time = 0
     capacity_dimension = routing.GetDimensionOrDie("Capacity")
     time_dimension = routing.GetDimensionOrDie("Time")
+    distance_dimension = routing.GetDimensionOrDie("Distance")
     dropped = []
     for order in range(6, routing.nodes()):
         index = manager.NodeToIndex(order)
@@ -343,7 +344,7 @@ def print_solution(
             )
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
-            distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
+            distance += distance_dimension.GetTransitValue(previous_index, index, vehicle_id)
         load_var = capacity_dimension.CumulVar(index)
         time_var = time_dimension.CumulVar(index)
         plan_output += (
