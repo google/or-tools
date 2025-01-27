@@ -331,7 +331,7 @@ def print_solution(
 
     for vehicle_id in range(data["num_vehicles"]):
         index = routing.Start(vehicle_id)
-        if routing.IsEnd(assignment.Value(routing.NextVar(index))):
+        if not routing.IsVehicleUsed(assignment,vehicle_id):
             continue
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         distance = 0
