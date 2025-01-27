@@ -18,7 +18,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/algorithms/set_cover_heuristics.h"
 #include "ortools/algorithms/set_cover_invariant.h"
@@ -42,9 +41,6 @@ ABSL_FLAG(std::string, output_fmt, "",
           "If out is non-empty, use the given format for the output.");
 ABSL_FLAG(std::string, output_model, "",
           "If non-empty, write the set cover model to the given file. ");
-ABSL_FLAG(std::string, output_model_fmt, "",
-          "If output_model is non-empty, use the given format for the output "
-          "model file. Can be proto, proto_bin, OrlibRail, OrlibScp.");
 
 ABSL_FLAG(bool, generate, false, "Generate a new model from the input model.");
 ABSL_FLAG(int, num_elements_wanted, 0,
@@ -60,6 +56,9 @@ ABSL_FLAG(std::string, generation, "", "First-solution generation method.");
 ABSL_FLAG(std::string, improvement, "", "Solution improvement method.");
 ABSL_FLAG(int, num_threads, 1,
           "Number of threads to use by the underlying solver.");
+
+ABSL_FLAG(bool, solve, false, "Solve the model.");
+ABSL_FLAG(bool, stats, false, "Log stats about the model.");
 
 namespace operations_research {
 using CL = SetCoverInvariant::ConsistencyLevel;
@@ -142,7 +141,8 @@ FileFormat ParseFileFormat(const std::string& format_name) {
   }
 }
 
-SetCoverModel ReadModel(absl::string_view input_file, FileFormat input_format) {
+SetCoverModel ReadModel(const std::string& input_file,
+                        FileFormat input_format) {
   switch (input_format) {
     case FileFormat::ORLIB_SCP:
       return ReadOrlibScp(input_file);
@@ -160,7 +160,7 @@ SetCoverModel ReadModel(absl::string_view input_file, FileFormat input_format) {
   }
 }
 
-SubsetBoolVector ReadSolution(absl::string_view input_file,
+SubsetBoolVector ReadSolution(const std::string& input_file,
                               FileFormat input_format) {
   switch (input_format) {
     case FileFormat::TXT:
@@ -175,8 +175,9 @@ SubsetBoolVector ReadSolution(absl::string_view input_file,
   }
 }
 
-void WriteModel(const SetCoverModel& model, absl::string_view output_file,
+void WriteModel(const SetCoverModel& model, const std::string& output_file,
                 FileFormat output_format) {
+  LOG(INFO) << "Writing model to " << output_file;
   switch (output_format) {
     case FileFormat::ORLIB_SCP:
       WriteOrlibScp(model, output_file);
@@ -197,7 +198,7 @@ void WriteModel(const SetCoverModel& model, absl::string_view output_file,
 }
 
 void WriteSolution(const SetCoverModel& model, const SubsetBoolVector& solution,
-                   absl::string_view output_file, FileFormat output_format) {
+                   const std::string& output_file, FileFormat output_format) {
   switch (output_format) {
     case FileFormat::TXT:
       WriteSetCoverSolutionText(model, solution, output_file);
@@ -233,20 +234,38 @@ void Run() {
   const auto& input_format = ParseFileFormat(absl::GetFlag(FLAGS_input_fmt));
   const auto& output = absl::GetFlag(FLAGS_output);
   const auto& output_format = ParseFileFormat(absl::GetFlag(FLAGS_output_fmt));
+  if (input.empty()) {
+    LOG(FATAL) << "No input file specified.";
+  }
+  if (!input.empty() && input_format == FileFormat::EMPTY) {
+    LOG(FATAL) << "Input format cannot be empty.";
+  }
+  if (!output.empty() && output_format == FileFormat::EMPTY) {
+    LOG(FATAL) << "Output format cannot be empty.";
+  }
   SetCoverModel model = ReadModel(input, input_format);
-  model.CreateSparseRowView();
   if (absl::GetFlag(FLAGS_generate)) {
+    model.CreateSparseRowView();
     model = SetCoverModel::GenerateRandomModelFrom(
         model, absl::GetFlag(FLAGS_num_elements_wanted),
         absl::GetFlag(FLAGS_num_subsets_wanted), absl::GetFlag(FLAGS_row_scale),
         absl::GetFlag(FLAGS_column_scale), absl::GetFlag(FLAGS_cost_scale));
   }
   if (!output.empty()) {
-    CHECK(output_format != FileFormat::EMPTY);
+    if (output_format == FileFormat::ORLIB_SCP) {
+      model.CreateSparseRowView();
+    }
     WriteModel(model, output, output_format);
   }
-  LogStats(input, &model);
-  SetCoverInvariant inv = RunLazyElementDegree(input, &model);
+  auto problem = output.empty() ? input : output;
+  if (absl::GetFlag(FLAGS_stats)) {
+    LogStats(problem, &model);
+  }
+  if (absl::GetFlag(FLAGS_solve)) {
+    LOG(INFO) << "Solving " << problem;
+    model.CreateSparseRowView();
+    SetCoverInvariant inv = RunLazyElementDegree(problem, &model);
+  }
 }
 }  // namespace operations_research
 

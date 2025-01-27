@@ -289,10 +289,9 @@ void IncreasingCountingSort(uint32_t radix, int shift, std::vector<Key>& keys,
   const auto num_keys = keys.size();
   // In this order for stability.
   for (int64_t i = num_keys - 1; i >= 0; --i) {
-    Counter& c = counts[Bucket(keys[i], shift, radix)];
-    scratch_keys[c - 1] = keys[i];
-    scratch_payloads[c - 1] = payloads[i];
-    --c;
+    Counter c = --counts[Bucket(keys[i], shift, radix)];
+    scratch_keys[c] = keys[i];
+    scratch_payloads[c] = payloads[i];
   }
   std::swap(keys, scratch_keys);
   std::swap(payloads, scratch_payloads);
@@ -301,14 +300,14 @@ void IncreasingCountingSort(uint32_t radix, int shift, std::vector<Key>& keys,
 
 template <typename Key, typename Payload>
 void RadixSort(int radix_log, std::vector<Key>& keys,
-               std::vector<Payload>& payloads, Key min_key, Key max_key) {
+               std::vector<Payload>& payloads, Key /*min_key*/, Key max_key) {
   // range_log is the number of bits necessary to represent the max_key
   // We could as well use max_key - min_key, but it is more expensive to
   // compute.
   const int range_log = internal::NumBitsToRepresent(max_key);
   DCHECK_EQ(internal::NumBitsToRepresent(0), 0);
   DCHECK_LE(internal::NumBitsToRepresent(std::numeric_limits<Key>::max()),
-            sizeof(Key) * CHAR_BIT);
+            std::numeric_limits<Key>::digits);
   const int radix = 1 << radix_log;  // By definition.
   std::vector<uint32_t> counters(radix, 0);
   std::vector<Key> scratch_keys(keys.size());
@@ -330,7 +329,7 @@ std::vector<ElementIndex> GetUncoveredElementsSortedByDegree(
   keys.reserve(num_elements);
   const SparseRowView& rows = inv->model()->rows();
   BaseInt max_degree = 0;
-  for (ElementIndex element : inv->model()->ElementRange()) {
+  for (const ElementIndex element : inv->model()->ElementRange()) {
     // Already covered elements should not be considered.
     if (inv->coverage()[element] != 0) continue;
     degree_sorted_elements.push_back(element);
@@ -729,8 +728,8 @@ bool GuidedLocalSearch::NextSolution(int num_iterations) {
 }
 
 Cost GuidedLocalSearch::ComputeDelta(SubsetIndex subset) const {
-  float delta = (penalization_factor_ * penalties_[subset] +
-                 inv_->model()->subset_costs()[subset]);
+  const float delta = (penalization_factor_ * penalties_[subset] +
+                       inv_->model()->subset_costs()[subset]);
   if (inv_->is_selected()[subset] && inv_->ComputeIsRedundant(subset)) {
     return delta;
   } else if (!inv_->is_selected()[subset]) {

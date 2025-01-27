@@ -14,8 +14,8 @@
 #include "ortools/algorithms/find_graph_symmetries.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -23,9 +23,12 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/memory/memory.h"
+#include "absl/log/check.h"
+#include "absl/numeric/int128.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -36,6 +39,8 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/graph/util.h"
 
@@ -699,9 +704,17 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
   // DCHECKs() and statistics.
   ScopedTimeDistributionUpdater search_time_updater(&stats_.search_time);
   DCHECK_EQ("", tmp_dynamic_permutation_.DebugString());
-  DCHECK_EQ(
-      base_partition->DebugString(/*sort_parts_lexicographically=*/false),
-      image_partition->DebugString(/*sort_parts_lexicographically=*/false));
+  DCHECK_EQ(base_partition->NumParts(), image_partition->NumParts());
+  if (DEBUG_MODE) {
+    for (int i = 0; i < base_partition->NumParts(); ++i) {
+      DCHECK_EQ(base_partition->FprintOfPart(i),
+                image_partition->FprintOfPart(i))
+          << base_partition->DebugString(/*sort_parts_lexicographically=*/false)
+          << " "
+          << image_partition->DebugString(
+                 /*sort_parts_lexicographically=*/false);
+    }
+  }
   DCHECK(search_states_.empty());
 
   // These will be used during the search. See their usage.
