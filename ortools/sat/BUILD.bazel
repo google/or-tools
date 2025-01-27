@@ -3445,6 +3445,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/graph:connected_components",
         "//ortools/util:adaptative_parameter_value",
+        "//ortools/util:bitset",
         "//ortools/util:integer_pq",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",

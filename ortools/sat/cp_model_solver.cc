@@ -818,6 +818,10 @@ void RestrictObjectiveUsingHint(CpModelProto* model_proto) {
 bool SolutionHintIsCompleteAndFeasible(
     const CpModelProto& model_proto, SolverLogger* logger = nullptr,
     SharedResponseManager* manager = nullptr) {
+  if (!model_proto.has_solution_hint() && model_proto.variables_size() > 0) {
+    return false;
+  }
+
   int num_active_variables = 0;
   int num_hinted_variables = 0;
   for (int var = 0; var < model_proto.variables_size(); ++var) {

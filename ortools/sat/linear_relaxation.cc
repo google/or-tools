@@ -1059,7 +1059,8 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
       const IntegerValue area_min =
           integer_trail->LevelZeroLowerBound(x_sizes[i]) *
           integer_trail->LevelZeroLowerBound(y_sizes[i]);
-      if (area_min != 0) {
+      if (area_min > 0) {
+        // Note that intervals that must be absent can have negative sizes.
         // Not including the term if we don't have a view is ok.
         (void)lc.AddLiteralTerm(presence_literal, area_min);
       }
