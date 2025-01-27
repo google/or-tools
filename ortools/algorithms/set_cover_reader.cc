@@ -13,9 +13,12 @@
 
 #include "ortools/algorithms/set_cover_reader.h"
 
+#include <sys/types.h>
+
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -38,8 +41,6 @@ namespace operations_research {
 class SetCoverReader {
  public:
   explicit SetCoverReader(File* file);
-  absl::string_view GetLine() { return line_; }
-  void Advance() { ++line_iter_; }
   absl::string_view GetNextToken();
   double ParseNextDouble();
   int64_t ParseNextInteger();
@@ -63,6 +64,11 @@ SetCoverReader::SetCoverReader(File* file)
 
 size_t SetCoverReader::SkipBlanks(size_t pos) const {
   const size_t size = line_.size();
+  // As it is expected that the blanks will be spaces, we can skip them faster
+  // by checking for spaces only.
+  for (; pos < size && line_[pos] == ' '; ++pos) {
+  }
+  // We skip all forms of blanks to be on the safe side.
   for (; pos < size && std::isspace(line_[pos]); ++pos) {
   }
   return pos;
@@ -195,66 +201,66 @@ SetCoverModel ReadSetCoverProto(absl::string_view filename, bool binary) {
 }
 
 namespace {
-// A class to write a line of text to a file.
-// The line is written in chunks of at most max_cols characters.
-class LineWriter {
+// A class to format data and write it to a file.
+// Text is formatted in chunks of at most max_cols characters.
+// Text is actually written to the file when the current chunk is full or when
+// FlushLine() is called.
+// FlushLine() must be called before closing the file.
+class LineFormatter {
  public:
-  LineWriter(File* file, int max_cols)
+  explicit LineFormatter(File* file)
+      : LineFormatter(file, std::numeric_limits<int64_t>::max()) {}
+  LineFormatter(File* file, int64_t max_cols)
       : num_cols_(0), max_cols_(max_cols), line_(), file_(file) {}
-  ~LineWriter() { Close(); }
+  ~LineFormatter() { CHECK(line_.empty()); }
 
-  void Write(absl::string_view text) {
+  void Append(absl::string_view text) {
     const int text_size = text.size();
     if (!text.empty() && text_size + num_cols_ > max_cols_) {
-      CHECK_OK(file::WriteString(file_, absl::StrCat(line_, "\n"),
-                                 file::Defaults()));
-      line_.clear();
-      num_cols_ = 0;
+      FlushLine();
     }
     absl::StrAppend(&line_, text);
     num_cols_ += text_size;
   }
 
-  void Write(BaseInt value) { Write(absl::StrCat(value, " ")); }
+  void Append(BaseInt value) { Append(absl::StrCat(value, " ")); }
 
-  void Write(double value) { Write(absl::StrFormat("%.17g ", value)); }
+  void Append(double value) { Append(absl::StrFormat("%.17g ", value)); }
 
-  void Close() {
+  void FlushLine() {
     CHECK_OK(
         file::WriteString(file_, absl::StrCat(line_, "\n"), file::Defaults()));
+    line_.clear();
+    num_cols_ = 0;
   }
 
  private:
-  int num_cols_;
-  int max_cols_;
+  int64_t num_cols_;
+  int64_t max_cols_;
   std::string line_;
   File* file_;
 };
 }  // namespace
 
 void WriteOrlibScp(const SetCoverModel& model, absl::string_view filename) {
-  const int kMaxCols = 80;
   File* file(file::OpenOrDie(filename, "w", file::Defaults()));
-  CHECK_OK(file::WriteString(
-      file, absl::StrCat(model.num_elements(), " ", model.num_subsets(), "\n"),
-      file::Defaults()));
-  {  // RAII for the file writer.
-    LineWriter cost_writer(file, kMaxCols);
-    for (const SubsetIndex subset : model.SubsetRange()) {
-      cost_writer.Write(model.subset_costs()[subset]);
+  LineFormatter formatter(file);
+  formatter.Append(model.num_elements());
+  formatter.Append(model.num_subsets());
+  formatter.FlushLine();
+  for (const SubsetIndex subset : model.SubsetRange()) {
+    formatter.Append(model.subset_costs()[subset]);
+  }
+  formatter.FlushLine();
+  for (const ElementIndex element : model.ElementRange()) {
+    LOG_EVERY_N_SEC(INFO, 5)
+        << absl::StrFormat("Writing element %d (%.1f%%)", element.value(),
+                           100.0 * element.value() / model.num_elements());
+    formatter.Append(absl::StrCat(model.rows()[element].size(), "\n"));
+    for (const SubsetIndex subset : model.rows()[element]) {
+      formatter.Append(subset.value() + 1);
     }
-    for (const ElementIndex element : model.ElementRange()) {
-      LOG_EVERY_N_SEC(INFO, 5)
-          << absl::StrFormat("Writing element %d (%.1f%%)", element.value(),
-                             100.0 * element.value() / model.num_elements());
-      CHECK_OK(file::WriteString(
-          file, absl::StrCat(model.rows()[element].size(), "\n"),
-          file::Defaults()));
-      LineWriter row_writer(file, kMaxCols);
-      for (const SubsetIndex subset : model.rows()[element]) {
-        row_writer.Write(subset.value() + 1);
-      }
-    }
+    formatter.FlushLine();
   }
   LOG(INFO) << "Finished writing the model.";
   file->Close(file::Defaults()).IgnoreError();
@@ -262,24 +268,21 @@ void WriteOrlibScp(const SetCoverModel& model, absl::string_view filename) {
 
 // Beware the fact that elements written are converted to 1-indexed.
 void WriteOrlibRail(const SetCoverModel& model, absl::string_view filename) {
-  const int kMaxCols = 80;
   File* file(file::OpenOrDie(filename, "w", file::Defaults()));
   CHECK_OK(file::WriteString(
       file, absl::StrCat(model.num_elements(), " ", model.num_subsets(), "\n"),
       file::Defaults()));
+  LineFormatter formatter(file);
   for (const SubsetIndex subset : model.SubsetRange()) {
     LOG_EVERY_N_SEC(INFO, 5)
         << absl::StrFormat("Writing subset %d (%.1f%%)", subset.value(),
                            100.0 * subset.value() / model.num_subsets());
-    CHECK_OK(
-        file::WriteString(file,
-                          absl::StrCat(model.subset_costs()[subset], " ",
-                                       model.columns()[subset].size(), "\n"),
-                          file::Defaults()));
-    LineWriter writer(file, kMaxCols);
+    formatter.Append(model.subset_costs()[subset]);
+    formatter.Append(static_cast<BaseInt>(model.columns()[subset].size()));
     for (const ElementIndex element : model.columns()[subset]) {
-      writer.Write(element.value() + 1);
+      formatter.Append(element.value() + 1);
     }
+    formatter.FlushLine();
   }
   LOG(INFO) << "Finished writing the model.";
   file->Close(file::Defaults()).IgnoreError();
@@ -343,13 +346,14 @@ void WriteSetCoverSolutionText(const SetCoverModel& model,
   CHECK_OK(file::WriteString(
       file, absl::StrCat(solution.size(), " ", cardinality, " ", cost, "\n"),
       file::Defaults()));
-  const int kMaxCols = 80;
-  LineWriter writer(file, kMaxCols);
+  LineFormatter formatter(file);
   for (BaseInt subset(0); subset < solution.size(); ++subset) {
     if (solution[SubsetIndex(subset)]) {
-      writer.Write(subset);
+      formatter.Append(subset);
     }
   }
+  formatter.FlushLine();
+  file->Close(file::Defaults()).IgnoreError();
 }
 
 void WriteSetCoverSolutionProto(const SetCoverModel& model,

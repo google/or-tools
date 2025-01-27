@@ -317,12 +317,14 @@ def print_solution(
     total_time = 0
     capacity_dimension = routing.GetDimensionOrDie("Capacity")
     time_dimension = routing.GetDimensionOrDie("Time")
+    distance_dimension = routing.GetDimensionOrDie("Distance")
     dropped = []
     for order in range(6, routing.nodes()):
         index = manager.NodeToIndex(order)
         if assignment.Value(routing.NextVar(index)) == index:
             dropped.append(order)
     print(f"dropped orders: {dropped}")
+    dropped = []
     for reload in range(1, 6):
         index = manager.NodeToIndex(reload)
         if assignment.Value(routing.NextVar(index)) == index:
@@ -348,7 +350,7 @@ def print_solution(
             )
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
-            distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
+            distance += distance_dimension.GetTransitValue(previous_index, index, vehicle_id)
             # capacity dimension TransitVar is negative at reload stations during replenishment
             # don't want to consider those values when calculating the total load of the route
             # hence only considering the positive values

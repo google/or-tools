@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_CP_MODEL_LNS_H_
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -39,6 +40,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/adaptative_parameter_value.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace sat {
@@ -250,7 +252,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
   // tail index, and going in sequence up to the last arc before the circuit is
   // closed. Each entry correspond to the arc literal on the circuit.
-  std::vector<std::vector<int>> GetRoutingPaths(
+  std::vector<std::vector<int>> GetRoutingPathLiterals(
       const CpSolverResponse& initial_solution) const;
 
   // Returns all precedences extracted from the scheduling constraint and the

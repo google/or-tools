@@ -443,8 +443,7 @@ bool AllDifferentConstraint::Propagate() {
 }
 
 AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
-    const std::vector<AffineExpression>& expressions,
-    IntegerTrail* integer_trail)
+    absl::Span<const AffineExpression> expressions, IntegerTrail* integer_trail)
     : integer_trail_(integer_trail) {
   CHECK(!expressions.empty());
 

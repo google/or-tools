@@ -150,7 +150,7 @@ class AllDifferentConstraint : PropagatorInterface {
 // https://cs.uwaterloo.ca/~vanbeek/Publications/ijcai03_TR.pdf
 class AllDifferentBoundsPropagator : public PropagatorInterface {
  public:
-  AllDifferentBoundsPropagator(const std::vector<AffineExpression>& expressions,
+  AllDifferentBoundsPropagator(absl::Span<const AffineExpression> expressions,
                                IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.
