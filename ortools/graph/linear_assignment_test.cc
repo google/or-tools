@@ -29,8 +29,6 @@
 #include "ortools/base/gmock.h"
 #include "ortools/graph/graph.h"
 
-ABSL_DECLARE_FLAG(bool, assignment_stack_order);
-
 namespace operations_research {
 
 using ::testing::Eq;

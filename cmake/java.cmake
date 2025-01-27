@@ -31,6 +31,7 @@ endif()
 if(UNIX AND NOT APPLE)
   list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
 endif()
+list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
 
 # Find Java and JNI
 find_package(Java 1.8 COMPONENTS Development REQUIRED)
@@ -298,14 +299,13 @@ set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
 set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
 
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
+set(need_unix_ortools_lib "$<AND:${is_not_windows},${is_ortools_shared}>")
+set(need_windows_ortools_lib "$<AND:${is_windows},${is_ortools_shared}>")
 
 add_custom_command(
   OUTPUT ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   COMMAND ${CMAKE_COMMAND} -E remove -f timestamp
-  COMMAND ${CMAKE_COMMAND} -E copy
-    $<TARGET_FILE:jni${JAVA_ARTIFACT}>
-    $<${is_ortools_shared}:$<TARGET_SONAME_FILE:ortools>>
-    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
     $<${need_unix_zlib_lib}:$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
@@ -443,6 +443,16 @@ add_custom_command(
     $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
     $<${need_unix_highs_lib}:$<TARGET_SONAME_FILE:highs>>
     $<${need_windows_highs_lib}:$<TARGET_FILE:highs>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${is_ortools_shared},copy,true>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E copy
+    $<TARGET_FILE:jni${JAVA_ARTIFACT}>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${MAVEN_EXECUTABLE} compile -B

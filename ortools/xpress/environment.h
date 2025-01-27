@@ -20,6 +20,7 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "ortools/base/macros.h"
 
 extern "C" {
 typedef struct xo_prob_struct* XPRSprob;
@@ -487,21 +488,21 @@ extern std::function<int(XPRSprob prob, int control, int value)> XPRSsetintcontr
 extern std::function<int(XPRSprob prob, int control, XPRSint64 value)> XPRSsetintcontrol64;
 extern std::function<int(XPRSprob prob, int control, double value)> XPRSsetdblcontrol;
 extern std::function<int(XPRSprob prob, int control, const char* value)> XPRSsetstrcontrol;
-extern std::function<int(XPRSprob prob, int control, int* p_value)> XPRSgetintcontrol;
-extern std::function<int(XPRSprob prob, int control, XPRSint64* p_value)> XPRSgetintcontrol64;
-extern std::function<int(XPRSprob prob, int control, double* p_value)> XPRSgetdblcontrol;
-extern std::function<int(XPRSprob prob, int control, char* value, int maxbytes, int* p_nbytes)> XPRSgetstringcontrol;
-extern std::function<int(XPRSprob prob, int attrib, int* p_value)> XPRSgetintattrib;
-extern std::function<int(XPRSprob prob, int attrib, double* p_value)> XPRSgetdblattrib;
+OR_DLL extern std::function<int(XPRSprob prob, int control, int* p_value)> XPRSgetintcontrol;
+OR_DLL extern std::function<int(XPRSprob prob, int control, XPRSint64* p_value)> XPRSgetintcontrol64;
+OR_DLL extern std::function<int(XPRSprob prob, int control, double* p_value)> XPRSgetdblcontrol;
+OR_DLL extern std::function<int(XPRSprob prob, int control, char* value, int maxbytes, int* p_nbytes)> XPRSgetstringcontrol;
+OR_DLL extern std::function<int(XPRSprob prob, int attrib, int* p_value)> XPRSgetintattrib;
+OR_DLL extern std::function<int(XPRSprob prob, int attrib, double* p_value)> XPRSgetdblattrib;
 extern std::function<int(XPRSprob prob, const char* name, int* p_id, int* p_type)> XPRSgetcontrolinfo;
 extern std::function<int(XPRSprob prob, const char* probname, int ncols, int nrows, const char rowtype[], const double rhs[], const double rng[], const double objcoef[], const int start[], const int collen[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSloadlp;
 extern std::function<int(XPRSprob prob, const char* probname, int ncols, int nrows, const char rowtype[], const double rhs[], const double rng[], const double objcoef[], const XPRSint64 start[], const int collen[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSloadlp64;
-extern std::function<int(XPRSprob prob, double objcoef[], int first, int last)> XPRSgetobj;
-extern std::function<int(XPRSprob prob, double rhs[], int first, int last)> XPRSgetrhs;
-extern std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRSgetrhsrange;
-extern std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb;
-extern std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub;
-extern std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef;
+OR_DLL extern std::function<int(XPRSprob prob, double objcoef[], int first, int last)> XPRSgetobj;
+OR_DLL extern std::function<int(XPRSprob prob, double rhs[], int first, int last)> XPRSgetrhs;
+OR_DLL extern std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRSgetrhsrange;
+OR_DLL extern std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb;
+OR_DLL extern std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub;
+OR_DLL extern std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef;
 extern std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals;
 extern std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts;
 extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows;
@@ -517,8 +518,8 @@ extern std::function<int(XPRSprob prob, int objsense)> XPRSchgobjsense;
 extern std::function<int(XPRSprob prob, char* errmsg)> XPRSgetlasterror;
 extern std::function<int(XPRSprob prob, int rowstat[], int colstat[])> XPRSgetbasis;
 extern std::function<int(XPRSprob prob, const char* filename, const char* flags)> XPRSwriteprob;
-extern std::function<int(XPRSprob prob, char rowtype[], int first, int last)> XPRSgetrowtype;
-extern std::function<int(XPRSprob prob, char coltype[], int first, int last)> XPRSgetcoltype;
+OR_DLL extern std::function<int(XPRSprob prob, char rowtype[], int first, int last)> XPRSgetrowtype;
+OR_DLL extern std::function<int(XPRSprob prob, char coltype[], int first, int last)> XPRSgetcoltype;
 extern std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds;
 extern std::function<int(XPRSprob prob, int length, const double solval[], const int colind[], const char* name)> XPRSaddmipsol;
 extern std::function<int(XPRSprob prob, double x[], double slack[], double duals[], double djs[])> XPRSgetlpsol;

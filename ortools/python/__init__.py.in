@@ -55,11 +55,11 @@ def _load_ortools_libs():
         except:
             pass
         else:
-            for dll in ["zlib1.dll", "abseil_dll.dll", "utf8_validity.dll", "re2.dll", "libprotobuf.dll", "highs.dll"]:
-              dll_path = os.path.join(basedir, ".libs", dll)
-              if os.path.exists(dll_path):
-                  print(f"load {dll_path}...")
-                  WinDLL(dll_path)
+            for dll in ["zlib1.dll", "abseil_dll.dll", "utf8_validity.dll", "re2.dll", "libprotobuf.dll", "highs.dll", "ortools.dll"]:
+                dll_path = os.path.join(basedir, ".libs", dll)
+                if os.path.exists(dll_path):
+                    print(f"load {dll_path}...")
+                    WinDLL(dll_path)
 
 
 _load_ortools_libs()

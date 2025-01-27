@@ -47,7 +47,7 @@ namespace operations_research {
 /// indices range between 0 and n-1, where n = number of vehicles * 2 (for start
 /// and end nodes) + number of non-start or end nodes.
 ///
-class RoutingIndexManager {
+class OR_DLL RoutingIndexManager {
  public:
   typedef RoutingNodeIndex NodeIndex;
   static const int64_t kUnassigned;
