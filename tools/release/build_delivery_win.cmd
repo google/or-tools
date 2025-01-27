@@ -279,7 +279,7 @@ echo Python build seems up to date, skipping
 exit /B 0
 )
 
-FOR %%v IN (8 9 10 11 12 13) DO (
+FOR %%v IN (11 12) DO (
   title Build Python 3.%%v
   echo Check python3.%%v... | tee.exe -a build.log
   which.exe "C:\python3%%v-64\python.exe" || exit 1
