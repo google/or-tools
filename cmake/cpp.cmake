@@ -377,13 +377,7 @@ function(generate_proto_library)
  else()
    set_target_properties(${PROTO_NAME}_proto PROPERTIES CXX_STANDARD 17)
  endif()
- if(MSVC AND BUILD_SHARED_LIBS)
-  target_compile_definitions(${PROTO_NAME}_proto INTERFACE "OR_PROTO_DLL=__declspec(dllimport)")
-  target_compile_definitions(${PROTO_NAME}_proto PRIVATE "OR_PROTO_DLL=__declspec(dllexport)")
- else()
-  target_compile_definitions(${PROTO_NAME}_proto PUBLIC "OR_PROTO_DLL=")
-endif()
- set_target_properties(${PROTO_NAME}_proto PROPERTIES
+  set_target_properties(${PROTO_NAME}_proto PROPERTIES
    CXX_STANDARD_REQUIRED ON
    CXX_EXTENSIONS OFF
    POSITION_INDEPENDENT_CODE ON)
@@ -393,6 +387,12 @@ endif()
    #$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
  )
  target_compile_definitions(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+ if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${PROTO_NAME}_proto INTERFACE "OR_PROTO_DLL=__declspec(dllimport)")
+  target_compile_definitions(${PROTO_NAME}_proto PRIVATE "OR_PROTO_DLL=__declspec(dllexport)")
+ else()
+  target_compile_definitions(${PROTO_NAME}_proto PUBLIC "OR_PROTO_DLL=")
+endif()
  target_compile_options(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
  target_link_libraries(${PROTO_NAME}_proto PUBLIC protobuf::libprotobuf ${PROTO_LINK_LIBRARIES})
  add_library(${PROJECT_NAMESPACE}::${PROTO_NAME}_proto ALIAS ${PROTO_NAME}_proto)
