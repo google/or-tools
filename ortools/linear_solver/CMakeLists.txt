@@ -29,6 +29,10 @@ add_library(${NAME} OBJECT ${_SRCS})
 set_target_properties(${NAME} PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   )
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
+  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
+endif()
 target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)

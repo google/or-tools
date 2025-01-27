@@ -2291,7 +2291,7 @@ class LocalSearchFilterManager : public BaseObject {
   int64_t accepted_value_;
 };
 
-class IntVarLocalSearchFilter : public LocalSearchFilter {
+class OR_DLL IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
   explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter() override;

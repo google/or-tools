@@ -1469,7 +1469,7 @@ class MPConstraint {
  * instead. We need to figure out how to deal with the subtleties of
  * the default values.
  */
-class MPSolverParameters {
+class OR_DLL MPSolverParameters {
  public:
   /// Enumeration of parameters that take continuous values.
   enum DoubleParam {
