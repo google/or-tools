@@ -74,7 +74,7 @@ if(UNIX)
   endforeach()
 else()
   # Currently Only support static build for windows
-  option(BUILD_SHARED_LIBS "Build shared libraries (.dll)." OFF)
+  option(BUILD_SHARED_LIBS "Build shared libraries (.dll)." ON)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})

@@ -26,8 +26,9 @@ target_compile_definitions(${NAME} PRIVATE
   -DOR_TOOLS_MAJOR=${PROJECT_VERSION_MAJOR}
   -DOR_TOOLS_MINOR=${PROJECT_VERSION_MINOR}
   -DOR_TOOLS_PATCH=${PROJECT_VERSION_PATCH})
-if(MSVC)
-  target_compile_definitions(${NAME} PRIVATE -DOR_TOOLS_EXPORTS)
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
+  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
 endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}

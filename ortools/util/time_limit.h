@@ -91,7 +91,7 @@ namespace operations_research {
  */
 // TODO(user): The expression "deterministic time" should be replaced with
 //                 "number of operations" to avoid confusion with "real" time.
-class TimeLimit {
+class OR_DLL TimeLimit {
  public:
   static const double kSafetyBufferSeconds;  // See the .cc for the value.
   static const int kHistorySize;
