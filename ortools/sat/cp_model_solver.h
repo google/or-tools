@@ -21,6 +21,8 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
+ABSL_DECLARE_FLAG(bool, cp_model_dump_response);
+
 namespace operations_research {
 namespace sat {
 

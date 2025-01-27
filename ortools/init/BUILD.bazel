@@ -16,10 +16,12 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "init",
     hdrs = ["init.h"],
+    srcs = ["init.cc"],
     deps = [
         "//ortools/base",
         "//ortools/gurobi:environment",
         "//ortools/sat:cp_model_solver",
+        "//ortools/sat:cp_model_solver_helpers",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:globals",
