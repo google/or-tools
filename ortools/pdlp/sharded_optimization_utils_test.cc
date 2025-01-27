@@ -41,7 +41,7 @@ using ::testing::IsNan;
 
 TEST(ShardedWeightedAverageTest, SimpleAverage) {
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2,
-                  /*thread_pool=*/nullptr);
+                  /*scheduler=*/nullptr);
   Eigen::VectorXd vec1{{4, 1}};
   Eigen::VectorXd vec2{{1, 7}};
 
@@ -61,7 +61,7 @@ TEST(ShardedWeightedAverageTest, SimpleAverage) {
 
 TEST(ShardedWeightedAverageTest, MoveConstruction) {
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2,
-                  /*thread_pool=*/nullptr);
+                  /*scheduler=*/nullptr);
   const Eigen::VectorXd vec{{4, 1}};
 
   ShardedWeightedAverage average(&sharder);
@@ -73,9 +73,9 @@ TEST(ShardedWeightedAverageTest, MoveConstruction) {
 
 TEST(ShardedWeightedAverageTest, MoveAssignment) {
   Sharder sharder1(/*num_elements=*/2, /*num_shards=*/2,
-                   /*thread_pool=*/nullptr);
+                   /*scheduler=*/nullptr);
   Sharder sharder2(/*num_elements=*/3, /*num_shards=*/2,
-                   /*thread_pool=*/nullptr);
+                   /*scheduler=*/nullptr);
   Eigen::VectorXd vec1{{4, 1}};
   Eigen::VectorXd vec2{{0, 3}};
 
@@ -91,7 +91,7 @@ TEST(ShardedWeightedAverageTest, MoveAssignment) {
 
 TEST(ShardedWeightedAverageTest, ZeroAverage) {
   Sharder sharder(/*num_elements=*/1, /*num_shards=*/1,
-                  /*thread_pool=*/nullptr);
+                  /*scheduler=*/nullptr);
 
   ShardedWeightedAverage average(&sharder);
   ASSERT_FALSE(average.HasNonzeroWeight());
@@ -103,7 +103,7 @@ TEST(ShardedWeightedAverageTest, ZeroAverage) {
 // average is exactly that vector, with no roundoff.
 TEST(ShardedWeightedAverageTest, AveragesEqualWithoutRoundoff) {
   Sharder sharder(/*num_elements=*/4, /*num_shards=*/1,
-                  /*thread_pool=*/nullptr);
+                  /*scheduler=*/nullptr);
   ShardedWeightedAverage average(&sharder);
   EXPECT_THAT(average.ComputeAverage(), ElementsAre(0, 0, 0, 0));
   Eigen::VectorXd data{{1.0, 1.0 / 3, 3.0 / 7, 3.14159}};
@@ -117,7 +117,7 @@ TEST(ShardedWeightedAverageTest, AveragesEqualWithoutRoundoff) {
 
 TEST(ShardedWeightedAverageTest, AddsZeroWeight) {
   Sharder sharder(/*num_elements=*/1, /*num_shards=*/1,
-                  /*thread_pool=*/nullptr);
+                  /*scheduler=*/nullptr);
 
   ShardedWeightedAverage average(&sharder);
   ASSERT_FALSE(average.HasNonzeroWeight());

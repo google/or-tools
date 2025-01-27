@@ -164,7 +164,7 @@ class Sharder {
           return 1 + 1 * matrix.col(col).nonZeros();
         }) {}
 
-  // Constructs a `Sharder` with the same thread pool as `other_sharder`, for
+  // Constructs a `Sharder` with the same scheduler as `other_sharder`, for
   // problems with `num_elements` elements and unit mass. The number of shards
   // will be approximately the same as that of `other_sharder`. Also see the
   // comments on the first constructor.
@@ -242,7 +242,7 @@ Eigen::VectorXd TransposedMatrixVectorProduct(
 // The following functions use `sharder` to compute a vector operation in
 // parallel. `sharder` should have the same size as the vector(s). For best
 // performance `sharder` should have been created with the `Sharder(int64_t,
-// int, ThreadPool*)` constructor.
+// int, Scheduler*)` constructor.
 ////////////////////////////////////////////////////////////////////////////////
 
 // Like `dest.setZero(sharder.NumElements())`. Note that if `dest.size() !=

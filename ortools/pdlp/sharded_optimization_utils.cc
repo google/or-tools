@@ -350,7 +350,7 @@ enum class ScalingNorm { kL2, kLInf };
 // `vector` in-place. If a component of `divisor` is equal to zero, leaves the
 // component of `vector` unchanged. `sharder` should have the same size as
 // `vector`. For best performance `sharder` should have been created with the
-// `Sharder(int64_t, int, ThreadPool*)` constructor.
+// `Sharder(int64_t, int, Scheduler*)` constructor.
 void DivideBySquareRootOfDivisor(const VectorXd& divisor,
                                  const Sharder& sharder, VectorXd& vector) {
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
