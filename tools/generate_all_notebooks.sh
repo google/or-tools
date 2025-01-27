@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # usage: ./tools/generate_all_notebooks.sh
-set -e
+set -eu
 
 DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "${DIR}" ]]; then
