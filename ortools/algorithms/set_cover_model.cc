@@ -29,6 +29,8 @@
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
+#include "ortools/algorithms/radix_sort.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/base/logging.h"
 
@@ -322,7 +324,9 @@ void SetCoverModel::ReserveNumElementsInSubset(ElementIndex num_elements,
 
 void SetCoverModel::SortElementsInSubsets() {
   for (const SubsetIndex subset : SubsetRange()) {
-    std::sort(columns_[subset].begin(), columns_[subset].end());
+    // std::sort(columns_[subset].begin(), columns_[subset].end());
+    BaseInt* data = reinterpret_cast<BaseInt*>(columns_[subset].data());
+    RadixSort(absl::MakeSpan(data, columns_[subset].size()));
   }
   elements_in_subsets_are_sorted_ = true;
 }
@@ -336,7 +340,10 @@ void SetCoverModel::CreateSparseRowView() {
   for (const SubsetIndex subset : SubsetRange()) {
     // Sort the columns. It's not super-critical to improve performance here
     // as this needs to be done only once.
-    std::sort(columns_[subset].begin(), columns_[subset].end());
+    // std::sort(columns_[subset].begin(), columns_[subset].end());
+    BaseInt* data = reinterpret_cast<BaseInt*>(columns_[subset].data());
+    RadixSort(absl::MakeSpan(data, columns_[subset].size()));
+
     for (const ElementIndex element : columns_[subset]) {
       ++row_sizes[element];
     }
@@ -346,7 +353,7 @@ void SetCoverModel::CreateSparseRowView() {
   }
   for (const SubsetIndex subset : SubsetRange()) {
     for (const ElementIndex element : columns_[subset]) {
-      rows_[element].push_back(subset);
+      rows_[element].emplace_back(subset);
     }
   }
   row_view_is_valid_ = true;
@@ -392,8 +399,10 @@ SetCoverProto SetCoverModel::ExportModelAsProto() const {
                            100.0 * subset.value() / num_subsets());
     SetCoverProto::Subset* subset_proto = message.add_subset();
     subset_proto->set_cost(subset_costs_[subset]);
-    SparseColumn column = columns_[subset];
-    std::sort(column.begin(), column.end());
+    SparseColumn column = columns_[subset];  // Copy is intentional.
+    // std::sort(column.begin(), column.end());
+    BaseInt* data = reinterpret_cast<BaseInt*>(column.data());
+    RadixSort(absl::MakeSpan(data, column.size()));
     for (const ElementIndex element : column) {
       subset_proto->add_element(element.value());
     }
