@@ -380,8 +380,16 @@ cc_library(
 )
 
 cc_library(
+    name = "base_export",
+    hdrs = ["base_export.h"],
+)
+
+cc_library(
     name = "macros",
     hdrs = ["macros.h"],
+    deps = [
+        ":base_export",
+    ],
 )
 
 cc_library(

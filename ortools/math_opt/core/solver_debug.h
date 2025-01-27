@@ -17,7 +17,7 @@
 #include <atomic>
 #include <cstdint>
 
-#include <ortools/base/base_export.h>
+#include "ortools/base/base_export.h"
 
 namespace operations_research {
 namespace math_opt {

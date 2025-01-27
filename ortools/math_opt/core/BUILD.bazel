@@ -146,6 +146,7 @@ cc_library(
     name = "solver_debug",
     srcs = ["solver_debug.cc"],
     hdrs = ["solver_debug.h"],
+    deps = ["//ortools/base:base_export"],
 )
 
 cc_library(
