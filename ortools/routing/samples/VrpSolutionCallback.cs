@@ -68,6 +68,10 @@ public class VrpSolutionCallback
             Console.WriteLine($"Route for Vehicle {i}:");
             long routeDistance = 0;
             long index = routingModel.Start(i);
+            if (routingModel.IsEnd(routingModel.NextVar(index).Value()))
+            {
+                continue;
+            }
             while (routingModel.IsEnd(index) == false)
             {
                 Console.Write($" {routingManager.IndexToNode(index)} ->");

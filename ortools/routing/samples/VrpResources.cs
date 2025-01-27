@@ -90,6 +90,10 @@ public class VrpResources
         long totalTime = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
         {
+            if (!routing.IsVehicleUsed(solution, i))
+            {
+                continue;
+            }
             Console.WriteLine("Route for Vehicle {0}:", i);
             var index = routing.Start(i);
             while (routing.IsEnd(index) == false)

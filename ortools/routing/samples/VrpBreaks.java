@@ -100,6 +100,9 @@ public final class VrpBreaks {
     long totalTime = 0;
     RoutingDimension timeDimension = routing.getMutableDimension("Time");
     for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       logger.info("Route for Vehicle " + i + ":");
       long index = routing.start(i);
       String route = "";

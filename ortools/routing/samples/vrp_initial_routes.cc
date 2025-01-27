@@ -91,6 +91,9 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   int64_t max_route_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
+    if (!routing.IsVehicleUsed(*solution, vehicle_id)) {
+      continue;
+    }
     int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t route_distance{0};

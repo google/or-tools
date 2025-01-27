@@ -86,6 +86,9 @@ public class VrpTimeWindows {
     RoutingDimension timeDimension = routing.getMutableDimension("Time");
     long totalTime = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       String route = "";

@@ -76,6 +76,8 @@ def print_solution(data, manager, routing, solution):
     time_dimension = routing.GetDimensionOrDie("Time")
     total_time = 0
     for vehicle_id in range(data["num_vehicles"]):
+        if not routing.IsVehicleUsed(solution, vehicle_id):
+            continue
         index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         while not routing.IsEnd(index):
