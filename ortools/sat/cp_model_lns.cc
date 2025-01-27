@@ -58,6 +58,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/adaptative_parameter_value.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -949,7 +950,8 @@ NeighborhoodGeneratorHelper::GetSchedulingPrecedences(
   return result;
 }
 
-std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
+std::vector<std::vector<int>>
+NeighborhoodGeneratorHelper::GetRoutingPathLiterals(
     const CpSolverResponse& initial_solution) const {
   struct HeadAndArcLiteral {
     int head;
@@ -2596,7 +2598,7 @@ Neighborhood RoutingRandomNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   const std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPaths(initial_solution);
+      helper_.GetRoutingPathLiterals(initial_solution);
 
   // Collect all unique variables.
   absl::flat_hash_set<int> all_path_variables;
@@ -2617,7 +2619,7 @@ Neighborhood RoutingPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPaths(initial_solution);
+      helper_.GetRoutingPathLiterals(initial_solution);
 
   // Collect all unique variables.
   absl::flat_hash_set<int> all_path_variables;
@@ -2663,7 +2665,7 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPaths(initial_solution);
+      helper_.GetRoutingPathLiterals(initial_solution);
   // Remove a corner case where all paths are empty.
   if (all_paths.empty()) {
     return helper_.NoNeighborhood();
