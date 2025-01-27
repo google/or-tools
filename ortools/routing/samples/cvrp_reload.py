@@ -330,9 +330,9 @@ def print_solution(
     print(f"dropped reload stations: {dropped}")
 
     for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
         if not routing.IsVehicleUsed(assignment,vehicle_id):
             continue
+        index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         distance = 0
         while not routing.IsEnd(index):
