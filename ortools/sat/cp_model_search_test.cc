@@ -11,16 +11,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+#include <limits>
+#include <random>
 #include <string>
+#include <tuple>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/stats.h"
 
 namespace operations_research {
 namespace sat {
@@ -291,6 +299,94 @@ TEST(BasicFixedSearchBehaviorTest, MedianTest2) {
 
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_THAT(response.solution(), testing::ElementsAre(10, 8));
+}
+
+TEST(BasicFixedSearchBehaviorTest, RandomHalfTest) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 10, 10 ]
+      }
+    }
+    search_strategy {
+      variables: [ 0, 1, 2, 3 ]
+      variable_selection_strategy: CHOOSE_FIRST
+      domain_reduction_strategy: SELECT_RANDOM_HALF
+    }
+  )pb");
+
+  absl::flat_hash_map<std::tuple<int, int, int, int>, int> count_by_solution;
+  {
+    SatParameters params;
+    params.set_enumerate_all_solutions(true);
+    params.set_num_workers(1);
+    Model model;
+    model.Add(NewSatParameters(params));
+    model.Add(NewFeasibleSolutionObserver(
+        [&count_by_solution](const CpSolverResponse& response) {
+          count_by_solution[std::make_tuple(
+              response.solution(0), response.solution(1), response.solution(2),
+              response.solution(3))] = 0;
+        }));
+    EXPECT_EQ(SolveCpModel(model_proto, &model).status(),
+              CpSolverStatus::OPTIMAL);
+  }
+  constexpr int kNumExpectedSolutions = 121;
+  EXPECT_EQ(count_by_solution.size(), kNumExpectedSolutions);
+
+  // Repeatedly solve the model with a different seed and count the number of
+  // times each solution occurs. If each solution is found with equal
+  // probability, each solution should be found "near" kExpectedMean times.
+  constexpr int kExpectedMean = 100;
+  std::mt19937_64 random(12345);
+  for (int i = 0; i < kNumExpectedSolutions * kExpectedMean; ++i) {
+    SatParameters params;
+    params.set_cp_model_presolve(false);
+    params.set_search_branching(SatParameters::FIXED_SEARCH);
+    params.set_random_seed(i);
+    params.set_num_workers(1);
+    auto search_order =
+        model_proto.mutable_search_strategy(0)->mutable_variables();
+    std::shuffle(search_order->begin(), search_order->end(), random);
+    const CpSolverResponse response = SolveWithParameters(model_proto, params);
+    EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    count_by_solution[std::make_tuple(
+        response.solution(0), response.solution(1), response.solution(2),
+        response.solution(3))]++;
+  }
+  EXPECT_EQ(count_by_solution.size(), kNumExpectedSolutions);
+  DoubleDistribution counts;
+  int min_count = std::numeric_limits<int>::max();
+  std::tuple<int, int, int, int> min_count_solution;
+  int max_count = 0;
+  std::tuple<int, int, int, int> max_count_solution;
+  for (const auto& [solution, count] : count_by_solution) {
+    if (count < min_count) {
+      min_count = count;
+      min_count_solution = solution;
+    }
+    if (count > max_count) {
+      max_count = count;
+      max_count_solution = solution;
+    }
+    counts.Add(count);
+  }
+  const double std_dev = counts.StdDeviation();
+  LOG(INFO) << "min_count = " << min_count << " for "
+            << absl::StrJoin(min_count_solution, ",");
+  LOG(INFO) << "max_count = " << max_count << " for "
+            << absl::StrJoin(max_count_solution, ",");
+  LOG(INFO) << "std_dev / mean = " << std_dev / kExpectedMean;
+  EXPECT_GE(min_count, kExpectedMean / 10);
+  // If each solution was really found with equal probability, the coefficient
+  // of variation would be much lower (about 0.1 for kExpectedMean = 100).
+  EXPECT_LE(std_dev / kExpectedMean, 0.5);
 }
 
 }  // namespace

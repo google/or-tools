@@ -562,6 +562,7 @@ message DecisionStrategyProto {
     SELECT_LOWER_HALF = 2;
     SELECT_UPPER_HALF = 3;
     SELECT_MEDIAN_VALUE = 4;
+    SELECT_RANDOM_HALF = 5;
   }
   DomainReductionStrategy domain_reduction_strategy = 3;
 }

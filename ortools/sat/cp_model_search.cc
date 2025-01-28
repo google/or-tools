@@ -50,7 +50,8 @@ CpModelView::CpModelView(Model* model)
     : mapping_(*model->GetOrCreate<CpModelMapping>()),
       boolean_assignment_(model->GetOrCreate<Trail>()->Assignment()),
       integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-      integer_encoder_(*model->GetOrCreate<IntegerEncoder>()) {}
+      integer_encoder_(*model->GetOrCreate<IntegerEncoder>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()) {}
 
 int CpModelView::NumVariables() const { return mapping_.NumProtoVariables(); }
 
@@ -131,6 +132,28 @@ BooleanOrIntegerLiteral CpModelView::MedianValue(int var) const {
     // Array is 0 based.
     const int target = (static_cast<int>(encoding.size()) + 1) / 2 - 1;
     result.boolean_literal_index = encoding[target].literal.Index();
+  }
+  return result;
+}
+
+BooleanOrIntegerLiteral CpModelView::RandomSplit(int var, int64_t lb,
+                                                 int64_t ub) const {
+  DCHECK(!IsFixed(var));
+  BooleanOrIntegerLiteral result;
+  if (mapping_.IsBoolean(var)) {
+    if (absl::Bernoulli(random_, 0.5)) {
+      result.boolean_literal_index = mapping_.Literal(var).Index();
+    } else {
+      result.boolean_literal_index = mapping_.Literal(var).NegatedIndex();
+    }
+  } else if (mapping_.IsInteger(var)) {
+    if (absl::Bernoulli(random_, 0.5)) {
+      result.integer_literal = IntegerLiteral::LowerOrEqual(
+          mapping_.Integer(var), IntegerValue(lb + (ub - lb) / 2));
+    } else {
+      result.integer_literal = IntegerLiteral::GreaterOrEqual(
+          mapping_.Integer(var), IntegerValue(ub - (ub - lb) / 2));
+    }
   }
   return result;
 }
@@ -315,6 +338,8 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
           return view.GreaterOrEqual(var, ub - (ub - lb) / 2);
         case DecisionStrategyProto::SELECT_MEDIAN_VALUE:
           return view.MedianValue(var);
+        case DecisionStrategyProto::SELECT_RANDOM_HALF:
+          return view.RandomSplit(var, lb, ub);
         default:
           LOG(FATAL) << "Unknown DomainReductionStrategy "
                      << strategy.domain_reduction_strategy();

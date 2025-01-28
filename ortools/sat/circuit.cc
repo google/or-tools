@@ -24,6 +24,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/sat/all_different.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -693,6 +694,16 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
       new CircuitPropagator(num_nodes, tails, heads, literals, options, model);
   constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
   model->TakeOwnership(constraint);
+
+  // TODO(user): Just ignore node zero if multiple_subcircuit_through_zero is
+  // true.
+  if (model->GetOrCreate<SatParameters>()->use_all_different_for_circuit() &&
+      !multiple_subcircuit_through_zero) {
+    AllDifferentConstraint* constraint =
+        new AllDifferentConstraint(num_nodes, tails, heads, literals, model);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  }
 }
 
 std::function<void(Model*)> CircuitCovering(
