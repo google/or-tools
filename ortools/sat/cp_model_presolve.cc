@@ -22,6 +22,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -5839,6 +5840,147 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   return changed;
 }
 
+bool CpModelPresolver::PresolveNoOverlap2DFramed(
+    absl::Span<const Rectangle> fixed_boxes,
+    absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct) {
+  const NoOverlap2DConstraintProto& proto = ct->no_overlap_2d();
+
+  Rectangle fixed_boxes_bb = fixed_boxes.front();
+  for (const Rectangle& box : fixed_boxes) {
+    fixed_boxes_bb.GrowToInclude(box);
+  }
+  std::vector<Rectangle> espace_for_single_box =
+      FindEmptySpaces(fixed_boxes_bb, {fixed_boxes.begin(), fixed_boxes.end()});
+  // TODO(user): Find a faster way to see if four boxes are delimiting a
+  // rectangle.
+  std::vector<Rectangle> empty;
+  ReduceNumberofBoxesGreedy(&espace_for_single_box, &empty);
+  ReduceNumberOfBoxesExactMandatory(&espace_for_single_box, &empty);
+  if (espace_for_single_box.size() != 1) {
+    // Not a rectangular frame, since the inside is not a rectangle.
+    return false;
+  }
+  const Rectangle framed_region = espace_for_single_box.front();
+  for (const RectangleInRange& box : non_fixed_boxes) {
+    if (!box.bounding_area.IsInsideOf(fixed_boxes_bb)) {
+      // Something can be outside of the frame.
+      return false;
+    }
+    if (2 * box.bounding_area.SizeX() <= framed_region.SizeX() ||
+        2 * box.bounding_area.SizeY() <= framed_region.SizeY()) {
+      // We can fit two boxes in the delimited space between the fixed boxes, so
+      // we cannot replace it by an at-most-one.
+      return false;
+    }
+    const int x_interval_index = proto.x_intervals(box.box_index);
+    const int y_interval_index = proto.y_intervals(box.box_index);
+    if (!context_->working_model->constraints(x_interval_index)
+             .enforcement_literal()
+             .empty() &&
+        !context_->working_model->constraints(y_interval_index)
+             .enforcement_literal()
+             .empty()) {
+      if (context_->working_model->constraints(x_interval_index)
+              .enforcement_literal(0) !=
+          context_->working_model->constraints(y_interval_index)
+              .enforcement_literal(0)) {
+        // Two different enforcement literals.
+        return false;
+      }
+    }
+  }
+  // All this no_overlap_2d constraint is doing is forcing at most one of
+  // the non-fixed boxes to be in the `framed_region` rectangle. A
+  // better representation of this is to simply enforce that the items fit
+  // that rectangle with linear constraints and add a at-most-one constraint.
+  std::vector<int> enforcement_literals_for_amo;
+  bool has_mandatory = false;
+  for (const RectangleInRange& box : non_fixed_boxes) {
+    const int box_index = box.box_index;
+    const int x_interval_index = proto.x_intervals(box_index);
+    const int y_interval_index = proto.y_intervals(box_index);
+    const ConstraintProto& x_interval_ct =
+        context_->working_model->constraints(x_interval_index);
+    const ConstraintProto& y_interval_ct =
+        context_->working_model->constraints(y_interval_index);
+    if (x_interval_ct.enforcement_literal().empty() &&
+        y_interval_ct.enforcement_literal().empty()) {
+      // Mandatory box, update the domains.
+      if (has_mandatory) {
+        return context_->NotifyThatModelIsUnsat(
+            "Two mandatory boxes in the same space");
+      }
+      has_mandatory = true;
+      if (!context_->IntersectDomainWith(x_interval_ct.interval().start(),
+                                         Domain(framed_region.x_min.value(),
+                                                framed_region.x_max.value()))) {
+        return true;
+      }
+      if (!context_->IntersectDomainWith(x_interval_ct.interval().end(),
+                                         Domain(framed_region.x_min.value(),
+                                                framed_region.x_max.value()))) {
+        return true;
+      }
+      if (!context_->IntersectDomainWith(y_interval_ct.interval().start(),
+                                         Domain(framed_region.y_min.value(),
+                                                framed_region.y_max.value()))) {
+        return true;
+      }
+      if (!context_->IntersectDomainWith(y_interval_ct.interval().end(),
+                                         Domain(framed_region.y_min.value(),
+                                                framed_region.y_max.value()))) {
+        return true;
+      }
+    } else {
+      auto add_linear_constraint = [&](const ConstraintProto& interval_ct,
+                                       int enforcement_literal,
+                                       IntegerValue min, IntegerValue max) {
+        // TODO(user): If size is constant add only one linear constraint
+        // instead of two.
+        ConstraintProto* linear_start =
+            context_->working_model->add_constraints();
+        ConstraintProto* linear_end =
+            context_->working_model->add_constraints();
+        linear_start->add_enforcement_literal(enforcement_literal);
+        linear_end->add_enforcement_literal(enforcement_literal);
+        linear_start->mutable_linear()->add_domain(min.value());
+        linear_start->mutable_linear()->add_domain(max.value());
+        linear_end->mutable_linear()->add_domain(min.value());
+        linear_end->mutable_linear()->add_domain(max.value());
+        AddLinearExpressionToLinearConstraint(interval_ct.interval().start(), 1,
+                                              linear_start->mutable_linear());
+        AddLinearExpressionToLinearConstraint(interval_ct.interval().end(), 1,
+                                              linear_end->mutable_linear());
+      };
+      const int enforcement_literal =
+          x_interval_ct.enforcement_literal().empty()
+              ? y_interval_ct.enforcement_literal(0)
+              : x_interval_ct.enforcement_literal(0);
+      enforcement_literals_for_amo.push_back(enforcement_literal);
+      add_linear_constraint(x_interval_ct, enforcement_literal,
+                            framed_region.x_min, framed_region.x_max);
+      add_linear_constraint(y_interval_ct, enforcement_literal,
+                            framed_region.y_min, framed_region.y_max);
+    }
+  }
+  if (has_mandatory) {
+    for (const int lit : enforcement_literals_for_amo) {
+      if (!context_->SetLiteralToFalse(lit)) {
+        return true;
+      }
+    }
+  } else if (enforcement_literals_for_amo.size() > 1) {
+    context_->working_model->add_constraints()
+        ->mutable_at_most_one()
+        ->mutable_literals()
+        ->Add(enforcement_literals_for_amo.begin(),
+              enforcement_literals_for_amo.end());
+  }
+  context_->UpdateRuleStats("no_overlap_2d: at most one rectangle in region");
+  context_->UpdateNewConstraintsVariableUsage();
+  return RemoveConstraint(ct);
+}
+
 bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) {
     return false;
@@ -6046,6 +6188,14 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
   }
+
+  if (fixed_boxes.size() == 4 && !non_fixed_boxes.empty() &&
+      !has_potential_zero_sized_interval) {
+    if (PresolveNoOverlap2DFramed(fixed_boxes, non_fixed_boxes, ct)) {
+      return true;
+    }
+  }
+
   // If the non-fixed boxes are disjoint but connected by fixed boxes, we can
   // split the constraint and duplicate the fixed boxes. To avoid duplicating
   // too many fixed boxes, we do this after we we applied the presolve reducing

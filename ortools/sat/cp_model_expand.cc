@@ -1437,7 +1437,7 @@ void AddSizeTwoTable(
   int num_large_clause_added = 0;
   auto add_support_constraint =
       [context, &num_clause_added, &num_large_clause_added, &num_implications](
-          int lit, const std::vector<int>& support_literals,
+          int lit, absl::Span<const int> support_literals,
           int max_support_size) {
         if (support_literals.size() == max_support_size) return;
         if (support_literals.size() == 1) {

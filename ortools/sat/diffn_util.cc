@@ -1610,6 +1610,7 @@ std::vector<Rectangle> PavedRegionDifference(
     std::vector<Rectangle> original_region,
     absl::Span<const Rectangle> area_to_remove) {
   std::vector<Rectangle> new_area_to_cover;
+  new_area_to_cover.reserve(original_region.size());
   for (const Rectangle& rectangle : area_to_remove) {
     new_area_to_cover.clear();
     for (const Rectangle& r : original_region) {

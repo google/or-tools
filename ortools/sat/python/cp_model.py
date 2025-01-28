@@ -107,6 +107,8 @@ SELECT_MIN_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MIN_VALUE
 SELECT_MAX_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MAX_VALUE
 SELECT_LOWER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_LOWER_HALF
 SELECT_UPPER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_UPPER_HALF
+SELECT_MEDIAN_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MEDIAN_VALUE
+SELECT_RANDOM_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_RANDOM_HALF
 
 # Search branching
 AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH

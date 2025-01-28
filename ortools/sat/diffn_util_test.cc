@@ -628,7 +628,7 @@ TEST(GetMinimumOverlapTest, BasicTest) {
 }
 
 IntegerValue RecomputeEnergy(const Rectangle& rectangle,
-                             const std::vector<RectangleInRange>& intervals) {
+                             absl::Span<const RectangleInRange> intervals) {
   IntegerValue ret = 0;
   for (const RectangleInRange& range : intervals) {
     const Rectangle min_intersect = range.GetMinimumIntersection(rectangle);

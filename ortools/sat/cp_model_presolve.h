@@ -28,6 +28,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_base.h"
@@ -214,6 +215,14 @@ class CpModelPresolver {
   void ProcessAtMostOneAndLinear();
   void ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
                                ActivityBoundHelper* helper);
+
+  // Presolve a no_overlap_2d constraint where all the non-fixed rectangles are
+  // framed by exactly four fixed rectangles and at most one single box can fit
+  // inside the frame. This is a rather specific situation, but it is fast to
+  // check and happens often in LNS problems.
+  bool PresolveNoOverlap2DFramed(
+      absl::Span<const Rectangle> fixed_boxes,
+      absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.

@@ -34,14 +34,14 @@ class CpModelNumbersTest(absltest.TestCase):
         self.assertTrue(cmn.is_boolean(np.bool_(1)))
         self.assertTrue(cmn.is_boolean(np.bool_(0)))
 
-    def testto_capped_int64(self):
+    def test_to_capped_int64(self):
         self.assertEqual(cmn.to_capped_int64(cmn.INT_MAX), cmn.INT_MAX)
         self.assertEqual(cmn.to_capped_int64(cmn.INT_MAX + 1), cmn.INT_MAX)
         self.assertEqual(cmn.to_capped_int64(cmn.INT_MIN), cmn.INT_MIN)
         self.assertEqual(cmn.to_capped_int64(cmn.INT_MIN - 1), cmn.INT_MIN)
         self.assertEqual(cmn.to_capped_int64(15), 15)
 
-    def testcapped_subtraction(self):
+    def test_capped_subtraction(self):
         self.assertEqual(cmn.capped_subtraction(10, 5), 5)
         self.assertEqual(cmn.capped_subtraction(cmn.INT_MIN, 5), cmn.INT_MIN)
         self.assertEqual(cmn.capped_subtraction(cmn.INT_MIN, -5), cmn.INT_MIN)

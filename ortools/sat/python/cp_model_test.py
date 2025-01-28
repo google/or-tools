@@ -168,7 +168,7 @@ class CpModelTest(absltest.TestCase):
         super().tearDown()
         sys.stdout.flush()
 
-    def testCreateIntegerVariable(self) -> None:
+    def test_create_integer_variable(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         self.assertEqual("x", str(x))
@@ -191,7 +191,7 @@ class CpModelTest(absltest.TestCase):
         cst = model.new_constant(5)
         self.assertEqual("5", str(cst))
 
-    def testLiteral(self) -> None:
+    def test_literal(self) -> None:
         model = cp_model.CpModel()
         x = model.new_bool_var("x")
         self.assertEqual("x", str(x))
@@ -212,7 +212,7 @@ class CpModelTest(absltest.TestCase):
         self.assertRaises(TypeError, z.negated)
         self.assertRaises(TypeError, z.__invert__)
 
-    def testNegation(self) -> None:
+    def test_negation(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         b = model.new_bool_var("b")
@@ -224,14 +224,14 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(nb.index, -b.index - 1)
         self.assertRaises(TypeError, x.negated)
 
-    def testEqualityOverload(self) -> None:
+    def test_equality_overload(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(0, 5, "y")
         self.assertEqual(x, x)
         self.assertNotEqual(x, y)
 
-    def testLinear(self) -> None:
+    def test_linear(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -242,7 +242,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(10, solver.value(x))
         self.assertEqual(-5, solver.value(y))
 
-    def testLinearConstraint(self) -> None:
+    def test_linear_constraint(self) -> None:
         model = cp_model.CpModel()
         model.add_linear_constraint(5, 0, 10)
         model.add_linear_constraint(-1, 0, 10)
@@ -252,7 +252,7 @@ class CpModelTest(absltest.TestCase):
         self.assertTrue(model.proto.constraints[1].HasField("bool_or"))
         self.assertEmpty(model.proto.constraints[1].bool_or.literals)
 
-    def testLinearNonEqual(self) -> None:
+    def test_linear_non_equal(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -263,7 +263,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(4, ct.linear.domain[2])
         self.assertEqual(cp_model.INT_MAX, ct.linear.domain[3])
 
-    def testEq(self) -> None:
+    def test_eq(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         ct = model.add(x == 2).proto
@@ -283,7 +283,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(2, ct.linear.domain[0])
         self.assertEqual(cp_model.INT_MAX, ct.linear.domain[1])
 
-    def testGt(self) -> None:
+    def test_gt(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         ct = model.add(x > 2).proto
@@ -293,7 +293,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(3, ct.linear.domain[0])
         self.assertEqual(cp_model.INT_MAX, ct.linear.domain[1])
 
-    def testLe(self) -> None:
+    def test_le(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         ct = model.add(x <= 2).proto
@@ -303,7 +303,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.INT_MIN, ct.linear.domain[0])
         self.assertEqual(2, ct.linear.domain[1])
 
-    def testLt(self) -> None:
+    def test_lt(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         ct = model.add(x < 2).proto
@@ -313,7 +313,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.INT_MIN, ct.linear.domain[0])
         self.assertEqual(1, ct.linear.domain[1])
 
-    def testEqVar(self) -> None:
+    def test_eq_var(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -326,7 +326,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(2, ct.linear.domain[0])
         self.assertEqual(2, ct.linear.domain[1])
 
-    def testGeVar(self) -> None:
+    def test_ge_var(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -340,7 +340,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(1, ct.linear.domain[0])
         self.assertEqual(cp_model.INT_MAX, ct.linear.domain[1])
 
-    def testGtVar(self) -> None:
+    def test_gt_var(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -354,7 +354,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(2, ct.linear.domain[0])
         self.assertEqual(cp_model.INT_MAX, ct.linear.domain[1])
 
-    def testLeVar(self) -> None:
+    def test_le_var(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -368,7 +368,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.INT_MIN, ct.linear.domain[0])
         self.assertEqual(1, ct.linear.domain[1])
 
-    def testLtVar(self) -> None:
+    def test_lt_var(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -382,7 +382,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.INT_MIN, ct.linear.domain[0])
         self.assertEqual(0, ct.linear.domain[1])
 
-    def testLinearNonEqualWithConstant(self) -> None:
+    def test_linear_non_equal_with_constant(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -394,7 +394,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(-1, ct.linear.domain[2])
         self.assertEqual(cp_model.INT_MAX, ct.linear.domain[3])
 
-    def testLinearWithEnforcement(self) -> None:
+    def test_linear_with_enforcement(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -413,14 +413,14 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(-4, model.proto.constraints[2].enforcement_literal[0])
         self.assertEqual(2, model.proto.constraints[2].enforcement_literal[1])
 
-    def testConstraintWithName(self) -> None:
+    def test_constraint_with_name(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
         ct = model.add_linear_constraint(x + 2 * y, 0, 10).with_name("test_constraint")
         self.assertEqual("test_constraint", ct.name)
 
-    def testNaturalApiMinimize(self) -> None:
+    def test_natural_api_minimize(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -433,7 +433,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(6, solver.value(1 + x))
         self.assertEqual(-10.0, solver.objective_value)
 
-    def testNaturalApiMaximizeFloat(self) -> None:
+    def test_natural_api_maximize_float(self) -> None:
         model = cp_model.CpModel()
         x = model.new_bool_var("x")
         y = model.new_int_var(0, 10, "y")
@@ -445,7 +445,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(-10, solver.value(-y))
         self.assertEqual(16.1, solver.objective_value)
 
-    def testNaturalApiMaximizeComplex(self) -> None:
+    def test_natural_api_maximize_complex(self) -> None:
         model = cp_model.CpModel()
         x1 = model.new_bool_var("x1")
         x2 = model.new_bool_var("x1")
@@ -469,7 +469,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(5, solver.value(5 * x4.negated()))
         self.assertEqual(8, solver.objective_value)
 
-    def testNaturalApiMaximize(self) -> None:
+    def test_natural_api_maximize(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -481,7 +481,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(-9, solver.value(y))
         self.assertEqual(17, solver.objective_value)
 
-    def testMinimizeConstant(self) -> None:
+    def test_minimize_constant(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         model.add(x >= -1)
@@ -490,7 +490,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual("OPTIMAL", solver.status_name(solver.solve(model)))
         self.assertEqual(10, solver.objective_value)
 
-    def testMaximizeConstant(self) -> None:
+    def test_maximize_constant(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         model.add(x >= -1)
@@ -499,7 +499,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual("OPTIMAL", solver.status_name(solver.solve(model)))
         self.assertEqual(5, solver.objective_value)
 
-    def testAddTrue(self) -> None:
+    def test_add_true(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         model.add(3 >= -1)
@@ -508,7 +508,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual("OPTIMAL", solver.status_name(solver.solve(model)))
         self.assertEqual(-10, solver.value(x))
 
-    def testAddFalse(self) -> None:
+    def test_add_false(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         model.add(3 <= -1)
@@ -516,7 +516,7 @@ class CpModelTest(absltest.TestCase):
         solver = cp_model.CpSolver()
         self.assertEqual("INFEASIBLE", solver.status_name(solver.solve(model)))
 
-    def testSum(self) -> None:
+    def test_sum(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 2, f"x{i}") for i in range(100)]
         model.add(sum(x) <= 1)
@@ -527,7 +527,7 @@ class CpModelTest(absltest.TestCase):
         for i in range(100):
             self.assertEqual(solver.value(x[i]), 1 if i == 99 else 0)
 
-    def testSumParsing(self) -> None:
+    def test_sum_parsing(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 2, f"x{i}") for i in range(5)]
         s1 = cp_model.LinearExpr.sum(x)
@@ -660,7 +660,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(TypeError):
             cp_model.LinearExpr.sum(x[0], x[2], FakeNpDTypeB())
 
-    def testWeightedSumParsing(self) -> None:
+    def test_weighted_sum_parsing(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 2, f"x{i}") for i in range(5)]
         c = [1, -2, 2, 3, 0.0]
@@ -702,7 +702,7 @@ class CpModelTest(absltest.TestCase):
         s7 = cp_model.LinearExpr.weighted_sum([2], [1.25])
         self.assertEqual(repr(s7), "FloatConstant(2.5)")
 
-    def testSumWithApi(self) -> None:
+    def test_sum_with_api(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 2, f"x{i}") for i in range(100)]
         self.assertEqual(cp_model.LinearExpr.sum([x[0]]), x[0])
@@ -720,7 +720,7 @@ class CpModelTest(absltest.TestCase):
         for i in range(100):
             self.assertEqual(solver.value(x[i]), 1 if i == 99 else 0)
 
-    def testWeightedSum(self) -> None:
+    def test_weighted_sum(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 2, f"x{i}") for i in range(100)]
         c = [2] * 100
@@ -745,7 +745,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(ValueError):
             cp_model.LinearExpr.WeightedSum([x[0]], [1.1, 2.2])
 
-    def testAllDifferent(self) -> None:
+    def test_all_different(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         model.add_all_different(x)
@@ -753,14 +753,14 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].all_diff.exprs, 5)
 
-    def testAllDifferentGen(self) -> None:
+    def test_all_different_gen(self) -> None:
         model = cp_model.CpModel()
         model.add_all_different(model.new_int_var(0, 4, f"x{i}") for i in range(5))
         self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].all_diff.exprs, 5)
 
-    def testAllDifferentList(self) -> None:
+    def test_all_different_list(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         model.add_all_different(x[0], x[1], x[2], x[3], x[4])
@@ -768,7 +768,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].all_diff.exprs, 5)
 
-    def testElement(self) -> None:
+    def test_element(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         model.add_element(x[0], [x[1], 2, 4, x[2]], x[4])
@@ -780,7 +780,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(ValueError):
             model.add_element(x[0], [], x[4])
 
-    def testFixedElement(self) -> None:
+    def test_fixed_element(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(4)]
         model.add_element(1, [x[0], 2, 4, x[2]], x[3])
@@ -791,7 +791,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(1, model.proto.constraints[0].linear.coeffs[0])
         self.assertEqual([2, 2], model.proto.constraints[0].linear.domain)
 
-    def testAffineElement(self) -> None:
+    def test_affine_element(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         model.add_element(x[0] + 1, [2 * x[1] - 2, 2, 4, x[2]], x[4] - 1)
@@ -826,7 +826,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(ValueError):
             model.add_circuit([])
 
-    def testMultipleCircuit(self) -> None:
+    def test_multiple_circuit(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         arcs: list[tuple[int, int, cp_model.LiteralT]] = [
@@ -841,7 +841,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(ValueError):
             model.add_multiple_circuit([])
 
-    def testAllowedAssignments(self) -> None:
+    def test_allowed_assignments(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         model.add_allowed_assignments(
@@ -862,7 +862,7 @@ class CpModelTest(absltest.TestCase):
                 [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
             )
 
-    def testForbiddenAssignments(self) -> None:
+    def test_forbidden_assignments(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         model.add_forbidden_assignments(
@@ -886,7 +886,7 @@ class CpModelTest(absltest.TestCase):
             [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
         )
 
-    def testAutomaton(self) -> None:
+    def test_automaton(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         model.add_automaton(x, 0, [2, 3], [(0, 0, 0), (0, 1, 1), (1, 2, 2), (2, 3, 3)])
@@ -922,7 +922,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(ValueError):
             model.add_automaton(x, 0, [2, 3], [])
 
-    def testInverse(self) -> None:
+    def test_inverse(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 4, f"x{i}") for i in range(5)]
         y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
@@ -932,7 +932,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].inverse.f_direct, 5)
         self.assertLen(model.proto.constraints[0].inverse.f_inverse, 5)
 
-    def testMaxEquality(self) -> None:
+    def test_max_equality(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
@@ -943,7 +943,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
         self.assertEqual(1, model.proto.constraints[0].lin_max.target.coeffs[0])
 
-    def testMinEquality(self) -> None:
+    def test_min_equality(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
@@ -953,7 +953,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
         self.assertEqual(-1, model.proto.constraints[0].lin_max.target.coeffs[0])
 
-    def testMinEqualityList(self) -> None:
+    def test_min_equality_list(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
@@ -963,7 +963,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
         self.assertEqual(-1, model.proto.constraints[0].lin_max.target.coeffs[0])
 
-    def testMinEqualityTuple(self) -> None:
+    def test_min_equality_tuple(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
@@ -973,7 +973,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
         self.assertEqual(-1, model.proto.constraints[0].lin_max.target.coeffs[0])
 
-    def testMinEqualityGenerator(self) -> None:
+    def test_min_equality_generator(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
@@ -983,7 +983,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
         self.assertEqual(-1, model.proto.constraints[0].lin_max.target.coeffs[0])
 
-    def testMinEqualityWithConstant(self) -> None:
+    def test_min_equality_with_constant(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(0, 4, "y")
@@ -999,7 +999,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEmpty(lin_max.exprs[1].vars)
         self.assertEqual(-3, lin_max.exprs[1].offset)
 
-    def testAbs(self) -> None:
+    def test_abs(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(-5, 5, "y")
@@ -1025,7 +1025,7 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertTrue(passed)
 
-    def testDivision(self) -> None:
+    def test_division(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 50, "y")
@@ -1077,7 +1077,7 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertTrue(passed)
 
-    def testMultiplicationEquality(self) -> None:
+    def test_multiplication_equality(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
@@ -1087,7 +1087,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].int_prod.exprs, 5)
         self.assertEqual(0, model.proto.constraints[0].int_prod.target.vars[0])
 
-    def testImplication(self) -> None:
+    def test_implication(self) -> None:
         model = cp_model.CpModel()
         x = model.new_bool_var("x")
         y = model.new_bool_var("y")
@@ -1099,7 +1099,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(x.index, model.proto.constraints[0].enforcement_literal[0])
         self.assertEqual(y.index, model.proto.constraints[0].bool_or.literals[0])
 
-    def testBoolOr(self) -> None:
+    def test_bool_or(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         model.add_bool_or(x)
@@ -1114,7 +1114,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(TypeError):
             model.add_bool_or([y, False])
 
-    def testBoolOrListOrGet(self) -> None:
+    def test_bool_or_list_or_get(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         model.add_bool_or(x)
@@ -1128,7 +1128,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[2].bool_or.literals, 2)
         self.assertLen(model.proto.constraints[3].bool_or.literals, 4)
 
-    def testAtLeastOne(self) -> None:
+    def test_at_least_one(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         model.add_at_least_one(x)
@@ -1141,7 +1141,7 @@ class CpModelTest(absltest.TestCase):
         y = model.new_int_var(0, 4, "y")
         self.assertRaises(TypeError, model.add_at_least_one, [y, False])
 
-    def testAtMostOne(self) -> None:
+    def test_at_most_one(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         model.add_at_most_one(x)
@@ -1154,7 +1154,7 @@ class CpModelTest(absltest.TestCase):
         y = model.new_int_var(0, 4, "y")
         self.assertRaises(TypeError, model.add_at_most_one, [y, False])
 
-    def testExactlyOne(self) -> None:
+    def test_exactly_one(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         model.add_exactly_one(x)
@@ -1167,7 +1167,7 @@ class CpModelTest(absltest.TestCase):
         y = model.new_int_var(0, 4, "y")
         self.assertRaises(TypeError, model.add_exactly_one, [y, False])
 
-    def testBoolAnd(self) -> None:
+    def test_bool_and(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         model.add_bool_and(x)
@@ -1179,7 +1179,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(-3, model.proto.constraints[1].bool_and.literals[1])
         self.assertEqual(5, model.proto.constraints[1].bool_and.literals[2])
 
-    def testBoolXOr(self) -> None:
+    def test_bool_x_or(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         model.add_bool_xor(x)
@@ -1187,7 +1187,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].bool_xor.literals, 5)
 
-    def testMapDomain(self) -> None:
+    def test_map_domain(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_bool_var(f"x{i}") for i in range(5)]
         y = model.new_int_var(0, 10, "y")
@@ -1195,7 +1195,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.variables, 6)
         self.assertLen(model.proto.constraints, 10)
 
-    def testInterval(self) -> None:
+    def test_interval(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(0, 3, "y")
@@ -1211,7 +1211,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(size_expr, 2)
         self.assertEqual(str(end_expr), "(x + 2)")
 
-    def testRebuildFromLinearExpressionProto(self) -> None:
+    def test_rebuild_from_linear_expression_proto(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(0, 1, "y")
@@ -1247,12 +1247,12 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(canonical_expr2.coeffs[1], 2)
         self.assertEqual(canonical_expr2.offset, 2)
 
-    def testAbsentInterval(self) -> None:
+    def test_absent_interval(self) -> None:
         model = cp_model.CpModel()
         i = model.new_optional_interval_var(1, 0, 1, False, "")
         self.assertEqual(0, i.index)
 
-    def testOptionalInterval(self) -> None:
+    def test_optional_interval(self) -> None:
         model = cp_model.CpModel()
         b = model.new_bool_var("b")
         x = model.new_int_var(0, 4, "x")
@@ -1272,7 +1272,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(TypeError):
             model.new_optional_interval_var(1, 2, 3, b + 1, "x")
 
-    def testNoOverlap(self) -> None:
+    def test_no_overlap(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(0, 3, "y")
@@ -1285,7 +1285,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, ct.proto.no_overlap.intervals[0])
         self.assertEqual(1, ct.proto.no_overlap.intervals[1])
 
-    def testNoOverlap2D(self) -> None:
+    def test_no_overlap2d(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(0, 3, "y")
@@ -1301,7 +1301,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(1, ct.proto.no_overlap_2d.y_intervals[0])
         self.assertEqual(0, ct.proto.no_overlap_2d.y_intervals[1])
 
-    def testCumulative(self) -> None:
+    def test_cumulative(self) -> None:
         model = cp_model.CpModel()
         intervals = [
             model.new_interval_var(
@@ -1320,7 +1320,7 @@ class CpModelTest(absltest.TestCase):
         with self.assertRaises(TypeError):
             model.add_cumulative([intervals[0], 3], [2, 3], 3)
 
-    def testGetOrMakeIndexFromConstant(self) -> None:
+    def test_get_or_make_index_from_constant(self) -> None:
         model = cp_model.CpModel()
         self.assertEqual(0, model.get_or_make_index_from_constant(3))
         self.assertEqual(0, model.get_or_make_index_from_constant(3))
@@ -1330,7 +1330,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(3, model_var.domain[0])
         self.assertEqual(3, model_var.domain[1])
 
-    def testStr(self) -> None:
+    def test_str(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         self.assertEqual(str(x == 2), "x == 2")
@@ -1381,7 +1381,7 @@ class CpModelTest(absltest.TestCase):
         i = model.new_interval_var(x, 2, y, "i")
         self.assertEqual(str(i), "i")
 
-    def testRepr(self) -> None:
+    def test_repr(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(0, 3, "y")
@@ -1429,12 +1429,12 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual("10", cp_model.display_bounds([10, 10]))
         self.assertEqual("10..15, 20..30", cp_model.display_bounds([10, 15, 20, 30]))
 
-    def testShortName(self) -> None:
+    def test_short_name(self) -> None:
         model = cp_model.CpModel()
         model.proto.variables.add(domain=[5, 10])
         self.assertEqual("[5..10]", cp_model.short_name(model.proto, 0))
 
-    def testIntegerExpressionErrors(self) -> None:
+    def test_integer_expression_errors(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 1, "x")
         y = model.new_int_var(0, 3, "y")
@@ -1453,13 +1453,13 @@ class CpModelTest(absltest.TestCase):
         self.assertRaises(TypeError, x.__add__, "dummy")
         self.assertRaises(TypeError, x.__mul__, "dummy")
 
-    def testModelErrors(self) -> None:
+    def test_model_errors(self) -> None:
         model = cp_model.CpModel()
         self.assertRaises(TypeError, model.add, "dummy")
         self.assertRaises(TypeError, model.get_or_make_index, "dummy")
         self.assertRaises(TypeError, model.minimize, "dummy")
 
-    def testSolverErrors(self) -> None:
+    def test_solver_errors(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 1, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -1471,7 +1471,7 @@ class CpModelTest(absltest.TestCase):
         self.assertRaises(TypeError, solver.value, "not_a_variable")
         self.assertRaises(TypeError, model.add_bool_or, [x, y])
 
-    def testHasObjectiveMinimize(self) -> None:
+    def test_has_objective_minimize(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 1, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -1480,7 +1480,7 @@ class CpModelTest(absltest.TestCase):
         model.minimize(y)
         self.assertTrue(model.has_objective())
 
-    def testHasObjectiveMaximize(self) -> None:
+    def test_has_objective_maximize(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 1, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -1489,7 +1489,7 @@ class CpModelTest(absltest.TestCase):
         model.maximize(y)
         self.assertTrue(model.has_objective())
 
-    def testSearchForAllSolutions(self) -> None:
+    def test_search_for_all_solutions(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1502,7 +1502,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(5, solution_counter.solution_count)
 
-    def testSolveWithSolutionCallback(self) -> None:
+    def test_solve_with_solution_callback(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1515,7 +1515,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(6, solution_sum.sum)
 
-    def testBestBoundCallback(self) -> None:
+    def test_best_bound_callback(self) -> None:
         model = cp_model.CpModel()
         x0 = model.new_bool_var("x0")
         x1 = model.new_bool_var("x1")
@@ -1533,7 +1533,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(2.6, best_bound_callback.best_bound)
 
-    def testValue(self) -> None:
+    def test_value(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1545,7 +1545,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(solver.value(y), 10)
         self.assertEqual(solver.value(2), 2)
 
-    def testBooleanValue(self) -> None:
+    def test_boolean_value(self) -> None:
         model = cp_model.CpModel()
         x = model.new_bool_var("x")
         y = model.new_bool_var("y")
@@ -1566,7 +1566,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(solver.boolean_value(2), True)
         self.assertEqual(solver.boolean_value(0), False)
 
-    def testUnsupportedOperators(self) -> None:
+    def test_unsupported_operators(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1581,7 +1581,7 @@ class CpModelTest(absltest.TestCase):
             if x == 2:
                 print("passed2")
 
-    def testIsLiteralTrueFalse(self) -> None:
+    def test_is_literal_true_false(self) -> None:
         model = cp_model.CpModel()
         x = model.new_constant(0)
         self.assertFalse(cp_model.object_is_a_true_literal(x))
@@ -1593,7 +1593,7 @@ class CpModelTest(absltest.TestCase):
         self.assertFalse(cp_model.object_is_a_true_literal(False))
         self.assertFalse(cp_model.object_is_a_false_literal(True))
 
-    def testSolveMinimizeWithSolutionCallback(self) -> None:
+    def test_solve_minimize_with_solution_callback(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1606,7 +1606,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(11, solution_obj.obj)
 
-    def testSolutionValue(self) -> None:
+    def test_solution_value(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         b = model.new_bool_var("b")
@@ -1625,7 +1625,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual([3, 5, -4], solution_recorder.int_var_values)
         self.assertEqual([True, False, True], solution_recorder.bool_var_values)
 
-    def testSolutionHinting(self) -> None:
+    def test_solution_hinting(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1639,7 +1639,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(2, solver.value(x))
         self.assertEqual(4, solver.value(y))
 
-    def testSolutionHintingWithBooleans(self) -> None:
+    def test_solution_hinting_with_booleans(self) -> None:
         model = cp_model.CpModel()
         x = model.new_bool_var("x")
         y = model.new_bool_var("y")
@@ -1653,7 +1653,7 @@ class CpModelTest(absltest.TestCase):
         self.assertTrue(solver.boolean_value(x))
         self.assertFalse(solver.boolean_value(y))
 
-    def testStats(self) -> None:
+    def test_stats(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1669,7 +1669,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(solver.num_branches, 0)
         self.assertGreater(solver.wall_time, 0.0)
 
-    def testSearchStrategy(self) -> None:
+    def test_search_strategy(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1694,7 +1694,7 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertEqual(cp_model.SELECT_MAX_VALUE, strategy.domain_reduction_strategy)
 
-    def testModelAndResponseStats(self) -> None:
+    def test_model_and_response_stats(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1706,7 +1706,7 @@ class CpModelTest(absltest.TestCase):
         solver.solve(model)
         self.assertTrue(solver.response_stats())
 
-    def testValidateModel(self) -> None:
+    def test_validate_model(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1714,7 +1714,7 @@ class CpModelTest(absltest.TestCase):
         model.maximize(x + 2 * y)
         self.assertFalse(model.validate())
 
-    def testValidateModelWithOverflow(self) -> None:
+    def test_validate_model_with_overflow(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, cp_model.INT_MAX, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1722,7 +1722,7 @@ class CpModelTest(absltest.TestCase):
         model.maximize(x + 2 * y)
         self.assertTrue(model.validate())
 
-    def testCopyModel(self) -> None:
+    def test_copy_model(self) -> None:
         model = cp_model.CpModel()
         b = model.new_bool_var("b")
         x = model.new_int_var(0, 4, "x")
@@ -1781,7 +1781,7 @@ class CpModelTest(absltest.TestCase):
         interval_ct = new_model.proto.constraints[copy_i.index].interval
         self.assertEqual(12, interval_ct.size.offset)
 
-    def testCustomLog(self) -> None:
+    def test_custom_log(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
@@ -1799,14 +1799,14 @@ class CpModelTest(absltest.TestCase):
 
         self.assertRegex(log_callback.log, ".*log_to_stdout.*")
 
-    def testIssue2762(self) -> None:
+    def test_issue2762(self) -> None:
         model = cp_model.CpModel()
 
         x = [model.new_bool_var("a"), model.new_bool_var("b")]
         with self.assertRaises(NotImplementedError):
             model.add((x[0] != 0) or (x[1] != 0))
 
-    def testModelError(self) -> None:
+    def test_model_error(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, -2, f"x{i}") for i in range(100)]
         model.add(sum(x) <= 1)
@@ -1815,7 +1815,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.MODEL_INVALID, solver.solve(model))
         self.assertEqual(solver.solution_info(), 'var #0 has no domain(): name: "x0"')
 
-    def testIntVarSeries(self) -> None:
+    def test_int_var_series(self) -> None:
         df = pd.DataFrame([1, -1, 1], columns=["coeffs"])
         model = cp_model.CpModel()
         x = model.new_int_var_series(
@@ -1836,7 +1836,7 @@ class CpModelTest(absltest.TestCase):
         )
         _ = z.apply(lambda x: ~x)
 
-    def testBoolVarSeries(self) -> None:
+    def test_bool_var_series(self) -> None:
         df = pd.DataFrame([1, -1, 1], columns=["coeffs"])
         model = cp_model.CpModel()
         x = model.new_bool_var_series(name="x", index=df.index)
@@ -1851,7 +1851,7 @@ class CpModelTest(absltest.TestCase):
         solution = solver.boolean_values(x)
         self.assertTrue((solution.values == [False, True, False]).all())
 
-    def testFixedSizeIntervalVarSeries(self) -> None:
+    def test_fixed_size_interval_var_series(self) -> None:
         df = pd.DataFrame([2, 4, 6], columns=["size"])
         model = cp_model.CpModel()
         starts = model.new_int_var_series(
@@ -1876,7 +1876,7 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertLen(model.proto.constraints, 7)
 
-    def testIntervalVarSeries(self) -> None:
+    def test_interval_var_series(self) -> None:
         df = pd.DataFrame([2, 4, 6], columns=["size"])
         model = cp_model.CpModel()
         starts = model.new_int_var_series(
@@ -1925,7 +1925,7 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertLen(model.proto.constraints, 13)
 
-    def testCompareWithNone(self) -> None:
+    def test_compare_with_none(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 10, "x")
         self.assertRaises(TypeError, x.__eq__, None)
@@ -1935,7 +1935,23 @@ class CpModelTest(absltest.TestCase):
         self.assertRaises(TypeError, x.__gt__, None)
         self.assertRaises(TypeError, x.__ge__, None)
 
-    def testIssue4376SatModel(self) -> None:
+    def test_small_series(self) -> None:
+        # OR-Tools issue #4525.
+        model = cp_model.CpModel()
+        x = model.new_bool_var("foo")
+        y = model.new_bool_var("bar")
+
+        s1 = pd.Series([x, y], index=[1, 2])
+        self.assertEqual(str(s1.sum()), "(foo + bar)")
+        s2 = pd.Series([1, -1], index=[1, 2])
+        self.assertEqual(str(s1.dot(s2)), "(foo + (-bar))")
+
+        s3 = pd.Series([x], index=[1])
+        self.assertIs(s3.sum(), x)
+        s4 = pd.Series([1], index=[1])
+        self.assertIs(s3.dot(s4), x)
+
+    def test_issue4376_sat_model(self) -> None:
         letters: str = "BCFLMRT"
 
         def symbols_from_string(text: str) -> list[int]:
@@ -2045,7 +2061,7 @@ TRFM"""
         if status == cp_model.OPTIMAL:
             self.assertLess(time.time(), solution_callback.last_time + 5.0)
 
-    def testIssue4376MinimizeModel(self) -> None:
+    def test_issue4376_minimize_model(self) -> None:
         model = cp_model.CpModel()
 
         jobs = [
@@ -2146,7 +2162,7 @@ TRFM"""
                 max(best_bound_callback.last_time, solution_callback.last_time) + 9.0,
             )
 
-    def testIssue4434(self) -> None:
+    def test_issue4434(self) -> None:
         model = cp_model.CpModel()
         i = model.NewIntVar(0, 10, "i")
         j = model.NewIntVar(0, 10, "j")
@@ -2163,7 +2179,7 @@ TRFM"""
         self.assertIsNotNone(expr_ne)
         self.assertIsNotNone(expr_ge)
 
-    def testRaisePythonExceptionInCallback(self) -> None:
+    def test_raise_python_exception_in_callback(self) -> None:
         model = cp_model.CpModel()
 
         jobs = [
@@ -2258,7 +2274,7 @@ TRFM"""
         with self.assertRaisesRegex(ValueError, msg):
             solver.solve(model, callback)
 
-    def testInPlaceSumModifications(self) -> None:
+    def test_in_place_sum_modifications(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
         y = [model.new_int_var(0, 10, f"y{i}") for i in range(5)]
@@ -2287,12 +2303,12 @@ TRFM"""
         self.assertEqual(e3.double_offset, 1.5)
         self.assertEqual(e3.num_exprs, 5)
 
-    def testLargeSum(self) -> None:
+    def test_large_sum(self) -> None:
         model = cp_model.CpModel()
         x = [model.new_int_var(0, 10, f"x{i}") for i in range(100000)]
         model.add(sum(x) == 10)
 
-    def testSimplification1(self):
+    def test_simplification1(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = (x * 2) * 2
@@ -2301,7 +2317,7 @@ TRFM"""
         self.assertEqual(4, prod.coefficient)
         self.assertEqual(0, prod.offset)
 
-    def testSimplification2(self):
+    def test_simplification2(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = 2 * (x * 2)
@@ -2310,7 +2326,7 @@ TRFM"""
         self.assertEqual(4, prod.coefficient)
         self.assertEqual(0, prod.offset)
 
-    def testSimplification3(self):
+    def test_simplification3(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = (2 * x) * 2
@@ -2319,7 +2335,7 @@ TRFM"""
         self.assertEqual(4, prod.coefficient)
         self.assertEqual(0, prod.offset)
 
-    def testSimplification4(self):
+    def test_simplification4(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = 2 * (2 * x)
@@ -2328,7 +2344,7 @@ TRFM"""
         self.assertEqual(4, prod.coefficient)
         self.assertEqual(0, prod.offset)
 
-    def testSimplification5(self):
+    def test_simplification5(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = 2 * (x + 1)
@@ -2337,7 +2353,7 @@ TRFM"""
         self.assertEqual(2, prod.coefficient)
         self.assertEqual(2, prod.offset)
 
-    def testSimplification6(self):
+    def test_simplification6(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = (x + 1) * 2
@@ -2346,7 +2362,7 @@ TRFM"""
         self.assertEqual(2, prod.coefficient)
         self.assertEqual(2, prod.offset)
 
-    def testSimplification7(self):
+    def test_simplification7(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = 2 * (x - 1)
@@ -2355,7 +2371,7 @@ TRFM"""
         self.assertEqual(2, prod.coefficient)
         self.assertEqual(-2, prod.offset)
 
-    def testSimplification8(self):
+    def test_simplification8(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = (x - 1) * 2
@@ -2364,7 +2380,7 @@ TRFM"""
         self.assertEqual(2, prod.coefficient)
         self.assertEqual(-2, prod.offset)
 
-    def testSimplification9(self):
+    def test_simplification9(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = 2 * (1 - x)
@@ -2373,7 +2389,7 @@ TRFM"""
         self.assertEqual(-2, prod.coefficient)
         self.assertEqual(2, prod.offset)
 
-    def testSimplification10(self):
+    def test_simplification10(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
         prod = (1 - x) * 2

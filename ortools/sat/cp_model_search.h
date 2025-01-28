@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
@@ -59,12 +60,14 @@ class CpModelView {
   BooleanOrIntegerLiteral GreaterOrEqual(int var, int64_t value) const;
   BooleanOrIntegerLiteral LowerOrEqual(int var, int64_t value) const;
   BooleanOrIntegerLiteral MedianValue(int var) const;
+  BooleanOrIntegerLiteral RandomSplit(int var, int64_t lb, int64_t ub) const;
 
  private:
   const CpModelMapping& mapping_;
   const VariablesAssignment& boolean_assignment_;
   const IntegerTrail& integer_trail_;
   const IntegerEncoder& integer_encoder_;
+  mutable absl::BitGenRef random_;
 };
 
 // Constructs the search strategy specified in the given CpModelProto.
