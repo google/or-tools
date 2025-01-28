@@ -88,6 +88,9 @@ void PrintSolution(const RoutingIndexManager& manager,
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   int64_t total_distance{0};
   for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
+    if (!routing.IsVehicleUsed(solution, vehicle_id)) {
+      continue;
+    }
     int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t distance{0};

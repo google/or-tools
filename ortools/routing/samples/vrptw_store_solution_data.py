@@ -77,6 +77,8 @@ def print_solution(routes, cumul_data):
     total_time = 0
     route_str = ""
     for i, route in enumerate(routes):
+        if len(route) <= 2:
+            continue
         route_str += "Route " + str(i) + ":\n"
         start_time = cumul_data[i][0][0]
         end_time = cumul_data[i][0][1]

@@ -77,6 +77,8 @@ def print_solution(manager, routing, solution):
     print(f"Objective: {solution.ObjectiveValue()}")
     total_distance = 0
     for vehicle_index in range(manager.GetNumberOfVehicles()):
+        if not routing.IsVehicleUsed(solution, vehicle_index):
+            continue
         index = routing.Start(vehicle_index)
         plan_output = f"Route for vehicle {vehicle_index}:\n"
         route_distance = 0

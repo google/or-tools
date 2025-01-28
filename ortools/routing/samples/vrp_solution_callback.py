@@ -73,6 +73,8 @@ def print_solution(
     total_distance = 0
     for vehicle_id in range(routing_manager.GetNumberOfVehicles()):
         index = routing_model.Start(vehicle_id)
+        if routing_model.IsEnd(routing_model.NextVar(index).Value()):
+            continue
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
         while not routing_model.IsEnd(index):
