@@ -42,6 +42,8 @@
 #include "ortools/flatzinc/parser.h"
 #include "ortools/util/logging.h"
 
+constexpr bool kOrToolsMode = true;
+
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, search_all_solutions, false, "Search for all solutions.");
 ABSL_FLAG(bool, display_all_solutions, false,
@@ -59,7 +61,8 @@ ABSL_FLAG(std::string, fz_model_name, "stdin",
 ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
 ABSL_FLAG(bool, fz_logging, false,
           "Print logging information from the flatzinc interpreter.");
-ABSL_FLAG(bool, ortools_mode, true, "Display solutions in the flatzinc format");
+ABSL_FLAG(bool, ortools_mode, kOrToolsMode,
+          "Display solutions in the flatzinc format");
 
 namespace operations_research {
 namespace fz {
@@ -102,8 +105,10 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = time_param;
       use_time_param = true;
     }
-    if (strcmp((*argv)[i], "-v") == 0) {
-      (*argv)[i] = logging_param;
+    if (kOrToolsMode) {
+      if (strcmp((*argv)[i], "-v") == 0) {
+        (*argv)[i] = logging_param;
+      }
     }
   }
   const char kUsage[] =
