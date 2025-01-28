@@ -90,7 +90,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("Time");
   int64_t total_time{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
-    if (!routing.IsVehicleUsed(*solution, vehicle_id)) {
+    if (!routing.IsVehicleUsed(solution, vehicle_id)) {
       continue;
     }
     int64_t index = routing.Start(vehicle_id);

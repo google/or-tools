@@ -89,7 +89,7 @@ void PrintSolution(const RoutingIndexManager& manager,
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("Time");
   int64_t total_time{0};
   for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
-    if (!routing.IsVehicleUsed(*solution, vehicle_id)) {
+    if (!routing.IsVehicleUsed(solution, vehicle_id)) {
       continue;
     }
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";

@@ -101,7 +101,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   int64_t total_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
-    if (!routing.IsVehicleUsed(*solution, vehicle_id)) {
+    if (!routing.IsVehicleUsed(solution, vehicle_id)) {
       continue;
     }
     int64_t index = routing.Start(vehicle_id);
