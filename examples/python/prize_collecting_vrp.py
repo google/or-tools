@@ -82,6 +82,8 @@ def print_solution(manager, routing, assignment):
     total_distance = 0
     total_value_collected = 0
     for v in range(manager.GetNumberOfVehicles()):
+        if not routing.IsVehicleUsed(assignment, v):
+            continue
         index = routing.Start(v)
         plan_output = f'Route for vehicle {v}:\n'
         route_distance = 0

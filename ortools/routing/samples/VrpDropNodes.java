@@ -83,6 +83,9 @@ public class VrpDropNodes {
     long totalDistance = 0;
     long totalLoad = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;

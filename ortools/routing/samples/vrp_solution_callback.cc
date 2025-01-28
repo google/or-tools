@@ -85,6 +85,9 @@ void print_solution(const RoutingIndexManager& routing_manager,
   for (int vehicle_id = 0; vehicle_id < routing_manager.num_vehicles();
        ++vehicle_id) {
     int64_t index = routing_model.Start(vehicle_id);
+    if (routing_model.IsEnd(routing_model.NextVar(index)->Value())) {
+      continue;
+    }
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t route_distance = 0;
     std::stringstream route;

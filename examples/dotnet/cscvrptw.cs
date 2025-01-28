@@ -298,13 +298,13 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
             for (int vehicle = 0; vehicle < number_of_vehicles; ++vehicle)
             {
                 String route = "Vehicle " + vehicle + ": ";
-                long order = model.Start(vehicle);
-                if (model.IsEnd(solution.Value(model.NextVar(order))))
+                if (!model.IsVehicleUsed(solution, vehicle))
                 {
                     route += "Empty";
                 }
                 else
                 {
+                    long order = model.Start(vehicle);
                     for (; !model.IsEnd(order); order = solution.Value(model.NextVar(order)))
                     {
                         IntVar local_load = capacity_dimension.CumulVar(order);

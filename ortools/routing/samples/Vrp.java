@@ -73,6 +73,9 @@ public class Vrp {
     // Inspect solution.
     long totalDistance = 0;
     for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
       String route = "";

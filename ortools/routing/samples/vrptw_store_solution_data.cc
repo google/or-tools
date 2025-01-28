@@ -82,6 +82,9 @@ void PrintSolution(
   int64_t total_time{0};
   std::ostringstream route;
   for (int vehicle_id = 0; vehicle_id < routes.size(); ++vehicle_id) {
+    if (routes[vehicle_id].size() <= 2) {
+      continue;
+    }
     route << "\nRoute " << vehicle_id << ": \n";
 
     route << "  " << routes[vehicle_id][0] << " Time("

@@ -86,6 +86,8 @@ def print_solution(data, manager, routing, solution):
     dim_two = routing.GetDimensionOrDie("Two")
 
     for vehicle_id in range(data["num_vehicles"]):
+        if not routing.IsVehicleUsed(solution, vehicle_id):
+            continue
         index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
