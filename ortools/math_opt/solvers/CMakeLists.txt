@@ -246,8 +246,7 @@ if(USE_XPRESS)
           SOURCES
           "xpress_solver_test.cc"
           LINK_LIBRARIES
-          GTest::gmock
-          GTest::gmock_main
+          GTest::gtest
           absl::status
           ortools::math_opt_matchers
           "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"

@@ -32,6 +32,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/xpress/environment.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -244,3 +245,14 @@ INSTANTIATE_TEST_SUITE_P(XpressStatusTest, StatusTest,
 }  // namespace
 }  // namespace math_opt
 }  // namespace operations_research
+
+GTEST_API_ int main(int argc, char **argv) {
+  printf("Running main() from %s\n", __FILE__);
+  testing::InitGoogleTest(&argc, argv);
+  if (operations_research::XpressIsCorrectlyInstalled()) {
+  return RUN_ALL_TESTS();
+  } else {
+    LOG(INFO) << "XPress MP is not correctly installed, skipping";
+    return EXIT_SUCCESS;
+  }
+}
