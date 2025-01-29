@@ -66,6 +66,10 @@ public class VrpStartsEnds
         long maxRouteDistance = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
         {
+            if (!routing.IsVehicleUsed(solution, i))
+            {
+                continue;
+            }
             Console.WriteLine("Route for Vehicle {0}:", i);
             long routeDistance = 0;
             var index = routing.Start(i);
