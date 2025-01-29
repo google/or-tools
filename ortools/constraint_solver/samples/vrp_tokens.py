@@ -17,6 +17,7 @@
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -59,6 +60,8 @@ def print_solution(manager, routing, solution):
     total_distance = 0
     total_token = 0
     for vehicle_id in range(manager.GetNumberOfVehicles()):
+        if not routing.IsVehicleUsed(solution, vehicle_id):
+            continue
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         index = routing.Start(vehicle_id)
         total_token += solution.Value(token_dimension.CumulVar(index))

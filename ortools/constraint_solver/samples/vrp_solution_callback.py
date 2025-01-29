@@ -28,6 +28,7 @@ import weakref
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -72,6 +73,8 @@ def print_solution(
     total_distance = 0
     for vehicle_id in range(routing_manager.GetNumberOfVehicles()):
         index = routing_model.Start(vehicle_id)
+        if routing_model.IsEnd(routing_model.NextVar(index).Value()):
+            continue
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
         while not routing_model.IsEnd(index):
@@ -86,6 +89,7 @@ def print_solution(
         print(plan_output)
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
+
 
 # [END solution_callback_printer]
 
@@ -115,6 +119,7 @@ class SolutionCallback:
             self._counter += 1
         if self._counter > self._counter_limit:
             self._routing_model_ref().solver().FinishCurrentSearch()
+
 
 # [END solution_callback]
 

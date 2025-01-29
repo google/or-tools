@@ -22,6 +22,7 @@ This problem has 72 different solutions in base 10.
 """
 # [START import]
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
