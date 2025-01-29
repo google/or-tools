@@ -43,6 +43,9 @@ public final class VrpWithTimeLimit {
     // Inspect solution.
     long maxRouteDistance = 0;
     for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;

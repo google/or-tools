@@ -67,6 +67,9 @@ public final class VrpSolutionCallback {
     // Inspect solution.
     long totalDistance = 0;
     for (int i = 0; i < routingManager.getNumberOfVehicles(); ++i) {
+      if (routingModel.activeVehicleVar(i).value() == 0) {
+        continue;
+      }
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
       long index = routingModel.start(i);
