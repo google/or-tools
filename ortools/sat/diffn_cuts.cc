@@ -335,8 +335,8 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     rectangles.reserve(num_rectangles);
     for (const auto& component :
          helper->connected_components().AsVectorOfSpan()) {
-      rectangles.clear();
       for (const int rect : component) {
+        rectangles.clear();
         if (helper->IsAbsent(rect)) continue;
         // We do not consider rectangles controlled by 2 different unassigned
         // enforcement literals.

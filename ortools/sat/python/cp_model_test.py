@@ -1940,6 +1940,7 @@ class CpModelTest(absltest.TestCase):
         model = cp_model.CpModel()
         x = model.new_bool_var("foo")
         y = model.new_bool_var("bar")
+        z = model.new_bool_var("baz")
 
         s1 = pd.Series([x, y], index=[1, 2])
         self.assertEqual(str(s1.sum()), "(foo + bar)")
@@ -1950,6 +1951,11 @@ class CpModelTest(absltest.TestCase):
         self.assertIs(s3.sum(), x)
         s4 = pd.Series([1], index=[1])
         self.assertIs(s3.dot(s4), x)
+
+        s5 = pd.Series([x, y, z], index=[1, 2, 3])
+        self.assertEqual(str(s5.sum()), "(foo + bar + baz)")
+        s6 = pd.Series([1, -2, 1], index=[1, 2, 3])
+        self.assertEqual(str(s5.dot(s6)), "(foo + (-2 * bar) + baz)")
 
     def test_issue4376_sat_model(self) -> None:
         letters: str = "BCFLMRT"
