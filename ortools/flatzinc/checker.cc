@@ -1072,7 +1072,7 @@ bool CheckSetNotIn(const Constraint& ct,
 bool CheckSetInReif(const Constraint& ct,
                     const std::function<int64_t(Variable*)>& evaluator) {
   const int64_t value = Eval(ct.arguments[0], evaluator);
-  const int64_t status = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
   return status == ct.arguments[1].Contains(value);
 }
 
