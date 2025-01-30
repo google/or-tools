@@ -20,7 +20,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
@@ -47,8 +46,8 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
     std::vector<AffineExpression> sizes,
     std::vector<LiteralIndex> reason_for_presence, Model* model)
     : model_(model),
-      trail_(model->GetOrCreate<Trail>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
+      assignment_(sat_solver_->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
@@ -64,15 +63,17 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
       cached_negated_end_max_(new IntegerValue[capacity_]),
       cached_shifted_start_min_(new IntegerValue[capacity_]),
       cached_negated_shifted_end_max_(new IntegerValue[capacity_]) {
-  minus_ends_.clear();
-  minus_starts_.clear();
   DCHECK_EQ(starts_.size(), ends_.size());
   DCHECK_EQ(starts_.size(), sizes_.size());
   DCHECK_EQ(starts_.size(), reason_for_presence_.size());
 
+  minus_starts_.clear();
+  minus_starts_.reserve(starts_.size());
+  minus_ends_.clear();
+  minus_ends_.reserve(starts_.size());
   for (int i = 0; i < starts_.size(); ++i) {
-    minus_ends_.push_back(ends_[i].Negated());
     minus_starts_.push_back(starts_[i].Negated());
+    minus_ends_.push_back(ends_[i].Negated());
   }
 
   InitSortedVectors();
@@ -84,8 +85,8 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
 SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
                                                        Model* model)
     : model_(model),
-      trail_(model->GetOrCreate<Trail>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
+      assignment_(sat_solver_->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
       capacity_(num_tasks),
@@ -120,6 +121,16 @@ void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchIntegerVariable(sizes_[t].var, id, t);
     watcher->WatchIntegerVariable(starts_[t].var, id, t);
     watcher->WatchIntegerVariable(ends_[t].var, id, t);
+
+    // This class do not need to be waked up on presence change, since this is
+    // not cached. However given that we can have many propagators that use the
+    // same helper, it is nicer to only register this one, and wake up all
+    // propagator through it rather than registering all of them individually.
+    // Note that IncrementalPropagate() will do nothing if this is the only
+    // change except waking up registered propagators.
+    if (!IsPresent(t) && !IsAbsent(t)) {
+      watcher_->WatchLiteral(Literal(reason_for_presence_[t]), id);
+    }
   }
   watcher->SetPropagatorPriority(id, 0);
 }
@@ -352,7 +363,7 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
 bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
   CHECK(IsPresent(a));
   CHECK(IsPresent(b));
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
 
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
@@ -370,7 +381,7 @@ bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
     AddWeightedSumLowerOrEqual({}, {before.var, after.var},
                                {int64_t{1}, int64_t{-1}}, -offset.value(),
                                model_);
-    if (model_->GetOrCreate<SatSolver>()->ModelIsUnsat()) return false;
+    if (sat_solver_->ModelIsUnsat()) return false;
   }
   return true;
 }
@@ -609,30 +620,11 @@ bool SchedulingConstraintHelper::ReportConflict() {
   return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
 }
 
-void SchedulingConstraintHelper::WatchAllTasks(int id, bool watch_max_side) {
-  // In all cases, we watch presence literals since this class is not waked up
-  // when those changes.
-  const int num_tasks = starts_.size();
-  for (int t = 0; t < num_tasks; ++t) {
-    if (!IsPresent(t) && !IsAbsent(t)) {
-      watcher_->WatchLiteral(Literal(reason_for_presence_[t]), id);
-    }
-  }
-
-  // If everything is watched, it is slighlty more efficient to enqueue the
-  // propagator when the helper Propagate() is called. This result in less
-  // entries in our watched lists.
-  if (watch_max_side) {
-    propagator_ids_.push_back(id);
-    return;
-  }
-
-  // We only watch "min" side.
-  for (int t = 0; t < num_tasks; ++t) {
-    watcher_->WatchLowerBound(starts_[t], id);
-    watcher_->WatchLowerBound(ends_[t], id);
-    watcher_->WatchLowerBound(sizes_[t], id);
-  }
+void SchedulingConstraintHelper::WatchAllTasks(int id) {
+  // It is more efficient to enqueue the propagator
+  // when the helper Propagate() is called. This result in less entries in our
+  // watched lists.
+  propagator_ids_.push_back(id);
 }
 
 void SchedulingConstraintHelper::AddOtherReason(int t) {

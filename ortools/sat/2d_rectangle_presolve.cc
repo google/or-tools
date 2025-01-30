@@ -111,6 +111,7 @@ bool PresolveFixed2dRectangles(
       // The whole rectangle was outside of the domain, remove it.
       std::swap(rectangle, (*fixed_boxes)[fixed_boxes->size() - 1]);
       fixed_boxes->resize(fixed_boxes->size() - 1);
+      changed = true;
       continue;
     } else {
       new_size++;

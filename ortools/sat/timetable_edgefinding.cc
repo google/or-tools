@@ -49,7 +49,7 @@ TimeTableEdgeFinding::TimeTableEdgeFinding(AffineExpression capacity,
 void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchUpperBound(capacity_, id);
-  helper_->WatchAllTasks(id, watcher);
+  helper_->WatchAllTasks(id);
   for (int t = 0; t < num_tasks_; t++) {
     watcher->WatchLowerBound(demands_->Demands()[t], id);
   }

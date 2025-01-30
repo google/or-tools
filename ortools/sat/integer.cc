@@ -2119,10 +2119,7 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
     const Literal literal = (*trail)[propagation_trail_index_++];
     if (literal.Index() >= literal_limit) continue;
     for (const auto entry : literal_to_watcher_[literal]) {
-      if (!in_queue_[entry.id]) {
-        in_queue_[entry.id] = true;
-        queue_by_priority_[id_to_priority_[entry.id]].push_back(entry.id);
-      }
+      CallOnNextPropagate(entry.id);
       if (entry.watch_index >= 0) {
         id_to_watch_indices_[entry.id].push_back(entry.watch_index);
       }
@@ -2134,10 +2131,7 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
     if (var.value() >= var_limit) continue;
     for (const auto entry : var_to_watcher_[var]) {
-      if (!in_queue_[entry.id]) {
-        in_queue_[entry.id] = true;
-        queue_by_priority_[id_to_priority_[entry.id]].push_back(entry.id);
-      }
+      CallOnNextPropagate(entry.id);
       if (entry.watch_index >= 0) {
         id_to_watch_indices_[entry.id].push_back(entry.watch_index);
       }
@@ -2161,9 +2155,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
   if (level == 0) {
     for (const int id : propagator_ids_to_call_at_level_zero_) {
-      if (in_queue_[id]) continue;
-      in_queue_[id] = true;
-      queue_by_priority_[id_to_priority_[id]].push_back(id);
+      CallOnNextPropagate(id);
     }
   }
 

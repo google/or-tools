@@ -318,7 +318,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   // Registers the given propagator id to be called if any of the tasks
   // in this class change. Note that we do not watch size max though.
-  void WatchAllTasks(int id, bool watch_max_side = true);
+  void WatchAllTasks(int id);
 
   // Manages the other helper (used by the diffn constraint).
   //
@@ -349,7 +349,9 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // not handle this correctly.
   bool InPropagationLoop() const { return integer_trail_->InPropagationLoop(); }
 
-  int CurrentDecisionLevel() const { return trail_->CurrentDecisionLevel(); }
+  int CurrentDecisionLevel() const {
+    return sat_solver_->CurrentDecisionLevel();
+  }
 
  private:
   // Tricky: when a task is optional, it is possible it size min is negative,
@@ -384,8 +386,8 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   void ImportOtherReasons();
 
   Model* model_;
-  Trail* trail_;
   SatSolver* sat_solver_;
+  const VariablesAssignment& assignment_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
   PrecedenceRelations* precedence_relations_;
@@ -610,17 +612,25 @@ inline bool SchedulingConstraintHelper::SizeIsFixed(int t) const {
 }
 
 inline bool SchedulingConstraintHelper::IsOptional(int t) const {
-  return reason_for_presence_[t] != kNoLiteralIndex;
+  DCHECK_GE(t, 0);
+  DCHECK_LT(t, reason_for_presence_.size());
+  return reason_for_presence_.data()[t] != kNoLiteralIndex;
 }
 
 inline bool SchedulingConstraintHelper::IsPresent(int t) const {
-  if (reason_for_presence_[t] == kNoLiteralIndex) return true;
-  return trail_->Assignment().LiteralIsTrue(Literal(reason_for_presence_[t]));
+  DCHECK_GE(t, 0);
+  DCHECK_LT(t, reason_for_presence_.size());
+  const LiteralIndex lit = reason_for_presence_.data()[t];
+  if (lit == kNoLiteralIndex) return true;
+  return assignment_.LiteralIsTrue(Literal(lit));
 }
 
 inline bool SchedulingConstraintHelper::IsAbsent(int t) const {
-  if (reason_for_presence_[t] == kNoLiteralIndex) return false;
-  return trail_->Assignment().LiteralIsFalse(Literal(reason_for_presence_[t]));
+  DCHECK_GE(t, 0);
+  DCHECK_LT(t, reason_for_presence_.size());
+  const LiteralIndex lit = reason_for_presence_.data()[t];
+  if (lit == kNoLiteralIndex) return false;
+  return assignment_.LiteralIsFalse(Literal(lit));
 }
 
 inline bool SchedulingConstraintHelper::IsOptional(LiteralIndex lit) const {
@@ -629,12 +639,12 @@ inline bool SchedulingConstraintHelper::IsOptional(LiteralIndex lit) const {
 
 inline bool SchedulingConstraintHelper::IsPresent(LiteralIndex lit) const {
   if (lit == kNoLiteralIndex) return true;
-  return trail_->Assignment().LiteralIsTrue(Literal(lit));
+  return assignment_.LiteralIsTrue(Literal(lit));
 }
 
 inline bool SchedulingConstraintHelper::IsAbsent(LiteralIndex lit) const {
   if (lit == kNoLiteralIndex) return false;
-  return trail_->Assignment().LiteralIsFalse(Literal(lit));
+  return assignment_.LiteralIsFalse(Literal(lit));
 }
 
 inline void SchedulingConstraintHelper::ClearReason() {

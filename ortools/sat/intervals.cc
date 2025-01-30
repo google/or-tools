@@ -214,6 +214,12 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
   std::vector<AffineExpression> sizes;
   std::vector<LiteralIndex> reason_for_presence;
 
+  const int num_variables = variables.size();
+  starts.reserve(num_variables);
+  ends.reserve(num_variables);
+  sizes.reserve(num_variables);
+  reason_for_presence.reserve(num_variables);
+
   for (const IntervalVariable i : variables) {
     if (IsOptional(i)) {
       reason_for_presence.push_back(PresenceLiteral(i).Index());
@@ -224,6 +230,7 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
     starts.push_back(Start(i));
     ends.push_back(End(i));
   }
+
   SchedulingConstraintHelper* helper = new SchedulingConstraintHelper(
       std::move(starts), std::move(ends), std::move(sizes),
       std::move(reason_for_presence), model_);
