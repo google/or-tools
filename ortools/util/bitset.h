@@ -506,7 +506,7 @@ class Bitset64 {
   void Clear(IndexType i) {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
-    data_[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
+    data_.data()[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
   }
 
   // Sets bucket containing bit i to 0.
@@ -527,14 +527,14 @@ class Bitset64 {
   bool AreOneOfTwoBitsSet(IndexType i) const {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
-    return data_[BitOffset64(Value(i))] & TwoBitsFromPos64(Value(i));
+    return data_.data()[BitOffset64(Value(i))] & TwoBitsFromPos64(Value(i));
   }
 
   // Returns true if the bit at position i is set.
   bool IsSet(IndexType i) const {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
-    return data_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
+    return data_.data()[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
   }
 
   // Same as IsSet().
@@ -545,7 +545,7 @@ class Bitset64 {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), size_);
     // The c++ hardening is costly here, so we disable it.
-    data_[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
+    data_.data()[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
   }
 
   // If value is true, sets the bit at position i to 1, sets it to 0 otherwise.
