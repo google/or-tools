@@ -334,14 +334,9 @@ def print_solution(
     for vehicle_id in range(data["num_vehicles"]):
         index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
-        load_var = 0
+        load_value = 0
         distance = 0
         while not routing.IsEnd(index):
-            if previous_index is not None:
-                # capacity dimension TransitVar is negative at reload stations during replenishment
-                # don't want to consider those values when calculating the total load of the route
-                # hence only considering the positive values
-                load_var += max(0,capacity_dimension.GetTransitValue(previous_index,index,vehicle_id))
             time_var = time_dimension.CumulVar(index)
             plan_output += (
                 f" {manager.IndexToNode(index)} "
@@ -354,7 +349,7 @@ def print_solution(
             # capacity dimension TransitVar is negative at reload stations during replenishment
             # don't want to consider those values when calculating the total load of the route
             # hence only considering the positive values
-            load_var += max(0,capacity_dimension.GetTransitValue(previous_index,index,vehicle_id))
+            load_value += max(0,capacity_dimension.GetTransitValue(previous_index,index,vehicle_id))
         time_var = time_dimension.CumulVar(index)
         plan_output += (
             f" {manager.IndexToNode(index)} "
@@ -362,11 +357,11 @@ def print_solution(
             f"Time({assignment.Min(time_var)},{assignment.Max(time_var)})\n"
         )
         plan_output += f"Distance of the route: {distance}m\n"
-        plan_output += f"Load of the route: {load_var}\n"
+        plan_output += f"Load of the route: {load_value}\n"
         plan_output += f"Time of the route: {assignment.Min(time_var)}min\n"
         print(plan_output)
         total_distance += distance
-        total_load += load_var
+        total_load += load_value
         total_time += assignment.Min(time_var)
     print(f"Total Distance of all routes: {total_distance}m")
     print(f"Total Load of all routes: {total_load}")
