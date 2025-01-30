@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # [START program]
 """Vehicles Routing Problem (VRP) for delivering items from any suppliers.
-Description:
-Need to deliver some item X and Y at end nodes (at least 11 X and 13 Y).
-Several locations provide them and even few provide both.
+
+Description: Need to deliver some item X and Y at end nodes (at least 11 X and
+13 Y). Several locations provide them and even few provide both.
 
 fleet:
   * vehicles: 2
@@ -465,8 +465,11 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(
-        len(data["distance_matrix"]), data["num_vehicles"], data["starts"], data["ends"]
+    manager = pywraprouting.RoutingIndexManager(
+        len(data["distance_matrix"]),
+        data["num_vehicles"],
+        data["starts"],
+        data["ends"],
     )
     # [END index_manager]
 

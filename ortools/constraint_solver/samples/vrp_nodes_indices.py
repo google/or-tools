@@ -18,11 +18,15 @@ This script generate few markdown tables to better understand
 the relation between nodes and indices.
 
 Things to notice:
-* Since we have two duplicates (node 5 and node 4) solver need 2 extra indices to have an unique index for each vehicle start/stop and locations.
-* Solver needs to "create" an index for a vehicle 1 start since solver need an unique start index per vehicle.
+* Since we have two duplicates (node 5 and node 4) solver need 2 extra indices
+to have an unique index for each vehicle start/stop and locations.
+* Solver needs to "create" an index for a vehicle 1 start since solver need an
+unique start index per vehicle.
 * All end nodes are moved to the end of the index list aka [15, 16, 17, 18].
-* routing.Size() return the number of node which are not end nodes (here 15 aka [0-14])
-note: using the two properties above, we know that any index in range(routing.Size()) is not a vehicle end node.
+* routing.Size() return the number of node which are not end nodes (here 15 aka
+[0-14])
+note: using the two properties above, we know that any index in
+range(routing.Size()) is not a vehicle end node.
 
 * Since end nodes are moved to the end, their respective "empty" node index are
 reused so all locations indices are "shifted"
@@ -31,9 +35,11 @@ e.g. node 9 is mapped to index 6
 e.g. start node 7 mapped to index 4
 
 Takeaway:
-* Allways use routing.Start(), routing.End(), manager.IndexToNode() or manager.NodeToIndex().
+* Allways use routing.Start(), routing.End(), manager.IndexToNode() or
+manager.NodeToIndex().
 * Location node is not necessarily equal to its index.
-* To loop through ALL indices use manager.GetNumberOfIndices() (Python) or manager::num_indices() (C++)
+* To loop through ALL indices use manager.GetNumberOfIndices() (Python) or
+manager::num_indices() (C++)
 """
 
 from ortools.constraint_solver import routing_enums_pb2

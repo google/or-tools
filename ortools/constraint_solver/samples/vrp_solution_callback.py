@@ -15,12 +15,12 @@
 # [START program]
 """Simple Vehicles Routing Problem (VRP).
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
+This is a sample using the routing library python wrapper to solve a VRP
+problem.
 
-   The solver stop after improving its solution 15 times or after 5 seconds.
+The solver stop after improving its solution 15 times or after 5 seconds.
 
-   Distances are in meters.
+Distances are in meters.
 """
 
 # [START import]
@@ -90,7 +90,6 @@ def print_solution(
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
 
-
 # [END solution_callback_printer]
 
 
@@ -112,7 +111,9 @@ class SolutionCallback:
         self.objectives = []
 
     def __call__(self):
-        objective = int(self._routing_model_ref().CostVar().Value())
+        objective = int(
+            self._routing_model_ref().CostVar().Value()
+        )  # pytype: disable=attribute-error
         if not self.objectives or objective < self.objectives[-1]:
             self.objectives.append(objective)
             print_solution(self._routing_manager_ref(), self._routing_model_ref())

@@ -15,31 +15,31 @@
 # limitations under the License.
 """Capacitated Vehicle Routing Problem (CVRP).
 
-   This is a sample using the routing library python wrapper to solve a CVRP
-   problem while allowing multiple trips, i.e., vehicles can return to a depot
-   to reset their load ("reload").
+This is a sample using the routing library python wrapper to solve a CVRP
+problem while allowing multiple trips, i.e., vehicles can return to a depot
+to reset their load ("reload").
 
-   A description of the CVRP problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+A description of the CVRP problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters.
+Distances are in meters.
 
-   In order to implement multiple trips, new nodes are introduced at the same
-   locations of the original depots. These additional nodes can be dropped
-   from the schedule at 0 cost.
+In order to implement multiple trips, new nodes are introduced at the same
+locations of the original depots. These additional nodes can be dropped
+from the schedule at 0 cost.
 
-   The max_slack parameter associated to the capacity constraints of all nodes
-   can be set to be the maximum of the vehicles' capacities, rather than 0 like
-   in a traditional CVRP. Slack is required since before a solution is found,
-   it is not known how much capacity will be transferred at the new nodes. For
-   all the other (original) nodes, the slack is then re-set to 0.
+The max_slack parameter associated to the capacity constraints of all nodes
+can be set to be the maximum of the vehicles' capacities, rather than 0 like
+in a traditional CVRP. Slack is required since before a solution is found,
+it is not known how much capacity will be transferred at the new nodes. For
+all the other (original) nodes, the slack is then re-set to 0.
 
-   The above two considerations are implemented in `add_capacity_constraints()`.
+The above two considerations are implemented in `add_capacity_constraints()`.
 
-   Last, it is useful to set a large distance between the initial depot and the
-   new nodes introduced, to avoid schedules having spurious transits through
-   those new nodes unless it's necessary to reload. This consideration is taken
-   into account in `create_distance_evaluator()`.
+Last, it is useful to set a large distance between the initial depot and the
+new nodes introduced, to avoid schedules having spurious transits through
+those new nodes unless it's necessary to reload. This consideration is taken
+into account in `create_distance_evaluator()`.
 """
 
 from functools import partial
@@ -336,31 +336,34 @@ def print_solution(
             continue
         index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
+        load_value = 0
         distance = 0
         while not routing.IsEnd(index):
-            load_var = capacity_dimension.CumulVar(index)
             time_var = time_dimension.CumulVar(index)
             plan_output += (
                 f" {manager.IndexToNode(index)} "
-                f"Load({assignment.Min(load_var)}) "
+                f"Load({assignment.Min(capacity_dimension.CumulVar(index))}) "
                 f"Time({assignment.Min(time_var)},{assignment.Max(time_var)}) ->"
             )
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             distance += distance_dimension.GetTransitValue(previous_index, index, vehicle_id)
-        load_var = capacity_dimension.CumulVar(index)
+            # capacity dimension TransitVar is negative at reload stations during replenishment
+            # don't want to consider those values when calculating the total load of the route
+            # hence only considering the positive values
+            load_value += max(0, capacity_dimension.GetTransitValue(previous_index, index, vehicle_id))
         time_var = time_dimension.CumulVar(index)
         plan_output += (
             f" {manager.IndexToNode(index)} "
-            f"Load({assignment.Min(load_var)}) "
+            f"Load({assignment.Min(capacity_dimension.CumulVar(index))}) "
             f"Time({assignment.Min(time_var)},{assignment.Max(time_var)})\n"
         )
         plan_output += f"Distance of the route: {distance}m\n"
-        plan_output += f"Load of the route: {assignment.Min(load_var)}\n"
+        plan_output += f"Load of the route: {load_value}\n"
         plan_output += f"Time of the route: {assignment.Min(time_var)}min\n"
         print(plan_output)
         total_distance += distance
-        total_load += assignment.Min(load_var)
+        total_load += load_value
         total_time += assignment.Min(time_var)
     print(f"Total Distance of all routes: {total_distance}m")
     print(f"Total Load of all routes: {total_load}")

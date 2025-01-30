@@ -13,14 +13,15 @@
 # limitations under the License.
 # [START program]
 """Vehicles Routing Problem (VRP) with breaks relative to the vehicle start time.
-   Each vehicles start at T:15min, T:30min, T:45min and T:60min respectively.
 
-   Each vehicle must perform a break lasting 5 minutes,
-   starting between 25 and 45 minutes after route start.
-   e.g. vehicle 2 starting a T:45min must start a 5min breaks
-   between [45+25,45+45] i.e. in the range [70, 90].
+Each vehicles start at T:15min, T:30min, T:45min and T:60min respectively.
 
-   Durations are in minutes.
+Each vehicle must perform a break lasting 5 minutes,
+starting between 25 and 45 minutes after route start.
+e.g. vehicle 2 starting a T:45min must start a 5min breaks
+between [45+25,45+45] i.e. in the range [70, 90].
+
+Durations are in minutes.
 """
 
 # [START import]

@@ -14,19 +14,19 @@
 # [START program]
 """Vehicles Routing Problem (VRP) with Time Window (TW) per vehicle.
 
- All time are in minutes using 0am as origin
- e.g. 8am = 480, 11am = 660, 1pm = 780 ...
+All time are in minutes using 0am as origin
+e.g. 8am = 480, 11am = 660, 1pm = 780 ...
 
- We have 1 depot (0) and 16 locations (1-16).
- We have a fleet of 4 vehicles (0-3) whose working time is [480, 1020] (8am-5pm)
- We have the distance matrix between these locations and depot.
- We have a service time of 25min at each location.
+We have 1 depot (0) and 16 locations (1-16).
+We have a fleet of 4 vehicles (0-3) whose working time is [480, 1020] (8am-5pm)
+We have the distance matrix between these locations and depot.
+We have a service time of 25min at each location.
 
- Locations are duplicated so we can simulate a TW per vehicle.
- location: [01-16] vehicle: 0 TW: [540, 660] (9am-11am)
- location: [17-32] vehicle: 1 TW: [660, 780] (11am-1pm)
- location: [33-48] vehicle: 2 TW: [780, 900] (1pm-3pm)
- location: [49-64] vehicle: 3 TW: [900, 1020] (3pm-5pm)
+Locations are duplicated so we can simulate a TW per vehicle.
+location: [01-16] vehicle: 0 TW: [540, 660] (9am-11am)
+location: [17-32] vehicle: 1 TW: [660, 780] (11am-1pm)
+location: [33-48] vehicle: 2 TW: [780, 900] (1pm-3pm)
+location: [49-64] vehicle: 3 TW: [900, 1020] (3pm-5pm)
 """
 
 # [START import]
@@ -88,6 +88,8 @@ def print_solution(manager, routing, assignment):
     time_dimension = routing.GetDimensionOrDie("Time")
     total_time = 0
     for vehicle_id in range(manager.GetNumberOfVehicles()):
+        if not routing.IsVehicleUsed(assignment, vehicle_id):
+            continue
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         index = routing.Start(vehicle_id)
         start_time = 0

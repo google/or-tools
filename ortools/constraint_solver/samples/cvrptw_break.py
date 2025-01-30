@@ -15,12 +15,12 @@
 # [START program]
 """Capacitated Vehicle Routing Problem with Time Windows (CVRPTW).
 
-   This is a sample using the routing library python wrapper to solve a CVRPTW
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library python wrapper to solve a CVRPTW
+problem.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters and time in minutes.
+Distances are in meters and time in minutes.
 """
 
 # [START import]
@@ -329,7 +329,11 @@ def main():
         vehicle_break = data["breaks"][v]
         break_intervals[v] = [
             routing.solver().FixedDurationIntervalVar(
-                15, 100, vehicle_break[0], vehicle_break[1], f"Break for vehicle {v}"
+                15,
+                100,
+                vehicle_break[0],
+                vehicle_break[1],
+                f"Break for vehicle {v}",
             )
         ]
         time_dimension.SetBreakIntervalsOfVehicle(

@@ -75,7 +75,6 @@ def create_data_model():
     data["depot"] = 0
     return data
 
-
 # [END data_model]
 
 
@@ -120,7 +119,6 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print(f"Maximum of the route distances: {max_route_distance}m")
-
 
 # [END solution_printer]
 
