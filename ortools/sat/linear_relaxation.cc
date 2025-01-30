@@ -1056,10 +1056,12 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
           intervals_repository->IsPresent(x_intervals[i])
               ? intervals_repository->PresenceLiteral(y_intervals[i])
               : intervals_repository->PresenceLiteral(x_intervals[i]);
-      const IntegerValue area_min =
-          integer_trail->LevelZeroLowerBound(x_sizes[i]) *
+      const IntegerValue x_size =
+          integer_trail->LevelZeroLowerBound(x_sizes[i]);
+      const IntegerValue y_size =
           integer_trail->LevelZeroLowerBound(y_sizes[i]);
-      if (area_min > 0) {
+      if (x_size > 0 && y_size > 0) {
+        const IntegerValue area_min = x_size * y_size;
         // Note that intervals that must be absent can have negative sizes.
         // Not including the term if we don't have a view is ok.
         (void)lc.AddLiteralTerm(presence_literal, area_min);

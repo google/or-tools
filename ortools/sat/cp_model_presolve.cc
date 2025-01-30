@@ -5866,8 +5866,8 @@ bool CpModelPresolver::PresolveNoOverlap2DFramed(
       // Something can be outside of the frame.
       return false;
     }
-    if (2 * box.bounding_area.SizeX() <= framed_region.SizeX() ||
-        2 * box.bounding_area.SizeY() <= framed_region.SizeY()) {
+    if (2 * box.x_size <= framed_region.SizeX() ||
+        2 * box.y_size <= framed_region.SizeY()) {
       // We can fit two boxes in the delimited space between the fixed boxes, so
       // we cannot replace it by an at-most-one.
       return false;

@@ -119,7 +119,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         }
         break;
       case ConstraintProto::kLinear:
-        if (!CopyLinear(ct)) return CreateUnsatModel(c, ct);
+        if (!CopyLinear(ct, /*canonicalize=*/first_copy)) {
+          return CreateUnsatModel(c, ct);
+        }
         break;
       case ConstraintProto::kIntProd:
         if (!CopyIntProd(ct, ignore_names)) return CreateUnsatModel(c, ct);
@@ -407,8 +409,9 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   return true;
 }
 
-bool ModelCopy::CopyLinearExpression(const LinearExpressionProto& expr,
-                                     LinearExpressionProto* dst) {
+bool ModelCopy::CopyLinearExpression(
+    const LinearExpressionProto& expr, LinearExpressionProto* dst,
+    absl::Span<const int> enforcement_literals) {
   non_fixed_variables_.clear();
   non_fixed_coefficients_.clear();
   int64_t offset = expr.offset();
@@ -436,10 +439,13 @@ bool ModelCopy::CopyLinearExpression(const LinearExpressionProto& expr,
                            non_fixed_variables_.end());
   dst->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
                              non_fixed_coefficients_.end());
+  // TODO(user): We could save work by only doing this if this is the first
+  // copy.
+  context_->CanonicalizeLinearExpression(enforcement_literals, dst);
   return true;
 }
 
-bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
+bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
   non_fixed_variables_.clear();
   non_fixed_coefficients_.clear();
   int64_t offset = 0;
@@ -516,6 +522,9 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
   linear->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
                                 non_fixed_coefficients_.end());
   FillDomainInProto(tight_domain, linear);
+  if (canonicalize) {
+    context_->CanonicalizeLinearConstraint(new_ct);
+  }
   return true;
 }
 
@@ -708,11 +717,14 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
   }
   *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
   CopyLinearExpression(ct.interval().start(),
-                       new_ct->mutable_interval()->mutable_start());
+                       new_ct->mutable_interval()->mutable_start(),
+                       ct.enforcement_literal());
   CopyLinearExpression(ct.interval().size(),
-                       new_ct->mutable_interval()->mutable_size());
+                       new_ct->mutable_interval()->mutable_size(),
+                       ct.enforcement_literal());
   CopyLinearExpression(ct.interval().end(),
-                       new_ct->mutable_interval()->mutable_end());
+                       new_ct->mutable_interval()->mutable_end(),
+                       ct.enforcement_literal());
   return true;
 }
 
@@ -778,10 +790,10 @@ bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
-    if (!CopyLinear(tmp_constraint_)) return false;
+    if (!CopyLinear(tmp_constraint_, true)) return false;
   }
 
-  // An enforced interval must have is size non-negative.
+  // An enforced interval must have its size non-negative.
   const LinearExpressionProto& size_expr = itv.size();
   if (context_->MinOf(size_expr) < 0) {
     tmp_constraint_.Clear();
@@ -791,7 +803,7 @@ bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     tmp_constraint_.mutable_linear()->add_domain(-size_expr.offset());
     tmp_constraint_.mutable_linear()->add_domain(
         std::numeric_limits<int64_t>::max());
-    if (!CopyLinear(tmp_constraint_)) return false;
+    if (!CopyLinear(tmp_constraint_, true)) return false;
   }
 
   return true;
