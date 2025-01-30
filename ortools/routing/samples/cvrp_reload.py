@@ -351,7 +351,7 @@ def print_solution(
             # capacity dimension TransitVar is negative at reload stations during replenishment
             # don't want to consider those values when calculating the total load of the route
             # hence only considering the positive values
-            load_value = max(0, capacity_dimension.GetTransitValue(previous_index, index, vehicle_id))
+            load_value += max(0, capacity_dimension.GetTransitValue(previous_index, index, vehicle_id))
         time_var = time_dimension.CumulVar(index)
         plan_output += (
             f" {manager.IndexToNode(index)} "
