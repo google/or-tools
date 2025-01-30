@@ -787,12 +787,17 @@ class IntegerTrail final : public SatPropagator {
   void AddAllGreaterThanConstantReason(absl::Span<AffineExpression> exprs,
                                        IntegerValue target_min,
                                        std::vector<int>* indices) const {
+    int64_t num_processed = 0;
     for (const AffineExpression& expr : exprs) {
       if (expr.IsConstant()) {
         DCHECK_GE(expr.constant, target_min);
         continue;
       }
       DCHECK_NE(expr.var, kNoIntegerVariable);
+
+      // On large routing problems, we can spend a lot of time in this loop.
+      // We check the time limit every 5 processed expressions.
+      if (++num_processed % 5 == 0 && time_limit_->LimitReached()) return;
 
       // Skip if we already have an explanation for expr >= target_min. Note
       // that we already do that while processing the returned indices, so this
@@ -897,7 +902,7 @@ class IntegerTrail final : public SatPropagator {
   // Returns some debugging info.
   std::string DebugString();
 
-  // Used internally to return the next conlict number.
+  // Used internally to return the next conflict number.
   int64_t NextConflictId();
 
   // Information for each integer variable about its current lower bound and

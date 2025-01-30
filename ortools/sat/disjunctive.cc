@@ -871,18 +871,19 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
   const auto by_shifted_smin = helper_->TaskByIncreasingShiftedStartMin();
   int rank = -1;
   IntegerValue window_end = kMinIntegerValue;
+  int* const ranks = ranks_.data();
   for (const auto [task, presence_lit, start_min] : by_shifted_smin) {
     if (!helper_->IsPresent(presence_lit)) {
-      ranks_[task] = -1;
+      ranks[task] = -1;
       continue;
     }
 
     const IntegerValue size_min = helper_->SizeMin(task);
     if (start_min < window_end) {
-      ranks_[task] = rank;
+      ranks[task] = rank;
       window_end += size_min;
     } else {
-      ranks_[task] = ++rank;
+      ranks[task] = ++rank;
       window_end = start_min + size_min;
     }
   }
@@ -1329,9 +1330,15 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
 
 int DisjunctivePrecedences::RegisterWith(GenericLiteralWatcher* watcher) {
   // This propagator reach the fixed point in one go.
+  // Maybe not in corner cases, but since it is expansive, it is okay not to
+  // run it again right away
+  //
+  // Note also that technically, we don't need to be waked up if only the upper
+  // bound of the task changes, but this require to use more memory and the gain
+  // is unclear as this runs with the highest priority.
   const int id = watcher->Register(this);
   helper_->SetTimeDirection(time_direction_);
-  helper_->WatchAllTasks(id, /*watch_max_side=*/false);
+  helper_->WatchAllTasks(id);
   return id;
 }
 

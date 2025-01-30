@@ -21,7 +21,6 @@
 #include "absl/types/span.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
@@ -344,7 +343,7 @@ TimeTablingPerTask::TimeTablingPerTask(AffineExpression capacity,
 
 void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  helper_->WatchAllTasks(id, watcher);
+  helper_->WatchAllTasks(id);
   watcher->WatchUpperBound(capacity_.var, id);
   for (int t = 0; t < num_tasks_; t++) {
     watcher->WatchLowerBound(demands_->Demands()[t], id);
