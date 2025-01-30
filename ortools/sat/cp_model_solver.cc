@@ -1192,8 +1192,10 @@ class LnsSolver : public SubSolver {
  public:
   LnsSolver(std::unique_ptr<NeighborhoodGenerator> generator,
             const SatParameters& lns_parameters,
-            NeighborhoodGeneratorHelper* helper, SharedClasses* shared)
+            NeighborhoodGeneratorHelper* helper, SharedClasses* shared,
+            int preferred_linearization_level = 0)
       : SubSolver(generator->name(), INCOMPLETE),
+        preferred_linearization_level_(preferred_linearization_level),
         generator_(std::move(generator)),
         helper_(helper),
         lns_parameters_(lns_parameters),
@@ -1274,13 +1276,13 @@ class LnsSolver : public SubSolver {
       // TODO(user): Tune these.
       // TODO(user): This could be a good candidate for bandits.
       const int64_t stall = generator_->num_consecutive_non_improving_calls();
+      std::string search_info;
       const int search_index = stall < 10 ? 0 : task_id % 2;
-      absl::string_view search_info;
       switch (search_index) {
         case 0:
           local_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-          local_params.set_linearization_level(0);
-          search_info = "auto_l0";
+          local_params.set_linearization_level(preferred_linearization_level_);
+          search_info = absl::StrCat("auto_l", preferred_linearization_level_);
           break;
         default:
           local_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
@@ -1616,6 +1618,7 @@ class LnsSolver : public SubSolver {
   }
 
  private:
+  int preferred_linearization_level_ = 0;
   std::unique_ptr<NeighborhoodGenerator> generator_;
   NeighborhoodGeneratorHelper* helper_;
   const SatParameters lns_parameters_;
@@ -1881,6 +1884,9 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }
     }
 
+    // For routing, the LP relaxation seems pretty important, so we prefer an
+    // high linearization level to solve LNS subproblems.
+    const int routing_lin_level = 2;
     const int num_circuit = static_cast<int>(
         helper->TypeToConstraints(ConstraintProto::kCircuit).size());
     const int num_routes = static_cast<int>(
@@ -1890,13 +1896,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingRandomNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params, helper, shared, routing_lin_level));
       }
       if (name_filter.Keep("routing_path_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params, helper, shared, routing_lin_level));
       }
     }
     if (num_routes > 0 || num_circuit > 1) {
@@ -1904,7 +1910,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingFullPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params, helper, shared, routing_lin_level));
       }
     }
   }

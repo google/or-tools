@@ -90,9 +90,10 @@ class ModelCopy {
   bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
   bool CopyIntDiv(const ConstraintProto& ct, bool ignore_names);
   bool CopyIntMod(const ConstraintProto& ct, bool ignore_names);
-  bool CopyLinear(const ConstraintProto& ct);
+  bool CopyLinear(const ConstraintProto& ct, bool canonicalize);
   bool CopyLinearExpression(const LinearExpressionProto& expr,
-                            LinearExpressionProto* dst);
+                            LinearExpressionProto* dst,
+                            absl::Span<const int> enforcement_literals = {});
   bool CopyAutomaton(const ConstraintProto& ct);
   bool CopyTable(const ConstraintProto& ct);
   bool CopyAllDiff(const ConstraintProto& ct);
