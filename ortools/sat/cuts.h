@@ -582,8 +582,7 @@ class BoolRLTCutHelper {
 
   // Precompute data according to the current lp relaxation.
   // This also restrict any Boolean to be currently appearing in the LP.
-  void Initialize(
-      const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars);
+  void Initialize(absl::Span<const IntegerVariable> lp_vars);
 
   // Tries RLT separation of the input constraint. Returns true on success.
   bool TrySimpleSeparation(const CutData& input_ct);

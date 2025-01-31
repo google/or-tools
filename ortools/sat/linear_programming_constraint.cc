@@ -296,6 +296,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
+      mirror_lp_variable_(*model->GetOrCreate<ModelLpVariableMapping>()),
       expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
       expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()) {
   // Tweak the default parameters to make the solve incremental.
@@ -314,6 +315,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
 
   // Register our local rev int repository.
   integer_trail_->RegisterReversibleClass(&rc_rev_int_repository_);
+  mirror_lp_variable_.resize(integer_trail_->NumIntegerVariables(),
+                             glop::kInvalidCol);
 
   // Register SharedStatistics with the cut helpers.
   auto* stats = model->GetOrCreate<SharedStatistics>();
@@ -336,6 +339,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
 
     integer_variables_.push_back(positive_variable);
     extended_integer_variables_.push_back(positive_variable);
+    DCHECK_EQ(mirror_lp_variable_[positive_variable], glop::kInvalidCol);
     mirror_lp_variable_[positive_variable] = col;
     ++col;
   }
@@ -347,6 +351,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       const int orbit_index = symmetrizer_->OrbitIndex(var);
       for (const IntegerVariable var : symmetrizer_->Orbit(orbit_index)) {
         extended_integer_variables_.push_back(var);
+        DCHECK_EQ(mirror_lp_variable_[var], glop::kInvalidCol);
         mirror_lp_variable_[var] = col;
         ++col;
       }
@@ -458,7 +463,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
 glop::ColIndex LinearProgrammingConstraint::GetMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
-  return mirror_lp_variable_.at(positive_variable);
+  return mirror_lp_variable_[positive_variable];
 }
 
 void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
@@ -898,7 +903,7 @@ glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
 
 double LinearProgrammingConstraint::GetSolutionValue(
     IntegerVariable variable) const {
-  return lp_solution_[mirror_lp_variable_.at(variable).value()];
+  return lp_solution_[mirror_lp_variable_[variable].value()];
 }
 
 void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
@@ -1539,8 +1544,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
 
       // Simple copy for non-slack variables.
       if (var < first_slack) {
-        const glop::ColIndex col =
-            mirror_lp_variable_.at(PositiveVariable(var));
+        const glop::ColIndex col = mirror_lp_variable_[PositiveVariable(var)];
         if (VariableIsPositive(var)) {
           tmp_scattered_vector_.Add(col, coeff);
         } else {
@@ -2166,7 +2170,7 @@ bool LinearProgrammingConstraint::Propagate() {
       implied_bounds_processor_.RecomputeCacheAndSeparateSomeImpliedBoundCuts(
           expanded_lp_solution_);
       if (parameters_.add_rlt_cuts()) {
-        rlt_cut_helper_.Initialize(mirror_lp_variable_);
+        rlt_cut_helper_.Initialize(extended_integer_variables_);
       }
 
       // The "generic" cuts are currently part of this class as they are using
@@ -2610,12 +2614,11 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
   // For the corner case of an objective of size 1, we do not want or need
   // to take it into account.
   bool take_objective_into_account = true;
-  if (mirror_lp_variable_.contains(objective_cp_)) {
+  if (objective_cp_is_part_of_lp_) {
     // The objective is part of the lp.
     // This should only happen for objective with a single term.
     CHECK_EQ(integer_objective_.size(), 1);
-    CHECK_EQ(integer_objective_[0].first,
-             mirror_lp_variable_.at(objective_cp_));
+    CHECK_EQ(integer_objective_[0].first, mirror_lp_variable_[objective_cp_]);
     CHECK_EQ(integer_objective_[0].second, IntegerValue(1));
 
     take_objective_into_account = false;

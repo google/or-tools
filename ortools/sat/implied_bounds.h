@@ -298,7 +298,7 @@ class ProductDetector {
   // Experimental. Find violated inequality of the form l1 * l2 <= l3.
   // And set-up data structure to query this efficiently.
   void InitializeBooleanRLTCuts(
-      const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars,
+      absl::Span<const IntegerVariable> lp_vars,
       const util_intops::StrongVector<IntegerVariable, double>& lp_values);
 
   // BoolRLTCandidates()[var] contains the list of factor for which we have
@@ -384,6 +384,8 @@ class ProductDetector {
   // We only consider BooleanVariable == IntegerVariable, and store not(literal)
   // as NegatedVariable(). This is a flat vector of size multiple of 3.
   std::vector<IntegerVariable> ternary_clauses_with_view_;
+
+  Bitset64<IntegerVariable> is_in_lp_vars_;
 
   // Stats.
   int64_t num_products_ = 0;

@@ -665,8 +665,7 @@ TEST(ProductDetectorTest, RLT) {
   lp_values[x] = 0.7;
   lp_values[y] = 0.9;
   lp_values[z] = 0.2;
-  const absl::flat_hash_map<IntegerVariable, glop::ColIndex> lp_vars = {
-      {x, glop::ColIndex(0)}, {y, glop::ColIndex(1)}, {z, glop::ColIndex(2)}};
+  std::vector<IntegerVariable> lp_vars = {x, y, z};
   detector->InitializeBooleanRLTCuts(lp_vars, lp_values);
 
   // (1 - X) * Y <= Z,   0.3 * 0.9 == 0.27 <= 0.2,   interesting!

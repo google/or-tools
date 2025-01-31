@@ -56,6 +56,13 @@ struct ModelReducedCosts
   ModelReducedCosts() = default;
 };
 
+// Stores the mapping integer_variable -> glop::ColIndex.
+// This is shared across all LP, which is fine since there are disjoint.
+struct ModelLpVariableMapping
+    : public util_intops::StrongVector<IntegerVariable, glop::ColIndex> {
+  ModelLpVariableMapping() = default;
+};
+
 // Knowing the symmetry of the IP problem should allow us to
 // solve the LP faster via "folding" techniques.
 //

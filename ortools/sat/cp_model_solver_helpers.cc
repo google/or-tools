@@ -1253,6 +1253,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   // Note that we do that before we finish loading the problem (objective and
   // LP relaxation), because propagation will be faster at this point and it
   // should be enough for the purpose of this auto-detection.
+  model->GetOrCreate<BinaryRelationRepository>()->Build();
   if (parameters.auto_detect_greater_than_at_least_one_of()) {
     model->GetOrCreate<GreaterThanAtLeastOneOfDetector>()
         ->AddGreaterThanAtLeastOneOfConstraints(model);

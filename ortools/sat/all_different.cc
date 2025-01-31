@@ -275,7 +275,7 @@ bool AllDifferentConstraint::Propagate() {
       successor_.AppendToLastVector(value);
 
       // Seed with previous matching.
-      if (prev_matching_[x] == value) {
+      if (prev_matching_[x] == value && value_to_variable_[value] == -1) {
         variable_to_value_[x] = prev_matching_[x];
         value_to_variable_[prev_matching_[x]] = x;
       }
@@ -373,6 +373,7 @@ bool AllDifferentConstraint::Propagate() {
       if (assignment.LiteralIsFalse(x_lit)) continue;
 
       const int value_node = value + num_variables_;
+      DCHECK_LT(value_node, component_number_.size());
       if (variable_to_value_[x] != value &&
           component_number_[x] != component_number_[value_node]) {
         // We can deduce that x != value. To explain, force x == value,
@@ -383,6 +384,8 @@ bool AllDifferentConstraint::Propagate() {
         variable_visited_.assign(num_variables_, false);
         // Undo x -> old_value and old_variable -> value.
         const int old_variable = value_to_variable_[value];
+        DCHECK_GE(old_variable, 0);
+        DCHECK_LT(old_variable, num_variables_);
         variable_to_value_[old_variable] = -1;
         const int old_value = variable_to_value_[x];
         value_to_variable_[old_value] = -1;

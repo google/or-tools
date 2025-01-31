@@ -1259,7 +1259,10 @@ bool PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   CHECK(CanBeUsedAsLiteral(ref_b));
 
   if (ref_a == ref_b) return true;
-  if (ref_a == NegatedRef(ref_b)) return false;
+  if (ref_a == NegatedRef(ref_b)) {
+    is_unsat_ = true;
+    return false;
+  }
 
   const int var_a = PositiveRef(ref_a);
   const int var_b = PositiveRef(ref_b);
