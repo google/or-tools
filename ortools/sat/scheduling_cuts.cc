@@ -480,7 +480,7 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
 }
 
 void GenerateCumulativeEnergeticCuts(
-    const std::string& cut_name,
+    absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, const AffineExpression& capacity,
     TimeLimit* time_limit, Model* model, LinearConstraintManager* manager) {
@@ -568,7 +568,7 @@ void GenerateCumulativeEnergeticCuts(
     }
 
     if (cut_generated) {
-      std::string full_name = cut_name;
+      std::string full_name(cut_name);
       if (add_opt_to_name) full_name.append("_optional");
       if (add_quadratic_to_name) full_name.append("_quadratic");
       if (add_lifted_to_name) full_name.append("_lifted");

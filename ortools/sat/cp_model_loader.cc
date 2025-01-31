@@ -1286,14 +1286,14 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     rhs_min = std::max(rhs_min, min_sum.value());
     rhs_max = std::min(rhs_max, max_sum.value());
 
-    auto* detector = m->GetOrCreate<GreaterThanAtLeastOneOfDetector>();
+    auto* repository = m->GetOrCreate<BinaryRelationRepository>();
     const Literal lit = mapping->Literal(ct.enforcement_literal(0));
     const Domain domain = ReadDomainFromProto(ct.linear());
     if (vars.size() == 1) {
-      detector->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+      repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
     } else if (vars.size() == 2) {
-      detector->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]}, rhs_min,
-                    rhs_max);
+      repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]}, rhs_min,
+                      rhs_max);
     }
   }
 

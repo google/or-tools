@@ -154,7 +154,16 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // The main objective variable should be equal to the linear sum of
   // the arguments passed to SetObjectiveCoefficient().
-  void SetMainObjectiveVariable(IntegerVariable ivar) { objective_cp_ = ivar; }
+  void SetMainObjectiveVariable(IntegerVariable ivar) {
+    objective_cp_ = ivar;
+    objective_cp_is_part_of_lp_ = false;
+    for (const IntegerVariable var : integer_variables_) {
+      if (var == objective_cp_) {
+        objective_cp_is_part_of_lp_ = true;
+        break;
+      }
+    }
+  }
   IntegerVariable ObjectiveVariable() const { return objective_cp_; }
 
   // Register a new cut generator with this constraint.
@@ -500,14 +509,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
-  // Note that these indices are dense in [0, mirror_lp_variable_.size()] so
+  // Note that these indices are dense in [0, integer_variables.size()] so
   // they can be used as vector indices.
-  //
-  // TODO(user): This should be util_intops::StrongVector<glop::ColIndex,
-  // IntegerVariable>.
   std::vector<IntegerVariable> integer_variables_;
   std::vector<IntegerVariable> extended_integer_variables_;
-  absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
 
   // This is only used if we use symmetry folding.
   // Refer to relevant orbit in the LinearConstraintSymmetrizer.
@@ -516,6 +521,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // We need to remember what to optimize if an objective is given, because
   // then we will switch the objective between feasibility and optimization.
   bool objective_is_defined_ = false;
+  bool objective_cp_is_part_of_lp_ = false;
   IntegerVariable objective_cp_;
 
   // Singletons from Model.
@@ -587,6 +593,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   bool lp_at_level_zero_is_final_ = false;
 
   // Same as lp_solution_ but this vector is indexed by IntegerVariable.
+  ModelLpVariableMapping& mirror_lp_variable_;
   ModelLpValues& expanded_lp_solution_;
   ModelReducedCosts& expanded_reduced_costs_;
 

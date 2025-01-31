@@ -1104,9 +1104,8 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
   return true;
 }
 
-void GreaterThanAtLeastOneOfDetector::Add(Literal lit, LinearTerm a,
-                                          LinearTerm b, IntegerValue lhs,
-                                          IntegerValue rhs) {
+void BinaryRelationRepository::Add(Literal lit, LinearTerm a, LinearTerm b,
+                                   IntegerValue lhs, IntegerValue rhs) {
   Relation r;
   r.enforcement = lit;
   r.a = a;
@@ -1127,6 +1126,18 @@ void GreaterThanAtLeastOneOfDetector::Add(Literal lit, LinearTerm a,
   relations_.push_back(std::move(r));
 }
 
+void BinaryRelationRepository::Build() {
+  DCHECK(!is_built_);
+  is_built_ = true;
+  std::vector<LiteralIndex> keys;
+  const int num_relations = relations_.size();
+  keys.reserve(num_relations);
+  for (int i = 0; i < num_relations; ++i) {
+    keys.push_back(relations_[i].enforcement.Index());
+  }
+  lit_to_relations_.ResetFromFlatMapping(keys, IdentityMap<int>());
+}
+
 bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
     IntegerVariable var, absl::Span<const Literal> clause,
     absl::Span<const int> indices, Model* model) {
@@ -1137,7 +1148,7 @@ bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
 
   const IntegerValue var_lb = integer_trail->LevelZeroLowerBound(var);
   for (const int index : indices) {
-    Relation r = relations_[index];
+    Relation r = repository_.relation(index);
     if (r.a.var != PositiveVariable(var)) std::swap(r.a, r.b);
     CHECK_EQ(r.a.var, PositiveVariable(var));
 
@@ -1193,9 +1204,8 @@ int GreaterThanAtLeastOneOfDetector::
   // Collect all relations impacted by this clause.
   std::vector<std::pair<IntegerVariable, int>> infos;
   for (const Literal l : clause) {
-    if (l.Index() >= lit_to_relations_->size()) continue;
-    for (const int index : (*lit_to_relations_)[l.Index()]) {
-      const Relation& r = relations_[index];
+    for (const int index : repository_.relation_indices(l.Index())) {
+      const Relation& r = repository_.relation(index);
       if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {
         infos.push_back({r.a.var, index});
       }
@@ -1247,8 +1257,8 @@ int GreaterThanAtLeastOneOfDetector::
 
   // Fill the set of interesting relations for each variables.
   util_intops::StrongVector<IntegerVariable, std::vector<int>> var_to_relations;
-  for (int index = 0; index < relations_.size(); ++index) {
-    const Relation& r = relations_[index];
+  for (int index = 0; index < repository_.size(); ++index) {
+    const Relation& r = repository_.relation(index);
     if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {
       if (r.a.var >= var_to_relations.size()) {
         var_to_relations.resize(r.a.var + 1);
@@ -1275,7 +1285,7 @@ int GreaterThanAtLeastOneOfDetector::
     if (solver->ModelIsUnsat()) return num_added_constraints;
     std::vector<Literal> clause;
     for (const int index : var_to_relations[target]) {
-      const Literal literal = relations_[index].enforcement;
+      const Literal literal = repository_.relation(index).enforcement;
       if (solver->Assignment().LiteralIsFalse(literal)) continue;
       const SatSolver::Status status =
           solver->EnqueueDecisionAndBacktrackOnConflict(literal.Negated());
@@ -1295,7 +1305,7 @@ int GreaterThanAtLeastOneOfDetector::
 
     std::vector<int> indices;
     for (const int index : var_to_relations[target]) {
-      const Literal literal = relations_[index].enforcement;
+      const Literal literal = repository_.relation(index).enforcement;
       if (clause_set.contains(literal)) {
         indices.push_back(index);
       }
@@ -1322,21 +1332,8 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   auto* logger = model->GetOrCreate<SolverLogger>();
 
   int num_added_constraints = 0;
-  SOLVER_LOG(logger, "[Precedences] num_relations=", relations_.size(),
+  SOLVER_LOG(logger, "[Precedences] num_relations=", repository_.size(),
              " num_clauses=", clauses->AllClausesInCreationOrder().size());
-
-  // Initialize lit_to_relations_.
-  {
-    std::vector<LiteralIndex> keys;
-    const int num_relations = relations_.size();
-    keys.reserve(num_relations);
-    for (int i = 0; i < num_relations; ++i) {
-      keys.push_back(relations_[i].enforcement.Index());
-    }
-    lit_to_relations_ =
-        std::make_unique<CompactVectorVector<LiteralIndex, int>>();
-    lit_to_relations_->ResetFromFlatMapping(keys, IdentityMap<int>());
-  }
 
   // We have two possible approaches. For now, we prefer the first one except if
   // there is too many clauses in the problem.
@@ -1387,9 +1384,6 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
                " GreaterThanAtLeastOneOf() constraints.");
   }
 
-  // Release the memory, it is not longer needed.
-  lit_to_relations_.reset(nullptr);
-  gtl::STLClearObject(&relations_);
   return num_added_constraints;
 }
 

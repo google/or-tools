@@ -32,7 +32,6 @@ namespace sat {
 namespace {
 
 using ::testing::ElementsAre;
-using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 
 // A simple macro to make the code more readable.
@@ -455,10 +454,12 @@ TEST(GreaterThanAtLeastOneOfDetectorTest, AddGreaterThanAtLeastOneOf) {
   const Literal lit_c = Literal(model.Add(NewBooleanVariable()), true);
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  repository->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
+  repository->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
+  repository->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
+  repository->Build();
   auto* detector = model.GetOrCreate<GreaterThanAtLeastOneOfDetector>();
-  detector->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
-  detector->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
-  detector->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
 
   auto* solver = model.GetOrCreate<SatSolver>();
   EXPECT_TRUE(solver->Propagate());
@@ -481,10 +482,12 @@ TEST(GreaterThanAtLeastOneOfDetectorTest,
   const Literal lit_c = Literal(model.Add(NewBooleanVariable()), true);
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  repository->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
+  repository->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
+  repository->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
+  repository->Build();
   auto* detector = model.GetOrCreate<GreaterThanAtLeastOneOfDetector>();
-  detector->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
-  detector->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
-  detector->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
 
   auto* solver = model.GetOrCreate<SatSolver>();
   EXPECT_TRUE(solver->Propagate());

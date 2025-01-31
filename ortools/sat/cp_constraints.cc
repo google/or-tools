@@ -135,20 +135,22 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
 
   int first_non_false = 0;
   const int size = exprs_.size();
+  Literal* const selectors = selectors_.data();
+  AffineExpression* const exprs = exprs_.data();
   for (int i = 0; i < size; ++i) {
-    if (assignment.LiteralIsTrue(selectors_[i])) return true;
+    if (assignment.LiteralIsTrue(selectors[i])) return true;
 
     // The permutation is needed to have proper lazy reason.
-    if (assignment.LiteralIsFalse(selectors_[i])) {
+    if (assignment.LiteralIsFalse(selectors[i])) {
       if (i != first_non_false) {
-        std::swap(selectors_[i], selectors_[first_non_false]);
-        std::swap(exprs_[i], exprs_[first_non_false]);
+        std::swap(selectors[i], selectors[first_non_false]);
+        std::swap(exprs[i], exprs[first_non_false]);
       }
       ++first_non_false;
       continue;
     }
 
-    const IntegerValue min = integer_trail_->LowerBound(exprs_[i]);
+    const IntegerValue min = integer_trail_->LowerBound(exprs[i]);
     if (min < target_min) {
       target_min = min;
 

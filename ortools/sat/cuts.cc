@@ -1666,8 +1666,7 @@ BoolRLTCutHelper::~BoolRLTCutHelper() {
   shared_stats_->AddStats(stats);
 }
 
-void BoolRLTCutHelper::Initialize(
-    const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars) {
+void BoolRLTCutHelper::Initialize(absl::Span<const IntegerVariable> lp_vars) {
   product_detector_->InitializeBooleanRLTCuts(lp_vars, *lp_values_);
   enabled_ = !product_detector_->BoolRLTCandidates().empty();
 }
