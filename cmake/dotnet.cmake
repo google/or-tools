@@ -31,6 +31,7 @@ include(UseSWIG)
 if(UNIX AND NOT APPLE)
   list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
 endif()
+list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
 
 # Find dotnet cli
 find_program(DOTNET_EXECUTABLE NAMES dotnet)
@@ -397,6 +398,8 @@ set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
 set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
 
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
+set(need_unix_ortools_lib "$<AND:${is_not_windows},${is_ortools_shared}>")
+set(need_windows_ortools_lib "$<AND:${is_windows},${is_ortools_shared}>")
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PACKAGE}.runtime.csproj.in

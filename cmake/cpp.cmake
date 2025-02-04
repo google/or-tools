@@ -45,9 +45,13 @@ set(OR_TOOLS_COMPILE_DEFINITIONS)
 set(OR_TOOLS_COMPILE_OPTIONS)
 set(OR_TOOLS_LINK_OPTIONS)
 
-if(BUILD_SHARED_LIBS)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_TOOLS_AS_DYNAMIC_LIB")
+if(MSVC AND BUILD_SHARED_LIBS)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_BUILD_DLL")
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_PROTO_DLL=__declspec(dllimport)")
+ else()
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_PROTO_DLL=")
 endif()
+
 # Optional built-in components
 if(BUILD_LP_PARSER)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
@@ -356,7 +360,7 @@ function(generate_proto_library)
      COMMAND ${PROTOC_PRG}
      "--proto_path=${PROJECT_SOURCE_DIR}"
      ${PROTO_DIRS}
-     "--cpp_out=${PROJECT_BINARY_DIR}"
+     "--cpp_out=dllexport_decl=OR_PROTO_DLL:${PROJECT_BINARY_DIR}"
      ${PROTO_FILE}
      DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
      COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
@@ -383,6 +387,12 @@ function(generate_proto_library)
    #$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
  )
  target_compile_definitions(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+ if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${PROTO_NAME}_proto INTERFACE "OR_PROTO_DLL=__declspec(dllimport)")
+  target_compile_definitions(${PROTO_NAME}_proto PRIVATE "OR_PROTO_DLL=__declspec(dllexport)")
+ else()
+  target_compile_definitions(${PROTO_NAME}_proto PUBLIC "OR_PROTO_DLL=")
+endif()
  target_compile_options(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
  target_link_libraries(${PROTO_NAME}_proto PUBLIC protobuf::libprotobuf ${PROTO_LINK_LIBRARIES})
  add_library(${PROJECT_NAMESPACE}::${PROTO_NAME}_proto ALIAS ${PROTO_NAME}_proto)
@@ -456,6 +466,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_compile_features(${PROJECT_NAME} PUBLIC
   $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE OR_EXPORT)
+endif()
 target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
 target_link_options(${PROJECT_NAME} INTERFACE ${OR_TOOLS_LINK_OPTIONS})
 # Properties

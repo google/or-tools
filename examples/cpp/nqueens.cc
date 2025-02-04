@@ -39,7 +39,6 @@ ABSL_FLAG(
     int, size, 0,
     "Size of the problem. If equal to 0, will test several increasing sizes.");
 ABSL_FLAG(bool, use_symmetry, false, "Use Symmetry Breaking methods");
-ABSL_DECLARE_FLAG(bool, cp_disable_solve);
 
 static const int kNumSolutions[] = {
     1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596, 2279184};

@@ -120,13 +120,6 @@ ABSL_FLAG(std::string, sol_file, "",
 ABSL_FLAG(std::string, dump_mps, "",
           "If non-empty, dumps the model in mps format there.");
 
-ABSL_DECLARE_FLAG(bool, verify_solution);  // Defined in ./linear_solver.cc
-ABSL_DECLARE_FLAG(bool,
-                  log_verification_errors);  // Defined in ./linear_solver.cc
-ABSL_DECLARE_FLAG(
-    bool,
-    linear_solver_enable_verbose_output);  // Defined in ./linear_solver.cc
-
 static const char kUsageStr[] =
     "Run MPSolver on the given input file. Many formats are supported: \n"
     "  - a .mps or .mps.gz file,\n"

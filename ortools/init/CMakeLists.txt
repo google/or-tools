@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h")
+file(GLOB _SRCS "*.h" "*.cc")
 set(NAME ${PROJECT_NAME}_init)
 
 # Will be merge in libortools.so
@@ -21,6 +21,10 @@ set_target_properties(${NAME} PROPERTIES
   LINKER_LANGUAGE CXX
   POSITION_INDEPENDENT_CODE ON
   )
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
+  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
+endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})

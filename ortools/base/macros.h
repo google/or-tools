@@ -16,6 +16,8 @@
 
 #include <cstdlib>  // for size_t.
 
+#include "ortools/base/base_export.h" // for OR_DLL
+
 #define COMPILE_ASSERT(x, msg)
 
 #ifdef NDEBUG

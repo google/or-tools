@@ -251,7 +251,7 @@ class PathsMetadata {
   std::vector<int64_t> path_of_node_;
 };
 
-class RoutingModel {
+class OR_DLL RoutingModel {
  public:
   /// Types of precedence policy applied to pickup and delivery pairs.
   enum PickupAndDeliveryPolicy {
@@ -2837,7 +2837,7 @@ class RoutingModel {
 };
 
 /// Routing model visitor.
-class RoutingModelVisitor : public BaseObject {
+class OR_DLL RoutingModelVisitor : public BaseObject {
  public:
   /// Constraint types.
   static const char kLightElement[];

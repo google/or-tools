@@ -38,6 +38,7 @@ if(UNIX AND NOT APPLE AND NOT (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD"))
     list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE32")
   endif()
 endif()
+list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
 
 # Find Python 3
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -456,6 +457,8 @@ set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
 set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
 
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
+set(need_unix_ortools_lib "$<AND:${is_not_windows},${is_ortools_shared}>")
+set(need_windows_ortools_lib "$<AND:${is_windows},${is_ortools_shared}>")
 
 add_custom_command(
   OUTPUT python/ortools_timestamp
@@ -556,8 +559,9 @@ add_custom_command(
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:${need_unix_re2_lib},copy,true>
+    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
     $<${need_unix_re2_lib}:$<TARGET_SONAME_FILE:re2::re2>>
+    $<${need_windows_re2_lib}:$<TARGET_FILE:re2::re2>>
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
@@ -601,7 +605,8 @@ add_custom_command(
 
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:${is_ortools_shared},copy,true>
-    $<${is_ortools_shared}:$<TARGET_SONAME_FILE:ortools>>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools>>
     ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/ortools_timestamp
   MAIN_DEPENDENCY

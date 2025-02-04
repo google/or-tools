@@ -51,8 +51,7 @@ setup(
     ],
     package_data={
         '@PYTHON_PROJECT@':[
-        '.libs/*',
-        $<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:'../$<TARGET_SONAME_FILE_NAME:@PROJECT_NAME@>'>
+            '.libs/*'
         ],
         '@PYTHON_PROJECT@.init.python':[
             '$<TARGET_FILE_NAME:init_pybind11>',
