@@ -44,7 +44,7 @@ METADATA = {"language_info": {"name": "python"}}
 nbook["metadata"] = METADATA
 
 print("Adding copyright cell...")
-GOOGLE = "##### Copyright 2024 Google LLC."
+GOOGLE = "##### Copyright 2025 Google LLC."
 nbook["cells"].append(v4.new_markdown_cell(source=GOOGLE, id="google"))
 
 print("Adding license cell...")
