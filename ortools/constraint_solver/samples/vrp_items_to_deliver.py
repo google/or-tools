@@ -465,7 +465,7 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(
+    manager = pywrapcp.RoutingIndexManager(
         len(data["distance_matrix"]),
         data["num_vehicles"],
         data["starts"],
