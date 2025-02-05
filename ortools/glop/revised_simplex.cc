@@ -220,6 +220,7 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
 
   SOLVER_LOG(logger_, "");
+  primal_edge_norms_.SetTimeLimit(time_limit);
   if (logger_->LoggingIsEnabled()) {
     DisplayBasicVariableStatistics();
   }
@@ -2563,13 +2564,15 @@ void RevisedSimplex::PermuteBasis() {
   if (col_perm.empty()) return;
 
   // Permute basis_.
-  ApplyColumnPermutationToRowIndexedVector(col_perm, &basis_, &tmp_basis_);
+  ApplyColumnPermutationToRowIndexedVector(col_perm.const_view(), &basis_,
+                                           &tmp_basis_);
 
   // Permute dual_pricing_vector_ if needed.
   if (!dual_pricing_vector_.empty()) {
     // TODO(user): We need to permute dual_prices_ too now, we recompute
     // everything one each basis factorization, so this don't matter.
-    ApplyColumnPermutationToRowIndexedVector(col_perm, &dual_pricing_vector_,
+    ApplyColumnPermutationToRowIndexedVector(col_perm.const_view(),
+                                             &dual_pricing_vector_,
                                              &tmp_dual_pricing_vector_);
   }
 

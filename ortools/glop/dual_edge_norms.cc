@@ -16,6 +16,7 @@
 #include <cstdlib>
 
 #include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/permutation.h"
 
 namespace operations_research {
 namespace glop {
@@ -42,8 +43,8 @@ DenseColumn::ConstView DualEdgeNorms::GetEdgeSquaredNorms() {
 void DualEdgeNorms::UpdateDataOnBasisPermutation(
     const ColumnPermutation& col_perm) {
   if (recompute_edge_squared_norms_) return;
-  ApplyColumnPermutationToRowIndexedVector(col_perm, &edge_squared_norms_,
-                                           &tmp_edge_squared_norms_);
+  ApplyColumnPermutationToRowIndexedVector(
+      col_perm.const_view(), &edge_squared_norms_, &tmp_edge_squared_norms_);
 }
 
 bool DualEdgeNorms::TestPrecision(RowIndex leaving_row,

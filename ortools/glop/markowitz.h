@@ -116,11 +116,12 @@ class MatrixNonZeroPattern {
   // Resets the pattern to the one of the given matrix but only for the
   // rows/columns whose given permutation is kInvalidRow or kInvalidCol.
   // This also fills the singleton columns/rows with the corresponding entries.
-  void InitializeFromMatrixSubset(const CompactSparseMatrixView& basis_matrix,
-                                  const RowPermutation& row_perm,
-                                  const ColumnPermutation& col_perm,
-                                  std::vector<ColIndex>* singleton_columns,
-                                  std::vector<RowIndex>* singleton_rows);
+  void InitializeFromMatrixSubset(
+      const CompactSparseMatrixView& basis_matrix,
+      StrictITISpan<RowIndex, const RowIndex> row_perm,
+      StrictITISpan<ColIndex, const ColIndex> col_perm,
+      std::vector<ColIndex>* singleton_columns,
+      std::vector<RowIndex>* singleton_rows);
 
   // Adds a non-zero entry to the matrix. There should be no duplicates.
   void AddEntry(RowIndex row, ColIndex col);
@@ -377,8 +378,9 @@ class Markowitz {
 
   // Helper function for determining if a column is a residual singleton column.
   // If it is, RowIndex* row contains the index of the single residual edge.
-  bool IsResidualSingletonColumn(const ColumnView& column,
-                                 const RowPermutation& row_perm, RowIndex* row);
+  bool IsResidualSingletonColumn(
+      const ColumnView& column,
+      StrictITISpan<RowIndex, const RowIndex> row_perm, RowIndex* row);
 
   // Returns the column of the current residual matrix with an index 'col' in
   // the initial matrix. We compute it by solving a linear system with the

@@ -106,20 +106,21 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
     // small entries (no complexity changes).
     const Fractional drop_tolerance = parameters_.drop_tolerance();
     unit_row_left_inverse_filtered_non_zeros_.clear();
-    const auto view = transposed_matrix_.view();
+    const auto matrix_view = transposed_matrix_.view();
     if (unit_row_left_inverse_.non_zeros.empty()) {
       const ColIndex size = unit_row_left_inverse_.values.size();
+      const auto values = unit_row_left_inverse_.values.view();
       for (ColIndex col(0); col < size; ++col) {
-        if (std::abs(unit_row_left_inverse_.values[col]) > drop_tolerance) {
+        if (std::abs(values[col]) > drop_tolerance) {
           unit_row_left_inverse_filtered_non_zeros_.push_back(col);
-          num_row_wise_entries += view.ColumnNumEntries(col);
+          num_row_wise_entries += matrix_view.ColumnNumEntries(col);
         }
       }
     } else {
       for (const auto e : unit_row_left_inverse_) {
         if (std::abs(e.coefficient()) > drop_tolerance) {
           unit_row_left_inverse_filtered_non_zeros_.push_back(e.column());
-          num_row_wise_entries += view.ColumnNumEntries(e.column());
+          num_row_wise_entries += matrix_view.ColumnNumEntries(e.column());
         }
       }
     }

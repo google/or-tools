@@ -592,11 +592,13 @@ class Bitset64 {
   // the higher order bits are assumed to be 0.
   void Intersection(const Bitset64<IndexType>& other) {
     const int min_size = std::min(data_.size(), other.data_.size());
+    uint64_t* const d = data_.data();
+    const uint64_t* const o = other.data_.data();
     for (int i = 0; i < min_size; ++i) {
-      data_[i] &= other.data_[i];
+      d[i] &= o[i];
     }
     for (int i = min_size; i < data_.size(); ++i) {
-      data_[i] = 0;
+      d[i] = 0;
     }
   }
 
@@ -723,6 +725,11 @@ class Bitset64 {
       output += IsSet(i) ? "1" : "0";
     }
     return output;
+  }
+
+  bool IsAllFalse() const {
+    return std::all_of(data_.begin(), data_.end(),
+                       [](uint64_t v) { return v == 0; });
   }
 
  private:

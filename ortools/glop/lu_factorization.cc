@@ -404,12 +404,14 @@ bool LuFactorization::LeftSolveLWithNonZeros(
   // use a different algorithm.
   ClearAndResizeVectorWithNonZeros(x->size(), result_before_permutation);
   x->swap(result_before_permutation->values);
+  const auto input = result_before_permutation->values.const_view();
+  const auto inverse_row_perm = inverse_row_perm_.const_view();
   if (nz->empty()) {
-    const RowIndex num_rows = inverse_row_perm_.size();
+    const RowIndex num_rows = inverse_row_perm.size();
     for (RowIndex row(0); row < num_rows; ++row) {
-      const Fractional value = (*result_before_permutation)[row];
+      const Fractional value = input[row];
       if (value != 0.0) {
-        const RowIndex permuted_row = inverse_row_perm_[row];
+        const RowIndex permuted_row = inverse_row_perm[row];
         (*x)[permuted_row] = value;
       }
     }
@@ -417,8 +419,8 @@ bool LuFactorization::LeftSolveLWithNonZeros(
     nz->swap(result_before_permutation->non_zeros);
     nz->reserve(result_before_permutation->non_zeros.size());
     for (const RowIndex row : result_before_permutation->non_zeros) {
-      const Fractional value = (*result_before_permutation)[row];
-      const RowIndex permuted_row = inverse_row_perm_[row];
+      const Fractional value = input[row];
+      const RowIndex permuted_row = inverse_row_perm[row];
       (*x)[permuted_row] = value;
       nz->push_back(permuted_row);
     }

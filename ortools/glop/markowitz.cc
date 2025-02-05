@@ -63,7 +63,8 @@ Status Markowitz::ComputeRowAndColumnPermutation(
   // Initialize residual_matrix_non_zero_ with the submatrix left after we
   // removed the singleton and residual singleton columns.
   residual_matrix_non_zero_.InitializeFromMatrixSubset(
-      basis_matrix, *row_perm, *col_perm, &singleton_column_, &singleton_row_);
+      basis_matrix, row_perm->const_view(), col_perm->const_view(),
+      &singleton_column_, &singleton_row_);
 
   // Perform Gaussian elimination.
   const int end_index = std::min(num_rows.value(), num_cols.value());
@@ -216,9 +217,9 @@ void Markowitz::ExtractSingletonColumns(
                                           basis_matrix.num_rows().value());
 }
 
-bool Markowitz::IsResidualSingletonColumn(const ColumnView& column,
-                                          const RowPermutation& row_perm,
-                                          RowIndex* row) {
+bool Markowitz::IsResidualSingletonColumn(
+    const ColumnView& column, StrictITISpan<RowIndex, const RowIndex> row_perm,
+    RowIndex* row) {
   int residual_degree = 0;
   for (const auto e : column) {
     if (row_perm[e.row()] != kInvalidRow) continue;
@@ -238,7 +239,9 @@ void Markowitz::ExtractResidualSingletonColumns(
   for (ColIndex col(0); col < num_cols; ++col) {
     if ((*col_perm)[col] != kInvalidCol) continue;
     const ColumnView column = basis_matrix.column(col);
-    if (!IsResidualSingletonColumn(column, *row_perm, &row)) continue;
+    if (!IsResidualSingletonColumn(column, row_perm->const_view(), &row)) {
+      continue;
+    }
     (*col_perm)[col] = ColIndex(*index);
     (*row_perm)[row] = RowIndex(*index);
     lower_.AddDiagonalOnlyColumn(1.0);
@@ -569,8 +572,10 @@ void MatrixNonZeroPattern::Reset(RowIndex num_rows, ColIndex num_cols) {
 }
 
 void MatrixNonZeroPattern::InitializeFromMatrixSubset(
-    const CompactSparseMatrixView& basis_matrix, const RowPermutation& row_perm,
-    const ColumnPermutation& col_perm, std::vector<ColIndex>* singleton_columns,
+    const CompactSparseMatrixView& basis_matrix,
+    StrictITISpan<RowIndex, const RowIndex> row_perm,
+    StrictITISpan<ColIndex, const ColIndex> col_perm,
+    std::vector<ColIndex>* singleton_columns,
     std::vector<RowIndex>* singleton_rows) {
   const ColIndex num_cols = basis_matrix.num_cols();
   const RowIndex num_rows = basis_matrix.num_rows();

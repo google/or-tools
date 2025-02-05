@@ -286,6 +286,7 @@ cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:scattered_vector",
         "//ortools/util:stats",
+        "//ortools/util:time_limit",
     ],
 )
 

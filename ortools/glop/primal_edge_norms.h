@@ -27,6 +27,7 @@
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace glop {
@@ -146,6 +147,8 @@ class PrimalEdgeNorms {
     return DeterministicTimeForFpOperations(num_operations_);
   }
 
+  void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
+
  private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
@@ -192,6 +195,7 @@ class PrimalEdgeNorms {
   const CompactSparseMatrix& compact_matrix_;
   const VariablesInfo& variables_info_;
   const BasisFactorization& basis_factorization_;
+  TimeLimit* time_limit_ = nullptr;
 
   // Internal data.
   GlopParameters parameters_;

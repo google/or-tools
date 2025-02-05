@@ -1481,10 +1481,11 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     stored.Set(row);
   }
 
+  const auto matrix_view = view();
   const auto entry_rows = rows_.view();
   for (int i = 0; i < non_zero_rows->size(); ++i) {
     const RowIndex row = (*non_zero_rows)[i];
-    for (const EntryIndex index : Column(RowToColIndex(row))) {
+    for (const EntryIndex index : matrix_view.Column(RowToColIndex(row))) {
       ++num_ops;
       const RowIndex entry_row = entry_rows[index];
       if (!stored[entry_row]) {
