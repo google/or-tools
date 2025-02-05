@@ -213,6 +213,35 @@ TEST(ProductWithodularInverseTest, FewSmallValues) {
   }
 }
 
+TEST(DiophantineEquationOfSizeTwoHasSolutionInDomainTest, RandomSmallValues) {
+  constexpr int kLimit = 1000;
+  constexpr int kNumTries = 10000;
+  absl::BitGen random;
+  for (int i = 0; i < kNumTries; ++i) {
+    const int64_t a = absl::Uniform(random, -kLimit, kLimit);
+    const int64_t b = absl::Uniform(random, -kLimit, kLimit);
+    const int64_t x = absl::Uniform(random, -kLimit, kLimit);
+    const int64_t y = absl::Uniform(random, -kLimit, kLimit);
+
+    const int64_t cte = a * x + b * y;
+
+    EXPECT_TRUE(DiophantineEquationOfSizeTwoHasSolutionInDomain(
+        Domain(x - 10, x + 10), a, Domain(y - 10, y + 10), b, cte));
+
+    bool has_solution = false;
+    const int64_t new_x = absl::Uniform(random, -kLimit, kLimit);
+    const int64_t new_y = absl::Uniform(random, -kLimit, kLimit);
+    for (int64_t d = -5; d < 5; ++d) {
+      has_solution |= (a * (new_x + d) + b * new_y == cte);
+    }
+    ASSERT_EQ(DiophantineEquationOfSizeTwoHasSolutionInDomain(
+                  Domain(new_x - 5, new_x + 4), a, Domain(new_y), b, cte),
+              has_solution)
+        << "a: " << a << " b: " << b << " c: " << cte << " x: " << new_x
+        << " y: " << new_y;
+  }
+}
+
 TEST(SolveDiophantineEquationOfSizeTwoTest, FewSmallValues) {
   const int limit = 50;
   for (int64_t a = -limit; a < limit; ++a) {

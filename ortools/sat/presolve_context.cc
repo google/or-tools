@@ -169,6 +169,16 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   FillDomainInProto(domain, mutable_linear);
 }
 
+void PresolveContext::AddImplyInDomain(int b, const LinearExpressionProto& expr,
+                                       const Domain& domain) {
+  ConstraintProto* const imply = working_model->add_constraints();
+
+  imply->mutable_enforcement_literal()->Resize(1, b);
+  LinearConstraintProto* mutable_linear = imply->mutable_linear();
+  FillDomainInProto(domain, mutable_linear);
+  AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
+}
+
 bool PresolveContext::DomainIsEmpty(int ref) const {
   return domains_[PositiveRef(ref)].IsEmpty();
 }
@@ -1248,7 +1258,8 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   return true;
 }
 
-bool PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
+ABSL_MUST_USE_RESULT bool PresolveContext::StoreBooleanEqualityRelation(
+    int ref_a, int ref_b) {
   if (is_unsat_) return false;
 
   CHECK(!VariableWasRemoved(ref_a));

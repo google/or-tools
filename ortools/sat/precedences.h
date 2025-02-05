@@ -467,6 +467,13 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 struct LinearTerm {
   IntegerVariable var = kNoIntegerVariable;
   IntegerValue coeff = IntegerValue(0);
+
+  void MakeCoeffPositive() {
+    if (coeff < 0) {
+      coeff = -coeff;
+      var = NegationOf(var);
+    }
+  }
 };
 
 // A relation of the form enforcement => a + b \in [lhs, rhs].

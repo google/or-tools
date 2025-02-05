@@ -21,15 +21,68 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
+
+// Helper to compute the minimum flow going out of a subset of nodes, for a
+// given RoutesConstraint.
+class MinOutgoingFlowHelper {
+ public:
+  MinOutgoingFlowHelper(int num_nodes, const std::vector<int>& tails,
+                        const std::vector<int>& heads,
+                        const std::vector<Literal>& literals, Model* model);
+
+  // Returns the minimum flow going out of `subset`, based on a conservative
+  // estimate of the maximum number of nodes of a feasible path inside this
+  // subset. `subset` must not be empty and must not contain the depot (node 0).
+  int ComputeMinOutgoingFlow(absl::Span<const int> subset);
+
+ private:
+  const std::vector<int>& tails_;
+  const std::vector<int>& heads_;
+  const std::vector<Literal>& literals_;
+  const BinaryRelationRepository& binary_relation_repository_;
+  const Trail& trail_;
+  const IntegerTrail& integer_trail_;
+
+  // Temporary data used by ComputeMinOutgoingFlow(). Always contain default
+  // values, except while ComputeMinOutgoingFlow() is running.
+  // ComputeMinOutgoingFlow() computes, for each i in [0, |subset|), whether
+  // each node n in the subset could appear at position i in a feasible path.
+  // It computes whether n can appear at position i based on which nodes can
+  // appear at position i-1, and based on the arc literals and some linear
+  // constraints they enforce. To save memory, it only stores data about two
+  // consecutive positions at a time: a "current" position i, and a "next"
+  // position i+1.
+
+  std::vector<bool> in_subset_;
+  // For each node n, the indices (in tails_, heads_) of the m->n arcs inside
+  // the subset (self arcs excepted).
+  std::vector<std::vector<int>> incoming_arc_indices_;
+  // For each node n, whether it can appear at the current and next position in
+  // a feasible path.
+  std::vector<bool> reachable_;
+  std::vector<bool> next_reachable_;
+  // For each node n, the lower bound of each variable (appearing in a linear
+  // constraint enforced by some incoming arc literal), if n appears at the
+  // current and next position in a feasible path. Variables not appearing in
+  // these maps have no tighter lower bound that the one from the IntegerTrail
+  // (at decision level 0).
+  std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      node_var_lower_bounds_;
+  std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      next_node_var_lower_bounds_;
+};
 
 // Given a graph with nodes in [0, num_nodes) and a set of arcs (the order is
 // important), this will:

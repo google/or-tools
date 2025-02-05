@@ -1381,8 +1381,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         if (num_cols == 2 && !row_is_all_equivalent[i]) {
           // We have [1, 0] or [0, 1].
           context->UpdateRuleStats("symmetry: equivalence in orbitope row");
-          context->StoreBooleanEqualityRelation(orbitope[i][0],
-                                                NegatedRef(orbitope[i][1]));
+          if (!context->StoreBooleanEqualityRelation(
+                  orbitope[i][0], NegatedRef(orbitope[i][1]))) {
+            return false;
+          }
           if (context->ModelIsUnsat()) return false;
         } else {
           // No solution.
@@ -1412,8 +1414,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         } else {
           context->UpdateRuleStats("symmetry: all equivalent in orbitope row");
           for (int j = 1; j < num_cols; ++j) {
-            context->StoreBooleanEqualityRelation(orbitope[i][0],
-                                                  orbitope[i][j]);
+            if (!context->StoreBooleanEqualityRelation(orbitope[i][0],
+                                                       orbitope[i][j])) {
+              return false;
+            }
             if (context->ModelIsUnsat()) return false;
           }
         }

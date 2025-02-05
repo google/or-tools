@@ -64,6 +64,7 @@
 #include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
@@ -158,6 +159,104 @@ void DumpModelProto(const M& proto, absl::string_view name) {
     LOG(INFO) << "Dumping " << name << " binary proto to '" << filename << "'.";
   }
   CHECK(WriteModelProtoToFile(proto, filename));
+}
+
+IntegerValue ExprMin(const LinearExpressionProto& expr,
+                     const CpModelProto& model) {
+  IntegerValue result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const IntegerVariableProto& var_proto = model.variables(expr.vars(i));
+    if (expr.coeffs(i) > 0) {
+      result += expr.coeffs(i) * var_proto.domain(0);
+    } else {
+      result += expr.coeffs(i) * var_proto.domain(var_proto.domain_size() - 1);
+    }
+  }
+  return result;
+}
+
+IntegerValue ExprMax(const LinearExpressionProto& expr,
+                     const CpModelProto& model) {
+  IntegerValue result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const IntegerVariableProto& var_proto = model.variables(expr.vars(i));
+    if (expr.coeffs(i) > 0) {
+      result += expr.coeffs(i) * var_proto.domain(var_proto.domain_size() - 1);
+    } else {
+      result += expr.coeffs(i) * var_proto.domain(0);
+    }
+  }
+  return result;
+}
+
+void DumpNoOverlap2dProblem(const ConstraintProto& ct,
+                            const CpModelProto& model_proto) {
+  std::vector<RectangleInRange> non_fixed_boxes;
+  std::vector<Rectangle> fixed_boxes;
+  for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
+    const int x_interval = ct.no_overlap_2d().x_intervals(i);
+    const int y_interval = ct.no_overlap_2d().y_intervals(i);
+
+    const ConstraintProto& x_ct = model_proto.constraints(x_interval);
+    const ConstraintProto& y_ct = model_proto.constraints(y_interval);
+
+    RectangleInRange box = {
+        .box_index = i,
+        .bounding_area =
+            Rectangle{
+                .x_min = ExprMin(x_ct.interval().start(), model_proto),
+                .x_max = ExprMax(x_ct.interval().end(), model_proto),
+                .y_min = ExprMin(y_ct.interval().start(), model_proto),
+                .y_max = ExprMax(y_ct.interval().end(), model_proto),
+            },
+
+        .x_size = ExprMin(x_ct.interval().size(), model_proto),
+        .y_size = ExprMin(y_ct.interval().size(), model_proto)};
+    if (box.x_size == box.bounding_area.SizeX() &&
+        box.y_size == box.bounding_area.SizeY()) {
+      fixed_boxes.push_back(box.bounding_area);
+    } else {
+      non_fixed_boxes.push_back(box);
+    }
+  }
+  VLOG(2) << "NoOverlap2D with " << fixed_boxes.size() << " fixed boxes and "
+          << non_fixed_boxes.size() << " non-fixed boxes.";
+
+  Rectangle bounding_box = non_fixed_boxes.front().bounding_area;
+  for (const RectangleInRange& r : non_fixed_boxes) {
+    bounding_box.GrowToInclude(r.bounding_area);
+  }
+  VLOG(3) << "Fixed boxes: " << RenderDot(bounding_box, fixed_boxes);
+  std::vector<Rectangle> non_fixed_boxes_to_render;
+  for (const auto& r : non_fixed_boxes) {
+    non_fixed_boxes_to_render.push_back(r.bounding_area);
+  }
+  VLOG(3) << "Non-fixed boxes: "
+          << RenderDot(bounding_box, non_fixed_boxes_to_render);
+  VLOG(3) << "BB: " << bounding_box
+          << " non-fixed boxes: " << absl::StrJoin(non_fixed_boxes, ", ");
+  VLOG(3) << "BB size: " << bounding_box.SizeX() << "x" << bounding_box.SizeY()
+          << " non-fixed boxes sizes: "
+          << absl::StrJoin(non_fixed_boxes, ", ",
+                           [](std::string* out, const RectangleInRange& r) {
+                             absl::StrAppend(out, r.bounding_area.SizeX(), "x",
+                                             r.bounding_area.SizeY());
+                           });
+  std::vector<Rectangle> sizes_to_render;
+  IntegerValue x = bounding_box.x_min;
+  IntegerValue y = 0;
+  int i = 0;
+  for (const auto& r : non_fixed_boxes) {
+    sizes_to_render.push_back(Rectangle{
+        .x_min = x, .x_max = x + r.x_size, .y_min = y, .y_max = y + r.y_size});
+    x += r.x_size;
+    if (x > bounding_box.x_max) {
+      x = 0;
+      y += r.y_size;
+    }
+    ++i;
+  }
+  VLOG(3) << "Sizes: " << RenderDot(bounding_box, sizes_to_render);
 }
 
 }  // namespace.
@@ -297,6 +396,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
             interval_is_fixed(model_proto.constraints(y_interval))) {
           no_overlap_2d_num_fixed_rectangles++;
         }
+      }
+      if (VLOG_IS_ON(2)) {
+        DumpNoOverlap2dProblem(ct, model_proto);
       }
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kNoOverlap) {

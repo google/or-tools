@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SCHEDULING_HELPERS_H_
 #define OR_TOOLS_SAT_SCHEDULING_HELPERS_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -148,6 +149,12 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   IntegerValue StartMax(int t) const { return -cached_negated_start_max_[t]; }
   IntegerValue EndMax(int t) const { return -cached_negated_end_max_[t]; }
 
+  IntegerValue LevelZeroSizeMin(int t) const {
+    // Note the variable that encodes the size of an absent task can be
+    // negative.
+    return std::max(IntegerValue(0),
+                    integer_trail_->LevelZeroLowerBound(sizes_[t]));
+  }
   IntegerValue LevelZeroStartMin(int t) const {
     return integer_trail_->LevelZeroLowerBound(starts_[t]);
   }

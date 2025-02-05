@@ -106,16 +106,22 @@ LiteralIndex IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteral(
     enforcement_literals.push_back(b.is_present.value());
   }
 
-  if (sat_solver_->CurrentDecisionLevel() == 0) {
+  auto remove_fixed = [assignment =
+                           &assignment_](std::vector<Literal>& literals) {
     int new_size = 0;
-    for (const Literal l : enforcement_literals) {
+    for (const Literal l : literals) {
       // We can ignore always absent interval, and skip the literal of the
       // interval that are now always present.
-      if (assignment_.LiteralIsTrue(l)) continue;
-      if (assignment_.LiteralIsFalse(l)) return kNoLiteralIndex;
-      enforcement_literals[new_size++] = l;
+      if (assignment->LiteralIsTrue(l)) continue;
+      if (assignment->LiteralIsFalse(l)) return false;
+      literals[new_size++] = l;
     }
-    enforcement_literals.resize(new_size);
+    literals.resize(new_size);
+    return true;
+  };
+
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    if (!remove_fixed(enforcement_literals)) return kNoLiteralIndex;
   }
 
   // task_a is currently before task_b ?
@@ -157,6 +163,12 @@ LiteralIndex IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteral(
   enforcement_literals.push_back(a_before_b.Negated());
   AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start, model_);
   enforcement_literals.pop_back();
+
+  // The calls to AddConditionalAffinePrecedence() might have fixed some of the
+  // enforcement literals. Remove them if we are at level zero.
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    if (!remove_fixed(enforcement_literals)) return kNoLiteralIndex;
+  }
 
   // Force the value of boolean_var in case the precedence is not active. This
   // avoids duplicate solutions when enumerating all possible solutions.

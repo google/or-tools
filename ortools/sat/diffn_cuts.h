@@ -48,8 +48,7 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 // The maximum area is the area of the bounding rectangle of each intervals
 // at level 0.
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
-    NoOverlap2DConstraintHelper* helper,
-    absl::Span<const std::vector<LiteralValueValue>> energies, Model* model);
+    NoOverlap2DConstraintHelper* helper, Model* model);
 
 // Internal methods and data structures, useful for testing.
 

@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
@@ -34,6 +35,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
 
@@ -42,6 +44,111 @@ namespace sat {
 namespace {
 
 using ::testing::ElementsAre;
+
+TEST(MinOutgoingFlowHelperTest, CapacityConstraints) {
+  Model model;
+  const int num_nodes = 5;
+  // A complete graph with num_nodes.
+  std::vector<int> tails;
+  std::vector<int> heads;
+  std::vector<Literal> literals;
+  absl::flat_hash_map<std::pair<int, int>, Literal> literal_by_arc;
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    for (int head = 0; head < num_nodes; ++head) {
+      if (tail == head) continue;
+      tails.push_back(tail);
+      heads.push_back(head);
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+      literal_by_arc[{tail, head}] = literals.back();
+    }
+  }
+  // For each node, the load of the vehicle leaving it.
+  std::vector<IntegerVariable> loads;
+  const int max_capacity = 30;
+  for (int n = 0; n < num_nodes; ++n) {
+    loads.push_back(model.Add(NewIntegerVariable(0, max_capacity)));
+  }
+  // Capacity constraints.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (const auto& [arc, literal] : literal_by_arc) {
+    const auto& [tail, head] = arc;
+    // We consider that, at each node n other than the depot, n+10 items must be
+    // picked up by the vehicle leaving n.
+    const int head_load = head == 0 ? 0 : head + 10;
+    // loads[head] - loads[tail] >= head_load
+    repository->Add(literal, {loads[head], 1}, {loads[tail], -1}, head_load,
+                    1000);
+  }
+  repository->Build();
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  const int min_flow = helper.ComputeMinOutgoingFlow({1, 2, 3, 4});
+
+  // Due to the capacity constraints, a feasible path can have at most 3 nodes,
+  // hence at least two paths are needed. The lower bound of the vehicle load
+  // at each node n appearing at position i should be computed as follows:
+  //
+  //            1  2  3  4  (position)
+  //          -------------
+  //   node 1 | 0 11 23  -
+  //        2 | 0 12 23  -
+  //        3 | 0 13 24  -
+  //        4 | 0 14 24  -
+  EXPECT_EQ(min_flow, 2);
+}
+
+TEST(MinOutgoingFlowHelperTest, TimeWindows) {
+  Model model;
+  const int num_nodes = 5;
+  // A complete graph with num_nodes.
+  std::vector<int> tails;
+  std::vector<int> heads;
+  std::vector<Literal> literals;
+  absl::flat_hash_map<std::pair<int, int>, Literal> literal_by_arc;
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    for (int head = 0; head < num_nodes; ++head) {
+      if (tail == head) continue;
+      tails.push_back(tail);
+      heads.push_back(head);
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+      literal_by_arc[{tail, head}] = literals.back();
+    }
+  }
+  // For each node, the time at which a vehicle leaves this node.
+  std::vector<IntegerVariable> times;
+  times.push_back(model.Add(NewIntegerVariable(0, 100)));  // Depot.
+  times.push_back(model.Add(NewIntegerVariable(8, 12)));   // Node 1.
+  times.push_back(model.Add(NewIntegerVariable(18, 22)));  // Node 2.
+  times.push_back(model.Add(NewIntegerVariable(18, 22)));  // Node 3.
+  times.push_back(model.Add(NewIntegerVariable(28, 32)));  // Node 4.
+  // Travel time constraints.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (const auto& [arc, literal] : literal_by_arc) {
+    const auto& [tail, head] = arc;
+    const int travel_time = 10 - tail;
+    // times[head] - times[tail] >= travel_time
+    repository->Add(literal, {times[head], 1}, {times[tail], -1}, travel_time,
+                    1000);
+  }
+  repository->Build();
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  const int min_flow = helper.ComputeMinOutgoingFlow({1, 2, 3, 4});
+
+  // Due to the time window constraints, a feasible path can have at most 3
+  // nodes, hence at least two paths are needed. The earliest departure time
+  // from each node n appearing at position i should be computed as follows:
+  //
+  //            1  2  3  4  (position)
+  //          -------------
+  //   node 1 | 8  -  -  -
+  //        2 | 18 18 -  -
+  //        3 | 18 18 -  -
+  //        4 | 28 28 28 -
+  EXPECT_EQ(min_flow, 2);
+}
 
 // Test on a simple tree:
 //      3
