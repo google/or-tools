@@ -310,6 +310,10 @@ class BasisFactorization {
   // Returns the number of updates since last refactorization.
   int NumUpdates() const { return num_updates_; }
 
+  EntryIndex NumberOfEntriesInLU() const {
+    return lu_factorization_.NumberOfEntries();
+  }
+
  private:
   // Called by ForceRefactorization() or Refactorize() or Initialize().
   Status ComputeFactorization();

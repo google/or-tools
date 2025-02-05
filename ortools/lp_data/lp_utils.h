@@ -249,12 +249,17 @@ inline void PermuteWithScratchpad(
   const IndexType size = input_output->size();
   zero_scratchpad->swap(*input_output);
   input_output->resize(size, 0.0);
-  for (IndexType index(0); index < size; ++index) {
-    const Fractional value = (*zero_scratchpad)[index];
+
+  // Caching the pointers help.
+  const Fractional* const input = zero_scratchpad->data();
+  const IndexType* const perm = permutation.data();
+  Fractional* const output = input_output->data();
+  for (int i = 0; i < size; ++i) {
+    DCHECK_GE(perm[i], 0);
+    DCHECK_LT(perm[i], size);
+    const Fractional value = input[i];
     if (value != 0.0) {
-      const IndexType permuted_index(
-          permutation[PermutationIndexType(index.value())].value());
-      (*input_output)[permuted_index] = value;
+      output[perm[i].value()] = value;
     }
   }
   zero_scratchpad->assign(size, 0.0);

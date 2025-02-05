@@ -177,7 +177,7 @@ class RankOneUpdateFactorization {
     }
 
     // y->is_non_zero is always all false before and after this code.
-    DCHECK(IsAllFalse(y->is_non_zero));
+    DCHECK(y->is_non_zero.IsAllFalse());
     y->RepopulateSparseMask();
     bool use_dense = y->ShouldUseDenseIteration(hypersparse_ratio_);
     for (int i = elementary_matrices_.size() - 1; i >= 0; --i) {
@@ -213,7 +213,7 @@ class RankOneUpdateFactorization {
     }
 
     // d->is_non_zero is always all false before and after this code.
-    DCHECK(IsAllFalse(d->is_non_zero));
+    DCHECK(d->is_non_zero.IsAllFalse());
     d->RepopulateSparseMask();
     bool use_dense = d->ShouldUseDenseIteration(hypersparse_ratio_);
     const size_t end = elementary_matrices_.size();
