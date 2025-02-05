@@ -35,6 +35,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -54,6 +55,10 @@ struct Rectangle {
   }
 
   IntegerValue Area() const { return SizeX() * SizeY(); }
+
+  IntegerValue CapArea() const {
+    return CapProdI(CapSubI(x_max, x_min), CapSubI(y_max, y_min));
+  }
 
   IntegerValue SizeX() const { return x_max - x_min; }
   IntegerValue SizeY() const { return y_max - y_min; }

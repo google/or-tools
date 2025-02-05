@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_NO_OVERLAP_2D_HELPER_H_
 #define OR_TOOLS_SAT_NO_OVERLAP_2D_HELPER_H_
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -87,6 +88,13 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
             .y_max = y_helper_->EndMax(index)};
   }
 
+  Rectangle GetLevelZeroBoundingRectangle(int index) const {
+    return {.x_min = x_helper_->LevelZeroStartMin(index),
+            .x_max = x_helper_->LevelZeroEndMax(index),
+            .y_min = y_helper_->LevelZeroStartMin(index),
+            .y_max = y_helper_->LevelZeroEndMax(index)};
+  }
+
   bool IsFixed(int index) const {
     return x_helper_->StartIsFixed(index) && x_helper_->EndIsFixed(index) &&
            y_helper_->StartIsFixed(index) && y_helper_->EndIsFixed(index);
@@ -94,6 +102,12 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   std::pair<IntegerValue, IntegerValue> GetBoxSizesMax(int index) const {
     return {x_helper_->SizeMax(index), y_helper_->SizeMax(index)};
+  }
+
+  std::pair<IntegerValue, IntegerValue> GetLevelZeroBoxSizesMin(
+      int index) const {
+    return {x_helper_->LevelZeroSizeMin(index),
+            y_helper_->LevelZeroSizeMin(index)};
   }
 
   void ClearReason() {
@@ -214,7 +228,10 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
     return connected_components_;
   }
 
-  int InProcessingCount() const { return inprocessing_count_; }
+  int64_t InProcessingCount() const { return inprocessing_count_; }
+  int64_t LastLevelZeroChangeIdx() const {
+    return level_zero_bound_change_idx_;
+  }
 
  private:
   void Reset(absl::Span<const Rectangle> fixed_boxes,
@@ -230,7 +247,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   Model* model_;
   GenericLiteralWatcher* watcher_;
   std::vector<int> propagators_watching_;
-  int inprocessing_count_ = 0;
+  int64_t inprocessing_count_ = 0;
+  int64_t level_zero_bound_change_idx_ = 0;
 };
 
 }  // namespace sat

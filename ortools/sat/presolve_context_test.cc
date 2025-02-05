@@ -604,7 +604,7 @@ TEST(PresolveContextTest, GetLiteralRepresentative) {
   EXPECT_NE(context.GetLiteralRepresentative(-2),
             context.GetLiteralRepresentative(-3));
 
-  context.StoreBooleanEqualityRelation(0, 1);
+  EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, 1));
   EXPECT_EQ(context.GetLiteralRepresentative(0),
             context.GetLiteralRepresentative(1));
   EXPECT_NE(context.GetLiteralRepresentative(0),
@@ -618,7 +618,7 @@ TEST(PresolveContextTest, GetLiteralRepresentative) {
   EXPECT_NE(context.GetLiteralRepresentative(-2),
             context.GetLiteralRepresentative(-3));
 
-  context.StoreBooleanEqualityRelation(0, -3);
+  EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, -3));
   EXPECT_EQ(context.GetLiteralRepresentative(0),
             context.GetLiteralRepresentative(1));
   EXPECT_EQ(context.GetLiteralRepresentative(0),

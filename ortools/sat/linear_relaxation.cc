@@ -40,12 +40,14 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/diffn_cuts.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/precedences.h"
@@ -982,6 +984,72 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   lc.AddTerm(span_start, integer_trail->UpperBound(capacity));
   relaxation->linear_constraints.push_back(lc.Build());
 }
+void AppendNoOverlap2dRelaxationForComponent(
+    absl::Span<const int> component, Model* model,
+    NoOverlap2DConstraintHelper* no_overlap_helper,
+    LinearConstraintManager* manager, ProductDecomposer* product_decomposer) {
+  std::optional<Rectangle> bounding_box;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (const int b : component) {
+    const Rectangle curr_bounding_box =
+        no_overlap_helper->GetLevelZeroBoundingRectangle(b);
+    if (curr_bounding_box.x_min > curr_bounding_box.x_max ||
+        curr_bounding_box.y_min > curr_bounding_box.y_max) {
+      // This can happen if the box must be absent.
+      continue;
+    }
+    if (bounding_box.has_value()) {
+      bounding_box->GrowToInclude(
+          no_overlap_helper->GetLevelZeroBoundingRectangle(b));
+    } else {
+      bounding_box = no_overlap_helper->GetLevelZeroBoundingRectangle(b);
+    }
+  }
+
+  if (!bounding_box.has_value()) {
+    // All boxes must be absent.
+    return;
+  }
+
+  const IntegerValue max_area = bounding_box->CapArea();
+  if (max_area == kMaxIntegerValue) return;
+
+  LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
+  for (int i = 0; i < no_overlap_helper->NumBoxes(); ++i) {
+    if (no_overlap_helper->IsPresent(i)) {
+      const AffineExpression& x_size_affine =
+          no_overlap_helper->x_helper().Sizes()[i];
+      const AffineExpression& y_size_affine =
+          no_overlap_helper->y_helper().Sizes()[i];
+      const std::vector<LiteralValueValue> energy =
+          product_decomposer->TryToDecompose(x_size_affine, y_size_affine);
+      if (!energy.empty()) {
+        if (!lc.AddDecomposedProduct(energy)) return;
+      } else {
+        lc.AddQuadraticLowerBound(x_size_affine, y_size_affine, integer_trail);
+      }
+    } else if (no_overlap_helper->x_helper().IsPresent(i) ||
+               no_overlap_helper->y_helper().IsPresent(i) ||
+               (no_overlap_helper->x_helper().PresenceLiteral(i) ==
+                no_overlap_helper->y_helper().PresenceLiteral(i))) {
+      // We have only one active literal.
+      const Literal presence_literal =
+          no_overlap_helper->x_helper().IsPresent(i)
+              ? no_overlap_helper->y_helper().PresenceLiteral(i)
+              : no_overlap_helper->x_helper().PresenceLiteral(i);
+      const auto& [x_size, y_size] =
+          no_overlap_helper->GetLevelZeroBoxSizesMin(i);
+      const IntegerValue area_min = x_size * y_size;
+      if (area_min > 0) {
+        // Not including the term if we don't have a view is ok.
+        (void)lc.AddLiteralTerm(presence_literal, area_min);
+      }
+    }
+  }
+  LinearConstraint ct = lc.Build();
+  if (ct.num_terms == 0) return;
+  manager->Add(std::move(ct));
+}
 
 // Adds the energetic relaxation sum(areas) <= bounding box area.
 void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
@@ -995,80 +1063,33 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
   std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
 
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* intervals_repository = model->GetOrCreate<IntervalsRepository>();
-
-  IntegerValue x_min = kMaxIntegerValue;
-  IntegerValue x_max = kMinIntegerValue;
-  IntegerValue y_min = kMaxIntegerValue;
-  IntegerValue y_max = kMinIntegerValue;
-  std::vector<AffineExpression> x_sizes;
-  std::vector<AffineExpression> y_sizes;
-  for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
-    const IntegerValue curr_x_min = integer_trail->LevelZeroLowerBound(
-        intervals_repository->Start(x_intervals[i]));
-    const IntegerValue curr_x_max = integer_trail->LevelZeroUpperBound(
-        intervals_repository->End(x_intervals[i]));
-    const IntegerValue curr_y_min = integer_trail->LevelZeroLowerBound(
-        intervals_repository->Start(y_intervals[i]));
-    const IntegerValue curr_y_max = integer_trail->LevelZeroUpperBound(
-        intervals_repository->End(y_intervals[i]));
-    if (curr_x_min > curr_x_max || curr_y_min > curr_y_max) {
-      // This can happen if the box must be absent.
-      continue;
-    }
-    x_sizes.push_back(intervals_repository->Size(x_intervals[i]));
-    y_sizes.push_back(intervals_repository->Size(y_intervals[i]));
-    x_min = std::min(x_min, curr_x_min);
-    x_max = std::max(x_max, curr_x_max);
-    y_min = std::min(y_min, curr_y_min);
-    y_max = std::max(y_max, curr_y_max);
-  }
-
-  if (x_min > x_max || y_min > y_max) {
-    // All boxes must be absent.
-    return;
-  }
-
-  const IntegerValue max_area =
-      IntegerValue(CapProd(CapSub(x_max.value(), x_min.value()),
-                           CapSub(y_max.value(), y_min.value())));
-  if (max_area == kMaxIntegerValue) return;
-
+  NoOverlap2DConstraintHelper* no_overlap_helper =
+      intervals_repository->GetOrCreate2DHelper(x_intervals, y_intervals);
   auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();
-  LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
-  for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
-    if (intervals_repository->IsPresent(x_intervals[i]) &&
-        intervals_repository->IsPresent(y_intervals[i])) {
-      const std::vector<LiteralValueValue> energy =
-          product_decomposer->TryToDecompose(x_sizes[i], y_sizes[i]);
-      if (!energy.empty()) {
-        if (!lc.AddDecomposedProduct(energy)) return;
-      } else {
-        lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
-      }
-    } else if (intervals_repository->IsPresent(x_intervals[i]) ||
-               intervals_repository->IsPresent(y_intervals[i]) ||
-               (intervals_repository->PresenceLiteral(x_intervals[i]) ==
-                intervals_repository->PresenceLiteral(y_intervals[i]))) {
-      // We have only one active literal.
-      const Literal presence_literal =
-          intervals_repository->IsPresent(x_intervals[i])
-              ? intervals_repository->PresenceLiteral(y_intervals[i])
-              : intervals_repository->PresenceLiteral(x_intervals[i]);
-      const IntegerValue x_size =
-          integer_trail->LevelZeroLowerBound(x_sizes[i]);
-      const IntegerValue y_size =
-          integer_trail->LevelZeroLowerBound(y_sizes[i]);
-      if (x_size > 0 && y_size > 0) {
-        const IntegerValue area_min = x_size * y_size;
-        // Note that intervals that must be absent can have negative sizes.
-        // Not including the term if we don't have a view is ok.
-        (void)lc.AddLiteralTerm(presence_literal, area_min);
-      }
+
+  CutGenerator& result = relaxation->cut_generators.emplace_back();
+  result.only_run_at_level_zero = true;
+  AddIntegerVariableFromIntervals(&no_overlap_helper->x_helper(), model,
+                                  &result.vars);
+  AddIntegerVariableFromIntervals(&no_overlap_helper->y_helper(), model,
+                                  &result.vars);
+  result.generate_cuts = [no_overlap_helper, model, product_decomposer,
+                          last_level_zero_bound_change_idx = int64_t{-1}](
+                             LinearConstraintManager* manager) mutable {
+    if (last_level_zero_bound_change_idx ==
+        no_overlap_helper->LastLevelZeroChangeIdx()) {
+      return true;
     }
-  }
-  relaxation->linear_constraints.push_back(lc.Build());
+    last_level_zero_bound_change_idx =
+        no_overlap_helper->LastLevelZeroChangeIdx();
+    for (const auto& component :
+         no_overlap_helper->connected_components().AsVectorOfSpan()) {
+      AppendNoOverlap2dRelaxationForComponent(
+          component, model, no_overlap_helper, manager, product_decomposer);
+    }
+    return true;
+  };
 }
 
 void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
@@ -1749,17 +1770,8 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 
   if (!has_variable_part) return;
 
-  std::vector<std::vector<LiteralValueValue>> energies;
-  const int num_rectangles = no_overlap_helper->NumBoxes();
-  auto* product_decomposer = m->GetOrCreate<ProductDecomposer>();
-  for (int i = 0; i < num_rectangles; ++i) {
-    energies.push_back(product_decomposer->TryToDecompose(
-        no_overlap_helper->x_helper().Sizes()[i],
-        no_overlap_helper->y_helper().Sizes()[i]));
-  }
-
   relaxation->cut_generators.push_back(
-      CreateNoOverlap2dEnergyCutGenerator(no_overlap_helper, energies, m));
+      CreateNoOverlap2dEnergyCutGenerator(no_overlap_helper, m));
 }
 
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,

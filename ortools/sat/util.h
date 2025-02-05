@@ -256,6 +256,12 @@ int64_t ProductWithModularInverse(int64_t coeff, int64_t mod, int64_t rhs);
 bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
                                        int64_t& x0, int64_t& y0);
 
+// Returns true if the equation a * X + b * Y = cte has some integer solutions
+// in the domain of X and Y.
+bool DiophantineEquationOfSizeTwoHasSolutionInDomain(const Domain& x, int64_t a,
+                                                     const Domain& y, int64_t b,
+                                                     int64_t cte);
+
 // The argument must be non-negative.
 int64_t FloorSquareRoot(int64_t a);
 int64_t CeilSquareRoot(int64_t a);

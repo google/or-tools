@@ -322,6 +322,7 @@ bool NoOverlap2DConstraintHelper::Propagate() {
   if (!x_helper_->Propagate() || !y_helper_->Propagate()) return false;
 
   if (x_helper_->CurrentDecisionLevel() == 0) {
+    ++level_zero_bound_change_idx_;
     SynchronizeAndSetDirection();
     int num_boxes = NumBoxes();
 

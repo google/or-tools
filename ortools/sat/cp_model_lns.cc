@@ -951,22 +951,23 @@ NeighborhoodGeneratorHelper::GetSchedulingPrecedences(
 }
 
 std::vector<std::vector<int>>
-NeighborhoodGeneratorHelper::GetRoutingPathLiterals(
+NeighborhoodGeneratorHelper::GetRoutingPathBooleanVariables(
     const CpSolverResponse& initial_solution) const {
-  struct HeadAndArcLiteral {
+  struct HeadAndArcBooleanVariable {
     int head;
-    int literal;
+    int bool_var;
   };
 
   std::vector<std::vector<int>> result;
-  absl::flat_hash_map<int, HeadAndArcLiteral> tail_to_head_and_arc_literal;
+  absl::flat_hash_map<int, HeadAndArcBooleanVariable>
+      tail_to_head_and_arc_bool_var;
 
   for (const int i : TypeToConstraints(ConstraintProto::kCircuit)) {
     const CircuitConstraintProto& ct = ModelProto().constraints(i).circuit();
 
     // Collect arcs.
     int min_node = std::numeric_limits<int>::max();
-    tail_to_head_and_arc_literal.clear();
+    tail_to_head_and_arc_bool_var.clear();
     for (int i = 0; i < ct.literals_size(); ++i) {
       const int literal = ct.literals(i);
       const int head = ct.heads(i);
@@ -977,27 +978,27 @@ NeighborhoodGeneratorHelper::GetRoutingPathLiterals(
       if (RefIsPositive(literal) == (value == 0)) continue;
       // Ignore self loops.
       if (head == tail) continue;
-      tail_to_head_and_arc_literal[tail] = {head, bool_var};
+      tail_to_head_and_arc_bool_var[tail] = {head, bool_var};
       min_node = std::min(tail, min_node);
     }
-    if (tail_to_head_and_arc_literal.empty()) continue;
+    if (tail_to_head_and_arc_bool_var.empty()) continue;
 
     // Unroll the path.
     int current_node = min_node;
     std::vector<int> path;
     do {
-      auto it = tail_to_head_and_arc_literal.find(current_node);
-      CHECK(it != tail_to_head_and_arc_literal.end());
+      auto it = tail_to_head_and_arc_bool_var.find(current_node);
+      CHECK(it != tail_to_head_and_arc_bool_var.end());
       current_node = it->second.head;
-      path.push_back(it->second.literal);
+      path.push_back(it->second.bool_var);
     } while (current_node != min_node);
     result.push_back(std::move(path));
   }
 
-  std::vector<HeadAndArcLiteral> route_starts;
+  std::vector<HeadAndArcBooleanVariable> route_starts;
   for (const int i : TypeToConstraints(ConstraintProto::kRoutes)) {
     const RoutesConstraintProto& ct = ModelProto().constraints(i).routes();
-    tail_to_head_and_arc_literal.clear();
+    tail_to_head_and_arc_bool_var.clear();
     route_starts.clear();
 
     // Collect route starts and arcs.
@@ -1014,20 +1015,20 @@ NeighborhoodGeneratorHelper::GetRoutingPathLiterals(
       if (tail == 0) {
         route_starts.push_back({head, bool_var});
       } else {
-        tail_to_head_and_arc_literal[tail] = {head, bool_var};
+        tail_to_head_and_arc_bool_var[tail] = {head, bool_var};
       }
     }
 
     // Unroll all routes.
-    for (const HeadAndArcLiteral& head_var : route_starts) {
+    for (const HeadAndArcBooleanVariable& head_var : route_starts) {
       std::vector<int> path;
       int current_node = head_var.head;
-      path.push_back(head_var.literal);
+      path.push_back(head_var.bool_var);
       do {
-        auto it = tail_to_head_and_arc_literal.find(current_node);
-        CHECK(it != tail_to_head_and_arc_literal.end());
+        auto it = tail_to_head_and_arc_bool_var.find(current_node);
+        CHECK(it != tail_to_head_and_arc_bool_var.end());
         current_node = it->second.head;
-        path.push_back(it->second.literal);
+        path.push_back(it->second.bool_var);
       } while (current_node != 0);
       result.push_back(std::move(path));
     }
@@ -2598,20 +2599,18 @@ Neighborhood RoutingRandomNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   const std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPathLiterals(initial_solution);
+      helper_.GetRoutingPathBooleanVariables(initial_solution);
 
   // Collect all unique variables.
-  absl::flat_hash_set<int> all_path_variables;
-  for (auto& path : all_paths) {
-    all_path_variables.insert(path.begin(), path.end());
+  std::vector<int> variables_to_fix;
+  for (const auto& path : all_paths) {
+    variables_to_fix.insert(variables_to_fix.end(), path.begin(), path.end());
   }
-  std::vector<int> fixed_variables(all_path_variables.begin(),
-                                   all_path_variables.end());
-  std::sort(fixed_variables.begin(), fixed_variables.end());
-  GetRandomSubset(1.0 - data.difficulty, &fixed_variables, random);
+  gtl::STLSortAndRemoveDuplicates(&variables_to_fix);
+  GetRandomSubset(1.0 - data.difficulty, &variables_to_fix, random);
 
   Bitset64<int> to_fix(helper_.NumVariables());
-  for (const int var : fixed_variables) to_fix.Set(var);
+  for (const int var : variables_to_fix) to_fix.Set(var);
   return helper_.FixGivenVariables(initial_solution, to_fix);
 }
 
@@ -2619,18 +2618,31 @@ Neighborhood RoutingPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPathLiterals(initial_solution);
+      helper_.GetRoutingPathBooleanVariables(initial_solution);
 
-  // Collect all unique variables.
-  absl::flat_hash_set<int> all_path_variables;
-  for (const auto& path : all_paths) {
-    all_path_variables.insert(path.begin(), path.end());
+  // Remove a corner case where all paths are empty.
+  if (all_paths.empty()) {
+    return helper_.NoNeighborhood();
   }
 
-  // Select variables to relax.
+  // Collect all unique variables.
+  std::vector<int> all_path_variables;
+  int sum_of_path_sizes = 0;
+  for (const auto& path : all_paths) {
+    sum_of_path_sizes += path.size();
+  }
+  all_path_variables.reserve(sum_of_path_sizes);
+  for (const auto& path : all_paths) {
+    all_path_variables.insert(all_path_variables.end(), path.begin(),
+                              path.end());
+  }
+  gtl::STLSortAndRemoveDuplicates(&all_path_variables);
+
+  // Select target number of variables to relax.
   const int num_variables_to_relax =
       static_cast<int>(all_path_variables.size() * data.difficulty);
   absl::flat_hash_set<int> relaxed_variables;
+
   while (relaxed_variables.size() < num_variables_to_relax) {
     DCHECK(!all_paths.empty());
     const int path_index = absl::Uniform<int>(random, 0, all_paths.size());
@@ -2665,57 +2677,54 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
-      helper_.GetRoutingPathLiterals(initial_solution);
+      helper_.GetRoutingPathBooleanVariables(initial_solution);
+
   // Remove a corner case where all paths are empty.
   if (all_paths.empty()) {
     return helper_.NoNeighborhood();
   }
 
   // Collect all unique variables.
-  absl::flat_hash_set<int> all_path_variables;
+  std::vector<int> all_path_variables;
+  int sum_of_path_sizes = 0;
   for (const auto& path : all_paths) {
-    all_path_variables.insert(path.begin(), path.end());
+    sum_of_path_sizes += path.size();
   }
+  all_path_variables.reserve(sum_of_path_sizes);
+  for (const auto& path : all_paths) {
+    all_path_variables.insert(all_path_variables.end(), path.begin(),
+                              path.end());
+  }
+  gtl::STLSortAndRemoveDuplicates(&all_path_variables);
 
-  // Select variables to relax.
+  // Select target number of variables to relax.
   const int num_variables_to_relax =
       static_cast<int>(all_path_variables.size() * data.difficulty);
   absl::flat_hash_set<int> relaxed_variables;
 
   // Relax the start and end of each path to ease relocation.
+  // TODO(user): Restrict this if the difficulty is very low.
   for (const auto& path : all_paths) {
     relaxed_variables.insert(path.front());
     relaxed_variables.insert(path.back());
   }
 
-  // Randomize paths.
-  for (auto& path : all_paths) {
-    std::shuffle(path.begin(), path.end(), random);
-  }
-
-  // Relax all variables (if possible) in one random path.
-  const int path_to_clean = absl::Uniform<int>(random, 0, all_paths.size());
+  // Relax all variables, if possible, of one random path.
+  const int path_index = absl::Uniform<int>(random, 0, all_paths.size());
+  std::shuffle(all_paths[path_index].begin(), all_paths[path_index].end(),
+               random);
   while (relaxed_variables.size() < num_variables_to_relax &&
-         !all_paths[path_to_clean].empty()) {
-    relaxed_variables.insert(all_paths[path_to_clean].back());
-    all_paths[path_to_clean].pop_back();
-  }
-  if (all_paths[path_to_clean].empty()) {
-    std::swap(all_paths[path_to_clean], all_paths.back());
-    all_paths.pop_back();
+         !all_paths[path_index].empty()) {
+    relaxed_variables.insert(all_paths[path_index].back());
+    all_paths[path_index].pop_back();
   }
 
   // Relax more variables until the target is reached.
-  while (relaxed_variables.size() < num_variables_to_relax) {
-    DCHECK(!all_paths.empty());
-    const int path_index = absl::Uniform<int>(random, 0, all_paths.size());
-    relaxed_variables.insert(all_paths[path_index].back());
-
-    // Remove variable and clean up empty paths.
-    all_paths[path_index].pop_back();
-    if (all_paths[path_index].empty()) {
-      std::swap(all_paths[path_index], all_paths.back());
-      all_paths.pop_back();
+  if (relaxed_variables.size() < num_variables_to_relax) {
+    std::shuffle(all_path_variables.begin(), all_path_variables.end(), random);
+    while (relaxed_variables.size() < num_variables_to_relax) {
+      relaxed_variables.insert(all_path_variables.back());
+      all_path_variables.pop_back();
     }
   }
 

@@ -137,8 +137,12 @@ class PresolveContext {
   // a => b.
   void AddImplication(int a, int b);
 
-  // b => x in [lb, ub].
+  // b => (x ∈ domain).
   void AddImplyInDomain(int b, int x, const Domain& domain);
+
+  // b => (expr ∈ domain).
+  void AddImplyInDomain(int b, const LinearExpressionProto& expr,
+                        const Domain& domain);
 
   // Helpers to query the current domain of a variable.
   bool DomainIsEmpty(int ref) const;

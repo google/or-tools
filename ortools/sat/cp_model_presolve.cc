@@ -295,9 +295,13 @@ bool CpModelPresolver::PresolveBoolXor(ConstraintProto* ct) {
       }
     }
     if (num_true_literals % 2 == 0) {  // a == not(b).
-      context_->StoreBooleanEqualityRelation(a, NegatedRef(b));
+      if (!context_->StoreBooleanEqualityRelation(a, NegatedRef(b))) {
+        return false;
+      }
     } else {  // a == b.
-      context_->StoreBooleanEqualityRelation(a, b);
+      if (!context_->StoreBooleanEqualityRelation(a, b)) {
+        return false;
+      }
     }
     context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("bool_xor: two active literals");
@@ -505,7 +509,10 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
         // increased to 1 to preserve the hint feasibility.
         const int implied_literal = ct->bool_and().literals(0);
         solution_crush_.SetLiteralToValueIf(enforcement, true, implied_literal);
-        context_->StoreBooleanEqualityRelation(enforcement, implied_literal);
+        if (!context_->StoreBooleanEqualityRelation(enforcement,
+                                                    implied_literal)) {
+          return false;
+        }
       }
     }
   }
@@ -721,8 +728,10 @@ bool CpModelPresolver::PresolveExactlyOne(ConstraintProto* ct) {
   // Size two: Equivalence.
   if (literals.size() == 2) {
     context_->UpdateRuleStats("exactly_one: size two");
-    context_->StoreBooleanEqualityRelation(literals[0],
-                                           NegatedRef(literals[1]));
+    if (!context_->StoreBooleanEqualityRelation(literals[0],
+                                                NegatedRef(literals[1]))) {
+      return false;
+    }
     return RemoveConstraint(ct);
   }
 
@@ -2606,10 +2615,14 @@ bool CpModelPresolver::PresolveLinearEqualityWithModulo(ConstraintProto* ct) {
       const int64_t rhs = std::abs(ct->linear().domain(0));
       context_->UpdateRuleStats("linear: only two odd Booleans in equality");
       if (rhs % 2) {
-        context_->StoreBooleanEqualityRelation(literals[0],
-                                               NegatedRef(literals[1]));
+        if (!context_->StoreBooleanEqualityRelation(literals[0],
+                                                    NegatedRef(literals[1]))) {
+          return false;
+        }
       } else {
-        context_->StoreBooleanEqualityRelation(literals[0], literals[1]);
+        if (!context_->StoreBooleanEqualityRelation(literals[0], literals[1])) {
+          return false;
+        }
       }
     }
   }
@@ -4662,8 +4675,10 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
     // This forces either all variable at 1 or all at zero.
     context_->UpdateRuleStats("linear: all equivalent!");
     for (int i = 1; i < num_vars; ++i) {
-      context_->StoreBooleanEqualityRelation(ct->linear().vars(0),
-                                             ct->linear().vars(i));
+      if (!context_->StoreBooleanEqualityRelation(ct->linear().vars(0),
+                                                  ct->linear().vars(i))) {
+        return false;
+      }
     }
     return RemoveConstraint(ct);
   }
@@ -5052,22 +5067,32 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
           AffineExpressionValueAt(index, index_var_value);
       const LinearExpressionProto& expr = ct->element().exprs(index_value);
 
-      // The target domain can be reduced if it shares its variable with the
-      // index.
-      Domain reduced_target_domain = target_domain;
+      bool is_possible_index;
       if (target.vars_size() == 1 && target.vars(0) == index_var) {
-        reduced_target_domain =
-            Domain(AffineExpressionValueAt(target, index_var_value));
+        // The target domain can be reduced if it shares its variable with the
+        // index.
+        is_possible_index = context_->DomainContains(
+            expr, AffineExpressionValueAt(target, index_var_value));
+      } else {
+        const Domain target_var_domain =
+            target.vars_size() == 1 ? context_->DomainOf(target.vars(0))
+                                    : Domain(0);
+        const Domain expr_var_domain = expr.vars_size() == 1
+                                           ? context_->DomainOf(expr.vars(0))
+                                           : Domain(0);
+        const int64_t target_coeff =
+            target.vars_size() == 1 ? target.coeffs(0) : 0;
+        const int64_t expr_coeff = expr.vars_size() == 1 ? expr.coeffs(0) : 0;
+        is_possible_index = DiophantineEquationOfSizeTwoHasSolutionInDomain(
+            target_var_domain, target_coeff, expr_var_domain, -expr_coeff,
+            -target.offset() + expr.offset());
       }
 
-      // TODO(user): Implement a more precise test here.
-      if (reduced_target_domain
-              .IntersectionWith(context_->DomainSuperSetOf(expr))
-              .IsEmpty()) {
+      if (is_possible_index) {
+        possible_index_var_values.push_back(index_var_value);
+      } else {
         ct->mutable_element()->mutable_exprs(index_value)->Clear();
         changed = true;
-      } else {
-        possible_index_var_values.push_back(index_var_value);
       }
     }
     if (possible_index_var_values.size() < index_var_domain.Size()) {
@@ -5683,6 +5708,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
             context_->UpdateRuleStats(
                 "no_overlap: make duplicate intervals as unperformed or zero "
                 "sized");
+            context_->UpdateNewConstraintsVariableUsage();
           }
         }
       }
@@ -5845,13 +5871,14 @@ bool CpModelPresolver::PresolveNoOverlap2DFramed(
     absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct) {
   const NoOverlap2DConstraintProto& proto = ct->no_overlap_2d();
 
-  Rectangle fixed_boxes_bb = fixed_boxes.front();
-  for (const Rectangle& box : fixed_boxes) {
-    fixed_boxes_bb.GrowToInclude(box);
+  DCHECK(!non_fixed_boxes.empty());
+  Rectangle bounding_box = non_fixed_boxes[0].bounding_area;
+  for (const RectangleInRange& box : non_fixed_boxes) {
+    bounding_box.GrowToInclude(box.bounding_area);
   }
   std::vector<Rectangle> espace_for_single_box =
-      FindEmptySpaces(fixed_boxes_bb, {fixed_boxes.begin(), fixed_boxes.end()});
-  // TODO(user): Find a faster way to see if four boxes are delimiting a
+      FindEmptySpaces(bounding_box, {fixed_boxes.begin(), fixed_boxes.end()});
+  // TODO(user): Find a faster way to see if fixed boxes are delimiting a
   // rectangle.
   std::vector<Rectangle> empty;
   ReduceNumberofBoxesGreedy(&espace_for_single_box, &empty);
@@ -5860,14 +5887,19 @@ bool CpModelPresolver::PresolveNoOverlap2DFramed(
     // Not a rectangular frame, since the inside is not a rectangle.
     return false;
   }
+  Rectangle fixed_boxes_bb = fixed_boxes.front();
+  for (const Rectangle& box : fixed_boxes) {
+    fixed_boxes_bb.GrowToInclude(box);
+  }
   const Rectangle framed_region = espace_for_single_box.front();
   for (const RectangleInRange& box : non_fixed_boxes) {
     if (!box.bounding_area.IsInsideOf(fixed_boxes_bb)) {
       // Something can be outside of the frame.
       return false;
     }
-    if (2 * box.x_size <= framed_region.SizeX() ||
-        2 * box.y_size <= framed_region.SizeY()) {
+    if (non_fixed_boxes.size() > 1 &&
+        (2 * box.x_size <= framed_region.SizeX() ||
+         2 * box.y_size <= framed_region.SizeY())) {
       // We can fit two boxes in the delimited space between the fixed boxes, so
       // we cannot replace it by an at-most-one.
       return false;
@@ -5937,20 +5969,12 @@ bool CpModelPresolver::PresolveNoOverlap2DFramed(
                                        IntegerValue min, IntegerValue max) {
         // TODO(user): If size is constant add only one linear constraint
         // instead of two.
-        ConstraintProto* linear_start =
-            context_->working_model->add_constraints();
-        ConstraintProto* linear_end =
-            context_->working_model->add_constraints();
-        linear_start->add_enforcement_literal(enforcement_literal);
-        linear_end->add_enforcement_literal(enforcement_literal);
-        linear_start->mutable_linear()->add_domain(min.value());
-        linear_start->mutable_linear()->add_domain(max.value());
-        linear_end->mutable_linear()->add_domain(min.value());
-        linear_end->mutable_linear()->add_domain(max.value());
-        AddLinearExpressionToLinearConstraint(interval_ct.interval().start(), 1,
-                                              linear_start->mutable_linear());
-        AddLinearExpressionToLinearConstraint(interval_ct.interval().end(), 1,
-                                              linear_end->mutable_linear());
+        context_->AddImplyInDomain(enforcement_literal,
+                                   interval_ct.interval().start(),
+                                   Domain(min.value(), max.value()));
+        context_->AddImplyInDomain(enforcement_literal,
+                                   interval_ct.interval().end(),
+                                   Domain(min.value(), max.value()));
       };
       const int enforcement_literal =
           x_interval_ct.enforcement_literal().empty()
@@ -6189,8 +6213,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     }
   }
 
-  if (fixed_boxes.size() == 4 && !non_fixed_boxes.empty() &&
-      !has_potential_zero_sized_interval) {
+  if (!fixed_boxes.empty() && fixed_boxes.size() <= 4 &&
+      !non_fixed_boxes.empty() && !has_potential_zero_sized_interval) {
     if (PresolveNoOverlap2DFramed(fixed_boxes, non_fixed_boxes, ct)) {
       return true;
     }
@@ -6984,8 +7008,10 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
       }
       if (literals.size() == 2 && literals[0] != NegatedRef(literals[1])) {
         context_->UpdateRuleStats("circuit: degree 2");
-        context_->StoreBooleanEqualityRelation(literals[0],
-                                               NegatedRef(literals[1]));
+        if (!context_->StoreBooleanEqualityRelation(literals[0],
+                                                    NegatedRef(literals[1]))) {
+          return true;
+        }
       }
     }
   }
@@ -7575,8 +7601,10 @@ void CpModelPresolver::Probe() {
       const int r_var =
           mapping->GetProtoVariableFromBooleanVariable(r.Variable());
       CHECK_GE(r_var, 0);
-      context_->StoreBooleanEqualityRelation(
-          var, r.IsPositive() ? r_var : NegatedRef(r_var));
+      if (!context_->StoreBooleanEqualityRelation(
+              var, r.IsPositive() ? r_var : NegatedRef(r_var))) {
+        return;
+      }
     }
   }
   probing_timer->AddCounter("new_bounds", num_changed_bounds);
@@ -8572,9 +8600,11 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     const Literal l = Literal(BooleanVariable(var), true);
     if (graph->RepresentativeOf(l) != l) {
       const Literal r = graph->RepresentativeOf(l);
-      context_->StoreBooleanEqualityRelation(
-          var, r.IsPositive() ? r.Variable().value()
-                              : NegatedRef(r.Variable().value()));
+      if (!context_->StoreBooleanEqualityRelation(
+              var, r.IsPositive() ? r.Variable().value()
+                                  : NegatedRef(r.Variable().value()))) {
+        return;
+      }
     }
   }
 
@@ -9848,7 +9878,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
       // singleton variables can freely *decrease* the objective).
       solution_crush_.UpdateLiteralsToFalseIfDifferent(NegatedRef(a),
                                                        NegatedRef(b));
-      context_->StoreBooleanEqualityRelation(a, b);
+      if (!context_->StoreBooleanEqualityRelation(a, b)) return;
 
       // We can also remove duplicate constraint now. It will be done later but
       // it seems more efficient to just do it now.
@@ -11913,8 +11943,8 @@ void CpModelPresolver::MaybeTransferLinear1ToAnotherVariable(int var) {
       Domain target_domain =
           implied.ContinuousMultiplicationBy(target.coeffs(0))
               .AdditionWith(Domain(target.offset()));
-      target_domain =
-          target_domain.IntersectionWith(Domain(0, target_domain.Max()));
+      target_domain = target_domain.IntersectionWith(
+          Domain(0, std::numeric_limits<int64_t>::max()));
 
       // We have target = abs(expr).
       const Domain expr_domain =

@@ -311,26 +311,29 @@ void GenerateNoOverlap2dEnergyCut(
 }
 
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
-    NoOverlap2DConstraintHelper* helper,
-    absl::Span<const std::vector<LiteralValueValue>> energies, Model* model) {
+    NoOverlap2DConstraintHelper* helper, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
   AddIntegerVariableFromIntervals(&helper->x_helper(), model, &result.vars);
   AddIntegerVariableFromIntervals(&helper->y_helper(), model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
-
-  result.generate_cuts = [helper, model,
-                          energies =
-                              std::vector<std::vector<LiteralValueValue>>(
-                                  energies.begin(), energies.end())](
+  ProductDecomposer* product_decomposer =
+      model->GetOrCreate<ProductDecomposer>();
+  result.generate_cuts = [helper, model, product_decomposer](
                              LinearConstraintManager* manager) {
+    const int num_rectangles = helper->NumBoxes();
+    std::vector<std::vector<LiteralValueValue>> energies(num_rectangles);
+    // TODO(user): We could compute this once and for all in the helper.
+    for (int i = 0; i < num_rectangles; ++i) {
+      energies[i] = product_decomposer->TryToDecompose(
+          helper->x_helper().Sizes()[i], helper->y_helper().Sizes()[i]);
+    }
     if (!helper->SynchronizeAndSetDirection(true, true, false)) return false;
     SchedulingDemandHelper* x_demands_helper = &helper->x_demands_helper();
     SchedulingDemandHelper* y_demands_helper = &helper->y_demands_helper();
     if (!x_demands_helper->CacheAllEnergyValues()) return true;
     if (!y_demands_helper->CacheAllEnergyValues()) return true;
 
-    const int num_rectangles = helper->NumBoxes();
     std::vector<int> rectangles;
     rectangles.reserve(num_rectangles);
     for (const auto& component :

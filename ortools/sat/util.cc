@@ -245,7 +245,56 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
   return true;
 }
 
-// TODO(user): Find better implementation? In pratice passing via double is
+bool DiophantineEquationOfSizeTwoHasSolutionInDomain(const Domain& x, int64_t a,
+                                                     const Domain& y, int64_t b,
+                                                     int64_t cte) {
+  if (x.IsEmpty() || y.IsEmpty()) return false;
+  if (a == 0 && b == 0) {
+    return cte == 0;
+  }
+  if (a == 0) {
+    const int64_t div = cte / b;
+    if (b * div != cte) return false;
+    return y.Contains(div);
+  }
+  if (b == 0) {
+    const int64_t div = cte / a;
+    if (a * div != cte) return false;
+    return x.Contains(div);
+  }
+
+  if (a == b) {
+    const int64_t div = cte / a;
+    if (a * div != cte) {
+      return false;
+    }
+    return !Domain(x)
+                .Negation()
+                .AdditionWith(Domain(div))
+                .IntersectionWith(y)
+                .IsEmpty();
+  }
+
+  int64_t x0, y0;
+  if (!SolveDiophantineEquationOfSizeTwo(a, b, cte, x0, y0)) {
+    return false;
+  }
+  const Domain z_domain =
+      x.AdditionWith(Domain(-x0))
+          .InverseMultiplicationBy(b)
+          .IntersectionWith(
+              y.AdditionWith(Domain(-y0)).InverseMultiplicationBy(-a));
+
+  const Domain z_restricted_d1 =
+      x.AdditionWith(Domain(-x0)).InverseMultiplicationBy(b);
+  const Domain z_restricted_d2 =
+      y.AdditionWith(Domain(-y0)).InverseMultiplicationBy(-a);
+  const Domain z_restricted_domain =
+      z_restricted_d1.IntersectionWith(z_restricted_d2);
+  return !z_restricted_domain.IsEmpty();
+}
+
+// TODO(user): Find better implementation? In practice passing via double is
 // almost always correct, but the CapProd() might be a bit slow. However this
 // is only called when we do propagate something.
 int64_t FloorSquareRoot(int64_t a) {

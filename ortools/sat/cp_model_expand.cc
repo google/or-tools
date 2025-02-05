@@ -892,7 +892,9 @@ void LinkLiteralsAndValues(const std::vector<int>& literals,
   for (const auto& [encoding_lit, support] : encoding_lit_to_support) {
     CHECK(!support.empty());
     if (support.size() == 1) {
-      context->StoreBooleanEqualityRelation(encoding_lit, support[0]);
+      if (!context->StoreBooleanEqualityRelation(encoding_lit, support[0])) {
+        return;
+      }
     } else {
       BoolArgumentProto* bool_or =
           context->working_model->add_constraints()->mutable_bool_or();
@@ -979,6 +981,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     std::vector<int64_t> in_states;
     std::vector<int64_t> labels;
     std::vector<int64_t> out_states;
+    absl::flat_hash_set<int64_t> still_reachable_after_domain_change;
     for (int i = 0; i < proto.transition_label_size(); ++i) {
       const int64_t tail = proto.transition_tail(i);
       const int64_t label = proto.transition_label(i);
@@ -988,6 +991,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       if (!reachable_states[time + 1].contains(head)) continue;
       if (!context->DomainContains(proto.exprs(time), label)) continue;
 
+      still_reachable_after_domain_change.insert(head);
       // TODO(user): if this transition correspond to just one in-state or
       // one-out state or one variable value, we could reuse the corresponding
       // Boolean variable instead of creating a new one!
@@ -998,6 +1002,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       // we use zero.
       out_states.push_back(time + 1 == n ? 0 : head);
     }
+
+    reachable_states[time + 1] = still_reachable_after_domain_change;
 
     // Deal with single tuple.
     const int num_tuples = in_states.size();
@@ -1013,10 +1019,9 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       // at false.
       std::vector<int> at_false;
       for (const auto [value, literal] : in_encoding) {
-        if (value != in_states[0]) at_false.push_back(literal);
-      }
-      for (const int literal : at_false) {
-        if (!context->SetLiteralToFalse(literal)) return;
+        if (value != in_states[0]) {
+          if (!context->SetLiteralToFalse(literal)) return;
+        }
       }
 
       in_encoding.clear();

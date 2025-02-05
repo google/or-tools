@@ -247,12 +247,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // cumulative, or as a dimension of a no_overlap_2d constraint.
   std::vector<std::vector<int>> GetUniqueIntervalSets() const;
 
-  // Returns one sub-vector per circuit or per single vehicle circuit in a
+  // Returns one sub-vector per circuit or per individual vehicle circuit in a
   // routes constraints. Each circuit is non empty, and does not contain any
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
   // tail index, and going in sequence up to the last arc before the circuit is
-  // closed. Each entry correspond to the arc literal on the circuit.
-  std::vector<std::vector<int>> GetRoutingPathLiterals(
+  // closed. Each entry correspond to the Boolean variable of the arc literal on
+  // the circuit.
+  std::vector<std::vector<int>> GetRoutingPathBooleanVariables(
       const CpSolverResponse& initial_solution) const;
 
   // Returns all precedences extracted from the scheduling constraint and the
@@ -818,7 +819,7 @@ class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// This routing based LNS generator aims are relaxing one full path, and make
+// This routing based LNS generator aims at relaxing one full path, and make
 // some room on the other paths to absorb the nodes of the relaxed path.
 //
 // In order to do so, it will relax the first and the last arc of each path in
