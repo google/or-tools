@@ -80,6 +80,7 @@ target_link_libraries(glop_proto PRIVATE protobuf::libprotobuf)
 add_library(glop)
 target_sources(glop PRIVATE
   ortools/base/accurate_sum.h
+  ortools/base/base_export.h
   ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.cc
@@ -303,6 +304,7 @@ install(DIRECTORY ortools/glop
 # dependencies headers
 install(FILES
   ortools/base/accurate_sum.h
+  ortools/base/base_export.h
   ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.h
