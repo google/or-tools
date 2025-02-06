@@ -246,7 +246,7 @@ INSTANTIATE_TEST_SUITE_P(XpressStatusTest, StatusTest,
 }  // namespace math_opt
 }  // namespace operations_research
 
-GTEST_API_ int main(int argc, char **argv) {
+int main(int argc, char **argv) {
   printf("Running main() from %s\n", __FILE__);
   testing::InitGoogleTest(&argc, argv);
   if (operations_research::XpressIsCorrectlyInstalled()) {
