@@ -1070,10 +1070,13 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
 
   CutGenerator& result = relaxation->cut_generators.emplace_back();
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(&no_overlap_helper->x_helper(), model,
-                                  &result.vars);
-  AddIntegerVariableFromIntervals(&no_overlap_helper->y_helper(), model,
-                                  &result.vars);
+
+  AddIntegerVariableFromIntervals(
+      &no_overlap_helper->x_helper(), model, &result.vars,
+      IntegerVariablesToAddMask::kSize | IntegerVariablesToAddMask::kPresence);
+  AddIntegerVariableFromIntervals(
+      &no_overlap_helper->y_helper(), model, &result.vars,
+      IntegerVariablesToAddMask::kSize | IntegerVariablesToAddMask::kPresence);
   result.generate_cuts = [no_overlap_helper, model, product_decomposer,
                           last_level_zero_bound_change_idx = int64_t{-1}](
                              LinearConstraintManager* manager) mutable {

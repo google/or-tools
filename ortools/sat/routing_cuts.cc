@@ -47,6 +47,8 @@
 namespace operations_research {
 namespace sat {
 
+namespace {
+
 // Helper to compute lower bounds based on binary relations enforced by arc
 // literals in a RoutesConstraint.
 class LowerBoundsHelper {
@@ -170,6 +172,8 @@ class LowerBoundsHelper {
   absl::flat_hash_map<IntegerVariable, absl::flat_hash_map<int, IntegerValue>>
       lower_bound_by_var_and_arc_index_;
 };
+
+}  // namespace
 
 MinOutgoingFlowHelper::MinOutgoingFlowHelper(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
@@ -310,6 +314,7 @@ class OutgoingCutHelper {
     // Compute the total demands in order to know the minimum incoming/outgoing
     // flow.
     for (const int64_t demand : demands) total_demand_ += demand;
+    complement_of_subset_.reserve(num_nodes_);
   }
 
   // Try to add an outgoing cut from the given subset.
@@ -356,6 +361,7 @@ class OutgoingCutHelper {
 
   int64_t total_demand_ = 0;
   std::vector<bool> in_subset_;
+  std::vector<int> complement_of_subset_;
   MinOutgoingFlowHelper min_outgoing_flow_helper_;
 };
 
@@ -469,15 +475,23 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
   // Bounds inferred automatically from the enforced binary relation of the
   // model.
   //
-  // TODO(user): use the complement of subset if contain_depot?
-  //
   // TODO(user): This is still not as good as the "capacity" bounds below in
   // some cases. Fix! we should be able to use the same relation to infer the
   // capacity bounds somehow.
-  if (subset.size() <= routing_cut_subset_size_for_binary_relation_bound_ &&
-      !contain_depot) {
-    const int64_t automatic_bound =
-        min_outgoing_flow_helper_.ComputeMinOutgoingFlow(subset);
+  if ((contain_depot ? num_nodes_ - subset.size() : subset.size()) <=
+      routing_cut_subset_size_for_binary_relation_bound_) {
+    int automatic_bound;
+    if (contain_depot) {
+      complement_of_subset_.clear();
+      for (int i = 0; i < num_nodes_; ++i) {
+        if (!in_subset_[i]) complement_of_subset_.push_back(i);
+      }
+      automatic_bound = min_outgoing_flow_helper_.ComputeMinOutgoingFlow(
+          complement_of_subset_);
+    } else {
+      automatic_bound =
+          min_outgoing_flow_helper_.ComputeMinOutgoingFlow(subset);
+    }
     if (automatic_bound > min_outgoing_flow) {
       absl::StrAppend(&name, "Automatic");
       min_outgoing_flow = automatic_bound;

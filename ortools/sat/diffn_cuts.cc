@@ -314,8 +314,12 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     NoOverlap2DConstraintHelper* helper, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(&helper->x_helper(), model, &result.vars);
-  AddIntegerVariableFromIntervals(&helper->y_helper(), model, &result.vars);
+  AddIntegerVariableFromIntervals(
+      &helper->x_helper(), model, &result.vars,
+      IntegerVariablesToAddMask::kSize | IntegerVariablesToAddMask::kPresence);
+  AddIntegerVariableFromIntervals(
+      &helper->y_helper(), model, &result.vars,
+      IntegerVariablesToAddMask::kSize | IntegerVariablesToAddMask::kPresence);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
   ProductDecomposer* product_decomposer =
       model->GetOrCreate<ProductDecomposer>();
@@ -558,8 +562,12 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
     NoOverlap2DConstraintHelper* helper, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(&helper->x_helper(), model, &result.vars);
-  AddIntegerVariableFromIntervals(&helper->y_helper(), model, &result.vars);
+  AddIntegerVariableFromIntervals(
+      &helper->x_helper(), model, &result.vars,
+      IntegerVariablesToAddMask::kEnd | IntegerVariablesToAddMask::kSize);
+  AddIntegerVariableFromIntervals(
+      &helper->y_helper(), model, &result.vars,
+      IntegerVariablesToAddMask::kEnd | IntegerVariablesToAddMask::kSize);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();

@@ -914,7 +914,9 @@ message SatParameters {
   // If the size of a subset of nodes of a RoutesConstraint is less than this
   // value, use linear constraints of size 1 and 2 (such as capacity and time
   // window constraints) enforced by the arc literals to compute cuts for this
-  // subset.
+  // subset. The algorithm for these cuts has a O(n^3) complexity, where n is
+  // the subset size. Hence the value of this parameter should not be too large
+  // (e.g. 10 or 20).
   optional int32 routing_cut_subset_size_for_binary_relation_bound = 312
       [default = 0];
 
