@@ -1,18 +1,3 @@
-diff --git a/googlemock/CMakeLists.txt b/googlemock/CMakeLists.txt
-index 99b2411..cd17813 100644
---- a/googlemock/CMakeLists.txt
-+++ b/googlemock/CMakeLists.txt
-@@ -109,6 +109,10 @@ target_include_directories(gmock SYSTEM INTERFACE
- target_include_directories(gmock_main SYSTEM INTERFACE
-   "$<BUILD_INTERFACE:${dirs}>"
-   "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>")
-+if (BUILD_SHARED_LIBS)
-+  target_compile_definitions(gmock_main INTERFACE
-+    $<BUILD_INTERFACE:GTEST_LINKED_AS_SHARED_LIBRARY=1>)
-+endif()
- 
- ########################################################################
- #
 diff --git a/googlemock/include/gmock/internal/gmock-port.h b/googlemock/include/gmock/internal/gmock-port.h
 index e9d9e32..ca55646 100644
 --- a/googlemock/include/gmock/internal/gmock-port.h
@@ -32,23 +17,8 @@ index e9d9e32..ca55646 100644
  
  #define GMOCK_FLAG_GET(name) ::absl::GetFlag(GMOCK_FLAG(name))
  #define GMOCK_FLAG_SET(name, value) \
-diff --git a/googletest/CMakeLists.txt b/googletest/CMakeLists.txt
-index dce6a7c..80888db 100644
---- a/googletest/CMakeLists.txt
-+++ b/googletest/CMakeLists.txt
-@@ -147,6 +147,10 @@ target_include_directories(gtest SYSTEM INTERFACE
- target_include_directories(gtest_main SYSTEM INTERFACE
-   "$<BUILD_INTERFACE:${dirs}>"
-   "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>")
-+if (BUILD_SHARED_LIBS)
-+  target_compile_definitions(gtest_main INTERFACE
-+    $<BUILD_INTERFACE:GTEST_LINKED_AS_SHARED_LIBRARY=1>)
-+endif()
- if(CMAKE_SYSTEM_NAME MATCHES "QNX" AND CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL 7.1)
-   target_link_libraries(gtest PUBLIC regex)
- endif()
 diff --git a/googletest/cmake/internal_utils.cmake b/googletest/cmake/internal_utils.cmake
-index 580ac1c..96fe3ac 100644
+index 580ac1c..b338398 100644
 --- a/googletest/cmake/internal_utils.cmake
 +++ b/googletest/cmake/internal_utils.cmake
 @@ -11,6 +11,7 @@
@@ -76,10 +46,20 @@ index 580ac1c..96fe3ac 100644
    # Make PDBs match library name.
    get_target_property(pdb_debug_postfix ${name} DEBUG_POSTFIX)
    set_target_properties(${name}
-@@ -190,6 +191,13 @@ function(cxx_library_with_type name type cxx_flags)
-       COMPILE_DEFINITIONS "GTEST_CREATE_SHARED_LIBRARY=1")
+@@ -185,11 +186,19 @@ function(cxx_library_with_type name type cxx_flags)
+     COMPILE_PDB_NAME_DEBUG "${name}${pdb_debug_postfix}")
+ 
+   if (BUILD_SHARED_LIBS OR type STREQUAL "SHARED")
+-    set_target_properties(${name}
+-      PROPERTIES
+-      COMPILE_DEFINITIONS "GTEST_CREATE_SHARED_LIBRARY=1")
++    target_compile_definitions(${name} PRIVATE
++      "GTEST_CREATE_SHARED_LIBRARY=1")
      target_compile_definitions(${name} INTERFACE
-       $<INSTALL_INTERFACE:GTEST_LINKED_AS_SHARED_LIBRARY=1>)
+-      $<INSTALL_INTERFACE:GTEST_LINKED_AS_SHARED_LIBRARY=1>)
++      $<BUILD_INTERFACE:GTEST_LINKED_AS_SHARED_LIBRARY=1>
++      $<INSTALL_INTERFACE:GTEST_LINKED_AS_SHARED_LIBRARY=1>
++    )
 +    if(APPLE)
 +      set_target_properties(${name} PROPERTIES
 +        INSTALL_RPATH "@loader_path")
@@ -90,10 +70,36 @@ index 580ac1c..96fe3ac 100644
    endif()
    if (DEFINED GTEST_HAS_PTHREAD)
      target_link_libraries(${name} PUBLIC Threads::Threads)
+@@ -226,9 +235,8 @@ function(cxx_executable_with_flags name cxx_flags libs)
+       COMPILE_FLAGS "${cxx_flags}")
+   endif()
+   if (BUILD_SHARED_LIBS)
+-    set_target_properties(${name}
+-      PROPERTIES
+-      COMPILE_DEFINITIONS "GTEST_LINKED_AS_SHARED_LIBRARY=1")
++    target_compile_definitions(${name} PRIVATE
++      "GTEST_LINKED_AS_SHARED_LIBRARY=1")
+   endif()
+   # To support mixing linking in static and dynamic libraries, link each
+   # library in with an extra call to target_link_libraries.
 diff --git a/googletest/include/gtest/internal/gtest-port.h b/googletest/include/gtest/internal/gtest-port.h
-index 8d27c2c..c1cd5e6 100644
+index 8d27c2c..890c953 100644
 --- a/googletest/include/gtest/internal/gtest-port.h
 +++ b/googletest/include/gtest/internal/gtest-port.h
+@@ -867,10 +867,10 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
+ #ifndef GTEST_API_
+ 
+ #ifdef _MSC_VER
+-#if defined(GTEST_LINKED_AS_SHARED_LIBRARY) && GTEST_LINKED_AS_SHARED_LIBRARY
+-#define GTEST_API_ __declspec(dllimport)
+-#elif defined(GTEST_CREATE_SHARED_LIBRARY) && GTEST_CREATE_SHARED_LIBRARY
++#if defined(GTEST_CREATE_SHARED_LIBRARY) && GTEST_CREATE_SHARED_LIBRARY
+ #define GTEST_API_ __declspec(dllexport)
++#elif defined(GTEST_LINKED_AS_SHARED_LIBRARY) && GTEST_LINKED_AS_SHARED_LIBRARY
++#define GTEST_API_ __declspec(dllimport)
+ #endif
+ #elif GTEST_HAVE_ATTRIBUTE_(visibility)
+ #define GTEST_API_ __attribute__((visibility("default")))
 @@ -2287,11 +2287,11 @@ using TimeInMillis = int64_t;  // Represents time in milliseconds.
  
  // Macros for declaring flags.
