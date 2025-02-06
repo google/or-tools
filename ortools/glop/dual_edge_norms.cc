@@ -105,7 +105,7 @@ void DualEdgeNorms::UpdateBeforeBasisPivot(
 
     // Avoid 0.0 norms (The 1e-4 is the value used by Koberstein).
     // TODO(user): use a more precise lower bound depending on the column norm?
-    // We can do that with Cauchy-Swartz inequality:
+    // We can do that with Cauchy-Schwarz inequality:
     //   (edge . leaving_column)^2 = 1.0 < ||edge||^2 * ||leaving_column||^2
     const Fractional kLowerBound = 1e-4;
     if (output[e.row()] < kLowerBound) {
@@ -121,13 +121,23 @@ void DualEdgeNorms::UpdateBeforeBasisPivot(
 void DualEdgeNorms::ComputeEdgeSquaredNorms() {
   SCOPED_TIME_STAT(&stats_);
 
+  // time_limit_->LimitReached() can be costly sometimes, so we only do that
+  // if we feel this will be slow anyway.
+  const bool test_limit = (time_limit_ != nullptr) &&
+                          basis_factorization_.NumberOfEntriesInLU() > 10'000;
+
   // Since we will do a lot of inversions, it is better to be as efficient and
   // precise as possible by having a refactorized basis.
   DCHECK(basis_factorization_.IsRefactorized());
   const RowIndex num_rows = basis_factorization_.GetNumberOfRows();
-  edge_squared_norms_.resize(num_rows, 0.0);
+  edge_squared_norms_.resize(num_rows, 1.0);
   for (RowIndex row(0); row < num_rows; ++row) {
     edge_squared_norms_[row] = basis_factorization_.DualEdgeSquaredNorm(row);
+
+    // This operation can be costly, and we abort if we are stuck here.
+    // Note that we still mark edges as "recomputed" otherwise we can runs into
+    // some DCHECK before we actually abort the solve.
+    if (test_limit && time_limit_->LimitReached()) break;
   }
   recompute_edge_squared_norms_ = false;
 }

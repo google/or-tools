@@ -23,6 +23,7 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace glop {
@@ -102,6 +103,8 @@ class DualEdgeNorms {
     parameters_ = parameters;
   }
 
+  void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
+
   // Stats related functions.
   std::string StatString() const { return stats_.StatString(); }
 
@@ -130,6 +133,7 @@ class DualEdgeNorms {
 
   // Parameters.
   GlopParameters parameters_;
+  TimeLimit* time_limit_ = nullptr;
 
   // Problem data that should be updated from outside.
   const BasisFactorization& basis_factorization_;

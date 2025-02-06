@@ -221,6 +221,8 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
 
   SOLVER_LOG(logger_, "");
   primal_edge_norms_.SetTimeLimit(time_limit);
+  dual_edge_norms_.SetTimeLimit(time_limit);
+
   if (logger_->LoggingIsEnabled()) {
     DisplayBasicVariableStatistics();
   }
