@@ -788,9 +788,16 @@ inline void SchedulingConstraintHelper::AddEnergyMinInIntervalReason(
 }
 
 // Cuts helpers.
+enum IntegerVariablesToAddMask {
+  kStart = 1 << 0,
+  kEnd = 1 << 1,
+  kSize = 1 << 2,
+  kPresence = 1 << 3,
+};
 void AddIntegerVariableFromIntervals(const SchedulingConstraintHelper* helper,
                                      Model* model,
-                                     std::vector<IntegerVariable>* vars);
+                                     std::vector<IntegerVariable>* vars,
+                                     int mask);
 
 void AppendVariablesFromCapacityAndDemands(
     const AffineExpression& capacity, SchedulingDemandHelper* demands_helper,

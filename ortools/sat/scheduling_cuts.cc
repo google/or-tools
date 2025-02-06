@@ -589,7 +589,9 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   result.only_run_at_level_zero = true;
   AppendVariablesFromCapacityAndDemands(capacity, demands_helper, model,
                                         &result.vars);
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(
+      helper, model, &result.vars,
+      IntegerVariablesToAddMask::kSize | IntegerVariablesToAddMask::kPresence);
   if (makespan.has_value() && !makespan.value().IsConstant()) {
     result.vars.push_back(makespan.value().var);
   }
@@ -647,7 +649,9 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
     const std::optional<AffineExpression>& makespan, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(
+      helper, model, &result.vars,
+      IntegerVariablesToAddMask::kSize | IntegerVariablesToAddMask::kPresence);
   if (makespan.has_value() && !makespan.value().IsConstant()) {
     result.vars.push_back(makespan.value().var);
   }
@@ -698,7 +702,8 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
   result.only_run_at_level_zero = true;
   AppendVariablesFromCapacityAndDemands(capacity, demands_helper, model,
                                         &result.vars);
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(helper, model, &result.vars,
+                                  IntegerVariablesToAddMask::kPresence);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   struct TimeTableEvent {
@@ -952,7 +957,9 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
   result.only_run_at_level_zero = true;
   AppendVariablesFromCapacityAndDemands(capacity, demands_helper, model,
                                         &result.vars);
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(
+      helper, model, &result.vars,
+      IntegerVariablesToAddMask::kEnd | IntegerVariablesToAddMask::kStart);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -981,7 +988,9 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
     SchedulingConstraintHelper* helper, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(
+      helper, model, &result.vars,
+      IntegerVariablesToAddMask::kEnd | IntegerVariablesToAddMask::kStart);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   result.generate_cuts = [helper, model](LinearConstraintManager* manager) {
@@ -1267,10 +1276,33 @@ void GenerateShortCompletionTimeCutsWithExactBound(
 // We strengthen this cuts by noticing that if all tasks starts after S,
 // then replacing end_min_i by (end_min_i - S) is still valid.
 //
-// A second difference is that we look at a set of intervals starting
-// after a given start_min, sorted by relative (end_lp - start_min).
+// A second difference is that we lift intervals that starts before a given
+// value, but are forced to cross it.
 //
-// TODO(user): merge with Packing cuts.
+// In the case of a cumulative constraint, we compute the cuts like if it
+// was a disjunctive cut with all the tasks being `demand` tasks with
+// duration `size_min`, all these spread out on `reachable_capacity`
+// no_overlap machines, counted from `current_start_min`.
+//
+// Thus, for each task (size si, end ei, demand di) and capacity c:
+//  sum (si * di * (ei - current_start_min)) >=
+//      sum(di * si ^ 2)   c * (sum (si * di) / c) ^ 2
+//      ---------------- + ---------------------------
+//             2                         2
+//
+//  sum (si * di * ei) - sum (si * di) * current_start_min >=
+//      sum(di * si ^ 2)   sum (si * di) ^ 2
+//      ---------------- + -----------------
+//             2                  2 * c
+//
+// By introducing ai the min energy of the task, we reinforce the
+// constraint into:
+//
+//  sum (ai * ei) >=
+//      sum(di * ai)   sum (ai) ^ 2
+//      ------------ + ------------ + sum (ai) * current_start_min
+//            2            2 * c
+
 void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
                                           std::vector<CtEvent> events,
                                           IntegerValue capacity_max,
@@ -1328,13 +1360,21 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
                 return e1.x_lp_end < e2.x_lp_end;
               });
 
+    // Best cut so far for this loop.
     int best_end = -1;
     double best_efficacy = 0.01;
-    IntegerValue best_min_contrib(0);
-    IntegerValue sum_duration(0);
-    IntegerValue sum_square_duration(0);
-    IntegerValue best_capacity(0);
-    double unscaled_lp_contrib = 0.0;
+    IntegerValue best_min_contrib = 0;
+    IntegerValue best_capacity = 0;
+    bool loop_is_valid = true;
+
+    // Area of the large rectangle.
+    IntegerValue sum_energy = 0;
+    // For normalization.
+    IntegerValue sum_square_energy = 0;
+    // Area of the small rectangles.
+    IntegerValue weighted_sum_square_duration = 0;
+
+    double lp_contrib = 0.0;
     IntegerValue current_start_min(kMaxIntegerValue);
 
     MaxBoundedSubsetSum dp(capacity_max.value());
@@ -1342,11 +1382,17 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
     for (int i = 0; i < residual_tasks.size(); ++i) {
       const CtEvent& event = residual_tasks[i];
       DCHECK_GE(event.x_start_min, sequence_start_min);
-      const IntegerValue energy = event.energy_min;
-      sum_duration += energy;
-      if (!AddProductTo(energy, energy, &sum_square_duration)) break;
+      const IntegerValue tmp_contrib =
+          CapProdI(event.x_size_min, event.energy_min);
 
-      unscaled_lp_contrib += event.x_lp_end * ToDouble(energy);
+      // Make sure we do not overflow, and we do not generate bogus cuts if we
+      // do.
+      loop_is_valid = false;
+      if (!AddTo(event.energy_min, &sum_energy)) break;
+      if (!AddTo(tmp_contrib, &weighted_sum_square_duration)) break;
+      if (!AddSquareTo(event.energy_min, &sum_square_energy)) break;
+
+      lp_contrib += event.x_lp_end * ToDouble(event.energy_min);
       current_start_min = std::min(current_start_min, event.x_start_min);
 
       if (dp.CurrentMax() != capacity_max) {
@@ -1356,6 +1402,10 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
           possible_demands.clear();
           for (const auto& [literal, size, demand] : event.decomposed_energy) {
             if (assignment.LiteralIsFalse(literal)) continue;
+            if (assignment.LiteralIsTrue(literal)) {
+              possible_demands.assign({demand.value()});
+              break;
+            }
             possible_demands.push_back(demand.value());
           }
           dp.AddChoices(possible_demands);
@@ -1368,38 +1418,48 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
       // by the other code.
       if (skip_low_sizes && i < 7) continue;
 
-      // We compute the cuts like if it was a disjunctive cut with all the
-      // duration actually equal to energy / capacity. But to keep the
-      // computation in the integer domain, we multiply by capacity
-      // everywhere instead.
       const IntegerValue reachable_capacity = dp.CurrentMax();
-      IntegerValue min_contrib = 0;
-      if (!AddProductTo(sum_duration, sum_duration, &min_contrib)) break;
-      if (!AddTo(sum_square_duration, &min_contrib)) break;
-      min_contrib = min_contrib / 2;  // The above is the double of the area.
 
-      const IntegerValue intermediate =
-          CapProdI(sum_duration, reachable_capacity);
-      if (AtMinOrMaxInt64I(intermediate)) break;
-      const IntegerValue offset = CapProdI(current_start_min, intermediate);
-      if (AtMinOrMaxInt64I(offset)) break;
-      if (!AddTo(offset, &min_contrib)) break;
+      const IntegerValue large_rectangle_contrib =
+          CapProdI(sum_energy, sum_energy);
+      if (AtMinOrMaxInt64I(large_rectangle_contrib)) break;
+      const IntegerValue mean_large_rectangle_contrib =
+          CeilRatio(large_rectangle_contrib, reachable_capacity);
 
-      // We compute the efficacity in the unscaled domain where the l2 norm of
-      // the cuts is exactly the sqrt of  the sum of squared duration.
-      const double efficacy =
-          (ToDouble(min_contrib) / ToDouble(reachable_capacity) -
-           unscaled_lp_contrib) /
-          std::sqrt(ToDouble(sum_square_duration));
+      IntegerValue min_contrib =
+          CapAddI(weighted_sum_square_duration, mean_large_rectangle_contrib);
+      if (AtMinOrMaxInt64I(min_contrib)) break;
 
-      // TODO(user): Check overflow and ignore if too big.
+      // The above is the double of the area.
+      min_contrib = CeilRatio(min_contrib, 2);
+
+      // shift contribution by current_start_min.
+      if (!AddTo(CapProdI(sum_energy, current_start_min), &min_contrib)) break;
+
+      // The efficacy of the cut is the normalized violation of the above
+      // equation. We will normalize by the sqrt of the sum of squared energies.
+      const double efficacy = (ToDouble(min_contrib) - lp_contrib) /
+                              std::sqrt(ToDouble(sum_square_energy));
+
+      // For a given start time, we only keep the best cut.
+      // The reason is that is the cut is strongly violated, we can get a
+      // sequence of violated cuts as we add more tasks. These new cuts will
+      // be less violated, but will not bring anything useful to the LP
+      // relaxation. At the same time, this sequence of cuts can push out
+      // other cuts from a disjoint set of tasks.
       if (efficacy > best_efficacy) {
         best_efficacy = efficacy;
         best_end = i;
         best_min_contrib = min_contrib;
         best_capacity = reachable_capacity;
       }
+
+      // We got there, the loop is valid.
+      loop_is_valid = true;
     }
+
+    if (!loop_is_valid) continue;
+
     if (best_end != -1) {
       LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
       bool is_lifted = false;
@@ -1408,172 +1468,11 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
         const CtEvent& event = residual_tasks[i];
         is_lifted |= event.lifted;
         add_energy_to_name |= event.use_energy;
-        cut.AddTerm(event.x_end, event.energy_min * best_capacity);
+        cut.AddTerm(event.x_end, event.energy_min);
       }
       std::string full_name(cut_name);
       if (is_lifted) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
-      if (best_capacity < capacity_max) {
-        full_name.append("_subsetsum");
-        VLOG(2) << full_name << ": capacity = " << best_capacity << "/"
-                << capacity_max;
-      }
-      top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
-    }
-  }
-  top_n_cuts.TransferToManager(manager);
-}
-
-void GenerateCumulativeCompletionTimeCutsWithDemandSplitting(
-    absl::string_view cut_name, std::vector<CtEvent> events,
-    IntegerValue capacity_max, bool skip_low_sizes, Model* model,
-    LinearConstraintManager* manager) {
-  TopNCuts top_n_cuts(5);
-
-  // Sort by start min to bucketize by start_min.
-  std::sort(events.begin(), events.end(),
-            [](const CtEvent& e1, const CtEvent& e2) {
-              return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
-                     std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
-            });
-  for (int start = 0; start + 1 < events.size(); ++start) {
-    // Skip to the next start_min value.
-    if (start > 0 &&
-        events[start].x_start_min == events[start - 1].x_start_min) {
-      continue;
-    }
-
-    const IntegerValue sequence_start_min = events[start].x_start_min;
-    std::vector<CtEvent> residual_tasks(events.begin() + start, events.end());
-
-    // We look at events that start before sequence_start_min, but are forced
-    // to cross this time point. In that case, we replace this event by a
-    // truncated event starting at sequence_start_min. To do this, we reduce
-    // the size_min, align the start_min with the sequence_start_min, and
-    // scale the energy down accordingly.
-    for (int before = 0; before < start; ++before) {
-      if (events[before].x_start_min + events[before].x_size_min >
-          sequence_start_min) {
-        CtEvent event = events[before];  // Copy.
-        event.lifted = true;
-        event.energy_min = 0;
-        event.x_size_min =
-            event.x_size_min + event.x_start_min - sequence_start_min;
-        event.x_start_min = sequence_start_min;
-        // Note that we do not use energy here.
-        residual_tasks.push_back(event);
-      }
-    }
-
-    std::sort(residual_tasks.begin(), residual_tasks.end(),
-              [](const CtEvent& e1, const CtEvent& e2) {
-                return e1.x_lp_end < e2.x_lp_end;
-              });
-
-    // Best cut so far for this loop.
-    int best_end = -1;
-    double best_efficacy = 0.01;
-    IntegerValue best_min_contrib = 0;
-    IntegerValue best_capacity = 0;
-    IntegerValue best_contrib_up_to_current_start = 0;
-
-    IntegerValue weighted_sum_duration = 0;
-    IntegerValue weighted_sum_square_duration = 0;
-    IntegerValue sum_square_energy = 0;
-    double lp_contrib = 0.0;
-    IntegerValue current_start_min(kMaxIntegerValue);
-
-    MaxBoundedSubsetSum dp(capacity_max.value());
-    std::vector<int64_t> possible_demands;
-    for (int i = 0; i < residual_tasks.size(); ++i) {
-      const CtEvent& event = residual_tasks[i];
-      DCHECK_GE(event.x_start_min, sequence_start_min);
-      DCHECK(event.y_size_is_fixed);
-      const IntegerValue demand = event.y_size_min;
-      const IntegerValue size_min = event.x_size_min;
-      if (!AddTo(size_min * demand, &weighted_sum_duration)) break;
-      if (!AddProductTo(demand, size_min * size_min,
-                        &weighted_sum_square_duration)) {
-        break;
-      }
-      if (!AddProductTo(demand * demand, size_min * size_min,
-                        &sum_square_energy)) {
-        break;
-      }
-
-      lp_contrib += event.x_lp_end * ToDouble(size_min * demand);
-      current_start_min = std::min(current_start_min, event.x_start_min);
-
-      if (dp.CurrentMax() != capacity_max) {
-        dp.Add(event.y_size_min.value());
-      }
-      const IntegerValue reachable_capacity = dp.CurrentMax();
-
-      // This is competing with the brute force approach. Skip cases covered
-      // by the other code.
-      if (skip_low_sizes && i < 7) continue;
-
-      // We compute the cuts like if it was a disjunctive cut with all the tasks
-      // being `demand` tasks with duration `size_min`, all these spread out on
-      // `reachable_capacity` no_overlap machines, counted from
-      // `current_start_min`.
-      //
-      // Thus, for each task (size si, end ei, demand di) and capacity c:
-      //  sum (si * di * (ei - current_start_min)) >=
-      //      sum(di * si ^ 2) +   c * (sum (si * di) / c) ^ 2
-      //      ----------------     ---------------------------
-      //             2                            2
-      //
-      //  sum (si * di * ei) - sum (si * di * current_start_min) >=
-      //      sum(di * si ^ 2) + sum (si * di) ^ 2
-      //      ----------------   -----------------
-      //             2                  2 * c
-      //
-      //  lp_contrib - contrib_up_to_current_start >= min_contrib
-
-      const IntegerValue large_rectangle_contrib =
-          CapProdI(weighted_sum_duration, weighted_sum_duration);
-      if (AtMinOrMaxInt64I(large_rectangle_contrib)) break;
-      const IntegerValue mean_large_rectangle_contrib =
-          CeilRatio(large_rectangle_contrib, reachable_capacity);
-
-      IntegerValue min_contrib =
-          CapAddI(weighted_sum_square_duration, mean_large_rectangle_contrib);
-      if (AtMinOrMaxInt64I(min_contrib)) break;
-      // The above is the double of the area.
-      min_contrib = CeilRatio(min_contrib, 2);
-
-      const IntegerValue contrib_up_to_current_start =
-          CapProdI(weighted_sum_duration, current_start_min);
-      if (AtMinOrMaxInt64I(contrib_up_to_current_start)) break;
-
-      // The efficacy of the cut is the normalized violation of the above
-      // equation. We will normalize by the sqrt of the sum of squared energies.
-      const double efficacy = (ToDouble(min_contrib) - lp_contrib +
-                               ToDouble(contrib_up_to_current_start)) /
-                              std::sqrt(ToDouble(sum_square_energy));
-
-      if (efficacy > best_efficacy) {
-        best_efficacy = efficacy;
-        best_end = i;
-        best_min_contrib = min_contrib;
-        best_capacity = reachable_capacity;
-        best_contrib_up_to_current_start = contrib_up_to_current_start;
-      }
-    }
-
-    if (best_end != -1) {
-      LinearConstraintBuilder cut(
-          model, best_min_contrib + best_contrib_up_to_current_start,
-          kMaxIntegerValue);
-      bool is_lifted = false;
-      for (int i = 0; i <= best_end; ++i) {
-        const CtEvent& event = residual_tasks[i];
-        is_lifted |= event.lifted;
-        cut.AddTerm(event.x_end, event.x_size_min * event.y_size_min);
-      }
-      std::string full_name(cut_name);
-      if (is_lifted) full_name.append("_lifted");
       if (best_capacity < capacity_max) {
         full_name.append("_subsetsum");
       }
@@ -1587,7 +1486,8 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
     SchedulingConstraintHelper* helper, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(helper, model, &result.vars,
+                                  IntegerVariablesToAddMask::kEnd);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   result.generate_cuts = [helper, model](LinearConstraintManager* manager) {
@@ -1636,7 +1536,8 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
   result.only_run_at_level_zero = true;
   AppendVariablesFromCapacityAndDemands(capacity, demands_helper, model,
                                         &result.vars);
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(helper, model, &result.vars,
+                                  IntegerVariablesToAddMask::kEnd);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -1670,13 +1571,8 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
           absl::StrCat("CumulativeCompletionTimeExhaustive", mirror_str),
           events, capacity_max, model, manager);
 
-      GenerateCumulativeCompletionTimeCutsWithDemandSplitting(
-          absl::StrCat("CumulativeCompletionTimeSplitQueyrane", mirror_str),
-          events, capacity_max,
-          /*skip_low_sizes=*/true, model, manager);
-
       GenerateCompletionTimeCutsWithEnergy(
-          absl::StrCat("CumulativeCompletionTimeRescaledQueyrane", mirror_str),
+          absl::StrCat("CumulativeCompletionTimeQueyrane", mirror_str),
           std::move(events), capacity_max,
           /*skip_low_sizes=*/true, model, manager);
     };

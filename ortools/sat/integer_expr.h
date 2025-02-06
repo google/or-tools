@@ -456,9 +456,10 @@ inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
 // Weighted sum == constant.
 template <typename VectorInt>
 inline std::function<void(Model*)> FixedWeightedSum(
-    const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
+    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
     int64_t value) {
-  return [=](Model* model) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     model->Add(WeightedSumGreaterOrEqual(vars, coefficients, value));
     model->Add(WeightedSumLowerOrEqual(vars, coefficients, value));
   };

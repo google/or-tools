@@ -1018,19 +1018,24 @@ void SchedulingDemandHelper::AddEnergyMinInWindowReason(
 
 void AddIntegerVariableFromIntervals(const SchedulingConstraintHelper* helper,
                                      Model* model,
-                                     std::vector<IntegerVariable>* vars) {
+                                     std::vector<IntegerVariable>* vars,
+                                     int mask) {
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   for (int t = 0; t < helper->NumTasks(); ++t) {
-    if (helper->Starts()[t].var != kNoIntegerVariable) {
+    if ((mask & IntegerVariablesToAddMask::kStart) &&
+        helper->Starts()[t].var != kNoIntegerVariable) {
       vars->push_back(helper->Starts()[t].var);
     }
-    if (helper->Sizes()[t].var != kNoIntegerVariable) {
+    if ((mask & IntegerVariablesToAddMask::kSize) &&
+        helper->Sizes()[t].var != kNoIntegerVariable) {
       vars->push_back(helper->Sizes()[t].var);
     }
-    if (helper->Ends()[t].var != kNoIntegerVariable) {
+    if ((mask & IntegerVariablesToAddMask::kEnd) &&
+        helper->Ends()[t].var != kNoIntegerVariable) {
       vars->push_back(helper->Ends()[t].var);
     }
-    if (helper->IsOptional(t) && !helper->IsAbsent(t) &&
+    if ((mask & IntegerVariablesToAddMask::kPresence) &&
+        helper->IsOptional(t) && !helper->IsAbsent(t) &&
         !helper->IsPresent(t)) {
       const Literal l = helper->PresenceLiteral(t);
       IntegerVariable view = kNoIntegerVariable;

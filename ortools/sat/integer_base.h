@@ -140,6 +140,11 @@ inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
   return true;
 }
 
+// Computes result += a * a, and return false iff there is an overflow.
+inline bool AddSquareTo(IntegerValue a, IntegerValue* result) {
+  return AddProductTo(a, a, result);
+}
+
 // Index of an IntegerVariable.
 //
 // Each time we create an IntegerVariable we also create its negation. This is
