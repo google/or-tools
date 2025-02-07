@@ -340,12 +340,14 @@ void SetCoverModel::CreateSparseRowView() {
   for (const SubsetIndex subset : SubsetRange()) {
     // Sort the columns. It's not super-critical to improve performance here
     // as this needs to be done only once.
-    // std::sort(columns_[subset].begin(), columns_[subset].end());
     BaseInt* data = reinterpret_cast<BaseInt*>(columns_[subset].data());
     RadixSort(absl::MakeSpan(data, columns_[subset].size()));
 
+    ElementIndex preceding_element(-1);
     for (const ElementIndex element : columns_[subset]) {
+      DCHECK_GT(element, preceding_element);  // Fail if there is a repetition.
       ++row_sizes[element];
+      preceding_element = element;
     }
   }
   for (const ElementIndex element : ElementRange()) {

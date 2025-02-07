@@ -18,6 +18,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/algorithms/set_cover_heuristics.h"
 #include "ortools/algorithms/set_cover_invariant.h"
@@ -141,8 +142,7 @@ FileFormat ParseFileFormat(const std::string& format_name) {
   }
 }
 
-SetCoverModel ReadModel(const std::string& input_file,
-                        FileFormat input_format) {
+SetCoverModel ReadModel(absl::string_view input_file, FileFormat input_format) {
   switch (input_format) {
     case FileFormat::ORLIB_SCP:
       return ReadOrlibScp(input_file);
@@ -160,7 +160,7 @@ SetCoverModel ReadModel(const std::string& input_file,
   }
 }
 
-SubsetBoolVector ReadSolution(const std::string& input_file,
+SubsetBoolVector ReadSolution(absl::string_view input_file,
                               FileFormat input_format) {
   switch (input_format) {
     case FileFormat::TXT:
@@ -198,7 +198,7 @@ void WriteModel(const SetCoverModel& model, const std::string& output_file,
 }
 
 void WriteSolution(const SetCoverModel& model, const SubsetBoolVector& solution,
-                   const std::string& output_file, FileFormat output_format) {
+                   absl::string_view output_file, FileFormat output_format) {
   switch (output_format) {
     case FileFormat::TXT:
       WriteSetCoverSolutionText(model, solution, output_file);

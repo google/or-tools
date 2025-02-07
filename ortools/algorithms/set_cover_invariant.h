@@ -63,7 +63,6 @@ class SetCoverDecision {
 //   are covered 1 time or less (not overcovered) in the current solution;
 //   is_redundant_,     whether a subset can be removed from the solution.
 //   is_redundant_[subset] == (num_non_overcovered_elements_[subet] == 0).
-
 class SetCoverInvariant {
  public:
   // The consistency level of the invariant.
