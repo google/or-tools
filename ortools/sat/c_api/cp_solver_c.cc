@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/go/cpmodel/cp_solver_c.h"
+#include "ortools/sat/c_api/cp_solver_c.h"
 
 #include <atomic>
 #include <string>

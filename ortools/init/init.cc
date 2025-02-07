@@ -22,25 +22,24 @@
 #include "ortools/sat/cp_model_solver_helpers.h"
 
 namespace operations_research {
-  void CppBridge::InitLogging(const std::string& usage) {
-    absl::SetProgramUsageMessage(usage);
-    absl::InitializeLog();
-  }
+void CppBridge::InitLogging(const std::string& usage) {
+  absl::SetProgramUsageMessage(usage);
+  absl::InitializeLog();
+}
 
-  void CppBridge::SetFlags(const CppFlags& flags) {
-    absl::SetFlag(&FLAGS_stderrthreshold, flags.stderrthreshold);
-    absl::EnableLogPrefix(flags.log_prefix);
-    if (!flags.cp_model_dump_prefix.empty()) {
-      absl::SetFlag(&FLAGS_cp_model_dump_prefix, flags.cp_model_dump_prefix);
-    }
-    absl::SetFlag(&FLAGS_cp_model_dump_models, flags.cp_model_dump_models);
-    absl::SetFlag(&FLAGS_cp_model_dump_submodels,
-        flags.cp_model_dump_submodels);
-    absl::SetFlag(&FLAGS_cp_model_dump_response, flags.cp_model_dump_response);
+void CppBridge::SetFlags(const CppFlags& flags) {
+  absl::SetFlag(&FLAGS_stderrthreshold, flags.stderrthreshold);
+  absl::EnableLogPrefix(flags.log_prefix);
+  if (!flags.cp_model_dump_prefix.empty()) {
+    absl::SetFlag(&FLAGS_cp_model_dump_prefix, flags.cp_model_dump_prefix);
   }
+  absl::SetFlag(&FLAGS_cp_model_dump_models, flags.cp_model_dump_models);
+  absl::SetFlag(&FLAGS_cp_model_dump_submodels, flags.cp_model_dump_submodels);
+  absl::SetFlag(&FLAGS_cp_model_dump_response, flags.cp_model_dump_response);
+}
 
-  bool CppBridge::LoadGurobiSharedLibrary(const std::string& full_library_path) {
-    return LoadGurobiDynamicLibrary({full_library_path}).ok();
-  }
+bool CppBridge::LoadGurobiSharedLibrary(const std::string& full_library_path) {
+  return LoadGurobiDynamicLibrary({full_library_path}).ok();
+}
 
 }  // namespace operations_research

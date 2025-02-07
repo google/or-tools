@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
@@ -36,8 +37,9 @@ namespace {
 class AllDifferentTest : public ::testing::TestWithParam<std::string> {
  public:
   std::function<void(Model*)> AllDifferent(
-      const std::vector<IntegerVariable>& vars) {
-    return [=](Model* model) {
+      absl::Span<const IntegerVariable> vars) {
+    return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+               Model* model) {
       if (GetParam() == "binary") {
         model->Add(AllDifferentBinary(vars));
       } else if (GetParam() == "ac") {

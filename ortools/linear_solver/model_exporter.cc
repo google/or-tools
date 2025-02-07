@@ -140,7 +140,7 @@ class MPModelProtoExporter {
   // into two constraints, one for the left hand side (_lhs) and one for right
   // hand side (_rhs).
   bool AppendConstraint(const MPConstraintProto& ct_proto,
-                        const std::string& name, LineBreaker& line_breaker,
+                        absl::string_view name, LineBreaker& line_breaker,
                         std::vector<bool>& show_variable, std::string* output);
 
   // Clears "output" and writes a term to it, in "LP" format. Returns false on
@@ -159,8 +159,8 @@ class MPModelProtoExporter {
 
   // Same as AppendMpsLineHeader. Appends an extra new-line at the end the
   // string pointed to by output.
-  void AppendMpsLineHeaderWithNewLine(const std::string& id,
-                                      const std::string& name,
+  void AppendMpsLineHeaderWithNewLine(absl::string_view id,
+                                      absl::string_view name,
                                       std::string* output) const;
 
   // Appends an MPS term in various contexts. The term consists of a head name,
@@ -186,7 +186,7 @@ class MPModelProtoExporter {
   // Appends a line describing the bound of a variablenew-line if two columns
   // are already present on the MPS line.
   // Used by and in complement to AppendMpsTermWithContext.
-  void AppendMpsBound(const std::string& bound_type, const std::string& name,
+  void AppendMpsBound(absl::string_view bound_type, absl::string_view name,
                       double value, std::string* output) const;
 
   const MPModelProto& proto_;
@@ -392,7 +392,7 @@ std::string DoubleToString(double d) { return absl::StrCat((d)); }
 }  // namespace
 
 bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
-                                            const std::string& name,
+                                            absl::string_view name,
                                             LineBreaker& line_breaker,
                                             std::vector<bool>& show_variable,
                                             std::string* output) {
@@ -414,7 +414,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
     absl::StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
   } else {
     if (ub != +kInfinity) {
-      std::string rhs_name = name;
+      std::string rhs_name(name);
       if (lb != -kInfinity) {
         absl::StrAppend(&rhs_name, "_rhs");
       }
@@ -427,7 +427,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
       absl::StrAppend(output, relation);
     }
     if (lb != -kInfinity) {
-      std::string lhs_name = name;
+      std::string lhs_name(name);
       if (ub != +kInfinity) {
         absl::StrAppend(&lhs_name, "_lhs");
       }
@@ -462,7 +462,7 @@ bool IsBoolean(const MPVariableProto& var) {
          floor(var.upper_bound()) == 1.0;
 }
 
-void UpdateMaxSize(const std::string& new_string, int* size) {
+void UpdateMaxSize(absl::string_view new_string, int* size) {
   const int new_size = new_string.size();
   if (new_size > *size) *size = new_size;
 }
@@ -687,7 +687,7 @@ void MPModelProtoExporter::AppendMpsLineHeader(absl::string_view id,
 }
 
 void MPModelProtoExporter::AppendMpsLineHeaderWithNewLine(
-    const std::string& id, const std::string& name, std::string* output) const {
+    absl::string_view id, absl::string_view name, std::string* output) const {
   AppendMpsLineHeader(id, name, output);
   absl::StripTrailingAsciiWhitespace(output);
   absl::StrAppend(output, "\n");
@@ -704,8 +704,8 @@ void MPModelProtoExporter::AppendMpsTermWithContext(absl::string_view head_name,
   AppendNewLineIfTwoColumns(output);
 }
 
-void MPModelProtoExporter::AppendMpsBound(const std::string& bound_type,
-                                          const std::string& name, double value,
+void MPModelProtoExporter::AppendMpsBound(absl::string_view bound_type,
+                                          absl::string_view name, double value,
                                           std::string* output) const {
   AppendMpsLineHeader(bound_type, "BOUND", output);
   AppendMpsPair(name, value, output);

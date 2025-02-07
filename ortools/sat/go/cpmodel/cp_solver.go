@@ -27,7 +27,7 @@ import (
 /*
 #include <stdlib.h> // for free
 #include <stdint.h>
-#include "ortools/sat/go/cpmodel/cp_solver_c.h"
+#include "ortools/sat/c_api/cp_solver_c.h"
 */
 import "C"
 

@@ -296,7 +296,6 @@ class SetCoverModel {
   bool elements_in_subsets_are_sorted_;
 
   // Costs for each subset.
-
   SubsetCostVector subset_costs_;
 
   // Vector of columns. Each column corresponds to a subset and contains the

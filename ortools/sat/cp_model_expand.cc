@@ -869,8 +869,8 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 
 // Adds clauses so that literals[i] true <=> encoding[values[i]] true.
 // This also implicitly use the fact that exactly one alternative is true.
-void LinkLiteralsAndValues(const std::vector<int>& literals,
-                           const std::vector<int64_t>& values,
+void LinkLiteralsAndValues(absl::Span<const int> literals,
+                           absl::Span<const int64_t> values,
                            const absl::flat_hash_map<int64_t, int>& encoding,
                            PresolveContext* context) {
   CHECK_EQ(literals.size(), values.size());

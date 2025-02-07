@@ -142,8 +142,8 @@ public class Loader {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
         // libraries order does matter !
-        List<String> dlls = Arrays.asList(
-            "zlib1", "abseil_dll", "re2", "utf8_validity", "libprotobuf", "highs", "ortools", "jniortools");
+        List<String> dlls = Arrays.asList("zlib1", "abseil_dll", "re2", "utf8_validity",
+            "libprotobuf", "highs", "ortools", "jniortools");
         for (String dll : dlls) {
           try {
             // System.out.println("System.load(" + dll + ")");

@@ -20,7 +20,7 @@ go_library(
         "cp_solver.go",
         "domain.go",
     ],
-    cdeps = [":cp_solver_c"],
+    cdeps = ["//ortools/sat/c_api:cp_solver_c"],
     cgo = True,
     importpath = "github.com/google/or-tools/ortools/sat/go/cpmodel",
     visibility = ["//visibility:public"],
@@ -47,20 +47,5 @@ go_test(
         "@com_github_google_go_cmp//cmp",
         "@org_golang_google_protobuf//proto",
         "@org_golang_google_protobuf//testing/protocmp",
-    ],
-)
-
-cc_library(
-    name = "cp_solver_c",
-    srcs = ["cp_solver_c.cc"],
-    hdrs = ["cp_solver_c.h"],
-    deps = [
-        "//ortools/base:memutil",
-        "//ortools/sat:cp_model_cc_proto",
-        "//ortools/sat:cp_model_solver",
-        "//ortools/sat:model",
-        "//ortools/sat:sat_parameters_cc_proto",
-        "//ortools/util:time_limit",
-        "@com_google_absl//absl/log:check",
     ],
 )
