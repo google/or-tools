@@ -224,6 +224,7 @@ cc_library(
     }),
     deps = [
         ":enums_cc_proto",
+        ":filter_committables",
         ":ils_cc_proto",
         ":index_manager",
         ":neighborhoods",
@@ -288,5 +289,16 @@ cc_library(
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "filter_committables",
+    hdrs = ["filter_committables.h"],
+    deps = [
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )

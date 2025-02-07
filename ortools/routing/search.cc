@@ -50,6 +50,7 @@
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
@@ -535,9 +536,11 @@ Assignment* RoutingFilteredHeuristic::BuildSolutionFromRoutes(
   return nullptr;
 }
 
-std::optional<int64_t> IntVarFilteredHeuristic::Evaluate(bool commit) {
+std::optional<int64_t> IntVarFilteredHeuristic::Evaluate(
+    bool commit, bool ignore_upper_bound, bool update_upper_bound) {
   ++number_of_decisions_;
-  const bool accept = FilterAccept();
+  const bool accept = FilterAccept(ignore_upper_bound);
+  int64_t objective_upper_bound = objective_upper_bound_;
   if (accept) {
     if (filter_manager_ != nullptr) {
       // objective upper_bound_ is used to reduce the number of potential
@@ -547,9 +550,13 @@ std::optional<int64_t> IntVarFilteredHeuristic::Evaluate(bool commit) {
       // is committed, the upper bound is relaxed to make sure further
       // (cost-degrading) insertions will be accepted
       // (cf. SynchronizeFilters()).
-      DCHECK_LE(filter_manager_->GetAcceptedObjectiveValue(),
-                objective_upper_bound_);
-      objective_upper_bound_ = filter_manager_->GetAcceptedObjectiveValue();
+      DCHECK(ignore_upper_bound ||
+             filter_manager_->GetAcceptedObjectiveValue() <=
+                 objective_upper_bound_);
+      objective_upper_bound = filter_manager_->GetAcceptedObjectiveValue();
+      if (update_upper_bound) {
+        objective_upper_bound_ = objective_upper_bound;
+      }
     }
     if (commit) {
       const Assignment::IntContainer& delta_container =
@@ -575,7 +582,7 @@ std::optional<int64_t> IntVarFilteredHeuristic::Evaluate(bool commit) {
   }
   delta_->Clear();
   delta_indices_.clear();
-  return accept ? std::optional<int64_t>{objective_upper_bound_} : std::nullopt;
+  return accept ? std::optional<int64_t>{objective_upper_bound} : std::nullopt;
 }
 
 void IntVarFilteredHeuristic::SynchronizeFilters() {
@@ -584,12 +591,13 @@ void IntVarFilteredHeuristic::SynchronizeFilters() {
   objective_upper_bound_ = std::numeric_limits<int64_t>::max();
 }
 
-bool IntVarFilteredHeuristic::FilterAccept() {
+bool IntVarFilteredHeuristic::FilterAccept(bool ignore_upper_bound) {
   if (!filter_manager_) return true;
   LocalSearchMonitor* const monitor = solver_->GetLocalSearchMonitor();
-  return filter_manager_->Accept(monitor, delta_, empty_,
-                                 std::numeric_limits<int64_t>::min(),
-                                 objective_upper_bound_);
+  return filter_manager_->Accept(
+      monitor, delta_, empty_, std::numeric_limits<int64_t>::min(),
+      ignore_upper_bound ? std::numeric_limits<int64_t>::max()
+                         : objective_upper_bound_);
 }
 
 // RoutingFilteredHeuristic
@@ -876,15 +884,21 @@ void CheapestInsertionFilteredHeuristic::AppendInsertionPositionsAfter(
   while (!model()->IsEnd(insert_after)) {
     const int64_t insert_before =
         (insert_after == start) ? next_after_start : Value(insert_after);
+    const int hint_weight = IsHint(insert_after, node_to_insert) +
+                            IsHint(node_to_insert, insert_before) -
+                            IsHint(insert_after, insert_before);
     if (evaluator_ == nullptr) {
       InsertBetween(node_to_insert, insert_after, insert_before, vehicle);
-      std::optional<int64_t> insertion_cost = Evaluate(/*commit=*/false);
+      std::optional<int64_t> insertion_cost =
+          Evaluate(/*commit=*/false, /*ignore_upper_bound=*/hint_weight > 0,
+                   /*update_upper_bound=*/hint_weight >= 0);
       if (insertion_cost.has_value()) {
-        node_insertions->push_back({insert_after, vehicle, *insertion_cost});
+        node_insertions->push_back(
+            {insert_after, vehicle, -hint_weight, *insertion_cost});
       }
     } else {
       node_insertions->push_back(
-          {insert_after, vehicle,
+          {insert_after, vehicle, -hint_weight,
            ignore_cost
                ? 0
                : GetInsertionCostForNodeAtPosition(node_to_insert, insert_after,
@@ -2492,7 +2506,8 @@ LocalCheapestInsertionFilteredHeuristic::
         RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
         std::vector<RoutingSearchParameters::InsertionSortingProperty>
             insertion_sorting_properties,
-        LocalSearchFilterManager* filter_manager, BinCapacities* bin_capacities,
+        LocalSearchFilterManager* filter_manager, bool use_first_solution_hint,
+        BinCapacities* bin_capacities,
         std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
                            std::vector<RoutingModel::VariableValuePair>*)>
             optimize_on_insertion)
@@ -2501,6 +2516,7 @@ LocalCheapestInsertionFilteredHeuristic::
                                          filter_manager),
       pair_insertion_strategy_(pair_insertion_strategy),
       insertion_sorting_properties_(std::move(insertion_sorting_properties)),
+      use_first_solution_hint_(use_first_solution_hint),
       bin_capacities_(bin_capacities),
       optimize_on_insertion_(std::move(optimize_on_insertion)) {
   DCHECK(!insertion_sorting_properties_.empty());
@@ -2510,6 +2526,20 @@ void LocalCheapestInsertionFilteredHeuristic::Initialize() {
   // NOTE(user): Keeping the code in a separate function as opposed to
   // inlining here, to allow for future additions to this function.
   synchronize_insertion_optimizer_ = true;
+  hint_next_values_.assign(model()->Size(), -1);
+  hint_prev_values_.assign(model()->Size() + model()->vehicles(), -1);
+  const Assignment* hint = model()->GetFirstSolutionHint();
+  if (hint != nullptr && use_first_solution_hint_) {
+    const Assignment::IntContainer& container = hint->IntVarContainer();
+    for (int i = 0; i < model()->Nexts().size(); ++i) {
+      const IntVarElement* element =
+          container.ElementPtrOrNull(model()->NextVar(i));
+      if (element != nullptr && element->Bound()) {
+        hint_next_values_[i] = element->Value();
+        hint_prev_values_[element->Value()] = i;
+      }
+    }
+  }
   ComputeInsertionOrder();
 }
 
@@ -2665,6 +2695,125 @@ std::optional<int64_t> GetAvgPickupDeliveryPairDistanceFromVehicles(
              : std::nullopt;
 }
 
+// Returns the maximum vehicle capacity for the given dimensions. Vehicles with
+// infinite capacity are ignored.
+int64_t GetMaxFiniteDimensionCapacity(
+    const RoutingModel& model,
+    const std::vector<RoutingDimension*>& dimensions) {
+  int64_t max_capacity = 0;
+  for (const RoutingDimension* dimension : dimensions) {
+    for (int vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
+      const int64_t capacity = dimension->vehicle_capacities()[vehicle];
+      if (capacity == kint64max) continue;
+      max_capacity = std::max(max_capacity, capacity);
+    }
+  }
+  return max_capacity;
+}
+
+// Returns the average dimension usage of the given node scaled according to the
+// given max capacity.
+int64_t GetAvgNodeUnaryDimensionUsage(
+    const RoutingModel& model, const std::vector<RoutingDimension*>& dimensions,
+    int64_t max_vehicle_capacity, int64_t node) {
+  if (dimensions.empty() || max_vehicle_capacity == 0) {
+    return 0;
+  }
+
+  double dimension_usage_sum = 0;
+  for (const RoutingDimension* dimension : dimensions) {
+    // TODO(user): extend to non unary dimensions.
+    DCHECK(dimension->IsUnary());
+    double dimension_usage_per_vehicle_sum = 0;
+    int valid_vehicles = 0;
+
+    // TODO(user): limit computations to vehicles allowed for this node.
+    for (int vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
+      const int64_t capacity = dimension->vehicle_capacities()[vehicle];
+      if (capacity == 0) continue;
+      DCHECK_GE(capacity, 0);
+      valid_vehicles++;
+      // If the capacity is infinite, bypass the "noise" added to the dimension
+      // usage.
+      if (capacity == kint64max) continue;
+      const RoutingModel::TransitCallback1& transit_evaluator =
+          dimension->GetUnaryTransitEvaluator(vehicle);
+      dimension_usage_per_vehicle_sum +=
+          1.0 * std::abs(transit_evaluator(node)) / capacity;
+    }
+
+    if (valid_vehicles > 0) {
+      // Cap the dimension usage to 1.0 in case some node demand is greater than
+      // the vehicle capacity.
+      dimension_usage_sum +=
+          std::min(1.0, dimension_usage_per_vehicle_sum / valid_vehicles);
+    }
+  }
+
+  // We multiply the computed dimension_usage_sum by the max_vehicle_capacity to
+  // have a larger scale for rounding to int64_t.
+  return MathUtil::SafeRound<int64_t>(max_vehicle_capacity *
+                                      dimension_usage_sum);
+}
+
+// Returns the average dimension usage of a pickup and delivery pair scaled
+// according to the given max capacity.
+int64_t GetAvgPickupDeliveryPairUnaryDimensionUsage(
+    const RoutingModel& model, const std::vector<RoutingDimension*>& dimensions,
+    int64_t max_vehicle_capacity, int pair_index) {
+  if (dimensions.empty()) {
+    return 0;
+  }
+
+  const auto& [pickups, deliveries] =
+      model.GetPickupAndDeliveryPairs()[pair_index];
+  if (pickups.empty() || deliveries.empty()) {
+    return 0;
+  }
+
+  double dimension_usage_sum = 0;
+  for (const RoutingDimension* dimension : dimensions) {
+    double dimension_usage_per_vehicle_sum = 0;
+    int valid_vehicles = 0;
+    // TODO(user): limit computations to nodes allowed for this vehicle.
+    for (int vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
+      const int64_t capacity = dimension->vehicle_capacities()[vehicle];
+      if (capacity == 0) continue;
+      valid_vehicles++;
+      // If the capacity is infinite, bypass the "noise" added to the dimension
+      // usage.
+      if (capacity == kint64max) continue;
+      const RoutingModel::TransitCallback1& transit_evaluator =
+          dimension->GetUnaryTransitEvaluator(vehicle);
+
+      double pickup_sum = 0;
+      for (int64_t pickup : pickups) {
+        pickup_sum += 1.0 * std::abs(transit_evaluator(pickup)) / capacity;
+      }
+      const double avg_pickup_usage = pickup_sum / pickups.size();
+      double delivery_sum = 0;
+      for (int64_t delivery : deliveries) {
+        delivery_sum += 1.0 * std::abs(transit_evaluator(delivery)) / capacity;
+      }
+      const double avg_delivery_usage = delivery_sum / deliveries.size();
+      dimension_usage_per_vehicle_sum +=
+          std::max(avg_pickup_usage, avg_delivery_usage);
+    }
+
+    if (valid_vehicles > 0) {
+      // Cap the dimension usage to 1.0 in case some node demand is greater than
+      // the vehicle capacity.
+      dimension_usage_sum +=
+          std::min(1.0, dimension_usage_per_vehicle_sum / valid_vehicles);
+    }
+  }
+
+  // We multiply the computed dimension_usage_sum by the max_vehicle_capacity to
+  // have a larger scale for rounding to int64_t.
+  return MathUtil::SafeRound<int64_t>(max_vehicle_capacity *
+                                      dimension_usage_sum);
+}
+
 }  // namespace
 
 void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
@@ -2683,10 +2832,20 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
   auto get_insertion_properties = [this](int64_t penalty,
                                          int64_t num_allowed_vehicles,
                                          int64_t avg_distance_to_vehicle,
-                                         int64_t neg_min_distance_to_vehicles) {
+                                         int64_t neg_min_distance_to_vehicles,
+                                         int hint_weight,
+                                         int reversed_hint_weight,
+                                         int64_t avg_dimension_usage) {
     DCHECK_NE(0, num_allowed_vehicles);
     absl::InlinedVector<int64_t, 8> properties;
     properties.reserve(insertion_sorting_properties_.size());
+
+    // Always consider hints first. We favor nodes with hints over nodes with
+    // reversed hints.
+    // TODO(user): Figure out a way to insert hinted nodes in a logical
+    // order. We could try toposorting hinted nodes.
+    properties.push_back(-hint_weight);
+    properties.push_back(-reversed_hint_weight);
 
     bool neg_min_distance_to_vehicles_appended = false;
     for (const int property : insertion_sorting_properties_) {
@@ -2714,6 +2873,9 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
           properties.push_back(neg_min_distance_to_vehicles);
           neg_min_distance_to_vehicles_appended = true;
           break;
+        case RoutingSearchParameters::SORTING_PROPERTY_HIGHEST_DIMENSION_USAGE:
+          properties.push_back(CapOpp(avg_dimension_usage));
+          break;
         default:
           LOG(DFATAL)
               << "Unknown RoutingSearchParameter::InsertionSortingProperty "
@@ -2736,6 +2898,7 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
   // Identify whether the selected properties require a more expensive
   // preprocessing.
   bool compute_avg_pickup_delivery_pair_distance_from_vehicles = false;
+  bool compute_avg_dimension_usage = false;
   for (const RoutingSearchParameters::InsertionSortingProperty property :
        insertion_sorting_properties_) {
     if (property ==
@@ -2745,12 +2908,24 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
             RoutingSearchParameters::
                 SORTING_PROPERTY_LOWEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS) {
       compute_avg_pickup_delivery_pair_distance_from_vehicles = true;
-      break;
+    }
+    if (property ==
+        RoutingSearchParameters::SORTING_PROPERTY_HIGHEST_DIMENSION_USAGE) {
+      compute_avg_dimension_usage = true;
     }
   }
 
   Bitset64<int> vehicle_set(model.vehicles());
   for (int v = 0; v < model.vehicles(); ++v) vehicle_set.Set(v);
+
+  const std::vector<RoutingDimension*> unary_dimensions =
+      compute_avg_dimension_usage ? model.GetUnaryDimensions()
+                                  : std::vector<RoutingDimension*>();
+
+  const int64_t max_dimension_capacity =
+      compute_avg_dimension_usage
+          ? GetMaxFiniteDimensionCapacity(model, unary_dimensions)
+          : 0;
 
   // Iterating on pickup and delivery pairs.
   const std::vector<PickupDeliveryPair>& pairs =
@@ -2760,12 +2935,16 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
     const auto& [pickups, deliveries] = pairs[pair_index];
     int64_t num_allowed_vehicles = std::numeric_limits<int64_t>::max();
     int64_t pickup_penalty = 0;
+    int hint_weight = 0;
+    int reversed_hint_weight = 0;
     for (int64_t pickup : pickups) {
       num_allowed_vehicles =
           std::min(num_allowed_vehicles,
                    static_cast<int64_t>(model.VehicleVar(pickup)->Size()));
       pickup_penalty =
           std::max(pickup_penalty, model.UnperformedPenalty(pickup));
+      hint_weight += HasHintedNext(pickup);
+      reversed_hint_weight += HasHintedPrev(pickup);
     }
     int64_t delivery_penalty = 0;
     for (int64_t delivery : deliveries) {
@@ -2774,6 +2953,8 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
                    static_cast<int64_t>(model.VehicleVar(delivery)->Size()));
       delivery_penalty =
           std::max(delivery_penalty, model.UnperformedPenalty(delivery));
+      hint_weight += HasHintedNext(delivery);
+      reversed_hint_weight += HasHintedPrev(delivery);
     }
 
     const std::optional<int64_t> maybe_avg_pair_to_vehicle_cost =
@@ -2788,10 +2969,17 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
       continue;
     }
 
+    const int64_t avg_pair_dimension_usage =
+        compute_avg_dimension_usage
+            ? GetAvgPickupDeliveryPairUnaryDimensionUsage(
+                  model, unary_dimensions, max_dimension_capacity, pair_index)
+            : 0;
+
     absl::InlinedVector<int64_t, 8> properties = get_insertion_properties(
         CapAdd(pickup_penalty, delivery_penalty), num_allowed_vehicles,
         maybe_avg_pair_to_vehicle_cost.value(),
-        GetNegMaxDistanceFromVehicles(model, pair_index));
+        GetNegMaxDistanceFromVehicles(model, pair_index), hint_weight,
+        reversed_hint_weight, avg_pair_dimension_usage);
 
     insertion_order_.push_back({.properties = std::move(properties),
                                 .vehicle = 0,
@@ -2813,9 +3001,16 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
         vehicle_set);
     DCHECK_GT(vehicle_set.size(), 0);
 
+    const int64_t avg_dimension_usage =
+        compute_avg_dimension_usage
+            ? GetAvgNodeUnaryDimensionUsage(model, unary_dimensions,
+                                            max_dimension_capacity, node)
+            : 0;
+
     absl::InlinedVector<int64_t, 8> properties = get_insertion_properties(
         model.UnperformedPenalty(node), model.VehicleVar(node)->Size(),
-        sum_distance / vehicle_set.size(), CapOpp(min_distance));
+        sum_distance / vehicle_set.size(), CapOpp(min_distance),
+        HasHintedNext(node), HasHintedPrev(node), avg_dimension_usage);
     insertion_order_.push_back({.properties = std::move(properties),
                                 .vehicle = 0,
                                 .is_node_index = true,
@@ -2839,7 +3034,7 @@ bool LocalCheapestInsertionFilteredHeuristic::InsertPair(
                 vehicle);
   // Capturing the state of the delta before it gets wiped by Evaluate.
   std::vector<int> indices = delta_indices();
-  if (Evaluate(/*commit=*/true).has_value()) {
+  if (Evaluate(/*commit=*/true, /*ignore_upper_bound=*/true).has_value()) {
     OptimizeOnInsertion(std::move(indices));
     return true;
   }
@@ -2888,8 +3083,9 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPair(
       std::vector<PickupDeliveryInsertion> sorted_pair_positions =
           ComputeEvaluatorSortedPairPositions(pickup, delivery);
       if (sorted_pair_positions.empty()) continue;
-      for (const auto [insert_pickup_after, insert_delivery_after, unused_value,
-                       vehicle] : sorted_pair_positions) {
+      for (const auto [insert_pickup_after, insert_delivery_after,
+                       unused_hint_weight, unused_value, vehicle] :
+           sorted_pair_positions) {
         if (InsertPair(pickup, insert_pickup_after, delivery,
                        insert_delivery_after, vehicle)) {
           if (MustUpdateBinCapacities()) {
@@ -2935,10 +3131,13 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
           int64_t sequence_cost = 0;
           int previous_node = -1;
           int previous_succ = -1;
+          int hint_weight = 0;
           for (const Insertion& insertion : sequence) {
             const int succ = previous_node == insertion.pred
                                  ? previous_succ
                                  : Value(insertion.pred);
+            hint_weight += IsHint(insertion.pred, insertion.node);
+            hint_weight += IsHint(insertion.node, succ);
             const int64_t cost = GetInsertionCostForNodeAtPosition(
                 insertion.node, insertion.pred, succ, sequence.Vehicle());
             CapAddTo(cost, &sequence_cost);
@@ -2946,6 +3145,7 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
             previous_succ = succ;
           }
           sequence.Cost() = sequence_cost;
+          sequence.SetHintWeight(hint_weight);
         }
         if (bin_capacities == nullptr) return;
         for (InsertionSequence sequence : insertion_container_) {
@@ -2967,15 +3167,21 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
     for (InsertionSequence sequence : insertion_container_) {
       int previous_node = -1;
       int previous_succ = -1;
+      int hint_weight = 0;
       for (const Insertion& insertion : sequence) {
         const int succ = previous_node == insertion.pred
                              ? previous_succ
                              : Value(insertion.pred);
+        hint_weight += IsHint(insertion.pred, insertion.node);
+        hint_weight += IsHint(insertion.node, succ);
         InsertBetween(insertion.node, insertion.pred, succ, sequence.Vehicle());
         previous_node = insertion.node;
         previous_succ = succ;
       }
-      sequence.Cost() = Evaluate(/*commit=*/false).value_or(kint64max);
+      sequence.Cost() =
+          Evaluate(/*commit=*/false, /*ignore_upper_bound=*/hint_weight > 0)
+              .value_or(kint64max);
+      sequence.SetHintWeight(hint_weight);
     }
   };
 
@@ -3025,7 +3231,8 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
           previous_node = insertion.node;
           previous_succ = succ;
         }
-        if (Evaluate(/*commit=*/true).has_value()) {
+        if (Evaluate(/*commit=*/true, /*ignore_upper_bound=*/true)
+                .has_value()) {
           // Insertion succeeded.
           if (MustUpdateBinCapacities()) {
             bin_capacities_->AddItemToBin(pickup, vehicle);
@@ -3131,7 +3338,8 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
                       Value(insertion.insert_after), insertion.vehicle);
         // Capturing the state of the delta before it gets wiped by Evaluate.
         std::vector<int> indices = delta_indices();
-        if (Evaluate(/*commit=*/true).has_value()) {
+        if (Evaluate(/*commit=*/true, /*ignore_upper_bound=*/true)
+                .has_value()) {
           if (MustUpdateBinCapacities()) {
             bin_capacities_->AddItemToBin(index, insertion.vehicle);
           }
@@ -3224,16 +3432,21 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPairPositions(
         const int64_t insert_delivery_before =
             insert_delivery_after == pickup ? insert_pickup_before
                                             : Value(insert_delivery_after);
+        const int hint_weight = IsHint(insert_pickup_after, pickup) +
+                                IsHint(insert_delivery_after, delivery) +
+                                IsHint(pickup, insert_pickup_before) +
+                                IsHint(delivery, insert_delivery_before);
         if (evaluator_ == nullptr) {
           InsertBetween(pickup, insert_pickup_after, insert_pickup_before,
                         vehicle);
           InsertBetween(delivery, insert_delivery_after, insert_delivery_before,
                         vehicle);
-          std::optional<int64_t> insertion_cost = Evaluate(/*commit=*/false);
+          std::optional<int64_t> insertion_cost = Evaluate(
+              /*commit=*/false, /*ignore_upper_bound=*/hint_weight > 0);
           if (insertion_cost.has_value()) {
             sorted_pickup_delivery_insertions.push_back(
-                {insert_pickup_after, insert_delivery_after, *insertion_cost,
-                 vehicle});
+                {insert_pickup_after, insert_delivery_after, -hint_weight,
+                 *insertion_cost, vehicle});
           }
         } else {
           const int64_t pickup_cost = GetInsertionCostForNodeAtPosition(
@@ -3250,9 +3463,9 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPairPositions(
             bin_capacities_->RemoveItemFromBin(pickup, vehicle);
             bin_capacities_->RemoveItemFromBin(delivery, vehicle);
           }
-          sorted_pickup_delivery_insertions.push_back({insert_pickup_after,
-                                                       insert_delivery_after,
-                                                       total_cost, vehicle});
+          sorted_pickup_delivery_insertions.push_back(
+              {insert_pickup_after, insert_delivery_after, -hint_weight,
+               total_cost, vehicle});
         }
         insert_delivery_after = insert_delivery_before;
       }

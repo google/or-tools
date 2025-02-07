@@ -449,18 +449,25 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
     }
   }
 
-  for (const RoutingDimension::NodePrecedence& precedence :
+  for (const auto [first_node, second_node, offset, performed_constraint] :
        dimension_.GetNodePrecedences()) {
-    const int first_index = precedence.first_node;
-    const int second_index = precedence.second_node;
-    if (lower_bounds[PositiveNode(first_index)] ==
-            std::numeric_limits<int64_t>::min() ||
-        lower_bounds[PositiveNode(second_index)] ==
-            std::numeric_limits<int64_t>::min()) {
-      // One of the nodes is unperformed, so the precedence rule doesn't apply.
-      continue;
+    const bool first_node_unperformed =
+        lower_bounds[PositiveNode(first_node)] ==
+        std::numeric_limits<int64_t>::min();
+    const bool second_node_unperformed =
+        lower_bounds[PositiveNode(second_node)] ==
+        std::numeric_limits<int64_t>::min();
+    switch (RoutingDimension::GetPrecedenceStatus(first_node_unperformed,
+                                                  second_node_unperformed,
+                                                  performed_constraint)) {
+      case RoutingDimension::PrecedenceStatus::kActive:
+        break;
+      case RoutingDimension::PrecedenceStatus::kInactive:
+        continue;
+      case RoutingDimension::PrecedenceStatus::kInvalid:
+        return false;
     }
-    AddArcs(first_index, second_index, precedence.offset);
+    AddArcs(first_node, second_node, offset);
   }
 
   return true;
@@ -1452,6 +1459,7 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
 
     // Precompute the slopes and y-intercept as they will be used to detect
     // convexities and in the constraints.
+    // This has size index_anchor_end - index_anchor_start.
     const std::vector<SlopeAndYIntercept> slope_and_y_intercept =
         PiecewiseLinearFunctionToSlopeAndYIntercept(
             travel_function, index_anchor_start, index_anchor_end);
@@ -1490,7 +1498,8 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
             seg > 0 ? travel_x_anchors[index_anchor_start + seg]
                     : current_route_min_cumuls_[pos] + pre_travel_transit;
         int64_t end_of_seg = seg + 1;
-        while (end_of_seg < num_pwl_anchors - 1 && !convexities[end_of_seg]) {
+        const int num_convexities = convexities.size();
+        while (end_of_seg < num_convexities && !convexities[end_of_seg]) {
           ++end_of_seg;
         }
         const int64_t higher_bound_interval =
@@ -1916,8 +1925,9 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     if (bound_cost.bound < std::numeric_limits<int64_t>::max() &&
         bound_cost.cost > 0) {
       const int span_violation = solver->CreateNewPositiveVariable();
-      SET_DEBUG_VARIABLE_NAME(solver, span_violation,
-                              "quadratic_span_violation");
+      SET_DEBUG_VARIABLE_NAME(
+          solver, span_violation,
+          absl::StrFormat("quadratic_span_violation(%ld)", vehicle));
       // end - start <= bound + span_violation
       const int violation = solver->CreateNewConstraint(
           std::numeric_limits<int64_t>::min(), bound_cost.bound);
@@ -1926,6 +1936,9 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       solver->SetCoefficient(violation, span_violation, -1.0);
       // Add variable squared_span_violation, equal to span_violation².
       const int squared_span_violation = solver->CreateNewPositiveVariable();
+      SET_DEBUG_VARIABLE_NAME(
+          solver, squared_span_violation,
+          absl::StrFormat("squared_span_violation(%ld)", vehicle));
       solver->AddProductConstraint(squared_span_violation,
                                    {span_violation, span_violation});
       // Add squared_span_violation * cost to objective.
@@ -2257,6 +2270,9 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         if (pr == path_size) break;
         // Reduce [pl, pr) from the left.
         while (pl < pr && trigger(k, pl + 1, pr)) ++pl;
+        // If pl == pr, then post_travel[pl-l] + pre_travel[pl] > limit.
+        // This is infeasible, because breaks cannot interrupt visits.
+        if (pl == pr) return false;
         // If k is the largest for this interval, add the constraint.
         // The call trigger(k', pl, pr) may hold for both k and k+1 with an
         // irreducible interval [pl, pr] when there is a transit > limit at
@@ -2275,10 +2291,14 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         } else {
           if (slack_sum_vars[pl] == -1) {
             slack_sum_vars[pl] = solver->CreateNewPositiveVariable();
+            SET_DEBUG_VARIABLE_NAME(solver, slack_sum_vars[pl],
+                                    absl::StrFormat("slack_sum_vars(%ld)", pl));
             min_sum_var_index = std::min(min_sum_var_index, pl);
           }
           if (slack_sum_vars[pr] == -1) {
             slack_sum_vars[pr] = solver->CreateNewPositiveVariable();
+            SET_DEBUG_VARIABLE_NAME(solver, slack_sum_vars[pr],
+                                    absl::StrFormat("slack_sum_vars(%ld)", pr));
             max_sum_var_index = std::max(max_sum_var_index, pr);
           }
           // sum_slacks[pr] - sum_slacks[pl] >= k * min_break_duration.
@@ -2457,23 +2477,26 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
   }
 
   // Node precedence constraints, set when both nodes are visited.
-  for (const RoutingDimension::NodePrecedence& precedence :
+  for (const auto [first_node, second_node, offset, performed_constraint] :
        dimension_->GetNodePrecedences()) {
-    const int first_cumul_var = index_to_cumul_variable_[precedence.first_node];
-    const int second_cumul_var =
-        index_to_cumul_variable_[precedence.second_node];
-    if (first_cumul_var < 0 || second_cumul_var < 0) {
-      // At least one of the nodes is not on any route, skip this precedence
-      // constraint.
-      continue;
+    const int first_cumul_var = index_to_cumul_variable_[first_node];
+    const int second_cumul_var = index_to_cumul_variable_[second_node];
+    switch (RoutingDimension::GetPrecedenceStatus(
+        first_cumul_var < 0, second_cumul_var < 0, performed_constraint)) {
+      case RoutingDimension::PrecedenceStatus::kActive:
+        break;
+      case RoutingDimension::PrecedenceStatus::kInactive:
+        continue;
+      case RoutingDimension::PrecedenceStatus::kInvalid:
+        return false;
     }
     DCHECK_NE(first_cumul_var, second_cumul_var)
         << "Dimension " << dimension_->name()
-        << " has a self-precedence on node " << precedence.first_node << ".";
+        << " has a self-precedence on node " << first_node << ".";
 
     // cumul[second_node] - cumul[first_node] >= offset.
     const int ct = solver->CreateNewConstraint(
-        precedence.offset, std::numeric_limits<int64_t>::max());
+        offset, std::numeric_limits<int64_t>::max());
     solver->SetCoefficient(ct, second_cumul_var, 1);
     solver->SetCoefficient(ct, first_cumul_var, -1);
   }
