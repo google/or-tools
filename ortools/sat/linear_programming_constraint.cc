@@ -2192,7 +2192,7 @@ bool LinearProgrammingConstraint::Propagate() {
 
       // Try to add cuts.
       if (level == 0 || !parameters_.only_add_cuts_at_level_zero()) {
-        for (const CutGenerator& generator : cut_generators_) {
+        for (CutGenerator& generator : cut_generators_) {
           if (level > 0 && generator.only_run_at_level_zero) continue;
           if (!generator.generate_cuts(&constraint_manager_)) {
             return false;

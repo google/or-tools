@@ -45,9 +45,23 @@ class MinOutgoingFlowHelper {
   // Returns the minimum flow going out of `subset`, based on a conservative
   // estimate of the maximum number of nodes of a feasible path inside this
   // subset. `subset` must not be empty and must not contain the depot (node 0).
+  // Paths are approximated by their length and their last node, and can thus
+  // contain cycles. The complexity is O(subset.size() ^ 3).
   int ComputeMinOutgoingFlow(absl::Span<const int> subset);
 
+  // Same as above, but uses less conservative estimates (paths are approximated
+  // by their set of nodes and their last node -- hence they can't contain
+  // cycles). The complexity is O(2 ^ subset.size()).
+  int ComputeTightMinOutgoingFlow(absl::Span<const int> subset);
+
  private:
+  // Returns the minimum flow going out of a subset of size `subset_size`,
+  // assuming that the longest feasible path inside this subset has
+  // `longest_path_length` nodes and that there are at most `max_longest_paths`
+  // such paths.
+  int GetMinOutgoingFlow(int subset_size, int longest_path_length,
+                         int max_longest_paths);
+
   const std::vector<int>& tails_;
   const std::vector<int>& heads_;
   const std::vector<Literal>& literals_;
@@ -66,9 +80,11 @@ class MinOutgoingFlowHelper {
   // position i+1.
 
   std::vector<bool> in_subset_;
-  // For each node n, the indices (in tails_, heads_) of the m->n arcs inside
-  // the subset (self arcs excepted).
+  std::vector<int> index_in_subset_;
+  // For each node n, the indices (in tails_, heads_) of the m->n and n->m arcs
+  // inside the subset (self arcs excepted).
   std::vector<std::vector<int>> incoming_arc_indices_;
+  std::vector<std::vector<int>> outgoing_arc_indices_;
   // For each node n, whether it can appear at the current and next position in
   // a feasible path.
   std::vector<bool> reachable_;
@@ -171,17 +187,17 @@ std::vector<int> ComputeGomoryHuTree(
 // connected. Note that we already assume basic constraint to be in the lp, so
 // we do not add any cuts for components of size 1.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
-    int num_nodes, std::vector<int> tails, std::vector<int> heads,
-    std::vector<Literal> literals, Model* model);
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals, Model* model);
 
 // Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
 // components, computes the demand needed to serves it, and depending on whether
 // it contains the depot (node zero) or not, compute the minimum number of
 // vehicle that needs to cross the component border.
-CutGenerator CreateCVRPCutGenerator(int num_nodes, std::vector<int> tails,
-                                    std::vector<int> heads,
-                                    std::vector<Literal> literals,
-                                    std::vector<int64_t> demands,
+CutGenerator CreateCVRPCutGenerator(int num_nodes, absl::Span<const int> tails,
+                                    absl::Span<const int> heads,
+                                    absl::Span<const Literal> literals,
+                                    absl::Span<const int64_t> demands,
                                     int64_t capacity, Model* model);
 
 // Try to find a subset where the current LP capacity of the outgoing or

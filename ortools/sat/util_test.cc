@@ -36,6 +36,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -970,6 +971,82 @@ TEST(WeightedPickTest, SimpleTest) {
         std::abs(weights[i] / 6.0 - static_cast<double>(counts[i]) * 1e-6),
         1e-2);
   }
+}
+
+TEST(SortedSubsetSums, RandomTest) {
+  const int maximum = 100;
+  const int num_elements = 20;
+  absl::BitGen random;
+  std::vector<int64_t> elements(num_elements);
+  for (int i = 0; i < num_elements; ++i) {
+    elements[i] = absl::Uniform(random, 0, maximum);
+  }
+
+  std::vector<int64_t> brute_force_result;
+  for (int mask = 0; mask < (1 << num_elements); ++mask) {
+    int64_t sum = 0;
+    for (int i = 0; i < num_elements; ++i) {
+      if ((mask >> i) & 1) sum += elements[i];
+    }
+    if (sum <= maximum) {
+      brute_force_result.push_back(sum);
+    }
+  }
+  gtl::STLSortAndRemoveDuplicates(&brute_force_result);
+
+  SortedSubsetSums tested;
+  tested.Compute(elements, maximum);
+  EXPECT_EQ(tested.SortedSums(), absl::MakeSpan(brute_force_result));
+}
+
+TEST(SortedSubsetSums, CornerCase) {
+  SortedSubsetSums helper;
+  EXPECT_THAT(helper.Compute({0, 5}, 4), ElementsAre(0));
+}
+
+TEST(MaxBoundedSubsetSumExactTest, RandomTest) {
+  const int bin_size = 100;
+  const int num_elements = 20;
+  absl::BitGen random;
+  std::vector<int64_t> elements(num_elements);
+  const int average_size = 2 * bin_size / num_elements;
+  int64_t sum_of_all = 0;
+  for (int i = 0; i < num_elements; ++i) {
+    elements[i] = absl::Uniform(random, average_size - 3, average_size + 3);
+    sum_of_all += elements[i];
+  }
+
+  // Lets compute the maximum by brute force.
+  int64_t brute_force_result = 0;
+  for (int mask = 0; mask < (1 << num_elements); ++mask) {
+    int64_t sum = 0;
+    for (int i = 0; i < num_elements; ++i) {
+      if ((mask >> i) & 1) sum += elements[i];
+    }
+    if (sum > bin_size) continue;
+    brute_force_result = std::max(brute_force_result, sum);
+  }
+
+  MaxBoundedSubsetSumExact helper;
+  EXPECT_EQ(brute_force_result, helper.MaxSubsetSum(elements, bin_size));
+}
+
+TEST(MaxBoundedSubsetSumExactTest, UsedToFail) {
+  const int64_t capacity = 109;
+  const std::vector<int64_t> elements = {
+      9, 2, 1, 9, 7, 10, 3, 4, 5, 5, 5, 8, 1, 3, 1, 7, 9, 5, 2, 7, 9, 6, 1,
+      5, 2, 2, 2, 3, 1,  2, 3, 5, 9, 8, 4, 1, 5, 3, 5, 4, 6, 7, 9, 1, 1, 3};
+
+  int64_t sum_of_elements = 0;
+  for (const int64_t e : elements) sum_of_elements += e;
+
+  MaxBoundedSubsetSumExact helper;
+  EXPECT_EQ(helper.MaxSubsetSum(elements, capacity), capacity);
+}
+
+TEST(MaxBoundedSubsetSumExactTest, CornerCase) {
+  MaxBoundedSubsetSumExact helper;
+  EXPECT_EQ(helper.MaxSubsetSum({0, 5, 6}, 4), 0);
 }
 
 }  // namespace

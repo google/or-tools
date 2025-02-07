@@ -31,6 +31,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/graph.h"
@@ -1385,6 +1386,58 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   }
 
   return num_added_constraints;
+}
+
+bool BinaryRelationRepository::PropagateLocalBounds(
+    const IntegerTrail& integer_trail, Literal lit,
+    const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
+    absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const {
+  output->clear();
+  if (lit.Index() >= lit_to_relations_.size()) return true;
+
+  auto get_lower_bound = [&](IntegerVariable var) {
+    const auto it = input.find(var);
+    if (it != input.end()) return it->second;
+    return integer_trail.LevelZeroLowerBound(var);
+  };
+  auto get_upper_bound = [&](IntegerVariable var) {
+    return -get_lower_bound(NegationOf(var));
+  };
+  auto update_lower_bound_by_var = [&](IntegerVariable var, IntegerValue lb) {
+    if (lb <= integer_trail.LevelZeroLowerBound(var)) return;
+    const auto [it, inserted] = output->insert({var, lb});
+    if (!inserted) {
+      it->second = std::max(it->second, lb);
+    }
+  };
+  auto update_upper_bound_by_var = [&](IntegerVariable var, IntegerValue ub) {
+    update_lower_bound_by_var(NegationOf(var), -ub);
+  };
+  auto update_var_bounds = [&](const LinearTerm& a, const LinearTerm& b,
+                               IntegerValue lhs, IntegerValue rhs) {
+    if (a.coeff == 0) return;
+
+    // lb(b.y) <= b.y <= ub(b.y) and lhs <= a.x + b.y <= rhs imply
+    //   ceil((lhs - ub(b.y)) / a) <= x <= floor((rhs - lb(b.y)) / a)
+    lhs = lhs - b.coeff * get_upper_bound(b.var);
+    rhs = rhs - b.coeff * get_lower_bound(b.var);
+    update_lower_bound_by_var(a.var, MathUtil::CeilOfRatio(lhs, a.coeff));
+    update_upper_bound_by_var(a.var, MathUtil::FloorOfRatio(rhs, a.coeff));
+  };
+  for (const int relation_index : lit_to_relations_[lit]) {
+    auto r = relations_[relation_index];
+    r.a.MakeCoeffPositive();
+    r.b.MakeCoeffPositive();
+    update_var_bounds(r.a, r.b, r.lhs, r.rhs);
+    update_var_bounds(r.b, r.a, r.lhs, r.rhs);
+  }
+
+  // Check feasibility.
+  // TODO(user): we might do that earlier?
+  for (const auto [var, lb] : *output) {
+    if (lb > integer_trail.LevelZeroUpperBound(var)) return false;
+  }
+  return true;
 }
 
 }  // namespace sat

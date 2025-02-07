@@ -371,16 +371,28 @@ bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
   if (before.coeff != 1) return true;
   if (after.var == kNoIntegerVariable) return true;
   if (before.var == kNoIntegerVariable) return true;
+  if (before.var == after.var) {
+    if (before.constant <= after.constant) {
+      return true;
+    } else {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
+  }
   const IntegerValue offset = before.constant - after.constant;
   if (precedence_relations_->Add(before.var, after.var, offset)) {
     VLOG(2) << "new relation " << TaskDebugString(a)
             << " <= " << TaskDebugString(b);
-
-    // TODO(user): Adding new constraint during propagation might not be the
-    // best idea as it can create some complication.
-    AddWeightedSumLowerOrEqual({}, {before.var, after.var},
-                               {int64_t{1}, int64_t{-1}}, -offset.value(),
-                               model_);
+    if (before.var == NegationOf(after.var)) {
+      AddWeightedSumLowerOrEqual({}, {before.var}, {int64_t{2}},
+                                 -offset.value(), model_);
+    } else {
+      // TODO(user): Adding new constraint during propagation might not be the
+      // best idea as it can create some complication.
+      AddWeightedSumLowerOrEqual({}, {before.var, after.var},
+                                 {int64_t{1}, int64_t{-1}}, -offset.value(),
+                                 model_);
+    }
     if (sat_solver_->ModelIsUnsat()) return false;
   }
   return true;

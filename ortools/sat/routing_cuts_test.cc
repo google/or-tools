@@ -45,6 +45,22 @@ namespace {
 
 using ::testing::ElementsAre;
 
+TEST(MinOutgoingFlowHelperTest, TwoNodesWithoutConstraints) {
+  Model model;
+  const std::vector<int> tails = {0, 1};
+  const std::vector<int> heads = {1, 0};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true)};
+  MinOutgoingFlowHelper helper(2, tails, heads, literals, &model);
+
+  const int min_flow = helper.ComputeMinOutgoingFlow({0, 1});
+  const int tight_min_flow = helper.ComputeTightMinOutgoingFlow({0, 1});
+
+  EXPECT_EQ(min_flow, 1);
+  EXPECT_EQ(tight_min_flow, 1);
+}
+
 TEST(MinOutgoingFlowHelperTest, CapacityConstraints) {
   Model model;
   const int num_nodes = 5;
@@ -84,6 +100,7 @@ TEST(MinOutgoingFlowHelperTest, CapacityConstraints) {
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
   const int min_flow = helper.ComputeMinOutgoingFlow({1, 2, 3, 4});
+  const int tight_min_flow = helper.ComputeTightMinOutgoingFlow({1, 2, 3, 4});
 
   // Due to the capacity constraints, a feasible path can have at most 3 nodes,
   // hence at least two paths are needed. The lower bound of the vehicle load
@@ -96,6 +113,7 @@ TEST(MinOutgoingFlowHelperTest, CapacityConstraints) {
   //        3 | 0 13 24  -
   //        4 | 0 14 24  -
   EXPECT_EQ(min_flow, 2);
+  EXPECT_EQ(tight_min_flow, 2);
 }
 
 TEST(MinOutgoingFlowHelperTest, TimeWindows) {
@@ -136,6 +154,7 @@ TEST(MinOutgoingFlowHelperTest, TimeWindows) {
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
   const int min_flow = helper.ComputeMinOutgoingFlow({1, 2, 3, 4});
+  const int tight_min_flow = helper.ComputeTightMinOutgoingFlow({1, 2, 3, 4});
 
   // Due to the time window constraints, a feasible path can have at most 3
   // nodes, hence at least two paths are needed. The earliest departure time
@@ -148,6 +167,7 @@ TEST(MinOutgoingFlowHelperTest, TimeWindows) {
   //        3 | 18 18 -  -
   //        4 | 28 28 28 -
   EXPECT_EQ(min_flow, 2);
+  EXPECT_EQ(tight_min_flow, 2);
 }
 
 // Test on a simple tree:
@@ -473,7 +493,7 @@ TEST(CreateFlowCutGeneratorTest, BasicExample) {
     *min_incoming_flow = std::max(IntegerValue(0), demand);
     *min_outgoing_flow = std::max(IntegerValue(0), -demand);
   };
-  const CutGenerator generator = CreateFlowCutGenerator(
+  CutGenerator generator = CreateFlowCutGenerator(
       num_nodes, tails, heads, capacities, get_flows, &model);
 
   LinearConstraintManager manager(&model);
@@ -517,7 +537,7 @@ TEST(CreateFlowCutGeneratorTest, WithMinusOneArcs) {
     *min_incoming_flow = std::max(IntegerValue(0), demand);
     *min_outgoing_flow = std::max(IntegerValue(0), -demand);
   };
-  const CutGenerator generator = CreateFlowCutGenerator(
+  CutGenerator generator = CreateFlowCutGenerator(
       num_nodes, tails, heads, capacities, get_flows, &model);
 
   LinearConstraintManager manager(&model);

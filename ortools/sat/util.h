@@ -502,6 +502,54 @@ class FirstFewValues {
   std::unique_ptr<int64_t[]> new_reachable_;
 };
 
+// Yet another variant of FirstFewValues or MaxBoundedSubsetSum.
+class SortedSubsetSums {
+ public:
+  // Computes all the possible subset sums in [0, maximum_sum].
+  // Returns them sorted. All elements must be non-negative.
+  //
+  // If abort_if_maximum_reached is true, we might not return all possible
+  // subset sums as we stop the exploration as soon as a subset sum is equal to
+  // maximum_sum. When this happen, we guarantee that the last element returned
+  // will be maximum_sum though.
+  //
+  // Worst case complexity is in O(2^num_elements) if maximum_sum is large or
+  // O(maximum_sum * num_elements) if that is lower.
+  //
+  // TODO(user): We could optimize even further the case of a small maximum_sum.
+  absl::Span<const int64_t> Compute(absl::Span<const int64_t> elements,
+                                    int64_t maximum_sum,
+                                    bool abort_if_maximum_reached = false);
+
+  // Returns the possible subset sums sorted.
+  absl::Span<const int64_t> SortedSums() const { return sums_; }
+
+ private:
+  std::vector<int64_t> sums_;
+  std::vector<int64_t> new_sums_;
+};
+
+// Similar to MaxBoundedSubsetSum() above but use a different algo.
+class MaxBoundedSubsetSumExact {
+ public:
+  // If we pack the given elements into a bin of size 'bin_size', returns
+  // largest possible sum that can be reached.
+  //
+  // This implementation allow to solve this in O(2^(num_elements/2)) allowing
+  // to go easily to 30 or 40 elements. If bin_size is small, complexity is more
+  // like O(num_element * bin_size).
+  int64_t MaxSubsetSum(absl::Span<const int64_t> elements, int64_t bin_size);
+
+  // Returns an estimate of how many elementary operations
+  // MaxSubsetSum() is going to take.
+  double ComplexityEstimate(int num_elements, int64_t bin_size);
+
+ private:
+  // We use a class just to reuse the memory and not allocate it on each query.
+  SortedSubsetSums sums_a_;
+  SortedSubsetSums sums_b_;
+};
+
 // Use Dynamic programming to solve a single knapsack. This is used by the
 // presolver to simplify variables appearing in a single linear constraint.
 //

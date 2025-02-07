@@ -509,6 +509,17 @@ class BinaryRelationRepository {
   // relations have been added.
   void Build();
 
+  // Assuming level-zero bounds + any (var >= value) in the input map,
+  // fills "output" with a "propagated" set of bounds assuming lit is true (by
+  // using the relations enforced by lit). Note that we will only fill bounds >
+  // level-zero ones in output.
+  //
+  // Returns false if the new bounds are infeasible at level zero.
+  bool PropagateLocalBounds(
+      const IntegerTrail& integer_trail, Literal lit,
+      const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
+      absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const;
+
  private:
   bool is_built_ = false;
   std::vector<Relation> relations_;
