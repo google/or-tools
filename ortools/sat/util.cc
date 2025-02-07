@@ -903,5 +903,110 @@ std::vector<absl::Span<int>> AtMostOneDecomposition(
   return decomposer.decomposition();
 }
 
+absl::Span<const int64_t> SortedSubsetSums::Compute(
+    absl::Span<const int64_t> elements, int64_t maximum_sum,
+    bool abort_if_maximum_reached) {
+  sums_.clear();
+  sums_.push_back(0);
+  for (const int64_t e : elements) {
+    DCHECK_GE(e, 0);
+    if (e == 0 || e > maximum_sum) continue;
+
+    // Optimization: If all the sums in [0, maximum_sum] are already reachable
+    // we can abort early since no new reachable sum wil be discovered.
+    if (sums_.size() == maximum_sum + 1) return sums_;
+
+    // Early abort when asked if we already reached maximum_sum.
+    if (abort_if_maximum_reached && sums_.back() == maximum_sum) return sums_;
+
+    // We merge sort sums_ and sums_ + e into new_sums_.
+    int i = 0;
+    int j = 0;
+    new_sums_.clear();
+    const int size = sums_.size();
+    const int64_t* const data = sums_.data();
+    int64_t last_pushed = -1;
+    while (i < size) {
+      DCHECK_LE(j, i);  // Since we add a positive e.
+      const int64_t a = data[i];
+      const int64_t b = data[j] + e;
+      int64_t to_push;
+      if (a <= b) {
+        ++i;
+        if (a == b) ++j;
+        to_push = a;
+      } else {
+        to_push = b;
+        ++j;
+      }
+      if (to_push == last_pushed) continue;
+      if (to_push > maximum_sum) {
+        j = size;  // so we don't keep pushing below.
+        break;
+      }
+      last_pushed = to_push;
+      new_sums_.push_back(to_push);
+    }
+
+    // We are sure of this since we will break only when to_push > maximum_sum
+    // and we are guarantee to have pushed all sums below "to_push" before, that
+    // includes all the initial sums in sums_.
+    DCHECK_EQ(i, size);
+
+    for (; j < size; ++j) {
+      const int64_t to_push = data[j] + e;
+      if (to_push == last_pushed) continue;
+      if (to_push > maximum_sum) break;
+      last_pushed = to_push;
+      new_sums_.push_back(to_push);
+    }
+    std::swap(sums_, new_sums_);
+  }
+  return sums_;
+}
+
+double MaxBoundedSubsetSumExact::ComplexityEstimate(int num_elements,
+                                                    int64_t bin_size) {
+  double estimate = std::numeric_limits<double>::infinity();
+  if (num_elements < 100) {
+    estimate = 2 * pow(2.0, num_elements / 2);
+  }
+  return std::min(estimate, static_cast<double>(bin_size) *
+                                static_cast<double>(num_elements));
+}
+
+int64_t MaxBoundedSubsetSumExact::MaxSubsetSum(
+    absl::Span<const int64_t> elements, int64_t bin_size) {
+  // Get rid of a few easy to decide corner cases.
+  if (elements.empty()) return 0;
+  if (elements.size() == 1) {
+    if (elements[0] > bin_size) return 0;
+    return elements[0];
+  }
+
+  // We split the elements in two equal-sized parts.
+  const int middle = elements.size() / 2;
+  const auto span_a = sums_a_.Compute(elements.subspan(0, middle), bin_size,
+                                      /*abort_if_maximum_reached=*/true);
+  if (span_a.back() == bin_size) return bin_size;
+
+  const auto span_b = sums_b_.Compute(elements.subspan(middle), bin_size,
+                                      /*abort_if_maximum_reached=*/true);
+  if (span_b.back() == bin_size) return bin_size;
+
+  // For all possible sum a, we compute the largest sum b that fits.
+  // We do that in linear time thanks to the sorted partial sums.
+  int64_t result = 0;
+  CHECK(!span_a.empty());
+  CHECK(!span_b.empty());
+  int j = span_b.size() - 1;
+  for (int i = 0; i < span_a.size(); ++i) {
+    while (j >= 0 && span_a[i] + span_b[j] > bin_size) --j;
+    result = std::max(result, span_a[i] + span_b[j]);
+    if (result == bin_size) return bin_size;
+  }
+  return result;
+}
+
 }  // namespace sat
 }  // namespace operations_research

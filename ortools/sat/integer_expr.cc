@@ -828,6 +828,7 @@ bool LinMinPropagator::Propagate() {
 
 void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
+  bool has_var_also_in_exprs = false;
   for (const LinearExpression& expr : exprs_) {
     for (int i = 0; i < expr.vars.size(); ++i) {
       const IntegerVariable& var = expr.vars[i];
@@ -837,10 +838,14 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
       } else {
         watcher->WatchUpperBound(var, id);
       }
+      has_var_also_in_exprs |= (var == min_var_);
     }
   }
   watcher->WatchUpperBound(min_var_, id);
   watcher->RegisterReversibleInt(id, &rev_unique_candidate_);
+  if (has_var_also_in_exprs) {
+    watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
+  }
 }
 
 ProductPropagator::ProductPropagator(AffineExpression a, AffineExpression b,

@@ -92,6 +92,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(strategy_change_increase_ratio);
   TEST_IS_FINITE(symmetry_detection_deterministic_time_limit);
   TEST_IS_FINITE(variable_activity_decay);
+  TEST_IN_RANGE(routing_cut_subset_size_for_tight_binary_relation_bound, 0, 32);
+  TEST_IS_FINITE(routing_cut_dp_effort);
 
   TEST_IS_FINITE(lns_initial_difficulty);
   TEST_IS_FINITE(lns_initial_deterministic_limit);

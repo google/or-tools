@@ -1266,49 +1266,126 @@ void GenerateShortCompletionTimeCutsWithExactBound(
   top_n_cuts.TransferToManager(manager);
 }
 
+namespace {
+
+// Returns a copy of the event with the start time increased to time.
+// Energy (min and decomposed) are updated accordingly.
+CtEvent TrimEventAfter(IntegerValue time, const CtEvent& old_event) {
+  DCHECK_GT(time, old_event.x_start_min);
+  CtEvent event = old_event;  // Copy.
+  event.lifted = true;
+  // Build the vector of energies as the vector of sizes.
+  event.energy_min = ComputeEnergyMinInWindow(
+      event.x_start_min, event.x_start_max, event.x_end_min, event.x_end_max,
+      event.x_size_min, event.y_size_min, event.decomposed_energy, time,
+      event.x_end_max);
+  event.x_size_min = event.x_size_min + event.x_start_min - time;
+  event.x_start_min = time;
+  if (event.energy_min > event.x_size_min * event.y_size_min) {
+    event.use_energy = true;
+  }
+  DCHECK_GE(event.energy_min, event.x_size_min * event.y_size_min);
+  return event;
+}
+
+// Collects all possible demand values for the event, and adds them to the
+// subset sum of the reachable capacity of the cumulative constraint.
+void AddEventDemandsToCapacitySubsetSum(
+    const CtEvent& event, const VariablesAssignment& assignment,
+    IntegerValue capacity_max, std::vector<int64_t>& tmp_possible_demands,
+    MaxBoundedSubsetSum& dp) {
+  if (dp.CurrentMax() != capacity_max) {
+    if (event.y_size_is_fixed) {
+      dp.Add(event.y_size_min.value());
+    } else if (!event.decomposed_energy.empty()) {
+      tmp_possible_demands.clear();
+      for (const auto& [literal, size, demand] : event.decomposed_energy) {
+        if (assignment.LiteralIsFalse(literal)) continue;
+        if (assignment.LiteralIsTrue(literal)) {
+          tmp_possible_demands.assign({demand.value()});
+          break;
+        }
+        tmp_possible_demands.push_back(demand.value());
+      }
+      dp.AddChoices(tmp_possible_demands);
+    } else {  // event.y_size_min is not fixed, we abort.
+      // TODO(user): We could still add all events in the range if the range
+      // is small.
+      dp.Add(capacity_max.value());
+    }
+  }
+}
+
+// In the no_overlap case, we have:
+//   area = event.x_size_min ^ 2
+// In the simple cumulative case, we split split the task (demand, size) into
+// demand tasks in the no_overlap case.
+//   area = event.y_size_min * event.x_size_min * event.x_size_min
+// In the cumulative case, the minimum energy of a task can be greater than
+// the product of its size and demand (energy_min > side * demand).
+//   We use energy_min * size.
+IntegerValue SmithRuleIndividualContribution(const CtEvent& event) {
+  if (event.use_energy) {
+    return event.energy_min * event.x_size_min;
+  } else {
+    return event.x_size_min * event.x_size_min * event.y_size_min;
+  }
+}
+
+}  // namespace
+
 // We generate the cut from the Smith's rule from:
 // M. Queyranne, Structure of a simple scheduling polyhedron,
 // Mathematical Programming 58 (1993), 263–285
 //
 // The original cut is:
-//    sum(end_min_i * duration_min_i) >=
-//        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
+//    sum(end_min_i * size_min_i) >=
+//        (sum(size_min_i^2) + sum(size_min_i)^2) / 2
 // We strengthen this cuts by noticing that if all tasks starts after S,
 // then replacing end_min_i by (end_min_i - S) is still valid.
 //
 // A second difference is that we lift intervals that starts before a given
 // value, but are forced to cross it.
 //
-// In the case of a cumulative constraint, we compute the cuts like if it
-// was a disjunctive cut with all the tasks being `demand` tasks with
-// duration `size_min`, all these spread out on `reachable_capacity`
-// no_overlap machines, counted from `current_start_min`.
+// In the case of a cumulative constraint with a capacity of C, we compute a
+// valid equation by splitting the task (size_min si, demand_min di) into di
+// tasks of size si and demand 1, that we spread across C no_overlap
+// constraint. When doing so, the lhs of the equation is the same, the first
+// term of the rhs is also unchanged. A lower bound of the second term of the
+// rhs is reached when the split is exact (each no_overlap sees a long demand of
+// sum(si * di / C). Thus the second term is greater or equal to
+//   (sum (si * di) ^ 2) / (2 * C)
 //
-// Thus, for each task (size si, end ei, demand di) and capacity c:
-//  sum (si * di * (ei - current_start_min)) >=
-//      sum(di * si ^ 2)   c * (sum (si * di) / c) ^ 2
-//      ---------------- + ---------------------------
-//             2                         2
+// Sometimes, the min energy of the task i is greater than si * di.
+// Let's introduce ai the minimum energy of the task and rewrite the previous
+// equation. In that new setting, we can rewrite the cumulative transformation
+// by splitting each tasks into at least di tasks of size at least si and demand
+// 1.
 //
-//  sum (si * di * ei) - sum (si * di) * current_start_min >=
-//      sum(di * si ^ 2)   sum (si * di) ^ 2
-//      ---------------- + -----------------
-//             2                  2 * c
+// In that setting, the lhs is rewritten as sum(ai * ei) and the second term of
+// the rhs is rewritten as sum(ai) ^ 2 / (2 * C).
 //
-// By introducing ai the min energy of the task, we reinforce the
-// constraint into:
+// The question is how to rewrite the term `sum(di * si * si). The minimum
+// contribution is when the task has size si and demand ai / si. (note that si
+// is the minimum size of the task, and di its minimum demand). We can
+// replace the small rectangle area term by ai * si.
 //
-//  sum (ai * ei) >=
-//      sum(di * ai)   sum (ai) ^ 2
-//      ------------ + ------------ + sum (ai) * current_start_min
-//            2            2 * c
-
+//  sum (ai * ei) - sum (ai) * current_start_min >=
+//    sum(si * ai) / 2 + (sum (ai) ^ 2) / (2 * C)
+//
+// The separation procedure is implemented using two loops:
+//   - first, we loop on potential start times in increasing order.
+//   - second loop, we add tasks that must contribute after this start time
+//     ordered by increasing end time in the LP relaxation.
 void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
                                           std::vector<CtEvent> events,
                                           IntegerValue capacity_max,
                                           bool skip_low_sizes, Model* model,
                                           LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);
+  const VariablesAssignment& assignment =
+      model->GetOrCreate<Trail>()->Assignment();
+  std::vector<int64_t> tmp_possible_demands;
 
   // Sort by start min to bucketize by start_min.
   std::sort(events.begin(), events.end(),
@@ -1316,6 +1393,8 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
               return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
                      std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
             });
+
+  // First loop: we loop on potential start times.
   for (int start = 0; start + 1 < events.size(); ++start) {
     // Skip to the next start_min value.
     if (start > 0 &&
@@ -1325,8 +1404,6 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
 
     const IntegerValue sequence_start_min = events[start].x_start_min;
     std::vector<CtEvent> residual_tasks(events.begin() + start, events.end());
-    const VariablesAssignment& assignment =
-        model->GetOrCreate<Trail>()->Assignment();
 
     // We look at events that start before sequence_start_min, but are forced
     // to cross this time point. In that case, we replace this event by a
@@ -1336,83 +1413,56 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
     for (int before = 0; before < start; ++before) {
       if (events[before].x_start_min + events[before].x_size_min >
           sequence_start_min) {
-        // Build the vector of energies as the vector of sizes.
-        CtEvent event = events[before];  // Copy.
-        event.lifted = true;
-        event.energy_min = ComputeEnergyMinInWindow(
-            event.x_start_min, event.x_start_max, event.x_end_min,
-            event.x_end_max, event.x_size_min, event.y_size_min,
-            event.decomposed_energy, sequence_start_min, event.x_end_max);
-        event.x_size_min =
-            event.x_size_min + event.x_start_min - sequence_start_min;
-        event.x_start_min = sequence_start_min;
-        if (event.energy_min > event.x_size_min * event.y_size_min) {
-          event.use_energy = true;
-        }
-        DCHECK_GE(event.energy_min, event.x_size_min * event.y_size_min);
+        CtEvent event = TrimEventAfter(sequence_start_min, events[before]);
         if (event.energy_min <= 0) continue;
-        residual_tasks.push_back(event);
+        residual_tasks.push_back(std::move(event));
       }
     }
-
-    std::sort(residual_tasks.begin(), residual_tasks.end(),
-              [](const CtEvent& e1, const CtEvent& e2) {
-                return e1.x_lp_end < e2.x_lp_end;
-              });
 
     // Best cut so far for this loop.
     int best_end = -1;
     double best_efficacy = 0.01;
     IntegerValue best_min_contrib = 0;
     IntegerValue best_capacity = 0;
-    bool loop_is_valid = true;
 
-    // Area of the large rectangle.
+    // Used in the first term of the rhs of the equation.
+    IntegerValue sum_event_contributions = 0;
+    // Used in the second term of the rhs of the equation.
     IntegerValue sum_energy = 0;
     // For normalization.
     IntegerValue sum_square_energy = 0;
-    // Area of the small rectangles.
-    IntegerValue weighted_sum_square_duration = 0;
 
     double lp_contrib = 0.0;
     IntegerValue current_start_min(kMaxIntegerValue);
 
     MaxBoundedSubsetSum dp(capacity_max.value());
-    std::vector<int64_t> possible_demands;
+
+    // We will add tasks one by one, sorted by end time, and evaluate the
+    // potential cut at each step.
+    std::sort(residual_tasks.begin(), residual_tasks.end(),
+              [](const CtEvent& e1, const CtEvent& e2) {
+                return e1.x_lp_end < e2.x_lp_end;
+              });
+
+    // Second loop: we add tasks one by one.
     for (int i = 0; i < residual_tasks.size(); ++i) {
       const CtEvent& event = residual_tasks[i];
       DCHECK_GE(event.x_start_min, sequence_start_min);
-      const IntegerValue tmp_contrib =
-          CapProdI(event.x_size_min, event.energy_min);
 
-      // Make sure we do not overflow, and we do not generate bogus cuts if we
-      // do.
-      loop_is_valid = false;
+      // Make sure we do not overflow.
       if (!AddTo(event.energy_min, &sum_energy)) break;
-      if (!AddTo(tmp_contrib, &weighted_sum_square_duration)) break;
+      if (!AddTo(SmithRuleIndividualContribution(event),
+                 &sum_event_contributions)) {
+        break;
+      }
       if (!AddSquareTo(event.energy_min, &sum_square_energy)) break;
 
       lp_contrib += event.x_lp_end * ToDouble(event.energy_min);
       current_start_min = std::min(current_start_min, event.x_start_min);
 
-      if (dp.CurrentMax() != capacity_max) {
-        if (event.y_size_is_fixed) {
-          dp.Add(event.y_size_min.value());
-        } else if (!event.decomposed_energy.empty()) {
-          possible_demands.clear();
-          for (const auto& [literal, size, demand] : event.decomposed_energy) {
-            if (assignment.LiteralIsFalse(literal)) continue;
-            if (assignment.LiteralIsTrue(literal)) {
-              possible_demands.assign({demand.value()});
-              break;
-            }
-            possible_demands.push_back(demand.value());
-          }
-          dp.AddChoices(possible_demands);
-        } else {
-          dp.Add(capacity_max.value());
-        }
-      }
+      // Maintain the reachable capacity with a bounded complexity subset sum.
+      AddEventDemandsToCapacitySubsetSum(event, assignment, capacity_max,
+                                         tmp_possible_demands, dp);
 
       // This is competing with the brute force approach. Skip cases covered
       // by the other code.
@@ -1420,6 +1470,7 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
 
       const IntegerValue reachable_capacity = dp.CurrentMax();
 
+      // Do we have a violated cut ?
       const IntegerValue large_rectangle_contrib =
           CapProdI(sum_energy, sum_energy);
       if (AtMinOrMaxInt64I(large_rectangle_contrib)) break;
@@ -1427,14 +1478,12 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
           CeilRatio(large_rectangle_contrib, reachable_capacity);
 
       IntegerValue min_contrib =
-          CapAddI(weighted_sum_square_duration, mean_large_rectangle_contrib);
+          CapAddI(sum_event_contributions, mean_large_rectangle_contrib);
       if (AtMinOrMaxInt64I(min_contrib)) break;
-
-      // The above is the double of the area.
       min_contrib = CeilRatio(min_contrib, 2);
 
       // shift contribution by current_start_min.
-      if (!AddTo(CapProdI(sum_energy, current_start_min), &min_contrib)) break;
+      if (!AddProductTo(sum_energy, current_start_min, &min_contrib)) break;
 
       // The efficacy of the cut is the normalized violation of the above
       // equation. We will normalize by the sqrt of the sum of squared energies.
@@ -1453,13 +1502,10 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
         best_min_contrib = min_contrib;
         best_capacity = reachable_capacity;
       }
-
-      // We got there, the loop is valid.
-      loop_is_valid = true;
     }
 
-    if (!loop_is_valid) continue;
-
+    // We have inserted all tasks. Have we found a violated cut ?
+    // If so, add the most violated one to the top_n cut container.
     if (best_end != -1) {
       LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
       bool is_lifted = false;

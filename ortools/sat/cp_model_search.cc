@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -741,20 +742,46 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
   // Base parameters for LNS worker.
   {
-    SatParameters new_params = base_params;
-    new_params.set_stop_after_first_solution(false);
-    new_params.set_cp_model_presolve(true);
+    SatParameters lns_params = base_params;
+    lns_params.set_stop_after_first_solution(false);
+    lns_params.set_cp_model_presolve(true);
 
     // We disable costly presolve/inprocessing.
-    new_params.set_use_sat_inprocessing(false);
-    new_params.set_cp_model_probing_level(0);
-    new_params.set_symmetry_level(0);
-    new_params.set_find_big_linear_overlap(false);
+    lns_params.set_use_sat_inprocessing(false);
+    lns_params.set_cp_model_probing_level(0);
+    lns_params.set_symmetry_level(0);
+    lns_params.set_find_big_linear_overlap(false);
 
-    new_params.set_log_search_progress(false);
-    new_params.set_debug_crash_on_bad_hint(false);  // Can happen in lns.
-    new_params.set_solution_pool_size(1);  // Keep the best solution found.
-    strategies["lns"] = new_params;
+    lns_params.set_log_search_progress(false);
+    lns_params.set_debug_crash_on_bad_hint(false);  // Can happen in lns.
+    lns_params.set_solution_pool_size(1);  // Keep the best solution found.
+    strategies["lns"] = lns_params;
+
+    // Note that we only do this for the derived parameters. The strategy "lns"
+    // will be handled along with the other ones.
+    auto it = absl::c_find_if(
+        base_params.subsolver_params(),
+        [](const SatParameters& params) { return params.name() == "lns"; });
+    if (it != base_params.subsolver_params().end()) {
+      lns_params.MergeFrom(*it);
+    }
+
+    SatParameters lns_params_base = lns_params;
+    lns_params_base.set_linearization_level(0);
+    lns_params_base.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    strategies["lns_base"] = lns_params_base;
+
+    SatParameters lns_params_stalling = lns_params;
+    lns_params_stalling.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
+    lns_params_stalling.set_search_random_variable_pool_size(5);
+    strategies["lns_stalling"] = lns_params_stalling;
+
+    // For routing, the LP relaxation seems pretty important, so we prefer an
+    // high linearization level to solve LNS subproblems.
+    SatParameters lns_params_routing = lns_params;
+    lns_params_routing.set_linearization_level(2);
+    lns_params_routing.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    strategies["lns_routing"] = lns_params_routing;
   }
 
   // Add user defined ones.

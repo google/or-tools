@@ -25,6 +25,7 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -46,6 +47,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
@@ -1293,14 +1295,14 @@ class FeasibilityPumpSolver : public SubSolver {
 class LnsSolver : public SubSolver {
  public:
   LnsSolver(std::unique_ptr<NeighborhoodGenerator> generator,
-            const SatParameters& lns_parameters,
-            NeighborhoodGeneratorHelper* helper, SharedClasses* shared,
-            int preferred_linearization_level = 0)
+            const SatParameters& lns_parameters_base,
+            const SatParameters& lns_parameters_stalling,
+            NeighborhoodGeneratorHelper* helper, SharedClasses* shared)
       : SubSolver(generator->name(), INCOMPLETE),
-        preferred_linearization_level_(preferred_linearization_level),
         generator_(std::move(generator)),
         helper_(helper),
-        lns_parameters_(lns_parameters),
+        lns_parameters_base_(lns_parameters_base),
+        lns_parameters_stalling_(lns_parameters_stalling),
         shared_(shared) {}
 
   ~LnsSolver() override {
@@ -1328,7 +1330,7 @@ class LnsSolver : public SubSolver {
       // change the LNS behavior.
       const int32_t low = static_cast<int32_t>(task_id);
       const int32_t high = static_cast<int32_t>(task_id >> 32);
-      std::seed_seq seed{low, high, lns_parameters_.random_seed()};
+      std::seed_seq seed{low, high, lns_parameters_base_.random_seed()};
       random_engine_t random(seed);
 
       NeighborhoodGenerator::SolveData data;
@@ -1372,26 +1374,22 @@ class LnsSolver : public SubSolver {
 
       if (!neighborhood.is_generated) return;
 
-      SatParameters local_params(lns_parameters_);
-      local_params.set_max_deterministic_time(data.deterministic_limit);
+      SatParameters local_params;
 
-      // TODO(user): Tune these.
       // TODO(user): This could be a good candidate for bandits.
       const int64_t stall = generator_->num_consecutive_non_improving_calls();
-      std::string search_info;
       const int search_index = stall < 10 ? 0 : task_id % 2;
       switch (search_index) {
         case 0:
-          local_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-          local_params.set_linearization_level(preferred_linearization_level_);
-          search_info = absl::StrCat("auto_l", preferred_linearization_level_);
+          local_params = lns_parameters_base_;
           break;
         default:
-          local_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
-          local_params.set_search_random_variable_pool_size(5);
-          search_info = "folio_rnd";
+          local_params = lns_parameters_stalling_;
           break;
       }
+      const std::string_view search_info =
+          absl::StripPrefix(std::string_view(local_params.name()), "lns_");
+      local_params.set_max_deterministic_time(data.deterministic_limit);
 
       std::string source_info =
           neighborhood.source_info.empty() ? name() : neighborhood.source_info;
@@ -1486,7 +1484,7 @@ class LnsSolver : public SubSolver {
         }
       }
       bool hint_feasible_before_presolve = false;
-      if (lns_parameters_.debug_crash_if_presolve_breaks_hint()) {
+      if (lns_parameters_base_.debug_crash_if_presolve_breaks_hint()) {
         hint_feasible_before_presolve =
             SolutionHintIsCompleteAndFeasible(lns_fragment, /*logger=*/nullptr);
       }
@@ -1525,7 +1523,7 @@ class LnsSolver : public SubSolver {
       context.reset(nullptr);
       neighborhood.delta.Clear();
 
-      if (lns_parameters_.debug_crash_if_presolve_breaks_hint() &&
+      if (lns_parameters_base_.debug_crash_if_presolve_breaks_hint() &&
           hint_feasible_before_presolve &&
           !SolutionHintIsCompleteAndFeasible(lns_fragment,
                                              /*logger=*/nullptr)) {
@@ -1720,10 +1718,10 @@ class LnsSolver : public SubSolver {
   }
 
  private:
-  int preferred_linearization_level_ = 0;
   std::unique_ptr<NeighborhoodGenerator> generator_;
   NeighborhoodGeneratorHelper* helper_;
-  const SatParameters lns_parameters_;
+  const SatParameters lns_parameters_base_;
+  const SatParameters lns_parameters_stalling_;
   SharedClasses* shared_;
   // This is a optimization to allocate the arena for the LNS fragment already
   // at roughly the right size. We will update it with the last size of the
@@ -1780,7 +1778,9 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }));
 
   const auto name_to_params = GetNamedParameters(params);
-  const SatParameters& lns_params = name_to_params.at("lns");
+  const SatParameters& lns_params_base = name_to_params.at("lns_base");
+  const SatParameters& lns_params_stalling = name_to_params.at("lns_stalling");
+  const SatParameters& lns_params_routing = name_to_params.at("lns_routing");
 
   // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
   // Synchronize() is called before any LNS neighborhood solvers.
@@ -1854,7 +1854,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
             helper, shared->response, shared->lp_solutions.get(),
             shared->incomplete_solutions.get(), name_filter.LastName()),
-        lns_params, helper, shared));
+        lns_params_base, lns_params_stalling, helper, shared));
   }
 
   // Add incomplete subsolvers that require an objective.
@@ -1870,37 +1870,37 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RelaxRandomVariablesGenerator>(
               helper, name_filter.LastName()),
-          lns_params, helper, shared));
+          lns_params_base, lns_params_stalling, helper, shared));
     }
     if (name_filter.Keep("rnd_cst_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RelaxRandomConstraintsGenerator>(
               helper, name_filter.LastName()),
-          lns_params, helper, shared));
+          lns_params_base, lns_params_stalling, helper, shared));
     }
     if (name_filter.Keep("graph_var_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<VariableGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
-          lns_params, helper, shared));
+          lns_params_base, lns_params_stalling, helper, shared));
     }
     if (name_filter.Keep("graph_arc_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<ArcGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
-          lns_params, helper, shared));
+          lns_params_base, lns_params_stalling, helper, shared));
     }
     if (name_filter.Keep("graph_cst_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<ConstraintGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
-          lns_params, helper, shared));
+          lns_params_base, lns_params_stalling, helper, shared));
     }
     if (name_filter.Keep("graph_dec_lns")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<DecompositionGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
-          lns_params, helper, shared));
+          lns_params_base, lns_params_stalling, helper, shared));
     }
     if (params.use_lb_relax_lns() &&
         params.num_workers() >= params.lb_relax_num_workers_threshold() &&
@@ -1908,7 +1908,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
               helper, name_filter.LastName(), shared->time_limit, shared),
-          lns_params, helper, shared));
+          lns_params_base, lns_params_stalling, helper, shared));
     }
 
     const bool has_no_overlap_or_cumulative =
@@ -1921,13 +1921,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
       if (name_filter.Keep("scheduling_time_window_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
       const std::vector<std::vector<int>> intervals_in_constraints =
           helper->GetUniqueIntervalSets();
@@ -1936,7 +1936,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
     }
 
@@ -1948,31 +1948,31 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
       if (name_filter.Keep("packing_square_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RectanglesPackingRelaxOneNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
       if (name_filter.Keep("packing_swap_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RectanglesPackingRelaxTwoNeighborhoodsGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
       if (name_filter.Keep("packing_precedences_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
       if (name_filter.Keep("packing_slice_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SlicePackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
     }
 
@@ -1982,13 +1982,10 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared));
+            lns_params_base, lns_params_stalling, helper, shared));
       }
     }
 
-    // For routing, the LP relaxation seems pretty important, so we prefer an
-    // high linearization level to solve LNS subproblems.
-    const int routing_lin_level = 2;
     const int num_circuit = static_cast<int>(
         helper->TypeToConstraints(ConstraintProto::kCircuit).size());
     const int num_routes = static_cast<int>(
@@ -1998,13 +1995,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingRandomNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared, routing_lin_level));
+            lns_params_routing, lns_params_stalling, helper, shared));
       }
       if (name_filter.Keep("routing_path_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared, routing_lin_level));
+            lns_params_routing, lns_params_stalling, helper, shared));
       }
     }
     if (num_routes > 0 || num_circuit > 1) {
@@ -2012,7 +2009,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingFullPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
-            lns_params, helper, shared, routing_lin_level));
+            lns_params_routing, lns_params_stalling, helper, shared));
       }
     }
   }
