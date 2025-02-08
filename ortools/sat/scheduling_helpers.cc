@@ -720,7 +720,6 @@ SchedulingDemandHelper::SchedulingDemandHelper(
       demands_(demands.begin(), demands.end()),
       helper_(helper) {
   const int num_tasks = helper->NumTasks();
-  linearized_energies_.resize(num_tasks);
   decomposed_energies_.resize(num_tasks);
   cached_energies_min_.resize(num_tasks, kMinIntegerValue);
   cached_energies_max_.resize(num_tasks, kMaxIntegerValue);
@@ -747,11 +746,6 @@ IntegerValue SchedulingDemandHelper::SimpleEnergyMin(int t) const {
   return CapProdI(DemandMin(t), helper_->SizeMin(t));
 }
 
-IntegerValue SchedulingDemandHelper::LinearEnergyMin(int t) const {
-  if (!linearized_energies_[t].has_value()) return kMinIntegerValue;
-  return linearized_energies_[t]->Min(*integer_trail_);
-}
-
 IntegerValue SchedulingDemandHelper::DecomposedEnergyMin(int t) const {
   if (decomposed_energies_[t].empty()) return kMinIntegerValue;
   IntegerValue result = kMaxIntegerValue;
@@ -769,11 +763,6 @@ IntegerValue SchedulingDemandHelper::DecomposedEnergyMin(int t) const {
 IntegerValue SchedulingDemandHelper::SimpleEnergyMax(int t) const {
   if (demands_.empty()) return kMaxIntegerValue;
   return CapProdI(DemandMax(t), helper_->SizeMax(t));
-}
-
-IntegerValue SchedulingDemandHelper::LinearEnergyMax(int t) const {
-  if (!linearized_energies_[t].has_value()) return kMaxIntegerValue;
-  return linearized_energies_[t]->Max(*integer_trail_);
 }
 
 IntegerValue SchedulingDemandHelper::DecomposedEnergyMax(int t) const {
@@ -806,14 +795,14 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
       decomposed_energies_[t].resize(new_size);
     }
 
-    cached_energies_min_[t] = std::max(
-        {SimpleEnergyMin(t), LinearEnergyMin(t), DecomposedEnergyMin(t)});
+    cached_energies_min_[t] =
+        std::max(SimpleEnergyMin(t), DecomposedEnergyMin(t));
     if (cached_energies_min_[t] <= kMinIntegerValue) return false;
     energy_is_quadratic_[t] =
         decomposed_energies_[t].empty() && !demands_.empty() &&
         !integer_trail_->IsFixed(demands_[t]) && !helper_->SizeIsFixed(t);
-    cached_energies_max_[t] = std::min(
-        {SimpleEnergyMax(t), LinearEnergyMax(t), DecomposedEnergyMax(t)});
+    cached_energies_max_[t] =
+        std::min(SimpleEnergyMax(t), DecomposedEnergyMax(t));
     if (cached_energies_max_[t] >= kMaxIntegerValue) return false;
   }
 
@@ -848,14 +837,6 @@ bool SchedulingDemandHelper::DecreaseEnergyMax(int t, IntegerValue value) {
         if (assignment_.LiteralIsFalse(lit)) continue;
         if (!helper_->PushLiteral(lit.Negated())) return false;
       }
-    }
-  } else if (linearized_energies_[t].has_value() &&
-             linearized_energies_[t]->vars.size() == 1) {
-    const LinearExpression& e = linearized_energies_[t].value();
-    const AffineExpression affine_energy(e.vars[0], e.coeffs[0], e.offset);
-    const IntegerLiteral deduction = affine_energy.LowerOrEqual(value);
-    if (!helper_->PushIntegerLiteralIfTaskPresent(t, deduction)) {
-      return false;
     }
   } else {
     // TODO(user): Propagate if possible.
@@ -900,12 +881,6 @@ void SchedulingDemandHelper::AddEnergyMinReason(int t) {
   } else if (SimpleEnergyMin(t) >= value) {
     AddDemandMinReason(t);
     helper_->AddSizeMinReason(t);
-  } else {
-    DCHECK_GE(LinearEnergyMin(t), value);
-    for (const IntegerVariable var : linearized_energies_[t]->vars) {
-      helper_->MutableIntegerReason()->push_back(
-          integer_trail_->LowerBoundAsLiteral(var));
-    }
   }
 }
 
@@ -925,21 +900,6 @@ bool SchedulingDemandHelper::AddLinearizedDemand(
     return builder->AddLiteralTerm(helper_->PresenceLiteral(t), DemandMin(t));
   }
   return true;
-}
-
-void SchedulingDemandHelper::OverrideLinearizedEnergies(
-    absl::Span<const LinearExpression> energies) {
-  const int num_tasks = energies.size();
-  DCHECK_EQ(num_tasks, helper_->NumTasks());
-  linearized_energies_.resize(num_tasks);
-  for (int t = 0; t < num_tasks; ++t) {
-    linearized_energies_[t] = energies[t];
-    if (DEBUG_MODE) {
-      for (const IntegerValue coeff : linearized_energies_[t]->coeffs) {
-        DCHECK_GE(coeff, 0);
-      }
-    }
-  }
 }
 
 std::vector<LiteralValueValue> SchedulingDemandHelper::FilteredDecomposedEnergy(

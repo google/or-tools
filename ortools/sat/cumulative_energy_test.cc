@@ -82,13 +82,8 @@ std::string InstanceDebugString(const EnergyInstance& instance) {
 bool SolveUsingConstraint(const EnergyInstance& instance) {
   Model model;
   std::vector<IntervalVariable> intervals;
-  std::vector<LinearExpression> energies;
+  std::vector<std::vector<LiteralValueValue>> decomposed_energies;
   for (const auto& task : instance.tasks) {
-    LinearExpression energy;
-    energy.vars.push_back(
-        model.Add(NewIntegerVariable(task.energy_min, task.energy_max)));
-    energy.coeffs.push_back(IntegerValue(1));
-    energies.push_back(energy);
     if (task.is_optional) {
       const Literal is_present = Literal(model.Add(NewBooleanVariable()), true);
       const IntegerVariable start =
@@ -103,6 +98,15 @@ bool SolveUsingConstraint(const EnergyInstance& instance) {
       intervals.push_back(model.Add(NewIntervalWithVariableSize(
           task.start_min, task.end_max, task.duration_min, task.duration_max)));
     }
+    std::vector<Literal> energy_literals;
+    std::vector<LiteralValueValue> energy_literals_values_values;
+    for (int e = task.energy_min; e <= task.energy_max; ++e) {
+      const Literal lit = Literal(model.Add(NewBooleanVariable()), true);
+      energy_literals.push_back(lit);
+      energy_literals_values_values.push_back({lit, e, 1});
+    }
+    model.Add(ExactlyOneConstraint(energy_literals));
+    decomposed_energies.push_back(energy_literals_values_values);
   }
 
   const AffineExpression capacity(
@@ -112,7 +116,7 @@ bool SolveUsingConstraint(const EnergyInstance& instance) {
   SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({}, helper, &model);
-  demands_helper->OverrideLinearizedEnergies(energies);
+  demands_helper->OverrideDecomposedEnergies(decomposed_energies);
   model.TakeOwnership(demands_helper);
 
   AddCumulativeOverloadChecker(capacity, helper, demands_helper, &model);

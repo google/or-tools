@@ -549,7 +549,6 @@ class SchedulingDemandHelper {
   }
 
   // Visible for testing.
-  void OverrideLinearizedEnergies(absl::Span<const LinearExpression> energies);
   void OverrideDecomposedEnergies(
       const std::vector<std::vector<LiteralValueValue>>& energies);
   // Returns the decomposed energy terms compatible with the current literal
@@ -565,9 +564,7 @@ class SchedulingDemandHelper {
 
  private:
   IntegerValue SimpleEnergyMin(int t) const;
-  IntegerValue LinearEnergyMin(int t) const;
   IntegerValue SimpleEnergyMax(int t) const;
-  IntegerValue LinearEnergyMax(int t) const;
   IntegerValue DecomposedEnergyMin(int t) const;
   IntegerValue DecomposedEnergyMax(int t) const;
 
@@ -586,10 +583,6 @@ class SchedulingDemandHelper {
   // A representation of the energies as a set of alternative.
   // If subvector is empty, we don't have this representation.
   std::vector<std::vector<LiteralValueValue>> decomposed_energies_;
-
-  // A representation of the energies as a set of linear expression.
-  // If the optional is not set, we don't have this representation.
-  std::vector<std::optional<LinearExpression>> linearized_energies_;
 };
 
 // =============================================================================
