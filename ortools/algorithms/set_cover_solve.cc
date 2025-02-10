@@ -142,8 +142,7 @@ FileFormat ParseFileFormat(const std::string& format_name) {
   }
 }
 
-SetCoverModel ReadModel(const std::string& input_file,
-                        FileFormat input_format) {
+SetCoverModel ReadModel(absl::string_view input_file, FileFormat input_format) {
   switch (input_format) {
     case FileFormat::ORLIB_SCP:
       return ReadOrlibScp(input_file);
