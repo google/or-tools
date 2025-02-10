@@ -1262,7 +1262,7 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
   // set it for completeness.
   presolved_qp->objective_scaling_factor = glop_lp.objective_scaling_factor();
   sharded_qp_ = ShardedQuadraticProgram(std::move(*presolved_qp), num_threads_,
-                                        num_shards_);
+                                        num_shards_, params.scheduler_type());
   // A status of `INIT` means the preprocessor created a (usually) smaller
   // problem that needs solving. Other statuses mean the preprocessor solved
   // the problem completely.

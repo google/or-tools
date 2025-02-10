@@ -38,6 +38,70 @@ bool PresolveFixed2dRectangles(
     absl::Span<const RectangleInRange> non_fixed_boxes,
     std::vector<Rectangle>* fixed_boxes);
 
+// Detect whether the fixed boxes of a no_overlap_2d constraint are splitting
+// the space into separate components and thus can be replaced by one
+// no_overlap_2d constraint per component. If this is not possible, return an
+// empty result. Otherwise, return a struct containing what boxes (fixed and
+// non-fixed) are needed in each new constraint.
+//
+// Note that for this to be correct, we need to introduce new boxes to "fill"
+// the space occupied by the other components. For example, if we have a
+// no_overlap_2d constraint with the fixed boxes and the bounding box of the
+// non-fixed boxes as follows:
+// +---------------------+
+// |                     |
+// |                     |
+// |                     |
+// |                     |
+// |                     |
+// |   ++++++++++++++++++|
+// |   ++++++++++++++++++|
+// |   ++++++++++++++++++|
+// |*****                |
+// |*****                |
+// |*****                |
+// |                     |
+// |                     |
+// |                     |
+// +---------------------+
+// and we are building the new no_overlap_2d constraint for the space below, we
+// would need to add two new fixed boxes (the '.' and the 'o' one):
+// +---------------------+
+// |ooooooooooooooooooooo|
+// |ooooooooooooooooooooo|
+// |ooooooooooooooooooooo|
+// |ooooooooooooooooooooo|
+// |ooooooooooooooooooooo|
+// |...++++++++++++++++++|
+// |...++++++++++++++++++|
+// |...++++++++++++++++++|
+// |*****                |
+// |*****                |
+// |*****                |
+// |                     |
+// |                     |
+// |                     |
+// +---------------------+
+// This ensures that the new no_overlap_2d constraint will impose the box to be
+// in that component as it should. Note that in the example above, the number of
+// boxes won't really increase after a presolve pass, since the presolve for
+// fixed boxes will simplify it to two fixed boxes again.
+struct Disjoint2dPackingResult {
+  struct Bin {
+    // Fixed boxes that the non-fixed boxes in this bin cannot overlap with.
+    std::vector<Rectangle> fixed_boxes;
+    // Non-fixed boxes on the original problem to copy to this new constraint.
+    std::vector<int> non_fixed_box_indexes;
+    // Area that is covered by the connected component bin represents encoded as
+    // a non-overlapping set of rectangles.
+    std::vector<Rectangle> bin_area;
+  };
+  std::vector<Bin> bins;
+};
+Disjoint2dPackingResult DetectDisjointRegionIn2dPacking(
+    absl::Span<const RectangleInRange> non_fixed_boxes,
+    absl::Span<const Rectangle> fixed_boxes, int max_num_components);
+
 // Given two vectors of non-overlapping rectangles defining two regions of the
 // space: one mandatory region that must be occupied and one optional region
 // that can be occupied, try to build a vector of as few non-overlapping

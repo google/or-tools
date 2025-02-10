@@ -11,20 +11,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "init",
-    srcs = ["init.cc"],
-    hdrs = ["init.h"],
+    name = "cp_solver_c",
+    srcs = ["cp_solver_c.cc"],
+    hdrs = ["cp_solver_c.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/gurobi:environment",
+        "//ortools/base:memutil",
+        "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:cp_model_solver_helpers",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:globals",
-        "@com_google_absl//absl/log:initialize",
+        "//ortools/sat:model",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/log:check",
     ],
 )

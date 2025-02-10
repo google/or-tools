@@ -6005,6 +6005,141 @@ bool CpModelPresolver::PresolveNoOverlap2DFramed(
   return RemoveConstraint(ct);
 }
 
+bool CpModelPresolver::ExpandEncoded2DBinPacking(
+    absl::Span<const Rectangle> fixed_boxes,
+    absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct) {
+  const Disjoint2dPackingResult disjoint_packing_presolve_result =
+      DetectDisjointRegionIn2dPacking(
+          non_fixed_boxes, fixed_boxes,
+          context_->params()
+              .maximum_regions_to_split_in_disconnected_no_overlap_2d());
+  if (disjoint_packing_presolve_result.bins.empty()) return false;
+
+  const NoOverlap2DConstraintProto& proto = ct->no_overlap_2d();
+  std::vector<SolutionCrush::BoxInAreaLiteral> box_in_area_lits;
+  absl::flat_hash_map<int, std::vector<int>> box_to_presence_literal;
+  // For the boxes that are optional, add a presence literal for each box in a
+  // fake "absent" bin.
+  for (int idx = 0; idx < non_fixed_boxes.size(); ++idx) {
+    const int b = non_fixed_boxes[idx].box_index;
+    const ConstraintProto& x_interval_ct =
+        context_->working_model->constraints(proto.x_intervals(b));
+    const ConstraintProto& y_interval_ct =
+        context_->working_model->constraints(proto.y_intervals(b));
+    if (x_interval_ct.enforcement_literal().empty() &&
+        y_interval_ct.enforcement_literal().empty()) {
+      // Mandatory box, cannot be in the "absent" bin -1.
+      continue;
+    }
+    int enforcement_literal = x_interval_ct.enforcement_literal().empty()
+                                  ? y_interval_ct.enforcement_literal(0)
+                                  : x_interval_ct.enforcement_literal(0);
+    int potentially_other_enforcement_literal =
+        y_interval_ct.enforcement_literal().empty()
+            ? x_interval_ct.enforcement_literal(0)
+            : y_interval_ct.enforcement_literal(0);
+
+    if (enforcement_literal == potentially_other_enforcement_literal) {
+      // The box is in the "absent" bin -1.
+      box_to_presence_literal[idx].push_back(NegatedRef(enforcement_literal));
+    } else {
+      const int interval_is_absent_literal =
+          context_->NewBoolVarWithConjunction(
+              {enforcement_literal, potentially_other_enforcement_literal});
+
+      BoolArgumentProto* bool_or =
+          context_->working_model->add_constraints()->mutable_bool_or();
+      bool_or->add_literals(NegatedRef(interval_is_absent_literal));
+      for (const int lit :
+           {enforcement_literal, potentially_other_enforcement_literal}) {
+        context_->AddImplication(NegatedRef(interval_is_absent_literal), lit);
+        bool_or->add_literals(NegatedRef(lit));
+      }
+      box_to_presence_literal[idx].push_back(interval_is_absent_literal);
+    }
+  }
+  // Now create the literals "item i in bin j".
+  for (int bin_index = 0;
+       bin_index < disjoint_packing_presolve_result.bins.size(); ++bin_index) {
+    const Disjoint2dPackingResult::Bin& bin =
+        disjoint_packing_presolve_result.bins[bin_index];
+    NoOverlap2DConstraintProto new_no_overlap_2d;
+    for (const Rectangle& ret : bin.fixed_boxes) {
+      new_no_overlap_2d.add_x_intervals(
+          context_->working_model->constraints_size());
+      new_no_overlap_2d.add_y_intervals(
+          context_->working_model->constraints_size() + 1);
+      IntervalConstraintProto* new_interval =
+          context_->working_model->add_constraints()->mutable_interval();
+      new_interval->mutable_start()->set_offset(ret.x_min.value());
+      new_interval->mutable_size()->set_offset(ret.SizeX().value());
+      new_interval->mutable_end()->set_offset(ret.x_max.value());
+
+      new_interval =
+          context_->working_model->add_constraints()->mutable_interval();
+      new_interval->mutable_start()->set_offset(ret.y_min.value());
+      new_interval->mutable_size()->set_offset(ret.SizeY().value());
+      new_interval->mutable_end()->set_offset(ret.y_max.value());
+    }
+    for (const int idx : bin.non_fixed_box_indexes) {
+      int presence_in_box_lit = context_->NewBoolVar("binpacking");
+      box_to_presence_literal[idx].push_back(presence_in_box_lit);
+      const int b = non_fixed_boxes[idx].box_index;
+      box_in_area_lits.push_back({.box_index = b,
+                                  .area_index = bin_index,
+                                  .literal = presence_in_box_lit});
+      const ConstraintProto& x_interval_ct =
+          context_->working_model->constraints(proto.x_intervals(b));
+      const ConstraintProto& y_interval_ct =
+          context_->working_model->constraints(proto.y_intervals(b));
+      ConstraintProto* new_interval_x =
+          context_->working_model->add_constraints();
+      *new_interval_x = x_interval_ct;
+      new_interval_x->clear_enforcement_literal();
+      new_interval_x->add_enforcement_literal(presence_in_box_lit);
+      ConstraintProto* new_interval_y =
+          context_->working_model->add_constraints();
+      *new_interval_y = y_interval_ct;
+      new_interval_y->clear_enforcement_literal();
+      new_interval_y->add_enforcement_literal(presence_in_box_lit);
+      new_no_overlap_2d.add_x_intervals(
+          context_->working_model->constraints_size() - 2);
+      new_no_overlap_2d.add_y_intervals(
+          context_->working_model->constraints_size() - 1);
+    }
+    context_->working_model->add_constraints()->mutable_no_overlap_2d()->Swap(
+        &new_no_overlap_2d);
+  }
+
+  // Each box is in exactly one bin (including the fake "absent" bin).
+  for (int box_index = 0; box_index < non_fixed_boxes.size(); ++box_index) {
+    const std::vector<int>& presence_literals =
+        box_to_presence_literal[box_index];
+    if (presence_literals.empty()) {
+      return context_->NotifyThatModelIsUnsat(
+          "A mandatory box cannot be placed in any position");
+    }
+    auto* exactly_one =
+        context_->working_model->add_constraints()->mutable_exactly_one();
+    for (const int presence_literal : presence_literals) {
+      exactly_one->add_literals(presence_literal);
+    }
+  }
+  CompactVectorVector<int, Rectangle> areas;
+  for (int bin_index = 0;
+       bin_index < disjoint_packing_presolve_result.bins.size(); ++bin_index) {
+    areas.Add(disjoint_packing_presolve_result.bins[bin_index].bin_area);
+  }
+  solution_crush_.AssignVariableToPackingArea(
+      areas, *context_->working_model, proto.x_intervals(), proto.y_intervals(),
+      box_in_area_lits);
+  context_->UpdateNewConstraintsVariableUsage();
+  context_->UpdateRuleStats(
+      "no_overlap_2d: fixed boxes partition available space, converted "
+      "to optional regions");
+  return RemoveConstraint(ct);
+}
+
 bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) {
     return false;
@@ -6249,6 +6384,12 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
         "no_overlap_2d: split into disjoint components duplicating fixed "
         "boxes");
     return RemoveConstraint(ct);
+  }
+
+  if (!has_potential_zero_sized_interval) {
+    if (ExpandEncoded2DBinPacking(fixed_boxes, non_fixed_boxes, ct)) {
+      return true;
+    }
   }
   RunPropagatorsForConstraint(*ct);
   return new_size < initial_num_boxes;

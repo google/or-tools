@@ -28,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -752,10 +753,11 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-          absl::StrFormat(
-              "bool_core (num_cores=%d [%s] a=%u d=%d fixed=%d/%d clauses=%s)",
-              iter, previous_core_info, encoder.nodes().size(), max_depth,
-              num_fixed, num_bools, FormatCounter(clauses_->num_clauses())),
+          absl::StrFormat("bool_%s (num_cores=%d [%s] a=%u d=%d "
+                          "fixed=%d/%d clauses=%s)",
+                          model_->Name(), iter, previous_core_info,
+                          encoder.nodes().size(), max_depth, num_fixed,
+                          num_bools, FormatCounter(clauses_->num_clauses())),
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
     }
 

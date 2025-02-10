@@ -224,6 +224,19 @@ class CpModelPresolver {
       absl::Span<const Rectangle> fixed_boxes,
       absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct);
 
+  // Detects when the space where items of a no_overlap_2d constraint can placed
+  // is disjoint (ie., fixed boxes split the domain). When it is the case, we
+  // can introduce a boolean for each pair <item, component> encoding whether
+  // the item is in the component or not. Then we replace the original
+  // no_overlap_2d constraint by one no_overlap_2d constraint for each
+  // component, with the new booleans as the enforcement_literal of the
+  // intervals. This is equivalent to expanding the original no_overlap_2d
+  // constraint into a bin packing problem with each connected component being a
+  // bin.
+  bool ExpandEncoded2DBinPacking(
+      absl::Span<const Rectangle> fixed_boxes,
+      absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct);
+
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
   // We detect inclusion of these constraint which allows a few simplifications.

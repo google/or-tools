@@ -25,14 +25,17 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/symmetry_util.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -620,6 +623,86 @@ void SolutionCrush::PermuteVariables(const SparsePermutation& permutation) {
   CHECK(solution_is_loaded_);
   permutation.ApplyToDenseCollection(var_has_value_);
   permutation.ApplyToDenseCollection(var_values_);
+}
+
+void SolutionCrush::AssignVariableToPackingArea(
+    const CompactVectorVector<int, Rectangle>& areas, const CpModelProto& model,
+    absl::Span<const int> x_intervals, absl::Span<const int> y_intervals,
+    absl::Span<const BoxInAreaLiteral> box_in_area_lits) {
+  struct RectangleTypeAndIndex {
+    enum class Type {
+      kHintedBox,
+      kArea,
+    };
+
+    int index;
+    Type type;
+  };
+  std::vector<Rectangle> rectangles_for_intersections;
+  std::vector<RectangleTypeAndIndex> rectangles_index;
+
+  for (int i = 0; i < x_intervals.size(); ++i) {
+    const ConstraintProto& x_ct = model.constraints(x_intervals[i]);
+    const ConstraintProto& y_ct = model.constraints(y_intervals[i]);
+
+    const std::optional<int64_t> x_min =
+        GetExpressionValue(x_ct.interval().start());
+    const std::optional<int64_t> x_max =
+        GetExpressionValue(x_ct.interval().end());
+    const std::optional<int64_t> y_min =
+        GetExpressionValue(y_ct.interval().start());
+    const std::optional<int64_t> y_max =
+        GetExpressionValue(y_ct.interval().end());
+
+    if (!x_min.has_value() || !x_max.has_value() || !y_min.has_value() ||
+        !y_max.has_value()) {
+      return;
+    }
+    if (*x_min > *x_max || *y_min > *y_max) {
+      VLOG(2) << "Hinted no_overlap_2d coordinate has max lower than min";
+      return;
+    }
+    const Rectangle box = {.x_min = x_min.value(),
+                           .x_max = x_max.value(),
+                           .y_min = y_min.value(),
+                           .y_max = y_max.value()};
+    rectangles_for_intersections.push_back(box);
+    rectangles_index.push_back(
+        {.index = i, .type = RectangleTypeAndIndex::Type::kHintedBox});
+  }
+
+  for (int i = 0; i < areas.size(); ++i) {
+    for (const Rectangle& area : areas[i]) {
+      rectangles_for_intersections.push_back(area);
+      rectangles_index.push_back(
+          {.index = i, .type = RectangleTypeAndIndex::Type::kArea});
+    }
+  }
+
+  const std::vector<std::pair<int, int>> intersections =
+      FindPartialRectangleIntersections(rectangles_for_intersections);
+
+  absl::flat_hash_set<std::pair<int, int>> box_to_area_pairs;
+
+  for (const auto& [rec1_index, rec2_index] : intersections) {
+    RectangleTypeAndIndex rec1 = rectangles_index[rec1_index];
+    RectangleTypeAndIndex rec2 = rectangles_index[rec2_index];
+    if (rec1.type == rec2.type) {
+      DCHECK(rec1.type == RectangleTypeAndIndex::Type::kHintedBox);
+      VLOG(2) << "Hinted position of boxes in no_overlap_2d are overlapping";
+      return;
+    }
+    if (rec1.type != RectangleTypeAndIndex::Type::kHintedBox) {
+      std::swap(rec1, rec2);
+    }
+
+    box_to_area_pairs.insert({rec1.index, rec2.index});
+  }
+
+  for (const auto& [box_index, area_index, literal] : box_in_area_lits) {
+    SetLiteralValue(literal,
+                    box_to_area_pairs.contains({box_index, area_index}));
+  }
 }
 
 }  // namespace sat
