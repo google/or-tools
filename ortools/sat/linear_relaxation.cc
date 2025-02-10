@@ -1015,12 +1015,12 @@ void AppendNoOverlap2dRelaxationForComponent(
   if (max_area == kMaxIntegerValue) return;
 
   LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
-  for (int i = 0; i < no_overlap_helper->NumBoxes(); ++i) {
-    if (no_overlap_helper->IsPresent(i)) {
+  for (const int b : component) {
+    if (no_overlap_helper->IsPresent(b)) {
       const AffineExpression& x_size_affine =
-          no_overlap_helper->x_helper().Sizes()[i];
+          no_overlap_helper->x_helper().Sizes()[b];
       const AffineExpression& y_size_affine =
-          no_overlap_helper->y_helper().Sizes()[i];
+          no_overlap_helper->y_helper().Sizes()[b];
       const std::vector<LiteralValueValue> energy =
           product_decomposer->TryToDecompose(x_size_affine, y_size_affine);
       if (!energy.empty()) {
@@ -1028,17 +1028,17 @@ void AppendNoOverlap2dRelaxationForComponent(
       } else {
         lc.AddQuadraticLowerBound(x_size_affine, y_size_affine, integer_trail);
       }
-    } else if (no_overlap_helper->x_helper().IsPresent(i) ||
-               no_overlap_helper->y_helper().IsPresent(i) ||
-               (no_overlap_helper->x_helper().PresenceLiteral(i) ==
-                no_overlap_helper->y_helper().PresenceLiteral(i))) {
+    } else if (no_overlap_helper->x_helper().IsPresent(b) ||
+               no_overlap_helper->y_helper().IsPresent(b) ||
+               (no_overlap_helper->x_helper().PresenceLiteral(b) ==
+                no_overlap_helper->y_helper().PresenceLiteral(b))) {
       // We have only one active literal.
       const Literal presence_literal =
-          no_overlap_helper->x_helper().IsPresent(i)
-              ? no_overlap_helper->y_helper().PresenceLiteral(i)
-              : no_overlap_helper->x_helper().PresenceLiteral(i);
+          no_overlap_helper->x_helper().IsPresent(b)
+              ? no_overlap_helper->y_helper().PresenceLiteral(b)
+              : no_overlap_helper->x_helper().PresenceLiteral(b);
       const auto& [x_size, y_size] =
-          no_overlap_helper->GetLevelZeroBoxSizesMin(i);
+          no_overlap_helper->GetLevelZeroBoxSizesMin(b);
       const IntegerValue area_min = x_size * y_size;
       if (area_min > 0) {
         // Not including the term if we don't have a view is ok.

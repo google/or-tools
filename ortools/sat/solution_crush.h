@@ -26,6 +26,8 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -277,6 +279,21 @@ class SolutionCrush {
 
   // Stores the solution as a hint in the given model.
   void StoreSolutionAsHint(CpModelProto& model) const;
+
+  // Given a list of N disjoint packing areas (each described by a union of
+  // rectangles) and a list of M boxes (described by their x and y interval
+  // constraints in the `model` proto), sets the value of the literals in
+  // `box_in_area_lits` with whether the box i intersects area j.
+  struct BoxInAreaLiteral {
+    int box_index;
+    int area_index;
+    int literal;
+  };
+  void AssignVariableToPackingArea(
+      const CompactVectorVector<int, Rectangle>& areas,
+      const CpModelProto& model, absl::Span<const int> x_intervals,
+      absl::Span<const int> y_intervals,
+      absl::Span<const BoxInAreaLiteral> box_in_area_lits);
 
  private:
   bool HasValue(int var) const { return var_has_value_[var]; }

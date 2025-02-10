@@ -40,85 +40,14 @@
 namespace operations_research {
 namespace sat {
 
-bool PresolveFixed2dRectangles(
+namespace {
+std::vector<Rectangle> FindSpacesThatCannotBeOccupied(
+    absl::Span<const Rectangle> fixed_boxes,
     absl::Span<const RectangleInRange> non_fixed_boxes,
-    std::vector<Rectangle>* fixed_boxes) {
-  // This implementation compiles a set of areas that cannot be occupied by any
-  // item, then calls ReduceNumberofBoxes() to use these areas to minimize
-  // `fixed_boxes`.
-  bool changed = false;
-
-  DCHECK(FindPartialRectangleIntersections(*fixed_boxes).empty());
-  IntegerValue original_area = 0;
-  std::vector<Rectangle> fixed_boxes_copy;
-  if (VLOG_IS_ON(1)) {
-    for (const Rectangle& r : *fixed_boxes) {
-      original_area += r.Area();
-    }
-  }
-  if (VLOG_IS_ON(2)) {
-    fixed_boxes_copy = *fixed_boxes;
-  }
-
-  const int original_num_boxes = fixed_boxes->size();
-
-  // The greedy algorithm is really fast. Run it first since it might greatly
-  // reduce the size of large trivial instances.
-  std::vector<Rectangle> empty_vec;
-  if (ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec)) {
-    changed = true;
-  }
-
-  IntegerValue min_x_size = std::numeric_limits<IntegerValue>::max();
-  IntegerValue min_y_size = std::numeric_limits<IntegerValue>::max();
-
-  CHECK(!non_fixed_boxes.empty());
-  Rectangle bounding_box = non_fixed_boxes[0].bounding_area;
-
-  for (const RectangleInRange& box : non_fixed_boxes) {
-    bounding_box.GrowToInclude(box.bounding_area);
-    min_x_size = std::min(min_x_size, box.x_size);
-    min_y_size = std::min(min_y_size, box.y_size);
-  }
-  DCHECK_GT(min_x_size, 0);
-  DCHECK_GT(min_y_size, 0);
-
-  // Fixed items are only useful to constraint where the non-fixed items can be
-  // placed. This means in particular that any part of a fixed item outside the
-  // bounding box of the non-fixed items is useless. Clip them.
-  int new_size = 0;
-  while (new_size < fixed_boxes->size()) {
-    Rectangle& rectangle = (*fixed_boxes)[new_size];
-    DCHECK_GT(rectangle.SizeX(), 0);
-    DCHECK_GT(rectangle.SizeY(), 0);
-    if (rectangle.x_min < bounding_box.x_min) {
-      rectangle.x_min = bounding_box.x_min;
-      changed = true;
-    }
-    if (rectangle.x_max > bounding_box.x_max) {
-      rectangle.x_max = bounding_box.x_max;
-      changed = true;
-    }
-    if (rectangle.y_min < bounding_box.y_min) {
-      rectangle.y_min = bounding_box.y_min;
-      changed = true;
-    }
-    if (rectangle.y_max > bounding_box.y_max) {
-      rectangle.y_max = bounding_box.y_max;
-      changed = true;
-    }
-    if (rectangle.SizeX() <= 0 || rectangle.SizeY() <= 0) {
-      // The whole rectangle was outside of the domain, remove it.
-      std::swap(rectangle, (*fixed_boxes)[fixed_boxes->size() - 1]);
-      fixed_boxes->resize(fixed_boxes->size() - 1);
-      changed = true;
-      continue;
-    } else {
-      new_size++;
-    }
-  }
-
-  std::vector<Rectangle> optional_boxes = *fixed_boxes;
+    const Rectangle& bounding_box, IntegerValue min_x_size,
+    IntegerValue min_y_size) {
+  std::vector<Rectangle> optional_boxes = {fixed_boxes.begin(),
+                                           fixed_boxes.end()};
 
   if (bounding_box.x_min > std::numeric_limits<IntegerValue>::min() &&
       bounding_box.y_min > std::numeric_limits<IntegerValue>::min() &&
@@ -228,6 +157,91 @@ bool PresolveFixed2dRectangles(
   }
   optional_boxes.erase(optional_boxes.begin(),
                        optional_boxes.begin() + num_optional_boxes_to_remove);
+  return optional_boxes;
+}
+
+}  // namespace
+
+bool PresolveFixed2dRectangles(
+    absl::Span<const RectangleInRange> non_fixed_boxes,
+    std::vector<Rectangle>* fixed_boxes) {
+  // This implementation compiles a set of areas that cannot be occupied by any
+  // item, then calls ReduceNumberofBoxes() to use these areas to minimize
+  // `fixed_boxes`.
+  bool changed = false;
+
+  DCHECK(FindPartialRectangleIntersections(*fixed_boxes).empty());
+  IntegerValue original_area = 0;
+  std::vector<Rectangle> fixed_boxes_copy;
+  if (VLOG_IS_ON(1)) {
+    for (const Rectangle& r : *fixed_boxes) {
+      original_area += r.Area();
+    }
+  }
+  if (VLOG_IS_ON(2)) {
+    fixed_boxes_copy = *fixed_boxes;
+  }
+
+  const int original_num_boxes = fixed_boxes->size();
+
+  // The greedy algorithm is really fast. Run it first since it might greatly
+  // reduce the size of large trivial instances.
+  std::vector<Rectangle> empty_vec;
+  if (ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec)) {
+    changed = true;
+  }
+
+  IntegerValue min_x_size = std::numeric_limits<IntegerValue>::max();
+  IntegerValue min_y_size = std::numeric_limits<IntegerValue>::max();
+
+  CHECK(!non_fixed_boxes.empty());
+  Rectangle bounding_box = non_fixed_boxes[0].bounding_area;
+
+  for (const RectangleInRange& box : non_fixed_boxes) {
+    bounding_box.GrowToInclude(box.bounding_area);
+    min_x_size = std::min(min_x_size, box.x_size);
+    min_y_size = std::min(min_y_size, box.y_size);
+  }
+  DCHECK_GT(min_x_size, 0);
+  DCHECK_GT(min_y_size, 0);
+
+  // Fixed items are only useful to constraint where the non-fixed items can be
+  // placed. This means in particular that any part of a fixed item outside the
+  // bounding box of the non-fixed items is useless. Clip them.
+  int new_size = 0;
+  while (new_size < fixed_boxes->size()) {
+    Rectangle& rectangle = (*fixed_boxes)[new_size];
+    DCHECK_GT(rectangle.SizeX(), 0);
+    DCHECK_GT(rectangle.SizeY(), 0);
+    if (rectangle.x_min < bounding_box.x_min) {
+      rectangle.x_min = bounding_box.x_min;
+      changed = true;
+    }
+    if (rectangle.x_max > bounding_box.x_max) {
+      rectangle.x_max = bounding_box.x_max;
+      changed = true;
+    }
+    if (rectangle.y_min < bounding_box.y_min) {
+      rectangle.y_min = bounding_box.y_min;
+      changed = true;
+    }
+    if (rectangle.y_max > bounding_box.y_max) {
+      rectangle.y_max = bounding_box.y_max;
+      changed = true;
+    }
+    if (rectangle.SizeX() <= 0 || rectangle.SizeY() <= 0) {
+      // The whole rectangle was outside of the domain, remove it.
+      std::swap(rectangle, (*fixed_boxes)[fixed_boxes->size() - 1]);
+      fixed_boxes->resize(fixed_boxes->size() - 1);
+      changed = true;
+      continue;
+    } else {
+      new_size++;
+    }
+  }
+
+  std::vector<Rectangle> optional_boxes = FindSpacesThatCannotBeOccupied(
+      *fixed_boxes, non_fixed_boxes, bounding_box, min_x_size, min_y_size);
 
   // TODO(user): instead of doing the greedy algorithm first with optional
   // boxes, and then the one that is exact for mandatory boxes but weak for
@@ -1465,6 +1479,86 @@ bool ReduceNumberOfBoxesExactMandatory(
   mandatory_rectangles->swap(result);
   optional_rectangles->swap(new_optional_rectangles);
   return true;
+}
+
+Disjoint2dPackingResult DetectDisjointRegionIn2dPacking(
+    absl::Span<const RectangleInRange> non_fixed_boxes,
+    absl::Span<const Rectangle> fixed_boxes, int max_num_components) {
+  if (max_num_components <= 1) return {};
+
+  IntegerValue min_x_size = std::numeric_limits<IntegerValue>::max();
+  IntegerValue min_y_size = std::numeric_limits<IntegerValue>::max();
+
+  CHECK(!non_fixed_boxes.empty());
+  Rectangle bounding_box = non_fixed_boxes[0].bounding_area;
+
+  for (const RectangleInRange& box : non_fixed_boxes) {
+    bounding_box.GrowToInclude(box.bounding_area);
+    min_x_size = std::min(min_x_size, box.x_size);
+    min_y_size = std::min(min_y_size, box.y_size);
+  }
+  DCHECK_GT(min_x_size, 0);
+  DCHECK_GT(min_y_size, 0);
+
+  std::vector<Rectangle> optional_boxes = FindSpacesThatCannotBeOccupied(
+      fixed_boxes, non_fixed_boxes, bounding_box, min_x_size, min_y_size);
+  std::vector<Rectangle> unoccupiable_space = {fixed_boxes.begin(),
+                                               fixed_boxes.end()};
+  unoccupiable_space.insert(unoccupiable_space.end(), optional_boxes.begin(),
+                            optional_boxes.end());
+
+  std::vector<Rectangle> occupiable_space =
+      FindEmptySpaces(bounding_box, unoccupiable_space);
+
+  std::vector<Rectangle> empty;
+  ReduceNumberofBoxesGreedy(&occupiable_space, &empty);
+  std::vector<std::vector<int>> space_components =
+      SplitInConnectedComponents(BuildNeighboursGraph(occupiable_space));
+
+  if (space_components.size() == 1 ||
+      space_components.size() > max_num_components) {
+    return {};
+  }
+
+  // If we are here, that means that the space where boxes can be placed is not
+  // connected.
+  Disjoint2dPackingResult result;
+  absl::flat_hash_set<int> component_set;
+  for (const std::vector<int>& component : space_components) {
+    Rectangle bin_bounding_box = occupiable_space[component[0]];
+    for (int i = 1; i < component.size(); ++i) {
+      bin_bounding_box.GrowToInclude(occupiable_space[component[i]]);
+    }
+    std::optional<Rectangle> reachable_area_bounding_box;
+    Disjoint2dPackingResult::Bin& bin = result.bins.emplace_back();
+    for (int idx : component) {
+      bin.bin_area.push_back(occupiable_space[idx]);
+    }
+    for (int i = 0; i < non_fixed_boxes.size(); i++) {
+      if (!non_fixed_boxes[i].bounding_area.IsDisjoint(bin_bounding_box)) {
+        if (reachable_area_bounding_box.has_value()) {
+          reachable_area_bounding_box->GrowToInclude(
+              non_fixed_boxes[i].bounding_area);
+        } else {
+          reachable_area_bounding_box = non_fixed_boxes[i].bounding_area;
+        }
+        bin.non_fixed_box_indexes.push_back(i);
+      }
+    }
+    if (bin.non_fixed_box_indexes.empty()) {
+      result.bins.pop_back();
+      continue;
+    }
+    bin.fixed_boxes =
+        FindEmptySpaces(*reachable_area_bounding_box, bin.bin_area);
+    ReduceNumberofBoxesGreedy(&bin.fixed_boxes, &empty);
+  }
+  VLOG_EVERY_N_SEC(1, 1) << "Detected a bin packing problem with "
+                         << result.bins.size()
+                         << " bins. Original problem sizes: "
+                         << non_fixed_boxes.size() << " non-fixed boxes, "
+                         << fixed_boxes.size() << " fixed boxes.";
+  return result;
 }
 
 }  // namespace sat

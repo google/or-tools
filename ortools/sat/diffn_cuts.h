@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/types/span.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"

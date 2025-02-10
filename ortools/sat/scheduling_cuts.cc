@@ -1316,22 +1316,6 @@ void AddEventDemandsToCapacitySubsetSum(
   }
 }
 
-// In the no_overlap case, we have:
-//   area = event.x_size_min ^ 2
-// In the simple cumulative case, we split split the task (demand, size) into
-// demand tasks in the no_overlap case.
-//   area = event.y_size_min * event.x_size_min * event.x_size_min
-// In the cumulative case, the minimum energy of a task can be greater than
-// the product of its size and demand (energy_min > side * demand).
-//   We use energy_min * size.
-IntegerValue SmithRuleIndividualContribution(const CtEvent& event) {
-  if (event.use_energy) {
-    return event.energy_min * event.x_size_min;
-  } else {
-    return event.x_size_min * event.x_size_min * event.y_size_min;
-  }
-}
-
 }  // namespace
 
 // We generate the cut from the Smith's rule from:
@@ -1345,7 +1329,8 @@ IntegerValue SmithRuleIndividualContribution(const CtEvent& event) {
 // then replacing end_min_i by (end_min_i - S) is still valid.
 //
 // A second difference is that we lift intervals that starts before a given
-// value, but are forced to cross it.
+// value, but are forced to cross it. This lifting procedure implies trimming
+// interval to its part that is after the given value.
 //
 // In the case of a cumulative constraint with a capacity of C, we compute a
 // valid equation by splitting the task (size_min si, demand_min di) into di
@@ -1370,8 +1355,8 @@ IntegerValue SmithRuleIndividualContribution(const CtEvent& event) {
 // is the minimum size of the task, and di its minimum demand). We can
 // replace the small rectangle area term by ai * si.
 //
-//  sum (ai * ei) - sum (ai) * current_start_min >=
-//    sum(si * ai) / 2 + (sum (ai) ^ 2) / (2 * C)
+//     sum (ai * ei) - sum (ai) * current_start_min >=
+//         sum(si * ai) / 2 + (sum (ai) ^ 2) / (2 * C)
 //
 // The separation procedure is implemented using two loops:
 //   - first, we loop on potential start times in increasing order.
@@ -1451,8 +1436,15 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
 
       // Make sure we do not overflow.
       if (!AddTo(event.energy_min, &sum_energy)) break;
-      if (!AddTo(SmithRuleIndividualContribution(event),
-                 &sum_event_contributions)) {
+      // In the no_overlap case, we have:
+      //   area = event.x_size_min ^ 2
+      // In the simple cumulative case, we split split the task
+      // (demand_min, size_min) into demand_min tasks in the no_overlap case.
+      //   area = event.y_size_min * event.x_size_min * event.x_size_min
+      // In the cumulative case, we can have energy_min > side_min * demand_min.
+      // In that case, we use energy_min * size_min.
+      if (!AddProductTo(event.energy_min, event.x_size_min,
+                        &sum_event_contributions)) {
         break;
       }
       if (!AddSquareTo(event.energy_min, &sum_square_energy)) break;

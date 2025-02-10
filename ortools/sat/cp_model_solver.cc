@@ -1005,9 +1005,11 @@ bool SolutionHintIsCompleteAndFeasible(
       if (model_proto.has_objective()) {
         absl::StrAppend(
             &message, " Its objective value is ",
-            ScaleObjectiveValue(
-                model_proto.objective(),
-                ComputeInnerObjective(model_proto.objective(), solution)),
+            absl::StrFormat(
+                "%.9g",
+                ScaleObjectiveValue(
+                    model_proto.objective(),
+                    ComputeInnerObjective(model_proto.objective(), solution))),
             ".");
       }
       SOLVER_LOG(logger, message);

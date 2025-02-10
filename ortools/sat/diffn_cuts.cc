@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <functional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -33,7 +32,6 @@
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -393,17 +391,20 @@ std::string DiffnCtEvent::DebugString() const {
 // The original cut is:
 //    sum(end_min_i * duration_min_i) >=
 //        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
-// We strengthen this cuts by noticing that if all tasks starts after S,
-// then replacing end_min_i by (end_min_i - S) is still valid.
-//
-// A second difference is that we look at a set of intervals starting
-// after a given start_min, sorted by relative (end_lp - start_min).
-//
-// TODO(user): merge with Packing cuts.
-void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
-    absl::string_view cut_name, std::vector<DiffnCtEvent> events,
-    bool use_lifting, bool skip_low_sizes, Model* model,
-    LinearConstraintManager* manager) {
+// We apply the following changes (see the code for cumulative constraints):
+//   - we strengthen this cuts by noticing that if all tasks starts after S,
+//     then replacing end_min_i by (end_min_i - S) is still valid.
+//   - we lift rectangles that start before the start of the sequence, but must
+//     overlap with it.
+//   - we apply the same transformation that was applied to the cumulative
+//     constraint to use the no_overlap cut in the no_overlap_2d setting.
+//   - we use a limited complexity subset-sum to compute reachable capacity
+//   - we look at a set of intervals starting after a given start_min, sorted by
+//     relative (end_lp - start_min).
+void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
+                                          std::vector<DiffnCtEvent> events,
+                                          bool use_lifting, Model* model,
+                                          LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);
 
   // Sort by start min to bucketize by start_min.
@@ -413,7 +414,7 @@ void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
                      std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
             });
   for (int start = 0; start + 1 < events.size(); ++start) {
-    // Skip to the next start_min value.
+    // Skip to the next bucket (of start_min).
     if (start > 0 &&
         events[start].x_start_min == events[start - 1].x_start_min) {
       continue;
@@ -457,47 +458,54 @@ void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
                 return e1.x_lp_end < e2.x_lp_end;
               });
 
+    // Best cut so far for this loop.
     int best_end = -1;
     double best_efficacy = 0.01;
-    IntegerValue best_min_contrib(0);
-    IntegerValue sum_duration(0);
-    IntegerValue sum_square_duration(0);
-    IntegerValue best_capacity(0);
-    double unscaled_lp_contrib = 0.0;
+    IntegerValue best_min_contrib = 0;
+    IntegerValue best_capacity = 0;
+    IntegerValue best_y_range = 0;
+
+    // Used in the first term of the rhs of the equation.
+    IntegerValue sum_event_contributions = 0;
+    // Used in the second term of the rhs of the equation.
+    IntegerValue sum_energy = 0;
+    // For normalization.
+    IntegerValue sum_square_energy = 0;
+
+    double lp_contrib = 0.0;
     IntegerValue current_start_min(kMaxIntegerValue);
-    IntegerValue y_min = kMaxIntegerValue;
-    IntegerValue y_max = kMinIntegerValue;
+    IntegerValue y_min_of_subset = kMaxIntegerValue;
+    IntegerValue y_max_of_subset = kMinIntegerValue;
+    IntegerValue sum_of_y_size_min = 0;
 
     bool use_dp = true;
     MaxBoundedSubsetSum dp(0);
+
     for (int i = 0; i < residual_tasks.size(); ++i) {
       const DiffnCtEvent& event = residual_tasks[i];
       DCHECK_GE(event.x_start_min, sequence_start_min);
-      const IntegerValue energy = event.energy_min;
-      sum_duration += energy;
-      if (!AddProductTo(energy, energy, &sum_square_duration)) break;
+      // Make sure we do not overflow.
+      if (!AddTo(event.energy_min, &sum_energy)) break;
+      if (!AddProductTo(event.energy_min, event.x_size_min,
+                        &sum_event_contributions)) {
+        break;
+      }
+      if (!AddSquareTo(event.energy_min, &sum_square_energy)) break;
+      if (!AddTo(event.y_size_min, &sum_of_y_size_min)) break;
 
-      unscaled_lp_contrib += event.x_lp_end * ToDouble(energy);
+      lp_contrib += event.x_lp_end * ToDouble(event.energy_min);
       current_start_min = std::min(current_start_min, event.x_start_min);
-
-      // This is competing with the brute force approach. Skip cases covered
-      // by the other code.
-      if (skip_low_sizes && i < 7) continue;
 
       // For the capacity, we use the worse |y_max - y_min| and if all the tasks
       // so far have a fixed demand with a gcd > 1, we can round it down.
-      //
-      // TODO(user): Use dynamic programming to compute all possible values for
-      // the sum of demands as long as the involved numbers are small or the
-      // number of tasks are small.
-      y_min = std::min(y_min, event.y_min);
-      y_max = std::max(y_max, event.y_max);
+      y_min_of_subset = std::min(y_min_of_subset, event.y_min);
+      y_max_of_subset = std::max(y_max_of_subset, event.y_max);
       if (!event.y_size_is_fixed) use_dp = false;
       if (use_dp) {
         if (i == 0) {
-          dp.Reset((y_max - y_min).value());
+          dp.Reset((y_max_of_subset - y_min_of_subset).value());
         } else {
-          if (y_max - y_min != dp.Bound()) {
+          if (y_max_of_subset - y_min_of_subset != dp.Bound()) {
             use_dp = false;
           }
         }
@@ -506,36 +514,45 @@ void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
         dp.Add(event.y_size_min.value());
       }
 
-      const IntegerValue capacity =
-          use_dp ? IntegerValue(dp.CurrentMax()) : y_max - y_min;
+      const IntegerValue reachable_capacity =
+          use_dp ? IntegerValue(dp.CurrentMax())
+                 : y_max_of_subset - y_min_of_subset;
 
-      // We compute the cuts like if it was a disjunctive cut with all the
-      // duration actually equal to energy / capacity. But to keep the
-      // computation in the integer domain, we multiply by capacity
-      // everywhere instead.
-      IntegerValue min_contrib = 0;
-      if (!AddProductTo(sum_duration, sum_duration, &min_contrib)) break;
-      if (!AddTo(sum_square_duration, &min_contrib)) break;
-      min_contrib = min_contrib / 2;  // The above is the double of the area.
+      // If we have not reached capacity, there can be no cuts on ends.
+      if (sum_of_y_size_min <= reachable_capacity) continue;
 
-      const IntegerValue intermediate = CapProdI(sum_duration, capacity);
-      if (AtMinOrMaxInt64I(intermediate)) break;
-      const IntegerValue offset = CapProdI(current_start_min, intermediate);
-      if (AtMinOrMaxInt64I(offset)) break;
-      if (!AddTo(offset, &min_contrib)) break;
+      // Do we have a violated cut ?
+      const IntegerValue large_rectangle_contrib =
+          CapProdI(sum_energy, sum_energy);
+      if (AtMinOrMaxInt64I(large_rectangle_contrib)) break;
+      const IntegerValue mean_large_rectangle_contrib =
+          CeilRatio(large_rectangle_contrib, reachable_capacity);
 
-      // We compute the efficacity in the unscaled domain where the l2 norm of
-      // the cuts is exactly the sqrt of  the sum of squared duration.
-      const double efficacy =
-          (ToDouble(min_contrib) / ToDouble(capacity) - unscaled_lp_contrib) /
-          std::sqrt(ToDouble(sum_square_duration));
+      IntegerValue min_contrib =
+          CapAddI(sum_event_contributions, mean_large_rectangle_contrib);
+      if (AtMinOrMaxInt64I(min_contrib)) break;
+      min_contrib = CeilRatio(min_contrib, 2);
 
-      // TODO(user): Check overflow and ignore if too big.
+      // shift contribution by current_start_min.
+      if (!AddProductTo(sum_energy, current_start_min, &min_contrib)) break;
+
+      // The efficacy of the cut is the normalized violation of the above
+      // equation. We will normalize by the sqrt of the sum of squared energies.
+      const double efficacy = (ToDouble(min_contrib) - lp_contrib) /
+                              std::sqrt(ToDouble(sum_square_energy));
+
+      // For a given start time, we only keep the best cut.
+      // The reason is that if the cut is strongly violated, we can get a
+      // sequence of violated cuts as we add more tasks. These new cuts will
+      // be less violated, but will not bring anything useful to the LP
+      // relaxation. At the same time, this sequence of cuts can push out
+      // other cuts from a disjoint set of tasks.
       if (efficacy > best_efficacy) {
         best_efficacy = efficacy;
         best_end = i;
         best_min_contrib = min_contrib;
-        best_capacity = capacity;
+        best_capacity = reachable_capacity;
+        best_y_range = y_max_of_subset - y_min_of_subset;
       }
     }
     if (best_end != -1) {
@@ -546,18 +563,20 @@ void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
         const DiffnCtEvent& event = residual_tasks[i];
         is_lifted |= event.lifted;
         add_energy_to_name |= event.use_energy;
-        cut.AddTerm(event.x_end, event.energy_min * best_capacity);
+        cut.AddTerm(event.x_end, event.energy_min);
       }
       std::string full_name(cut_name);
       if (is_lifted) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
+      if (best_capacity < best_y_range) {
+        full_name.append("_subsetsum");
+      }
       top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
     }
   }
   top_n_cuts.TransferToManager(manager);
 }
 
-// TODO(user): Use demands_helper and decomposed energy.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
     NoOverlap2DConstraintHelper* helper, Model* model) {
   CutGenerator result;
@@ -616,10 +635,9 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
           events.push_back(event);
         }
 
-        GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
-            cut_name, std::move(events),
-            /*use_lifting=*/false,
-            /*skip_low_sizes=*/false, model, manager);
+        GenerateNoOvelap2dCompletionTimeCuts(cut_name, std::move(events),
+                                             /*use_lifting=*/true, model,
+                                             manager);
       };
 
       if (!helper->SynchronizeAndSetDirection(true, true, false)) {
@@ -633,11 +651,11 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
       if (!helper->SynchronizeAndSetDirection(false, false, false)) {
         return false;
       }
-      generate_cuts("NoOverlap2dXCompletionTimeMirror");
+      generate_cuts("NoOverlap2dXCompletionTime_mirror");
       if (!helper->SynchronizeAndSetDirection(false, false, true)) {
         return false;
       }
-      generate_cuts("NoOverlap2dYCompletionTimeMirror");
+      generate_cuts("NoOverlap2dYCompletionTime_mirror");
     }
     return true;
   };

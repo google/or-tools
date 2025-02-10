@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// LINT: LEGACY_NAMES
 syntax = "proto2";
 
 package operations_research.sat;
@@ -23,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 315
+// NEXT TAG: 316
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -901,6 +902,19 @@ message SatParameters {
   // intervals.
   optional int32 max_pairs_pairwise_reasoning_in_no_overlap_2d = 276
       [default = 1250];
+
+  // Detects when the space where items of a no_overlap_2d constraint can placed
+  // is disjoint (ie., fixed boxes split the domain). When it is the case, we
+  // can introduce a boolean for each pair <item, component> encoding whether
+  // the item is in the component or not. Then we replace the original
+  // no_overlap_2d constraint by one no_overlap_2d constraint for each
+  // component, with the new booleans as the enforcement_literal of the
+  // intervals. This is equivalent to expanding the original no_overlap_2d
+  // constraint into a bin packing problem with each connected component being a
+  // bin. This heuristic is only done when the number of regions to split
+  // is less than this parameter and <= 1 disables it.
+  optional int32 maximum_regions_to_split_in_disconnected_no_overlap_2d = 315
+      [default = 0];
 
   // When set, it activates a few scheduling parameters to improve the lower
   // bound of scheduling problems. This is only effective with multiple workers
