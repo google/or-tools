@@ -391,6 +391,28 @@ std::string DiffnCtEvent::DebugString() const {
 // The original cut is:
 //    sum(end_min_i * duration_min_i) >=
 //        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
+//
+// Let's build a figure where each horizontal rectangle represent a task. It
+// ends at the end of the task, and its height is the duration of the task.
+// For a given order, we pack each rectangle to the left while not overlapping,
+// that is one rectangle starts when the previous one ends.
+//
+//     e1
+// -----
+// :\  | s1
+// :  \|       e2
+// -------------
+//     :\      |
+//     :   \   | s2
+//     :      \|  e3
+// ----------------
+//             : \| s3
+// ----------------
+//
+// We can notice that the total area is independent of the order of tasks.
+// The first term of the rhs is the area above the diagonal.
+// The second term of the rhs is the area below the diagonal.
+//
 // We apply the following changes (see the code for cumulative constraints):
 //   - we strengthen this cuts by noticing that if all tasks starts after S,
 //     then replacing end_min_i by (end_min_i - S) is still valid.
@@ -461,12 +483,11 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
     // Best cut so far for this loop.
     int best_end = -1;
     double best_efficacy = 0.01;
-    IntegerValue best_min_contrib = 0;
-    IntegerValue best_capacity = 0;
-    IntegerValue best_y_range = 0;
+    IntegerValue best_min_rhs = 0;
+    bool best_use_subset_sum = false;
 
     // Used in the first term of the rhs of the equation.
-    IntegerValue sum_event_contributions = 0;
+    IntegerValue sum_event_areas = 0;
     // Used in the second term of the rhs of the equation.
     IntegerValue sum_energy = 0;
     // For normalization.
@@ -486,8 +507,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       DCHECK_GE(event.x_start_min, sequence_start_min);
       // Make sure we do not overflow.
       if (!AddTo(event.energy_min, &sum_energy)) break;
-      if (!AddProductTo(event.energy_min, event.x_size_min,
-                        &sum_event_contributions)) {
+      if (!AddProductTo(event.energy_min, event.x_size_min, &sum_event_areas)) {
         break;
       }
       if (!AddSquareTo(event.energy_min, &sum_square_energy)) break;
@@ -505,7 +525,8 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
         if (i == 0) {
           dp.Reset((y_max_of_subset - y_min_of_subset).value());
         } else {
-          if (y_max_of_subset - y_min_of_subset != dp.Bound()) {
+          // TODO(user): Can we increase the bound dynamically ?
+          if (y_max_of_subset - y_min_of_subset > dp.Bound()) {
             use_dp = false;
           }
         }
@@ -522,23 +543,21 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       if (sum_of_y_size_min <= reachable_capacity) continue;
 
       // Do we have a violated cut ?
-      const IntegerValue large_rectangle_contrib =
-          CapProdI(sum_energy, sum_energy);
-      if (AtMinOrMaxInt64I(large_rectangle_contrib)) break;
-      const IntegerValue mean_large_rectangle_contrib =
-          CeilRatio(large_rectangle_contrib, reachable_capacity);
+      const IntegerValue square_sum_energy = CapProdI(sum_energy, sum_energy);
+      if (AtMinOrMaxInt64I(square_sum_energy)) break;
+      const IntegerValue rhs_second_term =
+          CeilRatio(square_sum_energy, reachable_capacity);
 
-      IntegerValue min_contrib =
-          CapAddI(sum_event_contributions, mean_large_rectangle_contrib);
-      if (AtMinOrMaxInt64I(min_contrib)) break;
-      min_contrib = CeilRatio(min_contrib, 2);
+      IntegerValue min_rhs = CapAddI(sum_event_areas, rhs_second_term);
+      if (AtMinOrMaxInt64I(min_rhs)) break;
+      min_rhs = CeilRatio(min_rhs, 2);
 
       // shift contribution by current_start_min.
-      if (!AddProductTo(sum_energy, current_start_min, &min_contrib)) break;
+      if (!AddProductTo(sum_energy, current_start_min, &min_rhs)) break;
 
       // The efficacy of the cut is the normalized violation of the above
       // equation. We will normalize by the sqrt of the sum of squared energies.
-      const double efficacy = (ToDouble(min_contrib) - lp_contrib) /
+      const double efficacy = (ToDouble(min_rhs) - lp_contrib) /
                               std::sqrt(ToDouble(sum_square_energy));
 
       // For a given start time, we only keep the best cut.
@@ -550,13 +569,13 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       if (efficacy > best_efficacy) {
         best_efficacy = efficacy;
         best_end = i;
-        best_min_contrib = min_contrib;
-        best_capacity = reachable_capacity;
-        best_y_range = y_max_of_subset - y_min_of_subset;
+        best_min_rhs = min_rhs;
+        best_use_subset_sum =
+            reachable_capacity < y_max_of_subset - y_min_of_subset;
       }
     }
     if (best_end != -1) {
-      LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
+      LinearConstraintBuilder cut(model, best_min_rhs, kMaxIntegerValue);
       bool is_lifted = false;
       bool add_energy_to_name = false;
       for (int i = 0; i <= best_end; ++i) {
@@ -568,9 +587,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       std::string full_name(cut_name);
       if (is_lifted) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
-      if (best_capacity < best_y_range) {
-        full_name.append("_subsetsum");
-      }
+      if (best_use_subset_sum) full_name.append("_subsetsum");
       top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
     }
   }

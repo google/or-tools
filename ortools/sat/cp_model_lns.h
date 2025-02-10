@@ -319,14 +319,15 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Arena holding the memory of the CpModelProto* of this class. This saves the
   // destruction cost that can take time on problem with millions of
   // variables/constraints.
-  google::protobuf::Arena local_arena_;
+  std::vector<char> local_arena_storage_;
+  std::unique_ptr<google::protobuf::Arena> local_arena_;
 
   // This proto will only contain the field variables() with an updated version
   // of the domains compared to model_proto_.variables(). We do it like this to
   // reduce the memory footprint of the helper when the model is large.
   //
   // TODO(user): Use custom domain repository rather than a proto?
-  CpModelProto* model_proto_with_only_variables_ ABSL_GUARDED_BY(domain_mutex_);
+  CpModelProto model_proto_with_only_variables_ ABSL_GUARDED_BY(domain_mutex_);
 
   // Constraints by types. This never changes.
   std::vector<std::vector<int>> type_to_constraints_;
