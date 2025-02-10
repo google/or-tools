@@ -218,6 +218,7 @@ class FixedShapeBinaryTree {
   template <typename TypeWithPushBack>
   void PartitionIntervalIntoNodes(LeafIndex first_leaf, LeafIndex last_leaf,
                                   TypeWithPushBack* result) const {
+    DCHECK_LE(first_leaf, last_leaf);
     TreeNodeIndex prev(0);
     TreeNodeIndex current = GetNodeStartOfRange(first_leaf, last_leaf);
     if (current == Root()) {

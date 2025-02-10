@@ -19,6 +19,7 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <random>
 #include <string>
 #include <tuple>
@@ -77,16 +78,19 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
       shared_bounds_(shared_bounds),
       shared_response_(shared_response) {
   // Initialize proto memory.
+  local_arena_storage_.assign(Neighborhood::kDefaultArenaSizePerVariable *
+                                  model_proto_.variables_size(),
+                              0);
+  local_arena_ = std::make_unique<google::protobuf::Arena>(
+      local_arena_storage_.data(), local_arena_storage_.size());
   simplified_model_proto_ =
-      google::protobuf::Arena::Create<CpModelProto>(&local_arena_);
-  model_proto_with_only_variables_ =
-      google::protobuf::Arena::Create<CpModelProto>(&local_arena_);
+      google::protobuf::Arena::Create<CpModelProto>(local_arena_.get());
 
   CHECK(shared_response_ != nullptr);
   if (shared_bounds_ != nullptr) {
     shared_bounds_id_ = shared_bounds_->RegisterNewId();
   }
-  *model_proto_with_only_variables_->mutable_variables() =
+  *model_proto_with_only_variables_.mutable_variables() =
       model_proto_.variables();
   InitializeHelperData();
   RecomputeHelperData();
@@ -112,7 +116,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
         const int64_t new_ub = new_upper_bounds[i];
         if (VLOG_IS_ON(3)) {
           const auto& domain =
-              model_proto_with_only_variables_->variables(var).domain();
+              model_proto_with_only_variables_.variables(var).domain();
           const int64_t old_lb = domain.Get(0);
           const int64_t old_ub = domain.Get(domain.size() - 1);
           VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
@@ -120,7 +124,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
                   << "]";
         }
         const Domain old_domain = ReadDomainFromProto(
-            model_proto_with_only_variables_->variables(var));
+            model_proto_with_only_variables_.variables(var));
         const Domain new_domain =
             old_domain.IntersectionWith(Domain(new_lb, new_ub));
         if (new_domain.IsEmpty()) {
@@ -141,7 +145,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
         }
         FillDomainInProto(
             new_domain,
-            model_proto_with_only_variables_->mutable_variables(var));
+            model_proto_with_only_variables_.mutable_variables(var));
         new_variables_have_been_fixed |= new_domain.IsFixed();
       }
     }
@@ -164,7 +168,7 @@ bool NeighborhoodGeneratorHelper::ObjectiveDomainIsConstraining() const {
     const int var = PositiveRef(model_proto_.objective().vars(i));
     const int64_t coeff = model_proto_.objective().coeffs(i);
     const auto& var_domain =
-        model_proto_with_only_variables_->variables(var).domain();
+        model_proto_with_only_variables_.variables(var).domain();
     const int64_t v1 = coeff * var_domain[0];
     const int64_t v2 = coeff * var_domain[var_domain.size() - 1];
     min_activity += std::min(v1, v2);
@@ -218,9 +222,20 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   {
     Model local_model;
     CpModelProto mapping_proto;
+    // We want to replace the simplified_model_proto_ by a new one. Since
+    // deleting an object in the arena doesn't free the memory, we also delete
+    // and recreate the arena, but reusing the same storage.
+    int64_t new_size = local_arena_->SpaceUsed();
+    new_size += new_size / 2;
     simplified_model_proto_->Clear();
+    local_arena_.reset();
+    local_arena_storage_.resize(new_size);
+    local_arena_ = std::make_unique<google::protobuf::Arena>(
+        local_arena_storage_.data(), local_arena_storage_.size());
+    simplified_model_proto_ =
+        google::protobuf::Arena::Create<CpModelProto>(local_arena_.get());
     *simplified_model_proto_->mutable_variables() =
-        model_proto_with_only_variables_->variables();
+        model_proto_with_only_variables_.variables();
     PresolveContext context(&local_model, simplified_model_proto_,
                             &mapping_proto);
     ModelCopy copier(&context);
@@ -383,7 +398,7 @@ bool NeighborhoodGeneratorHelper::IsActive(int var) const {
 }
 
 bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
-  const auto& var_proto = model_proto_with_only_variables_->variables(var);
+  const auto& var_proto = model_proto_with_only_variables_.variables(var);
   return var_proto.domain_size() == 2 &&
          var_proto.domain(0) == var_proto.domain(1);
 }
@@ -395,7 +410,7 @@ Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   {
     absl::ReaderMutexLock lock(&domain_mutex_);
     *neighborhood.delta.mutable_variables() =
-        model_proto_with_only_variables_->variables();
+        model_proto_with_only_variables_.variables();
   }
   return neighborhood;
 }
@@ -1057,7 +1072,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     absl::ReaderMutexLock domain_lock(&domain_mutex_);
     for (int i = 0; i < num_variables; ++i) {
       const IntegerVariableProto& current_var =
-          model_proto_with_only_variables_->variables(i);
+          model_proto_with_only_variables_.variables(i);
       IntegerVariableProto* new_var = neighborhood.delta.add_variables();
 
       // We only copy the name in debug mode.
@@ -1203,7 +1218,7 @@ CpModelProto NeighborhoodGeneratorHelper::UpdatedModelProtoCopy() const {
   {
     absl::MutexLock domain_lock(&domain_mutex_);
     *updated_model.mutable_variables() =
-        model_proto_with_only_variables_->variables();
+        model_proto_with_only_variables_.variables();
   }
   return updated_model;
 }
