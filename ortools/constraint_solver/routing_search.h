@@ -250,7 +250,8 @@ class IntVarFilteredHeuristic {
   /// solution.
   /// In any case all modifications to the internal delta are cleared before
   /// returning.
-  std::optional<int64_t> Evaluate(bool commit);
+  std::optional<int64_t> Evaluate(bool commit, bool ignore_upper_bound = false,
+                                  bool update_upper_bound = true);
   /// Returns true if the search must be stopped.
   virtual bool StopSearch() { return false; }
   /// Modifies the current solution by setting the variable of index 'index' to
@@ -295,7 +296,7 @@ class IntVarFilteredHeuristic {
  private:
   /// Checks if filters accept a given modification to the current solution
   /// (represented by delta).
-  bool FilterAccept();
+  bool FilterAccept(bool ignore_upper_bound);
 
   Solver* solver_;
   std::vector<IntVar*> vars_;
@@ -375,11 +376,13 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   struct NodeInsertion {
     int64_t insert_after;
     int vehicle;
+    int neg_hint_weight;
     int64_t value;
 
     bool operator<(const NodeInsertion& other) const {
-      return std::tie(value, insert_after, vehicle) <
-             std::tie(other.value, other.insert_after, other.vehicle);
+      return std::tie(neg_hint_weight, value, insert_after, vehicle) <
+             std::tie(other.neg_hint_weight, other.value, other.insert_after,
+                      other.vehicle);
     }
   };
   struct StartEndValue {
@@ -473,8 +476,22 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   /// if penalty callback is null or if the node cannot be unperformed.
   int64_t GetUnperformedValue(int64_t node_to_insert) const;
 
+  bool HasHintedNext(int node) const {
+    CHECK_LT(node, hint_next_values_.size());
+    return hint_next_values_[node] != -1;
+  }
+  bool HasHintedPrev(int node) const {
+    CHECK_LT(node, hint_prev_values_.size());
+    return hint_prev_values_[node] != -1;
+  }
+  bool IsHint(int node, int64_t next) const {
+    return node < hint_next_values_.size() && hint_next_values_[node] == next;
+  }
+
   std::function<int64_t(int64_t, int64_t, int64_t)> evaluator_;
   std::function<int64_t(int64_t)> penalty_evaluator_;
+  std::vector<int> hint_next_values_;
+  std::vector<int> hint_prev_values_;
 };
 
 /// Filter-based decision builder which builds a solution by inserting
@@ -928,10 +945,12 @@ class InsertionSequenceContainer {
     size_t begin;
     size_t end;
     int vehicle;
+    int neg_hint_weight;
     int64_t cost;
     bool operator<(const InsertionBounds& other) const {
-      return std::tie(cost, vehicle, begin) <
-             std::tie(other.cost, other.vehicle, other.begin);
+      return std::tie(neg_hint_weight, cost, vehicle, begin) <
+             std::tie(other.neg_hint_weight, other.cost, other.vehicle,
+                      other.begin);
     }
     size_t Size() const { return end - begin; }
   };
@@ -963,6 +982,10 @@ class InsertionSequenceContainer {
     int Vehicle() const { return bounds_->vehicle; }
     int64_t Cost() const { return bounds_->cost; }
     int64_t& Cost() { return bounds_->cost; }
+    void SetHintWeight(int hint_weight) {
+      bounds_->neg_hint_weight = -hint_weight;
+    }
+    int NegHintWeight() const { return bounds_->neg_hint_weight; }
 
    private:
     const Insertion* const data_;
@@ -1093,13 +1116,15 @@ class InsertionSequenceGenerator {
 struct PickupDeliveryInsertion {
   int64_t insert_pickup_after;
   int64_t insert_delivery_after;
+  int neg_hint_weight;
   int64_t value;
   int vehicle;
 
   bool operator<(const PickupDeliveryInsertion& other) const {
-    return std::tie(value, insert_pickup_after, insert_delivery_after,
-                    vehicle) < std::tie(other.value, other.insert_pickup_after,
-                                        other.insert_delivery_after,
+    return std::tie(neg_hint_weight, value, insert_pickup_after,
+                    insert_delivery_after, vehicle) <
+           std::tie(other.neg_hint_weight, other.value,
+                    other.insert_pickup_after, other.insert_delivery_after,
                                         other.vehicle);
   }
 };
@@ -1119,7 +1144,7 @@ class LocalCheapestInsertionFilteredHeuristic
       RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
       std::vector<RoutingSearchParameters::InsertionSortingProperty>
           insertion_sorting_properties,
-      LocalSearchFilterManager* filter_manager,
+      LocalSearchFilterManager* filter_manager, bool use_first_solution_hint,
       BinCapacities* bin_capacities = nullptr,
       std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
                          std::vector<RoutingModel::VariableValuePair>*)>
@@ -1185,6 +1210,8 @@ class LocalCheapestInsertionFilteredHeuristic
       insertion_sorting_properties_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
+
+  const bool use_first_solution_hint_;
 
   BinCapacities* const bin_capacities_;
 

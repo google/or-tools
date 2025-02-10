@@ -1320,6 +1320,13 @@ class OR_DLL RoutingModel {
   void SetFirstSolutionEvaluator(Solver::IndexEvaluator2 evaluator) {
     first_solution_evaluator_ = std::move(evaluator);
   }
+  /// Adds a hint to be used by first solution strategies. The hint assignment
+  /// must outlive the search.
+  /// As of 2024-12, only used by LOCAL_CHEAPEST_INSERTION and
+  /// LOCAL_CHEAPEST_COST_INSERTION.
+  void SetFirstSolutionHint(const Assignment* hint) { hint_ = hint; }
+  /// Returns the current hint assignment.
+  const Assignment* GetFirstSolutionHint() const { return hint_; }
   /// Adds a local search operator to the set of operators used to solve the
   /// vehicle routing problem.
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
@@ -2106,6 +2113,8 @@ class OR_DLL RoutingModel {
     MAKE_ACTIVE,
     RELOCATE_AND_MAKE_ACTIVE,
     MAKE_ACTIVE_AND_RELOCATE,
+    EXCHANGE_AND_MAKE_ACTIVE,
+    EXCHANGE_PATH_START_ENDS_AND_MAKE_ACTIVE,
     MAKE_INACTIVE,
     MAKE_CHAIN_INACTIVE,
     SWAP_ACTIVE,
@@ -2349,132 +2358,6 @@ class OR_DLL RoutingModel {
   RegularLimit* GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
   LocalSearchOperator* CreateInsertionOperator();
   LocalSearchOperator* CreateMakeInactiveOperator();
-#ifndef SWIG
-  template <class T>
-  LocalSearchOperator* CreateCPOperator(const T& operator_factory) {
-    return operator_factory(solver_.get(), nexts_,
-                            CostsAreHomogeneousAcrossVehicles()
-                                ? std::vector<IntVar*>()
-                                : vehicle_vars_,
-                            vehicle_start_class_callback_);
-  }
-  template <class T>
-  LocalSearchOperator* CreateCPOperator() {
-    return CreateCPOperator(MakeLocalSearchOperator<T>);
-  }
-  template <class T, typename ArgType>
-  LocalSearchOperator* CreateCPOperatorWithArg(ArgType arg) {
-    return CreateCPOperatorWithArg(MakeLocalSearchOperatorWithArg<T, ArgType>,
-                                   std::move(arg));
-  }
-
-  using NeighborAccessor =
-      std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>;
-  template <class T>
-  LocalSearchOperator* CreateCPOperatorWithNeighbors(
-      NeighborAccessor get_incoming_neighbors,
-      NeighborAccessor get_outgoing_neighbors) {
-    return CreateCPOperatorWithNeighbors(
-        MakeLocalSearchOperatorWithNeighbors<T>,
-        std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors));
-  }
-  template <class T>
-  LocalSearchOperator* CreateOperatorWithNeighborsRatio(
-      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
-      NeighborAccessor get_outgoing_neighbors) {
-    return neighbors_ratio_used == 1 ? CreateCPOperator<T>()
-                                     : CreateCPOperatorWithNeighbors<T>(
-                                           std::move(get_incoming_neighbors),
-                                           std::move(get_outgoing_neighbors));
-  }
-  template <class T>
-  LocalSearchOperator* CreateCPOperatorWithNeighbors(
-      const T& operator_factory, NeighborAccessor get_incoming_neighbors,
-      NeighborAccessor get_outgoing_neighbors) {
-    return operator_factory(
-        solver_.get(), nexts_,
-        CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
-                                            : vehicle_vars_,
-        vehicle_start_class_callback_, std::move(get_incoming_neighbors),
-        std::move(get_outgoing_neighbors));
-  }
-  template <class T, typename ArgType>
-  LocalSearchOperator* CreateCPOperatorWithArg(const T& operator_factory,
-                                               ArgType arg) {
-    return operator_factory(solver_.get(), nexts_,
-                            CostsAreHomogeneousAcrossVehicles()
-                                ? std::vector<IntVar*>()
-                                : vehicle_vars_,
-                            vehicle_start_class_callback_, std::move(arg));
-  }
-  template <class T, class Arg>
-  LocalSearchOperator* CreateOperator(const Arg& arg) {
-    return solver_->RevAlloc(new T(nexts_,
-                                   CostsAreHomogeneousAcrossVehicles()
-                                       ? std::vector<IntVar*>()
-                                       : vehicle_vars_,
-                                   vehicle_start_class_callback_, arg));
-  }
-  template <class T, class Arg>
-  LocalSearchOperator* CreateOperatorWithNeighbors(
-      NeighborAccessor get_incoming_neighbors,
-      NeighborAccessor get_outgoing_neighbors, const Arg& arg) {
-    return solver_->RevAlloc(
-        new T(nexts_,
-              CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
-                                                  : vehicle_vars_,
-              vehicle_start_class_callback_, std::move(get_incoming_neighbors),
-              std::move(get_outgoing_neighbors), arg));
-  }
-  template <class T, class Arg>
-  LocalSearchOperator* CreateOperatorWithNeighborsRatio(
-      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
-      NeighborAccessor get_outgoing_neighbors, const Arg& arg) {
-    return neighbors_ratio_used == 1
-               ? CreateOperator<T>(arg)
-               : CreateOperatorWithNeighbors<T>(
-                     std::move(get_incoming_neighbors),
-                     std::move(get_outgoing_neighbors), arg);
-  }
-  template <class T, class Arg1, class MoveableArg2>
-  LocalSearchOperator* CreateOperator(const Arg1& arg1, MoveableArg2 arg2) {
-    return solver_->RevAlloc(
-        new T(nexts_,
-              CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
-                                                  : vehicle_vars_,
-              vehicle_start_class_callback_, arg1, std::move(arg2)));
-  }
-  template <class T, class Arg1, class MoveableArg2>
-  LocalSearchOperator* CreateOperatorWithNeighborsRatio(
-      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
-      NeighborAccessor get_outgoing_neighbors, const Arg1& arg1,
-      MoveableArg2 arg2) {
-    return neighbors_ratio_used == 1
-               ? CreateOperator<T>(arg1, std::move(arg2))
-               : solver_->RevAlloc(new T(nexts_,
-                                         CostsAreHomogeneousAcrossVehicles()
-                                             ? std::vector<IntVar*>()
-                                             : vehicle_vars_,
-                                         vehicle_start_class_callback_,
-                                         std::move(get_incoming_neighbors),
-                                         std::move(get_outgoing_neighbors),
-                                         arg1, std::move(arg2)));
-  }
-  template <class T>
-  LocalSearchOperator* CreatePairOperator() {
-    return CreateOperator<T>(pickup_delivery_pairs_);
-  }
-  template <class T>
-  LocalSearchOperator* CreatePairOperator(
-      int neighbors_ratio_used, NeighborAccessor get_incoming_neighbors,
-      NeighborAccessor get_outgoing_neighbors) {
-    return neighbors_ratio_used == 1
-               ? CreateOperator<T>(pickup_delivery_pairs_)
-               : CreateOperatorWithNeighbors<T>(
-                     std::move(get_incoming_neighbors),
-                     std::move(get_outgoing_neighbors), pickup_delivery_pairs_);
-  }
-#endif  // SWIG
   void CreateNeighborhoodOperators(const RoutingSearchParameters& parameters);
   LocalSearchOperator* ConcatenateOperators(
       const RoutingSearchParameters& search_parameters,
@@ -2753,6 +2636,7 @@ class OR_DLL RoutingModel {
   Solver::IndexEvaluator2 first_solution_evaluator_;
   FirstSolutionStrategy::Value automatic_first_solution_strategy_ =
       FirstSolutionStrategy::UNSET;
+  const Assignment* hint_ = nullptr;
   std::vector<LocalSearchOperator*> local_search_operators_;
   std::vector<SearchMonitor*> monitors_;
   std::vector<SearchMonitor*> secondary_ls_monitors_;
@@ -3617,6 +3501,15 @@ class RoutingDimension {
     int64_t first_node;
     int64_t second_node;
     int64_t offset;
+    enum class PerformedConstraint {
+      // first_node and/or second_node can be unperformed.
+      kFirstAndSecondIndependent,
+      // if second_node is performed, first_node must be performed.
+      kSecondImpliesFirst,
+      // first_node is performed iff second_node is performed.
+      kFirstAndSecondEqual,
+    };
+    PerformedConstraint performed_constraint;
   };
 
   void AddNodePrecedence(NodePrecedence precedence) {
@@ -3625,12 +3518,52 @@ class RoutingDimension {
   const std::vector<NodePrecedence>& GetNodePrecedences() const {
     return node_precedences_;
   }
-#endif  // SWIG
-
+  /// Returns the status of a precedence based on the performed constraint and
+  /// the performed status of the first and second node of a precedence.
+  enum class PrecedenceStatus {
+    kActive,
+    kInactive,
+    kInvalid,
+  };
+  static PrecedenceStatus GetPrecedenceStatus(
+      bool first_unperformed, bool second_unperformed,
+      NodePrecedence::PerformedConstraint performed_constraint) {
+    switch (performed_constraint) {
+      case NodePrecedence::PerformedConstraint::kFirstAndSecondIndependent:
+        if (first_unperformed || second_unperformed) {
+          return PrecedenceStatus::kInactive;
+        }
+        break;
+      case NodePrecedence::PerformedConstraint::kSecondImpliesFirst:
+        if (first_unperformed) {
+          if (!second_unperformed) return PrecedenceStatus::kInvalid;
+          return PrecedenceStatus::kInactive;
+        }
+        if (second_unperformed) return PrecedenceStatus::kInactive;
+        break;
+      case NodePrecedence::PerformedConstraint::kFirstAndSecondEqual:
+        if (first_unperformed != second_unperformed) {
+          return PrecedenceStatus::kInvalid;
+        }
+        if (first_unperformed) return PrecedenceStatus::kInactive;
+        break;
+    }
+    return PrecedenceStatus::kActive;
+  }
+  void AddNodePrecedence(
+      int64_t first_node, int64_t second_node, int64_t offset,
+      NodePrecedence::PerformedConstraint performed_constraint =
+          NodePrecedence::PerformedConstraint::kFirstAndSecondIndependent) {
+    AddNodePrecedence({first_node, second_node, offset, performed_constraint});
+  }
+#else
   void AddNodePrecedence(int64_t first_node, int64_t second_node,
                          int64_t offset) {
-    AddNodePrecedence({first_node, second_node, offset});
+    AddNodePrecedence(
+        {first_node, second_node, offset,
+         NodePrecedence::PerformedConstraint::kFirstAndSecondIndependent});
   }
+#endif  // SWIG
 
   int64_t GetSpanUpperBoundForVehicle(int vehicle) const {
     return vehicle_span_upper_bounds_[vehicle];

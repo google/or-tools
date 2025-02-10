@@ -410,6 +410,7 @@ cc_library(
         "routing.h",
         "routing_constraints.h",
         "routing_decision_builders.h",
+        "routing_filter_committables.h",
         "routing_filters.h",
         "routing_ils.h",
         "routing_insertion_lns.h",

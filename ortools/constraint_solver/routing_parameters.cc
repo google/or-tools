@@ -121,6 +121,8 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_tsp_opt(BOOL_FALSE);
   o->set_use_make_active(BOOL_TRUE);
   o->set_use_relocate_and_make_active(BOOL_FALSE);  // costly if true by default
+  o->set_use_exchange_and_make_active(BOOL_FALSE);  // very costly
+  o->set_use_exchange_path_start_ends_and_make_active(BOOL_FALSE);
   o->set_use_make_inactive(BOOL_TRUE);
   o->set_use_make_chain_inactive(BOOL_TRUE);
   o->set_use_swap_active(BOOL_TRUE);
@@ -211,6 +213,8 @@ RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
   o->set_use_tsp_opt(BOOL_FALSE);
   o->set_use_make_active(BOOL_FALSE);
   o->set_use_relocate_and_make_active(BOOL_FALSE);
+  o->set_use_exchange_and_make_active(BOOL_FALSE);
+  o->set_use_exchange_path_start_ends_and_make_active(BOOL_FALSE);
   o->set_use_make_inactive(BOOL_FALSE);
   o->set_use_make_chain_inactive(BOOL_FALSE);
   o->set_use_swap_active(BOOL_FALSE);

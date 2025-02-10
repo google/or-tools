@@ -150,6 +150,10 @@ message RoutingSearchParameters {
     SORTING_PROPERTY_LOWEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS = 5;
     // Select nodes with the smallest distance to the closest vehicle.
     SORTING_PROPERTY_LOWEST_MIN_ARC_COST_TO_VEHICLE_START_ENDS = 6;
+    // Selects nodes that have a higher dimension usage on average, where the
+    // usage is determined as the ratio of node demand over vehicle capacity.
+    // Currently, this property only supports unary dimensions.
+    SORTING_PROPERTY_HIGHEST_DIMENSION_USAGE = 7;
   }
 
   // The properties used to sort insertion entries in the local cheapest
@@ -175,7 +179,7 @@ message RoutingSearchParameters {
   int32 first_solution_optimization_period = 59;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 37
+  // Next ID: 39
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -339,6 +343,23 @@ message RoutingSearchParameters {
     //   (where 1,2 and 5,6 are first and last nodes of paths) is:
     //   1 -> 4 -> 3 -> 5, 2 -> 6.
     OptionalBoolean use_relocate_and_make_active = 21;
+    // Operator which exchanges two nodes and inserts an inactive node.
+    // Possible neighbors for paths 0 -> 2 -> 4, 1 -> 3 -> 6 and 5 inactive are:
+    // 0 -> 3 -> 4, 1 -> 5 -> 2 -> 6
+    // 0 -> 3 -> 5 -> 4, 1 -> 2 -> 6
+    // 0 -> 5 -> 3 -> 4, 1 -> 2 -> 6
+    // 0 -> 3 -> 4, 1 -> 2 -> 5 -> 6
+    OptionalBoolean use_exchange_and_make_active = 37;
+    // Operator which exchanges the first and last nodes of two paths and makes
+    // a node active.
+    // Possible neighbors for paths 0 -> 1 -> 2 -> 7, 6 -> 3 -> 4 -> 8
+    // and 5 inactive are:
+    // 0 -> 5 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 7, 6 -> 1 -> 5 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 5 -> 8
+    // 0 -> 3 -> 5 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 5 -> 7, 6 -> 1 -> 2 -> 8
+    OptionalBoolean use_exchange_path_start_ends_and_make_active = 38;
     // Operator which makes path nodes inactive.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
     // and last nodes of the path) are:

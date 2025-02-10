@@ -161,6 +161,8 @@ enum class DimensionSchedulingStatus {
   // An optimal solution was found, however constraints which were relaxed were
   // violated.
   RELAXED_OPTIMAL_ONLY,
+  // Only a feasible solution was found, optimality was not proven.
+  FEASIBLE,
   // A solution could not be found.
   INFEASIBLE
 };
@@ -169,7 +171,7 @@ class RoutingLinearSolverWrapper {
  public:
   static const int kNoConstraint = -1;
 
-  virtual ~RoutingLinearSolverWrapper() {}
+  virtual ~RoutingLinearSolverWrapper() = default;
   virtual void Clear() = 0;
   virtual int CreateNewPositiveVariable() = 0;
   virtual void SetVariableName(int index, absl::string_view name) = 0;
@@ -404,8 +406,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     linear_program_.NotifyThatColumnsAreClean();
     VLOG(2) << linear_program_.Dump();
     const glop::ProblemStatus status = lp_solver_.Solve(linear_program_);
+    const bool feasible_only = status == glop::ProblemStatus::PRIMAL_FEASIBLE;
     if (status != glop::ProblemStatus::OPTIMAL &&
-        status != glop::ProblemStatus::IMPRECISE) {
+        status != glop::ProblemStatus::IMPRECISE && !feasible_only) {
       return DimensionSchedulingStatus::INFEASIBLE;
     }
     if (is_relaxation_) {
@@ -423,6 +426,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
       if (it == interval_list->end() || value < it->start) {
         return DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY;
       }
+    }
+    if (feasible_only && !linear_program_.objective_coefficients().empty()) {
+      return DimensionSchedulingStatus::FEASIBLE;
     }
     return DimensionSchedulingStatus::OPTIMAL;
   }
@@ -627,13 +633,14 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     };
     model_.clear_solution_hint();
     auto* hint = model_.mutable_solution_hint();
+    if (hint_.vars_size() == model_.variables_size()) {
+      *hint = hint_;
+    } else {
     for (const auto& [node, cumul] : schedule_variables_) {
       if (schedule_hint_[node] == 0) continue;
       hint->add_vars(cumul);
       hint->add_values(schedule_hint_[node]);
     }
-    if (hint_.vars_size() == model_.variables_size()) {
-      *model_.mutable_solution_hint() = hint_;
     }
     sat::Model model;
     model.Add(sat::NewSatParameters(parameters_));
@@ -645,6 +652,10 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
          !model_.has_floating_point_objective())) {
       record_hint();
       return DimensionSchedulingStatus::OPTIMAL;
+    } else if (response_.status() == sat::CpSolverStatus::FEASIBLE) {
+      // TODO(user): Consider storing "feasible" solutions in a separate
+      // cache we use as hint when the "optimal" cache is empty.
+      return DimensionSchedulingStatus::FEASIBLE;
     }
     return DimensionSchedulingStatus::INFEASIBLE;
   }
@@ -695,7 +706,8 @@ class DimensionCumulOptimizerCore {
   // Finds an optimal (or just feasible) solution for the route for the given
   // resource. If the resource is null, it is simply ignored.
   DimensionSchedulingStatus OptimizeSingleRouteWithResource(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       const Resource* resource, bool optimize_vehicle_costs,
       RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
@@ -706,7 +718,8 @@ class DimensionCumulOptimizerCore {
   // same model as in OptimizeSingleRouteWithResource() with the addition of
   // constraints for cumuls and breaks.
   DimensionSchedulingStatus ComputeSingleRouteSolutionCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       RoutingLinearSolverWrapper* solver,
       absl::Span<const int64_t> solution_cumul_values,
@@ -721,7 +734,8 @@ class DimensionCumulOptimizerCore {
   // If both 'resources' and 'resource_indices' are empty, computes the optimal
   // solution for the route itself (without added resource constraints).
   std::vector<DimensionSchedulingStatus> OptimizeSingleRouteWithResources(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       absl::Span<const Resource> resources,
@@ -755,7 +769,8 @@ class DimensionCumulOptimizerCore {
       std::vector<int64_t>* break_values);
 
   DimensionSchedulingStatus OptimizeAndPackSingleRoute(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RouteDimensionTravelInfo* dimension_travel_info,
       const Resource* resource, RoutingLinearSolverWrapper* solver,
       std::vector<int64_t>* cumul_values, std::vector<int64_t>* break_values);
@@ -830,7 +845,8 @@ class DimensionCumulOptimizerCore {
   // ends' cumuls, and then maximizes the starts' cumuls without increasing the
   // ends.
   DimensionSchedulingStatus PackRoutes(
-      std::vector<int> vehicles, RoutingLinearSolverWrapper* solver,
+      std::vector<int> vehicles, double solve_duration_ratio,
+      RoutingLinearSolverWrapper* solver,
       const glop::GlopParameters& packing_parameters);
 
   std::unique_ptr<CumulBoundsPropagator> propagator_;
@@ -886,19 +902,22 @@ class LocalDimensionCumulOptimizer {
   // and stores it in "optimal_cost" (if not null).
   // Returns true iff the route respects all constraints.
   DimensionSchedulingStatus ComputeRouteCumulCost(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       int64_t* optimal_cost);
 
   // Same as ComputeRouteCumulCost, but the cost computed does not contain
   // the part of the vehicle span cost due to fixed transits.
   DimensionSchedulingStatus ComputeRouteCumulCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::ResourceGroup::Resource* resource,
       int64_t* optimal_cost_without_transits);
 
   std::vector<DimensionSchedulingStatus>
   ComputeRouteCumulCostsForResourcesWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       absl::Span<const RoutingModel::ResourceGroup::Resource> resources,
       absl::Span<const int> resource_indices, bool optimize_vehicle_costs,
@@ -912,7 +931,8 @@ class LocalDimensionCumulOptimizer {
   // (if not null), and optimal_breaks, and returns true.
   // Returns false if the route is not feasible.
   DimensionSchedulingStatus ComputeRouteCumuls(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       const RoutingModel::ResourceGroup::Resource* resource,
       std::vector<int64_t>* optimal_cumuls,
@@ -921,7 +941,8 @@ class LocalDimensionCumulOptimizer {
   // Simple combination of ComputeRouteCumulCostWithoutFixedTransits() and
   // ComputeRouteCumuls().
   DimensionSchedulingStatus ComputeRouteCumulsAndCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       std::vector<int64_t>* optimal_cumuls,
       std::vector<int64_t>* optimal_breaks,
@@ -930,7 +951,8 @@ class LocalDimensionCumulOptimizer {
   // If feasible, computes the cost of a given route performed by a vehicle
   // defined by its cumuls and breaks.
   DimensionSchedulingStatus ComputeRouteSolutionCostWithoutFixedTransits(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       absl::Span<const int64_t> solution_cumul_values,
       absl::Span<const int64_t> solution_break_values, int64_t* solution_cost,
@@ -944,7 +966,8 @@ class LocalDimensionCumulOptimizer {
   // If 'resource' is non-null, the packed route must also respect its start/end
   // time window.
   DimensionSchedulingStatus ComputePackedRouteCumuls(
-      int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      int vehicle, double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo* dimension_travel_info,
       const RoutingModel::ResourceGroup::Resource* resource,
       std::vector<int64_t>* packed_cumuls, std::vector<int64_t>* packed_breaks);
@@ -1045,7 +1068,8 @@ int64_t ComputeBestVehicleToResourceAssignment(
 // The cumul and break values corresponding to the assignment of each resource
 // are also set in cumul_values and break_values, if non-null.
 bool ComputeVehicleToResourceClassAssignmentCosts(
-    int v, const RoutingModel::ResourceGroup& resource_group,
+    int v, double solve_duration_ratio,
+    const RoutingModel::ResourceGroup& resource_group,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
                                     absl::flat_hash_set<int>>&
         ignored_resources_per_class,

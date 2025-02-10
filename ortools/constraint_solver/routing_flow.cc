@@ -287,7 +287,7 @@ bool RoutingModel::SolveMatchingModel(
               // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
               // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
-                      vehicle,
+                      vehicle, /*solve_duration_ratio=*/1.0,
                       [&nexts](int64_t node) {
                         return nexts.find(node)->second;
                       },
@@ -312,7 +312,7 @@ bool RoutingModel::SolveMatchingModel(
               // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
               // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
-                      vehicle,
+                      vehicle, /*solve_duration_ratio=*/1.0,
                       [&nexts](int64_t node) {
                         return nexts.find(node)->second;
                       },

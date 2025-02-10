@@ -97,11 +97,15 @@ class FilteredHeuristicPathLNSOperator
   void OnStart() override;
 
   bool IncrementPosition() override;
-  bool CurrentRouteIsEmpty() const;
-  void IncrementCurrentRouteToNextNonEmpty();
+  bool RouteIsEmpty(int route) const;
+  int GetNextRoute(int route) const {
+    return route + 1 < num_routes_ ? route + 1 : 0;
+  }
+  int GetFirstNonEmptyRouteAfterCurrentRoute() const;
 
   std::function<int64_t(int64_t)> SetupNextAccessorForNeighbor() override;
 
+  const int num_routes_;
   int current_route_;
   int last_route_;
   bool just_started_;

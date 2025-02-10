@@ -133,16 +133,17 @@ bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
 FilteredHeuristicPathLNSOperator::FilteredHeuristicPathLNSOperator(
     std::unique_ptr<RoutingFilteredHeuristic> heuristic)
     : FilteredHeuristicLocalSearchOperator(std::move(heuristic)),
+      num_routes_(model_->vehicles()),
       current_route_(0),
       last_route_(0),
       just_started_(false) {}
 
 void FilteredHeuristicPathLNSOperator::OnStart() {
   // NOTE: We set last_route_ to current_route_ here to make sure all routes
-  // are scanned in IncrementCurrentRouteToNextNonEmpty().
+  // are scanned in GetFirstNonEmptyRouteAfterCurrentRoute().
   last_route_ = current_route_;
-  if (CurrentRouteIsEmpty()) {
-    IncrementCurrentRouteToNextNonEmpty();
+  if (RouteIsEmpty(current_route_)) {
+    current_route_ = GetFirstNonEmptyRouteAfterCurrentRoute();
   }
   just_started_ = true;
 }
@@ -150,25 +151,27 @@ void FilteredHeuristicPathLNSOperator::OnStart() {
 bool FilteredHeuristicPathLNSOperator::IncrementPosition() {
   if (just_started_) {
     just_started_ = false;
-    return !CurrentRouteIsEmpty();
+    // If current_route_ is empty or is the only non-empty route, then we don't
+    // create a new neighbor with this operator as it would result in running
+    // a first solution heuristic with all the nodes.
+    return !RouteIsEmpty(current_route_) &&
+           GetFirstNonEmptyRouteAfterCurrentRoute() != last_route_;
   }
-  IncrementCurrentRouteToNextNonEmpty();
+  current_route_ = GetFirstNonEmptyRouteAfterCurrentRoute();
   return current_route_ != last_route_;
 }
 
-bool FilteredHeuristicPathLNSOperator::CurrentRouteIsEmpty() const {
-  return model_->IsEnd(OldValue(model_->Start(current_route_)));
+bool FilteredHeuristicPathLNSOperator::RouteIsEmpty(int route) const {
+  return model_->IsEnd(OldValue(model_->Start(route)));
 }
 
-void FilteredHeuristicPathLNSOperator::IncrementCurrentRouteToNextNonEmpty() {
-  const int num_routes = model_->vehicles();
-  do {
-    ++current_route_ %= num_routes;
-    if (current_route_ == last_route_) {
-      // All routes have been scanned.
-      return;
+int FilteredHeuristicPathLNSOperator::GetFirstNonEmptyRouteAfterCurrentRoute()
+    const {
+  int route = GetNextRoute(current_route_);
+  while (route != last_route_ && RouteIsEmpty(route)) {
+    route = GetNextRoute(route);
     }
-  } while (CurrentRouteIsEmpty());
+  return route;
 }
 
 std::function<int64_t(int64_t)>
