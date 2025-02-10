@@ -3650,6 +3650,7 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
     if (!PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_)) {
       return;
     }
+    if (context_->ModelIsUnsat()) return;
   }
 
   // Extract enforcement or fix literal.
