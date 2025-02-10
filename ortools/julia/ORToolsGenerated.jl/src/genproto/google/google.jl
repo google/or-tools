@@ -1,5 +1,5 @@
 module google
 
-include("protobuf/protobuf.jl")
+include("google/protobuf/protobuf.jl")
 
 end # module google

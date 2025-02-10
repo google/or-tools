@@ -2,5 +2,7 @@ using ORTools
 using Test
 
 @testset "ORTools.jl" begin
-    # Write your tests here.
+    for file in readdir("moi")
+        include(joinpath("moi", file))
+    end
 end
