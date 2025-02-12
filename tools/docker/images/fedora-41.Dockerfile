@@ -21,8 +21,10 @@ RUN dnf -y update \
 # Install .Net
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-8.0 \
+&& dnf -y install dotnet-sdk-8.0 crypto-policies-scripts \
 && dnf clean all
+# https://docs.redhat.com/en/documentation/net/6.0/html/release_notes_for_.net_6.0_rpm_packages/known-issues_release-notes-for-dotnet-rpms
+RUN update-crypto-policies --set DEFAULT:SHA1
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
