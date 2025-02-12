@@ -685,15 +685,6 @@ if(USE_SCIP)
     COMPONENT Devel)
 endif()
 
-if(MSVC)
-# Bundle lib for MSVC
-configure_file(
-${PROJECT_SOURCE_DIR}/cmake/bundle-install.cmake.in
-${PROJECT_BINARY_DIR}/bundle-install.cmake
-@ONLY)
-install(SCRIPT ${PROJECT_BINARY_DIR}/bundle-install.cmake)
-endif()
-
 install(FILES "${PROJECT_SOURCE_DIR}/LICENSE"
   DESTINATION "${CMAKE_INSTALL_DOCDIR}"
   COMPONENT Devel)
