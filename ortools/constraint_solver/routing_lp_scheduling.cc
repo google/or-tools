@@ -2196,8 +2196,10 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
   }
 
-  for (const auto& [limit, min_break_duration] :
+  for (const auto& distance_duration :
        dimension_->GetBreakDistanceDurationOfVehicle(vehicle)) {
+    const int64_t limit = distance_duration.first;
+    const int64_t min_break_duration = distance_duration.second;
     int64_t min_num_breaks = 0;
     if (limit > 0) {
       min_num_breaks =
