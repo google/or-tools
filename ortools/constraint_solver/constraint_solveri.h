@@ -2331,7 +2331,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   class ActivePaths {
    public:
     explicit ActivePaths(int num_nodes) : start_to_path_(num_nodes, -1) {}
-    void Clear() { is_path_pair_active_.clear(); }
+    void Clear() { to_reset_ = true; }
     template <typename T>
     void Initialize(T is_start) {
       if (is_path_pair_active_.empty()) {
@@ -2343,14 +2343,15 @@ class PathOperator : public IntVarLocalSearchOperator {
             ++num_paths_;
           }
         }
-        is_path_pair_active_.resize(num_paths_ * num_paths_, true);
       }
     }
     void DeactivatePathPair(int start1, int start2) {
+      if (to_reset_) Reset();
       is_path_pair_active_[start_to_path_[start1] * num_paths_ +
                            start_to_path_[start2]] = false;
     }
     void ActivatePath(int start) {
+      if (to_reset_) Reset();
       const int p1 = start_to_path_[start];
       const int p1_block = num_paths_ * p1;
       for (int p2 = 0; p2 < num_paths_; ++p2) {
@@ -2362,11 +2363,19 @@ class PathOperator : public IntVarLocalSearchOperator {
       }
     }
     bool IsPathPairActive(int start1, int start2) const {
+      if (to_reset_) return true;
       return is_path_pair_active_[start_to_path_[start1] * num_paths_ +
                                   start_to_path_[start2]];
     }
 
    private:
+    void Reset() {
+      if (!to_reset_) return;
+      is_path_pair_active_.assign(num_paths_ * num_paths_, true);
+      to_reset_ = false;
+    }
+
+    bool to_reset_ = true;
     int num_paths_ = 0;
     std::vector<int64_t> start_to_path_;
     std::vector<bool> is_path_pair_active_;
