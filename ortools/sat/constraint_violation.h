@@ -26,8 +26,10 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/dense_set.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -80,7 +82,7 @@ class LinearIncrementalEvaluator {
   // independent of the set of positive constraint weight used.
   void ClearAffectedVariables();
   absl::Span<const int> VariablesAffectedByLastUpdate() const {
-    return last_affected_variables_;
+    return last_affected_variables_.PositionsSetAtLeastOnce();
   }
 
   // Query violation.
@@ -234,8 +236,7 @@ class LinearIncrementalEvaluator {
   std::vector<int64_t> cached_deltas_;
   std::vector<double> cached_scores_;
 
-  std::vector<bool> in_last_affected_variables_;
-  FixedCapacityVector<int> last_affected_variables_;
+  SparseBitset<int> last_affected_variables_;
 
   mutable size_t num_ops_ = 0;
 };
@@ -306,10 +307,12 @@ class CompiledConstraintWithProto : public CompiledConstraint {
 class LsEvaluator {
  public:
   // The cp_model must outlive this class.
-  LsEvaluator(const CpModelProto& cp_model, const SatParameters& params);
+  LsEvaluator(const CpModelProto& cp_model, const SatParameters& params,
+              TimeLimit* time_limit);
   LsEvaluator(const CpModelProto& cp_model, const SatParameters& params,
               const std::vector<bool>& ignored_constraints,
-              const std::vector<ConstraintProto>& additional_constraints);
+              const std::vector<ConstraintProto>& additional_constraints,
+              TimeLimit* time_limit);
 
   // Intersects the domain of the objective with [lb..ub].
   // It returns true if a reduction of the domain took place.
@@ -443,6 +446,7 @@ class LsEvaluator {
   std::vector<std::vector<int>> var_to_constraints_;
   std::vector<std::vector<int>> constraint_to_vars_;
   std::vector<bool> jump_value_optimal_;
+  TimeLimit* time_limit_;
 
   UnsafeDenseSet<int> violated_constraints_;
   std::vector<int> num_violated_constraint_per_var_ignoring_objective_;

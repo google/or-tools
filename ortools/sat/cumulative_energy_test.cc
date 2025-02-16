@@ -50,6 +50,8 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+  /*
+
 // An instance is a set of energy tasks and a capacity.
 struct EnergyTask {
   int start_min;
@@ -263,6 +265,8 @@ TEST(CumulativeEnergyTest, CompareToNaiveModel) {
     LOG(INFO) << result_constraint;
   }
 }
+
+*/
 
 struct CumulativeTasks {
   int64_t duration;

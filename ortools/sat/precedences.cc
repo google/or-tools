@@ -1392,7 +1392,7 @@ bool BinaryRelationRepository::PropagateLocalBounds(
     const IntegerTrail& integer_trail, Literal lit,
     const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
     absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const {
-  output->clear();
+  DCHECK_NE(lit.Index(), kNoLiteralIndex);
   if (lit.Index() >= lit_to_relations_.size()) return true;
 
   auto get_lower_bound = [&](IntegerVariable var) {
@@ -1419,8 +1419,10 @@ bool BinaryRelationRepository::PropagateLocalBounds(
 
     // lb(b.y) <= b.y <= ub(b.y) and lhs <= a.x + b.y <= rhs imply
     //   ceil((lhs - ub(b.y)) / a) <= x <= floor((rhs - lb(b.y)) / a)
-    lhs = lhs - b.coeff * get_upper_bound(b.var);
-    rhs = rhs - b.coeff * get_lower_bound(b.var);
+    if (b.coeff != 0) {
+      lhs = lhs - b.coeff * get_upper_bound(b.var);
+      rhs = rhs - b.coeff * get_lower_bound(b.var);
+    }
     update_lower_bound_by_var(a.var, MathUtil::CeilOfRatio(lhs, a.coeff));
     update_upper_bound_by_var(a.var, MathUtil::FloorOfRatio(rhs, a.coeff));
   };

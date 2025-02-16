@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -29,6 +30,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/max_flow.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -43,7 +45,13 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+using ::testing::AnyOf;
 using ::testing::ElementsAre;
+using ::testing::Eq;
+using ::testing::IsEmpty;
+using ::testing::Pair;
+using ::testing::UnorderedElementsAre;
+using Relation = RouteRelationsHelper::Relation;
 
 TEST(MinOutgoingFlowHelperTest, TwoNodesWithoutConstraints) {
   Model model;
@@ -170,12 +178,376 @@ TEST(MinOutgoingFlowHelperTest, TimeWindows) {
   EXPECT_EQ(tight_min_flow, 2);
 }
 
-// Test on a simple tree:
-//      3
-//     / \ \
-//    1   0 5
-//   / \
-//  2   4
+std::vector<absl::flat_hash_map<int, IntegerVariable>>
+GetNodeVariablesByDimension(const RouteRelationsHelper& helper) {
+  std::vector<absl::flat_hash_map<int, IntegerVariable>> result(
+      helper.num_dimensions());
+  for (int n = 0; n < helper.num_nodes(); ++n) {
+    for (int d = 0; d < helper.num_dimensions(); ++d) {
+      if (helper.GetNodeVariable(n, d) != kNoIntegerVariable) {
+        result[d][n] = helper.GetNodeVariable(n, d);
+      }
+    }
+  }
+  return result;
+}
+
+int SolveTwoDimensionBinPacking(int capacity, absl::Span<const int> load1,
+                                absl::Span<const int> load2) {
+  // Lets generate a quick cp-sat model.
+  const int num_items = load1.size();
+  const int num_bins = num_items;
+
+  CpModelBuilder cp_model;
+
+  // x[i][b] == item i in bin b.
+  std::vector<std::vector<BoolVar>> x(num_items);
+  for (int i = 0; i < num_items; ++i) {
+    x[i].resize(num_bins);
+    for (int b = 0; b < num_bins; ++b) {
+      x[i][b] = cp_model.NewBoolVar();
+    }
+  }
+
+  // Place all items.
+  for (int i = 0; i < num_items; ++i) {
+    cp_model.AddExactlyOne(x[i]);
+  }
+
+  // Respect capacity.
+  for (int b = 0; b < num_bins; ++b) {
+    LinearExpr sum1;
+    LinearExpr sum2;
+    for (int i = 0; i < num_items; ++i) {
+      sum1 += load1[i] * x[i][b];
+      sum2 += load2[i] * x[i][b];
+    }
+    cp_model.AddLessOrEqual(sum1, capacity);
+    cp_model.AddLessOrEqual(sum2, capacity);
+  }
+
+  // Bin used variables.
+  std::vector<BoolVar> is_used(num_bins);
+  for (int b = 0; b < num_bins; ++b) {
+    is_used[b] = cp_model.NewBoolVar();
+    for (int i = 0; i < num_items; ++i) {
+      cp_model.AddImplication(x[i][b], is_used[b]);
+    }
+  }
+
+  // Objective
+  cp_model.Minimize(LinearExpr::Sum(is_used));
+
+  // Solving part.
+  const CpSolverResponse response = Solve(cp_model.Build());
+  return static_cast<int>(response.objective_value());
+}
+
+// We test a simple example with 2 dimensions and 4 nodes with demands
+// (7, 3) (3, 7) and (3, 1), (1, 3).
+TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutes) {
+  Model model;
+  const int num_nodes = 5;
+
+  // A complete graph with num_nodes.
+  std::vector<int> tails;
+  std::vector<int> heads;
+  std::vector<Literal> literals;
+  absl::flat_hash_map<std::pair<int, int>, Literal> literal_by_arc;
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    for (int head = 0; head < num_nodes; ++head) {
+      if (tail == head) continue;
+      tails.push_back(tail);
+      heads.push_back(head);
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+      literal_by_arc[{tail, head}] = literals.back();
+    }
+  }
+
+  // Load of each node on both dimensions.
+  std::vector<int> load1 = {0, 7, 3, 3, 1};
+  std::vector<int> load2 = {0, 3, 7, 1, 3};
+
+  // For each node, one cumul variable per dimension.
+  std::vector<IntegerVariable> cumul_vars_1;
+  std::vector<IntegerVariable> cumul_vars_2;
+  const int64_t capacity(10);
+  for (int n = 0; n < num_nodes; ++n) {
+    cumul_vars_1.push_back(model.Add(NewIntegerVariable(load1[n], capacity)));
+    cumul_vars_2.push_back(model.Add(NewIntegerVariable(load2[n], capacity)));
+  }
+
+  // Capacity constraints on two dimensions.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (const auto& [arc, literal] : literal_by_arc) {
+    const auto& [tail, head] = arc;
+
+    // vars[head] >= vars[tail] + load[head];
+    repository->Add(literal, {cumul_vars_1[head], 1}, {cumul_vars_1[tail], -1},
+                    load1[head], 10000);
+    repository->Add(literal, {cumul_vars_2[head], 1}, {cumul_vars_2[tail], -1},
+                    load2[head], 10000);
+  }
+  repository->Build();
+
+  const int optimal = SolveTwoDimensionBinPacking(capacity, load1, load2);
+  EXPECT_EQ(optimal, 2);
+
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  std::vector<int> subset = {1, 2, 3, 4};
+  for (int k = 0; k < subset.size(); ++k) {
+    if (k < optimal) {
+      EXPECT_FALSE(helper.SubsetMightBeServedWithKRoutes(k, subset));
+    } else {
+      EXPECT_TRUE(helper.SubsetMightBeServedWithKRoutes(k, subset));
+    }
+  }
+}
+
+// Same as above but with randomization.
+// I kept the "golden" test just to make sure things looks reasonable.
+TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutesRandom) {
+  Model model;
+  absl::BitGen random;
+  const int num_nodes = 8;
+  const int capacity = 20;
+
+  // A complete graph with num_nodes.
+  std::vector<int> tails;
+  std::vector<int> heads;
+  std::vector<Literal> literals;
+  absl::flat_hash_map<std::pair<int, int>, Literal> literal_by_arc;
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    for (int head = 0; head < num_nodes; ++head) {
+      if (tail == head) continue;
+      tails.push_back(tail);
+      heads.push_back(head);
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+      literal_by_arc[{tail, head}] = literals.back();
+    }
+  }
+
+  // Load of each node on both dimensions.
+  std::vector<int> load1(num_nodes, 0);
+  std::vector<int> load2(num_nodes, 0);
+  for (int n = 0; n < num_nodes; ++n) {
+    load1[n] = absl::Uniform(random, 0, capacity);
+    load2[n] = absl::Uniform(random, 0, capacity);
+  }
+
+  // For each node, one cumul variable per dimension.
+  std::vector<IntegerVariable> cumul_vars_1;
+  std::vector<IntegerVariable> cumul_vars_2;
+  for (int n = 0; n < num_nodes; ++n) {
+    cumul_vars_1.push_back(model.Add(NewIntegerVariable(load1[n], capacity)));
+    cumul_vars_2.push_back(model.Add(NewIntegerVariable(load2[n], capacity)));
+  }
+
+  // Capacity constraints on two dimensions.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (const auto& [arc, literal] : literal_by_arc) {
+    const auto& [tail, head] = arc;
+
+    // vars[head] >= vars[tail] + load[head];
+    repository->Add(literal, {cumul_vars_1[head], 1}, {cumul_vars_1[tail], -1},
+                    load1[head], 10000);
+    repository->Add(literal, {cumul_vars_2[head], 1}, {cumul_vars_2[tail], -1},
+                    load2[head], 10000);
+  }
+  repository->Build();
+
+  // To check our indices mapping, lets remove a random nodes from the subset
+  std::vector<int> subset;
+  for (int i = 0; i < num_nodes; ++i) subset.push_back(i);
+  const int to_remove = absl::Uniform(random, 0, num_nodes);
+  std::swap(subset[to_remove], subset.back());
+  subset.pop_back();
+
+  // We set the load to zero to have the proper optimal.
+  load1[to_remove] = 0;
+  load2[to_remove] = 0;
+  const int optimal = SolveTwoDimensionBinPacking(capacity, load1, load2);
+  LOG(INFO) << "random problem optimal = " << optimal;
+
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  for (int k = 0; k < subset.size(); ++k) {
+    if (k < optimal) {
+      EXPECT_FALSE(helper.SubsetMightBeServedWithKRoutes(k, subset));
+    } else {
+      EXPECT_TRUE(helper.SubsetMightBeServedWithKRoutes(k, subset));
+    }
+  }
+}
+
+std::vector<absl::flat_hash_map<int, Relation>> GetRelationByDimensionAndArc(
+    const RouteRelationsHelper& helper) {
+  std::vector<absl::flat_hash_map<int, Relation>> result(
+      helper.num_dimensions());
+  for (int i = 0; i < helper.num_arcs(); ++i) {
+    for (int d = 0; d < helper.num_dimensions(); ++d) {
+      if (!helper.GetArcRelation(i, d).empty()) {
+        result[d][i] = helper.GetArcRelation(i, d);
+      }
+    }
+  }
+  return result;
+}
+
+TEST(RouteRelationsHelperTest, Basic) {
+  Model model;
+  // A graph with 6 nodes and the following arcs:
+  //
+  // l0 --->0<--- l1
+  //    |       |
+  //    1--l2-->2--l3-->3     4--l4-->5
+  //
+  const int num_nodes = 6;
+  const std::vector<int> tails = {1, 2, 1, 2, 4};
+  const std::vector<int> heads = {0, 0, 2, 3, 5};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true)};
+  // Add relations with "time" variables A, B, C intended to be associated with
+  // nodes 0, 1, 2 respectively, and "load" variables U, V, W, X, Y, Z intended
+  // to be associated with nodes 0, 1, 2, 3, 4, 5 respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable u = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable v = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable w = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
+  BinaryRelationRepository repository;
+  repository.Add(literals[0], {a, 1}, {b, -1}, 50, 1000);
+  repository.Add(literals[1], {a, 1}, {c, -1}, 70, 1000);
+  repository.Add(literals[2], {c, 1}, {b, -1}, 40, 1000);
+  repository.Add(literals[0], {NegationOf(u), -1}, {NegationOf(v), 1}, 4, 100);
+  repository.Add(literals[1], {u, 1}, {w, -1}, 4, 100);
+  repository.Add(literals[2], {w, -1}, {v, 1}, -100, -3);
+  repository.Add(literals[3], {x, 1}, {w, -1}, 5, 100);
+  repository.Add(literals[4], {z, 1}, {y, -1}, 7, 100);
+  repository.Build();
+
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, repository);
+
+  ASSERT_NE(helper, nullptr);
+  // Two dimensions (time and load) on the first connected component, and one
+  // dimension (load) on the second component.
+  EXPECT_EQ(helper->num_dimensions(), 3);
+  EXPECT_EQ(helper->num_nodes(), num_nodes);
+  EXPECT_EQ(helper->num_arcs(), 5);
+  // Check the node variables.
+  EXPECT_THAT(
+      GetNodeVariablesByDimension(*helper),
+      UnorderedElementsAre(
+          UnorderedElementsAre(Pair(0, a), Pair(1, b), Pair(2, c)),
+          UnorderedElementsAre(Pair(0, u), Pair(1, v), Pair(2, w), Pair(3, x)),
+          // Variables y and z cannot be unambiguously associated with nodes.
+          IsEmpty()));
+  // Check the arc relations.
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 50, 1000}),
+                                       Pair(1, Relation{-1, 1, 70, 1000}),
+                                       Pair(2, Relation{-1, 1, 40, 1000})),
+                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 4, 100}),
+                                       Pair(1, Relation{-1, 1, 4, 100}),
+                                       Pair(2, Relation{-1, 1, 3, 100}),
+                                       Pair(3, Relation{-1, 1, 5, 100})),
+                  // The relation for the arc 4->5 is not recovered since its
+                  // variables cannot be unambiguously associated with nodes.
+                  IsEmpty()));
+
+  helper->RemoveArcs({0, 2});
+
+  EXPECT_EQ(helper->num_nodes(), num_nodes);
+  EXPECT_EQ(helper->num_arcs(), 3);
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 70, 1000})),
+                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 4, 100}),
+                                       Pair(1, Relation{-1, 1, 5, 100})),
+                  IsEmpty()));
+}
+
+TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
+  Model model;
+  // A graph with 3 nodes and the following arcs: 0--l0-->1--l2-->2
+  const int num_nodes = 3;
+  const std::vector<int> tails = {0, 1};
+  const std::vector<int> heads = {1, 2};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true)};
+  // Add relations with "time" variables A, B, C and "load" variables X, Y, Z,
+  // intended to be associated with nodes 0, 1, 2 respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
+  BinaryRelationRepository repository;
+  repository.Add(literals[0], {b, 1}, {a, -1}, 50, 1000);
+  repository.Add(literals[1], {c, 1}, {b, -1}, 70, 1000);
+  repository.Add(literals[0], {z, 1}, {y, -1}, 5, 100);
+  repository.Add(literals[1], {y, 1}, {x, -1}, 7, 100);
+  // Weird relation linking time and load variables, causing all the variables
+  // to be in a single "dimension".
+  repository.Add(literals[0], {x, 1}, {a, -1}, 0, 100);
+  repository.Build();
+
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, repository);
+
+  EXPECT_EQ(helper, nullptr);
+}
+
+TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
+  Model model;
+  // A graph with 3 nodes and the following arcs: 0--l0-->1--l1-->2
+  const int num_nodes = 3;
+  const std::vector<int> tails = {0, 1};
+  const std::vector<int> heads = {1, 2};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true)};
+  // Add relations with "time" variables A, B, C intended to be associated with
+  // nodes 0, 1, 2 respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
+  BinaryRelationRepository repository;
+  repository.Add(literals[0], {b, 1}, {a, -1}, 50, 1000);
+  repository.Add(literals[1], {c, 1}, {b, -1}, 70, 1000);
+  // Add a second relation for some arc.
+  repository.Add(literals[1], {c, 2}, {b, -3}, 100, 200);
+  repository.Build();
+
+  using Relation = RouteRelationsHelper::Relation;
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, repository);
+
+  EXPECT_EQ(helper->num_dimensions(), 1);
+  EXPECT_EQ(helper->GetNodeVariable(0, 0), a);
+  EXPECT_EQ(helper->GetNodeVariable(1, 0), b);
+  EXPECT_EQ(helper->GetNodeVariable(2, 0), c);
+  EXPECT_EQ(helper->GetArcRelation(0, 0), (Relation{-1, 1, 50, 1000}));
+  EXPECT_THAT(
+      helper->GetArcRelation(1, 0),
+      AnyOf(Eq(Relation{-1, 1, 70, 1000}), Eq(Relation{-3, 2, 100, 200})));
+}
+
 TEST(ExtractAllSubsetsFromForestTest, Basic) {
   std::vector<int> parents = {3, 3, 1, 3, 1, 3};
 
@@ -391,8 +763,8 @@ TEST(CreateStronglyConnectedGraphCutGeneratorTest, BasicExample) {
 }
 
 TEST(CreateStronglyConnectedGraphCutGeneratorTest, AnotherExample) {
-  // This time, the graph is fully connected, but we still detect that {1, 2, 3}
-  // do not have enough outgoing flow:
+  // This time, the graph is fully connected, but we still detect that {1, 2,
+  // 3} do not have enough outgoing flow:
   //
   //           0.5
   //        0 <--> 1
@@ -423,7 +795,7 @@ TEST(CreateStronglyConnectedGraphCutGeneratorTest, AnotherExample) {
   generator.generate_cuts(&manager);
 
   // The sets {2, 3} and {1, 2, 3} will generate cuts.
-  // However as an heuristic, we will wait another round to generate {1, 2 ,3}.
+  // However as an heuristic, we will wait another round to generate {1, 2, 3}.
   EXPECT_EQ(manager.num_cuts(), 1);
   EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
               ::testing::StartsWith("1 <= 1*X3 1*X6"));

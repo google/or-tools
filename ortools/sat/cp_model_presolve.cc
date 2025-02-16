@@ -13359,7 +13359,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
         // If the presolve always keep symmetry, we compute it once and for all.
         if (!context_->working_model->has_symmetry()) {
           DetectAndAddSymmetryToProto(context_->params(),
-                                      context_->working_model, logger_);
+                                      context_->working_model, logger_,
+                                      context_->time_limit());
         }
 
         // We distinguish an empty symmetry message meaning that symmetry were

@@ -62,6 +62,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -400,6 +401,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   auto* logger = m->GetOrCreate<SolverLogger>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
+  auto* time_limit = m->GetOrCreate<TimeLimit>();
 
   // TODO(user): Debug what makes it unsat at this point.
   if (sat_solver->ModelIsUnsat()) return;
@@ -617,6 +619,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     // tests are very flaky (it only happens in parallel). Keeping it there for
     // the time being.
     if (sat_solver->ModelIsUnsat()) return;
+
+    if (time_limit->LimitReached()) return;
 
     // Encode the half-equalities.
     //

@@ -341,9 +341,9 @@ public final class CpModel {
   /**
    * Adds {@code AllDifferent(expressions)}.
    *
-   * <p>This constraint forces all affine expressions to have different values.
+   * <p>This constraint forces all expressions to have different values.
    *
-   * @param expressions a list of affine integer expressions
+   * @param expressions a list of 1-var affine integer expressions
    * @return an instance of the Constraint class
    */
   public Constraint addAllDifferent(LinearArgument[] expressions) {
@@ -450,11 +450,11 @@ public final class CpModel {
   /**
    * Adds {@code AllowedAssignments(expressions)}.
    *
-   * <p>An AllowedAssignments constraint is a constraint on an array of affine expressions that
-   * forces, when all expressions are fixed to a single value, that the corresponding list of values
-   * is equal to one of the tuples of the tupleList.
+   * <p>An AllowedAssignments constraint is a constraint on an array of 1-var affine expressions
+   * that forces, when all expressions are fixed to a single value, that the corresponding list of
+   * values is equal to one of the tuples of the tupleList.
    *
-   * @param expressions a list of affine expressions (a * var + b)
+   * @param expressions a list of 1-var affine expressions (a * var + b)
    * @return an instance of the TableConstraint class without any tuples. Tuples can be added
    *     directly to the table constraint.
    */
@@ -480,10 +480,10 @@ public final class CpModel {
   /**
    * Adds {@code ForbiddenAssignments(expressions)}.
    *
-   * <p>A ForbiddenAssignments constraint is a constraint on an array of affine expressions where
-   * the list of impossible combinations is provided in the tuples list.
+   * <p>A ForbiddenAssignments constraint is a constraint on an array of 1-var affine expressions
+   * where the list of impossible combinations is provided in the tuples list.
    *
-   * @param expressions a list of affine expressions (a * var + b)
+   * @param expressions a list of 1-var affine expressions (a * var + b)
    * @return an instance of the TableConstraint class without any tuples. Tuples can be added
    *     directly to the table constraint.
    */
@@ -509,11 +509,12 @@ public final class CpModel {
   /**
    * Adds an automaton constraint.
    *
-   * <p>An automaton constraint takes a list of affine expressions (of size n), an initial state, a
-   * set of final states, and a set of transitions that will be added incrementally directly on the
-   * returned AutomatonConstraint instance. A transition is a triplet ('tail', 'transition',
-   * 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from
-   * 'head' to 'tail', corresponding to the value of one expression in the list of expressions.
+   * <p>An automaton constraint takes a list of 1-var affine expressions (of size n), an initial
+   * state, a set of final states, and a set of transitions that will be added incrementally
+   * directly on the returned AutomatonConstraint instance. A transition is a triplet ('tail',
+   * 'transition', 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an
+   * arc from 'head' to 'tail', corresponding to the value of one expression in the list of
+   * expressions.
    *
    * <p>This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the
    * possible states of the automaton. The first state contains the initial state. The last phase
@@ -529,8 +530,8 @@ public final class CpModel {
    * from the initial state in phase 0, there is a path labeled by the values of the expressions
    * that ends in one of the final states in the final phase.
    *
-   * @param transitionExpressions a non empty list of affine expressions (a * var + b) whose values
-   *     correspond to the labels of the arcs traversed by the automaton
+   * @param transitionExpressions a non empty list of 1-var affine expressions (a * var + b) whose
+   *     values correspond to the labels of the arcs traversed by the automaton
    * @param startingState the initial state of the automaton
    * @param finalStates a non empty list of admissible final states
    * @return an instance of the Constraint class
@@ -757,16 +758,16 @@ public final class CpModel {
   // Scheduling support.
 
   /**
-   * Creates an interval variable from three affine expressions start, size, and end.
+   * Creates an interval variable from three 1-var affine expressions start, size, and end.
    *
    * <p>An interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap.
    *
    * <p>Internally, it ensures that {@code start + size == end}.
    *
-   * @param start the start of the interval. It needs to be an affine or constant expression.
-   * @param size the size of the interval. It needs to be an affine or constant expression.
-   * @param end the end of the interval. It needs to be an affine or constant expression.
+   * @param start the start of the interval. It needs to be an 1-var affine or constant expression.
+   * @param size the size of the interval. It needs to be an 1-var affine or constant expression.
+   * @param end the end of the interval. It needs to be an 1-var affine or constant expression.
    * @param name the name of the interval variable
    * @return An IntervalVar object
    */
@@ -779,12 +780,12 @@ public final class CpModel {
   }
 
   /**
-   * Creates an interval variable from an affine expression start, and a fixed size.
+   * Creates an interval variable from an 1-var affine expression start, and a fixed size.
    *
    * <p>An interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap.
    *
-   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param start the start of the interval. It needs to be an 1-var affine or constant expression.
    * @param size the fixed size of the interval.
    * @param name the name of the interval variable.
    * @return An IntervalVar object
@@ -806,7 +807,7 @@ public final class CpModel {
   }
 
   /**
-   * Creates an optional interval variable from three affine expressions start, size, end, and
+   * Creates an optional interval variable from three 1-var affine expressions start, size, end, and
    * isPresent.
    *
    * <p>An optional interval variable is a constraint, that is itself used in other constraints like
@@ -815,9 +816,9 @@ public final class CpModel {
    *
    * <p>Internally, it ensures that {@code isPresent => start + size == end}.
    *
-   * @param start the start of the interval. It needs to be an affine or constant expression.
-   * @param size the size of the interval. It needs to be an affine or constant expression.
-   * @param end the end of the interval. It needs to be an affine or constant expression.
+   * @param start the start of the interval. It needs to be an 1-var affine or constant expression.
+   * @param size the size of the interval. It needs to be an 1-var affine or constant expression.
+   * @param end the end of the interval. It needs to be an 1-var affine or constant expression.
    * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
    *     is simply ignored by all constraints.
    * @param name The name of the interval variable
@@ -833,12 +834,12 @@ public final class CpModel {
   }
 
   /**
-   * Creates an optional interval variable from an affine expression start, and a fixed size.
+   * Creates an optional interval variable from an 1-var affine expression start, and a fixed size.
    *
    * <p>An interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap.
    *
-   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param start the start of the interval. It needs to be an 1-var affine or constant expression.
    * @param size the fixed size of the interval.
    * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
    *     is simply ignored by all constraints.
@@ -913,8 +914,8 @@ public final class CpModel {
    * <p>{@code forall t: sum(demands[i] if (start(intervals[t]) <= t < end(intervals[t])) and (t is
    * present)) <= capacity}.
    *
-   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive affine
-   *     expression.
+   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive 1-var
+   *     affine expression.
    * @return an instance of the CumulativeConstraint class. this class allows adding (interval,
    *     demand) pairs incrementally.
    */

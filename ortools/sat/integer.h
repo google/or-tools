@@ -1393,6 +1393,8 @@ inline bool IntegerTrail::IntegerLiteralIsFalse(IntegerLiteral l) const {
 // serves as sentinels. Their index match the variables index.
 inline IntegerValue IntegerTrail::LevelZeroLowerBound(
     IntegerVariable var) const {
+  DCHECK_GE(var, 0);
+  DCHECK_LT(var, integer_trail_.size());
   return integer_trail_[var.value()].bound;
 }
 

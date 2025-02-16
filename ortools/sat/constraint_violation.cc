@@ -37,6 +37,7 @@
 #include "ortools/util/dense_set.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -215,7 +216,7 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
 
   // Resets the activity as the offset and the number of false enforcement to 0.
   activities_ = offsets_;
-  in_last_affected_variables_.resize(columns_.size(), false);
+  last_affected_variables_.ClearAndResize(columns_.size());
   num_false_enforcement_.assign(num_constraints_, 0);
 
   // Update these numbers for all columns.
@@ -256,23 +257,10 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
 }
 
 void LinearIncrementalEvaluator::ClearAffectedVariables() {
-  if (10 * last_affected_variables_.size() < columns_.size()) {
-    // Sparse.
-    in_last_affected_variables_.resize(columns_.size(), false);
-    for (const int var : last_affected_variables_) {
-      in_last_affected_variables_[var] = false;
-    }
-  } else {
-    // Dense.
-    in_last_affected_variables_.assign(columns_.size(), false);
-  }
-  last_affected_variables_.clear();
-  DCHECK(std::all_of(in_last_affected_variables_.begin(),
-                     in_last_affected_variables_.end(),
-                     [](bool b) { return !b; }));
+  last_affected_variables_.ClearAndResize(columns_.size());
 }
 
-// Tricky: Here we re-use in_last_affected_variables_ to resest
+// Tricky: Here we reuse last_affected_variables_ to reset
 // var_to_score_change. And in particular we need to list all variable whose
 // score changed here. Not just the one for which we have a decrease.
 void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
@@ -293,10 +281,9 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
     num_ops_ += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
-      if (!in_last_affected_variables_[var]) {
+      if (!last_affected_variables_[var]) {
         var_to_score_change[var] = enforcement_change;
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
+        last_affected_variables_.Set(var);
       } else {
         var_to_score_change[var] += enforcement_change;
       }
@@ -334,10 +321,9 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
       const int64_t coeff = row_coeffs[k];
       const int64_t diff =
           violation(activity + coeff * jump_deltas[var]) - old_distance;
-      if (!in_last_affected_variables_[var]) {
+      if (!last_affected_variables_[var]) {
         var_to_score_change[var] = static_cast<double>(diff);
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
+        last_affected_variables_.Set(var);
       } else {
         var_to_score_change[var] += static_cast<double>(diff);
       }
@@ -361,10 +347,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] -= weight_time_violation;
-      if (!in_last_affected_variables_[var]) {
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
-      }
+      last_affected_variables_.Set(var);
     }
   }
 
@@ -381,10 +364,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
           domains_[c].Distance(activities_[c] + coeff * jump_deltas[var]);
       jump_scores[var] +=
           weight * static_cast<double>(new_distance - old_distance);
-      if (!in_last_affected_variables_[var]) {
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
-      }
+      last_affected_variables_.Set(var);
     }
   }
 }
@@ -422,10 +402,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
           domains_[c].Distance(activities_[c] + coeff * jump_deltas[var]);
       jump_scores[var] -=
           weight * static_cast<double>(new_distance - old_distance);
-      if (!in_last_affected_variables_[var]) {
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
-      }
+      last_affected_variables_.Set(var);
     }
   }
 }
@@ -444,9 +421,8 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     const int var = row_var_buffer_[i];
     if (jump_deltas[var] == 1) {
       jump_scores[var] += score_change;
-      if (score_change < 0.0 && !in_last_affected_variables_[var]) {
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
+      if (score_change < 0.0) {
+        last_affected_variables_.Set(var);
       }
     }
   }
@@ -455,9 +431,8 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     const int var = row_var_buffer_[i];
     if (jump_deltas[var] == -1) {
       jump_scores[var] += score_change;
-      if (score_change < 0.0 && !in_last_affected_variables_[var]) {
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
+      if (score_change < 0.0) {
+        last_affected_variables_.Set(var);
       }
     }
   }
@@ -505,9 +480,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] += delta;
-      if (delta < 0.0 && !in_last_affected_variables_[var]) {
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
+      if (delta < 0.0) {
+        last_affected_variables_.Set(var);
       }
     }
   }
@@ -560,10 +534,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
       // we know that the score will always move in the same direction, so we
       // might skip the last_affected_variables_ update.
       jump_scores[var] += weight * static_cast<double>(diff);
-      if (!in_last_affected_variables_[var]) {
-        in_last_affected_variables_[var] = true;
-        last_affected_variables_.push_back(var);
-      }
+      last_affected_variables_.Set(var);
     }
   }
 }
@@ -948,7 +919,7 @@ void LinearIncrementalEvaluator::PrecomputeCompactView(
 
   cached_deltas_.assign(columns_.size(), 0);
   cached_scores_.assign(columns_.size(), 0);
-  last_affected_variables_.ClearAndReserve(columns_.size());
+  last_affected_variables_.ClearAndResize(columns_.size());
 }
 
 bool LinearIncrementalEvaluator::ViolationChangeIsConvex(int var) const {
@@ -1489,8 +1460,8 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
 // ----- LsEvaluator -----
 
 LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
-                         const SatParameters& params)
-    : cp_model_(cp_model), params_(params) {
+                         const SatParameters& params, TimeLimit* time_limit)
+    : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_ignoring_objective_.assign(
@@ -1506,8 +1477,9 @@ LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
 LsEvaluator::LsEvaluator(
     const CpModelProto& cp_model, const SatParameters& params,
     const std::vector<bool>& ignored_constraints,
-    const std::vector<ConstraintProto>& additional_constraints)
-    : cp_model_(cp_model), params_(params) {
+    const std::vector<ConstraintProto>& additional_constraints,
+    TimeLimit* time_limit)
+    : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_ignoring_objective_.assign(
@@ -1827,9 +1799,17 @@ void LsEvaluator::CompileConstraintsAndObjective(
     }
   }
 
+  static constexpr int kTimeoutCheckInterval = 1000;
+  int next_timeout_check_counter = 0;
   for (int c = 0; c < cp_model_.constraints_size(); ++c) {
     if (ignored_constraints[c]) continue;
     CompileOneConstraint(cp_model_.constraints(c));
+    if (next_timeout_check_counter++ == kTimeoutCheckInterval) {
+      if (time_limit_->LimitReached()) {
+        break;
+      }
+      next_timeout_check_counter = 0;
+    }
   }
 
   for (const ConstraintProto& ct : additional_constraints) {

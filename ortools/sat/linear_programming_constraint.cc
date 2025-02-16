@@ -858,7 +858,7 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
     }
   }
 
-  if (!lp_solution_is_set_) {
+  if (!lp_solution_is_set_ || force_lp_call_on_next_propagate_) {
     return Propagate();
   }
 
@@ -2120,8 +2120,11 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
 }
 
 bool LinearProgrammingConstraint::Propagate() {
+  force_lp_call_on_next_propagate_ = false;
   if (!enabled_) return true;
   if (time_limit_->LimitReached()) return true;
+  const int64_t timestamp_at_function_start = integer_trail_->num_enqueues();
+
   UpdateBoundsOfLpVariables();
 
   // TODO(user): It seems the time we loose by not stopping early might be worth
@@ -2160,6 +2163,15 @@ bool LinearProgrammingConstraint::Propagate() {
   int cuts_round = 0;
   while (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL &&
          cuts_round < max_cuts_rounds) {
+    // We are about to spend some effort finding cuts or changing the LP.
+    // If one of the LP solve done by this function propagated something, it
+    // seems better to reach the propagation fix point first before doing that.
+    if (integer_trail_->num_enqueues() > timestamp_at_function_start) {
+      force_lp_call_on_next_propagate_ = true;
+      watcher_->CallOnNextPropagate(watcher_id_);
+      return true;
+    }
+
     // We wait for the first batch of problem constraints to be added before we
     // begin to generate cuts. Note that we rely on num_solves_ since on some
     // problems there is no other constraints than the cuts.

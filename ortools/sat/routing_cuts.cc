@@ -30,12 +30,15 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/max_flow.h"
 #include "ortools/sat/cuts.h"
@@ -46,6 +49,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
@@ -99,6 +103,7 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
           *model->GetOrCreate<BinaryRelationRepository>()),
       trail_(*model->GetOrCreate<Trail>()),
       integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()),
       in_subset_(num_nodes, false),
       index_in_subset_(num_nodes, -1),
       incoming_arc_indices_(num_nodes),
@@ -108,31 +113,31 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
       node_var_lower_bounds_(num_nodes),
       next_node_var_lower_bounds_(num_nodes) {}
 
+MinOutgoingFlowHelper::~MinOutgoingFlowHelper() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"RoutingDp/num_full_dp_calls", num_full_dp_calls_});
+  stats.push_back({"RoutingDp/num_full_dp_skips", num_full_dp_skips_});
+  stats.push_back(
+      {"RoutingDp/num_full_dp_early_abort", num_full_dp_early_abort_});
+  stats.push_back(
+      {"RoutingDp/num_full_dp_work_abort", num_full_dp_work_abort_});
+  shared_stats_->AddStats(stats);
+}
+
 int MinOutgoingFlowHelper::ComputeMinOutgoingFlow(
     absl::Span<const int> subset) {
   DCHECK_GE(subset.size(), 1);
-  DCHECK(absl::c_all_of(in_subset_, [](bool b) { return !b; }));
-  DCHECK(absl::c_all_of(incoming_arc_indices_,
-                        [](const auto& v) { return v.empty(); }));
-  DCHECK(absl::c_all_of(reachable_, [](bool b) { return !b; }));
   DCHECK(absl::c_all_of(next_reachable_, [](bool b) { return !b; }));
   DCHECK(absl::c_all_of(node_var_lower_bounds_,
                         [](const auto& m) { return m.empty(); }));
   DCHECK(absl::c_all_of(next_node_var_lower_bounds_,
                         [](const auto& m) { return m.empty(); }));
 
-  for (const int n : subset) {
-    in_subset_[n] = true;
-    // Conservatively assume that each subset node is reachable from outside.
-    reachable_[n] = true;
-  }
-  const int num_arcs = tails_.size();
-  for (int i = 0; i < num_arcs; ++i) {
-    if (in_subset_[tails_[i]] && in_subset_[heads_[i]] &&
-        heads_[i] != tails_[i]) {
-      incoming_arc_indices_[heads_[i]].push_back(i);
-    }
-  }
+  InitializeGraph(subset);
+
+  // Conservatively assume that each subset node is reachable from outside.
+  reachable_ = in_subset_;
 
   // Maximum number of nodes of a feasible path inside the subset.
   int longest_path_length = 1;
@@ -180,12 +185,10 @@ int MinOutgoingFlowHelper::ComputeMinOutgoingFlow(
 
   // The maximum number of distinct paths of length `longest_path_length`.
   int max_longest_paths = 0;
-  // Reset the temporary data structures for the next call.
   for (const int n : subset) {
-    in_subset_[n] = false;
-    incoming_arc_indices_[n].clear();
     if (reachable_[n]) ++max_longest_paths;
-    reachable_[n] = false;
+
+    // Reset the temporary data structures for the next call.
     next_reachable_[n] = false;
     node_var_lower_bounds_[n].clear();
     next_node_var_lower_bounds_[n].clear();
@@ -227,82 +230,57 @@ struct Path {
   }
 };
 
-struct PathVariableBounds {
-  absl::flat_hash_set<int> incoming_arc_indices;
-  absl::flat_hash_map<IntegerVariable, absl::flat_hash_map<int, IntegerValue>>
-      lower_bound_by_var_and_arc_index;
-};
 }  // namespace
+
+void MinOutgoingFlowHelper::InitializeGraph(absl::Span<const int> subset) {
+  const int num_nodes = in_subset_.size();
+  in_subset_.assign(num_nodes, false);
+  index_in_subset_.assign(num_nodes, -1);
+  for (int i = 0; i < subset.size(); ++i) {
+    const int n = subset[i];
+    in_subset_[n] = true;
+    index_in_subset_[n] = i;
+  }
+
+  for (auto& v : incoming_arc_indices_) v.clear();
+  for (auto& v : outgoing_arc_indices_) v.clear();
+  for (int i = 0; i < tails_.size(); ++i) {
+    const int tail = tails_[i];
+    const int head = heads_[i];
+    if (in_subset_[tail] && in_subset_[head] && tail != head) {
+      outgoing_arc_indices_[tail].push_back(i);
+      incoming_arc_indices_[head].push_back(i);
+    }
+  }
+}
 
 int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
     absl::Span<const int> subset) {
   DCHECK_GE(subset.size(), 1);
   DCHECK_LE(subset.size(), 32);
-  DCHECK(absl::c_all_of(index_in_subset_, [](int i) { return i == -1; }));
-  DCHECK(absl::c_all_of(outgoing_arc_indices_,
-                        [](const auto& v) { return v.empty(); }));
 
   std::vector<int> longest_path_length_by_end_node(subset.size(), 1);
-  for (int i = 0; i < subset.size(); ++i) {
-    index_in_subset_[subset[i]] = i;
-  }
-  for (int i = 0; i < tails_.size(); ++i) {
-    if (index_in_subset_[tails_[i]] != -1 &&
-        index_in_subset_[heads_[i]] != -1 && heads_[i] != tails_[i]) {
-      outgoing_arc_indices_[tails_[i]].push_back(i);
-    }
-  }
+  InitializeGraph(subset);
 
-  absl::flat_hash_map<Path, PathVariableBounds> path_var_bounds;
+  absl::flat_hash_map<IntegerVariable, IntegerValue> tmp_lbs;
+  absl::flat_hash_map<Path, absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      path_var_bounds;
   std::vector<Path> paths;
   std::vector<Path> next_paths;
   for (int i = 0; i < subset.size(); ++i) {
     paths.push_back(
         {.node_set = static_cast<uint32_t>(1 << i), .last_node = subset[i]});
+    path_var_bounds[paths.back()] = {};  // LevelZero bounds.
   }
   int longest_path_length = 1;
   for (int path_length = 1; path_length <= subset.size(); ++path_length) {
     for (const Path& path : paths) {
-      // Merge the bounds by variable and arc incoming to the last node of the
-      // path into bounds by variable, if possible, and check whether they are
-      // feasible or not.
-      const auto& var_bounds = path_var_bounds[path];
-      absl::flat_hash_map<IntegerVariable, IntegerValue> lower_bound_by_var;
-      for (const auto& [var, lower_bound_by_arc_index] :
-           var_bounds.lower_bound_by_var_and_arc_index) {
-        // If each arc which can reach the last node of the path enforces some
-        // lower bound for `var`, then the lower bound of `var` can be increased
-        // to the minimum of these arc-specific lower bounds (since at least one
-        // of these arcs must be selected to reach this node).
-        if (lower_bound_by_arc_index.size() !=
-            var_bounds.incoming_arc_indices.size()) {
-          continue;
-        }
-        IntegerValue lb = lower_bound_by_arc_index.begin()->second;
-        for (const auto& [_, lower_bound] : lower_bound_by_arc_index) {
-          lb = std::min(lb, lower_bound);
-        }
-        if (lb > integer_trail_.LevelZeroLowerBound(var)) {
-          lower_bound_by_var[var] = lb;
-        }
-      }
-      path_var_bounds.erase(path);
-      auto get_lower_bound = [&](IntegerVariable var) {
-        const auto it = lower_bound_by_var.find(var);
-        if (it != lower_bound_by_var.end()) return it->second;
-        return integer_trail_.LevelZeroLowerBound(var);
-      };
-      auto get_upper_bound = [&](IntegerVariable var) {
-        return -get_lower_bound(NegationOf(var));
-      };
-      bool feasible_path = true;
-      for (const auto& [var, lb] : lower_bound_by_var) {
-        if (get_upper_bound(var) < lb) {
-          feasible_path = false;
-          break;
-        }
-      }
-      if (!feasible_path) continue;
+      // We remove it from the hash_map since this entry should no longer be
+      // used as we create path of increasing length.
+      DCHECK(path_var_bounds.contains(path));
+      const absl::flat_hash_map<IntegerVariable, IntegerValue> path_bounds =
+          std::move(path_var_bounds.extract(path).mapped());
+
       // We have found a feasible path, update the path length statistics...
       longest_path_length = path_length;
       longest_path_length_by_end_node[index_in_subset_[path.last_node]] =
@@ -319,47 +297,23 @@ int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
         const Path new_path = {
             .node_set = path.node_set | (1 << head_index_in_subset),
             .last_node = head};
-        if (!path_var_bounds.contains(new_path)) {
-          next_paths.push_back(new_path);
+
+        // If this arc cannot be taken skip.
+        tmp_lbs.clear();
+        if (!binary_relation_repository_.PropagateLocalBounds(
+                integer_trail_, literals_[outgoing_arc_index], path_bounds,
+                &tmp_lbs)) {
+          continue;
         }
-        auto& new_var_bounds = path_var_bounds[new_path];
-        new_var_bounds.incoming_arc_indices.insert(outgoing_arc_index);
-        auto update_lower_bound_by_var_and_arc_index =
-            [&](IntegerVariable var, int arc_index, IntegerValue lb) {
-              auto& lower_bound_by_arc_index =
-                  new_var_bounds.lower_bound_by_var_and_arc_index[var];
-              auto it = lower_bound_by_arc_index.find(arc_index);
-              if (it != lower_bound_by_arc_index.end()) {
-                it->second = std::max(it->second, lb);
-              } else {
-                lower_bound_by_arc_index[arc_index] = lb;
-              }
-            };
-        auto update_upper_bound_by_var_and_arc_index =
-            [&](IntegerVariable var, int arc_index, IntegerValue ub) {
-              update_lower_bound_by_var_and_arc_index(NegationOf(var),
-                                                      arc_index, -ub);
-            };
-        auto update_var_bounds = [&](int arc_index, LinearTerm a, LinearTerm b,
-                                     IntegerValue lhs, IntegerValue rhs) {
-          if (a.coeff == 0) return;
-          a.MakeCoeffPositive();
-          b.MakeCoeffPositive();
-          // lb(b.y) <= b.y <= ub(b.y) and lhs <= a.x + b.y <= rhs imply
-          //   ceil((lhs - ub(b.y)) / a) <= x <= floor((rhs - lb(b.y)) / a)
-          lhs = lhs - b.coeff * get_upper_bound(b.var);
-          rhs = rhs - b.coeff * get_lower_bound(b.var);
-          update_lower_bound_by_var_and_arc_index(
-              a.var, arc_index, MathUtil::CeilOfRatio(lhs, a.coeff));
-          update_upper_bound_by_var_and_arc_index(
-              a.var, arc_index, MathUtil::FloorOfRatio(rhs, a.coeff));
-        };
-        const Literal lit = literals_[outgoing_arc_index];
-        for (const int relation_index :
-             binary_relation_repository_.relation_indices(lit)) {
-          const auto& r = binary_relation_repository_.relation(relation_index);
-          update_var_bounds(outgoing_arc_index, r.a, r.b, r.lhs, r.rhs);
-          update_var_bounds(outgoing_arc_index, r.b, r.a, r.lhs, r.rhs);
+
+        const auto [it, inserted] = path_var_bounds.insert({new_path, tmp_lbs});
+        if (inserted) {
+          // We have a feasible path to a new state.
+          next_paths.push_back(new_path);
+        } else {
+          // We found another way to reach this state, only keep common best
+          // bounds.
+          ComputeMinLowerBoundOfSharedVariables(tmp_lbs, &it->second);
         }
       }
     }
@@ -373,13 +327,300 @@ int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
       ++max_longest_paths;
     }
   }
-  // Reset the temporary data structures for the next call.
-  for (const int n : subset) {
-    index_in_subset_[n] = -1;
-    outgoing_arc_indices_[n].clear();
-  }
+
   return GetMinOutgoingFlow(subset.size(), longest_path_length,
                             max_longest_paths);
+}
+
+bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
+    int k, absl::Span<const int> subset) {
+  if (k >= subset.size()) return true;
+  if (subset.size() > 31) return true;
+
+  ++num_full_dp_calls_;
+  InitializeGraph(subset);
+
+  struct State {
+    // Bit i is set iif node subset[i] is in one of the current routes.
+    uint32_t node_set;
+
+    // The last nodes of each of the k routes. If the hamming weight is less
+    // that k, then at least one route is still empty.
+    uint32_t last_nodes_set;
+
+    // Valid lower bounds for this state.
+    //
+    // Note that unlike the other algorithm here, we keep the collective bounds
+    // of all the nodes so far, so this is likely in
+    // O(longest_route * num_dimensions) which can take quite a lot of space.
+    //
+    // By "dimensions", we mean the number of variables appearing in binary
+    // relation controlled by an arc literal. See for instance
+    // RouteRelationsHelper that also uses a similar definition.
+    //
+    // Hopefully the DFS order limit the number of entry to O(n^2 * k), so still
+    // somewhat reasonable for small values.
+    absl::flat_hash_map<IntegerVariable, IntegerValue> lbs;
+  };
+
+  const int size = subset.size();
+  const uint32_t final_mask = (1 << size) - 1;
+
+  // This is also correlated to the work done, and we abort if we starts to
+  // do too much work on one instance.
+  int64_t allocated_memory_estimate = 0;
+
+  // We just do a DFS from the initial state.
+  std::vector<State> states;
+  states.push_back(State());
+  while (!states.empty()) {
+    if (allocated_memory_estimate > 1e7) {
+      ++num_full_dp_work_abort_;
+      return true;  // Abort.
+    }
+    const State from_state = std::move(states.back());
+    states.pop_back();
+
+    // The number of routes is the hamming weight of from_state.last_nodes_set.
+    const int num_routes = absl::popcount(from_state.last_nodes_set);
+
+    // We start by choosing the first k starts (in increasing order).
+    // For that we only add after the maximum position already chosen.
+    if (num_routes < k) {
+      const int num_extra = k - num_routes - 1;
+      for (int i = 0; i + num_extra < size; ++i) {
+        if (from_state.node_set >> i) continue;
+
+        // All "initial-state" start with empty hash-map that correspond to
+        // the level zero bounds.
+        State to_state;
+        const uint32_t head_mask = (1 << i);
+        to_state.node_set = from_state.node_set | head_mask;
+        to_state.last_nodes_set = from_state.last_nodes_set | head_mask;
+        if (to_state.node_set == final_mask) {
+          ++num_full_dp_early_abort_;
+          return true;  // All served!
+        }
+        states.push_back(std::move(to_state));
+      }
+      continue;
+    }
+
+    // We have k routes, extend one of the last nodes.
+    for (int i = 0; i < size; ++i) {
+      const uint32_t tail_mask = 1 << i;
+      if ((from_state.last_nodes_set & tail_mask) == 0) continue;
+
+      for (const int outgoing_arc_index : outgoing_arc_indices_[subset[i]]) {
+        const int head = heads_[outgoing_arc_index];
+        const uint32_t head_mask = (1 << index_in_subset_[head]);
+        if (from_state.node_set & head_mask) continue;
+
+        State to_state;
+        to_state.lbs = from_state.lbs;  // keep old bounds
+        if (!binary_relation_repository_.PropagateLocalBounds(
+                integer_trail_, literals_[outgoing_arc_index], from_state.lbs,
+                &to_state.lbs)) {
+          continue;
+        }
+
+        to_state.node_set = from_state.node_set | head_mask;
+        to_state.last_nodes_set = from_state.last_nodes_set | head_mask;
+        to_state.last_nodes_set ^= tail_mask;
+        allocated_memory_estimate += to_state.lbs.size();
+        if (to_state.node_set == final_mask) {
+          ++num_full_dp_early_abort_;
+          return true;  // All served!
+        }
+        states.push_back(std::move(to_state));
+      }
+    }
+  }
+
+  // We explored everything, no way to serve this with only k routes!
+  return false;
+}
+
+namespace {
+IntegerVariable UniqueSharedVariable(const Relation& r1, const Relation& r2) {
+  DCHECK_NE(r1.a.var, r1.b.var);
+  DCHECK_NE(r2.a.var, r2.b.var);
+  if (r1.a.var == r2.a.var && r1.b.var != r2.b.var) return r1.a.var;
+  if (r1.a.var == r2.b.var && r1.b.var != r2.a.var) return r1.a.var;
+  if (r1.b.var == r2.a.var && r1.a.var != r2.b.var) return r1.b.var;
+  if (r1.b.var == r2.b.var && r1.a.var != r2.a.var) return r1.b.var;
+  return kNoIntegerVariable;
+}
+}  // namespace
+
+std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals,
+    const BinaryRelationRepository& binary_relation_repository) {
+  const int num_arcs = tails.size();
+  // TODO(user): see if we can use a shared DenseConnectedComponentsFinder
+  // with one node per variable of the whole model instead.
+  ConnectedComponentsFinder<IntegerVariable> cc_finder;
+  // The indices of the binary relations associated with the incoming and
+  // outgoing arcs of each node.
+  std::vector<std::vector<int>> adjacent_relation_indices(num_nodes);
+  for (int i = 0; i < num_arcs; ++i) {
+    if (tails[i] == heads[i]) continue;
+    for (const int relation_index :
+         binary_relation_repository.relation_indices(literals[i])) {
+      const auto& r = binary_relation_repository.relation(relation_index);
+      if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
+        continue;
+      }
+      cc_finder.AddEdge(r.a.var, r.b.var);
+      adjacent_relation_indices[tails[i]].push_back(relation_index);
+      adjacent_relation_indices[heads[i]].push_back(relation_index);
+    }
+  }
+  const std::vector<std::vector<IntegerVariable>> connected_components =
+      cc_finder.FindConnectedComponents();
+  absl::flat_hash_map<IntegerVariable, int> component_by_var;
+  for (int i = 0; i < connected_components.size(); ++i) {
+    for (const IntegerVariable var : connected_components[i]) {
+      component_by_var[var] = i;
+    }
+  }
+
+  const int num_dimensions = connected_components.size();
+  std::vector<IntegerVariable> flat_node_dim_variables(
+      num_nodes * num_dimensions, kNoIntegerVariable);
+  for (int n = 0; n < num_nodes; ++n) {
+    // If two relations on incoming or outgoing arcs of n have a unique shared
+    // variable, such as in the case of l <-X,Y-> n <-Y,Z-> m (i.e. a relation
+    // between X and Y on the (l,n) arc, and a relation between Y and Z on the
+    // (n,m) arc), then this variable is necessarily associated with n.
+    for (const int r1_index : adjacent_relation_indices[n]) {
+      const auto& r1 = binary_relation_repository.relation(r1_index);
+      for (const int r2_index : adjacent_relation_indices[n]) {
+        if (r1_index == r2_index) continue;
+        const auto& r2 = binary_relation_repository.relation(r2_index);
+        const IntegerVariable shared_var = UniqueSharedVariable(r1, r2);
+        if (shared_var == kNoIntegerVariable) continue;
+        const int dimension = component_by_var[shared_var];
+        IntegerVariable& node_var =
+            flat_node_dim_variables[n * num_dimensions + dimension];
+        if (node_var != kNoIntegerVariable && node_var != shared_var) {
+          VLOG(2) << "Several vars per node and dimension in route with "
+                  << num_nodes << " nodes and " << num_arcs << " arcs";
+          return nullptr;
+        }
+        node_var = shared_var;
+      }
+    }
+  }
+
+  std::vector<Relation> flat_arc_dim_relations(num_arcs * num_dimensions,
+                                               Relation());
+  for (int i = 0; i < num_arcs; ++i) {
+    const int tail = tails[i];
+    const int head = heads[i];
+    if (tail == head) continue;
+    for (const int relation_index :
+         binary_relation_repository.relation_indices(literals[i])) {
+      const auto& r = binary_relation_repository.relation(relation_index);
+      if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
+        continue;
+      }
+      const int dimension = component_by_var[r.a.var];
+      IntegerVariable& tail_var =
+          flat_node_dim_variables[tail * num_dimensions + dimension];
+      IntegerVariable& head_var =
+          flat_node_dim_variables[head * num_dimensions + dimension];
+      // In a case such as l <-X,Y-> n <-Y,Z-> m the above algorithm cannot find
+      // that X and Z are associated with l and m, respectively. But once Y is
+      // associated with n, we can recover that X and Z are associated with l
+      // and m by looking at the two relations.
+      if (head_var == kNoIntegerVariable) {
+        if (tail_var == r.a.var) {
+          head_var = r.b.var;
+        } else if (tail_var == r.b.var) {
+          head_var = r.a.var;
+        } else {
+          continue;
+        }
+      } else if (tail_var == kNoIntegerVariable) {
+        if (head_var == r.a.var) {
+          tail_var = r.b.var;
+        } else if (head_var == r.b.var) {
+          tail_var = r.a.var;
+        } else {
+          continue;
+        }
+      }
+      Relation& arc_relation =
+          flat_arc_dim_relations[i * num_dimensions + dimension];
+      if (tail_var == r.a.var) {
+        arc_relation.tail_coeff = r.a.coeff;
+        arc_relation.head_coeff = r.b.coeff;
+      } else {
+        arc_relation.tail_coeff = r.b.coeff;
+        arc_relation.head_coeff = r.a.coeff;
+      }
+      arc_relation.lhs = r.lhs;
+      arc_relation.rhs = r.rhs;
+      if (arc_relation.head_coeff < 0) {
+        arc_relation.tail_coeff = -arc_relation.tail_coeff;
+        arc_relation.head_coeff = -arc_relation.head_coeff;
+        arc_relation.lhs = -arc_relation.lhs;
+        arc_relation.rhs = -arc_relation.rhs;
+        std::swap(arc_relation.lhs, arc_relation.rhs);
+      }
+    }
+  }
+
+  auto helper = std::unique_ptr<RouteRelationsHelper>(new RouteRelationsHelper(
+      num_dimensions, std::move(flat_node_dim_variables),
+      std::move(flat_arc_dim_relations)));
+  if (VLOG_IS_ON(2)) helper->LogStats();
+  return helper;
+}
+
+RouteRelationsHelper::RouteRelationsHelper(
+    int num_dimensions, std::vector<IntegerVariable> flat_node_dim_variables,
+    std::vector<Relation> flat_arc_dim_relations)
+    : num_dimensions_(num_dimensions),
+      flat_node_dim_variables_(std::move(flat_node_dim_variables)),
+      flat_arc_dim_relations_(std::move(flat_arc_dim_relations)) {}
+
+void RouteRelationsHelper::RemoveArcs(
+    absl::Span<const int> sorted_arc_indices) {
+  int new_size = 0;
+  const int num_arcs = this->num_arcs();
+  for (int i = 0; i < num_arcs; ++i) {
+    if (!sorted_arc_indices.empty() && sorted_arc_indices.front() == i) {
+      sorted_arc_indices.remove_prefix(1);
+      continue;
+    }
+    for (int d = 0; d < num_dimensions_; ++d) {
+      flat_arc_dim_relations_[new_size++] =
+          flat_arc_dim_relations_[i * num_dimensions_ + d];
+    }
+  }
+  flat_arc_dim_relations_.resize(new_size);
+}
+
+void RouteRelationsHelper::LogStats() const {
+  const int num_nodes = this->num_nodes();
+  const int num_arcs = this->num_arcs();
+  LOG(INFO) << "Route with " << num_nodes << " nodes and " << num_arcs
+            << " arcs";
+  for (int d = 0; d < num_dimensions_; ++d) {
+    int num_vars = 0;
+    int num_relations = 0;
+    for (int i = 0; i < num_nodes; ++i) {
+      if (GetNodeVariable(i, d) != kNoIntegerVariable) ++num_vars;
+    }
+    for (int i = 0; i < num_arcs; ++i) {
+      if (!GetArcRelation(i, d).empty()) ++num_relations;
+    }
+    LOG(INFO) << "dimension " << d << ": " << num_vars << " vars and "
+              << num_relations << " relations";
+  }
 }
 
 namespace {
@@ -397,13 +638,19 @@ class OutgoingCutHelper {
         tails_(tails.begin(), tails.end()),
         heads_(heads.begin(), heads.end()),
         literals_(literals.begin(), literals.end()),
-        literal_lp_values_(literals.size()),
         params_(*model->GetOrCreate<SatParameters>()),
         trail_(*model->GetOrCreate<Trail>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
         in_subset_(num_nodes, false),
-        min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model) {
+        self_arc_literal_(num_nodes_),
+        self_arc_lp_value_(num_nodes_),
+        nodes_incoming_weight_(num_nodes_),
+        nodes_outgoing_weight_(num_nodes_),
+        min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model),
+        route_relations_helper_(RouteRelationsHelper::Create(
+            num_nodes, tails, heads, literals,
+            *model->GetOrCreate<BinaryRelationRepository>())) {
     // Compute the total demands in order to know the minimum incoming/outgoing
     // flow.
     for (const int64_t demand : demands) total_demand_ += demand;
@@ -470,7 +717,7 @@ class OutgoingCutHelper {
   // relevant.
   bool AddOutgoingCut(LinearConstraintManager* manager, std::string name,
                       int subset_size, const std::vector<bool>& in_subset,
-                      int64_t rhs_lower_bound, int ignore_arcs_with_head);
+                      int64_t rhs_lower_bound, int outside_node_to_ignore);
 
   const int num_nodes_;
   const bool is_route_constraint_;
@@ -479,7 +726,6 @@ class OutgoingCutHelper {
   std::vector<int> tails_;
   std::vector<int> heads_;
   std::vector<Literal> literals_;
-  std::vector<double> literal_lp_values_;
   std::vector<ArcWithLpValue> relevant_arcs_;
   std::vector<ArcWithLpValue> symmetrized_relevant_arcs_;
   std::vector<std::pair<int, int>> ordered_arcs_;
@@ -493,9 +739,19 @@ class OutgoingCutHelper {
   std::vector<bool> in_subset_;
   std::vector<int> complement_of_subset_;
 
+  // Self-arc information, indexed in [0, num_nodes_)
+  std::vector<int> nodes_with_self_arc_;
+  std::vector<Literal> self_arc_literal_;
+  std::vector<double> self_arc_lp_value_;
+
+  // Temporary memory used by TrySubsetCut().
+  std::vector<double> nodes_incoming_weight_;
+  std::vector<double> nodes_outgoing_weight_;
+
   MaxBoundedSubsetSum max_bounded_subset_sum_;
   MaxBoundedSubsetSumExact max_bounded_subset_sum_exact_;
   MinOutgoingFlowHelper min_outgoing_flow_helper_;
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper_;
 };
 
 void OutgoingCutHelper::FilterFalseArcsAtLevelZero() {
@@ -504,8 +760,12 @@ void OutgoingCutHelper::FilterFalseArcsAtLevelZero() {
   int new_size = 0;
   const int size = static_cast<int>(tails_.size());
   const VariablesAssignment& assignment = trail_.Assignment();
+  std::vector<int> removed_arcs;
   for (int i = 0; i < size; ++i) {
-    if (assignment.LiteralIsFalse(literals_[i])) continue;
+    if (assignment.LiteralIsFalse(literals_[i])) {
+      removed_arcs.push_back(i);
+      continue;
+    }
     tails_[new_size] = tails_[i];
     heads_[new_size] = heads_[i];
     literals_[new_size] = literals_[i];
@@ -515,7 +775,9 @@ void OutgoingCutHelper::FilterFalseArcsAtLevelZero() {
     tails_.resize(new_size);
     heads_.resize(new_size);
     literals_.resize(new_size);
-    literal_lp_values_.resize(new_size);
+    if (route_relations_helper_ != nullptr) {
+      route_relations_helper_->RemoveArcs(removed_arcs);
+    }
   }
 }
 
@@ -526,20 +788,30 @@ void OutgoingCutHelper::InitializeForNewLpSolution(
   // We will collect only the arcs with a positive lp_values to speed up some
   // computation below.
   relevant_arcs_.clear();
+  nodes_with_self_arc_.clear();
 
   // Sort the arcs by non-increasing lp_values.
   const auto& lp_values = manager->LpValues();
   std::vector<std::pair<double, int>> relevant_arc_by_decreasing_lp_values;
   for (int i = 0; i < literals_.size(); ++i) {
-    double lp_value;
     const IntegerVariable direct_view = encoder_->GetLiteralView(literals_[i]);
-    if (direct_view != kNoIntegerVariable) {
-      lp_value = lp_values[direct_view];
-    } else {
-      lp_value =
-          1.0 - lp_values[encoder_->GetLiteralView(literals_[i].Negated())];
+    const double lp_value =
+        direct_view != kNoIntegerVariable
+            ? lp_values[direct_view]
+            : 1.0 - lp_values[encoder_->GetLiteralView(literals_[i].Negated())];
+
+    // We treat self-edge separately.
+    // Note also that we do not need to include them in relevant_arcs_.
+    //
+    // TODO(user): If there are multiple self-arc, the code should still
+    // work, but is not ideal.
+    if (tails_[i] == heads_[i]) {
+      const int node = tails_[i];
+      nodes_with_self_arc_.push_back(node);
+      self_arc_lp_value_[node] = lp_value;
+      self_arc_literal_[node] = literals_[i];
+      continue;
     }
-    literal_lp_values_[i] = lp_value;
 
     if (lp_value < 1e-6) continue;
     relevant_arcs_.push_back({tails_[i], heads_[i], lp_value});
@@ -549,17 +821,94 @@ void OutgoingCutHelper::InitializeForNewLpSolution(
             relevant_arc_by_decreasing_lp_values.end(),
             std::greater<std::pair<double, int>>());
 
+  gtl::STLSortAndRemoveDuplicates(&nodes_with_self_arc_);
+
   ordered_arcs_.clear();
   for (const auto& [score, arc] : relevant_arc_by_decreasing_lp_values) {
     ordered_arcs_.push_back({tails_[arc], heads_[arc]});
   }
 }
 
+namespace {
+
+// Compute the current outgoing/incoming flow out of the subset.
+// In many cases this will be the same, but not with outside_node_to_ignore
+// or in case our LP does not contain all the constraints.
+//
+// Looping over all arcs can take a significant portion of the running time,
+// it is why it is faster to do it only on arcs with non-zero lp values which
+// should be in linear number rather than the total number of arc which can be
+// quadratic.
+//
+// TODO(user): For the symmetric case there is an even faster algo. See if
+// it can be generalized to the asymmetric one if become needed.
+// Reference is algo 6.4 of the "The Traveling Salesman Problem" book
+// mentionned above.
+std::pair<double, double> GetIncomingAndOutgoingLpFlow(
+    absl::Span<const ArcWithLpValue> relevant_arcs,
+    const std::vector<bool>& in_subset, int outside_node_to_ignore = -1) {
+  double outgoing_flow = 0.0;
+  double incoming_flow = 0.0;
+  for (const auto arc : relevant_arcs) {
+    const bool tail_in = in_subset[arc.tail];
+    const bool head_in = in_subset[arc.head];
+    if (tail_in && !head_in) {
+      if (arc.head == outside_node_to_ignore) continue;
+      outgoing_flow += arc.lp_value;
+    } else if (!tail_in && head_in) {
+      if (arc.tail == outside_node_to_ignore) continue;
+      incoming_flow += arc.lp_value;
+    }
+  }
+  return {incoming_flow, outgoing_flow};
+}
+
+}  // namespace
+
 bool OutgoingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
                                        std::string name, int subset_size,
                                        const std::vector<bool>& in_subset,
                                        int64_t rhs_lower_bound,
-                                       int ignore_arcs_with_head) {
+                                       int outside_node_to_ignore) {
+  // Skip cut if it is not violated.
+  const auto [in_flow, out_flow] = GetIncomingAndOutgoingLpFlow(
+      relevant_arcs_, in_subset, outside_node_to_ignore);
+  const double out_violation = static_cast<double>(rhs_lower_bound) - out_flow;
+  const double in_violation = static_cast<double>(rhs_lower_bound) - in_flow;
+  if (out_violation <= 1e-3 && in_violation <= 1e-3) return false;
+
+  // We create the cut and rely on AddCut() for computing its efficacy and
+  // rejecting it if it is bad.
+  LinearConstraintBuilder outgoing(encoder_, IntegerValue(rhs_lower_bound),
+                                   kMaxIntegerValue);
+  LinearConstraintBuilder incoming(encoder_, IntegerValue(rhs_lower_bound),
+                                   kMaxIntegerValue);
+
+  // Rather than doing two loops, we initialize the cuts right away, even if
+  // only one of them will be used.
+  for (int i = 0; i < tails_.size(); ++i) {
+    const bool tail_in = in_subset[tails_[i]];
+    const bool head_in = in_subset[heads_[i]];
+    if (tail_in && !head_in) {
+      if (heads_[i] == outside_node_to_ignore) continue;
+      CHECK(outgoing.AddLiteralTerm(literals_[i], IntegerValue(1)));
+    } else if (!tail_in && head_in) {
+      if (tails_[i] == outside_node_to_ignore) continue;
+      CHECK(incoming.AddLiteralTerm(literals_[i], IntegerValue(1)));
+    }
+  }
+
+  // As arcs get fixed (this happens a lot in LNS subproblems), even if the
+  // incoming flow is the same as the outgoing flow, the number of incoming arcs
+  // might be widely different from the one of outgoing arcs. We prefer to pick
+  // the sparser cut.
+  const double out_efficacy = out_violation / std::sqrt(outgoing.NumTerms());
+  const double in_efficacy = in_violation / std::sqrt(incoming.NumTerms());
+
+  // Select the best option between outgoing and incoming.
+  LinearConstraintBuilder& cut_builder =
+      (out_efficacy >= in_efficacy) ? outgoing : incoming;
+
   // A node is said to be optional if it can be excluded from the subcircuit,
   // in which case there is a self-loop on that node.
   // If there are optional nodes, use extended formula:
@@ -570,72 +919,56 @@ bool OutgoingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
   int num_optional_nodes_out = 0;
   int optional_loop_in = -1;
   int optional_loop_out = -1;
-  for (int i = 0; i < tails_.size(); ++i) {
-    if (tails_[i] != heads_[i]) continue;
-    if (in_subset[tails_[i]]) {
+  for (const int n : nodes_with_self_arc_) {
+    if (in_subset[n]) {
       num_optional_nodes_in++;
       if (optional_loop_in == -1 ||
-          literal_lp_values_[i] < literal_lp_values_[optional_loop_in]) {
-        optional_loop_in = i;
+          self_arc_lp_value_[n] < self_arc_lp_value_[optional_loop_in]) {
+        optional_loop_in = n;
       }
     } else {
       num_optional_nodes_out++;
       if (optional_loop_out == -1 ||
-          literal_lp_values_[i] < literal_lp_values_[optional_loop_out]) {
-        optional_loop_out = i;
+          self_arc_lp_value_[n] < self_arc_lp_value_[optional_loop_out]) {
+        optional_loop_out = n;
       }
     }
   }
 
-  // TODO(user): The lower bound for CVRP is computed assuming all nodes must be
-  // served, if it is > 1 we lower it to one in the presence of optional nodes.
-  if (num_optional_nodes_in + num_optional_nodes_out > 0) {
-    CHECK_GE(rhs_lower_bound, 1);
-    rhs_lower_bound = 1;
-    ignore_arcs_with_head = -1;
-  }
-
-  // We create the cut and rely on AddCut() for computing its efficacy and
-  // rejecting it if it is bad.
-  LinearConstraintBuilder outgoing(encoder_, IntegerValue(rhs_lower_bound),
-                                   kMaxIntegerValue);
-
-  // Add outgoing arcs, compute outgoing flow.
-  for (int i = 0; i < tails_.size(); ++i) {
-    if (in_subset[tails_[i]] && !in_subset[heads_[i]]) {
-      if (heads_[i] == ignore_arcs_with_head) continue;
-      CHECK(outgoing.AddLiteralTerm(literals_[i], IntegerValue(1)));
-    }
-  }
+  // This just makes sure we don't call this with a bound > 1 if there is
+  // optional node inside the subset.
+  CHECK(rhs_lower_bound == 1 || num_optional_nodes_in == 0);
 
   // Support optional nodes if any.
   if (num_optional_nodes_in + num_optional_nodes_out > 0) {
     // When all optionals of one side are excluded in lp solution, no cut.
     if (num_optional_nodes_in == subset_size &&
         (optional_loop_in == -1 ||
-         literal_lp_values_[optional_loop_in] > 1.0 - 1e-6)) {
+         self_arc_lp_value_[optional_loop_in] > 1.0 - 1e-6)) {
       return false;
     }
     if (num_optional_nodes_out == num_nodes_ - subset_size &&
         (optional_loop_out == -1 ||
-         literal_lp_values_[optional_loop_out] > 1.0 - 1e-6)) {
+         self_arc_lp_value_[optional_loop_out] > 1.0 - 1e-6)) {
       return false;
     }
 
     // There is no mandatory node in subset, add optional_loop_in.
     if (num_optional_nodes_in == subset_size) {
-      CHECK(outgoing.AddLiteralTerm(literals_[optional_loop_in],
-                                    IntegerValue(1)));
+      CHECK_EQ(rhs_lower_bound, 1);
+      CHECK(cut_builder.AddLiteralTerm(self_arc_literal_[optional_loop_in],
+                                       IntegerValue(1)));
     }
 
     // There is no mandatory node out of subset, add optional_loop_out.
     if (num_optional_nodes_out == num_nodes_ - subset_size) {
-      CHECK(outgoing.AddLiteralTerm(literals_[optional_loop_out],
-                                    IntegerValue(1)));
+      CHECK_EQ(rhs_lower_bound, 1);
+      CHECK(cut_builder.AddLiteralTerm(self_arc_literal_[optional_loop_out],
+                                       IntegerValue(1)));
     }
   }
 
-  return manager->AddCut(outgoing.Build(), name);
+  return manager->AddCut(cut_builder.Build(), name);
 }
 
 bool OutgoingCutHelper::TrySubsetCut(std::string name,
@@ -644,8 +977,9 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
   DCHECK_GE(subset.size(), 1);
   DCHECK_LT(subset.size(), num_nodes_);
 
-  // Initialize "in_subset" and contain_depot.
+  // Do some initialization.
   bool contain_depot = false;
+  in_subset_.assign(num_nodes_, false);
   for (const int n : subset) {
     in_subset_[n] = true;
     if (n == 0 && is_route_constraint_) {
@@ -653,11 +987,48 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
     }
   }
 
-  // Compute a lower bound on the outgoing flow.
+  // For the route-constraint, we will always consider the subset without the
+  // depot. We complement it if needed.
+  if (contain_depot) {
+    complement_of_subset_.clear();
+    for (int i = 0; i < num_nodes_; ++i) {
+      if (!in_subset_[i]) {
+        complement_of_subset_.push_back(i);
+      }
+      in_subset_[i] = !in_subset_[i];
+    }
+
+    // Change the span to point in the new subset!
+    subset = complement_of_subset_;
+  }
+
+  // For now we can only apply fancy route cuts if all nodes in subset are
+  // mandatory.
+  bool all_subset_nodes_are_mandatory = true;
+  if (is_route_constraint_) {
+    for (const int n : nodes_with_self_arc_) {
+      if (in_subset_[n]) {
+        all_subset_nodes_are_mandatory = false;
+        break;
+      }
+    }
+  }
+
+  // The TSP case is "easy".
   //
-  // TODO(user): This lower bound assume all nodes in subset must be served.
-  // If this is not the case, we are really defensive in AddOutgoingCut().
-  // Improve depending on where the self-loop are.
+  // TODO(user): Turn on some of the automatic detection for circuit constraint.
+  // Even if we are looking for a full circuit of the mandatory nodes, some
+  // side-constraint might require to go in and out of a subset more than once.
+  //
+  // TODO(user): deal with non-mandatory node in the route constraint?
+  if (!is_route_constraint_ || !all_subset_nodes_are_mandatory) {
+    return AddOutgoingCut(manager, name, subset.size(), in_subset_,
+                          /*rhs_lower_bound=*/1,
+                          /*outside_node_to_ignore=*/-1);
+  }
+
+  // Compute a lower bound on the outgoing flow assuming all node in the subset
+  // must be served.
   int64_t min_outgoing_flow = 1;
 
   // Bounds inferred automatically from the enforced binary relation of the
@@ -666,73 +1037,38 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
   // TODO(user): This is still not as good as the "capacity" bounds below in
   // some cases. Fix! we should be able to use the same relation to infer the
   // capacity bounds somehow.
-  const int subset_or_complement_size =
-      contain_depot ? num_nodes_ - subset.size() : subset.size();
-  if (subset_or_complement_size <=
-          params_.routing_cut_subset_size_for_binary_relation_bound() &&
-      subset_or_complement_size >=
-          params_.routing_cut_subset_size_for_tight_binary_relation_bound()) {
-    int bound;
-    if (contain_depot) {
-      complement_of_subset_.clear();
-      for (int i = 0; i < num_nodes_; ++i) {
-        if (!in_subset_[i]) complement_of_subset_.push_back(i);
-      }
-      bound = min_outgoing_flow_helper_.ComputeMinOutgoingFlow(
-          complement_of_subset_);
-    } else {
-      bound = min_outgoing_flow_helper_.ComputeMinOutgoingFlow(subset);
+  if (subset.size() <
+      params_.routing_cut_subset_size_for_tight_binary_relation_bound()) {
+    const int bound =
+        min_outgoing_flow_helper_.ComputeTightMinOutgoingFlow(subset);
+    if (bound > min_outgoing_flow) {
+      absl::StrAppend(&name, "AutomaticTight");
+      min_outgoing_flow = bound;
     }
+  } else if (subset.size() <
+             params_.routing_cut_subset_size_for_binary_relation_bound()) {
+    const int bound = min_outgoing_flow_helper_.ComputeMinOutgoingFlow(subset);
     if (bound > min_outgoing_flow) {
       absl::StrAppend(&name, "Automatic");
       min_outgoing_flow = bound;
     }
   }
-  if (subset_or_complement_size <
-      params_.routing_cut_subset_size_for_tight_binary_relation_bound()) {
-    int bound;
-    if (contain_depot) {
-      complement_of_subset_.clear();
-      for (int i = 0; i < num_nodes_; ++i) {
-        if (!in_subset_[i]) complement_of_subset_.push_back(i);
-      }
-      bound = min_outgoing_flow_helper_.ComputeTightMinOutgoingFlow(
-          complement_of_subset_);
-    } else {
-      bound = min_outgoing_flow_helper_.ComputeTightMinOutgoingFlow(subset);
-    }
-    if (bound > min_outgoing_flow) {
-      absl::StrAppend(&name, "AutomaticTight");
-      min_outgoing_flow = bound;
-    }
-  }
 
   // Bounds coming from the demands_/capacity_ fields (if set).
+  // If we cannot reach the capacity given the demands in the subset, we can
+  // derive tighter bounds.
   std::vector<int> to_ignore_candidates;
   if (!demands_.empty()) {
-    // If subset contains depot, we actually look at the subset complement to
-    // derive a bound on the outgoing flow. If we cannot reach the capacity
-    // given the demands in the subset, we can derive tighter bounds.
     int64_t has_excessive_demands = false;
     int64_t has_negative_demands = false;
     int64_t sum_of_elements = 0;
     std::vector<int64_t> elements;
-    const auto process_demand = [&](int64_t d) {
+    for (const int n : subset) {
+      const int64_t d = demands_[n];
       if (d < 0) has_negative_demands = true;
       if (d > capacity_) has_excessive_demands = true;
       sum_of_elements += d;
       elements.push_back(d);
-    };
-    if (contain_depot) {
-      for (int n = 0; n < num_nodes_; ++n) {
-        if (!in_subset_[n]) {
-          process_demand(demands_[n]);
-        }
-      }
-    } else {
-      for (const int n : subset) {
-        process_demand(demands_[n]);
-      }
     }
 
     // Lets wait for these to disappear before adding cuts.
@@ -743,14 +1079,17 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
     // already tight.
     //
     // TODO(user): Compute a bound in the presence of negative demands?
-    bool exact_was_used = false;
     int64_t tightened_capacity = capacity_;
+    int tightening_level = 0;
     if (!has_negative_demands && sum_of_elements > capacity_) {
       max_bounded_subset_sum_.Reset(capacity_);
       for (const int64_t e : elements) {
         max_bounded_subset_sum_.Add(e);
       }
       tightened_capacity = max_bounded_subset_sum_.CurrentMax();
+      if (tightened_capacity < capacity_) {
+        tightening_level = 1;
+      }
 
       // If the complexity looks ok, try a more expensive DP than the quick one
       // above.
@@ -760,8 +1099,8 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
             max_bounded_subset_sum_exact_.MaxSubsetSum(elements, capacity_);
         CHECK_LE(exact, tightened_capacity);
         if (exact < tightened_capacity) {
+          tightening_level = 2;
           tightened_capacity = exact;
-          exact_was_used = true;
         }
       }
     }
@@ -770,10 +1109,10 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
         MathUtil::CeilOfRatio(sum_of_elements, tightened_capacity);
     if (flow_lower_bound > min_outgoing_flow) {
       min_outgoing_flow = flow_lower_bound;
-      absl::StrAppend(&name, exact_was_used ? "Tightened" : "Capacity");
+      absl::StrAppend(&name, "Demand", tightening_level);
     }
 
-    if (!contain_depot && flow_lower_bound >= min_outgoing_flow) {
+    if (flow_lower_bound >= min_outgoing_flow) {
       // We compute the biggest extra item that could fit in 'flow_lower_bound'
       // bins. If the first (flow_lower_bound - 1) bins are tight, i.e. all
       // their tightened_capacity is filled, then the last bin will have
@@ -806,6 +1145,13 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
       // By hypothesis, outgoing_flow(A) + outgoing_flow(B) > flow_lower_bound
       // and, since n is not the depot, outgoing_flow(B) <= 1. Hence
       // outgoing_flow(A) >= flow_lower_bound.
+      //
+      // Note that this reasoning also applies to the incoming_flow, we have the
+      // same lower bound from the incoming flow not arriving from such node.
+      //
+      // Also of note, is that even if this node is optional, the bound is still
+      // valid since if any flow leave or come to this node, it must be in the
+      // tour.
       for (int n = 1; n < num_nodes_; ++n) {
         if (in_subset_[n]) continue;
         if (demands_[n] > space_left) {
@@ -815,19 +1161,43 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
     }
   }
 
+  if (subset.size() <=
+      params_.routing_cut_subset_size_for_exact_binary_relation_bound()) {
+    // Before doing something expensive, we can check if this might generate
+    // a violated cut in the first place.
+    const auto [in_flow, out_flow] =
+        GetIncomingAndOutgoingLpFlow(relevant_arcs_, in_subset_);
+    const double max_flow = std::max(in_flow, out_flow);
+    if (max_flow + 1e-2 >= min_outgoing_flow + 1.0) {
+      min_outgoing_flow_helper_.ReportDpSkip();
+    } else if (!min_outgoing_flow_helper_.SubsetMightBeServedWithKRoutes(
+                   min_outgoing_flow, subset)) {
+      // TODO(user): Shall we call SubsetMightBeServedWithKRoutes() again
+      // with min_outgoing_flow + 1 here?
+      absl::StrAppend(&name, "DP");
+      min_outgoing_flow += 1;
+      to_ignore_candidates.clear();  // no longer valid.
+    }
+  }
+
   // Out of to_ignore_candidates, use an heuristic to pick one.
-  int ignore_arcs_with_head = -1;
+  int outside_node_to_ignore = -1;
   if (!to_ignore_candidates.empty()) {
     absl::StrAppend(&name, "Lifted");
 
-    // Compute the lp weight going from subset to the candidates.
-    absl::flat_hash_map<int, double> candidate_weights;
-    for (const int n : to_ignore_candidates) candidate_weights[n] = 0;
+    // Compute the lp weight going from subset to the candidates or from the
+    // candidates to the subset.
+    //
+    // Note that we only reset the position that we care about below.
+    for (const int n : to_ignore_candidates) {
+      nodes_incoming_weight_[n] = 0;
+      nodes_outgoing_weight_[n] = 0;
+    }
     for (const auto arc : relevant_arcs_) {
       if (in_subset_[arc.tail] && !in_subset_[arc.head]) {
-        auto it = candidate_weights.find(arc.head);
-        if (it == candidate_weights.end()) continue;
-        it->second += arc.lp_value;
+        nodes_incoming_weight_[arc.head] += arc.lp_value;
+      } else if (!in_subset_[arc.tail] && in_subset_[arc.head]) {
+        nodes_outgoing_weight_[arc.tail] += arc.lp_value;
       }
     }
 
@@ -835,7 +1205,8 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
     std::vector<int> bests;
     double best_weight = 0.0;
     for (const int n : to_ignore_candidates) {
-      const double weight = candidate_weights.at(n);
+      const double weight =
+          std::max(nodes_outgoing_weight_[n], nodes_incoming_weight_[n]);
       if (bests.empty() || weight > best_weight) {
         bests.clear();
         bests.push_back(n);
@@ -846,42 +1217,15 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
     }
 
     // Randomly pick if we have many "bests".
-    ignore_arcs_with_head =
+    outside_node_to_ignore =
         bests.size() == 1
             ? bests[0]
             : bests[absl::Uniform<int>(*random_, 0, bests.size())];
   }
 
-  // Compute the current outgoing flow out of the subset.
-  //
-  // This can take a significant portion of the running time, it is why it is
-  // faster to do it only on arcs with non-zero lp values which should be in
-  // linear number rather than the total number of arc which can be quadratic.
-  //
-  // TODO(user): For the symmetric case there is an even faster algo. See if
-  // it can be generalized to the asymmetric one if become needed.
-  // Reference is algo 6.4 of the "The Traveling Salesman Problem" book
-  // mentionned above.
-  double outgoing_flow = 0.0;
-  for (const auto arc : relevant_arcs_) {
-    if (in_subset_[arc.tail] && !in_subset_[arc.head]) {
-      if (arc.head == ignore_arcs_with_head) continue;
-      outgoing_flow += arc.lp_value;
-    }
-  }
-
-  // Add a cut if the current outgoing flow is not enough.
-  bool result = false;
-  if (outgoing_flow + 1e-2 < min_outgoing_flow) {
-    result = AddOutgoingCut(manager, name, subset.size(), in_subset_,
-                            /*rhs_lower_bound=*/min_outgoing_flow,
-                            ignore_arcs_with_head);
-  }
-
-  // Sparse clean up.
-  for (const int n : subset) in_subset_[n] = false;
-
-  return result;
+  return AddOutgoingCut(manager, name, subset.size(), in_subset_,
+                        /*rhs_lower_bound=*/min_outgoing_flow,
+                        outside_node_to_ignore);
 }
 
 bool OutgoingCutHelper::TryBlossomSubsetCut(
@@ -890,7 +1234,7 @@ bool OutgoingCutHelper::TryBlossomSubsetCut(
   DCHECK_GE(subset.size(), 1);
   DCHECK_LT(subset.size(), num_nodes_);
 
-  // Initialize "in_subset" and the subset demands.
+  // Initialize "in_subset".
   for (const int n : subset) in_subset_[n] = true;
   auto cleanup = ::absl::MakeCleanup([subset, this]() {
     for (const int n : subset) in_subset_[n] = false;
@@ -955,13 +1299,12 @@ bool OutgoingCutHelper::TryBlossomSubsetCut(
   if (special_edges.size() == 1) {
     int num_other_optional = 0;
     const auto [special_tail, special_head] = *special_edges.begin();
-    for (int i = 0; i < tails_.size(); ++i) {
-      if (tails_[i] != heads_[i]) continue;
-      if (tails_[i] != special_head && tails_[i] != special_tail) {
+    for (const int n : nodes_with_self_arc_) {
+      if (n != special_head && n != special_tail) {
         ++num_other_optional;
         if (best_optional_index == -1 ||
-            literal_lp_values_[i] < literal_lp_values_[best_optional_index]) {
-          best_optional_index = i;
+            self_arc_lp_value_[n] < self_arc_lp_value_[best_optional_index]) {
+          best_optional_index = n;
         }
       }
     }
@@ -981,10 +1324,10 @@ bool OutgoingCutHelper::TryBlossomSubsetCut(
   if (best_optional_index != -1) {
     absl::StrAppend(&name, "_opt");
 
-    // This is tricky: The normal cut assume x_e <=1, but in case of a single
+    // This is tricky: The normal cut assume x_e <= 1, but in case of a single
     // 2 cycle, x_e can be equal to 2. So we need a coeff of 2 to disable that
     // cut.
-    CHECK(builder.AddLiteralTerm(literals_[best_optional_index],
+    CHECK(builder.AddLiteralTerm(self_arc_literal_[best_optional_index],
                                  IntegerValue(2)));
   }
 

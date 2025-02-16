@@ -21,11 +21,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -783,16 +781,61 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
   const int num_tasks = cached_energies_min_.size();
   const bool is_at_level_zero = sat_solver_->CurrentDecisionLevel() == 0;
   for (int t = 0; t < num_tasks; ++t) {
-    // Try to reduce the size of the decomposed energy vector.
-    if (is_at_level_zero) {
+    if (!decomposed_energies_[t].empty()) {
+      // Checks the propagation of the exactly one on literals.
+      int num_literals_at_true = 0;
+      int num_unassigned_literals = 0;
+      for (const auto [lit, fixed_size, fixed_demand] :
+           decomposed_energies_[t]) {
+        if (assignment_.LiteralIsTrue(lit)) {
+          ++num_literals_at_true;
+        } else if (!assignment_.LiteralIsFalse(lit)) {
+          ++num_unassigned_literals;
+        }
+      }
+      if (num_literals_at_true > 1 ||
+          (num_literals_at_true == 1 && num_unassigned_literals > 0)) {
+        VLOG(1) << "Exactly one on literals not satisfied";
+        return false;
+      }
+
+      // Checks the propagation of the consistency of implied values and
+      // literals.
       int new_size = 0;
+      IntegerValue min_size = kMaxIntegerValue;
+      IntegerValue max_size = kMinIntegerValue;
+      IntegerValue min_demand = kMaxIntegerValue;
+      IntegerValue max_demand = kMinIntegerValue;
+
       for (int i = 0; i < decomposed_energies_[t].size(); ++i) {
-        if (assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
+        // Try to reduce the size of the decomposed energy vector.
+        if (is_at_level_zero &&
+            assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
           continue;
+        }
+        if (!assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
+          const IntegerValue fixed_size = decomposed_energies_[t][i].left_value;
+          const IntegerValue fixed_demand =
+              decomposed_energies_[t][i].right_value;
+          min_size = std::min(min_size, fixed_size);
+          max_size = std::max(max_size, fixed_size);
+          min_demand = std::min(min_demand, fixed_demand);
+          max_demand = std::max(max_demand, fixed_demand);
         }
         decomposed_energies_[t][new_size++] = decomposed_energies_[t][i];
       }
       decomposed_energies_[t].resize(new_size);
+
+      // Check consistency.
+      if (min_size != helper_->SizeMin(t) || max_size != helper_->SizeMax(t) ||
+          min_demand != DemandMin(t) || max_demand != DemandMax(t)) {
+        VLOG(1) << "Consistency check failed: size=[" << min_size << ".."
+                << max_size << "], demand=[" << min_demand << ".." << max_demand
+                << "], helper size=[" << helper_->SizeMin(t) << ".."
+                << helper_->SizeMax(t) << "], helper demand=[" << DemandMin(t)
+                << ".." << DemandMax(t) << "]";
+        return false;
+      }
     }
 
     cached_energies_min_[t] =

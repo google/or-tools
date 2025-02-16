@@ -43,6 +43,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
@@ -484,7 +485,9 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
         random_(params_),
-        var_domains_(shared_bounds) {}
+        var_domains_(shared_bounds) {
+    shared_time_limit_->UpdateLocalLimit(&time_limit_);
+  }
 
   // If VLOG_IS_ON(1), it will export a bunch of statistics.
   ~FeasibilityJumpSolver() override;
@@ -517,7 +520,8 @@ class FeasibilityJumpSolver : public SubSolver {
   void ImportState();
   void ReleaseState();
 
-  void Initialize();
+  // Return false if we could not initialize the evaluator in the time limit.
+  bool Initialize();
   void ResetCurrentSolution(bool use_hint, bool use_objective,
                             double perturbation_probability);
   void PerturbateCurrentSolution(double perturbation_probability);
@@ -589,6 +593,7 @@ class FeasibilityJumpSolver : public SubSolver {
   SatParameters params_;
   std::shared_ptr<SharedLsStates> states_;
   ModelSharedTimeLimit* shared_time_limit_;
+  TimeLimit time_limit_;
   SharedResponseManager* shared_response_;
   SharedLsSolutionRepository* shared_hints_;
   SharedStatTables* stat_tables_;

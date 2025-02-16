@@ -1730,7 +1730,10 @@ class LnsSolver : public SubSolver {
   // latest LNS fragment.
   absl::Mutex next_arena_size_mutex_;
   int64_t next_arena_size_ ABSL_GUARDED_BY(next_arena_size_mutex_) =
-      helper_->ModelProto().SpaceUsedLong();
+      helper_->ModelProto().GetArena() == nullptr
+          ? Neighborhood::kDefaultArenaSizePerVariable
+                * helper_->ModelProto().variables_size()
+          : helper_->ModelProto().GetArena()->SpaceUsed();
 };
 
 void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
@@ -2692,7 +2695,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // Moreover it is possible we will not find them again as the constraints
       // might have changed.
     } else {
-      DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
+      TimeLimit time_limit;
+      shared_time_limit->UpdateLocalLimit(&time_limit);
+      DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger,
+                                  &time_limit);
     }
   }
 

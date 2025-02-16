@@ -494,6 +494,7 @@ struct Relation {
 class BinaryRelationRepository {
  public:
   int size() const { return relations_.size(); }
+  // The returned relation is guaranteed to only have positive variables.
   const Relation& relation(int index) const { return relations_[index]; }
 
   absl::Span<const int> relation_indices(LiteralIndex lit) const {
@@ -515,6 +516,9 @@ class BinaryRelationRepository {
   // level-zero ones in output.
   //
   // Returns false if the new bounds are infeasible at level zero.
+  //
+  // Important: by default this does not call output->clear() so we can take
+  // the max with already inferred bounds.
   bool PropagateLocalBounds(
       const IntegerTrail& integer_trail, Literal lit,
       const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,

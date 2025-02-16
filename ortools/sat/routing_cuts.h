@@ -18,6 +18,7 @@
 
 #include <functional>
 #include <limits>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -34,6 +35,83 @@
 namespace operations_research {
 namespace sat {
 
+// Helper to recover the mapping between nodes and binary relation variables in
+// simple cases of route constraints (at most one variable per node and
+// "dimension" -- such as time or load, and at most one relation per arc and
+// dimension).
+class RouteRelationsHelper {
+ public:
+  // Creates a RouteRelationsHelper for the given RoutesConstraint and
+  // associated binary relations, if there is at most one variable per node and
+  // per dimension (otherwise, returns nullptr). If there are more than one
+  // relation per arc and dimension, a single relation is chosen arbitrarily.
+  static std::unique_ptr<RouteRelationsHelper> Create(
+      int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+      absl::Span<const Literal> literals,
+      const BinaryRelationRepository& binary_relation_repository);
+
+  // Returns the number of "dimensions", such as time or vehicle load.
+  int num_dimensions() const { return num_dimensions_; }
+
+  int num_nodes() const {
+    return num_dimensions_ == 0
+               ? 0
+               : flat_node_dim_variables_.size() / num_dimensions_;
+  }
+
+  int num_arcs() const {
+    return num_dimensions_ == 0
+               ? 0
+               : flat_arc_dim_relations_.size() / num_dimensions_;
+  }
+
+  // Returns the variable associated with the given node and dimension, or
+  // kNoIntegerVariable if there is none. The returned variable is always a
+  // positive one.
+  IntegerVariable GetNodeVariable(int node, int dimension) const {
+    return flat_node_dim_variables_[node * num_dimensions_ + dimension];
+  }
+
+  // Returns the relation tail_coeff.X + head_coeff.Y \in [lhs, rhs] between the
+  // X and Y variables associated with the tail and head of the given arc,
+  // respectively, and the given dimension (head_coeff is always positive).
+  // Returns an "empty" struct with all fields set to 0 if there is no such
+  // relation.
+  struct Relation {
+    IntegerValue tail_coeff = 0;
+    IntegerValue head_coeff = 0;
+    IntegerValue lhs;
+    IntegerValue rhs;
+
+    bool empty() const { return tail_coeff == 0 && head_coeff == 0; }
+
+    bool operator==(const Relation& r) const {
+      return tail_coeff == r.tail_coeff && head_coeff == r.head_coeff &&
+             lhs == r.lhs && rhs == r.rhs;
+    }
+  };
+  const Relation& GetArcRelation(int arc, int dimension) const {
+    return flat_arc_dim_relations_[arc * num_dimensions_ + dimension];
+  }
+
+  void RemoveArcs(absl::Span<const int> sorted_arc_indices);
+
+ private:
+  RouteRelationsHelper(int num_dimensions,
+                       std::vector<IntegerVariable> flat_node_dim_variables,
+                       std::vector<Relation> flat_arc_dim_relations);
+
+  void LogStats() const;
+
+  int num_dimensions_;
+  // The variable associated with node n and dimension d (or kNoIntegerVariable
+  // if there is none) is at index n * num_dimensions_ + d.
+  std::vector<IntegerVariable> flat_node_dim_variables_;
+  // The relation associated with arc a and dimension d (or kNoRelation if
+  // there is none) is at index a * num_dimensions_ + d.
+  std::vector<Relation> flat_arc_dim_relations_;
+};
+
 // Helper to compute the minimum flow going out of a subset of nodes, for a
 // given RoutesConstraint.
 class MinOutgoingFlowHelper {
@@ -41,6 +119,8 @@ class MinOutgoingFlowHelper {
   MinOutgoingFlowHelper(int num_nodes, const std::vector<int>& tails,
                         const std::vector<int>& heads,
                         const std::vector<Literal>& literals, Model* model);
+
+  ~MinOutgoingFlowHelper();
 
   // Returns the minimum flow going out of `subset`, based on a conservative
   // estimate of the maximum number of nodes of a feasible path inside this
@@ -54,7 +134,24 @@ class MinOutgoingFlowHelper {
   // cycles). The complexity is O(2 ^ subset.size()).
   int ComputeTightMinOutgoingFlow(absl::Span<const int> subset);
 
+  // Returns false if the given subset CANNOT be served by k routes.
+  // Returns true if we have a route or we don't know for sure (if we abort).
+  // The parameter k must be positive.
+  //
+  // Even more costly algo in O(n!/k!*k^(n-k)) that answers the question exactly
+  // given the available enforced linear1 and linear2 constraints. However it
+  // can stop as soon as one solution is found.
+  //
+  // TODO(user): the complexity also depends on the longest route and improves
+  // if routes fail quickly. Give a better estimate?
+  bool SubsetMightBeServedWithKRoutes(int k, absl::Span<const int> subset);
+
+  // Just for stats reporting.
+  void ReportDpSkip() { num_full_dp_skips_++; }
+
  private:
+  void InitializeGraph(absl::Span<const int> subset);
+
   // Returns the minimum flow going out of a subset of size `subset_size`,
   // assuming that the longest feasible path inside this subset has
   // `longest_path_length` nodes and that there are at most `max_longest_paths`
@@ -68,6 +165,7 @@ class MinOutgoingFlowHelper {
   const BinaryRelationRepository& binary_relation_repository_;
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
+  SharedStatistics* shared_stats_;
 
   // Temporary data used by ComputeMinOutgoingFlow(). Always contain default
   // values, except while ComputeMinOutgoingFlow() is running.
@@ -98,6 +196,12 @@ class MinOutgoingFlowHelper {
       node_var_lower_bounds_;
   std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
       next_node_var_lower_bounds_;
+
+  // Statistics.
+  int64_t num_full_dp_skips_ = 0;
+  int64_t num_full_dp_calls_ = 0;
+  int64_t num_full_dp_early_abort_ = 0;
+  int64_t num_full_dp_work_abort_ = 0;
 };
 
 // Given a graph with nodes in [0, num_nodes) and a set of arcs (the order is

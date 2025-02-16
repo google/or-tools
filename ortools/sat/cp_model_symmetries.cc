@@ -646,7 +646,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
-    double deterministic_limit, SolverLogger* logger) {
+    SolverLogger* logger, TimeLimit* solver_time_limit) {
   CHECK(generators != nullptr);
   generators->clear();
 
@@ -678,10 +678,11 @@ void FindCpModelSymmetries(
     return;
   }
 
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromDeterministicTime(
+      params.symmetry_detection_deterministic_time_limit());
+  time_limit->MergeWithGlobalTimeLimit(solver_time_limit);
   GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/false);
   std::vector<int> factorized_automorphism_group_size;
-  std::unique_ptr<TimeLimit> time_limit =
-      TimeLimit::FromDeterministicTime(deterministic_limit);
   const absl::Status status = symmetry_finder.FindSymmetries(
       &equivalence_classes, generators, &factorized_automorphism_group_size,
       time_limit.get());
@@ -767,14 +768,13 @@ void LogOrbitInformation(absl::Span<const int> var_to_orbit_index,
 }  // namespace
 
 void DetectAndAddSymmetryToProto(const SatParameters& params,
-                                 CpModelProto* proto, SolverLogger* logger) {
+                                 CpModelProto* proto, SolverLogger* logger,
+                                 TimeLimit* time_limit) {
   SymmetryProto* symmetry = proto->mutable_symmetry();
   symmetry->Clear();
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(params, *proto, &generators,
-                        params.symmetry_detection_deterministic_time_limit(),
-                        logger);
+  FindCpModelSymmetries(params, *proto, &generators, logger, time_limit);
   if (generators.empty()) {
     proto->clear_symmetry();
     return;
@@ -968,10 +968,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(
-      params, proto, &generators,
-      context->params().symmetry_detection_deterministic_time_limit(),
-      context->logger());
+  FindCpModelSymmetries(params, proto, &generators, context->logger(),
+                        context->time_limit());
 
   // Remove temporary affine relation.
   context->working_model->mutable_constraints()->DeleteSubrange(
