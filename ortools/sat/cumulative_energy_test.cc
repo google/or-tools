@@ -37,7 +37,6 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
@@ -49,8 +48,6 @@
 namespace operations_research {
 namespace sat {
 namespace {
-
-  /*
 
 // An instance is a set of energy tasks and a capacity.
 struct EnergyTask {
@@ -84,31 +81,24 @@ std::string InstanceDebugString(const EnergyInstance& instance) {
 bool SolveUsingConstraint(const EnergyInstance& instance) {
   Model model;
   std::vector<IntervalVariable> intervals;
-  std::vector<std::vector<LiteralValueValue>> decomposed_energies;
+  std::vector<IntegerValue> energy_min;
+  std::vector<IntegerValue> energy_max;
   for (const auto& task : instance.tasks) {
+    const IntegerVariable start_var =
+        model.Add(NewIntegerVariable(task.start_min, task.end_max));
+    const IntegerVariable end_var =
+        model.Add(NewIntegerVariable(task.start_min, task.end_max));
+    const IntegerVariable size_var =
+        model.Add(NewIntegerVariable(task.duration_min, task.duration_max));
     if (task.is_optional) {
       const Literal is_present = Literal(model.Add(NewBooleanVariable()), true);
-      const IntegerVariable start =
-          model.Add(NewIntegerVariable(task.start_min, task.end_max));
-      const IntegerVariable end =
-          model.Add(NewIntegerVariable(task.start_min, task.end_max));
-      const IntegerVariable duration =
-          model.Add(NewIntegerVariable(task.duration_min, task.duration_max));
-      intervals.push_back(
-          model.Add(NewOptionalInterval(start, end, duration, is_present)));
+      intervals.push_back(model.Add(
+          NewOptionalInterval(start_var, end_var, size_var, is_present)));
     } else {
-      intervals.push_back(model.Add(NewIntervalWithVariableSize(
-          task.start_min, task.end_max, task.duration_min, task.duration_max)));
+      intervals.push_back(model.Add(NewInterval(start_var, end_var, size_var)));
     }
-    std::vector<Literal> energy_literals;
-    std::vector<LiteralValueValue> energy_literals_values_values;
-    for (int e = task.energy_min; e <= task.energy_max; ++e) {
-      const Literal lit = Literal(model.Add(NewBooleanVariable()), true);
-      energy_literals.push_back(lit);
-      energy_literals_values_values.push_back({lit, e, 1});
-    }
-    model.Add(ExactlyOneConstraint(energy_literals));
-    decomposed_energies.push_back(energy_literals_values_values);
+    energy_min.push_back(task.energy_min);
+    energy_max.push_back(task.energy_max);
   }
 
   const AffineExpression capacity(
@@ -118,7 +108,7 @@ bool SolveUsingConstraint(const EnergyInstance& instance) {
   SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({}, helper, &model);
-  demands_helper->OverrideDecomposedEnergies(decomposed_energies);
+  demands_helper->OverrideEnergyBounds(energy_min, energy_max);
   model.TakeOwnership(demands_helper);
 
   AddCumulativeOverloadChecker(capacity, helper, demands_helper, &model);
@@ -265,8 +255,6 @@ TEST(CumulativeEnergyTest, CompareToNaiveModel) {
     LOG(INFO) << result_constraint;
   }
 }
-
-*/
 
 struct CumulativeTasks {
   int64_t duration;

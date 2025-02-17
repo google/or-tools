@@ -799,8 +799,8 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
         return false;
       }
 
-      // Checks the propagation of the consistency of implied values and
-      // literals.
+      // Checks the consistency of implied values and literal values with the
+      // cached  bounds of the size and demand expressions.
       int new_size = 0;
       IntegerValue min_size = kMaxIntegerValue;
       IntegerValue max_size = kMinIntegerValue;
@@ -838,14 +838,22 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
       }
     }
 
-    cached_energies_min_[t] =
-        std::max(SimpleEnergyMin(t), DecomposedEnergyMin(t));
+    if (t < override_energy_min_.size()) {
+      cached_energies_min_[t] = override_energy_min_[t];
+    } else {
+      cached_energies_min_[t] =
+          std::max(SimpleEnergyMin(t), DecomposedEnergyMin(t));
+    }
     if (cached_energies_min_[t] <= kMinIntegerValue) return false;
     energy_is_quadratic_[t] =
         decomposed_energies_[t].empty() && !demands_.empty() &&
         !integer_trail_->IsFixed(demands_[t]) && !helper_->SizeIsFixed(t);
-    cached_energies_max_[t] =
-        std::min(SimpleEnergyMax(t), DecomposedEnergyMax(t));
+    if (t < override_energy_max_.size()) {
+      cached_energies_max_[t] = override_energy_max_[t];
+    } else {
+      cached_energies_max_[t] =
+          std::min(SimpleEnergyMax(t), DecomposedEnergyMax(t));
+    }
     if (cached_energies_max_[t] >= kMaxIntegerValue) return false;
   }
 

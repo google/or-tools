@@ -200,7 +200,7 @@ class IntegerEncoder {
                                             IntegerValue value) const;
 
   // Advanced usage. It is more efficient to create the associated literals in
-  // order, but it might be anoying to do so. Instead, you can first call
+  // order, but it might be annoying to do so. Instead, you can first call
   // DisableImplicationBetweenLiteral() and when you are done creating all the
   // associated literals, you can call (only at level zero)
   // AddAllImplicationsBetweenAssociatedLiterals() which will also turn back on
@@ -318,7 +318,7 @@ class IntegerEncoder {
   // corresponding to the same variable).
   //
   // Note that we only keep this for positive variable.
-  // The one for the negation can be infered by it.
+  // The one for the negation can be inferred by it.
   //
   // Like                x >= 1     x >= 4     x >= 5
   // Correspond to       x <= 0     x <= 3     x <= 4

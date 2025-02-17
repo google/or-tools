@@ -2290,7 +2290,6 @@ cc_test(
         ":integer_base",
         ":integer_search",
         ":intervals",
-        ":linear_constraint",
         ":model",
         ":precedences",
         ":sat_base",

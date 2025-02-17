@@ -1323,9 +1323,6 @@ CtEvent CopyAndTrimEventAfter(const CtEvent& old_event, IntegerValue time,
     event.use_energy = event.energy_min > simple_energy_min;
   }
   event.x_start_min = time;
-  event.source.clear();
-  event.source.push_back(old_event);
-  event.trim_date = time;
   return event;
 }
 
@@ -1514,10 +1511,6 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
                     << "simple_min_shape_area: "
                     << event.energy_min * event.x_size_min;
           LOG(INFO) << "  event = " << event.DebugString();
-          if (event.lifted) {
-            LOG(INFO) << "old_event = " << event.source.front().DebugString();
-            LOG(INFO) << " trim_date: " << event.trim_date;
-          }
         }
         CHECK_GE(min_shape_area, event.energy_min * event.x_size_min);
 

@@ -146,9 +146,6 @@ struct CtEvent : BaseEvent {
   bool y_size_is_fixed = false;
 
   std::string DebugString() const;
-
-  std::vector<CtEvent> source;
-  IntegerValue trim_date = 0;
 };
 
 // Computes the minimum sum of the end min and the minimum sum of the end min
