@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -165,9 +165,9 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
-ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
-ABSL_DECLARE_FLAG(bool, log_verification_errors);
-ABSL_DECLARE_FLAG(bool, verify_solution);
+OR_DLL ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
+OR_DLL ABSL_DECLARE_FLAG(bool, log_verification_errors);
+OR_DLL ABSL_DECLARE_FLAG(bool, verify_solution);
 
 namespace operations_research {
 
@@ -1469,7 +1469,7 @@ class MPConstraint {
  * instead. We need to figure out how to deal with the subtleties of
  * the default values.
  */
-class MPSolverParameters {
+class OR_DLL MPSolverParameters {
  public:
   /// Enumeration of parameters that take continuous values.
   enum DoubleParam {

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/graph/cliques.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -23,15 +24,16 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/base/mathutil.h"
+#include "ortools/base/logging.h"
 #include "ortools/util/time_limit.h"
-#include "util/functional/to_callback.h"
 
 namespace operations_research {
 namespace {
@@ -97,7 +99,7 @@ class CliqueSizeVerifier {
   int64_t num_cliques_;
 };
 
-inline bool FullGraph(int index1, int index2) { return true; }
+inline bool FullGraph(int /*index1*/, int /*index2*/) { return true; }
 
 inline bool EmptyGraph(int index1, int index2) { return (index1 == index2); }
 
@@ -155,15 +157,17 @@ void RunBronKerboschAlgorithmUntilCompletion(
 }
 
 TEST(BronKerbosch, CompleteGraph) {
+#if !defined(_MSC_VER)
   constexpr int kNumNodes[] = {1, 5, 50, 500, 5000};
+#else
+  constexpr int kNumNodes[] = {1, 5, 50, 500};
+#endif
   for (const int num_nodes : kNumNodes) {
     auto graph = FullGraph;
     CliqueReporter<int> reporter;
     auto callback =
         absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-    operations_research::FindCliques(
-        ::util::functional::ToPermanentCallback(graph), num_nodes,
-        ::util::functional::ToPermanentCallback(callback));
+    operations_research::FindCliques(graph, num_nodes, callback);
     const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
     EXPECT_EQ(1, all_cliques.size());
     EXPECT_EQ(num_nodes, all_cliques[0].size());
@@ -241,9 +245,7 @@ TEST(BronKerbosch, EmptyGraph) {
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-  operations_research::FindCliques(
-      ::util::functional::ToPermanentCallback(graph), 10,
-      ::util::functional::ToPermanentCallback(callback));
+  operations_research::FindCliques(graph, 10, callback);
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(10, all_cliques.size());
   for (int i = 0; i < 10; ++i) {
@@ -334,9 +336,7 @@ TEST(BronKerbosch, MatchingGraph) {
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-  operations_research::FindCliques(
-      ::util::functional::ToPermanentCallback(graph), 10,
-      ::util::functional::ToPermanentCallback(callback));
+  operations_research::FindCliques(graph, 10, callback);
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(5, all_cliques.size());
   for (int i = 0; i < 5; ++i) {
@@ -368,9 +368,7 @@ TEST(BronKerbosch, ModuloGraph5) {
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-  operations_research::FindCliques(
-      ::util::functional::ToPermanentCallback(graph), 40,
-      ::util::functional::ToPermanentCallback(callback));
+  operations_research::FindCliques(graph, 40, callback);
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(5, all_cliques.size());
   for (int i = 0; i < 5; ++i) {
@@ -404,12 +402,48 @@ TEST(BronKerbosch, CompleteGraphCover) {
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-  operations_research::CoverArcsByCliques(
-      ::util::functional::ToPermanentCallback(graph), 10,
-      ::util::functional::ToPermanentCallback(callback));
+  operations_research::CoverArcsByCliques(graph, 10, callback);
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(1, all_cliques.size());
   EXPECT_EQ(10, all_cliques[0].size());
+}
+
+TEST(WeightedBronKerboschBitsetAlgorithmTest, CompleteGraph) {
+  const int num_nodes = 1000;
+  WeightedBronKerboschBitsetAlgorithm algo;
+  algo.Initialize(num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    for (int j = i + 1; j < num_nodes; ++j) {
+      algo.AddEdge(i, j);
+    }
+  }
+  std::vector<std::vector<int>> cliques = algo.Run();
+  EXPECT_EQ(cliques.size(), 1);
+  for (const std::vector<int>& clique : cliques) {
+    EXPECT_EQ(num_nodes, clique.size());
+  }
+}
+
+TEST(WeightedBronKerboschBitsetAlgorithmTest, ImplicationGraphClosure) {
+  const int num_nodes = 10;
+  WeightedBronKerboschBitsetAlgorithm algo;
+  algo.Initialize(num_nodes);
+  for (int i = 0; i + 2 < num_nodes; i += 2) {
+    const int j = i + 2;
+    algo.AddEdge(i, j ^ 1);  // i => j
+  }
+  algo.TakeTransitiveClosureOfImplicationGraph();
+  for (int i = 0; i < num_nodes; ++i) {
+    for (int j = 0; j < num_nodes; ++j) {
+      if (i % 2 == 0 && j % 2 == 0) {
+        if (j > i) {
+          EXPECT_TRUE(algo.HasEdge(i, j ^ 1));
+        } else {
+          EXPECT_FALSE(algo.HasEdge(i, j ^ 1));
+        }
+      }
+    }
+  }
 }
 
 TEST(BronKerbosch, EmptyGraphCover) {
@@ -417,9 +451,7 @@ TEST(BronKerbosch, EmptyGraphCover) {
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-  operations_research::CoverArcsByCliques(
-      ::util::functional::ToPermanentCallback(graph), 10,
-      ::util::functional::ToPermanentCallback(callback));
+  operations_research::CoverArcsByCliques(graph, 10, callback);
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(0, all_cliques.size());
 }
@@ -429,9 +461,7 @@ TEST(BronKerbosch, MatchingGraphCover) {
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-  operations_research::CoverArcsByCliques(
-      ::util::functional::ToPermanentCallback(graph), 10,
-      ::util::functional::ToPermanentCallback(callback));
+  operations_research::CoverArcsByCliques(graph, 10, callback);
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(5, all_cliques.size());
   for (int i = 0; i < 5; ++i) {
@@ -446,9 +476,7 @@ TEST(BronKerbosch, ModuloGraph5Cover) {
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
-  operations_research::CoverArcsByCliques(
-      ::util::functional::ToPermanentCallback(graph), 40,
-      ::util::functional::ToPermanentCallback(callback));
+  operations_research::CoverArcsByCliques(graph, 40, callback);
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(5, all_cliques.size());
   for (int i = 0; i < 5; ++i) {
@@ -477,6 +505,50 @@ TEST(BronKerboschAlgorithmTest, FullKPartiteGraph) {
   }
 }
 
+TEST(WeightedBronKerboschBitsetAlgorithmTest, FullKPartiteGraph) {
+  const int kNumPartitions[] = {2, 3, 4, 5, 6, 7};
+  for (const int num_partitions : kNumPartitions) {
+    SCOPED_TRACE(absl::StrCat("num_partitions = ", num_partitions));
+    WeightedBronKerboschBitsetAlgorithm algo;
+
+    const int num_nodes = num_partitions * num_partitions;
+    algo.Initialize(num_nodes);
+
+    for (int i = 0; i < num_nodes; ++i) {
+      for (int j = i + 1; j < num_nodes; ++j) {
+        if (FullKPartiteGraph(num_partitions, i, j)) algo.AddEdge(i, j);
+      }
+    }
+
+    std::vector<std::vector<int>> cliques = algo.Run();
+    EXPECT_EQ(cliques.size(), pow(num_partitions, num_partitions));
+    for (const std::vector<int>& clique : cliques) {
+      EXPECT_EQ(num_partitions, clique.size());
+    }
+  }
+}
+
+TEST(WeightedBronKerboschBitsetAlgorithmTest, ModuloGraph) {
+  int num_partitions = 50;
+  int partition_size = 100;
+  WeightedBronKerboschBitsetAlgorithm algo;
+
+  const int num_nodes = num_partitions * partition_size;
+  algo.Initialize(num_nodes);
+
+  for (int i = 0; i < num_nodes; ++i) {
+    for (int j = i + 1; j < num_nodes; ++j) {
+      if (ModuloGraph(num_partitions, i, j)) algo.AddEdge(i, j);
+    }
+  }
+
+  std::vector<std::vector<int>> cliques = algo.Run();
+  EXPECT_EQ(cliques.size(), num_partitions);
+  for (const std::vector<int>& clique : cliques) {
+    EXPECT_EQ(partition_size, clique.size());
+  }
+}
+
 // The following two tests run the Bron-Kerbosch algorithm with wall time
 // limit and deterministic time limit. They use a full 15-partite graph with
 // a one second time limit.
@@ -495,7 +567,7 @@ TEST(BronKerboschAlgorithmTest, WallTimeLimit) {
   absl::SetFlag(&FLAGS_time_limit_use_usertime, true);
 
   TimeLimit time_limit(kTimeLimitSeconds);
-  const auto graph = [kNumPartitions](int index1, int index2) {
+  const auto graph = [](int index1, int index2) {
     return FullKPartiteGraph(kNumPartitions, index1, index2);
   };
   CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);
@@ -516,7 +588,7 @@ TEST(BronKerboschAlgorithmTest, DeterministicTimeLimit) {
 
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromDeterministicTime(kDeterministicLimit);
-  const auto graph = [kNumPartitions](int index1, int index2) {
+  const auto graph = [](int index1, int index2) {
     return FullKPartiteGraph(kNumPartitions, index1, index2);
   };
   CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);
@@ -544,9 +616,7 @@ void BM_FindCliquesInModuloGraph(benchmark::State& state) {
     auto callback =
         absl::bind_front(&CliqueSizeVerifier::AppendClique, &verifier);
 
-    operations_research::FindCliques(
-        ::util::functional::ToPermanentCallback(graph), kGraphSize,
-        ::util::functional::ToPermanentCallback(callback));
+    operations_research::FindCliques(graph, kGraphSize, callback);
   }
   EXPECT_EQ(state.max_iterations * kExpectedNumCliques, verifier.num_cliques());
 }
@@ -590,6 +660,37 @@ BENCHMARK(BM_FindCliquesInModuloGraphWithBronKerboschAlgorithm)
     ->ArgPair(500, 10)
     ->ArgPair(1000, 5);
 
+void BM_FindCliquesInModuloGraphWithBitsetBK(benchmark::State& state) {
+  int num_partitions = state.range(0);
+  int partition_size = state.range(1);
+  const int kExpectedNumCliques = num_partitions;
+  const int kExpectedCliqueSize = partition_size;
+  const int num_nodes = num_partitions * partition_size;
+  for (auto _ : state) {
+    WeightedBronKerboschBitsetAlgorithm algo;
+    algo.Initialize(num_nodes);
+    for (int i = 0; i < num_nodes; ++i) {
+      for (int j = i + 1; j < num_nodes; ++j) {
+        if (ModuloGraph(num_partitions, i, j)) algo.AddEdge(i, j);
+      }
+    }
+
+    std::vector<std::vector<int>> cliques = algo.Run();
+    EXPECT_EQ(cliques.size(), kExpectedNumCliques);
+    for (const std::vector<int>& clique : cliques) {
+      EXPECT_EQ(kExpectedCliqueSize, clique.size());
+    }
+  }
+}
+
+BENCHMARK(BM_FindCliquesInModuloGraphWithBitsetBK)
+    ->ArgPair(5, 1000)
+    ->ArgPair(10, 500)
+    ->ArgPair(50, 100)
+    ->ArgPair(100, 50)
+    ->ArgPair(500, 10)
+    ->ArgPair(1000, 5);
+
 // A benchmark that finds all maximal cliques in a 7-partite graph (a graph
 // where the nodes are divided into 7 groups of size 7; each node is connected
 // to all nodes in other groups but to no node in the same group). This graph
@@ -605,10 +706,8 @@ void BM_FindCliquesInFull7PartiteGraph(benchmark::State& state) {
     auto callback =
         absl::bind_front(&CliqueSizeVerifier::AppendClique, &verifier);
 
-    operations_research::FindCliques(
-        ::util::functional::ToPermanentCallback(graph),
-        kNumPartitions * kNumPartitions,
-        ::util::functional::ToPermanentCallback(callback));
+    operations_research::FindCliques(graph, kNumPartitions * kNumPartitions,
+                                     callback);
   }
   EXPECT_EQ(state.max_iterations * kExpectedNumCliques, verifier.num_cliques());
 }
@@ -618,8 +717,7 @@ BENCHMARK(BM_FindCliquesInFull7PartiteGraph);
 void BM_FindCliquesInFullKPartiteGraphWithBronKerboschAlgorithm(
     benchmark::State& state) {
   int num_partitions = state.range(0);
-  const int kExpectedNumCliques =
-      ::MathUtil::IPow(num_partitions, num_partitions);
+  const int kExpectedNumCliques = std::pow(num_partitions, num_partitions);
   const int kExpectedCliqueSize = num_partitions;
 
   const auto graph = [num_partitions](int index1, int index2) {
@@ -649,7 +747,7 @@ void BM_FindCliquesInRandomGraphWithBronKerboschAlgorithm(
   const double arc_probability = arc_probability_permille / 1000.0;
   const absl::flat_hash_set<std::pair<int, int>> adjacency_matrix =
       MakeRandomGraphAdjacencyMatrix(num_nodes, arc_probability,
-                                     absl::GetFlag(FLAGS_test_random_seed));
+                                     GTEST_FLAG_GET(random_seed));
   const auto graph = [adjacency_matrix](int index1, int index2) {
     return BitmapGraph(adjacency_matrix, index1, index2);
   };

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -41,6 +42,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -232,11 +234,10 @@ bool CutData::AllCoefficientsArePositive() const {
   return true;
 }
 
-void CutData::Canonicalize() {
+void CutData::SortRelevantEntries() {
   num_relevant_entries = 0;
   max_magnitude = 0;
-  for (int i = 0; i < terms.size(); ++i) {
-    CutTerm& entry = terms[i];
+  for (CutTerm& entry : terms) {
     max_magnitude = std::max(max_magnitude, IntTypeAbs(entry.coeff));
     if (entry.HasRelevantLpValue()) {
       std::swap(terms[num_relevant_entries], entry);
@@ -270,92 +271,78 @@ double CutData::ComputeEfficacy() const {
   return violation / std::sqrt(norm);
 }
 
-void CutDataBuilder::ClearIndices() {
-  num_merges_ = 0;
-  constraint_is_indexed_ = false;
-  bool_index_.clear();
-  secondary_bool_index_.clear();
+// We can only merge the term if term.coeff + old_coeff do not overflow and
+// if t * new_coeff do not overflow.
+//
+// If we cannot merge the term, we will keep them separate. The produced cut
+// will be less strong, but can still be used.
+bool CutDataBuilder::MergeIfPossible(IntegerValue t, CutTerm& to_add,
+                                     CutTerm& target) {
+  DCHECK_EQ(to_add.expr_vars[0], target.expr_vars[0]);
+  DCHECK_EQ(to_add.expr_coeffs[0], target.expr_coeffs[0]);
+
+  const IntegerValue new_coeff = CapAddI(to_add.coeff, target.coeff);
+  if (AtMinOrMaxInt64I(new_coeff) || ProdOverflow(t, new_coeff)) {
+    return false;
+  }
+
+  to_add.coeff = 0;  // Clear since we merge it.
+  target.coeff = new_coeff;
+  return true;
 }
 
-void CutDataBuilder::RegisterAllBooleanTerms(const CutData& cut) {
-  constraint_is_indexed_ = true;
-  const int size = cut.terms.size();
-  for (int i = 0; i < size; ++i) {
-    const CutTerm& term = cut.terms[i];
+// We only deal with coeff * Bool or coeff * (1 - Bool)
+//
+// TODO(user): Because of merges, we might have entry with a coefficient of
+// zero than are not useful. Remove them?
+int CutDataBuilder::AddOrMergeBooleanTerms(absl::Span<CutTerm> new_terms,
+                                           IntegerValue t, CutData* cut) {
+  if (new_terms.empty()) return 0;
+
+  bool_index_.clear();
+  secondary_bool_index_.clear();
+  int num_merges = 0;
+
+  // Fill the maps.
+  int i = 0;
+  for (CutTerm& term : new_terms) {
+    const IntegerVariable var = term.expr_vars[0];
+    auto& map = term.expr_coeffs[0] > 0 ? bool_index_ : secondary_bool_index_;
+    const auto [it, inserted] = map.insert({var, i});
+    if (!inserted) {
+      if (MergeIfPossible(t, term, new_terms[it->second])) {
+        ++num_merges;
+      }
+    }
+    ++i;
+  }
+
+  // Loop over the cut now. Note that we loop with indices as we might add new
+  // terms in the middle of the loop.
+  for (CutTerm& term : cut->terms) {
     if (term.bound_diff != 1) continue;
     if (!term.IsSimple()) continue;
 
-    // Initially we shouldn't have duplicate bools and (1 - bools).
-    // So we just fill bool_index_.
-    bool_index_[term.expr_vars[0]] = i;
-  }
-}
+    const IntegerVariable var = term.expr_vars[0];
+    auto& map = term.expr_coeffs[0] > 0 ? bool_index_ : secondary_bool_index_;
+    auto it = map.find(var);
+    if (it == map.end()) continue;
 
-void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
-                                    CutData* cut) {
-  if (!constraint_is_indexed_) {
-    RegisterAllBooleanTerms(*cut);
-  }
-
-  DCHECK(term.IsSimple());
-  const IntegerVariable var = term.expr_vars[0];
-  const bool is_positive = (term.expr_coeffs[0] > 0);
-  const int new_index = cut->terms.size();
-  const auto [it, inserted] = bool_index_.insert({var, new_index});
-  if (inserted) {
-    cut->terms.push_back(term);
-    return;
-  }
-
-  // If the referred var is not right, replace the entry.
-  int entry_index = it->second;
-  if (entry_index >= new_index || cut->terms[entry_index].expr_vars[0] != var) {
-    it->second = new_index;
-    cut->terms.push_back(term);
-    return;
-  }
-
-  // If the sign is not right, look into secondary hash_map for opposite sign.
-  if ((cut->terms[entry_index].expr_coeffs[0] > 0) != is_positive) {
-    const auto [it, inserted] = secondary_bool_index_.insert({var, new_index});
-    if (inserted) {
-      cut->terms.push_back(term);
-      return;
-    }
-
-    // If the referred var is not right, replace the entry.
-    entry_index = it->second;
-    if (entry_index >= new_index ||
-        cut->terms[entry_index].expr_vars[0] != var) {
-      it->second = new_index;
-      cut->terms.push_back(term);
-      return;
-    }
-
-    // If the sign is not right, replace the entry.
-    if ((cut->terms[entry_index].expr_coeffs[0] > 0) != is_positive) {
-      it->second = new_index;
-      cut->terms.push_back(term);
-      return;
+    // We found a match, try to merge the map entry into the cut.
+    // Note that we don't waste time erasing this entry from the map since
+    // we should have no duplicates in the original cut.
+    if (MergeIfPossible(t, new_terms[it->second], term)) {
+      ++num_merges;
     }
   }
-  DCHECK_EQ(cut->terms[entry_index].expr_vars[0], var);
-  DCHECK_EQ((cut->terms[entry_index].expr_coeffs[0] > 0), is_positive);
 
-  // We can only merge the term if term.coeff + old_coeff do not overflow and
-  // if t * new_coeff do not overflow.
-  //
-  // If we cannot merge the term, we will keep them separate. The produced cut
-  // will be less strong, but can still be used.
-  const IntegerValue new_coeff =
-      CapAddI(cut->terms[entry_index].coeff, term.coeff);
-  if (AtMinOrMaxInt64I(new_coeff) || ProdOverflow(t, new_coeff)) {
-    // If we cannot merge the term, we keep them separate.
+  // Finally add the terms we couldn't merge.
+  for (const CutTerm& term : new_terms) {
+    if (term.coeff == 0) continue;
     cut->terms.push_back(term);
-  } else {
-    ++num_merges_;
-    cut->terms[entry_index].coeff = new_coeff;
   }
+
+  return num_merges;
 }
 
 // TODO(user): Divide by gcd first to avoid possible overflow in the
@@ -789,40 +776,38 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should be better except it can mess up the norm and the divisors.
   cut_ = base_ct;
   if (options.use_ib_before_heuristic && ib_processor != nullptr) {
-    ib_processor->BaseCutBuilder()->ClearNumMerges();
-    const int old_size = static_cast<int>(cut_.terms.size());
-    bool abort = true;
-    for (int i = 0; i < old_size; ++i) {
-      if (cut_.terms[i].bound_diff <= 1) continue;
-      if (!cut_.terms[i].HasRelevantLpValue()) continue;
+    std::vector<CutTerm>* new_bool_terms =
+        ib_processor->ClearedMutableTempTerms();
+    for (CutTerm& term : cut_.terms) {
+      if (term.bound_diff <= 1) continue;
+      if (!term.HasRelevantLpValue()) continue;
 
-      if (options.prefer_positive_ib && cut_.terms[i].coeff < 0) {
+      if (options.prefer_positive_ib && term.coeff < 0) {
         // We complement the term before trying the implied bound.
-        cut_.terms[i].Complement(&cut_.rhs);
+        term.Complement(&cut_.rhs);
         if (ib_processor->TryToExpandWithLowerImpliedbound(
-                IntegerValue(1), i,
-                /*complement=*/true, &cut_, ib_processor->BaseCutBuilder())) {
+                IntegerValue(1),
+                /*complement=*/true, &term, &cut_.rhs, new_bool_terms)) {
           ++total_num_initial_ibs_;
-          abort = false;
           continue;
         }
-        cut_.terms[i].Complement(&cut_.rhs);
+        term.Complement(&cut_.rhs);
       }
 
       if (ib_processor->TryToExpandWithLowerImpliedbound(
-              IntegerValue(1), i,
-              /*complement=*/true, &cut_, ib_processor->BaseCutBuilder())) {
-        abort = false;
+              IntegerValue(1),
+              /*complement=*/true, &term, &cut_.rhs, new_bool_terms)) {
         ++total_num_initial_ibs_;
       }
     }
-    total_num_initial_merges_ +=
-        ib_processor->BaseCutBuilder()->NumMergesSinceLastClear();
 
     // TODO(user): We assume that this is called with and without the option
     // use_ib_before_heuristic, so that we can abort if no IB has been applied
     // since then we will redo the computation. This is not really clean.
-    if (abort) return false;
+    if (new_bool_terms->empty()) return false;
+    total_num_initial_merges_ +=
+        ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
+            absl::MakeSpan(*new_bool_terms), IntegerValue(1), &cut_);
   }
 
   // Our heuristic will try to generate a few different cuts, and we will keep
@@ -842,7 +827,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
   //
   // TODO(user): If the rhs is small and close to zero, we might want to
   // consider different way of complementing the variables.
-  cut_.Canonicalize();
+  cut_.SortRelevantEntries();
   const IntegerValue remainder_threshold(
       std::max(IntegerValue(1), cut_.max_magnitude / 1000));
   if (cut_.rhs >= 0 && cut_.rhs < remainder_threshold.value()) {
@@ -904,6 +889,9 @@ bool IntegerRoundingCutHelper::ComputeCut(
   }
 
   // Re try complementation on the transformed cut.
+  // TODO(user): This can be quadratic! we don't want to try too much of them.
+  // Or optimize the algo, we should be able to be more incremental here.
+  // see on g200x740.pb.gz for instance.
   for (CutTerm& entry : cut_.terms) {
     if (!entry.HasRelevantLpValue()) break;
     if (entry.coeff % best_divisor == 0) continue;
@@ -997,11 +985,11 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should lead to stronger cuts even if the norms might be worse.
   num_ib_used_ = 0;
   if (ib_processor != nullptr) {
-    const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
-        f, factor_t, &cut_, &cut_builder_);
+    const auto [num_lb, num_ub, num_merges] =
+        ib_processor->PostprocessWithImpliedBound(f, factor_t, &cut_);
     total_num_pos_lifts_ += num_lb;
     total_num_neg_lifts_ += num_ub;
-    total_num_merges_ += cut_builder_.NumMergesSinceLastClear();
+    total_num_merges_ += num_merges;
     num_ib_used_ = num_lb + num_ub;
   }
 
@@ -1101,6 +1089,17 @@ struct LargeContribFirst {
   }
 };
 
+struct LargeLpValueFirst {
+  bool operator()(const CutTerm& a, const CutTerm& b) const {
+    if (a.lp_value == b.lp_value) {
+      // Prefer high coefficients if the distance is the same.
+      // We have more chance to get a cover this way.
+      return a.coeff > b.coeff;
+    }
+    return a.lp_value > b.lp_value;
+  }
+};
+
 // When minimizing a cover we want to remove bad score (large dist) divided by
 // item size. Note that here we assume item are "boolean" fully taken or not.
 // for general int we use (lp_dist / bound_diff) / (coeff * bound_diff) which
@@ -1133,14 +1132,15 @@ struct KnapsackRemove {
 template <class Compare>
 int CoverCutHelper::MinimizeCover(int cover_size, absl::int128 slack) {
   CHECK_GT(slack, 0);
-  std::sort(cut_.terms.begin(), cut_.terms.begin() + cover_size, Compare());
+  absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
+  std::sort(terms.begin(), terms.begin() + cover_size, Compare());
   for (int i = 0; i < cover_size;) {
-    const CutTerm& t = cut_.terms[i];
+    const CutTerm& t = terms[i];
     const absl::int128 contrib =
         absl::int128(t.bound_diff.value()) * absl::int128(t.coeff.value());
     if (contrib < slack) {
       slack -= contrib;
-      std::swap(cut_.terms[i], cut_.terms[--cover_size]);
+      std::swap(terms[i], terms[--cover_size]);
     } else {
       ++i;
     }
@@ -1152,16 +1152,17 @@ int CoverCutHelper::MinimizeCover(int cover_size, absl::int128 slack) {
 template <class CompareAdd, class CompareRemove>
 int CoverCutHelper::GetCoverSize(int relevant_size) {
   if (relevant_size == 0) return 0;
+  absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
 
   // Take first all at variable at upper bound, and ignore the one at lower
   // bound.
   int part1 = 0;
   for (int i = 0; i < relevant_size;) {
-    CutTerm& term = cut_.terms[i];
+    CutTerm& term = terms[i];
     const double dist = term.LpDistToMaxValue();
     if (dist < 1e-6) {
       // Move to part 1.
-      std::swap(term, cut_.terms[part1]);
+      std::swap(term, terms[part1]);
       ++i;
       ++part1;
     } else if (term.lp_value > 1e-6) {
@@ -1170,30 +1171,27 @@ int CoverCutHelper::GetCoverSize(int relevant_size) {
     } else {
       // Exclude entirely (part 3).
       --relevant_size;
-      std::swap(term, cut_.terms[relevant_size]);
+      std::swap(term, terms[relevant_size]);
     }
   }
-  std::sort(cut_.terms.begin() + part1, cut_.terms.begin() + relevant_size,
-            CompareAdd());
+  std::sort(terms.begin() + part1, terms.begin() + relevant_size, CompareAdd());
 
   // We substract the initial rhs to avoid overflow.
-  CHECK_GE(cut_.rhs, 0);
+  DCHECK_GE(cut_.rhs, 0);
   absl::int128 max_shifted_activity = -cut_.rhs;
   absl::int128 shifted_round_up = -cut_.rhs;
   int cover_size = 0;
-  double dist = 0.0;
   for (; cover_size < relevant_size; ++cover_size) {
     if (max_shifted_activity > 0) break;
-    const CutTerm& term = cut_.terms[cover_size];
+    const CutTerm& term = terms[cover_size];
     max_shifted_activity += absl::int128(term.coeff.value()) *
                             absl::int128(term.bound_diff.value());
     shifted_round_up += absl::int128(term.coeff.value()) *
                         std::min(absl::int128(term.bound_diff.value()),
                                  absl::int128(std::ceil(term.lp_value - 1e-6)));
-    dist += term.LpDistToMaxValue();
   }
 
-  CHECK_GE(cover_size, 0);
+  DCHECK_GE(cover_size, 0);
   if (shifted_round_up <= 0) {
     return 0;
   }
@@ -1203,51 +1201,60 @@ int CoverCutHelper::GetCoverSize(int relevant_size) {
 // Try a simple cover heuristic.
 // Look for violated CUT of the form: sum (UB - X) or (X - LB) >= 1.
 int CoverCutHelper::GetCoverSizeForBooleans() {
+  absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
+
   // Sorting can be slow, so we start by splitting the vector in 3 parts
-  // [can always be in cover, candidates, can never be in cover].
+  // - Can always be in cover
+  // - Candidates that needs sorting
+  // - At most one can be in cover (we keep the max).
   int part1 = 0;
-  int relevant_size = cut_.terms.size();
-  const double threshold = 1.0 - 1.0 / static_cast<double>(relevant_size);
+  int relevant_size = terms.size();
+  int best_in_part3 = -1;
+  const double threshold = 1.0 - 1.0 / static_cast<double>(terms.size());
   for (int i = 0; i < relevant_size;) {
-    const double lp_value = cut_.terms[i].lp_value;
+    const double lp_value = terms[i].lp_value;
 
     // Exclude non-Boolean.
-    if (cut_.terms[i].bound_diff > 1) {
+    if (terms[i].bound_diff > 1) {
       --relevant_size;
-      std::swap(cut_.terms[i], cut_.terms[relevant_size]);
+      std::swap(terms[i], terms[relevant_size]);
       continue;
     }
 
     if (lp_value >= threshold) {
       // Move to part 1.
-      std::swap(cut_.terms[i], cut_.terms[part1]);
+      std::swap(terms[i], terms[part1]);
       ++i;
       ++part1;
-    } else if (lp_value >= 0.001) {
+    } else if (lp_value > 0.5) {
       // Keep in part 2.
       ++i;
     } else {
-      // Exclude entirely (part 3).
+      // Only keep the max (part 3).
       --relevant_size;
-      std::swap(cut_.terms[i], cut_.terms[relevant_size]);
+      std::swap(terms[i], terms[relevant_size]);
+
+      if (best_in_part3 == -1 ||
+          LargeLpValueFirst()(terms[relevant_size], terms[best_in_part3])) {
+        best_in_part3 = relevant_size;
+      }
     }
   }
 
+  if (best_in_part3 != -1) {
+    std::swap(terms[relevant_size], terms[best_in_part3]);
+    ++relevant_size;
+  }
+
   // Sort by decreasing Lp value.
-  std::sort(cut_.terms.begin() + part1, cut_.terms.begin() + relevant_size,
-            [](const CutTerm& a, const CutTerm& b) {
-              if (a.lp_value == b.lp_value) {
-                // Prefer low coefficients if the distance is the same.
-                return a.coeff < b.coeff;
-              }
-              return a.lp_value > b.lp_value;
-            });
+  std::sort(terms.begin() + part1, terms.begin() + relevant_size,
+            LargeLpValueFirst());
 
   double activity = 0.0;
   int cover_size = relevant_size;
   absl::int128 slack = -cut_.rhs;
   for (int i = 0; i < relevant_size; ++i) {
-    const CutTerm& term = cut_.terms[i];
+    const CutTerm& term = terms[i];
     activity += term.LpDistToMaxValue();
 
     // As an heuristic we select all the term so that the sum of distance
@@ -1275,7 +1282,9 @@ int CoverCutHelper::GetCoverSizeForBooleans() {
   // possible violation. Note also that we lift as much as possible, so we don't
   // necessarily optimize for the cut efficacity though. But we do get a
   // stronger cut.
-  if (slack <= 0) return 0;
+  if (slack <= 0) {
+    return 0;
+  }
   if (cover_size == 0) return 0;
   return MinimizeCover<LargeCoeffFirst>(cover_size, slack);
 }
@@ -1297,21 +1306,23 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
   // Tricky: This only work because the cut absl128 rhs is not changed by these
   // operations.
   if (ib_processor != nullptr) {
-    ib_processor->BaseCutBuilder()->ClearNumMerges();
-    const int old_size = static_cast<int>(cut_.terms.size());
-    for (int i = 0; i < old_size; ++i) {
+    std::vector<CutTerm>* new_bool_terms =
+        ib_processor->ClearedMutableTempTerms();
+    for (CutTerm& term : cut_.terms) {
       // We only look at non-Boolean with an lp value not close to the upper
       // bound.
-      const CutTerm& term = cut_.terms[i];
       if (term.bound_diff <= 1) continue;
       if (term.lp_value + 1e-4 > AsDouble(term.bound_diff)) continue;
 
       if (ib_processor->TryToExpandWithLowerImpliedbound(
-              IntegerValue(1), i,
-              /*complement=*/false, &cut_, ib_processor->BaseCutBuilder())) {
+              IntegerValue(1),
+              /*complement=*/false, &term, &cut_.rhs, new_bool_terms)) {
         ++cover_stats_.num_initial_ibs;
       }
     }
+
+    ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
+        absl::MakeSpan(*new_bool_terms), IntegerValue(1), &cut_);
   }
 
   bool has_relevant_int = false;
@@ -1329,11 +1340,12 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
           : GetCoverSizeForBooleans();
   if (!has_relevant_int && ib_processor == nullptr) {
     // If some implied bound substitution are possible, we do not cache anything
-    // currently because the logic is currently sighlty different betweent the
+    // currently because the logic is currently sighlty different between the
     // two code. Fix?
     has_bool_base_ct_ = true;
-    bool_base_ct_ = cut_;
     bool_cover_size_ = cover_size;
+    if (cover_size == 0) return false;
+    bool_base_ct_ = cut_;
   }
   if (cover_size == 0) return false;
 
@@ -1387,11 +1399,11 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
   }
 
   if (ib_processor != nullptr) {
-    const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
-        f, /*factor_t=*/1, &cut_, &cut_builder_);
+    const auto [num_lb, num_ub, num_merges] =
+        ib_processor->PostprocessWithImpliedBound(f, /*factor_t=*/1, &cut_);
     cover_stats_.num_lb_ibs += num_lb;
     cover_stats_.num_ub_ibs += num_ub;
-    cover_stats_.num_merges += cut_builder_.NumMergesSinceLastClear();
+    cover_stats_.num_merges += num_merges;
   }
 
   cover_stats_.num_bumps += ApplyWithPotentialBump(f, best_coeff, &cut_);
@@ -1467,11 +1479,11 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
                                                                min_magnitude);
 
   if (ib_processor != nullptr) {
-    const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
-        f, /*factor_t=*/1, &cut_, &cut_builder_);
+    const auto [num_lb, num_ub, num_merges] =
+        ib_processor->PostprocessWithImpliedBound(f, /*factor_t=*/1, &cut_);
     flow_stats_.num_lb_ibs += num_lb;
     flow_stats_.num_ub_ibs += num_ub;
-    flow_stats_.num_merges += cut_builder_.NumMergesSinceLastClear();
+    flow_stats_.num_merges += num_merges;
   }
 
   // Lifting.
@@ -1516,8 +1528,9 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
     // We already called GetCoverSizeForBooleans() and ib_processor was nullptr,
     // so reuse that info.
     CHECK(ib_processor == nullptr);
-    InitializeCut(bool_base_ct_);
     cover_size = bool_cover_size_;
+    if (cover_size == 0) return false;
+    InitializeCut(bool_base_ct_);
   } else {
     InitializeCut(input_ct);
 
@@ -1526,16 +1539,19 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
     //
     // TODO(user): Merge Boolean terms that are complement of each other.
     if (ib_processor != nullptr) {
-      ib_processor->BaseCutBuilder()->ClearNumMerges();
-      const int old_size = static_cast<int>(cut_.terms.size());
-      for (int i = 0; i < old_size; ++i) {
-        if (cut_.terms[i].bound_diff <= 1) continue;
+      std::vector<CutTerm>* new_bool_terms =
+          ib_processor->ClearedMutableTempTerms();
+      for (CutTerm& term : cut_.terms) {
+        if (term.bound_diff <= 1) continue;
         if (ib_processor->TryToExpandWithLowerImpliedbound(
-                IntegerValue(1), i,
-                /*complement=*/false, &cut_, ib_processor->BaseCutBuilder())) {
+                IntegerValue(1),
+                /*complement=*/false, &term, &cut_.rhs, new_bool_terms)) {
           ++ls_stats_.num_initial_ibs;
         }
       }
+
+      ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
+          absl::MakeSpan(*new_bool_terms), IntegerValue(1), &cut_);
     }
 
     // TODO(user): we currently only deal with Boolean in the cover. Fix.
@@ -1650,8 +1666,7 @@ BoolRLTCutHelper::~BoolRLTCutHelper() {
   shared_stats_->AddStats(stats);
 }
 
-void BoolRLTCutHelper::Initialize(
-    const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars) {
+void BoolRLTCutHelper::Initialize(absl::Span<const IntegerVariable> lp_vars) {
   product_detector_->InitializeBooleanRLTCuts(lp_vars, *lp_values_);
   enabled_ = !product_detector_->BoolRLTCandidates().empty();
 }
@@ -2192,9 +2207,9 @@ bool ImpliedBoundsProcessor::DecomposeWithImpliedUpperBound(
   return true;
 }
 
-std::pair<int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
+std::tuple<int, int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
     const std::function<IntegerValue(IntegerValue)>& f, IntegerValue factor_t,
-    CutData* cut, CutDataBuilder* builder) {
+    CutData* cut) {
   int num_applied_lb = 0;
   int num_applied_ub = 0;
 
@@ -2202,10 +2217,9 @@ std::pair<int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
   CutTerm slack_term;
   CutTerm ub_bool_term;
   CutTerm ub_slack_term;
-  builder->ClearIndices();
-  const int initial_size = cut->terms.size();
-  for (int i = 0; i < initial_size; ++i) {
-    CutTerm& term = cut->terms[i];
+
+  tmp_terms_.clear();
+  for (CutTerm& term : cut->terms) {
     if (term.bound_diff <= 1) continue;
     if (!term.IsSimple()) continue;
 
@@ -2255,30 +2269,31 @@ std::pair<int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
       // loose more, so we prefer to be a bit defensive.
       if (score > base_score + 1e-2) {
         ++num_applied_ub;
-        term = ub_slack_term;  // Override first before push_back() !
-        builder->AddOrMergeTerm(ub_bool_term, factor_t, cut);
+        term = ub_slack_term;
+        tmp_terms_.push_back(ub_bool_term);
         continue;
       }
     }
 
     if (expand) {
       ++num_applied_lb;
-      term = slack_term;  // Override first before push_back() !
-      builder->AddOrMergeTerm(bool_term, factor_t, cut);
+      term = slack_term;
+      tmp_terms_.push_back(bool_term);
     }
   }
-  return {num_applied_lb, num_applied_ub};
+
+  const int num_merges = cut_builder_.AddOrMergeBooleanTerms(
+      absl::MakeSpan(tmp_terms_), factor_t, cut);
+
+  return {num_applied_lb, num_applied_ub, num_merges};
 }
 
-// Important: The cut_builder_ must have been reset.
 bool ImpliedBoundsProcessor::TryToExpandWithLowerImpliedbound(
-    IntegerValue factor_t, int i, bool complement, CutData* cut,
-    CutDataBuilder* builder) {
-  CutTerm& term = cut->terms[i];
-
+    IntegerValue factor_t, bool complement, CutTerm* term, absl::int128* rhs,
+    std::vector<CutTerm>* new_bool_terms) {
   CutTerm bool_term;
   CutTerm slack_term;
-  if (!DecomposeWithImpliedLowerBound(term, factor_t, bool_term, slack_term)) {
+  if (!DecomposeWithImpliedLowerBound(*term, factor_t, bool_term, slack_term)) {
     return false;
   }
 
@@ -2287,26 +2302,22 @@ bool ImpliedBoundsProcessor::TryToExpandWithLowerImpliedbound(
   // It is always good to complement such variable.
   //
   // Note that here we do more and just complement anything closer to UB.
-  //
-  // TODO(user): Because of merges, we might have entry with a coefficient of
-  // zero than are not useful. Remove them.
   if (complement) {
     if (bool_term.lp_value > 0.5) {
-      bool_term.Complement(&cut->rhs);
+      bool_term.Complement(rhs);
     }
     if (slack_term.lp_value > 0.5 * AsDouble(slack_term.bound_diff)) {
-      slack_term.Complement(&cut->rhs);
+      slack_term.Complement(rhs);
     }
   }
 
-  term = slack_term;
-  builder->AddOrMergeTerm(bool_term, factor_t, cut);
+  *term = slack_term;
+  new_bool_terms->push_back(bool_term);
   return true;
 }
 
 bool ImpliedBoundsProcessor::CacheDataForCut(IntegerVariable first_slack,
                                              CutData* cut) {
-  base_cut_builder_.ClearIndices();
   cached_data_.clear();
 
   const int size = cut->terms.size();
@@ -2370,7 +2381,7 @@ IntegerValue SumOfAllDiffLowerBounder::SumOfMinDomainValues() {
   int count = 0;
   IntegerValue sum = 0;
   for (const IntegerValue value : min_values_) {
-    sum += value;
+    sum = CapAddI(sum, value);
     if (++count >= expr_mins_.size()) return sum;
   }
   return sum;
@@ -2402,7 +2413,7 @@ IntegerValue SumOfAllDiffLowerBounder::GetBestLowerBound(std::string& suffix) {
 namespace {
 
 void TryToGenerateAllDiffCut(
-    const std::vector<std::pair<double, AffineExpression>>& sorted_exprs_lp,
+    absl::Span<const std::pair<double, AffineExpression>> sorted_exprs_lp,
     const IntegerTrail& integer_trail,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     TopNCuts& top_n_cuts, Model* model) {
@@ -2427,6 +2438,8 @@ void TryToGenerateAllDiffCut(
     std::string max_suffix;
     const IntegerValue required_max_sum =
         -negated_diff_maxes.GetBestLowerBound(max_suffix);
+    if (required_max_sum == std::numeric_limits<IntegerValue>::max()) continue;
+    DCHECK_LE(required_min_sum, required_max_sum);
     if (sum < ToDouble(required_min_sum) - kMinCutViolation ||
         sum > ToDouble(required_max_sum) + kMinCutViolation) {
       LinearConstraintBuilder cut(model, required_min_sum, required_max_sum);
@@ -2450,7 +2463,7 @@ void TryToGenerateAllDiffCut(
 }  // namespace
 
 CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<AffineExpression>& exprs, Model* model) {
+    absl::Span<const AffineExpression> exprs, Model* model) {
   CutGenerator result;
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
@@ -2462,37 +2475,38 @@ CutGenerator CreateAllDifferentCutGenerator(
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   Trail* trail = model->GetOrCreate<Trail>();
-  result.generate_cuts = [exprs, integer_trail, trail,
-                          model](LinearConstraintManager* manager) {
-    // These cuts work at all levels but the generator adds too many cuts on
-    // some instances and degrade the performance so we only use it at level
-    // 0.
-    if (trail->CurrentDecisionLevel() > 0) return true;
-    const auto& lp_values = manager->LpValues();
-    std::vector<std::pair<double, AffineExpression>> sorted_exprs;
-    for (const AffineExpression expr : exprs) {
-      if (integer_trail->LevelZeroLowerBound(expr) ==
-          integer_trail->LevelZeroUpperBound(expr)) {
-        continue;
-      }
-      sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
-    }
+  result.generate_cuts =
+      [exprs = std::vector<AffineExpression>(exprs.begin(), exprs.end()),
+       integer_trail, trail, model](LinearConstraintManager* manager) {
+        // These cuts work at all levels but the generator adds too many cuts on
+        // some instances and degrade the performance so we only use it at level
+        // 0.
+        if (trail->CurrentDecisionLevel() > 0) return true;
+        const auto& lp_values = manager->LpValues();
+        std::vector<std::pair<double, AffineExpression>> sorted_exprs;
+        for (const AffineExpression expr : exprs) {
+          if (integer_trail->LevelZeroLowerBound(expr) ==
+              integer_trail->LevelZeroUpperBound(expr)) {
+            continue;
+          }
+          sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
+        }
 
-    TopNCuts top_n_cuts(5);
-    std::sort(sorted_exprs.begin(), sorted_exprs.end(),
-              [](std::pair<double, AffineExpression>& a,
-                 const std::pair<double, AffineExpression>& b) {
-                return a.first < b.first;
-              });
-    TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values, top_n_cuts,
-                            model);
-    // Other direction.
-    std::reverse(sorted_exprs.begin(), sorted_exprs.end());
-    TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values, top_n_cuts,
-                            model);
-    top_n_cuts.TransferToManager(manager);
-    return true;
-  };
+        TopNCuts top_n_cuts(5);
+        std::sort(sorted_exprs.begin(), sorted_exprs.end(),
+                  [](std::pair<double, AffineExpression>& a,
+                     const std::pair<double, AffineExpression>& b) {
+                    return a.first < b.first;
+                  });
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                top_n_cuts, model);
+        // Other direction.
+        std::reverse(sorted_exprs.begin(), sorted_exprs.end());
+        TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
+                                top_n_cuts, model);
+        top_n_cuts.TransferToManager(manager);
+        return true;
+      };
   VLOG(2) << "Created all_diff cut generator of size: " << exprs.size();
   return result;
 }
@@ -2515,8 +2529,8 @@ IntegerValue MaxCornerDifference(const IntegerVariable var,
 //                       target expr I(i), max expr k.
 // The coefficient of zk is Sum(i=1..n)(MPlusCoefficient_ki) + bk
 IntegerValue MPlusCoefficient(
-    const std::vector<IntegerVariable>& x_vars,
-    const std::vector<LinearExpression>& exprs,
+    absl::Span<const IntegerVariable> x_vars,
+    absl::Span<const LinearExpression> exprs,
     const util_intops::StrongVector<IntegerVariable, int>& variable_partition,
     const int max_index, const IntegerTrail& integer_trail) {
   IntegerValue coeff = exprs[max_index].offset;
@@ -2537,8 +2551,8 @@ IntegerValue MPlusCoefficient(
 // rhs = wI(i)i * xi + Sum(k=1..d)(MPlusCoefficient_ki * zk)
 // for variable xi for given target index I(i).
 double ComputeContribution(
-    const IntegerVariable xi_var, const std::vector<IntegerVariable>& z_vars,
-    const std::vector<LinearExpression>& exprs,
+    const IntegerVariable xi_var, absl::Span<const IntegerVariable> z_vars,
+    absl::Span<const LinearExpression> exprs,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail, const int target_index) {
   CHECK_GE(target_index, 0);
@@ -2560,9 +2574,10 @@ double ComputeContribution(
 }
 }  // namespace
 
-CutGenerator CreateLinMaxCutGenerator(
-    const IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    const std::vector<IntegerVariable>& z_vars, Model* model) {
+CutGenerator CreateLinMaxCutGenerator(const IntegerVariable target,
+                                      absl::Span<const LinearExpression> exprs,
+                                      absl::Span<const IntegerVariable> z_vars,
+                                      Model* model) {
   CutGenerator result;
   std::vector<IntegerVariable> x_vars;
   result.vars = {target};
@@ -2579,62 +2594,65 @@ CutGenerator CreateLinMaxCutGenerator(
   result.vars.insert(result.vars.end(), x_vars.begin(), x_vars.end());
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  result.generate_cuts = [x_vars, z_vars, target, num_exprs, exprs,
-                          integer_trail,
-                          model](LinearConstraintManager* manager) {
-    const auto& lp_values = manager->LpValues();
-    util_intops::StrongVector<IntegerVariable, int> variable_partition(
-        lp_values.size(), -1);
-    util_intops::StrongVector<IntegerVariable, double>
-        variable_partition_contrib(lp_values.size(),
-                                   std::numeric_limits<double>::infinity());
-    for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
-      for (const IntegerVariable var : x_vars) {
-        const double contribution = ComputeContribution(
-            var, z_vars, exprs, lp_values, *integer_trail, expr_index);
-        const double prev_contribution = variable_partition_contrib[var];
-        if (contribution < prev_contribution) {
-          variable_partition[var] = expr_index;
-          variable_partition_contrib[var] = contribution;
+  result.generate_cuts =
+      [x_vars,
+       z_vars = std::vector<IntegerVariable>(z_vars.begin(), z_vars.end()),
+       target, num_exprs,
+       exprs = std::vector<LinearExpression>(exprs.begin(), exprs.end()),
+       integer_trail, model](LinearConstraintManager* manager) {
+        const auto& lp_values = manager->LpValues();
+        util_intops::StrongVector<IntegerVariable, int> variable_partition(
+            lp_values.size(), -1);
+        util_intops::StrongVector<IntegerVariable, double>
+            variable_partition_contrib(lp_values.size(),
+                                       std::numeric_limits<double>::infinity());
+        for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
+          for (const IntegerVariable var : x_vars) {
+            const double contribution = ComputeContribution(
+                var, z_vars, exprs, lp_values, *integer_trail, expr_index);
+            const double prev_contribution = variable_partition_contrib[var];
+            if (contribution < prev_contribution) {
+              variable_partition[var] = expr_index;
+              variable_partition_contrib[var] = contribution;
+            }
+          }
         }
-      }
-    }
 
-    LinearConstraintBuilder cut(model, /*lb=*/IntegerValue(0),
-                                /*ub=*/kMaxIntegerValue);
-    double violation = lp_values[target];
-    cut.AddTerm(target, IntegerValue(-1));
+        LinearConstraintBuilder cut(model, /*lb=*/IntegerValue(0),
+                                    /*ub=*/kMaxIntegerValue);
+        double violation = lp_values[target];
+        cut.AddTerm(target, IntegerValue(-1));
 
-    for (const IntegerVariable xi_var : x_vars) {
-      const int input_index = variable_partition[xi_var];
-      const LinearExpression& expr = exprs[input_index];
-      const IntegerValue coeff = GetCoefficientOfPositiveVar(xi_var, expr);
-      if (coeff != IntegerValue(0)) {
-        cut.AddTerm(xi_var, coeff);
-      }
-      violation -= ToDouble(coeff) * lp_values[xi_var];
-    }
-    for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
-      const IntegerVariable z_var = z_vars[expr_index];
-      const IntegerValue z_coeff = MPlusCoefficient(
-          x_vars, exprs, variable_partition, expr_index, *integer_trail);
-      if (z_coeff != IntegerValue(0)) {
-        cut.AddTerm(z_var, z_coeff);
-      }
-      violation -= ToDouble(z_coeff) * lp_values[z_var];
-    }
-    if (violation > 1e-2) {
-      manager->AddCut(cut.Build(), "LinMax");
-    }
-    return true;
-  };
+        for (const IntegerVariable xi_var : x_vars) {
+          const int input_index = variable_partition[xi_var];
+          const LinearExpression& expr = exprs[input_index];
+          const IntegerValue coeff = GetCoefficientOfPositiveVar(xi_var, expr);
+          if (coeff != IntegerValue(0)) {
+            cut.AddTerm(xi_var, coeff);
+          }
+          violation -= ToDouble(coeff) * lp_values[xi_var];
+        }
+        for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
+          const IntegerVariable z_var = z_vars[expr_index];
+          const IntegerValue z_coeff = MPlusCoefficient(
+              x_vars, exprs, variable_partition, expr_index, *integer_trail);
+          if (z_coeff != IntegerValue(0)) {
+            cut.AddTerm(z_var, z_coeff);
+          }
+          violation -= ToDouble(z_coeff) * lp_values[z_var];
+        }
+        if (violation > 1e-2) {
+          manager->AddCut(cut.Build(), "LinMax");
+        }
+        return true;
+      };
   return result;
 }
 
 namespace {
 
 IntegerValue EvaluateMaxAffine(
-    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    absl::Span<const std::pair<IntegerValue, IntegerValue>> affines,
     IntegerValue x) {
   IntegerValue y = kMinIntegerValue;
   for (const auto& p : affines) {
@@ -2647,7 +2665,7 @@ IntegerValue EvaluateMaxAffine(
 
 bool BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
-    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    absl::Span<const std::pair<IntegerValue, IntegerValue>> affines,
     Model* model, LinearConstraintBuilder* builder) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   const IntegerValue x_min = integer_trail->LevelZeroLowerBound(var);
@@ -2722,7 +2740,7 @@ CutGenerator CreateMaxAffineCutGenerator(
 }
 
 CutGenerator CreateCliqueCutGenerator(
-    const std::vector<IntegerVariable>& base_variables, Model* model) {
+    absl::Span<const IntegerVariable> base_variables, Model* model) {
   // Filter base_variables to only keep the one with a literal view, and
   // do the conversion.
   std::vector<IntegerVariable> variables;
@@ -2746,17 +2764,21 @@ CutGenerator CreateCliqueCutGenerator(
   CutGenerator result;
   result.vars = variables;
   auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  result.only_run_at_level_zero = true;
   result.generate_cuts = [variables, literals, implication_graph, positive_map,
                           negative_map,
                           model](LinearConstraintManager* manager) {
     std::vector<double> packed_values;
+    std::vector<double> packed_reduced_costs;
     const auto& lp_values = manager->LpValues();
+    const auto& reduced_costs = manager->ReducedCosts();
     for (int i = 0; i < literals.size(); ++i) {
       packed_values.push_back(lp_values[variables[i]]);
+      packed_reduced_costs.push_back(reduced_costs[variables[i]]);
     }
     const std::vector<std::vector<Literal>> at_most_ones =
-        implication_graph->GenerateAtMostOnesWithLargeWeight(literals,
-                                                             packed_values);
+        implication_graph->GenerateAtMostOnesWithLargeWeight(
+            literals, packed_values, packed_reduced_costs);
 
     for (const std::vector<Literal>& at_most_one : at_most_ones) {
       // We need to express such "at most one" in term of the initial

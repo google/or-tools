@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,7 +18,7 @@ DOCKER_BUILD_CMD := docker build
 endif
 DOCKER_RUN_CMD := docker run --rm --init
 
-MZN_SUFFIX=2024v4
+MZN_SUFFIX=2024v5
 DOCKER_NAME=cp-sat-minizinc-challenge
 MZN_TAG=${DOCKER_NAME}:${MZN_SUFFIX}
 MZN_LS_TAG=${DOCKER_NAME}-ls:${MZN_SUFFIX}

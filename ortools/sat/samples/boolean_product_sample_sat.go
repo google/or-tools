@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,10 +17,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"golang/protobuf/v2/proto/proto"
-	"ortools/sat/go/cpmodel"
-	sppb "ortools/sat/sat_parameters_go_proto"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func booleanProductSample() error {
@@ -44,11 +44,11 @@ func booleanProductSample() error {
 	}
 	// Set `fill_additional_solutions_in_response` and `enumerate_all_solutions` to true so
 	// the solver returns all solutions found.
-	params := sppb.SatParameters_builder{
+	params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(4),
-	}.Build()
+	}
 	response, err := cpmodel.SolveCpModelWithParameters(m, params)
 	if err != nil {
 		return fmt.Errorf("failed to solve the model: %w", err)
@@ -68,6 +68,6 @@ func booleanProductSample() error {
 func main() {
 	err := booleanProductSample()
 	if err != nil {
-		glog.Exitf("booleanProductSample returned with error: %v", err)
+		log.Exitf("booleanProductSample returned with error: %v", err)
 	}
 }

@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -45,9 +45,13 @@ set(OR_TOOLS_COMPILE_DEFINITIONS)
 set(OR_TOOLS_COMPILE_OPTIONS)
 set(OR_TOOLS_LINK_OPTIONS)
 
-if(BUILD_SHARED_LIBS)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_TOOLS_AS_DYNAMIC_LIB")
+if(MSVC AND BUILD_SHARED_LIBS)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_BUILD_DLL")
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_PROTO_DLL=__declspec(dllimport)")
+ else()
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_PROTO_DLL=")
 endif()
+
 # Optional built-in components
 if(BUILD_LP_PARSER)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
@@ -141,6 +145,165 @@ if(MSVC)
   )
 endif()
 
+################
+##  C++ Test  ##
+################
+# ortools_cxx_test()
+# CMake function to generate and build C++ test.
+# Parameters:
+# NAME: CMake target name
+# SOURCES: List of source files
+# [COMPILE_DEFINITIONS]: List of private compile definitions
+# [COMPILE_OPTIONS]: List of private compile options
+# [LINK_LIBRARIES]: List of private libraries to use when linking
+# note: ortools::ortools is always linked to the target
+# [LINK_OPTIONS]: List of private link options
+# e.g.:
+# ortools_cxx_test(
+#   NAME
+#     foo_bar_test
+#   SOURCES
+#     bar_test.cc
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar_test.cc
+#   LINK_LIBRARIES
+#     GTest::gmock
+#     GTest::gtest_main
+# )
+function(ortools_cxx_test)
+  set(options "")
+  set(oneValueArgs "NAME")
+  set(multiValueArgs
+    "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
+  cmake_parse_arguments(TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT BUILD_TESTING)
+    return()
+  endif()
+
+  if(NOT TEST_NAME)
+    message(FATAL_ERROR "no NAME provided")
+  endif()
+  if(NOT TEST_SOURCES)
+    message(FATAL_ERROR "no SOURCES provided")
+  endif()
+  message(STATUS "Configuring test ${TEST_NAME} ...")
+
+  add_executable(${TEST_NAME} "")
+  target_sources(${TEST_NAME} PRIVATE ${TEST_SOURCES})
+  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_definitions(${TEST_NAME} PRIVATE ${TEST_COMPILE_DEFINITIONS})
+  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_compile_options(${TEST_NAME} PRIVATE ${TEST_COMPILE_OPTIONS})
+  target_link_libraries(${TEST_NAME} PRIVATE
+    ${PROJECT_NAMESPACE}::ortools
+    ${TEST_LINK_LIBRARIES}
+  )
+  target_link_options(${TEST_NAME} PRIVATE ${TEST_LINK_OPTIONS})
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${TEST_NAME} PROPERTIES
+      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${TEST_NAME} PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
+  endif()
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME cxx_${TEST_NAME}
+      COMMAND ${TEST_NAME}
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+  endif()
+  message(STATUS "Configuring test ${TEST_NAME} ...DONE")
+endfunction()
+
+###################
+##  C++ Library  ##
+###################
+# ortools_cxx_library()
+# CMake function to generate and build C++ library.
+# Parameters:
+# NAME: CMake target name
+# SOURCES: List of source files
+# [TYPE]: SHARED or STATIC
+# [COMPILE_DEFINITIONS]: List of private compile definitions
+# [COMPILE_OPTIONS]: List of private compile options
+# [LINK_LIBRARIES]: List of **public** libraries to use when linking
+# note: ortools::ortools is always linked to the target
+# [LINK_OPTIONS]: List of private link options
+# e.g.:
+# ortools_cxx_library(
+#   NAME
+#     foo_bar_library
+#   SOURCES
+#     bar_library.cc
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar_library.cc
+#   TYPE
+#     SHARED
+#   LINK_LIBRARIES
+#     GTest::gmock
+#     GTest::gtest_main
+#   TESTING
+# )
+function(ortools_cxx_library)
+  set(options "TESTING")
+  set(oneValueArgs "NAME;TYPE")
+  set(multiValueArgs
+    "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
+  cmake_parse_arguments(LIBRARY
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(LIBRARY_TESTING AND NOT BUILD_TESTING)
+    return()
+  endif()
+
+  if(NOT LIBRARY_NAME)
+    message(FATAL_ERROR "no NAME provided")
+  endif()
+  if(NOT LIBRARY_SOURCES)
+    message(FATAL_ERROR "no SOURCES provided")
+  endif()
+  message(STATUS "Configuring library ${LIBRARY_NAME} ...")
+
+  add_library(${LIBRARY_NAME} ${LIBRARY_TYPE} "")
+  target_sources(${LIBRARY_NAME} PRIVATE ${LIBRARY_SOURCES})
+  target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_DEFINITIONS})
+  target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_17)
+  target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_OPTIONS})
+  target_link_libraries(${LIBRARY_NAME} PUBLIC
+    ${PROJECT_NAMESPACE}::ortools
+    ${LIBRARY_LINK_LIBRARIES}
+  )
+  target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LINK_OPTIONS})
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES
+      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
+  endif()
+  add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
+  message(STATUS "Configuring library ${LIBRARY_NAME} ...DONE")
+endfunction()
+
 ##################
 ##  PROTO FILE  ##
 ##################
@@ -197,7 +360,7 @@ function(generate_proto_library)
      COMMAND ${PROTOC_PRG}
      "--proto_path=${PROJECT_SOURCE_DIR}"
      ${PROTO_DIRS}
-     "--cpp_out=${PROJECT_BINARY_DIR}"
+     "--cpp_out=dllexport_decl=OR_PROTO_DLL:${PROJECT_BINARY_DIR}"
      ${PROTO_FILE}
      DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
      COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
@@ -224,6 +387,12 @@ function(generate_proto_library)
    #$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
  )
  target_compile_definitions(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+ if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${PROTO_NAME}_proto INTERFACE "OR_PROTO_DLL=__declspec(dllimport)")
+  target_compile_definitions(${PROTO_NAME}_proto PRIVATE "OR_PROTO_DLL=__declspec(dllexport)")
+ else()
+  target_compile_definitions(${PROTO_NAME}_proto PUBLIC "OR_PROTO_DLL=")
+endif()
  target_compile_options(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
  target_link_libraries(${PROTO_NAME}_proto PUBLIC protobuf::libprotobuf ${PROTO_LINK_LIBRARIES})
  add_library(${PROJECT_NAMESPACE}::${PROTO_NAME}_proto ALIAS ${PROTO_NAME}_proto)
@@ -288,6 +457,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_compile_features(${PROJECT_NAME} PUBLIC
   $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE OR_EXPORT)
+endif()
 target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
 target_link_options(${PROJECT_NAME} INTERFACE ${OR_TOOLS_LINK_OPTIONS})
 # Properties
@@ -388,11 +560,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   protobuf::libprotobuf
   ${RE2_DEPS}
   ${COINOR_DEPS}
-  $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
-  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
-  $<$<BOOL:${USE_HIGHS}>:highs::highs>
+  ${CPLEX_DEPS}
+  ${GLPK_DEPS}
+  ${HIGHS_DEPS}
   ${PDLP_DEPS}
-  $<$<BOOL:${USE_SCIP}>:libscip>
+  ${SCIP_DEPS}
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
@@ -469,8 +641,7 @@ configure_package_config_file(cmake/${PROJECT_NAME}Config.cmake.in
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-  COMPATIBILITY SameMajorVersion
-  )
+  COMPATIBILITY SameMajorVersion)
 install(
   FILES
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
@@ -514,15 +685,6 @@ if(USE_SCIP)
     COMPONENT Devel)
 endif()
 
-if(MSVC)
-# Bundle lib for MSVC
-configure_file(
-${PROJECT_SOURCE_DIR}/cmake/bundle-install.cmake.in
-${PROJECT_BINARY_DIR}/bundle-install.cmake
-@ONLY)
-install(SCRIPT ${PROJECT_BINARY_DIR}/bundle-install.cmake)
-endif()
-
 install(FILES "${PROJECT_SOURCE_DIR}/LICENSE"
   DESTINATION "${CMAKE_INSTALL_DOCDIR}"
   COMPONENT Devel)
@@ -536,72 +698,6 @@ install(DIRECTORY ortools/constraint_solver/docs/
   FILES_MATCHING
   PATTERN "*.md")
 endif()
-
-################
-##  C++ Test  ##
-################
-# add_cxx_test()
-# CMake function to generate and build C++ test.
-# Parameters:
-#  FILE_NAME: the C++ filename
-#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
-#  note: automatically determined if located in ortools/<component>/
-# e.g.:
-# add_cxx_test(
-#   FILE_NAME
-#     ${PROJECT_SOURCE_DIR}/ortools/foo/foo_test.cc
-#   COMPONENT_NAME
-#     foo
-# )
-function(add_cxx_test)
-  set(options "")
-  set(oneValueArgs FILE_NAME COMPONENT_NAME)
-  set(multiValueArgs "")
-  cmake_parse_arguments(TEST
-    "${options}"
-    "${oneValueArgs}"
-    "${multiValueArgs}"
-    ${ARGN}
-  )
-if(NOT TEST_FILE_NAME)
-    message(FATAL_ERROR "no FILE_NAME provided")
-  endif()
-  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
-
-  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
-
-  if(NOT TEST_COMPONENT_NAME)
-    # test is located in ortools/<component_name>/
-    get_filename_component(COMPONENT_DIR ${TEST_FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-  else()
-    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
-  endif()
-
-  add_executable(${TEST_NAME} ${TEST_FILE_NAME})
-  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
-
-  include(GNUInstallDirs)
-  if(APPLE)
-    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-  elseif(UNIX)
-    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-      OUTPUT_VARIABLE libdir_relative_path)
-    set_target_properties(${TEST_NAME} PROPERTIES
-      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
-  endif()
-
-  if(BUILD_TESTING)
-    add_test(
-      NAME cxx_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${TEST_NAME})
-  endif()
-  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
-endfunction()
 
 ##################
 ##  C++ Sample  ##

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,20 +13,21 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include "examples/cpp/parse_dimacs_assignment.h"
 #include "examples/cpp/print_dimacs_assignment.h"
 #include "ortools/algorithms/hungarian.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/linear_assignment.h"
 
 ABSL_FLAG(bool, assignment_compare_hungarian, false,
@@ -35,16 +36,18 @@ ABSL_FLAG(std::string, assignment_problem_output_file, "",
           "Print the problem to this file in DIMACS format (after layout "
           "is optimized, if applicable).");
 ABSL_FLAG(bool, assignment_reverse_arcs, false,
-          "Ignored if --assignment_static_graph=true. Use StarGraph "
-          "if true, ForwardStarGraph if false.");
+          "Ignored if --assignment_static_graph=true. Use ReverseArcListGraph "
+          "if true, ListGraph if false.");
 ABSL_FLAG(bool, assignment_static_graph, true,
-          "Use the ForwardStarStaticGraph representation, "
-          "otherwise ForwardStarGraph or StarGraph according "
+          "Use the StaticGraph representation, "
+          "otherwise ListGraph or ReverseArcListGraph according "
           "to --assignment_reverse_arcs.");
 
 namespace operations_research {
 
-typedef ForwardStarStaticGraph GraphType;
+using NodeIndex = int32_t;
+using ArcIndex = int32_t;
+using CostValue = int64_t;
 
 template <typename GraphType>
 CostValue BuildAndSolveHungarianInstance(
@@ -57,9 +60,7 @@ CostValue BuildAndSolveHungarianInstance(
   // First we have to find the biggest cost magnitude so we can
   // initialize the arc costs that aren't really there.
   CostValue largest_cost_magnitude = 0;
-  for (typename GraphType::ArcIterator arc_it(graph); arc_it.Ok();
-       arc_it.Next()) {
-    ArcIndex arc = arc_it.Index();
+  for (const auto arc : graph.AllForwardArcs()) {
     CostValue cost_magnitude = std::abs(assignment.ArcCost(arc));
     largest_cost_magnitude = std::max(largest_cost_magnitude, cost_magnitude);
   }
@@ -77,15 +78,9 @@ CostValue BuildAndSolveHungarianInstance(
   // hungarian algorithm). We opt for the alternative of iterating
   // over hte arcs via adjacency lists, which gives us the arc tails
   // implicitly.
-  for (typename GraphType::NodeIterator node_it(graph); node_it.Ok();
-       node_it.Next()) {
-    NodeIndex node = node_it.Index();
-    NodeIndex tail = (node - GraphType::kFirstNode);
-    for (typename GraphType::OutgoingArcIterator arc_it(graph, node);
-         arc_it.Ok(); arc_it.Next()) {
-      ArcIndex arc = arc_it.Index();
-      NodeIndex head =
-          (graph.Head(arc) - assignment.NumLeftNodes() - GraphType::kFirstNode);
+  for (const auto tail : graph.AllNodes()) {
+    for (const auto arc : graph.OutgoingArcs(tail)) {
+      NodeIndex head = graph.Head(arc) - assignment.NumLeftNodes();
       double cost = static_cast<double>(assignment.ArcCost(arc));
       hungarian_cost[tail][head] = cost;
     }
@@ -108,10 +103,7 @@ CostValue BuildAndSolveHungarianInstance(
 
 template <typename GraphType>
 void DisplayAssignment(const LinearSumAssignment<GraphType>& assignment) {
-  for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
-           node_it(assignment);
-       node_it.Ok(); node_it.Next()) {
-    const NodeIndex left_node = node_it.Index();
+  for (const auto left_node : assignment.BipartiteLeftNodes()) {
     const ArcIndex matching_arc = assignment.GetAssignmentArc(left_node);
     const NodeIndex right_node = assignment.Head(matching_arc);
     VLOG(5) << "assigned (" << left_node << ", " << right_node
@@ -132,17 +124,8 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
     LOG(FATAL) << error_message;
   }
   if (!absl::GetFlag(FLAGS_assignment_problem_output_file).empty()) {
-    // The following tail array management stuff is done in a generic
-    // way so we can plug in different types of graphs for which the
-    // TailArrayManager template can be instantiated, even though we
-    // know the type of the graph explicitly. In this way, the type of
-    // the graph can be switched just by changing the graph type in
-    // this file and making no other changes to the code.
-    TailArrayManager<GraphType> tail_array_manager(graph);
     PrintDimacsAssignmentProblem<GraphType>(
-        *assignment, tail_array_manager,
-        absl::GetFlag(FLAGS_assignment_problem_output_file));
-    tail_array_manager.ReleaseTailArrayIfForwardGraph();
+        *assignment, absl::GetFlag(FLAGS_assignment_problem_output_file));
   }
   CostValue hungarian_cost = 0.0;
   bool hungarian_solved = false;
@@ -175,10 +158,9 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
 
 static const char* const kUsageTemplate = "usage: %s <filename>";
 
-using ::operations_research::ForwardStarGraph;
-using ::operations_research::ForwardStarStaticGraph;
+using ::operations_research::ArcIndex;
+using ::operations_research::NodeIndex;
 using ::operations_research::SolveDimacsAssignment;
-using ::operations_research::StarGraph;
 
 int main(int argc, char* argv[]) {
   std::string usage;
@@ -194,10 +176,13 @@ int main(int argc, char* argv[]) {
   }
 
   if (absl::GetFlag(FLAGS_assignment_static_graph)) {
-    return SolveDimacsAssignment<ForwardStarStaticGraph>(argc, argv);
+    return SolveDimacsAssignment<::util::StaticGraph<NodeIndex, ArcIndex>>(
+        argc, argv);
   } else if (absl::GetFlag(FLAGS_assignment_reverse_arcs)) {
-    return SolveDimacsAssignment<StarGraph>(argc, argv);
+    return SolveDimacsAssignment<
+        ::util::ReverseArcListGraph<NodeIndex, ArcIndex>>(argc, argv);
   } else {
-    return SolveDimacsAssignment<ForwardStarGraph>(argc, argv);
+    return SolveDimacsAssignment<::util::ListGraph<NodeIndex, ArcIndex>>(argc,
+                                                                         argv);
   }
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,7 +21,7 @@ from ortools.constraint_solver import pywrapcp
 # from ortools.graph.python import min_cost_flow
 from ortools.linear_solver import pywraplp
 # from ortools.linear_solver import linear_solver_pb2
-# from ortools.sat.python import swig_helper
+# from ortools.sat.python import cp_model_helper
 # from ortools.sat.python import cp_model
 # from ortools.scheduling import rcpsp
 # from ortools.util.python import sorted_interval_list

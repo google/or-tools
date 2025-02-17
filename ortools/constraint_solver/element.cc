@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -407,18 +407,18 @@ RangeMinimumQueryExprElement::RangeMinimumQueryExprElement(
 }
 
 int64_t RangeMinimumQueryExprElement::Min() const {
-  return min_rmq_.GetMinimumFromRange(IndexMin(), IndexMax() + 1);
+  return min_rmq_.RangeMinimum(IndexMin(), IndexMax() + 1);
 }
 
 int64_t RangeMinimumQueryExprElement::Max() const {
-  return max_rmq_.GetMinimumFromRange(IndexMin(), IndexMax() + 1);
+  return max_rmq_.RangeMinimum(IndexMin(), IndexMax() + 1);
 }
 
 void RangeMinimumQueryExprElement::Range(int64_t* mi, int64_t* ma) {
   const int64_t range_min = IndexMin();
   const int64_t range_max = IndexMax() + 1;
-  *mi = min_rmq_.GetMinimumFromRange(range_min, range_max);
-  *ma = max_rmq_.GetMinimumFromRange(range_min, range_max);
+  *mi = min_rmq_.RangeMinimum(range_min, range_max);
+  *ma = max_rmq_.RangeMinimum(range_min, range_max);
 }
 
 #define UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(test)       \
@@ -870,16 +870,14 @@ IntExpr* Solver::MakeMonotonicElement(Solver::IndexEvaluator1 values,
                                       bool increasing, IntVar* const index) {
   CHECK_EQ(this, index->solver());
   if (increasing) {
-    return RegisterIntExpr(
-        RevAlloc(new IncreasingIntExprFunctionElement(this, values, index)));
+    return RegisterIntExpr(RevAlloc(
+        new IncreasingIntExprFunctionElement(this, std::move(values), index)));
   } else {
-    // You need to pass by copy such that opposite_value does not include a
-    // dandling reference when leaving this scope.
-    Solver::IndexEvaluator1 opposite_values = [values](int64_t i) {
-      return -values(i);
-    };
-    return RegisterIntExpr(MakeOpposite(RevAlloc(
-        new IncreasingIntExprFunctionElement(this, opposite_values, index))));
+    return RegisterIntExpr(
+        MakeOpposite(RevAlloc(new IncreasingIntExprFunctionElement(
+            this,
+            [values = std::move(values)](int64_t i) { return -values(i); },
+            index))));
   }
 }
 

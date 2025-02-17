@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -93,6 +94,9 @@ public class VrpResources {
     RoutingDimension timeDimension = routing.getMutableDimension("Time");
     long totalTime = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       String route = "";
@@ -149,7 +153,7 @@ public class VrpResources {
 
     // Add Time constraint.
     // [START time_constraint]
-    routing.addDimension(transitCallbackIndex, // transit callback
+    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback
         30, // allow waiting time
         30, // vehicle maximum capacities
         false, // start cumul to zero

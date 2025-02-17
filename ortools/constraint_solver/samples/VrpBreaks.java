@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -99,6 +100,9 @@ public final class VrpBreaks {
     long totalTime = 0;
     RoutingDimension timeDimension = routing.getMutableDimension("Time");
     for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       logger.info("Route for Vehicle " + i + ":");
       long index = routing.start(i);
       String route = "";
@@ -153,7 +157,7 @@ public final class VrpBreaks {
 
     // Add Time constraint.
     // [START time_constraint]
-    routing.addDimension(transitCallbackIndex, 10, 180,
+    boolean unused = routing.addDimension(transitCallbackIndex, 10, 180,
         true, // start cumul to zero
         "Time");
     RoutingDimension timeDimension = routing.getMutableDimension("Time");

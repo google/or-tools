@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,7 +51,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Li&Lim parser class
 class LiLimParser {
@@ -122,6 +122,6 @@ class LiLimParser {
   std::vector<SimpleTimeWindow<int64_t>> time_windows_;
   std::vector<int64_t> service_times_;
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_LILIM_PARSER_H_

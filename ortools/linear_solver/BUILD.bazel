@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,8 +13,9 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -201,7 +202,6 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_scip": [
-            "lpi_glop.cpp",
             "scip_callback.cc",
             "scip_interface.cc",
         ],
@@ -311,9 +311,9 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_scip": [
-            ":scip_with_glop",
             "//ortools/gscip:legacy_scip_params",
             "//ortools/linear_solver/proto_solver:scip_proto_solver",
+            "@scip",
         ],
         "//conditions:default": [],
     }),
@@ -340,21 +340,6 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
-    ],
-)
-
-copy_file(
-    name = "lpi_glop",
-    src = "@scip//:src/lpi/lpi_glop.cpp",
-    out = "lpi_glop.cpp",
-)
-
-cc_library(
-    name = "scip_with_glop",
-    srcs = ["lpi_glop.cpp"],
-    deps = [
-        "//ortools/glop:lp_solver",
-        "@scip//:libscip",
     ],
 )
 

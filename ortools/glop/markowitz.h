@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -116,11 +116,12 @@ class MatrixNonZeroPattern {
   // Resets the pattern to the one of the given matrix but only for the
   // rows/columns whose given permutation is kInvalidRow or kInvalidCol.
   // This also fills the singleton columns/rows with the corresponding entries.
-  void InitializeFromMatrixSubset(const CompactSparseMatrixView& basis_matrix,
-                                  const RowPermutation& row_perm,
-                                  const ColumnPermutation& col_perm,
-                                  std::vector<ColIndex>* singleton_columns,
-                                  std::vector<RowIndex>* singleton_rows);
+  void InitializeFromMatrixSubset(
+      const CompactSparseMatrixView& basis_matrix,
+      StrictITISpan<RowIndex, const RowIndex> row_perm,
+      StrictITISpan<ColIndex, const ColIndex> col_perm,
+      std::vector<ColIndex>* singleton_columns,
+      std::vector<RowIndex>* singleton_rows);
 
   // Adds a non-zero entry to the matrix. There should be no duplicates.
   void AddEntry(RowIndex row, ColIndex col);
@@ -215,9 +216,6 @@ class ColumnPriorityQueue {
   ColumnPriorityQueue(const ColumnPriorityQueue&) = delete;
   ColumnPriorityQueue& operator=(const ColumnPriorityQueue&) = delete;
 
-  // Releases the memory used by this class.
-  void Clear();
-
   // Clears the queue and prepares it to store up to num_cols column indices
   // with a degree from 1 to max_degree included.
   void Reset(int32_t max_degree, ColIndex num_cols);
@@ -232,10 +230,19 @@ class ColumnPriorityQueue {
   ColIndex Pop();
 
  private:
-  StrictITIVector<ColIndex, int32_t> col_index_;
-  StrictITIVector<ColIndex, int32_t> col_degree_;
-  std::vector<std::vector<ColIndex>> col_by_degree_;
+  void Remove(ColIndex col, int32_t old_degree);
+  void Insert(ColIndex col, int32_t degree);
+
+  // A degree of zero means not present.
   int32_t min_degree_;
+  StrictITIVector<ColIndex, int32_t> degree_;
+
+  // Pointer in the form of the prev/next column, kInvalidCol means "nil".
+  // We use double linked list for each degree, with col_by_degree_ pointing to
+  // the first element.
+  StrictITIVector<ColIndex, ColIndex> prev_;
+  StrictITIVector<ColIndex, ColIndex> next_;
+  std::vector<ColIndex> col_by_degree_;
 };
 
 // Contains a set of columns indexed by ColIndex. This is like a SparseMatrix
@@ -371,8 +378,9 @@ class Markowitz {
 
   // Helper function for determining if a column is a residual singleton column.
   // If it is, RowIndex* row contains the index of the single residual edge.
-  bool IsResidualSingletonColumn(const ColumnView& column,
-                                 const RowPermutation& row_perm, RowIndex* row);
+  bool IsResidualSingletonColumn(
+      const ColumnView& column,
+      StrictITISpan<RowIndex, const RowIndex> row_perm, RowIndex* row);
 
   // Returns the column of the current residual matrix with an index 'col' in
   // the initial matrix. We compute it by solving a linear system with the
@@ -412,6 +420,18 @@ class Markowitz {
   // residual matrix can be updated more efficiently by calling one of the
   // Remove...() functions above.
   void UpdateResidualMatrix(RowIndex pivot_row, ColIndex pivot_col);
+
+  // Temporary memory.
+  struct MatrixEntry {
+    RowIndex row;
+    ColIndex col;
+    Fractional coefficient;
+    MatrixEntry() = default;
+    MatrixEntry(RowIndex r, ColIndex c, Fractional coeff)
+        : row(r), col(c), coefficient(coeff) {}
+    bool operator<(const MatrixEntry& o) const { return row < o.row; }
+  };
+  std::vector<MatrixEntry> tmp_singleton_entries_;
 
   // Pointer to the matrix to factorize.
   CompactSparseMatrixView const* basis_matrix_;

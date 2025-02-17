@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -2595,7 +2595,7 @@ DisjunctiveConstraint::~DisjunctiveConstraint() {}
 void DisjunctiveConstraint::SetTransitionTime(
     std::function<int64_t(int64_t, int64_t)> transition_time) {
   if (transition_time != nullptr) {
-    transition_time_ = transition_time;
+    transition_time_ = std::move(transition_time);
   } else {
     transition_time_ = [](int64_t x, int64_t y) { return 0; };
   }

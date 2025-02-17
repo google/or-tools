@@ -1,0 +1,83 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 0
+  domain: 6
+}
+variables {
+  domain: 3
+  domain: 3
+}
+variables {
+  domain: 0
+  domain: 6
+}
+variables {
+  domain: 0
+  domain: 1
+}
+variables {
+  domain: 2
+  domain: 6
+}
+variables {
+  domain: 2
+  domain: 2
+}
+variables {
+  domain: 2
+  domain: 6
+}
+variables {
+  domain: 3
+  domain: 6
+}
+variables {
+  domain: 3
+  domain: 3
+}
+variables {
+  domain: 3
+  domain: 6
+}
+constraints {
+  enforcement_literal: 0
+  interval {
+    start { vars: 1 coeffs: 1 }
+    end { vars: 3 coeffs: 1 }
+    size { vars: 2 coeffs: 1 offset: 2 }
+  }
+}
+constraints {
+  enforcement_literal: 4
+  interval {
+    start { vars: 5 coeffs: 1 }
+    end  { vars: 7 coeffs: 1 }
+    size { vars: 6 coeffs: 1 }
+  }
+}
+constraints {
+  interval {
+    start { vars: 8 coeffs: 1 }
+    end { vars: 10 coeffs: 1 }
+    size { vars: 9 coeffs: 1 }
+  }
+}
+constraints {
+  no_overlap {
+    intervals: 0
+    intervals: 1
+    intervals: 2
+  }
+}
+constraints {
+  bool_xor {
+    literals: 0
+    literals: 4
+  }
+}

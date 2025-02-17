@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,19 +18,87 @@
 
 #include <functional>
 #include <limits>
-#include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
+
+// Helper to compute the minimum flow going out of a subset of nodes, for a
+// given RoutesConstraint.
+class MinOutgoingFlowHelper {
+ public:
+  MinOutgoingFlowHelper(int num_nodes, const std::vector<int>& tails,
+                        const std::vector<int>& heads,
+                        const std::vector<Literal>& literals, Model* model);
+
+  // Returns the minimum flow going out of `subset`, based on a conservative
+  // estimate of the maximum number of nodes of a feasible path inside this
+  // subset. `subset` must not be empty and must not contain the depot (node 0).
+  // Paths are approximated by their length and their last node, and can thus
+  // contain cycles. The complexity is O(subset.size() ^ 3).
+  int ComputeMinOutgoingFlow(absl::Span<const int> subset);
+
+  // Same as above, but uses less conservative estimates (paths are approximated
+  // by their set of nodes and their last node -- hence they can't contain
+  // cycles). The complexity is O(2 ^ subset.size()).
+  int ComputeTightMinOutgoingFlow(absl::Span<const int> subset);
+
+ private:
+  // Returns the minimum flow going out of a subset of size `subset_size`,
+  // assuming that the longest feasible path inside this subset has
+  // `longest_path_length` nodes and that there are at most `max_longest_paths`
+  // such paths.
+  int GetMinOutgoingFlow(int subset_size, int longest_path_length,
+                         int max_longest_paths);
+
+  const std::vector<int>& tails_;
+  const std::vector<int>& heads_;
+  const std::vector<Literal>& literals_;
+  const BinaryRelationRepository& binary_relation_repository_;
+  const Trail& trail_;
+  const IntegerTrail& integer_trail_;
+
+  // Temporary data used by ComputeMinOutgoingFlow(). Always contain default
+  // values, except while ComputeMinOutgoingFlow() is running.
+  // ComputeMinOutgoingFlow() computes, for each i in [0, |subset|), whether
+  // each node n in the subset could appear at position i in a feasible path.
+  // It computes whether n can appear at position i based on which nodes can
+  // appear at position i-1, and based on the arc literals and some linear
+  // constraints they enforce. To save memory, it only stores data about two
+  // consecutive positions at a time: a "current" position i, and a "next"
+  // position i+1.
+
+  std::vector<bool> in_subset_;
+  std::vector<int> index_in_subset_;
+  // For each node n, the indices (in tails_, heads_) of the m->n and n->m arcs
+  // inside the subset (self arcs excepted).
+  std::vector<std::vector<int>> incoming_arc_indices_;
+  std::vector<std::vector<int>> outgoing_arc_indices_;
+  // For each node n, whether it can appear at the current and next position in
+  // a feasible path.
+  std::vector<bool> reachable_;
+  std::vector<bool> next_reachable_;
+  // For each node n, the lower bound of each variable (appearing in a linear
+  // constraint enforced by some incoming arc literal), if n appears at the
+  // current and next position in a feasible path. Variables not appearing in
+  // these maps have no tighter lower bound that the one from the IntegerTrail
+  // (at decision level 0).
+  std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      node_var_lower_bounds_;
+  std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      next_node_var_lower_bounds_;
+};
 
 // Given a graph with nodes in [0, num_nodes) and a set of arcs (the order is
 // important), this will:
@@ -50,7 +118,7 @@ namespace sat {
 // Note that this is mainly a "symmetric" case algo, but it does still work for
 // the asymmetric case.
 void GenerateInterestingSubsets(int num_nodes,
-                                const std::vector<std::pair<int, int>>& arcs,
+                                absl::Span<const std::pair<int, int>> arcs,
                                 int stop_at_num_components,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets);
@@ -69,7 +137,7 @@ void GenerateInterestingSubsets(int num_nodes,
 // TODO(user): This also allocate O(n) memory internally, we could reuse it from
 // call to call if needed.
 void ExtractAllSubsetsFromForest(
-    const std::vector<int>& parent, std::vector<int>* subset_data,
+    absl::Span<const int> parent, std::vector<int>* subset_data,
     std::vector<absl::Span<const int>>* subsets,
     int node_limit = std::numeric_limits<int>::max());
 
@@ -109,7 +177,7 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs);
 // Pairs Network Flow Analysis", Dan Gusfield, 1990,
 // https://ranger.uta.edu/~weems/NOTES5311/LAB/LAB2SPR21/gusfield.huGomory.pdf
 std::vector<int> ComputeGomoryHuTree(
-    int num_nodes, const std::vector<ArcWithLpValue>& relevant_arcs);
+    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs);
 
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the
@@ -119,17 +187,17 @@ std::vector<int> ComputeGomoryHuTree(
 // connected. Note that we already assume basic constraint to be in the lp, so
 // we do not add any cuts for components of size 1.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
-    int num_nodes, std::vector<int> tails, std::vector<int> heads,
-    std::vector<Literal> literals, Model* model);
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals, Model* model);
 
 // Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
 // components, computes the demand needed to serves it, and depending on whether
 // it contains the depot (node zero) or not, compute the minimum number of
 // vehicle that needs to cross the component border.
-CutGenerator CreateCVRPCutGenerator(int num_nodes, std::vector<int> tails,
-                                    std::vector<int> heads,
-                                    std::vector<Literal> literals,
-                                    std::vector<int64_t> demands,
+CutGenerator CreateCVRPCutGenerator(int num_nodes, absl::Span<const int> tails,
+                                    absl::Span<const int> heads,
+                                    absl::Span<const Literal> literals,
+                                    absl::Span<const int64_t> demands,
                                     int64_t capacity, Model* model);
 
 // Try to find a subset where the current LP capacity of the outgoing or

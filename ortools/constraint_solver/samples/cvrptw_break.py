@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,18 +15,19 @@
 # [START program]
 """Capacitated Vehicle Routing Problem with Time Windows (CVRPTW).
 
-   This is a sample using the routing library python wrapper to solve a CVRPTW
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library python wrapper to solve a CVRPTW
+problem.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters and time in minutes.
+Distances are in meters and time in minutes.
 """
 
 # [START import]
 import functools
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -240,6 +241,8 @@ def print_solution(
     capacity_dimension = routing.GetDimensionOrDie("Capacity")
     time_dimension = routing.GetDimensionOrDie("Time")
     for vehicle_id in range(data["num_vehicles"]):
+        if not routing.IsVehicleUsed(assignment, vehicle_id):
+            continue
         index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         distance = 0
@@ -326,7 +329,11 @@ def main():
         vehicle_break = data["breaks"][v]
         break_intervals[v] = [
             routing.solver().FixedDurationIntervalVar(
-                15, 100, vehicle_break[0], vehicle_break[1], f"Break for vehicle {v}"
+                15,
+                100,
+                vehicle_break[0],
+                vehicle_break[1],
+                f"Break for vehicle {v}",
             )
         ]
         time_dimension.SetBreakIntervalsOfVehicle(

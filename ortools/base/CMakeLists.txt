@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,8 +26,9 @@ target_compile_definitions(${NAME} PRIVATE
   -DOR_TOOLS_MAJOR=${PROJECT_VERSION_MAJOR}
   -DOR_TOOLS_MINOR=${PROJECT_VERSION_MINOR}
   -DOR_TOOLS_PATCH=${PROJECT_VERSION_PATCH})
-if(MSVC)
-  target_compile_definitions(${NAME} PRIVATE -DOR_TOOLS_EXPORTS)
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
+  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
 endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
@@ -40,3 +41,22 @@ target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::base ALIAS ${NAME})
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        base_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        GTest::gtest
+        GTest::gtest_main
+        GTest::gmock
+    )
+  endforeach()
+endif()

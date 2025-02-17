@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,39 +20,39 @@ public class DoubleLinearExpr {
   private double offset;
 
   /** Creates a sum expression. */
-  static DoubleLinearExpr sum(IntVar[] variables) {
+  public static DoubleLinearExpr sum(IntVar[] variables) {
     return sumWithOffset(variables, 0.0);
   }
 
   /** Creates a sum expression. */
-  static DoubleLinearExpr sum(Literal[] literals) {
+  public static DoubleLinearExpr sum(Literal[] literals) {
     // We need the scalar product for the negative coefficient of negated Boolean variables.
     return sumWithOffset(literals, 0.0);
   }
 
   /** Creates a sum expression with a double offset. */
-  static DoubleLinearExpr sumWithOffset(IntVar[] variables, double offset) {
+  public static DoubleLinearExpr sumWithOffset(IntVar[] variables, double offset) {
     return new DoubleLinearExpr(variables, offset);
   }
 
   /** Creates a sum expression with a double offset. */
-  static DoubleLinearExpr sumWithOffset(Literal[] literals, double offset) {
+  public static DoubleLinearExpr sumWithOffset(Literal[] literals, double offset) {
     // We need the scalar product for the negative coefficient of negated Boolean variables.
     return new DoubleLinearExpr(literals, offset);
   }
 
   /** Creates a scalar product. */
-  static DoubleLinearExpr weightedSum(IntVar[] variables, double[] coefficients) {
+  public static DoubleLinearExpr weightedSum(IntVar[] variables, double[] coefficients) {
     return weightedSumWithOffset(variables, coefficients, 0.0);
   }
 
   /** Creates a scalar product. */
-  static DoubleLinearExpr weightedSum(Literal[] literals, double[] coefficients) {
+  public static DoubleLinearExpr weightedSum(Literal[] literals, double[] coefficients) {
     return weightedSumWithOffset(literals, coefficients, 0.0);
   }
 
   /** Creates a scalar product. */
-  static DoubleLinearExpr weightedSumWithOffset(
+  public static DoubleLinearExpr weightedSumWithOffset(
       IntVar[] variables, double[] coefficients, double offset) {
     if (variables.length != coefficients.length) {
       throw new CpModel.MismatchedArrayLengths(
@@ -62,7 +62,7 @@ public class DoubleLinearExpr {
   }
 
   /** Creates a scalar product with a double offset. */
-  static DoubleLinearExpr weightedSumWithOffset(
+  public static DoubleLinearExpr weightedSumWithOffset(
       Literal[] literals, double[] coefficients, double offset) {
     if (literals.length != coefficients.length) {
       throw new CpModel.MismatchedArrayLengths(
@@ -72,27 +72,27 @@ public class DoubleLinearExpr {
   }
 
   /** Creates a linear term (var * coefficient). */
-  static DoubleLinearExpr term(IntVar variable, double coefficient) {
+  public static DoubleLinearExpr term(IntVar variable, double coefficient) {
     return new DoubleLinearExpr(variable, coefficient, 0.0);
   }
 
   /** Creates a linear term (lit * coefficient). */
-  static DoubleLinearExpr term(Literal lit, double coefficient) {
+  public static DoubleLinearExpr term(Literal lit, double coefficient) {
     return new DoubleLinearExpr(lit, coefficient, 0.0);
   }
 
   /** Creates an affine expression (var * coefficient + offset). */
-  static DoubleLinearExpr affine(IntVar variable, double coefficient, double offset) {
+  public static DoubleLinearExpr affine(IntVar variable, double coefficient, double offset) {
     return new DoubleLinearExpr(variable, coefficient, offset);
   }
 
   /** Creates an affine expression (lit * coefficient + offset). */
-  static DoubleLinearExpr affine(Literal lit, double coefficient, double offset) {
+  public static DoubleLinearExpr affine(Literal lit, double coefficient, double offset) {
     return new DoubleLinearExpr(lit, coefficient, offset);
   }
 
-  /** Creates an constant expression. */
-  static DoubleLinearExpr constant(double value) {
+  /** Creates a constant expression. */
+  public static DoubleLinearExpr constant(double value) {
     return new DoubleLinearExpr(new IntVar[0], value);
   }
 

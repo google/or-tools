@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,3 +25,21 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   absl::strings
   ${PROJECT_NAMESPACE}::math_opt_proto)
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        math_opt_constraints_util_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        #benchmark::benchmark
+        GTest::gmock
+        GTest::gtest_main
+    )
+  endforeach()
+endif()

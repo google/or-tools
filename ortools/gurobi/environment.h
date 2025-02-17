@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -723,6 +723,8 @@ extern std::function<int(GRBenv *envP, const char *paramname, int *valueP, int *
 extern std::function<int(GRBenv *envP, const char *paramname, double *valueP, double *minP, double *maxP, double *defP)> GRBgetdblparaminfo;
 extern std::function<int(GRBenv *envP, const char *paramname, char *valueP, char *defP)> GRBgetstrparaminfo;
 extern std::function<GRBenv *(GRBmodel *model)> GRBgetenv;
+extern std::function<GRBenv*(GRBmodel* model, int num)> GRBgetmultiobjenv;
+extern std::function<GRBenv*(GRBmodel* model)> GRBdiscardmultiobjenvs;
 extern std::function<void(GRBenv *env)> GRBfreeenv;
 extern std::function<const char *(GRBenv *env)> GRBgeterrormsg;
 extern std::function<void(int *majorP, int *minorP, int *technicalP)> GRBversion;

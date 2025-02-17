@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -60,8 +60,8 @@ void TestPath(const int arcs[][2], int num_nodes, int num_arcs, bool eulerian,
 }
 
 TEST(EulerianTourTest, EmptyGraph) {
-  const int kArcs[][2] = {};
-  const int kExpectedTour[] = {};
+  const auto kArcs = nullptr;
+  const auto kExpectedTour = nullptr;
   TestTour(kArcs, 0, 0, -1, true, kExpectedTour);
 }
 
@@ -103,13 +103,13 @@ TEST(EulerianTourTest, MultiCycle) {
 TEST(EulerianTourTest, NonEulerian) {
   const int kArcs[][2] = {{0, 1}, {1, 4}, {1, 5}, {2, 3},
                           {2, 4}, {2, 5}, {3, 0}};
-  const int kExpectedTour[] = {};
+  const auto kExpectedTour = nullptr;
   TestTour(kArcs, 6, ABSL_ARRAYSIZE(kArcs), 1, false, kExpectedTour);
 }
 
 TEST(EulerianPathTest, EmptyGraph) {
-  const int kArcs[][2] = {};
-  const int kExpectedPath[] = {};
+  const auto kArcs = nullptr;
+  const auto kExpectedPath = nullptr;
   TestPath(kArcs, 0, 0, true, kExpectedPath);
 }
 

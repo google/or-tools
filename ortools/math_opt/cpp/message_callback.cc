@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/logging.h"
@@ -50,7 +51,7 @@ class PrinterMessageCallbackImpl {
   const std::string prefix_;
 };
 
-void PushBack(const std::vector<std::string>& messages,
+void PushBack(absl::Span<const std::string> messages,
               std::vector<std::string>* const sink) {
   sink->insert(sink->end(), messages.begin(), messages.end());
 }

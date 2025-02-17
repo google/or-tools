@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -324,6 +324,18 @@ class Termination:
     detail: str = ""
     problem_status: ProblemStatus = ProblemStatus()
     objective_bounds: ObjectiveBounds = ObjectiveBounds()
+
+    def to_proto(self) -> result_pb2.TerminationProto:
+        """Returns an equivalent protocol buffer to this Termination."""
+        return result_pb2.TerminationProto(
+            reason=self.reason.value,
+            limit=(
+                result_pb2.LIMIT_UNSPECIFIED if self.limit is None else self.limit.value
+            ),
+            detail=self.detail,
+            problem_status=self.problem_status.to_proto(),
+            objective_bounds=self.objective_bounds.to_proto(),
+        )
 
 
 def parse_termination(
@@ -929,6 +941,39 @@ class SolveResult:
             "unsupported type in argument for "
             f"variable_status: {type(variables).__name__!r}"
         )
+
+    def to_proto(self) -> result_pb2.SolveResultProto:
+        """Returns an equivalent protocol buffer for a SolveResult."""
+        proto = result_pb2.SolveResultProto(
+            termination=self.termination.to_proto(),
+            solutions=[s.to_proto() for s in self.solutions],
+            primal_rays=[r.to_proto() for r in self.primal_rays],
+            dual_rays=[r.to_proto() for r in self.dual_rays],
+            solve_stats=self.solve_stats.to_proto(),
+        )
+
+        # Ensure that at most solver has solver specific output.
+        existing_solver_specific_output = None
+
+        def has_solver_specific_output(solver_name: str) -> None:
+            nonlocal existing_solver_specific_output
+            if existing_solver_specific_output is not None:
+                raise ValueError(
+                    "found solver specific output for both"
+                    f" {existing_solver_specific_output} and {solver_name}"
+                )
+            existing_solver_specific_output = solver_name
+
+        if self.gscip_specific_output is not None:
+            has_solver_specific_output("gscip")
+            proto.gscip_output.CopyFrom(self.gscip_specific_output)
+        if self.osqp_specific_output is not None:
+            has_solver_specific_output("osqp")
+            proto.osqp_output.CopyFrom(self.osqp_specific_output)
+        if self.pdlp_specific_output is not None:
+            has_solver_specific_output("pdlp")
+            proto.pdlp_output.CopyFrom(self.pdlp_specific_output)
+        return proto
 
 
 def _get_problem_status(

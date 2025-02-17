@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,25 +18,27 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
 #include "ortools/util/filelineiter.h"
+#include "re2/re2.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 SolomonParser::SolomonParser()
     : sections_({{"VEHICLE", VEHICLE}, {"CUSTOMER", CUSTOMER}}) {
   Initialize();
 }
 
-bool SolomonParser::LoadFile(const std::string& file_name) {
+bool SolomonParser::LoadFile(absl::string_view file_name) {
   Initialize();
   return ParseFile(file_name);
 }
@@ -67,7 +69,7 @@ void SolomonParser::Initialize() {
   to_read_ = 1;
 }
 
-bool SolomonParser::ParseFile(const std::string& file_name) {
+bool SolomonParser::ParseFile(absl::string_view file_name) {
   for (const std::string& line :
        FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
     const std::vector<std::string> words =
@@ -135,4 +137,46 @@ bool SolomonParser::ParseFile(const std::string& file_name) {
   return section_ == CUSTOMER;
 }
 
-}  // namespace operations_research
+SolomonSolutionParser::SolomonSolutionParser() { Initialize(); }
+
+bool SolomonSolutionParser::LoadFile(absl::string_view file_name) {
+  Initialize();
+  return ParseFile(file_name);
+}
+
+void SolomonSolutionParser::Initialize() {
+  routes_.clear();
+  key_values_.clear();
+}
+
+bool SolomonSolutionParser::ParseFile(absl::string_view file_name) {
+  bool success = false;
+  for (const std::string& line :
+       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+    success = true;
+    const std::vector<std::string> words =
+        absl::StrSplit(line, ':', absl::SkipEmpty());
+    // Skip blank lines
+    if (words.empty()) continue;
+    std::string key = words[0];
+    std::string value = words.size() > 1
+                            ? absl::StrJoin(words.begin() + 1, words.end(), ":")
+                            : "";
+    if (!RE2::FullMatch(key, "Route\\s*(\\d+)\\s*")) {
+      absl::StripAsciiWhitespace(&key);
+      absl::StripAsciiWhitespace(&value);
+      key_values_[key] = value;
+      // Note: the "Solution" key will be captured here. That key has no actual
+      // usefulness and serves as a separator before reading routes.
+      continue;
+    }
+    routes_.push_back(std::vector<int>());
+    for (const auto item :
+         absl::StrSplit(value, absl::ByAnyChar(" \t"), absl::SkipEmpty())) {
+      routes_.back().push_back(strings::ParseLeadingInt32Value(item, -1));
+    }
+  }
+  return success;
+}
+
+}  // namespace operations_research::routing

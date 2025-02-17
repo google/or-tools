@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -133,7 +133,7 @@ namespace {
 // norm of the given column, otherwise do the same with a sparse version. In
 // both cases column is cleared.
 Fractional ComputeSquaredNormAndResetToZero(
-    const std::vector<RowIndex>& non_zeros, absl::Span<Fractional> column) {
+    absl::Span<const RowIndex> non_zeros, absl::Span<Fractional> column) {
   Fractional sum = 0.0;
   if (non_zeros.empty()) {
     sum = SquaredNormAndResetToZero(column);
@@ -404,11 +404,14 @@ bool LuFactorization::LeftSolveLWithNonZeros(
   // use a different algorithm.
   ClearAndResizeVectorWithNonZeros(x->size(), result_before_permutation);
   x->swap(result_before_permutation->values);
+  const auto input = result_before_permutation->values.const_view();
+  const auto inverse_row_perm = inverse_row_perm_.const_view();
   if (nz->empty()) {
-    for (RowIndex row(0); row < inverse_row_perm_.size(); ++row) {
-      const Fractional value = (*result_before_permutation)[row];
+    const RowIndex num_rows = inverse_row_perm.size();
+    for (RowIndex row(0); row < num_rows; ++row) {
+      const Fractional value = input[row];
       if (value != 0.0) {
-        const RowIndex permuted_row = inverse_row_perm_[row];
+        const RowIndex permuted_row = inverse_row_perm[row];
         (*x)[permuted_row] = value;
       }
     }
@@ -416,8 +419,8 @@ bool LuFactorization::LeftSolveLWithNonZeros(
     nz->swap(result_before_permutation->non_zeros);
     nz->reserve(result_before_permutation->non_zeros.size());
     for (const RowIndex row : result_before_permutation->non_zeros) {
-      const Fractional value = (*result_before_permutation)[row];
-      const RowIndex permuted_row = inverse_row_perm_[row];
+      const Fractional value = input[row];
+      const RowIndex permuted_row = inverse_row_perm[row];
       (*x)[permuted_row] = value;
       nz->push_back(permuted_row);
     }

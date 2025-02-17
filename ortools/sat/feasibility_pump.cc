@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,12 +34,14 @@
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -197,32 +199,33 @@ bool FeasibilityPump::Solve() {
 
 void FeasibilityPump::MaybePushToRepo() {
   if (incomplete_solutions_ == nullptr) return;
+  const double kInfinity = std::numeric_limits<double>::infinity();
 
-  std::vector<double> lp_solution(model_vars_size_,
-                                  std::numeric_limits<double>::infinity());
   // TODO(user): Consider adding solutions that have low fractionality.
   if (lp_solution_is_integer_) {
     // Fill the solution using LP solution values.
+    tmp_solution_.assign(model_vars_size_, kInfinity);
     for (const IntegerVariable positive_var : integer_variables_) {
       const int model_var =
           mapping_->GetProtoVariableFromIntegerVariable(positive_var);
       if (model_var >= 0 && model_var < model_vars_size_) {
-        lp_solution[model_var] = GetLPSolutionValue(positive_var);
+        tmp_solution_[model_var] = GetLPSolutionValue(positive_var);
       }
     }
-    incomplete_solutions_->AddSolution(lp_solution);
+    incomplete_solutions_->AddSolution(tmp_solution_);
   }
 
   if (integer_solution_is_feasible_) {
     // Fill the solution using Integer solution values.
+    tmp_solution_.assign(model_vars_size_, kInfinity);
     for (const IntegerVariable positive_var : integer_variables_) {
       const int model_var =
           mapping_->GetProtoVariableFromIntegerVariable(positive_var);
       if (model_var >= 0 && model_var < model_vars_size_) {
-        lp_solution[model_var] = GetIntegerSolutionValue(positive_var);
+        tmp_solution_[model_var] = GetIntegerSolutionValue(positive_var);
       }
     }
-    incomplete_solutions_->AddSolution(lp_solution);
+    incomplete_solutions_->AddSolution(tmp_solution_);
   }
 }
 
@@ -359,14 +362,14 @@ void FeasibilityPump::L1DistanceMinimize() {
       const ColIndex norm_lhs_slack_variable =
           lp_data_.GetSlackVariable(norm_lhs_constraints_[col]);
       const double lhs_scaling_factor =
-          scaler_.VariableScalingFactor(norm_lhs_slack_variable);
+          scaler_.VariableScalingFactorWithSlack(norm_lhs_slack_variable);
       lp_data_.SetVariableBounds(
           norm_lhs_slack_variable, -glop::kInfinity,
           lhs_scaling_factor * integer_solution_[col.value()]);
       const ColIndex norm_rhs_slack_variable =
           lp_data_.GetSlackVariable(norm_rhs_constraints_[col]);
       const double rhs_scaling_factor =
-          scaler_.VariableScalingFactor(norm_rhs_slack_variable);
+          scaler_.VariableScalingFactorWithSlack(norm_rhs_slack_variable);
       lp_data_.SetVariableBounds(
           norm_rhs_slack_variable, -glop::kInfinity,
           -rhs_scaling_factor * integer_solution_[col.value()]);
@@ -610,11 +613,11 @@ bool FeasibilityPump::PropagationRounding() {
     }
 
     const int64_t rounded_value =
-        static_cast<int64_t>(std::round(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::round(lp_solution_[var_index]));
     const int64_t floor_value =
-        static_cast<int64_t>(std::floor(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::floor(lp_solution_[var_index]));
     const int64_t ceil_value =
-        static_cast<int64_t>(std::ceil(lp_solution_[var_index]));
+        SafeDoubleToInt64(std::ceil(lp_solution_[var_index]));
 
     const bool floor_is_in_domain =
         (domain.Contains(floor_value) && lb.value() <= floor_value);

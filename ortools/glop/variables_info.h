@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -173,6 +173,12 @@ class VariablesInfo {
                                     DenseRow::ConstView reduced_costs);
   void EndDualPhaseI(Fractional dual_feasibility_tolerance,
                      DenseRow::ConstView reduced_costs);
+
+  // Advanced incremental API to reuse directly the internal storage.
+  // This saves two copy per solves, and only matter on large easy problems.
+  void InitializeFromMutatedState();
+  DenseRow* MutableLowerBounds() { return &lower_bounds_; }
+  DenseRow* MutableUpperBounds() { return &upper_bounds_; }
 
  private:
   // Computes the initial/default variable status from its type. A constrained

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,11 +27,10 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/stats.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
@@ -101,8 +100,14 @@ class SubSolver {
   // Note that this is protected by the global execution mutex and so it is
   // called sequentially. Subclasses do not need to call this.
   void AddTaskDuration(double duration_in_seconds) {
+    ++num_finished_tasks_;
+    wall_time_ += duration_in_seconds;
     timing_.AddTimeInSec(duration_in_seconds);
   }
+
+  // Note that this is protected by the global execution mutex and so it is
+  // called sequentially. Subclasses do not need to call this.
+  void NotifySelection() { ++num_scheduled_tasks_; }
 
   // This one need to be called by the Subclasses. Usually from Synchronize(),
   // or from the task itself it we execute a single task at the same time.
@@ -127,11 +132,42 @@ class SubSolver {
     return data;
   }
 
+  // Returns a score used to compare which tasks to schedule next.
+  // We will schedule the LOWER score.
+  //
+  // Tricky: Note that this will only be called sequentially. The deterministic
+  // time should only be used with the DeterministicLoop() because otherwise it
+  // can be updated at the same time as this is called.
+  double GetSelectionScore(bool deterministic) const {
+    const double time = deterministic ? deterministic_time_ : wall_time_;
+    const double divisor = num_scheduled_tasks_ > 0
+                               ? static_cast<double>(num_scheduled_tasks_)
+                               : 1.0;
+
+    // If we have little data, we strongly limit the number of task in flight.
+    // This is needed if some LNS are stuck for a long time to not just only
+    // schedule this type at the beginning.
+    const int64_t in_flight = num_scheduled_tasks_ - num_finished_tasks_;
+    const double confidence_factor =
+        num_finished_tasks_ > 10 ? 1.0 : std::exp(in_flight);
+
+    // We assume a "minimum time per task" which will be our base etimation for
+    // the average running time of this task.
+    return num_scheduled_tasks_ * std::max(0.1, time / divisor) *
+           confidence_factor;
+  }
+
  private:
   const std::string name_;
   const SubsolverType type_;
 
+  int64_t num_scheduled_tasks_ = 0;
+  int64_t num_finished_tasks_ = 0;
+
+  // Sum of wall_time / deterministic_time.
+  double wall_time_ = 0.0;
   double deterministic_time_ = 0.0;
+
   TimeDistribution timing_ = TimeDistribution("task time");
   TimeDistribution dtiming_ = TimeDistribution("task dtime");
 };
@@ -163,7 +199,7 @@ class SynchronizationPoint : public SubSolver {
 // any tasks. This can be used to synchronize classes used by many subsolvers
 // just once for instance.
 void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                          int num_threads);
+                          int num_threads, ModelSharedTimeLimit* time_limit);
 
 // Similar to NonDeterministicLoop() except this should result in a
 // deterministic solver provided that all SubSolver respect the Synchronize()

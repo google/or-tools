@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+// Used for free functions.
+%module(directors="1") operations_research;
+
 %include "enumsimple.swg"
 %include "exception.i"
 
@@ -21,6 +24,12 @@
 %include "ortools/util/java/tuple_set.i"
 %include "ortools/util/java/vector.i"
 %include "ortools/util/java/proto.i"
+
+// Make the SWIG-generated constructor public.
+// This is necessary as it will be called from the routing package.
+SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
+                    /*CPTR_VISIBILITY=*/public,
+                    /*TYPE...=*/SWIGTYPE)
 
 // Remove swig warnings
 %warnfilter(473) operations_research::DecisionBuilder;
@@ -123,8 +132,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 }  // namespace operations_research
 
 // ############ END DUPLICATED CODE BLOCK ############
-
-%module(directors="1") operations_research;
 
 %{
 #include <setjmp.h>
@@ -1615,8 +1622,11 @@ PROTO_INPUT(operations_research::RegularLimitParameters,
 PROTO2_RETURN(operations_research::RegularLimitParameters,
               com.google.ortools.constraintsolver.RegularLimitParameters)
 
-namespace operations_research {
+// Add needed import to main.java
+%pragma(java) moduleimports=%{
+%}
 
+namespace operations_research {
 // Globals
 // IMPORTANT(user): Globals will be placed in main.java
 // i.e. use `import com.[...].constraintsolver.main`

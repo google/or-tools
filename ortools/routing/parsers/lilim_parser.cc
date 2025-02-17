@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,7 +30,7 @@
 #include "ortools/base/zipfile.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 bool LiLimParser::LoadFile(absl::string_view file_name) {
   Initialize();
@@ -126,4 +126,4 @@ bool LiLimParser::ParseFile(absl::string_view file_name) {
 
 #undef PARSE_AND_RETURN_IF_NEGATIVE
 
-}  // namespace operations_research
+}  // namespace operations_research::routing

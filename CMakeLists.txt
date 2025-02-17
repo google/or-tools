@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,6 +14,9 @@
 # This file is just an orchestration
 cmake_minimum_required(VERSION 3.20)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Enable output of compile commands during generation.
+option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
 
 include(utils)
 set_version(VERSION)
@@ -63,24 +66,24 @@ if(UNIX)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   # for multi-config build system (e.g. Xcode, Ninja Multi-Config)
-  foreach(OUTPUTCONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
-    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/${CMAKE_INSTALL_LIBDIR})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/${CMAKE_INSTALL_LIBDIR})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/${CMAKE_INSTALL_BINDIR})
+  foreach(OutputConfig IN LISTS CMAKE_CONFIGURATION_TYPES)
+    string(TOUPPER ${OutputConfig} OUTPUTCONFIG)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OutputConfig}/${CMAKE_INSTALL_LIBDIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OutputConfig}/${CMAKE_INSTALL_LIBDIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OutputConfig}/${CMAKE_INSTALL_BINDIR})
   endforeach()
 else()
   # Currently Only support static build for windows
-  option(BUILD_SHARED_LIBS "Build shared libraries (.dll)." OFF)
+  option(BUILD_SHARED_LIBS "Build shared libraries (.dll)." ON)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   # for multi-config builds (e.g. msvc)
-  foreach(OUTPUTCONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
-    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/${CMAKE_INSTALL_BINDIR})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/${CMAKE_INSTALL_BINDIR})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/${CMAKE_INSTALL_BINDIR})
+  foreach(OutputConfig IN LISTS CMAKE_CONFIGURATION_TYPES)
+    string(TOUPPER ${OutputConfig} OUTPUTCONFIG)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OutputConfig}/${CMAKE_INSTALL_BINDIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OutputConfig}/${CMAKE_INSTALL_BINDIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OutputConfig}/${CMAKE_INSTALL_BINDIR})
   endforeach()
 endif()
 
@@ -189,21 +192,22 @@ message(STATUS "Build eigen3: ${BUILD_Eigen3}")
 if(BUILD_LP_PARSER OR BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build re2: ${BUILD_re2}")
+else()
+  set(BUILD_re2 OFF)
 endif()
+message(STATUS "Build re2: ${BUILD_re2}")
 
 if(BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build googletest: ${BUILD_googletest}")
-
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build benchmark: ${BUILD_benchmark}")
 else()
   set(BUILD_googletest OFF)
   set(BUILD_benchmark OFF)
 endif()
+message(STATUS "Build googletest: ${BUILD_googletest}")
+message(STATUS "Build benchmark: ${BUILD_benchmark}")
 
 # Optional third party solvers (enabled by default)
 ## BOP
@@ -234,6 +238,12 @@ if(USE_COINOR)
   CMAKE_DEPENDENT_OPTION(BUILD_Cbc "Build the Cbc dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build Cbc: ${BUILD_Cbc}")
+else()
+  set(BUILD_CoinUtils OFF)
+  set(BUILD_Osi OFF)
+  set(BUILD_Clp OFF)
+  set(BUILD_Cgl OFF)
+  set(BUILD_Cbc OFF)
 endif()
 
 ## GLOP
@@ -249,8 +259,10 @@ message(STATUS "GLPK support: ${USE_GLPK}")
 if(USE_GLPK)
   CMAKE_DEPENDENT_OPTION(BUILD_GLPK "Build the GLPK dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build GLPK: ${BUILD_GLPK}")
+else()
+  set(BUILD_GLPK OFF)
 endif()
+message(STATUS "Build GLPK: ${BUILD_GLPK}")
 
 ## GUROBI
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
@@ -264,8 +276,10 @@ message(STATUS "HiGHS support: ${USE_HIGHS}")
 if(USE_HIGHS)
   CMAKE_DEPENDENT_OPTION(BUILD_HIGHS "Build the HiGHS dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build HiGHS: ${BUILD_HIGHS}")
+else()
+  set(BUILD_HIGHS OFF)
 endif()
+message(STATUS "Build HiGHS: ${BUILD_HIGHS}")
 
 ## PDLP
 CMAKE_DEPENDENT_OPTION(USE_PDLP "Use the PDLP solver" ON "BUILD_CXX" OFF)
@@ -273,8 +287,10 @@ message(STATUS "PDLP support: ${USE_PDLP}")
 if(USE_PDLP)
   CMAKE_DEPENDENT_OPTION(BUILD_PDLP "Build the PDLP dependency Library" ON
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build PDLP: ${BUILD_PDLP}")
+else()
+  set(BUILD_PDLP OFF)
 endif()
+message(STATUS "Build PDLP: ${BUILD_PDLP}")
 
 ## SCIP
 # see: https://github.com/scipopt/scip
@@ -283,8 +299,10 @@ message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
     "NOT BUILD_DEPS" ON)
-  message(STATUS "Build SCIP: ${BUILD_SCIP}")
+else()
+  set(BUILD_SCIP OFF)
 endif()
+message(STATUS "Build SCIP: ${BUILD_SCIP}")
 
 # Optional third party solvers (disabled by default)
 ## CPLEX
@@ -346,6 +364,12 @@ if(BUILD_DOTNET)
 
   option(USE_DOTNET_7 "Use .Net 7.0 support" OFF)
   message(STATUS ".Net: Use .Net 7.0 support: ${USE_DOTNET_7}")
+
+  option(USE_DOTNET_8 "Use .Net 8.0 LTS support" OFF)
+  message(STATUS ".Net: Use .Net 8.0 support: ${USE_DOTNET_8}")
+
+  option(USE_DOTNET_9 "Use .Net 9.0 support" OFF)
+  message(STATUS ".Net: Use .Net 9.0 support: ${USE_DOTNET_9}")
 endif()
 
 if(BUILD_JAVA)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,8 +19,10 @@ machine.
 """
 
 from absl.testing import absltest
+from ortools.gurobi.isv.secret import gurobi_test_isv_key
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import compute_infeasible_subsystem_result
+from ortools.math_opt.python import init_arguments
 from ortools.math_opt.python import model
 from ortools.math_opt.python import parameters
 from ortools.math_opt.python import result
@@ -28,6 +30,18 @@ from ortools.math_opt.python import solve
 
 
 _Bounds = compute_infeasible_subsystem_result.ModelSubsetBounds
+
+_bad_isv_key = init_arguments.GurobiISVKey(
+    name="cat", application_name="hat", expiration=10, key="bat"
+)
+
+
+def _init_args(
+    gurobi_key: init_arguments.GurobiISVKey,
+) -> init_arguments.StreamableSolverInitArguments:
+    return init_arguments.StreamableSolverInitArguments(
+        gurobi=init_arguments.StreamableGurobiInitArguments(isv_key=gurobi_key)
+    )
 
 
 class SolveTest(absltest.TestCase):
@@ -88,6 +102,95 @@ class SolveTest(absltest.TestCase):
             iis.infeasible_subsystem.linear_constraints, {d: _Bounds(lower=True)}
         )
         self.assertEmpty(iis.infeasible_subsystem.variable_integrality)
+
+    def test_solve_valid_isv_success(self):
+        mod = model.Model()
+        x = mod.add_binary_variable()
+        mod.maximize(x)
+        res = solve.solve(
+            mod,
+            parameters.SolverType.GUROBI,
+            streamable_init_args=_init_args(
+                gurobi_test_isv_key.google_test_isv_key_placeholder()
+            ),
+        )
+        self.assertEqual(
+            res.termination.reason,
+            result.TerminationReason.OPTIMAL,
+            msg=res.termination,
+        )
+        self.assertAlmostEqual(1.0, res.termination.objective_bounds.primal_bound)
+
+    def test_solve_wrong_isv_error(self):
+        mod = model.Model()
+        x = mod.add_binary_variable()
+        mod.maximize(x)
+        with self.assertRaisesRegex(
+            ValueError, "failed to create Gurobi primary environment with ISV key"
+        ):
+            solve.solve(
+                mod,
+                parameters.SolverType.GUROBI,
+                streamable_init_args=_init_args(_bad_isv_key),
+            )
+
+    def test_incremental_solver_valid_isv_success(self):
+        mod = model.Model()
+        x = mod.add_binary_variable()
+        mod.maximize(x)
+        s = solve.IncrementalSolver(
+            mod,
+            parameters.SolverType.GUROBI,
+            streamable_init_args=_init_args(
+                gurobi_test_isv_key.google_test_isv_key_placeholder()
+            ),
+        )
+        res = s.solve()
+        self.assertEqual(
+            res.termination.reason,
+            result.TerminationReason.OPTIMAL,
+            msg=res.termination,
+        )
+        self.assertAlmostEqual(1.0, res.termination.objective_bounds.primal_bound)
+
+    def test_incremental_solver_wrong_isv_error(self):
+        mod = model.Model()
+        x = mod.add_binary_variable()
+        mod.maximize(x)
+        with self.assertRaisesRegex(
+            ValueError, "failed to create Gurobi primary environment with ISV key"
+        ):
+            solve.IncrementalSolver(
+                mod,
+                parameters.SolverType.GUROBI,
+                streamable_init_args=_init_args(_bad_isv_key),
+            )
+
+    def test_compute_infeasible_subsystem_valid_isv_success(self):
+        mod = model.Model()
+        x = mod.add_binary_variable()
+        mod.add_linear_constraint(x >= 3.0)
+        res = solve.compute_infeasible_subsystem(
+            mod,
+            parameters.SolverType.GUROBI,
+            streamable_init_args=_init_args(
+                gurobi_test_isv_key.google_test_isv_key_placeholder()
+            ),
+        )
+        self.assertEqual(res.feasibility, result.FeasibilityStatus.INFEASIBLE)
+
+    def test_compute_infeasible_subsystem_wrong_isv_error(self):
+        mod = model.Model()
+        x = mod.add_binary_variable()
+        mod.add_linear_constraint(x >= 3.0)
+        with self.assertRaisesRegex(
+            ValueError, "failed to create Gurobi primary environment with ISV key"
+        ):
+            solve.compute_infeasible_subsystem(
+                mod,
+                parameters.SolverType.GUROBI,
+                streamable_init_args=_init_args(_bad_isv_key),
+            )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -54,7 +54,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <initializer_list>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -63,7 +62,12 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
@@ -142,9 +146,9 @@ class SimpleRevFIFO {
  private:
   enum { CHUNK_SIZE = 16 };  // TODO(user): could be an extra template param
   struct Chunk {
-    T data_[CHUNK_SIZE];
-    const Chunk* const next_;
-    explicit Chunk(const Chunk* next) : next_(next) {}
+    T data[CHUNK_SIZE];
+    const Chunk* const next;
+    explicit Chunk(const Chunk* next) : next(next) {}
   };
 
  public:
@@ -157,9 +161,9 @@ class SimpleRevFIFO {
     T operator*() const { return *value_; }
     void operator++() {
       ++value_;
-      if (value_ == chunk_->data_ + CHUNK_SIZE) {
-        chunk_ = chunk_->next_;
-        value_ = chunk_ ? chunk_->data_ : nullptr;
+      if (value_ == chunk_->data + CHUNK_SIZE) {
+        chunk_ = chunk_->next;
+        value_ = chunk_ ? chunk_->data : nullptr;
       }
     }
 
@@ -179,7 +183,7 @@ class SimpleRevFIFO {
     } else {
       pos_.Decr(s);
     }
-    chunks_->data_[pos_.Value()] = val;
+    chunks_->data[pos_.Value()] = val;
   }
 
   /// Pushes the var on top if is not a duplicate of the current top object.
@@ -191,21 +195,21 @@ class SimpleRevFIFO {
 
   /// Returns the last item of the FIFO.
   const T* Last() const {
-    return chunks_ ? &chunks_->data_[pos_.Value()] : nullptr;
+    return chunks_ ? &chunks_->data[pos_.Value()] : nullptr;
   }
 
-  T* MutableLast() { return chunks_ ? &chunks_->data_[pos_.Value()] : nullptr; }
+  T* MutableLast() { return chunks_ ? &chunks_->data[pos_.Value()] : nullptr; }
 
   /// Returns the last value in the FIFO.
   const T& LastValue() const {
     DCHECK(chunks_);
-    return chunks_->data_[pos_.Value()];
+    return chunks_->data[pos_.Value()];
   }
 
   /// Sets the last value in the FIFO.
   void SetLastValue(const T& v) {
     DCHECK(Last());
-    chunks_->data_[pos_.Value()] = v;
+    chunks_->data[pos_.Value()] = v;
   }
 
  private:
@@ -507,7 +511,7 @@ class CallMethod0 : public Demon {
 
   ~CallMethod0() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(); }
+  void Run(Solver* const) override { (constraint_->*method_)(); }
 
   std::string DebugString() const override {
     return "CallMethod_" + name_ + "(" + constraint_->DebugString() + ")";
@@ -515,7 +519,7 @@ class CallMethod0 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)();
+  void (T::* const method_)();
   const std::string name_;
 };
 
@@ -546,7 +550,7 @@ class CallMethod1 : public Demon {
 
   ~CallMethod1() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
+  void Run(Solver* const) override { (constraint_->*method_)(param1_); }
 
   std::string DebugString() const override {
     return absl::StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
@@ -555,7 +559,7 @@ class CallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P);
+  void (T::* const method_)(P);
   const std::string name_;
   P param1_;
 };
@@ -580,20 +584,19 @@ class CallMethod2 : public Demon {
 
   ~CallMethod2() override {}
 
-  void Run(Solver* const s) override {
+  void Run(Solver* const) override {
     (constraint_->*method_)(param1_, param2_);
   }
 
   std::string DebugString() const override {
-    return absl::StrCat(absl::StrCat("CallMethod_", name_),
-                        absl::StrCat("(", constraint_->DebugString()),
-                        absl::StrCat(", ", ParameterDebugString(param1_)),
-                        absl::StrCat(", ", ParameterDebugString(param2_), ")"));
+    return absl::StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
+                        ", ", ParameterDebugString(param1_), ", ",
+                        ParameterDebugString(param2_), ")");
   }
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q);
+  void (T::* const method_)(P, Q);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -621,7 +624,7 @@ class CallMethod3 : public Demon {
 
   ~CallMethod3() override {}
 
-  void Run(Solver* const s) override {
+  void Run(Solver* const) override {
     (constraint_->*method_)(param1_, param2_, param3_);
   }
 
@@ -635,7 +638,7 @@ class CallMethod3 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q, R);
+  void (T::* const method_)(P, Q, R);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -665,7 +668,7 @@ class DelayedCallMethod0 : public Demon {
 
   ~DelayedCallMethod0() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(); }
+  void Run(Solver* const) override { (constraint_->*method_)(); }
 
   Solver::DemonPriority priority() const override {
     return Solver::DELAYED_PRIORITY;
@@ -678,7 +681,7 @@ class DelayedCallMethod0 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)();
+  void (T::* const method_)();
   const std::string name_;
 };
 
@@ -699,7 +702,7 @@ class DelayedCallMethod1 : public Demon {
 
   ~DelayedCallMethod1() override {}
 
-  void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
+  void Run(Solver* const) override { (constraint_->*method_)(param1_); }
 
   Solver::DemonPriority priority() const override {
     return Solver::DELAYED_PRIORITY;
@@ -713,7 +716,7 @@ class DelayedCallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P);
+  void (T::* const method_)(P);
   const std::string name_;
   P param1_;
 };
@@ -739,7 +742,7 @@ class DelayedCallMethod2 : public Demon {
 
   ~DelayedCallMethod2() override {}
 
-  void Run(Solver* const s) override {
+  void Run(Solver* const) override {
     (constraint_->*method_)(param1_, param2_);
   }
 
@@ -756,7 +759,7 @@ class DelayedCallMethod2 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::*const method_)(P, Q);
+  void (T::* const method_)(P, Q);
   const std::string name_;
   P param1_;
   Q param2_;
@@ -890,8 +893,64 @@ class LightIntIntFunctionElementCt : public Constraint {
   IntVar* const var_;
   IntVar* const index1_;
   IntVar* const index2_;
-  Solver::IndexEvaluator2 values_;
+  F values_;
   std::function<bool()> deep_serialize_;
+};
+
+// ----- LightIntIntIntFunctionElementCt -----
+
+template <typename F>
+class LightIntIntIntFunctionElementCt : public Constraint {
+ public:
+  LightIntIntIntFunctionElementCt(Solver* const solver, IntVar* const var,
+                                  IntVar* const index1, IntVar* const index2,
+                                  IntVar* const index3, F values)
+      : Constraint(solver),
+        var_(var),
+        index1_(index1),
+        index2_(index2),
+        index3_(index3),
+        values_(std::move(values)) {}
+  ~LightIntIntIntFunctionElementCt() override {}
+  void Post() override {
+    Demon* demon = MakeConstraintDemon0(
+        solver(), this, &LightIntIntIntFunctionElementCt::IndexBound,
+        "IndexBound");
+    index1_->WhenBound(demon);
+    index2_->WhenBound(demon);
+    index3_->WhenBound(demon);
+  }
+  void InitialPropagate() override { IndexBound(); }
+
+  std::string DebugString() const override {
+    return "LightIntIntFunctionElementCt";
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kLightElementEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index1_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
+                                            index2_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex3Argument,
+                                            index3_);
+    visitor->EndVisitConstraint(ModelVisitor::kLightElementEqual, this);
+  }
+
+ private:
+  void IndexBound() {
+    if (index1_->Bound() && index2_->Bound() && index3_->Bound()) {
+      var_->SetValue(values_(index1_->Min(), index2_->Min(), index3_->Min()));
+    }
+  }
+
+  IntVar* const var_;
+  IntVar* const index1_;
+  IntVar* const index2_;
+  IntVar* const index3_;
+  F values_;
 };
 
 /// The base class for all local search operators.
@@ -918,6 +977,7 @@ class LocalSearchOperator : public BaseObject {
   LocalSearchOperator() {}
   ~LocalSearchOperator() override {}
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) = 0;
+  virtual void EnterSearch() {}
   virtual void Start(const Assignment* assignment) = 0;
   virtual void Reset() {}
 #ifndef SWIG
@@ -1101,7 +1161,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   }
   /// Returns the variable of given index.
   IntVar* Var(int64_t index) const { return vars_[index]; }
-  virtual bool SkipUnchanged(int index) const { return false; }
+  virtual bool SkipUnchanged(int) const { return false; }
   int64_t OldValue(int64_t index) const { return state_.CommittedValue(index); }
   int64_t PrevValue(int64_t index) const {
     return state_.CheckPointValue(index);
@@ -1288,6 +1348,157 @@ class ChangeValue : public IntVarLocalSearchOperator {
   int index_;
 };
 
+// Iterators on nodes used by Pathoperator to traverse the search space.
+
+class AlternativeNodeIterator {
+ public:
+  explicit AlternativeNodeIterator(bool use_sibling)
+      : use_sibling_(use_sibling) {}
+  ~AlternativeNodeIterator() {}
+  template <class PathOperator>
+  void Reset(const PathOperator& path_operator, int base_index_reference) {
+    index_ = 0;
+    DCHECK(path_operator.ConsiderAlternatives(base_index_reference));
+    const int64_t base_node = path_operator.BaseNode(base_index_reference);
+    const int alternative_index =
+        use_sibling_ ? path_operator.GetSiblingAlternativeIndex(base_node)
+                     : path_operator.GetAlternativeIndex(base_node);
+    alternative_set_ =
+        alternative_index >= 0
+            ? absl::Span<const int64_t>(
+                  path_operator.alternative_sets_[alternative_index])
+            : absl::Span<const int64_t>();
+  }
+  bool Next() { return ++index_ < alternative_set_.size(); }
+  int GetValue() const {
+    return (index_ >= alternative_set_.size()) ? -1 : alternative_set_[index_];
+  }
+
+ private:
+  const bool use_sibling_;
+  int index_ = 0;
+  absl::Span<const int64_t> alternative_set_;
+};
+
+class NodeNeighborIterator {
+ public:
+  NodeNeighborIterator() {}
+  ~NodeNeighborIterator() {}
+  template <class PathOperator>
+  void Reset(const PathOperator& path_operator, int base_index_reference) {
+    using Span = absl::Span<const int>;
+    index_ = 0;
+    const int64_t base_node = path_operator.BaseNode(base_index_reference);
+    const int64_t start_node = path_operator.StartNode(base_index_reference);
+    const auto& get_incoming_neighbors =
+        path_operator.iteration_parameters_.get_incoming_neighbors;
+    incoming_neighbors_ =
+        path_operator.IsPathStart(base_node) || !get_incoming_neighbors
+            ? Span()
+            : Span(get_incoming_neighbors(base_node, start_node));
+    const auto& get_outgoing_neighbors =
+        path_operator.iteration_parameters_.get_outgoing_neighbors;
+    outgoing_neighbors_ =
+        path_operator.IsPathEnd(base_node) || !get_outgoing_neighbors
+            ? Span()
+            : Span(get_outgoing_neighbors(base_node, start_node));
+  }
+  bool Next() {
+    return ++index_ < incoming_neighbors_.size() + outgoing_neighbors_.size();
+  }
+  int GetValue() const {
+    if (index_ < incoming_neighbors_.size()) {
+      return incoming_neighbors_[index_];
+    }
+    const int index = index_ - incoming_neighbors_.size();
+    return (index >= outgoing_neighbors_.size()) ? -1
+                                                 : outgoing_neighbors_[index];
+  }
+  bool IsIncomingNeighbor() const {
+    return index_ < incoming_neighbors_.size();
+  }
+  bool IsOutgoingNeighbor() const {
+    return index_ >= incoming_neighbors_.size();
+  }
+
+ private:
+  int index_ = 0;
+  absl::Span<const int> incoming_neighbors_;
+  absl::Span<const int> outgoing_neighbors_;
+};
+
+template <class PathOperator>
+class BaseNodeIterators {
+ public:
+  BaseNodeIterators(const PathOperator* path_operator, int base_index_reference)
+      : path_operator_(*path_operator),
+        base_index_reference_(base_index_reference) {}
+  AlternativeNodeIterator* GetSiblingAlternativeIterator() const {
+    DCHECK(!alternatives_.empty());
+    DCHECK(!finished_);
+    return alternatives_[0].get();
+  }
+  AlternativeNodeIterator* GetAlternativeIterator() const {
+    DCHECK(!alternatives_.empty());
+    DCHECK(!finished_);
+    return alternatives_[1].get();
+  }
+  NodeNeighborIterator* GetNeighborIterator() const {
+    DCHECK(neighbors_);
+    DCHECK(!finished_);
+    return neighbors_.get();
+  }
+  void Initialize() {
+    if (path_operator_.ConsiderAlternatives(base_index_reference_)) {
+      alternatives_.push_back(std::make_unique<AlternativeNodeIterator>(
+          /*is_sibling=*/true));
+      alternatives_.push_back(std::make_unique<AlternativeNodeIterator>(
+          /*is_sibling=*/false));
+    }
+    if (path_operator_.HasNeighbors()) {
+      neighbors_ = std::make_unique<NodeNeighborIterator>();
+    }
+  }
+  void Reset(bool update_end_nodes = false) {
+    finished_ = false;
+    for (auto& alternative_iterator : alternatives_) {
+      alternative_iterator->Reset(path_operator_, base_index_reference_);
+    }
+    if (neighbors_) {
+      neighbors_->Reset(path_operator_, base_index_reference_);
+      if (update_end_nodes) neighbor_end_node_ = neighbors_->GetValue();
+    }
+  }
+  bool Increment() {
+    DCHECK(!finished_);
+    for (auto& alternative_iterator : alternatives_) {
+      if (alternative_iterator->Next()) return true;
+      alternative_iterator->Reset(path_operator_, base_index_reference_);
+    }
+    if (neighbors_) {
+      if (neighbors_->Next()) return true;
+      neighbors_->Reset(path_operator_, base_index_reference_);
+    }
+    finished_ = true;
+    return false;
+  }
+  bool HasReachedEnd() const {
+    // TODO(user): Extend to other iterators.
+    if (!neighbors_) return true;
+    return neighbor_end_node_ == neighbors_->GetValue();
+  }
+
+ private:
+  const PathOperator& path_operator_;
+  int base_index_reference_ = -1;
+#ifndef SWIG
+  std::vector<std::unique_ptr<AlternativeNodeIterator>> alternatives_;
+#endif  // SWIG
+  std::unique_ptr<NodeNeighborIterator> neighbors_;
+  int neighbor_end_node_ = -1;
+  bool finished_ = false;
+};
+
 /// Base class of the local search operators dedicated to path modifications
 /// (a path is a set of nodes linked together by arcs).
 /// This family of neighborhoods supposes they are handling next variables
@@ -1301,6 +1512,7 @@ class ChangeValue : public IntVarLocalSearchOperator {
 ///   nodes which can be used to define a neighbor (through the BaseNode method)
 /// Subclasses only need to override MakeNeighbor to create neighbors using
 /// the services above (no direct manipulation of assignments).
+template <bool ignore_path_vars>
 class PathOperator : public IntVarLocalSearchOperator {
  public:
   /// Set of parameters used to configure how the neighnorhood is traversed.
@@ -1323,29 +1535,88 @@ class PathOperator : public IntVarLocalSearchOperator {
     /// 'start_empty_path_class' can be nullptr in which case no symmetries will
     /// be removed.
     std::function<int(int64_t)> start_empty_path_class;
-    /// Callback returning neighbors of a node on a path starting at start_node.
-    std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>
-        get_neighbors;
+    /// Callbacks returning incoming/outgoing neighbors of a node on a path
+    /// starting at start_node.
+    std::function<const std::vector<int>&(
+        /*node=*/int, /*start_node=*/int)>
+        get_incoming_neighbors;
+    std::function<const std::vector<int>&(
+        /*node=*/int, /*start_node=*/int)>
+        get_outgoing_neighbors;
   };
   /// Builds an instance of PathOperator from next and path variables.
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars,
-               IterationParameters iteration_parameters);
-  PathOperator(const std::vector<IntVar*>& next_vars,
-               const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
-               bool skip_locally_optimal_paths, bool accept_path_end_base,
-               std::function<int(int64_t)> start_empty_path_class,
-               std::function<const std::vector<int>&(int, int)> get_neighbors)
+               IterationParameters iteration_parameters)
+      : IntVarLocalSearchOperator(next_vars, true),
+        number_of_nexts_(next_vars.size()),
+        base_nodes_(
+            std::make_unique<int[]>(iteration_parameters.number_of_base_nodes)),
+        end_nodes_(
+            std::make_unique<int[]>(iteration_parameters.number_of_base_nodes)),
+        base_paths_(
+            std::make_unique<int[]>(iteration_parameters.number_of_base_nodes)),
+        node_path_starts_(number_of_nexts_, -1),
+        node_path_ends_(number_of_nexts_, -1),
+        just_started_(false),
+        first_start_(true),
+        next_base_to_increment_(iteration_parameters.number_of_base_nodes),
+        iteration_parameters_(std::move(iteration_parameters)),
+        optimal_paths_enabled_(false),
+        active_paths_(number_of_nexts_),
+        alternative_index_(next_vars.size(), -1) {
+    DCHECK_GT(iteration_parameters_.number_of_base_nodes, 0);
+    for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
+      base_node_iterators_.push_back(BaseNodeIterators<PathOperator>(this, i));
+    }
+    if constexpr (!ignore_path_vars) {
+      AddVars(path_vars);
+    }
+    path_basis_.push_back(0);
+    for (int i = 1; i < iteration_parameters_.number_of_base_nodes; ++i) {
+      if (!OnSamePathAsPreviousBase(i)) path_basis_.push_back(i);
+    }
+    if ((path_basis_.size() > 2) ||
+        (!next_vars.empty() && !next_vars.back()
+                                    ->solver()
+                                    ->parameters()
+                                    .skip_locally_optimal_paths())) {
+      iteration_parameters_.skip_locally_optimal_paths = false;
+    }
+  }
+  PathOperator(
+      const std::vector<IntVar*>& next_vars,
+      const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
+      bool skip_locally_optimal_paths, bool accept_path_end_base,
+      std::function<int(int64_t)> start_empty_path_class,
+      std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
+      std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors)
       : PathOperator(next_vars, path_vars,
                      {number_of_base_nodes, skip_locally_optimal_paths,
                       accept_path_end_base, std::move(start_empty_path_class),
-                      std::move(get_neighbors)}) {}
+                      std::move(get_incoming_neighbors),
+                      std::move(get_outgoing_neighbors)}) {}
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
-  void Reset() override;
+  void EnterSearch() override {
+    first_start_ = true;
+    ResetIncrementalism();
+  }
+  void Reset() override {
+    active_paths_.Clear();
+    ResetIncrementalism();
+  }
 
   // TODO(user): Make the following methods protected.
-  bool SkipUnchanged(int index) const override;
+  bool SkipUnchanged(int index) const override {
+    if constexpr (ignore_path_vars) return true;
+    if (index < number_of_nexts_) {
+      const int path_index = index + number_of_nexts_;
+      return Value(path_index) == OldValue(path_index);
+    }
+    const int next_index = index - number_of_nexts_;
+    return Value(next_index) == OldValue(next_index);
+  }
 
   /// Returns the node after node in the current delta.
   int64_t Next(int64_t node) const {
@@ -1363,7 +1634,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// Returns the index of the path to which node belongs in the current delta.
   /// Only returns a valid value if path variables are taken into account.
   int64_t Path(int64_t node) const {
-    return ignore_path_vars_ ? 0LL : Value(node + number_of_nexts_);
+    if constexpr (ignore_path_vars) return 0LL;
+    return Value(node + number_of_nexts_);
   }
 
   /// Number of next variables.
@@ -1371,37 +1643,39 @@ class PathOperator : public IntVarLocalSearchOperator {
 
  protected:
   /// This method should not be overridden. Override MakeNeighbor() instead.
-  bool MakeOneNeighbor() override;
+  bool MakeOneNeighbor() override {
+    while (IncrementPosition()) {
+      // Need to revert changes here since MakeNeighbor might have returned
+      // false and have done changes in the previous iteration.
+      RevertChanges(true);
+      if (MakeNeighbor()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Called by OnStart() after initializing node information. Should be
   /// overridden instead of OnStart() to avoid calling PathOperator::OnStart
   /// explicitly.
   virtual void OnNodeInitialization() {}
+  /// When entering a new search or using metaheuristics, path operators
+  /// reactivate optimal routes and iterating re-starts at route starts, which
+  /// can potentially be out of sync with the last incremental moves.
+  /// This requires resetting incrementalism.
+  virtual void ResetIncrementalism() {}
 
   /// Returns the ith base node of the operator.
   int64_t BaseNode(int i) const { return base_nodes_[i]; }
-  /// Returns the alternative for the ith base node.
-  int BaseAlternative(int i) const { return base_alternatives_[i]; }
   /// Returns the alternative node for the ith base node.
   int64_t BaseAlternativeNode(int i) const {
-    if (!ConsiderAlternatives(i)) return BaseNode(i);
-    const int alternative_index = alternative_index_[BaseNode(i)];
-    return alternative_index >= 0
-               ? alternative_sets_[alternative_index][base_alternatives_[i]]
-               : BaseNode(i);
-  }
-  /// Returns the alternative for the sibling of the ith base node.
-  int BaseSiblingAlternative(int i) const {
-    return base_sibling_alternatives_[i];
+    return GetNodeWithDefault(base_node_iterators_[i].GetAlternativeIterator(),
+                              BaseNode(i));
   }
   /// Returns the alternative node for the sibling of the ith base node.
   int64_t BaseSiblingAlternativeNode(int i) const {
-    if (!ConsiderAlternatives(i)) return BaseNode(i);
-    const int sibling_alternative_index =
-        GetSiblingAlternativeIndex(BaseNode(i));
-    return sibling_alternative_index >= 0
-               ? alternative_sets_[sibling_alternative_index]
-                                  [base_sibling_alternatives_[i]]
-               : BaseNode(i);
+    return GetNodeWithDefault(
+        base_node_iterators_[i].GetSiblingAlternativeIterator(), BaseNode(i));
   }
   /// Returns the start node of the ith base node.
   int64_t StartNode(int i) const { return path_starts_[base_paths_[i]]; }
@@ -1431,7 +1705,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   // TODO(user): ideally this should be OnSamePath(int64_t node1, int64_t
   // node2);
   /// it's currently way more complicated to implement.
-  virtual bool OnSamePathAsPreviousBase(int64_t base_index) { return false; }
+  virtual bool OnSamePathAsPreviousBase(int64_t) { return false; }
   /// Returns the index of the node to which the base node of index base_index
   /// must be set to when it reaches the end of a path.
   /// By default, it is set to the start of the current path.
@@ -1447,7 +1721,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   }
   /// Indicates if alternatives should be considered when iterating over base
   /// nodes.
-  virtual bool ConsiderAlternatives(int64_t base_index) const { return false; }
+  virtual bool ConsiderAlternatives(int64_t) const { return false; }
 
   int64_t OldNext(int64_t node) const {
     DCHECK(!IsPathEnd(node));
@@ -1465,7 +1739,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   }
 
   int64_t OldPath(int64_t node) const {
-    return ignore_path_vars_ ? 0LL : OldValue(node + number_of_nexts_);
+    if constexpr (ignore_path_vars) return 0LL;
+    return OldValue(node + number_of_nexts_);
   }
 
   int CurrentNodePathStart(int64_t node) const {
@@ -1476,26 +1751,120 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   /// Moves the chain starting after the node before_chain and ending at the
   /// node chain_end after the node destination
-  bool MoveChain(int64_t before_chain, int64_t chain_end, int64_t destination);
+  bool MoveChain(int64_t before_chain, int64_t chain_end, int64_t destination) {
+    if (destination == before_chain || destination == chain_end) return false;
+    DCHECK(CheckChainValidity(before_chain, chain_end, destination) &&
+           !IsPathEnd(chain_end) && !IsPathEnd(destination));
+    const int64_t destination_path = Path(destination);
+    const int64_t after_chain = Next(chain_end);
+    SetNext(chain_end, Next(destination), destination_path);
+    if constexpr (!ignore_path_vars) {
+      int current = destination;
+      int next = Next(before_chain);
+      while (current != chain_end) {
+        SetNext(current, next, destination_path);
+        current = next;
+        next = Next(next);
+      }
+    } else {
+      SetNext(destination, Next(before_chain), destination_path);
+    }
+    SetNext(before_chain, after_chain, Path(before_chain));
+    return true;
+  }
 
   /// Reverses the chain starting after before_chain and ending before
   /// after_chain
   bool ReverseChain(int64_t before_chain, int64_t after_chain,
-                    int64_t* chain_last);
+                    int64_t* chain_last) {
+    if (CheckChainValidity(before_chain, after_chain, -1)) {
+      int64_t path = Path(before_chain);
+      int64_t current = Next(before_chain);
+      if (current == after_chain) {
+        return false;
+      }
+      int64_t current_next = Next(current);
+      SetNext(current, after_chain, path);
+      while (current_next != after_chain) {
+        const int64_t next = Next(current_next);
+        SetNext(current_next, current, path);
+        current = current_next;
+        current_next = next;
+      }
+      SetNext(before_chain, current, path);
+      *chain_last = current;
+      return true;
+    }
+    return false;
+  }
+
+  /// Swaps the nodes node1 and node2.
+  bool SwapNodes(int64_t node1, int64_t node2) {
+    if (IsPathEnd(node1) || IsPathEnd(node2) || IsPathStart(node1) ||
+        IsPathStart(node2)) {
+      return false;
+    }
+    if (node1 == node2) return false;
+    const int64_t prev_node1 = Prev(node1);
+    const bool ok = MoveChain(prev_node1, node1, Prev(node2));
+    return MoveChain(Prev(node2), node2, prev_node1) || ok;
+  }
 
   /// Insert the inactive node after destination.
-  bool MakeActive(int64_t node, int64_t destination);
+  bool MakeActive(int64_t node, int64_t destination) {
+    if (IsPathEnd(destination)) return false;
+    const int64_t destination_path = Path(destination);
+    SetNext(node, Next(destination), destination_path);
+    SetNext(destination, node, destination_path);
+    return true;
+  }
   /// Makes the nodes on the chain starting after before_chain and ending at
   /// chain_end inactive.
-  bool MakeChainInactive(int64_t before_chain, int64_t chain_end);
+  bool MakeChainInactive(int64_t before_chain, int64_t chain_end) {
+    const int64_t kNoPath = -1;
+    if (CheckChainValidity(before_chain, chain_end, -1) &&
+        !IsPathEnd(chain_end)) {
+      const int64_t after_chain = Next(chain_end);
+      int64_t current = Next(before_chain);
+      while (current != after_chain) {
+        const int64_t next = Next(current);
+        SetNext(current, current, kNoPath);
+        current = next;
+      }
+      SetNext(before_chain, after_chain, Path(before_chain));
+      return true;
+    }
+    return false;
+  }
+
   /// Replaces active by inactive in the current path, making active inactive.
-  bool SwapActiveAndInactive(int64_t active, int64_t inactive);
+  bool SwapActiveAndInactive(int64_t active, int64_t inactive) {
+    if (active == inactive) return false;
+    const int64_t prev = Prev(active);
+    return MakeChainInactive(prev, active) && MakeActive(inactive, prev);
+  }
+  /// Swaps both chains, making nodes on active_chain inactive and inserting
+  /// active_chain at the position where inactive_chain was.
+  bool SwapActiveAndInactiveChains(absl::Span<const int64_t> active_chain,
+                                   absl::Span<const int64_t> inactive_chain) {
+    if (active_chain.empty()) return false;
+    if (active_chain == inactive_chain) return false;
+    const int before_active_chain = Prev(active_chain.front());
+    if (!MakeChainInactive(before_active_chain, active_chain.back())) {
+      return false;
+    }
+    for (auto it = inactive_chain.crbegin(); it != inactive_chain.crend();
+         ++it) {
+      if (!MakeActive(*it, before_active_chain)) return false;
+    }
+    return true;
+  }
 
   /// Sets 'to' to be the node after 'from' on the given path.
   void SetNext(int64_t from, int64_t to, int64_t path) {
     DCHECK_LT(from, number_of_nexts_);
     SetValue(from, to);
-    if (!ignore_path_vars_) {
+    if constexpr (!ignore_path_vars) {
       DCHECK_LT(from + number_of_nexts_, Size());
       SetValue(from + number_of_nexts_, path);
     }
@@ -1523,7 +1892,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   /// Handling node alternatives.
   /// Adds a set of node alternatives to the neighborhood. No node can be in
-  /// two altrnatives.
+  /// two alternatives.
   int AddAlternativeSet(const std::vector<int64_t>& alternative_set) {
     const int alternative = alternative_sets_.size();
     for (int64_t node : alternative_set) {
@@ -1559,58 +1928,405 @@ class PathOperator : public IntVarLocalSearchOperator {
   }
   /// Returns the index of the alternative set of the sibling of node.
   int GetSiblingAlternativeIndex(int node) const {
-    if (node >= alternative_index_.size()) return -1;
-    const int alternative = alternative_index_[node];
+    const int alternative = GetAlternativeIndex(node);
     return alternative >= 0 ? sibling_alternative_[alternative] : -1;
+  }
+  /// Returns the index of the alternative set of the node.
+  int GetAlternativeIndex(int node) const {
+    return (node >= alternative_index_.size()) ? -1 : alternative_index_[node];
   }
   /// Returns the active node in the alternative set of the sibling of the given
   /// node.
   int64_t GetActiveAlternativeSibling(int node) const {
-    if (node >= alternative_index_.size()) return -1;
-    const int alternative = alternative_index_[node];
-    const int sibling_alternative =
-        alternative >= 0 ? sibling_alternative_[alternative] : -1;
-    return GetActiveInAlternativeSet(sibling_alternative);
+    return GetActiveInAlternativeSet(GetSiblingAlternativeIndex(node));
   }
   /// Returns true if the chain is a valid path without cycles from before_chain
   /// to chain_end and does not contain exclude.
+  /// In particular, rejects a chain if chain_end is not strictly after
+  /// before_chain on the path.
+  /// Cycles are detected through chain length overflow.
   bool CheckChainValidity(int64_t before_chain, int64_t chain_end,
-                          int64_t exclude) const;
-
-  bool HasNeighbors() const {
-    return iteration_parameters_.get_neighbors != nullptr;
+                          int64_t exclude) const {
+    if (before_chain == chain_end || before_chain == exclude) return false;
+    int64_t current = before_chain;
+    int chain_size = 0;
+    while (current != chain_end) {
+      if (chain_size > number_of_nexts_) return false;
+      if (IsPathEnd(current)) return false;
+      current = Next(current);
+      ++chain_size;
+      if (current == exclude) return false;
+    }
+    return true;
   }
 
-  int GetNeighborForBaseNode(int64_t base_index) const {
-    DCHECK(HasNeighbors());
-    return iteration_parameters_.get_neighbors(
-        BaseNode(base_index),
-        StartNode(base_index))[calls_per_base_node_[base_index]];
+  bool HasNeighbors() const {
+    return iteration_parameters_.get_incoming_neighbors != nullptr ||
+           iteration_parameters_.get_outgoing_neighbors != nullptr;
+  }
+
+  struct Neighbor {
+    // Index of the neighbor node.
+    int neighbor;
+    // True if 'neighbor' is an outgoing neighbor (i.e. arc main_node->neighbor)
+    // and false if it's an incoming one (arc neighbor->main_node).
+    bool outgoing;
+  };
+  Neighbor GetNeighborForBaseNode(int64_t base_index) const {
+    auto* iterator = base_node_iterators_[base_index].GetNeighborIterator();
+    return {.neighbor = iterator->GetValue(),
+            .outgoing = iterator->IsOutgoingNeighbor()};
   }
 
   const int number_of_nexts_;
-  const bool ignore_path_vars_;
 
  private:
-  void OnStart() override;
-  /// Returns true if two nodes are on the same path in the current assignment.
-  bool OnSamePath(int64_t node1, int64_t node2) const;
+  template <class NodeIterator>
+  static int GetNodeWithDefault(const NodeIterator* node_iterator,
+                                int default_value) {
+    const int node = node_iterator->GetValue();
+    return node >= 0 ? node : default_value;
+    }
 
-  bool CheckEnds() const {
-    const int base_node_size = base_nodes_.size();
-    for (int i = base_node_size - 1; i >= 0; --i) {
-      if (base_nodes_[i] != end_nodes_[i] || calls_per_base_node_[0] > 0) {
+  void OnStart() override {
+    optimal_paths_enabled_ = false;
+    if (!iterators_initialized_) {
+      iterators_initialized_ = true;
+      for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
+        base_node_iterators_[i].Initialize();
+    }
+    }
+    InitializeBaseNodes();
+    InitializeAlternatives();
+    OnNodeInitialization();
+  }
+
+  /// Returns true if two nodes are on the same path in the current assignment.
+  bool OnSamePath(int64_t node1, int64_t node2) const {
+    if (IsInactive(node1) != IsInactive(node2)) {
+      return false;
+    }
+    for (int node = node1; !IsPathEnd(node); node = OldNext(node)) {
+      if (node == node2) {
+        return true;
+      }
+    }
+    for (int node = node2; !IsPathEnd(node); node = OldNext(node)) {
+      if (node == node1) {
         return true;
       }
     }
     return false;
   }
-  bool IncrementPosition();
-  void InitializePathStarts();
-  void InitializeInactives();
-  void InitializeBaseNodes();
-  void InitializeAlternatives();
-  void Synchronize();
+
+  bool CheckEnds() const {
+    for (int i = iteration_parameters_.number_of_base_nodes - 1; i >= 0; --i) {
+      if (base_nodes_[i] != end_nodes_[i] ||
+          !base_node_iterators_[i].HasReachedEnd()) {
+        return true;
+      }
+    }
+    return false;
+  }
+  bool IncrementPosition() {
+    const int base_node_size = iteration_parameters_.number_of_base_nodes;
+
+    if (just_started_) {
+      just_started_ = false;
+      return true;
+    }
+    const int number_of_paths = path_starts_.size();
+    // Finding next base node positions.
+    // Increment the position of inner base nodes first (higher index nodes);
+    // if a base node is at the end of a path, reposition it at the start
+    // of the path and increment the position of the preceding base node (this
+    // action is called a restart).
+    int last_restarted = base_node_size;
+    for (int i = base_node_size - 1; i >= 0; --i) {
+      if (base_nodes_[i] < number_of_nexts_ && i <= next_base_to_increment_) {
+        if (base_node_iterators_[i].Increment()) break;
+        base_nodes_[i] = OldNext(base_nodes_[i]);
+        base_node_iterators_[i].Reset();
+        if (iteration_parameters_.accept_path_end_base ||
+            !IsPathEnd(base_nodes_[i])) {
+          break;
+        }
+      }
+      base_nodes_[i] = StartNode(i);
+      base_node_iterators_[i].Reset();
+      last_restarted = i;
+    }
+    next_base_to_increment_ = base_node_size;
+    // At the end of the loop, base nodes with indexes in
+    // [last_restarted, base_node_size[ have been restarted.
+    // Restarted base nodes are then repositioned by the virtual
+    // GetBaseNodeRestartPosition to reflect position constraints between
+    // base nodes (by default GetBaseNodeRestartPosition leaves the nodes
+    // at the start of the path).
+    // Base nodes are repositioned in ascending order to ensure that all
+    // base nodes "below" the node being repositioned have their final
+    // position.
+    for (int i = last_restarted; i < base_node_size; ++i) {
+      base_nodes_[i] = GetBaseNodeRestartPosition(i);
+      base_node_iterators_[i].Reset();
+    }
+    if (last_restarted > 0) {
+      return CheckEnds();
+    }
+    // If all base nodes have been restarted, base nodes are moved to new paths.
+    // First we mark the current paths as locally optimal if they have been
+    // completely explored.
+    if (optimal_paths_enabled_ &&
+        iteration_parameters_.skip_locally_optimal_paths) {
+      if (path_basis_.size() > 1) {
+        for (int i = 1; i < path_basis_.size(); ++i) {
+          active_paths_.DeactivatePathPair(StartNode(path_basis_[i - 1]),
+                                           StartNode(path_basis_[i]));
+        }
+      } else {
+        active_paths_.DeactivatePathPair(StartNode(path_basis_[0]),
+                                         StartNode(path_basis_[0]));
+      }
+    }
+    std::vector<int> current_starts(base_node_size);
+    for (int i = 0; i < base_node_size; ++i) {
+      current_starts[i] = StartNode(i);
+    }
+    // Exploration of next paths can lead to locally optimal paths since we are
+    // exploring them from scratch.
+    optimal_paths_enabled_ = true;
+    while (true) {
+      for (int i = base_node_size - 1; i >= 0; --i) {
+        const int next_path_index = base_paths_[i] + 1;
+        if (next_path_index < number_of_paths) {
+          base_paths_[i] = next_path_index;
+          base_nodes_[i] = path_starts_[next_path_index];
+          base_node_iterators_[i].Reset();
+          if (i == 0 || !OnSamePathAsPreviousBase(i)) {
+            break;
+          }
+        } else {
+          base_paths_[i] = 0;
+          base_nodes_[i] = path_starts_[0];
+          base_node_iterators_[i].Reset();
+        }
+      }
+      if (!iteration_parameters_.skip_locally_optimal_paths) return CheckEnds();
+      // If the new paths have already been completely explored, we can
+      // skip them from now on.
+      if (path_basis_.size() > 1) {
+        for (int j = 1; j < path_basis_.size(); ++j) {
+          if (active_paths_.IsPathPairActive(StartNode(path_basis_[j - 1]),
+                                             StartNode(path_basis_[j]))) {
+            return CheckEnds();
+          }
+        }
+      } else {
+        if (active_paths_.IsPathPairActive(StartNode(path_basis_[0]),
+                                           StartNode(path_basis_[0]))) {
+          return CheckEnds();
+        }
+      }
+      // If we are back to paths we just iterated on or have reached the end
+      // of the neighborhood search space, we can stop.
+      if (!CheckEnds()) return false;
+      bool stop = true;
+      for (int i = 0; i < base_node_size; ++i) {
+        if (StartNode(i) != current_starts[i]) {
+          stop = false;
+          break;
+        }
+      }
+      if (stop) return false;
+    }
+    return CheckEnds();
+  }
+
+  void InitializePathStarts() {
+    // Detect nodes which do not have any possible predecessor in a path; these
+    // nodes are path starts.
+    int max_next = -1;
+    std::vector<bool> has_prevs(number_of_nexts_, false);
+    for (int i = 0; i < number_of_nexts_; ++i) {
+      const int next = OldNext(i);
+      if (next < number_of_nexts_) {
+        has_prevs[next] = true;
+      }
+      max_next = std::max(max_next, next);
+    }
+    // Update locally optimal paths.
+    if (iteration_parameters_.skip_locally_optimal_paths) {
+      active_paths_.Initialize(
+          /*is_start=*/[&has_prevs](int node) { return !has_prevs[node]; });
+      for (int i = 0; i < number_of_nexts_; ++i) {
+        if (!has_prevs[i]) {
+          int current = i;
+          while (!IsPathEnd(current)) {
+            if ((OldNext(current) != PrevNext(current))) {
+              active_paths_.ActivatePath(i);
+              break;
+            }
+            current = OldNext(current);
+          }
+        }
+      }
+    }
+    // Create a list of path starts, dropping equivalent path starts of
+    // currently empty paths.
+    std::vector<bool> empty_found(number_of_nexts_, false);
+    std::vector<int64_t> new_path_starts;
+    for (int i = 0; i < number_of_nexts_; ++i) {
+      if (!has_prevs[i]) {
+        if (IsPathEnd(OldNext(i))) {
+          if (iteration_parameters_.start_empty_path_class != nullptr) {
+            if (empty_found[iteration_parameters_.start_empty_path_class(i)])
+              continue;
+            empty_found[iteration_parameters_.start_empty_path_class(i)] = true;
+          }
+        }
+        new_path_starts.push_back(i);
+      }
+    }
+    if (!first_start_) {
+      // Synchronizing base_paths_ with base node positions. When the last move
+      // was performed a base node could have been moved to a new route in which
+      // case base_paths_ needs to be updated. This needs to be done on the path
+      // starts before we re-adjust base nodes for new path starts.
+      std::vector<int> node_paths(max_next + 1, -1);
+      for (int i = 0; i < path_starts_.size(); ++i) {
+        int node = path_starts_[i];
+        while (!IsPathEnd(node)) {
+          node_paths[node] = i;
+          node = OldNext(node);
+        }
+        node_paths[node] = i;
+      }
+      for (int j = 0; j < iteration_parameters_.number_of_base_nodes; ++j) {
+        if (IsInactive(base_nodes_[j]) || node_paths[base_nodes_[j]] == -1) {
+          // Base node was made inactive or was moved to a new path, reposition
+          // the base node to its restart position.
+          base_nodes_[j] = GetBaseNodeRestartPosition(j);
+          base_paths_[j] = node_paths[base_nodes_[j]];
+        } else {
+          base_paths_[j] = node_paths[base_nodes_[j]];
+        }
+        // Always restart from first alternative.
+        base_node_iterators_[j].Reset();
+      }
+      // Re-adjust current base_nodes and base_paths to take into account new
+      // path starts (there could be fewer if a new path was made empty, or more
+      // if nodes were added to a formerly empty path).
+      int new_index = 0;
+      absl::flat_hash_set<int> found_bases;
+      for (int i = 0; i < path_starts_.size(); ++i) {
+        int index = new_index;
+        // Note: old and new path starts are sorted by construction.
+        while (index < new_path_starts.size() &&
+               new_path_starts[index] < path_starts_[i]) {
+          ++index;
+        }
+        const bool found = (index < new_path_starts.size() &&
+                            new_path_starts[index] == path_starts_[i]);
+        if (found) {
+          new_index = index;
+        }
+        for (int j = 0; j < iteration_parameters_.number_of_base_nodes; ++j) {
+          if (base_paths_[j] == i && !found_bases.contains(j)) {
+            found_bases.insert(j);
+            base_paths_[j] = new_index;
+            // If the current position of the base node is a removed empty path,
+            // readjusting it to the last visited path start.
+            if (!found) {
+              base_nodes_[j] = new_path_starts[new_index];
+            }
+          }
+        }
+      }
+    }
+    path_starts_.swap(new_path_starts);
+    // For every base path, store the end corresponding to the path start.
+    // TODO(user): make this faster, maybe by pairing starts with ends.
+    path_ends_.clear();
+    path_ends_.reserve(path_starts_.size());
+    int64_t max_node_index = number_of_nexts_ - 1;
+    for (const int start_node : path_starts_) {
+      int64_t node = start_node;
+      while (!IsPathEnd(node)) node = OldNext(node);
+      path_ends_.push_back(node);
+      max_node_index = std::max(max_node_index, node);
+    }
+    node_path_starts_.assign(max_node_index + 1, -1);
+    node_path_ends_.assign(max_node_index + 1, -1);
+    for (int i = 0; i < path_starts_.size(); ++i) {
+      const int64_t start_node = path_starts_[i];
+      const int64_t end_node = path_ends_[i];
+      int64_t node = start_node;
+      while (!IsPathEnd(node)) {
+        node_path_starts_[node] = start_node;
+        node_path_ends_[node] = end_node;
+        node = OldNext(node);
+      }
+      node_path_starts_[node] = start_node;
+      node_path_ends_[node] = end_node;
+    }
+  }
+  void InitializeInactives() {
+    inactives_.clear();
+    for (int i = 0; i < number_of_nexts_; ++i) {
+      inactives_.push_back(OldNext(i) == i);
+    }
+  }
+  void InitializeBaseNodes() {
+    // Inactive nodes must be detected before determining new path starts.
+    InitializeInactives();
+    InitializePathStarts();
+    if (first_start_ || InitPosition()) {
+      // Only do this once since the following starts will continue from the
+      // preceding position
+      for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
+        base_paths_[i] = 0;
+        base_nodes_[i] = path_starts_[0];
+      }
+      first_start_ = false;
+    }
+    for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
+      // If base node has been made inactive, restart from path start.
+      int64_t base_node = base_nodes_[i];
+      if (RestartAtPathStartOnSynchronize() || IsInactive(base_node)) {
+        base_node = path_starts_[base_paths_[i]];
+        base_nodes_[i] = base_node;
+      }
+      end_nodes_[i] = base_node;
+    }
+    // Repair end_nodes_ in case some must be on the same path and are not
+    // anymore (due to other operators moving these nodes).
+    for (int i = 1; i < iteration_parameters_.number_of_base_nodes; ++i) {
+      if (OnSamePathAsPreviousBase(i) &&
+          !OnSamePath(base_nodes_[i - 1], base_nodes_[i])) {
+        const int64_t base_node = base_nodes_[i - 1];
+        base_nodes_[i] = base_node;
+        end_nodes_[i] = base_node;
+        base_paths_[i] = base_paths_[i - 1];
+      }
+    }
+    for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
+      base_node_iterators_[i].Reset(/*update_end_nodes=*/true);
+    }
+    just_started_ = true;
+  }
+  void InitializeAlternatives() {
+    active_in_alternative_set_.resize(alternative_sets_.size(), -1);
+    for (int i = 0; i < alternative_sets_.size(); ++i) {
+      const int64_t current_active = active_in_alternative_set_[i];
+      if (current_active >= 0 && !IsInactive(current_active)) continue;
+      for (int64_t index : alternative_sets_[i]) {
+        if (!IsInactive(index)) {
+          active_in_alternative_set_[i] = index;
+          break;
+        }
+      }
+    }
+  }
 
   class ActivePaths {
    public:
@@ -1656,14 +2372,15 @@ class PathOperator : public IntVarLocalSearchOperator {
     std::vector<bool> is_path_pair_active_;
   };
 
-  std::vector<int> base_nodes_;
-  std::vector<int> base_alternatives_;
-  std::vector<int> base_sibling_alternatives_;
-  std::vector<int> end_nodes_;
-  std::vector<int> base_paths_;
+  std::unique_ptr<int[]> base_nodes_;
+  std::unique_ptr<int[]> end_nodes_;
+  std::unique_ptr<int[]> base_paths_;
   std::vector<int> node_path_starts_;
   std::vector<int> node_path_ends_;
-  std::vector<int> calls_per_base_node_;
+  bool iterators_initialized_ = false;
+#ifndef SWIG
+  std::vector<BaseNodeIterators<PathOperator>> base_node_iterators_;
+#endif  // SWIG
   std::vector<int64_t> path_starts_;
   std::vector<int64_t> path_ends_;
   std::vector<bool> inactives_;
@@ -1681,36 +2398,309 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<int> alternative_index_;
   std::vector<int64_t> active_in_alternative_set_;
   std::vector<int> sibling_alternative_;
+
+  friend class BaseNodeIterators<PathOperator>;
+  friend class AlternativeNodeIterator;
+  friend class NodeNeighborIterator;
 };
 
-/// Operator Factories.
-template <class T>
-LocalSearchOperator* MakeLocalSearchOperator(
+#ifndef SWIG
+/// ----- 2Opt -----
+
+/// Reverses a sub-chain of a path. It is called 2Opt because it breaks
+/// 2 arcs on the path; resulting paths are called 2-optimal.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
+/// (where (1, 5) are first and last nodes of the path and can therefore not be
+/// moved):
+/// 1 -> 3 -> 2 -> 4 -> 5
+/// 1 -> 4 -> 3 -> 2 -> 5
+/// 1 -> 2 -> 4 -> 3 -> 5
+
+LocalSearchOperator* MakeTwoOpt(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+        nullptr,
+    std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+        nullptr);
+
+/// ----- Relocate -----
+
+/// Moves a sub-chain of a path to another position; the specified chain length
+/// is the fixed length of the chains being moved. When this length is 1 the
+/// operator simply moves a node to another position.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5, for a chain length
+/// of 2 (where (1, 5) are first and last nodes of the path and can
+/// therefore not be moved):
+/// 1 -> 4 -> 2 -> 3 -> 5
+/// 1 -> 3 -> 4 -> 2 -> 5
+///
+/// Using Relocate with chain lengths of 1, 2 and 3 together is equivalent to
+/// the OrOpt operator on a path. The OrOpt operator is a limited version of
+/// 3Opt (breaks 3 arcs on a path).
+
+LocalSearchOperator* MakeRelocate(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+        nullptr,
+    std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+        nullptr,
+    int64_t chain_length = 1LL, bool single_path = false,
+    const std::string& name = "Relocate");
+
+/// ----- Exchange -----
+
+/// Exchanges the positions of two nodes.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
+/// (where (1, 5) are first and last nodes of the path and can therefore not
+/// be moved):
+/// 1 -> 3 -> 2 -> 4 -> 5
+/// 1 -> 4 -> 3 -> 2 -> 5
+/// 1 -> 2 -> 4 -> 3 -> 5
+
+LocalSearchOperator* MakeExchange(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+        nullptr,
+    std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+        nullptr);
+
+/// ----- Cross -----
+
+/// Cross echanges the starting chains of 2 paths, including exchanging the
+/// whole paths.
+/// First and last nodes are not moved.
+/// Possible neighbors for the paths 1 -> 2 -> 3 -> 4 -> 5 and 6 -> 7 -> 8
+/// (where (1, 5) and (6, 8) are first and last nodes of the paths and can
+/// therefore not be moved):
+/// 1 -> 7 -> 3 -> 4 -> 5  6 -> 2 -> 8
+/// 1 -> 7 -> 4 -> 5       6 -> 2 -> 3 -> 8
+/// 1 -> 7 -> 5            6 -> 2 -> 3 -> 4 -> 8
+
+LocalSearchOperator* MakeCross(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+        nullptr,
+    std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+        nullptr);
+
+/// ----- MakeActive -----
+
+/// MakeActive inserts an inactive node into a path.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive (where 1
+/// and 4 are first and last nodes of the path) are:
+/// 1 -> 5 -> 2 -> 3 -> 4
+/// 1 -> 2 -> 5 -> 3 -> 4
+/// 1 -> 2 -> 3 -> 5 -> 4
+
+LocalSearchOperator* MakeActive(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
+        nullptr,
+    std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
+        nullptr);
+
+/// ---- RelocateAndMakeActive -----
+
+/// RelocateAndMakeActive relocates a node and replaces it by an inactive node.
+/// The idea is to make room for inactive nodes.
+/// Possible neighbor for paths 0 -> 4, 1 -> 2 -> 5 and 3 inactive is:
+/// 0 -> 2 -> 4, 1 -> 3 -> 5.
+/// TODO(user): Naming is close to MakeActiveAndRelocate but this one is
+/// correct; rename MakeActiveAndRelocate if it is actually used.
+
+LocalSearchOperator* RelocateAndMakeActive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class);
 
-template <class T>
-LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
+// ----- ExchangeAndMakeActive -----
+
+// ExchangeAndMakeActive exchanges two nodes and inserts an inactive node.
+// Possible neighbors for paths 0 -> 2 -> 4, 1 -> 3 -> 6 and 5 inactive are:
+// 0 -> 3 -> 4, 1 -> 5 -> 2 -> 6
+// 0 -> 3 -> 5 -> 4, 1 -> 2 -> 6
+// 0 -> 5 -> 3 -> 4, 1 -> 2 -> 6
+// 0 -> 3 -> 4, 1 -> 2 -> 5 -> 6
+//
+// Warning this operator creates a very large neighborhood, with O(m*n^3)
+// neighbors (n: number of active nodes, m: number of non active nodes).
+// It should be used with only a small number of non active nodes.
+// TODO(user): Add support for neighbors which would make this operator more
+// usable.
+
+LocalSearchOperator* ExchangeAndMakeActive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::function<const std::vector<int>&(int, int)> get_neighbors);
+    std::function<int(int64_t)> start_empty_path_class);
 
-/// Classes to which this template function can be applied to as of 04/2014.
-/// Usage: LocalSearchOperator* op = MakeLocalSearchOperator<Relocate>(...);
-/// class TwoOpt;
-/// class Relocate;
-/// class Exchange;
-/// class Cross;
-/// class MakeActiveOperator;
-/// class MakeInactiveOperator;
-/// class MakeChainInactiveOperator;
-/// class SwapActiveOperator;
-/// class ExtendedSwapActiveOperator;
-/// class MakeActiveAndRelocate;
-/// class RelocateAndMakeActiveOperator;
-/// class RelocateAndMakeInactiveOperator;
+// ----- ExchangePathEndsAndMakeActive -----
+
+// An operator which exchanges the first and last nodes of two paths and makes a
+// node active.
+// Possible neighbors for paths 0 -> 1 -> 2 -> 7, 6 -> 3 -> 4 -> 8
+// and 5 inactive are:
+// 0 -> 5 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+// 0 -> 3 -> 4 -> 7, 6 -> 1 -> 5 -> 2 -> 8
+// 0 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 5 -> 8
+// 0 -> 3 -> 5 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+// 0 -> 3 -> 4 -> 5 -> 7, 6 -> 1 -> 2 -> 8
+//
+// This neighborhood is an artificially reduced version of
+// ExchangeAndMakeActiveOperator. It can still be used to opportunistically
+// insert inactive nodes.
+
+LocalSearchOperator* ExchangePathStartEndsAndMakeActive(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
+
+/// ----- MakeActiveAndRelocate -----
+
+/// MakeActiveAndRelocate makes a node active next to a node being relocated.
+/// Possible neighbor for paths 0 -> 4, 1 -> 2 -> 5 and 3 inactive is:
+/// 0 -> 3 -> 2 -> 4, 1 -> 5.
+
+LocalSearchOperator* MakeActiveAndRelocate(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
+
+/// ----- MakeInactive -----
+
+/// MakeInactive makes path nodes inactive.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
+/// and last nodes of the path) are:
+/// 1 -> 3 -> 4 & 2 inactive
+/// 1 -> 2 -> 4 & 3 inactive
+
+LocalSearchOperator* MakeInactive(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
+
+/// ----- RelocateAndMakeInactive -----
+
+/// RelocateAndMakeInactive relocates a node to a new position and makes the
+/// node which was at that position inactive.
+/// Possible neighbors for paths 0 -> 2 -> 4, 1 -> 3 -> 5 are:
+/// 0 -> 3 -> 4, 1 -> 5 & 2 inactive
+/// 0 -> 4, 1 -> 2 -> 5 & 3 inactive
+
+LocalSearchOperator* RelocateAndMakeInactive(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
+
+/// ----- MakeChainInactive -----
+
+/// Operator which makes a "chain" of path nodes inactive.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
+/// and last nodes of the path) are:
+///   1 -> 3 -> 4 with 2 inactive
+///   1 -> 2 -> 4 with 3 inactive
+///   1 -> 4 with 2 and 3 inactive
+
+LocalSearchOperator* MakeChainInactive(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
+
+/// ----- SwapActive -----
+
+/// SwapActive replaces an active node by an inactive one.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive (where 1
+/// and 4 are first and last nodes of the path) are:
+/// 1 -> 5 -> 3 -> 4 & 2 inactive
+/// 1 -> 2 -> 5 -> 4 & 3 inactive
+
+LocalSearchOperator* MakeSwapActive(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
+
+/// ----- SwapActiveChain -----
+
+LocalSearchOperator* MakeSwapActiveChain(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class, int max_chain_size);
+
+/// ----- ExtendedSwapActive -----
+
+/// ExtendedSwapActive makes an inactive node active and an active one
+/// inactive. It is similar to SwapActiveOperator excepts that it tries to
+/// insert the inactive node in all possible positions instead of just the
+/// position of the node made inactive.
+/// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive (where 1
+/// and 4 are first and last nodes of the path) are:
+/// 1 -> 5 -> 3 -> 4 & 2 inactive
+/// 1 -> 3 -> 5 -> 4 & 2 inactive
+/// 1 -> 5 -> 2 -> 4 & 3 inactive
+/// 1 -> 2 -> 5 -> 4 & 3 inactive
+
+LocalSearchOperator* MakeExtendedSwapActive(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
+
+/// ----- TSP-based operators -----
+
+/// Sliding TSP operator
+/// Uses an exact dynamic programming algorithm to solve the TSP corresponding
+/// to path sub-chains.
+/// For a subchain 1 -> 2 -> 3 -> 4 -> 5 -> 6, solves the TSP on nodes A, 2, 3,
+/// 4, 5, where A is a merger of nodes 1 and 6 such that cost(A,i) = cost(1,i)
+/// and cost(i,A) = cost(i,6).
+
+LocalSearchOperator* MakeTSPOpt(Solver* solver,
+                                const std::vector<IntVar*>& vars,
+                                const std::vector<IntVar*>& secondary_vars,
+                                Solver::IndexEvaluator3 evaluator,
+                                int chain_length);
+
+/// TSP-base lns.
+/// Randomly merge consecutive nodes until n "meta"-nodes remain and solve the
+/// corresponding TSP. This can be seen as a large neighborhood search operator
+/// although decisions are taken with the operator.
+/// This is an "unlimited" neighborhood which must be stopped by search limits.
+/// To force diversification, the operator iteratively forces each node to serve
+/// as base of a meta-node.
+
+LocalSearchOperator* MakeTSPLns(Solver* solver,
+                                const std::vector<IntVar*>& vars,
+                                const std::vector<IntVar*>& secondary_vars,
+                                Solver::IndexEvaluator3 evaluator,
+                                int tsp_size);
+
+/// ----- Lin-Kernighan -----
+
+LocalSearchOperator* MakeLinKernighan(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    const Solver::IndexEvaluator3& evaluator, bool topt);
+
+/// ----- Path-based Large Neighborhood Search -----
+
+/// Breaks "number_of_chunks" chains of "chunk_size" arcs, and deactivate all
+/// inactive nodes if "unactive_fragments" is true.
+/// As a special case, if chunk_size=0, then we break full paths.
+
+LocalSearchOperator* MakePathLns(Solver* solver,
+                                 const std::vector<IntVar*>& vars,
+                                 const std::vector<IntVar*>& secondary_vars,
+                                 int number_of_chunks, int chunk_size,
+                                 bool unactive_fragments);
+#endif  // SWIG
 
 #if !defined(SWIG)
 // After building a Directed Acyclic Graph, allows to generate sub-DAGs
@@ -1798,7 +2788,8 @@ class LocalSearchState {
   DEFINE_STRONG_INT_TYPE(ConstraintId, int);
   // Adds a variable domain to this state, returns a handler to the new domain.
   VariableDomainId AddVariableDomain(int64_t relaxed_min, int64_t relaxed_max);
-  void RelaxVariableDomain(VariableDomainId domain_id);
+  // Relaxes the domain, returns false iff the domain was already relaxed.
+  bool RelaxVariableDomain(VariableDomainId domain_id);
   bool TightenVariableDomainMin(VariableDomainId domain_id, int64_t value);
   bool TightenVariableDomainMax(VariableDomainId domain_id, int64_t value);
   int64_t VariableDomainMin(VariableDomainId domain_id) const;
@@ -1813,6 +2804,11 @@ class LocalSearchState {
   // domain identified by domain_id: only Relax, Tighten and Min/Max read
   // operations are available.
   Variable MakeVariable(VariableDomainId domain_id);
+  // Makes a variable from an interval without going through a domain_id.
+  // Can be used when no direct manipulation of the domain is needed.
+  Variable MakeVariableWithRelaxedDomain(int64_t min, int64_t max);
+  // Makes a variable with no state, this is meant as a placeholder.
+  static Variable DummyVariable();
   void Commit();
   void Revert();
   bool StateIsFeasible() const {
@@ -2001,7 +2997,8 @@ class LocalSearchState {
     bool constraint_is_trailed_ = false;
   };
   // Used to identify constraints and hold ownership.
-  util_intops::StrongVector<ConstraintId, std::unique_ptr<Constraint>> constraints_;
+  util_intops::StrongVector<ConstraintId, std::unique_ptr<Constraint>>
+      constraints_;
 };
 
 // A LocalSearchState Variable can only be created by a LocalSearchState,
@@ -2011,20 +3008,36 @@ class LocalSearchState {
 // to ensure that variable users will not misuse the state.
 class LocalSearchState::Variable {
  public:
-  int64_t Min() const { return state_->VariableDomainMin(domain_id_); }
-  int64_t Max() const { return state_->VariableDomainMax(domain_id_); }
-  bool SetMin(int64_t new_min) {
+  Variable() : state_(nullptr), domain_id_(VariableDomainId(-1)) {}
+  int64_t Min() const {
+    DCHECK(Exists());
+    return state_->VariableDomainMin(domain_id_);
+  }
+  int64_t Max() const {
+    DCHECK(Exists());
+    return state_->VariableDomainMax(domain_id_);
+  }
+  // Sets variable's minimum to max(Min(), new_min) and propagates the change.
+  // Returns true iff the variable domain is nonempty and propagation succeeded.
+  bool SetMin(int64_t new_min) const {
+    if (!Exists()) return true;
     return state_->TightenVariableDomainMin(domain_id_, new_min) &&
            state_->PropagateTighten(domain_id_);
   }
-  bool SetMax(int64_t new_max) {
+  // Sets variable's maximum to min(Max(), new_max) and propagates the change.
+  // Returns true iff the variable domain is nonempty and propagation succeeded.
+  bool SetMax(int64_t new_max) const {
+    if (!Exists()) return true;
     return state_->TightenVariableDomainMax(domain_id_, new_max) &&
            state_->PropagateTighten(domain_id_);
   }
-  void Relax() {
-    state_->RelaxVariableDomain(domain_id_);
-    state_->PropagateRelax(domain_id_);
+  void Relax() const {
+    if (state_ == nullptr) return;
+    if (state_->RelaxVariableDomain(domain_id_)) {
+      state_->PropagateRelax(domain_id_);
+    }
   }
+  bool Exists() const { return state_ != nullptr; }
 
  private:
   // Only LocalSearchState can construct LocalSearchVariables.
@@ -2033,8 +3046,8 @@ class LocalSearchState::Variable {
   Variable(LocalSearchState* state, VariableDomainId domain_id)
       : state_(state), domain_id_(domain_id) {}
 
-  LocalSearchState* const state_;
-  const VariableDomainId domain_id_;
+  LocalSearchState* state_;
+  VariableDomainId domain_id_;
 };
 #endif  // !defined(SWIG)
 
@@ -2058,9 +3071,9 @@ class LocalSearchFilter : public BaseObject {
  public:
   /// Lets the filter know what delta and deltadelta will be passed in the next
   /// Accept().
-  virtual void Relax(const Assignment* delta, const Assignment* deltadelta) {}
+  virtual void Relax(const Assignment*, const Assignment*) {}
   /// Dual of Relax(), lets the filter know that the delta was accepted.
-  virtual void Commit(const Assignment* delta, const Assignment* deltadelta) {}
+  virtual void Commit(const Assignment*, const Assignment*) {}
 
   /// Accepts a "delta" given the assignment with which the filter has been
   /// synchronized; the delta holds the variables which have been modified and
@@ -2149,7 +3162,7 @@ class LocalSearchFilterManager : public BaseObject {
   int64_t accepted_value_;
 };
 
-class IntVarLocalSearchFilter : public LocalSearchFilter {
+class OR_DLL IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
   explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter() override;
@@ -2178,7 +3191,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   bool IsVarSynced(int index) const { return var_synced_[index]; }
 
  protected:
-  virtual void OnSynchronize(const Assignment* delta) {}
+  virtual void OnSynchronize(const Assignment*) {}
   void SynchronizeOnAssignment(const Assignment* assignment);
 
  private:
@@ -2279,7 +3292,7 @@ class LocalSearchMonitor : public SearchMonitor {
   void Install() override;
 };
 
-class BooleanVar : public IntVar {
+class OR_DLL BooleanVar : public IntVar {
  public:
   static const int kUnboundBooleanVarValue;
 
@@ -2396,9 +3409,11 @@ class SearchLog : public SearchMonitor {
   std::function<std::string()> display_callback_;
   const bool display_on_new_solutions_only_;
   int nsol_;
-  int64_t tick_;
+  absl::Duration tick_;
   std::vector<int64_t> objective_min_;
   std::vector<int64_t> objective_max_;
+  std::vector<int64_t> last_objective_value_;
+  absl::Duration last_objective_timestamp_;
   int min_right_depth_;
   int max_depth_;
   int sliding_min_depth_;
@@ -3334,465 +4349,6 @@ inline int64_t PosIntDivDown(int64_t e, int64_t v) {
 }
 
 std::vector<int64_t> ToInt64Vector(const std::vector<int>& input);
-
-#if !defined(SWIG)
-// A PathState represents a set of paths and changes made on it.
-//
-// More accurately, let us define P_{num_nodes, starts, ends}-graphs the set of
-// directed graphs with nodes [0, num_nodes) whose connected components are
-// paths from starts[i] to ends[i] (for the same i) and loops.
-// Let us fix num_nodes, starts and ends, so we call these P-graphs.
-//
-// A P-graph can be described by the sequence of nodes of each of its paths,
-// and its set of loops. To describe a change made on a given P-graph G0 that
-// yields another P-graph G1, we choose to describe G1 in terms of G0. When
-// the difference between G0 and G1 is small, as is almost always the case in a
-// local search setting, the description is compact, allowing for incremental
-// filters to be efficient.
-//
-// In order to describe G1 in terms of G0 succintly, we describe each path of
-// G1 as a sequence of chains of G0. A chain of G0 is either a nonempty sequence
-// of consecutive nodes of a path of G0, or a node that was a loop in G0.
-// For instance, a path that was not modified from G0 to G1 has one chain,
-// the sequence of all nodes in the path. Typically, local search operators
-// modify one or two paths, and the resulting paths can described as sequences
-// of two to four chains of G0. Paths that were modified are listed explicitly,
-// allowing to iterate only on changed paths.
-// The loops of G1 are described more implicitly: the loops of G1 not in G0
-// are listed explicitly, but those in both G1 and G0 are not listed.
-//
-// A PathState object can be in two states: committed or changed.
-// At construction, the object is committed, G0.
-// To enter a changed state G1, one can pass modifications with ChangePath() and
-// ChangeLoops(). For reasons of efficiency, a chain is described as a range of
-// node indices in the representation of the committed graph G0. To that effect,
-// the nodes of a path of G0 are guaranteed to have consecutive indices.
-//
-// Filters can then browse the change efficiently using ChangedPaths(),
-// Chains(), Nodes() and ChangedLoops().
-//
-// Then Commit() or Revert() can be called: Commit() sets the changed state G1
-// as the new committed state, Revert() erases all changes.
-class PathState {
- public:
-  // A Chain allows to iterate on all nodes of a chain, and access some data:
-  // first node, last node, number of nodes in the chain.
-  // Chain is a range, its iterator ChainNodeIterator, its value type int.
-  // Chains are returned by PathChainIterator's operator*().
-  class Chain;
-  // A ChainRange allows to iterate on all chains of a path.
-  // ChainRange is a range, its iterator Chain*, its value type Chain.
-  class ChainRange;
-  // A NodeRange allows to iterate on all nodes of a path.
-  // NodeRange is a range, its iterator PathNodeIterator, its value type int.
-  class NodeRange;
-
-  struct ChainBounds {
-    ChainBounds() {}
-    ChainBounds(int begin_index, int end_index)
-        : begin_index(begin_index), end_index(end_index) {}
-    int begin_index;
-    int end_index;
-  };
-  int CommittedIndex(int node) const { return committed_index_[node]; }
-  ChainBounds CommittedPathRange(int path) const { return chains_[path]; }
-
-  // Path constructor: path_start and path_end must be disjoint,
-  // their values in [0, num_nodes).
-  PathState(int num_nodes, std::vector<int> path_start,
-            std::vector<int> path_end);
-
-  // Instance-constant accessors.
-
-  // Returns the number of nodes in the underlying graph.
-  int NumNodes() const { return num_nodes_; }
-  // Returns the number of paths (empty paths included).
-  int NumPaths() const { return num_paths_; }
-  // Returns the start of a path.
-  int Start(int path) const { return path_start_end_[path].start; }
-  // Returns the end of a path.
-  int End(int path) const { return path_start_end_[path].end; }
-
-  // State-dependent accessors.
-
-  // Returns the committed path of a given node, -1 if it is a loop.
-  int Path(int node) const { return committed_paths_[node]; }
-  // Returns the set of paths that actually changed,
-  // i.e. that have more than one chain.
-  const std::vector<int>& ChangedPaths() const { return changed_paths_; }
-  // Returns the set of loops that were added by the change.
-  const std::vector<int>& ChangedLoops() const { return changed_loops_; }
-  // Returns the current range of chains of path.
-  ChainRange Chains(int path) const;
-  // Returns the current range of nodes of path.
-  NodeRange Nodes(int path) const;
-
-  // State modifiers.
-
-  // Changes the path to the given sequence of chains of the committed state.
-  // Chains are described by semi-open intervals. No optimization is made in
-  // case two consecutive chains are actually already consecutive in the
-  // committed state: they are not merged into one chain, and Chains(path) will
-  // report the two chains.
-  void ChangePath(int path, const std::vector<ChainBounds>& chains);
-  // Same as above, but the initializer_list interface avoids the need to pass
-  // a vector.
-  void ChangePath(int path, const std::initializer_list<ChainBounds>& chains) {
-    changed_paths_.push_back(path);
-    const int path_begin_index = chains_.size();
-    chains_.insert(chains_.end(), chains.begin(), chains.end());
-    const int path_end_index = chains_.size();
-    paths_[path] = {path_begin_index, path_end_index};
-    // Always add sentinel, in case this is the last path change.
-    chains_.emplace_back(0, 0);
-  }
-
-  // Describes the nodes that are newly loops in this change.
-  void ChangeLoops(const std::vector<int>& new_loops);
-
-  // Set the current state G1 as committed. See class comment for details.
-  void Commit();
-  // Erase incremental changes. See class comment for details.
-  void Revert();
-
-  // LNS Operators may not fix variables,
-  // in which case we mark the candidate invalid.
-  void SetInvalid() { is_invalid_ = true; }
-  bool IsInvalid() const { return is_invalid_; }
-
- private:
-  // Most structs below are named pairs of ints, for typing purposes.
-
-  // Start and end are stored together to optimize (likely) simultaneous access.
-  struct PathStartEnd {
-    PathStartEnd(int start, int end) : start(start), end(end) {}
-    int start;
-    int end;
-  };
-  // Paths are ranges of chains, which are ranges of committed nodes, see below.
-  struct PathBounds {
-    int begin_index;
-    int end_index;
-  };
-
-  // Copies nodes in chains of path at the end of nodes,
-  // and sets those nodes' path member to value path.
-  void CopyNewPathAtEndOfNodes(int path);
-  // Commits paths in O(#{changed paths' nodes}) time,
-  // increasing this object's space usage by O(|changed path nodes|).
-  void IncrementalCommit();
-  // Commits paths in O(num_nodes + num_paths) time,
-  // reducing this object's space usage to O(num_nodes + num_paths).
-  void FullCommit();
-
-  // Instance-constant data.
-  const int num_nodes_;
-  const int num_paths_;
-  std::vector<PathStartEnd> path_start_end_;
-
-  // Representation of the committed and changed paths.
-  // A path is a range of chains, which is a range of nodes.
-  // Ranges are represented internally by indices in vectors:
-  // ChainBounds are indices in committed_nodes_. PathBounds are indices in
-  // chains_. When committed (after construction, Revert() or Commit()):
-  // - path ranges are [path, path+1): they have one chain.
-  // - chain ranges don't overlap, chains_ has an empty sentinel at the end.
-  //   The sentinel allows the Nodes() iterator to maintain its current pointer
-  //   to committed nodes on NodeRange::operator++().
-  // - committed_nodes_ contains all nodes, both paths and loops.
-  //   Actually, old duplicates will likely appear,
-  //   the current version of a node is at the index given by
-  //   committed_index_[node]. A Commit() can add nodes at the end of
-  //   committed_nodes_ in a space/time tradeoff, but if committed_nodes_' size
-  //   is above num_nodes_threshold_, Commit() must reclaim useless duplicates'
-  //   space by rewriting the path/chain/nodes structure.
-  // When changed (after ChangePaths() and ChangeLoops()),
-  // the structure is updated accordingly:
-  // - path ranges that were changed have nonoverlapping values [begin, end)
-  //   where begin is >= num_paths_ + 1, i.e. new chains are stored after
-  //   the committed state.
-  // - additional chain ranges are stored after the committed chains and its
-  //   sentinel to represent the new chains resulting from the changes.
-  //   Those chains do not overlap with one another or with committed chains.
-  // - committed_nodes_ are not modified, and still represent the committed
-  //   paths. committed_index_ is not modified either.
-  std::vector<int> committed_nodes_;
-  // Maps nodes to their path in the latest committed state.
-  std::vector<int> committed_paths_;
-  // Maps nodes to their index in the latest committed state.
-  std::vector<int> committed_index_;
-  const int num_nodes_threshold_;
-  std::vector<ChainBounds> chains_;
-  std::vector<PathBounds> paths_;
-
-  // Incremental information.
-  std::vector<int> changed_paths_;
-  std::vector<int> changed_loops_;
-
-  // See IsInvalid() and SetInvalid().
-  bool is_invalid_ = false;
-};
-
-// A Chain is a range of committed nodes.
-class PathState::Chain {
- public:
-  class Iterator {
-   public:
-    Iterator& operator++() {
-      ++current_node_;
-      return *this;
-    }
-    int operator*() const { return *current_node_; }
-    bool operator!=(Iterator other) const {
-      return current_node_ != other.current_node_;
-    }
-
-   private:
-    // Only a Chain can construct its iterator.
-    friend class PathState::Chain;
-    explicit Iterator(const int* node) : current_node_(node) {}
-    const int* current_node_;
-  };
-
-  // Chains hold CommittedNode* values, a Chain may be invalidated
-  // if the underlying vector is modified.
-  Chain(const int* begin_node, const int* end_node)
-      : begin_(begin_node), end_(end_node) {}
-
-  int NumNodes() const { return end_ - begin_; }
-  int First() const { return *begin_; }
-  int Last() const { return *(end_ - 1); }
-  Iterator begin() const { return Iterator(begin_); }
-  Iterator end() const { return Iterator(end_); }
-
-  Chain WithoutFirstNode() const { return Chain(begin_ + 1, end_); }
-
- private:
-  const int* const begin_;
-  const int* const end_;
-};
-
-// A ChainRange is a range of Chains, committed or not.
-class PathState::ChainRange {
- public:
-  class Iterator {
-   public:
-    Iterator& operator++() {
-      ++current_chain_;
-      return *this;
-    }
-    Chain operator*() const {
-      return {first_node_ + current_chain_->begin_index,
-              first_node_ + current_chain_->end_index};
-    }
-    bool operator!=(Iterator other) const {
-      return current_chain_ != other.current_chain_;
-    }
-
-   private:
-    // Only a ChainRange can construct its Iterator.
-    friend class ChainRange;
-    Iterator(const ChainBounds* chain, const int* const first_node)
-        : current_chain_(chain), first_node_(first_node) {}
-    const ChainBounds* current_chain_;
-    const int* const first_node_;
-  };
-
-  // ChainRanges hold ChainBounds* and CommittedNode*,
-  // a ChainRange may be invalidated if on of the underlying vector is modified.
-  ChainRange(const ChainBounds* const begin_chain,
-             const ChainBounds* const end_chain, const int* const first_node)
-      : begin_(begin_chain), end_(end_chain), first_node_(first_node) {}
-
-  Iterator begin() const { return {begin_, first_node_}; }
-  Iterator end() const { return {end_, first_node_}; }
-
- private:
-  const ChainBounds* const begin_;
-  const ChainBounds* const end_;
-  const int* const first_node_;
-};
-
-// A NodeRange allows to iterate on all nodes of a path,
-// by a two-level iteration on ChainBounds* and CommittedNode* of a PathState.
-class PathState::NodeRange {
- public:
-  class Iterator {
-   public:
-    Iterator& operator++() {
-      ++current_node_;
-      if (current_node_ == end_node_) {
-        ++current_chain_;
-        // Note: dereferencing bounds is valid because there is a sentinel
-        // value at the end of PathState::chains_ to that intent.
-        const ChainBounds bounds = *current_chain_;
-        current_node_ = first_node_ + bounds.begin_index;
-        end_node_ = first_node_ + bounds.end_index;
-      }
-      return *this;
-    }
-    int operator*() const { return *current_node_; }
-    bool operator!=(Iterator other) const {
-      return current_chain_ != other.current_chain_;
-    }
-
-   private:
-    // Only a NodeRange can construct its Iterator.
-    friend class NodeRange;
-    Iterator(const ChainBounds* current_chain, const int* const first_node)
-        : current_node_(first_node + current_chain->begin_index),
-          end_node_(first_node + current_chain->end_index),
-          current_chain_(current_chain),
-          first_node_(first_node) {}
-    const int* current_node_;
-    const int* end_node_;
-    const ChainBounds* current_chain_;
-    const int* const first_node_;
-  };
-
-  // NodeRanges hold ChainBounds* and int* (first committed node),
-  // a NodeRange may be invalidated if on of the underlying vector is modified.
-  NodeRange(const ChainBounds* begin_chain, const ChainBounds* end_chain,
-            const int* first_node)
-      : begin_chain_(begin_chain),
-        end_chain_(end_chain),
-        first_node_(first_node) {}
-  Iterator begin() const { return {begin_chain_, first_node_}; }
-  // Note: there is a sentinel value at the end of PathState::chains_,
-  // so dereferencing chain_range_.end()->begin_ is always valid.
-  Iterator end() const { return {end_chain_, first_node_}; }
-
- private:
-  const ChainBounds* begin_chain_;
-  const ChainBounds* end_chain_;
-  const int* const first_node_;
-};
-
-// This checker enforces dimension requirements.
-// A dimension requires that there is some valuation of
-// cumul and demand such that for all paths:
-// - cumul[A] is in interval node_capacity[A]
-// - if arc A -> B is on a path of path_class p,
-//   then cumul[A] + demand[p](A, B) = cumul[B].
-// - if A is on a path of class p, then
-//   cumul[A] must be inside interval path_capacity[path].
-class DimensionChecker {
- public:
-  struct Interval {
-    int64_t min;
-    int64_t max;
-  };
-
-  struct ExtendedInterval {
-    int64_t min;
-    int64_t max;
-    int64_t num_negative_infinity;
-    int64_t num_positive_infinity;
-  };
-
-  // TODO(user): the addition of kMinRangeSizeForRIQ slowed down Check().
-  // See if using a template parameter makes it faster.
-  DimensionChecker(const PathState* path_state,
-                   std::vector<Interval> path_capacity,
-                   std::vector<int> path_class,
-                   std::vector<std::function<Interval(int64_t, int64_t)>>
-                       demand_per_path_class,
-                   std::vector<Interval> node_capacity,
-                   int min_range_size_for_riq = kOptimalMinRangeSizeForRIQ);
-
-  // Given the change made in PathState, checks that the dimension
-  // constraint is still feasible.
-  bool Check() const;
-
-  // Commits to the changes made in PathState,
-  // must be called before PathState::Commit().
-  void Commit();
-
-  static constexpr int kOptimalMinRangeSizeForRIQ = 4;
-
- private:
-  inline void UpdateCumulUsingChainRIQ(int first_index, int last_index,
-                                       const ExtendedInterval& path_capacity,
-                                       ExtendedInterval& cumul) const;
-
-  // Commits to the current solution and rebuilds structures from scratch.
-  void FullCommit();
-  // Commits to the current solution and only build structures for paths that
-  // changed, using additional space to do so in a time-memory tradeoff.
-  void IncrementalCommit();
-  // Adds sums of given path to the bottom layer of the Range Intersection Query
-  // structure, updates index_ and previous_nontrivial_index_.
-  void AppendPathDemandsToSums(int path);
-  // Updates the Range Intersection Query structure from its bottom layer,
-  // with [begin_index, end_index) the range of the change,
-  // which must be at the end of the bottom layer.
-  // Supposes that requests overlapping the range will be inside the range,
-  // to avoid updating all layers.
-  void UpdateRIQStructure(int begin_index, int end_index);
-
-  const PathState* const path_state_;
-  const std::vector<ExtendedInterval> path_capacity_;
-  const std::vector<int> path_class_;
-  const std::vector<std::function<Interval(int64_t, int64_t)>>
-      demand_per_path_class_;
-  std::vector<ExtendedInterval> cached_demand_;
-  const std::vector<ExtendedInterval> node_capacity_;
-
-  // Precomputed data.
-  // Maps nodes to their pre-computed data, except for isolated nodes,
-  // which do not have precomputed data.
-  // Only valid for nodes that are in some path in the committed state.
-  std::vector<int> index_;
-  // Range intersection query in <O(n log n), O(1)>, with n = #nodes.
-  // Let node be in a path, i = index_[node], start the start of node's path.
-  // Let l such that index_[start] <= i - 2**l.
-  // - riq_[l][i].tsum_at_lst contains the sum of demands from start to node.
-  // - riq_[l][i].tsum_at_fst contains the sum of demands from start to the
-  //   node at i - 2**l.
-  // - riq_[l][i].tightest_tsum contains the intersection of
-  //   riq_[0][j].tsum_at_lst for all j in (i - 2**l, i].
-  // - riq_[0][i].cumuls_to_lst and riq_[0][i].cumuls_to_fst contain
-  //   the node's capacity.
-  // - riq_[l][i].cumuls_to_lst is the intersection, for j in (i - 2**l, i], of
-  //   riq_[0][j].cumuls_to_lst + sum_{k in [j, i)} demand(k, k+1)
-  // - riq_[l][i].cumuls_to_fst is the intersection, for j in (i - 2**l, i], of
-  //   riq_[0][j].cumuls_to_fst - sum_{k in (i-2**l, j)} demand(k, k+1)
-  struct RIQNode {
-    ExtendedInterval cumuls_to_fst;
-    ExtendedInterval tightest_tsum;
-    ExtendedInterval cumuls_to_lst;
-    ExtendedInterval tsum_at_fst;
-    ExtendedInterval tsum_at_lst;
-  };
-  std::vector<std::vector<RIQNode>> riq_;
-  // The incremental branch of Commit() may waste space in the layers of the
-  // RIQ structure. This is the upper limit of a layer's size.
-  const int maximum_riq_layer_size_;
-  // Range queries are used on a chain only if the range is larger than this.
-  const int min_range_size_for_riq_;
-};
-
-// Make a filter that takes ownership of a PathState and synchronizes it with
-// solver events. The solver represents a graph with array of variables 'nexts'.
-// Solver events are embodied by Assignment* deltas, that are translated to node
-// changes during Relax(), committed during Synchronize(), and reverted on
-// Revert().
-LocalSearchFilter* MakePathStateFilter(Solver* solver,
-                                       std::unique_ptr<PathState> path_state,
-                                       const std::vector<IntVar*>& nexts);
-
-// Make a filter that translates solver events to the input checker's interface.
-// Since DimensionChecker has a PathState, the filter returned by this
-// must be synchronized to the corresponding PathStateFilter:
-// - Relax() must be called after the PathStateFilter's.
-// - Accept() must be called after.
-// - Synchronize() must be called before.
-// - Revert() must be called before.
-LocalSearchFilter* MakeDimensionFilter(
-    Solver* solver, std::unique_ptr<DimensionChecker> checker,
-    const std::string& dimension_name);
-
-#endif  // !defined(SWIG)
 
 }  // namespace operations_research
 

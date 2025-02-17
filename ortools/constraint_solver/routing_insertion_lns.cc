@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -73,8 +74,10 @@ bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
   if (next_accessor == nullptr) {
     return false;
   }
+  model_->solver()->set_context(DebugString());
   const Assignment* const result_assignment =
       heuristic_->BuildSolutionFromRoutes(next_accessor);
+  model_->solver()->set_context("");
 
   if (result_assignment == nullptr) {
     return false;
@@ -130,16 +133,17 @@ bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
 FilteredHeuristicPathLNSOperator::FilteredHeuristicPathLNSOperator(
     std::unique_ptr<RoutingFilteredHeuristic> heuristic)
     : FilteredHeuristicLocalSearchOperator(std::move(heuristic)),
+      num_routes_(model_->vehicles()),
       current_route_(0),
       last_route_(0),
       just_started_(false) {}
 
 void FilteredHeuristicPathLNSOperator::OnStart() {
   // NOTE: We set last_route_ to current_route_ here to make sure all routes
-  // are scanned in IncrementCurrentRouteToNextNonEmpty().
+  // are scanned in GetFirstNonEmptyRouteAfterCurrentRoute().
   last_route_ = current_route_;
-  if (CurrentRouteIsEmpty()) {
-    IncrementCurrentRouteToNextNonEmpty();
+  if (RouteIsEmpty(current_route_)) {
+    current_route_ = GetFirstNonEmptyRouteAfterCurrentRoute();
   }
   just_started_ = true;
 }
@@ -147,25 +151,27 @@ void FilteredHeuristicPathLNSOperator::OnStart() {
 bool FilteredHeuristicPathLNSOperator::IncrementPosition() {
   if (just_started_) {
     just_started_ = false;
-    return !CurrentRouteIsEmpty();
+    // If current_route_ is empty or is the only non-empty route, then we don't
+    // create a new neighbor with this operator as it would result in running
+    // a first solution heuristic with all the nodes.
+    return !RouteIsEmpty(current_route_) &&
+           GetFirstNonEmptyRouteAfterCurrentRoute() != last_route_;
   }
-  IncrementCurrentRouteToNextNonEmpty();
+  current_route_ = GetFirstNonEmptyRouteAfterCurrentRoute();
   return current_route_ != last_route_;
 }
 
-bool FilteredHeuristicPathLNSOperator::CurrentRouteIsEmpty() const {
-  return model_->IsEnd(OldValue(model_->Start(current_route_)));
+bool FilteredHeuristicPathLNSOperator::RouteIsEmpty(int route) const {
+  return model_->IsEnd(OldValue(model_->Start(route)));
 }
 
-void FilteredHeuristicPathLNSOperator::IncrementCurrentRouteToNextNonEmpty() {
-  const int num_routes = model_->vehicles();
-  do {
-    ++current_route_ %= num_routes;
-    if (current_route_ == last_route_) {
-      // All routes have been scanned.
-      return;
+int FilteredHeuristicPathLNSOperator::GetFirstNonEmptyRouteAfterCurrentRoute()
+    const {
+  int route = GetNextRoute(current_route_);
+  while (route != last_route_ && RouteIsEmpty(route)) {
+    route = GetNextRoute(route);
     }
-  } while (CurrentRouteIsEmpty());
+  return route;
 }
 
 std::function<int64_t(int64_t)>
@@ -389,38 +395,16 @@ void FilteredHeuristicCloseNodesLNSOperator::RemoveNodeAndActiveSibling(
   if (!IsActive(node)) return;
   RemoveNode(node);
 
-  for (int64_t sibling_node : GetActiveSiblings(node)) {
-    if (!model_->IsStart(sibling_node) && !model_->IsEnd(sibling_node)) {
-      RemoveNode(sibling_node);
-    }
+  if (const std::optional<int64_t> sibling_node =
+          model_->GetFirstMatchingPickupDeliverySibling(
+              node,
+              [this](int64_t node) {
+                return IsActive(node) && !model_->IsStart(node) &&
+                       !model_->IsEnd(node);
+              });
+      sibling_node.has_value()) {
+    RemoveNode(sibling_node.value());
   }
-}
-
-std::vector<int64_t> FilteredHeuristicCloseNodesLNSOperator::GetActiveSiblings(
-    int64_t node) const {
-  // NOTE: In most use-cases, where each node is a pickup or delivery in a
-  // single index pair, this function is in O(k) where k is the number of
-  // alternative deliveries or pickups for this index pair.
-  std::vector<int64_t> active_siblings;
-  for (const auto& [pair_index, unused] : model_->GetPickupPositions(node)) {
-    for (int64_t sibling_delivery :
-         pickup_delivery_pairs_[pair_index].delivery_alternatives) {
-      if (IsActive(sibling_delivery)) {
-        active_siblings.push_back(sibling_delivery);
-        break;
-      }
-    }
-  }
-  for (const auto& [pair_index, unused] : model_->GetDeliveryPositions(node)) {
-    for (int64_t sibling_pickup :
-         pickup_delivery_pairs_[pair_index].pickup_alternatives) {
-      if (IsActive(sibling_pickup)) {
-        active_siblings.push_back(sibling_pickup);
-        break;
-      }
-    }
-  }
-  return active_siblings;
 }
 
 std::function<int64_t(int64_t)>

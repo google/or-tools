@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse_column.h"
@@ -462,15 +463,16 @@ void CompactSparseMatrix::PopulateFromMatrixView(const MatrixView& input) {
 
 void CompactSparseMatrix::PopulateFromSparseMatrixAndAddSlacks(
     const SparseMatrix& input) {
-  num_cols_ = input.num_cols() + RowToColIndex(input.num_rows());
+  const int input_num_cols = input.num_cols().value();
+  num_cols_ = input_num_cols + RowToColIndex(input.num_rows());
   num_rows_ = input.num_rows();
   const EntryIndex num_entries =
       input.num_entries() + EntryIndex(num_rows_.value());
   starts_.assign(num_cols_ + 1, EntryIndex(0));
-  coefficients_.assign(num_entries, 0.0);
-  rows_.assign(num_entries, RowIndex(0));
+  coefficients_.resize(num_entries, 0.0);
+  rows_.resize(num_entries, RowIndex(0));
   EntryIndex index(0);
-  for (ColIndex col(0); col < input.num_cols(); ++col) {
+  for (ColIndex col(0); col < input_num_cols; ++col) {
     starts_[col] = index;
     for (const SparseColumn::Entry e : input.column(col)) {
       coefficients_[index] = e.coefficient();
@@ -479,11 +481,12 @@ void CompactSparseMatrix::PopulateFromSparseMatrixAndAddSlacks(
     }
   }
   for (RowIndex row(0); row < num_rows_; ++row) {
-    starts_[input.num_cols() + RowToColIndex(row)] = index;
+    starts_[input_num_cols + RowToColIndex(row)] = index;
     coefficients_[index] = 1.0;
     rows_[index] = row;
     ++index;
   }
+  DCHECK_EQ(index, num_entries);
   starts_[num_cols_] = index;
 }
 
@@ -495,11 +498,12 @@ void CompactSparseMatrix::PopulateFromTranspose(
   // Fill the starts_ vector by computing the number of entries of each rows and
   // then doing a cumulative sum. After this step starts_[col + 1] will be the
   // actual start of the column col when we are done.
-  starts_.assign(num_cols_ + 2, EntryIndex(0));
+  const ColIndex start_size = num_cols_ + 2;
+  starts_.assign(start_size, EntryIndex(0));
   for (const RowIndex row : input.rows_) {
     ++starts_[RowToColIndex(row) + 2];
   }
-  for (ColIndex col(2); col < starts_.size(); ++col) {
+  for (ColIndex col(2); col < start_size; ++col) {
     starts_[col] += starts_[col - 1];
   }
   coefficients_.resize(starts_.back(), 0.0);
@@ -573,6 +577,17 @@ void TriangularMatrix::Reset(RowIndex num_rows, ColIndex col_capacity) {
   starts_[ColIndex(0)] = 0;
 }
 
+void CompactSparseMatrix::AddEntryToCurrentColumn(RowIndex row,
+                                                  Fractional coeff) {
+  rows_.push_back(row);
+  coefficients_.push_back(coeff);
+}
+
+void CompactSparseMatrix::CloseCurrentColumn() {
+  starts_.push_back(rows_.size());
+  ++num_cols_;
+}
+
 ColIndex CompactSparseMatrix::AddDenseColumn(const DenseColumn& dense_column) {
   return AddDenseColumnPrefix(dense_column.const_view(), RowIndex(0));
 }
@@ -592,7 +607,7 @@ ColIndex CompactSparseMatrix::AddDenseColumnPrefix(
 }
 
 ColIndex CompactSparseMatrix::AddDenseColumnWithNonZeros(
-    const DenseColumn& dense_column, const std::vector<RowIndex>& non_zeros) {
+    const DenseColumn& dense_column, absl::Span<const RowIndex> non_zeros) {
   if (non_zeros.empty()) return AddDenseColumn(dense_column);
   for (const RowIndex row : non_zeros) {
     const Fractional value = dense_column[row];
@@ -661,12 +676,13 @@ void TriangularMatrix::CloseCurrentColumn(Fractional diagonal_value) {
   // TODO(user): This is currently not used by all matrices. It will be good
   // to fill it only when needed.
   DCHECK_LT(num_cols_, pruned_ends_.size());
-  pruned_ends_[num_cols_] = coefficients_.size();
+  const EntryIndex num_entries = coefficients_.size();
+  pruned_ends_[num_cols_] = num_entries;
   ++num_cols_;
   DCHECK_LT(num_cols_, starts_.size());
-  starts_[num_cols_] = coefficients_.size();
-  if (first_non_identity_column_ == num_cols_ - 1 && coefficients_.empty() &&
-      diagonal_value == 1.0) {
+  starts_[num_cols_] = num_entries;
+  if (first_non_identity_column_ == num_cols_ - 1 && diagonal_value == 1.0 &&
+      num_entries == 0) {
     first_non_identity_column_ = num_cols_;
   }
   all_diagonal_coefficients_are_one_ =
@@ -827,6 +843,7 @@ void TriangularMatrix::UpperSolveInternal(DenseColumn::View rhs) const {
   const auto entry_rows = rows_.view();
   const auto entry_coefficients = coefficients_.view();
   const auto diagonal_coefficients = diagonal_coefficients_.view();
+  const auto starts = starts_.view();
   for (ColIndex col(diagonal_coefficients.size() - 1); col >= end; --col) {
     const Fractional value = rhs[ColToRowIndex(col)];
     if (value == 0.0) continue;
@@ -839,8 +856,8 @@ void TriangularMatrix::UpperSolveInternal(DenseColumn::View rhs) const {
     // It is faster to iterate this way (instead of i : Column(col)) because of
     // cache locality. Note that the floating-point computations are exactly the
     // same in both cases.
-    const EntryIndex i_end = starts_[col];
-    for (EntryIndex i(starts_[col + 1] - 1); i >= i_end; --i) {
+    const EntryIndex i_end = starts[col];
+    for (EntryIndex i(starts[col + 1] - 1); i >= i_end; --i) {
       rhs[entry_rows[i]] -= coeff * entry_coefficients[i];
     }
   }
@@ -1459,17 +1476,21 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
   }
 
   stored_.Resize(num_rows_);
-  for (const RowIndex row : *non_zero_rows) stored_.Set(row);
+  Bitset64<RowIndex>::View stored = stored_.view();
+  for (const RowIndex row : *non_zero_rows) {
+    stored.Set(row);
+  }
 
+  const auto matrix_view = view();
   const auto entry_rows = rows_.view();
   for (int i = 0; i < non_zero_rows->size(); ++i) {
     const RowIndex row = (*non_zero_rows)[i];
-    for (const EntryIndex index : Column(RowToColIndex(row))) {
+    for (const EntryIndex index : matrix_view.Column(RowToColIndex(row))) {
       ++num_ops;
       const RowIndex entry_row = entry_rows[index];
-      if (!stored_[entry_row]) {
+      if (!stored[entry_row]) {
         non_zero_rows->push_back(entry_row);
-        stored_.Set(entry_row);
+        stored.Set(entry_row);
       }
     }
     if (num_ops > num_ops_threshold) break;
@@ -1480,7 +1501,9 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     non_zero_rows->clear();
   } else {
     std::sort(non_zero_rows->begin(), non_zero_rows->end());
-    for (const RowIndex row : *non_zero_rows) stored_.ClearBucket(row);
+    for (const RowIndex row : *non_zero_rows) {
+      stored_.ClearBucket(row);
+    }
   }
 }
 

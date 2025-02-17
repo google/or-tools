@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -161,7 +161,7 @@ def create_section_data():
           'ortools/graph/connectivity.h ' + 'ortools/graph/ebert_graph.h ' +
           'ortools/graph/eulerian_path.h ' + 'ortools/graph/graph.h ' +
           'ortools/graph/graphs.h ' + 'ortools/graph/hamiltonian_path.h ' +
-          'ortools/graph/io.h ' + 'ortools/graph/iterators.h ' +
+          'ortools/graph/graph_io.h ' + 'ortools/graph/iterators.h ' +
           'ortools/graph/linear_assignment.h ' + 'ortools/graph/max_flow.h ' +
           'ortools/graph/min_cost_flow.h ' +
           'ortools/graph/minimum_spanning_tree.h ' +

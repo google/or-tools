@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,15 +15,18 @@
 
 #include <memory>
 #include <ostream>
+#include <utility>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
+#include "ortools/math_opt/io/mps_converter.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -40,21 +43,25 @@ using ::testing::status::StatusIs;
 constexpr absl::string_view kNoMultiObjectiveSupportMessage =
     "This test is disabled as the solver does not support multiple objective "
     "models";
+constexpr absl::string_view kNoIntegerVariableSupportMessage =
+    "This test is disabled as the solver does not support integer variables";
 
 constexpr double kTolerance = 1.0e-6;
 
 MultiObjectiveTestParameters::MultiObjectiveTestParameters(
-    SolverType solver_type, SolveParameters parameters,
-    bool supports_auxiliary_objectives,
-    bool supports_incremental_objective_add_and_delete,
-    bool supports_incremental_objective_modification)
+    const SolverType solver_type, SolveParameters parameters,
+    const bool supports_auxiliary_objectives,
+    const bool supports_incremental_objective_add_and_delete,
+    const bool supports_incremental_objective_modification,
+    const bool supports_integer_variables)
     : solver_type(solver_type),
-      parameters(parameters),
+      parameters(std::move(parameters)),
       supports_auxiliary_objectives(supports_auxiliary_objectives),
       supports_incremental_objective_add_and_delete(
           supports_incremental_objective_add_and_delete),
       supports_incremental_objective_modification(
-          supports_incremental_objective_modification) {}
+          supports_incremental_objective_modification),
+      supports_integer_variables(supports_integer_variables) {}
 
 std::ostream& operator<<(std::ostream& out,
                          const MultiObjectiveTestParameters& params) {
@@ -67,7 +74,8 @@ std::ostream& operator<<(std::ostream& out,
                                                                : "false")
       << ", supports_incremental_objective_modification: "
       << (params.supports_incremental_objective_modification ? "true" : "false")
-      << " }";
+      << ", supports_integer_variables: "
+      << (params.supports_integer_variables ? "true" : "false") << " }";
   return out;
 }
 
@@ -341,6 +349,153 @@ TEST_P(SimpleMultiObjectiveTest,
   EXPECT_THAT(result.solution, DoubleNear(1.0, kTolerance));
   EXPECT_THAT(result.priority_0_objective_value, DoubleNear(1.0, kTolerance));
   EXPECT_THAT(result.priority_1_objective_value, DoubleNear(1.0, kTolerance));
+}
+
+// Tests time limits on MIPLIB instance 23588. This instance was selected
+// because every supported solver can solve it quickly (a few seconds), but no
+// solver can solve it too quickly (so we can test time limits).
+//
+// Note that this instance is a MIP.
+absl::StatusOr<std::unique_ptr<Model>> Load23588MiplibInstance() {
+  ASSIGN_OR_RETURN(
+      const ModelProto model_proto,
+      ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/"
+                               "23588.mps")));
+  return Model::FromModelProto(model_proto);
+}
+
+// We move the "hard" objective to the auxiliary objective, and set a trivial
+// primary objective (0).
+TEST_P(SimpleMultiObjectiveTest,
+       MultiObjectiveModelWithAuxiliaryObjectiveTimeLimit) {
+  if (!GetParam().supports_integer_variables) {
+    GTEST_SKIP() << kNoIntegerVariableSupportMessage;
+  }
+  ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
+                       Load23588MiplibInstance());
+  const Objective aux_obj = model->AddMaximizationObjective(
+      model->primary_objective().AsLinearExpression(), /*priority=*/1);
+  model->clear_objective();
+  const SolveArguments args = {
+      .parameters = GetParam().parameters,
+      .model_parameters = {
+          .objective_parameters = {
+              {aux_obj, {.time_limit = absl::Milliseconds(1)}}}}};
+  const auto result = Solve(*model, GetParam().solver_type, args);
+  if (!GetParam().supports_auxiliary_objectives) {
+    EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
+                                 HasSubstr("multiple objectives")));
+    return;
+  }
+  ASSERT_OK(result);
+  EXPECT_THAT(*result, TerminatesWithLimit(Limit::kTime));
+  // Solvers do not stop very precisely, use a large number to avoid flaky
+  // tests. Do NOT try to fine tune this to be small, it is hard to get right
+  // for all compilation modes (e.g., debug, asan).
+  EXPECT_LE(result->solve_stats.solve_time, absl::Seconds(1));
+}
+
+// We keep the "hard" objective as the primary objective, and add a trivial
+// auxiliary objective (0).
+TEST_P(SimpleMultiObjectiveTest,
+       MultiObjectiveModelWithPrimaryObjectiveTimeLimit) {
+  if (!GetParam().supports_integer_variables) {
+    GTEST_SKIP() << kNoIntegerVariableSupportMessage;
+  }
+  ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
+                       Load23588MiplibInstance());
+  model->AddMaximizationObjective(0, /*priority=*/1);
+  const SolveArguments args = {
+      .parameters = GetParam().parameters,
+      .model_parameters = {
+          .objective_parameters = {{model->primary_objective(),
+                                    {.time_limit = absl::Milliseconds(1)}}}}};
+  const auto result = Solve(*model, GetParam().solver_type, args);
+  if (!GetParam().supports_auxiliary_objectives) {
+    EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
+                                 HasSubstr("multiple objectives")));
+    return;
+  }
+  ASSERT_OK(result);
+  EXPECT_THAT(*result, TerminatesWithLimit(Limit::kTime));
+  // Solvers do not stop very precisely, use a large number to avoid flaky
+  // tests. Do NOT try to fine tune this to be small, it is hard to get right
+  // for all compilation modes (e.g., debug, asan).
+  EXPECT_LE(result->solve_stats.solve_time, absl::Seconds(1));
+}
+
+// We test that, for a non-multi-objective model, we either respect the primary
+// objective time limit if the solver supports multi-objective models, or error
+// otherwise.
+TEST_P(SimpleMultiObjectiveTest,
+       SingleObjectiveModelWithPrimaryObjectiveTimeLimit) {
+  if (!GetParam().supports_auxiliary_objectives) {
+    return;
+  }
+  if (!GetParam().supports_integer_variables) {
+    GTEST_SKIP() << kNoIntegerVariableSupportMessage;
+  }
+  ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
+                       Load23588MiplibInstance());
+  SolveArguments args = {
+      .parameters = GetParam().parameters,
+      .model_parameters = {
+          .objective_parameters = {{model->primary_objective(),
+                                    {.time_limit = absl::Milliseconds(1)}}}}};
+  args.parameters.time_limit = absl::Seconds(10);
+  ASSERT_OK_AND_ASSIGN(const SolveResult result,
+                       Solve(*model, GetParam().solver_type, args));
+  EXPECT_THAT(result, TerminatesWithLimit(Limit::kTime));
+  // Solvers do not stop very precisely, use a large number to avoid flaky
+  // tests. Do NOT try to fine tune this to be small, it is hard to get right
+  // for all compilation modes (e.g., debug, asan).
+  EXPECT_LE(result.solve_stats.solve_time, absl::Seconds(1));
+}
+
+// We refine SingleObjectiveModelWithPrimaryObjectiveTimeLimit to ensure that
+// we take the minimum of the global time limit and the primary objective time
+// limit.
+TEST_P(SimpleMultiObjectiveTest,
+       SingleObjectiveModelTakesMininumFromPrimaryAndGlobalTimeLimits) {
+  if (!GetParam().supports_auxiliary_objectives) {
+    return;
+  }
+  if (!GetParam().supports_integer_variables) {
+    GTEST_SKIP() << kNoIntegerVariableSupportMessage;
+  }
+  ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
+                       Load23588MiplibInstance());
+  SolveArguments args = {
+      .parameters = GetParam().parameters,
+      .model_parameters = {
+          .objective_parameters = {{model->primary_objective(),
+                                    {.time_limit = absl::Seconds(10)}}}}};
+  args.parameters.time_limit = absl::Milliseconds(1);
+  ASSERT_OK_AND_ASSIGN(const SolveResult result,
+                       Solve(*model, GetParam().solver_type, args));
+  EXPECT_THAT(result, TerminatesWithLimit(Limit::kTime));
+  // Solvers do not stop very precisely, use a large number to avoid flaky
+  // tests. Do NOT try to fine tune this to be small, it is hard to get right
+  // for all compilation modes (e.g., debug, asan).
+  EXPECT_LE(result.solve_stats.solve_time, absl::Seconds(1));
+}
+
+// We test that all solvers that do not support multi-objective models error
+// when given primary objective parameters.
+TEST_P(SimpleMultiObjectiveTest,
+       SolverWithoutSupportErrorsWithPrimaryObjectiveParameters) {
+  if (GetParam().supports_auxiliary_objectives) {
+    return;
+  }
+  Model model;
+  const SolveArguments args = {
+      .parameters = GetParam().parameters,
+      .model_parameters = {
+          .objective_parameters = {
+              {model.primary_objective(), {.time_limit = absl::Seconds(10)}}}}};
+  EXPECT_THAT(Solve(model, GetParam().solver_type, args),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("primary_objective_parameters")));
 }
 
 // We start with the single objective model:

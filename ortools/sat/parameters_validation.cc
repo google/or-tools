@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,6 @@
 
 #include <stdint.h>
 
-#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <string>
@@ -55,44 +54,50 @@ namespace sat {
 
 std::string ValidateParameters(const SatParameters& params) {
   // Test that all floating point parameters are not NaN or +/- infinity.
-  TEST_IS_FINITE(random_polarity_ratio);
-  TEST_IS_FINITE(random_branches_ratio);
-  TEST_IS_FINITE(initial_variables_activity);
-  TEST_IS_FINITE(clause_cleanup_ratio);
-  TEST_IS_FINITE(pb_cleanup_ratio);
-  TEST_IS_FINITE(variable_activity_decay);
-  TEST_IS_FINITE(max_variable_activity_value);
-  TEST_IS_FINITE(glucose_max_decay);
-  TEST_IS_FINITE(glucose_decay_increment);
+  TEST_IS_FINITE(absolute_gap_limit);
+  TEST_IS_FINITE(blocking_restart_multiplier);
   TEST_IS_FINITE(clause_activity_decay);
+  TEST_IS_FINITE(clause_cleanup_ratio);
+  TEST_IS_FINITE(cut_active_count_decay);
+  TEST_IS_FINITE(cut_max_active_count_value);
+  TEST_IS_FINITE(feasibility_jump_batch_dtime);
+  TEST_IS_FINITE(glucose_decay_increment);
+  TEST_IS_FINITE(glucose_max_decay);
+  TEST_IS_FINITE(initial_variables_activity);
+  TEST_IS_FINITE(inprocessing_dtime_ratio);
+  TEST_IS_FINITE(inprocessing_minimization_dtime);
+  TEST_IS_FINITE(inprocessing_probing_dtime);
   TEST_IS_FINITE(max_clause_activity_value);
+  TEST_IS_FINITE(max_variable_activity_value);
+  TEST_IS_FINITE(merge_at_most_one_work_limit);
+  TEST_IS_FINITE(merge_no_overlap_work_limit);
+  TEST_IS_FINITE(min_orthogonality_for_lp_constraints);
+  TEST_IS_FINITE(mip_check_precision);
+  TEST_IS_FINITE(mip_drop_tolerance);
+  TEST_IS_FINITE(mip_max_bound);
+  TEST_IS_FINITE(mip_max_valid_magnitude);
+  TEST_IS_FINITE(mip_var_scaling);
+  TEST_IS_FINITE(mip_wanted_precision);
+  TEST_IS_FINITE(pb_cleanup_ratio);
+  TEST_IS_FINITE(presolve_probing_deterministic_time_limit);
+  TEST_IS_FINITE(probing_deterministic_time_limit);
+  TEST_IS_FINITE(propagation_loop_detection_factor);
+  TEST_IS_FINITE(random_branches_ratio);
+  TEST_IS_FINITE(random_polarity_ratio);
+  TEST_IS_FINITE(relative_gap_limit);
   TEST_IS_FINITE(restart_dl_average_ratio);
   TEST_IS_FINITE(restart_lbd_average_ratio);
-  TEST_IS_FINITE(blocking_restart_multiplier);
-  TEST_IS_FINITE(strategy_change_increase_ratio);
-  TEST_IS_FINITE(absolute_gap_limit);
-  TEST_IS_FINITE(relative_gap_limit);
-  TEST_IS_FINITE(probing_deterministic_time_limit);
-  TEST_IS_FINITE(presolve_probing_deterministic_time_limit);
-  TEST_IS_FINITE(propagation_loop_detection_factor);
-  TEST_IS_FINITE(merge_no_overlap_work_limit);
-  TEST_IS_FINITE(merge_at_most_one_work_limit);
-  TEST_IS_FINITE(min_orthogonality_for_lp_constraints);
-  TEST_IS_FINITE(mip_var_scaling);
-  TEST_IS_FINITE(cut_max_active_count_value);
-  TEST_IS_FINITE(cut_active_count_decay);
-  TEST_IS_FINITE(shaving_search_deterministic_time);
-  TEST_IS_FINITE(inprocessing_dtime_ratio);
-  TEST_IS_FINITE(inprocessing_probing_dtime);
-  TEST_IS_FINITE(inprocessing_minimization_dtime);
-  TEST_IS_FINITE(mip_max_bound);
-  TEST_IS_FINITE(mip_wanted_precision);
-  TEST_IS_FINITE(mip_check_precision);
-  TEST_IS_FINITE(mip_max_valid_magnitude);
-  TEST_IS_FINITE(mip_drop_tolerance);
-  TEST_IS_FINITE(shared_tree_worker_objective_split_probability);
   TEST_IS_FINITE(shared_tree_open_leaves_per_worker);
-  TEST_IS_FINITE(feasibility_jump_batch_dtime);
+  TEST_IS_FINITE(shaving_search_deterministic_time);
+  TEST_IS_FINITE(strategy_change_increase_ratio);
+  TEST_IS_FINITE(symmetry_detection_deterministic_time_limit);
+  TEST_IS_FINITE(variable_activity_decay);
+  TEST_IN_RANGE(routing_cut_subset_size_for_tight_binary_relation_bound, 0, 32);
+  TEST_IS_FINITE(routing_cut_dp_effort);
+
+  TEST_IS_FINITE(lns_initial_difficulty);
+  TEST_IS_FINITE(lns_initial_deterministic_limit);
+  TEST_IN_RANGE(lns_initial_difficulty, 0.0, 1.0);
 
   TEST_POSITIVE(at_most_one_max_expansion_size);
 
@@ -103,17 +108,18 @@ std::string ValidateParameters(const SatParameters& params) {
   const int kMaxReasonableParallelism = 10'000;
   TEST_IN_RANGE(num_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(num_search_workers, 0, kMaxReasonableParallelism);
-  TEST_IN_RANGE(shared_tree_num_workers, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(shared_tree_num_workers, -1, kMaxReasonableParallelism);
   TEST_IN_RANGE(interleave_batch_size, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(shared_tree_open_leaves_per_worker, 1,
                 kMaxReasonableParallelism);
+  TEST_IN_RANGE(shared_tree_balance_tolerance, 0,
+                log2(kMaxReasonableParallelism));
 
   // TODO(user): Consider using annotations directly in the proto for these
   // validation. It is however not open sourced.
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
-  TEST_IN_RANGE(shared_tree_worker_objective_split_probability, 0.0, 1.0);
 
   // Feasibility jump.
   TEST_NOT_NAN(feasibility_jump_decay);
@@ -140,13 +146,14 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(lp_primal_tolerance);
   TEST_NON_NEGATIVE(lp_dual_tolerance);
 
-  TEST_NON_NEGATIVE(mip_wanted_precision);
-  TEST_NON_NEGATIVE(max_time_in_seconds);
-  TEST_NON_NEGATIVE(max_deterministic_time);
-  TEST_NON_NEGATIVE(new_constraints_batch_size);
-  TEST_NON_NEGATIVE(probing_deterministic_time_limit);
-  TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(linearization_level);
+  TEST_NON_NEGATIVE(max_deterministic_time);
+  TEST_NON_NEGATIVE(max_time_in_seconds);
+  TEST_NON_NEGATIVE(mip_wanted_precision);
+  TEST_NON_NEGATIVE(new_constraints_batch_size);
+  TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
+  TEST_NON_NEGATIVE(probing_deterministic_time_limit);
+  TEST_NON_NEGATIVE(symmetry_detection_deterministic_time_limit);
 
   if (params.enumerate_all_solutions() &&
       (params.num_search_workers() > 1 || params.num_workers() > 1)) {
@@ -177,17 +184,19 @@ std::string ValidateParameters(const SatParameters& params) {
     }
   }
 
-  const auto strategies = GetNamedParameters(params);
-  for (const std::string& subsolver : params.subsolvers()) {
-    if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
-    if (!strategies.contains(subsolver)) {
-      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+  if (!params.subsolvers().empty() || !params.extra_subsolvers().empty()) {
+    const auto strategies = GetNamedParameters(params);
+    for (const std::string& subsolver : params.subsolvers()) {
+      if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
+      if (!strategies.contains(subsolver)) {
+        return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+      }
     }
-  }
 
-  for (const std::string& subsolver : params.extra_subsolvers()) {
-    if (!strategies.contains(subsolver)) {
-      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+    for (const std::string& subsolver : params.extra_subsolvers()) {
+      if (!strategies.contains(subsolver)) {
+        return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+      }
     }
   }
 

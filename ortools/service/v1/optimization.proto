@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import "ortools/service/v1/mathopt/model.proto";
 import "ortools/service/v1/mathopt/model_parameters.proto";
 import "ortools/service/v1/mathopt/parameters.proto";
 import "ortools/service/v1/mathopt/result.proto";
+import "ortools/service/v1/mathopt/solver_resources.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.ortools.service.v1";
@@ -26,6 +27,7 @@ option csharp_namespace = "Google.OrTools.Service";
 
 // A One Platform API exposing a set of optimization solvers for high-level
 // operations research problems.
+
 service Optimization {
   // Solves the input model and returns the result at once. Use this when you
   // don't need callbacks, incrementality and don't need to track the progress
@@ -43,6 +45,9 @@ message SolveMathOptModelRequest {
 
   // A mathematical representation of the optimization problem to solve.
   mathopt.ModelProto model = 2;
+
+  // Hints on resources requested for the solve.
+  mathopt.SolverResourcesProto resources = 6;
 
   // Parameters to control a single solve. The enable_output parameter is
   // handled specifically. For solvers that support messages callbacks, setting

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -97,11 +97,15 @@ class FilteredHeuristicPathLNSOperator
   void OnStart() override;
 
   bool IncrementPosition() override;
-  bool CurrentRouteIsEmpty() const;
-  void IncrementCurrentRouteToNextNonEmpty();
+  bool RouteIsEmpty(int route) const;
+  int GetNextRoute(int route) const {
+    return route + 1 < num_routes_ ? route + 1 : 0;
+  }
+  int GetFirstNonEmptyRouteAfterCurrentRoute() const;
 
   std::function<int64_t(int64_t)> SetupNextAccessorForNeighbor() override;
 
+  const int num_routes_;
   int current_route_;
   int last_route_;
   bool just_started_;

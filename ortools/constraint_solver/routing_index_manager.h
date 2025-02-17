@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,13 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 
+#include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/routing_types.h"
 
 namespace operations_research {
@@ -47,7 +47,7 @@ namespace operations_research {
 /// indices range between 0 and n-1, where n = number of vehicles * 2 (for start
 /// and end nodes) + number of non-start or end nodes.
 ///
-class RoutingIndexManager {
+class OR_DLL RoutingIndexManager {
  public:
   typedef RoutingNodeIndex NodeIndex;
   static const int64_t kUnassigned;
@@ -96,7 +96,7 @@ class RoutingIndexManager {
   }
   // Same as IndexToNode but for a given vector of indices.
   std::vector<NodeIndex> IndicesToNodes(
-      const std::vector<int64_t>& indices) const;
+      absl::Span<const int64_t> indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
   /// complete.

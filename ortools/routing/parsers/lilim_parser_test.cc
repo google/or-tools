@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,15 +19,9 @@
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
+#define ROOT_DIR "_main/"
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
-
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 void CheckData(const LiLimParser& parser) {
@@ -55,10 +49,9 @@ TEST(LiLimParserTest, LoadNonExistingFile) {
 
 TEST(LiLimParserTest, LoadExistingFile) {
   LiLimParser parser;
-  EXPECT_TRUE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                                     "ortools/routing/parsers"
-                                     "/testdata/pdptw_LRC2_10_6.txt")));
+  EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                             "ortools/routing/parsers"
+                                             "/testdata/pdptw_LRC2_10_6.txt")));
   CheckData(parser);
   // Load a non-existing file to check the parser was cleaned.
   EXPECT_FALSE(parser.LoadFile("doesnotexist.txt"));
@@ -78,12 +71,11 @@ TEST(LiLimParserTest, LoadNonExistingArchive) {
 
 TEST(LiLimParserTest, LoadNonExistingInstance) {
   LiLimParser parser;
-  EXPECT_FALSE(
-      parser.LoadFile("doesnotexist.txt",
-                      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
-                                     ROOT_DIR "ortools/routing/"
+  EXPECT_FALSE(parser.LoadFile("doesnotexist.txt",
+                               file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                              "ortools/routing/"
                                               "/parsers/testdata/lilim.zip")));
 }
 
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

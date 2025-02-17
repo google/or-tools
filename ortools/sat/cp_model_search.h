@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,10 +20,14 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/types.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -56,12 +60,14 @@ class CpModelView {
   BooleanOrIntegerLiteral GreaterOrEqual(int var, int64_t value) const;
   BooleanOrIntegerLiteral LowerOrEqual(int var, int64_t value) const;
   BooleanOrIntegerLiteral MedianValue(int var) const;
+  BooleanOrIntegerLiteral RandomSplit(int var, int64_t lb, int64_t ub) const;
 
  private:
   const CpModelMapping& mapping_;
   const VariablesAssignment& boolean_assignment_;
   const IntegerTrail& integer_trail_;
   const IntegerEncoder& integer_encoder_;
+  mutable absl::BitGenRef random_;
 };
 
 // Constructs the search strategy specified in the given CpModelProto.
@@ -75,7 +81,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
 // Constructs an integer completion search strategy.
 std::function<BooleanOrIntegerLiteral()>
 ConstructIntegerCompletionSearchStrategy(
-    const std::vector<IntegerVariable>& variable_mapping,
+    absl::Span<const IntegerVariable> variable_mapping,
     IntegerVariable objective_var, Model* model);
 
 // Constructs a search strategy that follows the hints from the model.
@@ -96,7 +102,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
 // arguments.
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
+    absl::Span<const IntegerVariable> variable_mapping,
     std::function<BooleanOrIntegerLiteral()> instrumented_strategy,
     Model* model);
 

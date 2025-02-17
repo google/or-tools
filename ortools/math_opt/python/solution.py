@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -164,6 +164,14 @@ class PrimalRay:
         default_factory=dict
     )
 
+    def to_proto(self) -> solution_pb2.PrimalRayProto:
+        """Returns an equivalent proto to this PrimalRay."""
+        return solution_pb2.PrimalRayProto(
+            variable_values=sparse_containers.to_sparse_double_vector_proto(
+                self.variable_values
+            )
+        )
+
 
 def parse_primal_ray(proto: solution_pb2.PrimalRayProto, mod: model.Model) -> PrimalRay:
     """Returns an equivalent PrimalRay from the input proto."""
@@ -277,6 +285,17 @@ class DualRay:
         default_factory=dict
     )
     reduced_costs: Dict[model.Variable, float] = dataclasses.field(default_factory=dict)
+
+    def to_proto(self) -> solution_pb2.DualRayProto:
+        """Returns an equivalent proto to this PrimalRay."""
+        return solution_pb2.DualRayProto(
+            dual_values=sparse_containers.to_sparse_double_vector_proto(
+                self.dual_values
+            ),
+            reduced_costs=sparse_containers.to_sparse_double_vector_proto(
+                self.reduced_costs
+            ),
+        )
 
 
 def parse_dual_ray(proto: solution_pb2.DualRayProto, mod: model.Model) -> DualRay:

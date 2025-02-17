@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,8 +15,14 @@
 //swiglint: disable full-signature
 
 %include "ortools/base/base.i"
+%include "ortools/util/python/proto.i"
 
+// PY_CONVERT_HELPER_* macros.
+%include "ortools/constraint_solver/python/constraint_solver_helpers.i"
+
+%include "ortools/util/python/functions.i"
 %include "ortools/util/python/pair.i"
+%include "ortools/util/python/vector.i"
 
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
@@ -28,10 +34,12 @@
 namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
+class RoutingSearchStatus;
 }  // namespace operations_research
 
 // Include the files we want to wrap a first time.
 %{
+#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -55,6 +63,8 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingResourceClassIndex,
     operations_research::RoutingModel::ResourceClassIndex);
 
+// ============= Type conversions ==============
+
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
@@ -69,7 +79,7 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingSearchParameters,
                  operations_research::RoutingSearchParameters)
 
-// Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
+// Wrap routing_types.h, routing_parameters.h according to the SWIG style guide.
 %ignoreall
 %unignore RoutingTransitCallback1;
 %unignore RoutingTransitCallback2;
@@ -84,9 +94,11 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
 %include "ortools/constraint_solver/routing_parameters.h"
 %unignoreall
 
+%unignore operations_research;
+namespace operations_research {
+
 // %including a .pb.h is frowned upon (for good general reasons), so we
 // have to duplicate the OptionalBoolean enum here to give it to python users.
-namespace operations_research {
 enum OptionalBoolean {
   BOOL_UNSPECIFIED = 0,
   BOOL_FALSE = 2,
@@ -98,6 +110,10 @@ struct FirstSolutionStrategy {
 };
 
 struct LocalSearchMetaheuristic {
+  enum Value {};
+};
+
+struct RoutingSearchStatus {
   enum Value {};
 };
 

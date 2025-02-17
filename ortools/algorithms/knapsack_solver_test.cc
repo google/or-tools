@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -123,6 +123,7 @@ int64_t SolveKnapsackProblem(
     return kInvalidSolution;
   }
 
+#if defined(USE_SCIP)
   const int64_t scip_profit = SolveKnapsackProblemUsingSpecificSolver(
       profit_array, number_of_items, weight_array, capacity_array,
       number_of_dimensions,
@@ -130,6 +131,9 @@ int64_t SolveKnapsackProblem(
   if (scip_profit != generic_profit) {
     return kInvalidSolution;
   }
+#else  // !defined(USE_SCIP)
+#warning SCIP support disable
+#endif  // !defined(USE_SCIP)
 
   const int64_t cpsat_profit = SolveKnapsackProblemUsingSpecificSolver(
       profit_array, number_of_items, weight_array, capacity_array,

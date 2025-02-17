@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,13 +28,17 @@ message VariablesProto {
   // Must be nonnegative and strictly increasing. The max(int64) value can't be
   // used.
   repeated int64 ids = 1;
+
   // Should have length equal to #variables, values in [-inf, inf).
   repeated double lower_bounds = 2;
+
   // Should have length equal to #variables, values in (-inf, inf].
   repeated double upper_bounds = 3;
+
   // Should have length equal to #variables. Value is false for continuous
   // variables and true for integer variables.
   repeated bool integers = 4;
+
   // If not set, assumed to be all empty strings. Otherwise, should have length
   // equal to #variables.
   //
@@ -92,10 +96,13 @@ message LinearConstraintsProto {
   // Must be nonnegative and strictly increasing. The max(int64) value can't be
   // used.
   repeated int64 ids = 1;
+
   // Should have length equal to #linear constraints, values in [-inf, inf).
   repeated double lower_bounds = 2;
+
   // Should have length equal to #linear constraints, values in (-inf, inf].
   repeated double upper_bounds = 3;
+
   // If not set, assumed to be all empty strings. Otherwise, should have length
   // equal to #linear constraints.
   //
@@ -258,7 +265,6 @@ message ModelProto {
   // Map key IDs must be in [0, max(int64)). Each priority, and each nonempty
   // name, must be unique and also distinct from the primary `objective`.
   map<int64, ObjectiveProto> auxiliary_objectives = 10;
-
   LinearConstraintsProto linear_constraints = 4;
 
   // The variable coefficients for the linear constraints.

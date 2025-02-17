@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,6 +20,7 @@ add_subdirectory(constraints)
 add_subdirectory(cpp)
 add_subdirectory(io)
 add_subdirectory(labs)
+add_subdirectory(solver_tests)
 add_subdirectory(solvers)
 add_subdirectory(storage)
 add_subdirectory(validators)
@@ -28,6 +29,7 @@ set(NAME ${PROJECT_NAME}_math_opt)
 add_library(${NAME} OBJECT)
 target_sources(${NAME} PUBLIC
   $<TARGET_OBJECTS:${NAME}_core>
+  $<TARGET_OBJECTS:${NAME}_core_c_api>
   $<TARGET_OBJECTS:${NAME}_cpp>
   $<TARGET_OBJECTS:${NAME}_io>
   $<TARGET_OBJECTS:${NAME}_labs>

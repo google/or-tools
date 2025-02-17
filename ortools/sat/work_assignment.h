@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,9 +15,9 @@
 #define OR_TOOLS_SAT_WORK_ASSIGNMENT_H_
 
 #include <stdint.h>
+#include <sys/stat.h>
 
 #include <array>
-#include <cmath>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -37,8 +37,10 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/restart.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -58,6 +60,8 @@ class ProtoLiteral {
   ProtoLiteral Negated() const {
     return ProtoLiteral(NegatedRef(proto_var_), -lb_ + 1);
   }
+  int proto_var() const { return proto_var_; }
+  IntegerValue lb() const { return lb_; }
   bool operator==(const ProtoLiteral& other) const {
     return proto_var_ == other.proto_var_ && lb_ == other.lb_;
   }
@@ -69,8 +73,15 @@ class ProtoLiteral {
 
   // Note you should only decode integer literals at the root level.
   Literal Decode(CpModelMapping*, IntegerEncoder*) const;
+
+  // Enodes a literal as a ProtoLiteral. This can encode literals that occur in
+  // the proto model, and also integer bounds literals.
   static std::optional<ProtoLiteral> Encode(Literal, CpModelMapping*,
                                             IntegerEncoder*);
+
+  // As above, but will only encode literals that are boolean variables or their
+  // negations (i.e. not integer bounds literals).
+  static std::optional<ProtoLiteral> EncodeLiteral(Literal, CpModelMapping*);
 
  private:
   IntegerLiteral DecodeInteger(CpModelMapping*) const;
@@ -92,6 +103,8 @@ class ProtoLiteral {
 // implications may be propagated.
 class ProtoTrail {
  public:
+  ProtoTrail();
+
   // Adds a new assigned level to the trail.
   void PushLevel(const ProtoLiteral& decision, IntegerValue objective_lb,
                  int node_id);
@@ -136,15 +149,26 @@ class ProtoTrail {
   absl::Span<const ProtoLiteral> Literals() const { return literals_; }
 
   const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
-  void SetPhase(absl::Span<const ProtoLiteral> phase) {
-    target_phase_.clear();
-    for (const ProtoLiteral& lit : phase) {
-      if (implication_level_.contains(lit)) return;
+  void ClearTargetPhase() { target_phase_.clear(); }
+  // Appends a literal to the target phase, returns false if the phase is full.
+  bool AddPhase(const ProtoLiteral& lit) {
+    if (target_phase_.size() >= kMaxPhaseSize) return false;
+    if (!implication_level_.contains(lit)) {
       target_phase_.push_back(lit);
+    }
+    return true;
+  }
+  void SetTargetPhase(absl::Span<const ProtoLiteral> phase) {
+    ClearTargetPhase();
+    for (const ProtoLiteral& lit : phase) {
+      if (!AddPhase(lit)) break;
     }
   }
 
  private:
+  // 256 ProtoLiterals take up 4KiB
+  static constexpr int kMaxPhaseSize = 256;
+
   std::vector<ProtoLiteral>& MutableImplications(int level) {
     return implications_[level - 1];
   }
@@ -203,12 +227,13 @@ class SharedTreeManager {
   }
 
  private:
-  // Because it is quite difficult to get a flat_hash_set to release memory,
+  // Because it is quite difficult to get a flat_hash_map to release memory,
   // we store info we need only for open nodes implications via a unique_ptr.
   // Note to simplify code, the root will always have a NodeTrailInfo after it
   // is closed.
   struct NodeTrailInfo {
-    absl::flat_hash_set<ProtoLiteral> implications;
+    // A map from literal to the best lower bound proven at this node.
+    absl::flat_hash_map<int, IntegerValue> implications;
     // This is only non-empty for nodes where all but one descendent is closed
     // (i.e. mostly leaves).
     std::vector<ProtoLiteral> phase;
@@ -294,6 +319,11 @@ class SharedTreeWorker {
   bool NextDecision(LiteralIndex* decision_index);
   void MaybeProposeSplit();
   bool ShouldReplaceSubtree();
+  bool FinishedMinRestarts() const {
+    return assigned_tree_.MaxLevel() > 0 &&
+           restart_policy_->NumRestarts() >=
+               parameters_->shared_tree_worker_min_restarts_per_subtree();
+  }
 
   // Add any implications to the clause database for the current level.
   // Return true if any new information was added.
@@ -320,14 +350,11 @@ class SharedTreeWorker {
   LevelZeroCallbackHelper* level_zero_callbacks_;
   RevIntRepository* reversible_int_repository_;
 
-  int64_t num_restarts_ = 0;
   int64_t num_trees_ = 0;
 
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
   std::vector<std::vector<Literal>> assigned_tree_implications_;
-  // How many restarts had happened when the current tree was assigned?
-  int64_t tree_assignment_restart_ = -1;
 
   // True if the last decision may split the assigned tree and has not yet been
   // proposed to the SharedTreeManager.
@@ -341,6 +368,7 @@ class SharedTreeWorker {
   // If a tree has worse LBD than the average over the last few trees we replace
   // the tree.
   RunningAverage assigned_tree_lbds_;
+  double earliest_replacement_dtime_ = 0;
 
   // Stores the trail index of the last implication added to assigned_tree_.
   int reversible_trail_index_ = 0;

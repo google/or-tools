@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,17 +20,11 @@ using System.Collections;
 using System.Collections.Generic;
 %}
 
-%include "enumsimple.swg"
-
-%include "exception.i"
-%include "std_vector.i"
-%include "std_common.i"
-%include "std_string.i"
-
 %include "ortools/base/base.i"
-%include "ortools/util/csharp/absl_string_view.i"
+%include "enumsimple.swg"
+%import "ortools/util/csharp/absl_string_view.i"
 %import "ortools/util/csharp/vector.i"
-%include "ortools/util/csharp/proto.i"
+%import "ortools/util/csharp/proto.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -71,6 +65,16 @@ struct FailureProtect {
   }
 };
 %}
+
+%template(IntVector) std::vector<int>;
+%template(IntVectorVector) std::vector<std::vector<int> >;
+VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
+
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
@@ -126,27 +130,9 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // ############ END DUPLICATED CODE BLOCK ############
 
-%template(IntVector) std::vector<int>;
-%template(IntVectorVector) std::vector<std::vector<int> >;
-VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
-//REGULAR_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
-
-%template(Int64Vector) std::vector<int64_t>;
-%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
-VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
-//REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
-
 %apply int64_t * INOUT { int64_t * marker };
 %apply int64_t * OUTPUT { int64_t *l, int64_t *u, int64_t *value };
 
-// Since knapsack_solver.i and constraint_solver.i both need to
-// instantiate the vector template, but their csharp_wrap.cc
-// files end up being compiled into the same .dll, we must name the
-// vector template differently.
-
-// TupleSet depends on the previous typemaps
 %include "ortools/util/csharp/tuple_set.i"
 
 // Types in Proxy class:
@@ -300,6 +286,9 @@ namespace operations_research {
 // Ignored:
 %ignore SequenceVarElement::LoadFromProto;
 %ignore SequenceVarElement::WriteToProto;
+
+// ModelVisitor
+%unignore ModelVisitor;
 
 // SolutionCollector
 %feature("director") SolutionCollector;
@@ -665,6 +654,12 @@ namespace operations_research {
 // Methods:
 %rename (SequenceVar) DisjunctiveConstraint::MakeSequenceVar;
 
+// ModelCache
+%unignore ModelCache;
+
+// ObjectiveMonitor
+%unignore ObjectiveMonitor;
+
 // Pack
 %unignore Pack;
 %typemap(cscode) Pack %{
@@ -694,6 +689,12 @@ namespace operations_research {
 %ignore PropagationBaseObject::EnqueueAll;
 %ignore PropagationBaseObject::set_action_on_fail;
 
+// PropagationMonitor
+%unignore PropagationMonitor;
+
+// RevPartialSequence
+%unignore RevPartialSequence;
+
 // SearchMonitor
 %feature("director") SearchMonitor;
 %unignore SearchMonitor;
@@ -703,6 +704,9 @@ namespace operations_research {
 %unignore SearchLimit;
 // Methods:
 %rename (IsCrossed) SearchLimit::crossed;
+
+// ImprovementSearchLimit
+%unignore ImprovementSearchLimit;
 
 // RegularLimit
 %feature("director") RegularLimit;
@@ -730,6 +734,9 @@ namespace operations_research {
 %unignore LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Reset;
 %unignore LocalSearchOperator::Start;
+
+// LocalSearchOperatorState
+%unignore LocalSearchOperatorState;
 
 // IntVarLocalSearchOperator
 %feature("director") IntVarLocalSearchOperator;
@@ -939,6 +946,10 @@ PROTO_INPUT(operations_research::CpModel,
             proto)
 PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
+
+// Add needed import to operations_research_constraint_solver.cs
+%pragma(csharp) moduleimports=%{
+%}
 
 namespace operations_research {
 // Globals

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,8 +29,9 @@
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/intervals.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/theta_tree.h"
 #include "ortools/sat/util.h"
@@ -76,7 +77,7 @@ CumulativeEnergyConstraint::CumulativeEnergyConstraint(
 
 void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  helper_->WatchAllTasks(id, watcher);
+  helper_->WatchAllTasks(id);
   watcher->SetPropagatorPriority(id, 2);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
@@ -85,7 +86,7 @@ bool CumulativeEnergyConstraint::Propagate() {
   // This only uses one time direction, but the helper might be used elsewhere.
   // TODO(user): just keep the current direction?
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
-  demands_->CacheAllEnergyValues();
+  if (!demands_->CacheAllEnergyValues()) return true;
 
   const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
   // TODO(user): force capacity_max >= 0, fail/remove optionals when 0.
@@ -108,6 +109,14 @@ bool CumulativeEnergyConstraint::Propagate() {
   theta_tree_.Reset(num_events);
 
   bool tree_has_mandatory_intervals = false;
+
+  const IntegerValue start_end_magnitude =
+      std::max(IntTypeAbs(helper_->EndMax(
+                   helper_->TaskByDecreasingEndMax().front().task_index)),
+               IntTypeAbs(helper_->TaskByIncreasingStartMin().front().time));
+  if (ProdOverflow(start_end_magnitude, capacity_max)) {
+    return true;
+  }
 
   // Main loop: insert tasks by increasing end_max, check for overloads.
   const auto by_decreasing_end_max = helper_->TaskByDecreasingEndMax();
@@ -421,7 +430,7 @@ CumulativeDualFeasibleEnergyConstraint::
 void CumulativeDualFeasibleEnergyConstraint::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  helper_->WatchAllTasks(id, watcher);
+  helper_->WatchAllTasks(id);
   watcher->SetPropagatorPriority(id, 3);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
@@ -506,7 +515,7 @@ bool CumulativeDualFeasibleEnergyConstraint::FindAndPropagateConflict(
 
 bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
-  demands_->CacheAllEnergyValues();
+  if (!demands_->CacheAllEnergyValues()) return true;
 
   const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
   if (capacity_max <= 0) return true;
@@ -528,12 +537,20 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
   if (num_events == 0) return true;
   ++num_calls_;
 
-  const IntegerValue largest_window =
-      helper_->EndMax(helper_->TaskByDecreasingEndMax().front().task_index) -
-      helper_->TaskByIncreasingStartMin().front().time;
+  const IntegerValue start_end_magnitude =
+      std::max(IntTypeAbs(helper_->EndMax(
+                   helper_->TaskByDecreasingEndMax().front().task_index)),
+               IntTypeAbs(helper_->TaskByIncreasingStartMin().front().time));
+  if (start_end_magnitude == 0) return true;
+
+  const IntegerValue max_energy =
+      CapProdI(CapProdI(start_end_magnitude, capacity_max), num_events);
+  if (max_energy == kMaxIntegerValue) {
+    return true;
+  }
+
   const IntegerValue max_for_fixpoint_inverse =
-      std::numeric_limits<IntegerValue>::max() /
-      (num_events * capacity_max * largest_window);
+      std::numeric_limits<IntegerValue>::max() / max_energy;
 
   theta_tree_.Reset(num_events);
 
@@ -567,6 +584,26 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
        ::gtl::reversed_view(by_decreasing_end_max)) {
     if (task_to_start_event_[current_task] == -1) continue;
     if (!helper_->IsPresent(current_task)) continue;
+    if (helper_->SizeMin(current_task) == 0) continue;
+    if (demands_->DemandMin(current_task) == 0) continue;
+
+    if (demands_->DemandMin(current_task) > capacity_max) {
+      // Obvious conflict, we check here since we assume the demand for each
+      // task to be lower than the capacity in the code downstream.
+      demands_->AddDemandMinReason(current_task);
+
+      if (capacity_.var != kNoIntegerVariable) {
+        helper_->MutableIntegerReason()->push_back(
+            integer_trail_->UpperBoundAsLiteral(capacity_));
+      }
+
+      const AffineExpression size = helper_->Sizes()[current_task];
+      if (size.var != kNoIntegerVariable) {
+        helper_->MutableIntegerReason()->push_back(size.GreaterOrEqual(1));
+      }
+
+      return helper_->ReportConflict();
+    }
 
     // Add the current task to the tree.
     {

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,13 +28,13 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
-#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -797,7 +797,7 @@ void ProductDetector::UpdateRLTMaps(
 
 // TODO(user): limit work if too many ternary.
 void ProductDetector::InitializeBooleanRLTCuts(
-    const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars,
+    absl::Span<const IntegerVariable> lp_vars,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
   // TODO(user): Maybe we shouldn't reconstruct this every time, but it is hard
   // in case of multiple lps to make sure we don't use variables not in the lp
@@ -808,14 +808,19 @@ void ProductDetector::InitializeBooleanRLTCuts(
   // We will list all interesting multiplicative candidate for each variable.
   bool_rlt_candidates_.clear();
   const int size = ternary_clauses_with_view_.size();
+  if (size == 0) return;
+
+  is_in_lp_vars_.resize(integer_trail_->NumIntegerVariables().value());
+  for (const IntegerVariable var : lp_vars) is_in_lp_vars_.Set(var);
+
   for (int i = 0; i < size; i += 3) {
     const IntegerVariable var1 = ternary_clauses_with_view_[i];
     const IntegerVariable var2 = ternary_clauses_with_view_[i + 1];
     const IntegerVariable var3 = ternary_clauses_with_view_[i + 2];
 
-    if (!lp_vars.contains(PositiveVariable(var1))) continue;
-    if (!lp_vars.contains(PositiveVariable(var2))) continue;
-    if (!lp_vars.contains(PositiveVariable(var3))) continue;
+    if (!is_in_lp_vars_[PositiveVariable(var1)]) continue;
+    if (!is_in_lp_vars_[PositiveVariable(var2)]) continue;
+    if (!is_in_lp_vars_[PositiveVariable(var3)]) continue;
 
     // If we have l1 + l2 + l3 >= 1, then for all (i, j) pair we have
     // !li * !lj <= lk. We are looking for violation like this.
@@ -830,6 +835,10 @@ void ProductDetector::InitializeBooleanRLTCuts(
     UpdateRLTMaps(lp_values, NegationOf(var2), 1.0 - lp2, NegationOf(var3),
                   1.0 - lp3, var1, lp1);
   }
+
+  // Clear.
+  // TODO(user): Just switch to memclear() when dense.
+  for (const IntegerVariable var : lp_vars) is_in_lp_vars_.ClearBucket(var);
 }
 
 }  // namespace sat

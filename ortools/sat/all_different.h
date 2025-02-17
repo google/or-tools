@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,15 +16,13 @@
 
 #include <cstdint>
 #include <functional>
-#include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
@@ -36,7 +34,7 @@ namespace sat {
 // encodes all the variables and simply enforces a <= 1 constraint on each
 // possible values.
 std::function<void(Model*)> AllDifferentBinary(
-    const std::vector<IntegerVariable>& vars);
+    absl::Span<const IntegerVariable> vars);
 
 // Enforces that the given tuple of variables takes different values.
 // Same as AllDifferentBinary() but use a different propagator that only enforce
@@ -47,7 +45,7 @@ std::function<void(Model*)> AllDifferentBinary(
 // this will not remove already taken values from inside a domain, but it will
 // propagates more the domain bounds.
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable>& vars);
+    absl::Span<const IntegerVariable> vars);
 std::function<void(Model*)> AllDifferentOnBounds(
     const std::vector<AffineExpression>& expressions);
 
@@ -62,14 +60,19 @@ std::function<void(Model*)> AllDifferentOnBounds(
 //
 // This will fully encode variables.
 std::function<void(Model*)> AllDifferentAC(
-    const std::vector<IntegerVariable>& variables);
+    absl::Span<const IntegerVariable> variables);
 
 // Implementation of AllDifferentAC().
 class AllDifferentConstraint : PropagatorInterface {
  public:
-  AllDifferentConstraint(std::vector<IntegerVariable> variables,
-                         IntegerEncoder* encoder, Trail* trail,
-                         IntegerTrail* integer_trail);
+  AllDifferentConstraint(absl::Span<const IntegerVariable> variables,
+                         Model* model);
+
+  // In a circuit, the successor of all node must be "different".
+  // Thus this propagator can also be used in this context.
+  AllDifferentConstraint(int num_nodes, absl::Span<const int> tails,
+                         absl::Span<const int> heads,
+                         absl::Span<const Literal> literals, Model* model);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -85,27 +88,23 @@ class AllDifferentConstraint : PropagatorInterface {
   // or manipulate it to create what-if scenarios without modifying successor_.
   bool MakeAugmentingPath(int start);
 
-  // Accessors to the cache of literals.
-  inline LiteralIndex VariableLiteralIndexOf(int x, int64_t value);
-  inline bool VariableHasPossibleValue(int x, int64_t value);
-
   // This caches all literals of the fully encoded variables.
   // Values of a given variable are 0-indexed using offsets variable_min_value_,
   // the set of all values is globally offset using offset min_all_values_.
   // TODO(user): compare this encoding to a sparser hash_map encoding.
   const int num_variables_;
   const std::vector<IntegerVariable> variables_;
-  int64_t min_all_values_;
-  int64_t num_all_values_;
-  std::vector<int64_t> variable_min_value_;
-  std::vector<int64_t> variable_max_value_;
-  std::vector<std::vector<LiteralIndex>> variable_literal_index_;
+
+  // Note that we remap all value into [0, num_values_) in a "dense" way.
+  std::vector<std::vector<std::pair<int, Literal>>>
+      variable_to_possible_values_;
+  int64_t num_values_;
 
   // Internal state of MakeAugmentingPath().
   // value_to_variable_ and variable_to_value_ represent the current assignment;
   // -1 means not assigned. Otherwise,
   // variable_to_value_[var] = value <=> value_to_variable_[value] = var.
-  std::vector<std::vector<int>> successor_;
+  CompactVectorVector<int> successor_;
   std::vector<bool> value_visited_;
   std::vector<bool> variable_visited_;
   std::vector<int> value_to_variable_;
@@ -130,7 +129,7 @@ class AllDifferentConstraint : PropagatorInterface {
   // part in the alternating cycle, and filter with only the SCC decomposition.
   // When num_variables_ == num_all_values_, the dummy node is useless,
   // we add it anyway to simplify the code.
-  std::vector<std::vector<int>> residual_graph_successors_;
+  CompactVectorVector<int> residual_graph_successors_;
   std::vector<int> component_number_;
 
   Trail* trail_;
@@ -152,7 +151,7 @@ class AllDifferentConstraint : PropagatorInterface {
 // https://cs.uwaterloo.ca/~vanbeek/Publications/ijcai03_TR.pdf
 class AllDifferentBoundsPropagator : public PropagatorInterface {
  public:
-  AllDifferentBoundsPropagator(const std::vector<AffineExpression>& expressions,
+  AllDifferentBoundsPropagator(absl::Span<const AffineExpression> expressions,
                                IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.

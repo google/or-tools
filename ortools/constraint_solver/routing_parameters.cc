@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
@@ -25,6 +26,7 @@
 #include "google/protobuf/duration.pb.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/proto_enum_utils.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -32,6 +34,7 @@
 #include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/testing_utils.h"
@@ -55,11 +58,27 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   IteratedLocalSearchParameters ils;
   ils.set_perturbation_strategy(PerturbationStrategy::RUIN_AND_RECREATE);
   RuinRecreateParameters* rr = ils.mutable_ruin_recreate_parameters();
-  rr->set_ruin_strategy(RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL);
+  // NOTE: As of 07/2024, we no longer add any default ruin strategies to the
+  // default RuinRecreateParameters, because since ruin_strategies is a repeated
+  // field, it will only be appended to when merging with a proto containing
+  // this field.
+  // A ruin strategy can be added as follows.
+  // rr->add_ruin_strategies()
+  //     ->mutable_spatially_close_routes()
+  //     ->set_num_ruined_routes(2);
+  rr->set_ruin_composition_strategy(RuinCompositionStrategy::UNSET);
   rr->set_recreate_strategy(FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
-  rr->set_num_ruined_routes(2);
+  rr->set_route_selection_neighbors_ratio(1.0);
+  rr->set_route_selection_min_neighbors(10);
+  rr->set_route_selection_max_neighbors(100);
   ils.set_improve_perturbed_solution(true);
   ils.set_acceptance_strategy(AcceptanceStrategy::GREEDY_DESCENT);
+  SimulatedAnnealingParameters* sa =
+      ils.mutable_simulated_annealing_parameters();
+  sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::EXPONENTIAL);
+  sa->set_initial_temperature(100.0);
+  sa->set_final_temperature(0.01);
+  sa->set_automatic_temperatures(false);
   return ils;
 }
 
@@ -71,7 +90,6 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_savings_max_memory_usage_bytes(6e9);
   p.set_savings_add_reverse_arcs(false);
   p.set_savings_arc_coefficient(1);
-  p.set_savings_parallel_routes(false);
   p.set_cheapest_insertion_farthest_seeds_ratio(0);
   p.set_cheapest_insertion_first_solution_neighbors_ratio(1);
   p.set_cheapest_insertion_first_solution_min_neighbors(1);
@@ -103,11 +121,15 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_tsp_opt(BOOL_FALSE);
   o->set_use_make_active(BOOL_TRUE);
   o->set_use_relocate_and_make_active(BOOL_FALSE);  // costly if true by default
+  o->set_use_exchange_and_make_active(BOOL_FALSE);  // very costly
+  o->set_use_exchange_path_start_ends_and_make_active(BOOL_FALSE);
   o->set_use_make_inactive(BOOL_TRUE);
   o->set_use_make_chain_inactive(BOOL_TRUE);
   o->set_use_swap_active(BOOL_TRUE);
+  o->set_use_swap_active_chain(BOOL_TRUE);
   o->set_use_extended_swap_active(BOOL_FALSE);
   o->set_use_shortest_path_swap_active(BOOL_TRUE);
+  o->set_use_shortest_path_two_opt(BOOL_TRUE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
   o->set_use_path_lns(BOOL_FALSE);
   o->set_use_full_path_lns(BOOL_FALSE);
@@ -126,10 +148,12 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_use_multi_armed_bandit_concatenate_operators(false);
   p.set_multi_armed_bandit_compound_operator_memory_coefficient(0.04);
   p.set_multi_armed_bandit_compound_operator_exploration_coefficient(1e12);
+  p.set_max_swap_active_chain_size(10);
   p.set_relocate_expensive_chain_num_arcs_to_consider(4);
   p.set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
   p.set_heuristic_close_nodes_lns_num_nodes(5);
   p.set_local_search_metaheuristic(LocalSearchMetaheuristic::AUTOMATIC);
+  p.set_num_max_local_optima_before_metaheuristic_switch(200);
   p.set_guided_local_search_lambda_coefficient(0.1);
   p.set_guided_local_search_reset_penalties_on_new_best_solution(false);
   p.set_use_depth_first_search(false);
@@ -189,11 +213,15 @@ RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
   o->set_use_tsp_opt(BOOL_FALSE);
   o->set_use_make_active(BOOL_FALSE);
   o->set_use_relocate_and_make_active(BOOL_FALSE);
+  o->set_use_exchange_and_make_active(BOOL_FALSE);
+  o->set_use_exchange_path_start_ends_and_make_active(BOOL_FALSE);
   o->set_use_make_inactive(BOOL_FALSE);
   o->set_use_make_chain_inactive(BOOL_FALSE);
   o->set_use_swap_active(BOOL_FALSE);
+  o->set_use_swap_active_chain(BOOL_FALSE);
   o->set_use_extended_swap_active(BOOL_FALSE);
   o->set_use_shortest_path_swap_active(BOOL_FALSE);
+  o->set_use_shortest_path_two_opt(BOOL_FALSE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
   o->set_use_path_lns(BOOL_FALSE);
   o->set_use_full_path_lns(BOOL_FALSE);
@@ -229,6 +257,185 @@ bool IsValidNonNegativeDuration(const google::protobuf::Duration& d) {
   return status_or_duration.ok() &&
          status_or_duration.value() >= absl::ZeroDuration();
 }
+
+// Searches for errors in ILS parameters and appends them to the given `errors`
+// vector.
+void FindErrorsInIteratedLocalSearchParameters(
+    const RoutingSearchParameters& search_parameters,
+    std::vector<std::string>& errors) {
+  using absl::StrCat;
+  if (!search_parameters.use_iterated_local_search()) {
+    return;
+  }
+
+  if (!search_parameters.has_iterated_local_search_parameters()) {
+    errors.emplace_back(
+        "use_iterated_local_search is true but "
+        "iterated_local_search_parameters are missing.");
+    return;
+  }
+
+  const IteratedLocalSearchParameters& ils =
+      search_parameters.iterated_local_search_parameters();
+
+  if (ils.perturbation_strategy() == PerturbationStrategy::UNSET) {
+    errors.emplace_back(
+        StrCat("Invalid value for "
+               "iterated_local_search_parameters.perturbation_strategy: ",
+               ils.perturbation_strategy()));
+  }
+
+  if (ils.perturbation_strategy() == PerturbationStrategy::RUIN_AND_RECREATE) {
+    if (!ils.has_ruin_recreate_parameters()) {
+      errors.emplace_back(StrCat(
+          "iterated_local_search_parameters.perturbation_strategy is ",
+          PerturbationStrategy::RUIN_AND_RECREATE,
+          " but iterated_local_search_parameters.ruin_recreate_parameters are "
+          "missing."));
+      return;
+    }
+
+    const RuinRecreateParameters& rr = ils.ruin_recreate_parameters();
+
+    if (rr.ruin_strategies().empty()) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                 "ruin_strategies is empty"));
+    }
+
+    if (rr.ruin_strategies().size() > 1 &&
+        rr.ruin_composition_strategy() == RuinCompositionStrategy::UNSET) {
+      errors.emplace_back(StrCat(
+          "iterated_local_search_parameters.ruin_recreate_parameters."
+          "ruin_composition_strategy cannot be unset when more than one ruin "
+          "strategy is defined"));
+    }
+
+    for (const auto& ruin : rr.ruin_strategies()) {
+      if (ruin.strategy_case() == RuinStrategy::kSpatiallyCloseRoutes &&
+          ruin.spatially_close_routes().num_ruined_routes() == 0) {
+        errors.emplace_back(StrCat(
+            "iterated_local_search_parameters.ruin_recreate_parameters."
+            "ruin_strategy is set to SpatiallyCloseRoutesRuinStrategy"
+            " but spatially_close_routes.num_ruined_routes is 0 (should be "
+            "strictly positive)"));
+      } else if (ruin.strategy_case() == RuinStrategy::kRandomWalk &&
+                 ruin.random_walk().num_removed_visits() == 0) {
+        errors.emplace_back(
+            StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                   "ruin_strategy is set to RandomWalkRuinStrategy"
+                   " but random_walk.num_removed_visits is 0 (should be "
+                   "strictly positive)"));
+      } else if (ruin.strategy_case() == RuinStrategy::kSisr) {
+        if (ruin.sisr().avg_num_removed_visits() == 0) {
+          errors.emplace_back(
+              "iterated_local_search_parameters.ruin_recreate_parameters."
+              "ruin is set to SISRRuinStrategy"
+              " but sisr.avg_num_removed_visits is 0 (should be strictly "
+              "positive)");
+        }
+        if (ruin.sisr().max_removed_sequence_size() == 0) {
+          errors.emplace_back(
+              "iterated_local_search_parameters.ruin_recreate_parameters.ruin "
+              "is set to SISRRuinStrategy but "
+              "sisr.max_removed_sequence_size is 0 (should be strictly "
+              "positive)");
+        }
+        if (ruin.sisr().bypass_factor() < 0 ||
+            ruin.sisr().bypass_factor() > 1) {
+          errors.emplace_back(StrCat(
+              "iterated_local_search_parameters.ruin_recreate_parameters."
+              "ruin is set to SISRRuinStrategy"
+              " but sisr.bypass_factor is not in [0, 1]"));
+        }
+      }
+    }
+
+    if (const double ratio = rr.route_selection_neighbors_ratio();
+        std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+      errors.emplace_back(
+          StrCat("Invalid "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_neighbors_ratio: ",
+                 ratio));
+    }
+    if (rr.route_selection_min_neighbors() == 0) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_min_neighbors must be positive"));
+    }
+    if (rr.route_selection_min_neighbors() >
+        rr.route_selection_max_neighbors()) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_min_neighbors cannot be greater than "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_max_neighbors"));
+    }
+
+    if (rr.recreate_strategy() == FirstSolutionStrategy::UNSET) {
+      errors.emplace_back(
+          StrCat("Invalid value for "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "recreate_strategy: ",
+                 rr.recreate_strategy()));
+    }
+  }
+
+  if (ils.acceptance_strategy() == AcceptanceStrategy::UNSET) {
+    errors.emplace_back(
+        StrCat("Invalid value for "
+               "iterated_local_search_parameters.acceptance_strategy: ",
+               ils.acceptance_strategy()));
+  }
+
+  if (ils.acceptance_strategy() == AcceptanceStrategy::SIMULATED_ANNEALING) {
+    if (!ils.has_simulated_annealing_parameters()) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.acceptance_strategy is ",
+                 AcceptanceStrategy::SIMULATED_ANNEALING,
+                 " but "
+                 "iterated_local_search_parameters.simulated_annealing_"
+                 "parameters are missing."));
+      return;
+    }
+
+    const SimulatedAnnealingParameters& sa_params =
+        ils.simulated_annealing_parameters();
+
+    if (sa_params.cooling_schedule_strategy() ==
+        CoolingScheduleStrategy::UNSET) {
+      errors.emplace_back(
+          StrCat("Invalid value for "
+                 "iterated_local_search_parameters.simulated_annealing_"
+                 "parameters.cooling_schedule_strategy: ",
+                 sa_params.cooling_schedule_strategy()));
+    }
+
+    if (!sa_params.automatic_temperatures()) {
+      if (sa_params.initial_temperature() < sa_params.final_temperature()) {
+        errors.emplace_back(
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "initial_temperature cannot be lower than "
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "final_temperature.");
+      }
+
+      if (sa_params.initial_temperature() < 1e-9) {
+        errors.emplace_back(
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "initial_temperature cannot be lower than 1e-9.");
+      }
+
+      if (sa_params.final_temperature() < 1e-9) {
+        errors.emplace_back(
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "final_temperature cannot be lower than 1e-9.");
+      }
+    }
+  }
+}
+
 }  // namespace
 
 std::string FindErrorInRoutingSearchParameters(
@@ -324,6 +531,26 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
         "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
         ". Must be greater or equal to 1."));
   }
+  {
+    absl::flat_hash_map<RoutingSearchParameters::InsertionSortingProperty, int>
+        sorting_properties_map;
+    for (const RoutingSearchParameters::InsertionSortingProperty property :
+         REPEATED_ENUM_ADAPTER(search_parameters,
+                               local_cheapest_insertion_sorting_properties)) {
+      if (property == RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED) {
+        errors.emplace_back(
+            StrCat("Invalid local cheapest insertion sorting property: ",
+                   RoutingSearchParameters::InsertionSortingProperty_Name(
+                       RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED)));
+      }
+      const int occurrences = sorting_properties_map[property]++;
+      if (occurrences == 2) {
+        errors.emplace_back(StrCat(
+            "Duplicate local cheapest insertion sorting property: ",
+            RoutingSearchParameters::InsertionSortingProperty_Name(property)));
+      }
+    }
+  }
   if (const double ratio = search_parameters.ls_operator_neighbors_ratio();
       std::isnan(ratio) || ratio <= 0 || ratio > 1) {
     errors.emplace_back(StrCat("Invalid ls_operator_neighbors_ratio: ", ratio));
@@ -376,12 +603,14 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
   if (const int64_t lim = search_parameters.solution_limit(); lim < 1)
     errors.emplace_back(StrCat("Invalid solution_limit: ", lim));
   if (!IsValidNonNegativeDuration(search_parameters.time_limit())) {
-    errors.emplace_back("Invalid time_limit: " +
-                        search_parameters.time_limit().ShortDebugString());
+    errors.emplace_back(
+        "Invalid time_limit: " +
+        ProtobufShortDebugString(search_parameters.time_limit()));
   }
   if (!IsValidNonNegativeDuration(search_parameters.lns_time_limit())) {
-    errors.emplace_back("Invalid lns_time_limit: " +
-                        search_parameters.lns_time_limit().ShortDebugString());
+    errors.emplace_back(
+        "Invalid lns_time_limit: " +
+        ProtobufShortDebugString(search_parameters.lns_time_limit()));
   }
   if (const double ratio = search_parameters.secondary_ls_time_limit_ratio();
       std::isnan(ratio) || ratio < 0 || ratio >= 1) {
@@ -393,10 +622,34 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     errors.emplace_back(StrCat("Invalid first_solution_strategy: ",
                                search_parameters.first_solution_strategy()));
   }
-  if (!LocalSearchMetaheuristic::Value_IsValid(
-          search_parameters.local_search_metaheuristic())) {
-    errors.emplace_back(StrCat("Invalid metaheuristic: ",
-                               search_parameters.local_search_metaheuristic()));
+  const LocalSearchMetaheuristic::Value local_search_metaheuristic =
+      search_parameters.local_search_metaheuristic();
+  if (local_search_metaheuristic != LocalSearchMetaheuristic::UNSET &&
+      local_search_metaheuristic != LocalSearchMetaheuristic::AUTOMATIC &&
+      !search_parameters.local_search_metaheuristics().empty()) {
+    errors.emplace_back(
+        StrCat("local_search_metaheuristics cannot be set if "
+               "local_search_metaheuristic is different from "
+               "UNSET or AUTOMATIC: ",
+               local_search_metaheuristic));
+  }
+  if (!LocalSearchMetaheuristic::Value_IsValid(local_search_metaheuristic)) {
+    errors.emplace_back(
+        StrCat("Invalid metaheuristic: ", local_search_metaheuristic));
+  }
+  for (const int metaheuristic :
+       search_parameters.local_search_metaheuristics()) {
+    if (!LocalSearchMetaheuristic::Value_IsValid(metaheuristic) ||
+        metaheuristic == LocalSearchMetaheuristic::UNSET) {
+      errors.emplace_back(StrCat("Invalid metaheuristic: ", metaheuristic));
+    }
+  }
+  if (!search_parameters.local_search_metaheuristics().empty() &&
+      search_parameters.num_max_local_optima_before_metaheuristic_switch() <
+          1) {
+    errors.emplace_back(StrCat(
+        "Invalid num_max_local_optima_before_metaheuristic_switch: ",
+        search_parameters.num_max_local_optima_before_metaheuristic_switch()));
   }
 
   const double scaling_factor = search_parameters.log_cost_scaling_factor();
@@ -484,6 +737,16 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
         "sat_parameters.enumerate_all_solutions cannot be true in parallel"
         " search");
   }
+
+  if (search_parameters.max_swap_active_chain_size() < 1 &&
+      search_parameters.local_search_operators().use_swap_active_chain() ==
+          OptionalBoolean::BOOL_TRUE) {
+    errors.emplace_back(
+        "max_swap_active_chain_size must be greater than 1 if "
+        "local_search_operators.use_swap_active_chain is BOOL_TRUE");
+  }
+
+  FindErrorsInIteratedLocalSearchParameters(search_parameters, errors);
 
   return errors;
 }

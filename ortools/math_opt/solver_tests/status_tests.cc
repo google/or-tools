@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -98,9 +98,6 @@ TEST_P(StatusTest, PrimalAndDualInfeasible) {
     GTEST_SKIP()
         << "Ignoring this test as GLPK gets stuck in presolve for IP's "
            "with a primal-dual infeasible LP relaxation.";
-  }
-  if (GetParam().solver_type == SolverType::kHighs) {
-    GTEST_SKIP() << "Ignoring this test as Highs 1.7+ returns error.";
   }
 
   Model model;

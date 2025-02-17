@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_ALGORITHMS_SET_COVER_LAGRANGIAN_H_
 
 #include <memory>
+#include <new>
 #include <tuple>
 #include <vector>
 
@@ -44,7 +45,12 @@ namespace operations_research {
 class SetCoverLagrangian {
  public:
   explicit SetCoverLagrangian(SetCoverInvariant* inv, int num_threads = 1)
-      : inv_(inv), model_(*inv->model()), num_threads_(num_threads) {}
+      : inv_(inv),
+        model_(*inv->model()),
+        num_threads_(num_threads),
+        thread_pool_(new ThreadPool(num_threads)) {
+    thread_pool_->StartWorkers();
+  }
 
   // Returns true if a solution was found.
   // TODO(user): Add time-outs and exit with a partial solution. This seems
@@ -136,6 +142,9 @@ class SetCoverLagrangian {
 
   // The number of threads to use for parallelization.
   int num_threads_;
+
+  // The thread pool used for parallelization.
+  std::unique_ptr<ThreadPool> thread_pool_;
 
   // Total (scalar) Lagrangian cost.
   Cost lagrangian_;

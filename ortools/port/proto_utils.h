@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,7 +31,7 @@ namespace operations_research {
 template <class P>
 std::string ProtobufDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
-  return message.GetTypeName();
+  return std::string(message.GetTypeName());
 #else   // defined(__PORTABLE_PLATFORM__)
   return message.DebugString();
 #endif  // !defined(__PORTABLE_PLATFORM__)
@@ -40,7 +40,7 @@ std::string ProtobufDebugString(const P& message) {
 template <class P>
 std::string ProtobufShortDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
-  return message.GetTypeName();
+  return std::string(message.GetTypeName());
 #else   // defined(__PORTABLE_PLATFORM__)
   return message.ShortDebugString();
 #endif  // !defined(__PORTABLE_PLATFORM__)
@@ -58,7 +58,7 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
         "Invalid enum value of: ", enum_value, " for enum type: ",
         google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
   }
-  return enum_value_descriptor->name();
+  return std::string(enum_value_descriptor->name());
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 

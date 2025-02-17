@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,6 +22,7 @@ from absl.testing import absltest
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import expressions
 from ortools.math_opt.python import hash_model_storage
+from ortools.math_opt.python import init_arguments
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python import message_callback
 from ortools.math_opt.python import model
@@ -48,6 +49,7 @@ _MODULES_TO_CHECK: List[types.ModuleType] = [
     callback,
     expressions,
     hash_model_storage,
+    init_arguments,
     message_callback,
     model,
     model_parameters,

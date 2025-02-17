@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -45,6 +45,23 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+using operations_research::sat::BoolArgumentProto;
+using operations_research::sat::CircuitConstraintProto;
+using operations_research::sat::ConstraintProto;
+using operations_research::sat::CpModelProto;
+using operations_research::sat::CpObjectiveProto;
+using operations_research::sat::CpSolverResponse;
+using operations_research::sat::CpSolverStatus;
+using operations_research::sat::IntegerVariableProto;
+using operations_research::sat::kMaxIntegerValue;
+using operations_research::sat::kMinIntegerValue;
+using operations_research::sat::LinearConstraintProto;
+using operations_research::sat::Model;
+using operations_research::sat::NewSatParameters;
+using operations_research::sat::PartialVariableAssignment;
+using operations_research::sat::RoutesConstraintProto;
+using operations_research::sat::SatParameters;
+
 // As of 07/2019, TSPs and VRPs with homogeneous fleets of vehicles are
 // supported.
 // TODO(user): Support any type of constraints.
@@ -86,7 +103,7 @@ void AddLinearConstraint(
 // lower_bound <= sum variable * coeff <= upper_bound.
 void AddLinearConstraint(
     CpModelProto* cp_model, int64_t lower_bound, int64_t upper_bound,
-    const std::vector<std::pair<int, double>>& variable_coeffs) {
+    absl::Span<const std::pair<int, double>> variable_coeffs) {
   AddLinearConstraint(cp_model, lower_bound, upper_bound, variable_coeffs, {});
 }
 
@@ -584,7 +601,7 @@ void AddGeneralizedDimensions(
 
 std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
                                         const ArcVarMap& arc_vars,
-                                        const std::vector<int>& is_unperformed,
+                                        absl::Span<const int> is_unperformed,
                                         CpModelProto* cp_model) {
   const int depot = 0;
   const int num_cp_nodes = model.Nexts().size() + model.vehicles() + 1;
@@ -612,8 +629,8 @@ std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
 
 void AddGeneralizedPickupDeliveryConstraints(
     const RoutingModel& model, const ArcVarMap& arc_vars,
-    const std::vector<absl::flat_hash_map<int, int>>& vehicle_performs_node,
-    const std::vector<int>& is_unperformed, CpModelProto* cp_model) {
+    absl::Span<const absl::flat_hash_map<int, int>> vehicle_performs_node,
+    absl::Span<const int> is_unperformed, CpModelProto* cp_model) {
   if (model.GetPickupAndDeliveryPairs().empty()) return;
   const std::vector<int> ranks =
       CreateGeneralizedRanks(model, arc_vars, is_unperformed, cp_model);

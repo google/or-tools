@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,15 +22,16 @@
 
 namespace operations_research {
 struct Arc {
-  std::pair<NodeIndex, NodeIndex> nodes;
-  FlowQuantity capacity;
-  FlowQuantity unit_cost;
+  std::pair<SimpleMinCostFlow::NodeIndex, SimpleMinCostFlow::NodeIndex> nodes;
+  SimpleMinCostFlow::FlowQuantity capacity;
+  SimpleMinCostFlow::FlowQuantity unit_cost;
 };
 
 void SolveMinCostFlow() {
   // Define supply of each node.
-  const std::vector<std::pair<NodeIndex, FlowQuantity> > supplies = {
-      {0, 20}, {1, 0}, {2, 0}, {3, -5}, {4, -15}};
+  const std::vector<
+      std::pair<SimpleMinCostFlow::NodeIndex, SimpleMinCostFlow::FlowQuantity> >
+      supplies = {{0, 20}, {1, 0}, {2, 0}, {3, -5}, {4, -15}};
 
   // Define each arc
   // Can't use std::tuple<NodeIndex, NodeIndex, FlowQuantity>
@@ -41,33 +42,32 @@ void SolveMinCostFlow() {
       {{1, 3}, 4, 2},  {{1, 4}, 10, 6}, {{2, 3}, 15, 1},
       {{2, 4}, 4, 3},  {{3, 4}, 20, 2}, {{4, 2}, 5, 3}};
 
-  StarGraph graph(supplies.size(), arcs.size());
-  MinCostFlow min_cost_flow(&graph);
+  SimpleMinCostFlow min_cost_flow;
   for (const auto& it : arcs) {
-    ArcIndex arc = graph.AddArc(it.nodes.first, it.nodes.second);
-    min_cost_flow.SetArcCapacity(arc, it.capacity);
-    min_cost_flow.SetArcUnitCost(arc, it.unit_cost);
+    min_cost_flow.AddArcWithCapacityAndUnitCost(it.nodes.first, it.nodes.second,
+                                                it.capacity, it.unit_cost);
   }
   for (const auto& it : supplies) {
     min_cost_flow.SetNodeSupply(it.first, it.second);
   }
 
-  LOG(INFO) << "Solving min cost flow with: " << graph.num_nodes()
-            << " nodes, and " << graph.num_arcs() << " arcs.";
+  LOG(INFO) << "Solving min cost flow with: " << min_cost_flow.NumNodes()
+            << " nodes, and " << min_cost_flow.NumArcs() << " arcs.";
 
   // Find the maximum flow between node 0 and node 4.
-  min_cost_flow.Solve();
-  if (MinCostFlow::OPTIMAL != min_cost_flow.status()) {
+  const auto status = min_cost_flow.Solve();
+  if (status != SimpleMinCostFlow::OPTIMAL) {
     LOG(FATAL) << "Solving the max flow is not optimal!";
   }
-  FlowQuantity total_flow_cost = min_cost_flow.GetOptimalCost();
+  SimpleMinCostFlow::FlowQuantity total_flow_cost = min_cost_flow.OptimalCost();
   LOG(INFO) << "Minimum cost flow: " << total_flow_cost;
   LOG(INFO) << "";
   LOG(INFO) << "Arc   : Flow / Capacity / Cost";
   for (int i = 0; i < arcs.size(); ++i) {
-    LOG(INFO) << graph.Tail(i) << " -> " << graph.Head(i) << ": "
-              << min_cost_flow.Flow(i) << " / " << min_cost_flow.Capacity(i)
-              << " / " << min_cost_flow.UnitCost(i);
+    LOG(INFO) << min_cost_flow.Tail(i) << " -> " << min_cost_flow.Head(i)
+              << ": " << min_cost_flow.Flow(i) << " / "
+              << min_cost_flow.Capacity(i) << " / "
+              << min_cost_flow.UnitCost(i);
   }
 }
 }  // namespace operations_research

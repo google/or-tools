@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,6 +34,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -49,7 +50,7 @@ namespace operations_research {
 namespace sat {
 
 std::vector<IntegerVariable> NegationOf(
-    const std::vector<IntegerVariable>& vars) {
+    absl::Span<const IntegerVariable> vars) {
   std::vector<IntegerVariable> result(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
     result[i] = NegationOf(vars[i]);
@@ -1686,13 +1687,13 @@ bool IntegerTrail::EnqueueInternal(
   }
 
   const int prev_trail_index = var_trail_index_[i_lit.var];
+  var_lbs_[i_lit.var] = i_lit.bound;
+  var_trail_index_[i_lit.var] = integer_trail_.size();
   integer_trail_.push_back({/*bound=*/i_lit.bound,
                             /*var=*/i_lit.var,
                             /*prev_trail_index=*/prev_trail_index,
                             /*reason_index=*/reason_index});
 
-  var_lbs_[i_lit.var] = i_lit.bound;
-  var_trail_index_[i_lit.var] = integer_trail_.size() - 1;
   return true;
 }
 
@@ -1737,13 +1738,13 @@ bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
   const int reason_index =
       AppendReasonToInternalBuffers({literal_reason.Negated()}, {});
   const int prev_trail_index = var_trail_index_[i_lit.var];
+  var_lbs_[i_lit.var] = i_lit.bound;
+  var_trail_index_[i_lit.var] = integer_trail_.size();
   integer_trail_.push_back({/*bound=*/i_lit.bound,
                             /*var=*/i_lit.var,
                             /*prev_trail_index=*/prev_trail_index,
                             /*reason_index=*/reason_index});
 
-  var_lbs_[i_lit.var] = i_lit.bound;
-  var_trail_index_[i_lit.var] = integer_trail_.size() - 1;
   return true;
 }
 
@@ -2113,14 +2114,12 @@ void GenericLiteralWatcher::CallOnNextPropagate(int id) {
 
 void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   // Process any new Literal on the trail.
+  const int literal_limit = literal_to_watcher_.size();
   while (propagation_trail_index_ < trail->Index()) {
     const Literal literal = (*trail)[propagation_trail_index_++];
-    if (literal.Index() >= literal_to_watcher_.size()) continue;
+    if (literal.Index() >= literal_limit) continue;
     for (const auto entry : literal_to_watcher_[literal]) {
-      if (!in_queue_[entry.id]) {
-        in_queue_[entry.id] = true;
-        queue_by_priority_[id_to_priority_[entry.id]].push_back(entry.id);
-      }
+      CallOnNextPropagate(entry.id);
       if (entry.watch_index >= 0) {
         id_to_watch_indices_[entry.id].push_back(entry.watch_index);
       }
@@ -2128,13 +2127,11 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   }
 
   // Process the newly changed variables lower bounds.
+  const int var_limit = var_to_watcher_.size();
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
-    if (var.value() >= var_to_watcher_.size()) continue;
+    if (var.value() >= var_limit) continue;
     for (const auto entry : var_to_watcher_[var]) {
-      if (!in_queue_[entry.id]) {
-        in_queue_[entry.id] = true;
-        queue_by_priority_[id_to_priority_[entry.id]].push_back(entry.id);
-      }
+      CallOnNextPropagate(entry.id);
       if (entry.watch_index >= 0) {
         id_to_watch_indices_[entry.id].push_back(entry.watch_index);
       }
@@ -2158,9 +2155,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
   if (level == 0) {
     for (const int id : propagator_ids_to_call_at_level_zero_) {
-      if (in_queue_[id]) continue;
-      in_queue_[id] = true;
-      queue_by_priority_[id_to_priority_[id]].push_back(id);
+      CallOnNextPropagate(id);
     }
   }
 

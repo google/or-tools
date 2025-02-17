@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -226,6 +226,8 @@ std::function<int(GRBenv** envP)> GRBemptyenv = nullptr;
 std::function<int(GRBenv** envP, const char* logfilename)> GRBloadenv = nullptr;
 std::function<int(GRBenv* env)> GRBstartenv = nullptr;
 std::function<GRBenv*(GRBmodel* model)> GRBgetenv = nullptr;
+std::function<GRBenv*(GRBmodel* model, int num)> GRBgetmultiobjenv = nullptr;
+std::function<GRBenv*(GRBmodel* model)> GRBdiscardmultiobjenvs = nullptr;
 std::function<void(GRBenv* env)> GRBfreeenv = nullptr;
 std::function<const char*(GRBenv* env)> GRBgeterrormsg = nullptr;
 std::function<void(int* majorP, int* minorP, int* technicalP)> GRBversion =
@@ -337,6 +339,9 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBgetstrparaminfo,
                                       "GRBgetstrparaminfo");
   gurobi_dynamic_library->GetFunction(&GRBgetenv, "GRBgetenv");
+  gurobi_dynamic_library->GetFunction(&GRBgetmultiobjenv, "GRBgetmultiobjenv");
+  gurobi_dynamic_library->GetFunction(&GRBdiscardmultiobjenvs,
+                                      "GRBdiscardmultiobjenvs");
   gurobi_dynamic_library->GetFunction(&GRBfreeenv, "GRBfreeenv");
   gurobi_dynamic_library->GetFunction(&GRBgeterrormsg, "GRBgeterrormsg");
   gurobi_dynamic_library->GetFunction(&GRBversion, "GRBversion");
@@ -346,8 +351,9 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   const std::vector<std::string> kGurobiVersions = {
-      "1103", "1102", "1101", "1100", "1003", "1002", "1001", "1000", "952", "951",
-      "950",  "911",  "910",  "903",  "902",  "811",  "801",  "752"};
+      "1201", "1200", "1103", "1102", "1101", "1100", "1003",
+      "1002", "1001", "1000", "952",  "951",  "950",  "911",
+      "910",  "903",  "902",  "811",  "801",  "752"};
   potential_paths.reserve(kGurobiVersions.size() * 3);
 
   // Look for libraries pointed by GUROBI_HOME first.
@@ -406,8 +412,8 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 
 #if defined(__GNUC__)  // path in linux64 gurobi/optimizer docker image.
   for (const std::string& version :
-       {"11.0.3", "11.0.2", "11.0.1", "11.0.0", "10.0.3", "10.0.2", "10.0.1", "10.0.0",
-        "9.5.2", "9.5.1", "9.5.0"}) {
+       {"12.0.1", "12.0.0", "11.0.3", "11.0.2", "11.0.1", "11.0.0", "10.0.3",
+        "10.0.2", "10.0.1", "10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
     potential_paths.push_back(
         absl::StrCat("/opt/gurobi/linux64/lib/libgurobi.so.", version));
   }

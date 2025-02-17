@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,9 @@
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -22,7 +25,7 @@
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 
 namespace operations_research {
 namespace sat {
@@ -34,7 +37,7 @@ std::vector<Rectangle> GenerateNonConflictingRectangles(
   rectangles.reserve(num_rectangles);
   rectangles.push_back(
       {.x_min = 0, .x_max = kSizeMax, .y_min = 0, .y_max = kSizeMax});
-  for (int i = 0; i < num_rectangles; ++i) {
+  while (rectangles.size() < num_rectangles) {
     std::swap(rectangles.back(),
               rectangles[absl::Uniform(random, 0ull, rectangles.size() - 1)]);
     const Rectangle& rec = rectangles.back();
@@ -49,6 +52,9 @@ std::vector<Rectangle> GenerateNonConflictingRectangles(
                                     .x_max = rec.x_max,
                                     .y_min = rec.y_min,
                                     .y_max = rec.y_max};
+      if (new_range.Area() == 0 || new_range2.Area() == 0) {
+        continue;
+      }
       rectangles.pop_back();
       rectangles.push_back(new_range);
       rectangles.push_back(new_range2);
@@ -63,9 +69,77 @@ std::vector<Rectangle> GenerateNonConflictingRectangles(
                                     .x_max = rec.x_max,
                                     .y_min = cut,
                                     .y_max = rec.y_max};
+      if (new_range.Area() == 0 || new_range2.Area() == 0) {
+        continue;
+      }
       rectangles.pop_back();
       rectangles.push_back(new_range);
       rectangles.push_back(new_range2);
+    }
+  }
+  return rectangles;
+}
+
+std::vector<Rectangle> GenerateNonConflictingRectanglesWithPacking(
+    std::pair<IntegerValue, IntegerValue> bb, int average_num_boxes,
+    absl::BitGenRef random) {
+  const double p = 0.01;
+  std::vector<Rectangle> rectangles;
+  int num_retries = 0;
+  double average_size =
+      std::sqrt(bb.first.value() * bb.second.value() / average_num_boxes);
+  const int64_t n_x = static_cast<int64_t>(average_size / p);
+  const int64_t n_y = static_cast<int64_t>(average_size / p);
+  while (num_retries < 4) {
+    num_retries++;
+
+    std::pair<IntegerValue, IntegerValue> sizes;
+    do {
+      sizes.first = std::binomial_distribution<>(n_x, p)(random);
+    } while (sizes.first == 0 || sizes.first > bb.first);
+    do {
+      sizes.second = std::binomial_distribution<>(n_y, p)(random);
+    } while (sizes.second == 0 || sizes.second > bb.second);
+
+    std::vector<IntegerValue> possible_x_positions = {0};
+    std::vector<IntegerValue> possible_y_positions = {0};
+    for (const Rectangle& rec : rectangles) {
+      possible_x_positions.push_back(rec.x_max);
+      possible_y_positions.push_back(rec.y_max);
+    }
+    std::sort(possible_x_positions.begin(), possible_x_positions.end());
+    std::sort(possible_y_positions.begin(), possible_y_positions.end());
+    bool found_position = false;
+    for (const IntegerValue x : possible_x_positions) {
+      for (const IntegerValue y : possible_y_positions) {
+        if (x + sizes.first > bb.first || y + sizes.second > bb.second) {
+          continue;
+        }
+        const Rectangle rec = {.x_min = x,
+                               .x_max = x + sizes.first,
+                               .y_min = y,
+                               .y_max = y + sizes.second};
+        bool conflict = false;
+        for (const Rectangle r : rectangles) {
+          if (!r.IsDisjoint(rec)) {
+            conflict = true;
+            break;
+          }
+        }
+        if (conflict) {
+          continue;
+        } else {
+          rectangles.push_back(rec);
+          found_position = true;
+          break;
+        }
+      }
+      if (found_position) {
+        break;
+      }
+    }
+    if (found_position) {
+      num_retries = 0;
     }
   }
   return rectangles;
@@ -84,10 +158,12 @@ std::vector<RectangleInRange> MakeItemsFromRectangles(
   ranges.reserve(rectangles.size());
   const int max_slack_x = slack_factor * size_max_x.value();
   const int max_slack_y = slack_factor * size_max_y.value();
+  int count = 0;
   for (const Rectangle& rec : rectangles) {
     RectangleInRange range;
     range.x_size = rec.x_max - rec.x_min;
     range.y_size = rec.y_max - rec.y_min;
+    range.box_index = count++;
     range.bounding_area = {
         .x_min =
             rec.x_min - IntegerValue(absl::Uniform(random, 0, max_slack_x)),
@@ -102,13 +178,12 @@ std::vector<RectangleInRange> MakeItemsFromRectangles(
   return ranges;
 }
 
-std::vector<ItemForPairwiseRestriction>
-GenerateItemsRectanglesWithNoPairwiseConflict(
-    const std::vector<Rectangle>& rectangles, double slack_factor,
+std::vector<ItemWithVariableSize> GenerateItemsRectanglesWithNoPairwiseConflict(
+    absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random) {
   const std::vector<RectangleInRange> range_items =
       MakeItemsFromRectangles(rectangles, slack_factor, random);
-  std::vector<ItemForPairwiseRestriction> items;
+  std::vector<ItemWithVariableSize> items;
   items.reserve(rectangles.size());
   for (int i = 0; i < range_items.size(); ++i) {
     const RectangleInRange& rec = range_items[i];
@@ -125,13 +200,13 @@ GenerateItemsRectanglesWithNoPairwiseConflict(
   return items;
 }
 
-std::vector<ItemForPairwiseRestriction>
+std::vector<ItemWithVariableSize>
 GenerateItemsRectanglesWithNoPairwisePropagation(int num_rectangles,
                                                  double slack_factor,
                                                  absl::BitGenRef random) {
   const std::vector<Rectangle> rectangles =
       GenerateNonConflictingRectangles(num_rectangles, random);
-  std::vector<ItemForPairwiseRestriction> items =
+  std::vector<ItemWithVariableSize> items =
       GenerateItemsRectanglesWithNoPairwiseConflict(rectangles, slack_factor,
                                                     random);
   bool done = false;

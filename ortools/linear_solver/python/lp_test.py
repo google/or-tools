@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -349,7 +349,7 @@ class PyWrapLpTest(unittest.TestCase):
         sum_of_vars = sum([x1, x2, x3])
         c2 = solver.Add(sum_of_vars <= 100.0, "OtherConstraintName")
 
-        mps_str = solver.ExportModelAsMpsFormat(fixed_format=False, obfuscated=False)
+        mps_str = solver.ExportModelAsMpsFormat(fixed_format=False, obfuscate=False)
         self.assertIn("ExportMps", mps_str)
 
 

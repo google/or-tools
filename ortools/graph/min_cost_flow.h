@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -174,7 +174,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
@@ -201,9 +201,6 @@ class MinCostFlowBase {
     // execution.
     //
     // Some details on how to deal with this:
-    // - The sum of all incoming/outgoing capacity at each node should not
-    //   overflow. TODO(user): this is not always properly checked and probably
-    //   deserve a different return status.
     // - Since we scale cost, each arc unit cost times (num_nodes + 1) should
     //   not overflow. We detect that at the beginning of the Solve().
     // - This is however not sufficient as the node potential depends on the
@@ -225,7 +222,28 @@ class MinCostFlowBase {
     //   deal with since we will still have the proper flow on each arc. It is
     //   thus possible to recompute the total cost in double or using
     //   absl::int128 if the need arise.
-    BAD_COST_RANGE
+    BAD_COST_RANGE,
+
+    // This is returned in our initial check if the arc capacity are too large.
+    // For each node these quantity should not overflow the FlowQuantity type
+    // which is int64_t by default.
+    // - Its initial excess (+supply or -demand) + sum incoming arc capacity
+    // - Its initial excess (+supply or -demand) - sum outgoing arc capacity.
+    //
+    // Note that these are upper bounds that guarantee that no overflow will
+    // take place during the algorithm execution. It is possible to go over that
+    // and still encounter no overflow, but since we cannot guarantee this, we
+    // rather check early and return a proper status.
+    //
+    // Note that we might cap the capacity of the arcs if we can detect it
+    // is too large in order to avoid returning this status for simple case,
+    // like if a client used int64_t max for all arcs out of the source.
+    //
+    // TODO(user): Not sure this is a good idea, probably better to make sure
+    // client use reasonable capacities. Also we should template by FlowQuantity
+    // and allow use of absl::int128 so we never have issue if the input is
+    // int64_t.
+    BAD_CAPACITY_RANGE,
   };
 };
 
@@ -239,6 +257,11 @@ class MinCostFlowBase {
 // GenericMinCostFlow<> interface.
 class SimpleMinCostFlow : public MinCostFlowBase {
  public:
+  typedef int32_t NodeIndex;
+  typedef int32_t ArcIndex;
+  typedef int64_t FlowQuantity;
+  typedef int64_t CostValue;
+
   // By default, the constructor takes no size. New node indices are created
   // lazily by AddArcWithCapacityAndUnitCost() or SetNodeSupply() such that the
   // set of valid nodes will always be [0, NumNodes()).
@@ -263,6 +286,11 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   ArcIndex AddArcWithCapacityAndUnitCost(NodeIndex tail, NodeIndex head,
                                          FlowQuantity capacity,
                                          CostValue unit_cost);
+
+  // Modifies the capacity of the given arc. The arc index must be non-negative
+  // (>= 0); it must be an index returned by a previous call to
+  // AddArcWithCapacityAndUnitCost().
+  void SetArcCapacity(ArcIndex arc, FlowQuantity capacity);
 
   // Sets the supply of the given node. The node index must be non-negative (>=
   // 0). Nodes implicitly created will have a default supply set to 0. A demand
@@ -355,9 +383,9 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   bool scale_prices_ = true;
 };
 
-// Generic MinCostFlow that works with StarGraph and all the graphs handling
-// reverse arcs from graph.h, see the end of min_cost_flow.cc for the exact
-// types this class is compiled for.
+// Generic MinCostFlow that works with all the graphs handling reverse arcs from
+// graph.h, see the end of min_cost_flow.cc for the exact types this class is
+// compiled for.
 //
 // One can greatly decrease memory usage by using appropriately small integer
 // types:
@@ -371,14 +399,16 @@ class SimpleMinCostFlow : public MinCostFlowBase {
 // Note that the latter two are different than FlowQuantity and CostValue, which
 // are used for global, aggregated values and may need to be larger.
 //
-// TODO(user): Avoid using the globally defined type CostValue and FlowQuantity.
 // Also uses the Arc*Type where there is no risk of overflow in more places.
-template <typename Graph, typename ArcFlowType = FlowQuantity,
-          typename ArcScaledCostType = CostValue>
+template <typename Graph, typename ArcFlowType = int64_t,
+          typename ArcScaledCostType = int64_t>
 class GenericMinCostFlow : public MinCostFlowBase {
  public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
+  typedef int64_t CostValue;
+  typedef int64_t FlowQuantity;
+  typedef typename Graph::IncomingArcIterator IncomingArcIterator;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator
       OutgoingOrOppositeIncomingArcIterator;
@@ -413,30 +443,8 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // Sets the capacity for the given arc.
   void SetArcCapacity(ArcIndex arc, ArcFlowType new_capacity);
 
-  // Sets the flow for the given arc. Note that new_flow must be smaller than
-  // the capacity of the arc.
-  void SetArcFlow(ArcIndex arc, ArcFlowType new_flow);
-
   // Solves the problem, returning true if a min-cost flow could be found.
   bool Solve();
-
-  // Checks for feasibility, i.e., that all the supplies and demands can be
-  // matched without exceeding bottlenecks in the network.
-  // If infeasible_supply_node (resp. infeasible_demand_node) are not NULL,
-  // they are populated with the indices of the nodes where the initial supplies
-  // (resp. demands) are too large. Feasible values for the supplies and
-  // demands are accessible through FeasibleSupply.
-  // Note that CheckFeasibility is called by Solve() when the flag
-  // min_cost_flow_check_feasibility is set to true (which is the default.)
-  bool CheckFeasibility(std::vector<NodeIndex>* infeasible_supply_node,
-                        std::vector<NodeIndex>* infeasible_demand_node);
-
-  // Makes the min-cost flow problem solvable by truncating supplies and
-  // demands to a level acceptable by the network. There may be several ways to
-  // do it. In our case, the levels are computed from the result of the max-flow
-  // algorithm run in CheckFeasibility().
-  // MakeFeasible returns false if CheckFeasibility() was not called before.
-  bool MakeFeasible();
 
   // Returns the cost of the minimum-cost flow found by the algorithm. This
   // works in O(num_arcs). This will only work if the last Solve() call was
@@ -450,23 +458,17 @@ class GenericMinCostFlow : public MinCostFlowBase {
   FlowQuantity Flow(ArcIndex arc) const;
 
   // Returns the capacity of the given arc.
+  //
+  // Warning: If the capacity were close to ArcFlowType::max() we might have
+  // adjusted them in order to avoid overflow.
   FlowQuantity Capacity(ArcIndex arc) const;
 
   // Returns the unscaled cost for the given arc.
   CostValue UnitCost(ArcIndex arc) const;
 
-  // Returns the supply at a given node. Demands are modelled as negative
-  // supplies.
+  // Returns the supply at a given node.
+  // Demands are modelled as negative supplies.
   FlowQuantity Supply(NodeIndex node) const;
-
-  // Returns the initial supply at a given node.
-  FlowQuantity InitialSupply(NodeIndex node) const;
-
-  // Returns the largest supply (if > 0) or largest demand in absolute value
-  // (if < 0) admissible at node. If the problem is not feasible, some of these
-  // values will be smaller (in absolute value) than the initial supplies
-  // and demand given as input.
-  FlowQuantity FeasibleSupply(NodeIndex node) const;
 
   // Whether to check the feasibility of the problem with a max-flow, prior to
   // solving it. This uses about twice as much memory, but detects infeasible
@@ -481,6 +483,12 @@ class GenericMinCostFlow : public MinCostFlowBase {
   void SetPriceScaling(bool value) { scale_prices_ = value; }
 
  private:
+  // Checks for feasibility, i.e., that all the supplies and demands can be
+  // matched without exceeding bottlenecks in the network.
+  // Note that CheckFeasibility is called by Solve() when SetCheckFeasibility()
+  // is set to true, which is the default.
+  bool CheckFeasibility();
+
   // Returns true if the given arc is admissible i.e. if its residual capacity
   // is strictly positive, and its reduced cost strictly negative, i.e., pushing
   // more flow into it will result in a reduction of the total cost.
@@ -643,12 +651,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // node. This is used to create the max-flow-based feasibility checker.
   std::vector<FlowQuantity> initial_node_excess_;
 
-  // An array containing the best acceptable excesses for each of the
-  // nodes. These excesses are imposed by the result of the max-flow-based
-  // feasibility checker for the nodes with an initial supply != 0. For the
-  // other nodes, the excess is simply 0.
-  std::vector<FlowQuantity> feasible_node_excess_;
-
   // Statistics about this class.
   StatsGroup stats_;
 
@@ -673,7 +675,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 // Note: SWIG does not seem to understand explicit template specialization and
 // instantiation declarations.
 
-extern template class GenericMinCostFlow<StarGraph>;
 extern template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
@@ -686,11 +687,14 @@ extern template class GenericMinCostFlow<
     /*ArcFlowType=*/int16_t,
     /*ArcScaledCostType=*/int32_t>;
 
-// Default MinCostFlow instance that uses StarGraph.
-// New clients should use SimpleMinCostFlow if they can.
-class MinCostFlow : public GenericMinCostFlow<StarGraph> {
- public:
-  explicit MinCostFlow(const StarGraph* graph) : GenericMinCostFlow(graph) {}
+// TODO(b/385094969): Remove this alias after 2025-07-01 to give or-tools users
+// a grace period.
+struct MinCostFlow : public MinCostFlowBase {
+  template <typename = void>
+  MinCostFlow() {
+    LOG(FATAL) << "MinCostFlow is deprecated. Use `SimpleMinCostFlow` or "
+                  "`GenericMinCostFlow` with a specific graph type instead.";
+  }
 };
 
 #endif  // SWIG

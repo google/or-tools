@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 #define OR_TOOLS_BASE_MACROS_H_
 
 #include <cstdlib>  // for size_t.
+
+#include "ortools/base/base_export.h"  // for OR_DLL
 
 #define COMPILE_ASSERT(x, msg)
 

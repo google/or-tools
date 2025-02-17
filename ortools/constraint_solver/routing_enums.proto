@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -50,6 +50,11 @@ message FirstSolutionStrategy {
     // "Scheduling of Vehicles from a Central Depot to a Number of Delivery
     // Points", Operations Research, Vol. 12, 1964, pp. 568-581
     SAVINGS = 10;
+    // Parallel version of the Savings algorithm.
+    // Instead of extending a single route until it is no longer possible,
+    // the parallel version iteratively considers the next most improving
+    // feasible saving and possibly builds several routes in parallel.
+    PARALLEL_SAVINGS = 17;
     // Sweep algorithm (Wren & Holliday).
     // Reference: Anthony Wren & Alan Holliday: Computer Scheduling of Vehicles
     // from One or More Depots to a Number of Delivery Points Operational
@@ -138,5 +143,29 @@ message LocalSearchMetaheuristic {
     // of variables to use must be provided via the SetTabuVarsCallback
     // callback.
     GENERIC_TABU_SEARCH = 5;
+  }
+}
+
+// Used by `RoutingModel` to report the status of the search for a solution.
+message RoutingSearchStatus {
+  enum Value {
+    // Problem not solved yet (before calling RoutingModel::Solve()).
+    ROUTING_NOT_SOLVED = 0;
+    // Problem solved successfully after calling RoutingModel::Solve().
+    ROUTING_SUCCESS = 1;
+    // Problem solved successfully after calling RoutingModel::Solve(), except
+    // that a local optimum has not been reached. Leaving more time would allow
+    // improving the solution.
+    ROUTING_PARTIAL_SUCCESS_LOCAL_OPTIMUM_NOT_REACHED = 2;
+    // No solution found to the problem after calling RoutingModel::Solve().
+    ROUTING_FAIL = 3;
+    // Time limit reached before finding a solution with RoutingModel::Solve().
+    ROUTING_FAIL_TIMEOUT = 4;
+    // Model, model parameters or flags are not valid.
+    ROUTING_INVALID = 5;
+    // Problem proven to be infeasible.
+    ROUTING_INFEASIBLE = 6;
+    // Problem has been solved to optimality.
+    ROUTING_OPTIMAL = 7;
   }
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -829,7 +829,8 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
   // All nodes have been explored.
   if (search_nodes_.empty()) {
     VLOG(1) << std::string(27, ' ') + "LS " << max_num_decisions_
-            << " finished." << " #explored:" << num_nodes_
+            << " finished."
+            << " #explored:" << num_nodes_
             << " #stored:" << transposition_table_.size()
             << " #skipped:" << num_skipped_nodes_;
     return false;

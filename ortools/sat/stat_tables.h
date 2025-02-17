@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,16 +14,17 @@
 #ifndef OR_TOOLS_SAT_STAT_TABLES_H_
 #define OR_TOOLS_SAT_STAT_TABLES_H_
 
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
+#include "absl/container/btree_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/subsolver.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research::sat {
@@ -42,13 +43,14 @@ class SharedStatTables {
 
   void AddLpStat(absl::string_view name, Model* model);
 
-  void AddLnsStat(absl::string_view name,
-                  const NeighborhoodGenerator& generator);
+  void AddLnsStat(absl::string_view name, int64_t num_fully_solved_calls,
+                  int64_t num_calls, int64_t num_improving_calls,
+                  double difficulty, double deterministic_limit);
 
   void AddLsStat(absl::string_view name, int64_t num_batches,
                  int64_t num_restarts, int64_t num_linear_moves,
                  int64_t num_general_moves, int64_t num_compound_moves,
-                 int64_t num_bactracks, int64_t num_weight_updates,
+                 int64_t num_backtracks, int64_t num_weight_updates,
                  int64_t num_scores_computed);
 
   // Display the set of table at the end.

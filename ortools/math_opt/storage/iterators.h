@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -38,7 +38,7 @@ namespace operations_research::math_opt {
 //   const std::pair<XXX, std::unique_ptr<UpdateData>>&
 // The returned iterator will be over non-const references to Field as read off
 // the UpdateData values.
-template <typename UpdateData, typename V, V UpdateData::*Field,
+template <typename UpdateData, typename V, V UpdateData::* Field,
           typename BaseIter>
 class UpdateDataFieldIterator {
  public:

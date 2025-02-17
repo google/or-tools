@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -33,10 +32,12 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -46,6 +47,7 @@
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
@@ -57,7 +59,6 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/timetable.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -777,7 +778,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
           // TODO(user): It should be safe otherwise the exactly_one will have
           // duplicate literal, but I am not sure that if presolve is off we can
           // assume that.
-          sat_solver->AddProblemClause(clause, /*is_safe=*/false);
+          sat_solver->AddProblemClause(clause);
         }
       }
       if (need_extra_propagation) {
@@ -1012,7 +1013,7 @@ void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
-  sat_solver->AddProblemClause(literals, /*is_safe=*/false);
+  sat_solver->AddProblemClause(literals);
   if (literals.size() == 3) {
     m->GetOrCreate<ProductDetector>()->ProcessTernaryClause(literals);
   }
@@ -1027,15 +1028,19 @@ void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
     literals.push_back(literal);
-    sat_solver->AddProblemClause(literals, /*is_safe=*/false);
+    sat_solver->AddProblemClause(literals);
     literals.pop_back();
   }
 }
 
 void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* implications = m->GetOrCreate<BinaryImplicationGraph>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
-  m->Add(AtMostOneConstraint(mapping->Literals(ct.at_most_one().literals())));
+  if (!implications->AddAtMostOne(
+          mapping->Literals(ct.at_most_one().literals()))) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+  }
 }
 
 void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
@@ -1212,6 +1217,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
 
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+
   if (ct.linear().vars().empty()) {
     const Domain rhs = ReadDomainFromProto(ct.linear());
     if (rhs.Contains(0)) return;
@@ -1280,14 +1286,14 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     rhs_min = std::max(rhs_min, min_sum.value());
     rhs_max = std::min(rhs_max, max_sum.value());
 
-    auto* detector = m->GetOrCreate<GreaterThanAtLeastOneOfDetector>();
+    auto* repository = m->GetOrCreate<BinaryRelationRepository>();
     const Literal lit = mapping->Literal(ct.enforcement_literal(0));
     const Domain domain = ReadDomainFromProto(ct.linear());
     if (vars.size() == 1) {
-      detector->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+      repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
     } else if (vars.size() == 2) {
-      detector->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]}, rhs_min,
-                    rhs_max);
+      repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]}, rhs_min,
+                      rhs_max);
     }
   }
 
@@ -1311,10 +1317,10 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         if (coeffs[1] > 0) v2 = NegationOf(v2);
 
         // magnitude * v1 <= magnitude * v2 + rhs_max.
-        precedences->Add(v1, v2, CeilOfRatio(-rhs_max, magnitude));
+        precedences->Add(v1, v2, MathUtil::CeilOfRatio(-rhs_max, magnitude));
 
         // magnitude * v1 >= magnitude * v2 + rhs_min.
-        precedences->Add(v2, v1, CeilOfRatio(rhs_min, magnitude));
+        precedences->Add(v2, v1, MathUtil::CeilOfRatio(rhs_min, magnitude));
       }
     } else if (vars.size() == 3) {
       for (int i = 0; i < 3; ++i) {
@@ -1336,14 +1342,16 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
               coeff > 0
                   ? coeff * integer_trail->LowerBound(vars[other]).value()
                   : coeff * integer_trail->UpperBound(vars[other]).value();
-          precedences->Add(v1, v2, CeilOfRatio(other_lb - rhs_max, magnitude));
+          precedences->Add(
+              v1, v2, MathUtil::CeilOfRatio(other_lb - rhs_max, magnitude));
 
           // magnitude * v1 + other_ub >= magnitude * v2 + rhs_min
           const int64_t other_ub =
               coeff > 0
                   ? coeff * integer_trail->UpperBound(vars[other]).value()
                   : coeff * integer_trail->LowerBound(vars[other]).value();
-          precedences->Add(v2, v1, CeilOfRatio(rhs_min - other_ub, magnitude));
+          precedences->Add(
+              v2, v1, MathUtil::CeilOfRatio(rhs_min - other_ub, magnitude));
         }
       }
     }
@@ -1429,21 +1437,26 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
   // We have a linear with a complex Domain, we need to create extra Booleans.
 
-  // In this case, we can create just one Boolean instead of two since one
-  // is the negation of the other.
-  const bool special_case =
-      ct.enforcement_literal().empty() && ct.linear().domain_size() == 4;
-
   // For enforcement => var \in domain, we can potentially reuse the encoding
   // literal directly rather than creating new ones.
-  const bool is_linear1 = !special_case && vars.size() == 1 && coeffs[0] == 1;
+  const bool is_linear1 = vars.size() == 1 && coeffs[0] == 1;
 
+  bool special_case = false;
   std::vector<Literal> clause;
   std::vector<Literal> for_enumeration;
   auto* encoding = m->GetOrCreate<IntegerEncoder>();
-  for (int i = 0; i < ct.linear().domain_size(); i += 2) {
+  const int domain_size = ct.linear().domain_size();
+  for (int i = 0; i < domain_size; i += 2) {
     const int64_t lb = ct.linear().domain(i);
     const int64_t ub = ct.linear().domain(i + 1);
+
+    // Skip non-reachable intervals.
+    if (min_sum > ub) continue;
+    if (max_sum < lb) continue;
+
+    // Skip trivial constraint. Note that when this happens, all the intervals
+    // before where non-reachable.
+    if (min_sum >= lb && max_sum <= ub) return;
 
     if (is_linear1) {
       if (lb == ub) {
@@ -1461,9 +1474,17 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       }
     }
 
+    // If there is just two terms and no enforcement, we don't need to create an
+    // extra boolean as the second case can be controlled by the negation of the
+    // first.
+    if (ct.enforcement_literal().empty() && clause.size() == 1 &&
+        i + 1 == domain_size) {
+      special_case = true;
+    }
+
     const Literal subdomain_literal(
-        special_case && i > 0 ? clause.back().Negated()
-                              : Literal(m->Add(NewBooleanVariable()), true));
+        special_case ? clause.back().Negated()
+                     : Literal(m->Add(NewBooleanVariable()), true));
     clause.push_back(subdomain_literal);
     for_enumeration.push_back(subdomain_literal);
 
@@ -1525,9 +1546,15 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
     case 0: {
       auto* integer_trail = m->GetOrCreate<IntegerTrail>();
       auto* sat_solver = m->GetOrCreate<SatSolver>();
-      if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
-          !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
-        sat_solver->NotifyThatModelIsUnsat();
+      if (prod.IsConstant()) {
+        if (prod.constant.value() != 1) {
+          sat_solver->NotifyThatModelIsUnsat();
+        }
+      } else {
+        if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
+            !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
+          sat_solver->NotifyThatModelIsUnsat();
+        }
       }
       break;
     }

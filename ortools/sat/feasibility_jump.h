@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,17 +27,14 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/functional/any_invocable.h"
-#include "absl/functional/bind_front.h"
-#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/constraint_violation.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/restart.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -304,6 +301,8 @@ struct LsState {
   // constraint weighted by these weights.
   std::vector<int64_t> solution;
   std::vector<double> weights;
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+      base_solution;
 
   // Depending on the options, we use an exponentially decaying constraint
   // weight like for SAT activities.
@@ -473,6 +472,7 @@ class FeasibilityJumpSolver : public SubSolver {
                         ModelSharedTimeLimit* shared_time_limit,
                         SharedResponseManager* shared_response,
                         SharedBoundsManager* shared_bounds,
+                        SharedLsSolutionRepository* shared_hints,
                         SharedStatistics* shared_stats,
                         SharedStatTables* stat_tables)
       : SubSolver(name, type),
@@ -481,6 +481,7 @@ class FeasibilityJumpSolver : public SubSolver {
         states_(std::move(ls_states)),
         shared_time_limit_(shared_time_limit),
         shared_response_(shared_response),
+        shared_hints_(shared_hints),
         stat_tables_(stat_tables),
         random_(params_),
         var_domains_(shared_bounds) {}
@@ -589,6 +590,7 @@ class FeasibilityJumpSolver : public SubSolver {
   std::shared_ptr<SharedLsStates> states_;
   ModelSharedTimeLimit* shared_time_limit_;
   SharedResponseManager* shared_response_;
+  SharedLsSolutionRepository* shared_hints_;
   SharedStatTables* stat_tables_;
   ModelRandomGenerator random_;
 

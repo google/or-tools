@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,8 +17,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
 )
 
 const horizon = 100
@@ -53,6 +53,6 @@ func intervalSampleSat() error {
 
 func main() {
 	if err := intervalSampleSat(); err != nil {
-		glog.Exitf("intervalSampleSat returned with error: %v", err)
+		log.Exitf("intervalSampleSat returned with error: %v", err)
 	}
 }

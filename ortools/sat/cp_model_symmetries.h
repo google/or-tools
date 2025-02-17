@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_SYMMETRIES_H_
 #define OR_TOOLS_SAT_CP_MODEL_SYMMETRIES_H_
 
-#include <limits>
 #include <memory>
 #include <vector>
 
@@ -55,7 +54,23 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 //
 // Currently this just try to fix variables by detecting symmetries between
 // Booleans in bool_and, at_most_one or exactly_one constraints.
+//
+// TODO(user): A bunch of other presolve transformations break the symmetry even
+// though they probably shouldn't. Like the find big liner overlap for instance.
+// Or when we fix variable but don't propagate to the full orbit. It might not
+// be too much work to:
+//   1/ Compute the symmetry early
+//   2/ Only do transformation that preserve them
+// To investigate. It seems disabling find_big_linear_overlap helps on
+// mas74.pb.gz, or the square??.mps for instance. But it is less good overall.
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context);
+
+// This make sure all variables from the same orbit have the same domain.
+// We also remove from the generator cycles on fixed or removed variables.
+//
+// Returns false on UNSAT.
+bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
+                                         PresolveContext* context);
 
 }  // namespace sat
 }  // namespace operations_research

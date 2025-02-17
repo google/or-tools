@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,6 +20,10 @@ add_library(${NAME} OBJECT ${_SRCS})
 set_target_properties(${NAME} PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   )
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
+  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
+endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
@@ -30,5 +34,5 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+  ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::constraint_solver ALIAS ${NAME})

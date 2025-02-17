@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,15 +21,15 @@
 
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 #include "ortools/routing/parsers/tsplib_parser.h"
 
 namespace operations_research {
 namespace {
 
 TEST(OneTreeLBTest, VolgenantJonkerEmpty) {
-  const double cost = ComputeOneTreeLowerBound(0, [](int from, int to) {
+  const double cost = ComputeOneTreeLowerBound(0, [](int /*from*/, int /*to*/) {
     ADD_FAILURE();  // Making sure the function is not being called.
     return 0;
   });
@@ -42,7 +42,7 @@ TEST(OneTreeLBTest, HeldWolfeCrowderEmpty) {
       TravelingSalesmanLowerBoundParameters::HeldWolfeCrowder;
   const double cost = ComputeOneTreeLowerBoundWithParameters(
       0,
-      [](int from, int to) {
+      [](int /*from*/, int /*to*/) {
         ADD_FAILURE();  // Making sure the function is not being called.
         return 0;
       },
@@ -52,7 +52,7 @@ TEST(OneTreeLBTest, HeldWolfeCrowderEmpty) {
 
 TEST(OneTreeLBTest, VolgenantJonkerOneNode) {
   const double cost =
-      ComputeOneTreeLowerBound(1, [](int from, int to) { return 0; });
+      ComputeOneTreeLowerBound(1, [](int /*from*/, int /*to*/) { return 0; });
   EXPECT_EQ(0, cost);
 }
 
@@ -61,13 +61,13 @@ TEST(OneTreeLBTest, HeldWolfeCrowderOneNode) {
   parameters.algorithm =
       TravelingSalesmanLowerBoundParameters::HeldWolfeCrowder;
   const double cost = ComputeOneTreeLowerBoundWithParameters(
-      1, [](int from, int to) { return 0; }, parameters);
+      1, [](int /*from*/, int /*to*/) { return 0; }, parameters);
   EXPECT_EQ(0, cost);
 }
 
 TEST(OneTreeLBTest, VolgenantJonkerTwoNodes) {
   const double cost =
-      ComputeOneTreeLowerBound(2, [](int from, int to) { return 1; });
+      ComputeOneTreeLowerBound(2, [](int /*from*/, int /*to*/) { return 1; });
   EXPECT_EQ(2, cost);
 }
 
@@ -76,7 +76,7 @@ TEST(OneTreeLBTest, HeldWolfeCrowderTwoNodes) {
   parameters.algorithm =
       TravelingSalesmanLowerBoundParameters::HeldWolfeCrowder;
   const double cost = ComputeOneTreeLowerBoundWithParameters(
-      2, [](int from, int to) { return 1; }, parameters);
+      2, [](int /*from*/, int /*to*/) { return 1; }, parameters);
   EXPECT_EQ(2, cost);
 }
 

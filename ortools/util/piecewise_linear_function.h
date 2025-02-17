@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,9 +22,15 @@
 
 #include <cstdint>
 #include <functional>
+#include <iterator>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "absl/algorithm/container.h"
+#include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 
 namespace operations_research {
 // This structure stores one straight line. It contains the start point, the
@@ -268,5 +274,86 @@ class PiecewiseLinearFunction {
   bool is_non_decreasing_;
   bool is_non_increasing_;
 };
+
+// The following class defines a piecewise linear formulation with potential
+// double values for the slope of each linear function.
+// This formulation is meant to be used with a small number of segments (see
+// InlinedVector sizes below).
+// These segments are determined by int64_t values for the "anchor" x and y
+// values, such that (x_anchors_[i], y_anchors_[i]) and
+// (x_anchors_[i+1], y_anchors_[i+1]) are respectively the start and end point
+// of the i-th segment.
+// TODO(user): Adjust the inlined vector sizes based on experiments.
+class FloatSlopePiecewiseLinearFunction {
+ public:
+  static const int kNoValue;
+
+  FloatSlopePiecewiseLinearFunction() = default;
+  FloatSlopePiecewiseLinearFunction(absl::InlinedVector<int64_t, 8> x_anchors,
+                                    absl::InlinedVector<int64_t, 8> y_anchors);
+  FloatSlopePiecewiseLinearFunction(
+      FloatSlopePiecewiseLinearFunction&& other) noexcept {
+    *this = std::move(other);
+  }
+
+  FloatSlopePiecewiseLinearFunction& operator=(
+      FloatSlopePiecewiseLinearFunction&& other) noexcept {
+    x_anchors_ = std::move(other.x_anchors_);
+    y_anchors_ = std::move(other.y_anchors_);
+    return *this;
+  }
+
+  std::string DebugString(absl::string_view line_prefix = {}) const;
+
+  const absl::InlinedVector<int64_t, 8>& x_anchors() const {
+    return x_anchors_;
+  }
+  const absl::InlinedVector<int64_t, 8>& y_anchors() const {
+    return y_anchors_;
+  }
+
+  // Computes the y value associated to 'x'. Returns kNoValue if 'x' is out of
+  // bounds, i.e. lower than the first x_anchor and largest than the last.
+  int64_t ComputeInBoundsValue(int64_t x) const;
+
+  // Computes the y value associated to 'x'. Unlike ComputeInBoundsValue(), if
+  // 'x' is outside the bounds of the function, the function will still be
+  // defined by its outer segments.
+  int64_t ComputeConvexValue(int64_t x) const;
+
+ private:
+  // Returns the index of the segment x belongs to, i.e. the index i such that
+  // x_anchors_[i] ≤ x < x_anchors_[i+1]. For x = x_anchors_.back(), also
+  // returns the last segment (i.e. x_anchors_.size() - 2).
+  // Returns kNoValue if x is out of bounds for the function.
+  int GetSegmentIndex(int64_t x) const {
+    if (x_anchors_.empty() || x < x_anchors_[0] || x > x_anchors_.back()) {
+      return kNoValue;
+    }
+    if (x == x_anchors_.back()) return x_anchors_.size() - 2;
+
+    // Search for first element xi such that xi > x.
+    const auto upper_segment = absl::c_upper_bound(x_anchors_, x);
+    const int segment_index =
+        std::distance(x_anchors_.begin(), upper_segment) - 1;
+    DCHECK_GE(segment_index, 0);
+    DCHECK_LE(segment_index, x_anchors_.size() - 2);
+    return segment_index;
+  }
+
+  // Returns the value of 'x' on the linear segment determined by
+  // x_anchors_[segment_index] and x_anchors_[segment_index + 1].
+  int64_t GetValueOnSegment(int64_t x, int segment_index) const;
+
+  // The set of *increasing* anchor cumul values for the interpolation.
+  absl::InlinedVector<int64_t, 8> x_anchors_;
+  // The y values used for the interpolation:
+  // For any x anchor value, let i be an index such that
+  // x_anchors[i] ≤ x < x_anchors[i+1], then the y value for x is
+  // y_anchors[i] * (1-λ) + y_anchors[i+1] * λ, with
+  // λ = (x - x_anchors[i]) / (x_anchors[i+1] - x_anchors[i]).
+  absl::InlinedVector<int64_t, 8> y_anchors_;
+};
+
 }  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_

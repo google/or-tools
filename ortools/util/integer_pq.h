@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -129,8 +129,8 @@ class IntegerPriorityQueue {
 
  private:
   // Puts the given element at heap index i.
-  void Set(int i, Element element) {
-    heap_[i] = element;
+  void Set(Element* heap, int i, Element element) {
+    heap[i] = element;
     position_[element.Index()] = i;
   }
 
@@ -139,44 +139,46 @@ class IntegerPriorityQueue {
   // this position.
   void SetAndDecreasePriority(int i, const Element element) {
     const int size = size_;
+    Element* heap = heap_.data();
     while (true) {
       const int left = i * 2;
       const int right = left + 1;
       if (right > size) {
         if (left > size) break;
-        const Element left_element = heap_[left];
+        const Element left_element = heap[left];
         if (!less_(element, left_element)) break;
-        Set(i, left_element);
+        Set(heap, i, left_element);
         i = left;
         break;
       }
-      const Element left_element = heap_[left];
-      const Element right_element = heap_[right];
+      const Element left_element = heap[left];
+      const Element right_element = heap[right];
       if (less_(left_element, right_element)) {
         if (!less_(element, right_element)) break;
-        Set(i, right_element);
+        Set(heap, i, right_element);
         i = right;
       } else {
         if (!less_(element, left_element)) break;
-        Set(i, left_element);
+        Set(heap, i, left_element);
         i = left;
       }
     }
-    Set(i, element);
+    Set(heap, i, element);
   }
 
   // Puts the given element at heap index i and update the heap knowing that the
   // element has a priority >= than the priority of the element currently at
   // this position.
   void SetAndIncreasePriority(int i, const Element element) {
+    Element* heap = heap_.data();
     while (i > 1) {
       const int parent = i >> 1;
-      const Element parent_element = heap_[parent];
+      const Element parent_element = heap[parent];
       if (!less_(parent_element, element)) break;
-      Set(i, parent_element);
+      Set(heap, i, parent_element);
       i = parent;
     }
-    Set(i, element);
+    Set(heap, i, element);
   }
 
   int size_;

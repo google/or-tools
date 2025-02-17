@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,12 +17,36 @@ load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
-pybind_extension(
-    name = "swig_helper",
-    srcs = ["swig_helper.cc"],
-    visibility = ["//visibility:public"],
+cc_library(
+    name = "linear_expr_doc",
+    hdrs = ["linear_expr_doc.h"],
+)
+
+cc_library(
+    name = "linear_expr",
+    srcs = ["linear_expr.cc"],
+    hdrs = ["linear_expr.h"],
     deps = [
         "//ortools/sat:cp_model_cc_proto",
+        "//ortools/util:fp_roundtrip_conv",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/container:fixed_array",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+pybind_extension(
+    name = "cp_model_helper",
+    srcs = ["cp_model_helper.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_expr",
+        ":linear_expr_doc",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:swig_helper",
         "@com_google_absl//absl/strings",
@@ -31,10 +55,10 @@ pybind_extension(
 )
 
 py_test(
-    name = "swig_helper_test",
-    srcs = ["swig_helper_test.py"],
+    name = "cp_model_helper_test",
+    srcs = ["cp_model_helper_test.py"],
     deps = [
-        ":swig_helper",
+        ":cp_model_helper",
         "//ortools/sat:cp_model_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
         "//ortools/util/python:sorted_interval_list",
@@ -43,21 +67,21 @@ py_test(
 )
 
 py_library(
-    name = "cp_model_helper",
-    srcs = ["cp_model_helper.py"],
+    name = "cp_model_numbers",
+    srcs = ["cp_model_numbers.py"],
     visibility = ["//visibility:public"],
     deps = [
-        ":swig_helper",
+        ":cp_model_helper",
         requirement("numpy"),
         "@com_google_protobuf//:protobuf_python",
     ],
 )
 
 py_test(
-    name = "cp_model_helper_test",
-    srcs = ["cp_model_helper_test.py"],
+    name = "cp_model_numbers_test",
+    srcs = ["cp_model_numbers_test.py"],
     deps = [
-        ":cp_model_helper",
+        ":cp_model_numbers",
         requirement("absl-py"),
     ],
 )
@@ -68,7 +92,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_helper",
-        ":swig_helper",
+        ":cp_model_numbers",
         requirement("numpy"),
         requirement("pandas"),
         "//ortools/sat:cp_model_py_pb2",
@@ -82,6 +106,8 @@ py_test(
     srcs = ["cp_model_test.py"],
     deps = [
         ":cp_model",
+        ":cp_model_helper",
         requirement("absl-py"),
+        requirement("numpy"),
     ],
 )

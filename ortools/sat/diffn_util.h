@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,11 +15,12 @@
 #define OR_TOOLS_SAT_DIFFN_UTIL_H_
 
 #include <algorithm>
-#include <iosfwd>
+#include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <optional>
-#include <ostream>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -29,9 +30,12 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
-#include "ortools/sat/integer.h"
-#include "ortools/sat/intervals.h"
+#include "ortools/sat/integer_base.h"
+#include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -52,18 +56,30 @@ struct Rectangle {
 
   IntegerValue Area() const { return SizeX() * SizeY(); }
 
+  IntegerValue CapArea() const {
+    return CapProdI(CapSubI(x_max, x_min), CapSubI(y_max, y_min));
+  }
+
   IntegerValue SizeX() const { return x_max - x_min; }
   IntegerValue SizeY() const { return y_max - y_min; }
 
   bool IsDisjoint(const Rectangle& other) const;
 
+  // The methods below are not meant to be used with zero-area rectangles.
+
   // Returns an empty rectangle if no intersection.
   Rectangle Intersect(const Rectangle& other) const;
   IntegerValue IntersectArea(const Rectangle& other) const;
 
+  bool IsInsideOf(const Rectangle& other) const {
+    return x_min >= other.x_min && x_max <= other.x_max &&
+           y_min >= other.y_min && y_max <= other.y_max;
+  }
+
   // Returns `this \ other` as a set of disjoint rectangles of non-empty area.
   // The resulting vector will have at most four elements.
-  absl::InlinedVector<Rectangle, 4> SetDifference(const Rectangle& other) const;
+  absl::InlinedVector<Rectangle, 4> RegionDifference(
+      const Rectangle& other) const;
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const Rectangle& r) {
@@ -75,6 +91,8 @@ struct Rectangle {
     return std::tie(x_min, x_max, y_min, y_max) ==
            std::tie(other.x_min, other.x_max, other.y_min, other.y_max);
   }
+
+  bool operator!=(const Rectangle& other) const { return !(other == *this); }
 
   static Rectangle GetEmpty() {
     return Rectangle{.x_min = IntegerValue(0),
@@ -113,18 +131,37 @@ inline IntegerValue Rectangle::IntersectArea(const Rectangle& other) const {
   }
 }
 
+// Returns the L2 distance between the centers of the two rectangles.
+inline double CenterToCenterL2Distance(const Rectangle& a, const Rectangle& b) {
+  const double diff_x =
+      (static_cast<double>(a.x_min.value()) + a.x_max.value()) / 2.0 -
+      (static_cast<double>(b.x_min.value()) + b.x_max.value()) / 2.0;
+  const double diff_y =
+      (static_cast<double>(a.y_min.value()) + a.y_max.value()) / 2.0 -
+      (static_cast<double>(b.y_min.value()) + b.y_max.value()) / 2.0;
+  return std::sqrt(diff_x * diff_x + diff_y * diff_y);
+}
+
+inline double CenterToCenterLInfinityDistance(const Rectangle& a,
+                                              const Rectangle& b) {
+  const double diff_x =
+      (static_cast<double>(a.x_min.value()) + a.x_max.value()) / 2.0 -
+      (static_cast<double>(b.x_min.value()) + b.x_max.value()) / 2.0;
+  const double diff_y =
+      (static_cast<double>(a.y_min.value()) + a.y_max.value()) / 2.0 -
+      (static_cast<double>(b.y_min.value()) + b.y_max.value()) / 2.0;
+  return std::max(std::abs(diff_x), std::abs(diff_y));
+}
+
 // Creates a graph when two nodes are connected iff their rectangles overlap.
 // Then partition into connected components.
-//
-// This method removes all singleton components. It will modify the
-// active_rectangle span in place.
-std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
-    absl::Span<const Rectangle> rectangles, absl::Span<int> active_rectangles);
+CompactVectorVector<int> GetOverlappingRectangleComponents(
+    absl::Span<const Rectangle> rectangles);
 
 // Visible for testing. The algo is in O(n^4) so shouldn't be used directly.
 // Returns true if there exist a bounding box with too much energy.
-bool BoxesAreInEnergyConflict(const std::vector<Rectangle>& rectangles,
-                              const std::vector<IntegerValue>& energies,
+bool BoxesAreInEnergyConflict(absl::Span<const Rectangle> rectangles,
+                              absl::Span<const IntegerValue> energies,
                               absl::Span<const int> boxes,
                               Rectangle* conflict = nullptr);
 
@@ -190,19 +227,31 @@ struct IndexedInterval {
       return a.start < b.start;
     }
   };
-};
-std::ostream& operator<<(std::ostream& out, const IndexedInterval& interval);
 
-// Given n fixed intervals, returns the subsets of intervals that overlap during
-// at least one time unit. Note that we only return "maximal" subset and filter
-// subset strictly included in another.
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const IndexedInterval& interval) {
+    absl::Format(&sink, "[%v..%v] (#%v)", interval.start, interval.end,
+                 interval.index);
+  }
+};
+
+// Given n fixed intervals that must be sorted by
+// IndexedInterval::ComparatorByStart(), returns the subsets of intervals that
+// overlap during at least one time unit. Note that we only return "maximal"
+// subset and filter subset strictly included in another.
+//
+// IMPORTANT: The span of intervals will not be usable after this function! this
+// could be changed if needed with an extra copy.
 //
 // All Intervals must have a positive size.
 //
 // The algo is in O(n log n) + O(result_size) which is usually O(n^2).
-void ConstructOverlappingSets(bool already_sorted,
-                              std::vector<IndexedInterval>* intervals,
-                              std::vector<std::vector<int>>* result);
+//
+// If the last argument is not empty, we will sort the interval in the result
+// according to the given order, i.e. i will be before j if order[i] < order[j].
+void ConstructOverlappingSets(absl::Span<IndexedInterval> intervals,
+                              CompactVectorVector<int>* result,
+                              absl::Span<const int> order = {});
 
 // Given n intervals, returns the set of connected components (using the overlap
 // relation between 2 intervals). Components are sorted by their start, and
@@ -219,7 +268,7 @@ void GetOverlappingIntervalComponents(
 std::vector<int> GetIntervalArticulationPoints(
     std::vector<IndexedInterval>* intervals);
 
-struct ItemForPairwiseRestriction {
+struct ItemWithVariableSize {
   int index;
   struct Interval {
     IntegerValue start_min;
@@ -229,6 +278,14 @@ struct ItemForPairwiseRestriction {
   };
   Interval x;
   Interval y;
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const ItemWithVariableSize& item) {
+    absl::Format(&sink, "Item %v: [(%v..%v)-(%v..%v)] x [(%v..%v)-(%v..%v)]",
+                 item.index, item.x.start_min, item.x.start_max, item.x.end_min,
+                 item.x.end_max, item.y.start_min, item.y.start_max,
+                 item.y.end_min, item.y.end_max);
+  }
 };
 
 struct PairwiseRestriction {
@@ -252,15 +309,14 @@ struct PairwiseRestriction {
 
 // Find pair of items that are either in conflict or could have their range
 // shrinked to avoid conflict.
-void AppendPairwiseRestrictions(
-    absl::Span<const ItemForPairwiseRestriction> items,
-    std::vector<PairwiseRestriction>* result);
+void AppendPairwiseRestrictions(absl::Span<const ItemWithVariableSize> items,
+                                std::vector<PairwiseRestriction>* result);
 
 // Same as above, but test `items` against `other_items` and append the
 // restrictions found to `result`.
 void AppendPairwiseRestrictions(
-    absl::Span<const ItemForPairwiseRestriction> items,
-    absl::Span<const ItemForPairwiseRestriction> other_items,
+    absl::Span<const ItemWithVariableSize> items,
+    absl::Span<const ItemWithVariableSize> other_items,
     std::vector<PairwiseRestriction>* result);
 
 // This class is used by the no_overlap_2d constraint to maintain the envelope
@@ -377,6 +433,12 @@ struct RectangleInRange {
     TOP_RIGHT = 3,
   };
 
+  bool operator==(const RectangleInRange& other) const {
+    return box_index == other.box_index &&
+           bounding_area == other.bounding_area && x_size == other.x_size &&
+           y_size == other.y_size;
+  }
+
   // Returns the position of the rectangle fixed to one of the corner of its
   // range.
   Rectangle GetAtCorner(Corner p) const {
@@ -433,6 +495,18 @@ struct RectangleInRange {
            Smallest1DIntersection(bounding_area.y_min, bounding_area.y_max,
                                   y_size, containing_area.y_min,
                                   containing_area.y_max);
+  }
+
+  Rectangle GetMandatoryRegion() const {
+    // Weird math to avoid overflow.
+    if (bounding_area.SizeX() - x_size >= x_size ||
+        bounding_area.SizeY() - y_size >= y_size) {
+      return Rectangle::GetEmpty();
+    }
+    return Rectangle{.x_min = bounding_area.x_max - x_size,
+                     .x_max = bounding_area.x_min + x_size,
+                     .y_min = bounding_area.y_max - y_size,
+                     .y_max = bounding_area.y_min + y_size};
   }
 
   static RectangleInRange BiggestWithMinIntersection(
@@ -599,13 +673,65 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
 // Render a packing solution as a Graphviz dot file. Only works in the "neato"
 // or "fdp" Graphviz backends.
 std::string RenderDot(std::optional<Rectangle> bb,
-                      absl::Span<const Rectangle> solution);
+                      absl::Span<const Rectangle> solution,
+                      std::string_view extra_dot_payload = "");
 
 // Given a bounding box and a list of rectangles inside that bounding box,
 // returns a list of rectangles partitioning the empty area inside the bounding
 // box.
 std::vector<Rectangle> FindEmptySpaces(
     const Rectangle& bounding_box, std::vector<Rectangle> ocupied_rectangles);
+
+// Given two regions, each one of them defined by a vector of non-overlapping
+// rectangles paving them, returns a vector of non-overlapping rectangles that
+// paves the points that were part of the first region but not of the second.
+// This can also be seen as the set difference of the points of the regions.
+std::vector<Rectangle> PavedRegionDifference(
+    std::vector<Rectangle> original_region,
+    absl::Span<const Rectangle> area_to_remove);
+
+// The two regions must be defined by non-overlapping rectangles.
+inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
+                                absl::Span<const Rectangle> other) {
+  return PavedRegionDifference({other.begin(), other.end()}, region).empty();
+}
+
+// For a given a set of N rectangles in `rectangles`, there might be up to
+// N*(N-1)/2 pairs of rectangles that intersect one another. If each of these
+// pairs describe an arc and each rectangle describe a node, the rectangles and
+// their intersections describe a graph. This function returns the full spanning
+// forest for this graph (ie., a spanning tree for each connected component).
+// This function allows to know if a set of rectangles has any intersection,
+// find an example intersection for each rectangle that has one, or split the
+// rectangles into connected components according to their intersections.
+//
+// The returned tuples are the arcs of the spanning forest represented by their
+// indices in the input vector.
+//
+// This function works with degenerate rectangles (ie., points or lines) and
+// have the same semantics for overlap as Rectangle::IsDisjoint().
+//
+// Note: This function runs in O(N (log N)^2) time on the input size, which
+// would be impossible to do if we were to return all the intersections, which
+// can be quadratic in number.
+std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
+    absl::Span<const Rectangle> rectangles);
+
+// This function is faster that the FindPartialRectangleIntersections() if one
+// only want to know if there is at least one intersection. It is in O(N log N).
+//
+// IMPORTANT: this assumes rectangles are already sorted by their x_min and does
+// not support degenerate rectangles with zero area.
+//
+// If a pair {i, j} is returned, we will have i < j, and no intersection in
+// the subset of rectanges in [0, j).
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
+    absl::Span<const Rectangle> rectangles);
+
+// Same as FindOneIntersectionIfPresent() but supports degenerate rectangles
+// with zero area.
+std::optional<std::pair<int, int>> FindOneIntersectionIfPresentWithZeroArea(
+    absl::Span<const Rectangle> rectangles);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -6,7 +6,7 @@ FROM rockylinux:9
 #############
 #ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
-&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y group install 'Development Tools' \
 && dnf -y install zlib-devel cmake \
 && dnf clean all \
 && rm -rf /var/cache/dnf

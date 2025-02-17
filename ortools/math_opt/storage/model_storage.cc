@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,19 +15,18 @@
 
 #include <cstdint>
 #include <memory>
+#include <new>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -39,7 +38,6 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/iterators.h"
 #include "ortools/math_opt/storage/linear_constraint_storage.h"
-#include "ortools/math_opt/storage/sparse_matrix.h"
 #include "ortools/math_opt/storage/update_trackers.h"
 #include "ortools/math_opt/storage/variable_storage.h"
 #include "ortools/math_opt/validators/model_validator.h"
@@ -82,19 +80,21 @@ absl::StatusOr<std::unique_ptr<ModelStorage>> ModelStorage::FromModelProto(
       model_proto.linear_constraint_matrix());
 
   // Add quadratic constraints.
-  storage->quadratic_constraints_.AddConstraints(
+  storage->copyable_data_.quadratic_constraints.AddConstraints(
       model_proto.quadratic_constraints());
 
   // Add SOC constraints.
-  storage->soc_constraints_.AddConstraints(
+  storage->copyable_data_.soc_constraints.AddConstraints(
       model_proto.second_order_cone_constraints());
 
   // Add SOS constraints.
-  storage->sos1_constraints_.AddConstraints(model_proto.sos1_constraints());
-  storage->sos2_constraints_.AddConstraints(model_proto.sos2_constraints());
+  storage->copyable_data_.sos1_constraints.AddConstraints(
+      model_proto.sos1_constraints());
+  storage->copyable_data_.sos2_constraints.AddConstraints(
+      model_proto.sos2_constraints());
 
   // Add indicator constraints.
-  storage->indicator_constraints_.AddConstraints(
+  storage->copyable_data_.indicator_constraints.AddConstraints(
       model_proto.indicator_constraints());
 
   return storage;
@@ -145,42 +145,22 @@ void ModelStorage::UpdateLinearConstraintCoefficients(
 
 std::unique_ptr<ModelStorage> ModelStorage::Clone(
     const std::optional<absl::string_view> new_name) const {
-  ModelProto model_proto = ExportModel();
+  // We leverage the private copy constructor that copies copyable_data_ but not
+  // update_trackers_ here.
+  std::unique_ptr<ModelStorage> clone =
+      absl::WrapUnique(new ModelStorage(*this));
   if (new_name.has_value()) {
-    model_proto.set_name(std::string(*new_name));
+    clone->copyable_data_.name = *new_name;
   }
-  absl::StatusOr<std::unique_ptr<ModelStorage>> clone =
-      ModelStorage::FromModelProto(model_proto);
-  // Unless there is a very serious bug, a model exported by ExportModel()
-  // should always be valid.
-  CHECK_OK(clone.status());
-
-  // Update the next ids so that the clone does not reused any deleted id from
-  // the original.
-  clone.value()->ensure_next_variable_id_at_least(next_variable_id());
-  clone.value()->ensure_next_auxiliary_objective_id_at_least(
-      next_auxiliary_objective_id());
-  clone.value()->ensure_next_linear_constraint_id_at_least(
-      next_linear_constraint_id());
-  clone.value()->ensure_next_constraint_id_at_least(
-      next_constraint_id<QuadraticConstraintId>());
-  clone.value()->ensure_next_constraint_id_at_least(
-      next_constraint_id<SecondOrderConeConstraintId>());
-  clone.value()->ensure_next_constraint_id_at_least(
-      next_constraint_id<Sos1ConstraintId>());
-  clone.value()->ensure_next_constraint_id_at_least(
-      next_constraint_id<Sos2ConstraintId>());
-  clone.value()->ensure_next_constraint_id_at_least(
-      next_constraint_id<IndicatorConstraintId>());
-
-  return std::move(clone).value();
+  return clone;
 }
 
 VariableId ModelStorage::AddVariable(const double lower_bound,
                                      const double upper_bound,
                                      const bool is_integer,
                                      const absl::string_view name) {
-  return variables_.Add(lower_bound, upper_bound, is_integer, name);
+  return copyable_data_.variables.Add(lower_bound, upper_bound, is_integer,
+                                      name);
 }
 
 void ModelStorage::AddVariables(const VariablesProto& variables) {
@@ -198,39 +178,39 @@ void ModelStorage::AddVariables(const VariablesProto& variables) {
 }
 
 void ModelStorage::DeleteVariable(const VariableId id) {
-  CHECK(variables_.contains(id));
+  CHECK(copyable_data_.variables.contains(id));
   const auto& trackers = update_trackers_.GetUpdatedTrackers();
   // Reuse output of GetUpdatedTrackers() only once to ensure a consistent view,
   // do not call UpdateAndGetLinearConstraintDiffs() etc.
-  objectives_.DeleteVariable(
+  copyable_data_.objectives.DeleteVariable(
       id,
       MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_objective>(trackers));
-  linear_constraints_.DeleteVariable(
+  copyable_data_.linear_constraints.DeleteVariable(
       id,
       MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_linear_constraints>(
           trackers));
-  quadratic_constraints_.DeleteVariable(id);
-  soc_constraints_.DeleteVariable(id);
-  sos1_constraints_.DeleteVariable(id);
-  sos2_constraints_.DeleteVariable(id);
-  indicator_constraints_.DeleteVariable(id);
-  variables_.Delete(
+  copyable_data_.quadratic_constraints.DeleteVariable(id);
+  copyable_data_.soc_constraints.DeleteVariable(id);
+  copyable_data_.sos1_constraints.DeleteVariable(id);
+  copyable_data_.sos2_constraints.DeleteVariable(id);
+  copyable_data_.indicator_constraints.DeleteVariable(id);
+  copyable_data_.variables.Delete(
       id,
       MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_variables>(trackers));
 }
 
 std::vector<VariableId> ModelStorage::variables() const {
-  return variables_.Variables();
+  return copyable_data_.variables.Variables();
 }
 
 std::vector<VariableId> ModelStorage::SortedVariables() const {
-  return variables_.SortedVariables();
+  return copyable_data_.variables.SortedVariables();
 }
 
 LinearConstraintId ModelStorage::AddLinearConstraint(
     const double lower_bound, const double upper_bound,
     const absl::string_view name) {
-  return linear_constraints_.Add(lower_bound, upper_bound, name);
+  return copyable_data_.linear_constraints.Add(lower_bound, upper_bound, name);
 }
 
 void ModelStorage::AddLinearConstraints(
@@ -251,16 +231,17 @@ void ModelStorage::AddLinearConstraints(
 }
 
 void ModelStorage::DeleteLinearConstraint(const LinearConstraintId id) {
-  CHECK(linear_constraints_.contains(id));
-  linear_constraints_.Delete(id, UpdateAndGetLinearConstraintDiffs());
+  CHECK(copyable_data_.linear_constraints.contains(id));
+  copyable_data_.linear_constraints.Delete(id,
+                                           UpdateAndGetLinearConstraintDiffs());
 }
 
 std::vector<LinearConstraintId> ModelStorage::LinearConstraints() const {
-  return linear_constraints_.LinearConstraints();
+  return copyable_data_.linear_constraints.LinearConstraints();
 }
 
 std::vector<LinearConstraintId> ModelStorage::SortedLinearConstraints() const {
-  return linear_constraints_.SortedLinearConstraints();
+  return copyable_data_.linear_constraints.SortedLinearConstraints();
 }
 
 void ModelStorage::AddAuxiliaryObjectives(
@@ -283,23 +264,26 @@ void ModelStorage::AddAuxiliaryObjectives(
 // tries to create a very long RepeatedField.
 ModelProto ModelStorage::ExportModel(const bool remove_names) const {
   ModelProto result;
-  result.set_name(name_);
-  *result.mutable_variables() = variables_.Proto();
+  result.set_name(copyable_data_.name);
+  *result.mutable_variables() = copyable_data_.variables.Proto();
   {
-    auto [primary, auxiliary] = objectives_.Proto();
+    auto [primary, auxiliary] = copyable_data_.objectives.Proto();
     *result.mutable_objective() = std::move(primary);
     *result.mutable_auxiliary_objectives() = std::move(auxiliary);
   }
   {
-    auto [constraints, matrix] = linear_constraints_.Proto();
+    auto [constraints, matrix] = copyable_data_.linear_constraints.Proto();
     *result.mutable_linear_constraints() = std::move(constraints);
     *result.mutable_linear_constraint_matrix() = std::move(matrix);
   }
-  *result.mutable_quadratic_constraints() = quadratic_constraints_.Proto();
-  *result.mutable_second_order_cone_constraints() = soc_constraints_.Proto();
-  *result.mutable_sos1_constraints() = sos1_constraints_.Proto();
-  *result.mutable_sos2_constraints() = sos2_constraints_.Proto();
-  *result.mutable_indicator_constraints() = indicator_constraints_.Proto();
+  *result.mutable_quadratic_constraints() =
+      copyable_data_.quadratic_constraints.Proto();
+  *result.mutable_second_order_cone_constraints() =
+      copyable_data_.soc_constraints.Proto();
+  *result.mutable_sos1_constraints() = copyable_data_.sos1_constraints.Proto();
+  *result.mutable_sos2_constraints() = copyable_data_.sos2_constraints.Proto();
+  *result.mutable_indicator_constraints() =
+      copyable_data_.indicator_constraints.Proto();
   // Performance can be improved when remove_names is true by just not
   // extracting the names above instead of clearing them below, but this will
   // be more code, see discussion on cl/549469633 and prototype in cl/549369764.
@@ -315,15 +299,19 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
   // We must detect the empty case to prevent unneeded copies and merging in
   // ExportModelUpdate().
 
-  if (storage.variables_.diff_is_empty(dirty_variables) &&
-      storage.objectives_.diff_is_empty(dirty_objective) &&
-      storage.linear_constraints_.diff_is_empty(dirty_linear_constraints) &&
-      storage.quadratic_constraints_.diff_is_empty(
+  if (storage.copyable_data_.variables.diff_is_empty(dirty_variables) &&
+      storage.copyable_data_.objectives.diff_is_empty(dirty_objective) &&
+      storage.copyable_data_.linear_constraints.diff_is_empty(
+          dirty_linear_constraints) &&
+      storage.copyable_data_.quadratic_constraints.diff_is_empty(
           dirty_quadratic_constraints) &&
-      storage.soc_constraints_.diff_is_empty(dirty_soc_constraints) &&
-      storage.sos1_constraints_.diff_is_empty(dirty_sos1_constraints) &&
-      storage.sos2_constraints_.diff_is_empty(dirty_sos2_constraints) &&
-      storage.indicator_constraints_.diff_is_empty(
+      storage.copyable_data_.soc_constraints.diff_is_empty(
+          dirty_soc_constraints) &&
+      storage.copyable_data_.sos1_constraints.diff_is_empty(
+          dirty_sos1_constraints) &&
+      storage.copyable_data_.sos2_constraints.diff_is_empty(
+          dirty_sos2_constraints) &&
+      storage.copyable_data_.indicator_constraints.diff_is_empty(
           dirty_indicator_constraints)) {
     return std::nullopt;
   }
@@ -333,18 +321,19 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
   // Variable/constraint deletions.
   {
     VariableStorage::UpdateResult variable_update =
-        storage.variables_.Update(dirty_variables);
+        storage.copyable_data_.variables.Update(dirty_variables);
     *result.mutable_deleted_variable_ids() = std::move(variable_update.deleted);
     *result.mutable_variable_updates() = std::move(variable_update.updates);
     *result.mutable_new_variables() = std::move(variable_update.creates);
   }
   const std::vector<VariableId> new_variables =
-      storage.variables_.VariablesFrom(dirty_variables.checkpoint);
+      storage.copyable_data_.variables.VariablesFrom(
+          dirty_variables.checkpoint);
 
   // Linear constraint updates
   {
     LinearConstraintStorage::UpdateResult lin_con_update =
-        storage.linear_constraints_.Update(
+        storage.copyable_data_.linear_constraints.Update(
             dirty_linear_constraints, dirty_variables.deleted, new_variables);
     *result.mutable_deleted_linear_constraint_ids() =
         std::move(lin_con_update.deleted);
@@ -358,25 +347,27 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
 
   // Quadratic constraint updates
   *result.mutable_quadratic_constraint_updates() =
-      storage.quadratic_constraints_.Update(dirty_quadratic_constraints);
+      storage.copyable_data_.quadratic_constraints.Update(
+          dirty_quadratic_constraints);
 
   // Second-order cone constraint updates
   *result.mutable_second_order_cone_constraint_updates() =
-      storage.soc_constraints_.Update(dirty_soc_constraints);
+      storage.copyable_data_.soc_constraints.Update(dirty_soc_constraints);
 
   // SOS constraint updates
   *result.mutable_sos1_constraint_updates() =
-      storage.sos1_constraints_.Update(dirty_sos1_constraints);
+      storage.copyable_data_.sos1_constraints.Update(dirty_sos1_constraints);
   *result.mutable_sos2_constraint_updates() =
-      storage.sos2_constraints_.Update(dirty_sos2_constraints);
+      storage.copyable_data_.sos2_constraints.Update(dirty_sos2_constraints);
 
   // Indicator constraint updates
   *result.mutable_indicator_constraint_updates() =
-      storage.indicator_constraints_.Update(dirty_indicator_constraints);
+      storage.copyable_data_.indicator_constraints.Update(
+          dirty_indicator_constraints);
 
   // Update the objective
   {
-    auto [primary, auxiliary] = storage.objectives_.Update(
+    auto [primary, auxiliary] = storage.copyable_data_.objectives.Update(
         dirty_objective, dirty_variables.deleted, new_variables);
     *result.mutable_objective_updates() = std::move(primary);
     *result.mutable_auxiliary_objectives_updates() = std::move(auxiliary);
@@ -390,25 +381,29 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
 
 void ModelStorage::UpdateTrackerData::AdvanceCheckpoint(
     const ModelStorage& storage) {
-  storage.variables_.AdvanceCheckpointInDiff(dirty_variables);
-  storage.objectives_.AdvanceCheckpointInDiff(dirty_variables.checkpoint,
-                                              dirty_objective);
-  storage.linear_constraints_.AdvanceCheckpointInDiff(
+  storage.copyable_data_.variables.AdvanceCheckpointInDiff(dirty_variables);
+  storage.copyable_data_.objectives.AdvanceCheckpointInDiff(
+      dirty_variables.checkpoint, dirty_objective);
+  storage.copyable_data_.linear_constraints.AdvanceCheckpointInDiff(
       dirty_variables.checkpoint, dirty_linear_constraints);
-  storage.quadratic_constraints_.AdvanceCheckpointInDiff(
+  storage.copyable_data_.quadratic_constraints.AdvanceCheckpointInDiff(
       dirty_quadratic_constraints);
-  storage.soc_constraints_.AdvanceCheckpointInDiff(dirty_soc_constraints);
-  storage.sos1_constraints_.AdvanceCheckpointInDiff(dirty_sos1_constraints);
-  storage.sos2_constraints_.AdvanceCheckpointInDiff(dirty_sos2_constraints);
-  storage.indicator_constraints_.AdvanceCheckpointInDiff(
+  storage.copyable_data_.soc_constraints.AdvanceCheckpointInDiff(
+      dirty_soc_constraints);
+  storage.copyable_data_.sos1_constraints.AdvanceCheckpointInDiff(
+      dirty_sos1_constraints);
+  storage.copyable_data_.sos2_constraints.AdvanceCheckpointInDiff(
+      dirty_sos2_constraints);
+  storage.copyable_data_.indicator_constraints.AdvanceCheckpointInDiff(
       dirty_indicator_constraints);
 }
 
 UpdateTrackerId ModelStorage::NewUpdateTracker() {
   return update_trackers_.NewUpdateTracker(
-      variables_, objectives_, linear_constraints_, quadratic_constraints_,
-      soc_constraints_, sos1_constraints_, sos2_constraints_,
-      indicator_constraints_);
+      copyable_data_.variables, copyable_data_.objectives,
+      copyable_data_.linear_constraints, copyable_data_.quadratic_constraints,
+      copyable_data_.soc_constraints, copyable_data_.sos1_constraints,
+      copyable_data_.sos2_constraints, copyable_data_.indicator_constraints);
 }
 
 void ModelStorage::DeleteUpdateTracker(const UpdateTrackerId update_tracker) {
@@ -436,50 +431,50 @@ absl::Status ModelStorage::ApplyUpdateProto(
       RETURN_IF_ERROR(summary.variables.Insert(id.value(), variable_name(id)))
           << "invalid variable id in model";
     }
-    RETURN_IF_ERROR(
-        summary.variables.SetNextFreeId(variables_.next_id().value()));
+    RETURN_IF_ERROR(summary.variables.SetNextFreeId(
+        copyable_data_.variables.next_id().value()));
     for (const AuxiliaryObjectiveId id : SortedAuxiliaryObjectives()) {
       RETURN_IF_ERROR(
           summary.auxiliary_objectives.Insert(id.value(), objective_name(id)))
           << "invalid auxiliary objective id in model";
     }
     RETURN_IF_ERROR(summary.auxiliary_objectives.SetNextFreeId(
-        objectives_.next_id().value()));
+        copyable_data_.objectives.next_id().value()));
     for (const LinearConstraintId id : SortedLinearConstraints()) {
       RETURN_IF_ERROR(summary.linear_constraints.Insert(
           id.value(), linear_constraint_name(id)))
           << "invalid linear constraint id in model";
     }
     RETURN_IF_ERROR(summary.linear_constraints.SetNextFreeId(
-        linear_constraints_.next_id().value()));
+        copyable_data_.linear_constraints.next_id().value()));
     for (const auto id : SortedConstraints<QuadraticConstraintId>()) {
       RETURN_IF_ERROR(summary.quadratic_constraints.Insert(
-          id.value(), quadratic_constraints_.data(id).name))
+          id.value(), copyable_data_.quadratic_constraints.data(id).name))
           << "invalid quadratic constraint id in model";
     }
     RETURN_IF_ERROR(summary.quadratic_constraints.SetNextFreeId(
-        quadratic_constraints_.next_id().value()));
+        copyable_data_.quadratic_constraints.next_id().value()));
     for (const auto id : SortedConstraints<SecondOrderConeConstraintId>()) {
       RETURN_IF_ERROR(summary.second_order_cone_constraints.Insert(
-          id.value(), soc_constraints_.data(id).name))
+          id.value(), copyable_data_.soc_constraints.data(id).name))
           << "invalid second-order cone constraint id in model";
     }
     RETURN_IF_ERROR(summary.second_order_cone_constraints.SetNextFreeId(
-        soc_constraints_.next_id().value()));
+        copyable_data_.soc_constraints.next_id().value()));
     for (const Sos1ConstraintId id : SortedConstraints<Sos1ConstraintId>()) {
       RETURN_IF_ERROR(summary.sos1_constraints.Insert(
           id.value(), constraint_data(id).name()))
           << "invalid SOS1 constraint id in model";
     }
     RETURN_IF_ERROR(summary.sos1_constraints.SetNextFreeId(
-        sos1_constraints_.next_id().value()));
+        copyable_data_.sos1_constraints.next_id().value()));
     for (const Sos2ConstraintId id : SortedConstraints<Sos2ConstraintId>()) {
       RETURN_IF_ERROR(summary.sos2_constraints.Insert(
           id.value(), constraint_data(id).name()))
           << "invalid SOS2 constraint id in model";
     }
     RETURN_IF_ERROR(summary.sos2_constraints.SetNextFreeId(
-        sos2_constraints_.next_id().value()));
+        copyable_data_.sos2_constraints.next_id().value()));
 
     for (const IndicatorConstraintId id :
          SortedConstraints<IndicatorConstraintId>()) {
@@ -487,7 +482,7 @@ absl::Status ModelStorage::ApplyUpdateProto(
           id.value(), constraint_data(id).name));
     }
     RETURN_IF_ERROR(summary.indicator_constraints.SetNextFreeId(
-        indicator_constraints_.next_id().value()));
+        copyable_data_.indicator_constraints.next_id().value()));
 
     RETURN_IF_ERROR(ValidateModelUpdate(update_proto, summary))
         << "update not valid";
@@ -554,15 +549,15 @@ absl::Status ModelStorage::ApplyUpdateProto(
   AddAuxiliaryObjectives(
       update_proto.auxiliary_objectives_updates().new_objectives());
   AddLinearConstraints(update_proto.new_linear_constraints());
-  quadratic_constraints_.AddConstraints(
+  copyable_data_.quadratic_constraints.AddConstraints(
       update_proto.quadratic_constraint_updates().new_constraints());
-  soc_constraints_.AddConstraints(
+  copyable_data_.soc_constraints.AddConstraints(
       update_proto.second_order_cone_constraint_updates().new_constraints());
-  sos1_constraints_.AddConstraints(
+  copyable_data_.sos1_constraints.AddConstraints(
       update_proto.sos1_constraint_updates().new_constraints());
-  sos2_constraints_.AddConstraints(
+  copyable_data_.sos2_constraints.AddConstraints(
       update_proto.sos2_constraint_updates().new_constraints());
-  indicator_constraints_.AddConstraints(
+  copyable_data_.indicator_constraints.AddConstraints(
       update_proto.indicator_constraint_updates().new_constraints());
 
   // Update the primary objective.

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_LP_DATA_PERMUTATION_H_
 #define OR_TOOLS_LP_DATA_PERMUTATION_H_
 
+#include <cstddef>
+
+#include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_types.h"
@@ -45,13 +48,13 @@ class Permutation {
  public:
   Permutation() : perm_() {}
 
-  explicit Permutation(IndexType size) : perm_(size.value(), IndexType(0)) {}
+  explicit Permutation(IndexType size) : perm_(size, IndexType(0)) {}
 
   // This type is neither copyable nor movable.
   Permutation(const Permutation&) = delete;
   Permutation& operator=(const Permutation&) = delete;
 
-  IndexType size() const { return IndexType(perm_.size()); }
+  IndexType size() const { return perm_.size(); }
   bool empty() const { return perm_.empty(); }
 
   void clear() { perm_.clear(); }
@@ -60,9 +63,7 @@ class Permutation {
     perm_.resize(size.value(), value);
   }
 
-  void assign(IndexType size, IndexType value) {
-    perm_.assign(size.value(), value);
-  }
+  void assign(IndexType size, IndexType value) { perm_.assign(size, value); }
 
   IndexType& operator[](IndexType i) { return perm_[i]; }
 
@@ -89,8 +90,16 @@ class Permutation {
   // is -1. (Remembering hint: the signature of a swap (a 2-cycle) is -1.)
   int ComputeSignature() const;
 
+  // For hot-loops it might be slighlty faster to cache the pointer and avoid
+  // bound checking on each [] access.
+  const IndexType* data() const { return perm_.data(); }
+
+  StrictITISpan<IndexType, const IndexType> const_view() const {
+    return perm_.view();
+  }
+
  private:
-  util_intops::StrongVector<IndexType, IndexType> perm_;
+  StrictITIVector<IndexType, IndexType> perm_;
 };
 
 typedef Permutation<RowIndex> RowPermutation;
@@ -116,16 +125,21 @@ void ApplyInversePermutation(const Permutation<IndexType>& perm,
 // row-indexed vector v.
 template <typename RowIndexedVector>
 void ApplyColumnPermutationToRowIndexedVector(
-    const Permutation<ColIndex>& col_perm, RowIndexedVector* v) {
-  RowIndexedVector temp_v = *v;
-  ApplyPermutation(col_perm, temp_v, v);
-}
-
-template <typename RowIndexedVector>
-void ApplyColumnPermutationToRowIndexedVector(
-    const Permutation<ColIndex>& col_perm, RowIndexedVector* v,
+    StrictITISpan<ColIndex, const ColIndex> col_perm, RowIndexedVector* v,
     RowIndexedVector* tmp) {
-  ApplyPermutation(col_perm, *v, tmp);
+  // Empty size means identity.
+  const int size = col_perm.size().value();
+  if (size == 0) return;
+
+  // Permute into tmp and swap.
+  DCHECK_EQ(size, v->size());
+
+  tmp->resize(RowIndex(size));
+  const auto* from = v->data();
+  auto* to = tmp->data();
+  for (int i = 0; i < size; ++i) {
+    to[col_perm[ColIndex(i)].value()] = from[i];
+  }
   std::swap(*tmp, *v);
 }
 
@@ -135,7 +149,7 @@ void ApplyColumnPermutationToRowIndexedVector(
 
 template <typename IndexType>
 void Permutation<IndexType>::PopulateFromInverse(const Permutation& inverse) {
-  const size_t size = inverse.perm_.size();
+  const IndexType size = inverse.perm_.size();
   perm_.resize(size);
   for (IndexType i(0); i < size; ++i) {
     perm_[inverse[i]] = i;
@@ -144,7 +158,7 @@ void Permutation<IndexType>::PopulateFromInverse(const Permutation& inverse) {
 
 template <typename IndexType>
 void Permutation<IndexType>::PopulateFromIdentity() {
-  const size_t size = perm_.size();
+  const IndexType size = perm_.size();
   perm_.resize(size, IndexType(0));
   for (IndexType i(0); i < size; ++i) {
     perm_[i] = i;
@@ -154,12 +168,12 @@ void Permutation<IndexType>::PopulateFromIdentity() {
 template <typename IndexType>
 void Permutation<IndexType>::PopulateRandomly() {
   PopulateFromIdentity();
-  std::shuffle(perm_.begin(), perm_.end());
+  std::shuffle(perm_.begin(), perm_.end(), absl::BitGen());
 }
 
 template <typename IndexType>
 bool Permutation<IndexType>::Check() const {
-  const size_t size = perm_.size();
+  const size_t size = perm_.size().value();
   util_intops::StrongVector<IndexType, bool> visited(size, false);
   for (IndexType i(0); i < size; ++i) {
     if (perm_[i] < 0 || perm_[i] >= size) {
@@ -177,7 +191,7 @@ bool Permutation<IndexType>::Check() const {
 
 template <typename IndexType>
 int Permutation<IndexType>::ComputeSignature() const {
-  const size_t size = perm_.size();
+  const size_t size = perm_.size().value();
   util_intops::StrongVector<IndexType, bool> visited(size);
   DCHECK(Check());
   int signature = 1;

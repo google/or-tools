@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,17 +17,13 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
-#include <functional>
 #include <limits>
 #include <numeric>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
@@ -37,7 +33,6 @@
 #include "google/protobuf/descriptor.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -143,7 +138,7 @@ void QuotientAndRemainder(int64_t a, int64_t b, int64_t& q, int64_t& r) {
 
 }  // namespace
 
-// Using the extended Euclidian algo, we find a and b such that
+// Using the extended Euclidean algo, we find a and b such that
 //     a x + b m = gcd(x, m)
 // https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 int64_t ModularInverse(int64_t x, int64_t m) {
@@ -250,7 +245,56 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
   return true;
 }
 
-// TODO(user): Find better implementation? In pratice passing via double is
+bool DiophantineEquationOfSizeTwoHasSolutionInDomain(const Domain& x, int64_t a,
+                                                     const Domain& y, int64_t b,
+                                                     int64_t cte) {
+  if (x.IsEmpty() || y.IsEmpty()) return false;
+  if (a == 0 && b == 0) {
+    return cte == 0;
+  }
+  if (a == 0) {
+    const int64_t div = cte / b;
+    if (b * div != cte) return false;
+    return y.Contains(div);
+  }
+  if (b == 0) {
+    const int64_t div = cte / a;
+    if (a * div != cte) return false;
+    return x.Contains(div);
+  }
+
+  if (a == b) {
+    const int64_t div = cte / a;
+    if (a * div != cte) {
+      return false;
+    }
+    return !Domain(x)
+                .Negation()
+                .AdditionWith(Domain(div))
+                .IntersectionWith(y)
+                .IsEmpty();
+  }
+
+  int64_t x0, y0;
+  if (!SolveDiophantineEquationOfSizeTwo(a, b, cte, x0, y0)) {
+    return false;
+  }
+  const Domain z_domain =
+      x.AdditionWith(Domain(-x0))
+          .InverseMultiplicationBy(b)
+          .IntersectionWith(
+              y.AdditionWith(Domain(-y0)).InverseMultiplicationBy(-a));
+
+  const Domain z_restricted_d1 =
+      x.AdditionWith(Domain(-x0)).InverseMultiplicationBy(b);
+  const Domain z_restricted_d2 =
+      y.AdditionWith(Domain(-y0)).InverseMultiplicationBy(-a);
+  const Domain z_restricted_domain =
+      z_restricted_d1.IntersectionWith(z_restricted_d2);
+  return !z_restricted_domain.IsEmpty();
+}
+
+// TODO(user): Find better implementation? In practice passing via double is
 // almost always correct, but the CapProd() might be a bit slow. However this
 // is only called when we do propagate something.
 int64_t FloorSquareRoot(int64_t a) {
@@ -451,44 +495,6 @@ double Percentile::GetPercentile(double percent) {
   return *lower_it + (percentile_rank - lower_rank) * (*upper_it - *lower_it);
 }
 
-void CompressTuples(absl::Span<const int64_t> domain_sizes,
-                    std::vector<std::vector<int64_t>>* tuples) {
-  if (tuples->empty()) return;
-
-  // Remove duplicates if any.
-  gtl::STLSortAndRemoveDuplicates(tuples);
-
-  const int num_vars = (*tuples)[0].size();
-
-  std::vector<int> to_remove;
-  std::vector<int64_t> tuple_minus_var_i(num_vars - 1);
-  for (int i = 0; i < num_vars; ++i) {
-    const int domain_size = domain_sizes[i];
-    if (domain_size == 1) continue;
-    absl::flat_hash_map<const std::vector<int64_t>, std::vector<int>>
-        masked_tuples_to_indices;
-    for (int t = 0; t < tuples->size(); ++t) {
-      int out = 0;
-      for (int j = 0; j < num_vars; ++j) {
-        if (i == j) continue;
-        tuple_minus_var_i[out++] = (*tuples)[t][j];
-      }
-      masked_tuples_to_indices[tuple_minus_var_i].push_back(t);
-    }
-    to_remove.clear();
-    for (const auto& it : masked_tuples_to_indices) {
-      if (it.second.size() != domain_size) continue;
-      (*tuples)[it.second.front()][i] = kTableAnyValue;
-      to_remove.insert(to_remove.end(), it.second.begin() + 1, it.second.end());
-    }
-    std::sort(to_remove.begin(), to_remove.end(), std::greater<int>());
-    for (const int t : to_remove) {
-      (*tuples)[t] = tuples->back();
-      tuples->pop_back();
-    }
-  }
-}
-
 void MaxBoundedSubsetSum::Reset(int64_t bound) {
   DCHECK_GE(bound, 0);
   gcd_ = 0;
@@ -538,12 +544,13 @@ void MaxBoundedSubsetSum::AddMultiples(int64_t coeff, int64_t max_value) {
   if (current_max_ == bound_) return;
   gcd_ = std::gcd(gcd_, coeff);
 
-  const int64_t num_values = std::min(max_value, FloorOfRatio(bound_, coeff));
+  const int64_t num_values =
+      std::min(max_value, MathUtil::FloorOfRatio(bound_, coeff));
   if (num_values > 10) {
     // We only keep GCD in this case.
     sums_.clear();
     expanded_sums_.clear();
-    current_max_ = FloorOfRatio(bound_, gcd_) * gcd_;
+    current_max_ = MathUtil::FloorOfRatio(bound_, gcd_) * gcd_;
     return;
   }
 
@@ -607,7 +614,7 @@ void MaxBoundedSubsetSum::AddChoicesInternal(absl::Span<const int64_t> values) {
   if (gcd_ == 1) {
     current_max_ = bound_;
   } else {
-    current_max_ = FloorOfRatio(bound_, gcd_) * gcd_;
+    current_max_ = MathUtil::FloorOfRatio(bound_, gcd_) * gcd_;
   }
 }
 
@@ -639,8 +646,8 @@ int64_t MaxBoundedSubsetSum::MaxIfAdded(int64_t candidate) const {
 }
 
 BasicKnapsackSolver::Result BasicKnapsackSolver::Solve(
-    const std::vector<Domain>& domains, const std::vector<int64_t>& coeffs,
-    const std::vector<int64_t>& costs, const Domain& rhs) {
+    absl::Span<const Domain> domains, absl::Span<const int64_t> coeffs,
+    absl::Span<const int64_t> costs, const Domain& rhs) {
   const int num_vars = domains.size();
   if (num_vars == 0) return {};
 
@@ -776,117 +783,6 @@ BasicKnapsackSolver::Result BasicKnapsackSolver::InternalSolve(
 
 namespace {
 
-// We will call FullyCompressTuplesRecursive() for a set of prefixes of the
-// original tuples, each having the same suffix (in reversed_suffix).
-//
-// For such set, we will compress it on the last variable of the prefixes. We
-// will then for each unique compressed set of value of that variable, call
-// a new FullyCompressTuplesRecursive() on the corresponding subset.
-void FullyCompressTuplesRecursive(
-    absl::Span<const int64_t> domain_sizes,
-    absl::Span<std::vector<int64_t>> tuples,
-    std::vector<absl::InlinedVector<int64_t, 2>>* reversed_suffix,
-    std::vector<std::vector<absl::InlinedVector<int64_t, 2>>>* output) {
-  struct TempData {
-    absl::InlinedVector<int64_t, 2> values;
-    int index;
-
-    bool operator<(const TempData& other) const {
-      return values < other.values;
-    }
-  };
-  std::vector<TempData> temp_data;
-
-  CHECK(!tuples.empty());
-  CHECK(!tuples[0].empty());
-  const int64_t domain_size = domain_sizes[tuples[0].size() - 1];
-
-  // Sort tuples and regroup common prefix in temp_data.
-  std::sort(tuples.begin(), tuples.end());
-  for (int i = 0; i < tuples.size();) {
-    const int start = i;
-    temp_data.push_back({{tuples[start].back()}, start});
-    tuples[start].pop_back();
-    for (++i; i < tuples.size(); ++i) {
-      const int64_t v = tuples[i].back();
-      tuples[i].pop_back();
-      if (tuples[i] == tuples[start]) {
-        temp_data.back().values.push_back(v);
-      } else {
-        tuples[i].push_back(v);
-        break;
-      }
-    }
-
-    // If one of the value is the special value kTableAnyValue, we convert
-    // it to the "empty means any" format.
-    for (const int64_t v : temp_data.back().values) {
-      if (v == kTableAnyValue) {
-        temp_data.back().values.clear();
-        break;
-      }
-    }
-    gtl::STLSortAndRemoveDuplicates(&temp_data.back().values);
-
-    // If values cover the whole domain, we clear the vector. This allows to
-    // use less space and avoid creating uneeded clauses.
-    if (temp_data.back().values.size() == domain_size) {
-      temp_data.back().values.clear();
-    }
-  }
-
-  if (temp_data.size() == 1) {
-    output->push_back({});
-    for (const int64_t v : tuples[temp_data[0].index]) {
-      if (v == kTableAnyValue) {
-        output->back().push_back({});
-      } else {
-        output->back().push_back({v});
-      }
-    }
-    output->back().push_back(temp_data[0].values);
-    for (int i = reversed_suffix->size(); --i >= 0;) {
-      output->back().push_back((*reversed_suffix)[i]);
-    }
-    return;
-  }
-
-  // Sort temp_data and make recursive call for all tuples that share the
-  // same suffix.
-  std::sort(temp_data.begin(), temp_data.end());
-  std::vector<std::vector<int64_t>> temp_tuples;
-  for (int i = 0; i < temp_data.size();) {
-    reversed_suffix->push_back(temp_data[i].values);
-    const int start = i;
-    temp_tuples.clear();
-    for (; i < temp_data.size(); i++) {
-      if (temp_data[start].values != temp_data[i].values) break;
-      temp_tuples.push_back(tuples[temp_data[i].index]);
-    }
-    FullyCompressTuplesRecursive(domain_sizes, absl::MakeSpan(temp_tuples),
-                                 reversed_suffix, output);
-    reversed_suffix->pop_back();
-  }
-}
-
-}  // namespace
-
-// TODO(user): We can probably reuse the tuples memory always and never create
-// new one. We should also be able to code an iterative version of this. Note
-// however that the recursion level is bounded by the number of coluns which
-// should be small.
-std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
-    absl::Span<const int64_t> domain_sizes,
-    std::vector<std::vector<int64_t>>* tuples) {
-  std::vector<absl::InlinedVector<int64_t, 2>> reversed_suffix;
-  std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> output;
-  FullyCompressTuplesRecursive(domain_sizes, absl::MakeSpan(*tuples),
-                               &reversed_suffix, &output);
-  return output;
-}
-
-namespace {
-
 class CliqueDecomposition {
  public:
   CliqueDecomposition(const std::vector<std::vector<int>>& graph,
@@ -1005,6 +901,111 @@ std::vector<absl::Span<int>> AtMostOneDecomposition(
     decomposer.ChangeOrder();
   }
   return decomposer.decomposition();
+}
+
+absl::Span<const int64_t> SortedSubsetSums::Compute(
+    absl::Span<const int64_t> elements, int64_t maximum_sum,
+    bool abort_if_maximum_reached) {
+  sums_.clear();
+  sums_.push_back(0);
+  for (const int64_t e : elements) {
+    DCHECK_GE(e, 0);
+    if (e == 0 || e > maximum_sum) continue;
+
+    // Optimization: If all the sums in [0, maximum_sum] are already reachable
+    // we can abort early since no new reachable sum wil be discovered.
+    if (sums_.size() == maximum_sum + 1) return sums_;
+
+    // Early abort when asked if we already reached maximum_sum.
+    if (abort_if_maximum_reached && sums_.back() == maximum_sum) return sums_;
+
+    // We merge sort sums_ and sums_ + e into new_sums_.
+    int i = 0;
+    int j = 0;
+    new_sums_.clear();
+    const int size = sums_.size();
+    const int64_t* const data = sums_.data();
+    int64_t last_pushed = -1;
+    while (i < size) {
+      DCHECK_LE(j, i);  // Since we add a positive e.
+      const int64_t a = data[i];
+      const int64_t b = data[j] + e;
+      int64_t to_push;
+      if (a <= b) {
+        ++i;
+        if (a == b) ++j;
+        to_push = a;
+      } else {
+        to_push = b;
+        ++j;
+      }
+      if (to_push == last_pushed) continue;
+      if (to_push > maximum_sum) {
+        j = size;  // so we don't keep pushing below.
+        break;
+      }
+      last_pushed = to_push;
+      new_sums_.push_back(to_push);
+    }
+
+    // We are sure of this since we will break only when to_push > maximum_sum
+    // and we are guarantee to have pushed all sums below "to_push" before, that
+    // includes all the initial sums in sums_.
+    DCHECK_EQ(i, size);
+
+    for (; j < size; ++j) {
+      const int64_t to_push = data[j] + e;
+      if (to_push == last_pushed) continue;
+      if (to_push > maximum_sum) break;
+      last_pushed = to_push;
+      new_sums_.push_back(to_push);
+    }
+    std::swap(sums_, new_sums_);
+  }
+  return sums_;
+}
+
+double MaxBoundedSubsetSumExact::ComplexityEstimate(int num_elements,
+                                                    int64_t bin_size) {
+  double estimate = std::numeric_limits<double>::infinity();
+  if (num_elements < 100) {
+    estimate = 2 * pow(2.0, num_elements / 2);
+  }
+  return std::min(estimate, static_cast<double>(bin_size) *
+                                static_cast<double>(num_elements));
+}
+
+int64_t MaxBoundedSubsetSumExact::MaxSubsetSum(
+    absl::Span<const int64_t> elements, int64_t bin_size) {
+  // Get rid of a few easy to decide corner cases.
+  if (elements.empty()) return 0;
+  if (elements.size() == 1) {
+    if (elements[0] > bin_size) return 0;
+    return elements[0];
+  }
+
+  // We split the elements in two equal-sized parts.
+  const int middle = elements.size() / 2;
+  const auto span_a = sums_a_.Compute(elements.subspan(0, middle), bin_size,
+                                      /*abort_if_maximum_reached=*/true);
+  if (span_a.back() == bin_size) return bin_size;
+
+  const auto span_b = sums_b_.Compute(elements.subspan(middle), bin_size,
+                                      /*abort_if_maximum_reached=*/true);
+  if (span_b.back() == bin_size) return bin_size;
+
+  // For all possible sum a, we compute the largest sum b that fits.
+  // We do that in linear time thanks to the sorted partial sums.
+  int64_t result = 0;
+  CHECK(!span_a.empty());
+  CHECK(!span_b.empty());
+  int j = span_b.size() - 1;
+  for (int i = 0; i < span_a.size(); ++i) {
+    while (j >= 0 && span_a[i] + span_b[j] > bin_size) --j;
+    result = std::max(result, span_a[i] + span_b[j]);
+    if (result == bin_size) return bin_size;
+  }
+  return result;
 }
 
 }  // namespace sat

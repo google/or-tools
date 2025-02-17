@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +23,7 @@ from nbformat import v4
 
 input_file = sys.argv[1]
 print(f"reading {input_file}")
-with open(input_file) as fpin:
+with open(input_file, encoding="utf-8") as fpin:
     text = fpin.read()
 
 # Compute output file path.
@@ -40,12 +40,15 @@ output_file = output_file.replace("samples/", "")
 nbook = v3.reads_py("")
 nbook = v4.upgrade(nbook)  # Upgrade v3 to v4
 
+METADATA = {"language_info": {"name": "python"}}
+nbook["metadata"] = METADATA
+
 print("Adding copyright cell...")
-google = "##### Copyright 2024 Google LLC."
-nbook["cells"].append(v4.new_markdown_cell(source=google, id="google"))
+GOOGLE = "##### Copyright 2025 Google LLC."
+nbook["cells"].append(v4.new_markdown_cell(source=GOOGLE, id="google"))
 
 print("Adding license cell...")
-apache = """Licensed under the Apache License, Version 2.0 (the "License");
+APACHE = """Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -57,43 +60,43 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-nbook["cells"].append(v4.new_markdown_cell(source=apache, id="apache"))
+nbook["cells"].append(v4.new_markdown_cell(source=APACHE, id="apache"))
 
 print("Adding Title cell...")
 basename = "# " + os.path.basename(input_file).replace(".py", "")
 nbook["cells"].append(v4.new_markdown_cell(source=basename, id="basename"))
 
 print("Adding link cell...")
-github_logo = (
+GITHUB_LOGO = (
     "https://raw.githubusercontent.com/google/or-tools/main/tools/github_32px.png"
 )
-github_path = "https://github.com/google/or-tools/blob/main/" + input_file
+GITHUB_PATH = "https://github.com/google/or-tools/blob/main/" + input_file
 
-colab_path = (
+COLAB_PATH = (
     "https://colab.research.google.com/github/google/or-tools/blob/main/" + output_file
 )
-colab_logo = (
+COLAB_LOGO = (
     "https://raw.githubusercontent.com/google/or-tools/main/tools/colab_32px.png"
 )
 link = f"""<table align=\"left\">
 <td>
-<a href=\"{colab_path}\"><img src=\"{colab_logo}\"/>Run in Google Colab</a>
+<a href=\"{COLAB_PATH}\"><img src=\"{COLAB_LOGO}\"/>Run in Google Colab</a>
 </td>
 <td>
-<a href=\"{github_path}\"><img src=\"{github_logo}\"/>View source on GitHub</a>
+<a href=\"{GITHUB_PATH}\"><img src=\"{GITHUB_LOGO}\"/>View source on GitHub</a>
 </td>
 </table>"""
 nbook["cells"].append(v4.new_markdown_cell(source=link, id="link"))
 
 print("Adding ortools install cell...")
-install_doc = (
+INSTALL_DOC = (
     "First, you must install "
     "[ortools](https://pypi.org/project/ortools/) package in this "
     "colab."
 )
-nbook["cells"].append(v4.new_markdown_cell(source=install_doc, id="doc"))
-install_cmd = "%pip install ortools"
-nbook["cells"].append(v4.new_code_cell(source=install_cmd, id="install"))
+nbook["cells"].append(v4.new_markdown_cell(source=INSTALL_DOC, id="doc"))
+INSTALL_CMD = "%pip install ortools"
+nbook["cells"].append(v4.new_code_cell(source=INSTALL_CMD, id="install"))
 
 print("Adding code cell...")
 all_blocks = ast.parse(text).body
@@ -102,7 +105,7 @@ line_start = [c.lineno - 1 for c in all_blocks]
 line_start[0] = 0
 lines = text.split("\n")
 
-full_text = ""
+FULL_TEXT = ""
 for idx, (c_block, s, e) in enumerate(
     zip(all_blocks, line_start, line_start[1:] + [len(lines)])
 ):
@@ -148,7 +151,7 @@ for idx, (c_block, s, e) in enumerate(
         and c_block.names[0].name == "flags"
     ):
         print(f"Rewrite import {c_block.module}.{c_block.names[0].name}...")
-        full_text += "from ortools.sat.colab import flags\n"
+        FULL_TEXT += "from ortools.sat.colab import flags\n"
     # Unwrap __main__ function
     elif isinstance(c_block, ast.If) and c_block.test.comparators[0].s == "__main__":
         print("Unwrapping main function...")
@@ -173,7 +176,7 @@ for idx, (c_block, s, e) in enumerate(
         filtered_lines = [
             re.sub(r"app.run\((.*)\)$", r"\1()", s) for s in filtered_lines
         ]
-        full_text += "\n".join(filtered_lines) + "\n"
+        FULL_TEXT += "\n".join(filtered_lines) + "\n"
     # Others
     else:
         print("Appending block...")
@@ -186,12 +189,14 @@ for idx, (c_block, s, e) in enumerate(
         filtered_lines = list(
             filter(lambda l: not re.search(r"# \[END .*\]$", l), filtered_lines)
         )
-        full_text += "\n".join(filtered_lines) + "\n"
+        FULL_TEXT += "\n".join(filtered_lines) + "\n"
 
-nbook["cells"].append(v4.new_code_cell(source=full_text, id="code"))
+nbook["cells"].append(
+    v4.new_code_cell(source=FULL_TEXT, id="code")
+)
 
 jsonform = v4.writes(nbook) + "\n"
 
 print(f"writing {output_file}")
-with open(output_file, "w") as fpout:
+with open(output_file, mode="w", encoding="utf-8") as fpout:
     fpout.write(jsonform)

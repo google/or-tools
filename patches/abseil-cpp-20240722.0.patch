@@ -77,3 +77,23 @@ index 32cc28f..e51d6df 100644
  endif()
  
  function(absl_internal_dll_contains)
+diff --git a/absl/flags/declare.h b/absl/flags/declare.h
+index 8d2a856..a154046 100644
+--- a/absl/flags/declare.h
++++ b/absl/flags/declare.h
+@@ -59,10 +59,15 @@ ABSL_NAMESPACE_END
+ 
+ // Internal implementation of ABSL_DECLARE_FLAG to allow macro expansion of its
+ // arguments. Clients must use ABSL_DECLARE_FLAG instead.
++#if defined(_MSC_VER)
++#define ABSL_DECLARE_FLAG_INTERNAL(type, name) \
++  extern absl::Flag<type> FLAGS_##name
++#else
+ #define ABSL_DECLARE_FLAG_INTERNAL(type, name)               \
+   extern absl::Flag<type> FLAGS_##name;                      \
+   namespace absl /* block flags in namespaces */ {}          \
+   /* second redeclaration is to allow applying attributes */ \
+   extern absl::Flag<type> FLAGS_##name
++#endif  // _MSC_VER
+ 
+ #endif  // ABSL_FLAGS_DECLARE_H_

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,6 +26,7 @@
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
@@ -36,7 +37,7 @@ namespace operations_research {
 
 // Correctly picking the midpoint of two integers in all cases isn't trivial!
 template <>
-int BinarySearchMidpoint(int x, int y) {
+inline int BinarySearchMidpoint(int x, int y) {
   if (x > y) std::swap(x, y);
   if (x >= 0 || y < 0) return x + (y - x) / 2;
   return (x + y) / 2;
@@ -182,7 +183,7 @@ TEST(BinarySearchDeathTest, DiesIfEitherBoundaryConditionViolatedInFastbuild) {
 // hence the presence of these tests outside the unnamed namespace.
 
 template <>
-absl::Time BinarySearchMidpoint(absl::Time x, absl::Time y) {
+inline absl::Time BinarySearchMidpoint(absl::Time x, absl::Time y) {
   return x + (y - x) / 2;
 }
 

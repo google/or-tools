@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,7 +30,7 @@ public class IntegerProgramming {
       System.out.println("Could not create solver " + solverType);
       return;
     }
-    double infinity = java.lang.Double.POSITIVE_INFINITY;
+    double infinity = Double.POSITIVE_INFINITY;
     // x1 and x2 are integer non-negative variables.
     MPVariable x1 = solver.makeIntVar(0.0, infinity, "x1");
     MPVariable x2 = solver.makeIntVar(0.0, infinity, "x2");

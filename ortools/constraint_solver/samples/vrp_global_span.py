@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,17 +15,18 @@
 # [START program]
 """Simple Vehicles Routing Problem (VRP).
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library python wrapper to solve a VRP
+problem.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters.
+Distances are in meters.
 """
 
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -66,6 +67,8 @@ def print_solution(data, manager, routing, solution):
     print(f"Objective: {solution.ObjectiveValue()}")
     max_route_distance = 0
     for vehicle_id in range(data["num_vehicles"]):
+        if not routing.IsVehicleUsed(solution, vehicle_id):
+            continue
         index = routing.Start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0

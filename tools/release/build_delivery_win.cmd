@@ -269,7 +269,7 @@ set PATH=%userprofile%\AppData\Roaming\Python\Python3%1\Scripts;%PATH%
 ::echo "python path: %PATH%"
 GOTO :eof
 
-REM PYTHON 3.8, 3.9, 3.10, 3.11, 3.12
+REM PYTHON 3.8, 3.9, 3.10, 3.11, 3.12, 3.13
 :BUILD_PYTHON
 title Build Python
 set HASH=
@@ -279,7 +279,7 @@ echo Python build seems up to date, skipping
 exit /B 0
 )
 
-FOR %%v IN (8 9 10 11 12) DO (
+FOR %%v IN (8 9 10 11 12 13) DO (
   title Build Python 3.%%v
   echo Check python3.%%v... | tee.exe -a build.log
   which.exe "C:\python3%%v-64\python.exe" || exit 1
@@ -300,6 +300,7 @@ FOR %%v IN (8 9 10 11 12) DO (
   echo Check MYPY files... | tee.exe -a build.log
     FOR %%m IN (
       ortools\algorithms\python\knapsack_solver.pyi
+      ortools\algorithms\python\set_cover.pyi
       ortools\constraint_solver\pywrapcp.pyi
       ortools\graph\python\linear_sum_assignment.pyi
       ortools\graph\python\max_flow.pyi
@@ -308,7 +309,7 @@ FOR %%v IN (8 9 10 11 12) DO (
       ortools\linear_solver\python\model_builder_helper.pyi
       ortools\linear_solver\pywraplp.pyi
       ortools\pdlp\python\pdlp.pyi
-      ortools\sat\python\swig_helper.pyi
+      ortools\sat\python\cp_model_helper.pyi
       ortools\scheduling\python\rcpsp.pyi
       ortools\util\python\sorted_interval_list.pyi
     ) DO (

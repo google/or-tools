@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,19 +15,18 @@
 #define OR_TOOLS_SAT_UTIL_H_
 
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/log/log_streamer.h"
 #include "absl/numeric/int128.h"
@@ -37,7 +36,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -68,9 +66,12 @@ class IdentityMap {
 template <typename K = int, typename V = int>
 class CompactVectorVector {
  public:
+  using value_type = V;
+
   // Size of the "key" space, always in [0, size()).
   size_t size() const;
   bool empty() const;
+  size_t num_entries() const { return buffer_.size(); }
 
   // Getters, either via [] or via a wrapping to be compatible with older api.
   //
@@ -87,9 +88,9 @@ class CompactVectorVector {
     starts_.reserve(size);
     sizes_.reserve(size);
   }
-  void reserve(int size, int num_terms) {
+  void reserve(int size, int num_entries) {
     reserve(size);
-    buffer_.reserve(num_terms);
+    buffer_.reserve(num_entries);
   }
 
   // Given a flat mapping (keys[i] -> values[i]) with two parallel vectors, not
@@ -100,6 +101,12 @@ class CompactVectorVector {
   // second argument.
   template <typename Keys, typename Values>
   void ResetFromFlatMapping(Keys keys, Values values);
+
+  // Same as above but for any collections of std::pair<K, V>, or, more
+  // generally, any iterable collection of objects that have a `first` and a
+  // `second` members.
+  template <typename Collection>
+  void ResetFromPairs(const Collection& pairs, int minimum_num_nodes = 0);
 
   // Initialize this vector from the transpose of another.
   // IMPORTANT: This cannot be called with the vector itself.
@@ -115,6 +122,7 @@ class CompactVectorVector {
   // Append a new entry.
   // Returns the previous size() as this is convenient for how we use it.
   int Add(absl::Span<const V> values);
+  void AppendToLastVector(const V& value);
 
   // Hacky: same as Add() but for sat::Literal or any type from which we can get
   // a value type V via L.Index().value().
@@ -247,6 +255,12 @@ int64_t ProductWithModularInverse(int64_t coeff, int64_t mod, int64_t rhs);
 //     DomainOf(y).SubtractionWith(y0).InverseMultiplicationBy(-a))
 bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
                                        int64_t& x0, int64_t& y0);
+
+// Returns true if the equation a * X + b * Y = cte has some integer solutions
+// in the domain of X and Y.
+bool DiophantineEquationOfSizeTwoHasSolutionInDomain(const Domain& x, int64_t a,
+                                                     const Domain& y, int64_t b,
+                                                     int64_t cte);
 
 // The argument must be non-negative.
 int64_t FloorSquareRoot(int64_t a);
@@ -428,10 +442,15 @@ class MaxBoundedSubsetSum {
 template <int n>
 class FirstFewValues {
  public:
-  FirstFewValues() { Reset(); }
+  FirstFewValues()
+      : reachable_(new int64_t[n]), new_reachable_(new int64_t[n]) {
+    Reset();
+  }
 
   void Reset() {
-    reachable_.fill(std::numeric_limits<int64_t>::max());
+    for (int i = 0; i < n; ++i) {
+      reachable_[i] = std::numeric_limits<int64_t>::max();
+    }
     reachable_[0] = 0;
     new_reachable_[0] = 0;
   }
@@ -441,23 +460,25 @@ class FirstFewValues {
   // TODO(user): Implement Add() with an upper bound on the multiplicity.
   void Add(const int64_t positive_value) {
     DCHECK_GT(positive_value, 0);
-    if (positive_value >= reachable_.back()) return;
+    const int64_t* reachable = reachable_.get();
+    if (positive_value >= reachable[n - 1]) return;
 
     // We copy from reachable_[i] to new_reachable_[j].
     // The position zero is already copied.
     int i = 1;
     int j = 1;
+    int64_t* new_reachable = new_reachable_.get();
     for (int base = 0; j < n && base < n; ++base) {
-      const int64_t candidate = CapAdd(new_reachable_[base], positive_value);
-      while (j < n && i < n && reachable_[i] < candidate) {
-        new_reachable_[j++] = reachable_[i++];
+      const int64_t candidate = CapAdd(new_reachable[base], positive_value);
+      while (j < n && i < n && reachable[i] < candidate) {
+        new_reachable[j++] = reachable[i++];
       }
       if (j < n) {
         // Eliminate duplicates.
-        while (i < n && reachable_[i] == candidate) i++;
+        while (i < n && reachable[i] == candidate) i++;
 
         // insert candidate in its final place.
-        new_reachable_[j++] = candidate;
+        new_reachable[j++] = candidate;
       }
     }
     std::swap(reachable_, new_reachable_);
@@ -466,16 +487,67 @@ class FirstFewValues {
   // Returns true iff sum might be expressible as a weighted sum of the added
   // value. Any sum >= LastValue() is always considered potentially reachable.
   bool MightBeReachable(int64_t sum) const {
-    if (sum >= reachable_.back()) return true;
-    return std::binary_search(reachable_.begin(), reachable_.end(), sum);
+    if (sum >= reachable_[n - 1]) return true;
+    return std::binary_search(&reachable_[0], &reachable_[0] + n, sum);
   }
 
-  const std::array<int64_t, n>& reachable() const { return reachable_; }
-  int64_t LastValue() const { return reachable_.back(); }
+  int64_t LastValue() const { return reachable_[n - 1]; }
+
+  absl::Span<const int64_t> reachable() {
+    return absl::MakeSpan(reachable_.get(), n);
+  }
 
  private:
-  std::array<int64_t, n> reachable_;
-  std::array<int64_t, n> new_reachable_;
+  std::unique_ptr<int64_t[]> reachable_;
+  std::unique_ptr<int64_t[]> new_reachable_;
+};
+
+// Yet another variant of FirstFewValues or MaxBoundedSubsetSum.
+class SortedSubsetSums {
+ public:
+  // Computes all the possible subset sums in [0, maximum_sum].
+  // Returns them sorted. All elements must be non-negative.
+  //
+  // If abort_if_maximum_reached is true, we might not return all possible
+  // subset sums as we stop the exploration as soon as a subset sum is equal to
+  // maximum_sum. When this happen, we guarantee that the last element returned
+  // will be maximum_sum though.
+  //
+  // Worst case complexity is in O(2^num_elements) if maximum_sum is large or
+  // O(maximum_sum * num_elements) if that is lower.
+  //
+  // TODO(user): We could optimize even further the case of a small maximum_sum.
+  absl::Span<const int64_t> Compute(absl::Span<const int64_t> elements,
+                                    int64_t maximum_sum,
+                                    bool abort_if_maximum_reached = false);
+
+  // Returns the possible subset sums sorted.
+  absl::Span<const int64_t> SortedSums() const { return sums_; }
+
+ private:
+  std::vector<int64_t> sums_;
+  std::vector<int64_t> new_sums_;
+};
+
+// Similar to MaxBoundedSubsetSum() above but use a different algo.
+class MaxBoundedSubsetSumExact {
+ public:
+  // If we pack the given elements into a bin of size 'bin_size', returns
+  // largest possible sum that can be reached.
+  //
+  // This implementation allow to solve this in O(2^(num_elements/2)) allowing
+  // to go easily to 30 or 40 elements. If bin_size is small, complexity is more
+  // like O(num_element * bin_size).
+  int64_t MaxSubsetSum(absl::Span<const int64_t> elements, int64_t bin_size);
+
+  // Returns an estimate of how many elementary operations
+  // MaxSubsetSum() is going to take.
+  double ComplexityEstimate(int num_elements, int64_t bin_size);
+
+ private:
+  // We use a class just to reuse the memory and not allocate it on each query.
+  SortedSubsetSums sums_a_;
+  SortedSubsetSums sums_b_;
 };
 
 // Use Dynamic programming to solve a single knapsack. This is used by the
@@ -499,9 +571,9 @@ class BasicKnapsackSolver {
     bool infeasible = false;
     std::vector<int64_t> solution;
   };
-  Result Solve(const std::vector<Domain>& domains,
-               const std::vector<int64_t>& coeffs,
-               const std::vector<int64_t>& costs, const Domain& rhs);
+  Result Solve(absl::Span<const Domain> domains,
+               absl::Span<const int64_t> coeffs,
+               absl::Span<const int64_t> costs, const Domain& rhs);
 
  private:
   Result InternalSolve(int64_t num_values, const Domain& rhs);
@@ -591,38 +663,6 @@ class Percentile {
   const int record_limit_;
 };
 
-// This method tries to compress a list of tuples by merging complementary
-// tuples, that is a set of tuples that only differ on one variable, and that
-// cover the domain of the variable. In that case, it will keep only one tuple,
-// and replace the value for variable by any_value, the equivalent of '*' in
-// regexps.
-//
-// This method is exposed for testing purposes.
-constexpr int64_t kTableAnyValue = std::numeric_limits<int64_t>::min();
-void CompressTuples(absl::Span<const int64_t> domain_sizes,
-                    std::vector<std::vector<int64_t>>* tuples);
-
-// Similar to CompressTuples() but produces a final table where each cell is
-// a set of value. This should result in a table that can still be encoded
-// efficiently in SAT but with less tuples and thus less extra Booleans. Note
-// that if a set of value is empty, it is interpreted at "any" so we can gain
-// some space.
-//
-// The passed tuples vector is used as temporary memory and is detroyed.
-// We interpret kTableAnyValue as an "any" tuple.
-//
-// TODO(user): To reduce memory, we could return some absl::Span in the last
-// layer instead of vector.
-//
-// TODO(user): The final compression is depend on the order of the variables.
-// For instance the table (1,1)(1,2)(1,3),(1,4),(2,3) can either be compressed
-// as (1,*)(2,3) or (1,{1,2,4})({1,3},3). More experiment are needed to devise
-// a better heuristic. It might for example be good to call CompressTuples()
-// first.
-std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
-    absl::Span<const int64_t> domain_sizes,
-    std::vector<std::vector<int64_t>>* tuples);
-
 // Keep the top n elements from a stream of elements.
 //
 // TODO(user): We could use gtl::TopN when/if it gets open sourced. Note that
@@ -700,39 +740,6 @@ inline bool IsNegatableInt64(absl::int128 x) {
          x > absl::int128(std::numeric_limits<int64_t>::min());
 }
 
-// These functions are copied from MathUtils. However, the original ones are
-// incompatible with absl::int128 as MathLimits<absl::int128>::kIsInteger ==
-// false.
-template <typename IntType, bool ceil>
-IntType CeilOrFloorOfRatio(IntType numerator, IntType denominator) {
-  static_assert(std::numeric_limits<IntType>::is_integer,
-                "CeilOfRatio is only defined for integral types");
-  DCHECK_NE(0, denominator) << "Division by zero is not supported.";
-  DCHECK(numerator != std::numeric_limits<IntType>::min() || denominator != -1)
-      << "Dividing " << numerator << "by -1 is not supported: it would SIGFPE";
-
-  const IntType rounded_toward_zero = numerator / denominator;
-  const bool needs_round = (numerator % denominator) != 0;
-  const bool same_sign = (numerator >= 0) == (denominator >= 0);
-
-  if (ceil) {  // Compile-time condition: not an actual branching
-    return rounded_toward_zero + static_cast<IntType>(same_sign && needs_round);
-  } else {
-    return rounded_toward_zero -
-           static_cast<IntType>(!same_sign && needs_round);
-  }
-}
-
-template <typename IntType>
-IntType CeilOfRatio(IntType numerator, IntType denominator) {
-  return CeilOrFloorOfRatio<IntType, true>(numerator, denominator);
-}
-
-template <typename IntType>
-IntType FloorOfRatio(IntType numerator, IntType denominator) {
-  return CeilOrFloorOfRatio<IntType, false>(numerator, denominator);
-}
-
 template <typename K, typename V>
 inline int CompactVectorVector<K, V>::Add(absl::Span<const V> values) {
   const int index = size();
@@ -740,6 +747,12 @@ inline int CompactVectorVector<K, V>::Add(absl::Span<const V> values) {
   sizes_.push_back(values.size());
   buffer_.insert(buffer_.end(), values.begin(), values.end());
   return index;
+}
+
+template <typename K, typename V>
+inline void CompactVectorVector<K, V>::AppendToLastVector(const V& value) {
+  sizes_.back()++;
+  buffer_.push_back(value);
 }
 
 template <typename K, typename V>
@@ -780,9 +793,9 @@ inline absl::Span<const V> CompactVectorVector<K, V>::operator[](K key) const {
   DCHECK_LT(key, starts_.size());
   DCHECK_LT(key, sizes_.size());
   const int k = InternalKey(key);
-  const size_t size = static_cast<size_t>(sizes_[k]);
+  const size_t size = static_cast<size_t>(sizes_.data()[k]);
   if (size == 0) return {};
-  return {&buffer_[starts_[k]], size};
+  return {&buffer_.data()[starts_.data()[k]], size};
 }
 
 template <typename K, typename V>
@@ -791,9 +804,9 @@ inline absl::Span<V> CompactVectorVector<K, V>::operator[](K key) {
   DCHECK_LT(key, starts_.size());
   DCHECK_LT(key, sizes_.size());
   const int k = InternalKey(key);
-  const size_t size = static_cast<size_t>(sizes_[k]);
+  const size_t size = static_cast<size_t>(sizes_.data()[k]);
   if (size == 0) return {};
-  return absl::MakeSpan(&buffer_[starts_[k]], size);
+  return absl::MakeSpan(&buffer_.data()[starts_.data()[k]], size);
 }
 
 template <typename K, typename V>
@@ -851,6 +864,50 @@ inline void CompactVectorVector<K, V>::ResetFromFlatMapping(Keys keys,
   buffer_.resize(keys.size());
   for (int i = 0; i < keys.size(); ++i) {
     buffer_[starts_[InternalKey(keys[i])]++] = values[i];
+  }
+
+  // Restore starts_.
+  for (int k = max_key - 1; k > 0; --k) {
+    starts_[k] = starts_[k - 1];
+  }
+  starts_[0] = 0;
+}
+
+// Similar to ResetFromFlatMapping().
+template <typename K, typename V>
+template <typename Collection>
+inline void CompactVectorVector<K, V>::ResetFromPairs(const Collection& pairs,
+                                                      int minimum_num_nodes) {
+  // Compute maximum index.
+  int max_key = minimum_num_nodes;
+  for (const auto& [key, _] : pairs) {
+    max_key = std::max(max_key, InternalKey(key) + 1);
+  }
+
+  if (pairs.empty()) {
+    clear();
+    sizes_.assign(minimum_num_nodes, 0);
+    starts_.assign(minimum_num_nodes, 0);
+    return;
+  }
+
+  // Compute sizes_;
+  sizes_.assign(max_key, 0);
+  for (const auto& [key, _] : pairs) {
+    sizes_[InternalKey(key)]++;
+  }
+
+  // Compute starts_;
+  starts_.assign(max_key, 0);
+  for (int k = 1; k < max_key; ++k) {
+    starts_[k] = starts_[k - 1] + sizes_[k - 1];
+  }
+
+  // Copy data and uses starts as temporary indices.
+  buffer_.resize(pairs.size());
+  for (int i = 0; i < pairs.size(); ++i) {
+    const auto& [key, value] = pairs[i];
+    buffer_[starts_[InternalKey(key)]++] = value;
   }
 
   // Restore starts_.

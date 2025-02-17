@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,6 +30,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
@@ -60,6 +61,7 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
       terms_.push_back({NegationOf(expr.var), -coeff * expr.coeff});
     }
   }
+  DCHECK(!ProdOverflow(coeff, expr.constant));
   offset_ += coeff * expr.constant;
 }
 
@@ -155,6 +157,13 @@ LinearConstraint LinearConstraintBuilder::BuildConstraint(IntegerValue lb,
   return result;
 }
 
+bool LinearConstraintBuilder::BuildIntoConstraintAndCheckOverflow(
+    IntegerValue lb, IntegerValue ub, LinearConstraint* ct) {
+  ct->lb = lb > kMinIntegerValue ? lb - offset_ : lb;
+  ct->ub = ub < kMaxIntegerValue ? ub - offset_ : ub;
+  return MergePositiveVariableTermsAndCheckForOverflow(&terms_, ct);
+}
+
 LinearExpression LinearConstraintBuilder::BuildExpression() {
   LinearExpression result;
   CleanTermsAndFillConstraint(&terms_, &result);
@@ -172,26 +181,27 @@ double ComputeActivity(
   double a1 = 0.0;
   double a2 = 0.0;
   double a3 = 0.0;
+  const double* view = values.data();
   for (; i < shifted_size; i += 4) {
     a0 += static_cast<double>(constraint.coeffs[i].value()) *
-          values[constraint.vars[i]];
+          view[constraint.vars[i].value()];
     a1 += static_cast<double>(constraint.coeffs[i + 1].value()) *
-          values[constraint.vars[i + 1]];
+          view[constraint.vars[i + 1].value()];
     a2 += static_cast<double>(constraint.coeffs[i + 2].value()) *
-          values[constraint.vars[i + 2]];
+          view[constraint.vars[i + 2].value()];
     a3 += static_cast<double>(constraint.coeffs[i + 3].value()) *
-          values[constraint.vars[i + 3]];
+          view[constraint.vars[i + 3].value()];
   }
   double activity = a0 + a1 + a2 + a3;
   if (i < size) {
     activity += static_cast<double>(constraint.coeffs[i].value()) *
-                values[constraint.vars[i]];
+                view[constraint.vars[i].value()];
     if (i + 1 < size) {
       activity += static_cast<double>(constraint.coeffs[i + 1].value()) *
-                  values[constraint.vars[i + 1]];
+                  view[constraint.vars[i + 1].value()];
       if (i + 2 < size) {
         activity += static_cast<double>(constraint.coeffs[i + 2].value()) *
-                    values[constraint.vars[i + 2]];
+                    view[constraint.vars[i + 2].value()];
       }
     }
   }

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,9 +16,6 @@
 
 #include <stdint.h>
 
-#include <vector>
-
-#include "absl/container/flat_hash_set.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/presolve_context.h"
 
@@ -35,14 +32,8 @@ void ExpandCpModel(PresolveContext* context);
 // presolve. We do that at the end, because the presolve is allowed to simplify
 // such constraints by updating the rhs. Also the extra variable we create are
 // only linked by a few constraints to the rest of the model and should not be
-// presolvable.
+// pre-solvable.
 void FinalExpansionForLinearConstraint(PresolveContext* context);
-
-// Fills and propagates the set of reachable states/labels.
-void PropagateAutomaton(const AutomatonConstraintProto& proto,
-                        const PresolveContext& context,
-                        std::vector<absl::flat_hash_set<int64_t>>* states,
-                        std::vector<absl::flat_hash_set<int64_t>>* labels);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # usage: ./tools/generate_all_notebooks.sh
-set -e
+set -eu
 
 DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "${DIR}" ]]; then

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,12 +17,15 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/flags/declare.h"
+#include "absl/types/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/stat_tables.h"
@@ -32,8 +35,8 @@
 #include "ortools/util/logging.h"
 
 ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
-ABSL_DECLARE_FLAG(bool, cp_model_check_intermediate_solutions);
 ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 
 namespace operations_research {
@@ -55,8 +58,10 @@ struct SharedClasses {
   ModelSharedTimeLimit* const time_limit;
   SolverLogger* const logger;
   SharedStatistics* const stats;
+  SharedStatTables* const stat_tables;
   SharedResponseManager* const response;
   SharedTreeManager* const shared_tree_manager;
+  SharedLsSolutionRepository* const ls_hints;
 
   // These can be nullptr depending on the options.
   std::unique_ptr<SharedBoundsManager> bounds;
@@ -64,8 +69,9 @@ struct SharedClasses {
   std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
   std::unique_ptr<SharedClausesManager> clauses;
 
-  // For displaying summary at the end.
-  SharedStatTables stat_tables;
+  // call local_model->Register() on most of the class here, this allow to
+  // more easily depends on one of the shared class deep within the solver.
+  void RegisterSharedClassesInLocalModel(Model* local_model);
 
   bool SearchIsDone();
 };
@@ -124,7 +130,7 @@ int RegisterClausesLevelZeroImport(int id,
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,
                               const CpModelProto& mapping_proto,
-                              const std::vector<int>& postsolve_mapping,
+                              absl::Span<const int> postsolve_mapping,
                               std::vector<int64_t>* solution);
 
 // Try to find a solution by following the hint and using a low conflict limit.

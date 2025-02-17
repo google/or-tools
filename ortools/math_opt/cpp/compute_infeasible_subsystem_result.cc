@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -77,7 +77,8 @@ absl::Status BoundsMapProtoToCpp(
     const google::protobuf::Map<int64_t, ModelSubsetProto::Bounds>& source,
     absl::flat_hash_map<K, ModelSubset::Bounds>& target,
     const ModelStorage* const model,
-    bool (ModelStorage::*const contains_strong_id)(typename K::IdType id) const,
+    bool (ModelStorage::* const contains_strong_id)(typename K::IdType id)
+        const,
     const absl::string_view object_name) {
   for (const auto& [raw_id, bounds_proto] : source) {
     const typename K::IdType strong_id(raw_id);
@@ -95,7 +96,8 @@ template <typename K>
 absl::Status RepeatedIdsProtoToCpp(
     const google::protobuf::RepeatedField<int64_t>& source,
     absl::flat_hash_set<K>& target, const ModelStorage* const model,
-    bool (ModelStorage::*const contains_strong_id)(typename K::IdType id) const,
+    bool (ModelStorage::* const contains_strong_id)(typename K::IdType id)
+        const,
     const absl::string_view object_name) {
   for (const int64_t raw_id : source) {
     const typename K::IdType strong_id(raw_id);

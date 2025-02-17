@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -119,13 +119,6 @@ ABSL_FLAG(std::string, sol_file, "",
           "If non-empty, output the best solution in Miplib .sol format.");
 ABSL_FLAG(std::string, dump_mps, "",
           "If non-empty, dumps the model in mps format there.");
-
-ABSL_DECLARE_FLAG(bool, verify_solution);  // Defined in ./linear_solver.cc
-ABSL_DECLARE_FLAG(bool,
-                  log_verification_errors);  // Defined in ./linear_solver.cc
-ABSL_DECLARE_FLAG(
-    bool,
-    linear_solver_enable_verbose_output);  // Defined in ./linear_solver.cc
 
 static const char kUsageStr[] =
     "Run MPSolver on the given input file. Many formats are supported: \n"

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,16 +51,16 @@ TEST_P(IpMultipleSolutionsTest, FindTwoSolutionsUsingHint) {
   model_parameters.solution_hints.emplace_back(hint);
 
   const Solution expected1 = {
-      .primal_solution = std::make_optional<PrimalSolution>(
-          {.variable_values = {{x1, 0.0}, {x2, 1.0}},
-           .objective_value = 3.0,
-           .feasibility_status = SolutionStatus::kFeasible})};
+      .primal_solution =
+          PrimalSolution{.variable_values = {{x1, 0.0}, {x2, 1.0}},
+                         .objective_value = 3.0,
+                         .feasibility_status = SolutionStatus::kFeasible}};
 
   const Solution expected2 = {
-      .primal_solution = std::make_optional<PrimalSolution>(
-          {.variable_values = {{x1, 1.0}, {x2, 0.0}},
-           .objective_value = 1.0,
-           .feasibility_status = SolutionStatus::kFeasible})};
+      .primal_solution =
+          PrimalSolution{.variable_values = {{x1, 1.0}, {x2, 0.0}},
+                         .objective_value = 1.0,
+                         .feasibility_status = SolutionStatus::kFeasible}};
 
   for (int32_t solution_pool_size : {1, 2}) {
     SCOPED_TRACE(absl::StrCat("Solution pool size: ", solution_pool_size));

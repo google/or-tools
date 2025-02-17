@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,15 +15,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <map>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -61,6 +62,16 @@ std::string IntervalsAsString(const Intervals& intervals) {
   }
   if (result.empty()) result = "[]";
   return result;
+}
+
+void SortAndRemoveInvalidIntervals(
+    absl::InlinedVector<ClosedInterval, 1>* intervals) {
+  intervals->erase(std::remove_if(intervals->begin(), intervals->end(),
+                                  [](const ClosedInterval& interval) {
+                                    return interval.start > interval.end;
+                                  }),
+                   intervals->end());
+  std::sort(intervals->begin(), intervals->end());
 }
 
 // Transforms a sorted list of intervals in a sorted DISJOINT list for which
@@ -162,7 +173,7 @@ Domain Domain::FromValues(std::vector<int64_t> values) {
 Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   Domain result;
   result.intervals_.assign(intervals.begin(), intervals.end());
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  SortAndRemoveInvalidIntervals(&result.intervals_);
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
@@ -175,7 +186,7 @@ Domain Domain::FromFlatSpanOfIntervals(
   for (int i = 0; i < flat_intervals.size(); i += 2) {
     result.intervals_.push_back({flat_intervals[i], flat_intervals[i + 1]});
   }
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  SortAndRemoveInvalidIntervals(&result.intervals_);
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
@@ -195,7 +206,7 @@ Domain Domain::FromVectorIntervals(
       result.intervals_.push_back({interval[0], interval[1]});
     }
   }
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  SortAndRemoveInvalidIntervals(&result.intervals_);
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
@@ -632,6 +643,82 @@ Domain Domain::SquareSuperset() const {
     }
     return Domain::FromValues(std::move(values));
   }
+}
+
+namespace {
+ClosedInterval EvaluateQuadraticProdInterval(int64_t a, int64_t b, int64_t c,
+                                             int64_t d, int64_t variable_min,
+                                             int64_t variable_max) {
+  // We have (a*x + b)(c*x + d) = a*c*x*x + (a*d + b*c)*x + b*d
+  // The minimum or maximum is at x = -(a*d + b*c)/(2*a*c)
+  //
+  // The minimum and maximum of the expression happens when x is one of the
+  // following:
+  // - variable_min;
+  // - variable_max;
+  // - the closest point to the parabola extreme, rounded down;
+  // - the closest point to the parabola extreme, rounded up.
+
+  const absl::int128 nominator =
+      -absl::int128{a} * absl::int128{d} - absl::int128{b} * absl::int128{c};
+  const absl::int128 denominator = absl::int128{a} * absl::int128{c};
+  const absl::int128 evaluated_minimum_point = (nominator / denominator) / 2;
+
+  const auto& evaluate = [&a, &b, &c, &d](const int64_t x) {
+    return CapProd(CapAdd(CapProd(a, x), b), CapAdd(CapProd(c, x), d));
+  };
+
+  const int64_t at_min_x = evaluate(variable_min);
+  const int64_t at_max_x = evaluate(variable_max);
+  int64_t min_var = std::min(at_min_x, at_max_x);
+  int64_t max_var = std::max(at_min_x, at_max_x);
+
+  if (evaluated_minimum_point > variable_min &&
+      evaluated_minimum_point < variable_max) {
+    const int64_t point_at_minimum_64 =
+        static_cast<int64_t>(evaluated_minimum_point);
+    const int rounder = ((nominator > 0) == (denominator > 0) ? 1 : -1);
+    const int64_t point1 = evaluate(point_at_minimum_64);
+    const int64_t point2 = evaluate(point_at_minimum_64 + rounder);
+    min_var = std::min(min_var, std::min(point1, point2));
+    max_var = std::max(max_var, std::max(point1, point2));
+  }
+
+  return ClosedInterval(min_var, max_var);
+}
+}  // namespace
+
+Domain Domain::QuadraticSuperset(int64_t a, int64_t b, int64_t c,
+                                 int64_t d) const {
+  if (IsEmpty()) return Domain();
+
+  if (Size() < kDomainComplexityLimit) {
+    std::vector<int64_t> values;
+    values.reserve(Size());
+    for (const int64_t value : Values()) {
+      values.push_back(  //
+          CapProd(       //
+              CapAdd(CapProd(a, value), b), CapAdd(CapProd(c, value), d)));
+    }
+    return Domain::FromValues(std::move(values));
+  }
+
+  if (a == 0) {
+    return MultiplicationBy(CapProd(c, b)).AdditionWith(Domain(CapProd(d, b)));
+  }
+  if (c == 0) {
+    return MultiplicationBy(CapProd(a, d)).AdditionWith(Domain(CapProd(d, b)));
+  }
+
+  Domain result;
+  result.intervals_.reserve(NumIntervals());
+  for (const auto& interval : intervals_) {
+    result.intervals_.push_back(EvaluateQuadraticProdInterval(
+        a, b, c, d, interval.start, interval.end));
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
 }
 
 // It is a bit difficult to see, but this code is doing the same thing as

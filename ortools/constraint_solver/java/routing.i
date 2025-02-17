@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,14 +13,18 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+// %module main
+
 %include "std_pair.i"
 %template(IntBoolPair) std::pair<int, bool>;
 
+%include "ortools/base/base.i"
+%include "ortools/util/java/vector.i"
+%include "ortools/util/java/proto.i"
 %include "ortools/constraint_solver/java/constraint_solver.i"
-%include "ortools/constraint_solver/java/routing_types.i"
-%include "ortools/constraint_solver/java/routing_index_manager.i"
+%import "ortools/util/java/sorted_interval_list.i" // Domain
 
-%import "ortools/util/java/sorted_interval_list.i"
+%include "ortools/constraint_solver/java/routing_index_manager.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -28,13 +32,17 @@
 namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
+
+class RoutingSearchStatus;
+
 }  // namespace operations_research
 
 // Include the files we want to wrap a first time.
 %{
-#include "ortools/constraint_solver/routing_types.h"
+#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.h"
+#include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing.h"
 #include <memory>
 %}
@@ -58,11 +66,26 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 
 namespace operations_research {
 
+// GlobalVehicleBreaksConstraint
+%typemap(javaimports) GlobalVehicleBreaksConstraint %{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.Constraint;
+%}
+
 // RoutingModel
 %unignore RoutingModel;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingModel %{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.DecisionBuilder;
+import com.google.ortools.constraintsolver.IntVar;
+import com.google.ortools.constraintsolver.IntervalVar;
+import com.google.ortools.constraintsolver.LocalSearchFilter;
+import com.google.ortools.constraintsolver.LocalSearchOperator;
+import com.google.ortools.constraintsolver.SearchMonitor;
+import com.google.ortools.constraintsolver.Solver;
 // Used to wrap Domain
 import com.google.ortools.util.Domain;
 // Used to wrap RoutingTransitCallback2
@@ -227,17 +250,31 @@ import java.util.function.LongUnaryOperator;
 %rename (solveFromAssignmentWithParameters) RoutingModel::SolveFromAssignmentWithParameters;
 %rename (solveWithParameters) RoutingModel::SolveWithParameters;
 %rename (start) RoutingModel::Start;
+%rename (status) RoutingModel::status;
 %rename (unperformedPenalty) RoutingModel::UnperformedPenalty;
 %rename (unperformedPenaltyOrValue) RoutingModel::UnperformedPenaltyOrValue;
 %rename (vehicleVar) RoutingModel::VehicleVar;
 %rename (vehicleVars) RoutingModel::VehicleVars;
 %rename (writeAssignment) RoutingModel::WriteAssignment;
 
+// RoutingModelVisitor
+%typemap(javaimports) RoutingModelVisitor %{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.BaseObject;
+%}
+
 // RoutingDimension
 %unignore RoutingDimension;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingDimension %{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.IntVar;
+import com.google.ortools.constraintsolver.IntervalVar;
+import com.google.ortools.constraintsolver.LocalSearchOperator;
+// Used to wrap std::function<int64_t(int, int)>
+// note: Java does not provide it, so we provide it.
+import com.google.ortools.constraintsolver.IntIntToLongFunction;
 // Used to wrap std::function<int64_t(int64_t from_index, int64_t to_index)> group_delay
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
@@ -294,6 +331,11 @@ import java.util.function.LongBinaryOperator;
 %unignore TypeRegulationsChecker;
 %ignore TypeRegulationsChecker::CheckVehicle;
 
+%typemap(javaimports) TypeRegulationsConstraint %{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.Constraint;
+%}
+
 // SimpleBoundCosts
 %unignore BoundCost;
 %unignore SimpleBoundCosts;
@@ -307,6 +349,14 @@ import java.util.function.LongBinaryOperator;
 
 // Add needed import to mainJNI.java
 %pragma(java) jniclassimports=%{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.IntVar;
+import com.google.ortools.constraintsolver.IntervalVar;
+import com.google.ortools.constraintsolver.LocalSearchFilter;
+import com.google.ortools.constraintsolver.LocalSearchOperator;
+import com.google.ortools.constraintsolver.SearchMonitor;
+
 // Used to wrap Domain
 import com.google.ortools.util.Domain;
 
@@ -370,8 +420,10 @@ PROTO2_RETURN(operations_research::RoutingSearchParameters,
               com.google.ortools.constraintsolver.RoutingSearchParameters)
 PROTO2_RETURN(operations_research::RoutingModelParameters,
               com.google.ortools.constraintsolver.RoutingModelParameters)
+PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
+                  com.google.ortools.constraintsolver.RoutingSearchStatus.Value)
 
-// Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
+// Wrap routing_types.h, routing_parameters.h according to the SWIG style guide.
 %ignoreall
 %unignore RoutingTransitCallback1;
 %unignore RoutingTransitCallback2;
@@ -379,8 +431,9 @@ PROTO2_RETURN(operations_research::RoutingModelParameters,
 %unignore RoutingIndexPairs;
 
 namespace operations_research {
-// IMPORTANT(user): These functions from routing_parameters.h are global, so in
-// java they are in the main.java (import com.[...].constraintsolver.main).
+// Globals
+// IMPORTANT(user): These functions from routing_parameters.h are global, so in Java
+// they are in the main.java (import com.[...].constraintsolver.main).
 %rename (defaultRoutingSearchParameters) DefaultRoutingSearchParameters;
 %rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;
 %rename (findErrorInRoutingSearchParameters) FindErrorInRoutingSearchParameters;

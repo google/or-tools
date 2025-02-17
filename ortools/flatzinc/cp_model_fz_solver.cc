@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <limits>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -42,7 +43,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
-ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 50,
+ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
           "Default max value for unbounded integer variables.");
 
 namespace operations_research {
@@ -117,6 +118,8 @@ struct CpModelProtoWithMapping {
   void FillConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void FillReifOrImpliedConstraint(const fz::Constraint& fz_ct,
                                    ConstraintProto* ct);
+  void BuildTableFromDomainIntLinEq(const fz::Constraint& fz_ct,
+                                    ConstraintProto* ct);
 
   // Translates the flatzinc search annotations into the CpModelProto
   // search_order field.
@@ -415,6 +418,55 @@ void CpModelProtoWithMapping::FillLinearConstraintWithGivenDomain(
   }
 }
 
+void CpModelProtoWithMapping::BuildTableFromDomainIntLinEq(
+    const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  const std::vector<int64_t>& coeffs = fz_ct.arguments[0].values;
+  const std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
+  const int rhs = fz_ct.arguments[2].Value();
+  CHECK_EQ(coeffs.back(), -1);
+  for (const int var : vars) {
+    LinearExpressionProto* expr = ct->mutable_table()->add_exprs();
+    expr->add_vars(var);
+    expr->add_coeffs(1);
+  }
+
+  switch (vars.size()) {
+    case 3: {
+      const Domain domain0 = ReadDomainFromProto(proto.variables(vars[0]));
+      const Domain domain1 = ReadDomainFromProto(proto.variables(vars[1]));
+      for (const int64_t v0 : domain0.Values()) {
+        for (const int64_t v1 : domain1.Values()) {
+          const int64_t v2 = coeffs[0] * v0 + coeffs[1] * v1 - rhs;
+          ct->mutable_table()->add_values(v0);
+          ct->mutable_table()->add_values(v1);
+          ct->mutable_table()->add_values(v2);
+        }
+      }
+      break;
+    }
+    case 4: {
+      const Domain domain0 = ReadDomainFromProto(proto.variables(vars[0]));
+      const Domain domain1 = ReadDomainFromProto(proto.variables(vars[1]));
+      const Domain domain2 = ReadDomainFromProto(proto.variables(vars[2]));
+      for (const int64_t v0 : domain0.Values()) {
+        for (const int64_t v1 : domain1.Values()) {
+          for (const int64_t v2 : domain2.Values()) {
+            const int64_t v3 =
+                coeffs[0] * v0 + coeffs[1] * v1 + coeffs[2] * v2 - rhs;
+            ct->mutable_table()->add_values(v0);
+            ct->mutable_table()->add_values(v1);
+            ct->mutable_table()->add_values(v2);
+            ct->mutable_table()->add_values(v3);
+          }
+        }
+      }
+      break;
+    }
+    default:
+      LOG(FATAL) << "Unsupported size";
+  }
+}
+
 void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                                              ConstraintProto* ct) {
   if (fz_ct.type == "false_constraint") {
@@ -502,8 +554,15 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                          std::numeric_limits<int64_t>::max()},
                         fz_ct, ct);
   } else if (fz_ct.type == "int_lin_eq") {
-    const int64_t rhs = fz_ct.arguments[2].values[0];
-    FillLinearConstraintWithGivenDomain({rhs, rhs}, fz_ct, ct);
+    // Special case for the index of element 2D and element 3D constraints.
+    if (fz_ct.strong_propagation && fz_ct.arguments[0].Size() >= 3 &&
+        fz_ct.arguments[0].Size() <= 4 &&
+        fz_ct.arguments[0].values.back() == -1) {
+      BuildTableFromDomainIntLinEq(fz_ct, ct);
+    } else {
+      const int64_t rhs = fz_ct.arguments[2].values[0];
+      FillLinearConstraintWithGivenDomain({rhs, rhs}, fz_ct, ct);
+    }
   } else if (fz_ct.type == "bool_lin_eq") {
     auto* arg = ct->mutable_linear();
     const std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
@@ -634,55 +693,71 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
              fz_ct.type == "array_var_int_element" ||
              fz_ct.type == "array_var_bool_element" ||
              fz_ct.type == "array_int_element_nonshifted") {
-    if (fz_ct.arguments[0].type == fz::Argument::VAR_REF ||
-        fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
-      auto* arg = ct->mutable_element();
-      arg->set_index(LookupVar(fz_ct.arguments[0]));
-      arg->set_target(LookupVar(fz_ct.arguments[2]));
+    auto* arg = ct->mutable_element();
+    *arg->mutable_linear_index() = LookupExpr(fz_ct.arguments[0]);
+    if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
+      arg->mutable_linear_index()->set_offset(arg->linear_index().offset() - 1);
+    }
+    *arg->mutable_linear_target() = LookupExpr(fz_ct.arguments[2]);
 
-      if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
-        // Add a dummy variable at position zero because flatzinc index start
-        // at 1.
-        // TODO(user): Make sure that zero is not in the index domain...
-        arg->add_vars(LookupConstant(0));
+    for (const VarOrValue elem : LookupVarsOrValues(fz_ct.arguments[1])) {
+      auto* elem_proto = ct->mutable_element()->add_exprs();
+      if (elem.var != kNoVar) {
+        elem_proto->add_vars(elem.var);
+        elem_proto->add_coeffs(1);
+      } else {
+        elem_proto->set_offset(elem.value);
       }
-      for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
-    } else {
-      // Special case added by the presolve or in flatzinc. We encode this
-      // as a table constraint.
-      CHECK(!absl::EndsWith(fz_ct.type, "_nonshifted"));
-      auto* arg = ct->mutable_table();
+    }
+  } else if (fz_ct.type == "ortools_array_int_element" ||
+             fz_ct.type == "ortools_array_bool_element" ||
+             fz_ct.type == "ortools_array_var_int_element" ||
+             fz_ct.type == "ortools_array_var_bool_element") {
+    auto* arg = ct->mutable_element();
 
-      // the constraint is:
-      //   values[coeff1 * vars[0] + coeff2 * vars[1] + offset] == target.
-      for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
-      arg->add_vars(LookupVar(fz_ct.arguments[2]));  // the target
+    // Index.
+    *arg->mutable_linear_index() = LookupExpr(fz_ct.arguments[0]);
+    const int64_t index_min = fz_ct.arguments[1].values[0];
+    arg->mutable_linear_index()->set_offset(arg->linear_index().offset() -
+                                            index_min);
 
-      const std::vector<int64_t>& values = fz_ct.arguments[1].values;
-      const int64_t coeff1 = fz_ct.arguments[3].values[0];
-      const int64_t coeff2 = fz_ct.arguments[3].values[1];
-      const int64_t offset = fz_ct.arguments[4].values[0] - 1;
+    // Target.
+    *arg->mutable_linear_target() = LookupExpr(fz_ct.arguments[3]);
 
-      for (const int64_t a : AllValuesInDomain(proto.variables(arg->vars(0)))) {
-        for (const int64_t b :
-             AllValuesInDomain(proto.variables(arg->vars(1)))) {
-          const int index = coeff1 * a + coeff2 * b + offset;
-          CHECK_GE(index, 0);
-          CHECK_LT(index, values.size());
-          arg->add_values(a);
-          arg->add_values(b);
-          arg->add_values(values[index]);
-        }
+    // Expressions.
+    for (const VarOrValue elem : LookupVarsOrValues(fz_ct.arguments[2])) {
+      auto* elem_proto = ct->mutable_element()->add_exprs();
+      if (elem.var != kNoVar) {
+        elem_proto->add_vars(elem.var);
+        elem_proto->add_coeffs(1);
+      } else {
+        elem_proto->set_offset(elem.value);
       }
     }
   } else if (fz_ct.type == "ortools_table_int") {
     auto* arg = ct->mutable_table();
-    for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
+    for (const VarOrValue v : LookupVarsOrValues(fz_ct.arguments[0])) {
+      LinearExpressionProto* expr = arg->add_exprs();
+      if (v.var != kNoVar) {
+        expr->add_vars(v.var);
+        expr->add_coeffs(1);
+      } else {
+        expr->set_offset(v.value);
+      }
+    }
     for (const int64_t value : fz_ct.arguments[1].values)
       arg->add_values(value);
   } else if (fz_ct.type == "ortools_regular") {
     auto* arg = ct->mutable_automaton();
-    for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
+    for (const VarOrValue v : LookupVarsOrValues(fz_ct.arguments[0])) {
+      LinearExpressionProto* expr = arg->add_exprs();
+      if (v.var != kNoVar) {
+        expr->add_vars(v.var);
+        expr->add_coeffs(1);
+      } else {
+        expr->set_offset(v.value);
+      }
+    }
 
     int count = 0;
     const int num_states = fz_ct.arguments[1].Value();
@@ -1277,6 +1352,65 @@ void OutputFlatzincStats(const CpSolverResponse& response,
 
 }  // namespace
 
+void ProcessFloatingPointOVariablesAndObjective(fz::Model* fz_model) {
+  // Scan the model, rename int2float to int_eq, change type of the floating
+  // point variables to integer.
+  for (fz::Constraint* ct : fz_model->constraints()) {
+    if (!ct->active) continue;
+    if (ct->type == "int2float") {
+      ct->type = "int_eq";
+      fz::Domain& float_domain = ct->arguments[1].variables[0]->domain;
+      float_domain.is_float = false;
+      for (const double float_value : float_domain.float_values) {
+        float_domain.values.push_back(static_cast<int64_t>(float_value));
+      }
+      float_domain.float_values.clear();
+    }
+  }
+
+  // Scan the model to find the float objective variable and the float objective
+  // constraint if defined.
+  fz::Variable* float_objective_var = nullptr;
+  for (fz::Variable* var : fz_model->variables()) {
+    if (!var->active) continue;
+    if (var->domain.is_float) {
+      CHECK(float_objective_var == nullptr);
+      float_objective_var = var;
+    }
+  }
+
+  fz::Constraint* float_objective_ct = nullptr;
+  if (float_objective_var != nullptr) {
+    for (fz::Constraint* ct : fz_model->constraints()) {
+      if (!ct->active) continue;
+      if (ct->type == "float_lin_eq") {
+        CHECK(float_objective_ct == nullptr);
+        float_objective_ct = ct;
+        break;
+      }
+    }
+  }
+
+  if (float_objective_ct != nullptr || float_objective_var != nullptr) {
+    CHECK(float_objective_ct != nullptr);
+    CHECK(float_objective_var != nullptr);
+    const int arity = float_objective_ct->arguments[0].Size();
+    CHECK_EQ(float_objective_ct->arguments[1].variables[arity - 1],
+             float_objective_var);
+    CHECK_EQ(float_objective_ct->arguments[0].floats[arity - 1], -1.0);
+    for (int i = 0; i + 1 < arity; ++i) {
+      fz_model->AddFloatingPointObjectiveTerm(
+          float_objective_ct->arguments[1].variables[i],
+          float_objective_ct->arguments[0].floats[i]);
+    }
+    fz_model->SetFloatingPointObjectiveOffset(
+        -float_objective_ct->arguments[2].floats[0]);
+    fz_model->ClearObjective();
+    float_objective_var->active = false;
+    float_objective_ct->active = false;
+  }
+}
+
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
                              const fz::FlatzincSatParameters& p,
                              const std::string& sat_params,
@@ -1410,8 +1544,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       } else {
         m.parameters.add_subsolvers("default_lp");
         m.parameters.add_subsolvers(
-            m.proto.search_strategy().empty() ? "no_lp" : "fixed");
-        m.parameters.add_subsolvers("less_encoding");
+            m.proto.search_strategy().empty() ? "probing" : "fixed");
+        m.parameters.add_subsolvers("no_lp");
         m.parameters.add_subsolvers("max_lp");
         m.parameters.add_subsolvers("quick_restart");
       }

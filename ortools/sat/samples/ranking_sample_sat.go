@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,9 +17,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	cmpb "ortools/sat/cp_model_go_proto"
-	"ortools/sat/go/cpmodel"
+	log "github.com/golang/glog"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
 const (
@@ -89,7 +89,7 @@ func rankingSampleSat() error {
 
 	for t := 0; t < numTasks; t++ {
 		start := model.NewIntVarFromDomain(horizon)
-		duration := cpmodel.NewConstant(int64_t(t + 1))
+		duration := cpmodel.NewConstant(int64(t + 1))
 		end := model.NewIntVarFromDomain(horizon)
 		var presence cpmodel.BoolVar
 		if t < numTasks/2 {
@@ -160,6 +160,6 @@ func rankingSampleSat() error {
 
 func main() {
 	if err := rankingSampleSat(); err != nil {
-		glog.Exitf("rankingSampleSat returned with error: %v", err)
+		log.Exitf("rankingSampleSat returned with error: %v", err)
 	}
 }

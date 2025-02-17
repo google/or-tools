@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -777,6 +777,23 @@ absl::Status Gurobi::ResetParameters() {
   return ToStatus(GRBresetparams(model_env_));
 }
 
+absl::Status Gurobi::SetMultiObjectiveDoubleParam(const char* const name,
+                                                  const int obj_index,
+                                                  const double value) {
+  ASSIGN_OR_RETURN(GRBenv* const obj_env, GetMultiObjectiveEnv(obj_index));
+  return util::StatusBuilder(ToStatus(GRBsetdblparam(obj_env, name, value)))
+         << " for objective index: " << obj_index;
+}
+
+absl::StatusOr<double> Gurobi::GetMultiObjectiveDoubleParam(
+    const char* const name, const int obj_index) {
+  ASSIGN_OR_RETURN(GRBenv* const obj_env, GetMultiObjectiveEnv(obj_index));
+  double result;
+  RETURN_IF_ERROR(ToStatus(GRBgetdblparam(obj_env, name, &result)))
+      << " for objective index: " << obj_index;
+  return result;
+}
+
 void Gurobi::Terminate() { GRBterminate(gurobi_model_); }
 
 Gurobi::CallbackContext::CallbackContext(Gurobi* const gurobi,
@@ -840,6 +857,17 @@ absl::StatusOr<double> Gurobi::CallbackContext::CbSolution(
   RETURN_IF_ERROR(gurobi_->ToStatus(
       GRBcbsolution(cb_data_, const_cast<double*>(solution.data()), &result)));
   return result;
+}
+
+absl::StatusOr<GRBenv*> Gurobi::GetMultiObjectiveEnv(
+    const int obj_index) const {
+  GRBenv* const obj_env = GRBgetmultiobjenv(gurobi_model_, obj_index);
+  if (obj_env == nullptr) {
+    return util::InvalidArgumentErrorBuilder()
+           << "Failed to get objective environment for objective index: "
+           << obj_index;
+  }
+  return obj_env;
 }
 
 }  // namespace operations_research::math_opt

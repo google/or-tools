@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -287,11 +287,11 @@ bool RoutingModel::SolveMatchingModel(
               // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
               // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
-                      vehicle,
+                      vehicle, /*solve_duration_ratio=*/1.0,
                       [&nexts](int64_t node) {
                         return nexts.find(node)->second;
                       },
-                      &cumul_cost_value) !=
+                      /*resource=*/nullptr, &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
               } else {
@@ -312,11 +312,11 @@ bool RoutingModel::SolveMatchingModel(
               // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
               // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
-                      vehicle,
+                      vehicle, /*solve_duration_ratio=*/1.0,
                       [&nexts](int64_t node) {
                         return nexts.find(node)->second;
                       },
-                      &cumul_cost_value) !=
+                      /*resource=*/nullptr, &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
               } else {

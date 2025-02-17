@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -233,19 +233,19 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds the element constraint: <c>variables[index] == target</c>.
+     * Adds the element constraint: <c>exprs[index] == target</c>.
      * </summary>
      */
-    public Constraint AddElement(IntVar index, IEnumerable<IntVar> vars, IntVar target)
+    public Constraint AddElement(LinearExpr index, IEnumerable<LinearExpr> exprs, LinearExpr target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
-        element.Index = index.Index;
-        element.Vars.TrySetCapacity(vars);
-        foreach (IntVar var in vars)
+        element.LinearIndex = GetLinearExpressionProto(index);
+        element.Exprs.TrySetCapacity(exprs);
+        foreach (LinearExpr expr in exprs)
         {
-            element.Vars.Add(var.Index);
+            element.Exprs.Add(GetLinearExpressionProto(expr));
         }
-        element.Target = target.Index;
+        element.LinearTarget = GetLinearExpressionProto(target);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Element = element;
@@ -257,16 +257,16 @@ public class CpModel
      * Adds the element constraint: <c> values[index] == target</c>.
      * </summary>
      */
-    public Constraint AddElement(IntVar index, IEnumerable<long> values, IntVar target)
+    public Constraint AddElement(LinearExpr index, IEnumerable<long> values, LinearExpr target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
-        element.Index = index.Index;
-        element.Vars.TrySetCapacity(values);
+        element.LinearIndex = GetLinearExpressionProto(index);
+        element.Exprs.TrySetCapacity(values);
         foreach (long value in values)
         {
-            element.Vars.Add(ConvertConstant(value));
+            element.Exprs.Add(GetLinearExpressionProto(value));
         }
-        element.Target = target.Index;
+        element.LinearTarget = GetLinearExpressionProto(target);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Element = element;
@@ -278,16 +278,16 @@ public class CpModel
      * Adds the element constraint: <c> values[index] == target</c>.
      * </summary>
      */
-    public Constraint AddElement(IntVar index, IEnumerable<int> values, IntVar target)
+    public Constraint AddElement(LinearExpr index, IEnumerable<int> values, LinearExpr target)
     {
         ElementConstraintProto element = new ElementConstraintProto();
-        element.Index = index.Index;
-        element.Vars.TrySetCapacity(values);
+        element.LinearIndex = GetLinearExpressionProto(index);
+        element.Exprs.TrySetCapacity(values);
         foreach (int value in values)
         {
-            element.Vars.Add(ConvertConstant(value));
+            element.Exprs.Add(GetLinearExpressionProto(value));
         }
-        element.Target = target.Index;
+        element.LinearTarget = GetLinearExpressionProto(target);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Element = element;
@@ -299,9 +299,9 @@ public class CpModel
      * Adds and returns an empty circuit constraint.
      * </summary>
      *
-     * <remarks> A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node <c>i</c>
-     * is not in the path, then there must be a loop arc <c> i -> i</c> associated with a true
-     * literal. Otherwise this constraint will fail.
+     * <remarks> A circuit is a unique Hamiltonian cycle in a subgraph of the total graph. In case
+     * a node <c>i</c> is not in the cycle, then there must be a loop arc <c> i -> i</c>
+     * associated with a true literal. Otherwise this constraint will fail.
      * </remarks>
      */
     public CircuitConstraint AddCircuit()
@@ -331,26 +331,27 @@ public class CpModel
 
     /**
      * <summary>
-     * Adds <c> AllowedAssignments(variables)</c>.
+     * Adds <c> AllowedAssignments(expressions)</c>.
      * </summary>
      *
-     * <remarks>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
-     * all variables are fixed to a single value, that the corresponding list of values is equal to
-     * one of the tuples of the tupleList.
+     * <remarks>An AllowedAssignments constraint is a constraint on an array of affine
+     * expressions (a * var + b) that forces, when all expressions are fixed to a single
+     * value, that the corresponding list of values is equal to one of the tuples of the
+     * tupleList.
      * </remarks>
      *
-     * <param name="vars"> a list of variables</param>
+     * <param name="exprs"> a list of affine expressions (a * var + b)</param>
      * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
      * directly to the table constraint
      * </returns>
      */
-    public TableConstraint AddAllowedAssignments(IEnumerable<IntVar> vars)
+    public TableConstraint AddAllowedAssignments(IEnumerable<LinearExpr> exprs)
     {
         TableConstraintProto table = new TableConstraintProto();
-        table.Vars.TrySetCapacity(vars);
-        foreach (IntVar var in vars)
+        table.Vars.TrySetCapacity(exprs);
+        foreach (LinearExpr expr in exprs)
         {
-            table.Vars.Add(var.Index);
+            table.Exprs.Add(GetLinearExpressionProto(expr));
         }
 
         TableConstraint ct = new TableConstraint(model_);
@@ -363,18 +364,19 @@ public class CpModel
      * Adds <c> ForbiddenAssignments(variables)</c>.
      * </summary>
      *
-     * <remarks>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
-     * impossible combinations is provided in the tuples list.
+     * <remarks>A ForbiddenAssignments constraint is a constraint on an array of affine
+     * expressions (a * var + b) where the list of impossible combinations is provided
+     * in the tuples list.
      * </remarks>
      *
-     * <param name="vars"> a list of variables</param>
+     * <param name="exprs"> a list of affine expressions (a * var + b)</param>
      * <returns> an instance of the TableConstraint class without any tuples. Tuples can be added
      * directly to the table constraint
      * </returns>
      */
-    public TableConstraint AddForbiddenAssignments(IEnumerable<IntVar> vars)
+    public TableConstraint AddForbiddenAssignments(IEnumerable<LinearExpr> exprs)
     {
-        TableConstraint ct = AddAllowedAssignments(vars);
+        TableConstraint ct = AddAllowedAssignments(exprs);
         ct.Proto.Table.Negated = true;
         return ct;
     }
@@ -385,48 +387,49 @@ public class CpModel
      * </summary>
      *
      * <remarks>
-     * <para>An automaton constraint takes a list of variables (of size n), an initial state, a set of
-     * final states, and a set of transitions that will be added incrementally directly on the
-     * returned AutomatonConstraint instance. A transition is a triplet (<c>tail</c>, <c>transition</c>,
-     * <c>head</c>), where <c>tail</c> and <c>head</c> are states, and <c>transition</c> is the label of an arc from
-     * <c>head</c> to <c>tail</c>, corresponding to the value of one variable in the list of variables. </para>
+     * <para>An automaton constraint takes a list of affine expressions (of size n), an initial
+     * state, a set of final states, and a set of transitions that will be added incrementally
+     * directly on the returned AutomatonConstraint instance. A transition is a triplet
+     * (<c>tail</c>, <c>transition</c>, <c>head</c>), where <c>tail</c> and <c>head</c> are states,
+     * and <c>transition</c> is the label of an arc from <c>head</c> to <c>tail</c>, corresponding
+     * to the value of one expression in the list of expressions. </para>
      *
      * <para>This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the
      * possible states of the automaton. The first state contains the initial state. The last phase
      * contains the final states. </para>
      *
-     * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
-     * transition (<c>tail</c>, <c>label</c>, <c>head</c>), it will add an arc from the state <c>tail</c> of phase i and
-     * the state <c>head</c> of phase i + 1. This arc labeled by the value <c>label</c> of the variables
-     * <c>variables[i]</c>. That is, this arc can only be selected <c>variables[i]</c>a is assigned the value
-     * <c>label</c>. </para>
+     * <para>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For
+     * each transition (<c>tail</c>, <c>label</c>, <c>head</c>), it will add an arc from the state
+     * <c>tail</c> of phase i and the state <c>head</c> of phase i + 1. This arc labeled by the
+     * value <c>label</c> of the expression <c>expressions[i]</c>. That is, this arc can only be
+     * selected <c>expressions[i]</c>a is assigned the value <c>label</c>. </para>
      *
-     * <para>A feasible solution of this constraint is an assignment of variables such that, starting
-     * from the initial state in phase 0, there is a path labeled by the values of the variables that
-     * ends in one of the final states in the final phase. </para>
+     * <para>A feasible solution of this constraint is an assignment of expression such that,
+     * starting from the initial state in phase 0, there is a path labeled by the values of the
+     * expressions that ends in one of the final states in the final phase. </para>
      * </remarks>
      *
-     * <param name="vars"> a non empty list of variables whose values correspond to the labels
-     *     of the arcs traversed by the automaton</param>
-     * <param name="starting_state"> the initial state of the automaton</param>
-     * <param name="final_states"> a non empty list of admissible final states </param>
-     * <returns> an instance of the AutomatonConstraint class </returns>
+     * <param name="expressions"> a non empty list of affine expressions (a * var + b) whose values
+     * correspond to the labels of the arcs traversed by the automaton</param> <param
+     * name="starting_state"> the initial state of the automaton</param> <param name="final_states">
+     * a non empty list of admissible final states </param> <returns> an instance of the
+     * AutomatonConstraint class </returns>
      */
-    public AutomatonConstraint AddAutomaton(IEnumerable<IntVar> vars, long starting_state,
+    public AutomatonConstraint AddAutomaton(IEnumerable<LinearExpr> expressions, long starting_state,
                                             IEnumerable<long> final_states)
     {
-        AutomatonConstraintProto aut = new AutomatonConstraintProto();
-        aut.Vars.TrySetCapacity(vars);
-        foreach (IntVar var in vars)
+        AutomatonConstraintProto automaton = new AutomatonConstraintProto();
+        automaton.Vars.TrySetCapacity(expressions);
+        foreach (LinearExpr expr in expressions)
         {
-            aut.Vars.Add(var.Index);
+            automaton.Exprs.Add(GetLinearExpressionProto(expr));
         }
 
-        aut.StartingState = starting_state;
-        aut.FinalStates.AddRange(final_states);
+        automaton.StartingState = starting_state;
+        automaton.FinalStates.AddRange(final_states);
 
         AutomatonConstraint ct = new AutomatonConstraint(model_);
-        ct.Proto.Automaton = aut;
+        ct.Proto.Automaton = automaton;
         return ct;
     }
 
@@ -1255,6 +1258,13 @@ public class CpModel
             linear.Offset = constant;
         }
 
+        return linear;
+    }
+
+    internal LinearExpressionProto GetLinearExpressionProto(long value)
+    {
+        LinearExpressionProto linear = new LinearExpressionProto();
+        linear.Offset = value;
         return linear;
     }
 

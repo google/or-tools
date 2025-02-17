@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
@@ -39,8 +40,9 @@
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
-#include "ortools/flatzinc/presolve.h"
 #include "ortools/util/logging.h"
+
+constexpr bool kOrToolsMode = true;
 
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, search_all_solutions, false, "Search for all solutions.");
@@ -50,7 +52,6 @@ ABSL_FLAG(bool, free_search, false,
           "If false, the solver must follow the defined search."
           "If true, other search are allowed.");
 ABSL_FLAG(int, threads, 0, "Number of threads the solver will use.");
-ABSL_FLAG(bool, presolve, true, "Presolve the model to simplify it.");
 ABSL_FLAG(bool, statistics, false, "Print solver statistics after search.");
 ABSL_FLAG(bool, read_from_stdin, false,
           "Read the FlatZinc from stdin, not from a file.");
@@ -60,7 +61,8 @@ ABSL_FLAG(std::string, fz_model_name, "stdin",
 ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
 ABSL_FLAG(bool, fz_logging, false,
           "Print logging information from the flatzinc interpreter.");
-ABSL_FLAG(bool, ortools_mode, true, "Display solutions in the flatzinc format");
+ABSL_FLAG(bool, ortools_mode, kOrToolsMode,
+          "Display solutions in the flatzinc format");
 
 namespace operations_research {
 namespace fz {
@@ -103,8 +105,10 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = time_param;
       use_time_param = true;
     }
-    if (strcmp((*argv)[i], "-v") == 0) {
-      (*argv)[i] = logging_param;
+    if (kOrToolsMode) {
+      if (strcmp((*argv)[i], "-v") == 0) {
+        (*argv)[i] = logging_param;
+      }
     }
   }
   const char kUsage[] =
@@ -129,7 +133,7 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
 }
 
 Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
-                         SolverLogger* logger) {
+                         SolverLogger* logger, absl::Duration* parse_duration) {
   WallTimer timer;
   timer.Start();
 
@@ -149,18 +153,10 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
     CHECK(ParseFlatzincString(input, &model));
   }
 
+  *parse_duration = timer.GetDuration();
   SOLVER_LOG(logger, "File ", (input_is_filename ? input : "stdin"),
-             " parsed in ", timer.GetInMs(), " ms");
+             " parsed in ", absl::ToInt64Milliseconds(*parse_duration), " ms");
   SOLVER_LOG(logger, "");
-
-  // Presolve the model.
-  Presolver presolve(logger);
-  SOLVER_LOG(logger, "Presolve model");
-  timer.Reset();
-  timer.Start();
-  presolve.Run(&model);
-  SOLVER_LOG(logger, "  - done in ", timer.GetInMs(), " ms");
-  SOLVER_LOG(logger);
 
   // Print statistics.
   ModelStatistics stats(model, logger);
@@ -216,9 +212,12 @@ int main(int argc, char** argv) {
     logger.SetLogToStdOut(true);
   }
 
-  const operations_research::fz::Model model =
+  absl::Duration parse_duration;
+  operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(
-          input, !absl::GetFlag(FLAGS_read_from_stdin), &logger);
+          input, !absl::GetFlag(FLAGS_read_from_stdin), &logger,
+          &parse_duration);
+  operations_research::sat::ProcessFloatingPointOVariablesAndObjective(&model);
 
   operations_research::fz::FlatzincSatParameters parameters;
   parameters.display_all_solutions = absl::GetFlag(FLAGS_display_all_solutions);
@@ -229,7 +228,8 @@ int main(int argc, char** argv) {
   parameters.random_seed = absl::GetFlag(FLAGS_fz_seed);
   parameters.display_statistics = absl::GetFlag(FLAGS_statistics);
   parameters.number_of_threads = absl::GetFlag(FLAGS_threads);
-  parameters.max_time_in_seconds = absl::GetFlag(FLAGS_time_limit);
+  parameters.max_time_in_seconds =
+      absl::GetFlag(FLAGS_time_limit) - absl::ToInt64Seconds(parse_duration);
   parameters.ortools_mode = absl::GetFlag(FLAGS_ortools_mode);
 
   operations_research::SolverLogger solution_logger;

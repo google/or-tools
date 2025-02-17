@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -182,9 +183,11 @@ class ResourceAssignmentConstraint : public Constraint {
     const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
         ignored_resources_per_class(resource_group_.GetResourceClassesCount());
     std::vector<std::vector<int64_t>> assignment_costs(model_.vehicles());
+    // TODO(user): Adjust the 'solve_duration_ratio' parameter.
     for (int v : resource_group_.GetVehiclesRequiringAResource()) {
       if (!ComputeVehicleToResourceClassAssignmentCosts(
-              v, resource_group_, ignored_resources_per_class, next, transit,
+              v, /*solve_duration_ratio=*/1.0, resource_group_,
+              ignored_resources_per_class, next, transit,
               /*optimize_vehicle_costs*/ false,
               model_.GetMutableLocalCumulLPOptimizer(dimension),
               model_.GetMutableLocalCumulMPOptimizer(dimension),
@@ -235,9 +238,9 @@ class ResourceAssignmentConstraint : public Constraint {
             s, this, &ResourceAssignmentConstraint::ResourceBound,
             "ResourceBound", v);
         resource_var->WhenBound(demon);
-        }
       }
     }
+  }
   void ResourceBound(int vehicle) {
     const int64_t resource = vehicle_resource_vars_[vehicle]->Value();
     if (resource < 0) return;
@@ -254,7 +257,7 @@ class ResourceAssignmentConstraint : public Constraint {
       dim->CumulVar(model_.End(vehicle))
           ->SetRange(attributes.end_domain().Min(),
                      attributes.end_domain().Max());
-  }
+    }
   }
 
   const RoutingModel& model_;
@@ -632,8 +635,8 @@ Constraint* MakePathSpansAndTotalSlacks(const RoutingDimension* dimension,
   RoutingModel* const model = dimension->model();
   CHECK_EQ(model->vehicles(), spans.size());
   CHECK_EQ(model->vehicles(), total_slacks.size());
-  return model->solver()->RevAlloc(
-      new PathSpansAndTotalSlacks(model, dimension, spans, total_slacks));
+  return model->solver()->RevAlloc(new PathSpansAndTotalSlacks(
+      model, dimension, std::move(spans), std::move(total_slacks)));
 }
 
 namespace {
@@ -705,5 +708,91 @@ std::string LightRangeLessOrEqual::DebugString() const {
   return left_->DebugString() + " < " + right_->DebugString();
 }
 }  // namespace
+
+namespace {
+
+class RouteConstraint : public Constraint {
+ public:
+  RouteConstraint(
+      RoutingModel* model, std::vector<IntVar*> route_cost_vars,
+      std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
+          route_evaluator)
+      : Constraint(model->solver()),
+        model_(model),
+        route_cost_vars_(std::move(route_cost_vars)),
+        route_evaluator_(std::move(route_evaluator)),
+        starts_(model->Size() + model->vehicles(), -1),
+        ends_(model->Size() + model->vehicles(), -1) {
+    const int size = model_->Size() + model_->vehicles();
+    for (int i = 0; i < size; ++i) {
+      starts_.SetValue(solver(), i, i);
+      ends_.SetValue(solver(), i, i);
+    }
+  }
+  ~RouteConstraint() override {}
+  void Post() override {
+    const std::vector<IntVar*> nexts = model_->Nexts();
+    for (int i = 0; i < nexts.size(); ++i) {
+      if (!nexts[i]->Bound()) {
+        auto* demon = MakeConstraintDemon2(
+            model_->solver(), this, &RouteConstraint::AddLink,
+            "RouteConstraint::AddLink", i, nexts[i]);
+        nexts[i]->WhenBound(demon);
+      }
+    }
+  }
+  void InitialPropagate() override {
+    const std::vector<IntVar*> nexts = model_->Nexts();
+    for (int i = 0; i < nexts.size(); ++i) {
+      if (nexts[i]->Bound()) {
+        AddLink(i, nexts[i]);
+      }
+    }
+  }
+  std::string DebugString() const override { return "RouteConstraint"; }
+
+ private:
+  void AddLink(int index, IntVar* next) {
+    DCHECK(next->Bound());
+    const int64_t chain_start = starts_.Value(index);
+    const int64_t index_next = next->Min();
+    const int64_t chain_end = ends_.Value(index_next);
+    starts_.SetValue(solver(), chain_end, chain_start);
+    ends_.SetValue(solver(), chain_start, chain_end);
+    if (model_->IsStart(chain_start) && model_->IsEnd(chain_end)) {
+      CheckRoute(chain_start, chain_end);
+    }
+  }
+  void CheckRoute(int64_t start, int64_t end) {
+    route_.clear();
+    for (int64_t node = start; node != end;
+         node = model_->NextVar(node)->Min()) {
+      route_.push_back(node);
+    }
+    route_.push_back(end);
+    std::optional<int64_t> cost = route_evaluator_(route_);
+    if (!cost.has_value()) {
+      solver()->Fail();
+    }
+    route_cost_vars_[model_->VehicleIndex(start)]->SetValue(cost.value());
+  }
+
+  RoutingModel* const model_;
+  std::vector<IntVar*> route_cost_vars_;
+  std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
+      route_evaluator_;
+  RevArray<int> starts_;
+  RevArray<int> ends_;
+  std::vector<int64_t> route_;
+};
+}  // namespace
+
+Constraint* MakeRouteConstraint(
+    RoutingModel* model, std::vector<IntVar*> route_cost_vars,
+    std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
+        route_evaluator) {
+  return model->solver()->RevAlloc(new RouteConstraint(
+      model, std::move(route_cost_vars), std::move(route_evaluator)));
+}
 
 }  // namespace operations_research

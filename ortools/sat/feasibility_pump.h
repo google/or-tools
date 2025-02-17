@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,13 +27,13 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -237,6 +237,8 @@ class FeasibilityPump {
 
   // TODO(user): Tune default value. Expose as parameter.
   int max_fp_iterations_ = 20;
+
+  std::vector<double> tmp_solution_;
 };
 
 }  // namespace sat

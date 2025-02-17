@@ -1,36 +1,19 @@
-FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
+FROM quay.io/pypa/manylinux_2_28_x86_64:latest AS env
+# note: Almalinux:8 based image with
+# CMake 3.31.2 and SWIG 4.3.0 already installed
 
-RUN yum -y update \
-&& yum -y install \
+RUN dnf -y update \
+&& dnf -y install \
  curl wget \
  git patch \
  which pkgconfig autoconf libtool \
  make gcc-c++ \
  redhat-lsb openssl-devel pcre2-devel \
  zlib-devel unzip zip \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
-
-# Install CMake 3.28.3
-RUN wget -q --no-check-certificate "https://cmake.org/files/v3.28/cmake-3.28.3-linux-x86_64.sh" \
-&& chmod a+x cmake-3.28.3-linux-x86_64.sh \
-&& ./cmake-3.28.3-linux-x86_64.sh --prefix=/usr --skip-license \
-&& rm cmake-3.28.3-linux-x86_64.sh
-
-# Install SWIG 4.2.1
-RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.2.1/swig-4.2.1.tar.gz" \
- -o swig-4.2.1.tar.gz \
-&& tar xvf swig-4.2.1.tar.gz \
-&& rm swig-4.2.1.tar.gz \
-&& cd swig-4.2.1 \
-&& ./configure --prefix=/usr/local \
-&& make -j 4 \
-&& make install \
-&& cd .. \
-&& rm -rf swig-4.2.1
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -54,13 +37,14 @@ RUN git clone -b "${GIT_BRANCH}" --single-branch "$GIT_URL" /project \
 && git reset --hard "${GIT_SHA1}"
 WORKDIR /project
 
+# Copy build script and setup env
+ENV PLATFORM x86_64
+ARG PYTHON_VERSION
+ENV PYTHON_VERSION ${PYTHON_VERSION:-3}
 COPY build-manylinux.sh .
 RUN chmod a+x "build-manylinux.sh"
 
 FROM devel AS build
-ENV PLATFORM x86_64
-ARG PYTHON_VERSION
-ENV PYTHON_VERSION ${PYTHON_VERSION:-3}
 RUN ./build-manylinux.sh build
 
 FROM build as test

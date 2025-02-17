@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -106,6 +106,9 @@ class TopN {
   }
   // Peeks the bottom result without calling Extract()
   const T& peek_bottom();
+  // Destructively extract the elements as a vector, sorted in descending order.
+  // Leaves TopN in an empty state.
+  std::vector<T> Take();
   // Extract the elements as a vector sorted in descending order.  The caller
   // assumes ownership of the vector and must delete it when done.  This is a
   // destructive operation.  The only method that can be called immediately
@@ -250,6 +253,19 @@ const T& TopN<T, Cmp>::peek_bottom() {
   }
   return elements_.front();
 }
+template <class T, class Cmp>
+std::vector<T> TopN<T, Cmp>::Take() {
+  std::vector<T> out = std::move(elements_);
+  if (state_ != State::HEAP_SORTED) {
+    std::sort(out.begin(), out.end(), cmp_);
+  } else {
+    out.pop_back();
+    std::sort_heap(out.begin(), out.end(), cmp_);
+  }
+  Reset();
+  return out;
+}
+
 template <class T, class Cmp>
 std::vector<T>* TopN<T, Cmp>::Extract() {
   auto out = new std::vector<T>;

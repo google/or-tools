@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,10 @@
 
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/intervals.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/no_overlap_2d_helper.h"
+#include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
 namespace sat {
@@ -28,8 +30,7 @@ namespace sat {
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
-    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
-    Model* model);
+    NoOverlap2DConstraintHelper* helper, Model* model);
 
 // Energetic cuts for the no_overlap_2d constraint.
 //
@@ -46,16 +47,13 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 // The maximum area is the area of the bounding rectangle of each intervals
 // at level 0.
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
-    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
-    SchedulingDemandHelper* x_demands_helper,
-    SchedulingDemandHelper* y_demands_helper,
-    const std::vector<std::vector<LiteralValueValue>>& energies, Model* model);
+    NoOverlap2DConstraintHelper* helper, Model* model);
 
 // Internal methods and data structures, useful for testing.
 
 // Base event type for scheduling cuts.
 struct DiffnBaseEvent {
-  DiffnBaseEvent(int t, SchedulingConstraintHelper* x_helper);
+  DiffnBaseEvent(int t, const SchedulingConstraintHelper* x_helper);
 
   // Cache of the intervals bound on the x direction.
   IntegerValue x_start_min;
@@ -82,7 +80,7 @@ struct DiffnBaseEvent {
 //       capacity_max.
 //   For a no_overlap_2d constraint, y the other dimension of the rect.
 struct DiffnCtEvent : DiffnBaseEvent {
-  DiffnCtEvent(int t, SchedulingConstraintHelper* x_helper);
+  DiffnCtEvent(int t, const SchedulingConstraintHelper* x_helper);
 
   // The lp value of the end of the x interval.
   AffineExpression x_end;

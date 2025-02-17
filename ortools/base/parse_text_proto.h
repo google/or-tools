@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #ifndef OR_TOOLS_BASE_PARSE_TEXT_PROTO_H_
 #define OR_TOOLS_BASE_PARSE_TEXT_PROTO_H_
+
+#include <string_view>
 
 #include "absl/log/absl_check.h"
 #include "google/protobuf/message.h"
@@ -30,6 +32,31 @@ T ParseTextOrDie(const std::string& input) {
   T result;
   ABSL_CHECK(ParseTextProto(input, &result));
   return result;
+}
+
+namespace text_proto_internal {
+
+class ParseProtoHelper {
+ public:
+  explicit ParseProtoHelper(std::string_view asciipb) : asciipb_(asciipb) {}
+  template <class T>
+  operator T() {  // NOLINT(runtime/explicit)
+    T result;
+    const bool ok = ::google::protobuf::TextFormat::TextFormat::ParseFromString(
+        asciipb_, &result);
+    CHECK(ok) << "Failed to parse text proto: " << asciipb_;
+    return result;
+  }
+
+ private:
+  const std::string asciipb_;
+};
+
+}  // namespace text_proto_internal
+
+text_proto_internal::ParseProtoHelper ParseTextProtoOrDie(
+    std::string_view input) {
+  return text_proto_internal::ParseProtoHelper(input);
 }
 
 }  // namespace google::protobuf::contrib::parse_proto

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -131,12 +131,18 @@ class Domain {
 
   /**
    * Creates a domain from the union of an unsorted list of intervals.
+   *
+   * Note that invalid intervals (start > end) will log a DFATAL error and will
+   * be ignored.
    */
   static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
   /**
    * Same as FromIntervals() for a flattened representation (start, end,
    * start, end, ...).
+   *
+   * Note that invalid intervals (start > end) will log a DFATAL error and will
+   * be ignored.
    */
   static Domain FromFlatSpanOfIntervals(
       absl::Span<const int64_t> flat_intervals);
@@ -144,7 +150,13 @@ class Domain {
   /**
    * This method is available in Python, Java and .NET. It allows
    * building a Domain object from a list of intervals (long[][] in Java and
-   * .NET, [[0, 2], [5, 5], [8, 10]] in python).
+   * .NET, [[0, 2], [5], [8, 10]] in python).
+   *
+   * Note that the intervals can be defined with a single value (i.e. [5]), or
+   * two increasing values (i.e. [8, 10]).
+   *
+   * Invalid intervals (start > end) will log a DFATAL error and will be
+   * ignored.
    */
   static Domain FromVectorIntervals(
       const std::vector<std::vector<int64_t> >& intervals);
@@ -153,6 +165,9 @@ class Domain {
    * This method is available in Python, Java and .NET. It allows
    * building a Domain object from a flattened list of intervals
    * (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).
+   *
+   * Note that invalid intervals (start > end) will log a DFATAL error and will
+   * be ignored.
    */
   static Domain FromFlatIntervals(const std::vector<int64_t>& flat_intervals);
 
@@ -420,6 +435,11 @@ class Domain {
    * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = y * y }.
    */
   Domain SquareSuperset() const;
+
+  /**
+   * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = (a*y + b)*(c*y + d) }.
+   */
+  Domain QuadraticSuperset(int64_t a, int64_t b, int64_t c, int64_t d) const;
 
   /**
    * Advanced usage. Given some \e implied information on this domain that is

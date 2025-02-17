@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/graph.h"
 
@@ -202,7 +203,7 @@ TEST(BidirectionalDijkstraTest, RandomizedCorrectnessTest) {
           ref_dijkstra.ArcPathToNode(ref_dests[0]);
       const auto path = tested_dijkstra.SetToSetShortestPath(srcs, dsts);
       std::vector<int> arc_path = path.forward_arc_path;
-      for (const int arc : gtl::reversed_view(path.backward_arc_path)) {
+      for (const int arc : ::gtl::reversed_view(path.backward_arc_path)) {
         arc_path.push_back(forward_arc_of_backward_arc[arc]);
       }
       ASSERT_THAT(arc_path, ElementsAreArray(ref_arc_path))

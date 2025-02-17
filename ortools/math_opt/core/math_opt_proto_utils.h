@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -342,6 +342,14 @@ absl::Status ModelIsSupported(const ModelProto& model,
 // not implemented or supported according to `support_menu`.
 bool UpdateIsSupported(const ModelUpdateProto& update,
                        const SupportedProblemStructures& support_menu);
+
+// Returns an InvalidArgumentError (respectively, UnimplementedError) if a
+// problem structure is present in `model_parameters` and not supported (resp.,
+// not yet implemented) according to `support_menu`.
+absl::Status ModelSolveParametersAreSupported(
+    const ModelSolveParametersProto& model_parameters,
+    const SupportedProblemStructures& support_menu,
+    absl::string_view solver_name);
 
 void UpgradeSolveResultProtoForStatsMigration(
     SolveResultProto& solve_result_proto);

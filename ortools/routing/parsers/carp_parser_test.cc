@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,21 +16,14 @@
 #include <string>
 
 #include "absl/base/log_severity.h"
-#include "absl/flags/flag.h"
 #include "absl/log/scoped_mock_log.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/path.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
+#define ROOT_DIR "_main/"
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
-
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 TEST(CarpParserTest, Constructor) {
   CarpParser parser;
@@ -69,7 +62,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfNodes) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_vertices.dat")));
 }
@@ -86,7 +79,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithServicings) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_arireq.dat")));
 }
@@ -103,7 +96,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithoutServicings) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_arinoreq.dat")));
 }
@@ -120,7 +113,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfVehicles) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_vehiculos.dat")));
 }
@@ -137,7 +130,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectCapacity) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_capacidad.dat")));
 }
@@ -154,7 +147,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTypeOfArcCost) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_tipo.dat")));
 }
@@ -170,7 +163,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTotalServicingCost) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_coste.dat")));
 }
@@ -189,7 +182,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectDepot) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers/testdata/"
                                      "carp_gdb19_incorrecto_deposito.dat")));
 }
@@ -207,7 +200,7 @@ TEST(CarpParserTest, LoadInvalidFileNoEdgeWithServicing) {
 
   CarpParser parser;
   EXPECT_FALSE(parser.LoadFile(
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
+      file::JoinPath(::testing::SrcDir(),
                      ROOT_DIR "ortools/routing/parsers"
                               "/testdata/carp_gdb19_no_arista_req.dat")));
 }
@@ -223,7 +216,7 @@ TEST(CarpParserTest, LoadInvalidFileServicingForArcsWithoutServicing) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
+      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
                                      "ortools/routing/parsers"
                                      "/testdata/carp_gdb19_mixed_arcs.dat")));
 }
@@ -239,16 +232,15 @@ TEST(CarpParserTest, LoadInvalidFileServicingForArcsInWrongOrder) {
 
   CarpParser parser;
   EXPECT_FALSE(parser.LoadFile(
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
+      file::JoinPath(::testing::SrcDir(),
                      ROOT_DIR "ortools/routing/parsers/testdata/"
                               "carp_gdb19_incorrecta_lista_aristas_req.dat")));
 }
 
 TEST(CarpParserTest, LoadInstanceFile) {
-  std::string file_name =
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                     "ortools/routing/parsers/testdata/"
-                     "carp_gdb19.dat");
+  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                         "ortools/routing/parsers/testdata/"
+                                         "carp_gdb19.dat");
   CarpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "gdb19");
@@ -271,13 +263,12 @@ TEST(CarpParserTest, LoadInstanceFile) {
 }
 
 TEST(CarpParserTest, LoadInstanceFileWithDifferentDepot) {
-  std::string file_name =
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                     "ortools/routing/parsers/testdata/"
-                     "carp_gdb19_diferente_deposito.dat");
+  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                         "ortools/routing/parsers/testdata/"
+                                         "carp_gdb19_diferente_deposito.dat");
   CarpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.depot(), 4);
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

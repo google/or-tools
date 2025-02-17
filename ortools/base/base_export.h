@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,17 +14,17 @@
 #ifndef OR_TOOLS_BASE_BASE_EXPORT_H_
 #define OR_TOOLS_BASE_BASE_EXPORT_H_
 
-#if defined(_MSC_VER) && defined(OR_TOOLS_AS_DYNAMIC_LIB)
+#if defined(_MSC_VER) && defined(OR_BUILD_DLL)
 // Annoying stuff for windows -- makes sure clients can import these functions
-#if defined(OR_TOOLS_EXPORTS)
-#define BASE_EXPORT __declspec(dllexport)
+#if defined(OR_EXPORT)
+#define OR_DLL __declspec(dllexport)
 #else
-#define BASE_EXPORT __declspec(dllimport)
-#endif  // defined(OR_TOOLS_EXPORT)
-#endif  // _MSC_VER && OR_TOOLS_AS_DYNAMIC_LIB
+#define OR_DLL __declspec(dllimport)
+#endif  // defined(OR_EXPORT)
+#endif  // _MSC_VER && OR_BUILD_DLL
 
-#ifndef BASE_EXPORT
-#define BASE_EXPORT
+#ifndef OR_DLL
+#define OR_DLL
 #endif
 
 #endif  // OR_TOOLS_BASE_BASE_EXPORT_H_

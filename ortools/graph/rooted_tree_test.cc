@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -219,12 +219,12 @@ TYPED_TEST_P(RootedTreeTest, AllDistancesToRoot) {
   // 0   3
   //     |
   //     2
-  const int root = 1;
+  const Node root = 1;
   std::vector<Node> parents = {1, this->kNullParent, 3, 1};
   const std::vector<double> arc_lengths = {1, 0, 10, 100};
   ASSERT_OK_AND_ASSIGN(const auto tree,
                        RootedTree<Node>::Create(root, parents));
-  EXPECT_THAT(tree.AllDistancesToRoot<double>(arc_lengths),
+  EXPECT_THAT(tree.template AllDistancesToRoot<double>(arc_lengths),
               ElementsAre(1.0, 0.0, 110.0, 100.0));
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -80,11 +80,12 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 class NearpParser {
  public:
   NearpParser();
@@ -95,7 +96,7 @@ class NearpParser {
 #endif
 
   // Loads instance from a file into this parser object.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
 
   // Returns the name of the instance being solved.
   const std::string& name() const { return name_; }
@@ -211,7 +212,7 @@ class NearpParser {
   };
 
   void Initialize();
-  bool ParseFile(const std::string& file_name);
+  bool ParseFile(absl::string_view file_name);
   bool ParseMetadataLine(const std::vector<std::string>& words);
   bool ParseArc(std::string_view line, bool with_servicing);
   bool ParseEdge(std::string_view line, bool with_servicing);
@@ -252,6 +253,6 @@ class NearpParser {
   int num_vehicles_;
   int64_t capacity_;
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_NEARP_PARSER_H_

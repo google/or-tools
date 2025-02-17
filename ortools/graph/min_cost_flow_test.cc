@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,17 +20,86 @@
 #include <random>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/graphs.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
+namespace {
+
+TEST(SolveTest, CapacityTooLarge) {
+  using Graph = ::util::ReverseArcListGraph<int64_t, int64_t>;
+  using Solver =
+      ::operations_research::GenericMinCostFlow<Graph, int64_t, int64_t>;
+
+  const int num_nodes = 6;
+  const int num_arcs = 10;
+  auto graph = std::make_unique<Graph>(num_nodes, num_arcs);
+  auto solver = std::make_unique<Solver>(graph.get());
+  const std::vector<int64_t> tails = {1, 2, 3, 4, 5, 0, 1, 2, 3, 4};
+  const std::vector<int64_t> heads = {0, 1, 2, 3, 4, 5, 5, 5, 5, 5};
+  const std::vector<int64_t> capacities = {
+      3184525836262886912, 3184525836262886912, 3184525836262886912,
+      3184525836262886912, 3184525836262886912, 1025,
+      3184525836262886914, 3184525836262886914, 3184525836262886914,
+      3184525836262886914,
+  };
+  const std::vector<int64_t> objectives(num_arcs, 0);
+  const std::vector<int64_t> supplies = {-3184525836262885888, 1, 1, 1, 1,
+                                         3184525836262885884};
+  for (int64_t e = 0; e < num_arcs; ++e) {
+    graph->AddArc(/*tail=*/tails[e], /*head=*/heads[e]);
+    solver->SetArcCapacity(/*arc=*/e, /*new_capacity=*/capacities[e]);
+    solver->SetArcUnitCost(/*arc=*/e, /*unit_cost=*/objectives[e]);
+  }
+  for (int64_t n = 0; n < num_nodes; ++n) {
+    solver->SetNodeSupply(/*node=*/n, /*supply=*/supplies[n]);
+  }
+
+  // This one can actually be "corrected" by our simple heuristic.
+  EXPECT_TRUE(solver->Solve());
+  EXPECT_EQ(solver->status(), Solver::OPTIMAL);
+}
+
+TEST(SolveTest, CapacityTooLarge2) {
+  using Graph = ::util::ReverseArcListGraph<int64_t, int64_t>;
+  using Solver =
+      ::operations_research::GenericMinCostFlow<Graph, int64_t, int64_t>;
+
+  const int num_nodes = 3;
+  const int num_arcs = 6;
+  auto graph = std::make_unique<Graph>(num_nodes, num_arcs);
+  auto solver = std::make_unique<Solver>(graph.get());
+
+  // We construct a double cycle so that the incoming/outgoing flow cannot be
+  // easily bounded.
+  const int64_t kint64max = std::numeric_limits<int64_t>::max();
+  const std::vector<int64_t> tails = {0, 0, 1, 1, 2, 2};
+  const std::vector<int64_t> heads = {1, 1, 2, 2, 0, 0};
+  const std::vector<int64_t> capacities(num_arcs, kint64max - 10);
+  const std::vector<int64_t> objectives(num_arcs, 0);
+  const std::vector<int64_t> supplies = {-(kint64max - 10), kint64max - 10, 0};
+
+  for (int64_t e = 0; e < num_arcs; ++e) {
+    graph->AddArc(/*tail=*/tails[e], /*head=*/heads[e]);
+    solver->SetArcCapacity(/*arc=*/e, /*new_capacity=*/capacities[e]);
+    solver->SetArcUnitCost(/*arc=*/e, /*unit_cost=*/objectives[e]);
+  }
+  for (int64_t n = 0; n < num_nodes; ++n) {
+    solver->SetNodeSupply(/*node=*/n, /*supply=*/supplies[n]);
+  }
+
+  EXPECT_FALSE(solver->Solve());
+  EXPECT_EQ(solver->status(), Solver::BAD_CAPACITY_RANGE);
+}
 
 template <typename Graph>
 void GenericMinCostFlowTester(
@@ -46,7 +115,7 @@ void GenericMinCostFlowTester(
     graph.AddArc(tail[arc], head[arc]);
   }
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
   EXPECT_TRUE(permutation.empty());
 
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
@@ -74,11 +143,6 @@ void GenericMinCostFlowTester(
       }
     } else if (expected_status == GenericMinCostFlow<Graph>::INFEASIBLE) {
       EXPECT_FALSE(ok);
-      for (int node = 0; node < graph.num_nodes(); ++node) {
-        FlowQuantity delta = min_cost_flow.InitialSupply(node) -
-                             min_cost_flow.FeasibleSupply(node);
-        EXPECT_EQ(0, delta) << "at node " << node;
-      }
     }
   }
 }
@@ -86,7 +150,7 @@ void GenericMinCostFlowTester(
 template <typename Graph>
 class GenericMinCostFlowTest : public ::testing::Test {};
 
-typedef ::testing::Types<StarGraph, util::ReverseArcListGraph<>,
+typedef ::testing::Types<util::ReverseArcListGraph<>,
                          util::ReverseArcStaticGraph<>,
                          util::ReverseArcMixedGraph<>>
     GraphTypes;
@@ -166,66 +230,6 @@ TYPED_TEST(GenericMinCostFlowTest, Test3) {
       kExpectedFlowCost, kExpectedFlow, GenericMinCostFlow<TypeParam>::OPTIMAL);
 }
 
-TYPED_TEST(GenericMinCostFlowTest, Infeasible) {
-  const int kNumNodes = 6;
-  const int kNumArcs = 9;
-  const FlowQuantity kNodeSupply[kNumNodes] = {20, 0, 0, 0, 0, -20};
-  const FlowQuantity kNodeInfeasibility[kNumNodes] = {4, 0, 0, 0, 0, -4};
-  const NodeIndex kTail[kNumArcs] = {0, 0, 1, 1, 1, 2, 3, 4, 4};
-  const NodeIndex kHead[kNumArcs] = {1, 2, 1, 3, 4, 3, 5, 3, 5};
-  const CostValue kCost[kNumArcs] = {1, 6, 3, 5, 7, 3, 1, 6, 9};
-  const FlowQuantity kCapacity[kNumArcs] = {10, 10, 10, 6, 6, 6, 10, 10, 10};
-  const NodeIndex kInfeasibleSupplyNode[] = {0};
-  const NodeIndex kInfeasibleDemandNode[] = {5};
-  const NodeIndex kFeasibleSupply[] = {16};
-  const NodeIndex kFeasibleDemand[] = {-16};
-
-  TypeParam graph(kNumNodes, kNumArcs);
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
-    graph.AddArc(kTail[arc], kHead[arc]);
-  }
-  std::vector<ArcIndex> permutation;
-  Graphs<TypeParam>::Build(&graph, &permutation);
-  EXPECT_TRUE(permutation.empty());
-
-  GenericMinCostFlow<TypeParam> min_cost_flow(&graph);
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
-    min_cost_flow.SetArcUnitCost(arc, kCost[arc]);
-    min_cost_flow.SetArcCapacity(arc, kCapacity[arc]);
-  }
-  for (ArcIndex arc = 0; arc < kNumNodes; ++arc) {
-    min_cost_flow.SetNodeSupply(arc, kNodeSupply[arc]);
-  }
-  std::vector<NodeIndex> infeasible_supply_node;
-  std::vector<NodeIndex> infeasible_demand_node;
-  bool feasible = min_cost_flow.CheckFeasibility(&infeasible_supply_node,
-                                                 &infeasible_demand_node);
-  EXPECT_FALSE(feasible);
-  for (int i = 0; i < infeasible_supply_node.size(); ++i) {
-    const NodeIndex node = infeasible_supply_node[i];
-    EXPECT_EQ(node, kInfeasibleSupplyNode[i]);
-    EXPECT_EQ(min_cost_flow.FeasibleSupply(node), kFeasibleSupply[i]);
-  }
-  for (int i = 0; i < infeasible_demand_node.size(); ++i) {
-    const NodeIndex node = infeasible_demand_node[i];
-    EXPECT_EQ(node, kInfeasibleDemandNode[i]);
-    EXPECT_EQ(min_cost_flow.FeasibleSupply(node), kFeasibleDemand[i]);
-  }
-  bool ok = min_cost_flow.Solve();
-  EXPECT_FALSE(ok);
-  EXPECT_EQ(GenericMinCostFlow<TypeParam>::INFEASIBLE, min_cost_flow.status());
-  for (NodeIndex node = 0; node < kNumNodes; ++node) {
-    FlowQuantity delta =
-        min_cost_flow.InitialSupply(node) - min_cost_flow.FeasibleSupply(node);
-    EXPECT_EQ(kNodeInfeasibility[node], delta);
-  }
-  EXPECT_EQ(min_cost_flow.GetOptimalCost(), 0);
-  min_cost_flow.MakeFeasible();
-  ok = min_cost_flow.Solve();
-  EXPECT_TRUE(ok);
-  EXPECT_EQ(GenericMinCostFlow<TypeParam>::OPTIMAL, min_cost_flow.status());
-}
-
 // Test on a 4x4 matrix. Example taken from
 // http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm
 TYPED_TEST(GenericMinCostFlowTest, Small4x4Matrix) {
@@ -243,7 +247,7 @@ TYPED_TEST(GenericMinCostFlowTest, Small4x4Matrix) {
     }
   }
   std::vector<ArcIndex> permutation;
-  Graphs<TypeParam>::Build(&graph, &permutation);
+  graph.Build(&permutation);
   EXPECT_TRUE(permutation.empty());
 
   GenericMinCostFlow<TypeParam> min_cost_flow(&graph);
@@ -272,7 +276,7 @@ TYPED_TEST(GenericMinCostFlowTest, Small4x4Matrix) {
 TYPED_TEST(GenericMinCostFlowTest, TotalFlowCostOverflow) {
   const int kNumNodes = 2;
   const int kNumArcs = 1;
-  const FlowQuantity kNodeSupply[kNumNodes] = {1LL << 61, -1LL << 61};
+  const FlowQuantity kNodeSupply[kNumNodes] = {1LL << 61, -(1LL << 61)};
   const NodeIndex kTail[kNumArcs] = {0};
   const NodeIndex kHead[kNumArcs] = {1};
   const CostValue kCost[kNumArcs] = {10};
@@ -295,7 +299,7 @@ TEST(GenericMinCostFlowTest, OverflowPrevention1) {
   mcf.SetNodeSupply(1, -std::numeric_limits<int64_t>::max());
 
   EXPECT_FALSE(mcf.Solve());
-  EXPECT_EQ(mcf.status(), MinCostFlowBase::BAD_COST_RANGE);
+  EXPECT_EQ(mcf.status(), MinCostFlowBase::BAD_CAPACITY_RANGE);
 }
 
 TEST(GenericMinCostFlowTest, OverflowPrevention2) {
@@ -588,7 +592,7 @@ CostValue SolveMinCostFlow(GenericMinCostFlow<Graph>* min_cost_flow) {
 
 template <typename Graph>
 CostValue SolveMinCostFlowWithLP(GenericMinCostFlow<Graph>* min_cost_flow) {
-  MPSolver solver("LPSolver", MPSolver::CLP_LINEAR_PROGRAMMING);
+  MPSolver solver("LPSolver", MPSolver::GLOP_LINEAR_PROGRAMMING);
   const Graph* graph = min_cost_flow->graph();
   const NodeIndex num_nodes = graph->num_nodes();
   const ArcIndex num_arcs = graph->num_arcs();
@@ -631,12 +635,13 @@ struct MinCostFlowSolver {
 template <typename Graph>
 void FullRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
                           NodeIndex num_sources, NodeIndex num_targets,
-                          CostValue expected_cost1, CostValue expected_cost2) {
+                          CostValue expected_cost1,
+                          CostValue /*expected_cost2*/) {
   const CostValue kCostRange = 1000;
   Graph graph;
   GenerateCompleteGraph(num_sources, num_targets, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateAssignmentSupply(num_sources, num_targets, &supply);
@@ -656,13 +661,13 @@ template <typename Graph>
 void PartialRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
                              NodeIndex num_sources, NodeIndex num_targets,
                              CostValue expected_cost1,
-                             CostValue expected_cost2) {
+                             CostValue /*expected_cost2*/) {
   const NodeIndex kDegree = 10;
   const CostValue kCostRange = 1000;
   Graph graph;
   GeneratePartialRandomGraph(num_sources, num_targets, kDegree, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateAssignmentSupply(num_sources, num_targets, &supply);
@@ -712,7 +717,7 @@ void PartialRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   Graph graph;
   GeneratePartialRandomGraph(num_sources, num_targets, kDegree, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateRandomSupply(num_sources, num_targets, kSupplyGens, kSupplyRange,
@@ -750,7 +755,7 @@ void FullRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   Graph graph;
   GenerateCompleteGraph(num_sources, num_targets, &graph);
   std::vector<typename Graph::ArcIndex> permutation;
-  Graphs<Graph>::Build(&graph, &permutation);
+  graph.Build(&permutation);
 
   std::vector<int64_t> supply;
   GenerateRandomSupply(num_sources, num_targets, kSupplyGens, kSupplyRange,
@@ -781,16 +786,16 @@ void FullRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   FLOW_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)         \
   FLOW_ONLY_TEST_SG(test_name, size, expected_cost1, expected_cost2)
 
-#define LP_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)        \
-  TEST(LPMinCostFlowTest, test_name##size) {                                 \
-    test_name<StarGraph>(SolveMinCostFlowWithLP, size, size, expected_cost1, \
-                         expected_cost2);                                    \
+#define LP_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)          \
+  TEST(LPMinCostFlowTest, test_name##size) {                                   \
+    test_name<util::ReverseArcListGraph<>>(SolveMinCostFlowWithLP, size, size, \
+                                           expected_cost1, expected_cost2);    \
   }
 
-#define FLOW_ONLY_TEST(test_name, size, expected_cost1, expected_cost2) \
-  TEST(MinCostFlowTest, test_name##size) {                              \
-    test_name<StarGraph>(SolveMinCostFlow, size, size, expected_cost1,  \
-                         expected_cost2);                               \
+#define FLOW_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)     \
+  TEST(MinCostFlowTest, test_name##size) {                                  \
+    test_name<util::ReverseArcListGraph<>>(SolveMinCostFlow, size, size,    \
+                                           expected_cost1, expected_cost2); \
   }
 
 #define FLOW_ONLY_TEST_SG(test_name, size, expected_cost1, expected_cost2)    \
@@ -858,10 +863,10 @@ FLOW_ONLY_TEST_SG(FullRandomFlow, 3000, 5588622, 7140712);  // 230s
 //   blaze run -c opt --linkopt=-static [--run_under=perflab] --
 //   ortools/graph/min_cost_flow_test --benchmarks=all
 //   --benchmark_min_iters=1 --heap_check= --benchmark_memory_usage
-static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
+template <typename Graph, typename ArcFlowType, typename ArcScaledCostType,
+          int kNumChannels, int kNumUsers>
+void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
   std::mt19937 my_random(12345);
-  const int kNumChannels = 20000;
-  const int kNumUsers = 20000;
   // Average probability of a user-channel pair being matched.
   const double kDensity = 1.0 / 200;
   const int kMaxChannelsPerUser = 5 * static_cast<int>(kDensity * kNumChannels);
@@ -903,12 +908,6 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
   CHECK_LE(total_demand, kNumUsers * kMaxChannelsPerUser);
 
   for (auto _ : state) {
-    // We don't have more than 65536 nodes, so we use 16-bit integers to spare
-    // memory (and potentially speed up the code). Arc indices must be 32 bits
-    // though, since we have much more.
-    typedef util::ReverseArcStaticGraph<
-        /*NodeIndexType*/ uint16_t, /*ArcIndexType*/ int32_t>
-        Graph;
     Graph graph(/*num_nodes=*/kNumUsers + kNumChannels + 1,
                 /*arc_capacity=*/kNumChannels * kNumUsers + kNumUsers);
     // We model this problem as a graph (on which we'll do a min-cost flow):
@@ -929,17 +928,15 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
     for (int j = 0; j < kNumUsers; ++j) {
       graph.AddArc(/*tail=*/kNumChannels + 1 + j, /*head=*/0);
     }
-    std::vector<Graph::ArcIndex> permutation;
+    std::vector<typename Graph::ArcIndex> permutation;
     graph.Build(&permutation);
     // To spare memory, we added arcs in the right order, so that no permutation
     // is needed. See graph.h.
     CHECK(permutation.empty());
 
     // To spare memory, the types are chosen as small as possible.
-    GenericMinCostFlow<Graph,
-                       /*ArcFlowType=*/int16_t,
-                       /*ArcScaledCostType=*/int32_t>
-        min_cost_flow(&graph);
+    GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType> min_cost_flow(
+        &graph);
 
     // We also disable the feasibility check which takes a huge amount of
     // memory.
@@ -948,7 +945,7 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
     min_cost_flow.SetNodeSupply(/*node=*/0, /*supply=*/-total_demand);
     // Now, set the arcs capacity and cost, in the same order as we created them
     // above.
-    Graph::ArcIndex arc_index = 0;
+    typename Graph::ArcIndex arc_index = 0;
     for (int i = 0; i < kNumChannels; ++i) {
       min_cost_flow.SetNodeSupply(
           /*node=*/i + 1, /*supply=*/num_users_per_channel[i]);
@@ -970,6 +967,17 @@ static void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem);
+// We don't have more than 65536 nodes, so we use 16-bit integers to spare
+// memory (and potentially speed up the code). Arc indices must be 32 bits
+// though, since we have much more.
+BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<
+          util::ReverseArcStaticGraph<uint16_t, int32_t>, int16_t, int32_t,
+          /*kNumChannels=*/20000, /*kNumUsers=*/20000>);
+// We also benchmark with default parameter types for reference.
+// We use fewer channels and users to avoid running out of memory.
+BENCHMARK(BM_MinCostFlowOnMultiMatchingProblem<
+          ::util::ReverseArcListGraph<>, int64_t, int64_t,
+          /*kNumChannels=*/5000, /*kNumUsers=*/5000>);
 
+}  // namespace
 }  // namespace operations_research

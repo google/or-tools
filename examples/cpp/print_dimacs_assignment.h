@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,19 +21,15 @@
 #include <cstdio>
 #include <string>
 
-#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
+#include "ortools/base/options.h"
 #include "ortools/graph/linear_assignment.h"
 
 namespace operations_research {
-
-template <typename GraphType>
-class LinearSumAssignment;
 
 // Given a LinearSumAssignment object representing an assignment problem
 // description, outputs the problem in DIMACS format in the output file.
@@ -42,13 +38,6 @@ class LinearSumAssignment;
 template <typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
-    const TailArrayManager<GraphType>& tail_array_manager,
-    absl::string_view output_filename);
-
-template <typename GraphType>
-void PrintDimacsAssignmentProblem(
-    const LinearSumAssignment<GraphType>& assignment,
-    const TailArrayManager<GraphType>& tail_array_manager,
     absl::string_view output_filename) {
   File* output;
   CHECK_OK(file::Open(output_filename, "w", &output, file::Defaults()));
@@ -57,18 +46,13 @@ void PrintDimacsAssignmentProblem(
       absl::StrFormat("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
   CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
 
-  for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
-           node_it(assignment);
-       node_it.Ok(); node_it.Next()) {
-    output_line = absl::StrFormat("n %d\n", node_it.Index() + 1);
+  for (const typename GraphType::NodeIndex left_node :
+       assignment.BipartiteLeftNodes()) {
+    output_line = absl::StrFormat("n %d\n", left_node + 1);
     CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
   }
 
-  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
-
-  for (typename GraphType::ArcIterator arc_it(assignment.Graph()); arc_it.Ok();
-       arc_it.Next()) {
-    ArcIndex arc = arc_it.Index();
+  for (const auto& arc : graph.AllForwardArcs()) {
     output_line = absl::StrFormat("a %d %d %d\n", graph.Tail(arc) + 1,
                                   graph.Head(arc) + 1, assignment.ArcCost(arc));
     CHECK_OK(file::WriteString(output, output_line, file::Defaults()));

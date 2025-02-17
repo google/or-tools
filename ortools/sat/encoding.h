@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,6 @@
 #ifndef OR_TOOLS_SAT_ENCODING_H_
 #define OR_TOOLS_SAT_ENCODING_H_
 
-#include <cstdint>
 #include <deque>
 #include <functional>
 #include <string>
@@ -30,12 +29,13 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/clause.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -219,7 +219,7 @@ std::vector<Literal> ExtractAssumptions(Coefficient stratified_lower_bound,
 // Returns the minimum weight of the nodes in the core. Note that the literal in
 // the core must appear in the same order as the one in nodes.
 Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
-                                 const std::vector<Literal>& core);
+                                 absl::Span<const Literal> core);
 
 // Returns the maximum node weight under the given upper_bound. Returns zero if
 // no such weight exist (note that a node weight is strictly positive, so this

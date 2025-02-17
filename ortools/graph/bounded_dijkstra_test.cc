@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,13 +28,12 @@
 #include "absl/random/random.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph/graph.h"
-#include "ortools/graph/io.h"
+#include "ortools/graph/graph_io.h"
 #include "ortools/graph/test_util.h"
 #include "ortools/util/flat_matrix.h"
-#include "ortools/util/saturated_arithmetic.h"
-#include "util/tuple/dump_vars.h"
 
 namespace operations_research {
 namespace {
@@ -683,8 +682,7 @@ TEST(BoundedDisjktraTest, RandomizedStressTest) {
         EXPECT_EQ(dijkstra.distances()[node], node_min_dist[node]) << node;
       }
       ASSERT_FALSE(HasFailure())
-          << DUMP_VARS(num_nodes, num_arcs, num_sources, limit, sources,
-                       lengths)
+          << DUMP_VARS(num_nodes, num_arcs, num_sources, limit, lengths)
           << "\n With graph:\n"
           << util::GraphToString(graph, util::PRINT_GRAPH_ARCS);
     }

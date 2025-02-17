@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,8 +13,12 @@
 
 # Home of constraint solver constraint_solver
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -53,10 +57,10 @@ cc_proto_library(
     deps = [":search_limit_proto"],
 )
 
-# java_proto_library(
-#     name = "search_limit_java_proto",
-#     deps = [":search_limit_proto"],
-# )
+java_proto_library(
+    name = "search_limit_java_proto",
+    deps = [":search_limit_proto"],
+)
 
 proto_library(
     name = "demon_profiler_proto",
@@ -69,17 +73,6 @@ cc_proto_library(
 )
 
 proto_library(
-    name = "routing_ils_proto",
-    srcs = ["routing_ils.proto"],
-    deps = [":routing_enums_proto"],
-)
-
-cc_proto_library(
-    name = "routing_ils_cc_proto",
-    deps = ["routing_ils_proto"],
-)
-
-proto_library(
     name = "search_stats_proto",
     srcs = ["search_stats.proto"],
 )
@@ -89,10 +82,10 @@ cc_proto_library(
     deps = [":search_stats_proto"],
 )
 
-# java_proto_library(
-#     name = "search_stats_java_proto",
-#     deps = [":search_stats_proto"],
-# )
+java_proto_library(
+    name = "search_stats_java_proto",
+    deps = [":search_stats_proto"],
+)
 
 proto_library(
     name = "solver_parameters_proto",
@@ -101,37 +94,55 @@ proto_library(
 
 cc_proto_library(
     name = "solver_parameters_cc_proto",
-    deps = ["solver_parameters_proto"],
+    deps = [":solver_parameters_proto"],
 )
 
-# java_proto_library(
-#     name = "solver_parameters_java_proto",
-#     deps = [":solver_parameters_proto"],
-# )
+java_proto_library(
+    name = "solver_parameters_java_proto",
+    deps = [":solver_parameters_proto"],
+)
 
-#py_proto_library(
-#    name = "assignment_py_pb2",
-#    deps = [":assignment_proto"],
-#)
+py_proto_library(
+    name = "assignment_py_pb2",
+    deps = [":assignment_proto"],
+)
 
-#py_proto_library(
-#    name = "search_limit_py_pb2",
-#    deps = [":search_limit_proto"],
-#)
+py_proto_library(
+    name = "search_limit_py_pb2",
+    deps = [":search_limit_proto"],
+)
 
-#py_proto_library(
-#    name = "demon_profiler_py_pb2",
-#    deps = [":demon_profiler_proto"],
-#)
+py_proto_library(
+    name = "demon_profiler_py_pb2",
+    deps = [":demon_profiler_proto"],
+)
 
-#py_proto_library(
-#    name = "solver_parameters_py_pb2",
-#    deps = [":solver_parameters_proto"],
-#)
+py_proto_library(
+    name = "search_stats_py_pb2",
+    deps = [":search_stats_proto"],
+)
+
+py_proto_library(
+    name = "solver_parameters_py_pb2",
+    deps = [":solver_parameters_proto"],
+)
+
+py_library(
+    name = "constraint_solver_py_pb2",
+    deps = [
+        ":assignment_py_pb2",
+        ":demon_profiler_py_pb2",
+        ":search_limit_py_pb2",
+        ":search_stats_py_pb2",
+        ":solver_parameters_py_pb2",
+    ],
+)
 
 # ----- Constraint Programming core engine -----
 
 # This is the main library.
+# TODO(user): split this monolithic library into independent components.
+# Do the same for others.
 cc_library(
     name = "cp",
     srcs = [
@@ -177,28 +188,19 @@ cc_library(
         ":solver_parameters_cc_proto",
         ":routing_parameters_cc_proto",
         "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:recordio",
-        "//ortools/base:sysinfo",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
-        #        "//zlib:zlibonly",
         "//ortools/base:bitmap",
+        "//ortools/base:file",
+        "//ortools/base:int_type",
         "//ortools/base:intops",
-        "//ortools/base:strong_vector",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
-        "//ortools/base:stl_util",
-        #        "//util/gzip:gzipstring",
-        "//ortools/base:hash",
-        #        "//util/hash:jenkins",
-        #        "//util/math:fastmath",
         "//ortools/base:mathutil",
+        "//ortools/base:recordio",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/base:sysinfo",
+        "//ortools/base:timer",
+        "//ortools/base:types",
         "//ortools/graph:hamiltonian_path",
         "//ortools/util:bitset",
         "//ortools/util:cached_log",
@@ -209,12 +211,21 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "//ortools/util:string_array",
         "//ortools/util:tuple_set",
-        #        "@com_google_re2//:re2",
-        "@com_google_absl//absl/status",
-        #        "//util/textprogressbar",
-        "//ortools/base:timer",
-        #        "//util/zippy",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -230,10 +241,31 @@ cc_proto_library(
     deps = [":routing_enums_proto"],
 )
 
-# java_proto_library(
-#     name = "routing_enums_java_proto",
-#     deps = [":routing_enums_proto"],
-# )
+java_proto_library(
+    name = "routing_enums_java_proto",
+    deps = [":routing_enums_proto"],
+)
+
+proto_library(
+    name = "routing_ils_proto",
+    srcs = ["routing_ils.proto"],
+    deps = [":routing_enums_proto"],
+)
+
+cc_proto_library(
+    name = "routing_ils_cc_proto",
+    deps = [":routing_ils_proto"],
+)
+
+py_proto_library(
+    name = "routing_ils_py_pb2",
+    deps = [":routing_ils_proto"],
+)
+
+java_proto_library(
+    name = "routing_ils_java_proto",
+    deps = [":routing_ils_proto"],
+)
 
 proto_library(
     name = "routing_parameters_proto",
@@ -253,15 +285,20 @@ cc_proto_library(
     deps = [":routing_parameters_proto"],
 )
 
-# java_proto_library(
-#     name = "routing_parameters_java_proto",
-#     deps = [":routing_parameters_proto"],
-# )
+java_proto_library(
+    name = "routing_parameters_java_proto",
+    deps = [":routing_parameters_proto"],
+)
 
-#py_proto_library(
-#    name = "routing_parameters_py_pb2",
-#    deps = [":routing_parameters_proto"],
-#)
+py_proto_library(
+    name = "routing_parameters_py_pb2",
+    deps = [":routing_parameters_proto"],
+)
+
+py_proto_library(
+    name = "routing_enums_py_pb2",
+    deps = [":routing_enums_proto"],
+)
 
 cc_library(
     name = "routing_parameters",
@@ -270,16 +307,34 @@ cc_library(
     deps = [
         ":cp",
         ":routing_enums_cc_proto",
+        ":routing_ils_cc_proto",
         ":routing_parameters_cc_proto",
+        ":routing_parameters_utils",
         ":solver_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:proto_enum_utils",
         "//ortools/base:protoutil",
+        "//ortools/base:types",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:testing_utils",
-        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "routing_parameters_utils",
+    srcs = ["routing_parameters_utils.cc"],
+    hdrs = ["routing_parameters_utils.h"],
+    deps = [
+        ":routing_parameters_cc_proto",
+        "//ortools/util:optional_boolean_cc_proto",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -287,8 +342,8 @@ cc_library(
     name = "routing_types",
     hdrs = ["routing_types.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:intops",
+        "//ortools/base:int_type",
+        "//ortools/util:piecewise_linear_function",
     ],
 )
 
@@ -298,8 +353,9 @@ cc_library(
     hdrs = ["routing_utils.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base",
         "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -312,7 +368,11 @@ cc_library(
         ":cp",
         ":routing_types",
         ":routing_utils",
-        "//ortools/base",
+        "//ortools/base:types",
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -323,9 +383,11 @@ cc_library(
     deps = [
         ":routing_types",
         "//ortools/base",
-        "//ortools/base:map_util",
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -348,6 +410,7 @@ cc_library(
         "routing.h",
         "routing_constraints.h",
         "routing_decision_builders.h",
+        "routing_filter_committables.h",
         "routing_filters.h",
         "routing_ils.h",
         "routing_insertion_lns.h",
@@ -369,50 +432,57 @@ cc_library(
         ":routing_parameters_cc_proto",
         ":routing_types",
         ":routing_utils",
+        ":solver_parameters_cc_proto",
         "//ortools/base",
-        "//ortools/base:adjustable_priority_queue",
         "//ortools/base:dump_vars",
-        "//ortools/base:hash",
+        "//ortools/base:int_type",
         "//ortools/base:map_util",
-        "//ortools/base:murmur",
+        "//ortools/base:mathutil",
         "//ortools/base:protoutil",
-        "//ortools/base:small_map",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/graph",
         "//ortools/graph:christofides",
         "//ortools/graph:connected_components",
+        "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
         "//ortools/graph:min_cost_flow",
-        "//ortools/graph:topologicalsorter",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
-        "//ortools/sat:boolean_problem",
-        "//ortools/sat:cp_constraints",
-        "//ortools/sat:cp_model",
+        "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
-        "//ortools/sat:cp_model_checker",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:cp_model_utils",
         "//ortools/sat:integer",
-        "//ortools/sat:integer_expr",
+        "//ortools/sat:lp_utils",
         "//ortools/sat:model",
-        "//ortools/sat:optimization",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:theta_tree",
         "//ortools/util:bitset",
         "//ortools/util:flat_matrix",
         "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:range_minimum_query",
         "//ortools/util:range_query_function",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/functional:bind_front",
         "@com_google_absl//absl/hash",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:die_if_null",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
@@ -420,3 +490,4 @@ cc_library(
         "@com_google_protobuf//:protobuf",
     ],
 )
+

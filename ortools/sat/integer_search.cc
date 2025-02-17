@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,6 +33,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -46,6 +47,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -61,10 +63,10 @@ IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail) {
   return IntegerLiteral::LowerOrEqual(var, lb);
 }
 
-IntegerLiteral ChooseBestObjectiveValue(IntegerVariable var, Model* model) {
-  const auto& variables =
-      model->GetOrCreate<ObjectiveDefinition>()->objective_impacting_variables;
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+IntegerLiteral ChooseBestObjectiveValue(
+    IntegerVariable var, IntegerTrail* integer_trail,
+    ObjectiveDefinition* objective_definition) {
+  const auto& variables = objective_definition->objective_impacting_variables;
   if (variables.contains(var)) {
     return AtMinValue(var, integer_trail);
   } else if (variables.contains(NegationOf(var))) {
@@ -167,15 +169,17 @@ IntegerLiteral SplitUsingBestSolutionValueInRepository(
 // not executed often, but otherwise it is done for each search decision,
 // which seems expensive. Improve.
 std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model) {
+    absl::Span<const IntegerVariable> vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [/*copy*/ vars, integer_trail]() {
-    for (const IntegerVariable var : vars) {
-      const IntegerLiteral decision = AtMinValue(var, integer_trail);
-      if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
-    }
-    return BooleanOrIntegerLiteral();
-  };
+  return
+      [/*copy*/ vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
+       integer_trail]() {
+        for (const IntegerVariable var : vars) {
+          const IntegerLiteral decision = AtMinValue(var, integer_trail);
+          if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
+        }
+        return BooleanOrIntegerLiteral();
+      };
 }
 
 std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model) {
@@ -269,22 +273,24 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
 
 std::function<BooleanOrIntegerLiteral()>
 UnassignedVarWithLowestMinAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model) {
+    absl::Span<const IntegerVariable> vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [/*copy */ vars, integer_trail]() {
-    IntegerVariable candidate = kNoIntegerVariable;
-    IntegerValue candidate_lb;
-    for (const IntegerVariable var : vars) {
-      const IntegerValue lb = integer_trail->LowerBound(var);
-      if (lb < integer_trail->UpperBound(var) &&
-          (candidate == kNoIntegerVariable || lb < candidate_lb)) {
-        candidate = var;
-        candidate_lb = lb;
-      }
-    }
-    if (candidate == kNoIntegerVariable) return BooleanOrIntegerLiteral();
-    return BooleanOrIntegerLiteral(AtMinValue(candidate, integer_trail));
-  };
+  return
+      [/*copy */ vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
+       integer_trail]() {
+        IntegerVariable candidate = kNoIntegerVariable;
+        IntegerValue candidate_lb;
+        for (const IntegerVariable var : vars) {
+          const IntegerValue lb = integer_trail->LowerBound(var);
+          if (lb < integer_trail->UpperBound(var) &&
+              (candidate == kNoIntegerVariable || lb < candidate_lb)) {
+            candidate = var;
+            candidate_lb = lb;
+          }
+        }
+        if (candidate == kNoIntegerVariable) return BooleanOrIntegerLiteral();
+        return BooleanOrIntegerLiteral(AtMinValue(candidate, integer_trail));
+      };
 }
 
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
@@ -394,8 +400,11 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
 
   // Objective based value.
   if (parameters.exploit_objective()) {
-    value_selection_heuristics.push_back([model](IntegerVariable var) {
-      return ChooseBestObjectiveValue(var, model);
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
+    value_selection_heuristics.push_back([integer_trail, objective_definition](
+                                             IntegerVariable var) {
+      return ChooseBestObjectiveValue(var, integer_trail, objective_definition);
     });
   }
 
@@ -722,7 +731,7 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
           }
         }
 
-        // TODO(Fdid): Also compare the second part of the precedence in
+        // TODO(user): Also compare the second part of the precedence in
         // PrecedenceIsBetter() and not just the interval before?
         if (best_helper == nullptr ||
             PrecedenceIsBetter(helper, a, best_helper, best_before)) {
@@ -735,13 +744,21 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
     }
 
     if (best_helper != nullptr) {
+      // If one of the task presence is undecided, start by making it present.
+      for (const int t : {best_before, best_after}) {
+        if (!best_helper->IsPresent(t)) {
+          VLOG(2) << "Presence: " << best_helper->TaskDebugString(t);
+          return BooleanOrIntegerLiteral(best_helper->PresenceLiteral(t));
+        }
+      }
+
       VLOG(2) << "New disjunctive precedence: "
               << best_helper->TaskDebugString(best_before) << " "
               << best_helper->TaskDebugString(best_after);
-      const IntervalVariable a = best_helper->IntervalVariables()[best_before];
-      const IntervalVariable b = best_helper->IntervalVariables()[best_after];
-      repo->CreateDisjunctivePrecedenceLiteral(a, b);
-      return BooleanOrIntegerLiteral(repo->GetPrecedenceLiteral(a, b));
+      const auto a = best_helper->GetIntervalDefinition(best_before);
+      const auto b = best_helper->GetIntervalDefinition(best_after);
+      return BooleanOrIntegerLiteral(
+          repo->GetOrCreateDisjunctivePrecedenceLiteral(a, b));
     }
 
     return BooleanOrIntegerLiteral();
@@ -866,9 +883,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
           CHECK_LT(helper->StartMin(t), helper->EndMin(s));
 
           // skip if we already have a literal created and assigned to false.
-          const IntervalVariable a = helper->IntervalVariables()[s];
-          const IntervalVariable b = helper->IntervalVariables()[t];
-          const LiteralIndex existing = repo->GetPrecedenceLiteral(a, b);
+          const LiteralIndex existing = repo->GetPrecedenceLiteral(
+              helper->Ends()[s], helper->Starts()[t]);
           if (existing != kNoLiteralIndex) {
             // It shouldn't be able to be true here otherwise we will have s and
             // t disjoint.
@@ -891,7 +907,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             }
 
             // It shouldn't be able to fail since s can be before t.
-            CHECK(repo->CreatePrecedenceLiteral(a, b));
+            CHECK(repo->CreatePrecedenceLiteral(helper->Ends()[s],
+                                                helper->Starts()[t]));
           }
 
           // Branch on that precedence.
@@ -942,10 +959,11 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
     if (best_helper != nullptr) {
       VLOG(2) << "New precedence: " << best_helper->TaskDebugString(best_before)
               << " " << best_helper->TaskDebugString(best_after);
-      const IntervalVariable a = best_helper->IntervalVariables()[best_before];
-      const IntervalVariable b = best_helper->IntervalVariables()[best_after];
-      repo->CreatePrecedenceLiteral(a, b);
-      return BooleanOrIntegerLiteral(repo->GetPrecedenceLiteral(a, b));
+      const AffineExpression end_a = best_helper->Ends()[best_before];
+      const AffineExpression start_b = best_helper->Starts()[best_after];
+      repo->CreatePrecedenceLiteral(end_a, start_b);
+      return BooleanOrIntegerLiteral(
+          repo->GetPrecedenceLiteral(end_a, start_b));
     }
 
     return BooleanOrIntegerLiteral();
@@ -1108,8 +1126,8 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
 }
 
 std::function<BooleanOrIntegerLiteral()> FollowHint(
-    const std::vector<BooleanOrIntegerVariable>& vars,
-    const std::vector<IntegerValue>& values, Model* model) {
+    absl::Span<const BooleanOrIntegerVariable> vars,
+    absl::Span<const IntegerValue> values, Model* model) {
   auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
@@ -1122,7 +1140,10 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
   int* rev_start_index = model->TakeOwnership(new int);
   *rev_start_index = 0;
 
-  return [=]() {
+  return [=,
+          vars =
+              std::vector<BooleanOrIntegerVariable>(vars.begin(), vars.end()),
+          values = std::vector<IntegerValue>(values.begin(), values.end())]() {
     rev_int_repo->SaveState(rev_start_index);
     for (int i = *rev_start_index; i < vars.size(); ++i) {
       const IntegerValue value = values[i];
@@ -1336,11 +1357,16 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   // the level zero first ! otherwise, the new deductions will not be
   // incorporated and the solver will loop forever.
   if (integer_trail_->HasPendingRootLevelDeduction()) {
-    if (!sat_solver_->ResetToLevelZero()) return false;
+    sat_solver_->Backtrack(0);
   }
 
   // The rest only trigger at level zero.
   if (sat_solver_->CurrentDecisionLevel() != 0) return true;
+
+  // Rather than doing it in each callback, we detect newly fixed variables or
+  // tighter bounds, and propagate just once when everything was added.
+  const int saved_bool_index = sat_solver_->LiteralTrail().Index();
+  const int saved_integer_index = integer_trail_->num_enqueues();
 
   auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
   for (const auto& cb : level_zero_callbacks->callbacks) {
@@ -1348,6 +1374,13 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
+  }
+
+  // We propagate if needed.
+  if (sat_solver_->LiteralTrail().Index() > saved_bool_index ||
+      integer_trail_->num_enqueues() > saved_integer_index ||
+      integer_trail_->HasPendingRootLevelDeduction()) {
+    if (!sat_solver_->ResetToLevelZero()) return false;
   }
 
   if (parameters_.use_sat_inprocessing() &&

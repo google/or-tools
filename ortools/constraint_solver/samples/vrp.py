@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,17 +15,18 @@
 # [START program]
 """Simple Vehicles Routing Problem (VRP).
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library python wrapper to solve a VRP
+problem.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters.
+Distances are in meters.
 """
 
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -65,16 +66,18 @@ def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
     print(f"Objective: {solution.ObjectiveValue()}")
     total_distance = 0
-    for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
-        plan_output = f"Route for vehicle {vehicle_id}:\n"
+    for vehicle_index in range(manager.GetNumberOfVehicles()):
+        if not routing.IsVehicleUsed(solution, vehicle_index):
+            continue
+        index = routing.Start(vehicle_index)
+        plan_output = f"Route for vehicle {vehicle_index}:\n"
         route_distance = 0
         while not routing.IsEnd(index):
             plan_output += f" {manager.IndexToNode(index)} ->"
             previous_index = index
             index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id
+                previous_index, index, vehicle_index
             )
         plan_output += f" {manager.IndexToNode(index)}\n"
         plan_output += f"Distance of the route: {route_distance}m\n"

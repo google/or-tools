@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -299,6 +299,19 @@ inline int64_t CapAdd(int64_t x, int64_t y) {
 #endif
 }
 
+// This avoid the need to convert to int64_t min/max and is about twice as fast
+// if it corresponds to your use case.
+inline bool AddIntoOverflow(int64_t x, int64_t* y) {
+#if defined(__clang__)
+  return __builtin_add_overflow(x, *y, y);
+#else
+  const int64_t result = TwosComplementAddition(x, *y);
+  if (AddHadOverflow(x, *y, result)) return true;
+  *y = result;
+  return false;
+#endif
+}
+
 inline void CapAddTo(int64_t x, int64_t* y) { *y = CapAdd(*y, x); }
 
 inline int64_t CapSub(int64_t x, int64_t y) {
@@ -309,6 +322,11 @@ inline int64_t CapSub(int64_t x, int64_t y) {
 #else
   return CapSubGeneric(x, y);
 #endif
+}
+
+// Updates *target with CapSub(*target, amount).
+inline void CapSubFrom(int64_t amount, int64_t* target) {
+  *target = CapSub(*target, amount);
 }
 
 inline int64_t CapProd(int64_t x, int64_t y) {

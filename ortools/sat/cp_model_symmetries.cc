@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -50,11 +50,13 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/solution_crush.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -739,6 +741,31 @@ void FindCpModelSymmetries(
   }
 }
 
+namespace {
+
+void LogOrbitInformation(absl::Span<const int> var_to_orbit_index,
+                         SolverLogger* logger) {
+  if (logger == nullptr || !logger->LoggingIsEnabled()) return;
+
+  int num_touched_vars = 0;
+  std::vector<int> orbit_sizes;
+  for (int var = 0; var < var_to_orbit_index.size(); ++var) {
+    const int rep = var_to_orbit_index[var];
+    if (rep == -1) continue;
+    if (rep >= orbit_sizes.size()) orbit_sizes.resize(rep + 1, 0);
+    ++num_touched_vars;
+    orbit_sizes[rep]++;
+  }
+  std::sort(orbit_sizes.begin(), orbit_sizes.end(), std::greater<int>());
+  const int num_orbits = orbit_sizes.size();
+  if (num_orbits > 10) orbit_sizes.resize(10);
+  SOLVER_LOG(logger, "[Symmetry] ", num_orbits, " orbits on ", num_touched_vars,
+             " variables with sizes: ", absl::StrJoin(orbit_sizes, ","),
+             (num_orbits > orbit_sizes.size() ? ",..." : ""));
+}
+
+}  // namespace
+
 void DetectAndAddSymmetryToProto(const SatParameters& params,
                                  CpModelProto* proto, SolverLogger* logger) {
   SymmetryProto* symmetry = proto->mutable_symmetry();
@@ -746,11 +773,20 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   FindCpModelSymmetries(params, *proto, &generators,
-                        /*deterministic_limit=*/1.0, logger);
+                        params.symmetry_detection_deterministic_time_limit(),
+                        logger);
   if (generators.empty()) {
     proto->clear_symmetry();
     return;
   }
+
+  // Log orbit information.
+  //
+  // TODO(user): It might be nice to just add this to the proto rather than
+  // re-reading the generators and recomputing this in a few places.
+  const int num_vars = proto->variables().size();
+  const std::vector<int> orbits = GetOrbits(num_vars, generators);
+  LogOrbitInformation(orbits, logger);
 
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {
     SparsePermutationProto* perm_proto = symmetry->add_permutations();
@@ -932,8 +968,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(params, proto, &generators,
-                        /*deterministic_limit=*/1.0, context->logger());
+  FindCpModelSymmetries(
+      params, proto, &generators,
+      context->params().symmetry_detection_deterministic_time_limit(),
+      context->logger());
 
   // Remove temporary affine relation.
   context->working_model->mutable_constraints()->DeleteSubrange(
@@ -968,10 +1006,12 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   const std::vector<int> orbits = GetOrbits(num_vars, generators);
   std::vector<int> orbit_sizes;
   int max_orbit_size = 0;
+  int sum_of_orbit_sizes = 0;
   for (int var = 0; var < num_vars; ++var) {
     const int rep = orbits[var];
     if (rep == -1) continue;
     if (rep >= orbit_sizes.size()) orbit_sizes.resize(rep + 1, 0);
+    ++sum_of_orbit_sizes;
     orbit_sizes[rep]++;
     if (orbit_sizes[rep] > max_orbit_size) {
       distinguished_var = var;
@@ -980,18 +1020,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
 
   // Log orbit info.
-  if (context->logger()->LoggingIsEnabled()) {
-    std::vector<int> sorted_sizes;
-    for (const int s : orbit_sizes) {
-      if (s != 0) sorted_sizes.push_back(s);
-    }
-    std::sort(sorted_sizes.begin(), sorted_sizes.end(), std::greater<int>());
-    const int num_orbits = sorted_sizes.size();
-    if (num_orbits > 10) sorted_sizes.resize(10);
-    SOLVER_LOG(context->logger(), "[Symmetry] ", num_orbits,
-               " orbits with sizes: ", absl::StrJoin(sorted_sizes, ","),
-               (num_orbits > sorted_sizes.size() ? ",..." : ""));
-  }
+  LogOrbitInformation(orbits, context->logger());
 
   // First heuristic based on propagation, see the function comment.
   if (max_orbit_size > 2) {
@@ -1007,9 +1036,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // TODO(user): Doing that is not always good, on cod105.mps, fixing variables
   // instead of letting the inner solver handle Boolean symmetries make the
   // problem unsolvable instead of easily solved. This is probably because this
-  // fixing do not exploit the full structure of these symmeteries. Note
+  // fixing do not exploit the full structure of these symmetries. Note
   // however that the fixing via propagation above close cod105 even more
   // efficiently.
+  std::vector<int> var_can_be_true_per_orbit(num_vars, -1);
   {
     std::vector<int> tmp_to_clear;
     std::vector<int> tmp_sizes(num_vars, 0);
@@ -1050,7 +1080,11 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
           }
 
           // We push all but the first one in each orbit.
-          if (tmp_sizes[rep] == 0) can_be_fixed_to_false.push_back(var);
+          if (tmp_sizes[rep] == 0) {
+            can_be_fixed_to_false.push_back(var);
+          } else {
+            var_can_be_true_per_orbit[rep] = var;
+          }
           tmp_sizes[rep] = 0;
         }
       } else {
@@ -1131,7 +1165,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
-  // Supper simple heuristic to use the orbitope or not.
+  // Super simple heuristic to use the orbitope or not.
   //
   // In an orbitope with an at most one on each row, we can fix the upper right
   // triangle. We could use a formula, but the loop is fast enough.
@@ -1146,6 +1180,29 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       --size_left;
     }
   }
+
+  // Fixing just a few variables to break large symmetry can be really bad. See
+  // for example cdc7-4-3-2.pb.gz where we don't find solution if we do that. On
+  // the other hand, enabling this make it worse on neos-3083784-nive.pb.gz.
+  //
+  // In general, enabling this works better in single thread with max_lp_sym,
+  // but worse in multi-thread, where less workers are using symmetries, and so
+  // it is better to fix more stuff.
+  //
+  // TODO(user): Tune more, especially as we handle symmetry better. Also the
+  // estimate is pretty bad, we should probably compute stabilizer and decide
+  // when we actually know how much we can fix compared to how many symmetry we
+  // lose.
+  const int num_fixable =
+      std::max<int>(max_num_fixed_in_orbitope, can_be_fixed_to_false.size());
+  if (/* DISABLES CODE */ (false) && !can_be_fixed_to_false.empty() &&
+      100 * num_fixable < sum_of_orbit_sizes) {
+    SOLVER_LOG(context->logger(),
+               "[Symmetry] Not fixing anything as gain seems too small.");
+    return true;
+  }
+
+  // Fix "can_be_fixed_to_false" instead of the orbitope if it is larger.
   if (max_num_fixed_in_orbitope < can_be_fixed_to_false.size()) {
     const int orbit_index = orbits[distinguished_var];
     int num_in_orbit = 0;
@@ -1153,6 +1210,18 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       const int var = can_be_fixed_to_false[i];
       if (orbits[var] == orbit_index) ++num_in_orbit;
       context->UpdateRuleStats("symmetry: fixed to false in general orbit");
+      if (var_can_be_true_per_orbit[orbits[var]] != -1) {
+        // We are breaking the symmetry in a way that makes the hint invalid.
+        // We want `var` to be false, so we would naively pick a symmetry to
+        // enforce that. But that will be wrong if we do this twice: after we
+        // permute the hint to fix the first one we would look for a symmetry
+        // group element that fixes the second one to false. But there are many
+        // of those, and picking the wrong one would risk making the first one
+        // true again. Since this is a AMO, fixing the one that is true doesn't
+        // have this problem.
+        context->solution_crush().MaybeUpdateVarWithSymmetriesToValue(
+            var_can_be_true_per_orbit[orbits[var]], true, generators);
+      }
       if (!context->SetLiteralToFalse(var)) return false;
     }
 
@@ -1312,8 +1381,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         if (num_cols == 2 && !row_is_all_equivalent[i]) {
           // We have [1, 0] or [0, 1].
           context->UpdateRuleStats("symmetry: equivalence in orbitope row");
-          context->StoreBooleanEqualityRelation(orbitope[i][0],
-                                                NegatedRef(orbitope[i][1]));
+          if (!context->StoreBooleanEqualityRelation(
+                  orbitope[i][0], NegatedRef(orbitope[i][1]))) {
+            return false;
+          }
           if (context->ModelIsUnsat()) return false;
         } else {
           // No solution.
@@ -1343,8 +1414,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         } else {
           context->UpdateRuleStats("symmetry: all equivalent in orbitope row");
           for (int j = 1; j < num_cols; ++j) {
-            context->StoreBooleanEqualityRelation(orbitope[i][0],
-                                                  orbitope[i][j]);
+            if (!context->StoreBooleanEqualityRelation(orbitope[i][0],
+                                                       orbitope[i][j])) {
+              return false;
+            }
             if (context->ModelIsUnsat()) return false;
           }
         }
@@ -1417,6 +1490,11 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
+  // The transformations below seems to hurt more than what they help.
+  // Especially when we handle symmetry during the search like with max_lp_sym
+  // worker. See for instance neos-948346.pb or map06.pb.gz.
+  if (params.symmetry_level() <= 3) return true;
+
   // If we are left with a set of variable than can all be permuted, lets
   // break the symmetry by ordering them.
   if (orbitope.size() == 1) {
@@ -1441,7 +1519,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
     context->UpdateNewConstraintsVariableUsage();
-  } else if (orbitope.size() > 1 && params.symmetry_level() > 3) {
+  } else if (orbitope.size() > 1) {
     std::vector<int64_t> max_values(orbitope.size());
     for (int i = 0; i < orbitope.size(); ++i) {
       const int var = orbitope[i][0];
@@ -1479,6 +1557,183 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         orbitope[0].size());
     context->UpdateNewConstraintsVariableUsage();
     return true;
+  }
+
+  return true;
+}
+
+namespace {
+
+std::vector<absl::Span<int>> GetCyclesAsSpan(
+    SparsePermutationProto& permutation) {
+  std::vector<absl::Span<int>> result;
+  int start = 0;
+  const int num_cycles = permutation.cycle_sizes().size();
+  for (int i = 0; i < num_cycles; ++i) {
+    const int size = permutation.cycle_sizes(i);
+    result.push_back(
+        absl::MakeSpan(&permutation.mutable_support()->at(start), size));
+    start += size;
+  }
+  return result;
+}
+
+}  // namespace
+
+bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
+                                         PresolveContext* context) {
+  std::vector<absl::Span<int>> cycles;
+  int num_problematic_generators = 0;
+  for (SparsePermutationProto& generator : *symmetry->mutable_permutations()) {
+    // We process each cycle at once.
+    // If all variables from a cycle are fixed to the same value, this is
+    // fine and we can just remove the cycle.
+    //
+    // TODO(user): These are just basic checks and do not guarantee that we
+    // properly kept this symmetry in the presolve.
+    //
+    // TODO(user): Deal with case where all variable in an orbit has been found
+    // to be equivalent to each other. Or all variables have affine
+    // representative, like if all domains where [0][2], we should have remapped
+    // all such variable to Booleans.
+    cycles = GetCyclesAsSpan(generator);
+    bool problematic = false;
+
+    int new_num_cycles = 0;
+    const int old_num_cycles = cycles.size();
+    for (int i = 0; i < old_num_cycles; ++i) {
+      if (cycles[i].empty()) continue;
+      const int reference_var = cycles[i][0];
+      const Domain reference_domain = context->DomainOf(reference_var);
+      const AffineRelation::Relation reference_relation =
+          context->GetAffineRelation(reference_var);
+
+      int num_affine_relations = 0;
+      int num_with_same_representative = 0;
+
+      int num_fixed = 0;
+      int num_unused = 0;
+      for (const int var : cycles[i]) {
+        CHECK(RefIsPositive(var));
+        if (context->DomainOf(var) != reference_domain) {
+          context->UpdateRuleStats(
+              "TODO symmetry: different domain in symmetric variables");
+          problematic = true;
+          break;
+        }
+
+        if (context->DomainOf(var).IsFixed()) {
+          ++num_fixed;
+          continue;
+        }
+
+        // If we have affine relation, we only support the case where they
+        // are all the same.
+        const auto affine_relation = context->GetAffineRelation(var);
+        if (affine_relation == reference_relation) {
+          ++num_with_same_representative;
+        }
+        if (affine_relation.representative != var) {
+          ++num_affine_relations;
+        }
+
+        if (context->VariableIsNotUsedAnymore(var)) {
+          ++num_unused;
+          continue;
+        }
+      }
+
+      if (problematic) break;
+
+      if (num_fixed > 0) {
+        if (num_fixed != cycles[i].size()) {
+          context->UpdateRuleStats(
+              "TODO symmetry: not all variables fixed in cycle");
+          problematic = true;
+          break;
+        }
+        continue;  // We can skip this cycle
+      }
+
+      if (num_affine_relations > 0) {
+        if (num_with_same_representative != cycles[i].size()) {
+          context->UpdateRuleStats(
+              "TODO symmetry: not all variables have same representative");
+          problematic = true;
+          break;
+        }
+        continue;  // We can skip this cycle
+      }
+
+      // Note that the order matter.
+      // If all have the same representative, we don't care about this one.
+      if (num_unused > 0) {
+        if (num_unused != cycles[i].size()) {
+          context->UpdateRuleStats(
+              "TODO symmetry: not all variables unused in cycle");
+          problematic = true;
+          break;
+        }
+        continue;  // We can skip this cycle
+      }
+
+      // Lets keep this cycle.
+      cycles[new_num_cycles++] = cycles[i];
+    }
+
+    if (problematic) {
+      ++num_problematic_generators;
+      generator.clear_support();
+      generator.clear_cycle_sizes();
+      continue;
+    }
+
+    if (new_num_cycles < old_num_cycles) {
+      cycles.resize(new_num_cycles);
+      generator.clear_cycle_sizes();
+      int new_support_size = 0;
+      for (const absl::Span<int> cycle : cycles) {
+        for (const int var : cycle) {
+          generator.set_support(new_support_size++, var);
+        }
+        generator.add_cycle_sizes(cycle.size());
+      }
+      generator.mutable_support()->Truncate(new_support_size);
+    }
+  }
+
+  if (num_problematic_generators > 0) {
+    SOLVER_LOG(context->logger(), "[Symmetry] ", num_problematic_generators,
+               " generators where problematic !! Fix.");
+  }
+
+  // Lets remove empty generators.
+  int new_size = 0;
+  const int old_size = symmetry->permutations().size();
+  for (int i = 0; i < old_size; ++i) {
+    if (symmetry->permutations(i).support().empty()) continue;
+    if (new_size != i) {
+      symmetry->mutable_permutations()->SwapElements(new_size, i);
+    }
+    ++new_size;
+  }
+  if (new_size != old_size) {
+    symmetry->mutable_permutations()->DeleteSubrange(new_size,
+                                                     old_size - new_size);
+  }
+
+  // Lets output the new statistics.
+  // TODO(user): Avoid the reconvertion.
+  {
+    const int num_vars = context->working_model->variables().size();
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    for (const SparsePermutationProto& perm : symmetry->permutations()) {
+      generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+    }
+    SOLVER_LOG(context->logger(),
+               "[Symmetry] final processing #generators:", generators.size());
+    const std::vector<int> orbits = GetOrbits(num_vars, generators);
+    LogOrbitInformation(orbits, context->logger());
   }
 
   return true;

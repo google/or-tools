@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,6 +35,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/restart.h"
@@ -113,20 +114,9 @@ std::optional<ProtoLiteral> ProtoLiteral::EncodeInteger(
 std::optional<ProtoLiteral> ProtoLiteral::Encode(Literal literal,
                                                  CpModelMapping* mapping,
                                                  IntegerEncoder* encoder) {
-  if (literal.Index() == kNoLiteralIndex) {
-    return std::nullopt;
-  }
-  int model_var =
-      mapping->GetProtoVariableFromBooleanVariable(literal.Variable());
-  if (model_var != -1) {
-    CHECK(mapping->IsBoolean(model_var));
-    ProtoLiteral result{
-        literal.IsPositive() ? model_var : NegatedRef(model_var),
-        literal.IsPositive() ? 1 : 0};
-    DCHECK_EQ(result.Decode(mapping, encoder), literal);
-    DCHECK_EQ(result.Negated().Decode(mapping, encoder), literal.Negated());
-    return result;
-  }
+  const std::optional<ProtoLiteral> result = EncodeLiteral(literal, mapping);
+  if (result.has_value()) return result;
+
   for (auto int_lit : encoder->GetIntegerLiterals(literal)) {
     auto result = EncodeInteger(int_lit, mapping);
     if (result.has_value()) {
@@ -137,6 +127,24 @@ std::optional<ProtoLiteral> ProtoLiteral::Encode(Literal literal,
   }
   return std::nullopt;
 }
+
+std::optional<ProtoLiteral> ProtoLiteral::EncodeLiteral(
+    Literal literal, CpModelMapping* mapping) {
+  if (literal.Index() == kNoLiteralIndex) {
+    return std::nullopt;
+  }
+  int model_var =
+      mapping->GetProtoVariableFromBooleanVariable(literal.Variable());
+  if (model_var == -1) {
+    return std::nullopt;
+  }
+  DCHECK(mapping->IsBoolean(model_var));
+  ProtoLiteral result{literal.IsPositive() ? model_var : NegatedRef(model_var),
+                      literal.IsPositive() ? 1 : 0};
+  return result;
+}
+
+ProtoTrail::ProtoTrail() { target_phase_.reserve(kMaxPhaseSize); }
 
 void ProtoTrail::PushLevel(const ProtoLiteral& decision,
                            IntegerValue objective_lb, int node_id) {
@@ -209,15 +217,16 @@ absl::Span<const ProtoLiteral> ProtoTrail::Implications(int level) const {
 
 SharedTreeManager::SharedTreeManager(Model* model)
     : params_(*model->GetOrCreate<SatParameters>()),
-      num_workers_(std::max(1, params_.shared_tree_num_workers())),
+      num_workers_(params_.shared_tree_num_workers()),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       num_splits_wanted_(
           num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1),
-      max_nodes_(params_.shared_tree_max_nodes_per_worker() >=
-                         std::numeric_limits<int>::max() / num_workers_
-                     ? std::numeric_limits<int>::max()
-                     : num_workers_ *
-                           params_.shared_tree_max_nodes_per_worker()) {
+      max_nodes_(
+          params_.shared_tree_max_nodes_per_worker() >=
+                  std::numeric_limits<int>::max() / std::max(num_workers_, 1)
+              ? std::numeric_limits<int>::max()
+              : num_workers_ * params_.shared_tree_max_nodes_per_worker()) {
+  CHECK_GE(num_workers_, 0);
   // Create the root node with a fake literal.
   nodes_.push_back(
       {.literal = ProtoLiteral(),
@@ -253,7 +262,12 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
     if (level > 0 && !node->closed) {
       NodeTrailInfo* trail_info = GetTrailInfo(node);
       for (const ProtoLiteral& implication : path.Implications(level)) {
-        trail_info->implications.insert(implication);
+        auto it = trail_info->implications
+                      .emplace(implication.proto_var(), implication.lb())
+                      .first;
+        if (it->second < implication.lb()) {
+          it->second = implication.lb();
+        }
       }
     }
     prev_level = level;
@@ -314,7 +328,8 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     // TODO(user): Need to write up the shape this creates.
     // This rule will allow twice as many leaves in the preferred subtree.
     if (discrepancy + path.MaxLevel() >
-        MaxAllowedDiscrepancyPlusDepth(num_desired_leaves)) {
+        MaxAllowedDiscrepancyPlusDepth(num_desired_leaves) +
+            params_.shared_tree_balance_tolerance()) {
       VLOG(2) << "Too high discrepancy to accept split";
       return;
     }
@@ -328,7 +343,8 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     }
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_BALANCED_TREE) {
-    if (path.MaxLevel() + 1 > log2(num_desired_leaves)) {
+    if (path.MaxLevel() + 1 >
+        log2(num_desired_leaves) + params_.shared_tree_balance_tolerance()) {
       VLOG(2) << "Tree too unbalanced to accept split";
       return;
     }
@@ -360,6 +376,7 @@ void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
     unassigned_leaves_.pop_back();
     if (!leaf->closed && leaf->children[0] == nullptr) {
       AssignLeaf(path, leaf);
+      path.SetTargetPhase(GetTrailInfo(leaf)->phase);
       return;
     }
   }
@@ -538,9 +555,10 @@ void SharedTreeManager::AssignLeaf(ProtoTrail& path, Node* leaf) {
     if (leaf->implied) {
       path.SetLevelImplied(path.MaxLevel());
     }
-    if (params_.shared_tree_worker_enable_trail_sharing()) {
-      for (const ProtoLiteral& implication : GetTrailInfo(leaf)->implications) {
-        path.AddImplication(path.MaxLevel(), implication);
+    if (params_.shared_tree_worker_enable_trail_sharing() &&
+        leaf->trail_info != nullptr) {
+      for (const auto& [var, lb] : leaf->trail_info->implications) {
+        path.AddImplication(path.MaxLevel(), ProtoLiteral(var, lb));
       }
     }
   }
@@ -723,36 +741,7 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
     *decision_index = decision.Index();
     return true;
   }
-  if (objective_ == nullptr ||
-      objective_->objective_var == kNoIntegerVariable) {
-    return helper_->GetDecision(decision_policy, decision_index);
-  }
-  // If the current node is close to the global lower bound, maybe try to
-  // improve it.
-  const IntegerValue root_obj_lb =
-      integer_trail_->LevelZeroLowerBound(objective_->objective_var);
-  const IntegerValue root_obj_ub =
-      integer_trail_->LevelZeroUpperBound(objective_->objective_var);
-  const IntegerValue obj_split =
-      root_obj_lb + absl::LogUniform<int64_t>(
-                        *random_, 0, (root_obj_ub - root_obj_lb).value());
-  const double objective_split_probability =
-      parameters_->shared_tree_worker_objective_split_probability();
-  return helper_->GetDecision(
-      [&]() -> BooleanOrIntegerLiteral {
-        IntegerValue obj_lb =
-            integer_trail_->LowerBound(objective_->objective_var);
-        IntegerValue obj_ub =
-            integer_trail_->UpperBound(objective_->objective_var);
-        if (obj_lb > obj_split || obj_ub <= obj_split ||
-            next_level > assigned_tree_.MaxLevel() + 1 ||
-            absl::Bernoulli(*random_, 1 - objective_split_probability)) {
-          return decision_policy();
-        }
-        return BooleanOrIntegerLiteral(
-            IntegerLiteral::LowerOrEqual(objective_->objective_var, obj_split));
-      },
-      decision_index);
+  return helper_->GetDecision(decision_policy, decision_index);
 }
 
 void SharedTreeWorker::MaybeProposeSplit() {
@@ -779,7 +768,9 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
   // If we have no assignment, try to get one.
   if (assigned_tree_.MaxLevel() == 0) return true;
   if (restart_policy_->NumRestarts() <
-      parameters_->shared_tree_worker_min_restarts_per_subtree()) {
+          parameters_->shared_tree_worker_min_restarts_per_subtree() ||
+      time_limit_->GetElapsedDeterministicTime() <
+          earliest_replacement_dtime_) {
     return false;
   }
   return assigned_tree_lbds_.WindowAverage() <
@@ -791,29 +782,46 @@ bool SharedTreeWorker::SyncWithSharedTree() {
   if (ShouldReplaceSubtree()) {
     ++num_trees_;
     VLOG(2) << parameters_->name() << " acquiring tree #" << num_trees_
-            << " after " << num_restarts_ - tree_assignment_restart_
-            << " restarts prev depth: " << assigned_tree_.MaxLevel()
+            << " after " << restart_policy_->NumRestarts() << " restarts"
+            << " prev depth: " << assigned_tree_.MaxLevel()
             << " target: " << assigned_tree_lbds_.WindowAverage()
             << " lbd: " << restart_policy_->LbdAverageSinceReset();
-    if (parameters_->shared_tree_worker_enable_trail_sharing()) {
-      std::vector<ProtoLiteral> phase_out;
+    if (parameters_->shared_tree_worker_enable_phase_sharing() &&
+        // Only save the phase if we've done a non-trivial amount of work on
+        // this subtree.
+        FinishedMinRestarts() &&
+        !decision_policy_->GetBestPartialAssignment().empty()) {
+      assigned_tree_.ClearTargetPhase();
       for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
-        auto encoded = ProtoLiteral::Encode(lit, mapping_, encoder_);
+        // Only set the phase for booleans to avoid creating literals on other
+        // workers.
+        auto encoded = ProtoLiteral::EncodeLiteral(lit, mapping_);
         if (!encoded.has_value()) continue;
-        phase_out.push_back(*encoded);
+        if (!assigned_tree_.AddPhase(*encoded)) break;
       }
-      assigned_tree_.SetPhase(phase_out);
     }
     manager_->ReplaceTree(assigned_tree_);
-    tree_assignment_restart_ = num_restarts_;
     assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
     restart_policy_->Reset();
-    if (parameters_->shared_tree_worker_enable_trail_sharing()) {
+    earliest_replacement_dtime_ = 0;
+    if (parameters_->shared_tree_worker_enable_phase_sharing()) {
+      VLOG(2) << "Importing phase of length: "
+              << assigned_tree_.TargetPhase().size();
       decision_policy_->ClearBestPartialAssignment();
       for (const ProtoLiteral& lit : assigned_tree_.TargetPhase()) {
         decision_policy_->SetTargetPolarity(DecodeDecision(lit));
       }
     }
+  }
+  // If we commit to this subtree, keep it for at least 1s of dtime.
+  // This allows us to replace obviously bad subtrees quickly, and not replace
+  // too frequently overall.
+  if (FinishedMinRestarts() && earliest_replacement_dtime_ >=
+                                   time_limit_->GetElapsedDeterministicTime()) {
+    earliest_replacement_dtime_ =
+        time_limit_->GetElapsedDeterministicTime() + 1;
+    // Treat this as reassigning the same tree.
+    assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
   }
   VLOG(2) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();
@@ -834,7 +842,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
 SatSolver::Status SharedTreeWorker::Search(
     const std::function<void()>& feasible_solution_observer) {
   // Inside GetAssociatedLiteral if a literal becomes fixed at level 0 during
-  // Search,the code checks it is at level 0 when decoding the literal, but
+  // Search, the code CHECKs it is at level 0 when decoding the literal, but
   // the fixed literals are cached, so we can create them now to avoid a
   // crash.
   sat_solver_->Backtrack(0);
@@ -849,9 +857,8 @@ SatSolver::Status SharedTreeWorker::Search(
       return sat_solver_->UnsatStatus();
     }
     if (heuristics_->restart_policies[heuristics_->policy_index]()) {
-      ++num_restarts_;
-      heuristics_->policy_index =
-          num_restarts_ % heuristics_->decision_policies.size();
+      heuristics_->policy_index = restart_policy_->NumRestarts() %
+                                  heuristics_->decision_policies.size();
       sat_solver_->Backtrack(0);
     }
     if (!SyncWithLocalTrail()) return sat_solver_->UnsatStatus();

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -77,6 +78,8 @@ def print_solution(routes, cumul_data):
     total_time = 0
     route_str = ""
     for i, route in enumerate(routes):
+        if len(route) <= 2:
+            continue
         route_str += "Route " + str(i) + ":\n"
         start_time = cumul_data[i][0][0]
         end_time = cumul_data[i][0][1]

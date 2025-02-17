@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,6 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research::sat {
@@ -53,10 +54,12 @@ void ReduceModuloBasis(absl::Span<const std::vector<absl::int128>> basis,
 
     const absl::int128 q =
         leading_coeff > 0
-            ? FloorOfRatio(v[n] + FloorOfRatio(leading_coeff, absl::int128(2)),
-                           leading_coeff)
-            : -FloorOfRatio(
-                  v[n] + FloorOfRatio(-leading_coeff, absl::int128(2)),
+            ? MathUtil::FloorOfRatio(
+                  v[n] + MathUtil::FloorOfRatio(leading_coeff, absl::int128(2)),
+                  leading_coeff)
+            : -MathUtil::FloorOfRatio(
+                  v[n] +
+                      MathUtil::FloorOfRatio(-leading_coeff, absl::int128(2)),
                   -leading_coeff);
     if (q == 0) continue;
     for (int j = 0; j <= n; ++j) v[j] -= q * basis[i][j];
@@ -210,8 +213,10 @@ DiophantineSolution SolveDiophantine(absl::Span<const int64_t> coeffs,
       ub -= coeff * (coeff < 0 ? ub_var : lb_var);
     }
     const absl::int128 coeff = kernel_basis[bounds_to_update][i];
-    const absl::int128 deduced_lb = CeilOfRatio(coeff > 0 ? lb : ub, coeff);
-    const absl::int128 deduced_ub = FloorOfRatio(coeff > 0 ? ub : lb, coeff);
+    const absl::int128 deduced_lb =
+        MathUtil::CeilOfRatio(coeff > 0 ? lb : ub, coeff);
+    const absl::int128 deduced_ub =
+        MathUtil::FloorOfRatio(coeff > 0 ? ub : lb, coeff);
     if (i > 0) {
       kernel_vars_lbs[i - 1] = deduced_lb;
       kernel_vars_ubs[i - 1] = deduced_ub;

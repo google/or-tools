@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,7 +12,8 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/set_cover_solve.cc")
 
 set(NAME ${PROJECT_NAME}_algorithms)
 
@@ -31,3 +32,24 @@ target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::algorithms ALIAS ${NAME})
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  list(FILTER _TEST_SRCS EXCLUDE REGEX ".*_stress_test.cc")
+  list(FILTER _TEST_SRCS EXCLUDE REGEX "set_cover_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        algorithms_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        GTest::gtest
+        GTest::gtest_main
+        GTest::gmock
+    )
+  endforeach()
+endif()

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -49,12 +49,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Solomon parser class.
 class SolomonParser {
@@ -70,7 +69,7 @@ class SolomonParser {
   // the instance. Loading a new instance clears the previously loaded instance.
 
   // Loads instance from a file.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
   // Loads instance from a file contained in a zipped archive; the archive can
   // contain multiple files.
   bool LoadFile(absl::string_view file_name, const std::string& archive_name);
@@ -115,7 +114,7 @@ class SolomonParser {
 
   // Parsing
   void Initialize();
-  bool ParseFile(const std::string& file_name);
+  bool ParseFile(absl::string_view file_name);
 
   // Parsing data
   const std::map<std::string, Section> sections_;
@@ -134,6 +133,45 @@ class SolomonParser {
   std::vector<SimpleTimeWindow<int64_t>> time_windows_;
   std::vector<int64_t> service_times_;
 };
-}  // namespace operations_research
+
+// Solomon solution parser class.
+class SolomonSolutionParser {
+ public:
+  SolomonSolutionParser();
+
+#ifndef SWIG
+  SolomonSolutionParser(const SolomonSolutionParser&) = delete;
+  const SolomonSolutionParser& operator=(const SolomonSolutionParser&) = delete;
+#endif
+
+  // Loads solution from a file. Returns false in case of failure to read
+  // the file. Loading a new solution clears the previously loaded solution.
+  bool LoadFile(absl::string_view file_name);
+
+  // Returns the number of routes used in the solution.
+  int NumberOfRoutes() const { return routes_.size(); }
+  // Returns the sequence of the ith route, excluding depot nodes.
+  const std::vector<int>& route(int i) const { return routes_[i]; }
+  // Returns the value corresponding to a key. Keys can be (but are not limited
+  // to) "Authors", "Date", "Instance Name", or "Reference". These keys might
+  // vary slightly per instance (refer to the input file).
+  const std::string& GetValueFromKey(absl::string_view key) const {
+    static const std::string* default_value = new std::string{};
+    auto it = key_values_.find(key);
+    if (it != key_values_.end()) return it->second;
+    return *default_value;
+  }
+
+ private:
+  // Parsing
+  void Initialize();
+  bool ParseFile(absl::string_view file_name);
+
+  // Parsing data
+  std::vector<std::vector<int>> routes_;
+  absl::flat_hash_map<std::string, std::string> key_values_;
+};
+
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_SOLOMON_PARSER_H_

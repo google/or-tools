@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,12 +14,15 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "google/protobuf/duration.pb.h"
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -82,6 +85,9 @@ void print_solution(const RoutingIndexManager& routing_manager,
   for (int vehicle_id = 0; vehicle_id < routing_manager.num_vehicles();
        ++vehicle_id) {
     int64_t index = routing_model.Start(vehicle_id);
+    if (routing_model.IsEnd(routing_model.NextVar(index)->Value())) {
+      continue;
+    }
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t route_distance = 0;
     std::stringstream route;

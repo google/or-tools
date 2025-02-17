@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,9 +51,9 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_solver.h"  // IWYU pragma: export.
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/model.h"  // IWYU pragma: export.
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -845,13 +845,23 @@ class CpModelBuilder {
   Constraint AddAllDifferent(std::initializer_list<LinearExpr> exprs);
 
   /// Adds the element constraint: variables[index] == target
-  Constraint AddVariableElement(IntVar index,
+  Constraint AddVariableElement(LinearExpr index,
                                 absl::Span<const IntVar> variables,
-                                IntVar target);
+                                LinearExpr target);
+
+  /// Adds the element constraint: expressions[index] == target.
+  Constraint AddElement(LinearExpr index,
+                        absl::Span<const LinearExpr> expressions,
+                        LinearExpr target);
+
+  /// Adds the element constraint: expressions[index] == target.
+  Constraint AddElement(LinearExpr index,
+                        std::initializer_list<LinearExpr> expressions,
+                        LinearExpr target);
 
   /// Adds the element constraint: values[index] == target
-  Constraint AddElement(IntVar index, absl::Span<const int64_t> values,
-                        IntVar target);
+  Constraint AddElement(LinearExpr index, absl::Span<const int64_t> values,
+                        LinearExpr target);
 
   /**
    * Adds a circuit constraint.
@@ -889,27 +899,51 @@ class CpModelBuilder {
   /**
    * Adds an allowed assignments constraint.
    *
-   * An AllowedAssignments constraint is a constraint on an array of variables
-   * that forces, when all variables are fixed to a single value, that the
-   * corresponding list of values is equal to one of the tuples added to the
-   * constraint.
+   * An AllowedAssignments constraint is a constraint on an array of affine
+   * expressions (a * var + b) that forces, when all expressions are fixed to a
+   * single value, that the corresponding list of values is equal to one of the
+   * tuples added to the constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
    * construction.
    */
-  TableConstraint AddAllowedAssignments(absl::Span<const IntVar> vars);
+  TableConstraint AddAllowedAssignments(
+      absl::Span<const LinearExpr> expressions);
+
+  /**
+   * Adds an allowed assignments constraint.
+   */
+  TableConstraint AddAllowedAssignments(absl::Span<const IntVar> variables);
+
+  /**
+   * Adds an allowed assignments constraint.
+   */
+  TableConstraint AddAllowedAssignments(
+      std::initializer_list<LinearExpr> expressions);
 
   /**
    * Adds an forbidden assignments constraint.
    *
-   * A ForbiddenAssignments constraint is a constraint on an array of variables
-   * where the list of impossible combinations is provided in the tuples added
-   * to the constraint.
+   * A ForbiddenAssignments constraint is a constraint on an array of affine
+   * expressions (a * var + b) where the list of impossible combinations is
+   * provided in the tuples added to the constraint.
    *
    * It returns a table constraint that allows adding tuples incrementally after
    * construction.
    */
-  TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> vars);
+  TableConstraint AddForbiddenAssignments(
+      absl::Span<const LinearExpr> expression);
+
+  /**
+   * Adds an forbidden assignments constraint.
+   */
+  TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> variables);
+
+  /**
+   * Adds an forbidden assignments constraint.
+   */
+  TableConstraint AddForbiddenAssignments(
+      std::initializer_list<LinearExpr> expressions);
 
   /** An inverse constraint.
    *
@@ -968,8 +1002,22 @@ class CpModelBuilder {
    * incrementally after construction.
    */
   AutomatonConstraint AddAutomaton(
+      absl::Span<const LinearExpr> transition_expressions, int starting_state,
+      absl::Span<const int> final_states);
+
+  /**
+   * An automaton constraint.
+   */
+  AutomatonConstraint AddAutomaton(
       absl::Span<const IntVar> transition_variables, int starting_state,
       absl::Span<const int> final_states);
+
+  /**
+   * An automaton constraint.
+   */
+  AutomatonConstraint AddAutomaton(
+      std::initializer_list<LinearExpr> transition_expressions,
+      int starting_state, absl::Span<const int> final_states);
 
   /// Adds target == min(vars).
   Constraint AddMinEquality(const LinearExpr& target,

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,7 @@
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
+#include "ortools/math_opt/constraints/second_order_cone/storage.h"
 #include "ortools/math_opt/constraints/sos/sos1_constraint.h"
 #include "ortools/math_opt/constraints/sos/sos2_constraint.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
@@ -261,7 +262,7 @@ void Model::SetObjective(const Objective objective,
   }
 }
 
-void Model::AddToObjective(Objective objective,
+void Model::AddToObjective(const Objective objective,
                            const LinearExpression& expression) {
   CheckModel(objective.storage());
   CheckOptionalModel(expression.storage());
@@ -270,6 +271,28 @@ void Model::AddToObjective(Objective objective,
     set_objective_coefficient(objective, var,
                               objective.coefficient(var) + coef);
   }
+}
+
+std::vector<Variable> Model::NonzeroVariablesInLinearObjective(
+    const Objective objective) const {
+  CheckModel(objective.storage());
+  std::vector<Variable> result;
+  result.reserve(storage()->num_linear_objective_terms(objective.typed_id()));
+  for (const auto [var_id, unused] :
+       storage()->linear_objective(objective.typed_id())) {
+    result.push_back(Variable(storage(), var_id));
+  }
+  return result;
+}
+
+std::vector<Variable> Model::NonzeroVariablesInQuadraticObjective() const {
+  std::vector<Variable> result;
+  for (const auto& [var_id1, var_id2, unused] :
+       storage()->quadratic_objective_terms(kPrimaryObjectiveId)) {
+    result.push_back(Variable(storage(), var_id1));
+    result.push_back(Variable(storage(), var_id2));
+  }
+  return result;
 }
 
 ModelProto Model::ExportModel(const bool remove_names) const {

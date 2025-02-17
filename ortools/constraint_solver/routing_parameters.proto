@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -36,8 +36,10 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 61
+// Next ID: 68
 message RoutingSearchParameters {
+  reserved 19, 65;
+
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
 
@@ -66,8 +68,6 @@ message RoutingSearchParameters {
   //                 - savings_arc_coefficient * Cost(a-->b)
   // This parameter must be greater than 0, and its default value is 1.
   double savings_arc_coefficient = 18;
-  // When true, the routes are built in parallel, sequentially otherwise.
-  bool savings_parallel_routes = 19;
 
   // Ratio (between 0 and 1) of available vehicles in the model on which
   // farthest nodes of the model are inserted as seeds in the
@@ -132,6 +132,39 @@ message RoutingSearchParameters {
   PairInsertionStrategy local_cheapest_cost_insertion_pickup_delivery_strategy =
       55;
 
+  // Properties used to select in which order nodes or node pairs are considered
+  // in insertion heuristics.
+  enum InsertionSortingProperty {
+    // Invalid property.
+    SORTING_PROPERTY_UNSPECIFIED = 0;
+    // Selects nodes with the least number of allowed vehicles.
+    SORTING_PROPERTY_ALLOWED_VEHICLES = 1;
+    // Selects nodes with the highest penalty.
+    SORTING_PROPERTY_PENALTY = 2;
+    // Selects nodes with the highest penalty / number of allowed vehicles
+    // ratio.
+    SORTING_PROPERTY_PENALTY_OVER_ALLOWED_VEHICLES_RATIO = 3;
+    // Selects nodes that are on average the farthest from vehicles.
+    SORTING_PROPERTY_HIGHEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS = 4;
+    // Selects nodes that are on average the closest to vehicles.
+    SORTING_PROPERTY_LOWEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS = 5;
+    // Select nodes with the smallest distance to the closest vehicle.
+    SORTING_PROPERTY_LOWEST_MIN_ARC_COST_TO_VEHICLE_START_ENDS = 6;
+    // Selects nodes that have a higher dimension usage on average, where the
+    // usage is determined as the ratio of node demand over vehicle capacity.
+    // Currently, this property only supports unary dimensions.
+    SORTING_PROPERTY_HIGHEST_DIMENSION_USAGE = 7;
+  }
+
+  // The properties used to sort insertion entries in the local cheapest
+  // insertion heuristic, in *decreasing* order of priority. The properties
+  // listed here are applied hierarchically, from highest to lowest priority.
+  // When no properties are provided
+  //        (SORTING_PROPERTY_ALLOWED_VEHICLES, SORTING_PROPERTY_PENALTY)
+  // is used by default.
+  repeated InsertionSortingProperty
+      local_cheapest_insertion_sorting_properties = 67;
+
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.
   bool christofides_use_minimum_matching = 30;
@@ -146,7 +179,7 @@ message RoutingSearchParameters {
   int32 first_solution_optimization_period = 59;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 35
+  // Next ID: 39
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -310,6 +343,23 @@ message RoutingSearchParameters {
     //   (where 1,2 and 5,6 are first and last nodes of paths) is:
     //   1 -> 4 -> 3 -> 5, 2 -> 6.
     OptionalBoolean use_relocate_and_make_active = 21;
+    // Operator which exchanges two nodes and inserts an inactive node.
+    // Possible neighbors for paths 0 -> 2 -> 4, 1 -> 3 -> 6 and 5 inactive are:
+    // 0 -> 3 -> 4, 1 -> 5 -> 2 -> 6
+    // 0 -> 3 -> 5 -> 4, 1 -> 2 -> 6
+    // 0 -> 5 -> 3 -> 4, 1 -> 2 -> 6
+    // 0 -> 3 -> 4, 1 -> 2 -> 5 -> 6
+    OptionalBoolean use_exchange_and_make_active = 37;
+    // Operator which exchanges the first and last nodes of two paths and makes
+    // a node active.
+    // Possible neighbors for paths 0 -> 1 -> 2 -> 7, 6 -> 3 -> 4 -> 8
+    // and 5 inactive are:
+    // 0 -> 5 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 7, 6 -> 1 -> 5 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 5 -> 8
+    // 0 -> 3 -> 5 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 5 -> 7, 6 -> 1 -> 2 -> 8
+    OptionalBoolean use_exchange_path_start_ends_and_make_active = 38;
     // Operator which makes path nodes inactive.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
     // and last nodes of the path) are:
@@ -329,6 +379,13 @@ message RoutingSearchParameters {
     //   1 -> [5] ->  3  -> 4 with 2 inactive
     //   1 ->  2  -> [5] -> 4 with 3 inactive
     OptionalBoolean use_swap_active = 14;
+    // Operator which replaces a chain of active nodes by an inactive one.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  3  -> 4 with 2 inactive
+    //   1 ->  2  -> [5] -> 4 with 3 inactive
+    //   1 -> [5] -> 4 with 2 and 3 inactive
+    OptionalBoolean use_swap_active_chain = 35;
     // Operator which makes an inactive node active and an active one inactive.
     // It is similar to SwapActiveOperator excepts that it tries to insert the
     // inactive node in all possible positions instead of just the position of
@@ -347,6 +404,9 @@ message RoutingSearchParameters {
     // from the shortest path starting from the node before the chain (source),
     // through the DAG to the node following the chain.
     OptionalBoolean use_shortest_path_swap_active = 34;
+    // Similar to use_two_opt but returns the shortest path on the DAG of node
+    // alternatives of the reversed chain (cf. use_shortest_path_swap_active).
+    OptionalBoolean use_shortest_path_two_opt = 36;
     // Operator which makes an inactive node active and an active pair of nodes
     // inactive OR makes an inactive pair of nodes active and an active node
     // inactive.
@@ -433,6 +493,9 @@ message RoutingSearchParameters {
   // unsuccessful in the past operators
   double multi_armed_bandit_compound_operator_exploration_coefficient = 43;
 
+  // Maximum size of the chain to make inactive in SwapActiveChainOperator.
+  int32 max_swap_active_chain_size = 66;
+
   // Number of expensive arcs to consider cutting in the RelocateExpensiveChain
   // neighborhood operator (see
   // LocalSearchNeighborhoodOperators.use_relocate_expensive_chain()).
@@ -452,6 +515,12 @@ message RoutingSearchParameters {
 
   // Local search metaheuristics used to guide the search.
   LocalSearchMetaheuristic.Value local_search_metaheuristic = 4;
+  // Local search metaheuristics alternatively used to guide the search. Every
+  // num_max_local_optima_before_metaheuristic_switch local minima found by a
+  // metaheurisitic, the solver will switch to the next metaheuristic. Cannot be
+  // defined if local_search_metaheuristic is different from UNSET or AUTOMATIC.
+  repeated LocalSearchMetaheuristic.Value local_search_metaheuristics = 63;
+  int32 num_max_local_optima_before_metaheuristic_switch = 64;
   // These are advanced settings which should not be modified unless you know
   // what you are doing.
   // Lambda coefficient used to penalize arc costs when GUIDED_LOCAL_SEARCH is
@@ -460,6 +529,13 @@ message RoutingSearchParameters {
   // Whether to reset penalties when a new best solution is found. The effect is
   // that a greedy descent is started before the next penalization phase.
   bool guided_local_search_reset_penalties_on_new_best_solution = 51;
+  // When an arc leaving a vehicle start or arriving at a vehicle end is
+  // penalized, this field controls whether to penalize all other equivalent
+  // arcs with starts or ends in the same vehicle class.
+  bool guided_local_search_penalize_with_vehicle_classes = 61;
+  // Whether to consider arc penalties in cost functions used in local search
+  // operators using arc costs.
+  bool use_guided_local_search_penalties_in_local_search_operators = 62;
 
   // --- Search control ---
   //

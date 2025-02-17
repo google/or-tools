@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,23 +14,19 @@
 #ifndef OR_TOOLS_SAT_SWIG_HELPER_H_
 #define OR_TOOLS_SAT_SWIG_HELPER_H_
 
-#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <string>
 
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
+
+class SolveWrapper;
 
 // Base class for SWIG director based on solution callbacks.
 // See http://www.swig.org/Doc4.0/SWIGDocumentation.html#CSharp_directors.
@@ -62,24 +58,26 @@ class SolutionCallback {
 
   double BestObjectiveBound() const;
 
-  int64_t SolutionIntegerValue(int index);
+  int64_t SolutionIntegerValue(int index) const;
 
-  bool SolutionBooleanValue(int index);
+  bool SolutionBooleanValue(int index) const;
 
   // Stops the search.
-  void StopSearch();
+  void StopSearch() const;
 
-  operations_research::sat::CpSolverResponse Response() const;
+  const operations_research::sat::CpSolverResponse& Response() const;
 
   // We use mutable and non const methods to overcome SWIG difficulties.
-  void SetAtomicBooleanToStopTheSearch(std::atomic<bool>* stopped_ptr) const;
+  void SetWrapperClass(SolveWrapper* wrapper) const;
+
+  SolveWrapper* wrapper() const { return wrapper_; }
 
   bool HasResponse() const;
 
  private:
   mutable CpSolverResponse response_;
   mutable bool has_response_ = false;
-  mutable std::atomic<bool>* stopped_ptr_;
+  mutable SolveWrapper* wrapper_ = nullptr;
 };
 
 // Simple director class for C#.
@@ -126,7 +124,6 @@ class SolveWrapper {
 
  private:
   Model model_;
-  std::atomic<bool> stopped_ = false;
 };
 
 // Static methods are stored in a module which name can vary.

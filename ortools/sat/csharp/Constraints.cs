@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -161,7 +161,7 @@ public class TableConstraint : Constraint
      *
      * <param name="tuple"> the tuple to add to the constraint</param>
      * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
-     *     variables of the constraint</exception>
+     *     expressions of the constraint</exception>
      */
     public TableConstraint AddTuple(IEnumerable<int> tuple)
     {
@@ -173,9 +173,9 @@ public class TableConstraint : Constraint
             table.Values.Add(value);
             count++;
         }
-        if (count != table.Vars.Count)
+        if (count != table.Exprs.Count)
         {
-            throw new ArgumentException("addTuple", "tuple does not have the same length as the variables");
+            throw new ArgumentException("addTuple", "tuple does not have the same length as the expressions");
         }
         return this;
     }
@@ -187,7 +187,7 @@ public class TableConstraint : Constraint
      *
      * <param name="tuple"> the tuple to add to the constraint</param>
      * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
-     *     variables of the constraint</exception>
+     *     expressions of the constraint</exception>
      */
     public TableConstraint AddTuple(IEnumerable<long> tuple)
     {
@@ -199,9 +199,9 @@ public class TableConstraint : Constraint
             table.Values.Add(value);
             count++;
         }
-        if (count != table.Vars.Count)
+        if (count != table.Exprs.Count)
         {
-            throw new ArgumentException("addTuple", "tuple does not have the same length as the variables");
+            throw new ArgumentException("addTuple", "tuple does not have the same length as the expressions");
         }
         return this;
     }
@@ -213,15 +213,15 @@ public class TableConstraint : Constraint
      *
      * <param name="tuples"> the set of tuple to add to the constraint</param>
      * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
-     *     variables of the constraint</exception>
+     *     expressions of the constraint</exception>
      */
     public TableConstraint AddTuples(int[,] tuples)
     {
         TableConstraintProto table = Proto.Table;
 
-        if (tuples.GetLength(1) != table.Vars.Count)
+        if (tuples.GetLength(1) != table.Exprs.Count)
         {
-            throw new ArgumentException("addTuples", "tuples does not have the same length as the variables");
+            throw new ArgumentException("addTuples", "tuples does not have the same length as the expressions");
         }
 
         for (int i = 0; i < tuples.GetLength(0); ++i)
@@ -241,15 +241,15 @@ public class TableConstraint : Constraint
      *
      * <param name="tuples"> the set of tuple to add to the constraint</param>
      * <exception cref="ArgumentException"> if the tuple does not have the same length as the array of
-     *     variables of the constraint</exception>
+     *     expressions of the constraint</exception>
      */
     public TableConstraint AddTuples(long[,] tuples)
     {
         TableConstraintProto table = Proto.Table;
 
-        if (tuples.GetLength(1) != table.Vars.Count)
+        if (tuples.GetLength(1) != table.Exprs.Count)
         {
-            throw new ArgumentException("addTuples", "tuples does not have the same length as the variables");
+            throw new ArgumentException("addTuples", "tuples does not have the same length as the expressions");
         }
 
         for (int i = 0; i < tuples.GetLength(0); ++i)

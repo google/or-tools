@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,13 +41,13 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
@@ -57,11 +57,13 @@
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/lb_tree_search.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/max_hs.h"
@@ -72,6 +74,8 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/stat_tables.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/work_assignment.h"
@@ -107,10 +111,6 @@ ABSL_FLAG(
     "DEBUG ONLY. When this is set to a non-empty file name, "
     "we will interpret this as an internal solution which can be used for "
     "debugging. For instance we use it to identify wrong cuts/reasons.");
-
-ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
-          "When true, all intermediate solutions found by the solver will be "
-          "checked. This can be expensive, therefore it is off by default.");
 
 namespace operations_research {
 namespace sat {
@@ -307,20 +307,13 @@ std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
       }
     }
   }
-
-  if (DEBUG_MODE ||
-      absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
-    // TODO(user): Checks against initial model.
-    CHECK(SolutionIsFeasible(model_proto, solution));
-  }
   return solution;
 }
 
 namespace {
 
 IntegerVariable GetOrCreateVariableWithTightBound(
-    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
-    Model* model) {
+    absl::Span<const std::pair<IntegerVariable, int64_t>> terms, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -344,7 +337,7 @@ IntegerVariable GetOrCreateVariableWithTightBound(
 }
 
 IntegerVariable GetOrCreateVariableLinkedToSumOf(
-    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
+    absl::Span<const std::pair<IntegerVariable, int64_t>> terms,
     bool lb_required, bool ub_required, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
@@ -384,7 +377,97 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
   return new_var;
 }
 
-}  // namespace
+// Currently, the LP will exploit symmetry if we load some in the
+// LinearConstraintSymmetrizer. So not loading them disable the feature.
+//
+// TODO(user): We probably want to separate the two as we could still use orbits
+// in other places while not doing so in the LP.
+void InitializeLinearConstraintSymmetrizerIfRequested(
+    const CpModelProto& model_proto, const LinearRelaxation& linear_relaxation,
+    Model* m) {
+  if (!model_proto.has_symmetry()) return;
+
+  auto* params = m->GetOrCreate<SatParameters>();
+  if (params->linearization_level() < 2) return;
+  if (!params->use_symmetry_in_lp()) return;
+
+  // Tricky: while we load the model, we might create new integer-variables, and
+  // in some rare case, these variable can appear in the LP relaxation. This
+  // might happen when we extend an at most one or when we use an integer
+  // encoding.
+  //
+  // The issue with this and having symmetry is that we didn't extend the
+  // problem symmetries to include these new variables, so we can derive wrong
+  // conclusion. When we use symmetry in the LP we cannot have any variable like
+  // this part of a LinearProgrammingConstraint.
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  int num_constraints_with_non_proto_variables = 0;
+  for (const auto& lp_constraint : linear_relaxation.linear_constraints) {
+    bool has_non_proto_variable = false;
+    for (const IntegerVariable var : lp_constraint.VarsAsSpan()) {
+      if (mapping->GetProtoVariableFromIntegerVariable(var) == -1) {
+        has_non_proto_variable = true;
+        break;
+      }
+    }
+    if (has_non_proto_variable) {
+      ++num_constraints_with_non_proto_variables;
+    }
+  }
+  if (num_constraints_with_non_proto_variables > 0) {
+    // TODO(user): Logging like this is not visible in multi-thread, so we will
+    // not have a lot of warning if this happens a lot.
+    auto* logger = m->GetOrCreate<SolverLogger>();
+    SOLVER_LOG(logger, num_constraints_with_non_proto_variables,
+               " LP constraints uses new variables not appearing in the "
+               "presolved model. ");
+
+    // TODO(user): We currently disable symmetries in LP completely when this
+    // happen, but we could probably be smarter about this. I am not really
+    // sure we want to create such extra variable in the first place :)
+    return;
+  }
+
+  // Convert to SparsePermutation.
+  const int num_vars = model_proto.variables().size();
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  for (const SparsePermutationProto& perm :
+       model_proto.symmetry().permutations()) {
+    generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+  }
+
+  // Get orbits in term of IntegerVariable.
+  const std::vector<int> var_to_orbit_index = GetOrbits(num_vars, generators);
+  std::vector<bool> orbit_is_ok;
+  std::vector<std::vector<IntegerVariable>> orbits;
+  for (int proto_var = 0; proto_var < num_vars; ++proto_var) {
+    const int orbit_index = var_to_orbit_index[proto_var];
+    if (orbit_index == -1) continue;
+    if (orbit_index >= orbits.size()) {
+      orbits.resize(orbit_index + 1);
+      orbit_is_ok.resize(orbit_index + 1, true);
+    }
+
+    // In linerization level >=2, all variables should have a view.
+    // Otherwise revisit and skip orbit without a full view.
+    const IntegerVariable var = mapping->Integer(proto_var);
+    CHECK_NE(var, kNoIntegerVariable);
+    orbits[orbit_index].push_back(var);
+  }
+
+  // Lets create the orbit sum vars and register each orbit.
+  auto* symmetrizer = m->GetOrCreate<LinearConstraintSymmetrizer>();
+  std::vector<std::pair<IntegerVariable, int64_t>> terms;
+  for (const std::vector<IntegerVariable>& orbit : orbits) {
+    terms.clear();
+    for (const IntegerVariable var : orbit) {
+      terms.push_back({var, 1});
+    }
+    const IntegerVariable sum_var =
+        GetOrCreateVariableLinkedToSumOf(terms, true, true, m);
+    symmetrizer->AddSymmetryOrbit(sum_var, orbit);
+  }
+}
 
 // Adds one LinearProgrammingConstraint per connected component of the model.
 IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
@@ -392,6 +475,9 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   // Non const as we will std::move() stuff out of there.
   LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
   if (m->GetOrCreate<SatSolver>()->ModelIsUnsat()) return kNoIntegerVariable;
+
+  // Load symmetry?
+  InitializeLinearConstraintSymmetrizerIfRequested(model_proto, relaxation, m);
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
@@ -427,6 +513,15 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   for (int i = 0; i < num_lp_cut_generators; ++i) {
     for (const IntegerVariable var : relaxation.cut_generators[i].vars) {
       components.AddEdge(get_cut_generator_index(i), get_var_index(var));
+    }
+  }
+
+  // Make sure variables from the same orbit end up in same components.
+  auto* symmetrizer = m->GetOrCreate<LinearConstraintSymmetrizer>();
+  for (int i = 0; i < symmetrizer->NumOrbits(); ++i) {
+    const int representative = get_var_index(symmetrizer->OrbitSumVar(i));
+    for (const IntegerVariable var : symmetrizer->Orbit(i)) {
+      components.AddEdge(representative, get_var_index(var));
     }
   }
 
@@ -471,8 +566,11 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
       m->TakeOwnership(lp_constraints[c]);
     }
     // Load the constraint.
-    lp_constraints[c]->AddLinearConstraint(
-        std::move(relaxation.linear_constraints[i]));
+    if (!lp_constraints[c]->AddLinearConstraint(
+            std::move(relaxation.linear_constraints[i]))) {
+      m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+      return kNoIntegerVariable;
+    }
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
@@ -486,18 +584,62 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
     lp_constraints[c]->AddCutGenerator(std::move(relaxation.cut_generators[i]));
   }
 
+  // We deal with the clique cut generator here now that the component have
+  // been computed. As we don't want to merge independent component with it.
+  auto* params = m->GetOrCreate<SatParameters>();
+  if (params->linearization_level() > 1 && params->add_clique_cuts() &&
+      params->cut_level() > 0) {
+    for (LinearProgrammingConstraint* lp : lp_constraints) {
+      if (lp == nullptr) continue;
+      lp->AddCutGenerator(CreateCliqueCutGenerator(lp->integer_variables(), m));
+    }
+  }
+
   // Add the objective.
   std::vector<std::vector<std::pair<IntegerVariable, int64_t>>>
       component_to_cp_terms(num_components);
   std::vector<std::pair<IntegerVariable, int64_t>> top_level_cp_terms;
   int num_components_containing_objective = 0;
   if (model_proto.has_objective()) {
+    // First convert the proto objective to an IntegerVariable one. In case of
+    // "use_symmetry_in_lp", we also rewrite it in terms of the sum of the
+    // variables in the orbits.
+    std::vector<std::pair<IntegerVariable, int64_t>> objective;
+    const int num_orbits = symmetrizer->NumOrbits();
+    if (num_orbits > 0) {
+      // We use the orbit_sum var instead.
+      std::vector<int64_t> orbit_obj_coeff(num_orbits, 0);
+      for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+        const IntegerVariable var =
+            mapping->Integer(model_proto.objective().vars(i));
+        const int64_t coeff = model_proto.objective().coeffs(i);
+        const int orbit_index = symmetrizer->OrbitIndex(var);
+        if (orbit_index != -1) {
+          if (orbit_obj_coeff[orbit_index] == 0) {
+            orbit_obj_coeff[orbit_index] = coeff;
+          } else {
+            CHECK_EQ(orbit_obj_coeff[orbit_index], coeff);
+          }
+          continue;
+        }
+        objective.push_back({var, coeff});
+      }
+      for (int i = 0; i < num_orbits; ++i) {
+        if (orbit_obj_coeff[i] == 0) continue;
+        objective.push_back({symmetrizer->OrbitSumVar(i), orbit_obj_coeff[i]});
+      }
+    } else {
+      for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+        const IntegerVariable var =
+            mapping->Integer(model_proto.objective().vars(i));
+        const int64_t coeff = model_proto.objective().coeffs(i);
+        objective.push_back({var, coeff});
+      }
+    }
+
     // First pass: set objective coefficients on the lp constraints, and store
     // the cp terms in one vector per component.
-    for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
-      const IntegerVariable var =
-          mapping->Integer(model_proto.objective().vars(i));
-      const int64_t coeff = model_proto.objective().coeffs(i);
+    for (const auto [var, coeff] : objective) {
       const int c = index_to_component[get_var_index(var)];
       if (lp_constraints[c] != nullptr) {
         lp_constraints[c]->SetObjectiveCoefficient(var, IntegerValue(coeff));
@@ -538,6 +680,8 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   return main_objective_var;
 }
 
+}  // namespace
+
 // Registers a callback that will export variables bounds fixed at level 0 of
 // the search. This should not be registered to a LNS search.
 void RegisterVariableBoundsLevelZeroExport(
@@ -557,7 +701,7 @@ void RegisterVariableBoundsLevelZeroExport(
   const std::string name = model->Name();
 
   auto broadcast_level_zero_bounds =
-      [=](const std::vector<IntegerVariable>& modified_vars) mutable {
+      [=](absl::Span<const IntegerVariable> modified_vars) mutable {
         // Inspect the modified IntegerVariables.
         for (const IntegerVariable& var : modified_vars) {
           const IntegerVariable positive_var = PositiveVariable(var);
@@ -660,7 +804,6 @@ void RegisterVariableBoundsLevelZeroImport(
     std::vector<int64_t> new_upper_bounds;
     shared_bounds_manager->GetChangedBounds(
         id, &model_variables, &new_lower_bounds, &new_upper_bounds);
-    bool new_bounds_have_been_imported = false;
     for (int i = 0; i < model_variables.size(); ++i) {
       const int model_var = model_variables[i];
 
@@ -675,7 +818,6 @@ void RegisterVariableBoundsLevelZeroImport(
           sat_solver->NotifyThatModelIsUnsat();
           return false;
         }
-        new_bounds_have_been_imported = true;
         trail->EnqueueWithUnitReason(lit);
         continue;
       }
@@ -691,7 +833,6 @@ void RegisterVariableBoundsLevelZeroImport(
       const bool changed_ub = new_ub < old_ub;
       if (!changed_lb && !changed_ub) continue;
 
-      new_bounds_have_been_imported = true;
       if (VLOG_IS_ON(3)) {
         const IntegerVariableProto& var_proto =
             model_proto.variables(model_var);
@@ -715,9 +856,9 @@ void RegisterVariableBoundsLevelZeroImport(
         return false;
       }
     }
-    if (new_bounds_have_been_imported && !sat_solver->FinishPropagation()) {
-      return false;
-    }
+
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -733,7 +874,7 @@ void RegisterObjectiveBestBoundExport(
   const auto broadcast_objective_lower_bound =
       [objective_var, integer_trail, shared_response_manager, model,
        best_obj_lb =
-           kMinIntegerValue](const std::vector<IntegerVariable>&) mutable {
+           kMinIntegerValue](absl::Span<const IntegerVariable>) mutable {
         const IntegerValue objective_lb =
             integer_trail->LevelZeroLowerBound(objective_var);
         if (objective_lb > best_obj_lb) {
@@ -764,7 +905,7 @@ void RegisterObjectiveBoundsImport(
   const auto import_objective_bounds = [name, solver, integer_trail, objective,
                                         shared_response_manager]() {
     if (solver->AssumptionLevel() != 0) return true;
-    bool propagate = false;
+    bool tighter_bounds = false;
 
     const IntegerValue external_lb =
         shared_response_manager->GetInnerObjectiveLowerBound();
@@ -776,7 +917,7 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
     const IntegerValue external_ub =
@@ -789,18 +930,20 @@ void RegisterObjectiveBoundsImport(
                                   {}, {})) {
         return false;
       }
-      propagate = true;
+      tighter_bounds = true;
     }
 
-    if (!propagate) return true;
+    // Note that we will propagate if they are new bounds separately.
+    // See BeforeTakingDecision().
+    if (tighter_bounds) {
+      VLOG(3) << "'" << name << "' imports objective bounds: external ["
+              << objective->ScaleIntegerObjective(external_lb) << ", "
+              << objective->ScaleIntegerObjective(external_ub) << "], current ["
+              << objective->ScaleIntegerObjective(current_lb) << ", "
+              << objective->ScaleIntegerObjective(current_ub) << "]";
+    }
 
-    VLOG(3) << "'" << name << "' imports objective bounds: external ["
-            << objective->ScaleIntegerObjective(external_lb) << ", "
-            << objective->ScaleIntegerObjective(external_ub) << "], current ["
-            << objective->ScaleIntegerObjective(current_lb) << ", "
-            << objective->ScaleIntegerObjective(current_ub) << "]";
-
-    return solver->FinishPropagation();
+    return true;
   };
 
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -867,28 +1010,37 @@ int RegisterClausesLevelZeroImport(int id,
   CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
-  bool share_glue_clauses =
+  const bool share_glue_clauses =
       model->GetOrCreate<SatParameters>()->share_glue_clauses();
+  const bool minimize_shared_clauses =
+      model->GetOrCreate<SatParameters>()->minimize_shared_clauses();
   auto* clause_stream = share_glue_clauses
                             ? shared_clauses_manager->GetClauseStream(id)
                             : nullptr;
+  auto* clause_manager = model->GetOrCreate<ClauseManager>();
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
                                            sat_solver, implications,
-                                           clause_stream]() {
+                                           clause_stream, clause_manager,
+                                           minimize_shared_clauses]() {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
     implications->EnableSharing(false);
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddBinaryClause(l1, l2)) {
+      if (!sat_solver->AddProblemClause({l1, l2})) {
         return false;
       }
     }
     implications->EnableSharing(true);
     if (clause_stream == nullptr) return true;
 
+    int new_clauses = 0;
     std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
+    sat_solver->EnsureNewClauseIndexInitialized();
+    // Temporarily disable clause sharing so we don't immediately re-export the
+    // clauses we just imported.
+    auto callback = clause_manager->TakeAddClauseCallback();
     for (const absl::Span<const int> shared_clause :
          shared_clauses_manager->GetUnseenClauses(id)) {
       // Check this clause was not already learned by this worker.
@@ -904,8 +1056,19 @@ int RegisterClausesLevelZeroImport(int id,
               absl::MakeSpan(local_clause).subspan(0, shared_clause.size()))) {
         return false;
       }
+      ++new_clauses;
     }
+    clause_manager->SetAddClauseCallback(std::move(callback));
     clause_stream->RemoveWorstClauses();
+    if (minimize_shared_clauses && new_clauses > 0) {
+      // The new clauses may be subsumed, so try to minimize them to reduce
+      // overhead of sharing.
+      // We only share up to 1024 literals worth of new clauses per second, so
+      // at most 1024 decisions to vivify all new clauses, so this should be
+      // relatively cheap.
+      return sat_solver->MinimizeByPropagation(
+          /*dtime=*/0.5, /*minimize_new_clauses_only=*/true);
+    }
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -1007,15 +1170,21 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     VLOG(3) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
-    VLOG(1) << "There is unsupported constraints types in this model: ";
+    auto* logger = model->GetOrCreate<SolverLogger>();
+    SOLVER_LOG(logger,
+               "There is unsupported constraints types in this model: ");
     std::vector<absl::string_view> names;
     for (const ConstraintProto::ConstraintCase type : unsupported_types) {
       names.push_back(ConstraintCaseName(type));
     }
     std::sort(names.begin(), names.end());
     for (const absl::string_view name : names) {
-      VLOG(1) << " - " << name;
+      SOLVER_LOG(logger, " - ", name);
     }
+
+    // TODO(user): This is wrong. We should support a MODEL_INVALID end of solve
+    // in the SharedResponseManager.
+    SOLVER_LOG(logger, "BUG: We will wrongly report INFEASIBLE now.");
     return unsat();
   }
 
@@ -1026,6 +1195,8 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   model->GetOrCreate<ProductDetector>()->ProcessImplicationGraph(
       model->GetOrCreate<BinaryImplicationGraph>());
   model->GetOrCreate<PrecedenceRelations>()->Build();
+
+  model->GetOrCreate<BinaryRelationRepository>()->Build();
 }
 
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
@@ -1099,7 +1270,9 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
     Prober* prober = model->GetOrCreate<Prober>();
-    prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
+    if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0)) {
+      return unsat();
+    }
     if (!model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
       return unsat();
@@ -1648,7 +1821,7 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
 // the model before presolve.
 void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
                                      CpModelProto mapping_proto,
-                                     const std::vector<int>& postsolve_mapping,
+                                     absl::Span<const int> postsolve_mapping,
                                      std::vector<int64_t>* solution) {
   WallTimer wall_timer;
   wall_timer.Start();
@@ -1693,7 +1866,7 @@ void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,
                               const CpModelProto& mapping_proto,
-                              const std::vector<int>& postsolve_mapping,
+                              absl::Span<const int> postsolve_mapping,
                               std::vector<int64_t>* solution) {
   if (params.debug_postsolve_with_full_solver()) {
     PostsolveResponseWithFullSolver(num_variable_in_original_model,
@@ -1720,6 +1893,16 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
                  "not supported in multi-thread.");
     }
     params->set_num_workers(1);
+
+    // TODO(user): This was the old behavior, but consider switching this to
+    // just a warning? it might be a valid usage to enumerate all solution of
+    // a presolved model.
+    if (!params->keep_all_feasible_solutions_in_presolve()) {
+      SOLVER_LOG(logger,
+                 "Forcing presolve to keep all feasible solution given that "
+                 "enumerate_all_solutions is true");
+    }
+    params->set_keep_all_feasible_solutions_in_presolve(true);
   }
 
   if (!model_proto.assumptions().empty()) {
@@ -1727,6 +1910,12 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
       SOLVER_LOG(logger,
                  "Forcing sequential search as assumptions are not supported "
                  "in multi-thread.");
+    }
+    if (!params->keep_all_feasible_solutions_in_presolve()) {
+      SOLVER_LOG(logger,
+                 "Forcing presolve to keep all feasible solutions in the "
+                 "presence of assumptions.");
+      params->set_keep_all_feasible_solutions_in_presolve(true);
     }
     params->set_num_workers(1);
   }
@@ -1741,6 +1930,21 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
 #endif
     SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
     params->set_num_workers(num_cores);
+  }
+
+  if (params->shared_tree_num_workers() == -1) {
+    int num_shared_tree_workers = 0;
+    if (params->num_workers() >= 16) {
+      if (model_proto.has_objective() ||
+          model_proto.has_floating_point_objective()) {
+        num_shared_tree_workers = (params->num_workers() - 8) / 2;
+      } else {
+        num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
+      }
+    }
+    SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+               num_shared_tree_workers);
+    params->set_shared_tree_num_workers(num_shared_tree_workers);
   }
 
   // We currently only use the feasibility pump or rins/rens if it is enabled
@@ -1773,8 +1977,10 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       time_limit(global_model->GetOrCreate<ModelSharedTimeLimit>()),
       logger(global_model->GetOrCreate<SolverLogger>()),
       stats(global_model->GetOrCreate<SharedStatistics>()),
+      stat_tables(global_model->GetOrCreate<SharedStatTables>()),
       response(global_model->GetOrCreate<SharedResponseManager>()),
-      shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()) {
+      shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
+      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
 
   if (params.share_level_zero_bounds()) {
@@ -1806,6 +2012,31 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
   if (params.share_binary_clauses() && params.num_workers() > 1) {
     clauses = std::make_unique<SharedClausesManager>(always_synchronize,
                                                      absl::Seconds(1));
+  }
+}
+
+void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
+  // Note that we do not register the logger which is not a shared class.
+  local_model->Register<SharedResponseManager>(response);
+  local_model->Register<SharedLsSolutionRepository>(ls_hints);
+  local_model->Register<SharedTreeManager>(shared_tree_manager);
+  local_model->Register<SharedStatistics>(stats);
+  local_model->Register<SharedStatTables>(stat_tables);
+
+  // TODO(user): Use parameters and not the presence/absence of these class
+  // to decide when to use them.
+  if (lp_solutions != nullptr) {
+    local_model->Register<SharedLPSolutionRepository>(lp_solutions.get());
+  }
+  if (incomplete_solutions != nullptr) {
+    local_model->Register<SharedIncompleteSolutionManager>(
+        incomplete_solutions.get());
+  }
+  if (bounds != nullptr) {
+    local_model->Register<SharedBoundsManager>(bounds.get());
+  }
+  if (clauses != nullptr) {
+    local_model->Register<SharedClausesManager>(clauses.get());
   }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,8 +14,10 @@
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
 
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -23,6 +25,8 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
@@ -51,6 +55,9 @@
 #include "ortools/xpress/environment.h"
 
 namespace operations_research {
+namespace mb {
+
+// ModelBuilderHelper.
 
 void ModelBuilderHelper::OverwriteModel(
     const ModelBuilderHelper& other_helper) {
@@ -244,7 +251,7 @@ void ModelBuilderHelper::SetConstraintCoefficient(int ct_index, int var_index,
     }
   }
   // If we reach this point, the variable does not exist in the constraint yet,
-  // so we add it to the constraint as a new term.
+  // so we add it to the constraint as a newterm.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -274,7 +281,7 @@ std::vector<double> ModelBuilderHelper::ConstraintCoefficients(
 
 int ModelBuilderHelper::AddEnforcedLinearConstraint() {
   const int index = model_.general_constraint_size();
-  // Create the new general constraint, and force the type to indicator ct.
+  // Create the mew constraint, and force the type to indicator ct.
   model_.add_general_constraint()->mutable_indicator_constraint();
   return index;
 }
@@ -514,7 +521,8 @@ SolveStatus MPSolverResponseStatusToSolveStatus(MPSolverResponseStatus s) {
 }
 }  // namespace
 
-ModelSolverHelper::ModelSolverHelper(const std::string& solver_name) {
+ModelSolverHelper::ModelSolverHelper(const std::string& solver_name)
+    : evaluator_(this) {
   if (solver_name.empty()) return;
   MPSolver::OptimizationProblemType parsed_type;
   if (!MPSolver::ParseSolverType(solver_name, &parsed_type)) {
@@ -709,6 +717,14 @@ double ModelSolverHelper::variable_value(int var_index) const {
   return response_.value().variable_value(var_index);
 }
 
+double ModelSolverHelper::expression_value(
+    std::shared_ptr<LinearExpr> expr) const {
+  if (!has_response()) return 0.0;
+  evaluator_.Clear();
+  evaluator_.AddToProcess(expr, 1.0);
+  return evaluator_.Evaluate();
+}
+
 double ModelSolverHelper::reduced_cost(int var_index) const {
   if (!has_response()) return 0.0;
   if (var_index >= response_.value().reduced_cost_size()) return 0.0;
@@ -768,4 +784,608 @@ void ModelSolverHelper::SetSolverSpecificParameters(
 
 void ModelSolverHelper::EnableOutput(bool enabled) { solver_output_ = enabled; }
 
+// Expressions.
+std::shared_ptr<LinearExpr> LinearExpr::Term(std::shared_ptr<LinearExpr> expr,
+                                             double coeff) {
+  return std::make_shared<AffineExpr>(expr, coeff, 0.0);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::Affine(std::shared_ptr<LinearExpr> expr,
+                                               double coeff, double constant) {
+  if (coeff == 1.0 && constant == 0.0) return expr;
+  return std::make_shared<AffineExpr>(expr, coeff, constant);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::AffineCst(double value, double coeff,
+                                                  double constant) {
+  return std::make_shared<FixedValue>(value * coeff + constant);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::Constant(double value) {
+  return std::make_shared<FixedValue>(value);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::Add(std::shared_ptr<LinearExpr> expr) {
+  std::vector<std::shared_ptr<LinearExpr>> exprs;
+  exprs.push_back(shared_from_this());
+  exprs.push_back(expr);
+  return std::make_shared<SumArray>(exprs, 0.0);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::AddFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
+  return std::make_shared<AffineExpr>(shared_from_this(), 1.0, cst);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> expr) {
+  std::vector<std::shared_ptr<LinearExpr>> exprs;
+  exprs.push_back(shared_from_this());
+  exprs.push_back(expr);
+  std::vector<double> coeffs = {1.0, -1.0};
+  return std::make_shared<WeightedSumArray>(exprs, coeffs, 0.0);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::SubFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
+  return std::make_shared<AffineExpr>(shared_from_this(), 1.0, -cst);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::RSubFloat(double cst) {
+  return std::make_shared<AffineExpr>(shared_from_this(), -1.0, cst);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::MulFloat(double cst) {
+  if (cst == 0.0) return std::make_shared<FixedValue>(0.0);
+  if (cst == 1.0) return shared_from_this();
+  return std::make_shared<AffineExpr>(shared_from_this(), cst, 0.0);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::Neg() {
+  return std::make_shared<AffineExpr>(shared_from_this(), -1, 0);
+}
+
+// Expression visitors.
+
+void ExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr, double coeff) {
+  to_process_.push_back(std::make_pair(expr, coeff));
+}
+
+void ExprVisitor::AddConstant(double constant) { offset_ += constant; }
+
+void ExprVisitor::Clear() {
+  to_process_.clear();
+  offset_ = 0.0;
+}
+
+void ExprFlattener::AddVarCoeff(std::shared_ptr<Variable> var, double coeff) {
+  canonical_terms_[var] += coeff;
+}
+
+double ExprFlattener::Flatten(std::vector<std::shared_ptr<Variable>>* vars,
+                              std::vector<double>* coeffs) {
+  while (!to_process_.empty()) {
+    const auto [expr, coeff] = to_process_.back();
+    to_process_.pop_back();
+    expr->Visit(*this, coeff);
+  }
+
+  vars->clear();
+  coeffs->clear();
+  for (const auto& [var, coeff] : canonical_terms_) {
+    if (coeff == 0.0) continue;
+    vars->push_back(var);
+    coeffs->push_back(coeff);
+  }
+
+  return offset_;
+}
+
+void ExprEvaluator::AddVarCoeff(std::shared_ptr<Variable> var, double coeff) {
+  offset_ += coeff * helper_->variable_value(var->index());
+}
+
+double ExprEvaluator::Evaluate() {
+  offset_ = 0.0;
+  while (!to_process_.empty()) {
+    const auto [expr, coeff] = to_process_.back();
+    to_process_.pop_back();
+    expr->Visit(*this, coeff);
+  }
+  return offset_;
+}
+
+FlatExpr::FlatExpr(std::shared_ptr<LinearExpr> expr) {
+  ExprFlattener lin;
+  lin.AddToProcess(expr, 1.0);
+  offset_ = lin.Flatten(&vars_, &coeffs_);
+}
+
+FlatExpr::FlatExpr(std::shared_ptr<LinearExpr> pos,
+                   std::shared_ptr<LinearExpr> neg) {
+  ExprFlattener lin;
+  lin.AddToProcess(pos, 1.0);
+  lin.AddToProcess(neg, -1.0);
+  offset_ = lin.Flatten(&vars_, &coeffs_);
+}
+
+FlatExpr::FlatExpr(const std::vector<std::shared_ptr<Variable>>& vars,
+                   const std::vector<double>& coeffs, double offset)
+    : vars_(vars), coeffs_(coeffs), offset_(offset) {}
+
+FlatExpr::FlatExpr(double offset) : offset_(offset) {}
+
+std::vector<int> FlatExpr::VarIndices() const {
+  std::vector<int> var_indices;
+  var_indices.reserve(vars_.size());
+  for (const std::shared_ptr<Variable>& var : vars_) {
+    var_indices.push_back(var->index());
+  }
+  return var_indices;
+}
+
+void FlatExpr::Visit(ExprVisitor& lin, double c) {
+  for (int i = 0; i < vars_.size(); ++i) {
+    lin.AddVarCoeff(vars_[i], coeffs_[i] * c);
+  }
+  lin.AddConstant(offset_ * c);
+}
+
+std::string FlatExpr::ToString() const {
+  if (vars_.empty()) {
+    return absl::StrCat(offset_);
+  }
+  std::string s;
+  int num_printed = 0;
+  for (int i = 0; i < vars_.size(); ++i) {
+    DCHECK_NE(coeffs_[i], 0.0);
+    ++num_printed;
+    if (num_printed > 5) {
+      absl::StrAppend(&s, " + ...");
+      break;
+    }
+    if (num_printed == 1) {
+      if (coeffs_[i] == 1.0) {
+        absl::StrAppend(&s, vars_[i]->ToString());
+      } else if (coeffs_[i] == -1.0) {
+        absl::StrAppend(&s, "-", vars_[i]->ToString());
+      } else {
+        absl::StrAppend(&s, coeffs_[i], " * ", vars_[i]->ToString());
+      }
+    } else {
+      if (coeffs_[i] == 1.0) {
+        absl::StrAppend(&s, " + ", vars_[i]->ToString());
+      } else if (coeffs_[i] == -1.0) {
+        absl::StrAppend(&s, " - ", vars_[i]->ToString());
+      } else if (coeffs_[i] > 0.0) {
+        absl::StrAppend(&s, " + ", coeffs_[i], " * ", vars_[i]->ToString());
+      } else {
+        absl::StrAppend(&s, " - ", -coeffs_[i], " * ", vars_[i]->ToString());
+      }
+    }
+  }
+  // If there are no terms, just print the offset.
+  if (num_printed == 0) {
+    return absl::StrCat(offset_);
+  }
+
+  // If there is an offset, print it.
+  if (offset_ != 0.0) {
+    if (offset_ > 0.0) {
+      absl::StrAppend(&s, " + ", offset_);
+    } else {
+      absl::StrAppend(&s, " - ", -offset_);
+    }
+  }
+  return s;
+}
+
+std::string FlatExpr::DebugString() const {
+  std::string s = absl::StrCat(
+      "FlatExpr(",
+      absl::StrJoin(vars_, ", ",
+                    [](std::string* out, std::shared_ptr<Variable> expr) {
+                      absl::StrAppend(out, expr->DebugString());
+                    }));
+  if (offset_ != 0.0) {
+    absl::StrAppend(&s, ", offset=", offset_);
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+void FixedValue::Visit(ExprVisitor& lin, double c) {
+  lin.AddConstant(value_ * c);
+}
+
+std::string FixedValue::ToString() const { return absl::StrCat(value_); }
+
+std::string FixedValue::DebugString() const {
+  return absl::StrCat("FixedValue(", value_, ")");
+}
+
+WeightedSumArray::WeightedSumArray(
+    const std::vector<std::shared_ptr<LinearExpr>>& exprs,
+    const std::vector<double>& coeffs, double offset)
+    : exprs_(exprs.begin(), exprs.end()),
+      coeffs_(coeffs.begin(), coeffs.end()),
+      offset_(offset) {}
+
+void WeightedSumArray::Visit(ExprVisitor& lin, double c) {
+  for (int i = 0; i < exprs_.size(); ++i) {
+    lin.AddToProcess(exprs_[i], coeffs_[i] * c);
+  }
+  lin.AddConstant(offset_ * c);
+}
+
+std::string WeightedSumArray::ToString() const {
+  if (exprs_.empty()) {
+    return absl::StrCat(offset_);
+  }
+  std::string s = "(";
+  bool first_printed = true;
+  for (int i = 0; i < exprs_.size(); ++i) {
+    if (coeffs_[i] == 0.0) continue;
+    if (first_printed) {
+      first_printed = false;
+      if (coeffs_[i] == 1.0) {
+        absl::StrAppend(&s, exprs_[i]->ToString());
+      } else if (coeffs_[i] == -1.0) {
+        absl::StrAppend(&s, "-", exprs_[i]->ToString());
+      } else {
+        absl::StrAppend(&s, coeffs_[i], " * ", exprs_[i]->ToString());
+      }
+    } else {
+      if (coeffs_[i] == 1.0) {
+        absl::StrAppend(&s, " + ", exprs_[i]->ToString());
+      } else if (coeffs_[i] == -1.0) {
+        absl::StrAppend(&s, " - ", exprs_[i]->ToString());
+      } else if (coeffs_[i] > 0.0) {
+        absl::StrAppend(&s, " + ", coeffs_[i], " * ", exprs_[i]->ToString());
+      } else {
+        absl::StrAppend(&s, " - ", -coeffs_[i], " * ", exprs_[i]->ToString());
+      }
+    }
+  }
+  // If there are no terms, just print the offset.
+  if (first_printed) {
+    return absl::StrCat(offset_);
+  }
+
+  // If there is an offset, print it.
+  if (offset_ != 0.0) {
+    if (offset_ > 0.0) {
+      absl::StrAppend(&s, " + ", offset_);
+    } else {
+      absl::StrAppend(&s, " - ", -offset_);
+    }
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+std::string WeightedSumArray::DebugString() const {
+  return absl::StrCat(
+      "WeightedSumArray([",
+      absl::StrJoin(exprs_, ", ",
+                    [](std::string* out, std::shared_ptr<LinearExpr> e) {
+                      absl::StrAppend(out, e->DebugString());
+                    }),
+      "], [", absl::StrJoin(coeffs_, "], "), offset_, ")");
+}
+
+AffineExpr::AffineExpr(std::shared_ptr<LinearExpr> expr, double coeff,
+                       double offset)
+    : expr_(expr), coeff_(coeff), offset_(offset) {}
+
+void AffineExpr::Visit(ExprVisitor& lin, double c) {
+  lin.AddToProcess(expr_, c * coeff_);
+  lin.AddConstant(offset_ * c);
+}
+
+std::shared_ptr<LinearExpr> AffineExpr::AddFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
+  return LinearExpr::Affine(expr_, coeff_, offset_ + cst);
+}
+
+std::shared_ptr<LinearExpr> AffineExpr::SubFloat(double cst) {
+  if (cst == 0.0) return shared_from_this();
+  return LinearExpr::Affine(expr_, coeff_, offset_ - cst);
+}
+
+std::shared_ptr<LinearExpr> AffineExpr::RSubFloat(double cst) {
+  return LinearExpr::Affine(expr_, -coeff_, cst - offset_);
+}
+
+std::shared_ptr<LinearExpr> AffineExpr::MulFloat(double cst) {
+  if (cst == 0.0) return std::make_shared<FixedValue>(0);
+  if (cst == 1.0) return shared_from_this();
+  return LinearExpr::Affine(expr_, coeff_ * cst, offset_ * cst);
+}
+
+std::shared_ptr<LinearExpr> AffineExpr::Neg() {
+  return LinearExpr::Affine(expr_, -coeff_, -offset_);
+}
+
+std::string AffineExpr::ToString() const {
+  std::string s = "(";
+  if (coeff_ == 1.0) {
+    absl::StrAppend(&s, expr_->ToString());
+  } else if (coeff_ == -1.0) {
+    absl::StrAppend(&s, "-", expr_->ToString());
+  } else {
+    absl::StrAppend(&s, coeff_, " * ", expr_->ToString());
+  }
+  if (offset_ > 0.0) {
+    absl::StrAppend(&s, " + ", offset_);
+  } else if (offset_ < 0.0) {
+    absl::StrAppend(&s, " - ", -offset_);
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+std::string AffineExpr::DebugString() const {
+  return absl::StrCat("AffineExpr(expr=", expr_->DebugString(),
+                      ", coeff=", coeff_, ", offset=", offset_, ")");
+}
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Eq(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs, 0.0,
+                                                   0.0);
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::EqCst(double rhs) {
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs,
+                                                   rhs);
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Le(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), rhs, -std::numeric_limits<double>::infinity(), 0.0);
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::LeCst(double rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), -std::numeric_limits<double>::infinity(), rhs);
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::Ge(
+    std::shared_ptr<LinearExpr> rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), rhs, 0.0, std::numeric_limits<double>::infinity());
+}
+
+std::shared_ptr<BoundedLinearExpression> LinearExpr::GeCst(double rhs) {
+  return std::make_shared<BoundedLinearExpression>(
+      shared_from_this(), rhs, std::numeric_limits<double>::infinity());
+}
+
+bool VariableComparator::operator()(std::shared_ptr<Variable> lhs,
+                                    std::shared_ptr<Variable> rhs) const {
+  return lhs->index() < rhs->index();
+}
+
+Variable::Variable(ModelBuilderHelper* helper, int index)
+    : helper_(helper), index_(index) {}
+
+Variable::Variable(ModelBuilderHelper* helper, double lb, double ub,
+                   bool is_integral)
+    : helper_(helper) {
+  index_ = helper_->AddVar();
+  helper_->SetVarLowerBound(index_, lb);
+  helper_->SetVarUpperBound(index_, ub);
+  helper_->SetVarIntegrality(index_, is_integral);
+}
+
+Variable::Variable(ModelBuilderHelper* helper, double lb, double ub,
+                   bool is_integral, const std::string& name)
+    : helper_(helper) {
+  index_ = helper_->AddVar();
+  helper_->SetVarLowerBound(index_, lb);
+  helper_->SetVarUpperBound(index_, ub);
+  helper_->SetVarIntegrality(index_, is_integral);
+  helper_->SetVarName(index_, name);
+}
+
+Variable::Variable(ModelBuilderHelper* helper, int64_t lb, int64_t ub,
+                   bool is_integral)
+    : helper_(helper) {
+  index_ = helper_->AddVar();
+  helper_->SetVarLowerBound(index_, lb);
+  helper_->SetVarUpperBound(index_, ub);
+  helper_->SetVarIntegrality(index_, is_integral);
+}
+
+Variable::Variable(ModelBuilderHelper* helper, int64_t lb, int64_t ub,
+                   bool is_integral, const std::string& name)
+    : helper_(helper) {
+  index_ = helper_->AddVar();
+  helper_->SetVarLowerBound(index_, lb);
+  helper_->SetVarUpperBound(index_, ub);
+  helper_->SetVarIntegrality(index_, is_integral);
+  helper_->SetVarName(index_, name);
+}
+
+std::string Variable::ToString() const {
+  if (!helper_->VarName(index_).empty()) {
+    return helper_->VarName(index_);
+  } else {
+    return absl::StrCat("Variable(", index_, ")");
+  }
+}
+
+std::string Variable::DebugString() const {
+  return absl::StrCat("Variable(index=", index_,
+                      ", lb=", helper_->VarLowerBound(index_),
+                      ", ub=", helper_->VarUpperBound(index_),
+                      ", is_integral=", helper_->VarIsIntegral(index_),
+                      ", name=\'", helper_->VarName(index_), "')");
+}
+
+std::string Variable::name() const {
+  const std::string& var_name = helper_->VarName(index_);
+  if (!var_name.empty()) return var_name;
+  return absl::StrCat("variable#", index_);
+}
+
+void Variable::SetName(const std::string& name) {
+  helper_->SetVarName(index_, name);
+}
+
+double Variable::lower_bounds() const { return helper_->VarLowerBound(index_); }
+
+void Variable::SetLowerBound(double lb) {
+  helper_->SetVarLowerBound(index_, lb);
+}
+
+double Variable::upper_bound() const { return helper_->VarUpperBound(index_); }
+
+void Variable::SetUpperBound(double ub) {
+  helper_->SetVarUpperBound(index_, ub);
+}
+
+bool Variable::is_integral() const { return helper_->VarIsIntegral(index_); }
+
+void Variable::SetIsIntegral(bool is_integral) {
+  helper_->SetVarIntegrality(index_, is_integral);
+}
+
+double Variable::objective_coefficient() const {
+  return helper_->VarObjectiveCoefficient(index_);
+}
+
+void Variable::SetObjectiveCoefficient(double coeff) {
+  helper_->SetVarObjectiveCoefficient(index_, coeff);
+}
+
+BoundedLinearExpression::BoundedLinearExpression(
+    std::shared_ptr<LinearExpr> expr, double lower_bound, double upper_bound) {
+  FlatExpr flat_expr(expr);
+  vars_ = flat_expr.vars();
+  coeffs_ = flat_expr.coeffs();
+  lower_bound_ = lower_bound - flat_expr.offset();
+  upper_bound_ = upper_bound - flat_expr.offset();
+}
+
+BoundedLinearExpression::BoundedLinearExpression(
+    std::shared_ptr<LinearExpr> pos, std::shared_ptr<LinearExpr> neg,
+    double lower_bound, double upper_bound) {
+  FlatExpr flat_expr(pos, neg);
+  vars_ = flat_expr.vars();
+  coeffs_ = flat_expr.coeffs();
+  lower_bound_ = lower_bound - flat_expr.offset();
+  upper_bound_ = upper_bound - flat_expr.offset();
+}
+
+BoundedLinearExpression::BoundedLinearExpression(
+    std::shared_ptr<LinearExpr> expr, int64_t lower_bound,
+    int64_t upper_bound) {
+  FlatExpr flat_expr(expr);
+  vars_ = flat_expr.vars();
+  coeffs_ = flat_expr.coeffs();
+  lower_bound_ = lower_bound - flat_expr.offset();
+  upper_bound_ = upper_bound - flat_expr.offset();
+}
+
+BoundedLinearExpression::BoundedLinearExpression(
+    std::shared_ptr<LinearExpr> pos, std::shared_ptr<LinearExpr> neg,
+    int64_t lower_bound, int64_t upper_bound) {
+  FlatExpr flat_expr(pos, neg);
+  vars_ = flat_expr.vars();
+  coeffs_ = flat_expr.coeffs();
+  lower_bound_ = lower_bound - flat_expr.offset();
+  upper_bound_ = upper_bound - flat_expr.offset();
+}
+
+double BoundedLinearExpression::lower_bound() const { return lower_bound_; }
+double BoundedLinearExpression::upper_bound() const { return upper_bound_; }
+const std::vector<std::shared_ptr<Variable>>& BoundedLinearExpression::vars()
+    const {
+  return vars_;
+}
+const std::vector<double>& BoundedLinearExpression::coeffs() const {
+  return coeffs_;
+}
+std::string BoundedLinearExpression::ToString() const {
+  std::string s;
+  if (vars_.empty()) {
+    s = absl::StrCat(0.0);
+  } else if (vars_.size() == 1) {
+    const std::string var_name = vars_[0]->ToString();
+    if (coeffs_[0] == 1) {
+      s = var_name;
+    } else if (coeffs_[0] == -1) {
+      s = absl::StrCat("-", var_name);
+    } else {
+      s = absl::StrCat(coeffs_[0], " * ", var_name);
+    }
+  } else {
+    s = "(";
+    for (int i = 0; i < vars_.size(); ++i) {
+      const std::string var_name = vars_[i]->ToString();
+      if (i == 0) {
+        if (coeffs_[i] == 1) {
+          absl::StrAppend(&s, var_name);
+        } else if (coeffs_[i] == -1) {
+          absl::StrAppend(&s, "-", var_name);
+        } else {
+          absl::StrAppend(&s, coeffs_[i], " * ", var_name);
+        }
+      } else {
+        if (coeffs_[i] == 1) {
+          absl::StrAppend(&s, " + ", var_name);
+        } else if (coeffs_[i] == -1) {
+          absl::StrAppend(&s, " - ", var_name);
+        } else if (coeffs_[i] > 1) {
+          absl::StrAppend(&s, " + ", coeffs_[i], " * ", var_name);
+        } else {
+          absl::StrAppend(&s, " - ", -coeffs_[i], " * ", var_name);
+        }
+      }
+    }
+    absl::StrAppend(&s, ")");
+  }
+  if (lower_bound_ == upper_bound_) {
+    return absl::StrCat(s, " == ", lower_bound_);
+  } else if (lower_bound_ == -std::numeric_limits<double>::infinity()) {
+    if (upper_bound_ == std::numeric_limits<double>::infinity()) {
+      return absl::StrCat("-inf <= ", s, " <= inf");
+    } else {
+      return absl::StrCat(s, " <= ", upper_bound_);
+    }
+  } else if (upper_bound_ == std::numeric_limits<double>::infinity()) {
+    return absl::StrCat(s, " >= ", lower_bound_);
+  } else {
+    return absl::StrCat(lower_bound_, " <= ", s, " <= ", upper_bound_);
+  }
+}
+
+std::string BoundedLinearExpression::DebugString() const {
+  return absl::StrCat(
+      "BoundedLinearExpression(vars=[",
+      absl::StrJoin(vars_, ", ",
+                    [](std::string* out, std::shared_ptr<Variable> var) {
+                      absl::StrAppend(out, var->DebugString());
+                    }),
+      "], coeffs=[", absl::StrJoin(coeffs_, ", "),
+      "], lower_bound=", lower_bound_, ", upper_bound=", upper_bound_, ")");
+}
+
+bool BoundedLinearExpression::CastToBool(bool* result) const {
+  const bool is_zero = lower_bound_ == 0.0 && upper_bound_ == 0.0;
+  if (is_zero) {
+    if (vars_.empty()) {
+      *result = true;
+      return true;
+    } else if (vars_.size() == 2 && coeffs_[0] + coeffs_[1] == 0 &&
+               std::abs(coeffs_[0]) == 1) {
+      *result = false;
+      return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace mb
 }  // namespace operations_research

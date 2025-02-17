@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,15 +21,15 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -298,7 +298,7 @@ class ProductDetector {
   // Experimental. Find violated inequality of the form l1 * l2 <= l3.
   // And set-up data structure to query this efficiently.
   void InitializeBooleanRLTCuts(
-      const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars,
+      absl::Span<const IntegerVariable> lp_vars,
       const util_intops::StrongVector<IntegerVariable, double>& lp_values);
 
   // BoolRLTCandidates()[var] contains the list of factor for which we have
@@ -384,6 +384,8 @@ class ProductDetector {
   // We only consider BooleanVariable == IntegerVariable, and store not(literal)
   // as NegatedVariable(). This is a flat vector of size multiple of 3.
   std::vector<IntegerVariable> ternary_clauses_with_view_;
+
+  Bitset64<IntegerVariable> is_in_lp_vars_;
 
   // Stats.
   int64_t num_products_ = 0;

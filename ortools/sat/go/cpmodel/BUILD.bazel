@@ -1,0 +1,51 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "cpmodel",
+    srcs = [
+        "cp_model.go",
+        "cp_solver.go",
+        "domain.go",
+    ],
+    cdeps = ["//ortools/sat/c_api:cp_solver_c"],
+    cgo = True,
+    importpath = "github.com/google/or-tools/ortools/sat/go/cpmodel",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/sat:cp_model_go_proto",
+        "//ortools/sat:sat_parameters_go_proto",
+        "@com_github_golang_glog//:glog",
+        "@org_golang_google_protobuf//proto",
+    ],
+)
+
+go_test(
+    name = "cpmodel_test",
+    srcs = [
+        "cp_model_test.go",
+        "cp_solver_test.go",
+        "domain_test.go",
+    ],
+    embed = [":cpmodel"],
+    deps = [
+        "//ortools/sat:cp_model_go_proto",
+        "//ortools/sat:sat_parameters_go_proto",
+        "@com_github_golang_glog//:glog",
+        "@com_github_google_go_cmp//cmp",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//testing/protocmp",
+    ],
+)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -76,17 +76,24 @@ class ParsePrimalSolutionTest(compare_proto.MathOptProtoAssertions, absltest.Tes
             solution.parse_primal_solution(proto, mod)
 
 
-class ParsePrimalRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+class PrimalRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
-    def test_parse(self) -> None:
+    def test_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        proto = solution_pb2.PrimalRayProto()
-        proto.variable_values.ids[:] = [0, 1]
-        proto.variable_values.values[:] = [1.0, 1.0]
-        actual = solution.parse_primal_ray(proto, mod)
-        self.assertDictEqual({x: 1.0, y: 1.0}, actual.variable_values)
+        ray = solution.PrimalRay(variable_values={x: 1.0, y: 1.0})
+        ray_proto = solution_pb2.PrimalRayProto()
+        ray_proto.variable_values.ids[:] = [0, 1]
+        ray_proto.variable_values.values[:] = [1.0, 1.0]
+
+        # Test proto -> model
+        parsed_ray = solution.parse_primal_ray(ray_proto, mod)
+        self.assertDictEqual({x: 1.0, y: 1.0}, parsed_ray.variable_values)
+
+        # Test model -> proto
+        exported_ray = ray.to_proto()
+        self.assert_protos_equiv(exported_ray, ray_proto)
 
 
 class ParseDualSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
@@ -151,22 +158,33 @@ class ParseDualSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestC
             solution.parse_dual_solution(proto, mod)
 
 
-class ParseDualRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+class DualRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
-    def test_parse(self) -> None:
+    def test_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         c = mod.add_linear_constraint(lb=0.0, ub=1.0, name="c")
         d = mod.add_linear_constraint(lb=0.0, ub=1.0, name="d")
-        proto = solution_pb2.DualRayProto()
-        proto.dual_values.ids[:] = [0, 1]
-        proto.dual_values.values[:] = [0.0, 1.0]
-        proto.reduced_costs.ids[:] = [0, 1]
-        proto.reduced_costs.values[:] = [10.0, 0.0]
-        actual = solution.parse_dual_ray(proto, mod)
-        self.assertDictEqual({x: 10.0, y: 0.0}, actual.reduced_costs)
-        self.assertDictEqual({c: 0.0, d: 1.0}, actual.dual_values)
+
+        dual_ray = solution.DualRay(
+            dual_values={c: 0.0, d: 1.0}, reduced_costs={x: 10.0, y: 0.0}
+        )
+
+        dual_ray_proto = solution_pb2.DualRayProto()
+        dual_ray_proto.dual_values.ids[:] = [0, 1]
+        dual_ray_proto.dual_values.values[:] = [0.0, 1.0]
+        dual_ray_proto.reduced_costs.ids[:] = [0, 1]
+        dual_ray_proto.reduced_costs.values[:] = [10.0, 0.0]
+
+        # Test proto -> dual ray
+        parsed_ray = solution.parse_dual_ray(dual_ray_proto, mod)
+        self.assertDictEqual(dual_ray.reduced_costs, parsed_ray.reduced_costs)
+        self.assertDictEqual(dual_ray.dual_values, parsed_ray.dual_values)
+
+        # Test dual ray -> proto
+        exported_proto = dual_ray.to_proto()
+        self.assert_protos_equiv(exported_proto, dual_ray_proto)
 
 
 class BasisTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):

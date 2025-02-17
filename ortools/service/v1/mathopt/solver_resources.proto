@@ -1,0 +1,44 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// The suggested resources to solve an optimization problem.
+
+syntax = "proto3";
+
+package operations_research.service.v1.mathopt;
+
+option java_multiple_files = true;
+option java_package = "com.google.ortools.service.v1.mathopt";
+option csharp_namespace = "Google.OrTools.Service";
+
+// This message is used to specify some hints on the resources a remote solve is
+// expected to use. These parameters are hints and may be ignored by the remote
+// server (in particular in case of solve in a local subprocess, for example).
+//
+// When using SolveService.Solve and SolveService.ComputeInfeasibleSubsystem,
+// these hints are mostly optional as some defaults will be computed based on
+// the other parameters.
+//
+// When using SolveService.StreamSolve these hints are used to dimension the
+// resources available during the execution of every action; thus it is
+// recommended to set them.
+message SolverResourcesProto {
+  // The number of CPUs this solve should be allocated (time-averaged over a
+  // short implementation-defined window). Must be finite and >=1.0.
+  // Note that if the SolveParametersProto.threads is not set then this
+  // parameter should also be left unset.
+  optional double cpu = 1;
+
+  // The limit of RAM for the solve in bytes. Must be finite and >=512000.
+  optional double ram = 2;
+}

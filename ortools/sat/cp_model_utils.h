@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,6 +34,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/options.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -99,12 +100,22 @@ std::vector<int> UsedVariables(const ConstraintProto& ct);
 // Returns the sorted list of interval used by a constraint.
 std::vector<int> UsedIntervals(const ConstraintProto& ct);
 
-// Insert variables in a constraint into a set.
-template <typename Set>
-void InsertVariablesFromConstraint(const CpModelProto& model_proto, int index,
-                                   Set& output) {
+// Insert/Remove variables from an interval constraint into a bitset.
+inline void InsertVariablesFromInterval(const CpModelProto& model_proto,
+                                        int index, Bitset64<int>& output) {
   const ConstraintProto& ct = model_proto.constraints(index);
-  for (const int var : UsedVariables(ct)) output.insert(var);
+  for (const int ref : ct.enforcement_literal()) output.Set(PositiveRef(ref));
+  for (const int var : ct.interval().start().vars()) output.Set(var);
+  for (const int var : ct.interval().size().vars()) output.Set(var);
+  for (const int var : ct.interval().end().vars()) output.Set(var);
+}
+inline void RemoveVariablesFromInterval(const CpModelProto& model_proto,
+                                        int index, Bitset64<int>& output) {
+  const ConstraintProto& ct = model_proto.constraints(index);
+  for (const int ref : ct.enforcement_literal()) output.Clear(PositiveRef(ref));
+  for (const int var : ct.interval().start().vars()) output.Clear(var);
+  for (const int var : ct.interval().size().vars()) output.Clear(var);
+  for (const int var : ct.interval().end().vars()) output.Clear(var);
 }
 
 // Returns true if a proto.domain() contain the given value.
@@ -205,6 +216,29 @@ bool ExpressionIsAffine(const LinearExpressionProto& expr);
 // ExpressionContainsSingleRef(expr) is true.
 int GetSingleRefFromExpression(const LinearExpressionProto& expr);
 
+// Evaluates an affine expression at the given value.
+inline int64_t AffineExpressionValueAt(const LinearExpressionProto& expr,
+                                       int64_t value) {
+  CHECK_EQ(1, expr.vars_size());
+  return expr.offset() + value * expr.coeffs(0);
+}
+
+// Returns the value of the inner variable of an affine expression from the
+// value of the expression. It will DCHECK that the result is valid.
+inline int64_t GetInnerVarValue(const LinearExpressionProto& expr,
+                                int64_t value) {
+  DCHECK_EQ(expr.vars_size(), 1);
+  const int64_t var_value = (value - expr.offset()) / expr.coeffs(0);
+  DCHECK_EQ(value, var_value * expr.coeffs(0) + expr.offset());
+  return var_value;
+}
+
+// Returns true if the expression is a * var + b.
+inline bool AffineExpressionContainsVar(const LinearExpressionProto& expr,
+                                        int var) {
+  return expr.vars_size() == 1 && expr.vars(0) == var;
+}
+
 // Adds a linear expression proto to a linear constraint in place.
 //
 // Important: The domain must already be set, otherwise the offset will be lost.
@@ -213,6 +247,13 @@ int GetSingleRefFromExpression(const LinearExpressionProto& expr);
 void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
                                            int64_t coefficient,
                                            LinearConstraintProto* linear);
+
+// Same as above, but with a single term (lit, coeff). Note that lit can be
+// negative. The offset is relative to the linear expression (and should be
+// negated when added to the rhs of the linear constraint proto).
+void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
+                                          LinearConstraintProto* linear,
+                                          int64_t* offset);
 
 // Same method, but returns if the addition was possible without overflowing.
 bool SafeAddLinearExpressionToLinearConstraint(

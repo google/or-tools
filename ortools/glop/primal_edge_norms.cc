@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -156,16 +156,27 @@ void PrimalEdgeNorms::ComputeMatrixColumnNorms() {
 void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
   SCOPED_TIME_STAT(&stats_);
 
+  // time_limit_->LimitReached() can be costly sometimes, so we only do that
+  // if we feel this will be slow anyway.
+  const bool test_limit = (time_limit_ != nullptr) &&
+                          basis_factorization_.NumberOfEntriesInLU() > 10'000;
+
   // Since we will do a lot of inversions, it is better to be as efficient and
   // precise as possible by refactorizing the basis.
   DCHECK(basis_factorization_.IsRefactorized());
-  edge_squared_norms_.resize(compact_matrix_.num_cols(), 0.0);
+  edge_squared_norms_.resize(compact_matrix_.num_cols(), 1.0);
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     // Note the +1.0 in the squared norm for the component of the edge on the
     // 'entering_col'.
     edge_squared_norms_[col] = 1.0 + basis_factorization_.RightSolveSquaredNorm(
                                          compact_matrix_.column(col));
+
+    // This operation can be costly, and we abort if we are stuck here.
+    // Note that we still mark edges as "recomputed" otherwise we can runs into
+    // some DCHECK before we actually abort the solve.
+    if (test_limit && time_limit_->LimitReached()) break;
   }
+
   recompute_edge_squared_norms_ = false;
 }
 

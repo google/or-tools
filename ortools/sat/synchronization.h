@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SYNCHRONIZATION_H_
 #define OR_TOOLS_SAT_SYNCHRONIZATION_H_
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstddef>
@@ -21,10 +22,12 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
@@ -39,7 +42,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
@@ -97,11 +100,13 @@ class SharedSolutionRepository {
   int NumSolutions() const;
 
   // Returns the solution #i where i must be smaller than NumSolutions().
-  Solution GetSolution(int index) const;
+  std::shared_ptr<const Solution> GetSolution(int index) const;
 
   // Returns the rank of the best known solution.
   // You shouldn't call this if NumSolutions() is zero.
   int64_t GetBestRank() const;
+
+  std::vector<std::shared_ptr<const Solution>> GetBestNSolutions(int n) const;
 
   // Returns the variable value of variable 'var_index' from solution
   // 'solution_index' where solution_index must be smaller than NumSolutions()
@@ -109,13 +114,16 @@ class SharedSolutionRepository {
   ValueType GetVariableValueInSolution(int var_index, int solution_index) const;
 
   // Returns a random solution biased towards good solutions.
-  Solution GetRandomBiasedSolution(absl::BitGenRef random) const;
+  std::shared_ptr<const Solution> GetRandomBiasedSolution(
+      absl::BitGenRef random) const;
 
   // Add a new solution. Note that it will not be added to the pool of solution
   // right away. One must call Synchronize for this to happen. In order to be
   // deterministic, this will keep all solutions until Synchronize() is called,
   // so we need to be careful not to generate too many solutions at once.
-  void Add(const Solution& solution);
+  //
+  // Returns a shared pointer to the solution that was stored in the repository.
+  std::shared_ptr<const Solution> Add(Solution solution);
 
   // Updates the current pool of solution with the one recently added. Note that
   // we use a stable ordering of solutions, so the final pool will be
@@ -143,10 +151,11 @@ class SharedSolutionRepository {
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
   mutable std::vector<int> tmp_indices_ ABSL_GUARDED_BY(mutex_);
-  std::vector<Solution> solutions_ ABSL_GUARDED_BY(mutex_);
-  std::vector<Solution> new_solutions_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::shared_ptr<Solution>> solutions_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::shared_ptr<Solution>> new_solutions_ ABSL_GUARDED_BY(mutex_);
 };
 
+// Solutions coming from the LP.
 class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
  public:
   explicit SharedLPSolutionRepository(int num_solutions_to_keep)
@@ -154,6 +163,28 @@ class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
                                          "lp solutions") {}
 
   void NewLPSolution(std::vector<double> lp_solution);
+};
+
+// Set of best solution from the feasibility jump workers.
+//
+// We store (solution, num_violated_constraints), so we have a list of solutions
+// that violate as little constraints as possible. This can be used to set the
+// phase during SAT search.
+//
+// TODO(user): We could also use it after first solution to orient a SAT search
+// towards better solutions. But then it is a bit trickier to rank solutions
+// compared to the old ones.
+class SharedLsSolutionRepository : public SharedSolutionRepository<int64_t> {
+ public:
+  SharedLsSolutionRepository()
+      : SharedSolutionRepository<int64_t>(10, "fj solution hints") {}
+
+  void AddSolution(std::vector<int64_t> solution, int num_violations) {
+    SharedSolutionRepository<int64_t>::Solution sol;
+    sol.rank = num_violations;
+    sol.variable_values = std::move(solution);
+    Add(sol);
+  }
 };
 
 // Set of partly filled solutions. They are meant to be finished by some lns
@@ -187,17 +218,6 @@ class SharedIncompleteSolutionManager {
   int64_t num_added_ ABSL_GUARDED_BY(mutex_) = 0;
   mutable int64_t num_queried_ ABSL_GUARDED_BY(mutex_) = 0;
 };
-
-// Used by FillSolveStatsInResponse() to extract statistic to put in a
-// CpSolverResponse. The callbacks registered here are supposed to only modify
-// the statistic fields, nothing else.
-struct CpSolverResponseStatisticCallbacks {
-  std::vector<std::function<void(CpSolverResponse*)>> callbacks;
-};
-
-// Get the solve statistics from the associated model classes and fills the
-// response with them.
-void FillSolveStatsInResponse(Model* model, CpSolverResponse* response);
 
 // Manages the global best response kept by the solver. This class is
 // responsible for logging the progress of the solutions and bounds as they are
@@ -242,6 +262,15 @@ class SharedResponseManager {
   // solution returned by GetResponse().
   void AddFinalResponsePostprocessor(
       std::function<void(CpSolverResponse*)> postprocessor);
+
+  // Similar to the one above, but this one has access to the local model used
+  // to create the response. It can thus extract statistics and fill them.
+  void AddStatisticsPostprocessor(
+      std::function<void(Model*, CpSolverResponse*)> postprocessor);
+
+  // Calls all registered AddStatisticsPostprocessor() with the given model on
+  // the given response.
+  void FillSolveStatsInResponse(Model* model, CpSolverResponse* response);
 
   // Adds a callback that will be called on each new solution (for
   // satisfiability problem) or each improving new solution (for an optimization
@@ -328,9 +357,11 @@ class SharedResponseManager {
 
   // Reads the new solution from the response and update our state. For an
   // optimization problem, we only do something if the solution is strictly
-  // improving.
-  void NewSolution(absl::Span<const int64_t> solution_values,
-                   const std::string& solution_info, Model* model = nullptr);
+  // improving. Returns a shared pointer to the solution that was potentially
+  // stored in the repository.
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+  NewSolution(absl::Span<const int64_t> solution_values,
+              const std::string& solution_info, Model* model = nullptr);
 
   // Changes the solution to reflect the fact that the "improving" problem is
   // infeasible. This means that if we have a solution, we have proven
@@ -459,6 +490,8 @@ class SharedResponseManager {
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::function<void(CpSolverResponse*)>> final_postprocessors_
       ABSL_GUARDED_BY(mutex_);
+  std::vector<std::function<void(Model*, CpSolverResponse*)>>
+      statistics_postprocessors_ ABSL_GUARDED_BY(mutex_);
 
   // Dump prefix.
   std::string dump_prefix_;
@@ -495,9 +528,9 @@ class SharedBoundsManager {
   // manager. The manager will compare these bounds changes against its
   // global state, and incorporate the improving ones.
   void ReportPotentialNewBounds(const std::string& worker_name,
-                                const std::vector<int>& variables,
-                                const std::vector<int64_t>& new_lower_bounds,
-                                const std::vector<int64_t>& new_upper_bounds);
+                                absl::Span<const int> variables,
+                                absl::Span<const int64_t> new_lower_bounds,
+                                absl::Span<const int64_t> new_upper_bounds);
 
   // If we solved a small independent component of the full problem, then we can
   // in most situation fix the solution on this subspace.
@@ -505,9 +538,11 @@ class SharedBoundsManager {
   // Note that because there can be more than one optimal solution on an
   // independent subproblem, it is important to do that in a locked fashion, and
   // reject future incompatible fixing.
-  void FixVariablesFromPartialSolution(
-      const std::vector<int64_t>& solution,
-      const std::vector<int>& variables_to_fix);
+  //
+  // Note that this do not work with symmetries. And for now we don't call it
+  // when this is the case.
+  void FixVariablesFromPartialSolution(absl::Span<const int64_t> solution,
+                                       absl::Span<const int> variables_to_fix);
 
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed
@@ -529,7 +564,7 @@ class SharedBoundsManager {
   void Synchronize();
 
   void LogStatistics(SolverLogger* logger);
-  int NumBoundsExported(const std::string& worker_name);
+  int NumBoundsExported(absl::string_view worker_name);
 
   // If non-empty, we will check that all bounds update contains this solution.
   // Note that this might fail once we reach optimality and we might have wrong
@@ -561,7 +596,21 @@ class SharedBoundsManager {
   std::vector<int64_t> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
   std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
-  absl::btree_map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
+
+  // We track the number of bounds exported by each solver, and the "extra"
+  // bounds pushed due to symmetries.
+  struct Counters {
+    int64_t num_exported = 0;
+    int64_t num_symmetric = 0;
+  };
+  absl::btree_map<std::string, Counters> bounds_exported_
+      ABSL_GUARDED_BY(mutex_);
+
+  // Symmetry info.
+  bool has_symmetry_ = false;
+  std::vector<int> var_to_representative_;  // Identity if not touched.
+  std::vector<int> var_to_orbit_index_;
+  CompactVectorVector<int, int> orbits_;
 
   std::vector<int64_t> debug_solution_;
   std::string dump_prefix_;
@@ -589,7 +638,7 @@ class SharedBoundsManager {
 class UniqueClauseStream {
  public:
   static constexpr int kMinClauseSize = 3;
-  static constexpr int kMaxClauseSize = 8;
+  static constexpr int kMaxClauseSize = 32;
   // Export 4KiB of clauses per batch.
   static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
   // Bound the total literals we buffer, approximately enforced so shorter
@@ -704,7 +753,7 @@ class SharedClausesManager {
 
   // Ids are used to identify which worker is exporting/importing clauses.
   int RegisterNewId();
-  void SetWorkerNameForId(int id, const std::string& worker_name);
+  void SetWorkerNameForId(int id, absl::string_view worker_name);
 
   // A worker can add or remove clauses from its own clause set.
   // Retains ownership of the returned ClauseFilter.
@@ -774,7 +823,7 @@ int SharedSolutionRepository<ValueType>::NumSolutions() const {
 }
 
 template <typename ValueType>
-typename SharedSolutionRepository<ValueType>::Solution
+std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetSolution(int i) const {
   absl::MutexLock mutex_lock(&mutex_);
   ++num_queried_;
@@ -785,24 +834,48 @@ template <typename ValueType>
 int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_GT(solutions_.size(), 0);
-  return solutions_[0].rank;
+  return solutions_[0]->rank;
+}
+
+template <typename ValueType>
+std::vector<std::shared_ptr<
+    const typename SharedSolutionRepository<ValueType>::Solution>>
+SharedSolutionRepository<ValueType>::GetBestNSolutions(int n) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  // Sorted and unique.
+  DCHECK(absl::c_is_sorted(
+      solutions_,
+      [](const std::shared_ptr<const Solution>& a,
+         const std::shared_ptr<const Solution>& b) { return *a < *b; }));
+  DCHECK(absl::c_adjacent_find(solutions_,
+                               [](const std::shared_ptr<const Solution>& a,
+                                  const std::shared_ptr<const Solution>& b) {
+                                 return *a == *b;
+                               }) == solutions_.end());
+  std::vector<std::shared_ptr<const Solution>> result;
+  const int num_solutions = std::min(static_cast<int>(solutions_.size()), n);
+  result.reserve(num_solutions);
+  for (int i = 0; i < num_solutions; ++i) {
+    result.push_back(solutions_[i]);
+  }
+  return result;
 }
 
 template <typename ValueType>
 ValueType SharedSolutionRepository<ValueType>::GetVariableValueInSolution(
     int var_index, int solution_index) const {
   absl::MutexLock mutex_lock(&mutex_);
-  return solutions_[solution_index].variable_values[var_index];
+  return solutions_[solution_index]->variable_values[var_index];
 }
 
 // TODO(user): Experiments on the best distribution.
 template <typename ValueType>
-typename SharedSolutionRepository<ValueType>::Solution
+std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     absl::BitGenRef random) const {
   absl::MutexLock mutex_lock(&mutex_);
   ++num_queried_;
-  const int64_t best_rank = solutions_[0].rank;
+  const int64_t best_rank = solutions_[0]->rank;
 
   // As long as we have solution with the best objective that haven't been
   // explored too much, we select one uniformly. Otherwise, we select a solution
@@ -816,9 +889,9 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
   // Select all the best solution with a low enough selection count.
   tmp_indices_.clear();
   for (int i = 0; i < solutions_.size(); ++i) {
-    const auto& solution = solutions_[i];
-    if (solution.rank == best_rank &&
-        solution.num_selected <= kExplorationThreshold) {
+    std::shared_ptr<const Solution> solution = solutions_[i];
+    if (solution->rank == best_rank &&
+        solution->num_selected <= kExplorationThreshold) {
       tmp_indices_.push_back(i);
     }
   }
@@ -829,16 +902,22 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
   } else {
     index = tmp_indices_[absl::Uniform<int>(random, 0, tmp_indices_.size())];
   }
-  solutions_[index].num_selected++;
+  solutions_[index]->num_selected++;
   return solutions_[index];
 }
 
 template <typename ValueType>
-void SharedSolutionRepository<ValueType>::Add(const Solution& solution) {
-  if (num_solutions_to_keep_ <= 0) return;
-  absl::MutexLock mutex_lock(&mutex_);
-  ++num_added_;
-  new_solutions_.push_back(solution);
+std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
+SharedSolutionRepository<ValueType>::Add(Solution solution) {
+  std::shared_ptr<Solution> solution_ptr =
+      std::make_shared<Solution>(std::move(solution));
+  if (num_solutions_to_keep_ <= 0) return std::move(solution_ptr);
+  {
+    absl::MutexLock mutex_lock(&mutex_);
+    ++num_added_;
+    new_solutions_.push_back(solution_ptr);
+  }
+  return solution_ptr;
 }
 
 template <typename ValueType>
@@ -854,15 +933,17 @@ void SharedSolutionRepository<ValueType>::Synchronize() {
   // existing solutions.
   //
   // TODO(user): Introduce a notion of orthogonality to diversify the pool?
-  gtl::STLStableSortAndRemoveDuplicates(&solutions_);
+  gtl::STLStableSortAndRemoveDuplicates(
+      &solutions_, [](const std::shared_ptr<Solution>& a,
+                      const std::shared_ptr<Solution>& b) { return *a < *b; });
   if (solutions_.size() > num_solutions_to_keep_) {
     solutions_.resize(num_solutions_to_keep_);
   }
 
   if (!solutions_.empty()) {
     VLOG(2) << "Solution pool update:" << " num_solutions=" << solutions_.size()
-            << " min_rank=" << solutions_[0].rank
-            << " max_rank=" << solutions_.back().rank;
+            << " min_rank=" << solutions_[0]->rank
+            << " max_rank=" << solutions_.back()->rank;
   }
 
   num_synchronization_++;

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -32,11 +33,12 @@
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -54,7 +56,7 @@
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, cp_model_debug_postsolve, false,
-          "DEBUG ONLY. When set to true, the mappin_model.proto will contains "
+          "DEBUG ONLY. When set to true, the mapping_model.proto will contains "
           "file:line of the code that created that constraint. This is helpful "
           "for debugging postsolve");
 
@@ -77,60 +79,61 @@ int PresolveContext::NewIntVar(const Domain& domain) {
 }
 
 int PresolveContext::NewIntVarWithDefinition(
-    const Domain& domain,
-    absl::Span<const std::pair<int, int64_t>> definition) {
+    const Domain& domain, absl::Span<const std::pair<int, int64_t>> definition,
+    bool append_constraint_to_mapping_model) {
+  if (domain.Size() == 1) {
+    UpdateRuleStats("TODO new_var_definition : use boolean equation");
+  }
+
   const int new_var = NewIntVar(domain);
 
-  // We only fill the hint of the new variable if all the variable involved
-  // in its definition have a value.
-  if (hint_is_loaded_) {
-    int64_t new_value = 0;
-    for (const auto [var, coeff] : definition) {
-      CHECK_GE(var, 0);
-      CHECK_LE(var, hint_.size());
-      if (!hint_has_value_[var]) return new_var;
-      new_value += coeff * hint_[var];
-    }
-    hint_has_value_[new_var] = true;
-    hint_[new_var] = new_value;
+  // Create new linear constraint new_var = definition.
+  // TODO(user): When we encounter overflow (rare), we still create a variable.
+  auto* new_linear =
+      append_constraint_to_mapping_model
+          ? NewMappingConstraint(__FILE__, __LINE__)->mutable_linear()
+          : working_model->add_constraints()->mutable_linear();
+  for (const auto [var, coeff] : definition) {
+    new_linear->add_vars(var);
+    new_linear->add_coeffs(coeff);
   }
+  new_linear->add_vars(new_var);
+  new_linear->add_coeffs(-1);
+  new_linear->add_domain(0);
+  new_linear->add_domain(0);
+  if (PossibleIntegerOverflow(*working_model, new_linear->vars(),
+                              new_linear->coeffs())) {
+    UpdateRuleStats("TODO new_var_definition : possible overflow.");
+    if (append_constraint_to_mapping_model) {
+      mapping_model->mutable_constraints()->RemoveLast();
+    } else {
+      working_model->mutable_constraints()->RemoveLast();
+    }
+    return -1;
+  }
+  if (!append_constraint_to_mapping_model) {
+    UpdateNewConstraintsVariableUsage();
+  }
+
+  solution_crush_.SetVarToLinearExpression(new_var, definition);
   return new_var;
 }
 
-int PresolveContext::NewBoolVar() { return NewIntVar(Domain(0, 1)); }
+int PresolveContext::NewBoolVar(absl::string_view source) {
+  UpdateRuleStats(absl::StrCat("new_bool: ", source));
+  return NewIntVar(Domain(0, 1));
+}
 
 int PresolveContext::NewBoolVarWithClause(absl::Span<const int> clause) {
-  const int new_var = NewBoolVar();
-  if (hint_is_loaded_) {
-    bool all_have_hint = true;
-    for (const int literal : clause) {
-      const int var = PositiveRef(literal);
-      if (!hint_has_value_[var]) {
-        all_have_hint = false;
-        continue;
-      }
-      if (RefIsPositive(literal)) {
-        if (hint_[var] == 1) {
-          hint_has_value_[new_var] = true;
-          hint_[new_var] = 1;
-          break;
-        }
-      } else {
-        if (hint_[var] == 0) {
-          hint_has_value_[new_var] = true;
-          hint_[new_var] = 1;
-          break;
-        }
-      }
-    }
+  const int new_var = NewBoolVar("with clause");
+  solution_crush_.SetVarToClause(new_var, clause);
+  return new_var;
+}
 
-    // If there all literal where hinted and at zero, we set the hint of
-    // new_var to zero, otherwise we leave it unassigned.
-    if (all_have_hint && !hint_has_value_[new_var]) {
-      hint_has_value_[new_var] = true;
-      hint_[new_var] = 0;
-    }
-  }
+int PresolveContext::NewBoolVarWithConjunction(
+    absl::Span<const int> conjunction) {
+  const int new_var = NewBoolVar("with conjunction");
+  solution_crush_.SetVarToConjunction(new_var, conjunction);
   return new_var;
 }
 
@@ -138,6 +141,7 @@ int PresolveContext::GetTrueLiteral() {
   if (!true_literal_is_defined_) {
     true_literal_is_defined_ = true;
     true_literal_ = NewIntVar(Domain(1));
+    solution_crush_.SetVarToConjunction(true_literal_, {});
   }
   return true_literal_;
 }
@@ -165,56 +169,66 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   FillDomainInProto(domain, mutable_linear);
 }
 
+void PresolveContext::AddImplyInDomain(int b, const LinearExpressionProto& expr,
+                                       const Domain& domain) {
+  ConstraintProto* const imply = working_model->add_constraints();
+
+  imply->mutable_enforcement_literal()->Resize(1, b);
+  LinearConstraintProto* mutable_linear = imply->mutable_linear();
+  FillDomainInProto(domain, mutable_linear);
+  AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
+}
+
 bool PresolveContext::DomainIsEmpty(int ref) const {
-  return domains[PositiveRef(ref)].IsEmpty();
+  return domains_[PositiveRef(ref)].IsEmpty();
 }
 
 bool PresolveContext::IsFixed(int ref) const {
-  DCHECK_LT(PositiveRef(ref), domains.size());
+  DCHECK_LT(PositiveRef(ref), domains_.size());
   DCHECK(!DomainIsEmpty(ref));
-  return domains[PositiveRef(ref)].IsFixed();
+  return domains_[PositiveRef(ref)].IsFixed();
 }
 
 bool PresolveContext::CanBeUsedAsLiteral(int ref) const {
   const int var = PositiveRef(ref);
-  return domains[var].Min() >= 0 && domains[var].Max() <= 1;
+  return domains_[var].Min() >= 0 && domains_[var].Max() <= 1;
 }
 
 bool PresolveContext::LiteralIsTrue(int lit) const {
   DCHECK(CanBeUsedAsLiteral(lit));
   if (RefIsPositive(lit)) {
-    return domains[lit].Min() == 1;
+    return domains_[lit].Min() == 1;
   } else {
-    return domains[PositiveRef(lit)].Max() == 0;
+    return domains_[PositiveRef(lit)].Max() == 0;
   }
 }
 
 bool PresolveContext::LiteralIsFalse(int lit) const {
   DCHECK(CanBeUsedAsLiteral(lit));
   if (RefIsPositive(lit)) {
-    return domains[lit].Max() == 0;
+    return domains_[lit].Max() == 0;
   } else {
-    return domains[PositiveRef(lit)].Min() == 1;
+    return domains_[PositiveRef(lit)].Min() == 1;
   }
 }
 
 int64_t PresolveContext::MinOf(int ref) const {
   DCHECK(!DomainIsEmpty(ref));
-  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
-                            : -domains[PositiveRef(ref)].Max();
+  return RefIsPositive(ref) ? domains_[PositiveRef(ref)].Min()
+                            : -domains_[PositiveRef(ref)].Max();
 }
 
 int64_t PresolveContext::MaxOf(int ref) const {
   DCHECK(!DomainIsEmpty(ref));
-  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Max()
-                            : -domains[PositiveRef(ref)].Min();
+  return RefIsPositive(ref) ? domains_[PositiveRef(ref)].Max()
+                            : -domains_[PositiveRef(ref)].Min();
 }
 
 int64_t PresolveContext::FixedValue(int ref) const {
   DCHECK(!DomainIsEmpty(ref));
   CHECK(IsFixed(ref));
-  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
-                            : -domains[PositiveRef(ref)].Min();
+  return RefIsPositive(ref) ? domains_[PositiveRef(ref)].Min()
+                            : -domains_[PositiveRef(ref)].Min();
 }
 
 int64_t PresolveContext::MinOf(const LinearExpressionProto& expr) const {
@@ -255,6 +269,18 @@ int64_t PresolveContext::FixedValue(const LinearExpressionProto& expr) const {
   for (int i = 0; i < expr.vars_size(); ++i) {
     if (expr.coeffs(i) == 0) continue;
     result += expr.coeffs(i) * FixedValue(expr.vars(i));
+  }
+  return result;
+}
+
+std::optional<int64_t> PresolveContext::FixedValueOrNullopt(
+    const LinearExpressionProto& expr) const {
+  int64_t result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    if (expr.coeffs(i) == 0) continue;
+    const Domain& domain = domains_[expr.vars(i)];
+    if (!domain.IsFixed()) return std::nullopt;
+    result += expr.coeffs(i) * domain.Min();
   }
   return result;
 }
@@ -391,7 +417,8 @@ bool PresolveContext::VariableIsUnique(int ref) const {
 }
 
 bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
-  return !keep_all_feasible_solutions && VariableIsUnique(ref);
+  return !params_.keep_all_feasible_solutions_in_presolve() &&
+         VariableIsUnique(ref);
 }
 
 bool PresolveContext::VariableWithCostIsUnique(int ref) const {
@@ -408,8 +435,8 @@ bool PresolveContext::VariableWithCostIsUnique(int ref) const {
 bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return !keep_all_feasible_solutions && !objective_domain_is_constraining_ &&
-         VariableWithCostIsUnique(var);
+  return !params_.keep_all_feasible_solutions_in_presolve() &&
+         !objective_domain_is_constraining_ && VariableWithCostIsUnique(var);
 }
 
 // Here, even if the variable is equivalent to others, if its affine defining
@@ -466,18 +493,18 @@ bool PresolveContext::VariableIsOnlyUsedInLinear1AndOneExtraConstraint(
 Domain PresolveContext::DomainOf(int ref) const {
   Domain result;
   if (RefIsPositive(ref)) {
-    result = domains[ref];
+    result = domains_[ref];
   } else {
-    result = domains[PositiveRef(ref)].Negation();
+    result = domains_[PositiveRef(ref)].Negation();
   }
   return result;
 }
 
 bool PresolveContext::DomainContains(int ref, int64_t value) const {
   if (!RefIsPositive(ref)) {
-    return domains[PositiveRef(ref)].Contains(-value);
+    return domains_[PositiveRef(ref)].Contains(-value);
   }
-  return domains[ref].Contains(value);
+  return domains_[ref].Contains(value);
 }
 
 bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
@@ -486,6 +513,11 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   if (IsFixed(expr)) {
     return FixedValue(expr) == value;
   }
+  if (value > MaxOf(expr)) return false;
+  if (value < MinOf(expr)) return false;
+
+  // We assume expression is validated for overflow initially, and the code
+  // below should be overflow safe.
   if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
   return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
 }
@@ -496,35 +528,29 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   const int var = PositiveRef(ref);
 
   if (RefIsPositive(ref)) {
-    if (domains[var].IsIncludedIn(domain)) {
+    if (domains_[var].IsIncludedIn(domain)) {
       return true;
     }
-    domains[var] = domains[var].IntersectionWith(domain);
+    domains_[var] = domains_[var].IntersectionWith(domain);
   } else {
     const Domain temp = domain.Negation();
-    if (domains[var].IsIncludedIn(temp)) {
+    if (domains_[var].IsIncludedIn(temp)) {
       return true;
     }
-    domains[var] = domains[var].IntersectionWith(temp);
+    domains_[var] = domains_[var].IntersectionWith(temp);
   }
 
   if (domain_modified != nullptr) {
     *domain_modified = true;
   }
   modified_domains.Set(var);
-  if (domains[var].IsEmpty()) {
+  if (domains_[var].IsEmpty()) {
     return NotifyThatModelIsUnsat(
         absl::StrCat("var #", ref, " as empty domain after intersecting with ",
                      domain.ToString()));
   }
 
-#ifdef CHECK_HINT
-  if (!domains[var].Contains(hint_[var])) {
-    LOG(FATAL) << "Hint with value " << hint_[var]
-               << " infeasible when changing domain of " << var << " to "
-               << domain[var];
-  }
-#endif
+  solution_crush_.SetOrUpdateVarToDomain(var, domains_[var]);
 
   // Propagate the domain of the representative right away.
   // Note that the recursive call should only by one level deep.
@@ -533,7 +559,8 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   return IntersectDomainWith(r.representative,
                              DomainOf(var)
                                  .AdditionWith(Domain(-r.offset))
-                                 .InverseMultiplicationBy(r.coeff));
+                                 .InverseMultiplicationBy(r.coeff),
+                             /*domain_modified=*/nullptr);
 }
 
 ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
@@ -598,7 +625,15 @@ void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   if (!is_todo) num_presolve_operations += num_times;
 
   if (logger_->LoggingIsEnabled()) {
-    VLOG(is_todo ? 3 : 2) << num_presolve_operations << " : " << name;
+    if (VLOG_IS_ON(1)) {
+      int level = is_todo ? 3 : 2;
+      if (std::abs(num_presolve_operations -
+                   params_.debug_max_num_presolve_operations()) <= 100) {
+        level = 1;
+      }
+      VLOG(level) << num_presolve_operations << " : " << name;
+    }
+
     stats_by_rule_name_[name] += num_times;
   }
 }
@@ -650,7 +685,10 @@ void PresolveContext::AddVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (!ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (working_model->has_solution_hint() &&
+      solution_crush_.SolutionIsLoaded() &&
+      !ConstraintIsFeasible(*working_model, ct,
+                            solution_crush_.GetVarValues())) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -706,7 +744,10 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
   // This is helpful to debug a wrong presolve that kill a feasible solution.
-  if (!ConstraintIsFeasible(*working_model, ct, hint_)) {
+  if (working_model->has_solution_hint() &&
+      solution_crush_.SolutionIsLoaded() &&
+      !ConstraintIsFeasible(*working_model, ct,
+                            solution_crush_.GetVarValues())) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
                << ct.ShortDebugString();
   }
@@ -714,6 +755,7 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
 }
 
 bool PresolveContext::ConstraintVariableGraphIsUpToDate() const {
+  if (is_unsat_) return true;  // We do not care in this case.
   return constraint_to_vars_.size() == working_model->constraints_size();
 }
 
@@ -727,6 +769,26 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
   for (int c = old_size; c < new_size; ++c) {
     AddVariableUsage(c);
   }
+}
+
+bool PresolveContext::HasUnusedAffineVariable() const {
+  if (is_unsat_) return false;  // We do not care in this case.
+  if (params_.keep_all_feasible_solutions_in_presolve()) return false;
+
+  // We can leave non-optimal stuff around if we reach the time limit.
+  if (time_limit_->LimitReached()) return false;
+
+  for (int var = 0; var < working_model->variables_size(); ++var) {
+    if (VariableIsNotUsedAnymore(var)) continue;
+    if (IsFixed(var)) continue;
+    const auto& constraints = VarToConstraints(var);
+    if (constraints.size() == 1 &&
+        constraints.contains(kAffineRelationConstraint) &&
+        GetAffineRelation(var).representative != var) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // TODO(user): Also test var_to_constraints_ !!
@@ -837,36 +899,29 @@ bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
   return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
 }
 
-bool PresolveContext::PropagateAffineRelation(int ref) {
-  const int var = PositiveRef(ref);
+bool PresolveContext::PropagateAffineRelation(int var) {
+  DCHECK(RefIsPositive(var));
   const AffineRelation::Relation r = GetAffineRelation(var);
   if (r.representative == var) return true;
   return PropagateAffineRelation(var, r.representative, r.coeff, r.offset);
 }
 
-bool PresolveContext::PropagateAffineRelation(int ref, int rep, int64_t coeff,
+bool PresolveContext::PropagateAffineRelation(int var, int rep, int64_t coeff,
                                               int64_t offset) {
-  DCHECK(!DomainIsEmpty(ref));
+  DCHECK(RefIsPositive(var));
+  DCHECK(RefIsPositive(rep));
+  DCHECK(!DomainIsEmpty(var));
   DCHECK(!DomainIsEmpty(rep));
-  if (!RefIsPositive(rep)) {
-    rep = NegatedRef(rep);
-    coeff = -coeff;
-  }
-  if (!RefIsPositive(ref)) {
-    ref = NegatedRef(ref);
-    offset = -offset;
-    coeff = -coeff;
-  }
 
   // Propagate domains both ways.
   // var = coeff * rep + offset
-  if (!IntersectDomainWith(rep, DomainOf(ref)
+  if (!IntersectDomainWith(rep, DomainOf(var)
                                     .AdditionWith(Domain(-offset))
                                     .InverseMultiplicationBy(coeff))) {
     return false;
   }
   if (!IntersectDomainWith(
-          ref,
+          var,
           DomainOf(rep).MultiplicationBy(coeff).AdditionWith(Domain(offset)))) {
     return false;
   }
@@ -878,6 +933,28 @@ void PresolveContext::RemoveAllVariablesFromAffineRelationConstraint() {
   for (auto& ref_map : var_to_constraints_) {
     ref_map.erase(kAffineRelationConstraint);
   }
+}
+
+void PresolveContext::RemoveNonRepresentativeAffineVariableIfUnused(int var) {
+  if (!VariableIsUnique(var)) {
+    return;
+  }
+  const AffineRelation::Relation r = GetAffineRelation(var);
+  if (var == r.representative) {
+    return;
+  }
+  DCHECK(VarToConstraints(var).contains(kAffineRelationConstraint));
+  DCHECK(!VariableIsNotUsedAnymore(r.representative));
+  // Add relation with current representative to the mapping model.
+  ConstraintProto* ct = NewMappingConstraint(__FILE__, __LINE__);
+  auto* arg = ct->mutable_linear();
+  arg->add_vars(var);
+  arg->add_coeffs(1);
+  arg->add_vars(r.representative);
+  arg->add_coeffs(-r.coeff);
+  arg->add_domain(r.offset);
+  arg->add_domain(r.offset);
+  RemoveVariableFromAffineRelation(var);
 }
 
 // We only call that for a non representative variable that is only used in
@@ -922,10 +999,11 @@ void PresolveContext::CanonicalizeVariable(int ref) {
   UpdateNewConstraintsVariableUsage();
 }
 
-bool PresolveContext::ScaleFloatingPointObjective() {
-  DCHECK(working_model->has_floating_point_objective());
-  DCHECK(!working_model->has_objective());
-  const auto& objective = working_model->floating_point_objective();
+bool ScaleFloatingPointObjective(const SatParameters& params,
+                                 SolverLogger* logger, CpModelProto* proto) {
+  DCHECK(proto->has_floating_point_objective());
+  DCHECK(!proto->has_objective());
+  const auto& objective = proto->floating_point_objective();
   std::vector<std::pair<int, double>> terms;
   for (int i = 0; i < objective.vars_size(); ++i) {
     DCHECK(RefIsPositive(objective.vars(i)));
@@ -933,12 +1011,9 @@ bool PresolveContext::ScaleFloatingPointObjective() {
   }
   const double offset = objective.offset();
   const bool maximize = objective.maximize();
-  working_model->clear_floating_point_objective();
+  proto->clear_floating_point_objective();
 
-  // We need the domains up to date before scaling.
-  WriteVariableDomainsToProto();
-  return ScaleAndSetObjective(params_, terms, offset, maximize, working_model,
-                              logger_);
+  return ScaleAndSetObjective(params, terms, offset, maximize, proto, logger);
 }
 
 bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
@@ -1005,65 +1080,44 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   return true;
 }
 
-bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
+bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
                                           int64_t offset,
                                           bool debug_no_recursion) {
-  CHECK_NE(coeff, 0);
+  DCHECK(RefIsPositive(var_x));
+  DCHECK(RefIsPositive(var_y));
+  DCHECK_NE(coeff, 0);
   if (is_unsat_) return false;
 
-  if (hint_is_loaded_) {
-    const int var_x = PositiveRef(ref_x);
-    const int var_y = PositiveRef(ref_y);
-    if (!hint_has_value_[var_y] && hint_has_value_[var_x]) {
-      hint_has_value_[var_y] = true;
-      const int64_t x_mult = RefIsPositive(ref_x) ? 1 : -1;
-      const int64_t y_mult = RefIsPositive(ref_y) ? 1 : -1;
-      hint_[var_y] = (hint_[var_x] * x_mult - offset) / coeff * y_mult;
-      if (hint_[var_y] * coeff * y_mult + offset != hint_[var_x] * x_mult) {
-        // TODO(user): Do we implement a rounding to closest instead of
-        // routing towards 0.
-        UpdateRuleStats(
-            "Warning: hint didn't satisfy affine relation and was corrected");
-      }
-    }
-  }
-
-#ifdef CHECK_HINT
-  const int64_t vx =
-      RefIsPositive(ref_x) ? hint_[ref_x] : -hint_[NegatedRef(ref_x)];
-  const int64_t vy =
-      RefIsPositive(ref_y) ? hint_[ref_y] : -hint_[NegatedRef(ref_y)];
-  if (vx != vy * coeff + offset) {
-    LOG(FATAL) << "Affine relation incompatible with hint: " << vx
-               << " != " << vy << " * " << coeff << " + " << offset;
-  }
-#endif
+  // Sets var_y's value to the solution of
+  //   "var_x's value - coeff * var_y's value = offset".
+  solution_crush_.SetVarToLinearConstraintSolution(1, {var_x, var_y},
+                                                   {1, -coeff}, offset);
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
-  // fixed but that is not propagated to ref_x or ref_y and this causes issues.
-  if (!PropagateAffineRelation(ref_x)) return false;
-  if (!PropagateAffineRelation(ref_y)) return false;
-  if (!PropagateAffineRelation(ref_x, ref_y, coeff, offset)) return false;
+  // fixed but that is not propagated to var_x or var_y and this causes issues.
+  if (!PropagateAffineRelation(var_x)) return false;
+  if (!PropagateAffineRelation(var_y)) return false;
+  if (!PropagateAffineRelation(var_x, var_y, coeff, offset)) return false;
 
-  if (IsFixed(ref_x)) {
-    const int64_t lhs = DomainOf(ref_x).FixedValue() - offset;
+  if (IsFixed(var_x)) {
+    const int64_t lhs = DomainOf(var_x).FixedValue() - offset;
     if (lhs % std::abs(coeff) != 0) {
       return NotifyThatModelIsUnsat();
     }
     UpdateRuleStats("affine: fixed");
-    return IntersectDomainWith(ref_y, Domain(lhs / coeff));
+    return IntersectDomainWith(var_y, Domain(lhs / coeff));
   }
 
-  if (IsFixed(ref_y)) {
-    const int64_t value_x = DomainOf(ref_y).FixedValue() * coeff + offset;
+  if (IsFixed(var_y)) {
+    const int64_t value_x = DomainOf(var_y).FixedValue() * coeff + offset;
     UpdateRuleStats("affine: fixed");
-    return IntersectDomainWith(ref_x, Domain(value_x));
+    return IntersectDomainWith(var_x, Domain(value_x));
   }
 
   // If both are already in the same class, we need to make sure the relations
   // are compatible.
-  const AffineRelation::Relation rx = GetAffineRelation(ref_x);
-  const AffineRelation::Relation ry = GetAffineRelation(ref_y);
+  const AffineRelation::Relation rx = GetAffineRelation(var_x);
+  const AffineRelation::Relation ry = GetAffineRelation(var_y);
   if (rx.representative == ry.representative) {
     // x = rx.coeff * rep + rx.offset;
     // y = ry.coeff * rep + ry.offset;
@@ -1084,18 +1138,18 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
     if (!IntersectDomainWith(rx.representative, Domain(unique_value))) {
       return false;
     }
-    if (!IntersectDomainWith(ref_x,
+    if (!IntersectDomainWith(var_x,
                              Domain(unique_value * rx.coeff + rx.offset))) {
       return false;
     }
-    if (!IntersectDomainWith(ref_y,
+    if (!IntersectDomainWith(var_y,
                              Domain(unique_value * ry.coeff + ry.offset))) {
       return false;
     }
     return true;
   }
 
-  // ref_x = coeff * ref_y + offset;
+  // var_x = coeff * var_y + offset;
   // rx.coeff * rep_x + rx.offset =
   //    coeff * (ry.coeff * rep_y + ry.offset) + offset
   //
@@ -1106,7 +1160,7 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   CHECK_NE(a, 0);
   CHECK_NE(b, 0);
   {
-    const int64_t gcd = MathUtil::GCD64(std::abs(a), std::abs(b));
+    const int64_t gcd = std::gcd(std::abs(a), std::abs(b));
     if (gcd != 1) {
       a /= gcd;
       b /= gcd;
@@ -1125,7 +1179,7 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
     }
 
     // Re-add the relation now that a will resolve to a multiple of b.
-    return StoreAffineRelation(ref_x, ref_y, coeff, offset,
+    return StoreAffineRelation(var_x, var_y, coeff, offset,
                                /*debug_no_recursion=*/true);
   }
 
@@ -1185,8 +1239,8 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   // as possible and not all call site do it.
   //
   // TODO(user): I am not sure this is needed given the propagation above.
-  if (!PropagateAffineRelation(ref_x)) return false;
-  if (!PropagateAffineRelation(ref_y)) return false;
+  if (!PropagateAffineRelation(var_x)) return false;
+  if (!PropagateAffineRelation(var_y)) return false;
 
   // These maps should only contains representative, so only need to remap
   // either x or y.
@@ -1204,7 +1258,8 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   return true;
 }
 
-bool PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
+ABSL_MUST_USE_RESULT bool PresolveContext::StoreBooleanEqualityRelation(
+    int ref_a, int ref_b) {
   if (is_unsat_) return false;
 
   CHECK(!VariableWasRemoved(ref_a));
@@ -1215,7 +1270,10 @@ bool PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   CHECK(CanBeUsedAsLiteral(ref_b));
 
   if (ref_a == ref_b) return true;
-  if (ref_a == NegatedRef(ref_b)) return IntersectDomainWith(ref_a, Domain(0));
+  if (ref_a == NegatedRef(ref_b)) {
+    is_unsat_ = true;
+    return false;
+  }
 
   const int var_a = PositiveRef(ref_a);
   const int var_b = PositiveRef(ref_b);
@@ -1278,11 +1336,21 @@ std::string PresolveContext::AffineRelationDebugString(int ref) const {
                       RefDebugString(r.representative), " + ", r.offset);
 }
 
+void PresolveContext::ResetAfterCopy() {
+  domains_.clear();
+  modified_domains.ClearAll();
+  var_with_reduced_small_degree.ClearAll();
+  var_to_constraints_.clear();
+  var_to_num_linear1_.clear();
+  objective_map_.clear();
+  DCHECK(!solution_crush_.SolutionIsLoaded());
+}
+
 // Create the internal structure for any new variables in working_model.
 void PresolveContext::InitializeNewDomains() {
   const int new_size = working_model->variables().size();
-  DCHECK_GE(new_size, domains.size());
-  if (domains.size() == new_size) return;
+  DCHECK_GE(new_size, domains_.size());
+  if (domains_.size() == new_size) return;
 
   modified_domains.Resize(new_size);
   var_with_reduced_small_degree.Resize(new_size);
@@ -1291,35 +1359,46 @@ void PresolveContext::InitializeNewDomains() {
 
   // We mark the domain as modified so we will look at these new variable during
   // our presolve loop.
-  for (int i = domains.size(); i < new_size; ++i) {
+  const int old_size = domains_.size();
+  domains_.resize(new_size);
+  for (int i = old_size; i < new_size; ++i) {
     modified_domains.Set(i);
-    domains.emplace_back(ReadDomainFromProto(working_model->variables(i)));
-    if (domains.back().IsEmpty()) {
+    domains_[i] = ReadDomainFromProto(working_model->variables(i));
+    if (domains_[i].IsEmpty()) {
       is_unsat_ = true;
       return;
     }
   }
 
   // We resize the hint too even if not loaded.
-  hint_.resize(new_size, 0);
-  hint_has_value_.resize(new_size, false);
+  solution_crush_.Resize(new_size);
 }
 
 void PresolveContext::LoadSolutionHint() {
-  CHECK(!hint_is_loaded_);
-  hint_is_loaded_ = true;
+  absl::flat_hash_map<int, int64_t> hint_values;
   if (working_model->has_solution_hint()) {
     const auto hint_proto = working_model->solution_hint();
-    const int num_terms = hint_proto.vars().size();
-    for (int i = 0; i < num_terms; ++i) {
+    int num_changes = 0;
+    for (int i = 0; i < hint_proto.vars().size(); ++i) {
       const int var = hint_proto.vars(i);
       if (!RefIsPositive(var)) break;  // Abort. Shouldn't happen.
-      if (var < hint_.size()) {
-        hint_has_value_[var] = true;
-        hint_[var] = hint_proto.values(i);
+      const int64_t hint_value = hint_proto.values(i);
+      const int64_t clamped_hint_value = DomainOf(var).ClosestValue(hint_value);
+      if (clamped_hint_value != hint_value) {
+        ++num_changes;
+      }
+      hint_values[var] = clamped_hint_value;
+    }
+    if (num_changes > 0) {
+      UpdateRuleStats("hint: moved var hint within its domain.", num_changes);
+    }
+    for (int i = 0; i < working_model->variables().size(); ++i) {
+      if (!hint_values.contains(i) && IsFixed(i)) {
+        hint_values[i] = FixedValue(i);
       }
     }
   }
+  solution_crush_.LoadSolution(working_model->variables().size(), hint_values);
 }
 
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
@@ -1360,8 +1439,9 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     max_literal = max_it->second.Get(this);
     if (min_literal != NegatedRef(max_literal)) {
       UpdateRuleStats("variables with 2 values: merge encoding literals");
-      StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal));
-      if (is_unsat_) return;
+      if (!StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal))) {
+        return;
+      }
     }
     min_literal = GetLiteralRepresentative(min_literal);
     max_literal = GetLiteralRepresentative(max_literal);
@@ -1378,7 +1458,8 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     var_map[var_min] = SavedLiteral(min_literal);
   } else {
     UpdateRuleStats("variables with 2 values: create encoding literal");
-    max_literal = NewBoolVar();
+    max_literal = NewBoolVar("var with 2 values");
+    solution_crush_.MaybeSetLiteralToValueEncoding(max_literal, var, var_max);
     min_literal = NegatedRef(max_literal);
     var_map[var_min] = SavedLiteral(min_literal);
     var_map[var_max] = SavedLiteral(max_literal);
@@ -1408,16 +1489,28 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   }
 }
 
-void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
+bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
                                                      int64_t value,
                                                      bool add_constraints) {
-  CHECK(RefIsPositive(var));
-  CHECK(!VariableWasRemoved(literal));
-  CHECK(!VariableWasRemoved(var));
+  DCHECK(RefIsPositive(var));
+  DCHECK(!VariableWasRemoved(literal));
+  DCHECK(!VariableWasRemoved(var));
+  if (is_unsat_) return false;
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
 
   // The code below is not 100% correct if this is not the case.
-  DCHECK(DomainOf(var).Contains(value));
+  if (!DomainOf(var).Contains(value)) {
+    return SetLiteralToFalse(literal);
+  }
+  if (DomainOf(var).IsFixed()) {
+    return SetLiteralToTrue(literal);
+  }
+  if (LiteralIsTrue(literal)) {
+    return IntersectDomainWith(var, Domain(value));
+  }
+  if (LiteralIsFalse(literal)) {
+    return IntersectDomainWith(var, Domain(value).Complement());
+  }
 
   // If an encoding already exist, make the two Boolean equals.
   const auto [it, inserted] =
@@ -1435,59 +1528,109 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
       if (literal != previous_literal) {
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
-        StoreBooleanEqualityRelation(literal, previous_literal);
+        if (!StoreBooleanEqualityRelation(literal, previous_literal)) {
+          return false;
+        }
       }
     }
-    return;
+    return true;
   }
 
   if (DomainOf(var).Size() == 2) {
-    // TODO(user): There is a bug here if the var == value was not in the
-    // domain, it will just be ignored.
-    CanonicalizeDomainOfSizeTwo(var);
-  } else {
-    VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
-            << ") == " << value;
-    eq_half_encoding_[var][value].insert(literal);
-    neq_half_encoding_[var][value].insert(NegatedRef(literal));
-    if (add_constraints) {
-      UpdateRuleStats("variables: add encoding constraint");
-      AddImplyInDomain(literal, var, Domain(value));
-      AddImplyInDomain(NegatedRef(literal), var, Domain(value).Complement());
+    if (!CanBeUsedAsLiteral(var)) {
+      // TODO(user): There is a bug here if the var == value was not in the
+      // domain, it will just be ignored.
+      CanonicalizeDomainOfSizeTwo(var);
+      if (is_unsat_) return false;
+
+      if (IsFixed(var)) {
+        if (FixedValue(var) == value) {
+          return SetLiteralToTrue(literal);
+        } else {
+          return SetLiteralToFalse(literal);
+        }
+      }
+
+      // We should have a Boolean now.
+      CanonicalizeEncoding(&var, &value);
     }
+
+    CHECK(CanBeUsedAsLiteral(var));
+    if (value == 0) {
+      if (!StoreBooleanEqualityRelation(literal, NegatedRef(var))) {
+        return false;
+      }
+    } else {
+      CHECK_EQ(value, 1);
+      if (!StoreBooleanEqualityRelation(literal, var)) return false;
+    }
+  } else if (add_constraints) {
+    UpdateRuleStats("variables: add encoding constraint");
+    AddImplyInDomain(literal, var, Domain(value));
+    AddImplyInDomain(NegatedRef(literal), var, Domain(value).Complement());
   }
+
+  // The canonicalization might have proven UNSAT.
+  return !ModelIsUnsat();
 }
 
 bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
                                                  int64_t value, bool imply_eq) {
   if (is_unsat_) return false;
   DCHECK(RefIsPositive(var));
-  if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
-    return SetLiteralToFalse(literal);
-  }
 
   // Creates the linking sets on demand.
   // Insert the enforcement literal in the half encoding map.
-  auto& direct_set =
-      imply_eq ? eq_half_encoding_[var][value] : neq_half_encoding_[var][value];
-  if (!direct_set.insert(literal).second) return false;  // Already there.
-
+  auto& direct_set = imply_eq ? eq_half_encoding_ : neq_half_encoding_;
+  auto insert_result = direct_set.insert({{literal, var}, value});
+  if (!insert_result.second) {
+    if (insert_result.first->second != value && imply_eq) {
+      UpdateRuleStats("variables: detect half reified incompatible value");
+      return SetLiteralToFalse(literal);
+    }
+    return false;  // Already there.
+  }
+  if (imply_eq) {
+    // We are adding b => x=v. Check if we already have ~b => x=u.
+    auto negated_encoding = direct_set.find({NegatedRef(literal), var});
+    if (negated_encoding != direct_set.end()) {
+      if (negated_encoding->second == value) {
+        UpdateRuleStats(
+            "variables: both boolean and its negation imply same equality");
+        if (!IntersectDomainWith(var, Domain(value))) {
+          return false;
+        }
+      } else {
+        const int64_t other_value = negated_encoding->second;
+        // b => var == value
+        // !b => var == other_value
+        // var = (value - other_value) * b + other_value
+        UpdateRuleStats(
+            "variables: both boolean and its negation fix the same variable");
+        if (RefIsPositive(literal)) {
+          StoreAffineRelation(var, literal, value - other_value, other_value);
+        } else {
+          StoreAffineRelation(var, NegatedRef(literal), other_value - value,
+                              value);
+        }
+      }
+    }
+  }
   VLOG(2) << "Collect lit(" << literal << ") implies var(" << var
           << (imply_eq ? ") == " : ") != ") << value;
   UpdateRuleStats("variables: detect half reified value encoding");
 
   // Note(user): We don't expect a lot of literals in these sets, so doing
   // a scan should be okay.
-  auto& other_set =
-      imply_eq ? neq_half_encoding_[var][value] : eq_half_encoding_[var][value];
-  for (const int other : other_set) {
-    if (GetLiteralRepresentative(other) != NegatedRef(literal)) continue;
-
+  auto& other_set = imply_eq ? neq_half_encoding_ : eq_half_encoding_;
+  auto it = other_set.find({NegatedRef(literal), var});
+  if (it != other_set.end() && it->second == value) {
     UpdateRuleStats("variables: detect fully reified value encoding");
     const int imply_eq_literal = imply_eq ? literal : NegatedRef(literal);
-    InsertVarValueEncodingInternal(imply_eq_literal, var, value,
-                                   /*add_constraints=*/false);
-    break;
+    if (!InsertVarValueEncodingInternal(imply_eq_literal, var, value,
+                                        /*add_constraints=*/false)) {
+      return false;
+    }
   }
 
   return true;
@@ -1507,23 +1650,22 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
-  InsertVarValueEncodingInternal(literal, var, value, /*add_constraints=*/true);
-
-  if (hint_is_loaded_) {
-    const int bool_var = PositiveRef(literal);
-    DCHECK(RefIsPositive(var));
-    if (!hint_has_value_[bool_var] && hint_has_value_[var]) {
-      const int64_t bool_value = hint_[var] == value ? 1 : 0;
-      hint_has_value_[bool_var] = true;
-      hint_[bool_var] = RefIsPositive(literal) ? bool_value : 1 - bool_value;
-    }
+  if (!InsertVarValueEncodingInternal(literal, var, value,
+                                      /*add_constraints=*/true)) {
+    return false;
   }
+
+  eq_half_encoding_.insert({{literal, var}, value});
+  neq_half_encoding_.insert({{NegatedRef(literal), var}, value});
+
+  solution_crush_.MaybeSetLiteralToValueEncoding(literal, var, value);
   return true;
 }
 
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
                                                     int64_t value) {
   if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
+    // The literal cannot be true.
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
@@ -1532,7 +1674,10 @@ bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
 
 bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
                                                      int64_t value) {
-  if (!CanonicalizeEncoding(&var, &value)) return false;
+  if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
+    // The constraint is trivial.
+    return false;
+  }
   literal = GetLiteralRepresentative(literal);
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
 }
@@ -1541,21 +1686,35 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
   if (!CanonicalizeEncoding(&ref, &value)) return false;
-  const absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[ref];
-  const auto it = var_map.find(value);
-  if (it != var_map.end()) {
-    if (VariableWasRemoved(it->second.Get(this))) return false;
+  DCHECK(RefIsPositive(ref));
+
+  if (!DomainOf(ref).Contains(value)) {
+    if (literal != nullptr) *literal = GetFalseLiteral();
+    return true;
+  }
+
+  if (CanBeUsedAsLiteral(ref)) {
     if (literal != nullptr) {
-      *literal = it->second.Get(this);
+      *literal = value == 1 ? ref : NegatedRef(ref);
     }
     return true;
   }
-  return false;
+
+  const auto first_it = encoding_.find(ref);
+  if (first_it == encoding_.end()) return false;
+  const auto it = first_it->second.find(value);
+  if (it == first_it->second.end()) return false;
+
+  if (VariableWasRemoved(it->second.Get(this))) return false;
+  if (literal != nullptr) {
+    *literal = it->second.Get(this);
+  }
+  return true;
 }
 
 bool PresolveContext::IsFullyEncoded(int ref) const {
   const int var = PositiveRef(ref);
-  const int64_t size = domains[var].Size();
+  const int64_t size = domains_[var].Size();
   if (size <= 2) return true;
   const auto& it = encoding_.find(var);
   return it == encoding_.end() ? false : size <= it->second.size();
@@ -1575,8 +1734,13 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   const int var = ref;
 
   // Returns the false literal if the value is not in the domain.
-  if (!domains[var].Contains(value)) {
+  if (!domains_[var].Contains(value)) {
     return GetFalseLiteral();
+  }
+
+  // Return the literal itself if this was called or canonicalized to a Boolean.
+  if (CanBeUsedAsLiteral(ref)) {
+    return value == 1 ? ref : NegatedRef(ref);
   }
 
   // Returns the associated literal if already present.
@@ -1594,7 +1758,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   }
 
   // Special case for fixed domains.
-  if (domains[var].Size() == 1) {
+  if (domains_[var].Size() == 1) {
     const int true_literal = GetTrueLiteral();
     var_map[value] = SavedLiteral(true_literal);
     return true_literal;
@@ -1603,7 +1767,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   // Special case for domains of size 2.
   const int64_t var_min = MinOf(var);
   const int64_t var_max = MaxOf(var);
-  if (domains[var].Size() == 2) {
+  if (domains_[var].Size() == 2) {
     // Checks if the other value is already encoded.
     const int64_t other_value = value == var_min ? var_max : var_min;
     auto other_it = var_map.find(other_value);
@@ -1627,15 +1791,19 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
       var_map[0] = SavedLiteral(NegatedRef(representative));
       return value == 1 ? representative : NegatedRef(representative);
     } else {
-      const int literal = NewBoolVar();
-      InsertVarValueEncoding(literal, var, var_max);
+      const int literal = NewBoolVar("integer encoding");
+      if (!InsertVarValueEncoding(literal, var, var_max)) {
+        return GetFalseLiteral();
+      }
       const int representative = GetLiteralRepresentative(literal);
       return value == var_max ? representative : NegatedRef(representative);
     }
   }
 
-  const int literal = NewBoolVar();
-  InsertVarValueEncoding(literal, var, value);
+  const int literal = NewBoolVar("integer encoding");
+  if (!InsertVarValueEncoding(literal, var, value)) {
+    return GetFalseLiteral();
+  }
   return GetLiteralRepresentative(literal);
 }
 
@@ -1691,27 +1859,40 @@ void PresolveContext::ReadObjectiveFromProto() {
   // summing an objective partial sum. Because of the model validation, this
   // shouldn't overflow, and we make sure it stays this way.
   objective_overflow_detection_ = std::abs(objective_integer_before_offset_);
+  int64_t fixed_terms = 0;
 
   objective_map_.clear();
   for (int i = 0; i < obj.vars_size(); ++i) {
-    const int ref = obj.vars(i);
+    int var = obj.vars(i);
+    int64_t coeff = obj.coeffs(i);
+
+    // TODO(user): There should be no negative reference here !
+    if (!RefIsPositive(var)) {
+      var = NegatedRef(var);
+      coeff = -coeff;
+    }
+
+    // We remove fixed terms as we read the objective. This can help a lot on
+    // LNS problems with a large proportions of fixed terms.
+    if (IsFixed(var)) {
+      fixed_terms += FixedValue(var) * coeff;
+      continue;
+    }
+
     const int64_t var_max_magnitude =
-        std::max(std::abs(MinOf(ref)), std::abs(MaxOf(ref)));
-
-    // Skipping var fixed to zero allow to avoid some overflow in situation
-    // were we can deal with it.
-    if (var_max_magnitude == 0) continue;
-
-    const int64_t coeff = obj.coeffs(i);
+        std::max(std::abs(MinOf(var)), std::abs(MaxOf(var)));
     objective_overflow_detection_ += var_max_magnitude * std::abs(coeff);
 
-    const int var = PositiveRef(ref);
-    objective_map_[var] += RefIsPositive(ref) ? coeff : -coeff;
+    objective_map_[var] += RefIsPositive(var) ? coeff : -coeff;
     if (objective_map_[var] == 0) {
       RemoveVariableFromObjective(var);
     } else {
       var_to_constraints_[var].insert(kObjectiveConstraint);
     }
+  }
+
+  if (fixed_terms != 0) {
+    AddToObjectiveOffset(fixed_terms);
   }
 }
 
@@ -1723,7 +1904,9 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   // If a variable only appear in objective, we can fix it!
   // Note that we don't care if it was in affine relation, because if none
   // of the relations are left, then we can still fix it.
-  if (!keep_all_feasible_solutions && !objective_domain_is_constraining_ &&
+  if (params_.cp_model_presolve() &&
+      !params_.keep_all_feasible_solutions_in_presolve() &&
+      !objective_domain_is_constraining_ &&
       ConstraintVariableGraphIsUpToDate() &&
       var_to_constraints_[var].size() == 1 &&
       var_to_constraints_[var].contains(kObjectiveConstraint)) {
@@ -1749,6 +1932,10 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   if (r.representative == var) return true;
 
   RemoveVariableFromObjective(var);
+
+  // After we removed the variable from the objective it might have become a
+  // unused affine. Add it to the list of variables to check so we reprocess it.
+  modified_domains.Set(var);
 
   // Do the substitution.
   AddToObjectiveOffset(coeff * r.offset);
@@ -1800,7 +1987,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   for (const auto& entry : tmp_entries_) {
     const int var = entry.first;
     const int64_t coeff = entry.second;
-    gcd = MathUtil::GCD64(gcd, std::abs(coeff));
+    gcd = std::gcd(gcd, std::abs(coeff));
     implied_domain =
         implied_domain.AdditionWith(DomainOf(var).MultiplicationBy(coeff))
             .RelaxIfTooComplex();
@@ -2161,8 +2348,17 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   const auto& it = reified_precedences_cache_.find(key);
   if (it != reified_precedences_cache_.end()) return it->second;
 
-  const int result = NewBoolVar();
+  const int result = NewBoolVar("precedences");
   reified_precedences_cache_[key] = result;
+
+  solution_crush_.SetVarToReifiedPrecedenceLiteral(result, time_i, time_j,
+                                                   active_i, active_j);
+
+  if (!IsFixed(time_i) && !IsFixed(time_j)) {
+    DCHECK(!PossibleIntegerOverflow(*working_model,
+                                    {time_i.vars(0), time_j.vars(0)},
+                                    {-time_i.coeffs(0), time_j.coeffs(0)}));
+  }
 
   // result => (time_i <= time_j) && active_i && active_j.
   ConstraintProto* const lesseq = working_model->add_constraints();
@@ -2186,7 +2382,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
   if (!LiteralIsTrue(active_i)) {
     AddImplication(result, active_i);
   }
-  if (!LiteralIsTrue(active_j)) {
+  if (!LiteralIsTrue(active_j) && active_i != active_j) {
     AddImplication(result, active_j);
   }
 
@@ -2208,7 +2404,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
     if (!LiteralIsTrue(active_i)) {
       greater->add_enforcement_literal(active_i);
     }
-    if (!LiteralIsTrue(active_j)) {
+    if (!LiteralIsTrue(active_j) && active_i != active_j) {
       greater->add_enforcement_literal(active_j);
     }
     CanonicalizeLinearConstraint(greater);
@@ -2294,12 +2490,17 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   // Update the domain in the current CpModelProto.
   context->WriteVariableDomainsToProto();
   const CpModelProto& model_proto = *(context->working_model);
-
   // Adapt some of the parameters during this probing phase.
-  auto* local_param = local_model->GetOrCreate<SatParameters>();
-  *local_param = context->params();
-  local_param->set_use_implied_bounds(false);
+  SatParameters local_params = context->params();
+  local_params.set_use_implied_bounds(false);
+  return LoadModelForPresolve(model_proto, std::move(local_params), context,
+                              local_model, "probing");
+}
 
+bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
+                          PresolveContext* context, Model* local_model,
+                          absl::string_view name_for_logging) {
+  *local_model->GetOrCreate<SatParameters>() = std::move(params);
   local_model->GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(
       context->time_limit());
   local_model->Register<ModelRandomGenerator>(context->random());
@@ -2315,15 +2516,16 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   ExtractEncoding(model_proto, local_model);
   auto* sat_solver = local_model->GetOrCreate<SatSolver>();
   if (sat_solver->ModelIsUnsat()) {
-    return context->NotifyThatModelIsUnsat("Initial loading for probing");
+    return context->NotifyThatModelIsUnsat(
+        absl::StrCat("Initial loading for ", name_for_logging));
   }
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
     CHECK(LoadConstraint(ct, local_model));
     if (sat_solver->ModelIsUnsat()) {
       return context->NotifyThatModelIsUnsat(
-          absl::StrCat("after loading constraint during probing ",
-                       ProtobufShortDebugString(ct)));
+          absl::StrCat("after loading constraint during ", name_for_logging,
+                       " ", ProtobufShortDebugString(ct)));
     }
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
@@ -2336,11 +2538,11 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   return true;
 }
 
-template <typename ProtoWithVarsAndCoeffs>
+template <typename ProtoWithVarsAndCoeffs, typename PresolveContextT>
 bool CanonicalizeLinearExpressionInternal(
     absl::Span<const int> enforcements, ProtoWithVarsAndCoeffs* proto,
     int64_t* offset, std::vector<std::pair<int, int64_t>>* tmp_terms,
-    PresolveContext* context) {
+    PresolveContextT* context) {
   // First regroup the terms on the same variables and sum the fixed ones.
   //
   // TODO(user): Add a quick pass to skip most of the work below if the
@@ -2433,6 +2635,29 @@ bool CanonicalizeLinearExpressionInternal(
   return remapped || proto->vars().size() < old_size;
 }
 
+namespace {
+bool CanonicalizeLinearExpressionNoContext(absl::Span<const int> enforcements,
+                                           LinearConstraintProto* proto) {
+  struct DummyContext {
+    bool IsFixed(int /*var*/) const { return false; }
+    int64_t FixedValue(int /*var*/) const { return 0; }
+    AffineRelation::Relation GetAffineRelation(int var) const {
+      return {var, 1, 0};
+    }
+    void UpdateRuleStats(absl::string_view /*rule*/) const {}
+  } dummy_context;
+  int64_t offset = 0;
+  std::vector<std::pair<int, int64_t>> tmp_terms;
+  const bool result = CanonicalizeLinearExpressionInternal(
+      enforcements, proto, &offset, &tmp_terms, &dummy_context);
+  if (offset != 0) {
+    FillDomainInProto(ReadDomainFromProto(*proto).AdditionWith(Domain(-offset)),
+                      proto);
+  }
+  return result;
+}
+}  // namespace
+
 bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
   int64_t offset = 0;
   const bool result = CanonicalizeLinearExpressionInternal(
@@ -2474,6 +2699,81 @@ ConstraintProto* PresolveContext::NewMappingConstraint(
     new_ct->set_name(absl::StrCat("#c", c, " ", file, ":", line));
   }
   return new_ct;
+}
+
+void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
+                                          const PresolveContext* context,
+                                          std::vector<int>* variable_mapping,
+                                          CpModelProto* mini_model) {
+  mini_model->Clear();
+
+  *mini_model->add_constraints() = ct;
+
+  absl::flat_hash_map<int, int> inverse_interval_map;
+  for (const int i : UsedIntervals(ct)) {
+    auto [it, inserted] =
+        inverse_interval_map.insert({i, mini_model->constraints_size()});
+    if (inserted) {
+      const ConstraintProto& itv_ct = context->working_model->constraints(i);
+      *mini_model->add_constraints() = itv_ct;
+
+      // Now add end = start + size for the interval. This is not strictly
+      // necessary but it makes the presolve more powerful.
+      ConstraintProto* linear = mini_model->add_constraints();
+      *linear->mutable_enforcement_literal() = itv_ct.enforcement_literal();
+      LinearConstraintProto* mutable_linear = linear->mutable_linear();
+      const IntervalConstraintProto& itv = itv_ct.interval();
+
+      mutable_linear->add_domain(0);
+      mutable_linear->add_domain(0);
+      AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
+      AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
+      AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
+      CanonicalizeLinearExpressionNoContext(itv_ct.enforcement_literal(),
+                                            mutable_linear);
+    }
+  }
+
+  absl::flat_hash_map<int, int> inverse_variable_map;
+  for (const ConstraintProto& cur_ct : mini_model->constraints()) {
+    for (const int v : UsedVariables(cur_ct)) {
+      auto [it, inserted] =
+          inverse_variable_map.insert({v, mini_model->variables_size()});
+      if (inserted) {
+        FillDomainInProto(context->DomainOf(v), mini_model->add_variables());
+      }
+    }
+  }
+
+  variable_mapping->resize(inverse_variable_map.size());
+  for (const auto& [k, v] : inverse_variable_map) {
+    (*variable_mapping)[v] = k;
+  }
+  const auto mapping_function = [&inverse_variable_map](int* i) {
+    const bool is_positive = RefIsPositive(*i);
+    const int positive_ref = is_positive ? *i : NegatedRef(*i);
+
+    const auto it = inverse_variable_map.find(positive_ref);
+    DCHECK(it != inverse_variable_map.end());
+    *i = is_positive ? it->second : NegatedRef(it->second);
+  };
+  const auto interval_mapping_function = [&inverse_interval_map](int* i) {
+    const auto it = inverse_interval_map.find(*i);
+    DCHECK(it != inverse_interval_map.end());
+    *i = it->second;
+  };
+  for (ConstraintProto& ct : *mini_model->mutable_constraints()) {
+    ApplyToAllVariableIndices(mapping_function, &ct);
+    ApplyToAllLiteralIndices(mapping_function, &ct);
+    ApplyToAllIntervalIndices(interval_mapping_function, &ct);
+  }
+}
+
+bool PresolveContext::DebugTestHintFeasibility() {
+  WriteVariableDomainsToProto();
+  const absl::Span<const int64_t> hint = solution_crush_.GetVarValues();
+  if (hint.size() != working_model->variables().size()) return false;
+  return SolutionIsFeasible(*working_model, hint);
 }
 
 }  // namespace sat

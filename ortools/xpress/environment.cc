@@ -48,6 +48,7 @@ std::function<int(char* buffer, int maxbytes)> XPRSgetlicerrmsg = nullptr;
 std::function<int(int* p_i, char* p_c)> XPRSlicense = nullptr;
 std::function<int(char* banner)> XPRSgetbanner = nullptr;
 std::function<int(char* version)> XPRSgetversion = nullptr;
+std::function<int(XPRSprob prob, const char* probname)> XPRSsetprobname = nullptr;
 std::function<int(XPRSprob prob, int control)> XPRSsetdefaultcontrol = nullptr;
 std::function<int(XPRSprob prob, int reason)> XPRSinterrupt = nullptr;
 std::function<int(XPRSprob prob, int control, int value)> XPRSsetintcontrol = nullptr;
@@ -69,6 +70,8 @@ std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRSgetrhsr
 std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb = nullptr;
 std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub = nullptr;
 std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef = nullptr;
+std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals = nullptr;
+std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts = nullptr;
 std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSdelrows = nullptr;
 std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], const int start[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSaddcols = nullptr;
@@ -91,6 +94,8 @@ std::function<int(XPRSprob prob, double x[], double slack[])> XPRSgetmipsol = nu
 std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[])> XPRSchgobj = nullptr;
 std::function<int(XPRSprob prob, int row, int col, double coef)> XPRSchgcoef = nullptr;
 std::function<int(XPRSprob prob, int ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef = nullptr;
+std::function<int(XPRSprob prob, XPRSint64 ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef64 = nullptr;
+std::function<int(XPRSprob prob, int ncoefs, const int objqcol1[], const int objqcol2[], const double objqcoef[])> XPRSchgmqobj = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rhs[])> XPRSchgrhs = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rng[])> XPRSchgrhsrange = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const char rowtype[])> XPRSchgrowtype = nullptr;
@@ -99,6 +104,7 @@ std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void*
 std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize = nullptr;
+std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int* solstatus)> XPRSoptimize = nullptr;
 
 void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   // This was generated with the parse_header_xpress.py script.
@@ -113,6 +119,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSlicense, "XPRSlicense");
   xpress_dynamic_library->GetFunction(&XPRSgetbanner, "XPRSgetbanner");
   xpress_dynamic_library->GetFunction(&XPRSgetversion, "XPRSgetversion");
+  xpress_dynamic_library->GetFunction(&XPRSsetprobname, "XPRSsetprobname");
   xpress_dynamic_library->GetFunction(&XPRSsetdefaultcontrol, "XPRSsetdefaultcontrol");
   xpress_dynamic_library->GetFunction(&XPRSinterrupt, "XPRSinterrupt");
   xpress_dynamic_library->GetFunction(&XPRSsetintcontrol, "XPRSsetintcontrol");
@@ -133,6 +140,8 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetlb, "XPRSgetlb");
   xpress_dynamic_library->GetFunction(&XPRSgetub, "XPRSgetub");
   xpress_dynamic_library->GetFunction(&XPRSgetcoef, "XPRSgetcoef");
+  xpress_dynamic_library->GetFunction(&XPRSgetduals, "XPRSgetduals");
+  xpress_dynamic_library->GetFunction(&XPRSgetredcosts, "XPRSgetredcosts");
   xpress_dynamic_library->GetFunction(&XPRSaddrows, "XPRSaddrows");
   xpress_dynamic_library->GetFunction(&XPRSdelrows, "XPRSdelrows");
   xpress_dynamic_library->GetFunction(&XPRSaddcols, "XPRSaddcols");
@@ -155,6 +164,8 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSchgobj, "XPRSchgobj");
   xpress_dynamic_library->GetFunction(&XPRSchgcoef, "XPRSchgcoef");
   xpress_dynamic_library->GetFunction(&XPRSchgmcoef, "XPRSchgmcoef");
+  xpress_dynamic_library->GetFunction(&XPRSchgmcoef64, "XPRSchgmcoef64");
+  xpress_dynamic_library->GetFunction(&XPRSchgmqobj, "XPRSchgmqobj");
   xpress_dynamic_library->GetFunction(&XPRSchgrhs, "XPRSchgrhs");
   xpress_dynamic_library->GetFunction(&XPRSchgrhsrange, "XPRSchgrhsrange");
   xpress_dynamic_library->GetFunction(&XPRSchgrowtype, "XPRSchgrowtype");
@@ -163,6 +174,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSaddcbmessage, "XPRSaddcbmessage");
   xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
   xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
+  xpress_dynamic_library->GetFunction(&XPRSoptimize, "XPRSoptimize");
 }
 // clang-format on
 

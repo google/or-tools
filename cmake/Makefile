@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -143,7 +143,9 @@ help:
 	@echo -e "\t${BOLD}clean_vms${RESET}: Remove ALL vagrant box."
 	@echo
 	@echo -e "\tWith ${BOLD}<vm>${RESET}:"
-	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD)"
+	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD 14)"
+	@echo -e "\t\t${BOLD}netbsd${RESET} (NetBSD 9)"
+	@echo -e "\t\t${BOLD}openbsd${RESET} (OpenBSD 7)"
 	@echo -e "\te.g. 'make freebsd_cpp'"
 	@echo
 	@echo -e "\t${BOLD}glop_<stage>${RESET}: Build Glop <stage> using an Ubuntu:rolling docker image."
@@ -630,7 +632,7 @@ TOOLCHAIN_STAGES := env devel toolchain build test
 define toolchain-stage-target =
 #$$(info STAGE: $1)
 #$$(info Create targets: toolchain_$1 $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))).)
-targets_toolchain_$1 = $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
+targets_toolchain_$1 := $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: toolchain_$1 $$(targets_toolchain_$1)
 toolchain_$1: $$(targets_toolchain_$1)
 $$(targets_toolchain_$1): toolchain_%_$1: docker/toolchain/Dockerfile
@@ -643,7 +645,7 @@ $$(targets_toolchain_$1): toolchain_%_$1: docker/toolchain/Dockerfile
  ..
 
 #$$(info Create targets: save_toolchain_$1 $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))) (debug).)
-save_targets_toolchain_$1 = $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
+save_targets_toolchain_$1 := $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: save_toolchain_$1 $$(save_targets_toolchain_$1)
 save_toolchain_$1: $$(save_targets_toolchain_$1)
 $$(save_targets_toolchain_$1): save_toolchain_%_$1: cache/%/docker_$1.tar
@@ -656,7 +658,7 @@ cache/%/docker_$1.tar: %_$1
 sh_targets_toolchain_$1 = $(addprefix sh_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: $$(sh_targets_toolchain_$1)
 $$(sh_targets_toolchain_$1): sh_toolchain_%_$1: %_$1
-	${DOCKER_RUN_CMD} -it --name ${IMAGE}_toolchain_$$*_$1 ${IMAGE}:toolchain_$$*_$1
+	${DOCKER_RUN_CMD} -it --name ${PROJECT}_toolchain_$$*_$1 ${IMAGE}:toolchain_$$*_$1
 
 #$$(info Create targets: clean_toolchain_$1 $(addprefix clean_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))).)
 clean_targets_toolchain_$1 = $(addprefix clean_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
@@ -698,7 +700,7 @@ cache/web/docker_$1.tar: web_$1
 #$$(info Create target: sh_web_$1 (debug).)
 .PHONY: sh_web_$1
 sh_web_$1: web_$1
-	${DOCKER_RUN_CMD} -it --name ${IMAGE}_web_$1 ${IMAGE}:web_$1
+	${DOCKER_RUN_CMD} -it --name ${PROJECT}_web_$1 ${IMAGE}:web_$1
 
 #$$(info Create target: clean_web_$1.)
 .PHONY: clean_web_$1
@@ -717,30 +719,43 @@ clean_web: $(addprefix clean_web_, $(WEB_STAGES))
 #############
 ## VAGRANT ##
 #############
-VMS := freebsd
+VAGRANT_VMS := \
+ freebsd \
+ netbsd \
+ openbsd
 
-freebsd_targets = $(addprefix freebsd_, $(LANGUAGES))
-.PHONY: freebsd $(freebsd_targets)
-freebsd: $(freebsd_targets)
-$(freebsd_targets): freebsd_%: vagrant/freebsd/%/Vagrantfile
-	@cd vagrant/freebsd/$* && vagrant destroy -f
-	cd vagrant/freebsd/$* && vagrant box update
-	cd vagrant/freebsd/$* && vagrant up
+define make-vagrant-target =
+#$$(info VMS: $1)
+#$$(info Create target: $1_<LANG>.)
+$1_targets := $(addprefix $1_, $(LANGUAGES))
+.PHONY: $1 $$($1_targets)
+$1: $$($1_targets)
+$$($1_targets): $1_%: vagrant/$1/%/Vagrantfile
+	@cd vagrant/$1/$$* && vagrant destroy -f
+	cd vagrant/$1/$$* && vagrant box update
+	cd vagrant/$1/$$* && vagrant up
 
-# SSH to a freebsd_<lang> vagrant machine (debug).
-sh_freebsd_targets = $(addprefix sh_freebsd_, $(LANGUAGES))
-.PHONY: $(sh_freebsd_targets)
-$(sh_freebsd_targets): sh_freebsd_%:
-	cd vagrant/freebsd/$* && vagrant up
-	cd vagrant/freebsd/$* && vagrant ssh
+#$$(info Create targets: sh_$1_<lang> vagrant machine (debug).)
+sh_$1_targets := $(addprefix sh_$1_, $(LANGUAGES))
+.PHONY: $$(sh_$1_targets)
+$$(sh_$1_targets): sh_$1_%:
+	cd vagrant/$1/$$* && vagrant up
+	cd vagrant/$1/$$* && vagrant ssh
 
-# Clean FreeBSD vagrant machine
-clean_freebsd_targets = $(addprefix clean_freebsd_, $(LANGUAGES))
-.PHONY: clean_freebsd $(clean_freebsd_targets)
-clean_freebsd: $(clean_freebsd_targets)
-$(clean_freebsd_targets): clean_freebsd_%:
-	cd vagrant/freebsd/$* && vagrant destroy -f
-	-rm -rf vagrant/freebsd/$*/.vagrant
+#$$(info Create targets: clean_$1)
+clean_$1_targets := $(addprefix clean_$1_, $(LANGUAGES))
+.PHONY: clean_$1 $(clean_$1_targets)
+clean_$1: $$(clean_$1_targets)
+$$(clean_$1_targets): clean_$1_%:
+	cd vagrant/$1/$$* && vagrant destroy -f
+	-rm -rf vagrant/$1/$$*/.vagrant
+endef
+
+$(foreach vms,$(VAGRANT_VMS),$(eval $(call make-vagrant-target,$(vms))))
+
+## MERGE ##
+.PHONY: clean_vagrant
+clean_vagrant: $(addprefix clean_, $(VAGRANT_VMS))
 
 ##########
 ## GLOP ##
@@ -779,7 +794,7 @@ clean_glop: $(addprefix clean_glop_, $(STAGES))
 ## CLEAN ##
 ###########
 .PHONY: clean
-clean: clean_all clean_platforms clean_toolchains clean_web clean_freebsd clean_glop
+clean: clean_all clean_platforms clean_toolchains clean_web clean_vagrant clean_glop
 	docker container prune -f
 	docker image prune -f
 	-rmdir cache

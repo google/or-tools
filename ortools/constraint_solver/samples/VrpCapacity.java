@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -70,6 +71,9 @@ public final class VrpCapacity {
     long totalDistance = 0;
     long totalLoad = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
@@ -135,7 +139,8 @@ public final class VrpCapacity {
       int fromNode = manager.indexToNode(fromIndex);
       return data.demands[fromNode];
     });
-    routing.addDimensionWithVehicleCapacity(demandCallbackIndex, 0, // null capacity slack
+    boolean unused = routing.addDimensionWithVehicleCapacity(demandCallbackIndex,
+        0, // null capacity slack
         data.vehicleCapacities, // vehicle maximum capacities
         true, // start cumul to zero
         "Capacity");

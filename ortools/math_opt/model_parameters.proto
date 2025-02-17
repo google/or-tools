@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@ syntax = "proto3";
 
 package operations_research.math_opt;
 
+import "google/protobuf/duration.proto";
 import "ortools/math_opt/solution.proto";
 import "ortools/math_opt/sparse_containers.proto";
 
@@ -89,6 +90,15 @@ message ObjectiveParametersProto {
   //
   //  If set, must be nonnegative.
   optional double objective_degradation_relative_tolerance = 8;
+
+  // Maximum time a solver should spend on optimizing this particular objective
+  // (or infinite if not set).
+  //
+  // Note that this does not supersede the global time limit in
+  // SolveParametersProto.time_limit; both will be enforced when set.
+  //
+  // This value is not a hard limit, solve time may slightly exceed this value.
+  google.protobuf.Duration time_limit = 9;
 }
 
 // TODO(b/183628247): follow naming convention in fields below.

@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -38,6 +38,7 @@ if(UNIX AND NOT APPLE AND NOT (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD"))
     list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE32")
   endif()
 endif()
+list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
 
 # Find Python 3
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -361,6 +362,7 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/errors.py
     ortools/math_opt/python/expressions.py
     ortools/math_opt/python/hash_model_storage.py
+    ortools/math_opt/python/init_arguments.py
     ortools/math_opt/python/mathopt.py
     ortools/math_opt/python/message_callback.py
     ortools/math_opt/python/model.py
@@ -386,7 +388,7 @@ if(BUILD_MATH_OPT)
 endif()
 file(COPY
   ortools/sat/python/cp_model.py
-  ortools/sat/python/cp_model_helper.py
+  ortools/sat/python/cp_model_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 file(COPY
   ortools/sat/colab/flags.py
@@ -424,15 +426,182 @@ configure_file(
   ${PROJECT_BINARY_DIR}/python/LICENSE
   COPYONLY)
 
+set(is_windows "$<PLATFORM_ID:Windows>")
+set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
+
+set(need_unix_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
+set(need_windows_zlib_lib "$<AND:${is_windows},$<BOOL:${BUILD_ZLIB}>>")
+
+set(need_unix_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
+set(need_windows_absl_lib "$<AND:${is_windows},$<BOOL:${BUILD_absl}>>")
+
+set(need_unix_re2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_re2}>>")
+set(need_windows_re2_lib "$<AND:${is_windows},$<BOOL:${BUILD_re2}>>")
+
+set(need_unix_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
+set(need_windows_protobuf_lib "$<AND:${is_windows},$<BOOL:${BUILD_Protobuf}>>")
+
+set(need_unix_coinutils_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_CoinUtils}>>")
+set(need_unix_osi_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Osi}>>")
+set(need_unix_clp_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Clp}>>")
+set(need_unix_cgl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cgl}>>")
+set(need_unix_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
+
+set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
+set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
+
+set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
+set(need_unix_ortools_lib "$<AND:${is_not_windows},${is_ortools_shared}>")
+set(need_windows_ortools_lib "$<AND:${is_windows},${is_ortools_shared}>")
+
 add_custom_command(
   OUTPUT python/ortools_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove -f ortools_timestamp
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
-  # Don't need to copy static lib on Windows.
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
-   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
-   ${PYTHON_PROJECT}/.libs
+    $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
+    $<${need_unix_zlib_lib}:$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
+    $<${need_windows_zlib_lib}:$<TARGET_FILE:ZLIB::ZLIB>>
+    ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_absl}>,copy,true>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_optional_access>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_variant_access>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_functions>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_handle>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_info>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc32c>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_cord_state>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_cpu_detect>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::debugging_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::decode_rust_punycode>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::demangle_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::demangle_rust>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::die_if_null>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::examine_stack>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::exponential_biased>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_commandlineflag>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_commandlineflag_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_config>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_marshalling>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_parse>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_private_handle_accessor>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_program_name>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_reflection>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_usage>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_usage_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::graphcycles_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::hash>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::hashtablez_sampler>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::int128>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::kernel_timeout_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::leak_check>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_entry>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_flags>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_globals>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_initialize>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_check_op>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_conditions>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_fnmatch>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_format>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_globals>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_log_sink_set>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_message>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_nullguard>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_proto>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_severity>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_sink>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::low_level_hash>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::malloc_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_distributions>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_platform>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_pool_urbg>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes_impl>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_slow>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_seed_material>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_seed_gen_exception>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_seed_sequences>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_hash_set>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_logging_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::spinlock_wait>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::stacktrace>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::status>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::statusor>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::str_format_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strerror>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::string_view>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strings>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strings_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::symbolize>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::synchronization>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::throw_delegate>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::time>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::time_zone>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::utf8_for_code_point>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::vlog_config_internal>>
+    $<${need_windows_absl_lib}:$<TARGET_FILE:absl::abseil_dll>>
+    ${PYTHON_PROJECT}/.libs
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_re2}>,copy,true>
+    $<${need_unix_re2_lib}:$<TARGET_SONAME_FILE:re2::re2>>
+    $<${need_windows_re2_lib}:$<TARGET_FILE:re2::re2>>
+    ${PYTHON_PROJECT}/.libs
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
+    $<${need_unix_protobuf_lib}:$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
+    $<${need_unix_protobuf_lib}:$<TARGET_SONAME_FILE:utf8_validity>>
+    $<${need_windows_protobuf_lib}:$<TARGET_FILE:protobuf::libprotobuf>>
+    $<${need_windows_protobuf_lib}:$<TARGET_FILE:utf8_validity>>
+    ${PYTHON_PROJECT}/.libs
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_unix_coinutils_lib},copy,true>
+    $<${need_unix_coinutils_lib}:$<TARGET_SONAME_FILE:Coin::CoinUtils>>
+    ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_unix_osi_lib},copy,true>
+    $<${need_unix_osi_lib}:$<TARGET_SONAME_FILE:Coin::Osi>>
+    ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_unix_clp_lib},copy,true>
+    $<${need_unix_clp_lib}:$<TARGET_SONAME_FILE:Coin::Clp>>
+    $<${need_unix_clp_lib}:$<TARGET_SONAME_FILE:Coin::OsiClp>>
+    $<${need_unix_clp_lib}:$<TARGET_SONAME_FILE:Coin::ClpSolver>>
+    ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_unix_cgl_lib},copy,true>
+    $<${need_unix_cgl_lib}:$<TARGET_SONAME_FILE:Coin::Cgl>>
+    ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_unix_cbc_lib},copy,true>
+    $<${need_unix_cbc_lib}:$<TARGET_SONAME_FILE:Coin::Cbc>>
+    $<${need_unix_cbc_lib}:$<TARGET_SONAME_FILE:Coin::OsiCbc>>
+    $<${need_unix_cbc_lib}:$<TARGET_SONAME_FILE:Coin::CbcSolver>>
+    ${PYTHON_PROJECT}/.libs
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
+    $<${need_unix_highs_lib}:$<TARGET_SONAME_FILE:highs>>
+    $<${need_windows_highs_lib}:$<TARGET_FILE:highs>>
+    ${PYTHON_PROJECT}/.libs
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${is_ortools_shared},copy,true>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools>>
+    ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/ortools_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
@@ -463,15 +632,17 @@ add_custom_command(
    $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
-  COMMAND ${CMAKE_COMMAND} -E copy
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
    $<TARGET_FILE:math_opt_pybind11> ${PYTHON_PROJECT}/math_opt/core/python
-  COMMAND ${CMAKE_COMMAND} -E copy
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
    $<TARGET_FILE:status_py_extension_stub> ${PYTHON_PROJECT}/../pybind11_abseil
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
    $<$<TARGET_EXISTS:pdlp_pybind11>:$<TARGET_FILE:pdlp_pybind11>> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
+   $<TARGET_FILE:cp_model_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
   COMMAND ${CMAKE_COMMAND} -E copy
@@ -491,7 +662,7 @@ add_custom_command(
     model_builder_helper_pybind11
     math_opt_pybind11
     $<TARGET_NAME_IF_EXISTS:pdlp_pybind11>
-    swig_helper_pybind11
+    cp_model_helper_pybind11
     rcpsp_pybind11
     sorted_interval_list_pybind11
   WORKING_DIRECTORY python
@@ -528,7 +699,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.status --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.cp_model_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,11 +21,12 @@
 
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 CarpParser::CarpParser() { Initialize(); }
 
@@ -44,12 +45,12 @@ void CarpParser::Initialize() {
   section_ = METADATA;
 }
 
-bool CarpParser::LoadFile(const std::string& file_name) {
+bool CarpParser::LoadFile(absl::string_view file_name) {
   Initialize();
   return ParseFile(file_name);
 }
 
-bool CarpParser::ParseFile(const std::string& file_name) {
+bool CarpParser::ParseFile(absl::string_view file_name) {
   static auto section_headers = std::array<const char*, 12>({
       "NOMBRE",
       "COMENTARIO",
@@ -246,4 +247,4 @@ std::optional<int64_t> ParseNodeIndex(std::string_view text) {
   return {node - 1};
 }
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

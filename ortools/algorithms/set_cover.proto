@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,8 @@ import "ortools/util/int128.proto";
 option java_package = "com.google.ortools.algorithms";
 option java_multiple_files = true;
 
+// TODO(user): use uint64 instead of int32 for indices, as the solver
+// supports it.
 message SetCoverProto {
   message Subset {
     // The cost for using the given subset.
@@ -44,16 +46,21 @@ message SetCoverSolutionResponse {
   enum Status {
     // Undefined.
     UNDEFINED = 0;
+
     // The solver found the proven optimal solution.
     OPTIMAL = 1;
+
     // The solver had enough time to find some solution that satisfied all
     // constraints, but it did not reach the optimal.
     FEASIBLE = 2;
+
     // The model does not have any solution.
     INFEASIBLE = 3;
+
     // The model is invalid.
     INVALID = 4;
   }
+
   // For future use. TODO(user): Implement.
   optional Status status = 1;
 

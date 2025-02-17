@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -585,6 +585,9 @@ class Solver {
       double dual_step_size, double extrapolation_factor,
       const NextSolutionAndDelta& next_primal) const;
 
+  std::pair<double, double> ComputeMovementTerms(
+      const VectorXd& delta_primal, const VectorXd& delta_dual) const;
+
   double ComputeMovement(const VectorXd& delta_primal,
                          const VectorXd& delta_dual) const;
 
@@ -644,7 +647,8 @@ class Solver {
 
   void ResetAverageToCurrent();
 
-  void LogNumericalTermination() const;
+  void LogNumericalTermination(const Eigen::VectorXd& primal_delta,
+                               const Eigen::VectorXd& dual_delta) const;
 
   void LogInnerIterationLimitHit() const;
 
@@ -718,7 +722,8 @@ PreprocessSolver::PreprocessSolver(QuadraticProgram qp,
     : num_threads_(
           NumThreads(params.num_threads(), params.num_shards(), qp, *logger)),
       num_shards_(NumShards(num_threads_, params.num_shards())),
-      sharded_qp_(std::move(qp), num_threads_, num_shards_),
+      sharded_qp_(std::move(qp), num_threads_, num_shards_,
+                  params.scheduler_type(), nullptr),
       logger_(*logger) {}
 
 SolverResult ErrorSolverResult(const TerminationReason reason,
@@ -1257,7 +1262,7 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
   // set it for completeness.
   presolved_qp->objective_scaling_factor = glop_lp.objective_scaling_factor();
   sharded_qp_ = ShardedQuadraticProgram(std::move(*presolved_qp), num_threads_,
-                                        num_shards_);
+                                        num_shards_, params.scheduler_type());
   // A status of `INIT` means the preprocessor created a (usually) smaller
   // problem that needs solving. Other statuses mean the preprocessor solved
   // the problem completely.
@@ -1870,15 +1875,18 @@ Solver::NextSolutionAndDelta Solver::ComputeNextDualSolution(
   return result;
 }
 
+std::pair<double, double> Solver::ComputeMovementTerms(
+    const VectorXd& delta_primal, const VectorXd& delta_dual) const {
+  return {SquaredNorm(delta_primal, ShardedWorkingQp().PrimalSharder()),
+          SquaredNorm(delta_dual, ShardedWorkingQp().DualSharder())};
+}
+
 double Solver::ComputeMovement(const VectorXd& delta_primal,
                                const VectorXd& delta_dual) const {
-  const double primal_movement =
-      (0.5 * primal_weight_) *
-      SquaredNorm(delta_primal, ShardedWorkingQp().PrimalSharder());
-  const double dual_movement =
-      (0.5 / primal_weight_) *
-      SquaredNorm(delta_dual, ShardedWorkingQp().DualSharder());
-  return primal_movement + dual_movement;
+  const auto [primal_squared_norm, dual_squared_norm] =
+      ComputeMovementTerms(delta_primal, delta_dual);
+  return (0.5 * primal_weight_ * primal_squared_norm) +
+         (0.5 / primal_weight_) * dual_squared_norm;
 }
 
 double Solver::ComputeNonlinearity(const VectorXd& delta_primal,
@@ -2318,11 +2326,16 @@ void Solver::ResetAverageToCurrent() {
   dual_average_.Add(current_dual_solution_, /*weight=*/1.0);
 }
 
-void Solver::LogNumericalTermination() const {
+void Solver::LogNumericalTermination(const Eigen::VectorXd& primal_delta,
+                                     const Eigen::VectorXd& dual_delta) const {
   if (params_.verbosity_level() >= 2) {
+    auto [primal_squared_norm, dual_squared_norm] =
+        ComputeMovementTerms(primal_delta, dual_delta);
     SOLVER_LOG(&preprocess_solver_->Logger(),
                "Forced numerical termination at iteration ",
-               iterations_completed_);
+               iterations_completed_, " with primal delta squared norm ",
+               primal_squared_norm, " dual delta squared norm ",
+               dual_squared_norm, " primal weight ", primal_weight_);
   }
 }
 
@@ -2397,11 +2410,13 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
       const double movement =
           ComputeMovement(next_primal_solution.delta, next_dual_solution.delta);
       if (movement == 0.0) {
-        LogNumericalTermination();
+        LogNumericalTermination(next_primal_solution.delta,
+                                next_dual_solution.delta);
         ResetAverageToCurrent();
         outcome = InnerStepOutcome::kForceNumericalTermination;
       } else if (movement > kDivergentMovement) {
-        LogNumericalTermination();
+        LogNumericalTermination(next_primal_solution.delta,
+                                next_dual_solution.delta);
         outcome = InnerStepOutcome::kForceNumericalTermination;
       }
       current_primal_delta_ = std::move(next_primal_solution.delta);
@@ -2435,12 +2450,14 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
     const double movement =
         ComputeMovement(next_primal_solution.delta, next_dual_solution.delta);
     if (movement == 0.0) {
-      LogNumericalTermination();
+      LogNumericalTermination(next_primal_solution.delta,
+                              next_dual_solution.delta);
       ResetAverageToCurrent();
       outcome = InnerStepOutcome::kForceNumericalTermination;
       break;
     } else if (movement > kDivergentMovement) {
-      LogNumericalTermination();
+      LogNumericalTermination(next_primal_solution.delta,
+                              next_dual_solution.delta);
       outcome = InnerStepOutcome::kForceNumericalTermination;
       break;
     }
@@ -2509,11 +2526,13 @@ InnerStepOutcome Solver::TakeConstantSizeStep() {
   const double movement =
       ComputeMovement(next_primal_solution.delta, next_dual_solution.delta);
   if (movement == 0.0) {
-    LogNumericalTermination();
+    LogNumericalTermination(next_primal_solution.delta,
+                            next_dual_solution.delta);
     ResetAverageToCurrent();
     return InnerStepOutcome::kForceNumericalTermination;
   } else if (movement > kDivergentMovement) {
-    LogNumericalTermination();
+    LogNumericalTermination(next_primal_solution.delta,
+                            next_dual_solution.delta);
     return InnerStepOutcome::kForceNumericalTermination;
   }
   VectorXd next_dual_product = TransposedMatrixVectorProduct(
@@ -2577,6 +2596,9 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
       params_, average_primal, average_dual, POINT_TYPE_AVERAGE_ITERATE,
       &first_convergence_info, nullptr);
 
+  // NOTE: Even though the objective gap sometimes is reduced by feasibility
+  // polishing, it is usually increased, and an experiment (on MIPLIB2017)
+  // shows that this test reduces the iteration count by 3-4% on average.
   if (!ObjectiveGapMet(optimality_criteria, first_convergence_info)) {
     if (params_.verbosity_level() >= 2) {
       SOLVER_LOG(&preprocess_solver_->Logger(),

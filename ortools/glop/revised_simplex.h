@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -170,14 +170,6 @@ class RevisedSimplex {
   // variables.
   void SetStartingVariableValuesForNextSolve(const DenseRow& values);
 
-  // Advanced usage. Tells the next Solve() that the matrix inside the linear
-  // program will not change compared to the one used the last time Solve() was
-  // called. This allows to bypass the somewhat costly check of comparing both
-  // matrices. Note that this call will be ignored if Solve() was never called
-  // or if ClearStateForNextSolve() was called.
-  void NotifyThatMatrixIsUnchangedForNextSolve();
-  void NotifyThatMatrixIsChangedForNextSolve();
-
   // Getters to retrieve all the information computed by the last Solve().
   RowIndex GetProblemNumRows() const;
   ColIndex GetProblemNumCols() const;
@@ -194,6 +186,14 @@ class RevisedSimplex {
   const BasisState& GetState() const;
   double DeterministicTime() const;
   bool objective_limit_reached() const { return objective_limit_reached_; }
+
+  DenseColumn::ConstView GetDualSquaredNorms() {
+    return dual_edge_norms_.GetEdgeSquaredNorms();
+  }
+
+  const DenseBitRow& GetNotBasicBitRow() const {
+    return variables_info_.GetNotBasicBitRow();
+  }
 
   // If the problem status is PRIMAL_UNBOUNDED (respectively DUAL_UNBOUNDED),
   // then the solver has a corresponding primal (respectively dual) ray to show
@@ -248,6 +248,24 @@ class RevisedSimplex {
 
   void SetLogger(SolverLogger* logger) { logger_ = logger; }
 
+  // Advanced usage. For fast incremental call to the solver, it is better not
+  // to use LinearProgram at all. This api allows to directly modify the
+  // internal data of glop and then call solve.
+  const CompactSparseMatrix& MatrixWithSlack() const { return compact_matrix_; }
+  CompactSparseMatrix* MutableTransposedMatrixWithSlack() {
+    transpose_was_changed_ = true;
+    return &transposed_matrix_;
+  }
+  DenseRow* MutableLowerBounds() {
+    return variables_info_.MutableLowerBounds();
+  }
+  DenseRow* MutableUpperBounds() {
+    return variables_info_.MutableUpperBounds();
+  }
+  ABSL_MUST_USE_RESULT Status MinimizeFromTransposedMatrixWithSlack(
+      const DenseRow& objective, Fractional objective_scaling_factor,
+      Fractional objective_offset, TimeLimit* time_limit);
+
  private:
   struct IterationStats : public StatsGroup {
     IterationStats()
@@ -298,6 +316,10 @@ class RevisedSimplex {
     VAR_VALUES,
     FINAL_CHECK
   };
+
+  ABSL_MUST_USE_RESULT Status SolveInternal(double start_time, bool maximize,
+                                            const DenseRow& objective,
+                                            TimeLimit* time_limit);
 
   // Propagates parameters_ to all the other classes that need it.
   //
@@ -410,7 +432,7 @@ class RevisedSimplex {
   bool InitializeObjectiveAndTestIfUnchanged(const LinearProgram& lp);
 
   // Computes the stopping criterion on the problem objective value.
-  void InitializeObjectiveLimit(const LinearProgram& lp);
+  void InitializeObjectiveLimit();
 
   // Initializes the starting basis. In most cases it starts by the all slack
   // basis and tries to apply some heuristics to replace fixed variables.
@@ -423,6 +445,7 @@ class RevisedSimplex {
 
   // Entry point for the solver initialization.
   ABSL_MUST_USE_RESULT Status Initialize(const LinearProgram& lp);
+  ABSL_MUST_USE_RESULT Status FinishInitialization(bool solve_from_scratch);
 
   // Saves the current variable statuses in solution_state_.
   void SaveState();
@@ -711,9 +734,8 @@ class RevisedSimplex {
   // If this is cleared, we assume they are none.
   DenseRow variable_starting_values_;
 
-  // Flag used by NotifyThatMatrixIsUnchangedForNextSolve() and changing
-  // the behavior of Initialize().
-  bool notify_that_matrix_is_unchanged_ = false;
+  // See MutableTransposedMatrixWithSlack().
+  bool transpose_was_changed_ = false;
 
   // This is known as 'd' in the literature and is set during each pivot to the
   // right inverse of the basic entering column of A by ComputeDirection().

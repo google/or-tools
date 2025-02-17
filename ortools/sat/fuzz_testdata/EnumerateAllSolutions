@@ -1,0 +1,27 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables {
+  domain: 1
+  domain: 4
+}
+variables {
+  domain: 1
+  domain: 4
+}
+variables {
+  domain: 1
+  domain: 4
+}
+variables {
+  domain: 1
+  domain: 4
+}
+constraints {
+  all_diff {
+    exprs {
+      vars: [0, 1, 2, 3]
+      coeffs: [1, 1, 1, 1]
+    }
+  }
+}

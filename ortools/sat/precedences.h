@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,22 +18,25 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -464,19 +467,75 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 struct LinearTerm {
   IntegerVariable var = kNoIntegerVariable;
   IntegerValue coeff = IntegerValue(0);
+
+  void MakeCoeffPositive() {
+    if (coeff < 0) {
+      coeff = -coeff;
+      var = NegationOf(var);
+    }
+  }
 };
 
-// This collect all enforced linear of size 2 or 1 and detect if at least one of
-// a subset touching the same variable must be true. When this is the case
-// we add a new propagator to propagate that fact.
+// A relation of the form enforcement => a + b \in [lhs, rhs].
+// Note that the [lhs, rhs] interval should always be within [min_activity,
+// max_activity] where the activity is the value of a + b.
+struct Relation {
+  Literal enforcement;
+  LinearTerm a;
+  LinearTerm b;
+  IntegerValue lhs;
+  IntegerValue rhs;
+};
+
+// A repository of all the enforced linear constraints of size 1 or 2.
+//
+// TODO(user): This is not always needed, find a way to clean this once we
+// don't need it.
+class BinaryRelationRepository {
+ public:
+  int size() const { return relations_.size(); }
+  const Relation& relation(int index) const { return relations_[index]; }
+
+  absl::Span<const int> relation_indices(LiteralIndex lit) const {
+    if (lit >= lit_to_relations_.size()) return {};
+    return lit_to_relations_[lit];
+  }
+
+  // Adds a relation lit => a + b \in [lhs, rhs].
+  void Add(Literal lit, LinearTerm a, LinearTerm b, IntegerValue lhs,
+           IntegerValue rhs);
+
+  // Builds the literal to relations mapping. This should be called once all the
+  // relations have been added.
+  void Build();
+
+  // Assuming level-zero bounds + any (var >= value) in the input map,
+  // fills "output" with a "propagated" set of bounds assuming lit is true (by
+  // using the relations enforced by lit). Note that we will only fill bounds >
+  // level-zero ones in output.
+  //
+  // Returns false if the new bounds are infeasible at level zero.
+  bool PropagateLocalBounds(
+      const IntegerTrail& integer_trail, Literal lit,
+      const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
+      absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const;
+
+ private:
+  bool is_built_ = false;
+  std::vector<Relation> relations_;
+  CompactVectorVector<LiteralIndex, int> lit_to_relations_;
+};
+
+// Detects if at least one of a subset of linear of size 2 or 1, touching the
+// same variable, must be true. When this is the case we add a new propagator to
+// propagate that fact.
 //
 // TODO(user): Shall we do that on the main thread before the workers are
 // spawned? note that the probing version need the model to be loaded though.
 class GreaterThanAtLeastOneOfDetector {
  public:
-  // Adds a relation lit => a + b \in [lhs, rhs].
-  void Add(Literal lit, LinearTerm a, LinearTerm b, IntegerValue lhs,
-           IntegerValue rhs);
+  explicit GreaterThanAtLeastOneOfDetector(Model* model)
+      : repository_(*model->GetOrCreate<BinaryRelationRepository>()) {}
 
   // Advanced usage. To be called once all the constraints have been added to
   // the model. This will detect GreaterThanAtLeastOneOfConstraint().
@@ -507,16 +566,7 @@ class GreaterThanAtLeastOneOfDetector {
                               absl::Span<const Literal> clause,
                               absl::Span<const int> indices, Model* model);
 
-  struct Relation {
-    Literal enforcement;
-    LinearTerm a;
-    LinearTerm b;
-    IntegerValue lhs;
-    IntegerValue rhs;
-  };
-  std::vector<Relation> relations_;
-
-  std::unique_ptr<CompactVectorVector<LiteralIndex, int>> lit_to_relations_;
+  BinaryRelationRepository& repository_;
 };
 
 // =============================================================================

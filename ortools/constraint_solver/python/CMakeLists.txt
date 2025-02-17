@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,8 +31,7 @@ if(APPLE)
   set_target_properties(pywrapcp PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
-  set_property(TARGET pywrapcp APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress")
+  target_link_options(pywrapcp PRIVATE "LINKER:-undefined,dynamic_lookup")
 elseif(UNIX)
   set_target_properties(pywrapcp PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../${PROJECT_NAME}/.libs")

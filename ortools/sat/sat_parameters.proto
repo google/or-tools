@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,19 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// LINT: LEGACY_NAMES
 syntax = "proto2";
 
 package operations_research.sat;
 
+option csharp_namespace = "Google.OrTools.Sat";
+option go_package = "github.com/google/or-tools/ortools/sat/proto/satparameters";
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
-
-option csharp_namespace = "Google.OrTools.Sat";
 
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 296
+// NEXT TAG: 316
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -72,6 +73,10 @@ message SatParameters {
   // of conflicts in an arithmetically increasing fashion. So x the first time,
   // 2 * x the second time, etc...
   optional int32 polarity_rephase_increment = 168 [default = 1000];
+
+  // If true and we have first solution LS workers, tries in some phase to
+  // follow a LS solutions that violates has litle constraints as possible.
+  optional bool polarity_exploit_ls_hints = 309 [default = false];
 
   // The proportion of polarity chosen at random. Note that this take
   // precedence over the phase saving heuristic. This is different from
@@ -446,6 +451,12 @@ message SatParameters {
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
 
+  // If cp_model_presolve is true and there is a large proportion of fixed
+  // variable after the first model copy, remap all the model to a dense set of
+  // variable before the full presolve even starts. This should help for LNS on
+  // large models.
+  optional bool remove_fixed_variables_early = 310 [default = true];
+
   // If true, we detect variable that are unique to a table constraint and only
   // there to encode a cost on each tuple. This is usually the case when a WCSP
   // (weighted constraint program) is encoded into CP-SAT format.
@@ -476,10 +487,12 @@ message SatParameters {
   // solver. Note that contrary to the precedence encoding, this easily support
   // variable demands.
   //
-  // WARNING: with this encoding, the constraint take a slighlty different
-  // meaning. The level must be within the reservoir for any permutation of the
-  // events. So we cannot have +100 and -100 at the same time if the maximum
-  // level is 10 (as autorized by the reservoir constraint).
+  // WARNING: with this encoding, the constraint takes a slightly different
+  // meaning. There must exist a permutation of the events occurring at the same
+  // time such that the level is within the reservoir after each of these events
+  // (in this permuted order). So we cannot have +100 and -100 at the same time
+  // if the level must be between 0 and 10 (as authorized by the reservoir
+  // constraint).
   optional bool expand_reservoir_using_circuit = 288 [default = false];
 
   // Encore cumulative with fixed demands and capacity as a reservoir
@@ -580,6 +593,10 @@ message SatParameters {
   // max-sat. We also minimize problem clauses and not just the learned clause
   // that we keep forever like in the paper.
   optional double inprocessing_minimization_dtime = 275 [default = 1.0];
+  optional bool inprocessing_minimization_use_conflict_analysis = 297
+      [default = true];
+  optional bool inprocessing_minimization_use_all_orderings = 298
+      [default = false];
 
   // ==========================================================================
   // Multithread
@@ -681,6 +698,10 @@ message SatParameters {
   // Implicitly disabled if share_binary_clauses is false.
   optional bool share_glue_clauses = 285 [default = false];
 
+  // Minimize and detect subsumption of shared clauses immediately after they
+  // are imported.
+  optional bool minimize_shared_clauses = 300 [default = true];
+
   // ==========================================================================
   // Debugging parameters
   // ==========================================================================
@@ -696,6 +717,9 @@ message SatParameters {
 
   // Crash if we do not manage to complete the hint into a full solution.
   optional bool debug_crash_on_bad_hint = 195 [default = false];
+
+  // Crash if presolve breaks a feasible hint.
+  optional bool debug_crash_if_presolve_breaks_hint = 306 [default = false];
 
   // ==========================================================================
   // Max-sat parameters
@@ -871,16 +895,58 @@ message SatParameters {
   optional bool use_area_energetic_reasoning_in_no_overlap_2d = 271
       [default = false];
 
+  optional bool use_try_edge_reasoning_in_no_overlap_2d = 299 [default = false];
+
   // If the number of pairs to look is below this threshold, do an extra step of
   // propagation in the no_overlap_2d constraint by looking at all pairs of
   // intervals.
   optional int32 max_pairs_pairwise_reasoning_in_no_overlap_2d = 276
       [default = 1250];
 
+  // Detects when the space where items of a no_overlap_2d constraint can placed
+  // is disjoint (ie., fixed boxes split the domain). When it is the case, we
+  // can introduce a boolean for each pair <item, component> encoding whether
+  // the item is in the component or not. Then we replace the original
+  // no_overlap_2d constraint by one no_overlap_2d constraint for each
+  // component, with the new booleans as the enforcement_literal of the
+  // intervals. This is equivalent to expanding the original no_overlap_2d
+  // constraint into a bin packing problem with each connected component being a
+  // bin. This heuristic is only done when the number of regions to split
+  // is less than this parameter and <= 1 disables it.
+  optional int32 maximum_regions_to_split_in_disconnected_no_overlap_2d = 315
+      [default = 0];
+
   // When set, it activates a few scheduling parameters to improve the lower
   // bound of scheduling problems. This is only effective with multiple workers
   // as it modifies the reduced_cost, lb_tree_search, and probing workers.
   optional bool use_dual_scheduling_heuristics = 214 [default = true];
+
+  // Turn on extra propagation for the circuit constraint.
+  // This can be quite slow.
+  optional bool use_all_different_for_circuit = 311 [default = false];
+
+  // If the size of a subset of nodes of a RoutesConstraint is less than this
+  // value, use linear constraints of size 1 and 2 (such as capacity and time
+  // window constraints) enforced by the arc literals to compute cuts for this
+  // subset (unless the subset size is less than
+  // routing_cut_subset_size_for_tight_binary_relation_bound, in which case the
+  // corresponding algorithm is used instead). The algorithm for these cuts has
+  // a O(n^3) complexity, where n is the subset size. Hence the value of this
+  // parameter should not be too large (e.g. 10 or 20).
+  optional int32 routing_cut_subset_size_for_binary_relation_bound = 312
+      [default = 0];
+
+  // Similar to above, but with a different algorithm producing better cuts, at
+  // the price of a higher O(2^n) complexity, where n is the subset size. Hence
+  // the value of this parameter should be small (e.g. less than 10).
+  optional int32 routing_cut_subset_size_for_tight_binary_relation_bound = 313
+      [default = 0];
+
+  // The amount of "effort" to spend in dynamic programming for computing
+  // routing cuts. This is in term of basic operations needed by the algorithm
+  // in the worst case, so a value like 1e8 should take less than a second to
+  // compute.
+  optional double routing_cut_dp_effort = 314 [default = 1e7];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {
@@ -1075,32 +1141,30 @@ message SatParameters {
   // TODO(user): Add reference to paper when published.
   optional double violation_ls_compound_move_probability = 259 [default = 0.5];
 
-  // Enables experimental workstealing-like shared tree search.
-  // If non-zero, start this many complete worker threads to explore a shared
+  // Enables shared tree search.
+  // If positive, start this many complete worker threads to explore a shared
   // search tree. These workers communicate objective bounds and simple decision
   // nogoods relating to the shared prefix of the tree, and will avoid exploring
   // the same subtrees as one another.
+  // Specifying a negative number uses a heuristic to select an appropriate
+  // number of shared tree workeres based on the total number of workers.
   optional int32 shared_tree_num_workers = 235 [default = 0];
 
   // Set on shared subtree workers. Users should not set this directly.
   optional bool use_shared_tree_search = 236 [default = false];
 
-  // After their assigned prefix, shared tree workers will branch on the
-  // objective with this probability. Higher numbers cause the shared tree
-  // search to focus on improving the lower bound over finding primal solutions.
-  optional double shared_tree_worker_objective_split_probability = 237
-      [default = 0.5];
-
-  // Minimum number of restarts before a worker will replace a subtree
+  // Minimum restarts before a worker will replace a subtree
   // that looks "bad" based on the average LBD of learned clauses.
   optional int32 shared_tree_worker_min_restarts_per_subtree = 282
       [default = 1];
 
   // If true, workers share more of the information from their local trail.
-  // Specifically, literals implied by the shared tree decisions and
-  // the longest conflict-free assignment from the last restart (to enable
-  // cross-worker phase-saving).
+  // Specifically, literals implied by the shared tree decisions.
   optional bool shared_tree_worker_enable_trail_sharing = 295 [default = true];
+
+  // If true, shared tree workers share their target phase when returning an
+  // assigned subtree for the next worker to use.
+  optional bool shared_tree_worker_enable_phase_sharing = 304 [default = true];
 
   // How many open leaf nodes should the shared tree maintain per worker.
   optional double shared_tree_open_leaves_per_worker = 281 [default = 2.0];
@@ -1109,7 +1173,7 @@ message SatParameters {
   // total number of nodes that may be generated in the shared tree. If the
   // shared tree runs out of unassigned leaves, workers act as portfolio
   // workers. Note: this limit includes interior nodes, not just leaves.
-  optional int32 shared_tree_max_nodes_per_worker = 238 [default = 100000];
+  optional int32 shared_tree_max_nodes_per_worker = 238 [default = 10000];
 
   enum SharedTreeSplitStrategy {
     // Uses the default strategy, currently equivalent to
@@ -1132,6 +1196,15 @@ message SatParameters {
   }
   optional SharedTreeSplitStrategy shared_tree_split_strategy = 239
       [default = SPLIT_STRATEGY_AUTO];
+
+  // How much deeper compared to the ideal max depth of the tree is considered
+  // "balanced" enough to still accept a split. Without such a tolerance,
+  // sometimes the tree can only be split by a single worker, and they may not
+  // generate a split for some time. In contrast, with a tolerance of 1, at
+  // least half of all workers should be able to split the tree as soon as a
+  // split becomes required. This only has an effect on
+  // SPLIT_STRATEGY_BALANCED_TREE and SPLIT_STRATEGY_DISCREPANCY.
+  optional int32 shared_tree_balance_tolerance = 305 [default = 1];
 
   // Whether we enumerate all solutions of a problem without objective. Note
   // that setting this to true automatically disable some presolve reduction
@@ -1193,6 +1266,10 @@ message SatParameters {
 
   // LNS parameters.
 
+  // Initial parameters for neighborhood generation.
+  optional double lns_initial_difficulty = 307 [default = 0.5];
+  optional double lns_initial_deterministic_limit = 308 [default = 0.1];
+
   // Testing parameters used to disable all lns workers.
   optional bool use_lns = 283 [default = true];
 
@@ -1213,7 +1290,10 @@ message SatParameters {
   // Turns on neighborhood generator based on local branching LP. Based on Huang
   // et al., "Local Branching Relaxation Heuristics for Integer Linear
   // Programs", 2023.
-  optional bool use_lb_relax_lns = 255 [default = false];
+  optional bool use_lb_relax_lns = 255 [default = true];
+
+  // Only use lb-relax if we have at least that many workers.
+  optional int32 lb_relax_num_workers_threshold = 296 [default = 16];
 
   // Rounding method to use for feasibility pump.
   enum FPRoundingMethod {
@@ -1313,6 +1393,23 @@ message SatParameters {
   // large models, which can be slow. At level 4, we try to break as much
   // symmetry as possible in presolve.
   optional int32 symmetry_level = 183 [default = 2];
+
+  // When we have symmetry, it is possible to "fold" all variables from the same
+  // orbit into a single variable, while having the same power of LP relaxation.
+  // This can help significantly on symmetric problem. However there is
+  // currently a bit of overhead as the rest of the solver need to do some
+  // translation between the folded LP and the rest of the problem.
+  optional bool use_symmetry_in_lp = 301 [default = false];
+
+  // Experimental. This will compute the symmetry of the problem once and for
+  // all. All presolve operations we do should keep the symmetry group intact
+  // or modify it properly. For now we have really little support for this. We
+  // will disable a bunch of presolve operations that could be supported.
+  optional bool keep_symmetry_in_presolve = 303 [default = false];
+
+  // Deterministic time limit for symmetry detection.
+  optional double symmetry_detection_deterministic_time_limit = 302
+      [default = 1.0];
 
   // The new linear propagation code treat all constraints at once and use
   // an adaptation of Bellman-Ford-Tarjan to propagate constraint in a smarter

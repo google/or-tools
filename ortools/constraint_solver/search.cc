@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,6 +33,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/bitmap.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -71,7 +72,6 @@ SearchLog::SearchLog(Solver* solver, std::vector<IntVar*> vars,
       display_callback_(std::move(display_callback)),
       display_on_new_solutions_only_(display_on_new_solutions_only),
       nsol_(0),
-      tick_(0),
       objective_min_(vars_.size(), std::numeric_limits<int64_t>::max()),
       objective_max_(vars_.size(), std::numeric_limits<int64_t>::min()),
       min_right_depth_(std::numeric_limits<int32_t>::max()),
@@ -85,17 +85,22 @@ std::string SearchLog::DebugString() const { return "SearchLog"; }
 
 void SearchLog::EnterSearch() {
   const std::string buffer =
-      absl::StrFormat("Start search (%s)", MemoryUsage());
+      (!display_on_new_solutions_only_ && display_callback_ != nullptr)
+          ? absl::StrFormat("Start search (%s, %s)", MemoryUsage(),
+                            display_callback_())
+          : absl::StrFormat("Start search (%s)", MemoryUsage());
   OutputLine(buffer);
   timer_->Restart();
   min_right_depth_ = std::numeric_limits<int32_t>::max();
   neighbors_offset_ = solver()->accepted_neighbors();
   nsol_ = 0;
+  last_objective_value_.clear();
+  last_objective_timestamp_ = timer_->GetDuration();
 }
 
 void SearchLog::ExitSearch() {
   const int64_t branches = solver()->branches();
-  int64_t ms = timer_->GetInMs();
+  int64_t ms = absl::ToInt64Milliseconds(timer_->GetDuration());
   if (ms == 0) {
     ms = 1;
   }
@@ -112,7 +117,7 @@ bool SearchLog::AtSolution() {
   std::string obj_str = "";
   std::vector<int64_t> current;
   bool objective_updated = false;
-  const auto scaled_str = [this](const std::vector<int64_t>& values) {
+  const auto scaled_str = [this](absl::Span<const int64_t> values) {
     std::vector<std::string> value_strings(values.size());
     for (int i = 0; i < values.size(); ++i) {
       if (scaling_factors_[i] != 1.0 || offsets_[i] != 0.0) {
@@ -142,7 +147,23 @@ bool SearchLog::AtSolution() {
     absl::StrAppend(&obj_str, "objective = ", scaled_str(current), ", ");
     objective_updated = true;
   }
+  const absl::Duration now = timer_->GetDuration();
   if (objective_updated) {
+    if (!last_objective_value_.empty()) {
+      const int64_t elapsed_ms =
+          absl::ToInt64Milliseconds(now - last_objective_timestamp_);
+      for (int i = 0; i < current.size(); ++i) {
+        const double improvement_rate =
+            100.0 * 1000.0 * (current[i] - last_objective_value_[i]) /
+            std::max<int64_t>(1, last_objective_value_[i] * elapsed_ms);
+        absl::StrAppend(&obj_str, "improvement rate = ", improvement_rate,
+                        "%/s, ");
+        last_objective_value_[i] = current[i];
+      }
+    } else {
+      last_objective_value_ = current;
+    }
+    last_objective_timestamp_ = now;
     if (!objective_min_.empty() &&
         std::lexicographical_compare(objective_min_.begin(),
                                      objective_min_.end(), current.begin(),
@@ -169,7 +190,7 @@ bool SearchLog::AtSolution() {
   absl::StrAppendFormat(&log,
                         "Solution #%d (%stime = %d ms, branches = %d,"
                         " failures = %d, depth = %d",
-                        nsol_++, obj_str, timer_->GetInMs(),
+                        nsol_++, obj_str, absl::ToInt64Milliseconds(now),
                         solver()->branches(), solver()->failures(), depth);
   if (!solver()->SearchContext().empty()) {
     absl::StrAppendFormat(&log, ", %s", solver()->SearchContext());
@@ -202,7 +223,8 @@ void SearchLog::NoMoreSolutions() {
   std::string buffer = absl::StrFormat(
       "Finished search tree (time = %d ms, branches = %d,"
       " failures = %d",
-      timer_->GetInMs(), solver()->branches(), solver()->failures());
+      absl::ToInt64Milliseconds(timer_->GetDuration()), solver()->branches(),
+      solver()->failures());
   if (solver()->neighbors() != 0) {
     absl::StrAppendFormat(&buffer,
                           ", neighbors = %d, filtered neighbors = %d,"
@@ -232,9 +254,9 @@ void SearchLog::RefuteDecision(Decision* const decision) {
 }
 
 void SearchLog::OutputDecision() {
-  std::string buffer =
-      absl::StrFormat("%d branches, %d ms, %d failures", solver()->branches(),
-                      timer_->GetInMs(), solver()->failures());
+  std::string buffer = absl::StrFormat(
+      "%d branches, %d ms, %d failures", solver()->branches(),
+      absl::ToInt64Milliseconds(timer_->GetDuration()), solver()->failures());
   if (min_right_depth_ != std::numeric_limits<int32_t>::max() &&
       max_depth_ != 0) {
     const int depth = solver()->SearchDepth();
@@ -268,10 +290,11 @@ void SearchLog::Maintain() {
   max_depth_ = std::max(current_depth, max_depth_);
 }
 
-void SearchLog::BeginInitialPropagation() { tick_ = timer_->GetInMs(); }
+void SearchLog::BeginInitialPropagation() { tick_ = timer_->GetDuration(); }
 
 void SearchLog::EndInitialPropagation() {
-  const int64_t delta = std::max<int64_t>(timer_->GetInMs() - tick_, 0);
+  const int64_t delta = std::max<int64_t>(
+      absl::ToInt64Milliseconds(timer_->GetDuration() - tick_), 0);
   const std::string buffer = absl::StrFormat(
       "Root node processed (time = %d ms, constraints = %d, %s)", delta,
       solver()->constraints(), MemoryUsage());
@@ -347,7 +370,8 @@ SearchMonitor* Solver::MakeSearchLog(
   std::vector<double> offsets(vars.size(), 0.0);
   return RevAlloc(new SearchLog(
       this, std::move(vars), opt_var->Name(), std::move(scaling_factors),
-      std::move(offsets), std::move(display_callback), true, branch_period));
+      std::move(offsets), std::move(display_callback),
+      /*display_on_new_solutions_only=*/true, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
@@ -355,10 +379,10 @@ SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
       << "Either variables are empty or objective is nullptr.";
   std::vector<IntVar*> vars = parameters.objective != nullptr
                                   ? parameters.objective->objective_vars()
-                                  : parameters.variables;
-  std::vector<double> scaling_factors = parameters.scaling_factors;
+                                  : std::move(parameters.variables);
+  std::vector<double> scaling_factors = std::move(parameters.scaling_factors);
   scaling_factors.resize(vars.size(), 1.0);
-  std::vector<double> offsets = parameters.offsets;
+  std::vector<double> offsets = std::move(parameters.offsets);
   offsets.resize(vars.size(), 0.0);
   return RevAlloc(new SearchLog(
       this, std::move(vars), "", std::move(scaling_factors), std::move(offsets),
@@ -1023,7 +1047,7 @@ class HighestRegretSelectorOnMin : public BaseObject {
       iterators_[i] = vars[i]->MakeDomainIterator(true);
     }
   }
-  ~HighestRegretSelectorOnMin() override{};
+  ~HighestRegretSelectorOnMin() override {};
   int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
                  int64_t first_unbound, int64_t last_unbound);
   std::string DebugString() const override { return "MaxRegretSelector"; }
@@ -1081,7 +1105,7 @@ class CheapestVarSelector : public BaseObject {
  public:
   explicit CheapestVarSelector(std::function<int64_t(int64_t)> var_evaluator)
       : var_evaluator_(std::move(var_evaluator)) {}
-  ~CheapestVarSelector() override{};
+  ~CheapestVarSelector() override {};
   int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
                  int64_t first_unbound, int64_t last_unbound);
   std::string DebugString() const override { return "CheapestVarSelector"; }
@@ -1114,7 +1138,7 @@ int64_t CheapestVarSelector::Choose(Solver* const,
 class PathSelector : public BaseObject {
  public:
   PathSelector() : first_(std::numeric_limits<int64_t>::max()) {}
-  ~PathSelector() override{};
+  ~PathSelector() override {};
   int64_t Choose(Solver* s, const std::vector<IntVar*>& vars);
   std::string DebugString() const override { return "ChooseNextOnPath"; }
 
@@ -2116,13 +2140,12 @@ BaseAssignVariables::Mode ChooseMode(Solver::IntValueStrategy val_str) {
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  Solver::VariableIndexSelector var_selector =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  Solver::VariableValueSelector value_selector =
-      BaseAssignVariables::MakeValueSelector(this, val_str);
-  const std::string name = BuildHeuristicsName(var_str, val_str);
   return BaseAssignVariables::MakePhase(
-      this, vars, var_selector, value_selector, name, ChooseMode(val_str));
+      this, vars, /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/BaseAssignVariables::MakeValueSelector(this, val_str),
+      /*value_selector_name=*/BuildHeuristicsName(var_str, val_str),
+      ChooseMode(val_str));
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2131,49 +2154,50 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
   CHECK(var_evaluator != nullptr);
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable =
+  return BaseAssignVariables::MakePhase(
+      this, vars,
+      /*var_selector=*/
       [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
                      int first_unbound, int last_unbound) {
         return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-      };
-  Solver::VariableValueSelector select_value =
-      BaseAssignVariables::MakeValueSelector(this, val_str);
-  const std::string name = "ChooseCheapestVariable_" + SelectValueName(val_str);
-  return BaseAssignVariables::MakePhase(
-      this, vars, choose_variable, select_value, name, ChooseMode(val_str));
+      },
+      /*value_selector=*/BaseAssignVariables::MakeValueSelector(this, val_str),
+      /*value_selector_name=*/"ChooseCheapestVariable_" +
+          SelectValueName(val_str),
+      ChooseMode(val_str));
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IndexEvaluator2 value_evaluator) {
-  Solver::VariableIndexSelector choose_variable =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   CheapestValueSelector* const value_selector =
       RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
-  Solver::VariableValueSelector select_value =
+  return BaseAssignVariables::MakePhase(
+      this, vars,
+      /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  const std::string name = ChooseVariableName(var_str) + "_SelectCheapestValue";
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, name,
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/ChooseVariableName(var_str) +
+          "_SelectCheapestValue",
+      BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(
     const std::vector<IntVar*>& vars, IntVarStrategy var_str,
     VariableValueComparator var_val1_val2_comparator) {
-  Solver::VariableIndexSelector choose_variable =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   BestValueByComparisonSelector* const value_selector = RevAlloc(
       new BestValueByComparisonSelector(std::move(var_val1_val2_comparator)));
-  Solver::VariableValueSelector select_value =
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2181,37 +2205,35 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator2 value_evaluator) {
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable =
+  CheapestValueSelector* value_selector =
+      RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
       [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
                      int first_unbound, int last_unbound) {
         return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-      };
-  CheapestValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
-  Solver::VariableValueSelector select_value =
+      },
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IndexEvaluator2 value_evaluator,
                                    Solver::IndexEvaluator1 tie_breaker) {
-  Solver::VariableIndexSelector choose_variable =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
       std::move(value_evaluator), std::move(tie_breaker)));
-  Solver::VariableValueSelector select_value =
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2220,20 +2242,19 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator1 tie_breaker) {
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable =
+  CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
+      std::move(value_evaluator), std::move(tie_breaker)));
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
       [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
                      int first_unbound, int last_unbound) {
         return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-      };
-  CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
-      std::move(value_evaluator), std::move(tie_breaker)));
-  Solver::VariableValueSelector select_value =
+      },
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2250,12 +2271,13 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
   switch (str) {
     case Solver::CHOOSE_STATIC_GLOBAL_BEST: {
       // TODO(user): support tie breaker
-      selector = RevAlloc(new StaticEvaluatorSelector(this, vars, eval));
+      selector =
+          RevAlloc(new StaticEvaluatorSelector(this, vars, std::move(eval)));
       break;
     }
     case Solver::CHOOSE_DYNAMIC_GLOBAL_BEST: {
-      selector = RevAlloc(new DynamicEvaluatorSelector(this, vars, eval,
-                                                       std::move(tie_breaker)));
+      selector = RevAlloc(new DynamicEvaluatorSelector(
+          this, vars, std::move(eval), std::move(tie_breaker)));
       break;
     }
   }
@@ -2945,11 +2967,116 @@ SolutionCollector* Solver::MakeAllSolutionCollector() {
 
 // ---------- Objective Management ----------
 
+class RoundRobinCompoundObjectiveMonitor : public BaseObjectiveMonitor {
+ public:
+  RoundRobinCompoundObjectiveMonitor(
+      std::vector<BaseObjectiveMonitor*> monitors,
+      int num_max_local_optima_before_metaheuristic_switch)
+      : BaseObjectiveMonitor(monitors[0]->solver()),
+        monitors_(std::move(monitors)),
+        enabled_monitors_(monitors_.size(), true),
+        local_optimum_limit_(num_max_local_optima_before_metaheuristic_switch) {
+  }
+  void EnterSearch() override {
+    active_monitor_ = 0;
+    num_local_optimum_ = 0;
+    enabled_monitors_.assign(monitors_.size(), true);
+    for (auto& monitor : monitors_) {
+      monitor->set_active(monitor == monitors_[active_monitor_]);
+      monitor->EnterSearch();
+    }
+  }
+  void ApplyDecision(Decision* d) override {
+    monitors_[active_monitor_]->ApplyDecision(d);
+  }
+  void AcceptNeighbor() override {
+    monitors_[active_monitor_]->AcceptNeighbor();
+  }
+  bool AtSolution() override {
+    bool ok = true;
+    for (auto& monitor : monitors_) {
+      ok &= monitor->AtSolution();
+    }
+    return ok;
+  }
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override {
+    return monitors_[active_monitor_]->AcceptDelta(delta, deltadelta);
+  }
+  void BeginNextDecision(DecisionBuilder* db) override {
+    monitors_[active_monitor_]->BeginNextDecision(db);
+  }
+  void RefuteDecision(Decision* d) override {
+    monitors_[active_monitor_]->RefuteDecision(d);
+  }
+  bool AcceptSolution() override {
+    return monitors_[active_monitor_]->AcceptSolution();
+  }
+  bool LocalOptimum() override {
+    const bool ok = monitors_[active_monitor_]->LocalOptimum();
+    if (!ok) {
+      enabled_monitors_[active_monitor_] = false;
+    }
+    if (++num_local_optimum_ >= local_optimum_limit_ || !ok) {
+      monitors_[active_monitor_]->set_active(false);
+      int next_active_monitor = (active_monitor_ + 1) % monitors_.size();
+      while (!enabled_monitors_[next_active_monitor]) {
+        if (next_active_monitor == active_monitor_) return false;
+        next_active_monitor = (active_monitor_ + 1) % monitors_.size();
+      }
+      active_monitor_ = next_active_monitor;
+      monitors_[active_monitor_]->set_active(true);
+      num_local_optimum_ = 0;
+      VLOG(2) << "Switching to monitor " << active_monitor_ << " "
+              << monitors_[active_monitor_]->DebugString();
+    }
+    return true;
+  }
+  IntVar* ObjectiveVar(int index) const override {
+    return monitors_[active_monitor_]->ObjectiveVar(index);
+  }
+  IntVar* MinimizationVar(int index) const override {
+    return monitors_[active_monitor_]->MinimizationVar(index);
+  }
+  int64_t Step(int index) const override {
+    return monitors_[active_monitor_]->Step(index);
+  }
+  bool Maximize(int index) const override {
+    return monitors_[active_monitor_]->Maximize(index);
+  }
+  int64_t BestValue(int index) const override {
+    return monitors_[active_monitor_]->BestValue(index);
+  }
+  int Size() const override { return monitors_[active_monitor_]->Size(); }
+  std::string DebugString() const override {
+    return monitors_[active_monitor_]->DebugString();
+  }
+  void Accept(ModelVisitor* visitor) const override {
+    // TODO(user): properly implement this.
+    for (auto& monitor : monitors_) {
+      monitor->Accept(visitor);
+    }
+  }
+
+ private:
+  const std::vector<BaseObjectiveMonitor*> monitors_;
+  std::vector<bool> enabled_monitors_;
+  int active_monitor_ = 0;
+  int num_local_optimum_ = 0;
+  const int local_optimum_limit_;
+};
+
+BaseObjectiveMonitor* Solver::MakeRoundRobinCompoundObjectiveMonitor(
+    std::vector<BaseObjectiveMonitor*> monitors,
+    int num_max_local_optima_before_metaheuristic_switch) {
+  return RevAlloc(new RoundRobinCompoundObjectiveMonitor(
+      std::move(monitors), num_max_local_optima_before_metaheuristic_switch));
+}
+
 ObjectiveMonitor::ObjectiveMonitor(Solver* solver,
                                    const std::vector<bool>& maximize,
                                    std::vector<IntVar*> vars,
                                    std::vector<int64_t> steps)
-    : SearchMonitor(solver),
+    : BaseObjectiveMonitor(solver),
       found_initial_solution_(false),
       objective_vars_(std::move(vars)),
       minimization_vars_(objective_vars_),
@@ -2983,6 +3110,7 @@ void ObjectiveMonitor::EnterSearch() {
   found_initial_solution_ = false;
   best_values_.assign(Size(), std::numeric_limits<int64_t>::max());
   current_values_ = best_values_;
+  solver()->SetUseFastLocalSearch(true);
 }
 
 bool ObjectiveMonitor::AtSolution() {
@@ -3083,14 +3211,14 @@ void OptimizeVar::BeginNextDecision(DecisionBuilder*) {
 void OptimizeVar::ApplyBound() {
   if (found_initial_solution_) {
     MakeMinimizationVarsLessOrEqualWithSteps(
-        [this](int i) { return BestInternalValue(i); });
+        [this](int i) { return CurrentInternalValue(i); });
   }
 }
 
 void OptimizeVar::RefuteDecision(Decision*) { ApplyBound(); }
 
 bool OptimizeVar::AcceptSolution() {
-  if (!found_initial_solution_) {
+  if (!found_initial_solution_ || !is_active()) {
     return true;
   } else {
     // This code should never return false in sequential mode because
@@ -3102,8 +3230,8 @@ bool OptimizeVar::AcceptSolution() {
       // accepted.
       if (!minimization_var->Bound()) return true;
       const int64_t value = minimization_var->Value();
-      if (value == BestInternalValue(i)) continue;
-      return value < BestInternalValue(i);
+      if (value == CurrentInternalValue(i)) continue;
+      return value < CurrentInternalValue(i);
     }
     return false;
   }
@@ -3285,6 +3413,7 @@ class TabuSearch : public Metaheuristic {
 
   const std::vector<IntVar*> vars_;
   Assignment::IntContainer assignment_container_;
+  bool has_stored_assignment_ = false;
   std::vector<int64_t> last_values_;
   TabuList keep_tabu_list_;
   TabuList synced_keep_tabu_list_;
@@ -3318,6 +3447,7 @@ void TabuSearch::EnterSearch() {
   Metaheuristic::EnterSearch();
   solver()->SetUseFastLocalSearch(true);
   stamp_ = 0;
+  has_stored_assignment_ = false;
 }
 
 void TabuSearch::ApplyDecision(Decision* const d) {
@@ -3396,7 +3526,7 @@ bool TabuSearch::AtSolution() {
 
   // New solution found: add new assignments to tabu lists; this is only
   // done after the first local optimum (stamp_ != 0)
-  if (0 != stamp_) {
+  if (0 != stamp_ && has_stored_assignment_) {
     for (int index = 0; index < vars_.size(); ++index) {
       IntVar* var = vars(index);
       const int64_t old_value = assignment_container_.Element(index).Value();
@@ -3412,6 +3542,7 @@ bool TabuSearch::AtSolution() {
     }
   }
   assignment_container_.Store();
+  has_stored_assignment_ = true;
 
   return true;
 }
@@ -3759,10 +3890,12 @@ int64_t GuidedLocalSearchPenaltiesMap::GetPenalty(
 template <typename P>
 class GuidedLocalSearch : public Metaheuristic {
  public:
-  GuidedLocalSearch(Solver* solver, IntVar* objective, bool maximize,
-                    int64_t step, const std::vector<IntVar*>& vars,
-                    double penalty_factor,
-                    bool reset_penalties_on_new_best_solution);
+  GuidedLocalSearch(
+      Solver* solver, IntVar* objective, bool maximize, int64_t step,
+      const std::vector<IntVar*>& vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs,
+      bool reset_penalties_on_new_best_solution);
   ~GuidedLocalSearch() override {}
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void ApplyDecision(Decision* d) override;
@@ -3852,6 +3985,8 @@ class GuidedLocalSearch : public Metaheuristic {
   P penalties_;
   DirtyArray<int64_t> penalized_values_;
   bool incremental_;
+  std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+      get_equivalent_pairs_;
   const bool reset_penalties_on_new_best_solution_;
 };
 
@@ -3859,6 +3994,8 @@ template <typename P>
 GuidedLocalSearch<P>::GuidedLocalSearch(
     Solver* solver, IntVar* objective, bool maximize, int64_t step,
     const std::vector<IntVar*>& vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution)
     : Metaheuristic(solver, {maximize}, {objective}, {step}),
       penalized_objective_(nullptr),
@@ -3869,6 +4006,7 @@ GuidedLocalSearch<P>::GuidedLocalSearch(
       penalties_(vars.size()),
       penalized_values_(vars.size()),
       incremental_(false),
+      get_equivalent_pairs_(std::move(get_equivalent_pairs)),
       reset_penalties_on_new_best_solution_(
           reset_penalties_on_new_best_solution) {
   AddVars(vars);
@@ -3919,7 +4057,9 @@ void GuidedLocalSearch<P>::ApplyDecision(Decision* const d) {
         assignment_penalized_value_ =
             CapAdd(assignment_penalized_value_, penalty);
       }
-      penalized_objective_ = solver()->MakeSum(elements)->Var();
+      solver()->SaveAndSetValue(
+          reinterpret_cast<void**>(&penalized_objective_),
+          reinterpret_cast<void*>(solver()->MakeSum(elements)->Var()));
     }
     penalized_values_.Commit();
     old_penalized_value_ = assignment_penalized_value_;
@@ -3957,7 +4097,7 @@ bool GuidedLocalSearch<P>::AtSolution() {
   if (!ObjectiveMonitor::AtSolution()) {
     return false;
   }
-  if (penalized_objective_ != nullptr) {
+  if (penalized_objective_ != nullptr && penalized_objective_->Bound()) {
     // If the value of the best solution has changed (aka a new best solution
     // has been found), triggering a reset on the penalties to start fresh.
     // The immediate consequence is a greedy dive towards a local minimum,
@@ -4052,7 +4192,15 @@ bool GuidedLocalSearch<P>::LocalOptimum() {
     if (utilities[var] == max_utility) {
       const IntVarElement& element = assignment_.Element(var);
       DCHECK(element.Bound());
-      penalties_.IncrementPenalty({var, element.Value()});
+      const int64_t value = element.Value();
+      if (get_equivalent_pairs_ == nullptr) {
+        penalties_.IncrementPenalty({var, value});
+      } else {
+        for (const auto [other_var, other_value] :
+             get_equivalent_pairs_(var, value)) {
+          penalties_.IncrementPenalty({other_var, other_value});
+        }
+      }
     }
   }
   SetCurrentInternalValue(0, std::numeric_limits<int64_t>::max());
@@ -4066,7 +4214,10 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch<P> {
       Solver* solver, IntVar* objective,
       std::function<int64_t(int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
-      double penalty_factor, bool reset_penalties_on_new_best_solution);
+      double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs,
+      bool reset_penalties_on_new_best_solution);
   ~BinaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
   int64_t AssignmentElementPenalty(int index) const override;
@@ -4084,11 +4235,16 @@ BinaryGuidedLocalSearch<P>::BinaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
     std::function<int64_t(int64_t, int64_t)> objective_function, bool maximize,
     int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution)
     : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
-                           penalty_factor,
+                           penalty_factor, std::move(get_equivalent_pairs),
                            reset_penalties_on_new_best_solution),
-      objective_function_(std::move(objective_function)) {}
+      objective_function_(std::move(objective_function)) {
+  solver->SetGuidedLocalSearchPenaltyCallback(
+      [this](int64_t i, int64_t j, int64_t) { return PenalizedValue(i, j); });
+}
 
 template <typename P>
 IntExpr* BinaryGuidedLocalSearch<P>::MakeElementPenalty(int index) {
@@ -4152,6 +4308,8 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch<P> {
       std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs,
       bool reset_penalties_on_new_best_solution);
   ~TernaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
@@ -4173,13 +4331,19 @@ TernaryGuidedLocalSearch<P>::TernaryGuidedLocalSearch(
     std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
     bool maximize, int64_t step, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution)
     : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
-                           penalty_factor,
+                           penalty_factor, std::move(get_equivalent_pairs),
                            reset_penalties_on_new_best_solution),
       objective_function_(std::move(objective_function)),
       secondary_values_(this->NumPrimaryVars(), -1) {
   this->AddVars(secondary_vars);
+  solver->SetGuidedLocalSearchPenaltyCallback(
+      [this](int64_t i, int64_t j, int64_t k) {
+        return PenalizedValue(i, j, k);
+      });
 }
 
 template <typename P>
@@ -4270,16 +4434,20 @@ ObjectiveMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
     Solver::IndexEvaluator2 objective_function, int64_t step,
     const std::vector<IntVar*>& vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution) {
   if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
     return RevAlloc(new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
         this, objective, std::move(objective_function), maximize, step, vars,
-        penalty_factor, reset_penalties_on_new_best_solution));
+        penalty_factor, std::move(get_equivalent_pairs),
+        reset_penalties_on_new_best_solution));
   } else {
     return RevAlloc(
         new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
             this, objective, std::move(objective_function), maximize, step,
-            vars, penalty_factor, reset_penalties_on_new_best_solution));
+            vars, penalty_factor, std::move(get_equivalent_pairs),
+            reset_penalties_on_new_best_solution));
   }
 }
 
@@ -4288,16 +4456,20 @@ ObjectiveMonitor* Solver::MakeGuidedLocalSearch(
     Solver::IndexEvaluator3 objective_function, int64_t step,
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution) {
   if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
     return RevAlloc(new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
         this, objective, std::move(objective_function), maximize, step, vars,
-        secondary_vars, penalty_factor, reset_penalties_on_new_best_solution));
+        secondary_vars, penalty_factor, std::move(get_equivalent_pairs),
+        reset_penalties_on_new_best_solution));
   } else {
     return RevAlloc(
         new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
             this, objective, std::move(objective_function), maximize, step,
             vars, secondary_vars, penalty_factor,
+            std::move(get_equivalent_pairs),
             reset_penalties_on_new_best_solution));
   }
 }

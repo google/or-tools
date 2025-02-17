@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,7 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
+file(GLOB _SRCS "*.h" "*.cc" "python/linear_expr.*" "c_api/*.h" "c_api/*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_fuzz.cc")
 list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/opb_reader.h
   ${CMAKE_CURRENT_SOURCE_DIR}/sat_cnf_reader.h
@@ -38,6 +40,24 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::sat ALIAS ${NAME})
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        sat_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        GTest::gmock
+        GTest::gtest_main
+    )
+  endforeach()
+endif()
 
 # Sat Runner
 add_executable(sat_runner)

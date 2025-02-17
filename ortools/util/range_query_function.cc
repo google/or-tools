@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -133,15 +133,13 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_start_ + static_cast<int64_t>(array().size()));
-    return rmq_min_.GetMinimumFromRange(from - domain_start_,
-                                        to - domain_start_);
+    return rmq_min_.RangeMinimum(from - domain_start_, to - domain_start_);
   }
   int64_t RangeMax(int64_t from, int64_t to) const override {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_start_ + static_cast<int64_t>(array().size()));
-    return rmq_max_.GetMinimumFromRange(from - domain_start_,
-                                        to - domain_start_);
+    return rmq_max_.RangeMinimum(from - domain_start_, to - domain_start_);
   }
   int64_t RangeFirstInsideInterval(int64_t range_begin, int64_t range_end,
                                    int64_t interval_begin,

@@ -1,4 +1,4 @@
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -79,12 +79,36 @@ if(USE_COINOR)
   set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
 endif()
 
+if(USE_CPLEX)
+  if(NOT TARGET CPLEX::CPLEX)
+    message(FATAL_ERROR "Target CPLEX::CPLEX not available.")
+  endif()
+  set(CPLEX_DEPS CPLEX::CPLEX)
+endif()
+
+if(USE_GLPK)
+  if(NOT TARGET GLPK::GLPK)
+    message(FATAL_ERROR "Target GLPK::GLPK not available.")
+  endif()
+  set(GLPK_DEPS GLPK::GLPK)
+endif()
+
+if(USE_HIGHS)
+  if(NOT TARGET highs::highs)
+    message(FATAL_ERROR "Target highs::highs not available.")
+  endif()
+  set(HIGHS_DEPS highs::highs)
+endif()
+
 if(USE_PDLP AND BUILD_PDLP)
   set(PDLP_DEPS Eigen3::Eigen)
 endif()
 
-if(USE_SCIP AND NOT TARGET libscip)
-  message(FATAL_ERROR "Target libscip not available.")
+if(USE_SCIP)
+  if(NOT TARGET libscip)
+    message(FATAL_ERROR "Target libscip not available.")
+  endif()
+  set(SCIP_DEPS libscip)
 endif()
 
 # Check optional Dependencies
@@ -93,8 +117,13 @@ if(USE_CPLEX AND NOT TARGET CPLEX::CPLEX)
 endif()
 
 # CXX Test
-if(BUILD_TESTING AND NOT TARGET GTest::gtest_main)
-  message(FATAL_ERROR "Target GTest::gtest_main not available.")
+if(BUILD_TESTING)
+  if(NOT TARGET GTest::gtest_main)
+    message(FATAL_ERROR "Target GTest::gtest_main not available.")
+  endif()
+  if(NOT TARGET benchmark::benchmark)
+    message(FATAL_ERROR "Target benchmark::benchmark not available.")
+  endif()
 endif()
 
 # Check language Dependencies

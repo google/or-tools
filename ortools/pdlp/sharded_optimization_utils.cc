@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -350,7 +350,7 @@ enum class ScalingNorm { kL2, kLInf };
 // `vector` in-place. If a component of `divisor` is equal to zero, leaves the
 // component of `vector` unchanged. `sharder` should have the same size as
 // `vector`. For best performance `sharder` should have been created with the
-// `Sharder(int64_t, int, ThreadPool*)` constructor.
+// `Sharder(int64_t, int, Scheduler*)` constructor.
 void DivideBySquareRootOfDivisor(const VectorXd& divisor,
                                  const Sharder& sharder, VectorXd& vector) {
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {

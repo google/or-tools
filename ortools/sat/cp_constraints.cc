@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
@@ -134,20 +135,22 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
 
   int first_non_false = 0;
   const int size = exprs_.size();
+  Literal* const selectors = selectors_.data();
+  AffineExpression* const exprs = exprs_.data();
   for (int i = 0; i < size; ++i) {
-    if (assignment.LiteralIsTrue(selectors_[i])) return true;
+    if (assignment.LiteralIsTrue(selectors[i])) return true;
 
     // The permutation is needed to have proper lazy reason.
-    if (assignment.LiteralIsFalse(selectors_[i])) {
+    if (assignment.LiteralIsFalse(selectors[i])) {
       if (i != first_non_false) {
-        std::swap(selectors_[i], selectors_[first_non_false]);
-        std::swap(exprs_[i], exprs_[first_non_false]);
+        std::swap(selectors[i], selectors[first_non_false]);
+        std::swap(exprs[i], exprs[first_non_false]);
       }
       ++first_non_false;
       continue;
     }
 
-    const IntegerValue min = integer_trail_->LowerBound(exprs_[i]);
+    const IntegerValue min = integer_trail_->LowerBound(exprs[i]);
     if (min < target_min) {
       target_min = min;
 

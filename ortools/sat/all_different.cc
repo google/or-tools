@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,12 +20,15 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -36,8 +39,9 @@ namespace operations_research {
 namespace sat {
 
 std::function<void(Model*)> AllDifferentBinary(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> vars) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     // Fully encode all the given variables and construct a mapping value ->
     // List of literal each indicating that a given variable takes this value.
     //
@@ -81,8 +85,9 @@ std::function<void(Model*)> AllDifferentOnBounds(
 }
 
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> vars) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     if (vars.empty()) return;
     std::vector<AffineExpression> expressions;
     expressions.reserve(vars.size());
@@ -97,106 +102,103 @@ std::function<void(Model*)> AllDifferentOnBounds(
 }
 
 std::function<void(Model*)> AllDifferentAC(
-    const std::vector<IntegerVariable>& variables) {
-  return [=](Model* model) {
+    absl::Span<const IntegerVariable> variables) {
+  return [variables](Model* model) {
     if (variables.size() < 3) return;
 
-    AllDifferentConstraint* constraint = new AllDifferentConstraint(
-        variables, model->GetOrCreate<IntegerEncoder>(),
-        model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>());
+    AllDifferentConstraint* constraint =
+        new AllDifferentConstraint(variables, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
 AllDifferentConstraint::AllDifferentConstraint(
-    std::vector<IntegerVariable> variables, IntegerEncoder* encoder,
-    Trail* trail, IntegerTrail* integer_trail)
+    absl::Span<const IntegerVariable> variables, Model* model)
     : num_variables_(variables.size()),
-      variables_(std::move(variables)),
-      trail_(trail),
-      integer_trail_(integer_trail) {
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
   // Initialize literals cache.
-  int64_t min_value = std::numeric_limits<int64_t>::max();
-  int64_t max_value = std::numeric_limits<int64_t>::min();
-  variable_min_value_.resize(num_variables_);
-  variable_max_value_.resize(num_variables_);
-  variable_literal_index_.resize(num_variables_);
-  int num_fixed_variables = 0;
+  // Note that remap all values appearing here with a dense_index.
+  num_values_ = 0;
+  absl::flat_hash_map<IntegerValue, int> dense_indexing;
+  variable_to_possible_values_.resize(num_variables_);
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
   for (int x = 0; x < num_variables_; x++) {
-    variable_min_value_[x] = integer_trail_->LowerBound(variables_[x]).value();
-    variable_max_value_[x] = integer_trail_->UpperBound(variables_[x]).value();
-
-    // Compute value range of all variables.
-    min_value = std::min(min_value, variable_min_value_[x]);
-    max_value = std::max(max_value, variable_max_value_[x]);
+    const IntegerValue lb = integer_trail_->LowerBound(variables[x]);
+    const IntegerValue ub = integer_trail_->UpperBound(variables[x]);
 
     // FullyEncode does not like 1-value domains, handle this case first.
     // TODO(user): Prune now, ignore these variables during solving.
-    if (variable_min_value_[x] == variable_max_value_[x]) {
-      num_fixed_variables++;
-      variable_literal_index_[x].push_back(kTrueLiteralIndex);
+    if (lb == ub) {
+      const auto [it, inserted] = dense_indexing.insert({lb, num_values_});
+      if (inserted) ++num_values_;
+
+      variable_to_possible_values_[x].push_back(
+          {it->second, encoder->GetTrueLiteral()});
       continue;
     }
 
     // Force full encoding if not already done.
-    if (!encoder->VariableIsFullyEncoded(variables_[x])) {
-      encoder->FullyEncodeVariable(variables_[x]);
+    if (!encoder->VariableIsFullyEncoded(variables[x])) {
+      encoder->FullyEncodeVariable(variables[x]);
     }
 
     // Fill cache with literals, default value is kFalseLiteralIndex.
-    int64_t size = variable_max_value_[x] - variable_min_value_[x] + 1;
-    variable_literal_index_[x].resize(size, kFalseLiteralIndex);
-    for (const auto& entry : encoder->FullDomainEncoding(variables_[x])) {
-      int64_t value = entry.value.value();
-      // Can happen because of initial propagation!
-      if (value < variable_min_value_[x] || variable_max_value_[x] < value) {
-        continue;
-      }
-      variable_literal_index_[x][value - variable_min_value_[x]] =
-          entry.literal.Index();
-    }
-  }
-  min_all_values_ = min_value;
-  num_all_values_ = max_value - min_value + 1;
+    for (const auto [value, lit] : encoder->FullDomainEncoding(variables[x])) {
+      const auto [it, inserted] = dense_indexing.insert({value, num_values_});
+      if (inserted) ++num_values_;
 
-  successor_.resize(num_variables_);
+      variable_to_possible_values_[x].push_back({it->second, lit});
+    }
+
+    // Not sure it is needed, but lets sort.
+    absl::c_sort(
+        variable_to_possible_values_[x],
+        [](const std::pair<int, Literal>& a, const std::pair<int, Literal>& b) {
+          return a.first < b.first;
+        });
+  }
+
   variable_to_value_.assign(num_variables_, -1);
   visiting_.resize(num_variables_);
   variable_visited_from_.resize(num_variables_);
-  residual_graph_successors_.resize(num_variables_ + num_all_values_ + 1);
-  component_number_.resize(num_variables_ + num_all_values_ + 1);
+  component_number_.resize(num_variables_ + num_values_ + 1);
+}
+
+AllDifferentConstraint::AllDifferentConstraint(
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals, Model* model)
+    : num_variables_(num_nodes),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
+  num_values_ = num_nodes;
+
+  // We assume everything is already dense.
+  const int num_arcs = tails.size();
+  variable_to_possible_values_.resize(num_variables_);
+  for (int a = 0; a < num_arcs; ++a) {
+    variable_to_possible_values_[tails[a]].push_back({heads[a], literals[a]});
+  }
+
+  variable_to_value_.assign(num_variables_, -1);
+  visiting_.resize(num_variables_);
+  variable_visited_from_.resize(num_variables_);
+  component_number_.resize(num_variables_ + num_values_ + 1);
 }
 
 void AllDifferentConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->SetPropagatorPriority(id, 2);
-  for (const auto& literal_indices : variable_literal_index_) {
-    for (const LiteralIndex li : literal_indices) {
+  for (int x = 0; x < num_variables_; x++) {
+    for (const auto [_, lit] : variable_to_possible_values_[x]) {
       // Watch only unbound literals.
-      if (li >= 0 &&
-          !trail_->Assignment().VariableIsAssigned(Literal(li).Variable())) {
-        watcher->WatchLiteral(Literal(li), id);
-        watcher->WatchLiteral(Literal(li).Negated(), id);
+      if (!trail_->Assignment().LiteralIsAssigned(lit)) {
+        watcher->WatchLiteral(lit, id);
+        watcher->WatchLiteral(lit.Negated(), id);
       }
     }
   }
-}
-
-LiteralIndex AllDifferentConstraint::VariableLiteralIndexOf(int x,
-                                                            int64_t value) {
-  return (value < variable_min_value_[x] || variable_max_value_[x] < value)
-             ? kFalseLiteralIndex
-             : variable_literal_index_[x][value - variable_min_value_[x]];
-}
-
-inline bool AllDifferentConstraint::VariableHasPossibleValue(int x,
-                                                             int64_t value) {
-  LiteralIndex li = VariableLiteralIndexOf(x, value);
-  if (li == kFalseLiteralIndex) return false;
-  if (li == kTrueLiteralIndex) return true;
-  DCHECK_GE(li, 0);
-  return !trail_->Assignment().LiteralIsFalse(Literal(li));
 }
 
 bool AllDifferentConstraint::MakeAugmentingPath(int start) {
@@ -260,50 +262,30 @@ bool AllDifferentConstraint::MakeAugmentingPath(int start) {
 bool AllDifferentConstraint::Propagate() {
   // Copy variable state to graph state.
   prev_matching_ = variable_to_value_;
-  value_to_variable_.assign(num_all_values_, -1);
+  value_to_variable_.assign(num_values_, -1);
   variable_to_value_.assign(num_variables_, -1);
+  successor_.clear();
+  const auto assignment = AssignmentView(trail_->Assignment());
   for (int x = 0; x < num_variables_; x++) {
-    successor_[x].clear();
-    const int64_t min_value = integer_trail_->LowerBound(variables_[x]).value();
-    const int64_t max_value = integer_trail_->UpperBound(variables_[x]).value();
-    for (int64_t value = min_value; value <= max_value; value++) {
-      if (VariableHasPossibleValue(x, value)) {
-        const int offset_value = value - min_all_values_;
-        // Forward-checking should propagate x != value.
-        successor_[x].push_back(offset_value);
+    successor_.Add({});
+    for (const auto [value, lit] : variable_to_possible_values_[x]) {
+      if (assignment.LiteralIsFalse(lit)) continue;
+
+      // Forward-checking should propagate x != value.
+      successor_.AppendToLastVector(value);
+
+      // Seed with previous matching.
+      if (prev_matching_[x] == value && value_to_variable_[value] == -1) {
+        variable_to_value_[x] = prev_matching_[x];
+        value_to_variable_[prev_matching_[x]] = x;
       }
     }
     if (successor_[x].size() == 1) {
-      const int offset_value = successor_[x][0];
-      if (value_to_variable_[offset_value] == -1) {
-        value_to_variable_[offset_value] = x;
-        variable_to_value_[x] = offset_value;
+      const int value = successor_[x][0];
+      if (value_to_variable_[value] == -1) {
+        value_to_variable_[value] = x;
+        variable_to_value_[x] = value;
       }
-    }
-  }
-
-  // Because we currently propagates all clauses before entering this
-  // propagator, we known that this can't happen.
-  if (DEBUG_MODE) {
-    for (int x = 0; x < num_variables_; x++) {
-      for (const int offset_value : successor_[x]) {
-        if (value_to_variable_[offset_value] != -1 &&
-            value_to_variable_[offset_value] != x) {
-          LOG(FATAL) << "Should have been propagated by AllDifferentBinary()!";
-        }
-      }
-    }
-  }
-
-  // Seed with previous matching.
-  for (int x = 0; x < num_variables_; x++) {
-    if (variable_to_value_[x] != -1) continue;
-    const int prev_value = prev_matching_[x];
-    if (prev_value == -1 || value_to_variable_[prev_value] != -1) continue;
-
-    if (VariableHasPossibleValue(x, prev_matching_[x] + min_all_values_)) {
-      variable_to_value_[x] = prev_matching_[x];
-      value_to_variable_[prev_matching_[x]] = x;
     }
   }
 
@@ -311,7 +293,7 @@ bool AllDifferentConstraint::Propagate() {
   int x = 0;
   for (; x < num_variables_; x++) {
     if (variable_to_value_[x] == -1) {
-      value_visited_.assign(num_all_values_, false);
+      value_visited_.assign(num_values_, false);
       variable_visited_.assign(num_variables_, false);
       MakeAugmentingPath(x);
     }
@@ -327,12 +309,10 @@ bool AllDifferentConstraint::Propagate() {
     conflict->clear();
     for (int y = 0; y < num_variables_; y++) {
       if (!variable_visited_[y]) continue;
-      for (int value = variable_min_value_[y]; value <= variable_max_value_[y];
-           value++) {
-        const LiteralIndex li = VariableLiteralIndexOf(y, value);
-        if (li >= 0 && !value_visited_[value - min_all_values_]) {
-          DCHECK(trail_->Assignment().LiteralIsFalse(Literal(li)));
-          conflict->push_back(Literal(li));
+      for (const auto [value, lit] : variable_to_possible_values_[y]) {
+        if (!value_visited_[value]) {
+          DCHECK(assignment.LiteralIsFalse(lit));
+          conflict->push_back(lit);
         }
       }
     }
@@ -341,32 +321,31 @@ bool AllDifferentConstraint::Propagate() {
 
   // The current matching is a valid solution, now try to filter values.
   // Build residual graph, compute its SCCs.
+  residual_graph_successors_.clear();
   for (int x = 0; x < num_variables_; x++) {
-    residual_graph_successors_[x].clear();
+    residual_graph_successors_.Add({});
     for (const int succ : successor_[x]) {
       if (succ != variable_to_value_[x]) {
-        residual_graph_successors_[x].push_back(num_variables_ + succ);
+        residual_graph_successors_.AppendToLastVector(num_variables_ + succ);
       }
     }
   }
-  for (int offset_value = 0; offset_value < num_all_values_; offset_value++) {
-    residual_graph_successors_[num_variables_ + offset_value].clear();
-    if (value_to_variable_[offset_value] != -1) {
-      residual_graph_successors_[num_variables_ + offset_value].push_back(
-          value_to_variable_[offset_value]);
+
+  const int dummy_node = num_variables_ + num_values_;
+  const bool need_dummy = num_variables_ < num_values_;
+  for (int value = 0; value < num_values_; value++) {
+    residual_graph_successors_.Add({});
+    if (value_to_variable_[value] != -1) {
+      residual_graph_successors_.AppendToLastVector(value_to_variable_[value]);
+    } else if (need_dummy) {
+      residual_graph_successors_.AppendToLastVector(dummy_node);
     }
   }
-  const int dummy_node = num_variables_ + num_all_values_;
-  residual_graph_successors_[dummy_node].clear();
-  if (num_variables_ < num_all_values_) {
+  if (need_dummy) {
+    DCHECK_EQ(residual_graph_successors_.size(), dummy_node);
+    residual_graph_successors_.Add({});
     for (int x = 0; x < num_variables_; x++) {
-      residual_graph_successors_[dummy_node].push_back(x);
-    }
-    for (int offset_value = 0; offset_value < num_all_values_; offset_value++) {
-      if (value_to_variable_[offset_value] == -1) {
-        residual_graph_successors_[num_variables_ + offset_value].push_back(
-            dummy_node);
-      }
+      residual_graph_successors_.AppendToLastVector(x);
     }
   }
 
@@ -390,47 +369,45 @@ bool AllDifferentConstraint::Propagate() {
   // Remove arcs var -> val where SCC(var) -/->* SCC(val).
   for (int x = 0; x < num_variables_; x++) {
     if (successor_[x].size() == 1) continue;
-    for (const int offset_value : successor_[x]) {
-      const int value_node = offset_value + num_variables_;
-      if (variable_to_value_[x] != offset_value &&
-          component_number_[x] != component_number_[value_node] &&
-          VariableHasPossibleValue(x, offset_value + min_all_values_)) {
-        // We can deduce that x != value. To explain, force x == offset_value,
+    for (const auto [value, x_lit] : variable_to_possible_values_[x]) {
+      if (assignment.LiteralIsFalse(x_lit)) continue;
+
+      const int value_node = value + num_variables_;
+      DCHECK_LT(value_node, component_number_.size());
+      if (variable_to_value_[x] != value &&
+          component_number_[x] != component_number_[value_node]) {
+        // We can deduce that x != value. To explain, force x == value,
         // then find another assignment for the variable matched to
-        // offset_value. It will fail: explaining why is the same as
+        // value. It will fail: explaining why is the same as
         // explaining failure as above, and it is an explanation of x != value.
-        value_visited_.assign(num_all_values_, false);
+        value_visited_.assign(num_values_, false);
         variable_visited_.assign(num_variables_, false);
-        // Undo x -> old_value and old_variable -> offset_value.
-        const int old_variable = value_to_variable_[offset_value];
+        // Undo x -> old_value and old_variable -> value.
+        const int old_variable = value_to_variable_[value];
+        DCHECK_GE(old_variable, 0);
+        DCHECK_LT(old_variable, num_variables_);
         variable_to_value_[old_variable] = -1;
         const int old_value = variable_to_value_[x];
         value_to_variable_[old_value] = -1;
-        variable_to_value_[x] = offset_value;
-        value_to_variable_[offset_value] = x;
+        variable_to_value_[x] = value;
+        value_to_variable_[value] = x;
 
-        value_visited_[offset_value] = true;
+        value_visited_[value] = true;
         MakeAugmentingPath(old_variable);
         DCHECK_EQ(variable_to_value_[old_variable], -1);  // No reassignment.
 
         std::vector<Literal>* reason = trail_->GetEmptyVectorToStoreReason();
         for (int y = 0; y < num_variables_; y++) {
           if (!variable_visited_[y]) continue;
-          for (int value = variable_min_value_[y];
-               value <= variable_max_value_[y]; value++) {
-            const LiteralIndex li = VariableLiteralIndexOf(y, value);
-            if (li >= 0 && !value_visited_[value - min_all_values_]) {
-              DCHECK(!VariableHasPossibleValue(y, value));
-              reason->push_back(Literal(li));
+          for (const auto [value, y_lit] : variable_to_possible_values_[y]) {
+            if (!value_visited_[value]) {
+              DCHECK(assignment.LiteralIsFalse(y_lit));
+              reason->push_back(y_lit);
             }
           }
         }
 
-        const LiteralIndex li =
-            VariableLiteralIndexOf(x, offset_value + min_all_values_);
-        DCHECK_NE(li, kTrueLiteralIndex);
-        DCHECK_NE(li, kFalseLiteralIndex);
-        return trail_->EnqueueWithStoredReason(Literal(li).Negated());
+        return trail_->EnqueueWithStoredReason(x_lit.Negated());
       }
     }
   }
@@ -439,8 +416,7 @@ bool AllDifferentConstraint::Propagate() {
 }
 
 AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
-    const std::vector<AffineExpression>& expressions,
-    IntegerTrail* integer_trail)
+    absl::Span<const AffineExpression> expressions, IntegerTrail* integer_trail)
     : integer_trail_(integer_trail) {
   CHECK(!expressions.empty());
 

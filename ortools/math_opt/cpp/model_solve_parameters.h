@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/map_filter.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/model.h"
@@ -184,10 +185,21 @@ struct ModelSolveParameters {
     //  If set, must be nonnegative.
     std::optional<double> objective_degradation_relative_tolerance;
 
-    // Returns the proto equivalent of this object.
-    ObjectiveParametersProto Proto() const;
+    // Maximum time a solver should spend on optimizing this particular
+    // objective (or infinite if not set).
+    //
+    // Note that this does not supersede the global time limit in
+    // SolveParametersProto.time_limit; both will be enforced when set.
+    //
+    // This value is not a hard limit, solve time may slightly exceed this
+    // value.
+    absl::Duration time_limit = absl::InfiniteDuration();
 
-    static ObjectiveParameters FromProto(const ObjectiveParametersProto& proto);
+    // Returns the proto equivalent of this object.
+    absl::StatusOr<ObjectiveParametersProto> Proto() const;
+
+    static absl::StatusOr<ObjectiveParameters> FromProto(
+        const ObjectiveParametersProto& proto);
   };
   // Parameters for individual objectives in a multi-objective model.
   ObjectiveMap<ObjectiveParameters> objective_parameters;
@@ -209,7 +221,7 @@ struct ModelSolveParameters {
   //
   // The caller should use CheckModelStorage() as this function does not check
   // internal consistency of the referenced variables and constraints.
-  ModelSolveParametersProto Proto() const;
+  absl::StatusOr<ModelSolveParametersProto> Proto() const;
 
   // Returns the ModelSolveParameters corresponding to this proto and the given
   // model.

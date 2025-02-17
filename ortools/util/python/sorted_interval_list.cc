@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+#include "absl/strings/str_cat.h"
 #include "ortools/util/python/sorted_interval_list_doc.h"
 #include "pybind11/cast.h"
 #include "pybind11/pybind11.h"
@@ -57,6 +58,10 @@ PYBIND11_MODULE(sorted_interval_list, m) {
       .def("union_with", &Domain::UnionWith,
            DOC(operations_research, Domain, UnionWith), arg("domain"))
       .def("__str__", &Domain::ToString)
+      .def("__repr__",
+           [](const Domain& domain) {
+             return absl::StrCat("Domain(", domain.ToString(), ")");
+           })
       // Compatibility with pre PEP8 APIs.
       .def_static("AllValues", &Domain::AllValues,
                   DOC(operations_research, Domain, AllValues))

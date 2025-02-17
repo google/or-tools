@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,10 +34,6 @@ inline std::string Stringify(const float a) {
 
 inline std::string Stringify(const double a) {
   return absl::StrFormat("%.16g", a);
-}
-
-inline std::string Stringify(const long double a) {
-  return absl::StrFormat("%.19g", a);
 }
 
 // Returns a string "num/den" representing the rational approximation of x.

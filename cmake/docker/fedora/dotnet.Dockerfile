@@ -2,7 +2,7 @@ FROM ortools/cmake:fedora_swig AS env
 
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-6.0 \
+&& dnf -y install dotnet-sdk-8.0 \
 && dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
@@ -14,7 +14,7 @@ COPY . .
 FROM devel AS build
 RUN cmake -version
 RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
-RUN cmake --build build --target all -v
+RUN OPENSSL_ENABLE_SHA1_SIGNATURES=1 cmake --build build --target all -v
 RUN cmake --build build --target install -v
 
 FROM build AS test

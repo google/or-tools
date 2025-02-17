@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,15 +14,22 @@
 #include "ortools/util/piecewise_linear_function.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
+#include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -78,6 +85,7 @@ uint64_t UnsignedCapProd(uint64_t left, uint64_t right) {
 }
 }  // namespace
 
+// PiecewiseSegment
 PiecewiseSegment::PiecewiseSegment(int64_t point_x, int64_t point_y,
                                    int64_t slope, int64_t other_point_x)
     : slope_(slope), reference_x_(point_x), reference_y_(point_y) {
@@ -269,6 +277,7 @@ std::string PiecewiseSegment::DebugString() const {
   return result;
 }
 
+// PiecewiseLinearFunction
 const int PiecewiseLinearFunction::kNotFound = -1;
 
 PiecewiseLinearFunction::PiecewiseLinearFunction(
@@ -798,6 +807,62 @@ bool PiecewiseLinearFunction::IsNonIncreasingInternal() const {
     value = end_y;
   }
   return true;
+}
+
+// FloatSlopePiecewiseLinearFunction
+const int FloatSlopePiecewiseLinearFunction::kNoValue = -1;
+
+FloatSlopePiecewiseLinearFunction::FloatSlopePiecewiseLinearFunction(
+    absl::InlinedVector<int64_t, 8> x_anchors,
+    absl::InlinedVector<int64_t, 8> y_anchors)
+    : x_anchors_(std::move(x_anchors)), y_anchors_(std::move(y_anchors)) {
+  DCHECK(absl::c_is_sorted(x_anchors_));
+  DCHECK_EQ(x_anchors_.size(), y_anchors_.size());
+  DCHECK_NE(x_anchors_.size(), 1);
+}
+
+std::string FloatSlopePiecewiseLinearFunction::DebugString(
+    absl::string_view line_prefix) const {
+  if (x_anchors_.size() <= 10) {
+    return "{ " + DUMP_VARS(x_anchors_, y_anchors_).str() + "}";
+  }
+  return absl::StrFormat("{\n%s%s\n%s%s\n}", line_prefix,
+                         DUMP_VARS(x_anchors_).str(), line_prefix,
+                         DUMP_VARS(y_anchors_).str());
+}
+
+int64_t FloatSlopePiecewiseLinearFunction::ComputeInBoundsValue(
+    int64_t x) const {
+  const int segment_index = GetSegmentIndex(x);
+  if (segment_index == kNoValue) return kNoValue;
+  return GetValueOnSegment(x, segment_index);
+}
+
+int64_t FloatSlopePiecewiseLinearFunction::ComputeConvexValue(int64_t x) const {
+  if (x_anchors_.empty()) return kNoValue;
+
+  int segment_index = kNoValue;
+  if (x <= x_anchors_[0]) {
+    segment_index = 0;
+  } else if (x >= x_anchors_.back()) {
+    segment_index = x_anchors_.size() - 2;
+  } else {
+    segment_index = GetSegmentIndex(x);
+  }
+
+  return GetValueOnSegment(x, segment_index);
+}
+
+int64_t FloatSlopePiecewiseLinearFunction::GetValueOnSegment(
+    int64_t x, int segment_index) const {
+  DCHECK_GE(segment_index, 0);
+  DCHECK_LE(segment_index, x_anchors_.size() - 2);
+  const double slope =
+      static_cast<double>(y_anchors_[segment_index + 1] -
+                          y_anchors_[segment_index]) /
+      (x_anchors_[segment_index + 1] - x_anchors_[segment_index]);
+  return MathUtil::Round<int64_t>(slope * (x - x_anchors_[segment_index]) +
+                                  y_anchors_[segment_index]);
 }
 
 }  // namespace operations_research

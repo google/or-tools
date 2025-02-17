@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -22,12 +24,15 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -274,6 +279,11 @@ class LinearConstraintBuilder {
   LinearConstraint Build();
   LinearConstraint BuildConstraint(IntegerValue lb, IntegerValue ub);
 
+  // Similar to BuildConstraint() but make sure we don't overflow while we merge
+  // terms referring to the same variables.
+  bool BuildIntoConstraintAndCheckOverflow(IntegerValue lb, IntegerValue ub,
+                                           LinearConstraint* ct);
+
   // Returns the linear expression part of the constraint only, without the
   // bounds.
   LinearExpression BuildExpression();
@@ -396,6 +406,41 @@ inline void CleanTermsAndFillConstraint(
     ++new_size;
   }
   output->resize(new_size);
+}
+
+inline bool MergePositiveVariableTermsAndCheckForOverflow(
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    LinearConstraint* output) {
+  // Sort and add coeff of duplicate variables. Note that a variable and
+  // its negation will appear one after another in the natural order.
+  int new_size = 0;
+  output->resize(terms->size());
+  std::sort(terms->begin(), terms->end());
+  IntegerVariable previous_var = kNoIntegerVariable;
+  int64_t current_coeff = 0;
+  for (const std::pair<IntegerVariable, IntegerValue>& entry : *terms) {
+    DCHECK(VariableIsPositive(entry.first));
+    if (previous_var == entry.first) {
+      if (AddIntoOverflow(entry.second.value(), &current_coeff)) {
+        return false;
+      }
+    } else {
+      if (current_coeff != 0) {
+        output->vars[new_size] = previous_var;
+        output->coeffs[new_size] = current_coeff;
+        ++new_size;
+      }
+      previous_var = entry.first;
+      current_coeff = entry.second.value();
+    }
+  }
+  if (current_coeff != 0) {
+    output->vars[new_size] = previous_var;
+    output->coeffs[new_size] = current_coeff;
+    ++new_size;
+  }
+  output->resize(new_size);
+  return true;
 }
 
 }  // namespace sat

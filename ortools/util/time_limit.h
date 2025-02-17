@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -38,7 +38,7 @@
  * Enables changing the behavior of the TimeLimit class to use -b usertime
  * instead of \b walltime. This is mainly useful for benchmarks.
  */
-ABSL_DECLARE_FLAG(bool, time_limit_use_usertime);
+OR_DLL ABSL_DECLARE_FLAG(bool, time_limit_use_usertime);
 
 namespace operations_research {
 
@@ -91,7 +91,7 @@ namespace operations_research {
  */
 // TODO(user): The expression "deterministic time" should be replaced with
 //                 "number of operations" to avoid confusion with "real" time.
-class TimeLimit {
+class OR_DLL TimeLimit {
  public:
   static const double kSafetyBufferSeconds;  // See the .cc for the value.
   static const int kHistorySize;

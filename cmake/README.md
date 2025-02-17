@@ -1,10 +1,11 @@
 # OR-Tools CMake Build Instructions
 
-| OS       | C++   | Python   | Java   | .NET   |
-|:-------- | :---: | :------: | :----: | :----: |
-| Linux    | [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][linux_python_svg]][linux_python_link] | [![Status][linux_java_svg]][linux_java_link] | [![Status][linux_dotnet_svg]][linux_dotnet_link] |
-| MacOS    | [![Status][macos_cpp_svg]][macos_cpp_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] |
-| Windows  | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
+| OS   | C++   | Python   | Java   | .NET   |
+|:---- | :---: | :------: | :----: | :----: |
+| amd64 Linux   | [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][linux_python_svg]][linux_python_link] | [![Status][linux_java_svg]][linux_java_link] | [![Status][linux_dotnet_svg]][linux_dotnet_link] |
+| arm64 MacOS   | [![Status][arm64_macos_cpp_svg]][arm64_macos_cpp_link] | [![Status][arm64_macos_python_svg]][arm64_macos_python_link] | [![Status][arm64_macos_java_svg]][arm64_macos_java_link] | [![Status][arm64_macos_dotnet_svg]][arm64_macos_dotnet_link] |
+| amd64 MacOS   | [![Status][amd64_macos_cpp_svg]][amd64_macos_cpp_link] | [![Status][amd64_macos_python_svg]][amd64_macos_python_link] | [![Status][amd64_macos_java_svg]][amd64_macos_java_link] | [![Status][amd64_macos_dotnet_svg]][amd64_macos_dotnet_link] |
+| amd64 Windows | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
 
 [linux_cpp_svg]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml/badge.svg?branch=main
 [linux_cpp_link]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml
@@ -15,14 +16,23 @@
 [linux_dotnet_svg]: ./../../../actions/workflows/amd64_linux_cmake_dotnet.yml/badge.svg?branch=main
 [linux_dotnet_link]: ./../../../actions/workflows/amd64_linux_cmake_dotnet.yml
 
-[macos_cpp_svg]: ./../../../actions/workflows/amd64_macos_cmake_cpp.yml/badge.svg?branch=main
-[macos_cpp_link]: ./../../../actions/workflows/amd64_macos_cmake_cpp.yml
-[macos_python_svg]: ./../../../actions/workflows/amd64_macos_cmake_python.yml/badge.svg?branch=main
-[macos_python_link]: ./../../../actions/workflows/amd64_macos_cmake_python.yml
-[macos_java_svg]: ./../../../actions/workflows/amd64_macos_cmake_java.yml/badge.svg?branch=main
-[macos_java_link]: ./../../../actions/workflows/amd64_macos_cmake_java.yml
-[macos_dotnet_svg]: ./../../../actions/workflows/amd64_macos_cmake_dotnet.yml/badge.svg?branch=main
-[macos_dotnet_link]: ./../../../actions/workflows/amd64_macos_cmake_dotnet.yml
+[arm64_macos_cpp_svg]: ./../../../actions/workflows/arm64_macos_cmake_cpp.yml/badge.svg?branch=main
+[arm64_macos_cpp_link]: ./../../../actions/workflows/arm64_macos_cmake_cpp.yml
+[arm64_macos_python_svg]: ./../../../actions/workflows/arm64_macos_cmake_python.yml/badge.svg?branch=main
+[arm64_macos_python_link]: ./../../../actions/workflows/arm64_macos_cmake_python.yml
+[arm64_macos_java_svg]: ./../../../actions/workflows/arm64_macos_cmake_java.yml/badge.svg?branch=main
+[arm64_macos_java_link]: ./../../../actions/workflows/arm64_macos_cmake_java.yml
+[arm64_macos_dotnet_svg]: ./../../../actions/workflows/arm64_macos_cmake_dotnet.yml/badge.svg?branch=main
+[arm64_macos_dotnet_link]: ./../../../actions/workflows/arm64_macos_cmake_dotnet.yml
+
+[amd64_macos_cpp_svg]: ./../../../actions/workflows/amd64_macos_cmake_cpp.yml/badge.svg?branch=main
+[amd64_macos_cpp_link]: ./../../../actions/workflows/amd64_macos_cmake_cpp.yml
+[amd64_macos_python_svg]: ./../../../actions/workflows/amd64_macos_cmake_python.yml/badge.svg?branch=main
+[amd64_macos_python_link]: ./../../../actions/workflows/amd64_macos_cmake_python.yml
+[amd64_macos_java_svg]: ./../../../actions/workflows/amd64_macos_cmake_java.yml/badge.svg?branch=main
+[amd64_macos_java_link]: ./../../../actions/workflows/amd64_macos_cmake_java.yml
+[amd64_macos_dotnet_svg]: ./../../../actions/workflows/amd64_macos_cmake_dotnet.yml/badge.svg?branch=main
+[amd64_macos_dotnet_link]: ./../../../actions/workflows/amd64_macos_cmake_dotnet.yml
 
 [windows_cpp_svg]: ./../../../actions/workflows/amd64_windows_cmake_cpp.yml/badge.svg?branch=main
 [windows_cpp_link]: ./../../../actions/workflows/amd64_windows_cmake_cpp.yml
@@ -236,6 +246,8 @@ cmake -S. -Bbuild -LH
 | `USE_DOTNET_CORE_31`  | OFF | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
 | `USE_DOTNET_6`  | ON | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
 | `USE_DOTNET_7`  | OFF | Enable .Net 7 support<br>Only available if `BUILD_DOTNET=ON` |
+| `USE_DOTNET_8`  | OFF | Enable .Net 8 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| `USE_DOTNET_9`  | OFF | Enable .Net 9 support<br>Only available if `BUILD_DOTNET=ON` |
 | `UNIVERSAL_DOTNET_PACKAGE`  | OFF | Build a multi platform package (i.e. `Google.OrTools` will depends on all runtime packages)<br>Only available if `BUILD_DOTNET=ON` |
 | | | |
 | `SKIP_GPG`  | ON | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |

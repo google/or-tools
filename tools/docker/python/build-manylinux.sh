@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,7 +35,7 @@ DESCRIPTION
 
 \tYou MUST define the following variables before running this script:
 \t* PLATFORM: x86_64 aarch64
-\t* PYTHON_VERSION: 3 38 39 310 311 312
+\t* PYTHON_VERSION: 3 38 39 310 311 312 313
 note: PYTHON_VERSION=3 will generate for all pythons which could take time...
 
 OPTIONS
@@ -107,6 +107,7 @@ function build_wheel() {
 
 function check_wheel() {
   assert_defined BUILD_DIR
+  assert_defined VENV_DIR
   # Check the wheel artifact
   # Arguments:
   #   $1 the python root directory
@@ -115,9 +116,14 @@ function check_wheel() {
     exit 1
   fi
 
+  # shellcheck source=/dev/null
+  source "${VENV_DIR}/bin/activate"
+  pip install -U auditwheel
+
   # Check mypy files
   declare -a MYPY_FILES=(
     "ortools/algorithms/python/knapsack_solver.pyi"
+    "ortools/algorithms/python/set_cover.pyi"
     "ortools/constraint_solver/pywrapcp.pyi"
     "ortools/graph/python/linear_sum_assignment.pyi"
     "ortools/graph/python/max_flow.pyi"
@@ -126,7 +132,7 @@ function check_wheel() {
     "ortools/linear_solver/python/model_builder_helper.pyi"
     "ortools/linear_solver/pywraplp.pyi"
     "ortools/pdlp/python/pdlp.pyi"
-    "ortools/sat/python/swig_helper.pyi"
+    "ortools/sat/python/cp_model_helper.pyi"
     "ortools/scheduling/python/rcpsp.pyi"
     "ortools/util/python/sorted_interval_list.pyi"
   )
@@ -138,16 +144,20 @@ function check_wheel() {
   done
 
   # Check all generated wheel packages
+  ROOT_DIR=$(pwd)
   pushd "${BUILD_DIR}/python/dist"
   for FILE in *.whl; do
     # if no files found do nothing
     [[ -e "$FILE" ]] || continue
-    auditwheel show "$FILE" || true
-    auditwheel -v repair --plat "manylinux2014_$PLATFORM" "$FILE" -w "$export_root"
-    #auditwheel -v repair --plat manylinux2014_x86_64 "$FILE" -w "$export_root"
-    #auditwheel -v repair --plat manylinux2014_aarch64 "$FILE" -w "$export_root"
+    python -m auditwheel show "$FILE" || true
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${ROOT_DIR}/${BUILD_DIR}/lib64" python -m auditwheel repair --plat "manylinux_2_28_$PLATFORM" "$FILE" -w .
+    #python -m auditwheel -v repair --plat manylinux_2_28_x86_64 "$FILE" -w .
+    #python -m auditwheel -v repair --plat manylinux_2_28_aarch64 "$FILE" -w .
   done
   popd
+
+  # Restore environment
+  deactivate
 }
 
 function test_wheel() {

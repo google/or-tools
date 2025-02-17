@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,19 +15,12 @@
 
 #include <string>
 
-#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
+#define ROOT_DIR "_main/"
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
-
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 TEST(TspTWParserTest, LoadDataSet) {
@@ -46,8 +39,7 @@ TEST(TspTWParserTest, LoadDataSet) {
         ROOT_DIR "ortools/routing/parsers/testdata/"
                  "n20w20.002.txt"}) {
     TspTWParser parser;
-    EXPECT_TRUE(parser.LoadFile(
-        file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), data)));
+    EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), data)));
     EXPECT_EQ(0, parser.depot());
     const int size = sizes[count];
     EXPECT_EQ(size, parser.size());
@@ -77,4 +69,4 @@ TEST(TspTWParserTest, LoadDataSet) {
 }
 
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2024 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -28,7 +28,7 @@ class RcpspTest(absltest.TestCase):
         parser = rcpsp.RcpspParser()
         data = "ortools/scheduling/testdata/j301_1.sm"
         try:
-            filename = f"{FLAGS.test_srcdir}/com_google_ortools/{data}"
+            filename = f"{FLAGS.test_srcdir}/_main/{data}"
         except flags._exceptions.UnparsedFlagAccessError:
             filename = f"../../../{data}"
         self.assertTrue(parser.parse_file(filename))

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
@@ -64,6 +65,9 @@ public class VrpGlobalSpan {
     // Inspect solution.
     long maxRouteDistance = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
+      if (!routing.isVehicleUsed(solution, i)) {
+        continue;
+      }
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
@@ -118,7 +122,7 @@ public class VrpGlobalSpan {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex, 0, 3000,
+    boolean unused = routing.addDimension(transitCallbackIndex, 0, 3000,
         true, // start cumul to zero
         "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");

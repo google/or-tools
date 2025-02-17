@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -393,6 +393,28 @@ public class SatSolverTest
     }
 
     [Fact]
+    public void ValueElement()
+    {
+        CpModel model = new CpModel();
+        IntVar v1 = model.NewIntVar(1, 10, "v1");
+        IntVar v2 = model.NewIntVar(1, 10, "v2");
+        model.AddElement(v1 + 2, new int[] { 1, 3, 5 }, 5 - v2);
+        Assert.Equal(3, model.Model.Constraints[0].Element.Exprs.Count);
+    }
+
+    public void ExprElement()
+    {
+        CpModel model = new CpModel();
+        IntVar v1 = model.NewIntVar(1, 10, "v1");
+        IntVar v2 = model.NewIntVar(1, 10, "v2");
+        IntVar x = model.NewIntVar(0, 5, "x");
+        IntVar y = model.NewIntVar(0, 5, "y");
+        IntVar z = model.NewIntVar(0, 5, "z");
+        model.AddElement(v1, new LinearExpr[] { x + 2, -y, LinearExpr.Constant(5), 2 * z }, 5 - v2);
+        Assert.Equal(4, model.Model.Constraints[0].Element.Exprs.Count);
+    }
+
+    [Fact]
     public void LargeWeightedSumLong()
     {
         CpModel model = new CpModel();
@@ -771,6 +793,6 @@ public class SatSolverTest
         Assert.Equal(0, model.Model.SolutionHint.Values[1]);
         Assert.Equal(2, model.Model.SolutionHint.Vars[2]);
         Assert.Equal(1, model.Model.SolutionHint.Values[2]);
-    }    
+    }
 }
 } // namespace Google.OrTools.Tests

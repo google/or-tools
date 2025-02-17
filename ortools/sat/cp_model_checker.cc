@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,11 +17,13 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -33,6 +35,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -102,13 +105,13 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 
   // Internally, we often take the negation of a domain, and we also want to
   // have sentinel values greater than the min/max of a variable domain, so
-  // the domain must fall in [kint64min + 2, kint64max - 1].
+  // the domain must fall in [-kint64max / 2, kint64max / 2].
   const int64_t lb = proto.domain(0);
   const int64_t ub = proto.domain(proto.domain_size() - 1);
-  if (lb < std::numeric_limits<int64_t>::min() + 2 ||
-      ub > std::numeric_limits<int64_t>::max() - 1) {
+  if (lb < -std::numeric_limits<int64_t>::max() / 2 ||
+      ub > std::numeric_limits<int64_t>::max() / 2) {
     return absl::StrCat(
-        "var #", v, " domain do not fall in [kint64min + 2, kint64max - 1]. ",
+        "var #", v, " domain do not fall in [-kint64max / 2, kint64max / 2]. ",
         ProtobufShortDebugString(proto));
   }
 
@@ -358,8 +361,14 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
   // Detect potential overflow.
   Domain product_domain(1);
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
-    product_domain = product_domain.ContinuousMultiplicationBy(
-        {MinOfExpression(model, expr), MaxOfExpression(model, expr)});
+    const int64_t min_expr = MinOfExpression(model, expr);
+    const int64_t max_expr = MaxOfExpression(model, expr);
+    if (min_expr == 0 && max_expr == 0) {
+      // An overflow multiplied by zero is still invalid.
+      continue;
+    }
+    product_domain =
+        product_domain.ContinuousMultiplicationBy({min_expr, max_expr});
   }
 
   if (product_domain.Max() <= -std ::numeric_limits<int64_t>::max() ||
@@ -414,55 +423,160 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
   return "";
 }
 
+void AppendToOverflowValidator(const LinearExpressionProto& input,
+                               LinearExpressionProto* output,
+                               int64_t prod = 1) {
+  output->mutable_vars()->Add(input.vars().begin(), input.vars().end());
+  for (const int64_t coeff : input.coeffs()) {
+    output->add_coeffs(coeff * prod);
+  }
+
+  // We add the absolute value to be sure that future computation will not
+  // overflow depending on the order they are performed in.
+  output->set_offset(
+      CapAdd(std::abs(output->offset()), std::abs(input.offset())));
+}
+
 std::string ValidateElementConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
   const ElementConstraintProto& element = ct.element();
 
+  const bool in_linear_format = element.has_linear_index() ||
+                                element.has_linear_target() ||
+                                !element.exprs().empty();
+  const bool in_legacy_format =
+      !element.vars().empty() || element.index() != 0 || element.target() != 0;
+  if (in_linear_format && in_legacy_format) {
+    return absl::StrCat(
+        "Inconsistent element with both legacy and new format defined",
+        ProtobufShortDebugString(ct));
+  }
+
+  if (element.vars().empty() && element.exprs().empty()) {
+    return "Empty element constraint is interpreted as vars[], thus invalid "
+           "since the index will be out of bounds.";
+  }
+
   // We need to be able to manipulate expression like "target - var" without
   // integer overflow.
-  LinearExpressionProto overflow_detection;
-  overflow_detection.add_vars(element.target());
-  overflow_detection.add_coeffs(1);
-  overflow_detection.add_vars(/*dummy*/ 0);
-  overflow_detection.add_coeffs(-1);
-  for (const int ref : element.vars()) {
-    overflow_detection.set_vars(1, ref);
-    if (PossibleIntegerOverflow(model, overflow_detection.vars(),
-                                overflow_detection.coeffs())) {
+  if (!element.vars().empty()) {
+    LinearExpressionProto overflow_detection;
+    overflow_detection.add_vars(element.target());
+    overflow_detection.add_coeffs(1);
+    overflow_detection.add_vars(/*dummy*/ 0);
+    overflow_detection.add_coeffs(-1);
+    for (const int ref : element.vars()) {
+      if (!VariableIndexIsValid(model, ref)) {
+        return absl::StrCat("Element vars must be valid variables: ",
+                            ProtobufShortDebugString(ct));
+      }
+      overflow_detection.set_vars(1, ref);
+      if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+                                  overflow_detection.coeffs())) {
+        return absl::StrCat(
+            "Domain of the variables involved in element constraint may cause "
+            "overflow",
+            ProtobufShortDebugString(ct));
+      }
+    }
+  }
+
+  if (in_legacy_format) {
+    if (!VariableIndexIsValid(model, element.index()) ||
+        !VariableIndexIsValid(model, element.target())) {
       return absl::StrCat(
-          "Domain of the variables involved in element constraint may cause "
-          "overflow",
+          "Element constraint index and target must valid variables: ",
           ProtobufShortDebugString(ct));
     }
   }
+
+  if (in_linear_format) {
+    RETURN_IF_NOT_EMPTY(
+        ValidateAffineExpression(model, element.linear_index()));
+    RETURN_IF_NOT_EMPTY(
+        ValidateAffineExpression(model, element.linear_target()));
+    for (const LinearExpressionProto& expr : element.exprs()) {
+      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+      LinearExpressionProto overflow_detection = ct.element().linear_target();
+      AppendToOverflowValidator(expr, &overflow_detection, -1);
+      overflow_detection.set_offset(overflow_detection.offset() -
+                                    expr.offset());
+      if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+                                  overflow_detection.coeffs(),
+                                  overflow_detection.offset())) {
+        return absl::StrCat(
+            "Domain of the variables involved in element constraint may cause "
+            "overflow");
+      }
+    }
+  }
+
   return "";
 }
 
-std::string ValidateTableConstraint(const ConstraintProto& ct) {
+std::string ValidateTableConstraint(const CpModelProto& model,
+                                    const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
-  if (arg.vars().empty()) return "";
-  if (arg.values().size() % arg.vars().size() != 0) {
+  if (!arg.vars().empty() && !arg.exprs().empty()) {
     return absl::StrCat(
-        "The flat encoding of a table constraint must be a multiple of the "
-        "number of variable: ",
+        "Inconsistent table with both legacy and new format defined: ",
+        ProtobufShortDebugString(ct));
+  }
+  if (arg.vars().empty() && arg.exprs().empty() && !arg.values().empty()) {
+    return absl::StrCat(
+        "Inconsistent table empty expressions and non-empty tuples: ",
+        ProtobufShortDebugString(ct));
+  }
+  if (arg.vars().empty() && arg.exprs().empty() && arg.values().empty()) {
+    return "";
+  }
+  const int arity = arg.vars().empty() ? arg.exprs().size() : arg.vars().size();
+  if (arg.values().size() % arity != 0) {
+    return absl::StrCat(
+        "The flat encoding of a table constraint tuples must be a multiple of "
+        "the number of expressions: ",
         ProtobufDebugString(ct));
+  }
+  for (const int var : arg.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in table constraint: ", var);
+    }
+  }
+  for (const LinearExpressionProto& expr : arg.exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }
   return "";
 }
 
-std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
-  const int num_transistions = ct.automaton().transition_tail().size();
-  if (num_transistions != ct.automaton().transition_head().size() ||
-      num_transistions != ct.automaton().transition_label().size()) {
+std::string ValidateAutomatonConstraint(const CpModelProto& model,
+                                        const ConstraintProto& ct) {
+  const AutomatonConstraintProto& automaton = ct.automaton();
+  if (!automaton.vars().empty() && !automaton.exprs().empty()) {
+    return absl::StrCat(
+        "Inconsistent automaton with both legacy and new format defined: ",
+        ProtobufShortDebugString(ct));
+  }
+  const int num_transistions = automaton.transition_tail().size();
+  if (num_transistions != automaton.transition_head().size() ||
+      num_transistions != automaton.transition_label().size()) {
     return absl::StrCat(
         "The transitions repeated fields must have the same size: ",
         ProtobufShortDebugString(ct));
   }
+  for (const int var : automaton.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable index in automaton constraint: ",
+                          var);
+    }
+  }
+  for (const LinearExpressionProto& expr : automaton.exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+  }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
-    const int64_t tail = ct.automaton().transition_tail(i);
-    const int64_t head = ct.automaton().transition_head(i);
-    const int64_t label = ct.automaton().transition_label(i);
+    const int64_t tail = automaton.transition_tail(i);
+    const int64_t head = automaton.transition_head(i);
+    const int64_t label = automaton.transition_label(i);
     if (label <= std::numeric_limits<int64_t>::min() + 1 ||
         label == std::numeric_limits<int64_t>::max()) {
       return absl::StrCat("labels in the automaton constraint are too big: ",
@@ -533,18 +647,15 @@ std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
         "All nodes in a route constraint must have incident arcs");
   }
 
+  // If the demands field is present, it must be of size nodes.size().
+  if (!ct.routes().demands().empty() &&
+      ct.routes().demands().size() != nodes.size()) {
+    return absl::StrCat(
+        "If the demands fields is set, it must be of size num_nodes:",
+        nodes.size());
+  }
+
   return ValidateGraphInput(/*is_route=*/true, ct.routes());
-}
-
-void AppendToOverflowValidator(const LinearExpressionProto& input,
-                               LinearExpressionProto* output) {
-  output->mutable_vars()->Add(input.vars().begin(), input.vars().end());
-  output->mutable_coeffs()->Add(input.coeffs().begin(), input.coeffs().end());
-
-  // We add the absolute value to be sure that future computation will not
-  // overflow depending on the order they are performed in.
-  output->set_offset(
-      CapAdd(std::abs(output->offset()), std::abs(input.offset())));
 }
 
 std::string ValidateIntervalConstraint(const CpModelProto& model,
@@ -594,7 +705,7 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
            "variable are currently not supported.";
   }
   RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end()));
-  AppendToOverflowValidator(arg.end(), &for_overflow_validation);
+  AppendToOverflowValidator(arg.end(), &for_overflow_validation, -1);
 
   if (PossibleIntegerOverflow(model, for_overflow_validation.vars(),
                               for_overflow_validation.coeffs(),
@@ -690,6 +801,15 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   }
   for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
     RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    // We want to be able to safely put time_exprs[i]-time_exprs[j] in a linear.
+    if (MinOfExpression(model, expr) <=
+            -std::numeric_limits<int64_t>::max() / 4 ||
+        MaxOfExpression(model, expr) >=
+            std::numeric_limits<int64_t>::max() / 4) {
+      return absl::StrCat(
+          "Potential integer overflow on time_expr of a reservoir: ",
+          ProtobufShortDebugString(ct));
+    }
   }
   for (const LinearExpressionProto& expr : ct.reservoir().level_changes()) {
     RETURN_IF_NOT_EMPTY(ValidateConstantAffineExpression(model, expr));
@@ -801,7 +921,8 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
         drs != DecisionStrategyProto::SELECT_MAX_VALUE &&
         drs != DecisionStrategyProto::SELECT_LOWER_HALF &&
         drs != DecisionStrategyProto::SELECT_UPPER_HALF &&
-        drs != DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
+        drs != DecisionStrategyProto::SELECT_MEDIAN_VALUE &&
+        drs != DecisionStrategyProto::SELECT_RANDOM_HALF) {
       return absl::StrCat("Unknown or unsupported domain_reduction_strategy: ",
                           drs);
     }
@@ -854,9 +975,9 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
   if (hint.vars().size() != hint.values().size()) {
     return "Invalid solution hint: vars and values do not have the same size.";
   }
-  for (const int ref : hint.vars()) {
-    if (!VariableReferenceIsValid(model, ref)) {
-      return absl::StrCat("Invalid variable reference in solution hint: ", ref);
+  for (const int var : hint.vars()) {
+    if (!VariableIndexIsValid(model, var)) {
+      return absl::StrCat("Invalid variable in solution hint: ", var);
     }
   }
 
@@ -998,11 +1119,11 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateElementConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
         support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         RETURN_IF_NOT_EMPTY(
@@ -1312,24 +1433,13 @@ class ConstraintChecker {
     return true;
   }
 
-  bool IntervalsAreDisjoint(const IntervalConstraintProto& interval1,
-                            const IntervalConstraintProto& interval2) {
-    return IntervalEnd(interval1) <= IntervalStart(interval2) ||
-           IntervalEnd(interval2) <= IntervalStart(interval1);
-  }
-
-  bool IntervalIsEmpty(const IntervalConstraintProto& interval) {
-    return IntervalStart(interval) == IntervalEnd(interval);
-  }
-
   bool NoOverlap2DConstraintIsFeasible(const CpModelProto& model,
                                        const ConstraintProto& ct) {
     const auto& arg = ct.no_overlap_2d();
     // Those intervals from arg.x_intervals and arg.y_intervals where both
     // the x and y intervals are enforced.
-    std::vector<std::pair<const IntervalConstraintProto* const,
-                          const IntervalConstraintProto* const>>
-        enforced_intervals_xy;
+    bool has_zero_sizes = false;
+    std::vector<Rectangle> enforced_rectangles;
     {
       const int num_intervals = arg.x_intervals_size();
       CHECK_EQ(arg.y_intervals_size(), num_intervals);
@@ -1337,27 +1447,37 @@ class ConstraintChecker {
         const ConstraintProto& x = model.constraints(arg.x_intervals(i));
         const ConstraintProto& y = model.constraints(arg.y_intervals(i));
         if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y)) {
-          enforced_intervals_xy.push_back({&x.interval(), &y.interval()});
+          enforced_rectangles.push_back({.x_min = IntervalStart(x.interval()),
+                                         .x_max = IntervalEnd(x.interval()),
+                                         .y_min = IntervalStart(y.interval()),
+                                         .y_max = IntervalEnd(y.interval())});
+          const auto& rect = enforced_rectangles.back();
+          if (rect.x_min == rect.x_max || rect.y_min == rect.y_max) {
+            has_zero_sizes = true;
+          }
         }
       }
     }
-    const int num_enforced_intervals = enforced_intervals_xy.size();
-    for (int i = 0; i < num_enforced_intervals; ++i) {
-      for (int j = i + 1; j < num_enforced_intervals; ++j) {
-        const auto& xi = *enforced_intervals_xy[i].first;
-        const auto& yi = *enforced_intervals_xy[i].second;
-        const auto& xj = *enforced_intervals_xy[j].first;
-        const auto& yj = *enforced_intervals_xy[j].second;
-        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
-          VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
-                  << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
-                  << IntervalEnd(yi) << "]) and " << j << "(x=["
-                  << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
-                  << IntervalStart(yj) << ", " << IntervalEnd(yj)
-                  << "]) are not disjoint.";
-          return false;
-        }
-      }
+
+    std::optional<std::pair<int, int>> one_intersection;
+    absl::c_stable_sort(enforced_rectangles,
+                        [](const Rectangle& a, const Rectangle& b) {
+                          return a.x_min < b.x_min;
+                        });
+    if (has_zero_sizes) {
+      one_intersection =
+          FindOneIntersectionIfPresentWithZeroArea(enforced_rectangles);
+    } else {
+      one_intersection = FindOneIntersectionIfPresent(enforced_rectangles);
+    }
+
+    if (one_intersection != std::nullopt) {
+      VLOG(1) << "Rectangles " << one_intersection->first << "("
+              << enforced_rectangles[one_intersection->first] << ") and "
+              << one_intersection->second << "("
+              << enforced_rectangles[one_intersection->second]
+              << ") are not disjoint.";
+      return false;
     }
     return true;
   }
@@ -1365,6 +1485,7 @@ class ConstraintChecker {
   bool CumulativeConstraintIsFeasible(const CpModelProto& model,
                                       const ConstraintProto& ct) {
     const int64_t capacity = LinearExpressionValue(ct.cumulative().capacity());
+    if (capacity < 0) return false;
     const int num_intervals = ct.cumulative().intervals_size();
     std::vector<std::pair<int64_t, int64_t>> events;
     for (int i = 0; i < num_intervals; ++i) {
@@ -1397,19 +1518,42 @@ class ConstraintChecker {
   }
 
   bool ElementConstraintIsFeasible(const ConstraintProto& ct) {
-    if (ct.element().vars().empty()) return false;
-    const int index = Value(ct.element().index());
-    if (index < 0 || index >= ct.element().vars_size()) return false;
-    return Value(ct.element().vars(index)) == Value(ct.element().target());
+    if (!ct.element().vars().empty()) {
+      const int index = Value(ct.element().index());
+      if (index < 0 || index >= ct.element().vars_size()) return false;
+      return Value(ct.element().vars(index)) == Value(ct.element().target());
+    }
+
+    if (!ct.element().exprs().empty()) {
+      const int index = LinearExpressionValue(ct.element().linear_index());
+      if (index < 0 || index >= ct.element().exprs_size()) return false;
+      return LinearExpressionValue(ct.element().exprs(index)) ==
+             LinearExpressionValue(ct.element().linear_target());
+    }
+
+    return false;
   }
 
   bool TableConstraintIsFeasible(const ConstraintProto& ct) {
-    const int size = ct.table().vars_size();
-    if (size == 0) return true;
+    std::vector<int64_t> solution;
+    if (ct.table().exprs().empty()) {
+      for (int i = 0; i < ct.table().vars_size(); ++i) {
+        solution.push_back(Value(ct.table().vars(i)));
+      }
+    } else {
+      for (int i = 0; i < ct.table().exprs_size(); ++i) {
+        solution.push_back(LinearExpressionValue(ct.table().exprs(i)));
+      }
+    }
+
+    // No expression -> always feasible.
+    if (solution.empty()) return true;
+    const int size = solution.size();
+
     for (int row_start = 0; row_start < ct.table().values_size();
          row_start += size) {
       int i = 0;
-      while (Value(ct.table().vars(i)) == ct.table().values(row_start + i)) {
+      while (solution[i] == ct.table().values(row_start + i)) {
         ++i;
         if (i == size) return !ct.table().negated();
       }
@@ -1419,20 +1563,24 @@ class ConstraintChecker {
 
   bool AutomatonConstraintIsFeasible(const ConstraintProto& ct) {
     // Build the transition table {tail, label} -> head.
+    const AutomatonConstraintProto& automaton = ct.automaton();
     absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transition_map;
-    const int num_transitions = ct.automaton().transition_tail().size();
+    const int num_transitions = automaton.transition_tail().size();
     for (int i = 0; i < num_transitions; ++i) {
-      transition_map[{ct.automaton().transition_tail(i),
-                      ct.automaton().transition_label(i)}] =
-          ct.automaton().transition_head(i);
+      transition_map[{automaton.transition_tail(i),
+                      automaton.transition_label(i)}] =
+          automaton.transition_head(i);
     }
 
     // Walk the automaton.
-    int64_t current_state = ct.automaton().starting_state();
-    const int num_steps = ct.automaton().vars_size();
+    int64_t current_state = automaton.starting_state();
+    const int num_steps =
+        std::max(automaton.vars_size(), automaton.exprs_size());
     for (int i = 0; i < num_steps; ++i) {
-      const std::pair<int64_t, int64_t> key = {current_state,
-                                               Value(ct.automaton().vars(i))};
+      const std::pair<int64_t, int64_t> key = {
+          current_state, automaton.vars().empty()
+                             ? LinearExpressionValue(automaton.exprs(i))
+                             : Value(automaton.vars(i))};
       if (!transition_map.contains(key)) {
         return false;
       }
@@ -1440,7 +1588,7 @@ class ConstraintChecker {
     }
 
     // Check we are now in a final state.
-    for (const int64_t final : ct.automaton().final_states()) {
+    for (const int64_t final : automaton.final_states()) {
       if (current_state == final) return true;
     }
     return false;
@@ -1503,18 +1651,43 @@ class ConstraintChecker {
     const int num_arcs = ct.routes().tails_size();
     int num_used_arcs = 0;
     int num_self_arcs = 0;
+
+    // Compute the number of nodes.
     int num_nodes = 0;
-    std::vector<int> tail_to_head;
+    for (int i = 0; i < num_arcs; ++i) {
+      num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
+      num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
+    }
+
+    std::vector<int> tail_to_head(num_nodes, -1);
+    std::vector<bool> has_incoming_arc(num_nodes, false);
+    std::vector<int> has_outgoing_arc(num_nodes, false);
     std::vector<int> depot_nexts;
     for (int i = 0; i < num_arcs; ++i) {
       const int tail = ct.routes().tails(i);
       const int head = ct.routes().heads(i);
-      num_nodes = std::max(num_nodes, 1 + tail);
-      num_nodes = std::max(num_nodes, 1 + head);
-      tail_to_head.resize(num_nodes, -1);
       if (LiteralIsTrue(ct.routes().literals(i))) {
+        // Check for loops.
+        if (tail != 0) {
+          if (has_outgoing_arc[tail]) {
+            VLOG(1) << "routes: node " << tail << "has two outgoing arcs";
+            return false;
+          }
+          has_outgoing_arc[tail] = true;
+        }
+        if (head != 0) {
+          if (has_incoming_arc[head]) {
+            VLOG(1) << "routes: node " << head << "has two incoming arcs";
+            return false;
+          }
+          has_incoming_arc[head] = true;
+        }
+
         if (tail == head) {
-          if (tail == 0) return false;
+          if (tail == 0) {
+            VLOG(1) << "Self loop on node 0 are forbidden.";
+            return false;
+          }
           ++num_self_arcs;
           continue;
         }
@@ -1522,7 +1695,7 @@ class ConstraintChecker {
         if (tail == 0) {
           depot_nexts.push_back(head);
         } else {
-          if (tail_to_head[tail] != -1) return false;
+          DCHECK_EQ(tail_to_head[tail], -1);
           tail_to_head[tail] = head;
         }
       }
@@ -1591,7 +1764,7 @@ class ConstraintChecker {
       current_level += delta.second;
       if (current_level < min_level || current_level > max_level) {
         VLOG(1) << "Reservoir level " << current_level
-                << " is out of bounds at time" << delta.first;
+                << " is out of bounds at time: " << delta.first;
         return false;
       }
     }
@@ -1635,9 +1808,9 @@ class ConstraintChecker {
             // This indicates that such a constraint was not added to the model.
             // It should probably be a validation error, but it is hard to
             // detect beforehand.
-            LOG(ERROR) << "Warning, an interval constraint was likely used "
-                          "without a corresponding linear constraint linking "
-                          "its start, size and end.";
+            VLOG(1) << "Warning, an interval constraint was likely used "
+                       "without a corresponding linear constraint linking "
+                       "its start, size and end.";
           }
           return false;
         }

@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-using ::operations_research::NodeIndex;
 using ::operations_research::SimpleMaxFlow;
 using ::pybind11::arg;
 
@@ -44,12 +43,12 @@ PYBIND11_MODULE(max_flow, m) {
   smf.def("flow", &SimpleMaxFlow::Flow, arg("arc"));
   smf.def("flows", pybind11::vectorize(&SimpleMaxFlow::Flow));
   smf.def("get_source_side_min_cut", [](SimpleMaxFlow* smf) {
-    std::vector<NodeIndex> result;
+    std::vector<SimpleMaxFlow::NodeIndex> result;
     smf->GetSourceSideMinCut(&result);
     return result;
   });
   smf.def("get_sink_side_min_cut", [](SimpleMaxFlow* smf) {
-    std::vector<NodeIndex> result;
+    std::vector<SimpleMaxFlow::NodeIndex> result;
     smf->GetSinkSideMinCut(&result);
     return result;
   });

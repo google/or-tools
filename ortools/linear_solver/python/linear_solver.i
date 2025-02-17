@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -127,20 +127,29 @@ from ortools.linear_solver.python.linear_solver_natural_api import VariableExpr
     return status.ok();
   }
 
-  std::string ExportModelAsLpFormat(bool obfuscated) {
+  std::string ExportModelAsLpFormat(bool obfuscate) {
     operations_research::MPModelExportOptions options;
-    options.obfuscate = obfuscated;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsLpFormat(model, options).value_or("");
   }
 
-  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscate) {
     operations_research::MPModelExportOptions options;
-    options.obfuscate = obfuscated;
+    options.obfuscate = obfuscate;
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsMpsFormat(model, options).value_or("");
+  }
+
+  bool WriteModelToMpsFile(const std::string& filename, bool fixed_format,
+                          bool obfuscate) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscate;
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return WriteModelToMpsFile(filename, model, options).ok();
   }
 
   /// Set a hint for solution.
@@ -365,8 +374,9 @@ PY_CONVERT(MPVariable);
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
-// ExportModelAsLpFormat() is also visible: it's overridden by an %extend, above.
-// ExportModelAsMpsFormat() is also visible: it's overridden by an %extend, above.
+%unignore  operations_research::MPSolver::ExportModelAsLpFormat(bool);
+%unignore  operations_research::MPSolver::ExportModelAsMpsFormat(bool, bool);
+%unignore  operations_research::MPSolver::WriteModelToMpsFile;
 %unignore operations_research::MPSolver::Write;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.

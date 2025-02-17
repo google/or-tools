@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -29,12 +30,14 @@
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -46,6 +49,170 @@
 
 namespace operations_research {
 namespace sat {
+
+LinearConstraintSymmetrizer::~LinearConstraintSymmetrizer() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"symmetrizer/overflows", num_overflows_});
+  shared_stats_->AddStats(stats);
+}
+
+void LinearConstraintSymmetrizer::AddSymmetryOrbit(
+    IntegerVariable sum_var, absl::Span<const IntegerVariable> orbit) {
+  CHECK_GT(orbit.size(), 1);
+
+  // Store the orbit info.
+  const int orbit_index = orbits_.size();
+  has_symmetry_ = true;
+  orbit_sum_vars_.push_back(sum_var);
+  orbits_.Add(orbit);
+
+  // And fill var_to_orbit_index_.
+  const int new_size = integer_trail_->NumIntegerVariables().value() / 2;
+  if (var_to_orbit_index_.size() < new_size) {
+    var_to_orbit_index_.resize(new_size, -1);
+  }
+  DCHECK(VariableIsPositive(sum_var));
+  DCHECK_EQ(var_to_orbit_index_[GetPositiveOnlyIndex(sum_var)], -1);
+  var_to_orbit_index_[GetPositiveOnlyIndex(sum_var)] = orbit_index;
+  for (const IntegerVariable var : orbit) {
+    DCHECK(VariableIsPositive(var));
+    DCHECK_EQ(var_to_orbit_index_[GetPositiveOnlyIndex(var)], -1);
+    var_to_orbit_index_[GetPositiveOnlyIndex(var)] = orbit_index;
+  }
+}
+
+// What we do here is basically equivalent to adding all the possible
+// permutations (under the problem symmetry group) of the constraint together.
+// When we do that all variables in the same orbit will have the same
+// coefficient (TODO(user): think how to prove this properly and especially
+// that the scaling is in 1/orbit_size) and will each appear once. We then
+// substitute each sum by the sum over the orbit, and divide coefficient by
+// their gcd.
+//
+// Any solution of the original LP can be transformed to a solution of the
+// folded LP with the same objective. So the folded LP will give us a tight and
+// valid objective lower bound but with a lot less variables! This is an
+// adaptation of "LP folding" to use in a MIP context. Introducing the orbit sum
+// allow to propagates and add cuts as these sum are still integer for us.
+//
+// The only issue is regarding scaling of the constraints. Basically each
+// orbit sum variable will appear with a factor 1/orbit_size in the original
+// constraint.
+//
+// We will remap & scale the constraint.
+// If not possible, we will drop it for now.
+bool LinearConstraintSymmetrizer::FoldLinearConstraint(LinearConstraint* ct,
+                                                       bool* folded) {
+  if (!has_symmetry_) return true;
+
+  // We assume the constraint had basic preprocessing with tight lb/ub for
+  // instance. First pass is to compute the scaling factor.
+  int64_t scaling_factor = 1;
+  for (int i = 0; i < ct->num_terms; ++i) {
+    const IntegerVariable var = ct->vars[i];
+    CHECK(VariableIsPositive(var));
+
+    const int orbit_index = var_to_orbit_index_[GetPositiveOnlyIndex(var)];
+    if (orbit_index == -1 || orbit_sum_vars_[orbit_index] == var) {
+      // If we have an orbit of size one, or the variable is its own
+      // representative (orbit sum), skip.
+      continue;
+    }
+
+    // Update the scaling factor.
+    const int orbit_size = orbits_[orbit_index].size();
+    if (AtMinOrMaxInt64(CapProd(orbit_size, scaling_factor))) {
+      ++num_overflows_;
+      VLOG(2) << "SYMMETRY skip constraint due to overflow";
+      return false;
+    }
+    scaling_factor = std::lcm(scaling_factor, orbit_size);
+  }
+
+  if (scaling_factor == 1) {
+    // No symmetric variables.
+    return true;
+  }
+
+  if (folded != nullptr) *folded = true;
+
+  // We need to multiply each term by scaling_factor / orbit_size.
+  //
+  // TODO(user): Now that we know the actual coefficient we could scale less.
+  // Maybe the coefficient of an orbit_var is already divisible by orbit_size.
+  builder_.Clear();
+  for (int i = 0; i < ct->num_terms; ++i) {
+    const IntegerVariable var = ct->vars[i];
+    const IntegerValue coeff = ct->coeffs[i];
+
+    const int orbit_index = var_to_orbit_index_[GetPositiveOnlyIndex(var)];
+    if (orbit_index == -1 || orbit_sum_vars_[orbit_index] == var) {
+      const int64_t scaled_coeff = CapProd(coeff.value(), scaling_factor);
+      if (AtMinOrMaxInt64(scaled_coeff)) {
+        ++num_overflows_;
+        VLOG(2) << "SYMMETRY skip constraint due to overflow";
+        return false;
+      }
+      builder_.AddTerm(var, scaled_coeff);
+    } else {
+      const int64_t orbit_size = orbits_[orbit_index].size();
+      const int64_t factor = scaling_factor / orbit_size;
+      const int64_t scaled_coeff = CapProd(coeff.value(), factor);
+      if (AtMinOrMaxInt64(scaled_coeff)) {
+        ++num_overflows_;
+        VLOG(2) << "SYMMETRY skip constraint due to overflow";
+        return false;
+      }
+      builder_.AddTerm(orbit_sum_vars_[orbit_index], scaled_coeff);
+    }
+  }
+
+  if (AtMinOrMaxInt64(CapProd(ct->lb.value(), scaling_factor)) ||
+      AtMinOrMaxInt64(CapProd(ct->ub.value(), scaling_factor))) {
+    ++num_overflows_;
+    VLOG(2) << "SYMMETRY skip constraint due to lb/ub overflow";
+    return false;
+  }
+  if (!builder_.BuildIntoConstraintAndCheckOverflow(
+          ct->lb * scaling_factor, ct->ub * scaling_factor, ct)) {
+    ++num_overflows_;
+    VLOG(2) << "SYMMETRY skip constraint due to overflow";
+    return false;
+  }
+
+  // Dividing by gcd can help.
+  DivideByGCD(ct);
+  if (PossibleOverflow(*integer_trail_, *ct)) {
+    ++num_overflows_;
+    VLOG(2) << "SYMMETRY skip constraint due to overflow factor = "
+            << scaling_factor;
+    return false;
+  }
+
+  // TODO(user): In some cases, this constraint will propagate/fix directly
+  // the orbit sum variables, we might want to propagate this in the cp world?
+  // This migth also remove bad scaling.
+  return true;
+}
+
+int LinearConstraintSymmetrizer::OrbitIndex(IntegerVariable var) const {
+  if (!has_symmetry_) return -1;
+  return var_to_orbit_index_[GetPositiveOnlyIndex(var)];
+}
+
+bool LinearConstraintSymmetrizer::IsOrbitSumVar(IntegerVariable var) const {
+  if (!has_symmetry_) return false;
+  const int orbit_index = var_to_orbit_index_[GetPositiveOnlyIndex(var)];
+  return orbit_index >= 0 && orbit_sum_vars_[orbit_index] == var;
+}
+
+bool LinearConstraintSymmetrizer::AppearInFoldedProblem(
+    IntegerVariable var) const {
+  if (!has_symmetry_) return true;
+  const int orbit_index = var_to_orbit_index_[GetPositiveOnlyIndex(var)];
+  return orbit_index == -1 || orbit_sum_vars_[orbit_index] == var;
+}
 
 namespace {
 
@@ -92,6 +259,15 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
   int new_size = 0;
   for (int i = 0; i < num_rows; ++i) {
     const ConstraintIndex constraint_index = lp_constraints_[i];
+    if (constraint_infos_[constraint_index].constraint.num_terms == 0) {
+      // Remove empty constraint.
+      //
+      // TODO(user): If the constraint is infeasible we could detect unsat
+      // right away, but hopefully this is a case where the propagation part
+      // of the solver can detect that too.
+      constraint_infos_[constraint_index].is_in_lp = false;
+      continue;
+    }
 
     // Constraints that are not tight in the current solution have a basic
     // status. We remove the ones that have been inactive in the last recent
@@ -130,15 +306,22 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
 // to detect duplicate constraints and merge bounds. This is also relevant if
 // we regenerate identical cuts for some reason.
 LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
-    LinearConstraint ct, bool* added) {
+    LinearConstraint ct, bool* added, bool* folded) {
   DCHECK_GT(ct.num_terms, 0);
   DCHECK(!PossibleOverflow(integer_trail_, ct)) << ct.DebugString();
   DCHECK(NoDuplicateVariable(ct));
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
   MakeAllVariablesPositive(&ct);
-  CHECK(std::is_sorted(ct.VarsAsSpan().begin(), ct.VarsAsSpan().end()));
   DCHECK(DebugCheckConstraint(ct));
+
+  // If configured, store instead the folded version of this constraint.
+  // TODO(user): Shall we simplify again?
+  if (symmetrizer_->HasSymmetry() &&
+      !symmetrizer_->FoldLinearConstraint(&ct, folded)) {
+    return kInvalidConstraintIndex;
+  }
+  CHECK(std::is_sorted(ct.VarsAsSpan().begin(), ct.VarsAsSpan().end()));
 
   // If an identical constraint exists, only updates its bound.
   const size_t key = ComputeHashOfTerms(ct);
@@ -245,7 +428,8 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
 
   // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-4) {
-    VLOG(3) << "BAD Cut '" << type_name << "'" << " size=" << ct.num_terms
+    VLOG(3) << "BAD Cut '" << type_name << "'"
+            << " size=" << ct.num_terms
             << " max_magnitude=" << ComputeInfinityNorm(ct)
             << " norm=" << l2_norm << " violation=" << violation
             << " eff=" << violation / l2_norm << " " << extra_info;
@@ -387,6 +571,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   }
 
   // Shorten the constraint if needed.
+  IntegerValue fixed_part = 0;
   if (new_size < num_terms) {
     term_changed = true;
     ++num_shortened_constraints_;
@@ -397,9 +582,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
       const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
       const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
       if (lb == ub) {
-        const IntegerValue rhs_adjust = lb * coeff;
-        if (ct->lb > kMinIntegerValue) ct->lb -= rhs_adjust;
-        if (ct->ub < kMaxIntegerValue) ct->ub -= rhs_adjust;
+        fixed_part += coeff * lb;
         continue;
       }
       ct->vars[new_size] = var;
@@ -411,7 +594,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 
   // Clear constraints that are always true.
   // We rely on the deletion code to remove them eventually.
-  if (min_sum >= ct->lb && max_sum <= ct->ub) {
+  if (min_sum + fixed_part >= ct->lb && max_sum + fixed_part <= ct->ub) {
     ct->resize(0);
     ct->lb = 0;
     ct->ub = 0;
@@ -419,8 +602,10 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   }
 
   // Make sure bounds are finite.
-  ct->lb = std::max(ct->lb, min_sum);
-  ct->ub = std::min(ct->ub, max_sum);
+  ct->lb = std::max(ct->lb, min_sum + fixed_part);
+  ct->ub = std::min(ct->ub, max_sum + fixed_part);
+  ct->lb -= fixed_part;
+  ct->ub -= fixed_part;
 
   // The variable can be shifted and complemented so we have constraints of
   // the form:
@@ -764,6 +949,8 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
 void LinearConstraintManager::AddAllConstraintsToLp() {
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
     if (constraint_infos_[i].is_in_lp) continue;
+    if (constraint_infos_[i].constraint.num_terms == 0) continue;
+
     constraint_infos_[i].is_in_lp = true;
     lp_constraints_.push_back(i);
   }

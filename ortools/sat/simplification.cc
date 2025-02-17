@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <deque>
 #include <limits>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -33,10 +32,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/drat_proof_handler.h"
-#include "ortools/sat/model.h"
-#include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/logging.h"

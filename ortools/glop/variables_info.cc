@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,6 +44,16 @@ bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
     variable_type_[col] = ComputeVariableType(col);
   }
   return false;
+}
+
+void VariablesInfo::InitializeFromMutatedState() {
+  const ColIndex num_cols = matrix_.num_cols();
+  DCHECK_EQ(num_cols, lower_bounds_.size());
+  DCHECK_EQ(num_cols, upper_bounds_.size());
+  variable_type_.resize(num_cols, VariableType::UNCONSTRAINED);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    variable_type_[col] = ComputeVariableType(col);
+  }
 }
 
 bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
@@ -120,13 +130,13 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
 
   // Compute the status for all the columns (note that the slack variables are
   // already added at the end of the matrix at this stage).
+  const int state_size = state.statuses.size().value();
   for (ColIndex col(0); col < num_cols; ++col) {
     // Start with the given "warm" status from the BasisState if it exists.
     VariableStatus status;
-    if (col < first_new_col && col < state.statuses.size()) {
+    if (col < first_new_col && col < state_size) {
       status = state.statuses[col];
-    } else if (col >= first_slack_col &&
-               col - num_new_cols < state.statuses.size()) {
+    } else if (col >= first_slack_col && col - num_new_cols < state_size) {
       status = state.statuses[col - num_new_cols];
     } else {
       UpdateToNonBasicStatus(col, DefaultVariableStatus(col));

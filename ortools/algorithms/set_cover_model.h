@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,7 @@
 #ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 #define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 
-#if defined(_MSC_VER)
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#else
-#include <sys/types.h>
-#endif  // defined(_MSC_VER)
-
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -29,7 +23,6 @@ typedef SSIZE_T ssize_t;
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/util/aligned_memory.h"
 
 // Representation class for the weighted set-covering problem.
 //
@@ -51,9 +44,9 @@ typedef SSIZE_T ssize_t;
 // - its columns are such that M(i, j) = 1 iff the i-th element of E is present
 //   in S_j.
 //
-// We alse use m to denote |E|, the number of elements, and n to denote |S|, the
+// We also use m to denote |E|, the number of elements, and n to denote |S|, the
 // number of subsets.
-// Finally, nnz or #nz denotes the numbers of non-zeros, i.e. the sum of the
+// Finally, NNZ denotes the numbers of non-zeros, i.e. the sum of the
 // cardinalities of all the subsets.
 
 namespace operations_research {
@@ -65,7 +58,7 @@ using Cost = double;
 // (2e9) elements and subsets. If need arises one day, BaseInt can be split
 // into SubsetBaseInt and ElementBaseInt.
 // Quick testing has shown a slowdown of about 20-25% when using int64_t.
-using BaseInt = int;
+using BaseInt = int32_t;
 
 // We make heavy use of strong typing to avoid obvious mistakes.
 // Subset index.
@@ -84,32 +77,14 @@ using SubsetRange = util_intops::StrongIntRange<SubsetIndex>;
 using ElementRange = util_intops::StrongIntRange<ElementIndex>;
 using ColumnEntryRange = util_intops::StrongIntRange<ColumnEntryIndex>;
 
-// SIMD operations require vectors to be aligned at 64-bytes on x86-64
-// processors as of 2024-05-03.
-// TODO(user): improve the code to make it possible to use unaligned memory.
-constexpr int kSetCoverAlignmentInBytes = 64;
+using SubsetCostVector = util_intops::StrongVector<SubsetIndex, Cost>;
+using ElementCostVector = util_intops::StrongVector<ElementIndex, Cost>;
 
-using CostAllocator = AlignedAllocator<Cost, kSetCoverAlignmentInBytes>;
-using ElementAllocator =
-    AlignedAllocator<ElementIndex, kSetCoverAlignmentInBytes>;
-using SubsetAllocator =
-    AlignedAllocator<SubsetIndex, kSetCoverAlignmentInBytes>;
+using SparseColumn = util_intops::StrongVector<ColumnEntryIndex, ElementIndex>;
+using SparseRow = util_intops::StrongVector<RowEntryIndex, SubsetIndex>;
 
-using SubsetCostVector =
-    util_intops::StrongVector<SubsetIndex, Cost, CostAllocator>;
-using ElementCostVector =
-    util_intops::StrongVector<ElementIndex, Cost, CostAllocator>;
-
-using SparseColumn =
-    util_intops::StrongVector<ColumnEntryIndex, ElementIndex, ElementAllocator>;
-using SparseRow =
-    util_intops::StrongVector<RowEntryIndex, SubsetIndex, SubsetAllocator>;
-
-using IntAllocator = AlignedAllocator<BaseInt, kSetCoverAlignmentInBytes>;
-using ElementToIntVector =
-    util_intops::StrongVector<ElementIndex, BaseInt, IntAllocator>;
-using SubsetToIntVector =
-    util_intops::StrongVector<SubsetIndex, BaseInt, IntAllocator>;
+using ElementToIntVector = util_intops::StrongVector<ElementIndex, BaseInt>;
+using SubsetToIntVector = util_intops::StrongVector<SubsetIndex, BaseInt>;
 
 // Views of the sparse vectors. These need not be aligned as it's their contents
 // that need to be aligned.
@@ -117,6 +92,13 @@ using SparseColumnView = util_intops::StrongVector<SubsetIndex, SparseColumn>;
 using SparseRowView = util_intops::StrongVector<ElementIndex, SparseRow>;
 
 using SubsetBoolVector = util_intops::StrongVector<SubsetIndex, bool>;
+using ElementBoolVector = util_intops::StrongVector<ElementIndex, bool>;
+
+// Useful for representing permutations,
+using ElementToElementVector =
+    util_intops::StrongVector<ElementIndex, ElementIndex>;
+using SubsetToSubsetVector =
+    util_intops::StrongVector<SubsetIndex, SubsetIndex>;
 
 // Main class for describing a weighted set-covering problem.
 class SetCoverModel {
@@ -127,10 +109,39 @@ class SetCoverModel {
         num_subsets_(0),
         num_nonzeros_(0),
         row_view_is_valid_(false),
+        elements_in_subsets_are_sorted_(false),
         subset_costs_(),
         columns_(),
         rows_(),
         all_subsets_() {}
+
+  // Constructs a weighted set-covering problem from a seed model, with
+  // num_elements elements and num_subsets subsets.
+  // - The distributions of the degrees of the elements and the cardinalities of
+  // the subsets are based on those of the seed model. They are scaled
+  // affininely by row_scale and column_scale respectively.
+  // - By affine scaling, we mean that the minimum value of the distribution is
+  // not scaled, but the variation above this minimum value is.
+  // - For a given subset with a given cardinality in the generated model, its
+  // elements are sampled from the distribution of the degrees as computed
+  // above.
+  // - The costs of the subsets in the new model are sampled from the
+  // distribution of the costs of the subsets in the seed model, scaled by
+  // cost_scale.
+  // IMPORTANT NOTICE: The algorithm may not succeed in generating a model
+  // where all the elements can be covered. In that case, the model will be
+  // empty.
+
+  static SetCoverModel GenerateRandomModelFrom(const SetCoverModel& seed_model,
+                                               BaseInt num_elements,
+                                               BaseInt num_subsets,
+                                               double row_scale,
+                                               double column_scale,
+                                               double cost_scale);
+
+  // Returns true if the model is empty, i.e. has no elements, no subsets, and
+  // no nonzeros.
+  bool IsEmpty() const { return rows_.empty() || columns_.empty(); }
 
   // Current number of elements to be covered in the model, i.e. the number of
   // elements in S. In matrix terms, this is the number of rows.
@@ -141,7 +152,7 @@ class SetCoverModel {
   BaseInt num_subsets() const { return num_subsets_; }
 
   // Current number of nonzeros in the matrix.
-  ssize_t num_nonzeros() const { return num_nonzeros_; }
+  int64_t num_nonzeros() const { return num_nonzeros_; }
 
   double FillRate() const {
     return 1.0 * num_nonzeros() / (1.0 * num_elements() * num_subsets());
@@ -194,7 +205,12 @@ class SetCoverModel {
   void AddElementToSubset(BaseInt element, BaseInt subset);
   void AddElementToSubset(ElementIndex element, SubsetIndex subset);
 
-  // Creates the sparse ("dual") representation of the problem.
+  // Sorts the elements in each subset. Should be called before exporting the
+  // model to a proto.
+  void SortElementsInSubsets();
+
+  // Creates the sparse ("dual") representation of the problem. This also sorts
+  // the elements in each subset.
   void CreateSparseRowView();
 
   // Returns true if the problem is feasible, i.e. if the subsets cover all
@@ -210,10 +226,12 @@ class SetCoverModel {
   void ReserveNumElementsInSubset(ElementIndex num_elements,
                                   SubsetIndex subset);
 
-  // Returns the model as a SetCoverProto. The function is not const because
-  // the element indices in the columns need to be sorted for the representation
-  // as a protobuf to be canonical.
-  SetCoverProto ExportModelAsProto();
+  // Returns the model as a SetCoverProto. Note that the elements of each subset
+  // are sorted locally before being exported to the proto. This is done to
+  // ensure that the proto is deterministic. The function is const because it
+  // does not modify the model. Therefore, the model as exported by this
+  // function may be different from the initial model.
+  SetCoverProto ExportModelAsProto() const;
 
   // Imports the model from a SetCoverProto.
   void ImportModelFromProto(const SetCoverProto& message);
@@ -243,10 +261,18 @@ class SetCoverModel {
   Stats ComputeColumnStats();
 
   // Computes deciles on rows and returns a vector of deciles.
-  std::vector<ssize_t> ComputeRowDeciles() const;
+  std::vector<int64_t> ComputeRowDeciles() const;
 
   // Computes deciles on columns and returns a vector of deciles.
-  std::vector<ssize_t> ComputeColumnDeciles() const;
+  std::vector<int64_t> ComputeColumnDeciles() const;
+
+  // Computes basic statistics on the deltas of the row and column elements and
+  // returns a Stats structure. The deltas are computed as the difference
+  // between two consecutive indices in rows or columns. The number of bytes
+  // computed is meant using a variable-length base-128 encoding.
+  // TODO(user): actually use this to compress the rows and columns.
+  Stats ComputeRowDeltaSizeStats() const;
+  Stats ComputeColumnDeltaSizeStats() const;
 
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
@@ -259,23 +285,26 @@ class SetCoverModel {
   // Number of subsets. Maintained for ease of access.
   BaseInt num_subsets_;
 
-  // Number of nonzeros in the matrix.
-  ssize_t num_nonzeros_;
+  // Number of nonzeros in the matrix. The value is an int64_t because there can
+  // be more than 1 << 31 nonzeros even with BaseInt = int32_t.
+  int64_t num_nonzeros_;
 
   // True when the SparseRowView is up-to-date.
   bool row_view_is_valid_;
 
-  // Costs for each subset.
+  // True when the elements in each subset are sorted.
+  bool elements_in_subsets_are_sorted_;
 
+  // Costs for each subset.
   SubsetCostVector subset_costs_;
 
   // Vector of columns. Each column corresponds to a subset and contains the
   // elements of the given subset.
-  // This takes nnz (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
+  // This takes NNZ (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
   // On classical benchmarks, the fill rate is in the 2 to 5% range.
   // Some synthetic benchmarks have fill rates of 20%, while benchmarks for
   // rail rotations have a fill rate of 0.2 to 0.4%.
-  // TODO(user): try using a compressed representation like Protocol Buffers,
+  // TODO(user): try using a compressed representation like VarInt or LEB128,
   // since the data is only iterated upon.
   SparseColumnView columns_;
 

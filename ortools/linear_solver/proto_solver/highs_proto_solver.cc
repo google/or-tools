@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -31,11 +32,13 @@
 #include "absl/types/optional.h"
 #include "google/protobuf/repeated_field.h"
 #include "lp_data/HConst.h"
+#include "lp_data/HighsInfo.h"
 #include "lp_data/HighsStatus.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "util/HighsInt.h"
 
 namespace operations_research {
 
@@ -45,13 +48,17 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     LazyMutableCopy<MPModelRequest> request) {
   MPSolutionResponse response;
-  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+  const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
   const MPModelProto& model = **optional_model;
 
   Highs highs;
-  // TODO(user): Set model name.
+  // Set model name.
+  if (model.has_name()) {
+    const std::string model_name = model.name();
+    highs.passModelName(model_name);
+  }
 
   if (request->has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
@@ -110,8 +117,29 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       highs.changeColCost(column, obj_coeffs[column]);
     }
 
-    // TODO(user): Support variable names.
-    // TODO(user): Support hints.
+    // Variable names.
+    for (int v = 0; v < variable_size; ++v) {
+      const MPVariableProto& variable = model.variable(v);
+      std::string varname_str = "";
+      if (!variable.name().empty()) {
+        varname_str = variable.name();
+        highs.passColName(v, varname_str);
+      }
+    }
+
+    // Hints.
+    int num_hints = model.solution_hint().var_index_size();
+    if (num_hints > 0) {
+      std::vector<HighsInt> hint_index(0, num_hints);
+      std::vector<double> hint_value(0, num_hints);
+      for (int i = 0; i < num_hints; ++i) {
+        hint_index[i] = model.solution_hint().var_index(i);
+        hint_value[i] = model.solution_hint().var_value(i);
+      }
+      const int* hint_indices = &hint_index[0];
+      const double* hint_values = &hint_value[0];
+      highs.setSolution((HighsInt)num_hints, hint_indices, hint_values);
+    }
   }
 
   {
@@ -156,7 +184,16 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           return response;
         }
       }
-      // TODO(user): Support constraint names.
+
+      // Constraint names.
+      for (int c = 0; c < model.constraint_size(); ++c) {
+        const MPConstraintProto& constraint = model.constraint(c);
+        std::string constraint_name_str = "";
+        if (!constraint.name().empty()) {
+          constraint_name_str = constraint.name();
+          highs.passRowName(c, constraint_name_str);
+        }
+      }
     }
 
     if (!model.general_constraint().empty()) {
@@ -219,6 +256,9 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           break;
         default: {
           // TODO(user): report feasible status.
+          const HighsInfo& info = highs.getInfo();
+          if (info.primal_solution_status == kSolutionStatusFeasible)
+            response.set_status(MPSOLVER_FEASIBLE);
           break;
         }
       }

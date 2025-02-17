@@ -8,18 +8,11 @@ FROM opensuse/leap AS env
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
 && zypper install -y git gcc11 gcc11-c++ cmake \
- wget which lsb-release util-linux pkgconfig autoconf libtool gzip zlib-devel gzip \
+ wget which lsb-release util-linux pkgconfig autoconf libtool gzip zlib-devel \
 && zypper clean -a
 ENV CC=gcc-11 CXX=g++-11
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
-
-# Install CMake 3.28.3
-RUN ARCH=$(uname -m) \
-&& wget -q "https://cmake.org/files/v3.28/cmake-3.28.3-linux-${ARCH}.sh" \
-&& chmod a+x cmake-3.28.3-linux-${ARCH}.sh \
-&& ./cmake-3.28.3-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.28.3-linux-${ARCH}.sh
 
 # Install SWIG
 RUN zypper refresh \
@@ -29,26 +22,11 @@ RUN zypper refresh \
 # Install .Net
 RUN zypper refresh \
 && zypper install -y wget tar gzip libicu-devel
-RUN mkdir -p /usr/share/dotnet \
-&& ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
-## .Net 3.1
-## see: https://dotnet.microsoft.com/download/dotnet-core/3.1
-RUN dotnet_sdk_version=3.1.415 \
-&& wget -qO dotnet.tar.gz \
-"https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
-&& dotnet_sha512='df7a6d1abed609c382799a8f69f129ec72ce68236b2faecf01aed4c957a40a9cfbbc9126381bf517dff3dbe0e488f1092188582701dd0fef09a68b8c5707c747' \
-&& echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-&& tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-&& rm dotnet.tar.gz
-## .Net 6.0
-## see: https://dotnet.microsoft.com/download/dotnet-core/6.0
-RUN dotnet_sdk_version=6.0.100 \
-&& wget -qO dotnet.tar.gz \
-"https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
-&& dotnet_sha512='cb0d174a79d6294c302261b645dba6a479da8f7cf6c1fe15ae6998bc09c5e0baec810822f9e0104e84b0efd51fdc0333306cb2a0a6fcdbaf515a8ad8cf1af25b' \
-&& echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-&& tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-&& rm dotnet.tar.gz
+# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
+RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
+&& chmod a+x dotnet-install.sh \
+&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
+&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

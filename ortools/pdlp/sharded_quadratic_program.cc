@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #include "ortools/pdlp/sharded_quadratic_program.h"
 
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -23,9 +24,10 @@
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/threadpool.h"
 #include "ortools/pdlp/quadratic_program.h"
+#include "ortools/pdlp/scheduler.h"
 #include "ortools/pdlp/sharder.h"
+#include "ortools/pdlp/solvers.pb.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research::pdlp {
@@ -76,24 +78,22 @@ void WarnIfMatrixUnbalanced(
 
 ShardedQuadraticProgram::ShardedQuadraticProgram(
     QuadraticProgram qp, const int num_threads, const int num_shards,
-    operations_research::SolverLogger* logger)
+    SchedulerType scheduler_type, operations_research::SolverLogger* logger)
     : qp_(std::move(qp)),
       transposed_constraint_matrix_(qp_.constraint_matrix.transpose()),
-      thread_pool_(num_threads == 1
-                       ? nullptr
-                       : std::make_unique<ThreadPool>("PDLP", num_threads)),
+      scheduler_(num_threads == 1 ? nullptr
+                                  : MakeScheduler(scheduler_type, num_threads)),
       constraint_matrix_sharder_(qp_.constraint_matrix, num_shards,
-                                 thread_pool_.get()),
+                                 scheduler_.get()),
       transposed_constraint_matrix_sharder_(transposed_constraint_matrix_,
-                                            num_shards, thread_pool_.get()),
+                                            num_shards, scheduler_.get()),
       primal_sharder_(qp_.variable_lower_bounds.size(), num_shards,
-                      thread_pool_.get()),
+                      scheduler_.get()),
       dual_sharder_(qp_.constraint_lower_bounds.size(), num_shards,
-                    thread_pool_.get()) {
+                    scheduler_.get()) {
   CHECK_GE(num_threads, 1);
   CHECK_GE(num_shards, num_threads);
   if (num_threads > 1) {
-    thread_pool_->StartWorkers();
     const int64_t work_per_iteration = qp_.constraint_matrix.nonZeros() +
                                        qp_.variable_lower_bounds.size() +
                                        qp_.constraint_lower_bounds.size();

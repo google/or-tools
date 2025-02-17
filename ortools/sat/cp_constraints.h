@@ -1,4 +1,4 @@
-// Copyright 2010-2024 Google LLC
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,18 +16,15 @@
 
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/util/rev.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -112,7 +109,7 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface,
 // ============================================================================
 
 inline std::vector<IntegerValue> ToIntegerValueVector(
-    const std::vector<int64_t>& input) {
+    absl::Span<const int64_t> input) {
   std::vector<IntegerValue> result(input.size());
   for (int i = 0; i < input.size(); ++i) {
     result[i] = IntegerValue(input[i]);
@@ -161,10 +158,13 @@ inline std::function<void(Model*)> GreaterThanAtLeastOneOf(
 // Note(user): If there is just one or two candidates, this doesn't add
 // anything.
 inline std::function<void(Model*)> PartialIsOneOfVar(
-    IntegerVariable target_var, const std::vector<IntegerVariable>& vars,
-    const std::vector<Literal>& selectors) {
+    IntegerVariable target_var, absl::Span<const IntegerVariable> vars,
+    absl::Span<const Literal> selectors) {
   CHECK_EQ(vars.size(), selectors.size());
-  return [=](Model* model) {
+  return [=,
+          selectors = std::vector<Literal>(selectors.begin(), selectors.end()),
+          vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
     const std::vector<IntegerValue> offsets(vars.size(), IntegerValue(0));
     if (vars.size() > 2) {
       // Propagate the min.
