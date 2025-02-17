@@ -160,9 +160,10 @@ class FloatExprVisitor {
   void AddToProcess(std::shared_ptr<LinearExpr> expr, double coeff);
   void AddConstant(double constant);
   void AddVarCoeff(std::shared_ptr<BaseIntVar> var, double coeff);
-  double Process(std::shared_ptr<LinearExpr> expr,
-                 std::vector<std::shared_ptr<BaseIntVar>>* vars,
+  void ProcessAll();
+  double Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
                  std::vector<double>* coeffs);
+  double Evaluate(const CpSolverResponse& solution);
 
  private:
   std::vector<std::pair<std::shared_ptr<LinearExpr>, double>> to_process_;
@@ -212,8 +213,7 @@ class IntExprVisitor {
   bool ProcessAll();
   bool Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
                std::vector<int64_t>* coeffs, int64_t* offset);
-  bool Evaluate(std::shared_ptr<LinearExpr> expr,
-                const CpSolverResponse& solution, int64_t* value);
+  bool Evaluate(const CpSolverResponse& solution, int64_t* value);
 
  private:
   std::vector<std::pair<std::shared_ptr<LinearExpr>, int64_t>> to_process_;

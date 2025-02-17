@@ -57,6 +57,22 @@ class SolutionSum(cp_model.CpSolverSolutionCallback):
         return self.__sum
 
 
+class SolutionFloatValue(cp_model.CpSolverSolutionCallback):
+    """Record the evaluation of a float expression in the solution."""
+
+    def __init__(self, expr: cp_model.LinearExpr) -> None:
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__expr: cp_model.LinearExpr = expr
+        self.__value: float = 0.0
+
+    def on_solution_callback(self) -> None:
+        self.__value = self.float_value(self.__expr)
+
+    @property
+    def value(self) -> float:
+        return self.__value
+
+
 class SolutionObjective(cp_model.CpSolverSolutionCallback):
     """Record the objective value of the solution."""
 
@@ -1515,6 +1531,18 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(6, solution_sum.sum)
 
+    def test_solve_with_float_value_in_callback(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 5, "x")
+        y = model.new_int_var(0, 5, "y")
+        model.add_linear_constraint(x + y, 6, 6)
+
+        solver = cp_model.CpSolver()
+        solution_float_value = SolutionFloatValue((x + y) * 0.5)
+        status = solver.solve(model, solution_float_value)
+        self.assertEqual(cp_model.OPTIMAL, status)
+        self.assertEqual(3.0, solution_float_value.value)
+
     def test_best_bound_callback(self) -> None:
         model = cp_model.CpModel()
         x0 = model.new_bool_var("x0")
@@ -1544,6 +1572,17 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(solver.value(x), 9)
         self.assertEqual(solver.value(y), 10)
         self.assertEqual(solver.value(2), 2)
+
+    def test_float_value(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        model.add(x + 2 * y == 29)
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+        self.assertEqual(cp_model.OPTIMAL, status)
+        self.assertEqual(solver.float_value(x * 1.5 + 0.25), 13.75)
+        self.assertEqual(solver.float_value(2.25), 2.25)
 
     def test_boolean_value(self) -> None:
         model = cp_model.CpModel()
