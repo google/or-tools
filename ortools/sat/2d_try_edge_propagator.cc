@@ -21,9 +21,6 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
-#include "ortools/algorithms/set_cover_heuristics.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/diffn_util.h"
@@ -33,6 +30,9 @@
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 namespace sat {
