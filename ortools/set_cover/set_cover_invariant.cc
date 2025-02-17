@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_invariant.h"
 
 #include <algorithm>
 #include <limits>
@@ -20,9 +20,9 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 

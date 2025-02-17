@@ -11,16 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
+#ifndef OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_
+#define OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_
 
 #include <tuple>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover.pb.h"
-#include "ortools/algorithms/set_cover_model.h"
+#include "ortools/set_cover/set_cover.pb.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 
@@ -288,4 +288,4 @@ class SetCoverInvariant {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
+#endif  // OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_

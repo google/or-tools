@@ -15,7 +15,7 @@
 from absl import app
 from absl.testing import absltest
 
-from ortools.algorithms.python import set_cover
+from ortools.set_cover.python import set_cover
 
 
 def create_initial_cover_model():

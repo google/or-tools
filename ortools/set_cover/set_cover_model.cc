@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover_model.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 #include <algorithm>
 #include <cmath>
@@ -31,8 +31,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/radix_sort.h"
-#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/base/logging.h"
+#include "ortools/set_cover/set_cover.pb.h"
 
 namespace operations_research {
 

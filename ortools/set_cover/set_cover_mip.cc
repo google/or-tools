@@ -11,18 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover_mip.h"
+#include "ortools/set_cover/set_cover_mip.h"
 
 #include <cstdint>
 #include <limits>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 

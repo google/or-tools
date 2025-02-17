@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover_heuristics.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
-#include "ortools/algorithms/set_cover_reader.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
+#include "ortools/set_cover/set_cover_reader.h"
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
@@ -300,7 +300,7 @@ PYBIND11_MODULE(set_cover, m) {
       .def(
           "compute_coverage_in_focus",
           [](SetCoverInvariant& invariant,
-             const std::vector<BaseInt>& focus) -> std::vector<BaseInt> {
+             absl::Span<const BaseInt> focus) -> std::vector<BaseInt> {
             return invariant
                 .ComputeCoverageInFocus(VectorIntToVectorSubsetIndex(focus))
                 .get();
@@ -321,7 +321,7 @@ PYBIND11_MODULE(set_cover, m) {
       .def("compress_trace", &SetCoverInvariant::CompressTrace)
       .def("load_solution",
            [](SetCoverInvariant& invariant,
-              const std::vector<bool>& solution) -> void {
+              absl::Span<const bool> solution) -> void {
              SubsetBoolVector sol(solution.begin(), solution.end());
              return invariant.LoadSolution(sol);
            })
@@ -453,7 +453,7 @@ PYBIND11_MODULE(set_cover, m) {
              return heuristic.NextSolution(num_iterations);
            })
       .def("next_solution",
-           [](SteepestSearch& heuristic, const std::vector<BaseInt>& focus,
+           [](SteepestSearch& heuristic, absl::Span<const BaseInt> focus,
               int num_iterations) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus),
                                            num_iterations);
@@ -512,7 +512,7 @@ PYBIND11_MODULE(set_cover, m) {
              return heuristic.NextSolution(num_iterations);
            })
       .def("next_solution",
-           [](GuidedTabuSearch& heuristic, const std::vector<BaseInt>& focus,
+           [](GuidedTabuSearch& heuristic, absl::Span<const BaseInt> focus,
               int num_iterations) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus),
                                            num_iterations);

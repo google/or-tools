@@ -412,6 +412,7 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/packing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
+  "ortools/set_cover/*.proto"
   "ortools/util/*.proto"
   )
 if(USE_PDLP OR BUILD_MATH_OPT)
@@ -539,6 +540,7 @@ foreach(SUBPROJECT IN ITEMS
  packing
  routing
  scheduling
+ set_cover
  port
  util)
   add_subdirectory(ortools/${SUBPROJECT})

@@ -11,10 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover_reader.h"
+#include "ortools/set_cover/set_cover_reader.h"
 
 #include <sys/types.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
@@ -28,12 +29,13 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "ortools/algorithms/set_cover.pb.h"
-#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/file.h"
+#include "ortools/base/filesystem.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
+#include "ortools/set_cover/set_cover.pb.h"
+#include "ortools/set_cover/set_cover_model.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {
@@ -105,30 +107,42 @@ int64_t SetCoverReader::ParseNextInteger() {
   return value;
 }
 
+namespace {
+double Percent(SubsetIndex subset, BaseInt total) {
+  return subset.value() == 0 ? 0 : 100.0 * subset.value() / total;
+}
+
+double Percent(ElementIndex element, BaseInt total) {
+  return element.value() == 0 ? 0 : 100.0 * element.value() / total;
+}
+}  // namespace
+
 // This is a row-based format where the elements are 1-indexed.
 SetCoverModel ReadOrlibScp(absl::string_view filename) {
+  CHECK_OK(file::Exists(filename, file::Defaults()));
   SetCoverModel model;
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
   const SubsetIndex num_cols(reader.ParseNextInteger());
-  model.ReserveNumSubsets(num_cols.value());
+  model.ReserveNumSubsets(num_cols);
   for (SubsetIndex subset : SubsetRange(num_cols)) {
     const double cost(reader.ParseNextDouble());
-    model.SetSubsetCost(subset.value(), cost);
+    model.SetSubsetCost(subset, cost);
   }
   for (ElementIndex element : ElementRange(num_rows)) {
     LOG_EVERY_N_SEC(INFO, 5)
         << absl::StrFormat("Reading element %d (%.1f%%)", element.value(),
-                           100.0 * element.value() / model.num_elements());
+                           Percent(element, model.num_elements()));
     const RowEntryIndex row_size(reader.ParseNextInteger());
     for (RowEntryIndex entry(0); entry < row_size; ++entry) {
       // Correct the 1-indexing.
-      const int subset(reader.ParseNextInteger() - 1);
-      model.AddElementToSubset(element.value(), subset);
+      const SubsetIndex subset(reader.ParseNextInteger() - 1);
+      model.AddElementToSubset(element, subset);
     }
   }
-  LOG(INFO) << "Finished reading the model.";
+  LOG(INFO) << "Read " << model.num_subsets() << " subsets, "
+            << model.num_elements() << " elements";
   file->Close(file::Defaults()).IgnoreError();
   model.CreateSparseRowView();
   return model;
@@ -136,59 +150,96 @@ SetCoverModel ReadOrlibScp(absl::string_view filename) {
 
 // This is a column-based format where the elements are 1-indexed.
 SetCoverModel ReadOrlibRail(absl::string_view filename) {
+  CHECK_OK(file::Exists(filename, file::Defaults()));
   SetCoverModel model;
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
-  const BaseInt num_cols(reader.ParseNextInteger());
+  const SubsetIndex num_cols(reader.ParseNextInteger());
   model.ReserveNumSubsets(num_cols);
-  for (BaseInt subset(0); subset < num_cols; ++subset) {
+  for (SubsetIndex subset : SubsetRange(num_cols)) {
     LOG_EVERY_N_SEC(INFO, 5)
-        << absl::StrFormat("Reading subset %d (%.1f%%)", subset,
-                           100.0 * subset / model.num_subsets());
+        << absl::StrFormat("Reading subset %d (%.1f%%)", subset.value(),
+                           Percent(subset, model.num_subsets()));
     const double cost(reader.ParseNextDouble());
     model.SetSubsetCost(subset, cost);
     const ColumnEntryIndex column_size(reader.ParseNextInteger());
-    model.ReserveNumElementsInSubset(column_size.value(), subset);
+    model.ReserveNumElementsInSubset(column_size.value(), subset.value());
     for (const ColumnEntryIndex _ : ColumnEntryRange(column_size)) {
       // Correct the 1-indexing.
       const ElementIndex element(reader.ParseNextInteger() - 1);
-      model.AddElementToSubset(element.value(), subset);
+      model.AddElementToSubset(element, subset);
     }
   }
-  LOG(INFO) << "Finished reading the model.";
+  LOG(INFO) << "Read " << model.num_subsets() << " subsets, "
+            << model.num_elements() << " elements";
   file->Close(file::Defaults()).IgnoreError();
   model.CreateSparseRowView();
   return model;
 }
 
 SetCoverModel ReadFimiDat(absl::string_view filename) {
+  CHECK_OK(file::Exists(filename, file::Defaults()));
   SetCoverModel model;
-  BaseInt subset(0);
+  SubsetIndex subset(0);
+  // Read the file once to discover the smallest element index.
+  BaseInt smallest_element = std::numeric_limits<BaseInt>::max();
+  BaseInt largest_element = 0;
+  for (const std::string& line : FileLines(filename)) {
+    std::vector<std::string> elements = absl::StrSplit(line, ' ');
+    if (elements.back().empty() || elements.back()[0] == '\0') {
+      elements.pop_back();
+    }
+    for (const std::string& number_str : elements) {
+      BaseInt element;
+      CHECK(absl::SimpleAtoi(number_str, &element));
+      smallest_element = std::min(smallest_element, element);
+      largest_element = std::max(largest_element, element);
+    }
+  }
+  DLOG(INFO) << "Smallest element: " << smallest_element
+             << ", Largest element: " << largest_element;
+  ElementBoolVector element_seen(largest_element + 1, false);
   for (const std::string& line : FileLines(filename)) {
     LOG_EVERY_N_SEC(INFO, 5)
-        << absl::StrFormat("Reading subset %d (%.1f%%)", subset,
-                           100.0 * subset / model.num_subsets());
+        << absl::StrFormat("Reading subset %d", subset.value());
     std::vector<std::string> elements = absl::StrSplit(line, ' ');
     if (elements.back().empty() || elements.back()[0] == '\0') {
       elements.pop_back();
     }
     model.AddEmptySubset(1);
-    for (const std::string& number : elements) {
-      BaseInt element;
-      CHECK(absl::SimpleAtoi(number, &element));
-      CHECK_GT(element, 0);
-      // Correct the 1-indexing.
-      model.AddElementToLastSubset(ElementIndex(element - 1));
+    // As there can be repetitions in the data, we need to keep track of the
+    // elements already added to the subset.
+    std::vector<ElementIndex> elements_list;
+    for (const std::string& number_str : elements) {
+      BaseInt raw_element;
+      CHECK(absl::SimpleAtoi(number_str, &raw_element));
+      // Re-index the elements starting from 0.
+      ElementIndex element(raw_element - smallest_element);
+      if (element_seen[element]) {
+        DLOG(INFO) << "Element " << element << " already in subset "
+                   << subset.value();
+        continue;
+      }
+      element_seen[element] = true;
+      elements_list.push_back(element);
+      CHECK_GE(element.value(), 0);
+      model.AddElementToLastSubset(element);
+    }
+    // Clean up the list of elements.
+    for (const ElementIndex element : elements_list) {
+      element_seen[element] = false;
     }
     ++subset;
   }
-  LOG(INFO) << "Finished reading the model.";
+  LOG(INFO) << "Read " << model.num_subsets() << " subsets, "
+            << model.num_elements() << " elements";
   model.CreateSparseRowView();
   return model;
 }
 
 SetCoverModel ReadSetCoverProto(absl::string_view filename, bool binary) {
+  CHECK_OK(file::Exists(filename, file::Defaults()));
   SetCoverModel model;
   SetCoverProto message;
   if (binary) {
@@ -255,7 +306,7 @@ void WriteOrlibScp(const SetCoverModel& model, absl::string_view filename) {
   for (const ElementIndex element : model.ElementRange()) {
     LOG_EVERY_N_SEC(INFO, 5)
         << absl::StrFormat("Writing element %d (%.1f%%)", element.value(),
-                           100.0 * element.value() / model.num_elements());
+                           Percent(element, model.num_elements()));
     formatter.Append(absl::StrCat(model.rows()[element].size(), "\n"));
     for (const SubsetIndex subset : model.rows()[element]) {
       formatter.Append(subset.value() + 1);
@@ -276,7 +327,7 @@ void WriteOrlibRail(const SetCoverModel& model, absl::string_view filename) {
   for (const SubsetIndex subset : model.SubsetRange()) {
     LOG_EVERY_N_SEC(INFO, 5)
         << absl::StrFormat("Writing subset %d (%.1f%%)", subset.value(),
-                           100.0 * subset.value() / model.num_subsets());
+                           Percent(subset, model.num_subsets()));
     formatter.Append(model.subset_costs()[subset]);
     formatter.Append(static_cast<BaseInt>(model.columns()[subset].size()));
     for (const ElementIndex element : model.columns()[subset]) {
@@ -299,6 +350,7 @@ void WriteSetCoverProto(const SetCoverModel& model, absl::string_view filename,
 }
 
 SubsetBoolVector ReadSetCoverSolutionText(absl::string_view filename) {
+  CHECK_OK(file::Exists(filename, file::Defaults()));
   SubsetBoolVector solution;
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
@@ -316,6 +368,7 @@ SubsetBoolVector ReadSetCoverSolutionText(absl::string_view filename) {
 
 SubsetBoolVector ReadSetCoverSolutionProto(absl::string_view filename,
                                            bool binary) {
+  CHECK_OK(file::Exists(filename, file::Defaults()));
   SubsetBoolVector solution;
   SetCoverSolutionResponse message;
   if (binary) {

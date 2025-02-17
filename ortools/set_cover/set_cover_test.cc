@@ -19,14 +19,14 @@
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/algorithms/set_cover.pb.h"
-#include "ortools/algorithms/set_cover_heuristics.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_mip.h"
-#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/parse_text_proto.h"
+#include "ortools/set_cover/set_cover.pb.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_mip.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 namespace {

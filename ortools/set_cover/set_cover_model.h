@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
+#ifndef OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_
+#define OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_
 
 #include <cstdint>
 #include <string>
@@ -20,9 +20,9 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/set_cover/set_cover.pb.h"
 
 // Representation class for the weighted set-covering problem.
 //
@@ -398,4 +398,4 @@ class IntersectingSubsetsIterator {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
+#endif  // OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_

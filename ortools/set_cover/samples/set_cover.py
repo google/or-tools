@@ -16,7 +16,7 @@
 
 # [START program]
 # [START import]
-from ortools.algorithms.python import set_cover
+from ortools.set_cover.python import set_cover
 # [END import]
 
 

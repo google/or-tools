@@ -151,6 +151,7 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
+  "ortools/set_cover/*.proto"
   "ortools/util/*.proto"
   )
 list(REMOVE_ITEM OR_TOOLS_PROTO_PY_FILES "ortools/constraint_solver/demon_profiler.proto")
@@ -290,6 +291,7 @@ foreach(SUBPROJECT IN ITEMS
  routing
  sat
  scheduling
+ set_cover
  util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
@@ -351,6 +353,8 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/scheduling/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/scheduling/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/set_cover/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/set_cover/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/python/__init__.py CONTENT "")
 
@@ -625,8 +629,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:knapsack_solver_pybind11> ${PYTHON_PROJECT}/algorithms/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/algorithms/python
-  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
@@ -657,6 +659,8 @@ add_custom_command(
    $<TARGET_FILE:cp_model_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
+   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/set_cover/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
@@ -665,7 +669,6 @@ add_custom_command(
   DEPENDS
     init_pybind11
     knapsack_solver_pybind11
-    set_cover_pybind11
     linear_sum_assignment_pybind11
     max_flow_pybind11
     min_cost_flow_pybind11
@@ -679,6 +682,7 @@ add_custom_command(
     $<TARGET_NAME_IF_EXISTS:pdlp_pybind11>
     cp_model_helper_pybind11
     rcpsp_pybind11
+    set_cover_pybind11
     sorted_interval_list_pybind11
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
@@ -704,7 +708,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E remove -f stub_timestamp
   COMMAND ${stubgen_EXECUTABLE} -p ortools.init.python.init --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.knapsack_solver --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.set_cover --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.linear_sum_assignment --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .
@@ -719,6 +722,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.model --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.cp_model_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.set_cover.python.set_cover --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
   MAIN_DEPENDENCY
