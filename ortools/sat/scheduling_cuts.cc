@@ -761,16 +761,16 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     // Sort events by time.
     // It is also important that all positive event with the same time as
     // negative events appear after for the correctness of the algo below.
-    std::sort(events.begin(), events.end(),
-              [](const TimeTableEvent& i, const TimeTableEvent& j) {
-                if (i.time == j.time) {
-                  if (i.is_positive == j.is_positive) {
-                    return i.interval_index < j.interval_index;
-                  }
-                  return !i.is_positive;
-                }
-                return i.time < j.time;
-              });
+    std::stable_sort(events.begin(), events.end(),
+                     [](const TimeTableEvent& i, const TimeTableEvent& j) {
+                       if (i.time == j.time) {
+                         if (i.is_positive == j.is_positive) {
+                           return i.interval_index < j.interval_index;
+                         }
+                         return !i.is_positive;
+                       }
+                       return i.time < j.time;
+                     });
 
     double sum_of_demand_lp = 0.0;
     bool positive_event_added_since_last_check = false;
@@ -862,11 +862,12 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
   const int num_events = events.size();
   if (num_events <= 1) return;
 
-  std::sort(events.begin(), events.end(),
-            [](const CachedIntervalData& e1, const CachedIntervalData& e2) {
-              return e1.start_min < e2.start_min ||
-                     (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
-            });
+  std::stable_sort(
+      events.begin(), events.end(),
+      [](const CachedIntervalData& e1, const CachedIntervalData& e2) {
+        return e1.start_min < e2.start_min ||
+               (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
+      });
 
   // Balas disjunctive cuts on 2 tasks a and b:
   //   start_1 * (duration_1 + start_min_1 - start_min_2) +
@@ -1157,11 +1158,11 @@ void GenerateShortCompletionTimeCutsWithExactBound(
     IntegerValue capacity_max, Model* model, LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);
   // Sort by start min to bucketize by start_min.
-  std::sort(events.begin(), events.end(),
-            [](const CtEvent& e1, const CtEvent& e2) {
-              return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
-                     std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
-            });
+  std::stable_sort(
+      events.begin(), events.end(), [](const CtEvent& e1, const CtEvent& e2) {
+        return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
+               std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
+      });
   std::vector<PermutableEvent> permutable_events;
   for (int start = 0; start + 1 < events.size(); ++start) {
     // Skip to the next start_min value.
@@ -1185,10 +1186,10 @@ void GenerateShortCompletionTimeCutsWithExactBound(
       }
     }
 
-    std::sort(residual_tasks.begin(), residual_tasks.end(),
-              [](const CtEvent& e1, const CtEvent& e2) {
-                return e1.x_lp_end < e2.x_lp_end;
-              });
+    std::stable_sort(residual_tasks.begin(), residual_tasks.end(),
+                     [](const CtEvent& e1, const CtEvent& e2) {
+                       return e1.x_lp_end < e2.x_lp_end;
+                     });
 
     IntegerValue sum_of_durations(0);
     IntegerValue sum_of_energies(0);
@@ -1413,11 +1414,11 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
   std::vector<int64_t> tmp_possible_demands;
 
   // Sort by start min to bucketize by start_min.
-  std::sort(events.begin(), events.end(),
-            [](const CtEvent& e1, const CtEvent& e2) {
-              return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
-                     std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
-            });
+  std::stable_sort(
+      events.begin(), events.end(), [](const CtEvent& e1, const CtEvent& e2) {
+        return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
+               std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
+      });
 
   // First loop: we loop on potential start times.
   for (int start = 0; start + 1 < events.size(); ++start) {
@@ -1468,10 +1469,10 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
 
     // We will add tasks one by one, sorted by end time, and evaluate the
     // potential cut at each step.
-    std::sort(residual_tasks.begin(), residual_tasks.end(),
-              [](const CtEvent& e1, const CtEvent& e2) {
-                return e1.x_lp_end < e2.x_lp_end;
-              });
+    std::stable_sort(residual_tasks.begin(), residual_tasks.end(),
+                     [](const CtEvent& e1, const CtEvent& e2) {
+                       return e1.x_lp_end < e2.x_lp_end;
+                     });
 
     // Second loop: we add tasks one by one.
     for (int i = 0; i < residual_tasks.size(); ++i) {
