@@ -172,7 +172,7 @@ function build_java() {
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
   fi
 
-  # shellcheck disable=SC2086: cmake fail to parse empty string ""
+  # shellcheck disable=SC2086 # cmake fail to parse empty string ""
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java -j8 -v
