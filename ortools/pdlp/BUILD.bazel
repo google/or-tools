@@ -26,6 +26,7 @@ cc_library(
         ":solvers_cc_proto",
         "//ortools/base:threadpool",
         "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/log",
         "@eigen",
     ],
 )
@@ -321,6 +322,7 @@ cc_test(
         ":gtest_main",
         ":scheduler",
         ":sharder",
+        ":solvers_cc_proto",
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/random:distributions",
