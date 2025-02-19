@@ -565,20 +565,6 @@ Fractional LuFactorization::ComputeInverseInfinityNormUpperBound() const {
          upper_.ComputeInverseInfinityNormUpperBound();
 }
 
-namespace {
-// Returns the density of the sparse column 'b' w.r.t. the given permutation.
-double ComputeDensity(const SparseColumn& b, const RowPermutation& row_perm) {
-  double density = 0.0;
-  for (const SparseColumn::Entry e : b) {
-    if (row_perm[e.row()] != kNonPivotal && e.coefficient() != 0.0) {
-      ++density;
-    }
-  }
-  const RowIndex num_rows = row_perm.size();
-  return density / num_rows.value();
-}
-}  // anonymous namespace
-
 void LuFactorization::ComputeTransposeUpper() {
   SCOPED_TIME_STAT(&stats_);
   transpose_upper_.PopulateFromTranspose(upper_);
