@@ -2705,8 +2705,10 @@ bool CumulBoundsPropagatorFilter::Accept(const Assignment* delta,
       delta_nexts_[index] = delta_element.Value();
     }
   }
-  const auto& next_accessor = [this](int64_t index) {
-    return delta_touched_[index] ? delta_nexts_[index] : Value(index);
+  const auto& next_accessor = [this](int64_t index) -> int64_t {
+    return delta_touched_[index] ? delta_nexts_[index]
+           : !IsVarSynced(index) ? -1
+                                 : Value(index);
   };
 
   return propagator_.PropagateCumulBounds(next_accessor, cumul_offset_);
@@ -2777,7 +2779,9 @@ bool LPCumulFilter::Accept(const Assignment* delta,
     }
   }
   const auto& next_accessor = [this](int64_t index) {
-    return delta_touched_[index] ? delta_nexts_[index] : Value(index);
+    return delta_touched_[index] ? delta_nexts_[index]
+           : !IsVarSynced(index) ? -1
+                                 : Value(index);
   };
 
   if (!filter_objective_cost_) {
@@ -2837,7 +2841,7 @@ void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
   const auto& next_accessor = [this, &model](int64_t index) {
     return IsVarSynced(index)     ? Value(index)
            : model.IsStart(index) ? model.End(model.VehicleIndex(index))
-                                  : index;
+                                  : -1;
   };
 
   if (!filter_objective_cost_) {
@@ -3093,7 +3097,9 @@ void ResourceGroupAssignmentFilter::OnSynchronizePathFromStart(int64_t start) {
   if (current_synch_failed_) return;
   DCHECK(IsVarSynced(start));
   const int v = model_.VehicleIndex(start);
-  const auto& next_accessor = [this](int64_t index) { return Value(index); };
+  const auto& next_accessor = [this](int64_t index) {
+    return IsVarSynced(index) ? Value(index) : -1;
+  };
   if (!vehicle_requires_resource_assignment_[v]) {
     const int64_t route_cost =
         ComputeRouteCumulCostWithoutResourceAssignment(v, next_accessor);
