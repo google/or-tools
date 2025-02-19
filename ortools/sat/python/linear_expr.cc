@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -762,6 +763,10 @@ bool IntExprVisitor::Evaluate(const CpSolverResponse& solution,
   }
   return true;
 }
+
+// TODO(user): This hash method does not distinguish between variables with
+// the same index and different models.
+int64_t Literal::Hash() const { return absl::HashOf(index()); }
 
 bool BaseIntVarComparator::operator()(std::shared_ptr<BaseIntVar> lhs,
                                       std::shared_ptr<BaseIntVar> rhs) const {

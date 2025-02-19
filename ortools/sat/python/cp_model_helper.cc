@@ -1064,6 +1064,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
                         "Evaluating a Literal as a Boolean valueis "
                         "not supported.");
            })
+      .def("__hash__", &Literal::Hash)
       // PEP8 Compatibility.
       .def("Not", &Literal::negated)
       .def("Index", &Literal::index);

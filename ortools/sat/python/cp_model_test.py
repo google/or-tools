@@ -207,6 +207,12 @@ class CpModelTest(absltest.TestCase):
         cst = model.new_constant(5)
         self.assertEqual("5", str(cst))
 
+    def test_hash_int_var(self) -> None:
+        model = cp_model.CpModel()
+        var_a = model.new_int_var(0, 2, "a")
+        variables = set()
+        variables.add(var_a)
+
     def test_literal(self) -> None:
         model = cp_model.CpModel()
         x = model.new_bool_var("x")

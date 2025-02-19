@@ -477,6 +477,9 @@ class Literal : public LinearExpr {
    *   The negation of the current literal.
    */
   virtual std::shared_ptr<Literal> negated() = 0;
+
+  /// Returns the hash of the current literal.
+  int64_t Hash() const;
 };
 
 /**
