@@ -21,7 +21,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/globals.h"
 #include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -106,7 +108,7 @@ void CheckAndPrint2DSolution(
   }
 }
 
-// Load a 2d binpacking problem and solve it as a 2d knapsack problem.
+// Load a 2d bin-packing problem and solve it as a 2d knapsack problem.
 // That is fit the max number of object in one box.
 void LoadAndSolve(const std::string& file_name, int instance) {
   packing::BinPacking2dParser parser;
@@ -226,7 +228,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

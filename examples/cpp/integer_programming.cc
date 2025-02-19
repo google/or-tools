@@ -16,7 +16,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/globals.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
@@ -94,7 +96,7 @@ void RunAllExamples() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;

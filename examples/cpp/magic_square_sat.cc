@@ -14,7 +14,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/globals.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
@@ -101,7 +103,7 @@ void MagicSquare(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::MagicSquare(absl::GetFlag(FLAGS_size));

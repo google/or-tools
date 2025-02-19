@@ -15,11 +15,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
@@ -50,8 +52,6 @@ Stat::Stat(absl::string_view name, StatsGroup* group) : name_(name) {
 }
 
 std::string Stat::StatString() const { return name_ + ": " + ValueAsString(); }
-
-StatsGroup::~StatsGroup() { gtl::STLDeleteValues(&time_distributions_); }
 
 void StatsGroup::Register(Stat* stat) { stats_.push_back(stat); }
 
@@ -117,13 +117,14 @@ std::string StatsGroup::StatString() const {
   return result;
 }
 
-TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
-  TimeDistribution*& ref = time_distributions_[name];
+TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(
+    absl::string_view name) {
+  std::unique_ptr<TimeDistribution>& ref = time_distributions_[name];
   if (ref == nullptr) {
-    ref = new TimeDistribution(name);
-    Register(ref);
+    ref = std::make_unique<TimeDistribution>(name);
+    Register(ref.get());
   }
-  return ref;
+  return ref.get();
 }
 
 DistributionStat::DistributionStat(absl::string_view name)

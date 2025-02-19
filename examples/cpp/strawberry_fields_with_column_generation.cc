@@ -606,7 +606,7 @@ int main(int argc, char** argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(usage.c_str(), &argc, &argv, true);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;

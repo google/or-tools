@@ -28,6 +28,7 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/log/globals.h"
 #include "absl/log/initialize.h"
 #include "absl/random/random.h"
 #include "ortools/base/logging.h"
@@ -239,7 +240,7 @@ int main(int argc, char** argv) {
       << "Specify a non-null client size.";
   CHECK_LT(0, absl::GetFlag(FLAGS_fix_cost))
       << "Specify a non-null client size.";
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::RunAllExamples(absl::GetFlag(FLAGS_facilities),
                                       absl::GetFlag(FLAGS_clients),
                                       absl::GetFlag(FLAGS_fix_cost));

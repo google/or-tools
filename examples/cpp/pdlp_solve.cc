@@ -131,7 +131,7 @@ void Solve(const std::string& input, absl::string_view params_str,
 }  // namespace operations_research::pdlp
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);
 
   operations_research::pdlp::Solve(

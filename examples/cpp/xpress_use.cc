@@ -90,7 +90,7 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
 }
 #define ABSL_MIN_LOG_LEVEL INFO;
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   std::cout << "start\n";
   LOG(WARNING) << "start";

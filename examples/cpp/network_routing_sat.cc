@@ -33,10 +33,12 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/globals.h"
 #include "absl/random/uniform_int_distribution.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
@@ -673,7 +675,7 @@ class NetworkRoutingSolver {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::NetworkRoutingData data;

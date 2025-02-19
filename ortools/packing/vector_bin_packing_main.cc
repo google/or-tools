@@ -16,6 +16,7 @@
 #include <string>
 
 #include "absl/flags/flag.h"
+#include "absl/log/globals.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/helpers.h"
@@ -94,7 +95,7 @@ void ParseAndSolve(const std::string& filename, absl::string_view solver,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

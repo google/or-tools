@@ -1414,7 +1414,7 @@ TEST_F(XpressFixtureMIP, CallbackThrowsException) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   testing::InitGoogleTest(&argc, argv);
   auto solver = operations_research::MPSolver::CreateSolver("XPRESS_LP");
   if (solver == nullptr) {

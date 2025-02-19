@@ -46,6 +46,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/flags/flag.h"
+#include "absl/log/globals.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -321,7 +324,7 @@ static const char kUsage[] =
     "There is no output besides the LOGs of the solver.";
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(kUsage, &argc, &argv, true);
   CHECK_EQ(0, absl::GetFlag(FLAGS_num_teams) % 2)
       << "The number of teams must be even";

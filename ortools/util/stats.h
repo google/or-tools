@@ -69,10 +69,13 @@
 #define OR_TOOLS_UTIL_STATS_H_
 
 #include <cstdint>
+#include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/timer.h"
@@ -138,7 +141,7 @@ class StatsGroup {
   // This type is neither copyable nor movable.
   StatsGroup(const StatsGroup&) = delete;
   StatsGroup& operator=(const StatsGroup&) = delete;
-  ~StatsGroup();
+  ~StatsGroup() = default;
 
   // Registers a Stat, which will appear in the string returned by StatString().
   // The Stat object must live as long as this StatsGroup.
@@ -154,9 +157,9 @@ class StatsGroup {
   void SetPrintOrder(PrintOrder print_order) { print_order_ = print_order; }
 
   // Returns and if needed creates and registers a TimeDistribution with the
-  // given name. Note that this involve a map lookup and his thus slower than
-  // directly accessing a TimeDistribution variable.
-  TimeDistribution* LookupOrCreateTimeDistribution(std::string name);
+  // given name. Note that this involve a hash map lookup and is thus slower
+  // than directly accessing a TimeDistribution variable.
+  TimeDistribution* LookupOrCreateTimeDistribution(absl::string_view name);
 
   // Calls Reset() on all the statistics registered with this group.
   void Reset();
@@ -165,7 +168,8 @@ class StatsGroup {
   std::string name_;
   PrintOrder print_order_ = SORT_BY_PRIORITY_THEN_VALUE;
   std::vector<Stat*> stats_;
-  std::map<std::string, TimeDistribution*> time_distributions_;
+  absl::flat_hash_map<std::string, std::unique_ptr<TimeDistribution>>
+      time_distributions_;
 };
 
 // Base class to track and compute statistics about the distribution of a
@@ -376,7 +380,8 @@ class DisabledScopedTimeStats {
 // per measurement compared to about 20ns (as of 2012-06, on my workstation).
 class EnabledScopedTimeStats {
  public:
-  explicit EnabledScopedTimeStats(StatsGroup* stats, const char* function_name)
+  explicit EnabledScopedTimeStats(StatsGroup* stats,
+                                  absl::string_view function_name)
       : scoped_time_stat_(
             stats->LookupOrCreateTimeDistribution(function_name)) {}
   EnabledScopedTimeStats(const EnabledScopedTimeStats&) = delete;

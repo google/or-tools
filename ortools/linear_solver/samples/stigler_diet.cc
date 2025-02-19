@@ -16,13 +16,14 @@
 // [START import]
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <utility>  // std::pair
 #include <vector>
 
-#include "absl/flags/flag.h"
-#include "absl/log/flags.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -321,7 +322,7 @@ void StiglerDiet() {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::StiglerDiet();
   return EXIT_SUCCESS;
 }

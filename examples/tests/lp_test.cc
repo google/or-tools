@@ -226,7 +226,7 @@ void RunAllExamples() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::RunAllExamples();
   return 0;
 }

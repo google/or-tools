@@ -28,7 +28,7 @@ void CppBridge::InitLogging(const std::string& usage) {
 }
 
 void CppBridge::SetFlags(const CppFlags& flags) {
-  absl::SetFlag(&FLAGS_stderrthreshold, flags.stderrthreshold);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   absl::EnableLogPrefix(flags.log_prefix);
   if (!flags.cp_model_dump_prefix.empty()) {
     absl::SetFlag(&FLAGS_cp_model_dump_prefix, flags.cp_model_dump_prefix);

@@ -28,7 +28,6 @@
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -90,7 +89,7 @@ int main(int argc, char* argv[]) {
       "The files must be in Mps or linear_solver.proto format and can be "
       "compressed with gzip.",
       &argc, &argv, true);
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
 
   GlopParameters parameters;
   ReadGlopParameters(&parameters);

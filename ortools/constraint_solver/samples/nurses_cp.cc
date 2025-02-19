@@ -13,13 +13,16 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <iterator>
 #include <numeric>  // std::iota
 #include <sstream>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
+#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -205,7 +208,7 @@ void SolveNursesExample() {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::SolveNursesExample();
   return EXIT_SUCCESS;
 }
