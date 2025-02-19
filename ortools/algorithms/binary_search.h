@@ -19,6 +19,7 @@
 #include <functional>
 #include <utility>
 
+#include "absl/base/log_severity.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
@@ -26,22 +27,29 @@
 #include "ortools/base/logging.h"
 
 namespace operations_research {
-
+// Finds a point in [x_true, x_false) where f changes from true to false.
+// If check_bounds is true, it will CHECK that f(x_true) = true and
+// f(x_false) = false.
+//
 // EXAMPLE:
 //   // Finds the value x in [0,Pi/2] such that cos(x)=2sin(x):
 //   BinarySearch<double>(/*x_true=*/0.0, /*x_false=*/M_PI/2,
 //                        [](double x) { return cos(x) >= 2*sin(x); });
 //
-// Note that x_true > x_false is supported: it works either way.
+// MONOTONIC FUNCTIONS: Suppose f is a monotonic boolean function. See below for
+// the NON-MONOTONIC case.
 //
-// Ideally, f is a monotonic boolean function, such that:
-// - f(x_true) = true
-// - f(x_false) = false
-// - there exists X such that f(x)=true for all x between x_true and X, and
-//   f(x)=false for all x between X and x_false.
+// If x_true < x_false, this returns X such that:
+// - x_true < X < x_false,
+// - f((x_true, X]) = true (i.e. for all x in (x_true, X], f(x) = true),
+// - f((X, x_false)) = false (i.e. for all x in (X, x_false), f(x) = false)
+// or this returns x_true if such an X does not exist.
 //
-// In those conditions, this returns that value X (note that f(X) is true).
-// See below for the NON-MONOTONIC case.
+// If x_true > x_false, this function returns X such that:
+// - x_false < X < x_true
+// - f((x_false, X)) = false
+// - f([X, x_true)) = true
+// or this return x_true if such an X does not exist.
 //
 // Also note that 'Point' may be floating-point types: the function will still
 // converge when the midpoint can't be distinguished from one of the limits,
@@ -68,7 +76,7 @@ namespace operations_research {
 // Note also that even if f() is non-deterministic, i.e. f(X) can sometimes
 // return true and sometimes false for the same X, then the binary search will
 // still finish, but it's hard to say anything about the returned X.
-template <class Point>
+template <class Point, bool check_bounds = DEBUG_MODE>
 Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f);
 
 // Used by BinarySearch(). This is just (x+y)/2, with some DCHECKs to catch
@@ -207,10 +215,12 @@ Point BinarySearchMidpoint(Point x, Point y) {
   return midpoint;
 }
 
-template <class Point>
+template <class Point, bool check_bounds>
 Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f) {
-  DCHECK(f(x_true)) << x_true;
-  DCHECK(!f(x_false)) << x_false;
+  if constexpr (check_bounds) {
+    CHECK(f(x_true)) << x_true;
+    CHECK(!f(x_false)) << x_false;
+  }
   int num_iterations = 0;
   constexpr int kMaxNumIterations = 1000000;
   while (true) {
