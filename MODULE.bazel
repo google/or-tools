@@ -5,12 +5,11 @@
 # For more details, please check https://github.com/bazelbuild/bazel/issues/18958
 ###############################################################################
 
-OR_TOOLS_VERSION = "10.0.0"
+OR_TOOLS_VERSION = "10.0"
 
 module(
-    name = "or-tools",
+    name = "ortools",
     version = OR_TOOLS_VERSION,
-    repo_name = "com_google_ortools",
 )
 
 # see https://registry.bazel.build/
