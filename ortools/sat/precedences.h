@@ -474,6 +474,10 @@ struct LinearTerm {
       var = NegationOf(var);
     }
   }
+
+  bool operator==(const LinearTerm& other) const {
+    return var == other.var && coeff == other.coeff;
+  }
 };
 
 // A relation of the form enforcement => a + b \in [lhs, rhs].
@@ -485,9 +489,15 @@ struct Relation {
   LinearTerm b;
   IntegerValue lhs;
   IntegerValue rhs;
+
+  bool operator==(const Relation& other) const {
+    return enforcement == other.enforcement && a == other.a && b == other.b &&
+           lhs == other.lhs && rhs == other.rhs;
+  }
 };
 
-// A repository of all the enforced linear constraints of size 1 or 2.
+// A repository of all the enforced linear constraints of size 1 or 2, and of
+// all the non-enforced linear constraints of size 2.
 //
 // TODO(user): This is not always needed, find a way to clean this once we
 // don't need it.
@@ -497,12 +507,35 @@ class BinaryRelationRepository {
   // The returned relation is guaranteed to only have positive variables.
   const Relation& relation(int index) const { return relations_[index]; }
 
-  absl::Span<const int> relation_indices(LiteralIndex lit) const {
+  // Returns the indices of the relations that are enforced by the given
+  // literal.
+  absl::Span<const int> IndicesOfRelationsEnforcedBy(LiteralIndex lit) const {
     if (lit >= lit_to_relations_.size()) return {};
     return lit_to_relations_[lit];
   }
 
-  // Adds a relation lit => a + b \in [lhs, rhs].
+  // Returns the indices of the non-enforced relations that contain the given
+  // (positive) variable.
+  absl::Span<const int> IndicesOfRelationsContaining(
+      IntegerVariable var) const {
+    if (var >= var_to_relations_.size()) return {};
+    return var_to_relations_[var];
+  }
+
+  // Returns the indices of the non-enforced relations that contain the given
+  // (positive) variables.
+  absl::Span<const int> IndicesOfRelationsBetween(IntegerVariable var1,
+                                                  IntegerVariable var2) const {
+    std::pair<IntegerVariable, IntegerVariable> key(var1, var2);
+    if (var1 > var2) std::swap(var1, var2);
+    auto it = var_pair_to_relations_.find(key);
+    if (it == var_pair_to_relations_.end()) return {};
+    return it->second;
+  }
+
+  // Adds a conditional relation lit => a + b \in [lhs, rhs] (one of the terms
+  // can be zero), or an always true binary relation a + b \in [lhs, rhs] (both
+  // terms must be non-zero).
   void Add(Literal lit, LinearTerm a, LinearTerm b, IntegerValue lhs,
            IntegerValue rhs);
 
@@ -512,8 +545,8 @@ class BinaryRelationRepository {
 
   // Assuming level-zero bounds + any (var >= value) in the input map,
   // fills "output" with a "propagated" set of bounds assuming lit is true (by
-  // using the relations enforced by lit). Note that we will only fill bounds >
-  // level-zero ones in output.
+  // using the relations enforced by lit, as well as the non-enforced ones).
+  // Note that we will only fill bounds > level-zero ones in output.
   //
   // Returns false if the new bounds are infeasible at level zero.
   //
@@ -526,8 +559,13 @@ class BinaryRelationRepository {
 
  private:
   bool is_built_ = false;
+  int num_enforced_relations_ = 0;
   std::vector<Relation> relations_;
   CompactVectorVector<LiteralIndex, int> lit_to_relations_;
+  CompactVectorVector<IntegerVariable, int> var_to_relations_;
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
+                      std::vector<int>>
+      var_pair_to_relations_;
 };
 
 // Detects if at least one of a subset of linear of size 2 or 1, touching the

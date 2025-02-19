@@ -54,15 +54,11 @@ class RouteRelationsHelper {
   int num_dimensions() const { return num_dimensions_; }
 
   int num_nodes() const {
-    return num_dimensions_ == 0
-               ? 0
-               : flat_node_dim_variables_.size() / num_dimensions_;
+    return flat_node_dim_variables_.size() / num_dimensions_;
   }
 
   int num_arcs() const {
-    return num_dimensions_ == 0
-               ? 0
-               : flat_arc_dim_relations_.size() / num_dimensions_;
+    return flat_arc_dim_relations_.size() / num_dimensions_;
   }
 
   // Returns the variable associated with the given node and dimension, or
@@ -122,6 +118,14 @@ class MinOutgoingFlowHelper {
 
   ~MinOutgoingFlowHelper();
 
+  // Returns the minimum flow going out of `subset`, based on a generalization
+  // of the CVRP "rounded capacity inequalities", by using the given helper, if
+  // possible (this requires all nodes to have an associated variable, and all
+  // relations to have +1, -1 coefficients). The complexity is O((subset.size()
+  // + num_arcs()) * num_dimensions()).
+  int ComputeDemandBasedMinOutgoingFlow(absl::Span<const int> subset,
+                                        const RouteRelationsHelper& helper);
+
   // Returns the minimum flow going out of `subset`, based on a conservative
   // estimate of the maximum number of nodes of a feasible path inside this
   // subset. `subset` must not be empty and must not contain the depot (node 0).
@@ -151,6 +155,103 @@ class MinOutgoingFlowHelper {
 
  private:
   void InitializeGraph(absl::Span<const int> subset);
+
+  // This is used to represent a "special bin packing" problem where we have
+  // objects that can either be items with a given demand or bins with a given
+  // capacity. The problem is to choose the minimum number of objects that will
+  // be bins, such that the other objects (items) can be packed inside.
+  struct ItemOrBin {
+    // Only one option will apply, this can either be an item with given demand
+    // or a bin with given capacity.
+    //
+    // Important: We support negative demands and negative capacity. We just
+    // need that the sum of demand <= capacity for the item in that bin.
+    IntegerValue demand = 0;
+    IntegerValue capacity = 0;
+
+    // We described the problem where each object can be an item or a bin, but
+    // in practice we might have restriction on what object can be which, and we
+    // use this field to indicate that.
+    //
+    // The numerical order is important as we use that in the greedy algorithm.
+    // See ComputeMinNumberOfBins() code.
+    enum {
+      MUST_BE_ITEM = 0,  // capacity will be set at zero.
+      ITEM_OR_BIN = 1,
+      MUST_BE_BIN = 2,  // demand will be set at zero.
+    } type = ITEM_OR_BIN;
+  };
+
+  // Given a "special bin packing" problem as decribed above, return a lower
+  // bound on the number of bins that needs to be taken.
+  //
+  // This simply sorts the object according to a greedy criteria and minimize
+  // the number of bins such that the "demands <= capacities" constraint is
+  // satisfied.
+  //
+  // TODO(user): Use fancier DP to derive tighter bound. Also, when there are
+  // many dimensions, the choice of which item go to which bin is correlated,
+  // can we exploit this?
+  //
+  // TODO(user): As this get more used and fancier, it is easy to write a CP-SAT
+  // model to solve a "special bin packing" problem and test on random problems
+  // that this is indeed a correct bound.
+  int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used);
+
+  // Given a subset S to serve in a route constraint, returns a special bin
+  // packing problem (defined above) where the minimum number of bins will
+  // correspond to the minimum number of vehicles needed to serve this subset.
+  //
+  // One way to derive such reduction is as follow.
+  //
+  // If we look at a path going through the subset, it will touch in order the
+  // nodes P = {n_0, ..., n_e}. It will enter S at a "start" node n_0 and leave
+  // at a "end" node n_e.
+  //
+  // We assume (see the RouteRelationsHelper) that each node n has an
+  // associated variable X_n, and that each arc t->h has an associated relation
+  // lhs(t,h) <= X_h - X_t. Summing all these inequalities along the path above
+  // we get:
+  //   Sum_{i \in [1..e]} lhs(n_i, n_(i+1)) <= X_(n_e) - X_(n_0)
+  // introducing:
+  //  - d(n) = min_(i \in S) lhs(i, n)  [minimum incoming weight in subset S]
+  //  - UB   = max_(i \in S) upper_bound(X_i)
+  // We get:
+  //    Sum_{n \in P \ n_0} d(n) <= UB - lower_bound(n_0)
+  //
+  // Here we can see that the "starting node" n0 is on the "capacity" side and
+  // will serve the role of a bin with capacity (UB - lower_bound(n_0)), whereas
+  // the other nodes n will be seen as "item" with demands d(i).
+  //
+  // Given that the set of paths going throug S must be disjoint and serve all
+  // the nodes, we get exactly the special bin packing problem described above
+  // where the starting nodes are the bins and the other inner-nodes are the
+  // items.
+  //
+  // Note that if a node has no incoming arc from within S, it must be a start
+  // (i.e. a bin). And if a node has no incoming arcs from outside S, it cannot
+  // be a start an must be an inner node (i.e. an item). We can exploit this to
+  // derive better bounds.
+  //
+  // We just explained the reduction using incoming arcs and starts of route,
+  // but we can do the same with outgoing arcs and ends of route. We can also
+  // change the dimension (the X_i) and variable direction used in the
+  // RouteRelationsHelper to exploit relations X_h - X_t <= rhs(t,h) instead.
+  //
+  // We provide a reduction for the cross product of:
+  // - Each possible dimension in the RouteRelationsHelper.
+  // - lhs or rhs (when negate_variables = true) in X - Y \in [lhs, rhs].
+  // - (start and incoming arcs) or (ends and outgoing arcs).
+  //
+  // Warning: the returned Span<> is only valid until the next call to this
+  // function.
+  //
+  // TODO(user): Given the info for a subset, we can derive bounds for any
+  // smaller set included in it. We just have to ignore the MUST_BE_ITEM
+  // type as this might no longer be true. That might be interseting.
+  absl::Span<ItemOrBin> RelaxIntoSpecialBinPackingProblem(
+      absl::Span<const int> subset, int dimension, bool negate_variables,
+      bool use_incoming, const RouteRelationsHelper& helper);
 
   // Returns the minimum flow going out of a subset of size `subset_size`,
   // assuming that the longest feasible path inside this subset has
@@ -197,11 +298,14 @@ class MinOutgoingFlowHelper {
   std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
       next_node_var_lower_bounds_;
 
+  std::vector<ItemOrBin> tmp_bin_packing_problem_;
+
   // Statistics.
   int64_t num_full_dp_skips_ = 0;
   int64_t num_full_dp_calls_ = 0;
   int64_t num_full_dp_early_abort_ = 0;
   int64_t num_full_dp_work_abort_ = 0;
+  absl::flat_hash_map<std::string, int> num_by_type_;
 };
 
 // Given a graph with nodes in [0, num_nodes) and a set of arcs (the order is

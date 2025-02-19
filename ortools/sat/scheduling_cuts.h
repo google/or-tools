@@ -22,6 +22,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
@@ -109,9 +110,11 @@ struct BaseEvent {
   IntegerValue x_end_min;
   IntegerValue x_end_max;
   IntegerValue x_size_min;
+  IntegerValue x_size_max;
 
   // Cache of the bounds on the y direction.
   IntegerValue y_size_min;
+  IntegerValue y_size_max;
 
   // The energy min of this event.
   IntegerValue energy_min;
@@ -119,6 +122,16 @@ struct BaseEvent {
   // If non empty, a decomposed view of the energy of this event.
   // First value in each pair is x_size, second is y_size.
   std::vector<LiteralValueValue> decomposed_energy;
+
+  // Indicates if the events used the optional energy information from the
+  // model.
+  bool use_energy = false;
+
+  // If we know that the size on y is fixed, we can use some heuristic to
+  // compute the maximum subset sums under the capacity and use that instead
+  // of the full capacity.
+  bool y_size_is_fixed() const { return y_size_min == y_size_max; }
+  void PropagateDecomposedEnergy(const VariablesAssignment& assignment);
 };
 
 // Stores the event for a rectangle along the two axis x and y.
@@ -132,18 +145,9 @@ struct CtEvent : BaseEvent {
   AffineExpression x_end;
   double x_lp_end;
 
-  // Indicates if the events used the optional energy information from the
-  // model.
-  bool use_energy = false;
-
   // Indicates if the cut is lifted, that is if it includes tasks that are not
   // strictly contained in the current time window.
   bool lifted = false;
-
-  // If we know that the size on y is fixed, we can use some heuristic to
-  // compute the maximum subset sums under the capacity and use that instead
-  // of the full capacity.
-  bool y_size_is_fixed = false;
 
   std::string DebugString() const;
 };

@@ -53,13 +53,13 @@ TEST(SchedulingDemandHelperTest, EnergyInWindow) {
   Model model;
 
   const AffineExpression start(model.Add(NewIntegerVariable(0, 10)));
-  const AffineExpression size(model.Add(NewIntegerVariable(2, 4)));
+  const AffineExpression size(model.Add(NewIntegerVariable(2, 10)));
   const AffineExpression end(model.Add(NewIntegerVariable(0, 10)));
   auto* repo = model.GetOrCreate<IntervalsRepository>();
   const IntervalVariable inter =
       repo->CreateInterval(start, end, size, kNoLiteralIndex, false);
 
-  const AffineExpression demand(model.Add(NewIntegerVariable(2, 4)));
+  const AffineExpression demand(model.Add(NewIntegerVariable(2, 10)));
 
   SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);
@@ -85,13 +85,13 @@ TEST(SchedulingDemandHelperTest, EnergyInWindowTakeIntoAccountWindowSize) {
   Model model;
 
   const AffineExpression start(model.Add(NewIntegerVariable(0, 4)));
-  const AffineExpression size(model.Add(NewIntegerVariable(6, 8)));
+  const AffineExpression size(model.Add(NewIntegerVariable(6, 10)));
   const AffineExpression end(model.Add(NewIntegerVariable(0, 10)));
   auto* repo = model.GetOrCreate<IntervalsRepository>();
   const IntervalVariable inter =
       repo->CreateInterval(start, end, size, kNoLiteralIndex, false);
 
-  const AffineExpression demand(model.Add(NewIntegerVariable(6, 8)));
+  const AffineExpression demand(model.Add(NewIntegerVariable(6, 10)));
 
   SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);

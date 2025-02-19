@@ -221,7 +221,7 @@ message CircuitConstraintProto {
 // - Self-arcs are allowed except for node 0.
 // - There is no cycle in this graph, except through node 0.
 //
-// Note: Currently this constraint expect all the nodes in [0, num_nodes) to
+// Note: Currently this constraint expects all the nodes in [0, num_nodes) to
 // have at least one incident arc. The model will be considered invalid if it
 // is not the case. You can add self-arc fixed to one to ignore some nodes if
 // needed.
@@ -246,6 +246,26 @@ message RoutesConstraintProto {
   //   arc_literal => (current_capacity_tail + demand <= current_capacity_head)
   repeated int32 demands = 4;
   int64 capacity = 5;
+
+  // A set of variables associated with the nodes.
+  message NodeVariables {
+    // The i-th element is the index of the variable associated with the i-th
+    // node, or -1 if there is no variable associated with this node (negative
+    // variable indices, referring to the negation of a variable, are not
+    // supported).
+    repeated int32 vars = 1;
+  }
+
+  // Variables associated with the nodes of the graph, such as the load of the
+  // vehicle arriving at a node, or the time which a vehicle arrives at a node.
+  // Variables with the same "dimension" (such as "load" or "time") must be
+  // listed together.
+  // This field is optional. If it is set, the linear constraints of size 1 or 2
+  // between these variables will be used to derive cuts for this constraint. If
+  // it is not set, the solve will try to automatically derive it, from the
+  // linear constraints of size 1 or 2 in the model (this can fail in complex
+  // cases).
+  repeated NodeVariables dimensions = 6;
 }
 
 // The values of the n-tuple formed by the given expression can only be one of

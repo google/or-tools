@@ -273,11 +273,11 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
     return true;
   }
 
-  if (std::max(bounding_box.SizeX(), bounding_box.SizeY()) *
-          active_box_ranges.size() >
-      std::numeric_limits<int32_t>::max()) {
+  if (AtMinOrMaxInt64I(
+          CapProdI(CapProdI(bounding_box.SizeX(), bounding_box.SizeY()),
+                   active_box_ranges.size()))) {
     // Avoid integer overflows if the area of the boxes get comparable with
-    // INT64_MAX
+    // INT64_MAX.
     return true;
   }
 

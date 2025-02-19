@@ -665,6 +665,60 @@ TEST(ValidateCpModelTest, IntervalMustAppearBeforeTheyAreUsed) {
               HasSubstr("must appear before"));
 }
 
+TEST(ValidateCpModelTest, ValidNodeVariables) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 0, 1 ]
+        dimensions { vars: [ 2, 3 ] }
+        dimensions { vars: [ -1, -1 ] }
+      }
+    }
+  )pb");
+  EXPECT_TRUE(ValidateCpModel(model).empty());
+}
+
+TEST(ValidateCpModelTest, InvalidNodeVariablesCount) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 0, 1 ]
+        dimensions { vars: [ 2, 3, 2 ] }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("must be of size num_nodes:2"));
+}
+
+TEST(ValidateCpModelTest, InvalidNodeVariableInRoutesConstraint) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 0, 1 ]
+        dimensions { vars: [ 2, 3 ] }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model),
+              HasSubstr("must refer to a valid variable"));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

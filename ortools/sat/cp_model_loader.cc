@@ -1280,10 +1280,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     max_sum += std::max(term_a, term_b);
   }
 
-  // Load conditional precedences.
+  // Load conditional precedences and always true binary relations.
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
-  if (params.auto_detect_greater_than_at_least_one_of() &&
-      ct.enforcement_literal().size() == 1 && vars.size() <= 2) {
+  if (ct.enforcement_literal().size() <= 1 && vars.size() <= 2) {
     // To avoid overflow in the code below, we tighten the bounds.
     int64_t rhs_min = ct.linear().domain(0);
     int64_t rhs_max = ct.linear().domain(ct.linear().domain().size() - 1);
@@ -1291,13 +1290,19 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     rhs_max = std::min(rhs_max, max_sum.value());
 
     auto* repository = m->GetOrCreate<BinaryRelationRepository>();
-    const Literal lit = mapping->Literal(ct.enforcement_literal(0));
-    const Domain domain = ReadDomainFromProto(ct.linear());
-    if (vars.size() == 1) {
-      repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
-    } else if (vars.size() == 2) {
-      repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]}, rhs_min,
-                      rhs_max);
+    if (ct.enforcement_literal().empty()) {
+      if (vars.size() == 2) {
+        repository->Add(Literal(kNoLiteralIndex), {vars[0], coeffs[0]},
+                        {vars[1], coeffs[1]}, rhs_min, rhs_max);
+      }
+    } else {
+      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
+      if (vars.size() == 1) {
+        repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+      } else if (vars.size() == 2) {
+        repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]},
+                        rhs_min, rhs_max);
+      }
     }
   }
 

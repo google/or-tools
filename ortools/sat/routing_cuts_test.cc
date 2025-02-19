@@ -124,6 +124,178 @@ TEST(MinOutgoingFlowHelperTest, CapacityConstraints) {
   EXPECT_EQ(tight_min_flow, 2);
 }
 
+class DemandBasedMinOutgoingFlowHelperTest
+    : public testing::TestWithParam<std::pair<bool, bool>> {};
+
+TEST_P(DemandBasedMinOutgoingFlowHelperTest, BasicCapacities) {
+  // If true, the load variables are the load of the vehicle leaving each node,
+  // otherwise they are the load of the vehicle arriving at each node.
+  const bool use_outgoing_load = GetParam().first;
+  // If true, vehicles pickup items at each node, otherwise they deliver items.
+  const bool pickup = GetParam().second;
+
+  Model model;
+  const int num_nodes = 5;
+  // A complete graph with num_nodes.
+  std::vector<int> tails;
+  std::vector<int> heads;
+  std::vector<Literal> literals;
+  absl::flat_hash_map<std::pair<int, int>, Literal> literal_by_arc;
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    for (int head = 0; head < num_nodes; ++head) {
+      if (tail == head) continue;
+      tails.push_back(tail);
+      heads.push_back(head);
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+      literal_by_arc[{tail, head}] = literals.back();
+    }
+  }
+  const std::vector<int> demands = {0, 11, 12, 13, 14};
+  std::vector<IntegerVariable> loads;
+  const int max_capacity = 49;
+  for (int n = 0; n < num_nodes; ++n) {
+    if (pickup == use_outgoing_load) {
+      loads.push_back(model.Add(NewIntegerVariable(demands[n], max_capacity)));
+    } else {
+      loads.push_back(
+          model.Add(NewIntegerVariable(0, max_capacity - demands[n])));
+    }
+  }
+  // Capacity constraints.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (const auto& [arc, literal] : literal_by_arc) {
+    const auto& [tail, head] = arc;
+    if (tail == 0 || head == 0) continue;
+    if (pickup) {
+      // loads[head] - loads[tail] >= demand
+      repository->Add(literal, {loads[head], 1}, {loads[tail], -1},
+                      demands[use_outgoing_load ? head : tail], 1000);
+    } else {
+      // loads[tail] - loads[head] >= demand
+      repository->Add(literal, {loads[tail], 1}, {loads[head], -1},
+                      demands[use_outgoing_load ? head : tail], 1000);
+    }
+  }
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   *repository);
+  ASSERT_NE(route_relations_helper, nullptr);
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+      {1, 2, 3, 4}, *route_relations_helper);
+
+  // The total demand is 50, and the maximum capacity is 49.
+  EXPECT_EQ(min_flow, 2);
+}
+
+TEST_P(DemandBasedMinOutgoingFlowHelperTest,
+       NodesWithoutIncomingOrOutgoingArc) {
+  // If true, the load variables are the load of the vehicle leaving each node,
+  // otherwise they are the load of the vehicle arriving at each node.
+  const bool use_outgoing_load = GetParam().first;
+  // If true, vehicles pickup items at each node, otherwise they deliver items.
+  const bool pickup = GetParam().second;
+
+  Model model;
+  // A graph with 4 nodes and 4 arcs, with 1 node without incoming arc and 1
+  // node without outgoing arc:
+  //
+  // 1 --> 2
+  // ^     |
+  // |     v
+  // 0 --> 3
+  const std::vector<int> tails = {0, 0, 1, 2};
+  const std::vector<int> heads = {1, 3, 2, 3};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true)};
+  const std::vector<int> demands = {11, 12, 13, 14};
+  std::vector<IntegerVariable> loads;
+  const int num_nodes = 4;
+  const int max_capacity = 49;
+  for (int n = 0; n < num_nodes; ++n) {
+    if (pickup == use_outgoing_load) {
+      loads.push_back(model.Add(NewIntegerVariable(demands[n], max_capacity)));
+    } else {
+      loads.push_back(
+          model.Add(NewIntegerVariable(0, max_capacity - demands[n])));
+    }
+  }
+  // Capacity constraints.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (int i = 0; i < 4; ++i) {
+    const int head = heads[i];
+    const int tail = tails[i];
+    if (pickup) {
+      // loads[head] - loads[tail] >= demand
+      repository->Add(literals[i], {loads[head], 1}, {loads[tail], -1},
+                      demands[use_outgoing_load ? head : tail], 1000);
+    } else {
+      // loads[tail] - loads[head] >= demand
+      repository->Add(literals[i], {loads[tail], 1}, {loads[head], -1},
+                      demands[use_outgoing_load ? head : tail], 1000);
+    }
+  }
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   *repository);
+  ASSERT_NE(route_relations_helper, nullptr);
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+      {0, 1, 2, 3}, *route_relations_helper);
+
+  // The total demand is 50, and the maximum capacity is 49.
+  EXPECT_EQ(min_flow, 2);
+}
+
+INSTANTIATE_TEST_SUITE_P(AllCombinations, DemandBasedMinOutgoingFlowHelperTest,
+                         testing::Values(std::make_pair(true, true),
+                                         std::make_pair(true, false),
+                                         std::make_pair(false, true),
+                                         std::make_pair(false, false)));
+
+TEST(MinOutgoingFlowHelperTest, DemandBasedMinOutgoingFlow_IsolatedNodes) {
+  Model model;
+  const int num_nodes = 5;
+  // A star graph with num_nodes-1 nodes and a depot.
+  std::vector<int> tails;
+  std::vector<int> heads;
+  std::vector<Literal> literals;
+  std::vector<IntegerVariable> variables;
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  // The depot variable.
+  variables.push_back(model.Add(NewIntegerVariable(0, 100)));
+  for (int head = 1; head < num_nodes; ++head) {
+    tails.push_back(0);
+    heads.push_back(head);
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+    variables.push_back(model.Add(NewIntegerVariable(0, 100)));
+    // Dummy relation, used only to associate a variable with each node.
+    repository->Add(literals.back(), {variables[head], 1}, {variables[0], -1},
+                    1, 100);
+  }
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   *repository);
+  ASSERT_NE(route_relations_helper, nullptr);
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+      {1, 2, 3, 4}, *route_relations_helper);
+
+  EXPECT_EQ(min_flow, 4);
+}
+
 TEST(MinOutgoingFlowHelperTest, TimeWindows) {
   Model model;
   const int num_nodes = 5;
@@ -480,6 +652,57 @@ TEST(RouteRelationsHelperTest, Basic) {
                   IsEmpty()));
 }
 
+TEST(RouteRelationsHelperTest, UnenforcedRelations) {
+  Model model;
+  // Graph:  0--l0-->1
+  //         ^\      |
+  //      l3 | \_l4_ | l1
+  //         |      \v
+  //         3<--l2--2
+  //
+  const int num_nodes = 4;
+  const std::vector<int> tails = {0, 1, 2, 3, 0};
+  const std::vector<int> heads = {1, 2, 3, 0, 2};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true)};
+  // Add relations with "time" variables A, B, C, D intended to be associated
+  // with nodes 0, 1, 2, 3 respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
+  BinaryRelationRepository repository;
+  repository.Add(literals[0], {b, 1}, {a, -1}, 1, 1);
+  repository.Add(literals[1], {c, 1}, {b, -1}, 2, 2);
+  repository.Add(literals[2], {d, 1}, {c, -1}, 3, 3);
+  repository.Add(literals[3], {a, 1}, {d, -1}, 4, 4);
+  // Several unenforced relations on the diagonal arc. The one with the +/-1
+  // coefficients should be preferred.
+  repository.Add(Literal(kNoLiteralIndex), {c, 3}, {a, -2}, 1, 9);
+  repository.Add(Literal(kNoLiteralIndex), {c, 1}, {a, -1}, 5, 5);
+  repository.Add(Literal(kNoLiteralIndex), {c, 2}, {a, -3}, 3, 8);
+  repository.Build();
+
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, repository);
+
+  ASSERT_NE(helper, nullptr);
+  EXPECT_THAT(GetNodeVariablesByDimension(*helper),
+              UnorderedElementsAre(UnorderedElementsAre(
+                  Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d))));
+  // The unenforced relation is taken into account.
+  EXPECT_THAT(
+      GetRelationByDimensionAndArc(*helper),
+      UnorderedElementsAre(UnorderedElementsAre(
+          Pair(0, Relation{-1, 1, 1, 1}), Pair(1, Relation{-1, 1, 2, 2}),
+          Pair(2, Relation{-1, 1, 3, 3}), Pair(3, Relation{-1, 1, 4, 4}),
+          Pair(4, Relation{-1, 1, 5, 5}))));
+}
+
 TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
   Model model;
   // A graph with 3 nodes and the following arcs: 0--l0-->1--l2-->2
@@ -538,6 +761,7 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
       num_nodes, tails, heads, literals, repository);
 
+  ASSERT_NE(helper, nullptr);
   EXPECT_EQ(helper->num_dimensions(), 1);
   EXPECT_EQ(helper->GetNodeVariable(0, 0), a);
   EXPECT_EQ(helper->GetNodeVariable(1, 0), b);
@@ -546,6 +770,140 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   EXPECT_THAT(
       helper->GetArcRelation(1, 0),
       AnyOf(Eq(Relation{-1, 1, 70, 1000}), Eq(Relation{-3, 2, 100, 200})));
+}
+
+TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
+  // A graph with 3 nodes and the following arcs: 0--l0-->1--l0-->2, both
+  // enforced by the same literal l0.
+  Model model;
+  const int num_nodes = 3;
+  const std::vector<int> tails = {0, 1};
+  const std::vector<int> heads = {1, 2};
+  const Literal literal(model.Add(NewBooleanVariable()), true);
+  const std::vector<Literal> literals = {literal, literal};
+  // Add relations with "time" variables A, B, C intended to be associated with
+  // nodes 0, 1, 2 respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
+  BinaryRelationRepository repository;
+  repository.Add(literals[0], {b, 1}, {a, -1}, 50, 1000);
+  repository.Add(literals[0], {c, 1}, {b, -1}, 40, 1000);
+  repository.Build();
+
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, repository);
+
+  // No variable should be associated with any node, since there is no unique
+  // way to do this ([A, B, C] or [C, B, A], for nodes [0, 1, 2] respectively).
+  // As a consequence, no relation should be recovered either.
+  EXPECT_EQ(helper, nullptr);
+}
+
+TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
+  // Graph:   0--l0-->1--l1-->2--l3-->3--l4-->4
+  //                  |               ^
+  //                  |               |
+  //               l3 ------->5-------- l5
+  //
+  Model model;
+  const int num_nodes = 6;
+  const std::vector<int> tails = {0, 1, 2, 3, 1, 5};
+  const std::vector<int> heads = {1, 2, 3, 4, 5, 3};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true)};
+  // Variables a, b, c, d, e, f are supposed to be associated with nodes 0, 1,
+  // 2, 3, 4, 5 respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable e = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable f = model.Add(NewIntegerVariable(0, 100));
+  BinaryRelationRepository repository;
+  repository.Add(literals[0], {b, 1}, {a, -1}, 0, 0);
+  repository.Add(literals[1], {c, 1}, {b, -1}, 1, 1);
+  repository.Add(literals[2], {d, 1}, {c, -1}, 2, 2);
+  repository.Add(literals[3], {e, 1}, {d, -1}, 3, 3);
+  repository.Add(literals[4], {f, 1}, {b, -1}, 4, 4);
+  // Inconsistent relation for arc 5->3 (should be between f and d).
+  repository.Add(literals[5], {f, 2}, {b, -1}, 5, 5);
+  repository.Build();
+
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, repository);
+
+  ASSERT_NE(helper, nullptr);
+  EXPECT_THAT(GetNodeVariablesByDimension(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, a), Pair(1, b), Pair(2, c),
+                                       Pair(3, d), Pair(4, e), Pair(5, f))));
+  // The relation for arc 5->3 is filtered out because it is inconsistent.
+  EXPECT_THAT(
+      GetRelationByDimensionAndArc(*helper),
+      UnorderedElementsAre(UnorderedElementsAre(
+          Pair(0, Relation{-1, 1, 0, 0}), Pair(1, Relation{-1, 1, 1, 1}),
+          Pair(2, Relation{-1, 1, 2, 2}), Pair(3, Relation{-1, 1, 3, 3}),
+          Pair(4, Relation{-1, 1, 4, 4}))));
+}
+
+TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
+  // Graph:  0--l0-->1<---
+  //         ^       |   |
+  //        l3      l1   |
+  //         |       v   l4
+  //         3<--l2--2   |
+  //         |           |
+  //         ----l4----->4
+  Model model;
+  const int num_nodes = 5;
+  const std::vector<int> tails = {0, 1, 2, 3, 4, 3};
+  const std::vector<int> heads = {1, 2, 3, 0, 1, 4};
+  const Literal l4 = Literal(model.Add(NewBooleanVariable()), true);
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      Literal(model.Add(NewBooleanVariable()), true),
+      l4,
+      l4};
+  // Variables a, b, c, d, e are supposed to be associated with nodes 0, 1, 2,
+  // 3, 4 respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable e = model.Add(NewIntegerVariable(0, 100));
+  BinaryRelationRepository repository;
+  repository.Add(literals[0], {b, 1}, {a, -1}, 0, 0);
+  repository.Add(literals[1], {c, 1}, {b, -1}, 1, 1);
+  repository.Add(literals[2], {d, 1}, {c, -1}, 2, 2);
+  repository.Add(literals[3], {a, 1}, {d, -1}, 3, 3);
+  // Inconsistent relation for arc 4->1 (should be between e and b). Note that
+  // arcs 4->1 and 4->3 are enforced by the same literal.
+  repository.Add(literals[4], {e, 1}, {d, -1}, 4, 4);
+  repository.Add(literals[5], {e, 1}, {d, -1}, 5, 5);
+  repository.Build();
+
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, repository);
+
+  ASSERT_NE(helper, nullptr);
+  EXPECT_THAT(GetNodeVariablesByDimension(*helper),
+              UnorderedElementsAre(UnorderedElementsAre(
+                  Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d), Pair(4, e))));
+  // The relation for arc 4->1 is filtered out because it is inconsistent.
+  EXPECT_THAT(
+      GetRelationByDimensionAndArc(*helper),
+      UnorderedElementsAre(UnorderedElementsAre(
+          Pair(0, Relation{-1, 1, 0, 0}), Pair(1, Relation{-1, 1, 1, 1}),
+          Pair(2, Relation{-1, 1, 2, 2}), Pair(3, Relation{-1, 1, 3, 3}),
+          Pair(5, Relation{-1, 1, 5, 5}))));
 }
 
 TEST(ExtractAllSubsetsFromForestTest, Basic) {

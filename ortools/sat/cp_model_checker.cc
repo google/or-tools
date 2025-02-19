@@ -625,7 +625,8 @@ std::string ValidateGraphInput(bool is_route, const GraphProto& graph) {
   return "";
 }
 
-std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
+std::string ValidateRoutesConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
   int max_node = 0;
   absl::flat_hash_set<int> nodes;
   for (const int node : ct.routes().tails()) {
@@ -653,6 +654,23 @@ std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
     return absl::StrCat(
         "If the demands fields is set, it must be of size num_nodes:",
         nodes.size());
+  }
+
+  for (const RoutesConstraintProto::NodeVariables& dimension :
+       ct.routes().dimensions()) {
+    if (dimension.vars().size() != nodes.size()) {
+      return absl::StrCat(
+          "If the dimensions field is set, its elements must be of size "
+          "num_nodes:",
+          nodes.size());
+    }
+    for (const int var : dimension.vars()) {
+      if (var != -1 && (var < 0 || var >= model.variables_size())) {
+        return absl::StrCat(
+            "All the node variables in a route constraint must refer to a "
+            "valid variable, or be equal to -1");
+      }
+    }
   }
 
   return ValidateGraphInput(/*is_route=*/true, ct.routes());
@@ -1130,7 +1148,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
             ValidateGraphInput(/*is_route=*/false, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
-        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));

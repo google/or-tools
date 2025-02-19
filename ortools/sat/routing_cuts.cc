@@ -20,6 +20,8 @@
 #include <functional>
 #include <memory>
 #include <numeric>
+#include <optional>
+#include <queue>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -122,7 +124,186 @@ MinOutgoingFlowHelper::~MinOutgoingFlowHelper() {
       {"RoutingDp/num_full_dp_early_abort", num_full_dp_early_abort_});
   stats.push_back(
       {"RoutingDp/num_full_dp_work_abort", num_full_dp_work_abort_});
+  for (const auto& [name, count] : num_by_type_) {
+    stats.push_back({absl::StrCat("RoutingDp/num_bounds_", name), count});
+  }
   shared_stats_->AddStats(stats);
+}
+
+int MinOutgoingFlowHelper::ComputeDemandBasedMinOutgoingFlow(
+    absl::Span<const int> subset, const RouteRelationsHelper& helper) {
+  DCHECK_EQ(helper.num_nodes(), in_subset_.size());
+  DCHECK_EQ(helper.num_arcs(), tails_.size());
+
+  // TODO(user): When we try multiple algorithm from this class on the same
+  // subset, we should initialize the graph just once as this is costly on large
+  // problem.
+  InitializeGraph(subset);
+
+  int min_outgoing_flow = 1;
+  std::string best_name;
+  for (int d = 0; d < helper.num_dimensions(); ++d) {
+    for (const bool negate_variables : {false, true}) {
+      for (const bool use_incoming : {true, false}) {
+        bool gcd_was_used = false;
+        const int bound = ComputeMinNumberOfBins(
+            RelaxIntoSpecialBinPackingProblem(subset, d, negate_variables,
+                                              use_incoming, helper),
+            &gcd_was_used);
+        if (bound > min_outgoing_flow) {
+          min_outgoing_flow = bound;
+          best_name = absl::StrCat((use_incoming ? "in_" : "out_"),
+                                   (gcd_was_used ? "gcd_" : ""),
+                                   (negate_variables ? "neg_" : ""), d);
+        }
+      }
+    }
+  }
+
+  if (min_outgoing_flow > 1) num_by_type_[best_name]++;
+  return min_outgoing_flow;
+}
+
+absl::Span<MinOutgoingFlowHelper::ItemOrBin>
+MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
+    absl::Span<const int> subset, int dimension, bool negate_variables,
+    bool use_incoming, const RouteRelationsHelper& helper) {
+  tmp_bin_packing_problem_.clear();
+
+  // Computes UB/LB.
+  IntegerValue min_lower_bound = kMaxIntegerValue;
+  IntegerValue max_upper_bound = kMinIntegerValue;
+  for (const int n : subset) {
+    IntegerVariable var = helper.GetNodeVariable(n, dimension);
+    if (var == kNoIntegerVariable) return {};
+    if (negate_variables) var = NegationOf(var);
+    min_lower_bound =
+        std::min(min_lower_bound, integer_trail_.LevelZeroLowerBound(var));
+    max_upper_bound =
+        std::max(max_upper_bound, integer_trail_.LevelZeroUpperBound(var));
+  }
+
+  // TODO(user): This should probably be moved to RouteRelationsHelper.
+  auto get_relation_lhs = [&](int arc_index) -> std::optional<IntegerValue> {
+    const auto& r = helper.GetArcRelation(arc_index, dimension);
+    if (r.empty()) {
+      // Use X_head-X_tail \in [lb(X_head)-ub(X_tail), ub(X_head)-lb(X_tail)].
+      const IntegerVariable tail_var =
+          helper.GetNodeVariable(tails_[arc_index], dimension);
+      const IntegerVariable head_var =
+          helper.GetNodeVariable(heads_[arc_index], dimension);
+      if (negate_variables) {
+        // Opposite of the rhs.
+        return integer_trail_.LevelZeroLowerBound(tail_var) -
+               integer_trail_.LevelZeroUpperBound(head_var);
+      }
+      return integer_trail_.LevelZeroLowerBound(head_var) -
+             integer_trail_.LevelZeroUpperBound(tail_var);
+    } else if (r.head_coeff != 1 || r.tail_coeff != -1) {
+      return std::nullopt;
+    }
+    return negate_variables ? -r.rhs : r.lhs;
+  };
+
+  for (const int n : subset) {
+    IntegerVariable var = helper.GetNodeVariable(n, dimension);
+    if (negate_variables) var = NegationOf(var);
+
+    const absl::Span<const int> arcs =
+        use_incoming ? incoming_arc_indices_[n] : outgoing_arc_indices_[n];
+    IntegerValue demand = kMaxIntegerValue;
+    for (const int a : arcs) {
+      const auto lhs = get_relation_lhs(a);
+      if (!lhs.has_value()) return {};
+      demand = std::min(demand, lhs.value());
+    }
+
+    ItemOrBin obj;
+    obj.capacity =
+        use_incoming
+            ? max_upper_bound - integer_trail_.LevelZeroLowerBound(var)
+            : integer_trail_.LevelZeroUpperBound(var) - min_lower_bound;
+    obj.demand = demand;
+
+    // TODO(user): Also use MUST_BE_ITEM.
+    if (arcs.empty()) {
+      obj.type = ItemOrBin::MUST_BE_BIN;
+      obj.demand = 0;  // We don't want kMaxIntegerValue !
+    } else {
+      obj.type = ItemOrBin::ITEM_OR_BIN;
+    }
+    tmp_bin_packing_problem_.push_back(obj);
+  }
+
+  return absl::MakeSpan(tmp_bin_packing_problem_);
+}
+
+int MinOutgoingFlowHelper::ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects,
+                                                  bool* gcd_was_used) {
+  if (objects.empty()) return 0;
+
+  IntegerValue sum_of_demands(0);
+  int64_t gcd = 0;
+  for (const ItemOrBin& obj : objects) {
+    sum_of_demands = CapAddI(sum_of_demands, obj.demand);
+    gcd = std::gcd(gcd, std::abs(obj.demand.value()));
+  }
+
+  // TODO(user): we can probably handle a couple of extra case rather than just
+  // bailing out here and below.
+  if (AtMinOrMaxInt64I(sum_of_demands)) return 0;
+
+  // If the gcd of all the demands term is positive, we can divide everything.
+  *gcd_was_used = (gcd > 1);
+  if (gcd > 1) {
+    for (ItemOrBin& obj : objects) {
+      obj.demand /= gcd;
+      obj.capacity = FloorRatio(obj.capacity, gcd);
+    }
+    sum_of_demands /= gcd;
+  }
+
+  // For a given choice of bins (set B), a feasible problem must satisfy.
+  //     sum_{i \notin B} demands_i <= sum_{i \in B} capacity_i.
+  //
+  // Using this we can compute a lower bound on the number of bins needed
+  // using a greedy algorithm that chooses B in order to make the above
+  // inequality as "loose" as possible.
+  //
+  // This puts 'a' before 'b' if we get more unused capacity by using 'a' as a
+  // bin and 'b' as an item rather than the other way around. If we call the
+  // other items demands D and capacities C, the two options are:
+  // - option1:   a.demand  + D <= b.capacity + C
+  // - option2:   b.demand  + D <= a.capacity + C
+  //
+  // The option2 above leads to more unused capacity:
+  //    (a.capacity - b.demand) > (b.capacity - a.demand).
+  std::stable_sort(objects.begin(), objects.end(),
+                   [](const ItemOrBin& a, const ItemOrBin& b) {
+                     if (a.type != b.type) {
+                       // We want in order:
+                       // MUST_BE_BIN, ITEM_OR_BIN, MUST_BE_ITEM.
+                       return a.type > b.type;
+                     }
+                     return a.capacity + a.demand > b.capacity + b.demand;
+                   });
+
+  // We start with no bins (sum_of_demands=everything, sum_of_capacity=0) and
+  // add the best bins one by one until we have sum_of_demands <=
+  // sum_of_capacity.
+  int num_bins = 0;
+  IntegerValue sum_of_capacity(0);
+  for (; num_bins < objects.size(); ++num_bins) {
+    const ItemOrBin& obj = objects[num_bins];
+    if (obj.type != ItemOrBin::MUST_BE_BIN &&
+        sum_of_demands <= sum_of_capacity) {
+      return num_bins;
+    }
+    sum_of_capacity = CapAddI(sum_of_capacity, obj.capacity);
+    if (AtMinOrMaxInt64I(sum_of_capacity)) return num_bins;
+    sum_of_demands -= obj.demand;
+  }
+  return num_bins;
 }
 
 int MinOutgoingFlowHelper::ComputeMinOutgoingFlow(
@@ -451,131 +632,331 @@ IntegerVariable UniqueSharedVariable(const Relation& r1, const Relation& r2) {
   if (r1.b.var == r2.b.var && r1.a.var != r2.a.var) return r1.b.var;
   return kNoIntegerVariable;
 }
+
+class RouteRelationsBuilder {
+ public:
+  using Relation = RouteRelationsHelper::Relation;
+
+  RouteRelationsBuilder(
+      int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+      absl::Span<const Literal> literals,
+      const BinaryRelationRepository& binary_relation_repository)
+      : num_nodes_(num_nodes),
+        num_arcs_(tails.size()),
+        tails_(tails),
+        heads_(heads),
+        literals_(literals),
+        binary_relation_repository_(binary_relation_repository) {}
+
+  int num_dimensions() const { return num_dimensions_; }
+
+  const std::vector<IntegerVariable>& flat_node_dim_variables() const {
+    return flat_node_dim_variables_;
+  }
+
+  const std::vector<Relation>& flat_arc_dim_relations() const {
+    return flat_arc_dim_relations_;
+  }
+
+  bool Build() {
+    // Step 1: find the number of dimensions (as the number of connected
+    // components in the graph of binary relations), and find to which dimension
+    // each variable belongs.
+    ComputeDimensionOfEachVariable();
+    if (num_dimensions_ == 0) return false;
+
+    // Step 2: find the variables which can be unambiguously associated with a
+    // node and dimension.
+    // - compute the indices of the binary relations which can be unambiguously
+    // associated with the incoming and outgoing arcs of each node, per
+    // dimension.
+    ComputeAdjacentRelationsPerNodeAndDimension();
+    // - find variable associations by using variables which are uniquely shared
+    // by two adjacent relations of a node.
+    std::queue<std::pair<int, int>> node_dim_pairs =
+        ComputeVarAssociationsFromSharedVariableOfAdjacentRelations();
+    if (node_dim_pairs.empty()) return false;
+    // - find more variable associations by using arcs from nodes with
+    // an associated variable, whose other end has no associated variable, and
+    // where only one variable can be associated with it.
+    ComputeVarAssociationsFromRelationsWithSingleFreeVar(node_dim_pairs);
+
+    // Step 3: compute the relation for each arc and dimension, now that the
+    // variables associated with each node and dimension are known.
+    ComputeArcRelations();
+    return true;
+  }
+
+ private:
+  IntegerVariable& node_variable(int node, int dimension) {
+    return flat_node_dim_variables_[node * num_dimensions_ + dimension];
+  };
+
+  const Relation& arc_relation(int arc_index, int dimension) const {
+    return flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
+  }
+
+  void SetArcRelation(int arc_index, int dimension, IntegerVariable tail_var,
+                      const sat::Relation& r) {
+    Relation& relation =
+        flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
+    // If several relations are associated with the same arc, keep the first one
+    // found, unless the new one has opposite +1/-1 coefficients (these
+    // relations are preferred because they can be used to compute "demand
+    // based" min outgoing flows).
+    if (!relation.empty()) {
+      if (IntTypeAbs(r.a.coeff) != 1 || r.b.coeff != -r.a.coeff) return;
+    }
+    if (tail_var == r.a.var) {
+      relation.tail_coeff = r.a.coeff;
+      relation.head_coeff = r.b.coeff;
+    } else {
+      relation.tail_coeff = r.b.coeff;
+      relation.head_coeff = r.a.coeff;
+    }
+    relation.lhs = r.lhs;
+    relation.rhs = r.rhs;
+    if (relation.head_coeff < 0) {
+      relation.tail_coeff = -relation.tail_coeff;
+      relation.head_coeff = -relation.head_coeff;
+      relation.lhs = -relation.lhs;
+      relation.rhs = -relation.rhs;
+      std::swap(relation.lhs, relation.rhs);
+    }
+  }
+
+  void ComputeDimensionOfEachVariable() {
+    // Step 1: find the number of dimensions (as the number of connected
+    // components in the graph of binary relations).
+    // TODO(user): see if we can use a shared
+    // DenseConnectedComponentsFinder with one node per variable of the whole
+    // model instead.
+    ConnectedComponentsFinder<IntegerVariable> cc_finder;
+    for (int i = 0; i < num_arcs_; ++i) {
+      if (tails_[i] == heads_[i]) continue;
+      num_arcs_per_literal_[literals_[i]]++;
+      for (const int relation_index :
+           binary_relation_repository_.IndicesOfRelationsEnforcedBy(
+               literals_[i])) {
+        const auto& r = binary_relation_repository_.relation(relation_index);
+        if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
+          continue;
+        }
+        cc_finder.AddEdge(r.a.var, r.b.var);
+      }
+    }
+    const std::vector<std::vector<IntegerVariable>> connected_components =
+        cc_finder.FindConnectedComponents();
+    for (int i = 0; i < connected_components.size(); ++i) {
+      for (const IntegerVariable var : connected_components[i]) {
+        dimension_by_var_[var] = i;
+      }
+    }
+    num_dimensions_ = connected_components.size();
+  }
+
+  void ComputeAdjacentRelationsPerNodeAndDimension() {
+    adjacent_relation_indices_ = std::vector<std::vector<std::vector<int>>>(
+        num_dimensions_, std::vector<std::vector<int>>(num_nodes_));
+    for (int i = 0; i < num_arcs_; ++i) {
+      if (tails_[i] == heads_[i]) continue;
+      // If a literal is associated with more than one arc, a relation
+      // associated with this literal cannot be unambiguously associated with an
+      // arc.
+      if (num_arcs_per_literal_[literals_[i]] > 1) continue;
+      for (const int relation_index :
+           binary_relation_repository_.IndicesOfRelationsEnforcedBy(
+               literals_[i])) {
+        const auto& r = binary_relation_repository_.relation(relation_index);
+        if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
+          continue;
+        }
+        const int dimension = dimension_by_var_[r.a.var];
+        adjacent_relation_indices_[dimension][tails_[i]].push_back(
+            relation_index);
+        adjacent_relation_indices_[dimension][heads_[i]].push_back(
+            relation_index);
+      }
+    }
+  }
+
+  // Returns the (node, dimension) pairs for which a variable association has
+  // been found.
+  std::queue<std::pair<int, int>>
+  ComputeVarAssociationsFromSharedVariableOfAdjacentRelations() {
+    flat_node_dim_variables_ = std::vector<IntegerVariable>(
+        num_nodes_ * num_dimensions_, kNoIntegerVariable);
+    std::queue<std::pair<int, int>> result;
+    for (int n = 0; n < num_nodes_; ++n) {
+      for (int d = 0; d < num_dimensions_; ++d) {
+        // If two relations on incoming or outgoing arcs of n have a unique
+        // shared variable, such as in the case of l <-X,Y-> n <-Y,Z-> m (i.e. a
+        // relation between X and Y on the (l,n) arc, and a relation between Y
+        // and Z on the (n,m) arc), then this variable is necessarily associated
+        // with n.
+        for (const int r1_index : adjacent_relation_indices_[d][n]) {
+          const auto& r1 = binary_relation_repository_.relation(r1_index);
+          for (const int r2_index : adjacent_relation_indices_[d][n]) {
+            if (r1_index == r2_index) continue;
+            const auto& r2 = binary_relation_repository_.relation(r2_index);
+            const IntegerVariable shared_var = UniqueSharedVariable(r1, r2);
+            if (shared_var == kNoIntegerVariable) continue;
+            DCHECK_EQ(dimension_by_var_[shared_var], d);
+            IntegerVariable& node_var = node_variable(n, d);
+            if (node_var == kNoIntegerVariable) {
+              result.push({n, d});
+            } else if (node_var != shared_var) {
+              VLOG(2) << "Several vars per node and dimension in route with "
+                      << num_nodes_ << " nodes and " << num_arcs_ << " arcs";
+              return {};
+            }
+            node_var = shared_var;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  void ComputeVarAssociationsFromRelationsWithSingleFreeVar(
+      std::queue<std::pair<int, int>>& node_dim_pairs_to_process) {
+    std::vector<std::vector<int>> adjacent_arcs_per_node(num_nodes_);
+    for (int i = 0; i < num_arcs_; ++i) {
+      if (tails_[i] == heads_[i]) continue;
+      adjacent_arcs_per_node[tails_[i]].push_back(i);
+      adjacent_arcs_per_node[heads_[i]].push_back(i);
+    }
+    while (!node_dim_pairs_to_process.empty()) {
+      const auto [node, dimension] = node_dim_pairs_to_process.front();
+      const IntegerVariable node_var = node_variable(node, dimension);
+      DCHECK_NE(node_var, kNoIntegerVariable);
+      node_dim_pairs_to_process.pop();
+      for (const int arc_index : adjacent_arcs_per_node[node]) {
+        const int tail = tails_[arc_index];
+        const int head = heads_[arc_index];
+        DCHECK(node == tail || node == head);
+        int other_node = node == tail ? head : tail;
+        if (node_variable(other_node, dimension) != kNoIntegerVariable) {
+          continue;
+        }
+        IntegerVariable candidate_var = kNoIntegerVariable;
+        bool candidate_var_is_unique = true;
+        for (const int relation_index :
+             binary_relation_repository_.IndicesOfRelationsEnforcedBy(
+                 literals_[arc_index])) {
+          const auto& r = binary_relation_repository_.relation(relation_index);
+          if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
+            continue;
+          }
+          if (r.a.var == node_var) {
+            if (candidate_var != kNoIntegerVariable &&
+                candidate_var != r.b.var) {
+              candidate_var_is_unique = false;
+              break;
+            }
+            candidate_var = r.b.var;
+          }
+          if (r.b.var == node_var) {
+            if (candidate_var != kNoIntegerVariable &&
+                candidate_var != r.a.var) {
+              candidate_var_is_unique = false;
+              break;
+            }
+            candidate_var = r.a.var;
+          }
+        }
+        if (candidate_var != kNoIntegerVariable && candidate_var_is_unique) {
+          node_variable(other_node, dimension) = candidate_var;
+          node_dim_pairs_to_process.push({other_node, dimension});
+        }
+      }
+    }
+  }
+
+  void ComputeArcRelations() {
+    flat_arc_dim_relations_ =
+        std::vector<Relation>(num_arcs_ * num_dimensions_, Relation());
+    int num_inconsistent_relations = 0;
+    for (int i = 0; i < num_arcs_; ++i) {
+      const int tail = tails_[i];
+      const int head = heads_[i];
+      if (tail == head) continue;
+      for (const int relation_index :
+           binary_relation_repository_.IndicesOfRelationsEnforcedBy(
+               literals_[i])) {
+        const auto& r = binary_relation_repository_.relation(relation_index);
+        if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
+          continue;
+        }
+        const int dimension = dimension_by_var_[r.a.var];
+        IntegerVariable& tail_var = node_variable(tail, dimension);
+        IntegerVariable& head_var = node_variable(head, dimension);
+        if (tail_var == kNoIntegerVariable || head_var == kNoIntegerVariable) {
+          continue;
+        }
+        if (!((tail_var == r.a.var && head_var == r.b.var) ||
+              (tail_var == r.b.var && head_var == r.a.var))) {
+          ++num_inconsistent_relations;
+          continue;
+        }
+        SetArcRelation(i, dimension, tail_var, r);
+      }
+      // If some relations are missing for this arc, check if we can use
+      // enforced relations to fill them.
+      for (int d = 0; d < num_dimensions_; ++d) {
+        if (!arc_relation(i, d).empty()) continue;
+        const IntegerVariable tail_var = node_variable(tail, d);
+        const IntegerVariable head_var = node_variable(head, d);
+        if (tail_var == kNoIntegerVariable || head_var == kNoIntegerVariable) {
+          continue;
+        }
+        for (const int relation_index :
+             binary_relation_repository_.IndicesOfRelationsBetween(tail_var,
+                                                                   head_var)) {
+          SetArcRelation(i, d, tail_var,
+                         binary_relation_repository_.relation(relation_index));
+        }
+      }
+    }
+    if (num_inconsistent_relations > 0) {
+      VLOG(2) << num_inconsistent_relations
+              << " inconsistent relations in route with " << num_nodes_
+              << " nodes and " << num_arcs_ << " arcs";
+    }
+  }
+
+  const int num_nodes_;
+  const int num_arcs_;
+  absl::Span<const int> tails_;
+  absl::Span<const int> heads_;
+  absl::Span<const Literal> literals_;
+  const BinaryRelationRepository& binary_relation_repository_;
+
+  int num_dimensions_;
+  absl::flat_hash_map<IntegerVariable, int> dimension_by_var_;
+  absl::flat_hash_map<Literal, int> num_arcs_per_literal_;
+  // The indices of the binary relations associated with the incoming and
+  // outgoing arcs of each node, per dimension.
+  std::vector<std::vector<std::vector<int>>> adjacent_relation_indices_;
+  // The variable associated with node n and dimension d (or kNoIntegerVariable
+  // if there is none) is at index n * num_dimensions_ + d.
+  std::vector<IntegerVariable> flat_node_dim_variables_;
+  // The relation associated with arc a and dimension d (or kNoRelation if
+  // there is none) is at index a * num_dimensions_ + d.
+  std::vector<Relation> flat_arc_dim_relations_;
+};
 }  // namespace
 
 std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals,
     const BinaryRelationRepository& binary_relation_repository) {
-  const int num_arcs = tails.size();
-  // TODO(user): see if we can use a shared DenseConnectedComponentsFinder
-  // with one node per variable of the whole model instead.
-  ConnectedComponentsFinder<IntegerVariable> cc_finder;
-  // The indices of the binary relations associated with the incoming and
-  // outgoing arcs of each node.
-  std::vector<std::vector<int>> adjacent_relation_indices(num_nodes);
-  for (int i = 0; i < num_arcs; ++i) {
-    if (tails[i] == heads[i]) continue;
-    for (const int relation_index :
-         binary_relation_repository.relation_indices(literals[i])) {
-      const auto& r = binary_relation_repository.relation(relation_index);
-      if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
-        continue;
-      }
-      cc_finder.AddEdge(r.a.var, r.b.var);
-      adjacent_relation_indices[tails[i]].push_back(relation_index);
-      adjacent_relation_indices[heads[i]].push_back(relation_index);
-    }
-  }
-  const std::vector<std::vector<IntegerVariable>> connected_components =
-      cc_finder.FindConnectedComponents();
-  absl::flat_hash_map<IntegerVariable, int> component_by_var;
-  for (int i = 0; i < connected_components.size(); ++i) {
-    for (const IntegerVariable var : connected_components[i]) {
-      component_by_var[var] = i;
-    }
-  }
-
-  const int num_dimensions = connected_components.size();
-  std::vector<IntegerVariable> flat_node_dim_variables(
-      num_nodes * num_dimensions, kNoIntegerVariable);
-  for (int n = 0; n < num_nodes; ++n) {
-    // If two relations on incoming or outgoing arcs of n have a unique shared
-    // variable, such as in the case of l <-X,Y-> n <-Y,Z-> m (i.e. a relation
-    // between X and Y on the (l,n) arc, and a relation between Y and Z on the
-    // (n,m) arc), then this variable is necessarily associated with n.
-    for (const int r1_index : adjacent_relation_indices[n]) {
-      const auto& r1 = binary_relation_repository.relation(r1_index);
-      for (const int r2_index : adjacent_relation_indices[n]) {
-        if (r1_index == r2_index) continue;
-        const auto& r2 = binary_relation_repository.relation(r2_index);
-        const IntegerVariable shared_var = UniqueSharedVariable(r1, r2);
-        if (shared_var == kNoIntegerVariable) continue;
-        const int dimension = component_by_var[shared_var];
-        IntegerVariable& node_var =
-            flat_node_dim_variables[n * num_dimensions + dimension];
-        if (node_var != kNoIntegerVariable && node_var != shared_var) {
-          VLOG(2) << "Several vars per node and dimension in route with "
-                  << num_nodes << " nodes and " << num_arcs << " arcs";
-          return nullptr;
-        }
-        node_var = shared_var;
-      }
-    }
-  }
-
-  std::vector<Relation> flat_arc_dim_relations(num_arcs * num_dimensions,
-                                               Relation());
-  for (int i = 0; i < num_arcs; ++i) {
-    const int tail = tails[i];
-    const int head = heads[i];
-    if (tail == head) continue;
-    for (const int relation_index :
-         binary_relation_repository.relation_indices(literals[i])) {
-      const auto& r = binary_relation_repository.relation(relation_index);
-      if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
-        continue;
-      }
-      const int dimension = component_by_var[r.a.var];
-      IntegerVariable& tail_var =
-          flat_node_dim_variables[tail * num_dimensions + dimension];
-      IntegerVariable& head_var =
-          flat_node_dim_variables[head * num_dimensions + dimension];
-      // In a case such as l <-X,Y-> n <-Y,Z-> m the above algorithm cannot find
-      // that X and Z are associated with l and m, respectively. But once Y is
-      // associated with n, we can recover that X and Z are associated with l
-      // and m by looking at the two relations.
-      if (head_var == kNoIntegerVariable) {
-        if (tail_var == r.a.var) {
-          head_var = r.b.var;
-        } else if (tail_var == r.b.var) {
-          head_var = r.a.var;
-        } else {
-          continue;
-        }
-      } else if (tail_var == kNoIntegerVariable) {
-        if (head_var == r.a.var) {
-          tail_var = r.b.var;
-        } else if (head_var == r.b.var) {
-          tail_var = r.a.var;
-        } else {
-          continue;
-        }
-      }
-      Relation& arc_relation =
-          flat_arc_dim_relations[i * num_dimensions + dimension];
-      if (tail_var == r.a.var) {
-        arc_relation.tail_coeff = r.a.coeff;
-        arc_relation.head_coeff = r.b.coeff;
-      } else {
-        arc_relation.tail_coeff = r.b.coeff;
-        arc_relation.head_coeff = r.a.coeff;
-      }
-      arc_relation.lhs = r.lhs;
-      arc_relation.rhs = r.rhs;
-      if (arc_relation.head_coeff < 0) {
-        arc_relation.tail_coeff = -arc_relation.tail_coeff;
-        arc_relation.head_coeff = -arc_relation.head_coeff;
-        arc_relation.lhs = -arc_relation.lhs;
-        arc_relation.rhs = -arc_relation.rhs;
-        std::swap(arc_relation.lhs, arc_relation.rhs);
-      }
-    }
-  }
-
-  auto helper = std::unique_ptr<RouteRelationsHelper>(new RouteRelationsHelper(
-      num_dimensions, std::move(flat_node_dim_variables),
-      std::move(flat_arc_dim_relations)));
+  RouteRelationsBuilder builder(num_nodes, tails, heads, literals,
+                                binary_relation_repository);
+  if (!builder.Build()) return nullptr;
+  std::unique_ptr<RouteRelationsHelper> helper(new RouteRelationsHelper(
+      builder.num_dimensions(), builder.flat_node_dim_variables(),
+      builder.flat_arc_dim_relations()));
   if (VLOG_IS_ON(2)) helper->LogStats();
   return helper;
 }
@@ -585,7 +966,9 @@ RouteRelationsHelper::RouteRelationsHelper(
     std::vector<Relation> flat_arc_dim_relations)
     : num_dimensions_(num_dimensions),
       flat_node_dim_variables_(std::move(flat_node_dim_variables)),
-      flat_arc_dim_relations_(std::move(flat_arc_dim_relations)) {}
+      flat_arc_dim_relations_(std::move(flat_arc_dim_relations)) {
+  DCHECK_GE(num_dimensions_, 1);
+}
 
 void RouteRelationsHelper::RemoveArcs(
     absl::Span<const int> sorted_arc_indices) {
@@ -1037,6 +1420,15 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
   // TODO(user): This is still not as good as the "capacity" bounds below in
   // some cases. Fix! we should be able to use the same relation to infer the
   // capacity bounds somehow.
+  if (route_relations_helper_ != nullptr) {
+    const int bound =
+        min_outgoing_flow_helper_.ComputeDemandBasedMinOutgoingFlow(
+            subset, *route_relations_helper_);
+    if (bound > min_outgoing_flow) {
+      absl::StrAppend(&name, "AutomaticDimension");
+      min_outgoing_flow = bound;
+    }
+  }
   if (subset.size() <
       params_.routing_cut_subset_size_for_tight_binary_relation_bound()) {
     const int bound =

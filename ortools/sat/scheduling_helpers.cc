@@ -21,9 +21,11 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -781,79 +783,26 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
   const int num_tasks = cached_energies_min_.size();
   const bool is_at_level_zero = sat_solver_->CurrentDecisionLevel() == 0;
   for (int t = 0; t < num_tasks; ++t) {
-    if (!decomposed_energies_[t].empty()) {
-      // Checks the propagation of the exactly one on literals.
-      int num_literals_at_true = 0;
-      int num_unassigned_literals = 0;
-      for (const auto [lit, fixed_size, fixed_demand] :
-           decomposed_energies_[t]) {
-        if (assignment_.LiteralIsTrue(lit)) {
-          ++num_literals_at_true;
-        } else if (!assignment_.LiteralIsFalse(lit)) {
-          ++num_unassigned_literals;
-        }
-      }
-      if (num_literals_at_true > 1 ||
-          (num_literals_at_true == 1 && num_unassigned_literals > 0)) {
-        VLOG(1) << "Exactly one on literals not satisfied";
-        return false;
-      }
-
-      // Checks the consistency of implied values and literal values with the
-      // cached  bounds of the size and demand expressions.
+    // Try to reduce the size of the decomposed energy vector.
+    if (is_at_level_zero) {
       int new_size = 0;
-      IntegerValue min_size = kMaxIntegerValue;
-      IntegerValue max_size = kMinIntegerValue;
-      IntegerValue min_demand = kMaxIntegerValue;
-      IntegerValue max_demand = kMinIntegerValue;
-
       for (int i = 0; i < decomposed_energies_[t].size(); ++i) {
-        // Try to reduce the size of the decomposed energy vector.
-        if (is_at_level_zero &&
-            assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
+        if (assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
           continue;
-        }
-        if (!assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
-          const IntegerValue fixed_size = decomposed_energies_[t][i].left_value;
-          const IntegerValue fixed_demand =
-              decomposed_energies_[t][i].right_value;
-          min_size = std::min(min_size, fixed_size);
-          max_size = std::max(max_size, fixed_size);
-          min_demand = std::min(min_demand, fixed_demand);
-          max_demand = std::max(max_demand, fixed_demand);
         }
         decomposed_energies_[t][new_size++] = decomposed_energies_[t][i];
       }
       decomposed_energies_[t].resize(new_size);
-
-      // Check consistency.
-      if (min_size != helper_->SizeMin(t) || max_size != helper_->SizeMax(t) ||
-          min_demand != DemandMin(t) || max_demand != DemandMax(t)) {
-        VLOG(1) << "Consistency check failed: size=[" << min_size << ".."
-                << max_size << "], demand=[" << min_demand << ".." << max_demand
-                << "], helper size=[" << helper_->SizeMin(t) << ".."
-                << helper_->SizeMax(t) << "], helper demand=[" << DemandMin(t)
-                << ".." << DemandMax(t) << "]";
-        return false;
-      }
     }
 
-    if (t < override_energy_min_.size()) {
-      cached_energies_min_[t] = override_energy_min_[t];
-    } else {
-      cached_energies_min_[t] =
-          std::max(SimpleEnergyMin(t), DecomposedEnergyMin(t));
-    }
+    cached_energies_min_[t] =
+        std::max(SimpleEnergyMin(t), DecomposedEnergyMin(t));
     if (cached_energies_min_[t] <= kMinIntegerValue) return false;
     energy_is_quadratic_[t] =
         decomposed_energies_[t].empty() && !demands_.empty() &&
         !integer_trail_->IsFixed(demands_[t]) && !helper_->SizeIsFixed(t);
-    if (t < override_energy_max_.size()) {
-      cached_energies_max_[t] = override_energy_max_[t];
-    } else {
-      cached_energies_max_[t] =
-          std::min(SimpleEnergyMax(t), DecomposedEnergyMax(t));
-    }
+    cached_energies_max_[t] =
+        std::min(SimpleEnergyMax(t), DecomposedEnergyMax(t));
     if (cached_energies_max_[t] >= kMaxIntegerValue) return false;
   }
 
@@ -875,18 +824,28 @@ bool SchedulingDemandHelper::DemandIsFixed(int t) const {
 }
 
 bool SchedulingDemandHelper::DecreaseEnergyMax(int t, IntegerValue value) {
-  if (value < EnergyMin(t)) {
-    if (helper_->IsOptional(t)) {
-      return helper_->PushTaskAbsence(t);
-    } else {
-      return helper_->ReportConflict();
-    }
-  } else if (!decomposed_energies_[t].empty()) {
+  if (helper_->IsAbsent(t)) return true;
+  if (value < EnergyMin(t)) return helper_->PushTaskAbsence(t);
+
+  if (!decomposed_energies_[t].empty()) {
     for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
       if (fixed_size * fixed_demand > value) {
-        if (assignment_.LiteralIsTrue(lit)) return helper_->ReportConflict();
+        // `lit` encodes that the energy is higher than value. So either lit
+        // must be false or the task must be absent.
         if (assignment_.LiteralIsFalse(lit)) continue;
-        if (!helper_->PushLiteral(lit.Negated())) return false;
+        if (assignment_.LiteralIsTrue(lit)) {
+          // Task must be absent.
+          if (helper_->PresenceLiteral(t) != lit) {
+            helper_->MutableLiteralReason()->push_back(lit.Negated());
+          }
+          return helper_->PushTaskAbsence(t);
+        }
+        if (helper_->IsPresent(t)) {
+          // Task is present, `lit` must be false.
+          DCHECK(!helper_->IsOptional(t) || helper_->PresenceLiteral(t) != lit);
+          helper_->AddPresenceReason(t);
+          if (!helper_->PushLiteral(lit.Negated())) return false;
+        }
       }
     }
   } else {

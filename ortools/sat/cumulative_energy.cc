@@ -225,15 +225,14 @@ bool CumulativeEnergyConstraint::Propagate() {
 
       const int task_with_new_energy_max =
           start_event_task_time_[event_with_new_energy_max].task_index;
-      if (helper_->IsPresent(task_with_new_energy_max)) {
-        helper_->AddPresenceReason(task_with_new_energy_max);
-        helper_->AddStartMinReason(task_with_new_energy_max, window_start);
-        helper_->AddEndMaxReason(task_with_new_energy_max, window_end);
-        if (!demands_->DecreaseEnergyMax(task_with_new_energy_max,
-                                         new_energy_max)) {
-          return false;
-        }
+      helper_->AddStartMinReason(task_with_new_energy_max, window_start);
+      helper_->AddEndMaxReason(task_with_new_energy_max, window_end);
+      if (!demands_->DecreaseEnergyMax(task_with_new_energy_max,
+                                       new_energy_max)) {
+        return false;
+      }
 
+      if (helper_->IsPresent(task_with_new_energy_max)) {
         theta_tree_.AddOrUpdateEvent(
             task_to_start_event_[task_with_new_energy_max],
             start_event_task_time_[event_with_new_energy_max].time *

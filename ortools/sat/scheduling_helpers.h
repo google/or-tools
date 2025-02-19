@@ -551,12 +551,6 @@ class SchedulingDemandHelper {
   // Visible for testing.
   void OverrideDecomposedEnergies(
       const std::vector<std::vector<LiteralValueValue>>& energies);
-  void OverrideEnergyBounds(const std::vector<IntegerValue>& energy_min,
-                            const std::vector<IntegerValue>& energy_max) {
-    override_energy_min_ = energy_min;
-    override_energy_max_ = energy_max;
-  }
-
   // Returns the decomposed energy terms compatible with the current literal
   // assignment. It must not be used to create reasons if not at level 0.
   // It returns en empty vector if the decomposed energy is not available.
@@ -589,10 +583,6 @@ class SchedulingDemandHelper {
   // A representation of the energies as a set of alternative.
   // If subvector is empty, we don't have this representation.
   std::vector<std::vector<LiteralValueValue>> decomposed_energies_;
-
-  // Override energy bounds.
-  std::vector<IntegerValue> override_energy_min_;
-  std::vector<IntegerValue> override_energy_max_;
 };
 
 // =============================================================================

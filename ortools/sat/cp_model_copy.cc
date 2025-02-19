@@ -858,7 +858,7 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
     const int new_index = interval_mapping_[ct.cumulative().intervals(i)];
     if (new_index != -1) {
       new_ct->add_intervals(new_index);
-      *new_ct->add_demands() = ct.cumulative().demands(i);
+      CopyLinearExpression(ct.cumulative().demands(i), new_ct->add_demands());
     }
   }
 

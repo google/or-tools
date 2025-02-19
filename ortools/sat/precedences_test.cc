@@ -14,9 +14,10 @@
 #include "ortools/sat/precedences.h"
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
-#include "absl/types/span.h"
+#include "absl/container/flat_hash_map.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/integer.h"
@@ -32,6 +33,7 @@ namespace sat {
 namespace {
 
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using ::testing::UnorderedElementsAre;
 
 // A simple macro to make the code more readable.
@@ -362,7 +364,7 @@ TEST(PrecedencesPropagatorTest, TrickyCycle) {
   EXPECT_FALSE(propagator->Propagate(trail));
   EXPECT_THAT(trail->FailingClause(), ElementsAre(Literal(-1)));
 
-  // Test that the code dectected properly a positive cycle in the dependency
+  // Test that the code detected properly a positive cycle in the dependency
   // graph instead of just pushing the bounds until the upper bound is reached.
   EXPECT_LT(integer_trail->num_enqueues(), 10);
 }
@@ -441,6 +443,151 @@ TEST(PrecedenceRelationsTest, CollectPrecedences) {
   // Same with NegationOf() and also test that p is cleared.
   relations->CollectPrecedences({NegationOf(vars[0]), NegationOf(vars[4])}, &p);
   EXPECT_TRUE(p.empty());
+}
+
+TEST(BinaryRelationRepositoryTest, Build) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
+  const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
+  const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
+  BinaryRelationRepository repository;
+  repository.Add(lit_a, {NegationOf(x), 1}, {y, 1}, 2, 8);
+  repository.Add(Literal(kNoLiteralIndex), {x, 2}, {y, -2}, 0, 10);
+  repository.Add(lit_a, {x, -3}, {NegationOf(y), 2}, 1, 15);
+  repository.Add(lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5);
+  repository.Add(Literal(kNoLiteralIndex), {x, 3}, {y, -1}, 5, 15);
+  repository.Add(Literal(kNoLiteralIndex), {x, 1}, {z, -1}, 0, 10);
+  repository.Build();
+
+  EXPECT_EQ(repository.size(), 6);
+  EXPECT_EQ(repository.relation(0), (Relation{lit_a, {x, -1}, {y, 1}, 2, 8}));
+  EXPECT_EQ(repository.relation(1),
+            (Relation{Literal(kNoLiteralIndex), {x, 2}, {y, -2}, 0, 10}));
+  EXPECT_EQ(repository.relation(2), (Relation{lit_a, {x, -3}, {y, -2}, 1, 15}));
+  EXPECT_EQ(repository.relation(3),
+            (Relation{lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5}));
+  EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_a),
+              UnorderedElementsAre(0, 2));
+  EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_b),
+              UnorderedElementsAre(3));
+  EXPECT_THAT(repository.IndicesOfRelationsContaining(x),
+              UnorderedElementsAre(1, 4, 5));
+  EXPECT_THAT(repository.IndicesOfRelationsContaining(y),
+              UnorderedElementsAre(1, 4));
+  EXPECT_THAT(repository.IndicesOfRelationsContaining(z),
+              UnorderedElementsAre(5));
+  EXPECT_THAT(repository.IndicesOfRelationsBetween(x, y),
+              UnorderedElementsAre(1, 4));
+  EXPECT_THAT(repository.IndicesOfRelationsBetween(x, z),
+              UnorderedElementsAre(5));
+  EXPECT_THAT(repository.IndicesOfRelationsBetween(z, y), IsEmpty());
+}
+
+TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
+  BinaryRelationRepository repository;
+  repository.Add(lit_a, {x, -1}, {y, 1}, 2, 10);  // lit_a => y => x + 2
+  repository.Build();
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
+  absl::flat_hash_map<IntegerVariable, IntegerValue> output;
+
+  const bool result =
+      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+
+  EXPECT_TRUE(result);
+  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
+                                           std::make_pair(y, 5)));
+}
+
+TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
+  const Literal kNoLiteral = Literal(kNoLiteralIndex);
+  BinaryRelationRepository repository;
+  repository.Add(lit_a, {x, -1}, {y, 1}, -5, 10);      // lit_a => y => x - 5
+  repository.Add(kNoLiteral, {x, -1}, {y, 1}, 2, 10);  // y => x + 2
+  repository.Build();
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
+  absl::flat_hash_map<IntegerVariable, IntegerValue> output;
+
+  const bool result =
+      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+
+  EXPECT_TRUE(result);
+  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
+                                           std::make_pair(y, 5)));
+}
+
+TEST(BinaryRelationRepositoryTest,
+     PropagateLocalBounds_EnforcedBoundSmallerThanLevelZeroBound) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
+  const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
+  BinaryRelationRepository repository;
+  repository.Add(lit_a, {x, -1}, {y, 1}, -5, 10);  // lit_a => y => x - 5
+  repository.Add(lit_b, {x, -1}, {y, 1}, 2, 10);   // lit_b => y => x + 2
+  repository.Build();
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
+  absl::flat_hash_map<IntegerVariable, IntegerValue> output;
+
+  const bool result =
+      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+
+  EXPECT_TRUE(result);
+  EXPECT_THAT(output, IsEmpty());
+}
+
+TEST(BinaryRelationRepositoryTest,
+     PropagateLocalBounds_EnforcedBoundSmallerThanOutputBound) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
+  BinaryRelationRepository repository;
+  repository.Add(lit_a, {x, -1}, {y, 1}, 2, 10);  // lit_a => y => x + 2
+  repository.Build();
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
+  absl::flat_hash_map<IntegerVariable, IntegerValue> output = {{y, 8}};
+
+  const bool result =
+      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+
+  EXPECT_TRUE(result);
+  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
+                                           std::make_pair(y, 8)));
+}
+
+TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_Infeasible) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
+  BinaryRelationRepository repository;
+  repository.Add(lit_a, {x, -1}, {y, 1}, 8, 10);  // lit_a => y => x + 8
+  repository.Build();
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
+  absl::flat_hash_map<IntegerVariable, IntegerValue> output;
+
+  const bool result =
+      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+
+  EXPECT_FALSE(result);
+  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -2),
+                                           std::make_pair(y, 11)));
 }
 
 TEST(GreaterThanAtLeastOneOfDetectorTest, AddGreaterThanAtLeastOneOf) {
