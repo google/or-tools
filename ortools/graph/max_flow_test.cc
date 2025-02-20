@@ -26,7 +26,7 @@ namespace operations_research {
 namespace {
 
 #if not defined(ROOT_DIR)
-#define ROOT_DIR "_main/"
+#define ROOT_DIR "_main"
 #endif
 
 TEST(SimpleMaxFlowTest, EmptyWithValidSourceAndSink) {
@@ -175,7 +175,7 @@ TEST(SimpleMaxFlowTest, ProblematicProblemWithMaxCapacity) {
   ASSERT_OK_AND_ASSIGN(
       FlowModelProto model,
       ReadFileToProto<FlowModelProto>(file::JoinPathRespectAbsolute(
-          ::testing::SrcDir(), ROOT_DIR "ortools/graph/testdata/"
+          ::testing::SrcDir(), ROOT_DIR "/ortools/graph/testdata/"
                                         "max_flow_test1.pb.txt")));
   SimpleMaxFlow solver;
   EXPECT_EQ(SimpleMaxFlow::OPTIMAL, LoadAndSolveFlowModel(model, &solver));
