@@ -31,9 +31,9 @@
 #include <type_traits>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/internal/resize_uninitialized.h"
-#include "ortools/base/macros.h"
 
 namespace gtl {
 namespace internal {

@@ -220,11 +220,10 @@ cc_library(
     name = "hamiltonian_path",
     hdrs = ["hamiltonian_path.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:types",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_or_function",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -236,8 +235,10 @@ cc_test(
     srcs = ["hamiltonian_path_test.cc"],
     deps = [
         ":hamiltonian_path",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -290,8 +291,8 @@ cc_test(
     deps = [
         ":eulerian_path",
         ":graph",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_benchmark//:benchmark",
     ],
 )
@@ -557,7 +558,10 @@ cc_binary(
         "//ortools/util:file_util",
         "//ortools/util:filelineiter",
         "//ortools/util:stats",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:globals",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -608,7 +612,6 @@ cc_library(
     srcs = ["linear_assignment.cc"],
     hdrs = ["linear_assignment.h"],
     deps = [
-        ":ebert_graph",
         ":iterators",
         "//ortools/base",
         "//ortools/util:permutation",

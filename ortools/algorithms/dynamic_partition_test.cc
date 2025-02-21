@@ -19,10 +19,13 @@
 #include <random>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/macros.h"  // for DEBUG_MODE.
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {

@@ -20,11 +20,16 @@
 // sake of simplicity, facilities and demands are randomly located. Distances
 // are assumed to be in meters and times in seconds.
 
+#include <cassert>
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"

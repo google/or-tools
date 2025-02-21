@@ -16,8 +16,6 @@
 #include <cstdlib>
 
 #include "absl/base/log_severity.h"
-#include "absl/flags/flag.h"
-#include "absl/log/flags.h"
 #include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"

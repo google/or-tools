@@ -17,8 +17,8 @@
 #include <limits>
 #include <vector>
 
+#include "absl/base/macros.h"
 #include "gtest/gtest.h"
-#include "ortools/base/macros.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

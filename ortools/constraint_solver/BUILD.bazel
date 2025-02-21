@@ -187,6 +187,7 @@ cc_library(
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/base:bitmap",
         "//ortools/base:file",
         "//ortools/base:int_type",

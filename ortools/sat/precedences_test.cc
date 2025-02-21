@@ -459,19 +459,21 @@ TEST(BinaryRelationRepositoryTest, Build) {
   repository.Add(lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5);
   repository.Add(Literal(kNoLiteralIndex), {x, 3}, {y, -1}, 5, 15);
   repository.Add(Literal(kNoLiteralIndex), {x, 1}, {z, -1}, 0, 10);
+  repository.AddPartialRelation(lit_b, x, z);
   repository.Build();
 
-  EXPECT_EQ(repository.size(), 6);
+  EXPECT_EQ(repository.size(), 7);
   EXPECT_EQ(repository.relation(0), (Relation{lit_a, {x, -1}, {y, 1}, 2, 8}));
   EXPECT_EQ(repository.relation(1),
             (Relation{Literal(kNoLiteralIndex), {x, 2}, {y, -2}, 0, 10}));
   EXPECT_EQ(repository.relation(2), (Relation{lit_a, {x, -3}, {y, -2}, 1, 15}));
   EXPECT_EQ(repository.relation(3),
             (Relation{lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5}));
+  EXPECT_EQ(repository.relation(6), (Relation{lit_b, {x, 1}, {z, 1}, 0, 0}));
   EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_a),
               UnorderedElementsAre(0, 2));
   EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_b),
-              UnorderedElementsAre(3));
+              UnorderedElementsAre(3, 6));
   EXPECT_THAT(repository.IndicesOfRelationsContaining(x),
               UnorderedElementsAre(1, 4, 5));
   EXPECT_THAT(repository.IndicesOfRelationsContaining(y),

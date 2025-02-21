@@ -13,11 +13,11 @@
 
 // Integer programming example that shows how to use the API.
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include "absl/base/log_severity.h"
-#include "absl/flags/flag.h"
 #include "absl/log/globals.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"

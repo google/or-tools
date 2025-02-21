@@ -352,14 +352,14 @@ class EnabledScopedTimeDistributionUpdater {
 
 class DisabledScopedTimeDistributionUpdater {
  public:
-  explicit DisabledScopedTimeDistributionUpdater(TimeDistribution* stat) {}
+  explicit DisabledScopedTimeDistributionUpdater(TimeDistribution*) {}
 
   // This type is neither copyable nor movable.
   DisabledScopedTimeDistributionUpdater(
       const DisabledScopedTimeDistributionUpdater&) = delete;
   DisabledScopedTimeDistributionUpdater& operator=(
       const DisabledScopedTimeDistributionUpdater&) = delete;
-  void AlsoUpdate(TimeDistribution* also_update) {}
+  void AlsoUpdate(TimeDistribution*) {}
 };
 
 class DisabledScopedTimeStats {
@@ -409,7 +409,12 @@ using ScopedTimeStats = EnabledScopedTimeStats;
 using ScopedTimeDistributionUpdater = DisabledScopedTimeDistributionUpdater;
 using ScopedTimeStats = DisabledScopedTimeStats;
 
-#define IF_STATS_ENABLED(instructions)
+// Defining it that way makes sure that the compiler still sees the code and
+// checks that the syntax & types are valid.
+#define IF_STATS_ENABLED(instructions) \
+  if constexpr (false) {               \
+    instructions;                      \
+  }
 
 #endif  // OR_STATS
 

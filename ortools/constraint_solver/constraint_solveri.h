@@ -74,8 +74,10 @@
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/base/base_export.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/tuple_set.h"
+
 
 namespace operations_research {
 
@@ -1515,7 +1517,7 @@ class BaseNodeIterators {
 template <bool ignore_path_vars>
 class PathOperator : public IntVarLocalSearchOperator {
  public:
-  /// Set of parameters used to configure how the neighnorhood is traversed.
+  /// Set of parameters used to configure how the neighborhood is traversed.
   struct IterationParameters {
     /// Number of nodes needed to define a neighbor.
     int number_of_base_nodes;

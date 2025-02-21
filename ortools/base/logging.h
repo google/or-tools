@@ -15,6 +15,7 @@
 #define OR_TOOLS_BASE_LOGGING_H_
 
 #include "absl/base/log_severity.h"    // IWYU pragma: keep
+#include "absl/base/macros.h"          // IWYU pragma: keep
 #include "absl/flags/declare.h"        // IWYU pragma: keep
 #include "absl/flags/flag.h"           // IWYU pragma: keep
 #include "absl/log/check.h"            // IWYU pragma: keep
@@ -26,7 +27,7 @@
 #include "absl/status/status.h"        // IWYU pragma: keep
 #include "absl/strings/str_cat.h"      // IWYU pragma: keep
 #include "absl/strings/string_view.h"  // IWYU pragma: keep
-#include "ortools/base/macros.h"       // IWYU pragma: keep
+#include "ortools/base/macros.h"
 
 namespace operations_research {
 

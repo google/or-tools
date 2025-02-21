@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
 #include "absl/base/log_severity.h"
-#include "absl/flags/flag.h"
 #include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"

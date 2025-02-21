@@ -304,7 +304,16 @@ absl::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
 
   std::vector<SCIP_VAR*> vars;
   std::vector<double> vals;
+  // Constraints created by add_abs_constraint.
   std::vector<SCIP_CONS*> cons;
+  // Make sure the constraints don't leak when we exit this scope.
+  absl::Cleanup cons_cleanup = [&]() {
+    for (SCIP_CONS* c : cons) {
+      const absl::Status status = SCIP_TO_STATUS(SCIPreleaseCons(scip, &c));
+      LOG_IF(ERROR, !status.ok()) << status;
+    }
+    cons.clear();
+  };
   auto add_abs_constraint = [&](absl::string_view name_prefix) -> absl::Status {
     SCIP_CONS* scip_cons = nullptr;
     CHECK(vars.size() == vals.size());

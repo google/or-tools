@@ -179,12 +179,6 @@ class SetCoverInvariant {
   // Computes the number of free (uncovered) elements in the given subset.
   BaseInt ComputeNumFreeElements(SubsetIndex subset) const;
 
-  // Includes subset in the solution by setting is_selected_[subset] to true
-  // without updating the invariant. Only updates the cost and the coverage.
-  // TODO(user): Merge with Select. Introduce consistency levels and maybe split
-  // the invariant into three.
-  void SelectNoUpdate(SubsetIndex subset);
-
   // Flips is_selected_[subset] to its negation, by calling Select or Deselect
   // depending on value. Updates the invariant incrementally to the given
   // consistency level.

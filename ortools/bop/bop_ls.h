@@ -41,7 +41,6 @@
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -99,7 +98,7 @@ class SatWrapper {
   // Backtracks the last decision if any.
   void BacktrackOneLevel();
 
-  // Bactracks all the decisions.
+  // Backtracks all the decisions.
   void BacktrackAll();
 
   // Extracts any new information learned during the search.

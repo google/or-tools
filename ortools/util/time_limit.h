@@ -30,6 +30,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/util/running_stat.h"

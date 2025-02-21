@@ -26,7 +26,6 @@
 #include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/globals.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"

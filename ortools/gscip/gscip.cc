@@ -322,15 +322,15 @@ absl::Status GScip::SetParams(const GScipParameters& params,
   }
   for (const auto& bool_param : params.bool_params()) {
     RETURN_IF_SCIP_ERROR(
-        (SCIPsetBoolParam(scip_, bool_param.first.c_str(), bool_param.second)));
+        SCIPsetBoolParam(scip_, bool_param.first.c_str(), bool_param.second));
   }
   for (const auto& int_param : params.int_params()) {
     RETURN_IF_SCIP_ERROR(
-        (SCIPsetIntParam(scip_, int_param.first.c_str(), int_param.second)));
+        SCIPsetIntParam(scip_, int_param.first.c_str(), int_param.second));
   }
   for (const auto& long_param : params.long_params()) {
-    RETURN_IF_SCIP_ERROR((SCIPsetLongintParam(scip_, long_param.first.c_str(),
-                                              long_param.second)));
+    RETURN_IF_SCIP_ERROR(SCIPsetLongintParam(scip_, long_param.first.c_str(),
+                                             long_param.second));
   }
   for (const auto& char_param : params.char_params()) {
     if (char_param.second.size() != 1) {
@@ -339,16 +339,16 @@ absl::Status GScip::SetParams(const GScipParameters& params,
                        "but parameter: ",
                        char_param.first, " was: ", char_param.second));
     }
-    RETURN_IF_SCIP_ERROR((SCIPsetCharParam(scip_, char_param.first.c_str(),
-                                           char_param.second[0])));
+    RETURN_IF_SCIP_ERROR(SCIPsetCharParam(scip_, char_param.first.c_str(),
+                                          char_param.second[0]));
   }
   for (const auto& string_param : params.string_params()) {
-    RETURN_IF_SCIP_ERROR((SCIPsetStringParam(scip_, string_param.first.c_str(),
-                                             string_param.second.c_str())));
+    RETURN_IF_SCIP_ERROR(SCIPsetStringParam(scip_, string_param.first.c_str(),
+                                            string_param.second.c_str()));
   }
   for (const auto& real_param : params.real_params()) {
     RETURN_IF_SCIP_ERROR(
-        (SCIPsetRealParam(scip_, real_param.first.c_str(), real_param.second)));
+        SCIPsetRealParam(scip_, real_param.first.c_str(), real_param.second));
   }
   if (!legacy_params.empty()) {
     RETURN_IF_ERROR(

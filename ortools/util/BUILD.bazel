@@ -79,7 +79,10 @@ cc_library(
     name = "bitset",
     srcs = ["bitset.cc"],
     hdrs = ["bitset.h"],
-    deps = ["//ortools/base"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/base:log_severity",
+    ],
 )
 
 cc_library(
@@ -213,6 +216,7 @@ cc_library(
     deps = [
         ":running_stat",
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/base:sysinfo",
         "//ortools/base:timer",
         "//ortools/base:types",

@@ -465,8 +465,8 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 // Similar to AffineExpression, but with a zero constant.
 // If coeff is zero, then this is always zero and var is ignored.
 struct LinearTerm {
-  IntegerVariable var = kNoIntegerVariable;
-  IntegerValue coeff = IntegerValue(0);
+  LinearTerm() = default;
+  LinearTerm(IntegerVariable v, IntegerValue c) : var(v), coeff(c) {}
 
   void MakeCoeffPositive() {
     if (coeff < 0) {
@@ -478,6 +478,9 @@ struct LinearTerm {
   bool operator==(const LinearTerm& other) const {
     return var == other.var && coeff == other.coeff;
   }
+
+  IntegerVariable var = kNoIntegerVariable;
+  IntegerValue coeff = IntegerValue(0);
 };
 
 // A relation of the form enforcement => a + b \in [lhs, rhs].
@@ -538,6 +541,10 @@ class BinaryRelationRepository {
   // terms must be non-zero).
   void Add(Literal lit, LinearTerm a, LinearTerm b, IntegerValue lhs,
            IntegerValue rhs);
+
+  // Adds a partial conditional relation between two variables, with unspecified
+  // coefficients and bounds.
+  void AddPartialRelation(Literal lit, IntegerVariable a, IntegerVariable b);
 
   // Builds the literal to relations mapping. This should be called once all the
   // relations have been added.

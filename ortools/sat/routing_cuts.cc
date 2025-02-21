@@ -43,6 +43,8 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/max_flow.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -164,29 +166,71 @@ int MinOutgoingFlowHelper::ComputeDemandBasedMinOutgoingFlow(
   return min_outgoing_flow;
 }
 
-absl::Span<MinOutgoingFlowHelper::ItemOrBin>
-MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
+absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     absl::Span<const int> subset, int dimension, bool negate_variables,
     bool use_incoming, const RouteRelationsHelper& helper) {
   tmp_bin_packing_problem_.clear();
 
-  // Computes UB/LB.
-  IntegerValue min_lower_bound = kMaxIntegerValue;
-  IntegerValue max_upper_bound = kMinIntegerValue;
-  for (const int n : subset) {
-    IntegerVariable var = helper.GetNodeVariable(n, dimension);
-    if (var == kNoIntegerVariable) return {};
-    if (negate_variables) var = NegationOf(var);
-    min_lower_bound =
-        std::min(min_lower_bound, integer_trail_.LevelZeroLowerBound(var));
-    max_upper_bound =
-        std::max(max_upper_bound, integer_trail_.LevelZeroUpperBound(var));
+  // Computes UB/LB. The derivation in the .h used a simple version, but we can
+  // be a bit tighter. We explain for the use_incoming case only:
+  //
+  // In this setting, recall that bins correspond to the first node of each
+  // route covering the subset. The max_upper_bound is a maximum over the last
+  // node of each route, and as such it does not need to consider nodes with no
+  // arc leaving the subset: such nodes cannot be last.
+  //
+  // Moreover, if the bin is not empty, then the bound for that bin does not
+  // need to consider the variable of the "bin" node itself. If the new bound is
+  // non-negative, then it is also valid for the empty bin. If it is negative we
+  // have an issue as using it will force the bin to not be empty. But we can
+  // always use std::max(0, new_bound) which is always valid and still tighter
+  // than the bound explained in the .h which is always non-negative.
+  //
+  // This way we can have a different bound for each bin, which is slightly
+  // stronger than using the same bound for all of them.
+  const int num_nodes = in_subset_.size();
+  std::vector<IntegerValue> min_lower_bound_of_others(num_nodes,
+                                                      kMaxIntegerValue);
+  std::vector<IntegerValue> max_upper_bound_of_others(num_nodes,
+                                                      kMinIntegerValue);
+
+  // We do a forward and a backward pass in order to compute the min/max
+  // of all the other nodes for each node.
+  for (const bool forward_pass : {true, false}) {
+    IntegerValue local_min = kMaxIntegerValue;
+    IntegerValue local_max = kMinIntegerValue;
+    const int size = subset.size();
+    for (int i = 0; i < size; ++i) {
+      const int n = forward_pass ? subset[i] : subset[size - 1 - i];
+      IntegerVariable var = helper.GetNodeVariable(n, dimension);
+      if (var == kNoIntegerVariable) return {};
+      if (negate_variables) var = NegationOf(var);
+
+      // The local_min/max contains the min/max of all nodes strictly before 'n'
+      // in the forward pass (resp. striclty after). So after two passes,
+      // min/max_..._of_others[n] will contains the min/max of all nodes
+      // different from n.
+      min_lower_bound_of_others[n] =
+          std::min(min_lower_bound_of_others[n], local_min);
+      max_upper_bound_of_others[n] =
+          std::max(max_upper_bound_of_others[n], local_max);
+
+      // Update local_min/max.
+      if (has_incoming_arcs_from_outside_[n]) {
+        local_min =
+            std::min(local_min, integer_trail_.LevelZeroLowerBound(var));
+      }
+      if (has_outgoing_arcs_to_outside_[n]) {
+        local_max =
+            std::max(local_max, integer_trail_.LevelZeroUpperBound(var));
+      }
+    }
   }
 
   // TODO(user): This should probably be moved to RouteRelationsHelper.
-  auto get_relation_lhs = [&](int arc_index) -> std::optional<IntegerValue> {
+  auto get_relation_lhs = [&](int arc_index) {
     const auto& r = helper.GetArcRelation(arc_index, dimension);
-    if (r.empty()) {
+    if (r.empty() || r.head_coeff != 1 || r.tail_coeff != -1) {
       // Use X_head-X_tail \in [lb(X_head)-ub(X_tail), ub(X_head)-lb(X_tail)].
       const IntegerVariable tail_var =
           helper.GetNodeVariable(tails_[arc_index], dimension);
@@ -199,8 +243,6 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
       }
       return integer_trail_.LevelZeroLowerBound(head_var) -
              integer_trail_.LevelZeroUpperBound(tail_var);
-    } else if (r.head_coeff != 1 || r.tail_coeff != -1) {
-      return std::nullopt;
     }
     return negate_variables ? -r.rhs : r.lhs;
   };
@@ -213,33 +255,51 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
         use_incoming ? incoming_arc_indices_[n] : outgoing_arc_indices_[n];
     IntegerValue demand = kMaxIntegerValue;
     for (const int a : arcs) {
-      const auto lhs = get_relation_lhs(a);
-      if (!lhs.has_value()) return {};
-      demand = std::min(demand, lhs.value());
+      demand = std::min(demand, get_relation_lhs(a));
     }
 
     ItemOrBin obj;
-    obj.capacity =
-        use_incoming
-            ? max_upper_bound - integer_trail_.LevelZeroLowerBound(var)
-            : integer_trail_.LevelZeroUpperBound(var) - min_lower_bound;
     obj.demand = demand;
 
-    // TODO(user): Also use MUST_BE_ITEM.
-    if (arcs.empty()) {
+    // We compute the capacity like this to avoid overflow and always have
+    // a non-negative capacity (see above).
+    obj.capacity = 0;
+    if (use_incoming) {
+      if (max_upper_bound_of_others[n] >
+          integer_trail_.LevelZeroLowerBound(var)) {
+        obj.capacity = max_upper_bound_of_others[n] -
+                       integer_trail_.LevelZeroLowerBound(var);
+      }
+    } else {
+      if (integer_trail_.LevelZeroUpperBound(var) >
+          min_lower_bound_of_others[n]) {
+        obj.capacity = integer_trail_.LevelZeroUpperBound(var) -
+                       min_lower_bound_of_others[n];
+      }
+    }
+
+    // Note that we don't explicitly deal with the corner case of a subset node
+    // with no arcs. This corresponds to INFEASIBLE problem and should be dealt
+    // with elsewhere. Being "less restrictive" will still result in a valid
+    // bound and that is enough here.
+    if ((use_incoming && !has_incoming_arcs_from_outside_[n]) ||
+        (!use_incoming && !has_outgoing_arcs_to_outside_[n])) {
+      obj.type = ItemOrBin::MUST_BE_ITEM;
+      obj.capacity = 0;
+    } else if (arcs.empty()) {
       obj.type = ItemOrBin::MUST_BE_BIN;
       obj.demand = 0;  // We don't want kMaxIntegerValue !
     } else {
       obj.type = ItemOrBin::ITEM_OR_BIN;
     }
+
     tmp_bin_packing_problem_.push_back(obj);
   }
 
   return absl::MakeSpan(tmp_bin_packing_problem_);
 }
 
-int MinOutgoingFlowHelper::ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects,
-                                                  bool* gcd_was_used) {
+int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used) {
   if (objects.empty()) return 0;
 
   IntegerValue sum_of_demands(0);
@@ -294,10 +354,20 @@ int MinOutgoingFlowHelper::ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects,
   int num_bins = 0;
   IntegerValue sum_of_capacity(0);
   for (; num_bins < objects.size(); ++num_bins) {
+    // Use obj as a bin instead of as an item, if possible (i.e., unless
+    // obj.type is MUST_BE_ITEM).
     const ItemOrBin& obj = objects[num_bins];
     if (obj.type != ItemOrBin::MUST_BE_BIN &&
         sum_of_demands <= sum_of_capacity) {
       return num_bins;
+    }
+    if (obj.type == ItemOrBin::MUST_BE_ITEM) {
+      // Because of our order, we only have objects of type MUST_BE_ITEM left.
+      // Hence we can no longer change items to bins, and since the demands
+      // exceed the capacity, the problem is infeasible. We just return the
+      // (number of objects + 1) in this case (any bound is valid).
+      DCHECK_GT(sum_of_demands, sum_of_capacity);
+      return objects.size() + 1;
     }
     sum_of_capacity = CapAddI(sum_of_capacity, obj.capacity);
     if (AtMinOrMaxInt64I(sum_of_capacity)) return num_bins;
@@ -318,6 +388,7 @@ int MinOutgoingFlowHelper::ComputeMinOutgoingFlow(
   InitializeGraph(subset);
 
   // Conservatively assume that each subset node is reachable from outside.
+  // TODO(user): use has_incoming_arcs_from_outside_[] to be more precise.
   reachable_ = in_subset_;
 
   // Maximum number of nodes of a feasible path inside the subset.
@@ -423,14 +494,25 @@ void MinOutgoingFlowHelper::InitializeGraph(absl::Span<const int> subset) {
     index_in_subset_[n] = i;
   }
 
+  has_incoming_arcs_from_outside_.assign(num_nodes, false);
+  has_outgoing_arcs_to_outside_.assign(num_nodes, false);
+
   for (auto& v : incoming_arc_indices_) v.clear();
   for (auto& v : outgoing_arc_indices_) v.clear();
   for (int i = 0; i < tails_.size(); ++i) {
     const int tail = tails_[i];
     const int head = heads_[i];
-    if (in_subset_[tail] && in_subset_[head] && tail != head) {
+
+    // we always ignore self-arcs here.
+    if (tail == head) continue;
+
+    if (in_subset_[tail] && in_subset_[head]) {
       outgoing_arc_indices_[tail].push_back(i);
       incoming_arc_indices_[head].push_back(i);
+    } else if (in_subset_[tail] && !in_subset_[head]) {
+      has_outgoing_arcs_to_outside_[tail] = true;
+    } else if (!in_subset_[tail] && in_subset_[head]) {
+      has_incoming_arcs_from_outside_[head] = true;
     }
   }
 }
@@ -449,6 +531,7 @@ int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
   std::vector<Path> paths;
   std::vector<Path> next_paths;
   for (int i = 0; i < subset.size(); ++i) {
+    // TODO(user): use has_incoming_arcs_from_outside_[] to skip some nodes.
     paths.push_back(
         {.node_set = static_cast<uint32_t>(1 << i), .last_node = subset[i]});
     path_var_bounds[paths.back()] = {};  // LevelZero bounds.
@@ -571,6 +654,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
       const int num_extra = k - num_routes - 1;
       for (int i = 0; i + num_extra < size; ++i) {
         if (from_state.node_set >> i) continue;
+        if (!has_incoming_arcs_from_outside_[subset[i]]) continue;
 
         // All "initial-state" start with empty hash-map that correspond to
         // the level zero bounds.
@@ -588,6 +672,9 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
     }
 
     // We have k routes, extend one of the last nodes.
+    //
+    // TODO(user): we cannot have any last node with
+    // has_outgoing_arcs_to_outside_[node] at false! Exploit this.
     for (int i = 0; i < size; ++i) {
       const uint32_t tail_mask = 1 << i;
       if ((from_state.last_nodes_set & tail_mask) == 0) continue;
@@ -640,13 +727,21 @@ class RouteRelationsBuilder {
   RouteRelationsBuilder(
       int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
       absl::Span<const Literal> literals,
+      absl::Span<const IntegerVariable> flat_node_dim_variables,
       const BinaryRelationRepository& binary_relation_repository)
       : num_nodes_(num_nodes),
         num_arcs_(tails.size()),
         tails_(tails),
         heads_(heads),
         literals_(literals),
-        binary_relation_repository_(binary_relation_repository) {}
+        binary_relation_repository_(binary_relation_repository) {
+    if (!flat_node_dim_variables.empty()) {
+      DCHECK_EQ(flat_node_dim_variables.size() % num_nodes, 0);
+      num_dimensions_ = flat_node_dim_variables.size() / num_nodes;
+      flat_node_dim_variables_.assign(flat_node_dim_variables.begin(),
+                                      flat_node_dim_variables.end());
+    }
+  }
 
   int num_dimensions() const { return num_dimensions_; }
 
@@ -659,27 +754,29 @@ class RouteRelationsBuilder {
   }
 
   bool Build() {
-    // Step 1: find the number of dimensions (as the number of connected
-    // components in the graph of binary relations), and find to which dimension
-    // each variable belongs.
-    ComputeDimensionOfEachVariable();
-    if (num_dimensions_ == 0) return false;
+    if (flat_node_dim_variables_.empty()) {
+      // Step 1: find the number of dimensions (as the number of connected
+      // components in the graph of binary relations), and find to which
+      // dimension each variable belongs.
+      ComputeDimensionOfEachVariable();
+      if (num_dimensions_ == 0) return false;
 
-    // Step 2: find the variables which can be unambiguously associated with a
-    // node and dimension.
-    // - compute the indices of the binary relations which can be unambiguously
-    // associated with the incoming and outgoing arcs of each node, per
-    // dimension.
-    ComputeAdjacentRelationsPerNodeAndDimension();
-    // - find variable associations by using variables which are uniquely shared
-    // by two adjacent relations of a node.
-    std::queue<std::pair<int, int>> node_dim_pairs =
-        ComputeVarAssociationsFromSharedVariableOfAdjacentRelations();
-    if (node_dim_pairs.empty()) return false;
-    // - find more variable associations by using arcs from nodes with
-    // an associated variable, whose other end has no associated variable, and
-    // where only one variable can be associated with it.
-    ComputeVarAssociationsFromRelationsWithSingleFreeVar(node_dim_pairs);
+      // Step 2: find the variables which can be unambiguously associated with a
+      // node and dimension.
+      // - compute the indices of the binary relations which can be
+      // unambiguously associated with the incoming and outgoing arcs of each
+      // node, per dimension.
+      ComputeAdjacentRelationsPerNodeAndDimension();
+      // - find variable associations by using variables which are uniquely
+      // shared by two adjacent relations of a node.
+      std::queue<std::pair<int, int>> node_dim_pairs =
+          ComputeVarAssociationsFromSharedVariableOfAdjacentRelations();
+      if (node_dim_pairs.empty()) return false;
+      // - find more variable associations by using arcs from nodes with
+      // an associated variable, whose other end has no associated variable, and
+      // where only one variable can be associated with it.
+      ComputeVarAssociationsFromRelationsWithSingleFreeVar(node_dim_pairs);
+    }
 
     // Step 3: compute the relation for each arc and dimension, now that the
     // variables associated with each node and dimension are known.
@@ -888,18 +985,20 @@ class RouteRelationsBuilder {
         if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
           continue;
         }
-        const int dimension = dimension_by_var_[r.a.var];
-        IntegerVariable& tail_var = node_variable(tail, dimension);
-        IntegerVariable& head_var = node_variable(head, dimension);
-        if (tail_var == kNoIntegerVariable || head_var == kNoIntegerVariable) {
-          continue;
+        for (int dimension = 0; dimension < num_dimensions_; ++dimension) {
+          IntegerVariable& tail_var = node_variable(tail, dimension);
+          IntegerVariable& head_var = node_variable(head, dimension);
+          if (tail_var == kNoIntegerVariable ||
+              head_var == kNoIntegerVariable) {
+            continue;
+          }
+          if (!((tail_var == r.a.var && head_var == r.b.var) ||
+                (tail_var == r.b.var && head_var == r.a.var))) {
+            ++num_inconsistent_relations;
+            continue;
+          }
+          SetArcRelation(i, dimension, tail_var, r);
         }
-        if (!((tail_var == r.a.var && head_var == r.b.var) ||
-              (tail_var == r.b.var && head_var == r.a.var))) {
-          ++num_inconsistent_relations;
-          continue;
-        }
-        SetArcRelation(i, dimension, tail_var, r);
       }
       // If some relations are missing for this arc, check if we can use
       // enforced relations to fill them.
@@ -950,8 +1049,10 @@ class RouteRelationsBuilder {
 std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals,
+    absl::Span<const IntegerVariable> flat_node_dim_variables,
     const BinaryRelationRepository& binary_relation_repository) {
   RouteRelationsBuilder builder(num_nodes, tails, heads, literals,
+                                flat_node_dim_variables,
                                 binary_relation_repository);
   if (!builder.Build()) return nullptr;
   std::unique_ptr<RouteRelationsHelper> helper(new RouteRelationsHelper(
@@ -1007,11 +1108,105 @@ void RouteRelationsHelper::LogStats() const {
 }
 
 namespace {
+// Converts a literal index in a model proto to a Literal.
+Literal ToLiteral(int lit) {
+  return Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit));
+}
+
+// Converts a variable index in a NodeVariables proto to an IntegerVariable.
+IntegerVariable ToPositiveIntegerVariable(int i) {
+  return IntegerVariable(PositiveRef(i) << 1);
+}
+
+// Converts an IntegerVariable to variable indices in a NodeVariables proto.
+int ToNodeVariableIndex(IntegerVariable var) {
+  if (var == kNoIntegerVariable) return -1;
+  return var.value() >> 1;
+}
+
+// Returns a repository containing a partial view (i.e. without coefficients or
+// domains) of the enforced linear constraints (of size 2 only) in `model`. This
+// is the only information needed to infer the mapping from variables to nodes
+// in routes constraints.
+BinaryRelationRepository ComputePartialBinaryRelationRepository(
+    const CpModelProto& model) {
+  BinaryRelationRepository repository;
+  for (const ConstraintProto& ct : model.constraints()) {
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    const absl::Span<const int> vars = ct.linear().vars();
+    if (ct.enforcement_literal().size() != 1 || vars.size() != 2) continue;
+    if (vars[0] == vars[1]) continue;
+    repository.AddPartialRelation(ToLiteral(ct.enforcement_literal(0)),
+                                  ToPositiveIntegerVariable(vars[0]),
+                                  ToPositiveIntegerVariable(vars[1]));
+  }
+  repository.Build();
+  return repository;
+}
+
+// Returns the number of dimensions added to the constraint.
+int MaybeFillRoutesConstraintNodeVariables(
+    RoutesConstraintProto& routes, const BinaryRelationRepository& repository) {
+  int max_node = 0;
+  for (const int node : routes.tails()) {
+    max_node = std::max(max_node, node);
+  }
+  for (const int node : routes.heads()) {
+    max_node = std::max(max_node, node);
+  }
+  const int num_nodes = max_node + 1;
+  std::vector<Literal> literals;
+  literals.reserve(routes.literals_size());
+  for (int lit : routes.literals()) {
+    literals.push_back(ToLiteral(lit));
+  }
+  const std::unique_ptr<RouteRelationsHelper> helper =
+      RouteRelationsHelper::Create(num_nodes, routes.tails(), routes.heads(),
+                                   literals,
+                                   /*flat_node_dim_variables=*/{}, repository);
+  if (helper == nullptr) return 0;
+
+  for (int d = 0; d < helper->num_dimensions(); ++d) {
+    RoutesConstraintProto::NodeVariables& dimension = *routes.add_dimensions();
+    for (int n = 0; n < num_nodes; ++n) {
+      const IntegerVariable var = helper->GetNodeVariable(n, d);
+      dimension.add_vars(ToNodeVariableIndex(var));
+    }
+  }
+  return helper->num_dimensions();
+}
+
+}  // namespace
+
+std::pair<int, int> MaybeFillMissingRoutesConstraintNodeVariables(
+    const CpModelProto& input_model, CpModelProto& output_model) {
+  std::vector<RoutesConstraintProto*> routes_to_fill;
+  for (ConstraintProto& ct : *output_model.mutable_constraints()) {
+    if (ct.constraint_case() != ConstraintProto::kRoutes) continue;
+    if (!ct.routes().dimensions().empty()) continue;
+    routes_to_fill.push_back(ct.mutable_routes());
+  }
+  if (routes_to_fill.empty()) return {0, 0};
+
+  int total_num_dimensions = 0;
+  const BinaryRelationRepository partial_repository =
+      ComputePartialBinaryRelationRepository(input_model);
+  for (RoutesConstraintProto* routes : routes_to_fill) {
+    total_num_dimensions +=
+        MaybeFillRoutesConstraintNodeVariables(*routes, partial_repository);
+  }
+  return {static_cast<int>(routes_to_fill.size()), total_num_dimensions};
+}
+
+namespace {
 
 class OutgoingCutHelper {
  public:
+  using NodeVariables = RoutesConstraintProto::NodeVariables;
+
   OutgoingCutHelper(int num_nodes, bool is_route_constraint, int64_t capacity,
                     absl::Span<const int64_t> demands,
+                    absl::Span<const IntegerVariable> flat_node_dim_variables,
                     absl::Span<const int> tails, absl::Span<const int> heads,
                     absl::Span<const Literal> literals, Model* model)
       : num_nodes_(num_nodes),
@@ -1032,7 +1227,7 @@ class OutgoingCutHelper {
         nodes_outgoing_weight_(num_nodes_),
         min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model),
         route_relations_helper_(RouteRelationsHelper::Create(
-            num_nodes, tails, heads, literals,
+            num_nodes, tails, heads, literals, flat_node_dim_variables,
             *model->GetOrCreate<BinaryRelationRepository>())) {
     // Compute the total demands in order to know the minimum incoming/outgoing
     // flow.
@@ -1509,7 +1704,7 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
       // bins. If the first (flow_lower_bound - 1) bins are tight, i.e. all
       // their tightened_capacity is filled, then the last bin will have
       // 'last_bin_fillin' stuff, which will leave 'space_left' to fit an extra
-      // 'item.
+      // item.
       const int64_t last_bin_fillin =
           sum_of_elements - (flow_lower_bound - 1) * tightened_capacity;
       const int64_t space_left = capacity_ - last_bin_fillin;
@@ -2056,7 +2251,9 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     absl::Span<const Literal> literals, Model* model) {
   auto helper = std::make_unique<OutgoingCutHelper>(
       num_nodes, /*is_route_constraint=*/false, /*capacity=*/0,
-      /*demands=*/absl::Span<const int64_t>(), tails, heads, literals, model);
+      /*demands=*/absl::Span<const int64_t>(),
+      /*flat_node_dim_variables=*/
+      absl::Span<const IntegerVariable>{}, tails, heads, literals, model);
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
@@ -2067,14 +2264,14 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
   return result;
 }
 
-CutGenerator CreateCVRPCutGenerator(int num_nodes, absl::Span<const int> tails,
-                                    absl::Span<const int> heads,
-                                    absl::Span<const Literal> literals,
-                                    absl::Span<const int64_t> demands,
-                                    int64_t capacity, Model* model) {
+CutGenerator CreateCVRPCutGenerator(
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
+    absl::Span<const IntegerVariable> flat_node_dim_variables, int64_t capacity,
+    Model* model) {
   auto helper = std::make_unique<OutgoingCutHelper>(
-      num_nodes, /*is_route_constraint=*/true, capacity, demands, tails, heads,
-      literals, model);
+      num_nodes, /*is_route_constraint=*/true, capacity, demands,
+      flat_node_dim_variables, tails, heads, literals, model);
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =

@@ -28,6 +28,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/parse_test_proto.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/max_flow.h"
 #include "ortools/sat/cp_model.h"
@@ -45,9 +46,11 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::EqualsProto;
 using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
@@ -178,7 +181,7 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest, BasicCapacities) {
   }
   repository->Build();
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
                                    *repository);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
@@ -203,22 +206,24 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest,
   // A graph with 4 nodes and 4 arcs, with 1 node without incoming arc and 1
   // node without outgoing arc:
   //
-  // 1 --> 2
-  // ^     |
-  // |     v
-  // 0 --> 3
-  const std::vector<int> tails = {0, 0, 1, 2};
-  const std::vector<int> heads = {1, 3, 2, 3};
-  const std::vector<Literal> literals = {
-      Literal(model.Add(NewBooleanVariable()), true),
-      Literal(model.Add(NewBooleanVariable()), true),
-      Literal(model.Add(NewBooleanVariable()), true),
-      Literal(model.Add(NewBooleanVariable()), true)};
+  // --> 1 --> 2  -->
+  //     ^     |
+  //     |     v
+  // --> 0 --> 3  -->
+  //
+  // We use "outside" arcs from/to node 4 otherwise the problem will be
+  // infeasible.
+  const int num_nodes = 5;
+  const std::vector<int> tails = {0, 0, 1, 2, 4, 4, 2, 3};
+  const std::vector<int> heads = {1, 3, 2, 3, 0, 1, 4, 4};
+  std::vector<Literal> literals(tails.size());
+  for (int i = 0; i < literals.size(); ++i) {
+    literals[i] = Literal(model.Add(NewBooleanVariable()), true);
+  }
   const std::vector<int> demands = {11, 12, 13, 14};
   std::vector<IntegerVariable> loads;
-  const int num_nodes = 4;
   const int max_capacity = 49;
-  for (int n = 0; n < num_nodes; ++n) {
+  for (int n = 0; n < demands.size(); ++n) {
     if (pickup == use_outgoing_load) {
       loads.push_back(model.Add(NewIntegerVariable(demands[n], max_capacity)));
     } else {
@@ -243,7 +248,7 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest,
   }
   repository->Build();
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
                                    *repository);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
@@ -254,6 +259,111 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest,
 
   // The total demand is 50, and the maximum capacity is 49.
   EXPECT_EQ(min_flow, 2);
+}
+
+TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
+  // when considering subset {1, 2, 3}, knowing that 2 cannot be reached
+  // from outside can lead to better bound. The non zero-demands are in () on
+  // the arcs.
+  //
+  // 0 --> 1 -(5)-> 2 -(5)-> 3 --> 0
+  //       1 <-(3)- 2 -----------> 0
+  //       1 -----(4)------> 3
+  // 0 --------------------> 3
+  for (const bool can_enter_at_2 : {true, false}) {
+    Model model;
+    const int num_nodes = 4;
+    std::vector<int> tails = {0, 1, 2, 3, 2, 2, 1, 0};
+    std::vector<int> heads = {1, 2, 3, 0, 0, 1, 3, 3};
+    std::vector<int> demands = {0, 5, 5, 0, 0, 4, 4, 0};
+    if (can_enter_at_2) {
+      tails.push_back(0);
+      heads.push_back(2);
+      demands.push_back(0);
+    }
+    std::vector<Literal> literals;
+    const int num_arcs = demands.size();
+    for (int i = 0; i < num_arcs; ++i) {
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+    }
+
+    std::vector<IntegerVariable> loads;
+    for (int i = 0; i < num_nodes; ++i) {
+      loads.push_back(model.Add(NewIntegerVariable(0, 8)));
+    }
+
+    // Capacity constraints.
+    auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+    for (int i = 0; i < num_arcs; ++i) {
+      // loads[head] - loads[tail] >= demand[arc]
+      repository->Add(literals[i], {loads[heads[i]], 1}, {loads[tails[i]], -1},
+                      demands[i], 1000);
+    }
+    repository->Build();
+    std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+        RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
+                                     *repository);
+    ASSERT_NE(route_relations_helper, nullptr);
+
+    MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+    const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+        {1, 2, 3}, *route_relations_helper);
+
+    // If we cannot enter at 2, the only possibility is 0->1->2->0 and 0->3->0.
+    // Otherwise 0->2->1->3->0 is just under the capacity of 8.
+    EXPECT_EQ(min_flow, can_enter_at_2 ? 1 : 2);
+  }
+}
+
+TEST(MinOutgoingFlowHelperTest, BetterUseOfUpperBound) {
+  // The non-zero demands are in () on the arcs.
+  // when considering subset {1, 2}:
+  //
+  // 0 --> 1 -(8)-> 2 --> 0
+  // 0 --> 2 -(8)-> 1 --> 0
+  for (const bool bounds_forces_two_path : {true, false}) {
+    Model model;
+    std::vector<int> tails = {0, 1, 2, 0, 2, 1};
+    std::vector<int> heads = {1, 2, 0, 2, 1, 0};
+    std::vector<int> demands = {0, 8, 0, 0, 8, 0};
+    std::vector<Literal> literals;
+    const int num_arcs = demands.size();
+    for (int i = 0; i < num_arcs; ++i) {
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+    }
+
+    std::vector<IntegerVariable> loads;
+    loads.push_back(model.Add(NewIntegerVariable(0, 10)));  // depot.
+    if (bounds_forces_two_path) {
+      // Here if we exploit the bound properly, we can see that both possible
+      // paths are invalid.
+      loads.push_back(model.Add(NewIntegerVariable(0, 10)));
+      loads.push_back(model.Add(NewIntegerVariable(5, 5)));
+    } else {
+      // Here the path 0->1->2->0 is fine.
+      loads.push_back(model.Add(NewIntegerVariable(0, 10)));
+      loads.push_back(model.Add(NewIntegerVariable(5, 10)));
+    }
+
+    // Capacity constraints.
+    auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+    for (int i = 0; i < num_arcs; ++i) {
+      // loads[head] - loads[tail] >= demand[arc]
+      repository->Add(literals[i], {loads[heads[i]], 1}, {loads[tails[i]], -1},
+                      demands[i], 1000);
+    }
+    repository->Build();
+    std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+        RouteRelationsHelper::Create(loads.size(), tails, heads, literals, {},
+                                     *repository);
+    ASSERT_NE(route_relations_helper, nullptr);
+
+    MinOutgoingFlowHelper helper(loads.size(), tails, heads, literals, &model);
+    const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+        {1, 2}, *route_relations_helper);
+
+    EXPECT_EQ(min_flow, bounds_forces_two_path ? 2 : 1);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(AllCombinations, DemandBasedMinOutgoingFlowHelperTest,
@@ -284,7 +394,7 @@ TEST(MinOutgoingFlowHelperTest, DemandBasedMinOutgoingFlow_IsolatedNodes) {
   }
   repository->Build();
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
                                    *repository);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
@@ -555,6 +665,98 @@ TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutesRandom) {
   }
 }
 
+int SolveSpecialBinPackingWithCpSat(absl::Span<const ItemOrBin> objects) {
+  CpModelBuilder cp_model;
+
+  const int n = objects.size();
+  std::vector<BoolVar> item_is_bin(n);
+  for (int i = 0; i < n; ++i) {
+    if (objects[i].type == ItemOrBin::MUST_BE_BIN) {
+      item_is_bin[i] = cp_model.TrueVar();
+    } else if (objects[i].type == ItemOrBin::MUST_BE_ITEM) {
+      item_is_bin[i] = cp_model.FalseVar();
+    } else {
+      item_is_bin[i] = cp_model.NewBoolVar();
+    }
+  }
+
+  // x[i][b] == item i in bin b.
+  std::vector<std::vector<BoolVar>> x(n);
+  for (int i = 0; i < n; ++i) {
+    x[i].resize(n);
+    for (int b = 0; b < n; ++b) {
+      if (i == b) {
+        // We always place a bin into itself in this model.
+        x[i][b] = item_is_bin[b];
+      } else {
+        x[i][b] = cp_model.NewBoolVar();
+        cp_model.AddImplication(x[i][b], item_is_bin[b]);
+      }
+    }
+  }
+
+  // Place all items.
+  for (int i = 0; i < n; ++i) {
+    cp_model.AddExactlyOne(x[i]);
+  }
+
+  // Respect capacity.
+  for (int b = 0; b < n; ++b) {
+    LinearExpr demands;
+    for (int i = 0; i < n; ++i) {
+      if (i == b) continue;
+      demands += objects[i].demand.value() * x[i][b];
+    }
+    // We shift by the bin demand since we always have x[b][b] at true if the
+    // bin is used as such.
+    cp_model.AddLessOrEqual(demands, objects[b].capacity.value())
+        .OnlyEnforceIf(item_is_bin[b]);
+  }
+
+  // Objective
+  cp_model.Minimize(LinearExpr::Sum(item_is_bin));
+
+  // Solving part.
+  SatParameters params;
+  params.set_log_search_progress(false);
+  const CpSolverResponse response =
+      SolveWithParameters(cp_model.Build(), params);
+
+  // This is the convention used in our bound computation function.
+  if (response.status() == INFEASIBLE) return n + 1;
+  return static_cast<int>(response.objective_value());
+}
+
+// Generate a random problem and make sure our bound is always valid.
+// These problems are a bit easy, but with --runs_per_test 1000 there are a few
+// instances where our lower bound is strictly worse than the true optimal.
+TEST(SpecialBinPackingProblemTest, ComputeMinNumberOfBins) {
+  Model model;
+  absl::BitGen random;
+  const int num_objects = 20;
+
+  std::vector<ItemOrBin> objects;
+  for (int i = 0; i < num_objects; ++i) {
+    ItemOrBin o;
+    o.capacity = absl::Uniform(random, 0, 100);
+    o.demand = absl::Uniform(random, 0, 50);
+    const int type = absl::Uniform(random, 0, 2);
+    if (type == 0) o.type = ItemOrBin::MUST_BE_ITEM;
+    if (type == 1) o.type = ItemOrBin::ITEM_OR_BIN;
+    if (type == 2) o.type = ItemOrBin::MUST_BE_BIN;
+    objects.push_back(o);
+  }
+
+  bool gcd_was_used;
+  const int obj_lb =
+      ComputeMinNumberOfBins(absl::MakeSpan(objects), &gcd_was_used);
+  const int optimal = SolveSpecialBinPackingWithCpSat(objects);
+  EXPECT_LE(obj_lb, optimal);
+  if (obj_lb != optimal) {
+    LOG(INFO) << "bound " << obj_lb << " optimal " << optimal;
+  }
+}
+
 std::vector<absl::flat_hash_map<int, Relation>> GetRelationByDimensionAndArc(
     const RouteRelationsHelper& helper) {
   std::vector<absl::flat_hash_map<int, Relation>> result(
@@ -610,7 +812,7 @@ TEST(RouteRelationsHelperTest, Basic) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, repository);
+      num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
   // Two dimensions (time and load) on the first connected component, and one
@@ -688,7 +890,7 @@ TEST(RouteRelationsHelperTest, UnenforcedRelations) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, repository);
+      num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeVariablesByDimension(*helper),
@@ -731,7 +933,7 @@ TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, repository);
+      num_nodes, tails, heads, literals, {}, repository);
 
   EXPECT_EQ(helper, nullptr);
 }
@@ -759,7 +961,7 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
 
   using Relation = RouteRelationsHelper::Relation;
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, repository);
+      num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_EQ(helper->num_dimensions(), 1);
@@ -792,7 +994,7 @@ TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, repository);
+      num_nodes, tails, heads, literals, {}, repository);
 
   // No variable should be associated with any node, since there is no unique
   // way to do this ([A, B, C] or [C, B, A], for nodes [0, 1, 2] respectively).
@@ -836,7 +1038,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, repository);
+      num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeVariablesByDimension(*helper),
@@ -891,7 +1093,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, repository);
+      num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeVariablesByDimension(*helper),
@@ -904,6 +1106,153 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
           Pair(0, Relation{-1, 1, 0, 0}), Pair(1, Relation{-1, 1, 1, 1}),
           Pair(2, Relation{-1, 1, 2, 2}), Pair(3, Relation{-1, 1, 3, 3}),
           Pair(5, Relation{-1, 1, 5, 5}))));
+}
+
+TEST(MaybeFillMissingRoutesConstraintNodeVariables,
+     FillsNodeVariablesIfNotPresent) {
+  // A graph with 4 nodes and the following arcs, with relations implying that
+  // variables 4, 5, 6, 7 should be associated with nodes 0, 1, 2, 3
+  // respectively.
+  //
+  // l0 --->0<--- l1
+  //    |       |
+  //    1--l2-->2--l3-->3
+  //
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      routes {
+        tails: [ 1, 2, 1, 2 ]
+        heads: [ 0, 0, 2, 3 ]
+        literals: [ 0, 1, 2, 3 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: [ 4, 5 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 1
+      linear {
+        vars: [ 4, 6 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 2
+      linear {
+        vars: [ 5, 6 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 6, 7 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model = initial_model;
+  const auto [num_routes, num_dimensions] =
+      MaybeFillMissingRoutesConstraintNodeVariables(initial_model,
+                                                    new_cp_model);
+
+  EXPECT_EQ(num_routes, 1);
+  EXPECT_EQ(num_dimensions, 1);
+  const ConstraintProto expected_constraint = ParseTestProto(R"pb(
+                routes {
+                  tails: [ 1, 2, 1, 2 ]
+                  heads: [ 0, 0, 2, 3 ]
+                  literals: [ 0, 1, 2, 3 ]
+                  dimensions { vars: [ 4, 5, 6, 7 ] }
+                }
+              )pb");
+  EXPECT_THAT(new_cp_model.constraints(0), EqualsProto(expected_constraint));
+}
+
+TEST(MaybeFillMissingRoutesConstraintNodeVariables,
+     KeepsNodeVariablesIfPresent) {
+  // A graph with 4 nodes and the following arcs, with relations implying that
+  // variables 4, 5, 6, 7 should be associated with nodes 0, 1, 2, 3
+  // respectively (but the user provided 7, 6, 5, 4 instead, respectively).
+  //
+  // l0 --->0<--- l1
+  //    |       |
+  //    1--l2-->2--l3-->3
+  //
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      routes {
+        tails: [ 1, 2, 1, 2 ]
+        heads: [ 0, 0, 2, 3 ]
+        literals: [ 0, 1, 2, 3 ]
+        dimensions { vars: [ 7, 6, 5, 4 ] }
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: [ 4, 5 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 1
+      linear {
+        vars: [ 4, 6 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 2
+      linear {
+        vars: [ 5, 6 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 6, 7 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model = initial_model;
+  const auto [num_routes, num_dimensions] =
+      MaybeFillMissingRoutesConstraintNodeVariables(initial_model,
+                                                    new_cp_model);
+
+  EXPECT_EQ(num_routes, 0);
+  EXPECT_EQ(num_dimensions, 0);
+  EXPECT_THAT(new_cp_model, EqualsProto(initial_model));
 }
 
 TEST(ExtractAllSubsetsFromForestTest, Basic) {

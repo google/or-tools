@@ -77,6 +77,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/routing_cuts.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -2480,6 +2481,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     status_response.set_solution_info(info);
     shared_response_manager->AppendResponseToBeMerged(status_response);
     return shared_response_manager->GetResponse();
+  }
+
+  // This uses the relations from the model_proto to fill the node variables of
+  // new_cp_model_proto. This is useful to have as many binary relations as
+  // possible (new_cp_model_proto can have less relations because the model
+  // copier can remove the ones which are always true).
+  const auto [num_routes, num_dimensions] =
+      MaybeFillMissingRoutesConstraintNodeVariables(model_proto,
+                                                    *new_cp_model_proto);
+  if (num_dimensions > 0) {
+    SOLVER_LOG(logger, "Routes: ", num_dimensions,
+               " dimension(s) automatically inferred for ", num_routes,
+               " routes constraint(s).");
   }
 
   if (context->working_model->has_symmetry()) {

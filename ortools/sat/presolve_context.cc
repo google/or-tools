@@ -2766,6 +2766,16 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
     ApplyToAllVariableIndices(mapping_function, &ct);
     ApplyToAllLiteralIndices(mapping_function, &ct);
     ApplyToAllIntervalIndices(interval_mapping_function, &ct);
+    if (ct.constraint_case() == ConstraintProto::kRoutes) {
+      for (RoutesConstraintProto::NodeVariables& node_vars :
+           *ct.mutable_routes()->mutable_dimensions()) {
+        for (int& var : *node_vars.mutable_vars()) {
+          if (var == -1) continue;
+          const auto it = inverse_variable_map.find(var);
+          var = it != inverse_variable_map.end() ? it->second : -1;
+        }
+      }
+    }
   }
 }
 

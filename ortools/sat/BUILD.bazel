@@ -625,6 +625,7 @@ cc_library(
         ":presolve_context",
         ":probing",
         ":rins",
+        ":routing_cuts",
         ":sat_base",
         ":sat_inprocessing",
         ":sat_parameters_cc_proto",
@@ -2660,6 +2661,7 @@ cc_library(
     hdrs = ["routing_cuts.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_utils",
         ":cuts",
         ":integer",
         ":integer_base",
@@ -2706,6 +2708,7 @@ cc_test(
         ":routing_cuts",
         ":sat_base",
         "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
         "//ortools/base:strong_vector",
         "//ortools/graph:max_flow",
         "//ortools/util:strong_integers",

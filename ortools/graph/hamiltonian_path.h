@@ -21,7 +21,7 @@
 //
 // The Shortest Hamiltonian Path Problem (SHPP) is similar to the Traveling
 // Salesperson Problem (TSP).
-// You have to visit all the cities, starting from a given one and you
+// You have to visit all the cities, starting from a given one_ and you
 // do not need to return to your starting point. With the TSP, you can start
 // anywhere, but you have to return to your start location.
 //
@@ -46,7 +46,7 @@
 // f(S, j) = min (i in S \ {j},  f(S \ {j}, i) + cost(i, j))
 //                                           (j is an element of S)
 // Note that this formulation, from the original Held-Karp paper is a bit
-// different, but equivalent to the one used in Caseau and Laburthe, Solving
+// different, but equivalent to the one_ used in Caseau and Laburthe, Solving
 // Small TSPs with Constraints, 1997, ICLP
 // f(S, j) = min (i in S, f(S \ {i}, i) + cost(i, j))
 //                                           (j is not an element of S)
@@ -88,8 +88,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/vector_or_function.h"
@@ -129,8 +129,8 @@ class Set {
   typedef Integer IntegerType;
 
   // Useful constants.
-  static constexpr Integer One = static_cast<Integer>(1);
-  static constexpr Integer Zero = static_cast<Integer>(0);
+  static constexpr Integer one_ = static_cast<Integer>(1);
+  static constexpr Integer zero_ = static_cast<Integer>(0);
   static const int MaxCardinality = 8 * sizeof(Integer);  // NOLINT
 
   // Construct a set from an Integer.
@@ -143,22 +143,22 @@ class Set {
   Integer value() const { return value_; }
 
   static Set FullSet(Integer card) {
-    return card == 0 ? Set(0) : Set(~Zero >> (MaxCardinality - card));
+    return card == 0 ? Set(0) : Set(~zero_ >> (MaxCardinality - card));
   }
 
   // Returns the singleton set with 'n' as its only element.
-  static Set Singleton(Integer n) { return Set(One << n); }
+  static Set Singleton(Integer n) { return Set(one_ << n); }
 
   // Returns a set equal to the calling object, with element n added.
   // If n is already in the set, no operation occurs.
-  Set AddElement(int n) const { return Set(value_ | (One << n)); }
+  Set AddElement(int n) const { return Set(value_ | (one_ << n)); }
 
   // Returns a set equal to the calling object, with element n removed.
   // If n is not in the set, no operation occurs.
-  Set RemoveElement(int n) const { return Set(value_ & ~(One << n)); }
+  Set RemoveElement(int n) const { return Set(value_ & ~(one_ << n)); }
 
   // Returns true if the calling set contains element n.
-  bool Contains(int n) const { return ((One << n) & value_) != 0; }
+  bool Contains(int n) const { return ((one_ << n) & value_) != 0; }
 
   // Returns true if 'other' is included in the calling set.
   bool Includes(Set other) const {
@@ -178,7 +178,7 @@ class Set {
   Set RemoveSmallestElement() const { return Set(value_ & (value_ - 1)); }
 
   // Returns the rank of an element in a set. For the set 11100, ElementRank(4)
-  // would return 2. (Ranks start at zero).
+  // would return 2. (Ranks start at zero_).
   int ElementRank(int n) const {
     DCHECK(Contains(n)) << "n = " << n << ", value_ = " << value_;
     return SingletonRank(Singleton(n));
@@ -418,7 +418,7 @@ uint64_t LatticeMemoryManager<Set, CostType>::BaseOffset(int card,
   DCHECK_EQ(card, node_rank);
   // Note(user): It is possible to get rid of base_offset_[card] by using a 2-D
   // array. It would also make it possible to free all the memory but the layer
-  // being constructed and the preceding one, if another lattice of paths is
+  // being constructed and the preceding one_, if another lattice of paths is
   // constructed.
   // TODO(user): Evaluate the interest of the above.
   // There are 'card' f(set, j) to store. That is why we need to multiply
@@ -465,7 +465,7 @@ class HamiltonianPathSolver {
   // stored
  public:
   // In 2010, 26 was the maximum solvable with 24 Gigs of RAM, and it took
-  // several minutes. With this 2014 version of the code, one may go a little
+  // several minutes. With this 2014 version of the code, one_ may go a little
   // higher, but considering the complexity of the algorithm (n*2^n), and that
   // there are very good ways to solve TSP with more than 32 cities,
   // we limit ourselves to 32 cites.
@@ -710,7 +710,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
   hamiltonian_costs_.resize(num_nodes_);
   // Compute the cost of the Hamiltonian paths starting from node 0, going
   // through all the other nodes, and ending at end_node. Compute the minimum
-  // one along the way.
+  // one_ along the way.
   CostType min_hamiltonian_cost = std::numeric_limits<CostType>::max();
   const NodeSet hamiltonian_set = full_set.RemoveElement(0);
   for (int end_node : hamiltonian_set) {
@@ -744,7 +744,7 @@ std::vector<int> HamiltonianPathSolver<CostType, CostFunction>::ComputePath(
       const CostType partial_cost = mem_.Value(subset, src);
       const CostType incumbent_cost =
           Saturated<CostType>::Add(partial_cost, Cost(src, dest));
-      // Take precision into account when CosttType is float or double.
+      // Take precision into account when CostType is float or double.
       // There is no visible penalty in the case CostType is an integer type.
       if (std::abs(Saturated<CostType>::Sub(current_cost, incumbent_cost)) <=
           std::numeric_limits<CostType>::epsilon() * current_cost) {
@@ -885,7 +885,7 @@ class PruningHamiltonianSolver {
   // guaranteed to be smaller than or equal to the cost of Hamiltonian path,
   // because Hamiltonian path is a spanning tree itself.
 
-  // TODO(user): Use generic map-based cache instead of lattice-based one.
+  // TODO(user): Use generic map-based cache instead of lattice-based one_.
   // TODO(user): Use SaturatedArithmetic for better precision.
 
  public:

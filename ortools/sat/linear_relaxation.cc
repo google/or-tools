@@ -613,8 +613,20 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
   } else {
     const std::vector<int64_t> demands(ct.routes().demands().begin(),
                                        ct.routes().demands().end());
+    int num_dimensions = ct.routes().dimensions_size();
+    std::vector<IntegerVariable> flat_node_dim_variables(
+        num_dimensions * num_nodes, kNoIntegerVariable);
+    for (int d = 0; d < num_dimensions; ++d) {
+      const auto& node_vars = ct.routes().dimensions(d).vars();
+      for (int n = 0; n < node_vars.size(); ++n) {
+        if (node_vars[n] == -1) continue;
+        flat_node_dim_variables[n * num_dimensions + d] =
+            mapping->Integer(node_vars[n]);
+      }
+    }
     relaxation->cut_generators.push_back(CreateCVRPCutGenerator(
-        num_nodes, tails, heads, literals, demands, ct.routes().capacity(), m));
+        num_nodes, tails, heads, literals, demands, flat_node_dim_variables,
+        ct.routes().capacity(), m));
   }
 }
 

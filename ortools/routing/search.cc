@@ -753,6 +753,7 @@ CheapestInsertionFilteredHeuristic::CheapestInsertionFilteredHeuristic(
     LocalSearchFilterManager* filter_manager)
     : RoutingFilteredHeuristic(model, std::move(stop_search), filter_manager),
       evaluator_(std::move(evaluator)),
+      evaluator_cache_(model->Nexts().size()),
       penalty_evaluator_(std::move(penalty_evaluator)) {}
 
 namespace {
@@ -912,9 +913,15 @@ int64_t CheapestInsertionFilteredHeuristic::GetInsertionCostForNodeAtPosition(
     int64_t node_to_insert, int64_t insert_after, int64_t insert_before,
     int vehicle) const {
   DCHECK(evaluator_ != nullptr);
+  EvaluatorCache& cache_entry = evaluator_cache_[insert_after];
+  if (cache_entry.node != insert_before || cache_entry.vehicle != vehicle) {
+    cache_entry = {.value = evaluator_(insert_after, insert_before, vehicle),
+                   .node = insert_before,
+                   .vehicle = vehicle};
+  }
   return CapSub(CapAdd(evaluator_(insert_after, node_to_insert, vehicle),
                        evaluator_(node_to_insert, insert_before, vehicle)),
-                evaluator_(insert_after, insert_before, vehicle));
+                cache_entry.value);
 }
 
 int64_t CheapestInsertionFilteredHeuristic::GetUnperformedValue(
@@ -2518,7 +2525,11 @@ LocalCheapestInsertionFilteredHeuristic::
       insertion_sorting_properties_(std::move(insertion_sorting_properties)),
       use_first_solution_hint_(use_first_solution_hint),
       bin_capacities_(bin_capacities),
-      optimize_on_insertion_(std::move(optimize_on_insertion)) {
+      optimize_on_insertion_(std::move(optimize_on_insertion)),
+      use_random_insertion_order_(
+          !insertion_sorting_properties_.empty() &&
+          insertion_sorting_properties_.front() ==
+              RoutingSearchParameters::SORTING_PROPERTY_RANDOM) {
   DCHECK(!insertion_sorting_properties_.empty());
 }
 
@@ -2813,10 +2824,30 @@ int64_t GetAvgPickupDeliveryPairUnaryDimensionUsage(
   return MathUtil::SafeRound<int64_t>(max_vehicle_capacity *
                                       dimension_usage_sum);
 }
-
 }  // namespace
 
 void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
+  if (use_random_insertion_order_) {
+    if (insertion_order_.empty()) {
+      const RoutingModel& model = *this->model();
+      insertion_order_.reserve(model.Size() +
+                               model.GetPickupAndDeliveryPairs().size());
+      for (int pair_index = 0;
+           pair_index < model.GetPickupAndDeliveryPairs().size();
+           ++pair_index) {
+        insertion_order_.push_back(
+            {.is_node_index = false, .index = pair_index});
+      }
+      for (int node = 0; node < model.Size(); ++node) {
+        if (model.IsStart(node) || model.IsEnd(node)) continue;
+        insertion_order_.push_back({.is_node_index = true, .index = node});
+      }
+    }
+    // We disregard all other properties and sort nodes/pairs in a random order.
+    absl::c_shuffle(insertion_order_, rnd_);
+    return;
+  }
+
   if (!insertion_order_.empty()) return;
 
   // We consider pairs and single nodes simultaneously, to make sure the most

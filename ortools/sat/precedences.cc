@@ -1137,6 +1137,15 @@ void BinaryRelationRepository::Add(Literal lit, LinearTerm a, LinearTerm b,
   relations_.push_back(std::move(r));
 }
 
+void BinaryRelationRepository::AddPartialRelation(Literal lit,
+                                                  IntegerVariable a,
+                                                  IntegerVariable b) {
+  DCHECK_NE(a, kNoIntegerVariable);
+  DCHECK_NE(b, kNoIntegerVariable);
+  DCHECK_NE(a, b);
+  Add(lit, LinearTerm(a, 1), LinearTerm(b, 1), 0, 0);
+}
+
 void BinaryRelationRepository::Build() {
   DCHECK(!is_built_);
   is_built_ = true;

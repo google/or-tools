@@ -25,6 +25,7 @@
 #include <memory>
 #include <optional>
 #include <queue>
+#include <random>
 #include <set>
 #include <string>
 #include <tuple>
@@ -392,6 +393,11 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
              std::tie(other.distance, other.vehicle);
     }
   };
+  struct EvaluatorCache {
+    int64_t value = 0;
+    int64_t node = -1;
+    int vehicle = -1;
+  };
   struct Seed {
     absl::InlinedVector<int64_t, 8> properties;
     int vehicle;
@@ -487,6 +493,8 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   }
 
   std::function<int64_t(int64_t, int64_t, int64_t)> evaluator_;
+  // TODO(user): Remove mutable if possible.
+  mutable std::vector<EvaluatorCache> evaluator_cache_;
   std::function<int64_t(int64_t)> penalty_evaluator_;
   std::vector<int> hint_next_values_;
   std::vector<int> hint_prev_values_;
@@ -1217,6 +1225,9 @@ class LocalCheapestInsertionFilteredHeuristic
                      std::vector<RoutingModel::VariableValuePair>*)>
       optimize_on_insertion_;
   bool synchronize_insertion_optimizer_ = true;
+
+  const bool use_random_insertion_order_;
+  std::mt19937 rnd_;
 };
 
 /// Filtered-base decision builder based on the addition heuristic, extending

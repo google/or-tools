@@ -164,10 +164,9 @@ cc_test(
     srcs = ["hungarian_test.cc"],
     deps = [
         ":hungarian",
-        "//ortools/base",
+        "//absl/base:core_headers",
         "//ortools/base:gmock_main",
         "//ortools/base:map_util",
-        "//ortools/base:types",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/types:span",

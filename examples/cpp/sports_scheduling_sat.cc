@@ -43,21 +43,22 @@
 // We also introduces a variable at_home[d][i] which is true if team i
 // plays any opponent at home on day d.
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/str_join.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/sorted_interval_list.h"
 
 // Problem main flags.
 ABSL_FLAG(int, num_teams, 10, "Number of teams in the problem.");

@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
@@ -42,12 +41,17 @@ namespace sat {
 class RouteRelationsHelper {
  public:
   // Creates a RouteRelationsHelper for the given RoutesConstraint and
-  // associated binary relations, if there is at most one variable per node and
-  // per dimension (otherwise, returns nullptr). If there are more than one
-  // relation per arc and dimension, a single relation is chosen arbitrarily.
+  // associated binary relations. If `flat_node_dim_variables` is empty,
+  // infers them from the binary relations, if possible (otherwise, returns
+  // nullptr). If `flat_node_dim_variables` is not empty, uses it to
+  // initialize the helper (this list should have num_dimensions times num_nodes
+  // elements, with the variable associated with node n and dimension d at index
+  // n * num_dimensions + d). If there are more than one relation per arc and
+  // dimension, a single relation is chosen arbitrarily.
   static std::unique_ptr<RouteRelationsHelper> Create(
       int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
       absl::Span<const Literal> literals,
+      absl::Span<const IntegerVariable> flat_node_dim_variables,
       const BinaryRelationRepository& binary_relation_repository);
 
   // Returns the number of "dimensions", such as time or vehicle load.
@@ -108,6 +112,56 @@ class RouteRelationsHelper {
   std::vector<Relation> flat_arc_dim_relations_;
 };
 
+// Computes and fills the node variables of all the routes constraints in
+// `output_model` that don't have them, if possible. The node variables are
+// inferred from the binary relations in `input_model`. Both models must have
+// the same variables (they can reference the same underlying object).
+// Returns the number of constraints that were filled, and the total number of
+// dimensions added to them.
+std::pair<int, int> MaybeFillMissingRoutesConstraintNodeVariables(
+    const CpModelProto& input_model, CpModelProto& output_model);
+
+// This is used to represent a "special bin packing" problem where we have
+// objects that can either be items with a given demand or bins with a given
+// capacity. The problem is to choose the minimum number of objects that will
+// be bins, such that the other objects (items) can be packed inside.
+struct ItemOrBin {
+  // Only one option will apply, this can either be an item with given demand
+  // or a bin with given capacity.
+  //
+  // Important: We support negative demands and negative capacity. We just
+  // need that the sum of demand <= capacity for the item in that bin.
+  IntegerValue demand = 0;
+  IntegerValue capacity = 0;
+
+  // We described the problem where each object can be an item or a bin, but
+  // in practice we might have restriction on what object can be which, and we
+  // use this field to indicate that.
+  //
+  // The numerical order is important as we use that in the greedy algorithm.
+  // See ComputeMinNumberOfBins() code.
+  enum {
+    MUST_BE_ITEM = 0,  // capacity will be set at zero.
+    ITEM_OR_BIN = 1,
+    MUST_BE_BIN = 2,  // demand will be set at zero.
+  } type = ITEM_OR_BIN;
+};
+
+// Given a "special bin packing" problem as decribed above, return a lower
+// bound on the number of bins that needs to be taken.
+//
+// This simply sorts the object according to a greedy criteria and minimize
+// the number of bins such that the "demands <= capacities" constraint is
+// satisfied.
+//
+// If the problem is infeasible, this will return object.size() + 1, which is
+// a trivially infeasible bound.
+//
+// TODO(user): Use fancier DP to derive tighter bound. Also, when there are
+// many dimensions, the choice of which item go to which bin is correlated,
+// can we exploit this?
+int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used);
+
 // Helper to compute the minimum flow going out of a subset of nodes, for a
 // given RoutesConstraint.
 class MinOutgoingFlowHelper {
@@ -155,48 +209,6 @@ class MinOutgoingFlowHelper {
 
  private:
   void InitializeGraph(absl::Span<const int> subset);
-
-  // This is used to represent a "special bin packing" problem where we have
-  // objects that can either be items with a given demand or bins with a given
-  // capacity. The problem is to choose the minimum number of objects that will
-  // be bins, such that the other objects (items) can be packed inside.
-  struct ItemOrBin {
-    // Only one option will apply, this can either be an item with given demand
-    // or a bin with given capacity.
-    //
-    // Important: We support negative demands and negative capacity. We just
-    // need that the sum of demand <= capacity for the item in that bin.
-    IntegerValue demand = 0;
-    IntegerValue capacity = 0;
-
-    // We described the problem where each object can be an item or a bin, but
-    // in practice we might have restriction on what object can be which, and we
-    // use this field to indicate that.
-    //
-    // The numerical order is important as we use that in the greedy algorithm.
-    // See ComputeMinNumberOfBins() code.
-    enum {
-      MUST_BE_ITEM = 0,  // capacity will be set at zero.
-      ITEM_OR_BIN = 1,
-      MUST_BE_BIN = 2,  // demand will be set at zero.
-    } type = ITEM_OR_BIN;
-  };
-
-  // Given a "special bin packing" problem as decribed above, return a lower
-  // bound on the number of bins that needs to be taken.
-  //
-  // This simply sorts the object according to a greedy criteria and minimize
-  // the number of bins such that the "demands <= capacities" constraint is
-  // satisfied.
-  //
-  // TODO(user): Use fancier DP to derive tighter bound. Also, when there are
-  // many dimensions, the choice of which item go to which bin is correlated,
-  // can we exploit this?
-  //
-  // TODO(user): As this get more used and fancier, it is easy to write a CP-SAT
-  // model to solve a "special bin packing" problem and test on random problems
-  // that this is indeed a correct bound.
-  int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used);
 
   // Given a subset S to serve in a route constraint, returns a special bin
   // packing problem (defined above) where the minimum number of bins will
@@ -280,10 +292,20 @@ class MinOutgoingFlowHelper {
 
   std::vector<bool> in_subset_;
   std::vector<int> index_in_subset_;
+
   // For each node n, the indices (in tails_, heads_) of the m->n and n->m arcs
   // inside the subset (self arcs excepted).
   std::vector<std::vector<int>> incoming_arc_indices_;
   std::vector<std::vector<int>> outgoing_arc_indices_;
+
+  // This can only be true for node in the current subset. If a node 'n' has no
+  // incoming arcs from outside the subset, the part of a route serving node 'n'
+  // in a subset cannot start at that node. And if it has no outoing arc leaving
+  // the subset, it cannot end at that node. This can be used to derive tighter
+  // bounds.
+  std::vector<bool> has_incoming_arcs_from_outside_;
+  std::vector<bool> has_outgoing_arcs_to_outside_;
+
   // For each node n, whether it can appear at the current and next position in
   // a feasible path.
   std::vector<bool> reachable_;
@@ -402,11 +424,14 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 // components, computes the demand needed to serves it, and depending on whether
 // it contains the depot (node zero) or not, compute the minimum number of
 // vehicle that needs to cross the component border.
-CutGenerator CreateCVRPCutGenerator(int num_nodes, absl::Span<const int> tails,
-                                    absl::Span<const int> heads,
-                                    absl::Span<const Literal> literals,
-                                    absl::Span<const int64_t> demands,
-                                    int64_t capacity, Model* model);
+// `flat_node_dim_variables` must have num_dimensions (possibly 0) times
+// num_nodes elements, with the variable associated with node n and dimension d
+// at index n * num_dimensions + d.
+CutGenerator CreateCVRPCutGenerator(
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
+    absl::Span<const IntegerVariable> flat_node_dim_variables, int64_t capacity,
+    Model* model);
 
 // Try to find a subset where the current LP capacity of the outgoing or
 // incoming arc is not enough to satisfy the demands.
