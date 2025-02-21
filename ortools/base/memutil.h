@@ -17,10 +17,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "absl/strings/internal/memutil.h"
-
 namespace strings {
-char* memdup(const char* s, size_t slen) {
+inline char* memdup(const char* s, size_t slen) {
   void* copy;
   if ((copy = malloc(slen)) == nullptr) return nullptr;
   memcpy(copy, s, slen);

@@ -638,7 +638,7 @@ class LocalSearchAssignmentIterator {
 
   // For each set of explored decisions, we store it in this table so that we
   // don't explore decisions (a, b) and later (b, a) for instance. The decisions
-  // are converted to int32_t, sorted and padded with 0 before beeing inserted
+  // are converted to int32_t, sorted and padded with 0 before being inserted
   // here.
   //
   // TODO(user): We may still miss some equivalent states because it is possible

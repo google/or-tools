@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_BASE_MACROS_H_
 #define OR_TOOLS_BASE_MACROS_H_
 
-#include <cstdlib>  // for size_t.
+#include "ortools/base/base_export.h"  // IWYU pragma: export
 
-#include "ortools/base/base_export.h"  // for OR_DLL
+#define COMPILE_ASSERT(x, msg)
 
 #ifdef NDEBUG
 const bool DEBUG_MODE = false;

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_TYPEID_H_
 #define OR_TOOLS_BASE_TYPEID_H_
 
+#include <cstddef>
 namespace gtl {
 template <typename T>
 inline size_t FastTypeId() {

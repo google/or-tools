@@ -32,7 +32,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/flow_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -42,6 +41,8 @@ namespace {
 
 using ::testing::ContainerEq;
 using ::testing::WhenSorted;
+
+using FlowQuantity = int64_t;
 
 template <typename Graph>
 typename GenericMaxFlow<Graph>::Status MaxFlowTester(

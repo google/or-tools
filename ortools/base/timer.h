@@ -16,7 +16,6 @@
 
 #include <cstdint>
 
-#include "absl/log/check.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 

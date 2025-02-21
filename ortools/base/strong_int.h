@@ -204,8 +204,8 @@ class StrongInt {
   };
 
   template <typename H>
-  friend H AbslHashValue(H h, const StrongInt &i) {
-    return H::combine(std::move(h), i.value_);
+  friend H AbslHashValue(H h, const StrongInt& i) {
+    return H::combine(std::move(h), i.value());
   }
 
  public:

@@ -19,17 +19,14 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdint>
 #include <deque>
 #include <forward_list>
 #include <functional>
 #include <iterator>
 #include <list>
 #include <map>
-#include <memory>
 #include <string>
 #include <type_traits>
-#include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/meta/type_traits.h"

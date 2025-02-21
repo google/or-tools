@@ -712,6 +712,7 @@ static const flex_int32_t yy_rule_can_match_eol[32] = {
 #include <cstdint>
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "ortools/flatzinc/parser.tab.hh"
 #if defined(_MSC_VER)

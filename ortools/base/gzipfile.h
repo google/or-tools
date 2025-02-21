@@ -28,7 +28,7 @@ enum class AppendedStreams {
   kIgnoreAppendedData,
 };
 
-// Return a readonly file that contains a uncompressed version of
+// Return a read-only file that contains a uncompressed version of
 // another File.
 //
 // If "ownership == TAKE_OWNERSHIP", the file takes ownership of

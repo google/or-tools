@@ -221,6 +221,11 @@ OR_DLL ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 
 namespace operations_research {
 
+// DEPRECATED: Global types for flow algorithms. Thes have been retired in favor
+// of directly parameterizing those algorithms.
+// typedef int64_t FlowQuantity;
+typedef int64_t CostValue;
+
 // This class does not take ownership of its underlying graph.
 template <typename GraphType, typename CostValue = int64_t>
 class LinearSumAssignment {

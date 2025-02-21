@@ -68,7 +68,7 @@ TEST(ConstantDivisorTemplateTest, Simple) {
 }
 
 TEST(ConstantDivisorUint64Test, Bugs) {
-  // If forumula (27) from p231 is ever implemented, these divisors will break
+  // If formula (27) from p231 is ever implemented, these divisors will break
   // if a >= is accidentally used instead of >.
   EXPECT_EQ(uint64_t{828560257293048160},
             ConstantDivisor<uint64_t>(21).div(uint64_t{17399765403154011380u}));
