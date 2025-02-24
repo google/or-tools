@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/timer.h"
 
 namespace operations_research {
