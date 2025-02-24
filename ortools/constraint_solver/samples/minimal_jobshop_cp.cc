@@ -198,8 +198,8 @@ void SolveJobShopExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  InitGoogle(argv[0], &argc, &argv, true);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::SolveJobShopExample();
   return EXIT_SUCCESS;
 }

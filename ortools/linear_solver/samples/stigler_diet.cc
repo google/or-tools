@@ -321,8 +321,8 @@ void StiglerDiet() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  InitGoogle(argv[0], &argc, &argv, true);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::StiglerDiet();
   return EXIT_SUCCESS;
 }

@@ -205,8 +205,8 @@ void SolveNursesExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  InitGoogle(argv[0], &argc, &argv, true);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::SolveNursesExample();
   return EXIT_SUCCESS;
 }
