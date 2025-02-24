@@ -14,7 +14,7 @@
 #include "ortools/set_cover/assignment.h"
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/set_cover/capacity_invariant.h"
 #include "ortools/set_cover/set_cover_invariant.h"

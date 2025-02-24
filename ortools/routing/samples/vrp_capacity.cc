@@ -18,8 +18,8 @@
 #include <sstream>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "google/protobuf/duration.pb.h"
-#include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"

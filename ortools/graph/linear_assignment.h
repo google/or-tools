@@ -221,11 +221,6 @@ OR_DLL ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 
 namespace operations_research {
 
-// DEPRECATED: Global types for flow algorithms. Thes have been retired in favor
-// of directly parameterizing those algorithms.
-// typedef int64_t FlowQuantity;
-typedef int64_t CostValue;
-
 // This class does not take ownership of its underlying graph.
 template <typename GraphType, typename CostValue = int64_t>
 class LinearSumAssignment {
@@ -364,29 +359,29 @@ class LinearSumAssignment {
 
  private:
   struct Stats {
-    Stats() : pushes_(0), double_pushes_(0), relabelings_(0), refinements_(0) {}
+    Stats() : pushes(0), double_pushes(0), relabelings(0), refinements(0) {}
     void Clear() {
-      pushes_ = 0;
-      double_pushes_ = 0;
-      relabelings_ = 0;
-      refinements_ = 0;
+      pushes = 0;
+      double_pushes = 0;
+      relabelings = 0;
+      refinements = 0;
     }
     void Add(const Stats& that) {
-      pushes_ += that.pushes_;
-      double_pushes_ += that.double_pushes_;
-      relabelings_ += that.relabelings_;
-      refinements_ += that.refinements_;
+      pushes += that.pushes;
+      double_pushes += that.double_pushes;
+      relabelings += that.relabelings;
+      refinements += that.refinements;
     }
     std::string StatsString() const {
       return absl::StrFormat(
           "%d refinements; %d relabelings; "
           "%d double pushes; %d pushes",
-          refinements_, relabelings_, double_pushes_, pushes_);
+          refinements, relabelings, double_pushes, pushes);
     }
-    int64_t pushes_;
-    int64_t double_pushes_;
-    int64_t relabelings_;
-    int64_t refinements_;
+    int64_t pushes;
+    int64_t double_pushes;
+    int64_t relabelings;
+    int64_t refinements;
   };
 
 #ifndef SWIG
@@ -1168,17 +1163,17 @@ bool LinearSumAssignment<GraphType, CostValue>::DoublePush(NodeIndex source) {
     matched_arc_[to_unmatch] = GraphType::kNilArc;
     active_nodes_->Add(to_unmatch);
     // This counts as a double push.
-    iteration_stats_.double_pushes_ += 1;
+    iteration_stats_.double_pushes += 1;
   } else {
     // We are about to increase the cardinality of the matching.
     total_excess_ -= 1;
     // This counts as a single push.
-    iteration_stats_.pushes_ += 1;
+    iteration_stats_.pushes += 1;
   }
   matched_arc_[source] = best_arc;
   matched_node_[new_mate] = source;
   // Finally, relabel new_mate.
-  iteration_stats_.relabelings_ += 1;
+  iteration_stats_.relabelings += 1;
   const CostValue new_price = price_[new_mate] - gap - epsilon_;
   price_[new_mate] = new_price;
   return new_price >= price_lower_bound_;
@@ -1200,14 +1195,14 @@ bool LinearSumAssignment<GraphType, CostValue>::Refine() {
       // we know we're returning a wrong answer so we we leave a
       // message in the logs to increase our hope of chasing down the
       // problem.
-      LOG_IF(DFATAL, total_stats_.refinements_ > 0)
+      LOG_IF(DFATAL, total_stats_.refinements > 0)
           << "Infeasibility detection triggered after first iteration found "
           << "a feasible assignment!";
       return false;
     }
   }
   DCHECK(active_nodes_->Empty());
-  iteration_stats_.refinements_ += 1;
+  iteration_stats_.refinements += 1;
   return true;
 }
 

@@ -14,6 +14,6 @@
 #ifndef OR_TOOLS_BASE_HELPERS_H_
 #define OR_TOOLS_BASE_HELPERS_H_
 
-#include "ortools/base/file.h"
+#include "ortools/base/file.h"  // IWYU pragma: export
 
 #endif  // OR_TOOLS_BASE_HELPERS_H_

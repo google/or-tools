@@ -32,6 +32,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
@@ -985,6 +986,7 @@ class RouteRelationsBuilder {
         if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
           continue;
         }
+        bool is_consistent = false;
         for (int dimension = 0; dimension < num_dimensions_; ++dimension) {
           IntegerVariable& tail_var = node_variable(tail, dimension);
           IntegerVariable& head_var = node_variable(head, dimension);
@@ -994,11 +996,12 @@ class RouteRelationsBuilder {
           }
           if (!((tail_var == r.a.var && head_var == r.b.var) ||
                 (tail_var == r.b.var && head_var == r.a.var))) {
-            ++num_inconsistent_relations;
             continue;
           }
           SetArcRelation(i, dimension, tail_var, r);
+          is_consistent = true;
         }
+        if (!is_consistent) ++num_inconsistent_relations;
       }
       // If some relations are missing for this arc, check if we can use
       // enforced relations to fill them.

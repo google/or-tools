@@ -16,11 +16,11 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/parse_text_proto.h"
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_heuristics.h"

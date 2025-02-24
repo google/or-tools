@@ -27,9 +27,9 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/2d_try_edge_propagator.h"

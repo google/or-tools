@@ -478,6 +478,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     parameters_.set_search_branching(sat::SatParameters::PORTFOLIO_SEARCH);
     parameters_.set_linearization_level(2);
     parameters_.set_cut_level(0);
+    parameters_.set_add_lp_constraints_lazily(false);
     parameters_.set_use_absl_random(false);
   }
   ~RoutingCPSatWrapper() override {}

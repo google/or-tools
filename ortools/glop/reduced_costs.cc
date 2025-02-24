@@ -18,8 +18,8 @@
 #include <random>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/base/logging.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/primal_edge_norms.h"

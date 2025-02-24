@@ -17,7 +17,7 @@
 #include <cmath>
 #include <optional>
 
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 

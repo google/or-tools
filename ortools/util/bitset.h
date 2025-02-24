@@ -26,9 +26,7 @@
 #include <tuple>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 
@@ -912,9 +910,9 @@ class SparseBitset {
   // This is useful to iterate on the "set" positions while clearing them for
   // instance. This way, after the loop, a client can call this for efficiency.
   void NotifyAllClear() {
-    if (DEBUG_MODE) {
-      for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
-    }
+#if !defined(NDEBUG)
+    for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
+#endif
     to_clear_.clear();
   }
 

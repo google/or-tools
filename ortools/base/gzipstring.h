@@ -16,8 +16,8 @@
 
 #include <string>
 
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "zconf.h"
 #include "zlib.h"
 

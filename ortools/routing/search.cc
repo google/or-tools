@@ -43,6 +43,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
@@ -872,40 +873,6 @@ void CheapestInsertionFilteredHeuristic::InsertBetween(int64_t node,
     SetValue(SecondaryVarIndex(predecessor), vehicle);
     SetValue(SecondaryVarIndex(node), vehicle);
     SetValue(SecondaryVarIndex(successor), vehicle);
-  }
-}
-
-void CheapestInsertionFilteredHeuristic::AppendInsertionPositionsAfter(
-    int64_t node_to_insert, int64_t start, int64_t next_after_start,
-    int vehicle, bool ignore_cost,
-    std::vector<NodeInsertion>* node_insertions) {
-  DCHECK(node_insertions != nullptr);
-  int64_t insert_after = start;
-  if (!model()->VehicleVar(node_to_insert)->Contains(vehicle)) return;
-  while (!model()->IsEnd(insert_after)) {
-    const int64_t insert_before =
-        (insert_after == start) ? next_after_start : Value(insert_after);
-    const int hint_weight = IsHint(insert_after, node_to_insert) +
-                            IsHint(node_to_insert, insert_before) -
-                            IsHint(insert_after, insert_before);
-    if (evaluator_ == nullptr) {
-      InsertBetween(node_to_insert, insert_after, insert_before, vehicle);
-      std::optional<int64_t> insertion_cost =
-          Evaluate(/*commit=*/false, /*ignore_upper_bound=*/hint_weight > 0,
-                   /*update_upper_bound=*/hint_weight >= 0);
-      if (insertion_cost.has_value()) {
-        node_insertions->push_back(
-            {insert_after, vehicle, -hint_weight, *insertion_cost});
-      }
-    } else {
-      node_insertions->push_back(
-          {insert_after, vehicle, -hint_weight,
-           ignore_cost
-               ? 0
-               : GetInsertionCostForNodeAtPosition(node_to_insert, insert_after,
-                                                   insert_before, vehicle)});
-    }
-    insert_after = insert_before;
   }
 }
 
@@ -1822,38 +1789,29 @@ void GlobalCheapestInsertionFilteredHeuristic::
         std::vector<GlobalCheapestInsertionFilteredHeuristic::PairEntries>*
             delivery_to_entries) {
   if (!gci_params_.use_neighbors_ratio_for_initialization) {
-    struct PairInsertion {
-      int64_t insert_pickup_after;
-      int64_t insert_delivery_after;
-      int vehicle;
-    };
-    std::vector<PairInsertion> pair_insertions;
-    std::vector<NodeInsertion> pickup_insertions;
-    std::vector<NodeInsertion> delivery_insertions;
-    for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
-      if (!IsCheapestClassRepresentative(vehicle)) continue;
-      const int64_t start = model()->Start(vehicle);
-      pickup_insertions.clear();
-      AppendInsertionPositionsAfter(pickup, start, Value(start), vehicle,
-                                    /*ignore_cost=*/true, &pickup_insertions);
-      for (const NodeInsertion& pickup_insertion : pickup_insertions) {
-        DCHECK(!model()->IsEnd(pickup_insertion.insert_after));
-        delivery_insertions.clear();
-        AppendInsertionPositionsAfter(
-            delivery, pickup, Value(pickup_insertion.insert_after), vehicle,
-            /*ignore_cost=*/true, &delivery_insertions);
-        for (const NodeInsertion& delivery_insertion : delivery_insertions) {
-          pair_insertions.push_back({pickup_insertion.insert_after,
-                                     delivery_insertion.insert_after, vehicle});
-        }
+    std::unique_ptr<IntVarIterator> vehicle_it(
+        model()->VehicleVar(pickup)->MakeDomainIterator(false));
+    for (const int vehicle : InitAndGetValues(vehicle_it.get())) {
+      if (vehicle < 0 || !model()->VehicleVar(delivery)->Contains(vehicle)) {
+        continue;
       }
-    }
-    for (const auto& [insert_pickup_after, insert_delivery_after, vehicle] :
-         pair_insertions) {
-      DCHECK_NE(insert_pickup_after, insert_delivery_after);
-      AddPairEntry(pickup, insert_pickup_after, delivery, insert_delivery_after,
-                   vehicle, priority_queue, pickup_to_entries,
-                   delivery_to_entries);
+      if (!IsCheapestClassRepresentative(vehicle)) continue;
+
+      int64_t pickup_insert_after = model()->Start(vehicle);
+      while (!model()->IsEnd(pickup_insert_after)) {
+        int64_t delivery_insert_after = pickup;
+        while (!model()->IsEnd(delivery_insert_after)) {
+          // TODO(user): Add a check to filter feasibility of the insertion
+          // when the evaluator_ is null.
+          AddPairEntry(pickup, pickup_insert_after, delivery,
+                       delivery_insert_after, vehicle, priority_queue,
+                       pickup_to_entries, delivery_to_entries);
+          delivery_insert_after = (delivery_insert_after == pickup)
+                                      ? Value(pickup_insert_after)
+                                      : Value(delivery_insert_after);
+        }
+        pickup_insert_after = Value(pickup_insert_after);
+      }
     }
     return;
   }
@@ -1879,6 +1837,10 @@ void GlobalCheapestInsertionFilteredHeuristic::
 
       if (!IsCheapestClassRepresentative(vehicle)) continue;
 
+      if (!model()->VehicleVar(pickup)->Contains(vehicle) ||
+          !model()->VehicleVar(delivery)->Contains(vehicle)) {
+        continue;
+      }
       int64_t delivery_insert_after = pickup;
       while (!model()->IsEnd(delivery_insert_after)) {
         const std::pair<int64_t, int64_t> insertion_position = {
@@ -1907,11 +1869,13 @@ void GlobalCheapestInsertionFilteredHeuristic::
           model()->GetCostClassIndexOfVehicle(vehicle).value() != cost_class) {
         continue;
       }
-
-      if (VehicleIsEmpty(vehicle)) {
-        // Vehicle is empty.
-        DCHECK_EQ(delivery_insert_after, model()->Start(vehicle));
+      if (!model()->VehicleVar(pickup)->Contains(vehicle) ||
+          !model()->VehicleVar(delivery)->Contains(vehicle)) {
+        continue;
       }
+
+      DCHECK(!VehicleIsEmpty(vehicle) ||
+             delivery_insert_after == model()->Start(vehicle));
 
       int64_t pickup_insert_after = model()->Start(vehicle);
       while (pickup_insert_after != delivery_insert_after) {
@@ -2254,7 +2218,6 @@ void GlobalCheapestInsertionFilteredHeuristic::
 
   if (!gci_params_.use_neighbors_ratio_for_initialization) {
     auto vehicles_it = vehicles.begin();
-    std::vector<NodeInsertion> insertions;
     // TODO(user): Ideally we'd want to iterate on vehicle var values:
     // std::unique_ptr<IntVarIterator>
     //     it(model()->VehicleVar(node)->MakeDomainIterator(false));
@@ -2262,16 +2225,15 @@ void GlobalCheapestInsertionFilteredHeuristic::
     // Requires taking vehicles into account.
     for (int v = 0; v < num_vehicles; v++) {
       const int vehicle = vehicles.empty() ? v : *vehicles_it++;
-
-      const int64_t start = model()->Start(vehicle);
+      if (!model()->VehicleVar(node)->Contains(vehicle)) continue;
       if (all_vehicles && !IsCheapestClassRepresentative(vehicle)) continue;
-      insertions.clear();
-      AppendInsertionPositionsAfter(node, start, Value(start), vehicle,
-                                    /*ignore_cost=*/true, &insertions);
-      for (const NodeInsertion& insertion : insertions) {
-        DCHECK_EQ(insertion.vehicle, vehicle);
-        AddNodeEntry(node, insertion.insert_after, vehicle, all_vehicles,
-                     queue);
+
+      int64_t insert_after = model()->Start(vehicle);
+      while (insert_after != model()->End(vehicle)) {
+        // TODO(user): Add a check to filter feasibility of the insertion
+        // when the evaluator_ is null.
+        AddNodeEntry(node, insert_after, vehicle, all_vehicles, queue);
+        insert_after = Value(insert_after);
       }
     }
     return;
@@ -2279,11 +2241,6 @@ void GlobalCheapestInsertionFilteredHeuristic::
 
   // We're only considering the closest incoming neighbors as insertion
   // positions for the node.
-  const auto insert_on_vehicle_for_cost_class = [this, &vehicles, all_vehicles](
-                                                    int v, int cost_class) {
-    return (model()->GetCostClassIndexOfVehicle(v).value() == cost_class) &&
-           (all_vehicles || vehicles.contains(v));
-  };
   for (int cost_class = 0; cost_class < model()->GetCostClassesCount();
        cost_class++) {
     for (const int64_t insert_after :
@@ -2294,10 +2251,14 @@ void GlobalCheapestInsertionFilteredHeuristic::
       }
       const int vehicle = node_index_to_vehicle_[insert_after];
       if (vehicle == -1 ||
-          !insert_on_vehicle_for_cost_class(vehicle, cost_class)) {
+          model()->GetCostClassIndexOfVehicle(vehicle).value() != cost_class) {
         continue;
       }
-      if (all_vehicles && !IsCheapestClassRepresentative(vehicle)) continue;
+      if (all_vehicles) {
+        if (!IsCheapestClassRepresentative(vehicle)) continue;
+      } else if (!vehicles.contains(vehicle)) {
+        continue;
+      }
       AddNodeEntry(node, insert_after, vehicle, all_vehicles, queue);
     }
   }
@@ -3383,6 +3344,37 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   return MakeUnassignedNodesUnperformed() && Evaluate(true).has_value();
 }
 
+void LocalCheapestInsertionFilteredHeuristic::AppendInsertionPositionsAfter(
+    int64_t node_to_insert, int64_t start, int64_t next_after_start,
+    int vehicle, std::vector<NodeInsertion>* node_insertions) {
+  DCHECK(node_insertions != nullptr);
+  int64_t insert_after = start;
+  if (!model()->VehicleVar(node_to_insert)->Contains(vehicle)) return;
+  while (!model()->IsEnd(insert_after)) {
+    const int64_t insert_before =
+        (insert_after == start) ? next_after_start : Value(insert_after);
+    const int hint_weight = IsHint(insert_after, node_to_insert) +
+                            IsHint(node_to_insert, insert_before) -
+                            IsHint(insert_after, insert_before);
+    if (evaluator_ == nullptr) {
+      InsertBetween(node_to_insert, insert_after, insert_before, vehicle);
+      std::optional<int64_t> insertion_cost =
+          Evaluate(/*commit=*/false, /*ignore_upper_bound=*/hint_weight > 0,
+                   /*update_upper_bound=*/hint_weight >= 0);
+      if (insertion_cost.has_value()) {
+        node_insertions->push_back(
+            {insert_after, vehicle, -hint_weight, *insertion_cost});
+      }
+    } else {
+      node_insertions->push_back(
+          {insert_after, vehicle, -hint_weight,
+           GetInsertionCostForNodeAtPosition(node_to_insert, insert_after,
+                                             insert_before, vehicle)});
+    }
+    insert_after = insert_before;
+  }
+}
+
 std::vector<LocalCheapestInsertionFilteredHeuristic::NodeInsertion>
 LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPositions(
     int64_t node) {
@@ -3402,7 +3394,7 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPositions(
     const int64_t start = model()->Start(vehicle);
     const size_t old_num_insertions = sorted_insertions.size();
     AppendInsertionPositionsAfter(node, start, Value(start), vehicle,
-                                  /*ignore_cost=*/false, &sorted_insertions);
+                                  &sorted_insertions);
     if (MustUpdateBinCapacities() && evaluator_) {
       // Compute cost incurred from soft capacities.
       const int64_t old_cost = bin_capacities_->TotalCost();
@@ -3430,7 +3422,7 @@ LocalCheapestInsertionFilteredHeuristic::
   if (node >= size) return {};
   std::vector<NodeInsertion> sorted_insertions;
   AppendInsertionPositionsAfter(node, start, next_after_start, vehicle,
-                                /*ignore_cost=*/false, &sorted_insertions);
+                                &sorted_insertions);
   absl::c_sort(sorted_insertions);
   return sorted_insertions;
 }

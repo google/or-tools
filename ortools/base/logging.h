@@ -14,14 +14,14 @@
 #ifndef OR_TOOLS_BASE_LOGGING_H_
 #define OR_TOOLS_BASE_LOGGING_H_
 
-#include "absl/base/log_severity.h"  // IWYU pragma: export
-#include "absl/base/macros.h"        // IWYU pragma: export
-#include "absl/flags/declare.h"      // IWYU pragma: export
-#include "absl/flags/flag.h"         // IWYU pragma: export
-#include "absl/log/check.h"          // IWYU pragma: export
-#include "absl/log/die_if_null.h"    // IWYU pragma: export
-#include "absl/log/globals.h"        // IWYU pragma: export
-#include "absl/log/log.h"
+#include "absl/base/log_severity.h"    // IWYU pragma: export
+#include "absl/base/macros.h"          // IWYU pragma: export
+#include "absl/flags/declare.h"        // IWYU pragma: export
+#include "absl/flags/flag.h"           // IWYU pragma: export
+#include "absl/log/check.h"            // IWYU pragma: export
+#include "absl/log/die_if_null.h"      // IWYU pragma: export
+#include "absl/log/globals.h"          // IWYU pragma: export
+#include "absl/log/log.h"              // IWYU pragma: export
 #include "absl/log/vlog_is_on.h"       // IWYU pragma: export
 #include "absl/memory/memory.h"        // IWYU pragma: export
 #include "absl/status/status.h"        // IWYU pragma: export

@@ -15,7 +15,7 @@
 
 #include <string>
 
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 
 namespace operations_research {
 namespace glop {

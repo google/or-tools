@@ -15,7 +15,7 @@
 // [START import]
 #include <cstdlib>
 
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"

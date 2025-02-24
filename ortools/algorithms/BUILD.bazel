@@ -237,9 +237,9 @@ cc_test(
     srcs = ["knapsack_solver_test.cc"],
     deps = [
         ":knapsack_solver_lib",  # buildcleaner: keep
-        "//ortools/base",
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/base:core_headers",
     ],
 )
 
@@ -284,8 +284,10 @@ cc_test(
         ":dynamic_partition",
         "//ortools/base:gmock_main",
         "//ortools/base:stl_util",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_BASE_GMOCK_H_
 #define OR_TOOLS_BASE_GMOCK_H_
 
-#include "gmock/gmock.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/message_matchers.h"
 #include "ortools/base/status_matchers.h"
 

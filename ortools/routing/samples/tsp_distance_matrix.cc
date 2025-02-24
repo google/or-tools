@@ -18,7 +18,7 @@
 #include <sstream>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"

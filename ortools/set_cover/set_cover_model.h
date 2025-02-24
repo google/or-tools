@@ -111,6 +111,8 @@ class SetCoverModel {
         row_view_is_valid_(false),
         elements_in_subsets_are_sorted_(false),
         subset_costs_(),
+        is_unicost_(true),
+        is_unicost_valid_(false),
         columns_(),
         rows_(),
         all_subsets_() {}
@@ -160,6 +162,23 @@ class SetCoverModel {
 
   // Vector of costs for each subset.
   const SubsetCostVector& subset_costs() const { return subset_costs_; }
+
+  // Returns true if all subset costs are equal to 1.0. This is a fast check
+  // that is only valid if the subset costs are not modified.
+  bool is_unicost() {
+    if (is_unicost_valid_) {
+      return is_unicost_;
+    }
+    is_unicost_ = true;
+    for (const Cost cost : subset_costs_) {
+      if (cost != 1.0) {
+        is_unicost_ = false;
+        break;
+      }
+    }
+    is_unicost_valid_ = true;
+    return is_unicost_;
+  }
 
   // Column view of the set covering problem.
   const SparseColumnView& columns() const { return columns_; }
@@ -244,10 +263,12 @@ class SetCoverModel {
     double median;
     double mean;
     double stddev;
+    double iqr;  // Interquartile range.
 
     std::string DebugString() const {
       return absl::StrCat("min = ", min, ", max = ", max, ", mean = ", mean,
-                          ", median = ", median, ", stddev = ", stddev, ", ");
+                          ", median = ", median, ", stddev = ", stddev, ", ",
+                          "iqr = ", iqr);
     }
   };
 
@@ -298,6 +319,12 @@ class SetCoverModel {
   // Costs for each subset.
   SubsetCostVector subset_costs_;
 
+  // True when all subset costs are equal to 1.0.
+  bool is_unicost_;
+
+  // True when is_unicost_ is up-to-date.
+  bool is_unicost_valid_;
+
   // Vector of columns. Each column corresponds to a subset and contains the
   // elements of the given subset.
   // This takes NNZ (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
@@ -340,7 +367,7 @@ class IntersectingSubsetsIterator {
         seed_subset_(seed_subset),
         model_(model),
         subset_seen_(model_.columns().size(), false) {
-    CHECK(model_.row_view_is_valid());
+    DCHECK(model_.row_view_is_valid());
     subset_seen_[seed_subset] = true;  // Avoid iterating on `seed_subset`.
     ++(*this);                         // Move to the first intersecting subset.
   }
@@ -359,11 +386,12 @@ class IntersectingSubsetsIterator {
     DCHECK(!at_end());
     const SparseRowView& rows = model_.rows();
     const SparseColumn& column = model_.columns()[seed_subset_];
-    for (; element_entry_ < ColumnEntryIndex(column.size()); ++element_entry_) {
+    const ColumnEntryIndex column_size = ColumnEntryIndex(column.size());
+    for (; element_entry_ < column_size; ++element_entry_) {
       const ElementIndex current_element = column[element_entry_];
       const SparseRow& current_row = rows[current_element];
-      for (; subset_entry_ < RowEntryIndex(current_row.size());
-           ++subset_entry_) {
+      const RowEntryIndex current_row_size = RowEntryIndex(current_row.size());
+      for (; subset_entry_ < current_row_size; ++subset_entry_) {
         intersecting_subset_ = current_row[subset_entry_];
         if (!subset_seen_[intersecting_subset_]) {
           subset_seen_[intersecting_subset_] = true;

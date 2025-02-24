@@ -24,9 +24,9 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "ortools/base/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {

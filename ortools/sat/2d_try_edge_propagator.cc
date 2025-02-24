@@ -21,7 +21,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"

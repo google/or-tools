@@ -19,9 +19,9 @@
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"

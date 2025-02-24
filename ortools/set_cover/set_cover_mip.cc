@@ -17,8 +17,8 @@
 #include <limits>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"

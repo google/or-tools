@@ -34,6 +34,7 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 // Code in the implementation file.
 %code {
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "ortools/flatzinc/parser_util.cc"

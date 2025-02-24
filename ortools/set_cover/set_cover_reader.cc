@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -32,7 +33,6 @@
 #include "ortools/base/file.h"
 #include "ortools/base/filesystem.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_model.h"

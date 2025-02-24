@@ -34,11 +34,12 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
@@ -1106,6 +1107,78 @@ bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
 
 }  // namespace
 
+bool FillDimensionValuesFromRoutingDimension(
+    int path, int64_t capacity, int64_t span_upper_bound,
+    absl::Span<const DimensionValues::Interval> cumul_of_node,
+    absl::Span<const DimensionValues::Interval> slack_of_node,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> evaluator,
+    DimensionValues& dimension_values) {
+  using Interval = DimensionValues::Interval;
+  // Copy cumul min/max data from cumul variables.
+  const int num_nodes = dimension_values.NumNodes(path);
+  absl::Span<const int> nodes = dimension_values.Nodes(path);
+  absl::Span<Interval> cumuls = dimension_values.MutableCumuls(path);
+  for (int r = 0; r < num_nodes; ++r) {
+    const int node = nodes[r];
+    Interval cumul = cumul_of_node[node];
+    if (!cumul.DecreaseMax(capacity)) return false;
+    cumuls[r] = cumul;
+  }
+  // Extract travel data.
+  // TODO(user): refine this logic to avoid more calls, using PathState
+  // chains to find chains in the middle of the path, and vehicle travel class
+  // to reuse chains from different vehicles.
+  absl::Span<int64_t> travels = dimension_values.MutableTravels(path);
+  {
+    absl::Span<const int> cnodes = dimension_values.CommittedNodes(path);
+    absl::Span<const int64_t> ctravels =
+        dimension_values.CommittedTravels(path);
+    // Reuse committed travels to avoid calling evaluator.
+    // Split [0, num_nodes) into [0, i), [i, j), [j, num_nodes),
+    // so that:
+    // - nodes[r] == cnodes[r] for r in [0, i)
+    // - nodes[r] == cnodes[r + delta] for r in [j, num_nodes)
+    //   with delta = num_cnodes - num_nodes.
+    const int i_limit = std::min(cnodes.size(), nodes.size());
+    DCHECK(cnodes.empty() || cnodes[0] == nodes[0]);
+    int i = 1;
+    while (i < i_limit && cnodes[i] == nodes[i]) {
+      travels[i - 1] = ctravels[i - 1];
+      ++i;
+    }
+    DCHECK(cnodes.empty() || cnodes.back() == nodes.back());
+    int j = num_nodes - 2;
+    const int delta = cnodes.size() - num_nodes;
+    const int j_limit = i + std::max(0, -delta);
+    while (j_limit <= j && nodes[j] == cnodes[j + delta]) {
+      travels[j] = ctravels[j + delta];
+      --j;
+    }
+    ++j;
+    for (int r = i; r <= j; ++r) {
+      const int64_t travel = evaluator(nodes[r - 1], nodes[r]);
+      travels[r - 1] = travel;
+    }
+  }
+  // Extract transit data, fill partial travel sums.
+  absl::Span<Interval> transits = dimension_values.MutableTransits(path);
+  absl::Span<int64_t> travel_sums = dimension_values.MutableTravelSums(path);
+  int64_t total_travel = 0;
+  travel_sums[0] = 0;
+  for (int r = 1; r < num_nodes; ++r) {
+    const int64_t travel = travels[r - 1];
+    CapAddTo(travel, &total_travel);
+    travel_sums[r] = total_travel;
+    Interval transit{.min = travel, .max = travel};
+    transit.Add(slack_of_node[nodes[r - 1]]);
+    transits[r - 1] = transit;
+  }
+  if (travel_sums.back() > span_upper_bound) return false;
+  dimension_values.MutableSpan(path) = {.min = travel_sums.back(),
+                                        .max = span_upper_bound};
+  return true;
+}
+
 bool PropagateLightweightVehicleBreaks(
     int path, DimensionValues& dimension_values,
     absl::Span<const std::pair<int64_t, int64_t>> interbreaks) {
@@ -1715,39 +1788,12 @@ bool PathCumulFilter::FillDimensionValues(int path) {
     node = next;
   }
   dimension_values_.MakePathFromNewNodes(path);
-  // Copy cumul min/max data from cumul variables.
-  const int num_nodes = dimension_values_.NumNodes(path);
-  absl::Span<const int> nodes = dimension_values_.Nodes(path);
-  absl::Span<Interval> cumuls = dimension_values_.MutableCumuls(path);
-  const int64_t capacity = path_capacities_[path];
-  for (int r = 0; r < num_nodes; ++r) {
-    const int node = nodes[r];
-    Interval cumul = initial_cumul_[node];
-    if (!cumul.DecreaseMax(capacity)) return false;
-    cumuls[r] = cumul;
+  if (!FillDimensionValuesFromRoutingDimension(
+          path, path_capacities_[path], path_span_upper_bounds_[path],
+          initial_cumul_, initial_slack_, *evaluators_[path],
+          dimension_values_)) {
+    return false;
   }
-  // Extract travel and transit data, fill partial travel sums.
-  // TODO(user): use evaluator class to copy travel values from
-  // committed travels, instead of expensive calls to evaluator.
-  absl::Span<int64_t> travels = dimension_values_.MutableTravels(path);
-  absl::Span<Interval> transits = dimension_values_.MutableTransits(path);
-  absl::Span<int64_t> travel_sums = dimension_values_.MutableTravelSums(path);
-  const auto& evaluator = *evaluators_[path];
-  int64_t total_travel = 0;
-  travel_sums[0] = 0;
-  for (int r = 1; r < num_nodes; ++r) {
-    const int node = nodes[r - 1];
-    const int64_t travel = evaluator(node, nodes[r]);
-    travels[r - 1] = travel;
-    CapAddTo(travel, &total_travel);
-    travel_sums[r] = total_travel;
-    Interval transit{.min = travel, .max = travel};
-    transit.Add(initial_slack_[node]);
-    transits[r - 1] = transit;
-  }
-  if (travel_sums.back() > path_span_upper_bounds_[path]) return false;
-  dimension_values_.MutableSpan(path) = {.min = travel_sums.back(),
-                                         .max = path_span_upper_bounds_[path]};
   dimension_values_.MutableVehicleBreaks(path) = initial_vehicle_breaks_[path];
   return true;
 }

@@ -17,7 +17,6 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/message_matchers.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {

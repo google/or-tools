@@ -372,18 +372,6 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   ~CheapestInsertionFilteredHeuristic() override = default;
 
  protected:
-  struct NodeInsertion {
-    int64_t insert_after;
-    int vehicle;
-    int neg_hint_weight;
-    int64_t value;
-
-    bool operator<(const NodeInsertion& other) const {
-      return std::tie(neg_hint_weight, value, insert_after, vehicle) <
-             std::tie(other.neg_hint_weight, other.value, other.insert_after,
-                      other.vehicle);
-    }
-  };
   struct StartEndValue {
     int64_t distance;
     int vehicle;
@@ -458,14 +446,6 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   /// made unperformed.
   void InsertBetween(int64_t node, int64_t predecessor, int64_t successor,
                      int vehicle = -1);
-  /// Helper method to the ComputeEvaluatorSortedPositions* methods. Finds all
-  /// possible insertion positions of node 'node_to_insert' in the partial route
-  /// starting at node 'start' and adds them to 'node_insertions' (no sorting is
-  /// done). If ignore_cost is true, insertion costs may not be computed.
-  void AppendInsertionPositionsAfter(
-      int64_t node_to_insert, int64_t start, int64_t next_after_start,
-      int vehicle, bool ignore_cost,
-      std::vector<NodeInsertion>* node_insertions);
   /// Returns the cost of inserting 'node_to_insert' between 'insert_after' and
   /// 'insert_before' on the 'vehicle', i.e.
   /// Cost(insert_after-->node) + Cost(node-->insert_before)
@@ -1165,10 +1145,29 @@ class LocalCheapestInsertionFilteredHeuristic
   void Initialize() override;
 
  private:
+  struct NodeInsertion {
+    int64_t insert_after;
+    int vehicle;
+    int neg_hint_weight;
+    int64_t value;
+
+    bool operator<(const NodeInsertion& other) const {
+      return std::tie(neg_hint_weight, value, insert_after, vehicle) <
+             std::tie(other.neg_hint_weight, other.value, other.insert_after,
+                      other.vehicle);
+    }
+  };
   /// Computes the order of insertion of the node/pairs in the model based on
   /// the "Seed" values (number of allowed vehicles, penalty, distance from
   /// vehicle start/ends), and stores them in insertion_order_.
   void ComputeInsertionOrder();
+  /// Helper method to the ComputeEvaluatorSortedPositions* methods. Finds all
+  /// possible insertion positions of node 'node_to_insert' in the partial route
+  /// starting at node 'start' and adds them to 'node_insertions' (no sorting is
+  /// done).
+  void AppendInsertionPositionsAfter(
+      int64_t node_to_insert, int64_t start, int64_t next_after_start,
+      int vehicle, std::vector<NodeInsertion>* node_insertions);
   /// Computes the possible insertion positions of 'node' and sorts them
   /// according to the current cost evaluator.
   /// 'node' is a variable index corresponding to a node.

@@ -14,19 +14,15 @@
 #ifndef OR_TOOLS_BASE_FUZZTEST_H_
 #define OR_TOOLS_BASE_FUZZTEST_H_
 
-#include <memory>
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <vector>
 
+// #include "fuzztest/googletest_fixture_adapter.h"
 #include "fuzztest/domain.h"
 #include "fuzztest/fuzztest.h"
-#include "fuzztest/googletest_fixture_adapter.h"
 #include "fuzztest/init_fuzztest.h"
-#include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
 
 namespace fuzztest {
 

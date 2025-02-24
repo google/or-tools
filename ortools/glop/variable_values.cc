@@ -19,8 +19,8 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/parameters.pb.h"

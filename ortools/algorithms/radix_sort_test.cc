@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
@@ -32,7 +33,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 
 namespace operations_research {

@@ -24,8 +24,8 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 // Solve a job shop problem:
@@ -198,8 +198,8 @@ void SolveJobShopExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  InitGoogle(argv[0], &argc, &argv, true);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::SolveJobShopExample();
   return EXIT_SUCCESS;
 }

@@ -26,10 +26,10 @@
 
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/ils.pb.h"

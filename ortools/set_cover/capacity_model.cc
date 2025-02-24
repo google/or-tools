@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {

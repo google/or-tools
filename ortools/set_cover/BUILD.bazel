@@ -240,7 +240,6 @@ cc_test(
         ":capacity_model",
         ":set_cover_model",
         "//ortools/base:gmock_main",
-        "//ortools/base:message_matchers",
     ],
 )
 

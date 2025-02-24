@@ -33,13 +33,13 @@
 #include <string>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
 
 File::File(FILE* descriptor, absl::string_view name)
     : f_(descriptor), name_(name) {}

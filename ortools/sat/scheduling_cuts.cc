@@ -28,6 +28,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
@@ -1300,7 +1301,8 @@ void GenerateShortCompletionTimeCutsWithExactBound(
           is_lifted |= event.lifted;
           cut.AddTerm(event.x_end, IntegerValue(1));
         }
-        std::string full_name = cut_name;
+        std::string full_name = cut_name + "_unweighted";
+        if (is_lifted) full_name.append("_lifted");
         top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
       }
 

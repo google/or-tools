@@ -17,10 +17,10 @@
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
-#include "ortools/base/logging.h"
 
 // Stress test for AdjustableKaryHeap.
 // The test generates a random heap of size num_elements. Then, it randomly

@@ -19,10 +19,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "benchmark/benchmark.h"
 #include "isp/fiber/auto_design/utils/parallelizer.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/threadlocal.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/graph.h"

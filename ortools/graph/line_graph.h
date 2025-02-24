@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_GRAPH_LINE_GRAPH_H_
 #define OR_TOOLS_GRAPH_LINE_GRAPH_H_
 
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 
 namespace operations_research {
 

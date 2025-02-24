@@ -383,16 +383,21 @@ class DimensionValues {
     return absl::MakeSpan(transit_.data() + begin, transit_.data() + end);
   }
 
-  // Returns a const view of the travels of the path, in the current
-  // state.
+  // Returns a const view of the travels of the path, in the committed state.
+  absl::Span<const int64_t> CommittedTravels(int path) const {
+    auto [begin, end] = committed_range_of_path_[path];
+    if (begin < end) --end;
+    return absl::MakeConstSpan(travel_.data() + begin, travel_.data() + end);
+  }
+
+  // Returns a const view of the travels of the path, in the current state.
   absl::Span<const int64_t> Travels(int path) const {
     auto [begin, end] = range_of_path_[path];
     if (begin < end) --end;
     return absl::MakeConstSpan(travel_.data() + begin, travel_.data() + end);
   }
 
-  // Returns a mutable view of the travels of the path, in the current
-  // state.
+  // Returns a mutable view of the travels of the path, in the current state.
   absl::Span<int64_t> MutableTravels(int path) {
     auto [begin, end] = range_of_path_[path];
     if (begin < end) --end;

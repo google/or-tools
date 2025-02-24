@@ -18,8 +18,8 @@
 #include <string>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "ortools/base/file.h"
-#include "ortools/base/logging.h"
 #include "zlib.h"
 
 namespace recordio {

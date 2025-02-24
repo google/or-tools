@@ -21,13 +21,13 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
 

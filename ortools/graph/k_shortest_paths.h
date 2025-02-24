@@ -66,9 +66,9 @@
 #include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/shortest_paths.h"
 
