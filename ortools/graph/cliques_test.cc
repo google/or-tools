@@ -27,12 +27,12 @@
 #include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

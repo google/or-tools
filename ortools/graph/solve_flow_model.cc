@@ -28,17 +28,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
 #include "ortools/base/filesystem.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
       "The files must be in Dimacs text format or in binary FlowModelProto "
       "format.",
       &argc, &argv, true);
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please specify input pattern via --input=...";
   }

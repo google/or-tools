@@ -22,8 +22,8 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/bop/bop_solver.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_data.h"

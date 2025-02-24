@@ -23,6 +23,7 @@
 
 #include "absl/base/casts.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"

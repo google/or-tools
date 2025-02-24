@@ -23,6 +23,7 @@
 #include <string>
 
 #include "absl/functional/any_invocable.h"
+#include "absl/log/log.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/pdlp/solvers.pb.h"

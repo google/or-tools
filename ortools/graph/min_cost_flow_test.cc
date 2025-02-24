@@ -21,19 +21,21 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
-#include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
 namespace {
+
+using FlowQuantity = int64_t;
+using CostValue = int64_t;
 
 TEST(SolveTest, CapacityTooLarge) {
   using Graph = ::util::ReverseArcListGraph<int64_t, int64_t>;
@@ -162,8 +164,10 @@ TYPED_TEST(GenericMinCostFlowTest, CapacityRange) {
   const int kNumNodes = 7;
   const int kNumArcs = 12;
   const FlowQuantity kNodeSupply[kNumNodes] = {20, 10, 25, -11, -13, -17, -14};
-  const NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2};
-  const NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4, 5, 6, 3, 4, 5, 6};
+  const typename TypeParam::NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1,
+                                                         1, 1, 2, 2, 2, 2};
+  const typename TypeParam::NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4,
+                                                         5, 6, 3, 4, 5, 6};
   const CostValue kCost[kNumArcs] = {1, 6, 3, 5, 7, 3, 1, 6, 9, 4, 5, 3};
   // Since MinCostFlow stores node excess as a FlowQuantity, one must take care
   // to check that the total flow in/out of a node is less than kint64max.  To
@@ -185,8 +189,8 @@ TYPED_TEST(GenericMinCostFlowTest, Test1) {
   const int kNumNodes = 2;
   const int kNumArcs = 1;
   const FlowQuantity kNodeSupply[kNumNodes] = {12, -12};
-  const NodeIndex kTail[kNumArcs] = {0};
-  const NodeIndex kHead[kNumArcs] = {1};
+  const typename TypeParam::NodeIndex kTail[kNumArcs] = {0};
+  const typename TypeParam::NodeIndex kHead[kNumArcs] = {1};
   const CostValue kCost[kNumArcs] = {10};
   const FlowQuantity kCapacity[kNumArcs] = {20};
   const CostValue kExpectedFlowCost = 120;
@@ -200,8 +204,10 @@ TYPED_TEST(GenericMinCostFlowTest, Test2) {
   const int kNumNodes = 7;
   const int kNumArcs = 12;
   const FlowQuantity kNodeSupply[kNumNodes] = {20, 10, 25, -11, -13, -17, -14};
-  const NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2};
-  const NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4, 5, 6, 3, 4, 5, 6};
+  const typename TypeParam::NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1,
+                                                         1, 1, 2, 2, 2, 2};
+  const typename TypeParam::NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4,
+                                                         5, 6, 3, 4, 5, 6};
   const CostValue kCost[kNumArcs] = {1, 6, 3, 5, 7, 3, 1, 6, 9, 4, 5, 3};
   const FlowQuantity kCapacity[kNumArcs] = {100, 100, 100, 100, 100, 100,
                                             100, 100, 100, 100, 100, 100};
@@ -217,8 +223,10 @@ TYPED_TEST(GenericMinCostFlowTest, Test3) {
   const int kNumNodes = 7;
   const int kNumArcs = 12;
   const FlowQuantity kNodeSupply[kNumNodes] = {20, 10, 25, -11, -13, -17, -14};
-  const NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2};
-  const NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4, 5, 6, 3, 4, 5, 6};
+  const typename TypeParam::NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1,
+                                                         1, 1, 2, 2, 2, 2};
+  const typename TypeParam::NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4,
+                                                         5, 6, 3, 4, 5, 6};
   const CostValue kCost[kNumArcs] = {0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0};
   const FlowQuantity kCapacity[kNumArcs] = {100, 100, 100, 100, 100, 100,
                                             100, 100, 100, 100, 100, 100};
@@ -241,28 +249,34 @@ TYPED_TEST(GenericMinCostFlowTest, Small4x4Matrix) {
                                                      {45, 110, 95, 115}};
   const CostValue kExpectedCost = 275;
   TypeParam graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
-  for (NodeIndex source = 0; source < kNumSources; ++source) {
-    for (NodeIndex target = 0; target < kNumTargets; ++target) {
+  for (typename TypeParam::NodeIndex source = 0; source < kNumSources;
+       ++source) {
+    for (typename TypeParam::NodeIndex target = 0; target < kNumTargets;
+         ++target) {
       graph.AddArc(source, kNumSources + target);
     }
   }
-  std::vector<ArcIndex> permutation;
+  std::vector<typename TypeParam::ArcIndex> permutation;
   graph.Build(&permutation);
   EXPECT_TRUE(permutation.empty());
 
   GenericMinCostFlow<TypeParam> min_cost_flow(&graph);
   int arc = 0;
-  for (NodeIndex source = 0; source < kNumSources; ++source) {
-    for (NodeIndex target = 0; target < kNumTargets; ++target) {
+  for (typename TypeParam::NodeIndex source = 0; source < kNumSources;
+       ++source) {
+    for (typename TypeParam::NodeIndex target = 0; target < kNumTargets;
+         ++target) {
       min_cost_flow.SetArcUnitCost(arc, kCost[source][target]);
       min_cost_flow.SetArcCapacity(arc, 1);
       ++arc;
     }
   }
-  for (NodeIndex source = 0; source < kNumSources; ++source) {
+  for (typename TypeParam::NodeIndex source = 0; source < kNumSources;
+       ++source) {
     min_cost_flow.SetNodeSupply(source, 1);
   }
-  for (NodeIndex target = 0; target < kNumTargets; ++target) {
+  for (typename TypeParam::NodeIndex target = 0; target < kNumTargets;
+       ++target) {
     min_cost_flow.SetNodeSupply(kNumSources + target, -1);
   }
   EXPECT_TRUE(min_cost_flow.Solve());
@@ -277,8 +291,8 @@ TYPED_TEST(GenericMinCostFlowTest, TotalFlowCostOverflow) {
   const int kNumNodes = 2;
   const int kNumArcs = 1;
   const FlowQuantity kNodeSupply[kNumNodes] = {1LL << 61, -(1LL << 61)};
-  const NodeIndex kTail[kNumArcs] = {0};
-  const NodeIndex kHead[kNumArcs] = {1};
+  const typename TypeParam::NodeIndex kTail[kNumArcs] = {0};
+  const typename TypeParam::NodeIndex kHead[kNumArcs] = {1};
   const CostValue kCost[kNumArcs] = {10};
   const FlowQuantity kCapacity[kNumArcs] = {1LL << 61};
   const CostValue kExpectedFlowCost = std::numeric_limits<int64_t>::max();
@@ -400,8 +414,10 @@ TEST(SimpleMinCostFlowTest, FeasibleProblem) {
   const int kNumNodes = 7;
   const int kNumArcs = 12;
   const FlowQuantity kNodeSupply[kNumNodes] = {20, 10, 25, -11, -13, -17, -14};
-  const NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2};
-  const NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4, 5, 6, 3, 4, 5, 6};
+  const SimpleMinCostFlow::NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1,
+                                                        1, 1, 2, 2, 2, 2};
+  const SimpleMinCostFlow::NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4,
+                                                        5, 6, 3, 4, 5, 6};
   const CostValue kCost[kNumArcs] = {0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0};
   const FlowQuantity kCapacity[kNumArcs] = {100, 100, 100, 100, 100, 100,
                                             100, 100, 100, 100, 100, 100};
@@ -411,10 +427,10 @@ TEST(SimpleMinCostFlowTest, FeasibleProblem) {
                                                 10, 0,  4, 0, 7, 14};
 
   SimpleMinCostFlow min_cost_flow;
-  for (NodeIndex node = 0; node < kNumNodes; ++node) {
+  for (SimpleMinCostFlow::NodeIndex node = 0; node < kNumNodes; ++node) {
     min_cost_flow.SetNodeSupply(node, kNodeSupply[node]);
   }
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
+  for (SimpleMinCostFlow::ArcIndex arc = 0; arc < kNumArcs; ++arc) {
     EXPECT_EQ(arc, min_cost_flow.AddArcWithCapacityAndUnitCost(
                        kTail[arc], kHead[arc], kCapacity[arc], kCost[arc]));
   }
@@ -422,7 +438,7 @@ TEST(SimpleMinCostFlowTest, FeasibleProblem) {
   EXPECT_EQ(SimpleMinCostFlow::OPTIMAL, status);
   EXPECT_EQ(kExpectedFlowCost, min_cost_flow.OptimalCost());
   EXPECT_EQ(kExpectedFlowVolume, min_cost_flow.MaximumFlow());
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
+  for (SimpleMinCostFlow::ArcIndex arc = 0; arc < kNumArcs; ++arc) {
     EXPECT_EQ(kExpectedFlow[arc], min_cost_flow.Flow(arc))
         << " for Arc #" << arc << ": " << kTail[arc] << "->" << kHead[arc];
   }
@@ -432,15 +448,17 @@ TEST(SimpleMinCostFlowTest, InfeasibleProblem) {
   const int kNumNodes = 7;
   const int kNumArcs = 12;
   const FlowQuantity kNodeSupply[kNumNodes] = {20, 10, 25, -11, -13, -17, -14};
-  const NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2};
-  const NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4, 5, 6, 3, 4, 5, 6};
+  const SimpleMinCostFlow::NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 1,
+                                                        1, 1, 2, 2, 2, 2};
+  const SimpleMinCostFlow::NodeIndex kHead[kNumArcs] = {3, 4, 5, 6, 3, 4,
+                                                        5, 6, 3, 4, 5, 6};
   const CostValue kCost[kNumArcs] = {0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0};
 
   SimpleMinCostFlow min_cost_flow;
-  for (NodeIndex node = 0; node < kNumNodes; ++node) {
+  for (SimpleMinCostFlow::NodeIndex node = 0; node < kNumNodes; ++node) {
     min_cost_flow.SetNodeSupply(node, kNodeSupply[node]);
   }
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
+  for (SimpleMinCostFlow::ArcIndex arc = 0; arc < kNumArcs; ++arc) {
     min_cost_flow.AddArcWithCapacityAndUnitCost(kTail[arc], kHead[arc], 1.0,
                                                 kCost[arc]);
   }
@@ -450,7 +468,7 @@ TEST(SimpleMinCostFlowTest, InfeasibleProblem) {
   // There should be unit flow through all the arcs we added.
   EXPECT_EQ(6, min_cost_flow.OptimalCost());
   EXPECT_EQ(12, min_cost_flow.MaximumFlow());
-  for (ArcIndex arc = 0; arc < kNumArcs; ++arc) {
+  for (SimpleMinCostFlow::ArcIndex arc = 0; arc < kNumArcs; ++arc) {
     EXPECT_EQ(1, min_cost_flow.Flow(arc))
         << " for Arc #" << arc << ": " << kTail[arc] << "->" << kHead[arc];
   }
@@ -484,45 +502,50 @@ TEST(SimpleMinCostFlowTest, OverflowCostBound) {
 }
 
 template <typename Graph>
-void GenerateCompleteGraph(const NodeIndex num_sources,
-                           const NodeIndex num_targets, Graph* graph) {
-  const NodeIndex num_nodes = num_sources + num_targets;
-  const ArcIndex num_arcs = num_sources * num_targets;
+void GenerateCompleteGraph(const typename Graph::NodeIndex num_sources,
+                           const typename Graph::NodeIndex num_targets,
+                           Graph* graph) {
+  const typename Graph::NodeIndex num_nodes = num_sources + num_targets;
+  const typename Graph::ArcIndex num_arcs = num_sources * num_targets;
   graph->Reserve(num_nodes, num_arcs);
-  for (NodeIndex source = 0; source < num_sources; ++source) {
-    for (NodeIndex target = 0; target < num_targets; ++target) {
+  for (typename Graph::NodeIndex source = 0; source < num_sources; ++source) {
+    for (typename Graph::NodeIndex target = 0; target < num_targets; ++target) {
       graph->AddArc(source, target + num_sources);
     }
   }
 }
 
 template <typename Graph>
-void GeneratePartialRandomGraph(const NodeIndex num_sources,
-                                const NodeIndex num_targets,
-                                const NodeIndex degree, Graph* graph) {
-  const NodeIndex num_nodes = num_sources + num_targets;
-  const ArcIndex num_arcs = num_sources * degree;
+void GeneratePartialRandomGraph(const typename Graph::NodeIndex num_sources,
+                                const typename Graph::NodeIndex num_targets,
+                                const typename Graph::NodeIndex degree,
+                                Graph* graph) {
+  const typename Graph::NodeIndex num_nodes = num_sources + num_targets;
+  const typename Graph::ArcIndex num_arcs = num_sources * degree;
   graph->Reserve(num_nodes, num_arcs);
   std::mt19937 randomizer(12345);
-  for (NodeIndex source = 0; source < num_sources; ++source) {
+  for (typename Graph::NodeIndex source = 0; source < num_sources; ++source) {
     // For each source, we create degree - 1 random arcs.
-    for (NodeIndex d = 0; d < degree - 1; ++d) {
-      NodeIndex target = absl::Uniform(randomizer, 0, num_targets);
+    for (typename Graph::NodeIndex d = 0; d < degree - 1; ++d) {
+      typename Graph::NodeIndex target =
+          absl::Uniform(randomizer, 0, num_targets);
       graph->AddArc(source, target + num_sources);
     }
   }
   // Make sure that each target has at least one corresponding source.
-  for (NodeIndex target = 0; target < num_targets; ++target) {
-    NodeIndex source = absl::Uniform(randomizer, 0, num_sources);
+  for (typename Graph::NodeIndex target = 0; target < num_targets; ++target) {
+    typename Graph::NodeIndex source =
+        absl::Uniform(randomizer, 0, num_sources);
     graph->AddArc(source, target + num_sources);
   }
 }
 
-void GenerateRandomSupply(const NodeIndex num_sources,
-                          const NodeIndex num_targets,
-                          const NodeIndex num_generations, const int64_t range,
-                          std::vector<int64_t>* supply) {
-  const NodeIndex num_nodes = num_sources + num_targets;
+template <typename Graph>
+void GenerateRandomSupply(const typename Graph::NodeIndex num_sources,
+                          const typename Graph::NodeIndex num_targets,
+                          const typename Graph::NodeIndex num_generations,
+                          const int64_t range, std::vector<int64_t>* supply) {
+  const typename Graph::NodeIndex num_nodes = num_sources + num_targets;
   supply->resize(num_nodes, 0);
   std::mt19937 randomizer(12345);
   for (int64_t i = 0; i < num_sources * num_generations; ++i) {
@@ -534,8 +557,9 @@ void GenerateRandomSupply(const NodeIndex num_sources,
   }
 }
 
-void GenerateAssignmentSupply(const NodeIndex num_sources,
-                              const NodeIndex num_targets,
+template <typename Graph>
+void GenerateAssignmentSupply(const typename Graph::NodeIndex num_sources,
+                              const typename Graph::NodeIndex num_targets,
                               std::vector<int64_t>* supply) {
   supply->resize(num_sources + num_targets);
   for (int i = 0; i < num_sources; ++i) {
@@ -546,27 +570,29 @@ void GenerateAssignmentSupply(const NodeIndex num_sources,
   }
 }
 
-void GenerateRandomArcValuations(const ArcIndex num_arcs,
+template <typename Graph>
+void GenerateRandomArcValuations(const typename Graph::ArcIndex num_arcs,
                                  const int64_t max_range,
                                  std::vector<int64_t>* arc_valuation) {
   arc_valuation->resize(num_arcs);
   std::mt19937 randomizer(12345);
-  for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
+  for (typename Graph::ArcIndex arc = 0; arc < num_arcs; ++arc) {
     (*arc_valuation)[arc] = absl::Uniform(randomizer, 0, max_range);
   }
 }
 
 template <typename Graph>
-void SetUpNetworkData(absl::Span<const ArcIndex> permutation,
+void SetUpNetworkData(absl::Span<const typename Graph::ArcIndex> permutation,
                       absl::Span<const int64_t> supply,
                       absl::Span<const int64_t> arc_cost,
                       absl::Span<const int64_t> arc_capacity, Graph* graph,
                       GenericMinCostFlow<Graph>* min_cost_flow) {
-  for (NodeIndex node = 0; node < graph->num_nodes(); ++node) {
+  for (typename Graph::NodeIndex node = 0; node < graph->num_nodes(); ++node) {
     min_cost_flow->SetNodeSupply(node, supply[node]);
   }
-  for (ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {
-    ArcIndex permuted_arc = arc < permutation.size() ? permutation[arc] : arc;
+  for (typename Graph::ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {
+    typename Graph::ArcIndex permuted_arc =
+        arc < permutation.size() ? permutation[arc] : arc;
     min_cost_flow->SetArcUnitCost(permuted_arc, arc_cost[arc]);
     min_cost_flow->SetArcCapacity(permuted_arc, arc_capacity[arc]);
   }
@@ -578,7 +604,8 @@ CostValue SolveMinCostFlow(GenericMinCostFlow<Graph>* min_cost_flow) {
   if (ok && min_cost_flow->status() == GenericMinCostFlow<Graph>::OPTIMAL) {
     CostValue cost = min_cost_flow->GetOptimalCost();
     CostValue computed_cost = 0;
-    for (ArcIndex arc = 0; arc < min_cost_flow->graph()->num_arcs(); ++arc) {
+    for (typename Graph::ArcIndex arc = 0;
+         arc < min_cost_flow->graph()->num_arcs(); ++arc) {
       const FlowQuantity flow = min_cost_flow->Flow(arc);
       EXPECT_GE(min_cost_flow->Capacity(arc), flow);
       computed_cost += min_cost_flow->UnitCost(arc) * flow;
@@ -594,17 +621,17 @@ template <typename Graph>
 CostValue SolveMinCostFlowWithLP(GenericMinCostFlow<Graph>* min_cost_flow) {
   MPSolver solver("LPSolver", MPSolver::GLOP_LINEAR_PROGRAMMING);
   const Graph* graph = min_cost_flow->graph();
-  const NodeIndex num_nodes = graph->num_nodes();
-  const ArcIndex num_arcs = graph->num_arcs();
+  const typename Graph::NodeIndex num_nodes = graph->num_nodes();
+  const typename Graph::ArcIndex num_arcs = graph->num_arcs();
   std::unique_ptr<MPConstraint*[]> constraint(new MPConstraint*[num_nodes]);
-  for (NodeIndex node = 0; node < graph->num_nodes(); ++node) {
+  for (typename Graph::NodeIndex node = 0; node < graph->num_nodes(); ++node) {
     constraint[node] = solver.MakeRowConstraint();
     FlowQuantity supply = min_cost_flow->Supply(node);
     constraint[node]->SetBounds(supply, supply);
   }
   std::unique_ptr<MPVariable*[]> var(new MPVariable*[num_arcs]);
   MPObjective* const objective = solver.MutableObjective();
-  for (ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {
+  for (typename Graph::ArcIndex arc = 0; arc < graph->num_arcs(); ++arc) {
     var[arc] = solver.MakeNumVar(0.0, min_cost_flow->Capacity(arc),
                                  absl::StrFormat("v%d", arc));
     constraint[graph->Tail(arc)]->SetCoefficient(var[arc], 1.0);
@@ -618,7 +645,7 @@ CostValue SolveMinCostFlowWithLP(GenericMinCostFlow<Graph>* min_cost_flow) {
 template <typename Graph>
 bool CheckAssignmentFeasibility(const Graph& graph,
                                 absl::Span<const int64_t> supply) {
-  for (NodeIndex node = 0; node < graph.num_nodes(); ++node) {
+  for (typename Graph::NodeIndex node = 0; node < graph.num_nodes(); ++node) {
     if (supply[node] != 0) {
       typename Graph::OutgoingOrOppositeIncomingArcIterator it(graph, node);
       EXPECT_TRUE(it.Ok()) << node << " has no incident arc";
@@ -634,7 +661,8 @@ struct MinCostFlowSolver {
 
 template <typename Graph>
 void FullRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
-                          NodeIndex num_sources, NodeIndex num_targets,
+                          typename Graph::NodeIndex num_sources,
+                          typename Graph::NodeIndex num_targets,
                           CostValue expected_cost1,
                           CostValue /*expected_cost2*/) {
   const CostValue kCostRange = 1000;
@@ -644,11 +672,11 @@ void FullRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
   graph.Build(&permutation);
 
   std::vector<int64_t> supply;
-  GenerateAssignmentSupply(num_sources, num_targets, &supply);
+  GenerateAssignmentSupply<Graph>(num_sources, num_targets, &supply);
   EXPECT_TRUE(CheckAssignmentFeasibility(graph, supply));
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
   std::vector<int64_t> arc_cost(graph.num_arcs());
-  GenerateRandomArcValuations(graph.num_arcs(), kCostRange, &arc_cost);
+  GenerateRandomArcValuations<Graph>(graph.num_arcs(), kCostRange, &arc_cost);
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
   SetUpNetworkData(permutation, supply, arc_cost, arc_capacity, &graph,
                    &min_cost_flow);
@@ -659,10 +687,11 @@ void FullRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
 
 template <typename Graph>
 void PartialRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
-                             NodeIndex num_sources, NodeIndex num_targets,
+                             typename Graph::NodeIndex num_sources,
+                             typename Graph::NodeIndex num_targets,
                              CostValue expected_cost1,
                              CostValue /*expected_cost2*/) {
-  const NodeIndex kDegree = 10;
+  const typename Graph::NodeIndex kDegree = 10;
   const CostValue kCostRange = 1000;
   Graph graph;
   GeneratePartialRandomGraph(num_sources, num_targets, kDegree, &graph);
@@ -670,13 +699,13 @@ void PartialRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
   graph.Build(&permutation);
 
   std::vector<int64_t> supply;
-  GenerateAssignmentSupply(num_sources, num_targets, &supply);
+  GenerateAssignmentSupply<Graph>(num_sources, num_targets, &supply);
   EXPECT_TRUE(CheckAssignmentFeasibility(graph, supply));
 
   EXPECT_EQ(graph.num_arcs(), num_sources * kDegree);
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
   std::vector<int64_t> arc_cost(graph.num_arcs());
-  GenerateRandomArcValuations(graph.num_arcs(), kCostRange, &arc_cost);
+  GenerateRandomArcValuations<Graph>(graph.num_arcs(), kCostRange, &arc_cost);
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
   SetUpNetworkData(permutation, supply, arc_cost, arc_capacity, &graph,
                    &min_cost_flow);
@@ -685,15 +714,16 @@ void PartialRandomAssignment(typename MinCostFlowSolver<Graph>::Solver f,
 }
 
 template <typename Graph>
-void ChangeCapacities(absl::Span<const ArcIndex> permutation,
+void ChangeCapacities(absl::Span<const typename Graph::ArcIndex> permutation,
                       absl::Span<const int64_t> arc_capacity,
                       FlowQuantity delta,
                       GenericMinCostFlow<Graph>* min_cost_flow,
                       float probability) {
   std::mt19937 randomizer(12345);
-  const ArcIndex num_arcs = min_cost_flow->graph()->num_arcs();
-  for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
-    ArcIndex permuted_arc = arc < permutation.size() ? permutation[arc] : arc;
+  const typename Graph::ArcIndex num_arcs = min_cost_flow->graph()->num_arcs();
+  for (typename Graph::ArcIndex arc = 0; arc < num_arcs; ++arc) {
+    typename Graph::ArcIndex permuted_arc =
+        arc < permutation.size() ? permutation[arc] : arc;
     if (absl::Bernoulli(randomizer, probability)) {
       min_cost_flow->SetArcCapacity(
           permuted_arc, std::max(arc_capacity[arc] - delta, int64_t{0}));
@@ -705,9 +735,10 @@ void ChangeCapacities(absl::Span<const ArcIndex> permutation,
 
 template <typename Graph>
 void PartialRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
-                       NodeIndex num_sources, NodeIndex num_targets,
+                       typename Graph::NodeIndex num_sources,
+                       typename Graph::NodeIndex num_targets,
                        CostValue expected_cost1, CostValue expected_cost2) {
-  const NodeIndex kDegree = 15;
+  const typename Graph::NodeIndex kDegree = 15;
   const FlowQuantity kSupplyRange = 500;
   const int64_t kSupplyGens = 15;
   const FlowQuantity kCapacityRange = 10000;
@@ -720,13 +751,14 @@ void PartialRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   graph.Build(&permutation);
 
   std::vector<int64_t> supply;
-  GenerateRandomSupply(num_sources, num_targets, kSupplyGens, kSupplyRange,
-                       &supply);
+  GenerateRandomSupply<Graph>(num_sources, num_targets, kSupplyGens,
+                              kSupplyRange, &supply);
   EXPECT_TRUE(CheckAssignmentFeasibility(graph, supply));
   std::vector<int64_t> arc_capacity(graph.num_arcs());
-  GenerateRandomArcValuations(graph.num_arcs(), kCapacityRange, &arc_capacity);
+  GenerateRandomArcValuations<Graph>(graph.num_arcs(), kCapacityRange,
+                                     &arc_capacity);
   std::vector<int64_t> arc_cost(graph.num_arcs());
-  GenerateRandomArcValuations(graph.num_arcs(), kCostRange, &arc_cost);
+  GenerateRandomArcValuations<Graph>(graph.num_arcs(), kCostRange, &arc_cost);
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
   SetUpNetworkData(permutation, supply, arc_cost, arc_capacity, &graph,
                    &min_cost_flow);
@@ -744,7 +776,8 @@ void PartialRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
 
 template <typename Graph>
 void FullRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
-                    NodeIndex num_sources, NodeIndex num_targets,
+                    typename Graph::NodeIndex num_sources,
+                    typename Graph::NodeIndex num_targets,
                     CostValue expected_cost1, CostValue expected_cost2) {
   const FlowQuantity kSupplyRange = 1000;
   const int64_t kSupplyGens = 10;
@@ -758,13 +791,14 @@ void FullRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
   graph.Build(&permutation);
 
   std::vector<int64_t> supply;
-  GenerateRandomSupply(num_sources, num_targets, kSupplyGens, kSupplyRange,
-                       &supply);
+  GenerateRandomSupply<Graph>(num_sources, num_targets, kSupplyGens,
+                              kSupplyRange, &supply);
   EXPECT_TRUE(CheckAssignmentFeasibility(graph, supply));
   std::vector<int64_t> arc_capacity(graph.num_arcs());
-  GenerateRandomArcValuations(graph.num_arcs(), kCapacityRange, &arc_capacity);
+  GenerateRandomArcValuations<Graph>(graph.num_arcs(), kCapacityRange,
+                                     &arc_capacity);
   std::vector<int64_t> arc_cost(graph.num_arcs());
-  GenerateRandomArcValuations(graph.num_arcs(), kCostRange, &arc_cost);
+  GenerateRandomArcValuations<Graph>(graph.num_arcs(), kCostRange, &arc_cost);
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
 
   SetUpNetworkData(permutation, supply, arc_cost, arc_capacity, &graph,

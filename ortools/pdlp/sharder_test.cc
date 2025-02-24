@@ -22,10 +22,10 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/scheduler.h"
 

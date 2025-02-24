@@ -19,9 +19,9 @@
 #include <utility>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip_callback_result.h"

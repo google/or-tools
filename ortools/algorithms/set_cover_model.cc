@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/discrete_distribution.h"
 #include "absl/random/distributions.h"
@@ -32,7 +33,6 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/radix_sort.h"
 #include "ortools/algorithms/set_cover.pb.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 

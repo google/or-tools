@@ -16,10 +16,12 @@
 
 #include <string>
 
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
+#include "absl/strings/string_view.h"
+#include "zconf.h"
 #include "zlib.h"
 
-bool GunzipString(absl::string_view str, std::string* out) {
+inline bool GunzipString(absl::string_view str, std::string* out) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
@@ -60,7 +62,8 @@ bool GunzipString(absl::string_view str, std::string* out) {
   return true;
 }
 
-bool GzipString(absl::string_view uncompressed, std::string* compressed) {
+inline bool GzipString(absl::string_view uncompressed,
+                       std::string* compressed) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;

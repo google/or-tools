@@ -21,8 +21,8 @@
 #include <sstream>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "ortools/algorithms/knapsack_solver.h"
-#include "ortools/base/logging.h"
 // [END import]
 
 namespace operations_research {

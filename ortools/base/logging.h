@@ -14,21 +14,21 @@
 #ifndef OR_TOOLS_BASE_LOGGING_H_
 #define OR_TOOLS_BASE_LOGGING_H_
 
-#include "absl/base/log_severity.h"
-#include "absl/flags/declare.h"
-#include "absl/flags/flag.h"
-#include "absl/log/check.h"
-#include "absl/log/die_if_null.h"
-#include "absl/log/log.h"
-#include "absl/log/vlog_is_on.h"
-#include "absl/memory/memory.h"
-#include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
-#include "ortools/base/macros.h"
-
-// Forward the new flag.
-ABSL_DECLARE_FLAG(int, stderrthreshold);
+#include "absl/base/log_severity.h"    // IWYU pragma: export
+#include "absl/base/macros.h"          // IWYU pragma: export
+#include "absl/flags/declare.h"        // IWYU pragma: export
+#include "absl/flags/flag.h"           // IWYU pragma: export
+#include "absl/log/check.h"            // IWYU pragma: export
+#include "absl/log/die_if_null.h"      // IWYU pragma: export
+#include "absl/log/globals.h"          // IWYU pragma: export
+#include "absl/log/log.h"              // IWYU pragma: export
+#include "absl/log/vlog_is_on.h"       // IWYU pragma: export
+#include "absl/memory/memory.h"        // IWYU pragma: export
+#include "absl/status/status.h"        // IWYU pragma: export
+#include "absl/strings/str_cat.h"      // IWYU pragma: export
+#include "absl/strings/string_view.h"  // IWYU pragma: export
+#include "ortools/base/base_export.h"  // IWYU pragma: export
+#include "ortools/base/macros.h"       // IWYU pragma: export
 
 namespace operations_research {
 

@@ -16,6 +16,7 @@
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
@@ -25,7 +26,6 @@
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/algorithms/set_cover_reader.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 
 ABSL_FLAG(std::string, input, "", "REQUIRED: Input file name.");
