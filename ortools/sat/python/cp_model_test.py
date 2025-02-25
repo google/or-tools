@@ -1047,6 +1047,19 @@ class CpModelTest(absltest.TestCase):
         )
         self.assertTrue(passed)
 
+    def test_issue4568(self) -> None:
+        model = cp_model.CpModel()
+        target = 11
+        value = model.new_int_var(0, 10, "")
+        defect = model.new_int_var(0, cp_model.INT32_MAX, "")
+        model.add_abs_equality(defect, value - target)
+        model.minimize(defect)
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        self.assertEqual(status, cp_model.OPTIMAL)
+        self.assertEqual(solver.objective_value, 1.0)
+
     def test_division(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 10, "x")
