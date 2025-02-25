@@ -153,8 +153,7 @@ template <typename Graph>
 class GenericMinCostFlowTest : public ::testing::Test {};
 
 typedef ::testing::Types<util::ReverseArcListGraph<>,
-                         util::ReverseArcStaticGraph<>,
-                         util::ReverseArcMixedGraph<>>
+                         util::ReverseArcStaticGraph<>>
     GraphTypes;
 
 TYPED_TEST_SUITE(GenericMinCostFlowTest, GraphTypes);

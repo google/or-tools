@@ -16,8 +16,11 @@
 #ifndef UTIL_GRAPH_ITERATORS_H_
 #define UTIL_GRAPH_ITERATORS_H_
 
+#include <cstddef>
 #include <iterator>
 #include <vector>
+
+#include "absl/log/check.h"
 
 namespace util {
 
@@ -100,34 +103,103 @@ BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
   return BeginEndReverseIteratorWrapper<Container>(c);
 }
 
-// Simple iterator on an integer range, see IntegerRange below.
+// Simple iterator on an integer range, see `IntegerRange` below.
+// `IntegerType` can be any signed integer type, or strong integer type that
+// defines usual operations (e.g. `gtl::IntType<T>`).
 template <typename IntegerType>
 class IntegerRangeIterator
-    : public std::iterator<std::input_iterator_tag, IntegerType> {
+// TODO(b/385094969): In C++17, `std::iterator_traits<Iterator>` required
+// explicitly specifying the iterator category. Remove this when backwards
+// compatibility with C++17 is no longer needed.
+#if __cplusplus < 202002L
+    : public std::iterator<std::input_iterator_tag, IntegerType>
+#endif
+{
  public:
+  // TODO(b/385094969): This should be `IntegerType` for integers,
+  // `IntegerType:value_type` for strong signed integer types.
+  using difference_type = ptrdiff_t;
+  using value_type = IntegerType;
+
+  IntegerRangeIterator() : index_{} {}
+
   explicit IntegerRangeIterator(IntegerType value) : index_(value) {}
-  IntegerRangeIterator(const IntegerRangeIterator& other)
-      : index_(other.index_) {}
-  IntegerRangeIterator& operator=(const IntegerRangeIterator& other) {
-    index_ = other.index_;
-  }
-  bool operator!=(const IntegerRangeIterator& other) const {
-    // This may seems weird, but using < instead of != avoid almost-infinite
-    // loop if one use IntegerRange<int>(1, 0) below for instance.
-    return index_ < other.index_;
-  }
+
+  IntegerType operator*() const { return index_; }
+
+  // TODO(b/385094969): Use `=default` when backwards compatibility with C++17
+  // is no longer needed.
   bool operator==(const IntegerRangeIterator& other) const {
     return index_ == other.index_;
   }
-  IntegerType operator*() const { return index_; }
+  bool operator!=(const IntegerRangeIterator& other) const {
+    return index_ != other.index_;
+  }
+  bool operator<(const IntegerRangeIterator& other) const {
+    return index_ < other.index_;
+  }
+  bool operator>(const IntegerRangeIterator& other) const {
+    return index_ > other.index_;
+  }
+  bool operator<=(const IntegerRangeIterator& other) const {
+    return index_ <= other.index_;
+  }
+  bool operator>=(const IntegerRangeIterator& other) const {
+    return index_ >= other.index_;
+  }
+
   IntegerRangeIterator& operator++() {
     ++index_;
     return *this;
   }
+
   IntegerRangeIterator operator++(int) {
-    IntegerRangeIterator previous_position(*this);
-    ++index_;
-    return previous_position;
+    auto tmp = *this;
+    ++*this;
+    return tmp;
+  }
+
+  IntegerRangeIterator& operator+=(difference_type n) {
+    index_ += n;
+    return *this;
+  }
+
+  IntegerRangeIterator& operator--() {
+    --index_;
+    return *this;
+  }
+
+  IntegerRangeIterator operator--(int) {
+    auto tmp = *this;
+    --*this;
+    return tmp;
+  }
+
+  IntegerRangeIterator& operator-=(difference_type n) {
+    index_ -= n;
+    return *this;
+  }
+
+  IntegerType operator[](difference_type n) const { return index_ + n; }
+
+  friend IntegerRangeIterator operator+(IntegerRangeIterator it,
+                                        difference_type n) {
+    return IntegerRangeIterator(it.index_ + n);
+  }
+
+  friend IntegerRangeIterator operator+(difference_type n,
+                                        IntegerRangeIterator it) {
+    return IntegerRangeIterator(it.index_ + n);
+  }
+
+  friend IntegerRangeIterator operator-(IntegerRangeIterator it,
+                                        difference_type n) {
+    return IntegerRangeIterator(it.index_ - n);
+  }
+
+  friend difference_type operator-(const IntegerRangeIterator l,
+                                   const IntegerRangeIterator r) {
+    return l.index_ - r.index_;
   }
 
  private:
@@ -146,10 +218,13 @@ class IntegerRangeIterator
 template <typename IntegerType>
 class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
  public:
+  // Requires `begin <= end`.
   IntegerRange(IntegerType begin, IntegerType end)
       : BeginEndWrapper<IntegerRangeIterator<IntegerType>>(
             IntegerRangeIterator<IntegerType>(begin),
-            IntegerRangeIterator<IntegerType>(end)) {}
+            IntegerRangeIterator<IntegerType>(end)) {
+    DCHECK_LE(begin, end);
+  }
 };
 
 // Allow iterating over a vector<T> as a mutable vector<T*>.

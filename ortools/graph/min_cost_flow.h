@@ -677,7 +677,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
 extern template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
-extern template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
 extern template class GenericMinCostFlow<
     ::util::ReverseArcStaticGraph<uint16_t, int32_t>>;
 extern template class GenericMinCostFlow<

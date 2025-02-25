@@ -243,9 +243,9 @@ class GraphShortestPathsDeathTest : public testing::Test {};
 template <typename GraphType>
 class GraphShortestPathsTest : public testing::Test {};
 
-typedef testing::Types<
-    ::util::ListGraph<>, ::util::StaticGraph<>, ::util::ReverseArcListGraph<>,
-    ::util::ReverseArcStaticGraph<>, ::util::ReverseArcMixedGraph<>>
+typedef testing::Types<::util::ListGraph<>, ::util::StaticGraph<>,
+                       ::util::ReverseArcListGraph<>,
+                       ::util::ReverseArcStaticGraph<>>
     GraphTypesForShortestPathsTesting;
 
 TYPED_TEST_SUITE(GraphShortestPathsDeathTest,

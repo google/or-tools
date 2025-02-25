@@ -102,8 +102,7 @@ template <typename Graph>
 class GenericMaxFlowTest : public ::testing::Test {};
 
 typedef ::testing::Types<util::FlowGraph<>, util::ReverseArcListGraph<>,
-                         util::ReverseArcStaticGraph<>,
-                         util::ReverseArcMixedGraph<>>
+                         util::ReverseArcStaticGraph<>>
     GraphTypes;
 
 TYPED_TEST_SUITE(GenericMaxFlowTest, GraphTypes);
@@ -685,22 +684,18 @@ static void BM_FullRandomFlow(benchmark::State& state) {
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcMixedGraph<>);
 
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcMixedGraph<>);
 
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcMixedGraph<>);
 
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcMixedGraph<>);
 
 #undef LP_AND_FLOW_TEST
 
