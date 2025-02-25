@@ -14,6 +14,4 @@
 #ifndef OR_TOOLS_BASE_OPTIONS_H_
 #define OR_TOOLS_BASE_OPTIONS_H_
 
-#include "ortools/base/file.h"
-
 #endif  // OR_TOOLS_BASE_OPTIONS_H_
