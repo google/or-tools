@@ -2182,7 +2182,7 @@ class CpModel:
 
         # Raises TypeError if linear_expr is not an integer.
         flat_expr = cmh.FlatIntExpr(linear_expr)
-        result.offset = flat_expr.offset
+        result.offset = flat_expr.offset * mult
         for var in flat_expr.vars:
             result.vars.append(var.index)
         for coeff in flat_expr.coeffs:
