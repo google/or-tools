@@ -541,10 +541,10 @@ def solve_rcpsp(
     if params:
         text_format.Parse(params, solver.parameters)
 
-    # Favor objective_shaving_search over objective_lb_search.
+    # Favor objective_shaving over objective_lb_search.
     if solver.parameters.num_workers >= 16 and solver.parameters.num_workers < 24:
         solver.parameters.ignore_subsolvers.append("objective_lb_search")
-        solver.parameters.extra_subsolvers.append("objective_shaving_search")
+        solver.parameters.extra_subsolvers.append("objective_shaving")
 
     # Experimental: Specify the fact that the objective is a makespan
     solver.parameters.push_all_tasks_toward_start = True
