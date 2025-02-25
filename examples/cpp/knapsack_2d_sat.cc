@@ -12,25 +12,27 @@
 // limitations under the License.
 
 // This file solves a 2D Bin Packing problem as a 2D Knapsack problem.
-// It loads the size of the mainrectangle, all available items (rectangles too),
-// and tries to fit as many rectangles as possible in the main rectangle.
+// It loads the size of the main rectangle, all available items (rectangles
+// too), and tries to fit as many rectangles as possible in the main rectangle.
 
-#include <algorithm>
 #include <cstdint>
-#include <limits>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
 #include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/packing/binpacking_2d_parser.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(std::string, input, "", "Input file.");
 ABSL_FLAG(int, instance, -1, "Instance number if the file.");
@@ -106,7 +108,7 @@ void CheckAndPrint2DSolution(
   }
 }
 
-// Load a 2d binpacking problem and solve it as a 2d knapsack problem.
+// Load a 2d bin-packing problem and solve it as a 2d knapsack problem.
 // That is fit the max number of object in one box.
 void LoadAndSolve(const std::string& file_name, int instance) {
   packing::BinPacking2dParser parser;
@@ -226,7 +228,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

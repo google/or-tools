@@ -24,12 +24,13 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 
 namespace operations_research {
 
 // Takes a filename and a buffer and fills the lines buffer
 // with the lines of the file corresponding to the filename.
-void ParseFileByLines(const std::string& filename,
+void ParseFileByLines(absl::string_view filename,
                       std::vector<std::string>* lines);
 
 // The FapVariable struct represents a radio link of the

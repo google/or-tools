@@ -11,17 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
-#include "absl/strings/str_cat.h"
+#include "absl/log/globals.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(int, size, 7, "Size of the magic square");
 ABSL_FLAG(std::string, params, "", "Sat parameters");
@@ -101,7 +103,7 @@ void MagicSquare(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::MagicSquare(absl::GetFlag(FLAGS_size));

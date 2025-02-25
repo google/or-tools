@@ -28,23 +28,29 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <cstdlib>
 #include <random>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
 #include "absl/random/uniform_int_distribution.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/shortest_paths.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 // ----- Data Generator -----
@@ -673,7 +679,7 @@ class NetworkRoutingSolver {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::NetworkRoutingData data;

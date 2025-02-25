@@ -11,10 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
-#include "absl/flags/flag.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/generic_max_flow.h"
@@ -64,7 +66,7 @@ void SolveMaxFlow() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   operations_research::SolveMaxFlow();
   return EXIT_SUCCESS;

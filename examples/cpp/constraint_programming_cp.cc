@@ -13,8 +13,12 @@
 
 // Constraint programming example that shows how to use the API.
 
+#include <cstdint>
+#include <cstdlib>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -23,12 +27,12 @@ namespace operations_research {
 void RunConstraintProgrammingExample() {
   // Instantiate the solver.
   Solver solver("ConstraintProgrammingExample");
-  const int64_t numVals = 3;
+  const int64_t kNumVals = 3;
 
   // Define decision variables.
-  IntVar* const x = solver.MakeIntVar(0, numVals - 1, "x");
-  IntVar* const y = solver.MakeIntVar(0, numVals - 1, "y");
-  IntVar* const z = solver.MakeIntVar(0, numVals - 1, "z");
+  IntVar* const x = solver.MakeIntVar(0, kNumVals - 1, "x");
+  IntVar* const y = solver.MakeIntVar(0, kNumVals - 1, "y");
+  IntVar* const z = solver.MakeIntVar(0, kNumVals - 1, "z");
 
   // Define constraints.
   std::vector<IntVar*> xyvars = {x, y};
@@ -57,7 +61,7 @@ void RunConstraintProgrammingExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RunConstraintProgrammingExample();
   return EXIT_SUCCESS;

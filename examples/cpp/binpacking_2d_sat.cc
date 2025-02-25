@@ -24,10 +24,12 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/globals.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
@@ -555,7 +557,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

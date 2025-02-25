@@ -57,14 +57,13 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/globals.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -606,7 +605,7 @@ int main(int argc, char** argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(usage.c_str(), &argc, &argv, true);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;

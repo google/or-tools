@@ -23,8 +23,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
-#include "ortools/base/commandlineflags.h"
+#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -33,7 +34,6 @@ ABSL_FLAG(int, size, 16, "scaling factor of the model");
 ABSL_FLAG(std::string, params,
           "num_workers:8,log_search_progress:true,max_time_in_seconds:10.0",
           "Sat parameters");
-
 namespace operations_research {
 namespace sat {
 
@@ -111,7 +111,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   operations_research::sat::MultiKnapsackSat(absl::GetFlag(FLAGS_size),
                                              absl::GetFlag(FLAGS_params));

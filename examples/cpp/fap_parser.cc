@@ -20,19 +20,20 @@
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
 
 namespace operations_research {
 namespace {
-int strtoint32(const std::string& word) {
+int strtoint32(absl::string_view word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
 }  // namespace
 
-void ParseFileByLines(const std::string& filename,
+void ParseFileByLines(absl::string_view filename,
                       std::vector<std::string>* lines) {
   CHECK(lines != nullptr);
   std::string result;
