@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_BASE_RECORDIO_H_
 #define OR_TOOLS_BASE_RECORDIO_H_
 
-#include <memory>
+#include <cstdint>
 #include <string>
 
 #include "ortools/base/file.h"
@@ -35,7 +35,7 @@ class RecordWriter {
   // Magic number when reading and writing protocol buffers.
   static const int kMagicNumber;
 
-  explicit RecordWriter(File* const file);
+  explicit RecordWriter(File* file);
 
   template <class P>
   bool WriteProtocolMessage(const P& proto) {

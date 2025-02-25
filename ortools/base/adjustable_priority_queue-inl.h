@@ -14,6 +14,6 @@
 #ifndef OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_
 #define OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_
 
-#include "ortools/base/adjustable_priority_queue.h"
+#include "ortools/base/adjustable_priority_queue.h"  // IWYU pragma: export
 
 #endif  // OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_

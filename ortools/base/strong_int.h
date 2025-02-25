@@ -88,7 +88,7 @@
 // The class also defines a hash functor that allows the StrongInt to be used
 // as key to hashable containers such as hash_map and hash_set.
 //
-// We suggest using the StrongIntIndexedContainer wrapper around google3's
+// We suggest using the StrongIntIndexedContainer wrapper around
 // FixedArray and STL vector (see int-type-indexed-container.h) if an StrongInt
 // is intended to be used as an index into these containers.  These wrappers are
 // indexed in a type-safe manner using StrongInts to ensure type-safety.
@@ -147,15 +147,18 @@
 
 #include <stddef.h>
 
+#include <cstdint>
 #include <functional>
 #include <iosfwd>
+#include <iterator>
+#include <limits>
 #include <ostream>  // NOLINT
 #include <type_traits>
 
+#include "absl/base/attributes.h"
 #include "absl/base/port.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/macros.h"
 
 namespace util_intops {
 
@@ -200,8 +203,13 @@ class StrongInt {
     }
   };
 
+  template <typename H>
+  friend H AbslHashValue(H h, const StrongInt& i) {
+    return H::combine(std::move(h), i.value());
+  }
+
  public:
-  // Default c'tor initializing value_ to 0.
+  // Default ctor initializing value_ to 0.
   constexpr StrongInt() : value_(0) {}
   // C'tor explicitly initializing from a ValueType.
   constexpr explicit StrongInt(ValueType value) : value_(value) {}
@@ -285,9 +293,6 @@ class StrongInt {
  private:
   // The integer value of type ValueType.
   ValueType value_;
-
-  COMPILE_ASSERT(std::is_integral<ValueType>::value,
-                 invalid_integer_type_for_id_type_);
 } ABSL_ATTRIBUTE_PACKED;
 
 // -- NON-MEMBER STREAM OPERATORS ----------------------------------------------

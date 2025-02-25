@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_BASE_MURMUR_H_
 #define OR_TOOLS_BASE_MURMUR_H_
 
+#include <cstddef>
+#include <cstdint>
+
 #include "ortools/base/hash.h"
 
 namespace util_hash {

@@ -27,11 +27,9 @@
 //
 
 #include <iterator>
-#include <type_traits>
 
-#include "absl/types/span.h"
 #include "google/protobuf/descriptor.pb.h"
-
+#include "google/protobuf/repeated_field.h"
 namespace google::protobuf::contrib::utils {
 
 using google::protobuf::GetEnumDescriptor;

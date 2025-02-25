@@ -175,6 +175,53 @@ TEST(BinarySearchDeathTest, DiesIfEitherBoundaryConditionViolatedInFastbuild) {
                "");
 }
 
+TEST(BinarySearchDeathTest, DiesIfBoundCheckIsEnabledAndABoundIsViolated) {
+  // EXPECT_DEATH does not work with 2-parameter templates.
+  auto bs = [](int x_true, int x_false, auto f) {
+    return BinarySearch<int, true>(x_true, x_false, f);
+  };
+  EXPECT_DEATH(bs(/*x_true=*/0, /*x_false=*/42, [](int x) { return x < 999; }),
+               "");
+  EXPECT_DEATH(bs(/*x_true=*/0, /*x_false=*/42, [](int x) { return x < 0; }),
+               "");
+  EXPECT_DEATH(bs(/*x_true=*/0, /*x_false=*/42, [](int x) { return x > 20; }),
+               "");
+}
+
+TEST(BinarySearchTest, NoDeathIfBoundCheckIsDisabled) {
+  // EXPECT_EQ does not work with 2-parameter templates.
+  auto bs = [](int x_true, int x_false, auto f) {
+    return BinarySearch<int, false>(x_true, x_false, f);
+  };
+
+  // f is true on the whole interval ]0, 42[: return last value 41.
+  EXPECT_EQ(bs(/*x_true=*/0, /*x_false=*/42, [](int x) { return x < 999; }),
+            41);
+  // f is true on reversed interval ]42, 0[: return last value 1.
+  EXPECT_EQ(bs(/*x_true=*/42, /*x_false=*/0, [](int x) { return x < 999; }), 1);
+  // f is false on the whole interval ]0, 42[: return x_true bound 0.
+  EXPECT_EQ(bs(/*x_true=*/0, /*x_false=*/42, [](int x) { return x < 0; }), 0);
+  // f is false on reversed interval ]42, 0[: return x_true bound 42.
+  EXPECT_EQ(bs(/*x_true=*/0, /*x_false=*/42, [](int x) { return x < 0; }), 0);
+  // f is false on x_true, true on x_false.
+  // No DCHECK trigger, instead return a transition point of the function
+  // f': x_true -> true, x_false -> false, x_true < x < x_false -> f(x).
+  // The transitions are: 0 (true) -> 1 (false) and 41 (true) -> 42 (false).
+  {
+    const int x_transition =
+        bs(/*x_true=*/0, /*x_false=*/42, [](int x) { return x > 20; });
+    EXPECT_TRUE(x_transition == 0 || x_transition == 41);
+  }
+  // f is false on x_true, true on x_false, with a reversed interval.
+  // No DCHECK trigger, return one of the transition points.
+  // The transitions are: 42 (true) -> 41 (false) and 1 (true) -> 0 (false).
+  {
+    const int x_transition =
+        bs(/*x_true=*/42, /*x_false=*/0, [](int x) { return x < 20; });
+    EXPECT_TRUE(x_transition == 42 || x_transition == 1);
+  }
+}
+
 }  // namespace
 
 // Examples of cases where one needs to override BinarySearchMidpoint() to get

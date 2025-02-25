@@ -14,9 +14,7 @@
 #ifndef OR_TOOLS_BASE_MACROS_H_
 #define OR_TOOLS_BASE_MACROS_H_
 
-#include <cstdlib>  // for size_t.
-
-#include "ortools/base/base_export.h"  // for OR_DLL
+#include "ortools/base/base_export.h"  // IWYU pragma: export
 
 #define COMPILE_ASSERT(x, msg)
 
@@ -25,19 +23,5 @@ const bool DEBUG_MODE = false;
 #else   // NDEBUG
 const bool DEBUG_MODE = true;
 #endif  // NDEBUG
-
-// DISALLOW_COPY_AND_ASSIGN disallows the copy and operator= functions.
-// It goes in the private: declarations in a class.
-#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName&) = delete;      \
-  TypeName& operator=(const TypeName&) = delete
-
-template <typename T, size_t N>
-char (&ArraySizeHelper(T (&array)[N]))[N];
-#ifndef COMPILER_MSVC
-template <typename T, size_t N>
-char (&ArraySizeHelper(const T (&array)[N]))[N];
-#endif
-#define arraysize(array) (sizeof(ArraySizeHelper(array)))
 
 #endif  // OR_TOOLS_BASE_MACROS_H_

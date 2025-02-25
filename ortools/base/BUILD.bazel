@@ -44,7 +44,6 @@ cc_library(
     hdrs = [
         "commandlineflags.h",
         "init_google.h",
-        "logging.h",
         "stl_logging.h",
         "types.h",
         "version.h",
@@ -63,7 +62,6 @@ cc_library(
     deps = [
         ":commandlineflags",
         ":logging",
-        ":macros",
         ":types",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -73,7 +71,10 @@ cc_library(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/log:die_if_null",
+        "@com_google_absl//absl/log:globals",
         "@com_google_absl//absl/log:initialize",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
@@ -617,7 +618,6 @@ cc_library(
     srcs = ["timer.cc"],
     hdrs = ["timer.h"],
     deps = [
-        ":macros",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/time",
     ],
