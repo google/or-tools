@@ -1,10 +1,14 @@
 libortools = ORTools_jll.libortools
 
+# Keep this file in sync with math_opt/core/c_api/solver.h.
+
+# There is no need to explicitly have a `mutable struct MathOptInterrupter`
+# on the Julia side, as it's only an opaque pointer for this API.
+
 function MathOptNewInterrupter()
   return ccall((:MathOptNewInterrupter, libortools),
                Ptr{Cvoid},
-               (Cvoid,),
-               ptr)
+               ())
 end
 
 function MathOptFreeInterrupter(ptr)
@@ -53,4 +57,3 @@ function MathOptSolve(model, model_size, solver_type, interrupter, solve_result,
                solve_result_size,
                status_msg)
 end
-
