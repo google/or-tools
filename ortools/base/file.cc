@@ -242,7 +242,11 @@ absl::Status WriteString(File* file, absl::string_view contents,
 absl::Status SetContents(absl::string_view filename, absl::string_view contents,
                          Options options) {
   File* file;
+#if defined(_MSC_VER)
+  auto status = file::Open(filename, "wb", &file, options);
+#else
   auto status = file::Open(filename, "w", &file, options);
+#endif
   if (!status.ok()) return status;
   status = file::WriteString(file, contents, options);
   status.Update(file->Close(options));  // Even if WriteString() fails!
