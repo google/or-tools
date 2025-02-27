@@ -30,9 +30,8 @@ _API_KEY = flags.DEFINE_string("api_key", None, "API key for the OR API")
 
 
 def request_example() -> None:
-    """Endpoint for the Operations Research API."""
-
-    # Set up the API key and endpoint.
+    """Run example using MathOpt `remote_http_solve` function."""
+    # Set up the API key.
     api_key = _API_KEY.value
     if not api_key:
         print(
@@ -50,10 +49,15 @@ def request_example() -> None:
     model.maximize(2 * x + y)
     try:
         result, logs = remote_http_solve.remote_http_solve(
-            model, mathopt.SolverType.GSCIP, api_key=api_key
+            model,
+            mathopt.SolverType.GSCIP,
+            mathopt.SolveParameters(enable_output=True),
+            api_key=api_key,
         )
-        print(result)
-        print(logs)
+        print("Objective value: ", result.objective_value())
+        print("x: ", result.variable_values(x))
+        print("y: ", result.variable_values(y))
+        print("\n".join(logs))
     except remote_http_solve.OptimizationServiceError as err:
         print(err)
 
