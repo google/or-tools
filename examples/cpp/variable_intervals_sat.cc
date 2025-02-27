@@ -13,7 +13,7 @@
 
 #include <atomic>
 
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/sat_parameters.pb.h"

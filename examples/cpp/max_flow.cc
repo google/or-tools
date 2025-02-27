@@ -17,8 +17,8 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph/graph.h"
 

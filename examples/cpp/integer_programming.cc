@@ -19,10 +19,10 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {

@@ -29,10 +29,10 @@
 #include <string>
 
 #include "absl/flags/parse.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
