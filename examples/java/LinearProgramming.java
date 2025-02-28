@@ -79,7 +79,7 @@ public class LinearProgramming {
 
     // Verify that the solution satisfies all constraints (when using solvers
     // others than GLOP_LINEAR_PROGRAMMING, this is highly recommended!).
-    if (!solver.verifySolution(/*tolerance=*/1e-7, /*log_errors=*/true)) {
+    if (!solver.verifySolution(/* tolerance= */ 1e-7, /* log_errors= */ true)) {
       System.err.println("The solution returned by the solver violated the"
           + " problem constraints by at least 1e-7");
       return;

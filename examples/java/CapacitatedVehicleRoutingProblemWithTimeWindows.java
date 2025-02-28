@@ -30,21 +30,6 @@ import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 import java.util.logging.Logger;
 
-// A pair class
-class Pair<K, V> {
-  final K first;
-  final V second;
-
-  public static <K, V> Pair<K, V> of(K element0, V element1) {
-    return new Pair<K, V>(element0, element1);
-  }
-
-  public Pair(K element0, V element1) {
-    this.first = element0;
-    this.second = element1;
-  }
-}
-
 /**
  * Sample showing how to model and solve a capacitated vehicle routing problem with time windows
  * using the swig-wrapped version of the vehicle routing library in
@@ -54,82 +39,97 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   private static final Logger logger =
       Logger.getLogger(CapacitatedVehicleRoutingProblemWithTimeWindows.class.getName());
 
+  // A pair class
+  static class Pair<K, V> {
+    final K first;
+    final V second;
+
+    public static <K, V> Pair<K, V> of(K element0, V element1) {
+      return new Pair<K, V>(element0, element1);
+    }
+
+    public Pair(K element0, V element1) {
+      this.first = element0;
+      this.second = element1;
+    }
+  }
+
   static class DataModel {
-  // Locations representing either an order location or a vehicle route
-  // start/end.
+    // Locations representing either an order location or a vehicle route
+    // start/end.
     public final List<Pair<Integer, Integer>> locations = new ArrayList<>();
 
-  // Quantity to be picked up for each order.
+    // Quantity to be picked up for each order.
     public final List<Integer> orderDemands = new ArrayList<>();
-  // Time window in which each order must be performed.
+    // Time window in which each order must be performed.
     public final List<Pair<Integer, Integer>> orderTimeWindows = new ArrayList<>();
-  // Penalty cost "paid" for dropping an order.
+    // Penalty cost "paid" for dropping an order.
     public final List<Integer> orderPenalties = new ArrayList<>();
 
     public final int numberOfVehicles = 20;
 
-  // Capacity of the vehicles.
+    // Capacity of the vehicles.
     public final int vehicleCapacity = 50;
     public final int numberOfOrders = 100;
-  // Latest time at which each vehicle must end its tour.
+    // Latest time at which each vehicle must end its tour.
     public final List<Integer> vehicleEndTime = new ArrayList<>();
-  // Cost per unit of distance of each vehicle.
+    // Cost per unit of distance of each vehicle.
     public final List<Integer> vehicleCostCoefficients = new ArrayList<>();
-  // Vehicle start and end indices. They have to be implemented as int[] due
-  // to the available SWIG-ed interface.
+    // Vehicle start and end indices. They have to be implemented as int[] due
+    // to the available SWIG-ed interface.
     public int[] vehicleStarts;
     public int[] vehicleEnds;
 
-  // Random number generator to produce data.
-  private final Random randomGenerator = new Random(0xBEEF);
+    // Random number generator to produce data.
+    private final Random randomGenerator = new Random(0xBEEF);
 
-  /**
+    /**
      * Creates order data. Location of the order is random, as well as its demand (quantity), time
      * window and penalty.
-   *
-   * @param xMax maximum x coordinate in which orders are located.
-   * @param yMax maximum y coordinate in which orders are located.
-   * @param demandMax maximum quantity of a demand.
-   * @param timeWindowMax maximum starting time of the order time window.
-   * @param timeWindowWidth duration of the order time window.
-   * @param penaltyMin minimum pernalty cost if order is dropped.
-   * @param penaltyMax maximum pernalty cost if order is dropped.
-   */
+     *
+     * @param xMax maximum x coordinate in which orders are located.
+     * @param yMax maximum y coordinate in which orders are located.
+     * @param demandMax maximum quantity of a demand.
+     * @param timeWindowMax maximum starting time of the order time window.
+     * @param timeWindowWidth duration of the order time window.
+     * @param penaltyMin minimum pernalty cost if order is dropped.
+     * @param penaltyMax maximum pernalty cost if order is dropped.
+     */
     private void buildOrders(int xMax, int yMax, int demandMax, int timeWindowMax,
         int timeWindowWidth, int penaltyMin, int penaltyMax) {
-    for (int order = 0; order < numberOfOrders; ++order) {
+      for (int order = 0; order < numberOfOrders; ++order) {
         locations.add(
             Pair.of(randomGenerator.nextInt(xMax + 1), randomGenerator.nextInt(yMax + 1)));
-      orderDemands.add(randomGenerator.nextInt(demandMax + 1));
-      int timeWindowStart = randomGenerator.nextInt(timeWindowMax + 1);
-      orderTimeWindows.add(Pair.of(timeWindowStart, timeWindowStart + timeWindowWidth));
-      orderPenalties.add(randomGenerator.nextInt(penaltyMax - penaltyMin + 1) + penaltyMin);
+        orderDemands.add(randomGenerator.nextInt(demandMax + 1));
+        int timeWindowStart = randomGenerator.nextInt(timeWindowMax + 1);
+        orderTimeWindows.add(Pair.of(timeWindowStart, timeWindowStart + timeWindowWidth));
+        orderPenalties.add(randomGenerator.nextInt(penaltyMax - penaltyMin + 1) + penaltyMin);
+      }
     }
-  }
 
-  /**
+    /**
      * Creates fleet data. Vehicle starting and ending locations are random, as well as vehicle
      * costs per distance unit.
-   *
-   * @param xMax maximum x coordinate in which orders are located.
-   * @param yMax maximum y coordinate in which orders are located.
-   * @param endTime latest end time of a tour of a vehicle.
+     *
+     * @param xMax maximum x coordinate in which orders are located.
+     * @param yMax maximum y coordinate in which orders are located.
+     * @param endTime latest end time of a tour of a vehicle.
      * @param costCoefficientMax maximum cost per distance unit of a vehicle (minimum is 1),
-   */
+     */
     private void buildFleet(int xMax, int yMax, int endTime, int costCoefficientMax) {
-    vehicleStarts = new int[numberOfVehicles];
-    vehicleEnds = new int[numberOfVehicles];
-    for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
-      vehicleStarts[vehicle] = locations.size();
+      vehicleStarts = new int[numberOfVehicles];
+      vehicleEnds = new int[numberOfVehicles];
+      for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
+        vehicleStarts[vehicle] = locations.size();
         locations.add(
             Pair.of(randomGenerator.nextInt(xMax + 1), randomGenerator.nextInt(yMax + 1)));
-      vehicleEnds[vehicle] = locations.size();
+        vehicleEnds[vehicle] = locations.size();
         locations.add(
             Pair.of(randomGenerator.nextInt(xMax + 1), randomGenerator.nextInt(yMax + 1)));
-      vehicleEndTime.add(endTime);
-      vehicleCostCoefficients.add(randomGenerator.nextInt(costCoefficientMax) + 1);
+        vehicleEndTime.add(endTime);
+        vehicleCostCoefficients.add(randomGenerator.nextInt(costCoefficientMax) + 1);
+      }
     }
-  }
 
     public DataModel() {
       final int xMax = 20;
@@ -174,7 +174,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     };
   }
 
-  /// @brief Print the solution.
+  // Print the solution.
   static void printSolution(
       DataModel data, RoutingModel model, RoutingIndexManager manager, Assignment solution) {
     RoutingSearchStatus.Value status = model.status();
@@ -184,7 +184,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       logger.warning("No solution found!");
       return;
     }
-    String output = "";
 
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
@@ -196,7 +195,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       }
     }
     if (dropped.length() > 0) {
-      output += "Dropped orders:" + dropped + "\n";
+      logger.info("Dropped orders:" + dropped);
     }
 
     // Routes
@@ -221,12 +220,12 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       IntVar time = timeDimension.cumulVar(index);
       long nodeIndex = manager.indexToNode(index);
       route += nodeIndex + " Load(" + solution.value(load) + ")";
-      route += " Time(" + solution.min(time) + ", " + solution.max(time) + ") -> ";
+      route += " Time(" + solution.min(time) + ", " + solution.max(time) + ")";
       logger.info(route);
     }
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
 
     // Instantiate the data problem.
@@ -261,7 +260,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     };
     unused = model.addDimension(model.registerUnaryTransitCallback(demandCallback), 0,
         data.vehicleCapacity, true, "capacity");
-    RoutingDimension capacityDimension = model.getMutableDimension("capacity");
 
     // Setting up vehicles
     LongBinaryOperator[] callbacks = new LongBinaryOperator[data.numberOfVehicles];
@@ -293,4 +291,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     // Print solution on console.
     printSolution(data, model, manager, solution);
   }
+
+  private CapacitatedVehicleRoutingProblemWithTimeWindows() {}
 }
