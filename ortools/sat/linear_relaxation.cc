@@ -60,7 +60,6 @@
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
@@ -614,18 +613,25 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
     const std::vector<int64_t> demands(ct.routes().demands().begin(),
                                        ct.routes().demands().end());
     int num_dimensions = ct.routes().dimensions_size();
-    std::vector<IntegerVariable> flat_node_dim_variables(
-        num_dimensions * num_nodes, kNoIntegerVariable);
+    std::vector<AffineExpression> flat_node_dim_expressions(
+        num_dimensions * num_nodes, AffineExpression());
     for (int d = 0; d < num_dimensions; ++d) {
-      const auto& node_vars = ct.routes().dimensions(d).vars();
-      for (int n = 0; n < node_vars.size(); ++n) {
-        if (node_vars[n] == -1) continue;
-        flat_node_dim_variables[n * num_dimensions + d] =
-            mapping->Integer(node_vars[n]);
+      const auto& node_exprs = ct.routes().dimensions(d).exprs();
+      for (int n = 0; n < node_exprs.size(); ++n) {
+        const LinearExpressionProto& expr = node_exprs[n];
+        AffineExpression& node_expr =
+            flat_node_dim_expressions[n * num_dimensions + d];
+        if (expr.vars().empty()) {
+          node_expr = AffineExpression(IntegerValue(expr.offset()));
+          continue;
+        }
+        DCHECK_EQ(expr.vars_size(), 1);
+        node_expr = AffineExpression(mapping->Integer(expr.vars(0)),
+                                     expr.coeffs(0), expr.offset());
       }
     }
     relaxation->cut_generators.push_back(CreateCVRPCutGenerator(
-        num_nodes, tails, heads, literals, demands, flat_node_dim_variables,
+        num_nodes, tails, heads, literals, demands, flat_node_dim_expressions,
         ct.routes().capacity(), m));
   }
 }

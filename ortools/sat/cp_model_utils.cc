@@ -162,7 +162,7 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
       AddIndices(ct.routes().literals(), literals);
-      // The node variables are not used by the constraint itself.
+      // The node expressions are not used by the constraint itself.
       break;
     case ConstraintProto::ConstraintCase::kInverse:
       AddIndices(ct.inverse().f_direct(), variables);

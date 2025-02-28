@@ -261,6 +261,54 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest,
   EXPECT_EQ(min_flow, 2);
 }
 
+INSTANTIATE_TEST_SUITE_P(AllCombinations, DemandBasedMinOutgoingFlowHelperTest,
+                         testing::Values(std::make_pair(true, true),
+                                         std::make_pair(true, false),
+                                         std::make_pair(false, true),
+                                         std::make_pair(false, false)));
+
+TEST(MinOutgoingFlowHelperTest, NodeExpressionWithConstant) {
+  // A graph with 3 nodes: 0 <--> 1 -(demand1)-> 2 <-(demand2)-> 0
+  Model model;
+  const int num_nodes = 3;
+  std::vector<int> tails = {1, 0, 0, 1, 2};
+  std::vector<int> heads = {2, 1, 2, 0, 0};
+  std::vector<Literal> literals;
+  for (int i = 0; i < tails.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+  }
+  // The vehicle capacity and the demand at each node.
+  const int capacity = 100;
+  const int demand1 = 70;
+  const int demand2 = 40;
+  // The load of the vehicle arriving at node 1.
+  const IntegerVariable load1 =
+      model.Add(NewIntegerVariable(0, capacity - demand1));
+  // The load of the vehicle arriving at node 2, minus `offset`.
+  const int offset = 30;
+  const IntegerVariable offset_load2 =
+      model.Add(NewIntegerVariable(-offset, capacity - demand2 - offset));
+
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  // Capacity constraint: (offset_load2 + offset) - load1 >= demand1
+  repository->Add(literals[0], {offset_load2, 1}, {load1, -1}, demand1 - offset,
+                  1000);
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   {AffineExpression(), AffineExpression(load1),
+                                    AffineExpression(offset_load2, 1, offset)},
+                                   *repository);
+  ASSERT_NE(route_relations_helper, nullptr);
+
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+  const int min_flow =
+      helper.ComputeDemandBasedMinOutgoingFlow({1, 2}, *route_relations_helper);
+
+  // The total demand exceeds the capacity.
+  EXPECT_EQ(min_flow, 2);
+}
+
 TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
   // when considering subset {1, 2, 3}, knowing that 2 cannot be reached
   // from outside can lead to better bound. The non zero-demands are in () on
@@ -366,12 +414,6 @@ TEST(MinOutgoingFlowHelperTest, BetterUseOfUpperBound) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(AllCombinations, DemandBasedMinOutgoingFlowHelperTest,
-                         testing::Values(std::make_pair(true, true),
-                                         std::make_pair(true, false),
-                                         std::make_pair(false, true),
-                                         std::make_pair(false, false)));
-
 TEST(MinOutgoingFlowHelperTest, DemandBasedMinOutgoingFlow_IsolatedNodes) {
   Model model;
   const int num_nodes = 5;
@@ -460,14 +502,14 @@ TEST(MinOutgoingFlowHelperTest, TimeWindows) {
   EXPECT_EQ(tight_min_flow, 2);
 }
 
-std::vector<absl::flat_hash_map<int, IntegerVariable>>
-GetNodeVariablesByDimension(const RouteRelationsHelper& helper) {
-  std::vector<absl::flat_hash_map<int, IntegerVariable>> result(
+std::vector<absl::flat_hash_map<int, AffineExpression>>
+GetNodeExpressionsByDimension(const RouteRelationsHelper& helper) {
+  std::vector<absl::flat_hash_map<int, AffineExpression>> result(
       helper.num_dimensions());
   for (int n = 0; n < helper.num_nodes(); ++n) {
     for (int d = 0; d < helper.num_dimensions(); ++d) {
-      if (helper.GetNodeVariable(n, d) != kNoIntegerVariable) {
-        result[d][n] = helper.GetNodeVariable(n, d);
+      if (!helper.GetNodeExpression(n, d).IsConstant()) {
+        result[d][n] = helper.GetNodeExpression(n, d);
       }
     }
   }
@@ -822,7 +864,7 @@ TEST(RouteRelationsHelperTest, Basic) {
   EXPECT_EQ(helper->num_arcs(), 5);
   // Check the node variables.
   EXPECT_THAT(
-      GetNodeVariablesByDimension(*helper),
+      GetNodeExpressionsByDimension(*helper),
       UnorderedElementsAre(
           UnorderedElementsAre(Pair(0, a), Pair(1, b), Pair(2, c)),
           UnorderedElementsAre(Pair(0, u), Pair(1, v), Pair(2, w), Pair(3, x)),
@@ -893,7 +935,7 @@ TEST(RouteRelationsHelperTest, UnenforcedRelations) {
       num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
-  EXPECT_THAT(GetNodeVariablesByDimension(*helper),
+  EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
               UnorderedElementsAre(UnorderedElementsAre(
                   Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d))));
   // The unenforced relation is taken into account.
@@ -965,9 +1007,9 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
 
   ASSERT_NE(helper, nullptr);
   EXPECT_EQ(helper->num_dimensions(), 1);
-  EXPECT_EQ(helper->GetNodeVariable(0, 0), a);
-  EXPECT_EQ(helper->GetNodeVariable(1, 0), b);
-  EXPECT_EQ(helper->GetNodeVariable(2, 0), c);
+  EXPECT_EQ(helper->GetNodeExpression(0, 0), a);
+  EXPECT_EQ(helper->GetNodeExpression(1, 0), b);
+  EXPECT_EQ(helper->GetNodeExpression(2, 0), c);
   EXPECT_EQ(helper->GetArcRelation(0, 0), (Relation{-1, 1, 50, 1000}));
   EXPECT_THAT(
       helper->GetArcRelation(1, 0),
@@ -1041,7 +1083,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
       num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
-  EXPECT_THAT(GetNodeVariablesByDimension(*helper),
+  EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
               UnorderedElementsAre(
                   UnorderedElementsAre(Pair(0, a), Pair(1, b), Pair(2, c),
                                        Pair(3, d), Pair(4, e), Pair(5, f))));
@@ -1096,7 +1138,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
       num_nodes, tails, heads, literals, {}, repository);
 
   ASSERT_NE(helper, nullptr);
-  EXPECT_THAT(GetNodeVariablesByDimension(*helper),
+  EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
               UnorderedElementsAre(UnorderedElementsAre(
                   Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d), Pair(4, e))));
   // The relation for arc 4->1 is filtered out because it is inconsistent.
@@ -1108,7 +1150,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
           Pair(5, Relation{-1, 1, 5, 5}))));
 }
 
-TEST(MaybeFillMissingRoutesConstraintNodeVariables,
+TEST(MaybeFillMissingRoutesConstraintNodeExpressions,
      FillsNodeVariablesIfNotPresent) {
   // A graph with 4 nodes and the following arcs, with relations implying that
   // variables 4, 5, 6, 7 should be associated with nodes 0, 1, 2, 3
@@ -1169,23 +1211,40 @@ TEST(MaybeFillMissingRoutesConstraintNodeVariables,
   )pb");
   CpModelProto new_cp_model = initial_model;
   const auto [num_routes, num_dimensions] =
-      MaybeFillMissingRoutesConstraintNodeVariables(initial_model,
-                                                    new_cp_model);
+      MaybeFillMissingRoutesConstraintNodeExpressions(initial_model,
+                                                      new_cp_model);
 
   EXPECT_EQ(num_routes, 1);
   EXPECT_EQ(num_dimensions, 1);
   const ConstraintProto expected_constraint = ParseTestProto(R"pb(
-    routes {
-      tails: [ 1, 2, 1, 2 ]
-      heads: [ 0, 0, 2, 3 ]
-      literals: [ 0, 1, 2, 3 ]
-      dimensions { vars: [ 4, 5, 6, 7 ] }
-    }
-  )pb");
+                routes {
+                  tails: [ 1, 2, 1, 2 ]
+                  heads: [ 0, 0, 2, 3 ]
+                  literals: [ 0, 1, 2, 3 ]
+                  dimensions {
+                    exprs {
+                      vars: [ 4 ]
+                      coeffs: [ 1 ]
+                    }
+                    exprs {
+                      vars: [ 5 ]
+                      coeffs: [ 1 ]
+                    }
+                    exprs {
+                      vars: [ 6 ]
+                      coeffs: [ 1 ]
+                    }
+                    exprs {
+                      vars: [ 7 ]
+                      coeffs: [ 1 ]
+                    }
+                  }
+                }
+              )pb");
   EXPECT_THAT(new_cp_model.constraints(0), EqualsProto(expected_constraint));
 }
 
-TEST(MaybeFillMissingRoutesConstraintNodeVariables,
+TEST(MaybeFillMissingRoutesConstraintNodeExpressions,
      KeepsNodeVariablesIfPresent) {
   // A graph with 4 nodes and the following arcs, with relations implying that
   // variables 4, 5, 6, 7 should be associated with nodes 0, 1, 2, 3
@@ -1209,7 +1268,24 @@ TEST(MaybeFillMissingRoutesConstraintNodeVariables,
         tails: [ 1, 2, 1, 2 ]
         heads: [ 0, 0, 2, 3 ]
         literals: [ 0, 1, 2, 3 ]
-        dimensions { vars: [ 7, 6, 5, 4 ] }
+        dimensions {
+          exprs {
+            vars: [ 7 ]
+            coeffs: [ 1 ]
+          }
+          exprs {
+            vars: [ 6 ]
+            coeffs: [ 1 ]
+          }
+          exprs {
+            vars: [ 5 ]
+            coeffs: [ 1 ]
+          }
+          exprs {
+            vars: [ 4 ]
+            coeffs: [ 1 ]
+          }
+        }
       }
     }
     constraints {
@@ -1247,8 +1323,8 @@ TEST(MaybeFillMissingRoutesConstraintNodeVariables,
   )pb");
   CpModelProto new_cp_model = initial_model;
   const auto [num_routes, num_dimensions] =
-      MaybeFillMissingRoutesConstraintNodeVariables(initial_model,
-                                                    new_cp_model);
+      MaybeFillMissingRoutesConstraintNodeExpressions(initial_model,
+                                                      new_cp_model);
 
   EXPECT_EQ(num_routes, 0);
   EXPECT_EQ(num_dimensions, 0);

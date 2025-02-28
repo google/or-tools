@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
@@ -31,6 +32,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,39 +44,37 @@ namespace sat {
 class RouteRelationsHelper {
  public:
   // Creates a RouteRelationsHelper for the given RoutesConstraint and
-  // associated binary relations. If `flat_node_dim_variables` is empty,
+  // associated binary relations. If `flat_node_dim_expressions` is empty,
   // infers them from the binary relations, if possible (otherwise, returns
-  // nullptr). If `flat_node_dim_variables` is not empty, uses it to
+  // nullptr). If `flat_node_dim_expressions` is not empty, uses it to
   // initialize the helper (this list should have num_dimensions times num_nodes
-  // elements, with the variable associated with node n and dimension d at index
-  // n * num_dimensions + d). If there are more than one relation per arc and
-  // dimension, a single relation is chosen arbitrarily.
+  // elements, with the expression associated with node n and dimension d at
+  // index n * num_dimensions + d). If there are more than one relation per arc
+  // and dimension, a single relation is chosen arbitrarily.
   static std::unique_ptr<RouteRelationsHelper> Create(
-      int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
-      absl::Span<const Literal> literals,
-      absl::Span<const IntegerVariable> flat_node_dim_variables,
+      int num_nodes, const std::vector<int>& tails,
+      const std::vector<int>& heads, const std::vector<Literal>& literals,
+      absl::Span<const AffineExpression> flat_node_dim_expressions,
       const BinaryRelationRepository& binary_relation_repository);
 
   // Returns the number of "dimensions", such as time or vehicle load.
   int num_dimensions() const { return num_dimensions_; }
 
   int num_nodes() const {
-    return flat_node_dim_variables_.size() / num_dimensions_;
+    return flat_node_dim_expressions_.size() / num_dimensions_;
   }
 
   int num_arcs() const {
     return flat_arc_dim_relations_.size() / num_dimensions_;
   }
 
-  // Returns the variable associated with the given node and dimension, or
-  // kNoIntegerVariable if there is none. The returned variable is always a
-  // positive one.
-  IntegerVariable GetNodeVariable(int node, int dimension) const {
-    return flat_node_dim_variables_[node * num_dimensions_ + dimension];
+  // Returns the expression associated with the given node and dimension.
+  const AffineExpression& GetNodeExpression(int node, int dimension) const {
+    return flat_node_dim_expressions_[node * num_dimensions_ + dimension];
   }
 
   // Returns the relation tail_coeff.X + head_coeff.Y \in [lhs, rhs] between the
-  // X and Y variables associated with the tail and head of the given arc,
+  // X and Y expressions associated with the tail and head of the given arc,
   // respectively, and the given dimension (head_coeff is always positive).
   // Returns an "empty" struct with all fields set to 0 if there is no such
   // relation.
@@ -95,31 +95,41 @@ class RouteRelationsHelper {
     return flat_arc_dim_relations_[arc * num_dimensions_ + dimension];
   }
 
+  // Returns the level zero lower or upper bound of the offset between the
+  // expressions associated with the head and tail of the given arc, and the
+  // given dimension.
+  IntegerValue GetArcOffsetBound(int arc, int dimension, bool upper_bound,
+                                 const IntegerTrail& integer_trail) const;
+
   void RemoveArcs(absl::Span<const int> sorted_arc_indices);
 
  private:
-  RouteRelationsHelper(int num_dimensions,
-                       std::vector<IntegerVariable> flat_node_dim_variables,
+  RouteRelationsHelper(const std::vector<int>& tails,
+                       const std::vector<int>& heads, int num_dimensions,
+                       std::vector<AffineExpression> flat_node_dim_expressions,
                        std::vector<Relation> flat_arc_dim_relations);
 
   void LogStats() const;
 
+  const std::vector<int>& tails_;
+  const std::vector<int>& heads_;
+
   int num_dimensions_;
-  // The variable associated with node n and dimension d (or kNoIntegerVariable
-  // if there is none) is at index n * num_dimensions_ + d.
-  std::vector<IntegerVariable> flat_node_dim_variables_;
-  // The relation associated with arc a and dimension d (or kNoRelation if
-  // there is none) is at index a * num_dimensions_ + d.
+  // The expression associated with node n and dimension d is at index n *
+  // num_dimensions_ + d.
+  std::vector<AffineExpression> flat_node_dim_expressions_;
+  // The relation associated with arc a and dimension d is at index a *
+  // num_dimensions_ + d.
   std::vector<Relation> flat_arc_dim_relations_;
 };
 
-// Computes and fills the node variables of all the routes constraints in
-// `output_model` that don't have them, if possible. The node variables are
+// Computes and fills the node expressions of all the routes constraints in
+// `output_model` that don't have them, if possible. The node expressions are
 // inferred from the binary relations in `input_model`. Both models must have
 // the same variables (they can reference the same underlying object).
 // Returns the number of constraints that were filled, and the total number of
 // dimensions added to them.
-std::pair<int, int> MaybeFillMissingRoutesConstraintNodeVariables(
+std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
     const CpModelProto& input_model, CpModelProto& output_model);
 
 // This is used to represent a "special bin packing" problem where we have
@@ -236,7 +246,7 @@ class MinOutgoingFlowHelper {
   // will serve the role of a bin with capacity (UB - lower_bound(n_0)), whereas
   // the other nodes n will be seen as "item" with demands d(i).
   //
-  // Given that the set of paths going throug S must be disjoint and serve all
+  // Given that the set of paths going through S must be disjoint and serve all
   // the nodes, we get exactly the special bin packing problem described above
   // where the starting nodes are the bins and the other inner-nodes are the
   // items.
@@ -425,14 +435,14 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 // components, computes the demand needed to serves it, and depending on whether
 // it contains the depot (node zero) or not, compute the minimum number of
 // vehicle that needs to cross the component border.
-// `flat_node_dim_variables` must have num_dimensions (possibly 0) times
-// num_nodes elements, with the variable associated with node n and dimension d
-// at index n * num_dimensions + d.
+// `flat_node_dim_expressions` must have num_dimensions (possibly 0) times
+// num_nodes elements, with the expression associated with node n and dimension
+// d at index n * num_dimensions + d.
 CutGenerator CreateCVRPCutGenerator(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
-    absl::Span<const IntegerVariable> flat_node_dim_variables, int64_t capacity,
-    Model* model);
+    absl::Span<const AffineExpression> flat_node_dim_expressions,
+    int64_t capacity, Model* model);
 
 // Try to find a subset where the current LP capacity of the outgoing or
 // incoming arc is not enough to satisfy the demands.

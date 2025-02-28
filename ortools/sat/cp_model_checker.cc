@@ -652,24 +652,28 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
   if (!ct.routes().demands().empty() &&
       ct.routes().demands().size() != nodes.size()) {
     return absl::StrCat(
-        "If the demands fields is set, it must be of size num_nodes:",
+        "If the demands fields in a route constraint is set, it must be of "
+        "size num_nodes:",
         nodes.size());
   }
 
-  for (const RoutesConstraintProto::NodeVariables& dimension :
+  for (const RoutesConstraintProto::NodeExpressions& dimension :
        ct.routes().dimensions()) {
-    if (dimension.vars().size() != nodes.size()) {
+    if (dimension.exprs().size() != nodes.size()) {
       return absl::StrCat(
-          "If the dimensions field is set, its elements must be of size "
-          "num_nodes:",
+          "If the dimensions field in a route constraint is set, its elements "
+          "must be of size num_nodes:",
           nodes.size());
     }
-    for (const int var : dimension.vars()) {
-      if (var != -1 && (var < 0 || var >= model.variables_size())) {
-        return absl::StrCat(
-            "All the node variables in a route constraint must refer to a "
-            "valid variable, or be equal to -1");
+    for (const LinearExpressionProto& expr : dimension.exprs()) {
+      for (const int v : expr.vars()) {
+        if (!VariableReferenceIsValid(model, v)) {
+          return absl::StrCat("Out of bound integer variable ", v,
+                              " in route constraint ",
+                              ProtobufShortDebugString(ct));
+        }
       }
+      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
     }
   }
 

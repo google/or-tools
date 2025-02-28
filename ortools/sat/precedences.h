@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -529,9 +528,9 @@ class BinaryRelationRepository {
   // (positive) variables.
   absl::Span<const int> IndicesOfRelationsBetween(IntegerVariable var1,
                                                   IntegerVariable var2) const {
-    std::pair<IntegerVariable, IntegerVariable> key(var1, var2);
     if (var1 > var2) std::swap(var1, var2);
-    auto it = var_pair_to_relations_.find(key);
+    const std::pair<IntegerVariable, IntegerVariable> key(var1, var2);
+    const auto it = var_pair_to_relations_.find(key);
     if (it == var_pair_to_relations_.end()) return {};
     return it->second;
   }

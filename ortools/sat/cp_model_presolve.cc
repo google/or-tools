@@ -13174,20 +13174,16 @@ void UpdateHintInProto(PresolveContext* context) {
   crush.StoreSolutionAsHint(*proto);
 }
 
-// Replaces the node variables in the routes constraints with their
-// representative. These variables are not used directly in the route
-// constraints themselves, so we don't care about the coefficient and offset of
-// the representative here (they are taken into account in the constraints which
-// do use these variables).
-void UpdateRoutesConstraintNodeVariables(PresolveContext* context) {
+// Canonicalizes the routes constraints node expressions. In particular,
+// replaces the variables in these expressions with their representative.
+void CanonicalizeRoutesConstraintNodeExpressions(PresolveContext* context) {
   CpModelProto& proto = *context->working_model;
   for (ConstraintProto& ct_ref : *proto.mutable_constraints()) {
     if (ct_ref.constraint_case() != ConstraintProto::kRoutes) continue;
-    for (RoutesConstraintProto::NodeVariables& node_vars :
+    for (RoutesConstraintProto::NodeExpressions& node_exprs :
          *ct_ref.mutable_routes()->mutable_dimensions()) {
-      for (int& var : *node_vars.mutable_vars()) {
-        if (var == -1) continue;
-        var = context->GetAffineRelation(var).representative;
+      for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
+        context->CanonicalizeLinearExpression({}, &expr);
       }
     }
   }
@@ -13664,7 +13660,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   }
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
-  UpdateRoutesConstraintNodeVariables(context_);
+  CanonicalizeRoutesConstraintNodeExpressions(context_);
   UpdateHintInProto(context_);
   const int old_size = postsolve_mapping_->size();
   ApplyVariableMapping(absl::MakeSpan(mapping), postsolve_mapping_,
@@ -13725,11 +13721,19 @@ void ApplyVariableMapping(absl::Span<int> mapping,
     ApplyToAllVariableIndices(mapping_function, &ct_ref);
     ApplyToAllLiteralIndices(mapping_function, &ct_ref);
     if (ct_ref.constraint_case() == ConstraintProto::kRoutes) {
-      for (RoutesConstraintProto::NodeVariables& node_vars :
+      for (RoutesConstraintProto::NodeExpressions& node_exprs :
            *ct_ref.mutable_routes()->mutable_dimensions()) {
-        for (int& var : *node_vars.mutable_vars()) {
-          if (var == -1) continue;
-          var = mapping[var] >= 0 ? mapping[var] : -1;
+        for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
+          if (expr.vars().empty()) continue;
+          DCHECK_EQ(expr.vars().size(), 1);
+          const int ref = expr.vars(0);
+          const int image = mapping[PositiveRef(ref)];
+          if (image < 0) {
+            expr.clear_vars();
+            expr.clear_coeffs();
+            continue;
+          }
+          expr.set_vars(0, RefIsPositive(ref) ? image : NegatedRef(image));
         }
       }
     }

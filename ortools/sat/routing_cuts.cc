@@ -20,7 +20,6 @@
 #include <functional>
 #include <memory>
 #include <numeric>
-#include <optional>
 #include <queue>
 #include <string>
 #include <tuple>
@@ -203,9 +202,8 @@ absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     const int size = subset.size();
     for (int i = 0; i < size; ++i) {
       const int n = forward_pass ? subset[i] : subset[size - 1 - i];
-      IntegerVariable var = helper.GetNodeVariable(n, dimension);
-      if (var == kNoIntegerVariable) return {};
-      if (negate_variables) var = NegationOf(var);
+      AffineExpression expr = helper.GetNodeExpression(n, dimension);
+      if (negate_variables) expr = expr.Negated();
 
       // The local_min/max contains the min/max of all nodes strictly before 'n'
       // in the forward pass (resp. striclty after). So after two passes,
@@ -219,44 +217,26 @@ absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
       // Update local_min/max.
       if (has_incoming_arcs_from_outside_[n]) {
         local_min =
-            std::min(local_min, integer_trail_.LevelZeroLowerBound(var));
+            std::min(local_min, integer_trail_.LevelZeroLowerBound(expr));
       }
       if (has_outgoing_arcs_to_outside_[n]) {
         local_max =
-            std::max(local_max, integer_trail_.LevelZeroUpperBound(var));
+            std::max(local_max, integer_trail_.LevelZeroUpperBound(expr));
       }
     }
   }
 
-  // TODO(user): This should probably be moved to RouteRelationsHelper.
-  auto get_relation_lhs = [&](int arc_index) {
-    const auto& r = helper.GetArcRelation(arc_index, dimension);
-    if (r.empty() || r.head_coeff != 1 || r.tail_coeff != -1) {
-      // Use X_head-X_tail \in [lb(X_head)-ub(X_tail), ub(X_head)-lb(X_tail)].
-      const IntegerVariable tail_var =
-          helper.GetNodeVariable(tails_[arc_index], dimension);
-      const IntegerVariable head_var =
-          helper.GetNodeVariable(heads_[arc_index], dimension);
-      if (negate_variables) {
-        // Opposite of the rhs.
-        return integer_trail_.LevelZeroLowerBound(tail_var) -
-               integer_trail_.LevelZeroUpperBound(head_var);
-      }
-      return integer_trail_.LevelZeroLowerBound(head_var) -
-             integer_trail_.LevelZeroUpperBound(tail_var);
-    }
-    return negate_variables ? -r.rhs : r.lhs;
-  };
-
   for (const int n : subset) {
-    IntegerVariable var = helper.GetNodeVariable(n, dimension);
-    if (negate_variables) var = NegationOf(var);
+    AffineExpression expr = helper.GetNodeExpression(n, dimension);
+    if (negate_variables) expr = expr.Negated();
 
     const absl::Span<const int> arcs =
         use_incoming ? incoming_arc_indices_[n] : outgoing_arc_indices_[n];
     IntegerValue demand = kMaxIntegerValue;
     for (const int a : arcs) {
-      demand = std::min(demand, get_relation_lhs(a));
+      demand =
+          std::min(demand, helper.GetArcOffsetBound(
+                               a, dimension, negate_variables, integer_trail_));
     }
 
     ItemOrBin obj;
@@ -267,14 +247,14 @@ absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     obj.capacity = 0;
     if (use_incoming) {
       if (max_upper_bound_of_others[n] >
-          integer_trail_.LevelZeroLowerBound(var)) {
+          integer_trail_.LevelZeroLowerBound(expr)) {
         obj.capacity = max_upper_bound_of_others[n] -
-                       integer_trail_.LevelZeroLowerBound(var);
+                       integer_trail_.LevelZeroLowerBound(expr);
       }
     } else {
-      if (integer_trail_.LevelZeroUpperBound(var) >
+      if (integer_trail_.LevelZeroUpperBound(expr) >
           min_lower_bound_of_others[n]) {
-        obj.capacity = integer_trail_.LevelZeroUpperBound(var) -
+        obj.capacity = integer_trail_.LevelZeroUpperBound(expr) -
                        min_lower_bound_of_others[n];
       }
     }
@@ -728,7 +708,7 @@ class RouteRelationsBuilder {
   RouteRelationsBuilder(
       int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
       absl::Span<const Literal> literals,
-      absl::Span<const IntegerVariable> flat_node_dim_variables,
+      absl::Span<const AffineExpression> flat_node_dim_expressions,
       const BinaryRelationRepository& binary_relation_repository)
       : num_nodes_(num_nodes),
         num_arcs_(tails.size()),
@@ -736,18 +716,18 @@ class RouteRelationsBuilder {
         heads_(heads),
         literals_(literals),
         binary_relation_repository_(binary_relation_repository) {
-    if (!flat_node_dim_variables.empty()) {
-      DCHECK_EQ(flat_node_dim_variables.size() % num_nodes, 0);
-      num_dimensions_ = flat_node_dim_variables.size() / num_nodes;
-      flat_node_dim_variables_.assign(flat_node_dim_variables.begin(),
-                                      flat_node_dim_variables.end());
+    if (!flat_node_dim_expressions.empty()) {
+      DCHECK_EQ(flat_node_dim_expressions.size() % num_nodes, 0);
+      num_dimensions_ = flat_node_dim_expressions.size() / num_nodes;
+      flat_node_dim_expressions_.assign(flat_node_dim_expressions.begin(),
+                                        flat_node_dim_expressions.end());
     }
   }
 
   int num_dimensions() const { return num_dimensions_; }
 
-  const std::vector<IntegerVariable>& flat_node_dim_variables() const {
-    return flat_node_dim_variables_;
+  const std::vector<AffineExpression>& flat_node_dim_expressions() const {
+    return flat_node_dim_expressions_;
   }
 
   const std::vector<Relation>& flat_arc_dim_relations() const {
@@ -755,7 +735,7 @@ class RouteRelationsBuilder {
   }
 
   bool Build() {
-    if (flat_node_dim_variables_.empty()) {
+    if (flat_node_dim_expressions_.empty()) {
       // Step 1: find the number of dimensions (as the number of connected
       // components in the graph of binary relations), and find to which
       // dimension each variable belongs.
@@ -786,34 +766,76 @@ class RouteRelationsBuilder {
   }
 
  private:
-  IntegerVariable& node_variable(int node, int dimension) {
-    return flat_node_dim_variables_[node * num_dimensions_ + dimension];
+  // A coeff * var + offset affine expression, where `var` is always a positive
+  // reference (contrary to AffineExpression, where the coefficient is always
+  // positive).
+  struct NodeExpression {
+    IntegerVariable var;
+    IntegerValue coeff;
+    IntegerValue offset;
+
+    explicit NodeExpression(const AffineExpression& expr) {
+      if (expr.var == kNoIntegerVariable || VariableIsPositive(expr.var)) {
+        var = expr.var;
+        coeff = expr.coeff;
+      } else {
+        var = PositiveVariable(expr.var);
+        coeff = -expr.coeff;
+      }
+      offset = expr.constant;
+    }
+
+    bool IsEmpty() const { return var == kNoIntegerVariable; }
+  };
+
+  AffineExpression& node_expression(int node, int dimension) {
+    return flat_node_dim_expressions_[node * num_dimensions_ + dimension];
   };
 
   const Relation& arc_relation(int arc_index, int dimension) const {
     return flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
   }
 
-  void SetArcRelation(int arc_index, int dimension, IntegerVariable tail_var,
-                      const sat::Relation& r) {
+  void MaybeSetArcRelation(int arc_index, int dimension,
+                           const NodeExpression& tail_expr,
+                           const NodeExpression& head_expr,
+                           const sat::Relation& r) {
     Relation& relation =
         flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
+    IntegerValue tail_coeff;
+    IntegerValue head_coeff;
+    // A relation a * X + b * Y \in [lhs, rhs] between the X and Y variables is
+    // equivalent to a (k.a/A) * (A.X+α) + (k.b/B) * (B.Y+β) \in [k.lhs+ɣ,
+    // k.rhs+ɣ] relation between the A.X+α and B.Y+β terms if the divisions are
+    // exact, where ɣ=(k.a/A)*α+(k.b/B)*β. The smallest k > 0 such that k.a/A is
+    // integer is |A|/gcd(a, A), and the smallest k > 0 such that k.b/B is
+    // integer is |B|/gcd(b, B). The least common multiple of the two is the
+    // smallest k ensuring the above equivalence.
+    int64_t a = r.a.coeff.value();
+    int64_t b = r.b.coeff.value();
+    if (r.a.var != tail_expr.var) std::swap(a, b);
+    const int64_t tail_k = std::abs(tail_expr.coeff.value()) /
+                           std::gcd(tail_expr.coeff.value(), a);
+    const int64_t head_k = std::abs(head_expr.coeff.value()) /
+                           std::gcd(head_expr.coeff.value(), b);
+    const int64_t k = std::lcm(tail_k, head_k);
+    // TODO(user): do not add the relation in case of overflow (this can
+    // happen if the expressions are provided by the user in the model proto).
+    tail_coeff = (k * a) / tail_expr.coeff;
+    head_coeff = (k * b) / head_expr.coeff;
     // If several relations are associated with the same arc, keep the first one
     // found, unless the new one has opposite +1/-1 coefficients (these
     // relations are preferred because they can be used to compute "demand
     // based" min outgoing flows).
     if (!relation.empty()) {
-      if (IntTypeAbs(r.a.coeff) != 1 || r.b.coeff != -r.a.coeff) return;
+      if (IntTypeAbs(tail_coeff) != 1 || head_coeff != -tail_coeff) return;
     }
-    if (tail_var == r.a.var) {
-      relation.tail_coeff = r.a.coeff;
-      relation.head_coeff = r.b.coeff;
-    } else {
-      relation.tail_coeff = r.b.coeff;
-      relation.head_coeff = r.a.coeff;
-    }
-    relation.lhs = r.lhs;
-    relation.rhs = r.rhs;
+    const IntegerValue domain_offset =
+        tail_coeff * tail_expr.offset + head_coeff * head_expr.offset;
+    relation.tail_coeff = tail_coeff;
+    relation.head_coeff = head_coeff;
+    relation.lhs = k * r.lhs + domain_offset;
+    relation.rhs = k * r.rhs + domain_offset;
     if (relation.head_coeff < 0) {
       relation.tail_coeff = -relation.tail_coeff;
       relation.head_coeff = -relation.head_coeff;
@@ -882,8 +904,8 @@ class RouteRelationsBuilder {
   // been found.
   std::queue<std::pair<int, int>>
   ComputeVarAssociationsFromSharedVariableOfAdjacentRelations() {
-    flat_node_dim_variables_ = std::vector<IntegerVariable>(
-        num_nodes_ * num_dimensions_, kNoIntegerVariable);
+    flat_node_dim_expressions_ = std::vector<AffineExpression>(
+        num_nodes_ * num_dimensions_, AffineExpression());
     std::queue<std::pair<int, int>> result;
     for (int n = 0; n < num_nodes_; ++n) {
       for (int d = 0; d < num_dimensions_; ++d) {
@@ -900,15 +922,15 @@ class RouteRelationsBuilder {
             const IntegerVariable shared_var = UniqueSharedVariable(r1, r2);
             if (shared_var == kNoIntegerVariable) continue;
             DCHECK_EQ(dimension_by_var_[shared_var], d);
-            IntegerVariable& node_var = node_variable(n, d);
-            if (node_var == kNoIntegerVariable) {
+            AffineExpression& node_expr = node_expression(n, d);
+            if (node_expr.IsConstant()) {
               result.push({n, d});
-            } else if (node_var != shared_var) {
+            } else if (node_expr.var != shared_var) {
               VLOG(2) << "Several vars per node and dimension in route with "
                       << num_nodes_ << " nodes and " << num_arcs_ << " arcs";
               return {};
             }
-            node_var = shared_var;
+            node_expr = shared_var;
           }
         }
       }
@@ -926,15 +948,15 @@ class RouteRelationsBuilder {
     }
     while (!node_dim_pairs_to_process.empty()) {
       const auto [node, dimension] = node_dim_pairs_to_process.front();
-      const IntegerVariable node_var = node_variable(node, dimension);
-      DCHECK_NE(node_var, kNoIntegerVariable);
+      const AffineExpression node_expr = node_expression(node, dimension);
+      DCHECK(!node_expr.IsConstant());
       node_dim_pairs_to_process.pop();
       for (const int arc_index : adjacent_arcs_per_node[node]) {
         const int tail = tails_[arc_index];
         const int head = heads_[arc_index];
         DCHECK(node == tail || node == head);
         int other_node = node == tail ? head : tail;
-        if (node_variable(other_node, dimension) != kNoIntegerVariable) {
+        if (!node_expression(other_node, dimension).IsConstant()) {
           continue;
         }
         IntegerVariable candidate_var = kNoIntegerVariable;
@@ -946,7 +968,7 @@ class RouteRelationsBuilder {
           if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
             continue;
           }
-          if (r.a.var == node_var) {
+          if (r.a.var == node_expr.var) {
             if (candidate_var != kNoIntegerVariable &&
                 candidate_var != r.b.var) {
               candidate_var_is_unique = false;
@@ -954,7 +976,7 @@ class RouteRelationsBuilder {
             }
             candidate_var = r.b.var;
           }
-          if (r.b.var == node_var) {
+          if (r.b.var == node_expr.var) {
             if (candidate_var != kNoIntegerVariable &&
                 candidate_var != r.a.var) {
               candidate_var_is_unique = false;
@@ -964,7 +986,7 @@ class RouteRelationsBuilder {
           }
         }
         if (candidate_var != kNoIntegerVariable && candidate_var_is_unique) {
-          node_variable(other_node, dimension) = candidate_var;
+          node_expression(other_node, dimension) = candidate_var;
           node_dim_pairs_to_process.push({other_node, dimension});
         }
       }
@@ -988,17 +1010,16 @@ class RouteRelationsBuilder {
         }
         bool is_consistent = false;
         for (int dimension = 0; dimension < num_dimensions_; ++dimension) {
-          IntegerVariable& tail_var = node_variable(tail, dimension);
-          IntegerVariable& head_var = node_variable(head, dimension);
-          if (tail_var == kNoIntegerVariable ||
-              head_var == kNoIntegerVariable) {
+          const NodeExpression tail_expr(node_expression(tail, dimension));
+          const NodeExpression head_expr(node_expression(head, dimension));
+          if (tail_expr.IsEmpty() || head_expr.IsEmpty()) {
             continue;
           }
-          if (!((tail_var == r.a.var && head_var == r.b.var) ||
-                (tail_var == r.b.var && head_var == r.a.var))) {
+          if (!((tail_expr.var == r.a.var && head_expr.var == r.b.var) ||
+                (tail_expr.var == r.b.var && head_expr.var == r.a.var))) {
             continue;
           }
-          SetArcRelation(i, dimension, tail_var, r);
+          MaybeSetArcRelation(i, dimension, tail_expr, head_expr, r);
           is_consistent = true;
         }
         if (!is_consistent) ++num_inconsistent_relations;
@@ -1007,16 +1028,17 @@ class RouteRelationsBuilder {
       // enforced relations to fill them.
       for (int d = 0; d < num_dimensions_; ++d) {
         if (!arc_relation(i, d).empty()) continue;
-        const IntegerVariable tail_var = node_variable(tail, d);
-        const IntegerVariable head_var = node_variable(head, d);
-        if (tail_var == kNoIntegerVariable || head_var == kNoIntegerVariable) {
+        const NodeExpression tail_expr(node_expression(tail, d));
+        const NodeExpression head_expr(node_expression(head, d));
+        if (tail_expr.IsEmpty() || head_expr.IsEmpty()) {
           continue;
         }
         for (const int relation_index :
-             binary_relation_repository_.IndicesOfRelationsBetween(tail_var,
-                                                                   head_var)) {
-          SetArcRelation(i, d, tail_var,
-                         binary_relation_repository_.relation(relation_index));
+             binary_relation_repository_.IndicesOfRelationsBetween(
+                 tail_expr.var, head_expr.var)) {
+          MaybeSetArcRelation(
+              i, d, tail_expr, head_expr,
+              binary_relation_repository_.relation(relation_index));
         }
       }
     }
@@ -1040,9 +1062,9 @@ class RouteRelationsBuilder {
   // The indices of the binary relations associated with the incoming and
   // outgoing arcs of each node, per dimension.
   std::vector<std::vector<std::vector<int>>> adjacent_relation_indices_;
-  // The variable associated with node n and dimension d (or kNoIntegerVariable
-  // if there is none) is at index n * num_dimensions_ + d.
-  std::vector<IntegerVariable> flat_node_dim_variables_;
+  // The expression associated with node n and dimension d is at index n *
+  // num_dimensions_ + d.
+  std::vector<AffineExpression> flat_node_dim_expressions_;
   // The relation associated with arc a and dimension d (or kNoRelation if
   // there is none) is at index a * num_dimensions_ + d.
   std::vector<Relation> flat_arc_dim_relations_;
@@ -1050,28 +1072,52 @@ class RouteRelationsBuilder {
 }  // namespace
 
 std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
-    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
-    absl::Span<const Literal> literals,
-    absl::Span<const IntegerVariable> flat_node_dim_variables,
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& literals,
+    absl::Span<const AffineExpression> flat_node_dim_expressions,
     const BinaryRelationRepository& binary_relation_repository) {
   RouteRelationsBuilder builder(num_nodes, tails, heads, literals,
-                                flat_node_dim_variables,
+                                flat_node_dim_expressions,
                                 binary_relation_repository);
   if (!builder.Build()) return nullptr;
   std::unique_ptr<RouteRelationsHelper> helper(new RouteRelationsHelper(
-      builder.num_dimensions(), builder.flat_node_dim_variables(),
-      builder.flat_arc_dim_relations()));
+      tails, heads, builder.num_dimensions(),
+      builder.flat_node_dim_expressions(), builder.flat_arc_dim_relations()));
   if (VLOG_IS_ON(2)) helper->LogStats();
   return helper;
 }
 
 RouteRelationsHelper::RouteRelationsHelper(
-    int num_dimensions, std::vector<IntegerVariable> flat_node_dim_variables,
+    const std::vector<int>& tails, const std::vector<int>& heads,
+    int num_dimensions, std::vector<AffineExpression> flat_node_dim_expressions,
     std::vector<Relation> flat_arc_dim_relations)
-    : num_dimensions_(num_dimensions),
-      flat_node_dim_variables_(std::move(flat_node_dim_variables)),
+    : tails_(tails),
+      heads_(heads),
+      num_dimensions_(num_dimensions),
+      flat_node_dim_expressions_(std::move(flat_node_dim_expressions)),
       flat_arc_dim_relations_(std::move(flat_arc_dim_relations)) {
   DCHECK_GE(num_dimensions_, 1);
+}
+
+IntegerValue RouteRelationsHelper::GetArcOffsetBound(
+    int arc, int dimension, bool upper_bound,
+    const IntegerTrail& integer_trail) const {
+  const auto& r = GetArcRelation(arc, dimension);
+  if (r.empty() || r.head_coeff != 1 || r.tail_coeff != -1) {
+    // Use X_head-X_tail \in [lb(X_head)-ub(X_tail), ub(X_head)-lb(X_tail)].
+    const AffineExpression tail_expr =
+        GetNodeExpression(tails_[arc], dimension);
+    const AffineExpression head_expr =
+        GetNodeExpression(heads_[arc], dimension);
+    if (upper_bound) {
+      // Opposite of the rhs.
+      return integer_trail.LevelZeroLowerBound(tail_expr) -
+             integer_trail.LevelZeroUpperBound(head_expr);
+    }
+    return integer_trail.LevelZeroLowerBound(head_expr) -
+           integer_trail.LevelZeroUpperBound(tail_expr);
+  }
+  return upper_bound ? -r.rhs : r.lhs;
 }
 
 void RouteRelationsHelper::RemoveArcs(
@@ -1100,7 +1146,7 @@ void RouteRelationsHelper::LogStats() const {
     int num_vars = 0;
     int num_relations = 0;
     for (int i = 0; i < num_nodes; ++i) {
-      if (GetNodeVariable(i, d) != kNoIntegerVariable) ++num_vars;
+      if (!GetNodeExpression(i, d).IsConstant()) ++num_vars;
     }
     for (int i = 0; i < num_arcs; ++i) {
       if (!GetArcRelation(i, d).empty()) ++num_relations;
@@ -1123,7 +1169,7 @@ IntegerVariable ToPositiveIntegerVariable(int i) {
 
 // Converts an IntegerVariable to variable indices in a NodeVariables proto.
 int ToNodeVariableIndex(IntegerVariable var) {
-  if (var == kNoIntegerVariable) return -1;
+  DCHECK(VariableIsPositive(var));
   return var.value() >> 1;
 }
 
@@ -1148,7 +1194,7 @@ BinaryRelationRepository ComputePartialBinaryRelationRepository(
 }
 
 // Returns the number of dimensions added to the constraint.
-int MaybeFillRoutesConstraintNodeVariables(
+int MaybeFillRoutesConstraintNodeExpressions(
     RoutesConstraintProto& routes, const BinaryRelationRepository& repository) {
   int max_node = 0;
   for (const int node : routes.tails()) {
@@ -1158,22 +1204,32 @@ int MaybeFillRoutesConstraintNodeVariables(
     max_node = std::max(max_node, node);
   }
   const int num_nodes = max_node + 1;
+  std::vector<int> tails(routes.tails().begin(), routes.tails().end());
+  std::vector<int> heads(routes.heads().begin(), routes.heads().end());
   std::vector<Literal> literals;
   literals.reserve(routes.literals_size());
   for (int lit : routes.literals()) {
     literals.push_back(ToLiteral(lit));
   }
   const std::unique_ptr<RouteRelationsHelper> helper =
-      RouteRelationsHelper::Create(num_nodes, routes.tails(), routes.heads(),
-                                   literals,
-                                   /*flat_node_dim_variables=*/{}, repository);
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   /*flat_node_dim_expressions=*/{},
+                                   repository);
   if (helper == nullptr) return 0;
 
   for (int d = 0; d < helper->num_dimensions(); ++d) {
-    RoutesConstraintProto::NodeVariables& dimension = *routes.add_dimensions();
+    RoutesConstraintProto::NodeExpressions& dimension =
+        *routes.add_dimensions();
     for (int n = 0; n < num_nodes; ++n) {
-      const IntegerVariable var = helper->GetNodeVariable(n, d);
-      dimension.add_vars(ToNodeVariableIndex(var));
+      AffineExpression expr = helper->GetNodeExpression(n, d);
+      LinearExpressionProto& node_expr = *dimension.add_exprs();
+      if (expr.var != kNoIntegerVariable) {
+        node_expr.add_vars(ToNodeVariableIndex(PositiveVariable(expr.var)));
+        node_expr.add_coeffs(VariableIsPositive(expr.var)
+                                 ? expr.coeff.value()
+                                 : -expr.coeff.value());
+      }
+      node_expr.set_offset(expr.constant.value());
     }
   }
   return helper->num_dimensions();
@@ -1181,7 +1237,7 @@ int MaybeFillRoutesConstraintNodeVariables(
 
 }  // namespace
 
-std::pair<int, int> MaybeFillMissingRoutesConstraintNodeVariables(
+std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
     const CpModelProto& input_model, CpModelProto& output_model) {
   std::vector<RoutesConstraintProto*> routes_to_fill;
   for (ConstraintProto& ct : *output_model.mutable_constraints()) {
@@ -1196,7 +1252,7 @@ std::pair<int, int> MaybeFillMissingRoutesConstraintNodeVariables(
       ComputePartialBinaryRelationRepository(input_model);
   for (RoutesConstraintProto* routes : routes_to_fill) {
     total_num_dimensions +=
-        MaybeFillRoutesConstraintNodeVariables(*routes, partial_repository);
+        MaybeFillRoutesConstraintNodeExpressions(*routes, partial_repository);
   }
   return {static_cast<int>(routes_to_fill.size()), total_num_dimensions};
 }
@@ -1205,13 +1261,12 @@ namespace {
 
 class OutgoingCutHelper {
  public:
-  using NodeVariables = RoutesConstraintProto::NodeVariables;
-
-  OutgoingCutHelper(int num_nodes, bool is_route_constraint, int64_t capacity,
-                    absl::Span<const int64_t> demands,
-                    absl::Span<const IntegerVariable> flat_node_dim_variables,
-                    absl::Span<const int> tails, absl::Span<const int> heads,
-                    absl::Span<const Literal> literals, Model* model)
+  OutgoingCutHelper(
+      int num_nodes, bool is_route_constraint, int64_t capacity,
+      absl::Span<const int64_t> demands,
+      absl::Span<const AffineExpression> flat_node_dim_expressions,
+      absl::Span<const int> tails, absl::Span<const int> heads,
+      absl::Span<const Literal> literals, Model* model)
       : num_nodes_(num_nodes),
         is_route_constraint_(is_route_constraint),
         capacity_(capacity),
@@ -1230,7 +1285,7 @@ class OutgoingCutHelper {
         nodes_outgoing_weight_(num_nodes_),
         min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model),
         route_relations_helper_(RouteRelationsHelper::Create(
-            num_nodes, tails, heads, literals, flat_node_dim_variables,
+            num_nodes, tails_, heads_, literals_, flat_node_dim_expressions,
             *model->GetOrCreate<BinaryRelationRepository>())) {
     // Compute the total demands in order to know the minimum incoming/outgoing
     // flow.
@@ -2255,8 +2310,8 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
   auto helper = std::make_unique<OutgoingCutHelper>(
       num_nodes, /*is_route_constraint=*/false, /*capacity=*/0,
       /*demands=*/absl::Span<const int64_t>(),
-      /*flat_node_dim_variables=*/
-      absl::Span<const IntegerVariable>{}, tails, heads, literals, model);
+      /*flat_node_dim_expressions=*/
+      absl::Span<const AffineExpression>{}, tails, heads, literals, model);
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
@@ -2270,11 +2325,11 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 CutGenerator CreateCVRPCutGenerator(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
-    absl::Span<const IntegerVariable> flat_node_dim_variables, int64_t capacity,
-    Model* model) {
+    absl::Span<const AffineExpression> flat_node_dim_expressions,
+    int64_t capacity, Model* model) {
   auto helper = std::make_unique<OutgoingCutHelper>(
       num_nodes, /*is_route_constraint=*/true, capacity, demands,
-      flat_node_dim_variables, tails, heads, literals, model);
+      flat_node_dim_expressions, tails, heads, literals, model);
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =

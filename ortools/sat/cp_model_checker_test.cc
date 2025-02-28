@@ -665,7 +665,7 @@ TEST(ValidateCpModelTest, IntervalMustAppearBeforeTheyAreUsed) {
               HasSubstr("must appear before"));
 }
 
-TEST(ValidateCpModelTest, ValidNodeVariables) {
+TEST(ValidateCpModelTest, ValidNodeExpressions) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -676,15 +676,27 @@ TEST(ValidateCpModelTest, ValidNodeVariables) {
         tails: [ 0, 1 ]
         heads: [ 1, 0 ]
         literals: [ 0, 1 ]
-        dimensions { vars: [ 2, 3 ] }
-        dimensions { vars: [ -1, -1 ] }
+        dimensions {
+          exprs {
+            vars: [ 2 ]
+            coeffs: [ 1 ]
+          }
+          exprs {
+            vars: [ 3 ]
+            coeffs: [ 2 ]
+          }
+        }
+        dimensions {
+          exprs {}
+          exprs {}
+        }
       }
     }
   )pb");
   EXPECT_TRUE(ValidateCpModel(model).empty());
 }
 
-TEST(ValidateCpModelTest, InvalidNodeVariablesCount) {
+TEST(ValidateCpModelTest, InvalidNodeExpressionsCount) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -694,14 +706,54 @@ TEST(ValidateCpModelTest, InvalidNodeVariablesCount) {
         tails: [ 0, 1 ]
         heads: [ 1, 0 ]
         literals: [ 0, 1 ]
-        dimensions { vars: [ 2, 3, 2 ] }
+        dimensions {
+          exprs {
+            vars: [ 2 ]
+            coeffs: [ 1 ]
+          }
+          exprs {
+            vars: [ 3 ]
+            coeffs: [ 1 ]
+          }
+          exprs {
+            vars: [ 2 ]
+            coeffs: [ 1 ]
+          }
+        }
       }
     }
   )pb");
   EXPECT_THAT(ValidateCpModel(model), HasSubstr("must be of size num_nodes:2"));
 }
 
-TEST(ValidateCpModelTest, InvalidNodeVariableInRoutesConstraint) {
+TEST(ValidateCpModelTest, NonAffineExpressionInRoutesConstraint) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 0, 1 ]
+        dimensions {
+          exprs {
+            vars: [ 2, 3 ]
+            coeffs: [ 1, 2 ]
+          }
+          exprs {
+            vars: [ 3 ]
+            coeffs: [ 1 ]
+          }
+        }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("expression must be affine"));
+}
+
+TEST(ValidateCpModelTest, InvalidNodeExpressionInRoutesConstraint) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -711,12 +763,21 @@ TEST(ValidateCpModelTest, InvalidNodeVariableInRoutesConstraint) {
         tails: [ 0, 1 ]
         heads: [ 1, 0 ]
         literals: [ 0, 1 ]
-        dimensions { vars: [ 2, 3 ] }
+        dimensions {
+          exprs {
+            vars: [ 2 ]
+            coeffs: [ 1 ]
+          }
+          exprs {
+            vars: [ 3 ]
+            coeffs: [ 1 ]
+          }
+        }
       }
     }
   )pb");
   EXPECT_THAT(ValidateCpModel(model),
-              HasSubstr("must refer to a valid variable"));
+              HasSubstr("Out of bound integer variable 3 in route constraint"));
 }
 
 }  // namespace

@@ -482,6 +482,8 @@ TEST(BinaryRelationRepositoryTest, Build) {
               UnorderedElementsAre(5));
   EXPECT_THAT(repository.IndicesOfRelationsBetween(x, y),
               UnorderedElementsAre(1, 4));
+  EXPECT_THAT(repository.IndicesOfRelationsBetween(y, x),
+              UnorderedElementsAre(1, 4));
   EXPECT_THAT(repository.IndicesOfRelationsBetween(x, z),
               UnorderedElementsAre(5));
   EXPECT_THAT(repository.IndicesOfRelationsBetween(z, y), IsEmpty());

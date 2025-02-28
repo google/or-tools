@@ -247,25 +247,23 @@ message RoutesConstraintProto {
   repeated int32 demands = 4;
   int64 capacity = 5;
 
-  // A set of variables associated with the nodes.
-  message NodeVariables {
-    // The i-th element is the index of the variable associated with the i-th
-    // node, or -1 if there is no variable associated with this node (negative
-    // variable indices, referring to the negation of a variable, are not
-    // supported).
-    repeated int32 vars = 1;
+  // A set of linear expressions associated with the nodes.
+  message NodeExpressions {
+    // The i-th element is the linear expression associated with the i-th node.
+    // All expressions must be affine expressions (a * var + b).
+    repeated LinearExpressionProto exprs = 1;
   }
 
-  // Variables associated with the nodes of the graph, such as the load of the
-  // vehicle arriving at a node, or the time which a vehicle arrives at a node.
-  // Variables with the same "dimension" (such as "load" or "time") must be
-  // listed together.
+  // Expressions associated with the nodes of the graph, such as the load of the
+  // vehicle arriving at a node, or the time at which a vehicle arrives at a
+  // node. Expressions with the same "dimension" (such as "load" or "time") must
+  // be listed together.
   // This field is optional. If it is set, the linear constraints of size 1 or 2
-  // between these variables will be used to derive cuts for this constraint. If
-  // it is not set, the solve will try to automatically derive it, from the
-  // linear constraints of size 1 or 2 in the model (this can fail in complex
-  // cases).
-  repeated NodeVariables dimensions = 6;
+  // between the variables in these expressions will be used to derive cuts for
+  // this constraint. If it is not set, the solver will try to automatically
+  // derive it, from the linear constraints of size 1 or 2 in the model (this
+  // can fail in complex cases).
+  repeated NodeExpressions dimensions = 6;
 }
 
 // The values of the n-tuple formed by the given expression can only be one of

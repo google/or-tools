@@ -2767,12 +2767,20 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
     ApplyToAllLiteralIndices(mapping_function, &ct);
     ApplyToAllIntervalIndices(interval_mapping_function, &ct);
     if (ct.constraint_case() == ConstraintProto::kRoutes) {
-      for (RoutesConstraintProto::NodeVariables& node_vars :
+      for (RoutesConstraintProto::NodeExpressions& node_exprs :
            *ct.mutable_routes()->mutable_dimensions()) {
-        for (int& var : *node_vars.mutable_vars()) {
-          if (var == -1) continue;
-          const auto it = inverse_variable_map.find(var);
-          var = it != inverse_variable_map.end() ? it->second : -1;
+        for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
+          if (expr.vars().empty()) continue;
+          DCHECK_EQ(expr.vars().size(), 1);
+          const int ref = expr.vars(0);
+          const auto it = inverse_variable_map.find(PositiveRef(ref));
+          if (it == inverse_variable_map.end()) {
+            expr.clear_vars();
+            expr.clear_coeffs();
+            continue;
+          }
+          const int image = it->second;
+          expr.set_vars(0, RefIsPositive(ref) ? image : NegatedRef(image));
         }
       }
     }
