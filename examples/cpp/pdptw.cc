@@ -83,8 +83,7 @@ ABSL_FLAG(std::string, routing_model_parameters, "",
           "Text proto RoutingModelParameters (possibly partial) that will "
           "override the DefaultRoutingModelParameters()");
 
-namespace operations_research {
-namespace routing {
+namespace operations_research::routing {
 namespace {
 
 // Returns the list of variables to use for the Tabu metaheuristic.
@@ -131,7 +130,7 @@ double ComputeScalingFactorFromCallback(const C& callback, int size) {
 
 void SetupModel(const LiLimParser& parser, const RoutingIndexManager& manager,
                 RoutingModel* model,
-                routing::RoutingSearchParameters* search_parameters) {
+                RoutingSearchParameters* search_parameters) {
   const int64_t kPenalty = 100000000;
   const int64_t kFixedCost = 100000;
   const int num_nodes = parser.NumberOfNodes();
@@ -357,24 +356,25 @@ bool LoadAndSolve(absl::string_view pdp_file,
   return false;
 }
 
-}  // namespace routing
-}  // namespace operations_research
+}  // namespace operations_research::routing
+
+namespace o_r = ::operations_research::routing;
 
 int main(int argc, char** argv) {
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
-  operations_research::routing::RoutingModelParameters model_parameters =
-      operations_research::routing::DefaultRoutingModelParameters();
+  o_r::RoutingModelParameters model_parameters =
+      o_r::DefaultRoutingModelParameters();
   model_parameters.set_reduce_vehicle_cost_model(
       absl::GetFlag(FLAGS_reduce_vehicle_cost_model));
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_model_parameters), &model_parameters));
-  operations_research::routing::RoutingSearchParameters search_parameters =
-      operations_research::routing::DefaultRoutingSearchParameters();
+  o_r::RoutingSearchParameters search_parameters =
+      o_r::DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &search_parameters));
-  if (!operations_research::routing::LoadAndSolve(
-          absl::GetFlag(FLAGS_pdp_file), model_parameters, search_parameters)) {
+  if (!o_r::LoadAndSolve(absl::GetFlag(FLAGS_pdp_file), model_parameters,
+                         search_parameters)) {
     LOG(INFO) << "Error solving " << absl::GetFlag(FLAGS_pdp_file);
   }
   return EXIT_SUCCESS;
