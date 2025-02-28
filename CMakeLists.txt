@@ -30,6 +30,10 @@ message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD 20)
+  # 设置源代码和执行字符集为 UTF-8（MSVC 2015 及以上支持 /utf-8）
+  message(STATE "set utf-8=======")
+  add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+  add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 else()
   set(CMAKE_CXX_STANDARD 17)
 endif()
