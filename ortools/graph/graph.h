@@ -452,12 +452,14 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
     DCHECK(is_built_);
     DCHECK(Base::IsNodeValid(node));
-    return node + 1 < num_nodes_ ? start_[node + 1] : num_arcs_;
+    return start_[node + 1];
   }
 
   bool is_built_;
   bool arc_in_order_;
   NodeIndexType last_tail_seen_;
+  // First outgoing arc for each node. If `num_nodes_ > 0`, the "past-the-end"
+  // value is a sentinel (`start_[num_nodes_] == num_arcs_`).
   std::vector<ArcIndexType> start_;
   std::vector<NodeIndexType> head_;
   std::vector<NodeIndexType> tail_;
@@ -633,16 +635,20 @@ class ReverseArcStaticGraph
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
     DCHECK(is_built_);
     DCHECK(Base::IsNodeValid(node));
-    return node + 1 < num_nodes_ ? start_[node + 1] : num_arcs_;
+    return start_[node + 1];
   }
   ArcIndexType ReverseArcLimit(NodeIndexType node) const {
     DCHECK(is_built_);
     DCHECK(Base::IsNodeValid(node));
-    return node + 1 < num_nodes_ ? reverse_start_[node + 1] : 0;
+    return reverse_start_[node + 1];
   }
 
   bool is_built_;
+  // First outgoing arc for each node. If `num_nodes_ > 0`, the "past-the-end"
+  // value is a sentinel (`start_[num_nodes_] == num_arcs_`).
   std::vector<ArcIndexType> start_;
+  // First reverse outgoing arc for each node. If `num_nodes_ > 0`,
+  // the "past-the-end" value is a sentinel (`reverse_start_[num_nodes_] == 0`).
   std::vector<ArcIndexType> reverse_start_;
   SVector<NodeIndexType> head_;
   SVector<ArcIndexType> opposite_;
@@ -945,13 +951,15 @@ template <typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
 void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
     ComputeCumulativeSum(std::vector<ArcIndexType>* v) {
+  DCHECK_EQ(v->size(), num_nodes_ + 1);
   ArcIndexType sum = 0;
-  for (int i = 0; i < num_nodes_; ++i) {
+  for (NodeIndexType i = 0; i < num_nodes_; ++i) {
     ArcIndexType temp = (*v)[i];
     (*v)[i] = sum;
     sum += temp;
   }
   DCHECK(sum == num_arcs_);
+  (*v)[num_nodes_] = sum;  // Sentinel.
 }
 
 // Given the tail of arc #i in (*head)[i] and the head of arc #i in (*head)[~i]
@@ -968,10 +976,10 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
   // Computes the outgoing degree of each nodes and check if we need to permute
   // something or not. Note that the tails are currently stored in the positive
   // range of the SVector head.
-  start->assign(num_nodes_, 0);
+  start->assign(num_nodes_ + 1, 0);
   int last_tail_seen = 0;
   bool permutation_needed = false;
-  for (int i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     NodeIndexType tail = (*head)[i];
     if (!permutation_needed) {
       permutation_needed = tail < last_tail_seen;
@@ -984,7 +992,7 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
   // Abort early if we do not need the permutation: we only need to put the
   // heads in the positive range.
   if (!permutation_needed) {
-    for (int i = 0; i < num_arcs_; ++i) {
+    for (ArcIndexType i = 0; i < num_arcs_; ++i) {
       (*head)[i] = (*head)[~i];
     }
     if (permutation != nullptr) {
@@ -996,19 +1004,20 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
   // Computes the forward arc permutation.
   // Note that this temporarily alters the start vector.
   std::vector<ArcIndexType> perm(num_arcs_);
-  for (int i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     perm[i] = (*start)[(*head)[i]]++;
   }
 
   // Restore in (*start)[i] the index of the first arc with tail >= i.
-  for (int i = num_nodes_ - 1; i > 0; --i) {
+  DCHECK_GE(num_nodes_, 1);
+  for (NodeIndexType i = num_nodes_ - 1; i > 0; --i) {
     (*start)[i] = (*start)[i - 1];
   }
   (*start)[0] = 0;
 
   // Permutes the head into their final position in head.
   // We do not need the tails anymore at this point.
-  for (int i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     (*head)[perm[i]] = (*head)[~i];
   }
   if (permutation != nullptr) {
@@ -1239,7 +1248,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::ReserveNodes(
     NodeIndexType bound) {
   Base::ReserveNodes(bound);
   if (bound <= num_nodes_) return;
-  start_.reserve(bound);
+  start_.reserve(bound + 1);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1255,7 +1264,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
   if (node < num_nodes_) return;
   DCHECK(!const_capacities_ || node < node_capacity_) << node;
   num_nodes_ = node + 1;
-  start_.resize(num_nodes_, 0);
+  start_.resize(num_nodes_ + 1, 0);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1314,6 +1323,9 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
   node_capacity_ = num_nodes_;
   arc_capacity_ = num_arcs_;
   this->FreezeCapacities();
+  if (num_nodes_ == 0) {
+    return;
+  }
 
   // If Arc are in order, start_ already contains the degree distribution.
   if (arc_in_order_) {
@@ -1326,8 +1338,8 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
 
   // Computes outgoing degree of each nodes. We have to clear start_, since
   // at least the first arc was processed with arc_in_order_ == true.
-  start_.assign(num_nodes_, 0);
-  for (int i = 0; i < num_arcs_; ++i) {
+  start_.assign(num_nodes_ + 1, 0);
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     start_[tail_[i]]++;
   }
   this->ComputeCumulativeSum(&start_);
@@ -1335,14 +1347,14 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
   // Computes the forward arc permutation.
   // Note that this temporarily alters the start_ vector.
   std::vector<ArcIndexType> perm(num_arcs_);
-  for (int i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     perm[i] = start_[tail_[i]]++;
   }
 
   // We use "tail_" (which now contains rubbish) to permute "head_" faster.
   CHECK_EQ(tail_.size(), static_cast<size_t>(num_arcs_));
   tail_.swap(head_);
-  for (int i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     head_[perm[i]] = tail_[i];
   }
 
@@ -1351,7 +1363,8 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
   }
 
   // Restore in start_[i] the index of the first arc with tail >= i.
-  for (int i = num_nodes_ - 1; i > 0; --i) {
+  DCHECK_GE(num_nodes_, 1);
+  for (ArcIndexType i = num_nodes_ - 1; i > 0; --i) {
     start_[i] = start_[i - 1];
   }
   start_[0] = 0;
@@ -1744,11 +1757,14 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
   node_capacity_ = num_nodes_;
   arc_capacity_ = num_arcs_;
   this->FreezeCapacities();
+  if (num_nodes_ == 0) {
+    return;
+  }
   this->BuildStartAndForwardHead(&head_, &start_, permutation);
 
   // Computes incoming degree of each nodes.
-  reverse_start_.assign(num_nodes_, 0);
-  for (int i = 0; i < num_arcs_; ++i) {
+  reverse_start_.assign(num_nodes_ + 1, 0);
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     reverse_start_[head_[i]]++;
   }
   this->ComputeCumulativeSum(&reverse_start_);
@@ -1756,13 +1772,15 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
   // Computes the reverse arcs of the forward arcs.
   // Note that this sort the reverse arcs with the same tail by head.
   opposite_.reserve(num_arcs_);
-  for (int i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     // TODO(user): the 0 is wasted here, but minor optimisation.
     opposite_.grow(0, reverse_start_[head_[i]]++ - num_arcs_);
   }
 
   // Computes in reverse_start_ the start index of the reverse arcs.
-  for (int i = num_nodes_ - 1; i > 0; --i) {
+  DCHECK_GE(num_nodes_, 1);
+  reverse_start_[num_nodes_] = 0;  // Sentinel.
+  for (NodeIndexType i = num_nodes_ - 1; i > 0; --i) {
     reverse_start_[i] = reverse_start_[i - 1] - num_arcs_;
   }
   if (num_nodes_ != 0) {
@@ -1770,7 +1788,7 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
   }
 
   // Fill reverse arc information.
-  for (int i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
     opposite_[opposite_[i]] = i;
   }
   for (const NodeIndexType node : Base::AllNodes()) {
