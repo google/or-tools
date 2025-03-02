@@ -131,8 +131,11 @@
       $<@need_cgl_lib@:;$<TARGET_SONAME_FILE:Coin::Cgl>>
       $<@need_cbc_lib@:;$<TARGET_SONAME_FILE:Coin::Cbc>;$<TARGET_SONAME_FILE:Coin::OsiCbc>;$<TARGET_SONAME_FILE:Coin::CbcSolver>>
 
-      $<@need_unix_highs_lib@:;$<TARGET_SONAME_FILE:highs>>
-      $<@need_windows_highs_lib@:;$<TARGET_FILE:highs>>
+      $<@need_unix_highs_lib@:;$<TARGET_SONAME_FILE:highs::highs>>
+      $<@need_windows_highs_lib@:;$<TARGET_FILE:highs::highs>>
+
+      $<@need_unix_scip_lib@:;$<TARGET_SONAME_FILE:SCIP::libscip>>
+      $<@need_windows_scip_lib@:;$<TARGET_FILE:SCIP::libscip>>
 
       $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools>>
       $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools>>

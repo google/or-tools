@@ -296,11 +296,19 @@ message(STATUS "Build PDLP: ${BUILD_PDLP}")
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
+  CMAKE_DEPENDENT_OPTION(BUILD_Boost "Build the Boost dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  CMAKE_DEPENDENT_OPTION(BUILD_soplex "Build the Soplex dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
     "NOT BUILD_DEPS" ON)
 else()
+  set(BUILD_Boost OFF)
+  set(BUILD_soplex OFF)
   set(BUILD_SCIP OFF)
 endif()
+message(STATUS "Build Boost (Soplex requirement): ${BUILD_Boost}")
+message(STATUS "Build Soplex (SCIP requirement): ${BUILD_soplex}")
 message(STATUS "Build SCIP: ${BUILD_SCIP}")
 
 # Optional third party solvers (disabled by default)
