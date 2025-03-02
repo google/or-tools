@@ -15,6 +15,7 @@
 #define OR_TOOLS_SET_COVER_CAPACITY_INVARIANT_H_
 
 #include "absl/log/check.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/capacity_model.h"
 #include "ortools/set_cover/set_cover_model.h"
 
@@ -31,18 +32,6 @@ class CapacityInvariant {
 
   // Clears the invariant.
   void Clear();
-
-  // Returns `true` when the constraint is not violated by this flipping move
-  // and incrementally updates the invariant. Otherwise, returns `false` and
-  // does not change the object.
-  //
-  // Flips is_selected_[subset] to its negation, by calling Select or Deselect
-  // depending on value.
-  bool Flip(SubsetIndex subset);
-
-  // Returns `true` when the constraint would not be violated if this flipping
-  // move is performed. Otherwise, returns `false`. The object never changes.
-  bool CanFlip(SubsetIndex subset) const;
 
   // Returns `true` when the constraint is not violated by selecting all of the
   // items in the subset and incrementally updates the invariant. Otherwise,
@@ -87,7 +76,7 @@ class CapacityInvariant {
   SetCoverModel* set_cover_model_;
 
   // Current slack of the constraint.
-  operations_research::CapacityWeight current_slack_;
+  CapacityWeight current_slack_;
 
   // Current solution assignment.
   // TODO(user): reuse the assignment of a SetCoverInvariant.
@@ -96,11 +85,11 @@ class CapacityInvariant {
   // Determines the change in slack when (de)selecting the given subset.
   // The returned value is nonnegative; add it to the slack when selecting
   // and subtract it when deselecting.
-  double ComputeSlackChange(SubsetIndex subset) const;
+  CapacityWeight ComputeSlackChange(SubsetIndex subset) const;
 
   // Determines whether the given slack change violates the constraint
   // (`false`) or not (`true`).
-  bool SlackChangeFitsConstraint(double slack_change) const;
+  bool SlackChangeFitsConstraint(CapacityWeight slack_change) const;
 };
 }  // namespace operations_research
 

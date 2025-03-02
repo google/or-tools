@@ -34,21 +34,21 @@ TEST(CapacityModel, ChecksConstraintViolation) {
 
   CapacityInvariant cinv(&m, &sc);
   // Current assignment: [false, false]. Current activation: 0.
-  EXPECT_TRUE(cinv.CanFlip(SubsetIndex(0)));  // All moves are possible.
-  EXPECT_TRUE(cinv.CanFlip(SubsetIndex(1)));
+  EXPECT_TRUE(cinv.CanSelect(SubsetIndex(0)));  // All moves are possible.
+  EXPECT_TRUE(cinv.CanSelect(SubsetIndex(1)));
 
-  EXPECT_TRUE(cinv.Flip(SubsetIndex(0)));      // Select returns true.
-  EXPECT_TRUE(cinv.CanFlip(SubsetIndex(0)));   // Undoing: still valid.
-  EXPECT_FALSE(cinv.CanFlip(SubsetIndex(1)));  // Impossible move.
-  EXPECT_FALSE(cinv.Flip(SubsetIndex(1)));     // Select returns false.
+  EXPECT_TRUE(cinv.Select(SubsetIndex(0)));
+  EXPECT_TRUE(cinv.CanDeselect(SubsetIndex(0)));  // Undoing: still valid.
+  EXPECT_FALSE(cinv.CanSelect(SubsetIndex(1)));   // Impossible move.
+  EXPECT_FALSE(cinv.Select(SubsetIndex(1)));
   // Current assignment: [true, false]. Current activation: 1.
 
-  EXPECT_TRUE(cinv.Flip(SubsetIndex(0)));      // Deselect returns true.
-  EXPECT_TRUE(cinv.CanFlip(SubsetIndex(0)));   // Undoing: still valid.
-  EXPECT_TRUE(cinv.CanFlip(SubsetIndex(1)));   // Valid when 0 not selected.
-  EXPECT_TRUE(cinv.Flip(SubsetIndex(1)));      // Select returns true.
-  EXPECT_FALSE(cinv.CanFlip(SubsetIndex(0)));  // Impossible move.
-  EXPECT_TRUE(cinv.CanFlip(SubsetIndex(1)));   // Undoing: still valid.
+  EXPECT_TRUE(cinv.Deselect(SubsetIndex(0)));
+  EXPECT_TRUE(cinv.CanSelect(SubsetIndex(0)));  // Undoing: still valid.
+  EXPECT_TRUE(cinv.CanSelect(SubsetIndex(1)));  // Valid when 0 not selected.
+  EXPECT_TRUE(cinv.Select(SubsetIndex(1)));
+  EXPECT_FALSE(cinv.CanSelect(SubsetIndex(0)));   // Impossible move.
+  EXPECT_TRUE(cinv.CanDeselect(SubsetIndex(1)));  // Undoing: still valid.
 }
 
 }  // namespace

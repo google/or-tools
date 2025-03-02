@@ -14,20 +14,18 @@
 #include "ortools/set_cover/capacity_model.h"
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <numeric>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 void CapacityModel::AddTerm(SubsetIndex subset, ElementIndex element,
                             CapacityWeight weight) {
-  CHECK(std::isfinite(weight));
-
   subsets_.push_back(subset);
   elements_.push_back(element);
   weights_.push_back(weight);
@@ -37,13 +35,11 @@ void CapacityModel::AddTerm(SubsetIndex subset, ElementIndex element,
 }
 
 void CapacityModel::SetMinimumCapacity(CapacityWeight min_capacity) {
-  CHECK(!std::isnan(min_capacity));
   CHECK_NE(min_capacity, std::numeric_limits<CapacityWeight>::max());
   min_capacity_ = min_capacity;
 }
 
 void CapacityModel::SetMaximumCapacity(CapacityWeight max_capacity) {
-  CHECK(!std::isnan(max_capacity));
   CHECK_NE(max_capacity, std::numeric_limits<CapacityWeight>::min());
   max_capacity_ = max_capacity;
 }

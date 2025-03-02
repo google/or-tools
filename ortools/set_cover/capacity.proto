@@ -43,15 +43,15 @@ message CapacityConstraintProto {
   message CapacityTerm {
     // The subset this weight corresponds to (index of the subset in the
     // `subset` repeated field in `SetCoverProto`).
-    int32 subset = 1;
+    int64 subset = 1;
 
     message ElementWeightPair {
       // The element this weight corresponds to (value of `element` in
       // `SetCoverProto.Subset`).
-      int32 element = 1;
+      int64 element = 1;
 
       // The weight of the element.
-      double weight = 2;
+      int64 weight = 2;
     }
 
     repeated ElementWeightPair element_weights = 2;
@@ -67,9 +67,9 @@ message CapacityConstraintProto {
 
   // The minimum amount of resource that must be consumed. At least one of
   // `min_capacity` and `max_capacity` must be present.
-  double min_capacity = 2;
+  int64 min_capacity = 2;
 
   // The maximum amount of resource that can be consumed. At least one of
   // `min_capacity` and `max_capacity` must be present.
-  double max_capacity = 3;
+  int64 max_capacity = 3;
 }

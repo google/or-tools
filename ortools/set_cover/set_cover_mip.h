@@ -15,8 +15,8 @@
 #define OR_TOOLS_SET_COVER_SET_COVER_MIP_H_
 
 #include "absl/types/span.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
-#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 enum class SetCoverMipSolver : int {

@@ -23,6 +23,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
@@ -299,15 +300,6 @@ BaseInt SetCoverInvariant::ComputeNumFreeElements(SubsetIndex subset) const {
     }
   }
   return num_free_elements;
-}
-
-void SetCoverInvariant::Flip(SubsetIndex subset,
-                             ConsistencyLevel target_consistency) {
-  if (!is_selected_[subset]) {
-    Select(subset, target_consistency);
-  } else {
-    Deselect(subset, target_consistency);
-  }
 }
 
 void SetCoverInvariant::Select(SubsetIndex subset,

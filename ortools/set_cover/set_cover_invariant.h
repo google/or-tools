@@ -19,6 +19,7 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_model.h"
 
@@ -178,11 +179,6 @@ class SetCoverInvariant {
 
   // Computes the number of free (uncovered) elements in the given subset.
   BaseInt ComputeNumFreeElements(SubsetIndex subset) const;
-
-  // Flips is_selected_[subset] to its negation, by calling Select or Deselect
-  // depending on value. Updates the invariant incrementally to the given
-  // consistency level.
-  void Flip(SubsetIndex subset, ConsistencyLevel consistency);
 
   // Includes subset in the solution by setting is_selected_[subset] to true
   // and incrementally updating the invariant to the given consistency level.

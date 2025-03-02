@@ -21,6 +21,7 @@
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 

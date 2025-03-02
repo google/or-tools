@@ -30,6 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
 #include "ortools/base/logging.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 
@@ -134,9 +135,9 @@ bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
   std::vector<SubsetIndex> subsets_to_remove;
   subsets_to_remove.reserve(focus.size());
   while (!pq.IsEmpty() || inv_->num_uncovered_elements() > 0) {
-    LOG_EVERY_N_SEC(INFO, 5)
-        << "Queue size: " << pq.heap_size()
-        << ", #uncovered elements: " << inv_->num_uncovered_elements();
+    // LOG_EVERY_N_SEC(INFO, 5)
+    //     << "Queue size: " << pq.heap_size()
+    //     << ", #uncovered elements: " << inv_->num_uncovered_elements();
     const SubsetIndex best_subset(pq.TopIndex());
     pq.Pop();
     inv_->Select(best_subset, CL::kFreeAndUncovered);
@@ -705,7 +706,11 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 
     UpdatePenalties(focus);
     tabu_list_.Add(best_subset);
-    inv_->Flip(best_subset, CL::kFreeAndUncovered);
+    if (inv_->is_selected()[best_subset]) {
+      inv_->Deselect(best_subset, CL::kFreeAndUncovered);
+    } else {
+      inv_->Select(best_subset, CL::kFreeAndUncovered);
+    }
     // TODO(user): make the cost computation incremental.
     augmented_cost =
         std::accumulate(augmented_costs_.begin(), augmented_costs_.end(), 0.0);
@@ -714,9 +719,6 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
              << inv_->cost() << ", best cost = ," << best_cost
              << ", penalized cost = ," << augmented_cost;
     if (inv_->cost() < best_cost) {
-      LOG(INFO) << "Updated best cost, " << "Iteration, " << iteration
-                << ", current cost = ," << inv_->cost() << ", best cost = ,"
-                << best_cost << ", penalized cost = ," << augmented_cost;
       best_cost = inv_->cost();
       best_choices = inv_->is_selected();
     }
@@ -773,17 +775,19 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 
   for (int iteration = 0;
        !priority_heap_.IsEmpty() && iteration < num_iterations; ++iteration) {
-    // Improve current solution respective to the current penalties.
+    // Improve current solution respective to the current penalties by flipping
+    // the best subset.
     const SubsetIndex best_subset(priority_heap_.TopIndex());
     if (inv_->is_selected()[best_subset]) {
       utility_heap_.Insert({0, best_subset.value()});
+      inv_->Deselect(best_subset, CL::kRedundancy);
     } else {
       utility_heap_.Insert(
           {static_cast<float>(inv_->model()->subset_costs()[best_subset] /
                               (1 + penalties_[best_subset])),
            best_subset.value()});
+      inv_->Select(best_subset, CL::kRedundancy);
     }
-    inv_->Flip(best_subset, CL::kRedundancy);  // Flip the best subset.
     DCHECK(!utility_heap_.IsEmpty());
 
     // Getting the subset with highest utility. utility_heap_ is not empty,

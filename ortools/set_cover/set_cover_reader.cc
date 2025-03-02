@@ -34,6 +34,7 @@
 #include "ortools/base/filesystem.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/util/filelineiter.h"

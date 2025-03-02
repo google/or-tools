@@ -23,6 +23,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/timer.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"

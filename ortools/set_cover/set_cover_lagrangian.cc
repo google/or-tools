@@ -23,6 +23,7 @@
 #include "absl/synchronization/blocking_counter.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
 #include "ortools/base/threadpool.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 

@@ -15,12 +15,14 @@
 #define OR_TOOLS_SET_COVER_CAPACITY_MODEL_H_
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/capacity.pb.h"
 #include "ortools/set_cover/set_cover_model.h"
 
@@ -36,7 +38,7 @@
 
 namespace operations_research {
 // Basic type for weights. For now, the same as `Cost` for the set covering.
-using CapacityWeight = double;
+using CapacityWeight = int64_t;
 
 // Term index in a capacity constraint.
 DEFINE_STRONG_INT_TYPE(CapacityTermIndex, BaseInt);
@@ -65,8 +67,6 @@ class CapacityModel {
         min_capacity_(min),
         max_capacity_(max) {
     // At least one bound must be set. Otherwise, the constraint is vacuous.
-    CHECK(!std::isnan(min_capacity_));
-    CHECK(!std::isnan(max_capacity_));
     CHECK(min_capacity_ != std::numeric_limits<CapacityWeight>::min() ||
           max_capacity_ != std::numeric_limits<CapacityWeight>::max());
   }
@@ -89,7 +89,6 @@ class CapacityModel {
   }
 
   // Adds a new term to the constraint.
-  // This will CHECK-fail if the weight is infinite or a NaN.
   void AddTerm(SubsetIndex subset, ElementIndex element, CapacityWeight weight);
 
   // Returns the element, subset, or capacity of the given term.

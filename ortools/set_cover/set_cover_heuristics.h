@@ -18,8 +18,8 @@
 
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
-#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 

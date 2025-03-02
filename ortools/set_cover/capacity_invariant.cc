@@ -13,10 +13,14 @@
 
 #include "ortools/set_cover/capacity_invariant.h"
 
+#include <limits>
+
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/capacity_model.h"
 #include "ortools/set_cover/set_cover_model.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 
@@ -25,48 +29,55 @@ void CapacityInvariant::Clear() {
   is_selected_.assign(set_cover_model_->num_subsets(), false);
 }
 
-double CapacityInvariant::ComputeSlackChange(const SubsetIndex subset) const {
-  double slack_change = 0.0;
+namespace {
+// Returns true if the addition of `q` to `sum` overflows, for q >= 0.
+bool PositiveAddOverflows(CapacityWeight sum, CapacityWeight q) {
+  DCHECK_GE(q, 0);
+  return sum > std::numeric_limits<CapacityWeight>::max() - q;
+}
+
+// Returns true if the addition of `q` to `sum` overflows, for q <= 0.
+bool NegativeAddOverflows(CapacityWeight sum, CapacityWeight q) {
+  DCHECK_LE(q, 0);
+  return sum < std::numeric_limits<CapacityWeight>::min() - q;
+}
+}  // namespace
+
+CapacityWeight CapacityInvariant::ComputeSlackChange(
+    const SubsetIndex subset) const {
+  CapacityWeight slack_change = 0;
   for (CapacityTermIndex term : model_->TermRange()) {
     if (model_->GetTermSubsetIndex(term) == subset) {
       // Hypothesis: GetTermSubsetIndex(term) is an element of the subset.
       // This information is stored in a SetCoverModel instance.
-      slack_change += model_->GetTermCapacityWeight(term);
+      const CapacityWeight term_weight = model_->GetTermCapacityWeight(term);
+      // Make sure that the slack change will not overflow.
+      CHECK(!PositiveAddOverflows(slack_change, term_weight));
+      slack_change += term_weight;
     }
   }
   return slack_change;
 }
 
 bool CapacityInvariant::SlackChangeFitsConstraint(
-    const double slack_change) const {
-  const double new_slack = current_slack_ + slack_change;
+    CapacityWeight slack_change) const {
+  CHECK(!AddOverflows(current_slack_, slack_change));
+  const CapacityWeight new_slack = current_slack_ + slack_change;
   return new_slack >= model_->GetMinimumCapacity() &&
          new_slack <= model_->GetMaximumCapacity();
-}
-
-bool CapacityInvariant::Flip(SubsetIndex subset) {
-  DCHECK_LT(subset.value(), set_cover_model_->num_subsets())
-      << "Invalid subset: " << subset;
-  return !is_selected_[subset] ? Select(subset) : Deselect(subset);
-}
-
-bool CapacityInvariant::CanFlip(SubsetIndex subset) const {
-  DCHECK_LT(subset.value(), set_cover_model_->num_subsets())
-      << "Invalid subset: " << subset;
-  return !is_selected_[subset] ? CanSelect(subset) : CanDeselect(subset);
 }
 
 bool CapacityInvariant::Select(SubsetIndex subset) {
   DVLOG(1) << "[Capacity constraint] Selecting subset " << subset;
   DCHECK(!is_selected_[subset]);
 
-  const double slack_change = ComputeSlackChange(subset);
+  const CapacityWeight slack_change = ComputeSlackChange(subset);
   if (!SlackChangeFitsConstraint(slack_change)) {
     DVLOG(1) << "[Capacity constraint] Selecting subset " << subset
              << ": infeasible";
     return false;
   }
-
+  CHECK(!PositiveAddOverflows(current_slack_, slack_change));
   is_selected_[subset] = true;
   current_slack_ += slack_change;
   DVLOG(1) << "[Capacity constraint] New slack: " << current_slack_;
@@ -77,7 +88,7 @@ bool CapacityInvariant::CanSelect(SubsetIndex subset) const {
   DVLOG(1) << "[Capacity constraint] Can select subset " << subset << "?";
   DCHECK(!is_selected_[subset]);
 
-  const double slack_change = ComputeSlackChange(subset);
+  const CapacityWeight slack_change = ComputeSlackChange(subset);
   DVLOG(1) << "[Capacity constraint] New slack if selecting: "
            << current_slack_ + slack_change;
   return SlackChangeFitsConstraint(slack_change);
@@ -87,13 +98,13 @@ bool CapacityInvariant::Deselect(SubsetIndex subset) {
   DVLOG(1) << "[Capacity constraint] Deselecting subset " << subset;
   DCHECK(is_selected_[subset]);
 
-  const double slack_change = -ComputeSlackChange(subset);
+  const CapacityWeight slack_change = -ComputeSlackChange(subset);
   if (!SlackChangeFitsConstraint(slack_change)) {
     DVLOG(1) << "[Capacity constraint] Deselecting subset " << subset
              << ": infeasible";
     return false;
   }
-
+  CHECK(!NegativeAddOverflows(current_slack_, slack_change));
   is_selected_[subset] = false;
   current_slack_ += slack_change;
   DVLOG(1) << "[Capacity constraint] New slack: " << current_slack_;
@@ -104,7 +115,7 @@ bool CapacityInvariant::CanDeselect(SubsetIndex subset) const {
   DVLOG(1) << "[Capacity constraint] Can deselect subset " << subset << "?";
   DCHECK(is_selected_[subset]);
 
-  const double slack_change = -ComputeSlackChange(subset);
+  const CapacityWeight slack_change = -ComputeSlackChange(subset);
   DVLOG(1) << "[Capacity constraint] New slack if deselecting: "
            << current_slack_ + slack_change;
   return SlackChangeFitsConstraint(slack_change);

@@ -32,6 +32,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/radix_sort.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover.pb.h"
 
 namespace operations_research {
@@ -159,15 +160,10 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
       subset_already_contains_element[element] = false;
     }
   }
-  LOG(INFO) << "Finished generating the model with " << num_elements_covered
-            << " elements covered.";
 
   // It can happen -- rarely in practice -- that some of the elements cannot be
   // covered. Let's add them to randomly chosen subsets.
   if (num_elements_covered != num_elements) {
-    LOG(INFO) << "Generated model with " << num_elements - num_elements_covered
-              << " elements that cannot be covered. Adding them to random "
-                 "subsets.";
     SubsetBoolVector element_already_in_subset(num_subsets, false);
     for (ElementIndex element(0); element.value() < num_elements; ++element) {
       LOG_EVERY_N_SEC(INFO, 5) << absl::StrFormat(
@@ -200,11 +196,7 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
         ++num_elements_covered;
       }
     }
-    LOG(INFO) << "Finished generating subsets for elements that were not "
-                 "covered in the original model.";
   }
-  LOG(INFO) << "Finished generating the model. There are "
-            << num_elements - num_elements_covered << " uncovered elements.";
 
   CHECK_EQ(num_elements_covered, num_elements);
 
@@ -338,10 +330,8 @@ void SetCoverModel::SortElementsInSubsets() {
 
 void SetCoverModel::CreateSparseRowView() {
   if (row_view_is_valid_) {
-    LOG(INFO) << "CreateSparseRowView: already valid";
     return;
   }
-  LOG(INFO) << "CreateSparseRowView started";
   rows_.resize(num_elements_, SparseRow());
   ElementToIntVector row_sizes(num_elements_, 0);
   for (const SubsetIndex subset : SubsetRange()) {
@@ -367,7 +357,6 @@ void SetCoverModel::CreateSparseRowView() {
   }
   row_view_is_valid_ = true;
   elements_in_subsets_are_sorted_ = true;
-  LOG(INFO) << "CreateSparseRowView finished";
 }
 
 bool SetCoverModel::ComputeFeasibility() const {
@@ -382,7 +371,7 @@ bool SetCoverModel::ComputeFeasibility() const {
   }
   SubsetIndex column_index(0);
   for (const SparseColumn& column : columns_) {
-    DLOG_IF(INFO, column.empty()) << "Empty column " << column_index.value();
+    // DLOG_IF(INFO, column.empty()) << "Empty column " << column_index.value();
     for (const ElementIndex element : column) {
       ++coverage[element];
     }
@@ -420,7 +409,6 @@ SetCoverProto SetCoverModel::ExportModelAsProto() const {
       subset_proto->add_element(element.value());
     }
   }
-  LOG(INFO) << "Finished exporting the model.";
   return message;
 }
 

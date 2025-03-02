@@ -334,13 +334,6 @@ PYBIND11_MODULE(set_cover, m) {
           arg("subset"))
       .def("recompute", &SetCoverInvariant::Recompute)
       .def(
-          "flip",
-          [](SetCoverInvariant& invariant, BaseInt subset,
-             SetCoverInvariant::ConsistencyLevel consistency) {
-            invariant.Flip(SubsetIndex(subset), consistency);
-          },
-          arg("subset"), arg("consistency"))
-      .def(
           "select",
           [](SetCoverInvariant& invariant, BaseInt subset,
              SetCoverInvariant::ConsistencyLevel consistency) {
@@ -418,8 +411,8 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](ElementDegreeSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus,
-              const std::vector<double>& costs) -> bool {
+              absl::Span<const BaseInt> focus,
+              absl::Span<const double> costs) -> bool {
              return heuristic.NextSolution(
                  VectorIntToVectorSubsetIndex(focus),
                  VectorDoubleToSubsetCostVector(costs));
@@ -434,7 +427,7 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](LazyElementDegreeSolutionGenerator& heuristic,
-              const std::vector<BaseInt>& focus) -> bool {
+              absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            })
       .def("next_solution",
@@ -459,8 +452,8 @@ PYBIND11_MODULE(set_cover, m) {
                                            num_iterations);
            })
       .def("next_solution",
-           [](SteepestSearch& heuristic, const std::vector<BaseInt>& focus,
-              const std::vector<double>& costs, int num_iterations) -> bool {
+           [](SteepestSearch& heuristic, absl::Span<const BaseInt> focus,
+              absl::Span<const double> costs, int num_iterations) -> bool {
              return heuristic.NextSolution(
                  VectorIntToVectorSubsetIndex(focus),
                  VectorDoubleToSubsetCostVector(costs), num_iterations);

@@ -15,11 +15,11 @@
 #define OR_TOOLS_SET_COVER_SET_COVER_LAGRANGIAN_H_
 
 #include <memory>
-#include <new>
 #include <tuple>
 #include <vector>
 
 #include "ortools/base/threadpool.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 
