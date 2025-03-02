@@ -1,0 +1,148 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0b21f5a..0b26a36 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -27,6 +27,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
+ set(CPACK_PACKAGE_VENDOR "Zuse Institute Berlin")
+ include(CPack)
+ 
++# Disable CTest targets
++set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
++include(CTest)
++
+ option(ZLIB "Use ZLIB" ON)
+ option(GMP "Use GMP" ON)
+ option(EMSCRIPTEN_HTML "Emscripten HTML output" OFF)
+@@ -69,6 +73,8 @@ set(CMAKE_MACOSX_RPATH ON)
+ 
+ # use C++14 standard
+ set(CMAKE_CXX_STANDARD 14)
++set(CMAKE_CXX_STANDARD_REQUIRED ON)
++set(CMAKE_CXX_EXTENSIONS OFF)
+ 
+ # set function visibility default to hidden
+ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+@@ -123,12 +129,11 @@ if(COVERAGE)
+ endif()
+ 
+ if(ZLIB)
+-    find_package(ZLIB)
+-endif()
+-if(ZLIB_FOUND)
+-    set(SOPLEX_WITH_ZLIB on)
+-    set(libs ${libs} ${ZLIB_LIBRARIES})
+-    include_directories(${ZLIB_INCLUDE_DIRS})
++  if(NOT TARGET ZLIB::ZLIB)
++    find_package(ZLIB REQUIRED)
++  endif()
++  set(SOPLEX_WITH_ZLIB on)
++  set(libs ${libs} ZLIB::ZLIB)
+ endif()
+ 
+ if(GMP)
+@@ -170,39 +175,24 @@ else()
+     set(SOPLEX_WITH_PAPILO off)
+ endif()
+ 
+-set(BOOST_MINIMUM_VERSION 1.65.0)
++set(BOOST_MINIMUM_VERSION 1.65.0) # PaPILO requires at least Boost 1.65 (on mac 1.72)
+ if(BOOST)
+-    find_package(Boost ${BOOST_MINIMUM_VERSION}) # PaPILO requires at least Boost 1.65 (on mac 1.72)
+-    if(Boost_FOUND)
+-        set(SOPLEX_WITH_BOOST on)
+-        include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+-        if(NOT Boost_VERSION_MACRO)
+-           set(Boost_VERSION_MACRO ${Boost_VERSION})
+-        endif()
+-        if(${Boost_VERSION_MACRO} LESS "107000")
+-            if(NOT SOPLEX_WITH_GMP)
+-               message(SEND_ERROR "If no GMP is linked, then the minimal Boost verion is 1.70. \
+-                       Found Boost version is ${Boost_VERSION_STRING}. Either provide newer Boost, link GMP, or disable Boost by setting BOOST=off.")
+-            else()
+-               message(WARNING "The multiprecision and quadprecision features are disabled with Boost versions older than 1.70. \
+-                       Found Boost version is ${Boost_VERSION_STRING}.")
+-            endif()
+-        endif()
+-        if(MPFR) # MPFR is used within boost multiprecision, so using it without Boost does not make sense
+-            find_package(MPFR)
+-        endif()
+-        if(MPFR_FOUND)
+-            message(STATUS "SoPlex with Boost MPFR libraries")
+-            set(SOPLEX_WITH_MPFR on)
+-            include_directories(${MPFR_INCLUDE_DIRS})
+-            set(libs ${libs} ${MPFR_LIBRARIES})
+-        else()
+-            message(STATUS "SoPlex with Boost CPP multiprecision libraries")
+-            set(SOPLEX_WITH_CPPMPF on)
+-        endif()
+-    else()
+-        set(BOOST off)
+-    endif()
++  if(NOT TARGET Boost::multiprecision OR NOT TARGET Boost::serialization)
++    message(FATAL_ERROR "Boost::multiprecision or Boost::serialization not available!!!")
++    find_package(Boost ${BOOST_MINIMUM_VERSION} REQUIRED)
++  endif()
++  set(SOPLEX_WITH_BOOST on)
++  set(libs ${libs} Boost::multiprecision Boost::serialization)
++  if(MPFR) # MPFR is used within boost multiprecision, so using it without Boost does not make sense
++    find_package(MPFR REQUIRED)
++    message(STATUS "SoPlex with Boost MPFR libraries")
++    set(SOPLEX_WITH_MPFR on)
++    include_directories(${MPFR_INCLUDE_DIRS})
++    set(libs ${libs} ${MPFR_LIBRARIES})
++  else()
++    message(STATUS "SoPlex with Boost CPP multiprecision libraries")
++    set(SOPLEX_WITH_CPPMPF on)
++  endif()
+ endif()
+ 
+ # disable fused floating point contraction to enhance reproducibility across compilers and architectures
+@@ -247,7 +237,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/soplex/config.h.in ${PROJECT_BINA
+ configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake" @ONLY)
+ 
+ add_subdirectory(src)
+-add_subdirectory(tests/c_interface)
+-add_subdirectory(check)
+-
+-enable_testing()
++if(BUILD_TESTING)
++  add_subdirectory(tests/c_interface)
++  add_subdirectory(check)
++endif()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 84ec5a5..e1d0028 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -193,8 +193,8 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
+ set_target_properties(libsoplexshared PROPERTIES CXX_VISIBILITY_PRESET default)
+ 
+ # create soplex binary using library without pic
+-add_executable(soplex soplexmain.cpp)
+-target_link_libraries(soplex LINK_PUBLIC libsoplex ${Boost_LIBRARIES})
++add_executable(soplex EXCLUDE_FROM_ALL soplexmain.cpp)
++target_link_libraries(soplex PRIVATE libsoplex ${Boost_LIBRARIES})
+ 
+ if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
+     set_target_properties(soplex PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/soplex_webdemo_shell.html)
+@@ -206,8 +206,8 @@ if(CMAKE_BUILD_TYPE EQUAL "Debug")
+    add_sanitizers(soplex)
+ endif()
+ 
+-add_executable(example EXCLUDE_FROM_ALL example.cpp)
+-target_link_libraries(example libsoplex)
++add_executable(soplex_example EXCLUDE_FROM_ALL example.cpp)
++target_link_libraries(soplex_example libsoplex)
+ 
+ # set the install rpath to the installed destination
+ set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+@@ -244,8 +244,8 @@ install(TARGETS soplex libsoplex libsoplex-pic libsoplexshared EXPORT soplex-tar
+ 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ # Add library targets to the build-tree export set
+-export(TARGETS libsoplex libsoplex-pic libsoplexshared
+-  FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
++#export(TARGETS libsoplex libsoplex-pic libsoplexshared
++#  FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
+ 
+ #configure the config file for the build tree
+ set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${PROJECT_BINARY_DIR}")
