@@ -447,15 +447,27 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   void InsertBetween(int64_t node, int64_t predecessor, int64_t successor,
                      int vehicle = -1);
   /// Returns the cost of inserting 'node_to_insert' between 'insert_after' and
-  /// 'insert_before' on the 'vehicle', i.e.
-  /// Cost(insert_after-->node) + Cost(node-->insert_before)
-  /// - Cost (insert_after-->insert_before).
+  /// 'insert_before' on the 'vehicle' when the evaluator_ is defined, i.e.
+  /// evaluator_(insert_after-->node) + evaluator_(node-->insert_before)
+  /// - evaluator_(insert_after-->insert_before).
   // TODO(user): Replace 'insert_before' and 'insert_after' by 'predecessor'
   // and 'successor' in the code.
-  int64_t GetInsertionCostForNodeAtPosition(int64_t node_to_insert,
-                                            int64_t insert_after,
-                                            int64_t insert_before,
-                                            int vehicle) const;
+  int64_t GetEvaluatorInsertionCostForNodeAtPosition(int64_t node_to_insert,
+                                                     int64_t insert_after,
+                                                     int64_t insert_before,
+                                                     int vehicle) const;
+  /// Same as above, except that when the evaluator_ is not defined, the cost is
+  /// determined by Evaluate-ing the insertion of the node through the filter
+  /// manager, returning std::nullopt when the insertion is not feasible.
+  std::optional<int64_t> GetInsertionCostForNodeAtPosition(
+      int64_t node_to_insert, int64_t insert_after, int64_t insert_before,
+      int vehicle, int hint_weight = 0);
+  /// Same as above for the insertion of a pickup/delivery pair at the given
+  /// positions.
+  std::optional<int64_t> GetInsertionCostForPairAtPositions(
+      int64_t pickup_to_insert, int64_t pickup_insert_after,
+      int64_t delivery_to_insert, int64_t delivery_insert_after, int vehicle,
+      int hint_weight = 0);
   /// Returns the cost of unperforming node 'node_to_insert'. Returns kint64max
   /// if penalty callback is null or if the node cannot be unperformed.
   int64_t GetUnperformedValue(int64_t node_to_insert) const;
@@ -642,8 +654,12 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// nodes/pairs on the given vehicle, i.e. iff the route of the given vehicle
   /// is empty and 'all_vehicles' is true.
   bool UseEmptyVehicleTypeCuratorForVehicle(int vehicle,
-                                            bool all_vehicles = true) {
-    return vehicle >= 0 && VehicleIsEmpty(vehicle) && all_vehicles;
+                                            bool all_vehicles = true) const {
+    // NOTE: When the evaluator_ is null, filters are used to evaluate the cost
+    // and feasibility of inserting on each vehicle, so all vehicles are
+    // considered for insertion instead of just one per class.
+    return vehicle >= 0 && VehicleIsEmpty(vehicle) && all_vehicles &&
+           evaluator_ != nullptr;
   }
 
   /// Tries to insert the pickup/delivery pair on a vehicle of the same type and
@@ -804,20 +820,14 @@ class GlobalCheapestInsertionFilteredHeuristic
                     int vehicle,
                     AdjustablePriorityQueue<PairEntry>* priority_queue,
                     std::vector<PairEntries>* pickup_entries,
-                    std::vector<PairEntries>* delivery_entries) const;
+                    std::vector<PairEntries>* delivery_entries);
   /// Updates the pair entry's value and rearranges the priority queue
   /// accordingly.
-  void UpdatePairEntry(
-      PairEntry* pair_entry,
-      AdjustablePriorityQueue<PairEntry>* priority_queue) const;
-  /// Computes and returns the insertion value of inserting 'pickup' and
-  /// 'delivery' respectively after 'pickup_insert_after' and
-  /// 'delivery_insert_after' on 'vehicle'.
-  int64_t GetInsertionValueForPairAtPositions(int64_t pickup,
-                                              int64_t pickup_insert_after,
-                                              int64_t delivery,
-                                              int64_t delivery_insert_after,
-                                              int vehicle) const;
+  /// Returns true iff the pair entry was correctly updated, otherwise returns
+  /// false which indicates the pair entry should be removed from the priority
+  /// queue.
+  bool UpdatePairEntry(PairEntry* pair_entry,
+                       AdjustablePriorityQueue<PairEntry>* priority_queue);
 
   /// Initializes the priority queue and the node entries with the current state
   /// of the solution on the given vehicle routes.
@@ -855,7 +865,7 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// 'insert_after' on 'vehicle' and adds it to the 'queue' and
   /// 'node_entries'.
   void AddNodeEntry(int64_t node, int64_t insert_after, int vehicle,
-                    bool all_vehicles, NodeEntryQueue* queue) const;
+                    bool all_vehicles, NodeEntryQueue* queue);
 
   void ResetVehicleIndices() override {
     node_index_to_vehicle_.assign(node_index_to_vehicle_.size(), -1);

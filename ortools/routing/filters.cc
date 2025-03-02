@@ -2120,9 +2120,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths(bool synchronizing_all_paths) {
     // OnSynchronizePathFromStart() calls recompute everything. Otherwise we let
     // the InitializeAcceptPath() call below revert the data structures.
     dimension_values_.Reset();
-    cost_of_path_.Revert();
     cost_of_path_.SetAllAndCommit(0);
-    location_of_node_.Revert();
     location_of_node_.SetAllAndCommit({-1, -1});
     global_span_cost_.SetAndCommit(0);
     synchronized_objective_value_ = 0;  // Accept() relies on this value.
@@ -2492,7 +2490,6 @@ PickupDeliveryFilter::PickupDeliveryFilter(
 }
 
 void PickupDeliveryFilter::Reset() {
-  assigned_status_of_pair_.Revert();
   assigned_status_of_pair_.SetAllAndCommit({});
   num_assigned_pairs_.SetAndCommit(0);
 }
