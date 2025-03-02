@@ -1217,30 +1217,30 @@ TEST(MaybeFillMissingRoutesConstraintNodeExpressions,
   EXPECT_EQ(num_routes, 1);
   EXPECT_EQ(num_dimensions, 1);
   const ConstraintProto expected_constraint = ParseTestProto(R"pb(
-                routes {
-                  tails: [ 1, 2, 1, 2 ]
-                  heads: [ 0, 0, 2, 3 ]
-                  literals: [ 0, 1, 2, 3 ]
-                  dimensions {
-                    exprs {
-                      vars: [ 4 ]
-                      coeffs: [ 1 ]
-                    }
-                    exprs {
-                      vars: [ 5 ]
-                      coeffs: [ 1 ]
-                    }
-                    exprs {
-                      vars: [ 6 ]
-                      coeffs: [ 1 ]
-                    }
-                    exprs {
-                      vars: [ 7 ]
-                      coeffs: [ 1 ]
-                    }
-                  }
-                }
-              )pb");
+    routes {
+      tails: [ 1, 2, 1, 2 ]
+      heads: [ 0, 0, 2, 3 ]
+      literals: [ 0, 1, 2, 3 ]
+      dimensions {
+        exprs {
+          vars: [ 4 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 5 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 6 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 7 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
   EXPECT_THAT(new_cp_model.constraints(0), EqualsProto(expected_constraint));
 }
 
