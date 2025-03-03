@@ -275,6 +275,7 @@ if(BUILD_Boost)
     https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-cmake.tar.gz
     USES_TERMINAL_DOWNLOAD TRUE
     DOWNLOAD_NO_EXTRACT FALSE
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
   )
   set(BOOST_INCLUDE_LIBRARIES multiprecision serialization)
   option(BOOST_SKIP_INSTALL_RULES NO)
