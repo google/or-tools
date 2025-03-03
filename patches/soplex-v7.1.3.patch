@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0b21f5a..0b26a36 100644
+index 0b21f5a..bde4883 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -27,6 +27,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
@@ -13,7 +13,18 @@ index 0b21f5a..0b26a36 100644
  option(ZLIB "Use ZLIB" ON)
  option(GMP "Use GMP" ON)
  option(EMSCRIPTEN_HTML "Emscripten HTML output" OFF)
-@@ -69,6 +73,8 @@ set(CMAKE_MACOSX_RPATH ON)
+@@ -43,6 +47,10 @@ option(SANITIZE_THREAD "should the thread sanitizer be enabled in debug mode if
+ option(COVERAGE "enable coverage support" OFF)
+ option(PAPILO "should papilo library be linked" ON)
+ 
++option(SOPLEX_EXAMPLE "Build example" OFF)
++option(SOPLEX_SOPLEX "Build soplex program" OFF)
++option(SOPLEX_EXPORT "Enable to use soplex from the current project's build tree, without installation." OFF)
++
+ SET(COVERAGE_CTEST_ARGS "" CACHE STRING "additional ctest arguments for coverage")
+ 
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+@@ -69,6 +77,8 @@ set(CMAKE_MACOSX_RPATH ON)
  
  # use C++14 standard
  set(CMAKE_CXX_STANDARD 14)
@@ -22,7 +33,7 @@ index 0b21f5a..0b26a36 100644
  
  # set function visibility default to hidden
  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-@@ -123,12 +129,11 @@ if(COVERAGE)
+@@ -123,12 +133,11 @@ if(COVERAGE)
  endif()
  
  if(ZLIB)
@@ -40,7 +51,7 @@ index 0b21f5a..0b26a36 100644
  endif()
  
  if(GMP)
-@@ -170,39 +175,24 @@ else()
+@@ -170,39 +179,24 @@ else()
      set(SOPLEX_WITH_PAPILO off)
  endif()
  
@@ -97,7 +108,7 @@ index 0b21f5a..0b26a36 100644
  endif()
  
  # disable fused floating point contraction to enhance reproducibility across compilers and architectures
-@@ -247,7 +237,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/soplex/config.h.in ${PROJECT_BINA
+@@ -247,7 +241,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/soplex/config.h.in ${PROJECT_BINA
  configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake" @ONLY)
  
  add_subdirectory(src)
@@ -110,39 +121,95 @@ index 0b21f5a..0b26a36 100644
 +  add_subdirectory(check)
 +endif()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 84ec5a5..e1d0028 100644
+index 84ec5a5..6f5d4ef 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -193,8 +193,8 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
+@@ -193,24 +193,28 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
  set_target_properties(libsoplexshared PROPERTIES CXX_VISIBILITY_PRESET default)
  
  # create soplex binary using library without pic
 -add_executable(soplex soplexmain.cpp)
 -target_link_libraries(soplex LINK_PUBLIC libsoplex ${Boost_LIBRARIES})
-+add_executable(soplex EXCLUDE_FROM_ALL soplexmain.cpp)
-+target_link_libraries(soplex PRIVATE libsoplex ${Boost_LIBRARIES})
++if(SOPLEX_SOPLEX)
++  add_executable(soplex EXCLUDE_FROM_ALL soplexmain.cpp)
++  target_link_libraries(soplex PRIVATE libsoplex ${Boost_LIBRARIES})
  
- if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
+-if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
++  # set the install rpath to the installed destination
++  set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
++
++  if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
      set_target_properties(soplex PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/soplex_webdemo_shell.html)
-@@ -206,8 +206,8 @@ if(CMAKE_BUILD_TYPE EQUAL "Debug")
-    add_sanitizers(soplex)
+     set(CMAKE_EXECUTABLE_SUFFIX ".html")
+-endif()
++  endif()
+ 
+-if(CMAKE_BUILD_TYPE EQUAL "Debug")
+-   find_package(Sanitizers)
+-   add_sanitizers(soplex)
++  if(CMAKE_BUILD_TYPE EQUAL "Debug")
++    find_package(Sanitizers)
++    add_sanitizers(soplex)
++  endif()
  endif()
  
 -add_executable(example EXCLUDE_FROM_ALL example.cpp)
 -target_link_libraries(example libsoplex)
-+add_executable(soplex_example EXCLUDE_FROM_ALL example.cpp)
-+target_link_libraries(soplex_example libsoplex)
+-
+-# set the install rpath to the installed destination
+-set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
++if(SOPLEX_EXAMPLE)
++  add_executable(example example.cpp)
++  target_link_libraries(example libsoplex)
++endif()
  
- # set the install rpath to the installed destination
- set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-@@ -244,8 +244,8 @@ install(TARGETS soplex libsoplex libsoplex-pic libsoplexshared EXPORT soplex-tar
+ # install the header files of soplex
+ install(FILES ${headers} ${PROJECT_BINARY_DIR}/soplex/config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/soplex)
+@@ -237,15 +241,28 @@ install(FILES
+   DESTINATION include/soplex/external/zstr)
+ 
+ # install the binary and the library to appropriate lcoations and add them to an export group
+-install(TARGETS soplex libsoplex libsoplex-pic libsoplexshared EXPORT soplex-targets
++if(SOPLEX_SOPLEX)
++  install(TARGETS soplex
++    EXPORT soplex-targets
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++endif()
++
++install(TARGETS libsoplex libsoplex-pic libsoplexshared
++  EXPORT soplex-targets
+ 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
  	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
  
++install(EXPORT soplex-targets
++  FILE soplex-targets.cmake
++  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soplex)
++
  # Add library targets to the build-tree export set
 -export(TARGETS libsoplex libsoplex-pic libsoplexshared
 -  FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
-+#export(TARGETS libsoplex libsoplex-pic libsoplexshared
-+#  FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
++if(SOPLEX_EXPORT)
++  export(TARGETS libsoplex libsoplex-pic libsoplexshared
++    FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
++endif()
  
  #configure the config file for the build tree
  set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${PROJECT_BINARY_DIR}")
+@@ -259,7 +276,6 @@ ${CMAKE_BINARY_DIR}/soplex-config-version.cmake
+     COMPATIBILITY SameMajorVersion
+     )
+ 
+-
+ #configure the config file for the install
+ set(CONF_INCLUDE_DIRS "\${CMAKE_CURRENT_LIST_DIR}/../../../include")
+ configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in
+@@ -267,7 +283,6 @@ configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in
+ 
+ # install the targets of the soplex export group and the config file so that other projects
+ # can link easily against soplex
+-install(EXPORT soplex-targets FILE soplex-targets.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soplex)
+ install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake"
+ 	           ${CMAKE_BINARY_DIR}/soplex-config-version.cmake
+ 		   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soplex)
