@@ -1,4 +1,4 @@
-include "fzn_cumulative_opt.mzn"
+include "fzn_cumulative_opt.mzn";
 
 predicate fzn_disjunctive_opt(array[int] of var opt int: s,
                               array[int] of var int: d) =
