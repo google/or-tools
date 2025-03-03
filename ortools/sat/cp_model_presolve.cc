@@ -6208,8 +6208,9 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       non_fixed_boxes.push_back(
           {.box_index = new_size,
            .bounding_area = bounding_boxes.back(),
-           .x_size = context_->SizeMin(x_interval_index),
-           .y_size = context_->SizeMin(y_interval_index)});
+           .x_size = std::max(int64_t{0}, context_->SizeMin(x_interval_index)),
+           .y_size =
+               std::max(int64_t{0}, context_->SizeMin(y_interval_index))});
     }
     new_size++;
 
@@ -6219,12 +6220,12 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     if (y_constant && !context_->IntervalIsConstant(y_interval_index)) {
       y_constant = false;
     }
-    if (context_->SizeMax(x_interval_index) == 0 ||
-        context_->SizeMax(y_interval_index) == 0) {
+    if (context_->SizeMax(x_interval_index) <= 0 ||
+        context_->SizeMax(y_interval_index) <= 0) {
       has_zero_sized_interval = true;
     }
-    if (context_->SizeMin(x_interval_index) == 0 ||
-        context_->SizeMin(y_interval_index) == 0) {
+    if (context_->SizeMin(x_interval_index) <= 0 ||
+        context_->SizeMin(y_interval_index) <= 0) {
       has_potential_zero_sized_interval = true;
     }
   }
