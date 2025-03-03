@@ -59,10 +59,11 @@ public final class VrpCapacity {
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
+
   // [END data_model]
 
   // [START solution_printer]
-  /// @brief Print the solution.
+  // Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
     // Solution cost.
@@ -96,9 +97,10 @@ public final class VrpCapacity {
     logger.info("Total distance of all routes: " + totalDistance + "m");
     logger.info("Total load of all routes: " + totalLoad);
   }
+
   // [END solution_printer]
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
