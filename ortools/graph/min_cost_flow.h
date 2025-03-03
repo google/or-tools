@@ -408,8 +408,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
   typedef typename Graph::ArcIndex ArcIndex;
   typedef int64_t CostValue;
   typedef int64_t FlowQuantity;
-  typedef typename Graph::IncomingArcIterator IncomingArcIterator;
-  typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator
       OutgoingOrOppositeIncomingArcIterator;
   typedef ZVector<ArcIndex> ArcIndexArray;

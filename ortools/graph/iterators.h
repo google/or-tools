@@ -227,28 +227,6 @@ class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
   }
 };
 
-// Allow iterating over a vector<T> as a mutable vector<T*>.
-template <class T>
-struct MutableVectorIteration {
-  explicit MutableVectorIteration(std::vector<T>* v) : v_(v) {}
-  struct Iterator {
-    explicit Iterator(typename std::vector<T>::iterator it) : it_(it) {}
-    T* operator*() { return &*it_; }
-    Iterator& operator++() {
-      it_++;
-      return *this;
-    }
-    bool operator!=(const Iterator& other) const { return other.it_ != it_; }
-
-   private:
-    typename std::vector<T>::iterator it_;
-  };
-  Iterator begin() { return Iterator(v_->begin()); }
-  Iterator end() { return Iterator(v_->end()); }
-
- private:
-  std::vector<T>* const v_;
-};
 }  // namespace util
 
 #endif  // UTIL_GRAPH_ITERATORS_H_

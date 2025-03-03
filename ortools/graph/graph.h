@@ -18,6 +18,9 @@
 // time. Its design is based on the experience acquired by the Operations
 // Research team in their various graph algorithm implementations.
 //
+// Also see README.md#basegraph for a more graphical documentation of the
+// concepts presented here.
+//
 // The main ideas are:
 // - Graph nodes and arcs are represented by integers.
 // - Node or arc annotations (weight, cost, ...) are not part of the graph
@@ -363,7 +366,8 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   BeginEndWrapper<OutgoingArcIterator> OutgoingArcs(NodeIndexType node) const;
 
   // Advanced usage. Same as OutgoingArcs(), but allows to restart the iteration
-  // from an already known outgoing arc of the given node.
+  // from an already known outgoing arc of the given node. If `from` is
+  // `kNilArc`, an empty range is returned.
   BeginEndWrapper<OutgoingArcIterator> OutgoingArcsStartingFrom(
       NodeIndexType node, ArcIndexType from) const;
 
@@ -431,9 +435,16 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
   ArcIndexType OutDegree(NodeIndexType node) const;  // Work in O(1).
-  BeginEndWrapper<OutgoingArcIterator> OutgoingArcs(NodeIndexType node) const;
-  BeginEndWrapper<OutgoingArcIterator> OutgoingArcsStartingFrom(
-      NodeIndexType node, ArcIndexType from) const;
+  IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
+    return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
+  }
+  IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
+                                                      ArcIndexType from) const {
+    DCHECK_GE(from, start_[node]);
+    const ArcIndexType limit = DirectArcLimit(node);
+    return IntegerRange<ArcIndexType>(from == Base::kNilArc ? limit : from,
+                                      limit);
+  }
 
   // This loops over the heads of the OutgoingArcs(node). It is just a more
   // convenient way to achieve this. Moreover this interface is used by some
@@ -598,14 +609,21 @@ class ReverseArcStaticGraph
   ArcIndexType OutDegree(NodeIndexType node) const;
   ArcIndexType InDegree(NodeIndexType node) const;
 
-  BeginEndWrapper<OutgoingArcIterator> OutgoingArcs(NodeIndexType node) const;
+  IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
+    return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
+  }
+  IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
+                                                      ArcIndexType from) const {
+    DCHECK_GE(from, start_[node]);
+    const ArcIndexType limit = DirectArcLimit(node);
+    return IntegerRange<ArcIndexType>(from == Base::kNilArc ? limit : from,
+                                      limit);
+  }
   BeginEndWrapper<IncomingArcIterator> IncomingArcs(NodeIndexType node) const;
   BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
   OutgoingOrOppositeIncomingArcs(NodeIndexType node) const;
   BeginEndWrapper<OppositeIncomingArcIterator> OppositeIncomingArcs(
       NodeIndexType node) const;
-  BeginEndWrapper<OutgoingArcIterator> OutgoingArcsStartingFrom(
-      NodeIndexType node, ArcIndexType from) const;
   BeginEndWrapper<IncomingArcIterator> IncomingArcsStartingFrom(
       NodeIndexType node, ArcIndexType from) const;
   BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
@@ -1228,8 +1246,6 @@ StaticGraph<NodeIndexType, ArcIndexType>::FromArcs(NodeIndexType num_nodes,
   return g;
 }
 
-DEFINE_RANGE_BASED_ARC_ITERATION(StaticGraph, Outgoing);
-
 template <typename NodeIndexType, typename ArcIndexType>
 absl::Span<const NodeIndexType>
 StaticGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
@@ -1377,6 +1393,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
   }
 }
 
+// TODO(b/385094969): Remove this class.
 template <typename NodeIndexType, typename ArcIndexType>
 class StaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
  public:
@@ -1397,15 +1414,6 @@ class StaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
     DCHECK(Ok());
     index_++;
   }
-
-  // Note(user): we lose a bit by returning a BeginEndWrapper<> on top of
-  // this iterator rather than a simple IntegerRange<> on the arc indices.
-  // On my computer: around 420M arcs/sec instead of 440M arcs/sec.
-  //
-  // However, it is slightly more consistent to do it this way, and we don't
-  // have two different codes depending on the way a client iterates on the
-  // arcs.
-  DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingArcIterator);
 
  private:
   ArcIndexType index_;
@@ -1669,7 +1677,6 @@ class ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
 
 // ReverseArcStaticGraph implementation ----------------------------------------
 
-DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph, Outgoing);
 DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph, Incoming);
 DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph,
                                  OutgoingOrOppositeIncoming);
@@ -1798,6 +1805,7 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
   }
 }
 
+// TODO(b/385094969): Remove this class.
 template <typename NodeIndexType, typename ArcIndexType>
 class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
  public:
@@ -1816,10 +1824,6 @@ class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
     DCHECK(Ok());
     index_++;
   }
-
-  // TODO(user): we lose a bit by returning a BeginEndWrapper<> on top of this
-  // iterator rather than a simple IntegerRange on the arc indices.
-  DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingArcIterator);
 
  private:
   ArcIndexType index_;

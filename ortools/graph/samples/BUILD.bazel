@@ -31,22 +31,6 @@ code_sample_cc(name = "bfs_one_to_all")
 
 code_sample_cc(name = "bfs_undirected")
 
-code_sample_cc(name = "dag_shortest_path_one_to_all")
-
-code_sample_cc(name = "dag_shortest_path_sequential")
-
-code_sample_cc(name = "dag_simple_shortest_path")
-
-code_sample_cc(name = "dag_multiple_shortest_paths_one_to_all")
-
-code_sample_cc(name = "dag_multiple_shortest_paths_sequential")
-
-code_sample_cc(name = "dag_simple_multiple_shortest_paths")
-
-code_sample_cc(name = "dag_constrained_shortest_path_sequential")
-
-code_sample_cc(name = "dag_simple_constrained_shortest_path")
-
 code_sample_cc(name = "dijkstra_all_pairs_shortest_paths")
 
 code_sample_cc(name = "dijkstra_directed")

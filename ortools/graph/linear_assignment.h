@@ -1227,8 +1227,10 @@ LinearSumAssignment<GraphType, CostValue>::BestArcAndGap(
   DCHECK(IsActive(left_node))
       << "Node " << left_node << " must be active (unmatched)!";
   DCHECK_GT(epsilon_, 0);
-  typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
-  ArcIndex best_arc = arc_it.Index();
+  const auto arcs = graph_->OutgoingArcs(left_node);
+  auto arc_it = arcs.begin();
+  DCHECK(!arcs.empty());
+  ArcIndex best_arc = *arc_it;
   CostValue min_partial_reduced_cost = PartialReducedCost(best_arc);
   // We choose second_min_partial_reduced_cost so that in the case of
   // the largest possible gap (which results from a left-side node
@@ -1238,8 +1240,8 @@ LinearSumAssignment<GraphType, CostValue>::BestArcAndGap(
   const CostValue max_gap = slack_relabeling_price_ - epsilon_;
   CostValue second_min_partial_reduced_cost =
       min_partial_reduced_cost + max_gap;
-  for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
-    const ArcIndex arc = arc_it.Index();
+  for (++arc_it; arc_it != arcs.end(); ++arc_it) {
+    const ArcIndex arc = *arc_it;
     const CostValue partial_reduced_cost = PartialReducedCost(arc);
     if (partial_reduced_cost < second_min_partial_reduced_cost) {
       if (partial_reduced_cost < min_partial_reduced_cost) {
@@ -1266,26 +1268,27 @@ inline CostValue LinearSumAssignment<GraphType, CostValue>::ImplicitPrice(
     NodeIndex left_node) const {
   DCHECK_GT(num_left_nodes_, left_node);
   DCHECK_GT(epsilon_, 0);
-  typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
+  const auto arcs = graph_->OutgoingArcs(left_node);
   // We must not execute this method if left_node has no incident arc.
-  DCHECK(arc_it.Ok());
-  ArcIndex best_arc = arc_it.Index();
+  DCHECK(!arcs.empty());
+  auto arc_it = arcs.begin();
+  ArcIndex best_arc = *arc_it;
   if (best_arc == matched_arc_[left_node]) {
-    arc_it.Next();
-    if (arc_it.Ok()) {
-      best_arc = arc_it.Index();
+    ++arc_it;
+    if (arc_it != arcs.end()) {
+      best_arc = *arc_it;
     }
   }
   CostValue min_partial_reduced_cost = PartialReducedCost(best_arc);
-  if (!arc_it.Ok()) {
+  if (arc_it == arcs.end()) {
     // Only one arc is incident to left_node, and the node is
     // currently matched along that arc, which must be the case in any
     // feasible solution. Therefore we implicitly price this node so
     // low that we will never consider unmatching it.
     return -(min_partial_reduced_cost + slack_relabeling_price_);
   }
-  for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
-    const ArcIndex arc = arc_it.Index();
+  for (++arc_it; arc_it != arcs.end(); ++arc_it) {
+    const ArcIndex arc = *arc_it;
     if (arc != matched_arc_[left_node]) {
       const CostValue partial_reduced_cost = PartialReducedCost(arc);
       if (partial_reduced_cost < min_partial_reduced_cost) {
@@ -1314,9 +1317,7 @@ bool LinearSumAssignment<GraphType, CostValue>::EpsilonOptimal() const {
     // Get the implicit price of left_node and make sure the reduced
     // costs of left_node's incident arcs are in bounds.
     CostValue left_node_price = ImplicitPrice(left_node);
-    for (typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
-         arc_it.Ok(); arc_it.Next()) {
-      const ArcIndex arc = arc_it.Index();
+    for (const ArcIndex arc : graph_->OutgoingArcs(left_node)) {
       const CostValue reduced_cost = left_node_price + PartialReducedCost(arc);
       // Note the asymmetric definition of epsilon-optimality that we
       // use because it means we can saturate all admissible arcs in
@@ -1354,8 +1355,7 @@ bool LinearSumAssignment<GraphType, CostValue>::FinalizeSetup() {
   // precondition.
   for (NodeIndex node = 0; node < num_left_nodes_; ++node) {
     matched_arc_[node] = GraphType::kNilArc;
-    typename GraphType::OutgoingArcIterator arc_it(*graph_, node);
-    if (!arc_it.Ok()) {
+    if (graph_->OutgoingArcs(node).empty()) {
       incidence_precondition_satisfied_ = false;
     }
   }

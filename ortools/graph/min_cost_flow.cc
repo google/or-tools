@@ -188,8 +188,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
 
         // Adjust and recompute min_node_excess[node].
         min_node_excess[node] = node_excess_[node];
-        for (OutgoingArcIterator it(*graph_, node); it.Ok(); it.Next()) {
-          const int arc = it.Index();
+        for (const ArcIndex arc : graph_->OutgoingArcs(node)) {
           residual_arc_capacity_[arc] =
               std::min(residual_arc_capacity_[arc], upper_bound);
           min_node_excess[node] =
@@ -204,8 +203,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
 
         // Adjust and recompute max_node_excess[node].
         max_node_excess[node] = node_excess_[node];
-        for (IncomingArcIterator it(*graph_, node); it.Ok(); it.Next()) {
-          const int arc = it.Index();
+        for (const ArcIndex arc : graph_->IncomingArcs(node)) {
           residual_arc_capacity_[arc] =
               std::min(residual_arc_capacity_[arc], upper_bound);
           max_node_excess[node] =
