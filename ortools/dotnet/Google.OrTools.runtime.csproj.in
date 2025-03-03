@@ -78,6 +78,7 @@
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_format>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_globals>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_log_sink_set>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_structured_proto>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_message>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_nullguard>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_proto>>
@@ -111,6 +112,7 @@
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::throw_delegate>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::time>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::time_zone>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::tracing_internal>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::utf8_for_code_point>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::vlog_config_internal>>
       $<@need_windows_absl_lib@:;$<TARGET_FILE:absl::abseil_dll>>
