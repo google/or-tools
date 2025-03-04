@@ -59,7 +59,6 @@ setup(
         ],
         '@PYTHON_PROJECT@.algorithms.python':[
             '$<TARGET_FILE_NAME:knapsack_solver_pybind11>',
-            '$<TARGET_FILE_NAME:set_cover_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.bop':['*.pyi'],
@@ -111,6 +110,10 @@ setup(
         ],
         '@PYTHON_PROJECT@.scheduling.python':[
             '$<TARGET_FILE_NAME:rcpsp_pybind11>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.set_cover.python':[
+            '$<TARGET_FILE_NAME:set_cover_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.util.python':[

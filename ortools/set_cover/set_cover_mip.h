@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MIP_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_MIP_H_
+#ifndef OR_TOOLS_SET_COVER_SET_COVER_MIP_H_
+#define OR_TOOLS_SET_COVER_SET_COVER_MIP_H_
 
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_invariant.h"
 
 namespace operations_research {
 enum class SetCoverMipSolver : int {
@@ -67,4 +67,4 @@ class SetCoverMip {
 };
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_MIP_H_
+#endif  // OR_TOOLS_SET_COVER_SET_COVER_MIP_H_

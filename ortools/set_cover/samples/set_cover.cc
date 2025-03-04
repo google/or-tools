@@ -16,9 +16,9 @@
 #include <cstdlib>
 
 #include "absl/log/log.h"
-#include "ortools/algorithms/set_cover_heuristics.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
 // [END import]
 
 namespace operations_research {

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover_model.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 #include <algorithm>
 #include <cmath>
@@ -32,7 +32,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/radix_sort.h"
-#include "ortools/algorithms/set_cover.pb.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover.pb.h"
 
 namespace operations_research {
 
@@ -159,15 +160,10 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
       subset_already_contains_element[element] = false;
     }
   }
-  LOG(INFO) << "Finished genreating the model with " << num_elements_covered
-            << " elements covered.";
 
   // It can happen -- rarely in practice -- that some of the elements cannot be
   // covered. Let's add them to randomly chosen subsets.
   if (num_elements_covered != num_elements) {
-    LOG(INFO) << "Generated model with " << num_elements - num_elements_covered
-              << " elements that cannot be covered. Adding them to random "
-                 "subsets.";
     SubsetBoolVector element_already_in_subset(num_subsets, false);
     for (ElementIndex element(0); element.value() < num_elements; ++element) {
       LOG_EVERY_N_SEC(INFO, 5) << absl::StrFormat(
@@ -200,11 +196,7 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
         ++num_elements_covered;
       }
     }
-    LOG(INFO) << "Finished generating subsets for elements that were not "
-                 "covered in the original model.";
   }
-  LOG(INFO) << "Finished generating the model. There are "
-            << num_elements - num_elements_covered << " uncovered elements.";
 
   CHECK_EQ(num_elements_covered, num_elements);
 
@@ -237,6 +229,8 @@ void SetCoverModel::UpdateAllSubsetsList() {
 }
 
 void SetCoverModel::AddEmptySubset(Cost cost) {
+  // TODO(user): refine the logic for is_unicost_ and is_unicost_valid_.
+  is_unicost_valid_ = false;
   elements_in_subsets_are_sorted_ = false;
   subset_costs_.push_back(cost);
   columns_.push_back(SparseColumn());
@@ -262,6 +256,9 @@ void SetCoverModel::AddElementToLastSubset(ElementIndex element) {
 }
 
 void SetCoverModel::SetSubsetCost(BaseInt subset, Cost cost) {
+  // TODO(user): refine the logic for is_unicost_ and is_unicost_valid_.
+  // NOMUTANTS -- this is a performance optimization.
+  is_unicost_valid_ = false;
   elements_in_subsets_are_sorted_ = false;
   CHECK(std::isfinite(cost));
   DCHECK_GE(subset, 0);
@@ -338,14 +335,14 @@ void SetCoverModel::CreateSparseRowView() {
   rows_.resize(num_elements_, SparseRow());
   ElementToIntVector row_sizes(num_elements_, 0);
   for (const SubsetIndex subset : SubsetRange()) {
-    // Sort the columns. It's not super-critical to improve performance here
-    // as this needs to be done only once.
     BaseInt* data = reinterpret_cast<BaseInt*>(columns_[subset].data());
     RadixSort(absl::MakeSpan(data, columns_[subset].size()));
 
     ElementIndex preceding_element(-1);
     for (const ElementIndex element : columns_[subset]) {
-      DCHECK_GT(element, preceding_element);  // Fail if there is a repetition.
+      CHECK_GT(element, preceding_element)
+          << "Repetition in column "
+          << subset;  // Fail if there is a repetition.
       ++row_sizes[element];
       preceding_element = element;
     }
@@ -372,11 +369,14 @@ bool SetCoverModel::ComputeFeasibility() const {
   for (const Cost cost : subset_costs_) {
     CHECK_GT(cost, 0.0);
   }
+  SubsetIndex column_index(0);
   for (const SparseColumn& column : columns_) {
-    CHECK_GT(column.size(), 0);
+    // DLOG_IF(INFO, column.empty()) << "Empty column " << column_index.value();
     for (const ElementIndex element : column) {
       ++coverage[element];
     }
+    // NOMUTANTS -- column_index is only used for logging in debug mode.
+    ++column_index;
   }
   for (const ElementIndex element : ElementRange()) {
     CHECK_GE(coverage[element], 0);
@@ -409,7 +409,6 @@ SetCoverProto SetCoverModel::ExportModelAsProto() const {
       subset_proto->add_element(element.value());
     }
   }
-  LOG(INFO) << "Finished exporting the model.";
   return message;
 }
 
@@ -497,15 +496,27 @@ class StatsAccumulator {
 }  // namespace
 
 template <typename T>
-SetCoverModel::Stats ComputeStats(std::vector<T> sizes) {
+SetCoverModel::Stats ComputeStats(std::vector<T> samples) {
   SetCoverModel::Stats stats;
-  stats.min = *std::min_element(sizes.begin(), sizes.end());
-  stats.max = *std::max_element(sizes.begin(), sizes.end());
-  stats.mean = std::accumulate(sizes.begin(), sizes.end(), 0.0) / sizes.size();
-  std::nth_element(sizes.begin(), sizes.begin() + sizes.size() / 2,
-                   sizes.end());
-  stats.median = sizes[sizes.size() / 2];
-  stats.stddev = StandardDeviation(sizes);
+  stats.min = *std::min_element(samples.begin(), samples.end());
+  stats.max = *std::max_element(samples.begin(), samples.end());
+  stats.mean =
+      std::accumulate(samples.begin(), samples.end(), 0.0) / samples.size();
+  auto const q1 = samples.size() / 4;
+  auto const q2 = samples.size() / 2;
+  auto const q3 = q1 + q2;
+  // The first call to nth_element is O(n). The 2nd and 3rd calls are O(n / 2).
+  // Basically it's equivalent to running nth_element twice.
+  // One should be tempted to use a faster sorting algorithm like radix sort,
+  // it is not sure that we would gain a lot. There would be no gain in
+  // complexity whatsoever anyway. On top of that, this code is called at most
+  // one per problem, so it's not worth the effort.
+  std::nth_element(samples.begin(), samples.begin() + q2, samples.end());
+  std::nth_element(samples.begin(), samples.begin() + q1, samples.begin() + q2);
+  std::nth_element(samples.begin() + q2, samples.begin() + q3, samples.end());
+  stats.median = samples[samples.size() / 2];
+  stats.iqr = samples[q3] - samples[q1];
+  stats.stddev = StandardDeviation(samples);
   return stats;
 }
 

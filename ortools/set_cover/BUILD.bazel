@@ -1,0 +1,287 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Description:
+# A solver for weighted set covering with side constraints
+
+proto_library(
+    name = "set_cover_proto",
+    srcs = ["set_cover.proto"],
+    deps = [
+        "//ortools/util:int128_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "set_cover_cc_proto",
+    deps = [":set_cover_proto"],
+)
+
+py_proto_library(
+    name = "set_cover_py_pb2",
+    deps = [":set_cover_proto"],
+)
+
+cc_library(
+    name = "base_types",
+    hdrs = ["base_types.h"],
+    deps = [
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+    ],
+)
+
+cc_library(
+    name = "set_cover_lagrangian",
+    srcs = ["set_cover_lagrangian.cc"],
+    hdrs = ["set_cover_lagrangian.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/algorithms:adjustable_k_ary_heap",
+        "//ortools/base:threadpool",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "set_cover_model",
+    srcs = ["set_cover_model.cc"],
+    hdrs = ["set_cover_model.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        "//ortools/algorithms:radix_sort",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_invariant",
+    srcs = ["set_cover_invariant.cc"],
+    hdrs = ["set_cover_invariant.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        ":set_cover_model",
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_heuristics",
+    srcs = ["set_cover_heuristics.cc"],
+    hdrs = ["set_cover_heuristics.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/algorithms:adjustable_k_ary_heap",
+        "//ortools/base",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_mip",
+    srcs = ["set_cover_mip.cc"],
+    hdrs = ["set_cover_mip.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/linear_solver",
+        "//ortools/lp_data:base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_reader",
+    srcs = ["set_cover_reader.cc"],
+    hdrs = ["set_cover_reader.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        ":set_cover_model",
+        "//ortools/base:file",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_library(
+    name = "assignment",
+    srcs = ["assignment.cc"],
+    hdrs = ["assignment.h"],
+    deps = [
+        ":base_types",
+        ":capacity_invariant",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/base:mathutil",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "assignment_test",
+    srcs = ["assignment_test.cc"],
+    deps = [
+        ":assignment",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_binary(
+    name = "set_cover_solve",
+    srcs = ["set_cover_solve.cc"],
+    deps = [
+        ":base_types",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        ":set_cover_reader",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_test(
+    name = "set_cover_test",
+    size = "medium",
+    timeout = "eternal",
+    srcs = ["set_cover_test.cc"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_mip",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
+# Side constraint: capacity.
+
+proto_library(
+    name = "capacity_proto",
+    srcs = ["capacity.proto"],
+)
+
+cc_proto_library(
+    name = "capacity_cc_proto",
+    deps = [":capacity_proto"],
+)
+
+py_proto_library(
+    name = "capacity_py_pb2",
+    deps = [":capacity_proto"],
+)
+
+cc_library(
+    name = "capacity_model",
+    srcs = ["capacity_model.cc"],
+    hdrs = ["capacity_model.h"],
+    deps = [
+        ":base_types",
+        ":capacity_cc_proto",
+        ":set_cover_model",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "capacity_model_test",
+    srcs = ["capacity_model_test.cc"],
+    deps = [
+        ":capacity_model",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
+    name = "capacity_invariant",
+    srcs = ["capacity_invariant.cc"],
+    hdrs = ["capacity_invariant.h"],
+    deps = [
+        ":base_types",
+        ":capacity_model",
+        ":set_cover_model",
+        "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "capacity_invariant_test",
+    srcs = ["capacity_invariant_test.cc"],
+    deps = [
+        ":capacity_invariant",
+        ":capacity_model",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
+    ],
+)

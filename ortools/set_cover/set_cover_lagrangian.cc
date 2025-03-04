@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover_lagrangian.h"
+#include "ortools/set_cover/set_cover_lagrangian.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -22,9 +22,10 @@
 #include "absl/log/check.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/threadpool.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 
@@ -99,7 +100,8 @@ void FillReducedCostsSlice(SubsetIndex slice_start, SubsetIndex slice_end,
 }
 
 BaseInt BlockSize(BaseInt size, int num_threads) {
-  return 1 + (size - 1) / num_threads;
+  // Traditional formula to compute std::ceil(size / num_threads).
+  return (size + num_threads - 1) / num_threads;
 }
 }  // namespace
 

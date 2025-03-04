@@ -11,16 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
+#ifndef OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_
+#define OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_
 
 #include <tuple>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover.pb.h"
-#include "ortools/algorithms/set_cover_model.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover.pb.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 
@@ -180,17 +181,6 @@ class SetCoverInvariant {
   BaseInt ComputeNumFreeElements(SubsetIndex subset) const;
 
   // Includes subset in the solution by setting is_selected_[subset] to true
-  // without updating the invariant. Only updates the cost and the coverage.
-  // TODO(user): Merge with Select. Introduce consistency levels and maybe split
-  // the invariant into three.
-  void SelectNoUpdate(SubsetIndex subset);
-
-  // Flips is_selected_[subset] to its negation, by calling Select or Deselect
-  // depending on value. Updates the invariant incrementally to the given
-  // consistency level.
-  void Flip(SubsetIndex subset, ConsistencyLevel consistency);
-
-  // Includes subset in the solution by setting is_selected_[subset] to true
   // and incrementally updating the invariant to the given consistency level.
   void Select(SubsetIndex subset, ConsistencyLevel consistency);
 
@@ -288,4 +278,4 @@ class SetCoverInvariant {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
+#endif  // OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
+#ifndef OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_
+#define OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_
 
 #include <cstdint>
 #include <string>
@@ -20,9 +20,10 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover.pb.h"
 
 // Representation class for the weighted set-covering problem.
 //
@@ -50,55 +51,6 @@
 // cardinalities of all the subsets.
 
 namespace operations_research {
-// Basic non-strict type for cost. The speed penalty for using double is ~2%.
-using Cost = double;
-
-// Base non-strict integer type for counting elements and subsets.
-// Using ints makes it possible to represent problems with more than 2 billion
-// (2e9) elements and subsets. If need arises one day, BaseInt can be split
-// into SubsetBaseInt and ElementBaseInt.
-// Quick testing has shown a slowdown of about 20-25% when using int64_t.
-using BaseInt = int32_t;
-
-// We make heavy use of strong typing to avoid obvious mistakes.
-// Subset index.
-DEFINE_STRONG_INT_TYPE(SubsetIndex, BaseInt);
-
-// Element index.
-DEFINE_STRONG_INT_TYPE(ElementIndex, BaseInt);
-
-// Position in a vector. The vector may either represent a column, i.e. a
-// subset with all its elements, or a row, i,e. the list of subsets which
-// contain a given element.
-DEFINE_STRONG_INT_TYPE(ColumnEntryIndex, BaseInt);
-DEFINE_STRONG_INT_TYPE(RowEntryIndex, BaseInt);
-
-using SubsetRange = util_intops::StrongIntRange<SubsetIndex>;
-using ElementRange = util_intops::StrongIntRange<ElementIndex>;
-using ColumnEntryRange = util_intops::StrongIntRange<ColumnEntryIndex>;
-
-using SubsetCostVector = util_intops::StrongVector<SubsetIndex, Cost>;
-using ElementCostVector = util_intops::StrongVector<ElementIndex, Cost>;
-
-using SparseColumn = util_intops::StrongVector<ColumnEntryIndex, ElementIndex>;
-using SparseRow = util_intops::StrongVector<RowEntryIndex, SubsetIndex>;
-
-using ElementToIntVector = util_intops::StrongVector<ElementIndex, BaseInt>;
-using SubsetToIntVector = util_intops::StrongVector<SubsetIndex, BaseInt>;
-
-// Views of the sparse vectors. These need not be aligned as it's their contents
-// that need to be aligned.
-using SparseColumnView = util_intops::StrongVector<SubsetIndex, SparseColumn>;
-using SparseRowView = util_intops::StrongVector<ElementIndex, SparseRow>;
-
-using SubsetBoolVector = util_intops::StrongVector<SubsetIndex, bool>;
-using ElementBoolVector = util_intops::StrongVector<ElementIndex, bool>;
-
-// Useful for representing permutations,
-using ElementToElementVector =
-    util_intops::StrongVector<ElementIndex, ElementIndex>;
-using SubsetToSubsetVector =
-    util_intops::StrongVector<SubsetIndex, SubsetIndex>;
 
 // Main class for describing a weighted set-covering problem.
 class SetCoverModel {
@@ -111,6 +63,8 @@ class SetCoverModel {
         row_view_is_valid_(false),
         elements_in_subsets_are_sorted_(false),
         subset_costs_(),
+        is_unicost_(true),
+        is_unicost_valid_(false),
         columns_(),
         rows_(),
         all_subsets_() {}
@@ -160,6 +114,23 @@ class SetCoverModel {
 
   // Vector of costs for each subset.
   const SubsetCostVector& subset_costs() const { return subset_costs_; }
+
+  // Returns true if all subset costs are equal to 1.0. This is a fast check
+  // that is only valid if the subset costs are not modified.
+  bool is_unicost() {
+    if (is_unicost_valid_) {
+      return is_unicost_;
+    }
+    is_unicost_ = true;
+    for (const Cost cost : subset_costs_) {
+      if (cost != 1.0) {
+        is_unicost_ = false;
+        break;
+      }
+    }
+    is_unicost_valid_ = true;
+    return is_unicost_;
+  }
 
   // Column view of the set covering problem.
   const SparseColumnView& columns() const { return columns_; }
@@ -244,10 +215,12 @@ class SetCoverModel {
     double median;
     double mean;
     double stddev;
+    double iqr;  // Interquartile range.
 
     std::string DebugString() const {
       return absl::StrCat("min = ", min, ", max = ", max, ", mean = ", mean,
-                          ", median = ", median, ", stddev = ", stddev, ", ");
+                          ", median = ", median, ", stddev = ", stddev, ", ",
+                          "iqr = ", iqr);
     }
   };
 
@@ -298,6 +271,12 @@ class SetCoverModel {
   // Costs for each subset.
   SubsetCostVector subset_costs_;
 
+  // True when all subset costs are equal to 1.0.
+  bool is_unicost_;
+
+  // True when is_unicost_ is up-to-date.
+  bool is_unicost_valid_;
+
   // Vector of columns. Each column corresponds to a subset and contains the
   // elements of the given subset.
   // This takes NNZ (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
@@ -340,7 +319,7 @@ class IntersectingSubsetsIterator {
         seed_subset_(seed_subset),
         model_(model),
         subset_seen_(model_.columns().size(), false) {
-    CHECK(model_.row_view_is_valid());
+    DCHECK(model_.row_view_is_valid());
     subset_seen_[seed_subset] = true;  // Avoid iterating on `seed_subset`.
     ++(*this);                         // Move to the first intersecting subset.
   }
@@ -359,11 +338,12 @@ class IntersectingSubsetsIterator {
     DCHECK(!at_end());
     const SparseRowView& rows = model_.rows();
     const SparseColumn& column = model_.columns()[seed_subset_];
-    for (; element_entry_ < ColumnEntryIndex(column.size()); ++element_entry_) {
+    const ColumnEntryIndex column_size = ColumnEntryIndex(column.size());
+    for (; element_entry_ < column_size; ++element_entry_) {
       const ElementIndex current_element = column[element_entry_];
       const SparseRow& current_row = rows[current_element];
-      for (; subset_entry_ < RowEntryIndex(current_row.size());
-           ++subset_entry_) {
+      const RowEntryIndex current_row_size = RowEntryIndex(current_row.size());
+      for (; subset_entry_ < current_row_size; ++subset_entry_) {
         intersecting_subset_ = current_row[subset_entry_];
         if (!subset_seen_[intersecting_subset_]) {
           subset_seen_[intersecting_subset_] = true;
@@ -398,4 +378,4 @@ class IntersectingSubsetsIterator {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
+#endif  // OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_

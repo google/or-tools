@@ -28,7 +28,7 @@ message SetCoverProto {
     optional double cost = 1;
 
     // The list of elements in the subset.
-    repeated int32 element = 2 [packed = true];
+    repeated int64 element = 2 [packed = true];
   }
 
   // The list of subsets in the model.
@@ -66,10 +66,10 @@ message SetCoverSolutionResponse {
 
   // The number of subsets that are selected in the solution. This is used
   // to decompress their indices below.
-  optional int32 num_subsets = 2;
+  optional int64 num_subsets = 2;
 
   // The list of the subsets selected in the solution.
-  repeated int32 subset = 3 [packed = true];
+  repeated int64 subset = 3 [packed = true];
 
   // The cost of the solution, as computed by the algorithm.
   optional double cost = 4;

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
 
 #include <algorithm>
 #include <climits>
@@ -29,9 +29,10 @@
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 
@@ -120,28 +121,47 @@ bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
       subset_priorities.push_back({priority, subset.value()});
     }
   }
+  const SetCoverModel& model = *inv_->model();
+  const BaseInt num_subsets = model.num_subsets();
+  const SparseColumnView& colunms = model.columns();
+  const SparseRowView& rows = model.rows();
+
   // The priority queue maintains the maximum number of elements covered by unit
   // of cost. We chose 16 as the arity of the heap after some testing.
   // TODO(user): research more about the best value for Arity.
   AdjustableKAryHeap<float, SubsetIndex::ValueType, 16, true> pq(
-      subset_priorities, inv_->model()->num_subsets());
-  while (!pq.IsEmpty()) {
+      subset_priorities, num_subsets);
+  SubsetBoolVector subset_seen(num_subsets, false);
+  std::vector<SubsetIndex> subsets_to_remove;
+  subsets_to_remove.reserve(focus.size());
+  while (!pq.IsEmpty() || inv_->num_uncovered_elements() > 0) {
+    // LOG_EVERY_N_SEC(INFO, 5)
+    //     << "Queue size: " << pq.heap_size()
+    //     << ", #uncovered elements: " << inv_->num_uncovered_elements();
     const SubsetIndex best_subset(pq.TopIndex());
     pq.Pop();
     inv_->Select(best_subset, CL::kFreeAndUncovered);
     // NOMUTANTS -- reason, for C++
-    if (inv_->num_uncovered_elements() == 0) break;
-    for (IntersectingSubsetsIterator it(*inv_->model(), best_subset);
-         !it.at_end(); ++it) {
-      const SubsetIndex subset = *it;
-      const BaseInt marginal_impact(inv_->num_free_elements()[subset]);
-      if (marginal_impact > 0) {
-        const float priority = marginal_impact / costs[subset];
-        pq.Update({priority, subset.value()});
-      } else {
-        pq.Remove(subset.value());
+    subset_seen[best_subset] = true;
+    subsets_to_remove.push_back(best_subset);
+    for (const ElementIndex element : colunms[best_subset]) {
+      for (const SubsetIndex subset : rows[element]) {
+        if (subset_seen[subset]) continue;
+        subset_seen[subset] = true;
+        const BaseInt marginal_impact(inv_->num_free_elements()[subset]);
+        if (marginal_impact > 0) {
+          const float priority = marginal_impact / costs[subset];
+          pq.Update({priority, subset.value()});
+        } else {
+          pq.Remove(subset.value());
+        }
+        subsets_to_remove.push_back(subset);
       }
     }
+    for (const SubsetIndex subset : subsets_to_remove) {
+      subset_seen[subset] = false;
+    }
+    subsets_to_remove.clear();
     DVLOG(1) << "Cost = " << inv_->cost()
              << " num_uncovered_elements = " << inv_->num_uncovered_elements();
   }
@@ -686,7 +706,11 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 
     UpdatePenalties(focus);
     tabu_list_.Add(best_subset);
-    inv_->Flip(best_subset, CL::kFreeAndUncovered);
+    if (inv_->is_selected()[best_subset]) {
+      inv_->Deselect(best_subset, CL::kFreeAndUncovered);
+    } else {
+      inv_->Select(best_subset, CL::kFreeAndUncovered);
+    }
     // TODO(user): make the cost computation incremental.
     augmented_cost =
         std::accumulate(augmented_costs_.begin(), augmented_costs_.end(), 0.0);
@@ -695,9 +719,6 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
              << inv_->cost() << ", best cost = ," << best_cost
              << ", penalized cost = ," << augmented_cost;
     if (inv_->cost() < best_cost) {
-      LOG(INFO) << "Updated best cost, " << "Iteration, " << iteration
-                << ", current cost = ," << inv_->cost() << ", best cost = ,"
-                << best_cost << ", penalized cost = ," << augmented_cost;
       best_cost = inv_->cost();
       best_choices = inv_->is_selected();
     }
@@ -754,17 +775,19 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 
   for (int iteration = 0;
        !priority_heap_.IsEmpty() && iteration < num_iterations; ++iteration) {
-    // Improve current solution respective to the current penalties.
+    // Improve current solution respective to the current penalties by flipping
+    // the best subset.
     const SubsetIndex best_subset(priority_heap_.TopIndex());
     if (inv_->is_selected()[best_subset]) {
       utility_heap_.Insert({0, best_subset.value()});
+      inv_->Deselect(best_subset, CL::kRedundancy);
     } else {
       utility_heap_.Insert(
           {static_cast<float>(inv_->model()->subset_costs()[best_subset] /
                               (1 + penalties_[best_subset])),
            best_subset.value()});
+      inv_->Select(best_subset, CL::kRedundancy);
     }
-    inv_->Flip(best_subset, CL::kRedundancy);  // Flip the best subset.
     DCHECK(!utility_heap_.IsEmpty());
 
     // Getting the subset with highest utility. utility_heap_ is not empty,

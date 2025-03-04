@@ -78,30 +78,3 @@ py_test(
         requirement("absl-py"),
     ],
 )
-
-# set_cover
-pybind_extension(
-    name = "set_cover",
-    srcs = ["set_cover.cc"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/algorithms:set_cover_cc_proto",
-        "//ortools/algorithms:set_cover_heuristics",
-        "//ortools/algorithms:set_cover_invariant",
-        "//ortools/algorithms:set_cover_model",
-        "//ortools/algorithms:set_cover_reader",
-        "@com_google_absl//absl/strings",
-        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
-    ],
-)
-
-py_test(
-    name = "set_cover_test",
-    srcs = ["set_cover_test.py"],
-    python_version = "PY3",
-    deps = [
-        ":set_cover",
-        "//ortools/algorithms:set_cover_py_pb2",
-        requirement("absl-py"),
-    ],
-)

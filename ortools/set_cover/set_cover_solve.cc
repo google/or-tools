@@ -21,12 +21,13 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "ortools/algorithms/set_cover_heuristics.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
-#include "ortools/algorithms/set_cover_reader.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/timer.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
+#include "ortools/set_cover/set_cover_reader.h"
 
 ABSL_FLAG(std::string, input, "", "REQUIRED: Input file name.");
 ABSL_FLAG(std::string, input_fmt, "",

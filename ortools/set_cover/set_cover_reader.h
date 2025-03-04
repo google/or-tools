@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_READER_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_READER_H_
+#ifndef OR_TOOLS_SET_COVER_SET_COVER_READER_H_
+#define OR_TOOLS_SET_COVER_SET_COVER_READER_H_
 
 #include "absl/strings/string_view.h"
-#include "ortools/algorithms/set_cover_model.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 
@@ -106,4 +106,4 @@ void WriteSetCoverSolutionProto(const SetCoverModel& model,
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_READER_H_
+#endif  // OR_TOOLS_SET_COVER_SET_COVER_READER_H_
