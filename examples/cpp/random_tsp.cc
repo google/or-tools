@@ -25,14 +25,22 @@
 // (forbidden arcs).
 
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
+#include <random>
 #include <string>
 
+#include "absl/base/log_severity.h"
+#include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -182,6 +190,9 @@ void Tsp() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  absl::InitializeLog();
+  absl::EnableLogPrefix(false);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   absl::ParseCommandLine(argc, argv);
   operations_research::Tsp();
   return EXIT_SUCCESS;

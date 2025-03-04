@@ -20,19 +20,20 @@
 // of each items.
 
 #include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 
 ABSL_FLAG(int, size, 16, "scaling factor of the model");
 ABSL_FLAG(std::string, params,
-          "num_workers:8,log_search_progress:true,max_time_in_seconds:10.0",
+          "num_workers:8,log_search_progress:false,max_time_in_seconds:10.0",
           "Sat parameters");
 namespace operations_research {
 namespace sat {
