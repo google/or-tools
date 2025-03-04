@@ -374,17 +374,7 @@ class Model {
   const std::vector<Annotation>& search_annotations() const {
     return search_annotations_;
   }
-#if !defined(SWIG)
-  util::MutableVectorIteration<Annotation> mutable_search_annotations() {
-    return util::MutableVectorIteration<Annotation>(&search_annotations_);
-  }
-#endif
   const std::vector<SolutionOutputSpecs>& output() const { return output_; }
-#if !defined(SWIG)
-  util::MutableVectorIteration<SolutionOutputSpecs> mutable_output() {
-    return util::MutableVectorIteration<SolutionOutputSpecs>(&output_);
-  }
-#endif
   bool maximize() const { return maximize_; }
   Variable* objective() const { return objective_; }
   const std::vector<Variable*>& float_objective_variables() const {
