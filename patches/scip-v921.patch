@@ -15,13 +15,13 @@ index a90120188a..2c068e5e30 100644
        if ( ival == 0 )
        {
 -         (void) google::SetVLOGLevel("*", google::GLOG_INFO);
-+           absl::SetFlag(&FLAGS_stderrthreshold, 2);
++         absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
           lpi->lp_info = false;
        }
        else
        {
 -         (void) google::SetVLOGLevel("*", google::GLOG_ERROR);
-+           absl::SetFlag(&FLAGS_stderrthreshold, 0);
++         absl::SetStderrThreshold(absl::LogSeverityAtLeast::kError);
           lpi->lp_info = true;
        }
        break;
