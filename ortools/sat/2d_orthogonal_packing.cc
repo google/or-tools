@@ -23,11 +23,11 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/constant_divisor.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/2d_packing_brute_force.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/util.h"

@@ -18,6 +18,8 @@
 
 #include <functional>
 #include <limits>
+#include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -30,9 +32,146 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
+
+// Helper to recover the mapping between nodes and binary relation variables in
+// simple cases of route constraints (at most one variable per node and
+// "dimension" -- such as time or load, and at most one relation per arc and
+// dimension).
+class RouteRelationsHelper {
+ public:
+  // Creates a RouteRelationsHelper for the given RoutesConstraint and
+  // associated binary relations. If `flat_node_dim_expressions` is empty,
+  // infers them from the binary relations, if possible (otherwise, returns
+  // nullptr). If `flat_node_dim_expressions` is not empty, uses it to
+  // initialize the helper (this list should have num_dimensions times num_nodes
+  // elements, with the expression associated with node n and dimension d at
+  // index n * num_dimensions + d). If there are more than one relation per arc
+  // and dimension, a single relation is chosen arbitrarily.
+  static std::unique_ptr<RouteRelationsHelper> Create(
+      int num_nodes, const std::vector<int>& tails,
+      const std::vector<int>& heads, const std::vector<Literal>& literals,
+      absl::Span<const AffineExpression> flat_node_dim_expressions,
+      const BinaryRelationRepository& binary_relation_repository);
+
+  // Returns the number of "dimensions", such as time or vehicle load.
+  int num_dimensions() const { return num_dimensions_; }
+
+  int num_nodes() const {
+    return flat_node_dim_expressions_.size() / num_dimensions_;
+  }
+
+  int num_arcs() const {
+    return flat_arc_dim_relations_.size() / num_dimensions_;
+  }
+
+  // Returns the expression associated with the given node and dimension.
+  const AffineExpression& GetNodeExpression(int node, int dimension) const {
+    return flat_node_dim_expressions_[node * num_dimensions_ + dimension];
+  }
+
+  // Returns the relation tail_coeff.X + head_coeff.Y \in [lhs, rhs] between the
+  // X and Y expressions associated with the tail and head of the given arc,
+  // respectively, and the given dimension (head_coeff is always positive).
+  // Returns an "empty" struct with all fields set to 0 if there is no such
+  // relation.
+  struct Relation {
+    IntegerValue tail_coeff = 0;
+    IntegerValue head_coeff = 0;
+    IntegerValue lhs;
+    IntegerValue rhs;
+
+    bool empty() const { return tail_coeff == 0 && head_coeff == 0; }
+
+    bool operator==(const Relation& r) const {
+      return tail_coeff == r.tail_coeff && head_coeff == r.head_coeff &&
+             lhs == r.lhs && rhs == r.rhs;
+    }
+  };
+  const Relation& GetArcRelation(int arc, int dimension) const {
+    return flat_arc_dim_relations_[arc * num_dimensions_ + dimension];
+  }
+
+  // Returns the level zero lower or upper bound of the offset between the
+  // expressions associated with the head and tail of the given arc, and the
+  // given dimension.
+  IntegerValue GetArcOffsetBound(int arc, int dimension, bool upper_bound,
+                                 const IntegerTrail& integer_trail) const;
+
+  void RemoveArcs(absl::Span<const int> sorted_arc_indices);
+
+ private:
+  RouteRelationsHelper(const std::vector<int>& tails,
+                       const std::vector<int>& heads, int num_dimensions,
+                       std::vector<AffineExpression> flat_node_dim_expressions,
+                       std::vector<Relation> flat_arc_dim_relations);
+
+  void LogStats() const;
+
+  const std::vector<int>& tails_;
+  const std::vector<int>& heads_;
+
+  int num_dimensions_;
+  // The expression associated with node n and dimension d is at index n *
+  // num_dimensions_ + d.
+  std::vector<AffineExpression> flat_node_dim_expressions_;
+  // The relation associated with arc a and dimension d is at index a *
+  // num_dimensions_ + d.
+  std::vector<Relation> flat_arc_dim_relations_;
+};
+
+// Computes and fills the node expressions of all the routes constraints in
+// `output_model` that don't have them, if possible. The node expressions are
+// inferred from the binary relations in `input_model`. Both models must have
+// the same variables (they can reference the same underlying object).
+// Returns the number of constraints that were filled, and the total number of
+// dimensions added to them.
+std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
+    const CpModelProto& input_model, CpModelProto& output_model);
+
+// This is used to represent a "special bin packing" problem where we have
+// objects that can either be items with a given demand or bins with a given
+// capacity. The problem is to choose the minimum number of objects that will
+// be bins, such that the other objects (items) can be packed inside.
+struct ItemOrBin {
+  // Only one option will apply, this can either be an item with given demand
+  // or a bin with given capacity.
+  //
+  // Important: We support negative demands and negative capacity. We just
+  // need that the sum of demand <= capacity for the item in that bin.
+  IntegerValue demand = 0;
+  IntegerValue capacity = 0;
+
+  // We described the problem where each object can be an item or a bin, but
+  // in practice we might have restriction on what object can be which, and we
+  // use this field to indicate that.
+  //
+  // The numerical order is important as we use that in the greedy algorithm.
+  // See ComputeMinNumberOfBins() code.
+  enum {
+    MUST_BE_ITEM = 0,  // capacity will be set at zero.
+    ITEM_OR_BIN = 1,
+    MUST_BE_BIN = 2,  // demand will be set at zero.
+  } type = ITEM_OR_BIN;
+};
+
+// Given a "special bin packing" problem as decribed above, return a lower
+// bound on the number of bins that needs to be taken.
+//
+// This simply sorts the object according to a greedy criteria and minimize
+// the number of bins such that the "demands <= capacities" constraint is
+// satisfied.
+//
+// If the problem is infeasible, this will return object.size() + 1, which is
+// a trivially infeasible bound.
+//
+// TODO(user): Use fancier DP to derive tighter bound. Also, when there are
+// many dimensions, the choice of which item go to which bin is correlated,
+// can we exploit this?
+int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used);
 
 // Helper to compute the minimum flow going out of a subset of nodes, for a
 // given RoutesConstraint.
@@ -41,6 +180,16 @@ class MinOutgoingFlowHelper {
   MinOutgoingFlowHelper(int num_nodes, const std::vector<int>& tails,
                         const std::vector<int>& heads,
                         const std::vector<Literal>& literals, Model* model);
+
+  ~MinOutgoingFlowHelper();
+
+  // Returns the minimum flow going out of `subset`, based on a generalization
+  // of the CVRP "rounded capacity inequalities", by using the given helper, if
+  // possible (this requires all nodes to have an associated variable, and all
+  // relations to have +1, -1 coefficients). The complexity is O((subset.size()
+  // + num_arcs()) * num_dimensions()).
+  int ComputeDemandBasedMinOutgoingFlow(absl::Span<const int> subset,
+                                        const RouteRelationsHelper& helper);
 
   // Returns the minimum flow going out of `subset`, based on a conservative
   // estimate of the maximum number of nodes of a feasible path inside this
@@ -54,7 +203,79 @@ class MinOutgoingFlowHelper {
   // cycles). The complexity is O(2 ^ subset.size()).
   int ComputeTightMinOutgoingFlow(absl::Span<const int> subset);
 
+  // Returns false if the given subset CANNOT be served by k routes.
+  // Returns true if we have a route or we don't know for sure (if we abort).
+  // The parameter k must be positive.
+  //
+  // Even more costly algo in O(n!/k!*k^(n-k)) that answers the question exactly
+  // given the available enforced linear1 and linear2 constraints. However it
+  // can stop as soon as one solution is found.
+  //
+  // TODO(user): the complexity also depends on the longest route and improves
+  // if routes fail quickly. Give a better estimate?
+  bool SubsetMightBeServedWithKRoutes(int k, absl::Span<const int> subset);
+
+  // Just for stats reporting.
+  void ReportDpSkip() { num_full_dp_skips_++; }
+
  private:
+  void InitializeGraph(absl::Span<const int> subset);
+
+  // Given a subset S to serve in a route constraint, returns a special bin
+  // packing problem (defined above) where the minimum number of bins will
+  // correspond to the minimum number of vehicles needed to serve this subset.
+  //
+  // One way to derive such reduction is as follow.
+  //
+  // If we look at a path going through the subset, it will touch in order the
+  // nodes P = {n_0, ..., n_e}. It will enter S at a "start" node n_0 and leave
+  // at a "end" node n_e.
+  //
+  // We assume (see the RouteRelationsHelper) that each node n has an
+  // associated variable X_n, and that each arc t->h has an associated relation
+  // lhs(t,h) <= X_h - X_t. Summing all these inequalities along the path above
+  // we get:
+  //   Sum_{i \in [1..e]} lhs(n_i, n_(i+1)) <= X_(n_e) - X_(n_0)
+  // introducing:
+  //  - d(n) = min_(i \in S) lhs(i, n)  [minimum incoming weight in subset S]
+  //  - UB   = max_(i \in S) upper_bound(X_i)
+  // We get:
+  //    Sum_{n \in P \ n_0} d(n) <= UB - lower_bound(n_0)
+  //
+  // Here we can see that the "starting node" n0 is on the "capacity" side and
+  // will serve the role of a bin with capacity (UB - lower_bound(n_0)), whereas
+  // the other nodes n will be seen as "item" with demands d(i).
+  //
+  // Given that the set of paths going through S must be disjoint and serve all
+  // the nodes, we get exactly the special bin packing problem described above
+  // where the starting nodes are the bins and the other inner-nodes are the
+  // items.
+  //
+  // Note that if a node has no incoming arc from within S, it must be a start
+  // (i.e. a bin). And if a node has no incoming arcs from outside S, it cannot
+  // be a start an must be an inner node (i.e. an item). We can exploit this to
+  // derive better bounds.
+  //
+  // We just explained the reduction using incoming arcs and starts of route,
+  // but we can do the same with outgoing arcs and ends of route. We can also
+  // change the dimension (the X_i) and variable direction used in the
+  // RouteRelationsHelper to exploit relations X_h - X_t <= rhs(t,h) instead.
+  //
+  // We provide a reduction for the cross product of:
+  // - Each possible dimension in the RouteRelationsHelper.
+  // - lhs or rhs (when negate_variables = true) in X - Y \in [lhs, rhs].
+  // - (start and incoming arcs) or (ends and outgoing arcs).
+  //
+  // Warning: the returned Span<> is only valid until the next call to this
+  // function.
+  //
+  // TODO(user): Given the info for a subset, we can derive bounds for any
+  // smaller set included in it. We just have to ignore the MUST_BE_ITEM
+  // type as this might no longer be true. That might be interseting.
+  absl::Span<ItemOrBin> RelaxIntoSpecialBinPackingProblem(
+      absl::Span<const int> subset, int dimension, bool negate_variables,
+      bool use_incoming, const RouteRelationsHelper& helper);
+
   // Returns the minimum flow going out of a subset of size `subset_size`,
   // assuming that the longest feasible path inside this subset has
   // `longest_path_length` nodes and that there are at most `max_longest_paths`
@@ -68,6 +289,7 @@ class MinOutgoingFlowHelper {
   const BinaryRelationRepository& binary_relation_repository_;
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
+  SharedStatistics* shared_stats_;
 
   // Temporary data used by ComputeMinOutgoingFlow(). Always contain default
   // values, except while ComputeMinOutgoingFlow() is running.
@@ -81,10 +303,20 @@ class MinOutgoingFlowHelper {
 
   std::vector<bool> in_subset_;
   std::vector<int> index_in_subset_;
+
   // For each node n, the indices (in tails_, heads_) of the m->n and n->m arcs
   // inside the subset (self arcs excepted).
   std::vector<std::vector<int>> incoming_arc_indices_;
   std::vector<std::vector<int>> outgoing_arc_indices_;
+
+  // This can only be true for node in the current subset. If a node 'n' has no
+  // incoming arcs from outside the subset, the part of a route serving node 'n'
+  // in a subset cannot start at that node. And if it has no outoing arc leaving
+  // the subset, it cannot end at that node. This can be used to derive tighter
+  // bounds.
+  std::vector<bool> has_incoming_arcs_from_outside_;
+  std::vector<bool> has_outgoing_arcs_to_outside_;
+
   // For each node n, whether it can appear at the current and next position in
   // a feasible path.
   std::vector<bool> reachable_;
@@ -98,6 +330,15 @@ class MinOutgoingFlowHelper {
       node_var_lower_bounds_;
   std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
       next_node_var_lower_bounds_;
+
+  std::vector<ItemOrBin> tmp_bin_packing_problem_;
+
+  // Statistics.
+  int64_t num_full_dp_skips_ = 0;
+  int64_t num_full_dp_calls_ = 0;
+  int64_t num_full_dp_early_abort_ = 0;
+  int64_t num_full_dp_work_abort_ = 0;
+  absl::flat_hash_map<std::string, int> num_by_type_;
 };
 
 // Given a graph with nodes in [0, num_nodes) and a set of arcs (the order is
@@ -194,11 +435,14 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 // components, computes the demand needed to serves it, and depending on whether
 // it contains the depot (node zero) or not, compute the minimum number of
 // vehicle that needs to cross the component border.
-CutGenerator CreateCVRPCutGenerator(int num_nodes, absl::Span<const int> tails,
-                                    absl::Span<const int> heads,
-                                    absl::Span<const Literal> literals,
-                                    absl::Span<const int64_t> demands,
-                                    int64_t capacity, Model* model);
+// `flat_node_dim_expressions` must have num_dimensions (possibly 0) times
+// num_nodes elements, with the expression associated with node n and dimension
+// d at index n * num_dimensions + d.
+CutGenerator CreateCVRPCutGenerator(
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
+    absl::Span<const AffineExpression> flat_node_dim_expressions,
+    int64_t capacity, Model* model);
 
 // Try to find a subset where the current LP capacity of the outgoing or
 // incoming arc is not enough to satisfy the demands.

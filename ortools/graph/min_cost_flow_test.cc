@@ -646,8 +646,8 @@ bool CheckAssignmentFeasibility(const Graph& graph,
                                 absl::Span<const int64_t> supply) {
   for (typename Graph::NodeIndex node = 0; node < graph.num_nodes(); ++node) {
     if (supply[node] != 0) {
-      typename Graph::OutgoingOrOppositeIncomingArcIterator it(graph, node);
-      EXPECT_TRUE(it.Ok()) << node << " has no incident arc";
+      EXPECT_FALSE(graph.OutgoingOrOppositeIncomingArcs(node).empty())
+          << node << " has no incident arc";
     }
   }
   return true;

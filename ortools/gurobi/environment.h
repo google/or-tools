@@ -119,7 +119,6 @@ absl::Status LoadGurobiDynamicLibrary(std::vector<std::string> potential_paths);
 #define GRB_MAX_CONCURRENT 64
 #define CB_ARGS GRBmodel *model, void *cbdata, int where, void *usrdata
 #define LOGCB_ARGS char *msg, void *logdata
-extern std::function<int(GRBenv**, const char*, const char*, const char*, int, const char*)> GRBisqp;
 extern std::function<int(GRBmodel *model, const char *attrname)> GRBisattravailable;
 extern std::function<int(GRBmodel *model, const char *attrname, int *valueP)> GRBgetintattr;
 extern std::function<int(GRBmodel *model, const char *attrname, int newvalue)> GRBsetintattr;

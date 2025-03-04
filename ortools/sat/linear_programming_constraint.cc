@@ -30,6 +30,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -858,7 +859,7 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
     }
   }
 
-  if (!lp_solution_is_set_) {
+  if (!lp_solution_is_set_ || num_force_lp_call_on_next_propagate_ > 0) {
     return Propagate();
   }
 
@@ -2120,8 +2121,12 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
 }
 
 bool LinearProgrammingConstraint::Propagate() {
+  const int old_num_force = num_force_lp_call_on_next_propagate_;
+  num_force_lp_call_on_next_propagate_ = 0;
   if (!enabled_) return true;
   if (time_limit_->LimitReached()) return true;
+  const int64_t timestamp_at_function_start = integer_trail_->num_enqueues();
+
   UpdateBoundsOfLpVariables();
 
   // TODO(user): It seems the time we loose by not stopping early might be worth
@@ -2160,6 +2165,20 @@ bool LinearProgrammingConstraint::Propagate() {
   int cuts_round = 0;
   while (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL &&
          cuts_round < max_cuts_rounds) {
+    // We are about to spend some effort finding cuts or changing the LP.
+    // If one of the LP solve done by this function propagated something, it
+    // seems better to reach the propagation fix point first before doing that.
+    //
+    // Heuristic: if we seem to be in a propagation loop, we might need more
+    // cut/lazy-constraints in order to just get out of it, so we loop only if
+    // num_force_lp_call_on_next_propagate_ is small.
+    if (integer_trail_->num_enqueues() > timestamp_at_function_start &&
+        old_num_force < 3) {
+      num_force_lp_call_on_next_propagate_ = old_num_force + 1;
+      watcher_->CallAgainDuringThisPropagation();
+      return true;
+    }
+
     // We wait for the first batch of problem constraints to be added before we
     // begin to generate cuts. Note that we rely on num_solves_ since on some
     // problems there is no other constraints than the cuts.

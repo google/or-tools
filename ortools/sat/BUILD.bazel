@@ -16,9 +16,9 @@
 load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -287,9 +287,11 @@ cc_library(
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/graph:strongly_connected_components",
+        "//ortools/util:bitset",
         "//ortools/util:dense_set",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -312,6 +314,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -337,6 +340,7 @@ cc_library(
         "//ortools/algorithms:binary_search",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/functional:any_invocable",
         "@com_google_absl//absl/functional:bind_front",
@@ -621,6 +625,7 @@ cc_library(
         ":presolve_context",
         ":probing",
         ":rins",
+        ":routing_cuts",
         ":sat_base",
         ":sat_inprocessing",
         ":sat_parameters_cc_proto",
@@ -730,6 +735,7 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -1888,6 +1894,7 @@ cc_test(
         ":sat_solver",
         "//ortools/base:gmock_main",
         "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -2335,6 +2342,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -2654,6 +2662,7 @@ cc_library(
     hdrs = ["routing_cuts.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_utils",
         ":cuts",
         ":integer",
         ":integer_base",
@@ -2662,18 +2671,23 @@ cc_library(
         ":model",
         ":precedences",
         ":sat_base",
+        ":synchronization",
         ":util",
         "//ortools/base",
         "//ortools/base:mathutil",
+        "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/graph",
+        "//ortools/graph:connected_components",
         "//ortools/graph:max_flow",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
@@ -2684,6 +2698,7 @@ cc_test(
     name = "routing_cuts_test",
     srcs = ["routing_cuts_test.cc"],
     deps = [
+        ":cp_model",
         ":cuts",
         ":integer",
         ":integer_base",
@@ -2694,6 +2709,7 @@ cc_test(
         ":routing_cuts",
         ":sat_base",
         "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
         "//ortools/base:strong_vector",
         "//ortools/graph:max_flow",
         "//ortools/util:strong_integers",
@@ -2713,7 +2729,6 @@ cc_library(
         ":cuts",
         ":integer",
         ":integer_base",
-        ":intervals",
         ":linear_constraint",
         ":linear_constraint_manager",
         ":model",
@@ -2729,6 +2744,7 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
@@ -3253,10 +3269,10 @@ cc_library(
         ":no_overlap_2d_helper",
         ":synchronization",
         ":util",
-        "//ortools/algorithms:set_cover_heuristics",
-        "//ortools/algorithms:set_cover_invariant",
-        "//ortools/algorithms:set_cover_model",
         "//ortools/base:stl_util",
+        "//ortools/set_cover:set_cover_heuristics",
+        "//ortools/set_cover:set_cover_invariant",
+        "//ortools/set_cover:set_cover_model",
         "//ortools/util:bitset",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/log",
@@ -3787,6 +3803,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/util:logging",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],

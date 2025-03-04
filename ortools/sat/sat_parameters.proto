@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 316
+// NEXT TAG: 318
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -474,6 +474,9 @@ message SatParameters {
   // If true, expand all_different constraints that are not permutations.
   // Permutations (#Variables = #Values) are always expanded.
   optional bool expand_alldiff_constraints = 170 [default = false];
+
+  // Max domain size for all_different constraints to be expanded.
+  optional int32 max_alldiff_domain_size = 317 [default = 128];
 
   // If true, expand the reservoir constraints by creating booleans for all
   // possible precedences between event and encoding the constraint.
@@ -940,6 +943,12 @@ message SatParameters {
   // the price of a higher O(2^n) complexity, where n is the subset size. Hence
   // the value of this parameter should be small (e.g. less than 10).
   optional int32 routing_cut_subset_size_for_tight_binary_relation_bound = 313
+      [default = 0];
+
+  // Similar to above, but with an even stronger algorithm in O(n!). We try to
+  // be defensive and abort early or not run that often. Still the value of
+  // that parameter shouldn't really be much more than 10.
+  optional int32 routing_cut_subset_size_for_exact_binary_relation_bound = 316
       [default = 0];
 
   // The amount of "effort" to spend in dynamic programming for computing

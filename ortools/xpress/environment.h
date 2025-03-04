@@ -20,7 +20,7 @@
 #include <string>
 
 #include "absl/status/status.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/base_export.h"
 
 extern "C" {
 typedef struct xo_prob_struct* XPRSprob;

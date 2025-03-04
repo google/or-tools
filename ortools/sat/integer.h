@@ -1233,7 +1233,14 @@ class GenericLiteralWatcher final : public SatPropagator {
   int GetCurrentId() const { return current_id_; }
 
   // Add the given propagator to its queue.
+  //
+  // Warning: This will have no effect if called from within the propagation of
+  // a propagator since the propagator is still marked as "in the queue" until
+  // its propagation is done. Use CallAgainDuringThisPropagation() if that is
+  // what you need instead.
   void CallOnNextPropagate(int id);
+
+  void CallAgainDuringThisPropagation() { call_again_ = true; };
 
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
@@ -1283,6 +1290,7 @@ class GenericLiteralWatcher final : public SatPropagator {
 
   // The id of the propagator we just called.
   int current_id_;
+  bool call_again_ = false;
 
   std::vector<std::function<void(const std::vector<IntegerVariable>&)>>
       level_zero_modified_variable_callback_;
@@ -1393,6 +1401,8 @@ inline bool IntegerTrail::IntegerLiteralIsFalse(IntegerLiteral l) const {
 // serves as sentinels. Their index match the variables index.
 inline IntegerValue IntegerTrail::LevelZeroLowerBound(
     IntegerVariable var) const {
+  DCHECK_GE(var, 0);
+  DCHECK_LT(var, integer_trail_.size());
   return integer_trail_[var.value()].bound;
 }
 

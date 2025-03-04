@@ -100,6 +100,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(lns_initial_difficulty, 0.0, 1.0);
 
   TEST_POSITIVE(at_most_one_max_expansion_size);
+  TEST_POSITIVE(max_alldiff_domain_size);
 
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);

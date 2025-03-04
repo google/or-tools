@@ -38,6 +38,7 @@
 #include "absl/flags/flag.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
@@ -6207,8 +6208,9 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       non_fixed_boxes.push_back(
           {.box_index = new_size,
            .bounding_area = bounding_boxes.back(),
-           .x_size = context_->SizeMin(x_interval_index),
-           .y_size = context_->SizeMin(y_interval_index)});
+           .x_size = std::max(int64_t{0}, context_->SizeMin(x_interval_index)),
+           .y_size =
+               std::max(int64_t{0}, context_->SizeMin(y_interval_index))});
     }
     new_size++;
 
@@ -6218,12 +6220,12 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     if (y_constant && !context_->IntervalIsConstant(y_interval_index)) {
       y_constant = false;
     }
-    if (context_->SizeMax(x_interval_index) == 0 ||
-        context_->SizeMax(y_interval_index) == 0) {
+    if (context_->SizeMax(x_interval_index) <= 0 ||
+        context_->SizeMax(y_interval_index) <= 0) {
       has_zero_sized_interval = true;
     }
-    if (context_->SizeMin(x_interval_index) == 0 ||
-        context_->SizeMin(y_interval_index) == 0) {
+    if (context_->SizeMin(x_interval_index) <= 0 ||
+        context_->SizeMin(y_interval_index) <= 0) {
       has_potential_zero_sized_interval = true;
     }
   }
@@ -13173,6 +13175,21 @@ void UpdateHintInProto(PresolveContext* context) {
   crush.StoreSolutionAsHint(*proto);
 }
 
+// Canonicalizes the routes constraints node expressions. In particular,
+// replaces the variables in these expressions with their representative.
+void CanonicalizeRoutesConstraintNodeExpressions(PresolveContext* context) {
+  CpModelProto& proto = *context->working_model;
+  for (ConstraintProto& ct_ref : *proto.mutable_constraints()) {
+    if (ct_ref.constraint_case() != ConstraintProto::kRoutes) continue;
+    for (RoutesConstraintProto::NodeExpressions& node_exprs :
+         *ct_ref.mutable_routes()->mutable_dimensions()) {
+      for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
+        context->CanonicalizeLinearExpression({}, &expr);
+      }
+    }
+  }
+}
+
 }  // namespace
 
 // The presolve works as follow:
@@ -13359,7 +13376,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
         // If the presolve always keep symmetry, we compute it once and for all.
         if (!context_->working_model->has_symmetry()) {
           DetectAndAddSymmetryToProto(context_->params(),
-                                      context_->working_model, logger_);
+                                      context_->working_model, logger_,
+                                      context_->time_limit());
         }
 
         // We distinguish an empty symmetry message meaning that symmetry were
@@ -13643,6 +13661,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   }
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
+  CanonicalizeRoutesConstraintNodeExpressions(context_);
   UpdateHintInProto(context_);
   const int old_size = postsolve_mapping_->size();
   ApplyVariableMapping(absl::MakeSpan(mapping), postsolve_mapping_,
@@ -13702,6 +13721,23 @@ void ApplyVariableMapping(absl::Span<int> mapping,
   for (ConstraintProto& ct_ref : *proto->mutable_constraints()) {
     ApplyToAllVariableIndices(mapping_function, &ct_ref);
     ApplyToAllLiteralIndices(mapping_function, &ct_ref);
+    if (ct_ref.constraint_case() == ConstraintProto::kRoutes) {
+      for (RoutesConstraintProto::NodeExpressions& node_exprs :
+           *ct_ref.mutable_routes()->mutable_dimensions()) {
+        for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
+          if (expr.vars().empty()) continue;
+          DCHECK_EQ(expr.vars().size(), 1);
+          const int ref = expr.vars(0);
+          const int image = mapping[PositiveRef(ref)];
+          if (image < 0) {
+            expr.clear_vars();
+            expr.clear_coeffs();
+            continue;
+          }
+          expr.set_vars(0, RefIsPositive(ref) ? image : NegatedRef(image));
+        }
+      }
+    }
   }
 
   // Remap the objective variables.

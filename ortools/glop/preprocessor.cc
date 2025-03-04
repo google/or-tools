@@ -44,11 +44,6 @@ namespace glop {
 using ::util::Reverse;
 
 namespace {
-// Returns an interval as an human readable string for debugging.
-std::string IntervalString(Fractional lb, Fractional ub) {
-  return absl::StrFormat("[%g, %g]", lb, ub);
-}
-
 #if defined(_MSC_VER)
 double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }
 #endif

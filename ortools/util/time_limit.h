@@ -30,6 +30,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/util/running_stat.h"
@@ -264,7 +265,7 @@ class OR_DLL TimeLimit {
    * If the passed limit contain an external Boolean, replace the current one
    * with it. Not that this does not change the secondary Boolean.
    */
-  void MergeWithGlobalTimeLimit(TimeLimit* other);
+  void MergeWithGlobalTimeLimit(const TimeLimit* other);
 
   /**
    * Overwrites the deterministic time limit with the new value.
@@ -484,7 +485,7 @@ inline void TimeLimit::ResetLimitFromParameters(const Parameters& parameters) {
               parameters.max_deterministic_time());
 }
 
-inline void TimeLimit::MergeWithGlobalTimeLimit(TimeLimit* other) {
+inline void TimeLimit::MergeWithGlobalTimeLimit(const TimeLimit* other) {
   if (other == nullptr) return;
   ResetTimers(
       std::min(GetTimeLeft(), other->GetTimeLeft()),

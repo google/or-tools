@@ -824,18 +824,28 @@ bool SchedulingDemandHelper::DemandIsFixed(int t) const {
 }
 
 bool SchedulingDemandHelper::DecreaseEnergyMax(int t, IntegerValue value) {
-  if (value < EnergyMin(t)) {
-    if (helper_->IsOptional(t)) {
-      return helper_->PushTaskAbsence(t);
-    } else {
-      return helper_->ReportConflict();
-    }
-  } else if (!decomposed_energies_[t].empty()) {
+  if (helper_->IsAbsent(t)) return true;
+  if (value < EnergyMin(t)) return helper_->PushTaskAbsence(t);
+
+  if (!decomposed_energies_[t].empty()) {
     for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
       if (fixed_size * fixed_demand > value) {
-        if (assignment_.LiteralIsTrue(lit)) return helper_->ReportConflict();
+        // `lit` encodes that the energy is higher than value. So either lit
+        // must be false or the task must be absent.
         if (assignment_.LiteralIsFalse(lit)) continue;
-        if (!helper_->PushLiteral(lit.Negated())) return false;
+        if (assignment_.LiteralIsTrue(lit)) {
+          // Task must be absent.
+          if (helper_->PresenceLiteral(t) != lit) {
+            helper_->MutableLiteralReason()->push_back(lit.Negated());
+          }
+          return helper_->PushTaskAbsence(t);
+        }
+        if (helper_->IsPresent(t)) {
+          // Task is present, `lit` must be false.
+          DCHECK(!helper_->IsOptional(t) || helper_->PresenceLiteral(t) != lit);
+          helper_->AddPresenceReason(t);
+          if (!helper_->PushLiteral(lit.Negated())) return false;
+        }
       }
     }
   } else {

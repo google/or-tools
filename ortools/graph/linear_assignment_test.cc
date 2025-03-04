@@ -397,6 +397,7 @@ TEST(LinearSumAssignmentFriendTest, EpsilonOptimal) {
 // without bogging down the normal set of fastbuild tests people need to run.
 #if LARGE
 TEST(LinearSumAssignmentPrecisionTest, PrecisionWarning) {
+  using NodeIndex = typename util::ListGraph<>::NodeIndex;
   const NodeIndex kNumLeftNodes = 10000000;
   util::ListGraph<> g(2 * kNumLeftNodes, 2 * kNumLeftNodes);
   LinearSumAssignment<util::ListGraph<>> a(g, kNumLeftNodes);

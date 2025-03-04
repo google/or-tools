@@ -911,7 +911,7 @@ class SparseBitset {
   // instance. This way, after the loop, a client can call this for efficiency.
   void NotifyAllClear() {
 #if !defined(NDEBUG)
-      for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
+    for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
 #endif
     to_clear_.clear();
   }

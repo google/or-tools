@@ -13,8 +13,8 @@
 
 load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -79,7 +79,10 @@ cc_library(
     name = "bitset",
     srcs = ["bitset.cc"],
     hdrs = ["bitset.h"],
-    deps = ["//ortools/base"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/base:log_severity",
+    ],
 )
 
 cc_library(
@@ -213,6 +216,7 @@ cc_library(
     deps = [
         ":running_stat",
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/base:sysinfo",
         "//ortools/base:timer",
         "//ortools/base:types",

@@ -2521,6 +2521,35 @@ class CpSolver:
             index=_get_index(variables),
         )
 
+    def float_value(self, expression: LinearExprT) -> float:
+        """Returns the value of a linear expression after solve."""
+        return self._checked_response.float_value(expression)
+
+    def float_values(self, expressions: _IndexOrSeries) -> pd.Series:
+        """Returns the float values of the input linear expressions.
+
+        If `expressions` is a `pd.Index`, then the output will be indexed by the
+        variables. If `variables` is a `pd.Series` indexed by the underlying
+        dimensions, then the output will be indexed by the same underlying
+        dimensions.
+
+        Args:
+          expressions (Union[pd.Index, pd.Series]): The set of expressions from
+            which to get the values.
+
+        Returns:
+          pd.Series: The values of all variables in the set.
+
+        Raises:
+          RuntimeError: if solve() has not been called.
+        """
+        if self.__response_wrapper is None:
+            raise RuntimeError("solve() has not been called.")
+        return pd.Series(
+            data=[self.__response_wrapper.float_value(expr) for expr in expressions],
+            index=_get_index(expressions),
+        )
+
     def boolean_value(self, literal: LiteralT) -> bool:
         """Returns the boolean value of a literal after solve."""
         return self._checked_response.boolean_value(literal)
@@ -2795,6 +2824,23 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")
         return self.Value(expression)
+
+    def float_value(self, expression: LinearExprT) -> float:
+        """Evaluates an linear expression in the current solution.
+
+        Args:
+            expression: a linear expression of the model.
+
+        Returns:
+            An integer value equal to the evaluation of the linear expression
+            against the current solution.
+
+        Raises:
+            RuntimeError: if 'expression' is not a LinearExpr.
+        """
+        if not self.has_response():
+            raise RuntimeError("solve() has not been called.")
+        return self.FloatValue(expression)
 
     def has_response(self) -> bool:
         return self.HasResponse()

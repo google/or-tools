@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/boolean_problem.pb.h"
@@ -106,7 +107,7 @@ void StoreAssignment(const VariablesAssignment& assignment,
 
 // Constructs a sub-problem formed by the constraints with given indices.
 void ExtractSubproblem(const LinearBooleanProblem& problem,
-                       const std::vector<int>& constraint_indices,
+                       absl::Span<const int> constraint_indices,
                        LinearBooleanProblem* subproblem);
 
 // Modifies the given LinearBooleanProblem so that all the literals appearing

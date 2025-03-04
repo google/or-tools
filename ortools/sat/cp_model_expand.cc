@@ -1961,6 +1961,10 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
 
 bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
                              ConstraintProto* ct, PresolveContext* context) {
+  if (union_of_domains.Size() > context->params().max_alldiff_domain_size()) {
+    return false;
+  }
+
   const AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
   const int num_exprs = proto.exprs_size();
   int num_fully_encoded = 0;
@@ -1976,7 +1980,7 @@ bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
     return true;
   }
 
-  if (num_fully_encoded == num_exprs && union_of_domains.Size() < 256) {
+  if (num_fully_encoded == num_exprs) {
     // All variables fully encoded, and domains are small enough.
     return true;
   }

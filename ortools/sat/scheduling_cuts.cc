@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <functional>
 #include <limits>
 #include <optional>
 #include <string>
@@ -29,7 +28,9 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -38,7 +39,6 @@
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -63,7 +63,57 @@ BaseEvent::BaseEvent(int t, SchedulingConstraintHelper* x_helper)
       x_start_max(x_helper->StartMax(t)),
       x_end_min(x_helper->EndMin(t)),
       x_end_max(x_helper->EndMax(t)),
-      x_size_min(x_helper->SizeMin(t)) {}
+      x_size_min(x_helper->SizeMin(t)),
+      x_size_max(x_helper->SizeMax(t)) {}
+
+void BaseEvent::PropagateDecomposedEnergy(
+    const VariablesAssignment& assignment) {
+  if (decomposed_energy.empty()) return;
+
+  IntegerValue new_x_size_min = kMaxIntegerValue;
+  IntegerValue new_x_size_max = kMinIntegerValue;
+  IntegerValue new_y_size_min = kMaxIntegerValue;
+  IntegerValue new_y_size_max = kMinIntegerValue;
+  IntegerValue new_energy_min = kMaxIntegerValue;
+  int new_size = 0;
+  for (const auto [lit, fixed_size, fixed_demand] : decomposed_energy) {
+    // Filter out false literals and out of bounds values.
+    if (assignment.LiteralIsFalse(lit) || fixed_size < x_size_min ||
+        fixed_size > x_size_max || fixed_demand < y_size_min ||
+        fixed_demand > y_size_max) {
+      continue;
+    }
+
+    if (assignment.LiteralIsTrue(lit)) {
+      new_x_size_min = fixed_size;
+      new_x_size_max = fixed_size;
+      new_y_size_min = fixed_demand;
+      new_y_size_max = fixed_demand;
+      new_energy_min = fixed_size * fixed_demand;
+      decomposed_energy.clear();
+      decomposed_energy.push_back({lit, fixed_size, fixed_demand});
+      new_size = 1;
+      break;
+    }
+
+    new_x_size_min = std::min(new_x_size_min, fixed_size);
+    new_x_size_max = std::max(new_x_size_max, fixed_size);
+    new_y_size_min = std::min(new_y_size_min, fixed_demand);
+    new_y_size_max = std::max(new_y_size_max, fixed_demand);
+    new_energy_min = std::min(new_energy_min, fixed_size * fixed_demand);
+    decomposed_energy[new_size++] = {lit, fixed_size, fixed_demand};
+  }
+  decomposed_energy.resize(new_size);
+  CHECK(!decomposed_energy.empty());
+
+  // Update the event.
+  x_size_min = new_x_size_min;
+  x_size_max = new_x_size_max;
+  y_size_min = new_y_size_min;
+  y_size_max = new_y_size_max;
+  energy_min = new_energy_min;
+  use_energy = energy_min > x_size_min * y_size_min;
+}
 
 struct EnergyEvent : BaseEvent {
   EnergyEvent(int t, SchedulingConstraintHelper* x_helper)
@@ -604,6 +654,8 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
                           model](LinearConstraintManager* manager) {
     if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
     if (!demands_helper->CacheAllEnergyValues()) return true;
+    const VariablesAssignment& assignment =
+        model->GetOrCreate<Trail>()->Assignment();
 
     const auto& lp_values = manager->LpValues();
     std::vector<EnergyEvent> events;
@@ -617,8 +669,10 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
       EnergyEvent e(i, helper);
       e.y_size = demands_helper->Demands()[i];
       e.y_size_min = demands_helper->DemandMin(i);
+      e.y_size_max = demands_helper->DemandMax(i);
       e.decomposed_energy = demands_helper->DecomposedEnergies()[i];
       e.energy_min = demands_helper->EnergyMin(i);
+      e.PropagateDecomposedEnergy(assignment);
       e.energy_is_quadratic = demands_helper->EnergyIsQuadratic(i);
       if (!helper->IsPresent(i)) {
         e.presence_literal_index = helper->PresenceLiteral(i).Index();
@@ -671,6 +725,7 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
       EnergyEvent e(i, helper);
       e.y_size = IntegerValue(1);
       e.y_size_min = IntegerValue(1);
+      e.y_size_max = IntegerValue(1);
       e.energy_min = e.x_size_min;
       if (!helper->IsPresent(i)) {
         e.presence_literal_index = helper->PresenceLiteral(i).Index();
@@ -762,16 +817,11 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     // Sort events by time.
     // It is also important that all positive event with the same time as
     // negative events appear after for the correctness of the algo below.
-    std::sort(events.begin(), events.end(),
-              [](const TimeTableEvent& i, const TimeTableEvent& j) {
-                if (i.time == j.time) {
-                  if (i.is_positive == j.is_positive) {
-                    return i.interval_index < j.interval_index;
-                  }
-                  return !i.is_positive;
-                }
-                return i.time < j.time;
-              });
+    std::stable_sort(events.begin(), events.end(),
+                     [](const TimeTableEvent& i, const TimeTableEvent& j) {
+                       return std::tie(i.time, i.is_positive) <
+                              std::tie(j.time, j.is_positive);
+                     });
 
     double sum_of_demand_lp = 0.0;
     bool positive_event_added_since_last_check = false;
@@ -863,11 +913,12 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
   const int num_events = events.size();
   if (num_events <= 1) return;
 
-  std::sort(events.begin(), events.end(),
-            [](const CachedIntervalData& e1, const CachedIntervalData& e2) {
-              return e1.start_min < e2.start_min ||
-                     (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
-            });
+  std::stable_sort(
+      events.begin(), events.end(),
+      [](const CachedIntervalData& e1, const CachedIntervalData& e2) {
+        return e1.start_min < e2.start_min ||
+               (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
+      });
 
   // Balas disjunctive cuts on 2 tasks a and b:
   //   start_1 * (duration_1 + start_min_1 - start_min_2) +
@@ -1017,14 +1068,22 @@ CtEvent::CtEvent(int t, SchedulingConstraintHelper* x_helper)
     : BaseEvent(t, x_helper) {}
 
 std::string CtEvent::DebugString() const {
-  return absl::StrCat("CtEvent(x_end = ", x_end.DebugString(),
-                      ", x_start_min = ", x_start_min.value(),
-                      ", x_start_max = ", x_start_max.value(),
-                      ", x_size_min = ", x_size_min.value(),
-                      ", x_lp_end = ", x_lp_end,
-                      ", y_size_min = ", y_size_min.value(),
-                      ", energy_min = ", energy_min.value(),
-                      ", use_energy = ", use_energy, ", lifted = ", lifted);
+  return absl::StrCat(
+      "CtEvent(x_end = ", x_end.DebugString(),
+      ", x_start_min = ", x_start_min.value(),
+      ", x_start_max = ", x_start_max.value(),
+      ", x_size_min = ", x_size_min.value(),
+      ", x_size_max = ", x_size_max.value(),
+      ", x_end_min = ", x_end_min.value(), ", x_end_max = ", x_end_max.value(),
+      ", x_lp_end = ", x_lp_end, ", y_size_min = ", y_size_min.value(),
+      ", y_size_max = ", y_size_max.value(),
+      ", energy_min = ", energy_min.value(), ", use_energy = ", use_energy,
+      ", lifted = ", lifted, ", decomposed_energy = [",
+      absl::StrJoin(decomposed_energy, ", ",
+                    [](std::string* out, const LiteralValueValue& e) {
+                      absl::StrAppend(out, e.left_value, " * ", e.right_value);
+                    }),
+      "]");
 }
 
 namespace {
@@ -1152,11 +1211,11 @@ void GenerateShortCompletionTimeCutsWithExactBound(
     IntegerValue capacity_max, Model* model, LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);
   // Sort by start min to bucketize by start_min.
-  std::sort(events.begin(), events.end(),
-            [](const CtEvent& e1, const CtEvent& e2) {
-              return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
-                     std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
-            });
+  std::stable_sort(
+      events.begin(), events.end(), [](const CtEvent& e1, const CtEvent& e2) {
+        return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
+               std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
+      });
   std::vector<PermutableEvent> permutable_events;
   for (int start = 0; start + 1 < events.size(); ++start) {
     // Skip to the next start_min value.
@@ -1180,10 +1239,10 @@ void GenerateShortCompletionTimeCutsWithExactBound(
       }
     }
 
-    std::sort(residual_tasks.begin(), residual_tasks.end(),
-              [](const CtEvent& e1, const CtEvent& e2) {
-                return e1.x_lp_end < e2.x_lp_end;
-              });
+    std::stable_sort(residual_tasks.begin(), residual_tasks.end(),
+                     [](const CtEvent& e1, const CtEvent& e2) {
+                       return e1.x_lp_end < e2.x_lp_end;
+                     });
 
     IntegerValue sum_of_durations(0);
     IntegerValue sum_of_energies(0);
@@ -1242,7 +1301,8 @@ void GenerateShortCompletionTimeCutsWithExactBound(
           is_lifted |= event.lifted;
           cut.AddTerm(event.x_end, IntegerValue(1));
         }
-        std::string full_name = cut_name;
+        std::string full_name = cut_name + "_unweighted";
+        if (is_lifted) full_name.append("_lifted");
         top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
       }
 
@@ -1270,21 +1330,28 @@ namespace {
 
 // Returns a copy of the event with the start time increased to time.
 // Energy (min and decomposed) are updated accordingly.
-CtEvent TrimEventAfter(IntegerValue time, const CtEvent& old_event) {
-  DCHECK_GT(time, old_event.x_start_min);
+CtEvent CopyAndTrimEventAfter(const CtEvent& old_event, IntegerValue time,
+                              const VariablesAssignment& assignment) {
+  CHECK_GT(time, old_event.x_start_min);
+  CHECK_GT(old_event.x_start_min + old_event.x_size_min, time);
   CtEvent event = old_event;  // Copy.
   event.lifted = true;
-  // Build the vector of energies as the vector of sizes.
-  event.energy_min = ComputeEnergyMinInWindow(
-      event.x_start_min, event.x_start_max, event.x_end_min, event.x_end_max,
-      event.x_size_min, event.y_size_min, event.decomposed_energy, time,
-      event.x_end_max);
-  event.x_size_min = event.x_size_min + event.x_start_min - time;
-  event.x_start_min = time;
-  if (event.energy_min > event.x_size_min * event.y_size_min) {
-    event.use_energy = true;
+  // Trim the decomposed energy and compute the energy min in the window.
+
+  const IntegerValue shift = time - event.x_start_min;
+  CHECK_GT(shift, IntegerValue(0));
+  event.x_size_min -= shift;
+  event.x_size_max -= shift;
+  event.energy_min = event.x_size_min * event.y_size_min;
+  if (!event.decomposed_energy.empty()) {
+    // Trim durations
+    for (auto& [literal, size, demand] : event.decomposed_energy) {
+      CHECK_GT(size, shift);
+      size -= shift;
+    }
+    event.PropagateDecomposedEnergy(assignment);
   }
-  DCHECK_GE(event.energy_min, event.x_size_min * event.y_size_min);
+  event.x_start_min = time;
   return event;
 }
 
@@ -1295,7 +1362,7 @@ void AddEventDemandsToCapacitySubsetSum(
     IntegerValue capacity_max, std::vector<int64_t>& tmp_possible_demands,
     MaxBoundedSubsetSum& dp) {
   if (dp.CurrentMax() != capacity_max) {
-    if (event.y_size_is_fixed) {
+    if (event.y_size_is_fixed()) {
       dp.Add(event.y_size_min.value());
     } else if (!event.decomposed_energy.empty()) {
       tmp_possible_demands.clear();
@@ -1373,11 +1440,11 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
   std::vector<int64_t> tmp_possible_demands;
 
   // Sort by start min to bucketize by start_min.
-  std::sort(events.begin(), events.end(),
-            [](const CtEvent& e1, const CtEvent& e2) {
-              return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
-                     std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
-            });
+  std::stable_sort(
+      events.begin(), events.end(), [](const CtEvent& e1, const CtEvent& e2) {
+        return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
+               std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
+      });
 
   // First loop: we loop on potential start times.
   for (int start = 0; start + 1 < events.size(); ++start) {
@@ -1398,7 +1465,8 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
     for (int before = 0; before < start; ++before) {
       if (events[before].x_start_min + events[before].x_size_min >
           sequence_start_min) {
-        CtEvent event = TrimEventAfter(sequence_start_min, events[before]);
+        CtEvent event = CopyAndTrimEventAfter(events[before],
+                                              sequence_start_min, assignment);
         if (event.energy_min <= 0) continue;
         residual_tasks.push_back(std::move(event));
       }
@@ -1408,7 +1476,8 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
     int best_end = -1;
     double best_efficacy = 0.01;
     IntegerValue best_min_contrib = 0;
-    IntegerValue best_capacity = 0;
+    bool best_uses_subset_sum = false;
+    bool best_uses_shapes = false;
 
     // Used in the first term of the rhs of the equation.
     IntegerValue sum_event_contributions = 0;
@@ -1416,6 +1485,8 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
     IntegerValue sum_energy = 0;
     // For normalization.
     IntegerValue sum_square_energy = 0;
+    // Does the cut uses shapes when computing individual event contributions.
+    bool uses_shapes = false;
 
     double lp_contrib = 0.0;
     IntegerValue current_start_min(kMaxIntegerValue);
@@ -1424,10 +1495,10 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
 
     // We will add tasks one by one, sorted by end time, and evaluate the
     // potential cut at each step.
-    std::sort(residual_tasks.begin(), residual_tasks.end(),
-              [](const CtEvent& e1, const CtEvent& e2) {
-                return e1.x_lp_end < e2.x_lp_end;
-              });
+    std::stable_sort(residual_tasks.begin(), residual_tasks.end(),
+                     [](const CtEvent& e1, const CtEvent& e2) {
+                       return e1.x_lp_end < e2.x_lp_end;
+                     });
 
     // Second loop: we add tasks one by one.
     for (int i = 0; i < residual_tasks.size(); ++i) {
@@ -1443,9 +1514,42 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
       //   area = event.y_size_min * event.x_size_min * event.x_size_min
       // In the cumulative case, we can have energy_min > side_min * demand_min.
       // In that case, we use energy_min * size_min.
-      if (!AddProductTo(event.energy_min, event.x_size_min,
-                        &sum_event_contributions)) {
-        break;
+      if (event.decomposed_energy.empty()) {
+        if (!AddProductTo(event.energy_min, event.x_size_min,
+                          &sum_event_contributions)) {
+          break;
+        }
+      } else {
+        IntegerValue min_shape_area = kMaxIntegerValue;
+        for (const auto& [literal, size, demand] : event.decomposed_energy) {
+          IntegerValue shape_area = CapProdI(CapProdI(size, size), demand);
+          if (assignment.LiteralIsFalse(literal)) continue;
+          if (assignment.LiteralIsTrue(literal)) {
+            min_shape_area = shape_area;
+            break;
+          } else {
+            min_shape_area = std::min(min_shape_area, shape_area);
+          }
+        }
+        if (min_shape_area < event.energy_min * event.x_size_min) {
+          VLOG(2) << "min_shape_area: " << min_shape_area
+                  << " energy_min: " << event.energy_min
+                  << " x_size_min: " << event.x_size_min
+                  << "simple_min_shape_area: "
+                  << event.energy_min * event.x_size_min;
+          VLOG(2) << "  event = " << event.DebugString();
+        }
+        CHECK_GE(min_shape_area, event.energy_min * event.x_size_min);
+
+        if (!AddTo(min_shape_area, &sum_event_contributions)) break;
+        if (min_shape_area > event.energy_min * event.x_size_min) {
+          VLOG(2) << "min_shape_area: " << min_shape_area
+                  << " simple_min_shape_area: "
+                  << event.energy_min * event.x_size_min;
+          VLOG(2) << "  event = " << event.DebugString();
+
+          uses_shapes = true;
+        }
       }
       if (!AddSquareTo(event.energy_min, &sum_square_energy)) break;
 
@@ -1492,7 +1596,8 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
         best_efficacy = efficacy;
         best_end = i;
         best_min_contrib = min_contrib;
-        best_capacity = reachable_capacity;
+        best_uses_subset_sum = reachable_capacity < capacity_max;
+        best_uses_shapes = uses_shapes;
       }
     }
 
@@ -1511,9 +1616,8 @@ void GenerateCompletionTimeCutsWithEnergy(absl::string_view cut_name,
       std::string full_name(cut_name);
       if (is_lifted) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
-      if (best_capacity < capacity_max) {
-        full_name.append("_subsetsum");
-      }
+      if (best_uses_subset_sum) full_name.append("_subsetsum");
+      if (best_uses_shapes) full_name.append("_shapes");
       top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
     }
   }
@@ -1543,6 +1647,7 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
           event.x_end = end_expr;
           event.x_lp_end = end_expr.LpValue(lp_values);
           event.y_size_min = IntegerValue(1);
+          event.y_size_max = IntegerValue(1);
           event.energy_min = size_min;
           events.push_back(event);
         }
@@ -1588,6 +1693,8 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
                           capacity](bool mirror) {
       std::vector<CtEvent> events;
       const auto& lp_values = manager->LpValues();
+      const VariablesAssignment& assignment =
+          model->GetOrCreate<Trail>()->Assignment();
       for (int index = 0; index < helper->NumTasks(); ++index) {
         if (!helper->IsPresent(index)) continue;
         if (helper->SizeMin(index) > 0 &&
@@ -1596,9 +1703,12 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
           event.x_end = helper->Ends()[index];
           event.x_lp_end = event.x_end.LpValue(lp_values);
           event.y_size_min = demands_helper->DemandMin(index);
+          event.y_size_max = demands_helper->DemandMax(index);
           event.energy_min = demands_helper->EnergyMin(index);
+          event.use_energy =
+              event.energy_min > event.x_size_min * event.y_size_min;
           event.decomposed_energy = demands_helper->DecomposedEnergies()[index];
-          event.y_size_is_fixed = demands_helper->DemandIsFixed(index);
+          event.PropagateDecomposedEnergy(assignment);
           events.push_back(event);
         }
       }

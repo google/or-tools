@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
@@ -524,6 +525,14 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
   FillDomainInProto(tight_domain, linear);
   if (canonicalize) {
     context_->CanonicalizeLinearConstraint(new_ct);
+    // We checked if the constraint was trivial above, but canonicalization can
+    // make it trivial again by simplifying expressions like (x - x).
+    if (new_ct->linear().vars().empty() &&
+        ReadDomainFromProto(new_ct->linear()).Contains(0)) {
+      context_->UpdateRuleStats("linear: trivial 0=0");
+      context_->working_model->mutable_constraints()->RemoveLast();
+      return true;
+    }
   }
   return true;
 }
@@ -858,7 +867,7 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
     const int new_index = interval_mapping_[ct.cumulative().intervals(i)];
     if (new_index != -1) {
       new_ct->add_intervals(new_index);
-      *new_ct->add_demands() = ct.cumulative().demands(i);
+      CopyLinearExpression(ct.cumulative().demands(i), new_ct->add_demands());
     }
   }
 

@@ -216,8 +216,6 @@ void ComputeOneToAllShortestPaths(
 }
 
 // Computes shortest paths from the node `source` to nodes in `destinations`.
-// TODO(b/385094969): Remove second template parameter when all clients are
-// migrated.
 template <class GraphType>
 void ComputeOneToManyShortestPaths(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,

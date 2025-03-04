@@ -42,6 +42,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -52,7 +53,6 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -77,6 +77,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/routing_cuts.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -1730,7 +1731,10 @@ class LnsSolver : public SubSolver {
   // latest LNS fragment.
   absl::Mutex next_arena_size_mutex_;
   int64_t next_arena_size_ ABSL_GUARDED_BY(next_arena_size_mutex_) =
-      helper_->ModelProto().SpaceUsedLong();
+      helper_->ModelProto().GetArena() == nullptr
+          ? Neighborhood::kDefaultArenaSizePerVariable
+                * helper_->ModelProto().variables_size()
+          : helper_->ModelProto().GetArena()->SpaceUsed();
 };
 
 void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
@@ -2479,6 +2483,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     return shared_response_manager->GetResponse();
   }
 
+  // This uses the relations from the model_proto to fill the node expressions
+  // of new_cp_model_proto. This is useful to have as many binary relations as
+  // possible (new_cp_model_proto can have less relations because the model
+  // copier can remove the ones which are always true).
+  const auto [num_routes, num_dimensions] =
+      MaybeFillMissingRoutesConstraintNodeExpressions(model_proto,
+                                                      *new_cp_model_proto);
+  if (num_dimensions > 0) {
+    SOLVER_LOG(logger, "Routes: ", num_dimensions,
+               " dimension(s) automatically inferred for ", num_routes,
+               " routes constraint(s).");
+  }
+
   if (context->working_model->has_symmetry()) {
     SOLVER_LOG(logger, "Ignoring internal symmetry field");
     context->working_model->clear_symmetry();
@@ -2692,7 +2709,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // Moreover it is possible we will not find them again as the constraints
       // might have changed.
     } else {
-      DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
+      TimeLimit time_limit;
+      shared_time_limit->UpdateLocalLimit(&time_limit);
+      DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger,
+                                  &time_limit);
     }
   }
 

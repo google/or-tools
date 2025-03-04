@@ -69,10 +69,13 @@
 #define OR_TOOLS_UTIL_STATS_H_
 
 #include <cstdint>
+#include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/timer.h"
@@ -138,7 +141,7 @@ class StatsGroup {
   // This type is neither copyable nor movable.
   StatsGroup(const StatsGroup&) = delete;
   StatsGroup& operator=(const StatsGroup&) = delete;
-  ~StatsGroup();
+  ~StatsGroup() = default;
 
   // Registers a Stat, which will appear in the string returned by StatString().
   // The Stat object must live as long as this StatsGroup.
@@ -154,9 +157,9 @@ class StatsGroup {
   void SetPrintOrder(PrintOrder print_order) { print_order_ = print_order; }
 
   // Returns and if needed creates and registers a TimeDistribution with the
-  // given name. Note that this involve a map lookup and his thus slower than
-  // directly accessing a TimeDistribution variable.
-  TimeDistribution* LookupOrCreateTimeDistribution(std::string name);
+  // given name. Note that this involve a hash map lookup and is thus slower
+  // than directly accessing a TimeDistribution variable.
+  TimeDistribution* LookupOrCreateTimeDistribution(absl::string_view name);
 
   // Calls Reset() on all the statistics registered with this group.
   void Reset();
@@ -165,7 +168,8 @@ class StatsGroup {
   std::string name_;
   PrintOrder print_order_ = SORT_BY_PRIORITY_THEN_VALUE;
   std::vector<Stat*> stats_;
-  std::map<std::string, TimeDistribution*> time_distributions_;
+  absl::flat_hash_map<std::string, std::unique_ptr<TimeDistribution>>
+      time_distributions_;
 };
 
 // Base class to track and compute statistics about the distribution of a
@@ -348,37 +352,24 @@ class EnabledScopedTimeDistributionUpdater {
 
 class DisabledScopedTimeDistributionUpdater {
  public:
-  explicit DisabledScopedTimeDistributionUpdater(TimeDistribution* stat) {}
+  explicit DisabledScopedTimeDistributionUpdater(TimeDistribution*) {}
 
   // This type is neither copyable nor movable.
   DisabledScopedTimeDistributionUpdater(
       const DisabledScopedTimeDistributionUpdater&) = delete;
   DisabledScopedTimeDistributionUpdater& operator=(
       const DisabledScopedTimeDistributionUpdater&) = delete;
-  void AlsoUpdate(TimeDistribution* also_update) {}
+  void AlsoUpdate(TimeDistribution*) {}
 };
 
-class DisabledScopedInstructionCounter {
+class DisabledScopedTimeStats {
  public:
-  explicit DisabledScopedInstructionCounter(absl::string_view) {}
-  DisabledScopedInstructionCounter(const DisabledScopedInstructionCounter&) =
-      delete;
-  DisabledScopedInstructionCounter& operator=(
-      const DisabledScopedInstructionCounter&) = delete;
+  explicit DisabledScopedTimeStats(StatsGroup*, const char*) {}
+  DisabledScopedTimeStats(const DisabledScopedTimeStats&) = delete;
+  DisabledScopedTimeStats& operator=(const DisabledScopedTimeStats&) = delete;
+  DisabledScopedTimeStats(DisabledScopedTimeStats&&) = delete;
+  DisabledScopedTimeStats& operator=(DisabledScopedTimeStats&&) = delete;
 };
-
-#ifdef OR_STATS
-
-using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
-#ifdef HAS_PERF_SUBSYSTEM
-using ScopedInstructionCounter = EnabledScopedInstructionCounter;
-#else   // HAS_PERF_SUBSYSTEM
-using ScopedInstructionCounter = DisabledScopedInstructionCounter;
-#endif  // HAS_PERF_SUBSYSTEM
-
-// Simple macro to be used by a client that want to execute costly operations
-// only if OR_STATS is defined.
-#define IF_STATS_ENABLED(instructions) instructions
 
 // Measures the time from this macro line to the end of the scope and adds it
 // to the distribution (from the given StatsGroup) with the same name as the
@@ -387,38 +378,50 @@ using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 // Note(user): This adds more extra overhead around the measured code compared
 // to defining your own TimeDistribution stat in your StatsGroup. About 80ns
 // per measurement compared to about 20ns (as of 2012-06, on my workstation).
-#define SCOPED_TIME_STAT(stats)                                        \
-  operations_research::ScopedTimeDistributionUpdater scoped_time_stat( \
-      (stats)->LookupOrCreateTimeDistribution(__FUNCTION__))
+class EnabledScopedTimeStats {
+ public:
+  explicit EnabledScopedTimeStats(StatsGroup* stats,
+                                  absl::string_view function_name)
+      : scoped_time_stat_(
+            stats->LookupOrCreateTimeDistribution(function_name)) {}
+  EnabledScopedTimeStats(const EnabledScopedTimeStats&) = delete;
+  EnabledScopedTimeStats& operator=(const EnabledScopedTimeStats&) = delete;
+  EnabledScopedTimeStats(EnabledScopedTimeStats&&) = delete;
+  EnabledScopedTimeStats& operator=(EnabledScopedTimeStats&&) = delete;
 
-#ifdef HAS_PERF_SUBSYSTEM
+ private:
+  operations_research::EnabledScopedTimeDistributionUpdater scoped_time_stat_;
+};
 
-inline std::string RemoveOperationsResearchAndGlop(
-    const std::string& pretty_function) {
-  return strings::GlobalReplaceSubstrings(
-      pretty_function, {{"operations_research::", ""}, {"glop::", ""}});
-}
+#ifdef OR_STATS
 
-#define SCOPED_INSTRUCTION_COUNT(time_limit)                              \
-  operations_research::ScopedInstructionCounter scoped_instruction_count( \
-      RemoveOperationsResearchAndGlop(__PRETTY_FUNCTION__), time_limit)
+using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
+using ScopedTimeStats = EnabledScopedTimeStats;
 
-#else  // !HAS_PERF_SUBSYSTEM
-#define SCOPED_INSTRUCTION_COUNT(time_limit)
-#endif  // HAS_PERF_SUBSYSTEM
+// Simple macro to be used by a client that want to execute costly operations
+// only if OR_STATS is defined.
+#define IF_STATS_ENABLED(instructions) instructions
 
 #else  // !OR_STATS
 // If OR_STATS is not defined, we remove some instructions that may be time
 // consuming.
 
 using ScopedTimeDistributionUpdater = DisabledScopedTimeDistributionUpdater;
-using ScopedInstructionCounter = DisabledScopedInstructionCounter;
+using ScopedTimeStats = DisabledScopedTimeStats;
 
-#define IF_STATS_ENABLED(instructions)
-#define SCOPED_TIME_STAT(stats)
-#define SCOPED_INSTRUCTION_COUNT(time_limit)
+// Defining it that way makes sure that the compiler still sees the code and
+// checks that the syntax & types are valid.
+#define IF_STATS_ENABLED(instructions) \
+  if constexpr (false) {               \
+    instructions;                      \
+  }
 
 #endif  // OR_STATS
+
+#define SCOPED_TIME_STAT(stats) \
+  operations_research::ScopedTimeStats scoped_time_stat(stats, __FUNCTION__);
+
+#define SCOPED_INSTRUCTION_COUNT(time_limit)
 
 }  // namespace operations_research
 

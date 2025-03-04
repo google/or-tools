@@ -145,7 +145,6 @@ class UpdateRow {
   DenseRow coefficient_;
 
   // Boolean used to avoid recomputing many times the same thing.
-  bool compute_update_row_;
   RowIndex left_inverse_computed_for_ = kInvalidRow;
   RowIndex update_row_computed_for_ = kInvalidRow;
 

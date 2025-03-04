@@ -20,9 +20,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/util.h"

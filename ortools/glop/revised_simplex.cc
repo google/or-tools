@@ -2861,8 +2861,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
-    IF_STATS_ENABLED(
-        ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
+    ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
 
     // Trigger a refactorization if one of the class we use request it.
     if (!refactorize && reduced_costs_.NeedsBasisRefactorization()) {
@@ -3164,8 +3163,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
-    IF_STATS_ENABLED(
-        ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
+    ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
 
     // Trigger a refactorization if one of the class we use request it.
     //
@@ -3488,8 +3486,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
     AdvanceDeterministicTime(time_limit);
     if (time_limit->LimitReached()) break;
 
-    IF_STATS_ENABLED(
-        ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
+    ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();

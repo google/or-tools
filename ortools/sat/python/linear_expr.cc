@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -130,20 +131,25 @@ void FloatExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
                                     double coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
+
 void FloatExprVisitor::AddConstant(double constant) { offset_ += constant; }
+
 void FloatExprVisitor::AddVarCoeff(std::shared_ptr<BaseIntVar> var,
                                    double coeff) {
   canonical_terms_[var] += coeff;
 }
-double FloatExprVisitor::Process(std::shared_ptr<LinearExpr> expr,
-                                 std::vector<std::shared_ptr<BaseIntVar>>* vars,
-                                 std::vector<double>* coeffs) {
-  AddToProcess(expr, 1.0);
+
+void FloatExprVisitor::ProcessAll() {
   while (!to_process_.empty()) {
     const auto [expr, coeff] = to_process_.back();
     to_process_.pop_back();
     expr->VisitAsFloat(*this, coeff);
   }
+}
+
+double FloatExprVisitor::Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
+                                 std::vector<double>* coeffs) {
+  ProcessAll();
 
   vars->clear();
   coeffs->clear();
@@ -156,9 +162,20 @@ double FloatExprVisitor::Process(std::shared_ptr<LinearExpr> expr,
   return offset_;
 }
 
+double FloatExprVisitor::Evaluate(const CpSolverResponse& solution) {
+  ProcessAll();
+
+  for (const auto& [var, coeff] : canonical_terms_) {
+    if (coeff == 0) continue;
+    offset_ += coeff * solution.solution(var->index());
+  }
+  return offset_;
+}
+
 FlatFloatExpr::FlatFloatExpr(std::shared_ptr<LinearExpr> expr) {
   FloatExprVisitor lin;
-  offset_ = lin.Process(expr, &vars_, &coeffs_);
+  lin.AddToProcess(expr, 1.0);
+  offset_ = lin.Process(&vars_, &coeffs_);
 }
 
 void FlatFloatExpr::VisitAsFloat(FloatExprVisitor& lin, double c) {
@@ -735,10 +752,8 @@ bool IntExprVisitor::Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
   return true;
 }
 
-bool IntExprVisitor::Evaluate(std::shared_ptr<LinearExpr> expr,
-                              const CpSolverResponse& solution,
+bool IntExprVisitor::Evaluate(const CpSolverResponse& solution,
                               int64_t* value) {
-  AddToProcess(expr, 1);
   if (!ProcessAll()) return false;
 
   *value = offset_;
@@ -748,6 +763,10 @@ bool IntExprVisitor::Evaluate(std::shared_ptr<LinearExpr> expr,
   }
   return true;
 }
+
+// TODO(user): This hash method does not distinguish between variables with
+// the same index and different models.
+int64_t Literal::Hash() const { return absl::HashOf(index()); }
 
 bool BaseIntVarComparator::operator()(std::shared_ptr<BaseIntVar> lhs,
                                       std::shared_ptr<BaseIntVar> rhs) const {

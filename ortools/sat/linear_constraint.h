@@ -288,6 +288,8 @@ class LinearConstraintBuilder {
   // bounds.
   LinearExpression BuildExpression();
 
+  int NumTerms() const { return terms_.size(); }
+
  private:
   const IntegerEncoder* encoder_;
   IntegerValue lb_;

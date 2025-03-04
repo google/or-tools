@@ -31,12 +31,12 @@
 #include "absl/functional/bind_front.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -132,21 +132,24 @@ void FeasibilityJumpSolver::ImportState() {
 
 void FeasibilityJumpSolver::ReleaseState() { states_->Release(state_); }
 
-void FeasibilityJumpSolver::Initialize() {
-  is_initialized_ = true;
-
+bool FeasibilityJumpSolver::Initialize() {
   // For now we just disable or enable it.
   // But in the future we might have more variation.
   if (params_.feasibility_jump_linearization_level() == 0) {
-    evaluator_ =
-        std::make_unique<LsEvaluator>(linear_model_->model_proto(), params_);
+    evaluator_ = std::make_unique<LsEvaluator>(linear_model_->model_proto(),
+                                               params_, &time_limit_);
   } else {
-    evaluator_ =
-        std::make_unique<LsEvaluator>(linear_model_->model_proto(), params_,
-                                      linear_model_->ignored_constraints(),
-                                      linear_model_->additional_constraints());
+    evaluator_ = std::make_unique<LsEvaluator>(
+        linear_model_->model_proto(), params_,
+        linear_model_->ignored_constraints(),
+        linear_model_->additional_constraints(), &time_limit_);
   }
 
+  if (time_limit_.LimitReached()) {
+    evaluator_.reset();
+    return false;
+  }
+  is_initialized_ = true;
   const int num_variables = linear_model_->model_proto().variables().size();
   var_domains_.resize(num_variables);
   for (int v = 0; v < num_variables; ++v) {
@@ -162,6 +165,7 @@ void FeasibilityJumpSolver::Initialize() {
       var_occurs_in_non_linear_constraint_[v] = true;
     }
   }
+  return true;
 }
 
 namespace {
@@ -346,7 +350,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
   return [this] {
     // We delay initialization to the first task as it might be a bit slow
     // to scan the whole model, so we want to do this part in parallel.
-    if (!is_initialized_) Initialize();
+    if (!is_initialized_) {
+      if (!Initialize()) {
+        return;
+      }
+    }
 
     // Load the next state to work on.
     ImportState();

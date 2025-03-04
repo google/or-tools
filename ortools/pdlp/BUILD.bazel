@@ -13,8 +13,8 @@
 
 load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,6 +26,7 @@ cc_library(
         ":solvers_cc_proto",
         "//ortools/base:threadpool",
         "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/log",
         "@eigen",
     ],
 )
@@ -321,6 +322,7 @@ cc_test(
         ":gtest_main",
         ":scheduler",
         ":sharder",
+        ":solvers_cc_proto",
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/random:distributions",

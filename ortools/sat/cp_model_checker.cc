@@ -625,7 +625,8 @@ std::string ValidateGraphInput(bool is_route, const GraphProto& graph) {
   return "";
 }
 
-std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
+std::string ValidateRoutesConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
   int max_node = 0;
   absl::flat_hash_set<int> nodes;
   for (const int node : ct.routes().tails()) {
@@ -651,8 +652,29 @@ std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
   if (!ct.routes().demands().empty() &&
       ct.routes().demands().size() != nodes.size()) {
     return absl::StrCat(
-        "If the demands fields is set, it must be of size num_nodes:",
+        "If the demands fields in a route constraint is set, it must be of "
+        "size num_nodes:",
         nodes.size());
+  }
+
+  for (const RoutesConstraintProto::NodeExpressions& dimension :
+       ct.routes().dimensions()) {
+    if (dimension.exprs().size() != nodes.size()) {
+      return absl::StrCat(
+          "If the dimensions field in a route constraint is set, its elements "
+          "must be of size num_nodes:",
+          nodes.size());
+    }
+    for (const LinearExpressionProto& expr : dimension.exprs()) {
+      for (const int v : expr.vars()) {
+        if (!VariableReferenceIsValid(model, v)) {
+          return absl::StrCat("Out of bound integer variable ", v,
+                              " in route constraint ",
+                              ProtobufShortDebugString(ct));
+        }
+      }
+      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    }
   }
 
   return ValidateGraphInput(/*is_route=*/true, ct.routes());
@@ -1130,7 +1152,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
             ValidateGraphInput(/*is_route=*/false, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
-        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));

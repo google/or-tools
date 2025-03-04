@@ -30,6 +30,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -497,7 +498,7 @@ void StoreAssignment(const VariablesAssignment& assignment,
 }
 
 void ExtractSubproblem(const LinearBooleanProblem& problem,
-                       const std::vector<int>& constraint_indices,
+                       absl::Span<const int> constraint_indices,
                        LinearBooleanProblem* subproblem) {
   *subproblem = problem;
   subproblem->set_name("Subproblem of " + problem.name());

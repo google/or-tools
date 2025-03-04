@@ -11,9 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cctype>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <locale>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 #include "gtest/gtest.h"
 #include "ortools/base/init_google.h"
@@ -1336,7 +1340,7 @@ TEST_F(XpressFixtureMIP, SetHint) {
   // back using the API
   // In this test we send the (near) optimal solution as a hint (with
   // obj=56774). Usually XPRESS finds it in ~3000 seconds but in this case it
-  // should be able to retain it in juste a few seconds using the hint. Note
+  // should be able to retain it in just a few seconds using the hint. Note
   // that the logs should mention "User solution (USER_HINT) stored."
   buildLargeMipWithCallback(solver, 60, 2);
 
@@ -1414,7 +1418,7 @@ TEST_F(XpressFixtureMIP, CallbackThrowsException) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   testing::InitGoogleTest(&argc, argv);
   auto solver = operations_research::MPSolver::CreateSolver("XPRESS_LP");
   if (solver == nullptr) {

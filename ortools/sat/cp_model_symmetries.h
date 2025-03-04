@@ -22,6 +22,7 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -32,7 +33,11 @@ namespace sat {
 // representation of the) problem variables.
 //
 // Note that we ignore the variables that appear in no constraint, instead of
-// outputing the full symmetry group involving them.
+// outputting the full symmetry group involving them.
+//
+// Note that the time limit is the global one of the solver, this method
+// enforces params.symmetry_detection_deterministic_time_limit() per call on top
+// of it.
 //
 // TODO(user): On SAT problems it is more powerful to detect permutations also
 // involving the negation of the problem variables. So that we could find a
@@ -40,15 +45,16 @@ namespace sat {
 //
 // TODO(user): As long as we only exploit symmetry involving only Boolean
 // variables we can make this code more efficient by not detecting symmetries
-// involing integer variable.
+// involving integer variable.
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
-    double deterministic_limit, SolverLogger* logger);
+    SolverLogger* logger, TimeLimit* solver_time_limit);
 
 // Detects symmetries and fill the symmetry field.
 void DetectAndAddSymmetryToProto(const SatParameters& params,
-                                 CpModelProto* proto, SolverLogger* logger);
+                                 CpModelProto* proto, SolverLogger* logger,
+                                 TimeLimit* solver_time_limit);
 
 // Basic implementation of some symmetry breaking during presolve.
 //

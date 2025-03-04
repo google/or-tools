@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "absl/hash/hash.h"
+#include "absl/log/log.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"

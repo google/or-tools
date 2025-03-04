@@ -27,11 +27,11 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -62,6 +62,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -400,6 +401,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   auto* logger = m->GetOrCreate<SolverLogger>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
+  auto* time_limit = m->GetOrCreate<TimeLimit>();
 
   // TODO(user): Debug what makes it unsat at this point.
   if (sat_solver->ModelIsUnsat()) return;
@@ -617,6 +619,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     // tests are very flaky (it only happens in parallel). Keeping it there for
     // the time being.
     if (sat_solver->ModelIsUnsat()) return;
+
+    if (time_limit->LimitReached()) return;
 
     // Encode the half-equalities.
     //
@@ -1276,10 +1280,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     max_sum += std::max(term_a, term_b);
   }
 
-  // Load conditional precedences.
+  // Load conditional precedences and always true binary relations.
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
-  if (params.auto_detect_greater_than_at_least_one_of() &&
-      ct.enforcement_literal().size() == 1 && vars.size() <= 2) {
+  if (ct.enforcement_literal().size() <= 1 && vars.size() <= 2) {
     // To avoid overflow in the code below, we tighten the bounds.
     int64_t rhs_min = ct.linear().domain(0);
     int64_t rhs_max = ct.linear().domain(ct.linear().domain().size() - 1);
@@ -1287,13 +1290,19 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     rhs_max = std::min(rhs_max, max_sum.value());
 
     auto* repository = m->GetOrCreate<BinaryRelationRepository>();
-    const Literal lit = mapping->Literal(ct.enforcement_literal(0));
-    const Domain domain = ReadDomainFromProto(ct.linear());
-    if (vars.size() == 1) {
-      repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
-    } else if (vars.size() == 2) {
-      repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]}, rhs_min,
-                      rhs_max);
+    if (ct.enforcement_literal().empty()) {
+      if (vars.size() == 2) {
+        repository->Add(Literal(kNoLiteralIndex), {vars[0], coeffs[0]},
+                        {vars[1], coeffs[1]}, rhs_min, rhs_max);
+      }
+    } else {
+      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
+      if (vars.size() == 1) {
+        repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+      } else if (vars.size() == 2) {
+        repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]},
+                        rhs_min, rhs_max);
+      }
     }
   }
 

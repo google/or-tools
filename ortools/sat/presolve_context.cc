@@ -30,12 +30,12 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -2766,6 +2766,24 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
     ApplyToAllVariableIndices(mapping_function, &ct);
     ApplyToAllLiteralIndices(mapping_function, &ct);
     ApplyToAllIntervalIndices(interval_mapping_function, &ct);
+    if (ct.constraint_case() == ConstraintProto::kRoutes) {
+      for (RoutesConstraintProto::NodeExpressions& node_exprs :
+           *ct.mutable_routes()->mutable_dimensions()) {
+        for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
+          if (expr.vars().empty()) continue;
+          DCHECK_EQ(expr.vars().size(), 1);
+          const int ref = expr.vars(0);
+          const auto it = inverse_variable_map.find(PositiveRef(ref));
+          if (it == inverse_variable_map.end()) {
+            expr.clear_vars();
+            expr.clear_coeffs();
+            continue;
+          }
+          const int image = it->second;
+          expr.set_vars(0, RefIsPositive(ref) ? image : NegatedRef(image));
+        }
+      }
+    }
   }
 }
 

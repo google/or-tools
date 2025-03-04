@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <deque>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -28,6 +27,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -1107,6 +1107,17 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
 
 void BinaryRelationRepository::Add(Literal lit, LinearTerm a, LinearTerm b,
                                    IntegerValue lhs, IntegerValue rhs) {
+  if (lit.Index() != kNoLiteralIndex) {
+    num_enforced_relations_++;
+    DCHECK(a.coeff == 0 || a.var != kNoIntegerVariable);
+    DCHECK(b.coeff == 0 || b.var != kNoIntegerVariable);
+  } else {
+    DCHECK_NE(a.coeff, 0);
+    DCHECK_NE(b.coeff, 0);
+    DCHECK_NE(a.var, kNoIntegerVariable);
+    DCHECK_NE(b.var, kNoIntegerVariable);
+  }
+
   Relation r;
   r.enforcement = lit;
   r.a = a;
@@ -1127,16 +1138,102 @@ void BinaryRelationRepository::Add(Literal lit, LinearTerm a, LinearTerm b,
   relations_.push_back(std::move(r));
 }
 
+void BinaryRelationRepository::AddPartialRelation(Literal lit,
+                                                  IntegerVariable a,
+                                                  IntegerVariable b) {
+  DCHECK_NE(a, kNoIntegerVariable);
+  DCHECK_NE(b, kNoIntegerVariable);
+  DCHECK_NE(a, b);
+  Add(lit, LinearTerm(a, 1), LinearTerm(b, 1), 0, 0);
+}
+
 void BinaryRelationRepository::Build() {
   DCHECK(!is_built_);
   is_built_ = true;
-  std::vector<LiteralIndex> keys;
+  std::vector<std::pair<LiteralIndex, int>> literal_key_values;
+  std::vector<std::pair<IntegerVariable, int>> var_key_values;
   const int num_relations = relations_.size();
-  keys.reserve(num_relations);
+  literal_key_values.reserve(num_enforced_relations_);
+  var_key_values.reserve(num_relations - num_enforced_relations_);
   for (int i = 0; i < num_relations; ++i) {
-    keys.push_back(relations_[i].enforcement.Index());
+    const Relation& r = relations_[i];
+    if (r.enforcement.Index() == kNoLiteralIndex) {
+      var_key_values.emplace_back(r.a.var, i);
+      var_key_values.emplace_back(r.b.var, i);
+      std::pair<IntegerVariable, IntegerVariable> key(r.a.var, r.b.var);
+      if (relations_[i].a.var > relations_[i].b.var) {
+        std::swap(key.first, key.second);
+      }
+      var_pair_to_relations_[key].push_back(i);
+    } else {
+      literal_key_values.emplace_back(r.enforcement.Index(), i);
+    }
   }
-  lit_to_relations_.ResetFromFlatMapping(keys, IdentityMap<int>());
+  lit_to_relations_.ResetFromPairs(literal_key_values);
+  var_to_relations_.ResetFromPairs(var_key_values);
+}
+
+bool BinaryRelationRepository::PropagateLocalBounds(
+    const IntegerTrail& integer_trail, Literal lit,
+    const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
+    absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const {
+  DCHECK_NE(lit.Index(), kNoLiteralIndex);
+
+  auto get_lower_bound = [&](IntegerVariable var) {
+    const auto it = input.find(var);
+    if (it != input.end()) return it->second;
+    return integer_trail.LevelZeroLowerBound(var);
+  };
+  auto get_upper_bound = [&](IntegerVariable var) {
+    return -get_lower_bound(NegationOf(var));
+  };
+  auto update_lower_bound_by_var = [&](IntegerVariable var, IntegerValue lb) {
+    if (lb <= integer_trail.LevelZeroLowerBound(var)) return;
+    const auto [it, inserted] = output->insert({var, lb});
+    if (!inserted) {
+      it->second = std::max(it->second, lb);
+    }
+  };
+  auto update_upper_bound_by_var = [&](IntegerVariable var, IntegerValue ub) {
+    update_lower_bound_by_var(NegationOf(var), -ub);
+  };
+  auto update_var_bounds = [&](const LinearTerm& a, const LinearTerm& b,
+                               IntegerValue lhs, IntegerValue rhs) {
+    if (a.coeff == 0) return;
+
+    // lb(b.y) <= b.y <= ub(b.y) and lhs <= a.x + b.y <= rhs imply
+    //   ceil((lhs - ub(b.y)) / a) <= x <= floor((rhs - lb(b.y)) / a)
+    if (b.coeff != 0) {
+      lhs = lhs - b.coeff * get_upper_bound(b.var);
+      rhs = rhs - b.coeff * get_lower_bound(b.var);
+    }
+    update_lower_bound_by_var(a.var, MathUtil::CeilOfRatio(lhs, a.coeff));
+    update_upper_bound_by_var(a.var, MathUtil::FloorOfRatio(rhs, a.coeff));
+  };
+  auto update_var_bounds_from_relation = [&](Relation r) {
+    r.a.MakeCoeffPositive();
+    r.b.MakeCoeffPositive();
+    update_var_bounds(r.a, r.b, r.lhs, r.rhs);
+    update_var_bounds(r.b, r.a, r.lhs, r.rhs);
+  };
+  if (lit.Index() < lit_to_relations_.size()) {
+    for (const int relation_index : lit_to_relations_[lit]) {
+      update_var_bounds_from_relation(relations_[relation_index]);
+    }
+  }
+  for (const auto& [var, _] : input) {
+    if (var >= var_to_relations_.size()) continue;
+    for (const int relation_index : var_to_relations_[var]) {
+      update_var_bounds_from_relation(relations_[relation_index]);
+    }
+  }
+
+  // Check feasibility.
+  // TODO(user): we might do that earlier?
+  for (const auto [var, lb] : *output) {
+    if (lb > integer_trail.LevelZeroUpperBound(var)) return false;
+  }
+  return true;
 }
 
 bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
@@ -1205,7 +1302,8 @@ int GreaterThanAtLeastOneOfDetector::
   // Collect all relations impacted by this clause.
   std::vector<std::pair<IntegerVariable, int>> infos;
   for (const Literal l : clause) {
-    for (const int index : repository_.relation_indices(l.Index())) {
+    for (const int index :
+         repository_.IndicesOfRelationsEnforcedBy(l.Index())) {
       const Relation& r = repository_.relation(index);
       if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {
         infos.push_back({r.a.var, index});
@@ -1260,6 +1358,7 @@ int GreaterThanAtLeastOneOfDetector::
   util_intops::StrongVector<IntegerVariable, std::vector<int>> var_to_relations;
   for (int index = 0; index < repository_.size(); ++index) {
     const Relation& r = repository_.relation(index);
+    if (r.enforcement.Index() == kNoLiteralIndex) continue;
     if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {
       if (r.a.var >= var_to_relations.size()) {
         var_to_relations.resize(r.a.var + 1);
@@ -1386,58 +1485,6 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   }
 
   return num_added_constraints;
-}
-
-bool BinaryRelationRepository::PropagateLocalBounds(
-    const IntegerTrail& integer_trail, Literal lit,
-    const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
-    absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const {
-  output->clear();
-  if (lit.Index() >= lit_to_relations_.size()) return true;
-
-  auto get_lower_bound = [&](IntegerVariable var) {
-    const auto it = input.find(var);
-    if (it != input.end()) return it->second;
-    return integer_trail.LevelZeroLowerBound(var);
-  };
-  auto get_upper_bound = [&](IntegerVariable var) {
-    return -get_lower_bound(NegationOf(var));
-  };
-  auto update_lower_bound_by_var = [&](IntegerVariable var, IntegerValue lb) {
-    if (lb <= integer_trail.LevelZeroLowerBound(var)) return;
-    const auto [it, inserted] = output->insert({var, lb});
-    if (!inserted) {
-      it->second = std::max(it->second, lb);
-    }
-  };
-  auto update_upper_bound_by_var = [&](IntegerVariable var, IntegerValue ub) {
-    update_lower_bound_by_var(NegationOf(var), -ub);
-  };
-  auto update_var_bounds = [&](const LinearTerm& a, const LinearTerm& b,
-                               IntegerValue lhs, IntegerValue rhs) {
-    if (a.coeff == 0) return;
-
-    // lb(b.y) <= b.y <= ub(b.y) and lhs <= a.x + b.y <= rhs imply
-    //   ceil((lhs - ub(b.y)) / a) <= x <= floor((rhs - lb(b.y)) / a)
-    lhs = lhs - b.coeff * get_upper_bound(b.var);
-    rhs = rhs - b.coeff * get_lower_bound(b.var);
-    update_lower_bound_by_var(a.var, MathUtil::CeilOfRatio(lhs, a.coeff));
-    update_upper_bound_by_var(a.var, MathUtil::FloorOfRatio(rhs, a.coeff));
-  };
-  for (const int relation_index : lit_to_relations_[lit]) {
-    auto r = relations_[relation_index];
-    r.a.MakeCoeffPositive();
-    r.b.MakeCoeffPositive();
-    update_var_bounds(r.a, r.b, r.lhs, r.rhs);
-    update_var_bounds(r.b, r.a, r.lhs, r.rhs);
-  }
-
-  // Check feasibility.
-  // TODO(user): we might do that earlier?
-  for (const auto [var, lb] : *output) {
-    if (lb > integer_trail.LevelZeroUpperBound(var)) return false;
-  }
-  return true;
 }
 
 }  // namespace sat

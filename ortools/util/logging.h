@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_cat.h"
+#include "absl/strings/str_cat.h"  // IWYU pragma: export
 #include "ortools/base/timer.h"
 
 namespace operations_research {

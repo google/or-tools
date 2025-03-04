@@ -90,10 +90,7 @@ TYPED_TEST(LineGraphTest, LineGraph) {
     const typename TypeParam::NodeIndex expected_tail = kExpectedLineArcs[i][0];
     const typename TypeParam::NodeIndex expected_head = kExpectedLineArcs[i][1];
     bool found = false;
-    for (typename TypeParam::OutgoingArcIterator out_iterator(line_graph,
-                                                              expected_tail);
-         out_iterator.Ok(); out_iterator.Next()) {
-      const typename TypeParam::ArcIndex arc = out_iterator.Index();
+    for (const auto arc : line_graph.OutgoingArcs(expected_tail)) {
       if (line_graph.Head(arc) == expected_head) {
         found = true;
         break;

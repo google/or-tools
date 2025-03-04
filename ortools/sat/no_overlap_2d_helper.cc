@@ -20,8 +20,8 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/2d_rectangle_presolve.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
