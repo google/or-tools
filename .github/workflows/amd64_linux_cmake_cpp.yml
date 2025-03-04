@@ -3,18 +3,22 @@ name: amd64 Linux CMake C++
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Building using the github runner environement directly.
 jobs:
   native:
     strategy:
-       matrix:
-         cmake: [
-           {generator: "Unix Makefiles", config: "Release"},
-           {generator: "Ninja", config: "Release"},
-           {generator: "Ninja Multi-Config", config: "Release"},
-         ]
-       fail-fast: false
-    name: Linux • ${{ matrix.cmake.generator }} • C++
+      matrix:
+        cmake: [
+          {name: "Make", generator: "Unix Makefiles", config: Release},
+          {name: "Ninja", generator: "Ninja", config: Release},
+          {name: "Ninja Multi", generator: "Ninja Multi-Config", config: Release},
+        ]
+      fail-fast: false
+    name: amd64•Linux•CMake(${{matrix.cmake.name}})•C++
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,31 +26,37 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install ninja-build
-      - name: Check cmake
+      - name: Check CMake
         run: cmake --version
       - name: Configure
         run: >
           cmake -S. -Bbuild
-          -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
+          -G "${{matrix.cmake.generator}}"
+          -DCMAKE_BUILD_TYPE=${{matrix.cmake.config}}
           -DBUILD_DEPS=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
+          --config ${{matrix.cmake.config}}
           --target all
           -v -j2
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1
           cmake --build build
-          --config ${{ matrix.cmake.config }}
+          --config ${{matrix.cmake.config}}
           --target test
           -v
       - name: Install
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
+          --config ${{matrix.cmake.config}}
           --target install
           -v
+
+  amd64_linux_cmake_cpp:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v4

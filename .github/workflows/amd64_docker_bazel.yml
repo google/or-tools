@@ -3,11 +3,14 @@ name: amd64 Docker Bazel
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 jobs:
   bazel:
     strategy:
       matrix:
-        platform: [amd64] # arm64 riscv64
         distro: [
           almalinux,
           # alpine,
@@ -19,7 +22,7 @@ jobs:
           ubuntu
         ]
       fail-fast: false
-    name: ${{ matrix.platform }} • ${{ matrix.distro }} • Bazel
+    name: amd64•${{matrix.distro}}•Bazel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,10 +31,10 @@ jobs:
           docker info
           docker buildx ls
       - name: Build env image
-        run: make --directory=bazel ${{ matrix.platform }}_${{ matrix.distro }}_env
+        run: make --directory=bazel amd64_${{matrix.distro}}_env
       - name: Build devel image
-        run: make --directory=bazel ${{ matrix.platform }}_${{ matrix.distro }}_devel
+        run: make --directory=bazel amd64_${{matrix.distro}}_devel
       - name: Build project
-        run: make --directory=bazel ${{ matrix.platform }}_${{ matrix.distro }}_build
+        run: make --directory=bazel amd64_${{matrix.distro}}_build
       - name: Test project
-        run: make --directory=bazel ${{ matrix.platform }}_${{ matrix.distro }}_test
+        run: make --directory=bazel amd64_${{matrix.distro}}_test

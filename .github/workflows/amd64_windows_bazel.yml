@@ -3,12 +3,15 @@ name: amd64 Windows Bazel
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Building using the github runner environement directly.
 jobs:
   native:
     strategy:
       matrix:
-        runner: [windows-2022]
         python: [
         #  {version: '3.10'},
         #  {version: '3.11'},
@@ -16,8 +19,8 @@ jobs:
         #  {version: '3.13'},
         ]
       fail-fast: false # Don't cancel all jobs if one fails.
-    name: ${{ matrix.runner }} • Bazel • Python-${{ matrix.python.version }}
-    runs-on: ${{ matrix.runner }}
+    name: amd64•Windows•Bazel•Python-${{matrix.python.version}}
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
@@ -31,7 +34,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python.version }}
+          python-version: ${{matrix.python.version}}
       - name: Check Python
         run: python --version
       - name: Install Bazel
@@ -50,3 +53,9 @@ jobs:
           -c opt
           --test_output=errors
           //ortools/... //examples/...
+
+  amd64_windows_bazel:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v4

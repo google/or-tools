@@ -3,10 +3,14 @@ name: amd64 Linux CMake GLPK ON
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Building using the github runner environement directly.
 jobs:
   native:
-    name: Linux • CMake • GLPK ON
+    name: amd64•Linux•CMake•GLPK=ON
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

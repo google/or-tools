@@ -3,13 +3,17 @@ name: amd64 Windows CMake Python
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Building using the github runner environement directly.
 jobs:
   native:
     strategy:
       matrix:
         cmake: [
-          {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
+          {name: "VS2022", generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
         python: [
           {version: "3.9", dir: Python309},
@@ -19,7 +23,7 @@ jobs:
           {version: "3.13", dir: Python313},
         ]
       fail-fast: false
-    name: Windows • VS 2022 • Python-${{ matrix.python.version }}
+    name: amd64•Windows•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}
     runs-on: windows-latest
     env:
       CTEST_OUTPUT_ON_FAILURE: 1
@@ -27,37 +31,43 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python.version }}
+          python-version: ${{matrix.python.version}}
       - name: Install python3
         run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
       - name: Add Python binaries to path
         run: >
-          echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{ matrix.python.dir }}/Scripts" |
+          echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{matrix.python.dir}}/Scripts" |
           Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Check cmake
+      - name: Check CMake
         run: cmake --version
       - name: Configure
         run: >
           cmake -S. -Bbuild
-          -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -G "${{matrix.cmake.generator}}"
+          -DCMAKE_BUILD_TYPE=${{matrix.cmake.config}}
           -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
           -DBUILD_PYTHON=ON
       - name: Build
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.build_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.build_target}}
           -v -j2
       - name: Test
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.test_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.test_target}}
           -v
       - name: Install
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.install_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.install_target}}
           -v
+
+  amd64_windows_cmake_python:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v4
