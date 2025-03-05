@@ -238,7 +238,7 @@ absl::Span<const int64_t> ShortestPathOnAlternatives::GetShortestPath(
   if (predecessor == -1) return path_;
   // Build the path from predecessors on the shortest path.
   path_.resize(chain.size(), predecessor);
-  touched_.SparseClearAll();
+  touched_.ResetAllToFalse();
   touched_.Set(predecessor);
   for (int rank = chain.size() - 2; rank >= 0; --rank) {
     path_[rank] = path_predecessor_[path_[rank + 1]];

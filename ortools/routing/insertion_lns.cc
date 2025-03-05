@@ -67,7 +67,7 @@ bool FilteredHeuristicLocalSearchOperator::MakeOneNeighbor() {
 }
 
 bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
-  removed_nodes_.SparseClearAll();
+  removed_nodes_.ResetAllToFalse();
 
   const std::function<int64_t(int64_t)> next_accessor =
       SetupNextAccessorForNeighbor();
@@ -415,8 +415,8 @@ FilteredHeuristicCloseNodesLNSOperator::SetupNextAccessorForNeighbor() {
   }
   DCHECK(!model_->IsEnd(current_node_));
 
-  changed_nexts_.SparseClearAll();
-  changed_prevs_.SparseClearAll();
+  changed_nexts_.ResetAllToFalse();
+  changed_prevs_.ResetAllToFalse();
 
   RemoveNodeAndActiveSibling(current_node_);
 

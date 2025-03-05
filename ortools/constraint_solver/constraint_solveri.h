@@ -1039,14 +1039,14 @@ class LocalSearchOperatorState {
       }
       committed_is_active_.CopyBucket(candidate_is_active_, index);
     }
-    changes_.SparseClearAll();
-    incremental_changes_.SparseClearAll();
+    changes_.ResetAllToFalse();
+    incremental_changes_.ResetAllToFalse();
   }
 
   void CheckPoint() { checkpoint_values_ = committed_values_; }
 
   void Revert(bool only_incremental) {
-    incremental_changes_.SparseClearAll();
+    incremental_changes_.ResetAllToFalse();
     if (only_incremental) return;
 
     for (const int64_t index : changes_.PositionsSetAtLeastOnce()) {
@@ -1057,7 +1057,7 @@ class LocalSearchOperatorState {
       }
       candidate_is_active_.CopyBucket(committed_is_active_, index);
     }
-    changes_.SparseClearAll();
+    changes_.ResetAllToFalse();
   }
 
   const std::vector<int64_t>& CandidateIndicesChanged() const {

@@ -50,6 +50,12 @@ bool FillDimensionValuesFromRoutingDimension(
     absl::AnyInvocable<int64_t(int64_t, int64_t) const> evaluator,
     DimensionValues& dimension_values);
 
+void FillPrePostVisitValues(
+    int path, const DimensionValues& dimension_values,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
+    PrePostVisitValues& visit_values);
+
 // Propagates vehicle break constraints in dimension_values.
 // This returns false if breaks cannot fit the path.
 // Otherwise, this returns true, and modifies the start cumul, end cumul and the

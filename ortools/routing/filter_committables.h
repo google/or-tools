@@ -93,7 +93,7 @@ class CommittableVector {
     for (const size_t index : changed_.PositionsSetAtLeastOnce()) {
       elements_[index].current = elements_[index].committed;
     }
-    changed_.SparseClearAll();
+    changed_.ResetAllToFalse();
   }
 
   // Makes the current state committed, clearing all changes.
@@ -101,12 +101,12 @@ class CommittableVector {
     for (const size_t index : changed_.PositionsSetAtLeastOnce()) {
       elements_[index].committed = elements_[index].current;
     }
-    changed_.SparseClearAll();
+    changed_.ResetAllToFalse();
   }
 
   // Sets all elements of this vector to given value, and commits to this state.
   void SetAllAndCommit(const T& value) {
-    changed_.SparseClearAll();
+    changed_.ResetAllToFalse();
     elements_.assign(elements_.size(), {value, value});
   }
 

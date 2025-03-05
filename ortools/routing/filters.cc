@@ -508,7 +508,7 @@ bool BasePathFilter::Accept(const Assignment* delta,
   for (int64_t touched_path : touched_paths_.PositionsSetAtLeastOnce()) {
     touched_path_chain_start_ends_[touched_path] = {kUnassigned, kUnassigned};
   }
-  touched_paths_.SparseClearAll();
+  touched_paths_.ResetAllToFalse();
 
   const auto update_touched_path_chain_start_end = [this](int64_t index) {
     const int64_t start = node_path_starts_[index];
@@ -618,14 +618,14 @@ void BasePathFilter::SynchronizeFullAssignment() {
 }
 
 void BasePathFilter::OnSynchronize(const Assignment* delta) {
-  new_synchronized_unperformed_nodes_.ClearAll();
+  new_synchronized_unperformed_nodes_.ResetAllToFalse();
   if (delta == nullptr || delta->Empty() ||
       absl::c_all_of(ranks_, [](int rank) { return rank == kUnassigned; })) {
     SynchronizeFullAssignment();
     return;
   }
   const Assignment::IntContainer& container = delta->IntVarContainer();
-  touched_paths_.SparseClearAll();
+  touched_paths_.ResetAllToFalse();
   for (const IntVarElement& new_element : container.elements()) {
     int64_t index = kUnassigned;
     if (FindIndex(new_element.Var(), &index)) {
@@ -1177,6 +1177,42 @@ bool FillDimensionValuesFromRoutingDimension(
   dimension_values.MutableSpan(path) = {.min = travel_sums.back(),
                                         .max = span_upper_bound};
   return true;
+}
+
+// Fills pre- and post-visits of a path, using pre/post-travel evaluators.
+// NOTE: The visit at node A uses time interval
+// [cumul(A) - previsit(A), cumul(A) + postvisit(A)).
+// The pre-travel of travel A->B is the post-visit of A,
+// and the post-travel of travel A->B is the pre-visit of B.
+// TODO(user): when PathCumulFilter uses a PathState, replace
+// dimension_values by a PathState.
+// TODO(user): use committed values as a cache to avoid calling evaluators.
+void FillPrePostVisitValues(
+    int path, const DimensionValues& dimension_values,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
+    PrePostVisitValues& visit_values) {
+  const int num_nodes = dimension_values.NumNodes(path);
+  visit_values.ChangePathSize(path, num_nodes);
+  absl::Span<int64_t> pre_visits = visit_values.MutablePreVisits(path);
+  absl::Span<int64_t> post_visits = visit_values.MutablePostVisits(path);
+  absl::Span<const int> nodes = dimension_values.Nodes(path);
+  if (pre_travel_evaluator == nullptr) {
+    absl::c_fill(post_visits, 0);
+  } else {
+    for (int i = 0; i < num_nodes - 1; ++i) {
+      post_visits[i] = pre_travel_evaluator(nodes[i], nodes[i + 1]);
+    }
+    post_visits.back() = 0;
+  }
+  if (post_travel_evaluator == nullptr) {
+    absl::c_fill(pre_visits, 0);
+  } else {
+    pre_visits[0] = 0;
+    for (int i = 1; i < num_nodes; ++i) {
+      pre_visits[i] = post_travel_evaluator(nodes[i - 1], nodes[i]);
+    }
+  }
 }
 
 bool PropagateLightweightVehicleBreaks(
@@ -2573,7 +2609,7 @@ bool PickupDeliveryFilter::AcceptPathDispatch() {
 
 template <bool check_assigned_pairs>
 bool PickupDeliveryFilter::AcceptPathDefault(int path) {
-  pair_is_open_.SparseClearAll();
+  pair_is_open_.ResetAllToFalse();
   int num_opened_pairs = 0;
   for (const int node : path_state_->Nodes(path)) {
     const auto [is_paired, is_pickup, pair_index] = pair_info_of_node_[node];
@@ -2735,7 +2771,7 @@ bool CumulBoundsPropagatorFilter::Accept(const Assignment* delta,
                                          const Assignment* /*deltadelta*/,
                                          int64_t /*objective_min*/,
                                          int64_t /*objective_max*/) {
-  delta_touched_.ClearAll();
+  delta_touched_.ResetAllToFalse();
   for (const IntVarElement& delta_element :
        delta->IntVarContainer().elements()) {
     int64_t index = -1;
@@ -2808,7 +2844,7 @@ LPCumulFilter::LPCumulFilter(const std::vector<IntVar*>& nexts,
 bool LPCumulFilter::Accept(const Assignment* delta,
                            const Assignment* /*deltadelta*/,
                            int64_t /*objective_min*/, int64_t objective_max) {
-  delta_touched_.ClearAll();
+  delta_touched_.ResetAllToFalse();
   for (const IntVarElement& delta_element :
        delta->IntVarContainer().elements()) {
     int64_t index = -1;

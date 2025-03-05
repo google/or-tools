@@ -1353,7 +1353,7 @@ class GlobalCheapestInsertionFilteredHeuristic::NodeEntryQueue {
   void Clear() {
     priority_queue_.Clear();
     for (Entries& entries : entries_) entries.Clear();
-    touched_entries_.SparseClearAll();
+    touched_entries_.ResetAllToFalse();
   }
   bool IsEmpty() const {
     return priority_queue_.IsEmpty() &&
@@ -1368,7 +1368,7 @@ class GlobalCheapestInsertionFilteredHeuristic::NodeEntryQueue {
     for (int touched : touched_entries_.PositionsSetAtLeastOnce()) {
       SortInsertions(&entries_[touched]);
     }
-    touched_entries_.SparseClearAll();
+    touched_entries_.ResetAllToFalse();
     DCHECK(!priority_queue_.IsEmpty());
     Entries* entries = priority_queue_.Top();
     DCHECK(!entries->entries.empty());
@@ -1512,7 +1512,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
     for (int node : nodes_to_insert.PositionsSetAtLeastOnce()) {
       if (!Contains(node)) non_inserted_nodes.push_back(node);
     }
-    nodes_to_insert.SparseClearAll();
+    nodes_to_insert.ResetAllToFalse();
     for (int node : non_inserted_nodes) {
       nodes_to_insert.Set(node);
     }

@@ -760,7 +760,7 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
     };
   }
 
-  removed_routes_.SparseClearAll();
+  removed_routes_.ResetAllToFalse();
 
   const int seed_route = assignment->Value(model_.VehicleVar(seed_node));
   DCHECK_GE(seed_route, 0);
@@ -933,7 +933,7 @@ std::function<int64_t(int64_t)> SISRRuinProcedure::Ruin(
   }
 
   routing_solution_.Reset(assignment);
-  ruined_routes_.SparseClearAll();
+  ruined_routes_.ResetAllToFalse();
 
   const double max_sequence_size =
       std::min<double>(max_removed_sequence_size_,
