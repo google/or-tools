@@ -1076,6 +1076,53 @@ int RegisterClausesLevelZeroImport(int id,
   return id;
 }
 
+namespace {
+
+// Fills the BinaryRelationRepository with the enforced linear constraints of
+// size 1 or 2 in the model, and with the non-enforced linear constraints of
+// size 2.
+void FillBinaryRelationRepository(const CpModelProto& model_proto,
+                                  Model* model) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  auto* repository = model->GetOrCreate<BinaryRelationRepository>();
+
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    // Load conditional precedences and always true binary relations.
+    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+        ct.enforcement_literal().size() > 1 || ct.linear().vars_size() > 2) {
+      continue;
+    }
+    const std::vector<IntegerVariable> vars =
+        mapping->Integers(ct.linear().vars());
+    absl::Span<const int64_t> coeffs = ct.linear().coeffs();
+
+    const auto [min_sum, max_sum] =
+        mapping->ComputeMinMaxActivity(ct.linear(), integer_trail);
+    // Tighten the bounds to avoid overflows in the code using the repository.
+    const int64_t rhs_min = std::max(ct.linear().domain(0), min_sum);
+    const int64_t rhs_max =
+        std::min(ct.linear().domain(ct.linear().domain().size() - 1), max_sum);
+
+    if (ct.enforcement_literal().empty()) {
+      if (vars.size() == 2) {
+        repository->Add(Literal(kNoLiteralIndex), {vars[0], coeffs[0]},
+                        {vars[1], coeffs[1]}, rhs_min, rhs_max);
+      }
+    } else {
+      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
+      if (vars.size() == 1) {
+        repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+      } else if (vars.size() == 2) {
+        repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]},
+                        rhs_min, rhs_max);
+      }
+    }
+  }
+}
+
+}  // namespace
+
 void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   CHECK(shared_response_manager != nullptr);
@@ -1129,6 +1176,8 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   // Reserve space for the precedence relations.
   model->GetOrCreate<PrecedenceRelations>()->Resize(
       model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
+
+  FillBinaryRelationRepository(model_proto, model);
 
   // Load the constraints.
   int num_ignored_constraints = 0;

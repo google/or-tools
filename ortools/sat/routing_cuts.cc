@@ -43,6 +43,7 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/max_flow.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
@@ -107,6 +108,7 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
           *model->GetOrCreate<BinaryRelationRepository>()),
       trail_(*model->GetOrCreate<Trail>()),
       integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      integer_encoder_(*model->GetOrCreate<IntegerEncoder>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       in_subset_(num_nodes, false),
       index_in_subset_(num_nodes, -1),
@@ -115,7 +117,9 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
       reachable_(num_nodes, false),
       next_reachable_(num_nodes, false),
       node_var_lower_bounds_(num_nodes),
-      next_node_var_lower_bounds_(num_nodes) {}
+      next_node_var_lower_bounds_(num_nodes),
+      bin_packing_helper_(
+          model->GetOrCreate<SatParameters>()->routing_cut_dp_effort()) {}
 
 MinOutgoingFlowHelper::~MinOutgoingFlowHelper() {
   if (!VLOG_IS_ON(1)) return;
@@ -145,18 +149,17 @@ int MinOutgoingFlowHelper::ComputeDemandBasedMinOutgoingFlow(
   int min_outgoing_flow = 1;
   std::string best_name;
   for (int d = 0; d < helper.num_dimensions(); ++d) {
-    for (const bool negate_variables : {false, true}) {
+    for (const bool negate_expressions : {false, true}) {
       for (const bool use_incoming : {true, false}) {
-        bool gcd_was_used = false;
-        const int bound = ComputeMinNumberOfBins(
-            RelaxIntoSpecialBinPackingProblem(subset, d, negate_variables,
+        std::string info;
+        const int bound = bin_packing_helper_.ComputeMinNumberOfBins(
+            RelaxIntoSpecialBinPackingProblem(subset, d, negate_expressions,
                                               use_incoming, helper),
-            &gcd_was_used);
+            info);
         if (bound > min_outgoing_flow) {
           min_outgoing_flow = bound;
-          best_name = absl::StrCat((use_incoming ? "in_" : "out_"),
-                                   (gcd_was_used ? "gcd_" : ""),
-                                   (negate_variables ? "neg_" : ""), d);
+          best_name = absl::StrCat((use_incoming ? "in" : "out"), info,
+                                   (negate_expressions ? "_neg" : ""), "_", d);
         }
       }
     }
@@ -166,8 +169,9 @@ int MinOutgoingFlowHelper::ComputeDemandBasedMinOutgoingFlow(
   return min_outgoing_flow;
 }
 
-absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
-    absl::Span<const int> subset, int dimension, bool negate_variables,
+absl::Span<SpecialBinPackingHelper::ItemOrBin>
+MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
+    absl::Span<const int> subset, int dimension, bool negate_expressions,
     bool use_incoming, const RouteRelationsHelper& helper) {
   tmp_bin_packing_problem_.clear();
 
@@ -203,7 +207,7 @@ absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     for (int i = 0; i < size; ++i) {
       const int n = forward_pass ? subset[i] : subset[size - 1 - i];
       AffineExpression expr = helper.GetNodeExpression(n, dimension);
-      if (negate_variables) expr = expr.Negated();
+      if (negate_expressions) expr = expr.Negated();
 
       // The local_min/max contains the min/max of all nodes strictly before 'n'
       // in the forward pass (resp. striclty after). So after two passes,
@@ -228,18 +232,18 @@ absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
 
   for (const int n : subset) {
     AffineExpression expr = helper.GetNodeExpression(n, dimension);
-    if (negate_variables) expr = expr.Negated();
+    if (negate_expressions) expr = expr.Negated();
 
     const absl::Span<const int> arcs =
         use_incoming ? incoming_arc_indices_[n] : outgoing_arc_indices_[n];
     IntegerValue demand = kMaxIntegerValue;
     for (const int a : arcs) {
-      demand =
-          std::min(demand, helper.GetArcOffsetBound(
-                               a, dimension, negate_variables, integer_trail_));
+      demand = std::min(demand, helper.GetArcOffsetLowerBound(
+                                    a, dimension, negate_expressions,
+                                    integer_trail_, integer_encoder_));
     }
 
-    ItemOrBin obj;
+    SpecialBinPackingHelper::ItemOrBin obj;
     obj.demand = demand;
 
     // We compute the capacity like this to avoid overflow and always have
@@ -265,13 +269,13 @@ absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     // bound and that is enough here.
     if ((use_incoming && !has_incoming_arcs_from_outside_[n]) ||
         (!use_incoming && !has_outgoing_arcs_to_outside_[n])) {
-      obj.type = ItemOrBin::MUST_BE_ITEM;
+      obj.type = SpecialBinPackingHelper::ItemOrBin::MUST_BE_ITEM;
       obj.capacity = 0;
     } else if (arcs.empty()) {
-      obj.type = ItemOrBin::MUST_BE_BIN;
+      obj.type = SpecialBinPackingHelper::ItemOrBin::MUST_BE_BIN;
       obj.demand = 0;  // We don't want kMaxIntegerValue !
     } else {
-      obj.type = ItemOrBin::ITEM_OR_BIN;
+      obj.type = SpecialBinPackingHelper::ItemOrBin::ITEM_OR_BIN;
     }
 
     tmp_bin_packing_problem_.push_back(obj);
@@ -280,14 +284,27 @@ absl::Span<ItemOrBin> MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
   return absl::MakeSpan(tmp_bin_packing_problem_);
 }
 
-int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used) {
+int SpecialBinPackingHelper::ComputeMinNumberOfBins(
+    absl::Span<ItemOrBin> objects, std::string& info) {
   if (objects.empty()) return 0;
 
   IntegerValue sum_of_demands(0);
   int64_t gcd = 0;
+  int64_t max_capacity = 0;
+  int max_num_items = 0;
+  bool all_demands_are_non_negative = true;
   for (const ItemOrBin& obj : objects) {
     sum_of_demands = CapAddI(sum_of_demands, obj.demand);
-    gcd = std::gcd(gcd, std::abs(obj.demand.value()));
+    if (obj.type != ItemOrBin::MUST_BE_BIN) {
+      ++max_num_items;
+      if (obj.demand < 0) {
+        all_demands_are_non_negative = false;
+      }
+      gcd = std::gcd(gcd, std::abs(obj.demand.value()));
+    }
+    if (obj.type != ItemOrBin::MUST_BE_ITEM) {
+      max_capacity = std::max(max_capacity, obj.capacity.value());
+    }
   }
 
   // TODO(user): we can probably handle a couple of extra case rather than just
@@ -295,15 +312,69 @@ int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used) {
   if (AtMinOrMaxInt64I(sum_of_demands)) return 0;
 
   // If the gcd of all the demands term is positive, we can divide everything.
-  *gcd_was_used = (gcd > 1);
   if (gcd > 1) {
+    absl::StrAppend(&info, "_gcd");
     for (ItemOrBin& obj : objects) {
       obj.demand /= gcd;
       obj.capacity = FloorRatio(obj.capacity, gcd);
     }
-    sum_of_demands /= gcd;
+    max_capacity = MathUtil::FloorOfRatio(max_capacity, gcd);
   }
 
+  const int result = ComputeMinNumberOfBinsInternal(objects);
+
+  // We only try DP if it can help.
+  //
+  // Tricky: For the GreedyPackingWorks() to make sense, we use the fact that
+  // ComputeMinNumberOfBinsInternal() moves the best bins first. In any case
+  // the code will still be correct if it is not the case as we just use this
+  // as an heuristic to do less work.
+  if (result > 1 && all_demands_are_non_negative &&
+      max_bounded_subset_sum_exact_.ComplexityEstimate(
+          max_num_items, max_capacity) < dp_effort_ &&
+      !GreedyPackingWorks(result, objects) &&
+      UseDpToTightenCapacities(objects)) {
+    const int new_result = ComputeMinNumberOfBinsInternal(objects);
+    CHECK_GE(new_result, result);
+    if (new_result > result) {
+      absl::StrAppend(&info, "_dp");
+    }
+    return new_result;
+  }
+
+  return result;
+}
+
+// TODO(user): We could be more tight here and also compute the max_reachable
+// under smaller capacity than the max_capacity.
+bool SpecialBinPackingHelper::UseDpToTightenCapacities(
+    absl::Span<ItemOrBin> objects) {
+  tmp_demands_.clear();
+  int64_t max_capacity = 0;
+  for (const ItemOrBin& obj : objects) {
+    if (obj.type != ItemOrBin::MUST_BE_BIN) {
+      tmp_demands_.push_back(obj.demand.value());
+    }
+    if (obj.type != ItemOrBin::MUST_BE_ITEM) {
+      max_capacity = std::max(max_capacity, obj.capacity.value());
+    }
+  }
+  const int64_t max_reachable =
+      max_bounded_subset_sum_exact_.MaxSubsetSum(tmp_demands_, max_capacity);
+  bool some_change = false;
+  if (max_reachable < max_capacity) {
+    for (ItemOrBin& obj : objects) {
+      if (obj.capacity > max_reachable) {
+        some_change = true;
+        obj.capacity = max_reachable;
+      }
+    }
+  }
+  return some_change;
+}
+
+int SpecialBinPackingHelper::ComputeMinNumberOfBinsInternal(
+    absl::Span<ItemOrBin> objects) {
   // For a given choice of bins (set B), a feasible problem must satisfy.
   //     sum_{i \notin B} demands_i <= sum_{i \in B} capacity_i.
   //
@@ -329,6 +400,12 @@ int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used) {
                      return a.capacity + a.demand > b.capacity + b.demand;
                    });
 
+  // Note that we already checked for overflow.
+  IntegerValue sum_of_demands(0);
+  for (const ItemOrBin& obj : objects) {
+    sum_of_demands += obj.demand;
+  }
+
   // We start with no bins (sum_of_demands=everything, sum_of_capacity=0) and
   // add the best bins one by one until we have sum_of_demands <=
   // sum_of_capacity.
@@ -340,7 +417,7 @@ int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used) {
     const ItemOrBin& obj = objects[num_bins];
     if (obj.type != ItemOrBin::MUST_BE_BIN &&
         sum_of_demands <= sum_of_capacity) {
-      return num_bins;
+      break;
     }
     if (obj.type == ItemOrBin::MUST_BE_ITEM) {
       // Because of our order, we only have objects of type MUST_BE_ITEM left.
@@ -354,7 +431,32 @@ int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used) {
     if (AtMinOrMaxInt64I(sum_of_capacity)) return num_bins;
     sum_of_demands -= obj.demand;
   }
+
   return num_bins;
+}
+
+bool SpecialBinPackingHelper::GreedyPackingWorks(
+    int num_bins, absl::Span<const ItemOrBin> objects) {
+  if (num_bins >= objects.size()) return true;
+  CHECK_GE(num_bins, 1);
+  tmp_capacities_.resize(num_bins);
+  for (int i = 0; i < num_bins; ++i) {
+    tmp_capacities_[i] = objects[i].capacity;
+  }
+
+  // We place the objects in order in the first bin that fits.
+  for (const ItemOrBin object : objects.subspan(num_bins)) {
+    bool placed = false;
+    for (int b = 0; b < num_bins; ++b) {
+      if (object.demand <= tmp_capacities_[b]) {
+        placed = true;
+        tmp_capacities_[b] -= object.demand;
+        break;
+      }
+    }
+    if (!placed) return false;
+  }
+  return true;
 }
 
 int MinOutgoingFlowHelper::ComputeMinOutgoingFlow(
@@ -734,7 +836,7 @@ class RouteRelationsBuilder {
     return flat_arc_dim_relations_;
   }
 
-  bool Build() {
+  bool BuildNodeExpressions() {
     if (flat_node_dim_expressions_.empty()) {
       // Step 1: find the number of dimensions (as the number of connected
       // components in the graph of binary relations), and find to which
@@ -758,11 +860,13 @@ class RouteRelationsBuilder {
       // where only one variable can be associated with it.
       ComputeVarAssociationsFromRelationsWithSingleFreeVar(node_dim_pairs);
     }
+    return true;
+  }
 
+  void BuildArcRelations(Model* model) {
     // Step 3: compute the relation for each arc and dimension, now that the
     // variables associated with each node and dimension are known.
-    ComputeArcRelations();
-    return true;
+    ComputeArcRelations(model);
   }
 
  private:
@@ -773,6 +877,11 @@ class RouteRelationsBuilder {
     IntegerVariable var;
     IntegerValue coeff;
     IntegerValue offset;
+
+    NodeExpression() : var(kNoIntegerVariable), coeff(0), offset(0) {}
+
+    NodeExpression(IntegerVariable var, IntegerValue coeff, IntegerValue offset)
+        : var(var), coeff(coeff), offset(offset) {}
 
     explicit NodeExpression(const AffineExpression& expr) {
       if (expr.var == kNoIntegerVariable || VariableIsPositive(expr.var)) {
@@ -796,53 +905,26 @@ class RouteRelationsBuilder {
     return flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
   }
 
-  void MaybeSetArcRelation(int arc_index, int dimension,
-                           const NodeExpression& tail_expr,
-                           const NodeExpression& head_expr,
-                           const sat::Relation& r) {
+  void MaybeSetArcRelation(int arc_index, int dimension, Relation r) {
+    if (r.empty()) return;
     Relation& relation =
         flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
-    IntegerValue tail_coeff;
-    IntegerValue head_coeff;
-    // A relation a * X + b * Y \in [lhs, rhs] between the X and Y variables is
-    // equivalent to a (k.a/A) * (A.X+α) + (k.b/B) * (B.Y+β) \in [k.lhs+ɣ,
-    // k.rhs+ɣ] relation between the A.X+α and B.Y+β terms if the divisions are
-    // exact, where ɣ=(k.a/A)*α+(k.b/B)*β. The smallest k > 0 such that k.a/A is
-    // integer is |A|/gcd(a, A), and the smallest k > 0 such that k.b/B is
-    // integer is |B|/gcd(b, B). The least common multiple of the two is the
-    // smallest k ensuring the above equivalence.
-    int64_t a = r.a.coeff.value();
-    int64_t b = r.b.coeff.value();
-    if (r.a.var != tail_expr.var) std::swap(a, b);
-    const int64_t tail_k = std::abs(tail_expr.coeff.value()) /
-                           std::gcd(tail_expr.coeff.value(), a);
-    const int64_t head_k = std::abs(head_expr.coeff.value()) /
-                           std::gcd(head_expr.coeff.value(), b);
-    const int64_t k = std::lcm(tail_k, head_k);
-    // TODO(user): do not add the relation in case of overflow (this can
-    // happen if the expressions are provided by the user in the model proto).
-    tail_coeff = (k * a) / tail_expr.coeff;
-    head_coeff = (k * b) / head_expr.coeff;
     // If several relations are associated with the same arc, keep the first one
     // found, unless the new one has opposite +1/-1 coefficients (these
     // relations are preferred because they can be used to compute "demand
     // based" min outgoing flows).
-    if (!relation.empty()) {
-      if (IntTypeAbs(tail_coeff) != 1 || head_coeff != -tail_coeff) return;
+    if (!relation.empty() &&
+        (IntTypeAbs(r.tail_coeff) != 1 || r.head_coeff != -r.tail_coeff)) {
+      return;
     }
-    const IntegerValue domain_offset =
-        tail_coeff * tail_expr.offset + head_coeff * head_expr.offset;
-    relation.tail_coeff = tail_coeff;
-    relation.head_coeff = head_coeff;
-    relation.lhs = k * r.lhs + domain_offset;
-    relation.rhs = k * r.rhs + domain_offset;
-    if (relation.head_coeff < 0) {
-      relation.tail_coeff = -relation.tail_coeff;
-      relation.head_coeff = -relation.head_coeff;
-      relation.lhs = -relation.lhs;
-      relation.rhs = -relation.rhs;
-      std::swap(relation.lhs, relation.rhs);
+    if (r.head_coeff < 0) {
+      r.tail_coeff = -r.tail_coeff;
+      r.head_coeff = -r.head_coeff;
+      r.lhs = -r.lhs;
+      r.rhs = -r.rhs;
+      std::swap(r.lhs, r.rhs);
     }
+    relation = r;
   }
 
   void ComputeDimensionOfEachVariable() {
@@ -993,7 +1075,14 @@ class RouteRelationsBuilder {
     }
   }
 
-  void ComputeArcRelations() {
+  void ComputeArcRelations(Model* model) {
+    auto& binary_implication_graph =
+        *model->GetOrCreate<BinaryImplicationGraph>();
+    const auto& integer_encoder = *model->GetOrCreate<IntegerEncoder>();
+    const auto& trail = *model->GetOrCreate<Trail>();
+    const auto& integer_trail = *model->GetOrCreate<IntegerTrail>();
+    DCHECK_EQ(trail.CurrentDecisionLevel(), 0);
+
     flat_arc_dim_relations_ =
         std::vector<Relation>(num_arcs_ * num_dimensions_, Relation());
     int num_inconsistent_relations = 0;
@@ -1001,31 +1090,76 @@ class RouteRelationsBuilder {
       const int tail = tails_[i];
       const int head = heads_[i];
       if (tail == head) continue;
+      // The implications of the arc literal.
+      const std::vector<Literal>& implications =
+          !trail.Assignment().LiteralIsAssigned(literals_[i])
+              ? binary_implication_graph.DirectImplications(literals_[i])
+              : std::vector<Literal>();
+      // Changes `expr` to a constant expression if possible, and returns true.
+      // Otherwise, returns false.
+      auto to_constant = [&](NodeExpression& expr) {
+        if (expr.var == kNoIntegerVariable) return true;
+        if (integer_trail.IsFixed(expr.var)) {
+          expr.offset += integer_trail.FixedValue(expr.var) * expr.coeff;
+          expr.var = kNoIntegerVariable;
+          expr.coeff = 0;
+          return true;
+        }
+        // All the literals implied by the arc literal can be assumed to be 1.
+        for (const Literal l : implications) {
+          const IntegerVariable l_view = integer_encoder.GetLiteralView(l);
+          const IntegerVariable negated_l_view =
+              integer_encoder.GetLiteralView(l.Negated());
+          if (expr.var == l_view) {
+            expr = {kNoIntegerVariable, 0, expr.coeff + expr.offset};
+            return true;
+          } else if (NegationOf(expr.var) == l_view) {
+            expr = {kNoIntegerVariable, 0, -expr.coeff + expr.offset};
+            return true;
+          } else if (expr.var == negated_l_view ||
+                     NegationOf(expr.var) == negated_l_view) {
+            expr = {kNoIntegerVariable, 0, expr.offset};
+            return true;
+          }
+        }
+        return false;
+      };
       for (const int relation_index :
            binary_relation_repository_.IndicesOfRelationsEnforcedBy(
                literals_[i])) {
-        const auto& r = binary_relation_repository_.relation(relation_index);
-        if (r.a.var == kNoIntegerVariable || r.b.var == kNoIntegerVariable) {
-          continue;
-        }
+        auto r = binary_relation_repository_.relation(relation_index);
         bool is_consistent = false;
         for (int dimension = 0; dimension < num_dimensions_; ++dimension) {
-          const NodeExpression tail_expr(node_expression(tail, dimension));
-          const NodeExpression head_expr(node_expression(head, dimension));
-          if (tail_expr.IsEmpty() || head_expr.IsEmpty()) {
-            continue;
+          NodeExpression tail_expr(node_expression(tail, dimension));
+          NodeExpression head_expr(node_expression(head, dimension));
+          // Try to match the relation variables with the node expression
+          // variables. First swap the relation terms if needed (this does not
+          // change the relation bounds).
+          if ((r.a.var != kNoIntegerVariable && r.a.var == head_expr.var) ||
+              (r.b.var != kNoIntegerVariable && r.b.var == tail_expr.var)) {
+            std::swap(r.a, r.b);
           }
+          // If the relation has only one term, try to remove the variable
+          // in the node expression corresponding to the missing term.
+          if (r.a.var == kNoIntegerVariable) {
+            if (!to_constant(tail_expr)) continue;
+          } else if (r.b.var == kNoIntegerVariable) {
+            if (!to_constant(head_expr)) continue;
+          }
+          // If the relation and node expression variables do not match, we
+          // cannot use this relation for this arc.
           if (!((tail_expr.var == r.a.var && head_expr.var == r.b.var) ||
                 (tail_expr.var == r.b.var && head_expr.var == r.a.var))) {
             continue;
           }
-          MaybeSetArcRelation(i, dimension, tail_expr, head_expr, r);
+          MaybeSetArcRelation(i, dimension,
+                              ComputeArcRelation(tail_expr, head_expr, r));
           is_consistent = true;
         }
         if (!is_consistent) ++num_inconsistent_relations;
       }
       // If some relations are missing for this arc, check if we can use
-      // enforced relations to fill them.
+      // non-enforced relations to fill them.
       for (int d = 0; d < num_dimensions_; ++d) {
         if (!arc_relation(i, d).empty()) continue;
         const NodeExpression tail_expr(node_expression(tail, d));
@@ -1037,8 +1171,10 @@ class RouteRelationsBuilder {
              binary_relation_repository_.IndicesOfRelationsBetween(
                  tail_expr.var, head_expr.var)) {
           MaybeSetArcRelation(
-              i, d, tail_expr, head_expr,
-              binary_relation_repository_.relation(relation_index));
+              i, d,
+              ComputeArcRelation(
+                  tail_expr, head_expr,
+                  binary_relation_repository_.relation(relation_index)));
         }
       }
     }
@@ -1047,6 +1183,84 @@ class RouteRelationsBuilder {
               << " inconsistent relations in route with " << num_nodes_
               << " nodes and " << num_arcs_ << " arcs";
     }
+  }
+
+  // Returns a relation between two given expressions which is equivalent to a
+  // given relation between the variables used in these expressions (or an empty
+  // relation if this is not possible).
+  Relation ComputeArcRelation(const NodeExpression& tail_expr,
+                              const NodeExpression& head_expr,
+                              const sat::Relation& r) {
+    DCHECK((r.a.var == tail_expr.var && r.b.var == head_expr.var) ||
+           (r.a.var == head_expr.var && r.b.var == tail_expr.var));
+    // A relation a * X + b * Y \in [lhs, rhs] between the X and Y variables is
+    // equivalent to a (k.a/A) * (A.X+α) + (k.b/B) * (B.Y+β) \in [k.lhs+ɣ,
+    // k.rhs+ɣ] relation between the A.X+α and B.Y+β terms if the divisions are
+    // exact, where ɣ=(k.a/A)*α+(k.b/B)*β. The smallest k > 0 such that k.a/A is
+    // integer is |A|/gcd(a, A), and the smallest k > 0 such that k.b/B is
+    // integer is |B|/gcd(b, B). The least common multiple of the two is the
+    // smallest k ensuring the above equivalence.
+    int64_t a = r.a.coeff.value();
+    int64_t b = r.b.coeff.value();
+    if (r.a.var != tail_expr.var) std::swap(a, b);
+    if (a == 0 || tail_expr.coeff == 0) {
+      Relation result =
+          ComputeArcUnaryRelation(head_expr, tail_expr, b, r.lhs, r.rhs);
+      std::swap(result.tail_coeff, result.head_coeff);
+      return result;
+    }
+    if (b == 0 || head_expr.coeff == 0) {
+      return ComputeArcUnaryRelation(tail_expr, head_expr, a, r.lhs, r.rhs);
+    }
+    const int64_t tail_k = std::abs(tail_expr.coeff.value()) /
+                           std::gcd(tail_expr.coeff.value(), a);
+    const int64_t head_k = std::abs(head_expr.coeff.value()) /
+                           std::gcd(head_expr.coeff.value(), b);
+    const int64_t k = std::lcm(tail_k, head_k);
+    // TODO(user): do not add the relation in case of overflow (this can
+    // happen if the expressions are provided by the user in the model proto).
+    const IntegerValue tail_coeff = (k * a) / tail_expr.coeff;
+    const IntegerValue head_coeff = (k * b) / head_expr.coeff;
+    const IntegerValue domain_offset =
+        tail_coeff * tail_expr.offset + head_coeff * head_expr.offset;
+    return {
+        tail_coeff,
+        head_coeff,
+        k * r.lhs + domain_offset,
+        k * r.rhs + domain_offset,
+    };
+  }
+
+  // Returns a relation between two given expressions which is equivalent to a
+  // given relation "coeff * X \in [lhs, rhs]", where X is the variable used in
+  // `tail_expression` (or an empty relation if this is not possible).
+  Relation ComputeArcUnaryRelation(const NodeExpression& tail_expr,
+                                   const NodeExpression& head_expr,
+                                   IntegerValue coeff, IntegerValue lhs,
+                                   IntegerValue rhs) {
+    DCHECK_NE(coeff, 0);
+    // A relation a * X \in [lhs, rhs] is equivalent to a (k.a/A) * (A.X+α) + k'
+    // * (B.Y+β) \in [k.lhs+ɣ, k.rhs+ɣ] relation between the A.X+α and B.Y+β
+    // terms if A != 0, if the division is exact, and if k' = 0 or B = 0, where
+    // ɣ=(k.a/A)*α+k'*β. The smallest k > 0 such that k.a/A is integer is
+    // |A|/gcd(a, A).
+    if (tail_expr.coeff == 0) return {};
+    const int64_t k = std::abs(tail_expr.coeff.value()) /
+                      std::gcd(tail_expr.coeff.value(), coeff.value());
+    // TODO(user): do not add the relation in case of overflow (this can
+    // happen if the expressions are provided by the user in the model proto).
+    // If B = 0 we can use any value for k' = head_coeff. We use the opposite of
+    // tail_coeff to get a relation with +1/-1 coefficients if possible.
+    const IntegerValue tail_coeff = (k * coeff) / tail_expr.coeff;
+    const IntegerValue head_coeff = head_expr.coeff != 0 ? 0 : -tail_coeff;
+    const IntegerValue domain_offset =
+        tail_coeff * tail_expr.offset + head_coeff * head_expr.offset;
+    return {
+        tail_coeff,
+        head_coeff,
+        k * lhs + domain_offset,
+        k * rhs + domain_offset,
+    };
   }
 
   const int num_nodes_;
@@ -1075,13 +1289,14 @@ std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
     const std::vector<Literal>& literals,
     absl::Span<const AffineExpression> flat_node_dim_expressions,
-    const BinaryRelationRepository& binary_relation_repository) {
+    const BinaryRelationRepository& binary_relation_repository, Model* model) {
   RouteRelationsBuilder builder(num_nodes, tails, heads, literals,
                                 flat_node_dim_expressions,
                                 binary_relation_repository);
-  if (!builder.Build()) return nullptr;
+  if (!builder.BuildNodeExpressions()) return nullptr;
+  if (model != nullptr) builder.BuildArcRelations(model);
   std::unique_ptr<RouteRelationsHelper> helper(new RouteRelationsHelper(
-      tails, heads, builder.num_dimensions(),
+      tails, heads, literals, builder.num_dimensions(),
       builder.flat_node_dim_expressions(), builder.flat_arc_dim_relations()));
   if (VLOG_IS_ON(2)) helper->LogStats();
   return helper;
@@ -1089,35 +1304,74 @@ std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
 
 RouteRelationsHelper::RouteRelationsHelper(
     const std::vector<int>& tails, const std::vector<int>& heads,
-    int num_dimensions, std::vector<AffineExpression> flat_node_dim_expressions,
+    const std::vector<Literal>& literals, int num_dimensions,
+    std::vector<AffineExpression> flat_node_dim_expressions,
     std::vector<Relation> flat_arc_dim_relations)
     : tails_(tails),
       heads_(heads),
+      literals_(literals),
       num_dimensions_(num_dimensions),
       flat_node_dim_expressions_(std::move(flat_node_dim_expressions)),
       flat_arc_dim_relations_(std::move(flat_arc_dim_relations)) {
   DCHECK_GE(num_dimensions_, 1);
 }
 
-IntegerValue RouteRelationsHelper::GetArcOffsetBound(
-    int arc, int dimension, bool upper_bound,
-    const IntegerTrail& integer_trail) const {
-  const auto& r = GetArcRelation(arc, dimension);
-  if (r.empty() || r.head_coeff != 1 || r.tail_coeff != -1) {
-    // Use X_head-X_tail \in [lb(X_head)-ub(X_tail), ub(X_head)-lb(X_tail)].
-    const AffineExpression tail_expr =
-        GetNodeExpression(tails_[arc], dimension);
-    const AffineExpression head_expr =
-        GetNodeExpression(heads_[arc], dimension);
-    if (upper_bound) {
-      // Opposite of the rhs.
-      return integer_trail.LevelZeroLowerBound(tail_expr) -
-             integer_trail.LevelZeroUpperBound(head_expr);
+IntegerValue RouteRelationsHelper::GetArcOffsetLowerBound(
+    int arc, int dimension, bool negate_expressions,
+    const IntegerTrail& integer_trail,
+    const IntegerEncoder& integer_encoder) const {
+  // Compute the lower (resp. upper) bound of X_head - X_tail as lb(X_head) -
+  // ub(X_tail) (resp. ub(X_head) - lb(X_tail)), which is always true. This
+  // bound is only used if the arc is enforced, hence we can compute it by
+  // assuming that the arc literal is 1 (or that its negation is 0).
+  const AffineExpression& tail_expr = GetNodeExpression(tails_[arc], dimension);
+  const AffineExpression& head_expr = GetNodeExpression(heads_[arc], dimension);
+  // TODO(user): is this the correct/best way to get the integer variable
+  // corresponding to the arc literal?
+  const IntegerVariable enforcement_var =
+      integer_encoder.GetLiteralView(literals_[arc]);
+  const IntegerVariable negated_enforcement_var =
+      integer_encoder.GetLiteralView(literals_[arc].Negated());
+  auto get_bound = [&](const AffineExpression& expr, bool upper_bound) {
+    if (enforcement_var != kNoIntegerVariable) {
+      if (expr.var == enforcement_var) {
+        return expr.coeff + expr.constant;
+      }
+      if (expr.var == NegationOf(enforcement_var)) {
+        return -expr.coeff + expr.constant;
+      }
+    } else if (negated_enforcement_var != kNoIntegerVariable &&
+               (expr.var == negated_enforcement_var ||
+                expr.var == NegationOf(negated_enforcement_var))) {
+      return expr.constant;
     }
-    return integer_trail.LevelZeroLowerBound(head_expr) -
-           integer_trail.LevelZeroUpperBound(tail_expr);
+    return upper_bound ? integer_trail.LevelZeroUpperBound(expr)
+                       : integer_trail.LevelZeroLowerBound(expr);
+  };
+  IntegerValue result;
+  if (head_expr.var == tail_expr.var) {
+    const AffineExpression offset_expr(head_expr.var,
+                                       head_expr.coeff - tail_expr.coeff,
+                                       head_expr.constant - tail_expr.constant);
+    if (negate_expressions) {
+      result = -get_bound(offset_expr, /*upper_bound=*/true);
+    } else {
+      result = get_bound(offset_expr, /*upper_bound=*/false);
+    }
+  } else if (negate_expressions) {
+    // Opposite of the upper bound.
+    result = get_bound(tail_expr, /*upper_bound=*/false) -
+             get_bound(head_expr, /*upper_bound=*/true);
+  } else {
+    result = get_bound(head_expr, /*upper_bound=*/false) -
+             get_bound(tail_expr, /*upper_bound=*/true);
   }
-  return upper_bound ? -r.rhs : r.lhs;
+  // If there is an X_head - X_tail arc relation, use it to improve the bound.
+  const auto& r = GetArcRelation(arc, dimension);
+  if (r.head_coeff == 1 && r.tail_coeff == -1) {
+    result = std::max(result, negate_expressions ? -r.rhs : r.lhs);
+  }
+  return result;
 }
 
 void RouteRelationsHelper::RemoveArcs(
@@ -1213,8 +1467,8 @@ int MaybeFillRoutesConstraintNodeExpressions(
   }
   const std::unique_ptr<RouteRelationsHelper> helper =
       RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
-                                   /*flat_node_dim_expressions=*/{},
-                                   repository);
+                                   /*flat_node_dim_expressions=*/{}, repository,
+                                   /*model=*/nullptr);
   if (helper == nullptr) return 0;
 
   for (int d = 0; d < helper->num_dimensions(); ++d) {
@@ -1286,7 +1540,7 @@ class OutgoingCutHelper {
         min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model),
         route_relations_helper_(RouteRelationsHelper::Create(
             num_nodes, tails_, heads_, literals_, flat_node_dim_expressions,
-            *model->GetOrCreate<BinaryRelationRepository>())) {
+            *model->GetOrCreate<BinaryRelationRepository>(), model)) {
     // Compute the total demands in order to know the minimum incoming/outgoing
     // flow.
     for (const int64_t demand : demands) total_demand_ += demand;

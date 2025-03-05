@@ -425,7 +425,7 @@ LinearPropagator::~LinearPropagator() {
 void LinearPropagator::SetLevel(int level) {
   if (level < previous_level_) {
     order_.Clear();
-    modified_vars_.ClearAll();
+    modified_vars_.ResetAllToFalse();
 
     // If the solver backtracked at any point, we invalidate all our queue
     // and propagated_by information.

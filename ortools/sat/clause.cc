@@ -346,7 +346,7 @@ void ClauseManager::AttachAllClauses() {
   if (all_clauses_are_attached_) return;
   all_clauses_are_attached_ = true;
 
-  needs_cleaning_.ClearAll();  // This doesn't resize it.
+  needs_cleaning_.ResetAllToFalse();  // This doesn't resize it.
   watchers_on_false_.resize(needs_cleaning_.size().value());
 
   DeleteRemovedClauses();

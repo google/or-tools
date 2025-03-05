@@ -147,6 +147,31 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "primary_variables",
+    srcs = ["primary_variables.cc"],
+    hdrs = ["primary_variables.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base:stl_util",
+        "//ortools/util:bitset",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "primary_variables_test",
+    srcs = ["primary_variables_test.cc"],
+    deps = [
+        ":primary_variables",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     deps = [":cp_model_proto"],
@@ -245,6 +270,7 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":diffn_util",
+        ":primary_variables",
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/port:proto_utils",
@@ -254,6 +280,7 @@ cc_library(
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/strings",
@@ -623,6 +650,7 @@ cc_library(
         ":parameters_validation",
         ":precedences",
         ":presolve_context",
+        ":primary_variables",
         ":probing",
         ":rins",
         ":routing_cuts",
@@ -680,8 +708,8 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":integer",
         ":integer_base",
-        ":intervals",
         ":linear_constraint",
         ":model",
         ":sat_base",
@@ -1875,7 +1903,6 @@ cc_library(
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -1885,6 +1912,8 @@ cc_test(
     size = "small",
     srcs = ["precedences_test.cc"],
     deps = [
+        ":cp_model_mapping",
+        ":cp_model_solver_helpers",
         ":integer",
         ":integer_base",
         ":integer_search",
@@ -1893,9 +1922,9 @@ cc_test(
         ":sat_base",
         ":sat_solver",
         "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -2042,6 +2071,7 @@ cc_library(
         ":sat_solver",
         "//ortools/base",
         "//ortools/graph:strongly_connected_components",
+        "//ortools/util:bitset",
         "//ortools/util:sort",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/algorithm:container",
@@ -2661,6 +2691,7 @@ cc_library(
     srcs = ["routing_cuts.cc"],
     hdrs = ["routing_cuts.h"],
     deps = [
+        ":clause",
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":cuts",
@@ -2698,6 +2729,7 @@ cc_test(
     name = "routing_cuts_test",
     srcs = ["routing_cuts_test.cc"],
     deps = [
+        ":clause",
         ":cp_model",
         ":cuts",
         ":integer",

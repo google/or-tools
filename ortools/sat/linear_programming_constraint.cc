@@ -1885,7 +1885,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
     for (const ColIndex col : non_zeros_.PositionsSetAtLeastOnce()) {
       dense_cut[col] = IntegerValue(0);
     }
-    non_zeros_.SparseClearAll();
+    non_zeros_.ResetAllToFalse();
 
     // Copy cut.
     const LinearConstraintInternal& ct = integer_lp_[entry.first];

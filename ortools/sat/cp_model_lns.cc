@@ -2426,6 +2426,10 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
   Neighborhood neighborhood =
       helper_.FixGivenVariables(initial_solution, variables_to_freeze);
 
+  neighborhood.is_simple = false;
+  neighborhood.is_reduced = true;
+  neighborhood.variables_that_can_be_fixed_to_local_optimum.clear();
+
   // The call above add the relaxed variables to the neighborhood using the
   // current bounds at level 0. For big problems, this might create a hard model
   // with a large complicated landscape of fixed boxes with a lot of potential

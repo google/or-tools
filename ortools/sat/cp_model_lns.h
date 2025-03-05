@@ -59,8 +59,8 @@ struct Neighborhood {
   // True if neighborhood generator was able to generate a neighborhood.
   bool is_generated = false;
 
-  // True if an optimal solution to the neighborhood is also an optimal solution
-  // to the original model.
+  // False if an optimal solution to the neighborhood is also an optimal
+  // solution to the original model.
   bool is_reduced = false;
 
   // True if this neighborhood was just obtained by fixing some variables.

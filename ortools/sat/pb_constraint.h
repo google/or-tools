@@ -717,7 +717,7 @@ class VariableWithSameReasonIdentifier {
   }
 
   // Clears the cache. Call this before each conflict analysis.
-  void Clear() { seen_.ClearAll(); }
+  void Clear() { seen_.ResetAllToFalse(); }
 
   // Returns the first variable with exactly the same reason as 'var' on which
   // this function was called since the last Clear(). Note that if no variable

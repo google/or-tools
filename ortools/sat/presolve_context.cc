@@ -1338,8 +1338,8 @@ std::string PresolveContext::AffineRelationDebugString(int ref) const {
 
 void PresolveContext::ResetAfterCopy() {
   domains_.clear();
-  modified_domains.ClearAll();
-  var_with_reduced_small_degree.ClearAll();
+  modified_domains.ResetAllToFalse();
+  var_with_reduced_small_degree.ResetAllToFalse();
   var_to_constraints_.clear();
   var_to_num_linear1_.clear();
   objective_map_.clear();
