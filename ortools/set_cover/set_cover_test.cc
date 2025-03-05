@@ -92,17 +92,21 @@ class KnightsCover {
     }
   }
 
-  void ClearSubsetWithinRadius(int row, int col, int radius,
-                               SetCoverInvariant* inv) const {
+  std::vector<SubsetIndex> ClearSubsetWithinRadius(
+      const SetCoverInvariant::ConsistencyLevel consistency, int row, int col,
+      int radius, SetCoverInvariant* inv) const {
+    std::vector<SubsetIndex> cleared_subsets;
     for (int r = row - radius; r <= row + radius; ++r) {
       for (int c = col - radius; c <= col + radius; ++c) {
         if (!IsOnBoard(r, c)) continue;
         const SubsetIndex subset(SubsetNumber(r, c));
         if (inv->is_selected()[subset]) {
-          inv->Deselect(subset, CL::kFreeAndUncovered);
+          inv->Deselect(subset, consistency);
+          cleared_subsets.push_back(subset);
         }
       }
     }
+    return cleared_subsets;
   }
 
  private:
@@ -370,19 +374,20 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRandomClear) {
   for (int i = 0; i < 10000; ++i) {
     LazyElementDegreeSolutionGenerator degree(&inv);
     CHECK(degree.NextSolution());
-    CHECK(inv.CheckConsistency(CL::kCostAndCoverage));
 
-    SteepestSearch steepest(&inv);
+    LazySteepestSearch steepest(&inv);
     CHECK(steepest.NextSolution(100));
 
     if (inv.cost() < best_cost) {
       best_cost = inv.cost();
       best_choices = inv.is_selected();
       LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
+    } else {
+      inv.LoadSolution(best_choices);
     }
-    inv.LoadSolution(best_choices);
     ClearRandomSubsets(0.1 * inv.trace().size(), &inv);
   }
+
   inv.LoadSolution(best_choices);
   knights.DisplaySolution(best_choices);
   LOG(INFO) << "RandomClear cost: " << best_cost;
@@ -410,9 +415,9 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRadiusClear) {
       for (int col = 0; col < BoardSize; ++col) {
         LazyElementDegreeSolutionGenerator degree(&inv);
         CHECK(degree.NextSolution());
-        CHECK(inv.CheckConsistency(CL::kCostAndCoverage));
+        DCHECK(inv.CheckConsistency(CL::kCostAndCoverage));
 
-        SteepestSearch steepest(&inv);
+        LazySteepestSearch steepest(&inv);
         CHECK(steepest.NextSolution(100));
 
         if (inv.cost() < best_cost) {
@@ -420,9 +425,11 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRadiusClear) {
           best_choices = inv.is_selected();
           LOG(INFO) << "Best cost: " << best_cost
                     << " at iteration = " << iteration;
+        } else {
+          inv.LoadSolution(best_choices);
         }
-        inv.LoadSolution(best_choices);
-        knights.ClearSubsetWithinRadius(row, col, radius, &inv);
+        knights.ClearSubsetWithinRadius(CL::kCostAndCoverage, row, col, radius,
+                                        &inv);
         ++iteration;
       }
     }

@@ -135,9 +135,9 @@ bool GreedySolutionGenerator::NextSolution(absl::Span<const SubsetIndex> focus,
   std::vector<SubsetIndex> subsets_to_remove;
   subsets_to_remove.reserve(focus.size());
   while (!pq.IsEmpty() || inv_->num_uncovered_elements() > 0) {
-    // LOG_EVERY_N_SEC(INFO, 5)
-    //     << "Queue size: " << pq.heap_size()
-    //     << ", #uncovered elements: " << inv_->num_uncovered_elements();
+    VLOG_EVERY_N_SEC(1, 5) << "Queue size: " << pq.heap_size()
+                           << ", #uncovered elements: "
+                           << inv_->num_uncovered_elements();
     const SubsetIndex best_subset(pq.TopIndex());
     pq.Pop();
     inv_->Select(best_subset, CL::kFreeAndUncovered);
@@ -480,6 +480,7 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
 
 bool LazyElementDegreeSolutionGenerator::NextSolution(
     const SubsetBoolVector& in_focus, const SubsetCostVector& costs) {
+  inv_->CompressTrace();
   DVLOG(1) << "Entering LazyElementDegreeSolutionGenerator::NextSolution";
   DCHECK(inv_->CheckConsistency(CL::kCostAndCoverage));
   // Create the list of all the indices in the problem.
@@ -519,7 +520,6 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
     DVLOG(1) << "Cost = " << inv_->cost()
              << " num_uncovered_elements = " << inv_->num_uncovered_elements();
   }
-  inv_->CompressTrace();
   DCHECK(inv_->CheckConsistency(CL::kCostAndCoverage));
   stats.PrintStats();
   return true;
@@ -600,6 +600,80 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus,
   // TODO(user): change this to enable working on partial solutions.
   DCHECK_EQ(inv_->num_uncovered_elements(), 0);
   DCHECK(inv_->CheckConsistency(CL::kFreeAndUncovered));
+  return true;
+}
+
+// LazySteepestSearch.
+
+bool LazySteepestSearch::NextSolution(int num_iterations) {
+  const SubsetIndex num_subsets(inv_->model()->num_subsets());
+  const SubsetBoolVector in_focus(num_subsets, true);
+  return NextSolution(in_focus, inv_->model()->subset_costs(), num_iterations);
+}
+
+bool LazySteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
+                                      int num_iterations) {
+  const SubsetIndex num_subsets(inv_->model()->num_subsets());
+  const SubsetBoolVector in_focus = MakeBoolVector(focus, num_subsets);
+  return NextSolution(focus, inv_->model()->subset_costs(), num_iterations);
+}
+
+bool LazySteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
+                                      const SubsetCostVector& costs,
+                                      int num_iterations) {
+  const SubsetIndex num_subsets(inv_->model()->num_subsets());
+  const SubsetBoolVector in_focus = MakeBoolVector(focus, num_subsets);
+  return NextSolution(in_focus, costs, num_iterations);
+}
+
+bool LazySteepestSearch::NextSolution(const SubsetBoolVector& in_focus,
+                                      const SubsetCostVector& costs,
+                                      int num_iterations) {
+  DCHECK(inv_->CheckConsistency(CL::kCostAndCoverage));
+  DVLOG(1) << "Entering LazySteepestSearch::NextSolution, num_iterations = "
+           << num_iterations;
+  const BaseInt num_selected_subsets = inv_->trace().size();
+  std::vector<Cost> selected_costs;
+  selected_costs.reserve(num_selected_subsets);
+  // First part of the trick:
+  // Since the heuristic is greedy, it only considers subsets that are selected
+  // and in_focus.
+  for (const SetCoverDecision& decision : inv_->trace()) {
+    if (in_focus[decision.subset()]) {
+      selected_costs.push_back(costs[decision.subset()]);
+    }
+  }
+  std::vector<BaseInt> cost_permutation(selected_costs.size());
+  std::iota(cost_permutation.begin(), cost_permutation.end(), 0);
+  // TODO(user): use RadixSort and sort on Cost,we need doubles and payloads.
+  std::sort(cost_permutation.begin(), cost_permutation.end(),
+            [&selected_costs](const BaseInt i, const BaseInt j) {
+              if (selected_costs[i] == selected_costs[j]) {
+                return i < j;
+              }
+              return selected_costs[i] > selected_costs[j];
+            });
+  std::vector<SubsetIndex> cost_sorted_subsets;
+  cost_sorted_subsets.reserve(num_selected_subsets);
+  for (const BaseInt i : cost_permutation) {
+    cost_sorted_subsets.push_back(inv_->trace()[i].subset());
+  }
+  for (const SubsetIndex subset : cost_sorted_subsets) {
+    // Second part of the trick:
+    // ComputeIsRedundant is expensive, but it is going to be called only once
+    // per subset in the solution. Once this has been done, there is no need to
+    // update any priority queue, nor to use a stronger level of consistency
+    // than kCostAndCoverage.
+    // In the non-lazy version, the redundancy of a subset may be updated many
+    // times and the priority queue must be updated accordingly, including just
+    // for removing the subset that was just considered,
+    // A possible optimization would be to sort the elements by coverage and
+    // run ComputeIsRedundant with the new element order. This would make the
+    // subsets which cover only one element easier to prove non-redundant.
+    if (inv_->ComputeIsRedundant(subset)) {
+      inv_->Deselect(subset, CL::kCostAndCoverage);
+    }
+  }
   return true;
 }
 
@@ -719,6 +793,9 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
              << inv_->cost() << ", best cost = ," << best_cost
              << ", penalized cost = ," << augmented_cost;
     if (inv_->cost() < best_cost) {
+      VLOG(1) << "Updated best cost, " << "Iteration, " << iteration
+              << ", current cost = ," << inv_->cost() << ", best cost = ,"
+              << best_cost << ", penalized cost = ," << augmented_cost;
       best_cost = inv_->cost();
       best_choices = inv_->is_selected();
     }

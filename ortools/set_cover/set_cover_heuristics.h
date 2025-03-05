@@ -240,6 +240,37 @@ class SteepestSearch {
   SetCoverInvariant* inv_;
 };
 
+// Lazy Steepest Search is a variant of Steepest Search that does not use any
+// priority queue to update the priorities of the subsets. The priorities are
+// computed when needed. It is faster to compute because there are relatively
+// few subsets in the solution, because the cardinality of the solution is
+// bounded by the number of elements.
+class LazySteepestSearch {
+ public:
+  explicit LazySteepestSearch(SetCoverInvariant* inv) : inv_(inv) {}
+
+  // Returns true if a solution was found within num_iterations.
+  // TODO(user): Add time-outs and exit with a partial solution.
+  bool NextSolution(int num_iterations);
+
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(absl::Span<const SubsetIndex> focus, int num_iterations);
+
+  // Same as above, with a different set of costs.
+  bool NextSolution(absl::Span<const SubsetIndex> focus,
+                    const SubsetCostVector& costs, int num_iterations);
+
+ private:
+  // Same as above, with a different set of costs, and the focus defined as a
+  // vector of Booleans. This is the actual implementation of NextSolution.
+  bool NextSolution(const SubsetBoolVector& in_focus,
+                    const SubsetCostVector& costs, int num_iterations);
+
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
+};
+
 // A Tabu list is a fixed-sized set with FIFO replacement. It is expected to
 // be of small size, usually a few dozens of elements.
 template <typename T>
