@@ -18,5 +18,5 @@ exports_files([
     "pybind11_abseil.patch",
     "pybind11_protobuf.patch",
     "pybind11.patch",
-    "scip-v920.patch",
+    "scip-v921.patch",
 ])
