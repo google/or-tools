@@ -590,11 +590,11 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // An array representing the supply (if > 0) or the demand (if < 0)
   // for each node in graph_.
-  std::vector<FlowQuantity> node_excess_;
+  std::unique_ptr<FlowQuantity[]> node_excess_;
 
   // An array representing the potential (or price function) for
   // each node in graph_.
-  std::vector<CostValue> node_potential_;
+  std::unique_ptr<CostValue[]> node_potential_;
 
   // An array representing the residual_capacity for each arc in graph_.
   // Residual capacities enable one to represent the capacity and flow for all
@@ -618,7 +618,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   ZVector<ArcFlowType> residual_arc_capacity_;
 
   // An array representing the first admissible arc for each node in graph_.
-  std::vector<ArcIndex> first_admissible_arc_;
+  std::unique_ptr<ArcIndex[]> first_admissible_arc_;
 
   // A stack used for managing active nodes in the algorithm.
   // Note that the papers cited above recommend the use of a queue, but
@@ -647,7 +647,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // An array containing the initial excesses (i.e. the supplies) for each
   // node. This is used to create the max-flow-based feasibility checker.
-  std::vector<FlowQuantity> initial_node_excess_;
+  std::unique_ptr<FlowQuantity[]> initial_node_excess_;
 
   // Statistics about this class.
   StatsGroup stats_;

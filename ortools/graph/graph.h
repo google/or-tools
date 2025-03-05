@@ -619,18 +619,28 @@ class ReverseArcStaticGraph
     return IntegerRange<ArcIndexType>(from == Base::kNilArc ? limit : from,
                                       limit);
   }
+
+  IntegerRange<ArcIndexType> OppositeIncomingArcs(NodeIndexType node) const {
+    return IntegerRange<ArcIndexType>(reverse_start_[node],
+                                      ReverseArcLimit(node));
+  }
+  IntegerRange<ArcIndexType> OppositeIncomingArcsStartingFrom(
+      NodeIndexType node, ArcIndexType from) const {
+    DCHECK_GE(from, reverse_start_[node]);
+    const ArcIndexType limit = ReverseArcLimit(node);
+    return IntegerRange<ArcIndexType>(from == Base::kNilArc ? limit : from,
+                                      limit);
+  }
+
   BeginEndWrapper<IncomingArcIterator> IncomingArcs(NodeIndexType node) const;
   BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
   OutgoingOrOppositeIncomingArcs(NodeIndexType node) const;
-  BeginEndWrapper<OppositeIncomingArcIterator> OppositeIncomingArcs(
-      NodeIndexType node) const;
+
   BeginEndWrapper<IncomingArcIterator> IncomingArcsStartingFrom(
       NodeIndexType node, ArcIndexType from) const;
   BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
   OutgoingOrOppositeIncomingArcsStartingFrom(NodeIndexType node,
                                              ArcIndexType from) const;
-  BeginEndWrapper<OppositeIncomingArcIterator> OppositeIncomingArcsStartingFrom(
-      NodeIndexType node, ArcIndexType from) const;
 
   // This loops over the heads of the OutgoingArcs(node). It is just a more
   // convenient way to achieve this. Moreover this interface is used by some
@@ -1084,7 +1094,15 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
     return this->index_ == other.index_;                    \
   }                                                         \
   ArcIndexType operator*() const { return this->Index(); }  \
-  void operator++() { this->Next(); }
+  iterator_class_name& operator++() {                       \
+    this->Next();                                           \
+    return *this;                                           \
+  }                                                         \
+  iterator_class_name operator++(int) {                     \
+    auto tmp = *this;                                       \
+    this->Next();                                           \
+    return tmp;                                             \
+  }
 
 // ListGraph implementation ----------------------------------------------------
 
@@ -1171,12 +1189,12 @@ template <typename NodeIndexType, typename ArcIndexType>
 class ListGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
  public:
   OutgoingArcIterator(const ListGraph& graph, NodeIndexType node)
-      : graph_(graph), index_(graph.start_[node]) {
+      : graph_(&graph), index_(graph.start_[node]) {
     DCHECK(graph.IsNodeValid(node));
   }
   OutgoingArcIterator(const ListGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
-      : graph_(graph), index_(arc) {
+      : graph_(&graph), index_(arc) {
     DCHECK(graph.IsNodeValid(node));
     DCHECK(arc == Base::kNilArc || graph.Tail(arc) == node);
   }
@@ -1184,13 +1202,13 @@ class ListGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
   ArcIndexType Index() const { return index_; }
   void Next() {
     DCHECK(Ok());
-    index_ = graph_.next_[index_];
+    index_ = graph_->next_[index_];
   }
 
   DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingArcIterator);
 
  private:
-  const ListGraph& graph_;
+  const ListGraph* graph_;
   ArcIndexType index_;
 };
 
@@ -1204,20 +1222,20 @@ class ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
   using value_type = NodeIndexType;
 
   OutgoingHeadIterator(const ListGraph& graph, NodeIndexType node)
-      : graph_(graph), index_(graph.start_[node]) {
+      : graph_(&graph), index_(graph.start_[node]) {
     DCHECK(graph.IsNodeValid(node));
   }
   OutgoingHeadIterator(const ListGraph& graph, NodeIndexType node,
                        ArcIndexType arc)
-      : graph_(graph), index_(arc) {
+      : graph_(&graph), index_(arc) {
     DCHECK(graph.IsNodeValid(node));
     DCHECK(arc == Base::kNilArc || graph.Tail(arc) == node);
   }
   bool Ok() const { return index_ != Base::kNilArc; }
-  NodeIndexType Index() const { return graph_.Head(index_); }
+  NodeIndexType Index() const { return graph_->Head(index_); }
   void Next() {
     DCHECK(Ok());
-    index_ = graph_.next_[index_];
+    index_ = graph_->next_[index_];
   }
 
   bool operator!=(
@@ -1226,10 +1244,18 @@ class ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
     return index_ != other.index_;
   }
   NodeIndexType operator*() const { return Index(); }
-  void operator++() { Next(); }
+  OutgoingHeadIterator& operator++() {
+    Next();
+    return *this;
+  }
+  OutgoingHeadIterator operator++(int) {
+    auto tmp = *this;
+    Next();
+    return *this;
+  }
 
  private:
-  const ListGraph& graph_;
+  const ListGraph* graph_;
   ArcIndexType index_;
 };
 
@@ -1528,12 +1554,12 @@ template <typename NodeIndexType, typename ArcIndexType>
 class ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
  public:
   OutgoingArcIterator(const ReverseArcListGraph& graph, NodeIndexType node)
-      : graph_(graph), index_(graph.start_[node]) {
+      : graph_(&graph), index_(graph.start_[node]) {
     DCHECK(graph.IsNodeValid(node));
   }
   OutgoingArcIterator(const ReverseArcListGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
-      : graph_(graph), index_(arc) {
+      : graph_(&graph), index_(arc) {
     DCHECK(graph.IsNodeValid(node));
     DCHECK(arc == Base::kNilArc || arc >= 0);
     DCHECK(arc == Base::kNilArc || graph.Tail(arc) == node);
@@ -1542,13 +1568,13 @@ class ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
   ArcIndexType Index() const { return index_; }
   void Next() {
     DCHECK(Ok());
-    index_ = graph_.next_[index_];
+    index_ = graph_->next_[index_];
   }
 
   DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingArcIterator);
 
  private:
-  const ReverseArcListGraph& graph_;
+  const ReverseArcListGraph* graph_;
   ArcIndexType index_;
 };
 
@@ -1588,24 +1614,24 @@ class ReverseArcListGraph<NodeIndexType, ArcIndexType>::IncomingArcIterator
     : public OppositeIncomingArcIterator {
  public:
   IncomingArcIterator(const ReverseArcListGraph& graph, NodeIndexType node)
-      : OppositeIncomingArcIterator(graph, node), graph_(graph) {}
+      : OppositeIncomingArcIterator(graph, node), graph_(&graph) {}
   IncomingArcIterator(const ReverseArcListGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
       : OppositeIncomingArcIterator(
             graph, node,
             arc == Base::kNilArc ? Base::kNilArc : graph.OppositeArc(arc)),
-        graph_(graph) {}
+        graph_(&graph) {}
 
   // We overwrite OppositeIncomingArcIterator::Index() here.
   ArcIndexType Index() const {
     return this->index_ == Base::kNilArc ? Base::kNilArc
-                                         : graph_.OppositeArc(this->index_);
+                                         : graph_->OppositeArc(this->index_);
   }
 
   DEFINE_STL_ITERATOR_FUNCTIONS(IncomingArcIterator);
 
  private:
-  const ReverseArcListGraph& graph_;
+  const ReverseArcListGraph* graph_;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1614,13 +1640,13 @@ class ReverseArcListGraph<NodeIndexType,
  public:
   OutgoingOrOppositeIncomingArcIterator(const ReverseArcListGraph& graph,
                                         NodeIndexType node)
-      : graph_(graph), index_(graph.reverse_start_[node]), node_(node) {
+      : graph_(&graph), index_(graph.reverse_start_[node]), node_(node) {
     DCHECK(graph.IsNodeValid(node));
     if (index_ == Base::kNilArc) index_ = graph.start_[node];
   }
   OutgoingOrOppositeIncomingArcIterator(const ReverseArcListGraph& graph,
                                         NodeIndexType node, ArcIndexType arc)
-      : graph_(graph), index_(arc), node_(node) {
+      : graph_(&graph), index_(arc), node_(node) {
     DCHECK(graph.IsNodeValid(node));
     DCHECK(arc == Base::kNilArc || graph.Tail(arc) == node);
   }
@@ -1630,21 +1656,21 @@ class ReverseArcListGraph<NodeIndexType,
   void Next() {
     DCHECK(Ok());
     if (index_ < 0) {
-      index_ = graph_.next_[index_];
+      index_ = graph_->next_[index_];
       if (index_ == Base::kNilArc) {
-        index_ = graph_.start_[node_];
+        index_ = graph_->start_[node_];
       }
     } else {
-      index_ = graph_.next_[index_];
+      index_ = graph_->next_[index_];
     }
   }
 
   DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingOrOppositeIncomingArcIterator);
 
  private:
-  const ReverseArcListGraph& graph_;
+  const ReverseArcListGraph* graph_;
   ArcIndexType index_;
-  const NodeIndexType node_;
+  NodeIndexType node_;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1680,7 +1706,6 @@ class ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
 DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph, Incoming);
 DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph,
                                  OutgoingOrOppositeIncoming);
-DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph, OppositeIncoming);
 
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::OutDegree(
@@ -1830,6 +1855,7 @@ class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
   const ArcIndexType limit_;
 };
 
+// TODO(b/385094969): Remove this class.
 template <typename NodeIndexType, typename ArcIndexType>
 class ReverseArcStaticGraph<NodeIndexType,
                             ArcIndexType>::OppositeIncomingArcIterator {

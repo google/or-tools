@@ -39,6 +39,7 @@ namespace {
 using testing::ElementsAre;
 using testing::IsEmpty;
 using testing::UnorderedElementsAreArray;
+using util::Permute;
 using util::StaticGraph;
 
 TEST(KShortestPathsYenDeathTest, EmptyGraph) {
@@ -200,6 +201,66 @@ TEST(KShortestPathsYenTest, ReturnsTheRightNumberOfPaths) {
   EXPECT_THAT(paths.paths,
               ElementsAre(std::vector<int>{0, 2}, std::vector<int>{0, 1, 2}));
   EXPECT_THAT(paths.distances, ElementsAre(1, 2));
+}
+
+// This test verifies that the algorithm returns the shortest path from the
+// candidate paths produced at each spur.
+TEST(DISABLED_KShortestPathsYenTest, ShortestPathSelectedFromCandidates) {
+  // Topology:
+  //
+  //    0 ---- 3 ---- 6     Arcs        length
+  //    | \  / | \  / |     horizontal  100
+  //    |  \/  |  \/  |     diagonal    100
+  //    |  /\  |  /\  |     vertical    1000
+  //    | /  \ | /  \ |
+  //    1 ---- 2 ---- 7
+  //    | \  / | \  / |
+  //    |  \/  |  \/  |
+  //    |  /\  |  /\  |
+  //    | /  \ | /  \ |
+  //    4 ---- 5 ---- 8
+  StaticGraph<> graph;
+
+  using TailHeadCost = std::tuple<int, int, int>;
+  std::vector<TailHeadCost> arcs = {
+      {0, 1, 1000}, {0, 2, 100},  {0, 3, 100},                 //
+      {1, 0, 1000}, {1, 2, 100},  {1, 3, 100},  {1, 4, 1000},  //
+      {2, 0, 100},  {2, 1, 100},  {2, 3, 1000}, {2, 4, 100},  {2, 5, 1000},
+      {2, 6, 100},  {2, 7, 100},  {2, 8, 100},                               //
+      {3, 0, 100},  {3, 1, 100},  {3, 2, 1000}, {3, 6, 100},  {3, 7, 100},   //
+      {4, 1, 1000}, {4, 2, 100},  {4, 5, 100},                               //
+      {5, 1, 100},  {5, 2, 1000}, {5, 4, 100},  {5, 7, 100},  {5, 8, 100},   //
+      {6, 2, 100},  {6, 3, 100},  {6, 7, 1000},                              //
+      {7, 2, 100},  {7, 3, 100},  {7, 5, 100},  {7, 6, 1000}, {7, 8, 1000},  //
+      {8, 2, 100},  {8, 5, 100},  {8, 7, 1000},
+  };
+  std::vector<PathDistance> lengths;
+  lengths.reserve(arcs.size());
+  for (const auto& [tail, head, cost] : arcs) {
+    graph.AddArc(tail, head);
+    lengths.push_back(cost);
+  }
+
+  std::vector<int> permutation;
+  graph.Build(&permutation);
+  Permute(permutation, &lengths);
+
+  const KShortestPaths<StaticGraph<>> paths =
+      YenKShortestPaths(graph, lengths, /*source=*/0,
+                        /*destination=*/6, /*k=*/10);
+
+  EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 2, 6},  //
+                                       std::vector<int>{0, 3, 6},
+                                       std::vector<int>{0, 2, 1, 3, 6},
+                                       std::vector<int>{0, 3, 1, 2, 6},
+                                       std::vector<int>{0, 2, 7, 3, 6},
+                                       std::vector<int>{0, 3, 7, 2, 6},
+                                       std::vector<int>{0, 2, 7, 5, 1, 3, 6},
+                                       std::vector<int>{0, 3, 7, 5, 1, 2, 6},
+                                       std::vector<int>{0, 2, 4, 5, 1, 3, 6},
+                                       std::vector<int>{0, 3, 7, 5, 4, 2, 6}));
+  EXPECT_THAT(paths.distances,
+              ElementsAre(200, 200, 400, 400, 400, 400, 600, 600, 600, 600));
 }
 
 namespace internal {
