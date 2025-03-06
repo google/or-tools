@@ -300,7 +300,7 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
     int active;
     int unknown;
   };
-  CommittableVector<ActivityCounts> active_count_per_group_;
+  CommittableArray<ActivityCounts> active_count_per_group_;
   // node_is_active_[node] is true iff node was synced and active at last
   // Synchronize().
   std::vector<bool> node_is_active_;
@@ -460,7 +460,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
     int active = 0;
     int inactive = 0;
   };
-  CommittableVector<ActivityCount> count_per_disjunction_;
+  CommittableArray<ActivityCount> count_per_disjunction_;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
   const bool filter_cost_;
@@ -1502,7 +1502,7 @@ class PathCumulFilter : public BasePathFilter {
   DimensionValues dimension_values_;
   // Maps each path to the sum of its path-only costs: span/slack cost,
   // soft cumul costs, soft span limits.
-  CommittableVector<int64_t> cost_of_path_;
+  CommittableArray<int64_t> cost_of_path_;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
 
@@ -1514,7 +1514,7 @@ class PathCumulFilter : public BasePathFilter {
   // some pickup alternative is on the path, and at what rank (position).
   // Only the Revert() method of CommittableVector is used, to reset all
   // locations to the default dummy value before examining a path.
-  CommittableVector<RankAndIndex> pickup_rank_and_alternative_index_of_pair_;
+  CommittableArray<RankAndIndex> pickup_rank_and_alternative_index_of_pair_;
 
   // node_index_to_precedences_[node_index] contains all NodePrecedence elements
   // with node_index as either "first_node" or "second_node".
@@ -1527,7 +1527,7 @@ class PathCumulFilter : public BasePathFilter {
   };
   // Maps the location of each node in the committed and current solutions.
   // This is used when enforcing precedence constraints
-  CommittableVector<PathAndRank> location_of_node_;
+  CommittableArray<PathAndRank> location_of_node_;
 
   // Name of the dimension, for debugging/profiling purposes.
   const std::string name_;
@@ -2490,7 +2490,7 @@ class PickupDeliveryFilter : public LocalSearchFilter {
     bool delivery : 1;
     PairStatus() : pickup(false), delivery(false) {}
   };
-  CommittableVector<PairStatus> assigned_status_of_pair_;
+  CommittableArray<PairStatus> assigned_status_of_pair_;
   SparseBitset<int> pair_is_open_;
   CommittableValue<int> num_assigned_pairs_;
   std::deque<int> visited_deque_;

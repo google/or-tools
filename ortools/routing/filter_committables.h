@@ -55,10 +55,10 @@ class CommittableValue {
 };
 
 template <typename T>
-class CommittableVector {
+class CommittableArray {
  public:
   // Makes a vector with initial elements all committed to value.
-  CommittableVector<T>(size_t num_elements, const T& value)
+  CommittableArray<T>(size_t num_elements, const T& value)
       : elements_(num_elements, {value, value}), changed_(num_elements) {}
 
   // Return the size of the vector.
@@ -140,6 +140,35 @@ class CommittableVector {
   // Holds indices that were Set() since the last Commit() or Revert().
   SparseBitset<size_t> changed_;
 };
+
+struct IndexRange {
+  size_t begin = 0;
+  size_t end = 0;
+  int Size() const { return end - begin; }
+  bool operator==(const IndexRange& other) const {
+    return begin == other.begin && end == other.end;
+  }
+};
+
+// Given unchanged committable ranges representing ranges of indices in input,
+// copies the corresponding elements of input to contiguous ranges
+// of temp_container, swaps temp_container with input, and updates the
+// committable ranges to represent the new ranges in output.
+template <typename T>
+void DefragmentRanges(std::vector<T>& mutable_input,
+                      CommittableArray<IndexRange>& ranges,
+                      std::vector<T>& temp_container) {
+  temp_container.clear();
+  const int num_ranges = ranges.Size();
+  for (int i = 0; i < num_ranges; ++i) {
+    const size_t new_begin = temp_container.size();
+    const auto [begin, end] = ranges.GetCommitted(i);
+    temp_container.insert(temp_container.end(), mutable_input.begin() + begin,
+                          mutable_input.begin() + end);
+    ranges.Set(i, {.begin = new_begin, .end = temp_container.size()});
+  }
+  std::swap(mutable_input, temp_container);
+}
 
 // This class allows to represent a state of dimension values for all paths of
 // a vehicle routing problem. Values of interest for each path are:
@@ -313,38 +342,13 @@ class DimensionValues {
     range_of_path_.Commit();
     num_elements_.Commit();
     span_.Commit();
-    // If the committed data would take too much space, compact the data:
-    // copy committed data to the end of vectors, erase old data, refresh
-    // indexing (range_of_path_).
+    // If the committed data would take too much space, defragment it.
     if (num_elements_.Get() <= max_num_committed_elements_) return;
-    temp_nodes_.clear();
-    temp_transit_.clear();
-    temp_travel_.clear();
-    temp_travel_sum_.clear();
-    temp_cumul_.clear();
-    const int num_paths = range_of_path_.Size();
-    for (int path = 0; path < num_paths; ++path) {
-      if (range_of_path_.GetCommitted(path).Size() == 0) continue;
-      const size_t new_begin = temp_nodes_.size();
-      const auto [begin, end] = range_of_path_.GetCommitted(path);
-      temp_nodes_.insert(temp_nodes_.end(), nodes_.begin() + begin,
-                         nodes_.begin() + end);
-      temp_transit_.insert(temp_transit_.end(), transit_.begin() + begin,
-                           transit_.begin() + end);
-      temp_travel_.insert(temp_travel_.end(), travel_.begin() + begin,
-                          travel_.begin() + end);
-      temp_travel_sum_.insert(temp_travel_sum_.end(),
-                              travel_sum_.begin() + begin,
-                              travel_sum_.begin() + end);
-      temp_cumul_.insert(temp_cumul_.end(), cumul_.begin() + begin,
-                         cumul_.begin() + end);
-      range_of_path_.Set(path, {.begin = new_begin, .end = temp_nodes_.size()});
-    }
-    std::swap(nodes_, temp_nodes_);
-    std::swap(transit_, temp_transit_);
-    std::swap(travel_, temp_travel_);
-    std::swap(travel_sum_, temp_travel_sum_);
-    std::swap(cumul_, temp_cumul_);
+    DefragmentRanges(nodes_, range_of_path_, temp_ints_);
+    DefragmentRanges(transit_, range_of_path_, temp_intervals_);
+    DefragmentRanges(cumul_, range_of_path_, temp_intervals_);
+    DefragmentRanges(travel_, range_of_path_, temp_int64s_);
+    DefragmentRanges(travel_sum_, range_of_path_, temp_int64s_);
     range_of_path_.Commit();
     num_elements_.SetAndCommit(nodes_.size());
   }
@@ -481,21 +485,14 @@ class DimensionValues {
   std::vector<int64_t> travel_sum_;
   std::vector<Interval> cumul_;
   // Temporary vectors used in Commit() during compaction.
-  std::vector<int> temp_nodes_;
-  std::vector<Interval> temp_transit_;
-  std::vector<int64_t> temp_travel_;
-  std::vector<int64_t> temp_travel_sum_;
-  std::vector<Interval> temp_cumul_;
+  std::vector<int> temp_ints_;
+  std::vector<Interval> temp_intervals_;
+  std::vector<int64_t> temp_int64s_;
   // A path has a range of indices in the committed state and another one in the
   // current state.
-  struct Range {
-    size_t begin = 0;
-    size_t end = 0;
-    int Size() const { return end - begin; }
-  };
-  CommittableVector<Range> range_of_path_;
+  CommittableArray<IndexRange> range_of_path_;
   // Associates span to each path.
-  CommittableVector<Interval> span_;
+  CommittableArray<Interval> span_;
   // Associates vehicle breaks with each path.
   // TODO(user): turns this into a committable vector.
   std::vector<std::vector<VehicleBreak>> vehicle_breaks_;
@@ -562,22 +559,8 @@ class PrePostVisitValues {
     // copy committed data to the end of vectors, erase old data, refresh
     // indexing (range_of_path_).
     if (num_elements_.Get() <= max_num_committed_elements_) return;
-    temp_pre_visit_.clear();
-    temp_post_visit_.clear();
-    for (int path = 0; path < range_of_path_.Size(); ++path) {
-      if (range_of_path_.GetCommitted(path).Size() == 0) continue;
-      const size_t new_begin = temp_pre_visit_.size();
-      const auto [begin, end] = range_of_path_.GetCommitted(path);
-      temp_pre_visit_.insert(temp_pre_visit_.end(), pre_visit_.begin() + begin,
-                             pre_visit_.begin() + end);
-      temp_post_visit_.insert(temp_post_visit_.end(),
-                              post_visit_.begin() + begin,
-                              post_visit_.begin() + end);
-      range_of_path_.Set(path,
-                         {.begin = new_begin, .end = temp_pre_visit_.size()});
-    }
-    std::swap(pre_visit_, temp_pre_visit_);
-    std::swap(post_visit_, temp_post_visit_);
+    DefragmentRanges(pre_visit_, range_of_path_, temp_int64s_);
+    DefragmentRanges(post_visit_, range_of_path_, temp_int64s_);
     range_of_path_.Commit();
     num_elements_.SetAndCommit(pre_visit_.size());
   }
@@ -638,17 +621,11 @@ class PrePostVisitValues {
   // These vectors hold the data.
   std::vector<int64_t> pre_visit_;
   std::vector<int64_t> post_visit_;
-  // Temporary vectors used in Commit() during compaction.
-  std::vector<int64_t> temp_pre_visit_;
-  std::vector<int64_t> temp_post_visit_;
+  // Temporary vector used in Commit() during compaction.
+  std::vector<int64_t> temp_int64s_;
   // A path has a range of indices in the committed state and another one in the
   // current state.
-  struct Range {
-    size_t begin = 0;
-    size_t end = 0;
-    int Size() const { return end - begin; }
-  };
-  CommittableVector<Range> range_of_path_;
+  CommittableArray<IndexRange> range_of_path_;
   // Threshold for the size of the committed vector. This is purely heuristic:
   // it should be more than the number of nodes so compactions do not occur at
   // each submit, but ranges should not be too far apart to avoid cache misses.
