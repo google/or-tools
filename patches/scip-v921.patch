@@ -1,8 +1,23 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 8492dc75..70d7dd21 100644
+index 8492dc75..4c12a9bf 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -412,22 +412,11 @@ endif()
+@@ -38,9 +38,11 @@ set(CPACK_PACKAGE_VENDOR "Zuse Institute Berlin")
+ set(CPACK_PACKAGE_CONTACT "http://scipopt.org")
+ include(CPack)
+ 
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
++if(CMAKE_PROJECT_NAME EQUAL "SCIP")
++  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
++  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
++  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
++endif()
+ 
+ if(SCIPOptSuite_BINARY_DIR)
+   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${SCIPOptSuite_BINARY_DIR}/bin)
+@@ -412,22 +414,11 @@ endif()
  #search the selected LP solver library
  message(STATUS "Finding Solver \"${LPS}\"")
  if(LPS STREQUAL "spx")
@@ -28,7 +43,7 @@ index 8492dc75..70d7dd21 100644
      if (DEFINED SOPLEX_WITH_PAPILO)
          message(STATUS "SOPLEX links PAPILO")
          if((NOT SCIP_WITH_PAPILO)) # TODO not sure how to handle AUTOBUILD
-@@ -502,9 +491,9 @@ if(SOPLEX_FOUND)
+@@ -502,9 +493,9 @@ if(SOPLEX_FOUND)
      message(STATUS "Finding SOPLEX - found")
      # SoPlex headers can be directly included
      include_directories(${SOPLEX_INCLUDE_DIRS})
@@ -40,7 +55,7 @@ index 8492dc75..70d7dd21 100644
      else()
          set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
      endif()
-@@ -514,7 +503,7 @@ if(SOPLEX_FOUND)
+@@ -514,7 +505,7 @@ if(SOPLEX_FOUND)
          set(lpi lpi/lpi_spx2.cpp)
      endif()
  else()
