@@ -78,6 +78,9 @@
 // Note on iteration efficiency: When re-indexing the arcs it is not possible to
 // have both the outgoing arcs and the incoming ones form a consecutive range.
 //
+// Iterators are invalidated by any operation that changes the graph (e.g.
+// `AddArc()`).
+//
 // It is however possible to do so for the outgoing arcs and the opposite
 // incoming arcs. It is why the OutgoingOrOppositeIncomingArcs() and
 // OutgoingArcs() iterations are more efficient than the IncomingArcs() one.
