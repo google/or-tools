@@ -49,14 +49,12 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
-using ::testing::AnyOf;
 using ::testing::ElementsAre;
-using ::testing::Eq;
 using ::testing::EqualsProto;
 using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
-using Relation = RouteRelationsHelper::Relation;
+using HeadMinusTailBounds = RouteRelationsHelper::HeadMinusTailBounds;
 
 TEST(MinOutgoingFlowHelperTest, TwoNodesWithoutConstraints) {
   Model model;
@@ -1108,15 +1106,18 @@ TEST(SpecialBinPackingHelperTest, UseDpToTightenCapacities) {
   EXPECT_EQ(objects[3].capacity, 9);
 }
 
-std::vector<absl::flat_hash_map<int, Relation>> GetRelationByDimensionAndArc(
-    const RouteRelationsHelper& helper) {
-  std::vector<absl::flat_hash_map<int, Relation>> result(
+std::vector<absl::flat_hash_map<int, HeadMinusTailBounds>>
+GetRelationByDimensionAndArc(const RouteRelationsHelper& helper) {
+  std::vector<absl::flat_hash_map<int, HeadMinusTailBounds>> result(
       helper.num_dimensions());
   for (int i = 0; i < helper.num_arcs(); ++i) {
     for (int d = 0; d < helper.num_dimensions(); ++d) {
-      if (!helper.GetArcRelation(i, d).empty()) {
-        result[d][i] = helper.GetArcRelation(i, d);
+      // We don't output trivial relation, as the tests are written this way.
+      if (helper.GetArcRelation(i, d).lhs == kMinIntegerValue &&
+          helper.GetArcRelation(i, d).rhs == kMaxIntegerValue) {
+        continue;
       }
+      result[d][i] = helper.GetArcRelation(i, d);
     }
   }
   return result;
@@ -1182,13 +1183,13 @@ TEST(RouteRelationsHelperTest, Basic) {
   // Check the arc relations.
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
               UnorderedElementsAre(
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 50, 1000}),
-                                       Pair(1, Relation{-1, 1, 70, 1000}),
-                                       Pair(2, Relation{-1, 1, 40, 1000})),
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 4, 100}),
-                                       Pair(1, Relation{-1, 1, 4, 100}),
-                                       Pair(2, Relation{-1, 1, 3, 100}),
-                                       Pair(3, Relation{-1, 1, 5, 100})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{50, 1000}),
+                                       Pair(1, HeadMinusTailBounds{70, 1000}),
+                                       Pair(2, HeadMinusTailBounds{40, 1000})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 100}),
+                                       Pair(1, HeadMinusTailBounds{4, 100}),
+                                       Pair(2, HeadMinusTailBounds{3, 100}),
+                                       Pair(3, HeadMinusTailBounds{5, 100})),
                   // The relation for the arc 4->5 is not recovered since its
                   // variables cannot be unambiguously associated with nodes.
                   IsEmpty()));
@@ -1199,9 +1200,9 @@ TEST(RouteRelationsHelperTest, Basic) {
   EXPECT_EQ(helper->num_arcs(), 3);
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
               UnorderedElementsAre(
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 70, 1000})),
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 4, 100}),
-                                       Pair(1, Relation{-1, 1, 5, 100})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{70, 1000})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 100}),
+                                       Pair(1, HeadMinusTailBounds{5, 100})),
                   IsEmpty()));
 }
 
@@ -1248,12 +1249,13 @@ TEST(RouteRelationsHelperTest, UnenforcedRelations) {
               UnorderedElementsAre(UnorderedElementsAre(
                   Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d))));
   // The unenforced relation is taken into account.
-  EXPECT_THAT(
-      GetRelationByDimensionAndArc(*helper),
-      UnorderedElementsAre(UnorderedElementsAre(
-          Pair(0, Relation{-1, 1, 1, 1}), Pair(1, Relation{-1, 1, 2, 2}),
-          Pair(2, Relation{-1, 1, 3, 3}), Pair(3, Relation{-1, 1, 4, 4}),
-          Pair(4, Relation{-1, 1, 5, 5}))));
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{1, 1}),
+                                       Pair(1, HeadMinusTailBounds{2, 2}),
+                                       Pair(2, HeadMinusTailBounds{3, 3}),
+                                       Pair(3, HeadMinusTailBounds{4, 4}),
+                                       Pair(4, HeadMinusTailBounds{5, 5}))));
 }
 
 TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
@@ -1310,7 +1312,6 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   repository.Add(literals[1], {c, 2}, {b, -3}, 100, 200);
   repository.Build();
 
-  using Relation = RouteRelationsHelper::Relation;
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
       num_nodes, tails, heads, literals, {}, repository, &model);
 
@@ -1319,10 +1320,8 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   EXPECT_EQ(helper->GetNodeExpression(0, 0), a);
   EXPECT_EQ(helper->GetNodeExpression(1, 0), b);
   EXPECT_EQ(helper->GetNodeExpression(2, 0), c);
-  EXPECT_EQ(helper->GetArcRelation(0, 0), (Relation{-1, 1, 50, 1000}));
-  EXPECT_THAT(
-      helper->GetArcRelation(1, 0),
-      AnyOf(Eq(Relation{-1, 1, 70, 1000}), Eq(Relation{-3, 2, 100, 200})));
+  EXPECT_EQ(helper->GetArcRelation(0, 0), (HeadMinusTailBounds{50, 1000}));
+  EXPECT_EQ(helper->GetArcRelation(1, 0), (HeadMinusTailBounds{70, 1000}));
 }
 
 TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
@@ -1397,12 +1396,13 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
                   UnorderedElementsAre(Pair(0, a), Pair(1, b), Pair(2, c),
                                        Pair(3, d), Pair(4, e), Pair(5, f))));
   // The relation for arc 5->3 is filtered out because it is inconsistent.
-  EXPECT_THAT(
-      GetRelationByDimensionAndArc(*helper),
-      UnorderedElementsAre(UnorderedElementsAre(
-          Pair(0, Relation{-1, 1, 0, 0}), Pair(1, Relation{-1, 1, 1, 1}),
-          Pair(2, Relation{-1, 1, 2, 2}), Pair(3, Relation{-1, 1, 3, 3}),
-          Pair(4, Relation{-1, 1, 4, 4}))));
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
+                                       Pair(1, HeadMinusTailBounds{1, 1}),
+                                       Pair(2, HeadMinusTailBounds{2, 2}),
+                                       Pair(3, HeadMinusTailBounds{3, 3}),
+                                       Pair(4, HeadMinusTailBounds{4, 4}))));
 }
 
 TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
@@ -1437,8 +1437,10 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
   repository.Add(literals[1], {c, 1}, {b, -1}, 1, 1);
   repository.Add(literals[2], {d, 1}, {c, -1}, 2, 2);
   repository.Add(literals[3], {a, 1}, {d, -1}, 3, 3);
+
   // Inconsistent relation for arc 4->1 (should be between e and b). Note that
-  // arcs 4->1 and 4->3 are enforced by the same literal.
+  // arcs 4->1 and 4->3 are enforced by the same literal, thus both should
+  // be true at the same time, hence the crossed bounds below.
   repository.Add(literals[4], {e, 1}, {d, -1}, 4, 4);
   repository.Add(literals[5], {e, 1}, {d, -1}, 5, 5);
   repository.Build();
@@ -1450,13 +1452,15 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
   EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
               UnorderedElementsAre(UnorderedElementsAre(
                   Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d), Pair(4, e))));
+
   // The relation for arc 4->1 is filtered out because it is inconsistent.
-  EXPECT_THAT(
-      GetRelationByDimensionAndArc(*helper),
-      UnorderedElementsAre(UnorderedElementsAre(
-          Pair(0, Relation{-1, 1, 0, 0}), Pair(1, Relation{-1, 1, 1, 1}),
-          Pair(2, Relation{-1, 1, 2, 2}), Pair(3, Relation{-1, 1, 3, 3}),
-          Pair(5, Relation{-1, 1, 5, 5}))));
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
+                                       Pair(1, HeadMinusTailBounds{1, 1}),
+                                       Pair(2, HeadMinusTailBounds{2, 2}),
+                                       Pair(3, HeadMinusTailBounds{3, 3}),
+                                       Pair(5, HeadMinusTailBounds{5, 4}))));
 }
 
 TEST(MaybeFillMissingRoutesConstraintNodeExpressions,
@@ -2011,6 +2015,76 @@ TEST(CreateFlowCutGeneratorTest, WithMinusOneArcs) {
   EXPECT_EQ(manager.num_cuts(), 1);
   EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
               ::testing::StartsWith("1 <= 1*X1 1*X2"));
+}
+
+TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
+  // Graph with the following arcs, (demands), and [LP values]:
+  //
+  //                (3)         (4)         (4)
+  //        --[1]--> 1 --[.9]--> 2 --[.9]--> 3 --[1]--
+  //        |         \__[.1]__  ^\__[.1]__  ^       |
+  // depot _|                  \/          \/        v_ depot
+  //        |          __[.1]__/\  __[.1]__/\        ^
+  //        |         /          v/          v       |
+  //        --[1]--> 4 --[.9]--> 5 --[.9]--> 6 --[1]--
+  //                (3)         (3)         (3)
+  //
+  // The path 1->2->3 is infeasible due to the capacity limit. The sum of its LP
+  // values is 1.8, larger than its length minus 1, so we should get a cut for
+  // this path.
+  const int num_nodes = 7;
+  const std::vector<int> demands{0, 3, 4, 4, 3, 3, 3};
+  const std::vector<int> tails{0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6};
+  const std::vector<int> heads{1, 4, 2, 5, 3, 6, 0, 5, 2, 6, 3, 0};
+  const std::vector<double> values{1.0, 1.0, 0.9, 0.1, 0.9, 0.1,
+                                   1.0, 0.9, 0.1, 0.9, 0.1, 1.0};
+
+  Model model;
+  std::vector<Literal> literals;
+  auto& lp_values = *model.GetOrCreate<ModelLpValues>();
+  lp_values.resize(32, 0.0);
+  for (int i = 0; i < values.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+    lp_values[model.Add(NewIntegerVariableFromLiteral(literals.back()))] =
+        values[i];
+  }
+  // The capacity of each vehicle.
+  const int capacity = 10;
+  // The load of the vehicle arriving at each node.
+  std::vector<IntegerVariable> loads;
+  std::vector<AffineExpression> flat_node_dim_expressions;
+  for (int i = 0; i < num_nodes; ++i) {
+    const IntegerVariable load =
+        model.Add(NewIntegerVariable(0, capacity - demands[i]));
+    loads.push_back(load);
+    flat_node_dim_expressions.push_back(AffineExpression(load));
+  }
+  // Capacity constraints.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (int i = 0; i < tails.size(); ++i) {
+    const int tail = tails[i];
+    const int head = heads[i];
+    if (tail == 0 || head == 0) continue;
+    // loads[head] >= loads[tail] + demand[tail]
+    repository->Add(literals[i], {loads[head], 1}, {loads[tail], -1},
+                    demands[tail], 10000);
+  }
+  repository->Build();
+  // Enable the cut generator.
+  model.GetOrCreate<SatParameters>()
+      ->set_routing_cut_max_infeasible_path_length(10);
+
+  CutGenerator generator =
+      CreateCVRPCutGenerator(num_nodes, tails, heads, literals, /*demands=*/{},
+                             flat_node_dim_expressions, /*capacity=*/0, &model);
+
+  LinearConstraintManager manager(&model);
+  generator.generate_cuts(&manager);
+
+  ASSERT_EQ(manager.num_cuts(), 1);
+  // Arcs with ID 2 (1->2) and ID 4 (2->3) should be in the cut.
+  EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
+              ::testing::StartsWith("0 <= 1*X2 1*X4 <= 1"));
 }
 
 }  // namespace

@@ -21,6 +21,7 @@
 #include <memory>
 #include <numeric>
 #include <queue>
+#include <stack>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -793,7 +794,27 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
 }
 
 namespace {
-IntegerVariable UniqueSharedVariable(const Relation& r1, const Relation& r2) {
+
+// Represents the relation tail_coeff.X + head_coeff.Y \in [lhs, rhs] between
+// the X and Y expressions associated with the tail and head of the given arc,
+// respectively, and the given dimension (head_coeff is always positive).
+//
+// An "empty" struct with all fields set to 0 is used to represent no relation.
+struct LocalRelation {
+  IntegerValue tail_coeff = 0;
+  IntegerValue head_coeff = 0;
+  IntegerValue lhs;
+  IntegerValue rhs;
+
+  bool empty() const { return tail_coeff == 0 && head_coeff == 0; }
+  bool operator==(const LocalRelation& r) const {
+    return tail_coeff == r.tail_coeff && head_coeff == r.head_coeff &&
+           lhs == r.lhs && rhs == r.rhs;
+  }
+};
+
+IntegerVariable UniqueSharedVariable(const sat::Relation& r1,
+                                     const sat::Relation& r2) {
   DCHECK_NE(r1.a.var, r1.b.var);
   DCHECK_NE(r2.a.var, r2.b.var);
   if (r1.a.var == r2.a.var && r1.b.var != r2.b.var) return r1.a.var;
@@ -805,7 +826,7 @@ IntegerVariable UniqueSharedVariable(const Relation& r1, const Relation& r2) {
 
 class RouteRelationsBuilder {
  public:
-  using Relation = RouteRelationsHelper::Relation;
+  using HeadMinusTailBounds = RouteRelationsHelper::HeadMinusTailBounds;
 
   RouteRelationsBuilder(
       int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
@@ -832,7 +853,7 @@ class RouteRelationsBuilder {
     return flat_node_dim_expressions_;
   }
 
-  const std::vector<Relation>& flat_arc_dim_relations() const {
+  const std::vector<HeadMinusTailBounds>& flat_arc_dim_relations() const {
     return flat_arc_dim_relations_;
   }
 
@@ -901,22 +922,8 @@ class RouteRelationsBuilder {
     return flat_node_dim_expressions_[node * num_dimensions_ + dimension];
   };
 
-  const Relation& arc_relation(int arc_index, int dimension) const {
-    return flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
-  }
-
-  void MaybeSetArcRelation(int arc_index, int dimension, Relation r) {
+  void ProcessNewArcRelation(int arc_index, int dimension, LocalRelation r) {
     if (r.empty()) return;
-    Relation& relation =
-        flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
-    // If several relations are associated with the same arc, keep the first one
-    // found, unless the new one has opposite +1/-1 coefficients (these
-    // relations are preferred because they can be used to compute "demand
-    // based" min outgoing flows).
-    if (!relation.empty() &&
-        (IntTypeAbs(r.tail_coeff) != 1 || r.head_coeff != -r.tail_coeff)) {
-      return;
-    }
     if (r.head_coeff < 0) {
       r.tail_coeff = -r.tail_coeff;
       r.head_coeff = -r.head_coeff;
@@ -924,7 +931,13 @@ class RouteRelationsBuilder {
       r.rhs = -r.rhs;
       std::swap(r.lhs, r.rhs);
     }
-    relation = r;
+    if (r.head_coeff != 1 || r.tail_coeff != -1) return;
+
+    // Combine the relation information.
+    HeadMinusTailBounds& relation =
+        flat_arc_dim_relations_[arc_index * num_dimensions_ + dimension];
+    relation.lhs = std::max(relation.lhs, r.lhs);
+    relation.rhs = std::min(relation.rhs, r.rhs);
   }
 
   void ComputeDimensionOfEachVariable() {
@@ -1083,8 +1096,8 @@ class RouteRelationsBuilder {
     const auto& integer_trail = *model->GetOrCreate<IntegerTrail>();
     DCHECK_EQ(trail.CurrentDecisionLevel(), 0);
 
-    flat_arc_dim_relations_ =
-        std::vector<Relation>(num_arcs_ * num_dimensions_, Relation());
+    flat_arc_dim_relations_ = std::vector<HeadMinusTailBounds>(
+        num_arcs_ * num_dimensions_, HeadMinusTailBounds());
     int num_inconsistent_relations = 0;
     for (int i = 0; i < num_arcs_; ++i) {
       const int tail = tails_[i];
@@ -1152,16 +1165,15 @@ class RouteRelationsBuilder {
                 (tail_expr.var == r.b.var && head_expr.var == r.a.var))) {
             continue;
           }
-          MaybeSetArcRelation(i, dimension,
-                              ComputeArcRelation(tail_expr, head_expr, r));
+          ProcessNewArcRelation(i, dimension,
+                                ComputeArcRelation(tail_expr, head_expr, r));
           is_consistent = true;
         }
         if (!is_consistent) ++num_inconsistent_relations;
       }
-      // If some relations are missing for this arc, check if we can use
-      // non-enforced relations to fill them.
+
+      // Check if we can use non-enforced relations to improve the relations.
       for (int d = 0; d < num_dimensions_; ++d) {
-        if (!arc_relation(i, d).empty()) continue;
         const NodeExpression tail_expr(node_expression(tail, d));
         const NodeExpression head_expr(node_expression(head, d));
         if (tail_expr.IsEmpty() || head_expr.IsEmpty()) {
@@ -1170,7 +1182,7 @@ class RouteRelationsBuilder {
         for (const int relation_index :
              binary_relation_repository_.IndicesOfRelationsBetween(
                  tail_expr.var, head_expr.var)) {
-          MaybeSetArcRelation(
+          ProcessNewArcRelation(
               i, d,
               ComputeArcRelation(
                   tail_expr, head_expr,
@@ -1188,9 +1200,9 @@ class RouteRelationsBuilder {
   // Returns a relation between two given expressions which is equivalent to a
   // given relation between the variables used in these expressions (or an empty
   // relation if this is not possible).
-  Relation ComputeArcRelation(const NodeExpression& tail_expr,
-                              const NodeExpression& head_expr,
-                              const sat::Relation& r) {
+  LocalRelation ComputeArcRelation(const NodeExpression& tail_expr,
+                                   const NodeExpression& head_expr,
+                                   const sat::Relation& r) {
     DCHECK((r.a.var == tail_expr.var && r.b.var == head_expr.var) ||
            (r.a.var == head_expr.var && r.b.var == tail_expr.var));
     // A relation a * X + b * Y \in [lhs, rhs] between the X and Y variables is
@@ -1204,7 +1216,7 @@ class RouteRelationsBuilder {
     int64_t b = r.b.coeff.value();
     if (r.a.var != tail_expr.var) std::swap(a, b);
     if (a == 0 || tail_expr.coeff == 0) {
-      Relation result =
+      LocalRelation result =
           ComputeArcUnaryRelation(head_expr, tail_expr, b, r.lhs, r.rhs);
       std::swap(result.tail_coeff, result.head_coeff);
       return result;
@@ -1234,10 +1246,10 @@ class RouteRelationsBuilder {
   // Returns a relation between two given expressions which is equivalent to a
   // given relation "coeff * X \in [lhs, rhs]", where X is the variable used in
   // `tail_expression` (or an empty relation if this is not possible).
-  Relation ComputeArcUnaryRelation(const NodeExpression& tail_expr,
-                                   const NodeExpression& head_expr,
-                                   IntegerValue coeff, IntegerValue lhs,
-                                   IntegerValue rhs) {
+  LocalRelation ComputeArcUnaryRelation(const NodeExpression& tail_expr,
+                                        const NodeExpression& head_expr,
+                                        IntegerValue coeff, IntegerValue lhs,
+                                        IntegerValue rhs) {
     DCHECK_NE(coeff, 0);
     // A relation a * X \in [lhs, rhs] is equivalent to a (k.a/A) * (A.X+α) + k'
     // * (B.Y+β) \in [k.lhs+ɣ, k.rhs+ɣ] relation between the A.X+α and B.Y+β
@@ -1276,12 +1288,13 @@ class RouteRelationsBuilder {
   // The indices of the binary relations associated with the incoming and
   // outgoing arcs of each node, per dimension.
   std::vector<std::vector<std::vector<int>>> adjacent_relation_indices_;
-  // The expression associated with node n and dimension d is at index n *
-  // num_dimensions_ + d.
+  // The expression associated with node n and dimension d is at index
+  // n * num_dimensions_ + d.
   std::vector<AffineExpression> flat_node_dim_expressions_;
-  // The relation associated with arc a and dimension d (or kNoRelation if
-  // there is none) is at index a * num_dimensions_ + d.
-  std::vector<Relation> flat_arc_dim_relations_;
+
+  // The relation associated with arc a and dimension d is at index
+  // a * num_dimensions_ + d.
+  std::vector<HeadMinusTailBounds> flat_arc_dim_relations_;
 };
 }  // namespace
 
@@ -1306,7 +1319,7 @@ RouteRelationsHelper::RouteRelationsHelper(
     const std::vector<int>& tails, const std::vector<int>& heads,
     const std::vector<Literal>& literals, int num_dimensions,
     std::vector<AffineExpression> flat_node_dim_expressions,
-    std::vector<Relation> flat_arc_dim_relations)
+    std::vector<HeadMinusTailBounds> flat_arc_dim_relations)
     : tails_(tails),
       heads_(heads),
       literals_(literals),
@@ -1326,6 +1339,7 @@ IntegerValue RouteRelationsHelper::GetArcOffsetLowerBound(
   // assuming that the arc literal is 1 (or that its negation is 0).
   const AffineExpression& tail_expr = GetNodeExpression(tails_[arc], dimension);
   const AffineExpression& head_expr = GetNodeExpression(heads_[arc], dimension);
+
   // TODO(user): is this the correct/best way to get the integer variable
   // corresponding to the arc literal?
   const IntegerVariable enforcement_var =
@@ -1366,12 +1380,13 @@ IntegerValue RouteRelationsHelper::GetArcOffsetLowerBound(
     result = get_bound(head_expr, /*upper_bound=*/false) -
              get_bound(tail_expr, /*upper_bound=*/true);
   }
+
   // If there is an X_head - X_tail arc relation, use it to improve the bound.
+  //
+  // Note that by our overflow precondition, the difference of any two variable
+  // bounds should fit on an int64_t.
   const auto& r = GetArcRelation(arc, dimension);
-  if (r.head_coeff == 1 && r.tail_coeff == -1) {
-    result = std::max(result, negate_expressions ? -r.rhs : r.lhs);
-  }
-  return result;
+  return std::max(result, negate_expressions ? -r.rhs : r.lhs);
 }
 
 void RouteRelationsHelper::RemoveArcs(
@@ -1403,7 +1418,10 @@ void RouteRelationsHelper::LogStats() const {
       if (!GetNodeExpression(i, d).IsConstant()) ++num_vars;
     }
     for (int i = 0; i < num_arcs; ++i) {
-      if (!GetArcRelation(i, d).empty()) ++num_relations;
+      if (GetArcRelation(i, d).lhs != kMinIntegerValue ||
+          GetArcRelation(i, d).rhs != kMaxIntegerValue) {
+        ++num_relations;
+      }
     }
     LOG(INFO) << "dimension " << d << ": " << num_vars << " vars and "
               << num_relations << " relations";
@@ -1513,14 +1531,13 @@ std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
 
 namespace {
 
-class OutgoingCutHelper {
+class RoutingCutHelper {
  public:
-  OutgoingCutHelper(
-      int num_nodes, bool is_route_constraint, int64_t capacity,
-      absl::Span<const int64_t> demands,
-      absl::Span<const AffineExpression> flat_node_dim_expressions,
-      absl::Span<const int> tails, absl::Span<const int> heads,
-      absl::Span<const Literal> literals, Model* model)
+  RoutingCutHelper(int num_nodes, bool is_route_constraint, int64_t capacity,
+                   absl::Span<const int64_t> demands,
+                   absl::Span<const AffineExpression> flat_node_dim_expressions,
+                   absl::Span<const int> tails, absl::Span<const int> heads,
+                   absl::Span<const Literal> literals, Model* model)
       : num_nodes_(num_nodes),
         is_route_constraint_(is_route_constraint),
         capacity_(capacity),
@@ -1530,6 +1547,9 @@ class OutgoingCutHelper {
         literals_(literals.begin(), literals.end()),
         params_(*model->GetOrCreate<SatParameters>()),
         trail_(*model->GetOrCreate<Trail>()),
+        integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+        binary_relation_repository_(
+            *model->GetOrCreate<BinaryRelationRepository>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
         in_subset_(num_nodes, false),
@@ -1594,6 +1614,10 @@ class OutgoingCutHelper {
                            absl::Span<const int> subset,
                            LinearConstraintManager* manager);
 
+  // Try adding cuts to exclude paths in the residual graph corresponding to the
+  // LP solution which are actually infeasible.
+  void TryInfeasiblePathCuts(LinearConstraintManager* manager);
+
  private:
   // Removes the arcs with a literal fixed at false at level zero. This is
   // especially useful to remove fixed self loop.
@@ -1609,6 +1633,12 @@ class OutgoingCutHelper {
                       int subset_size, const std::vector<bool>& in_subset,
                       int64_t rhs_lower_bound, int outside_node_to_ignore);
 
+  void GenerateCutsForInfeasiblePaths(
+      int start_node, int max_path_length,
+      const CompactVectorVector<int, std::pair<int, double>>&
+          outgoing_arcs_with_lp_values,
+      LinearConstraintManager* manager, TopNCuts& top_n_cuts);
+
   const int num_nodes_;
   const bool is_route_constraint_;
   const int64_t capacity_;
@@ -1617,11 +1647,14 @@ class OutgoingCutHelper {
   std::vector<int> heads_;
   std::vector<Literal> literals_;
   std::vector<ArcWithLpValue> relevant_arcs_;
+  std::vector<std::pair<int, double>> relevant_arc_indices_;
   std::vector<ArcWithLpValue> symmetrized_relevant_arcs_;
   std::vector<std::pair<int, int>> ordered_arcs_;
 
   const SatParameters& params_;
   const Trail& trail_;
+  const IntegerTrail& integer_trail_;
+  const BinaryRelationRepository& binary_relation_repository_;
   ModelRandomGenerator* random_;
   IntegerEncoder* encoder_;
 
@@ -1644,7 +1677,7 @@ class OutgoingCutHelper {
   std::unique_ptr<RouteRelationsHelper> route_relations_helper_;
 };
 
-void OutgoingCutHelper::FilterFalseArcsAtLevelZero() {
+void RoutingCutHelper::FilterFalseArcsAtLevelZero() {
   if (trail_.CurrentDecisionLevel() != 0) return;
 
   int new_size = 0;
@@ -1671,13 +1704,14 @@ void OutgoingCutHelper::FilterFalseArcsAtLevelZero() {
   }
 }
 
-void OutgoingCutHelper::InitializeForNewLpSolution(
+void RoutingCutHelper::InitializeForNewLpSolution(
     LinearConstraintManager* manager) {
   FilterFalseArcsAtLevelZero();
 
   // We will collect only the arcs with a positive lp_values to speed up some
   // computation below.
   relevant_arcs_.clear();
+  relevant_arc_indices_.clear();
   nodes_with_self_arc_.clear();
 
   // Sort the arcs by non-increasing lp_values.
@@ -1705,6 +1739,7 @@ void OutgoingCutHelper::InitializeForNewLpSolution(
 
     if (lp_value < 1e-6) continue;
     relevant_arcs_.push_back({tails_[i], heads_[i], lp_value});
+    relevant_arc_indices_.push_back({i, lp_value});
     relevant_arc_by_decreasing_lp_values.push_back({lp_value, i});
   }
   std::sort(relevant_arc_by_decreasing_lp_values.begin(),
@@ -1733,7 +1768,7 @@ namespace {
 // TODO(user): For the symmetric case there is an even faster algo. See if
 // it can be generalized to the asymmetric one if become needed.
 // Reference is algo 6.4 of the "The Traveling Salesman Problem" book
-// mentionned above.
+// mentioned above.
 std::pair<double, double> GetIncomingAndOutgoingLpFlow(
     absl::Span<const ArcWithLpValue> relevant_arcs,
     const std::vector<bool>& in_subset, int outside_node_to_ignore = -1) {
@@ -1755,11 +1790,11 @@ std::pair<double, double> GetIncomingAndOutgoingLpFlow(
 
 }  // namespace
 
-bool OutgoingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
-                                       std::string name, int subset_size,
-                                       const std::vector<bool>& in_subset,
-                                       int64_t rhs_lower_bound,
-                                       int outside_node_to_ignore) {
+bool RoutingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
+                                      std::string name, int subset_size,
+                                      const std::vector<bool>& in_subset,
+                                      int64_t rhs_lower_bound,
+                                      int outside_node_to_ignore) {
   // Skip cut if it is not violated.
   const auto [in_flow, out_flow] = GetIncomingAndOutgoingLpFlow(
       relevant_arcs_, in_subset, outside_node_to_ignore);
@@ -1861,9 +1896,9 @@ bool OutgoingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
   return manager->AddCut(cut_builder.Build(), name);
 }
 
-bool OutgoingCutHelper::TrySubsetCut(std::string name,
-                                     absl::Span<const int> subset,
-                                     LinearConstraintManager* manager) {
+bool RoutingCutHelper::TrySubsetCut(std::string name,
+                                    absl::Span<const int> subset,
+                                    LinearConstraintManager* manager) {
   DCHECK_GE(subset.size(), 1);
   DCHECK_LT(subset.size(), num_nodes_);
 
@@ -2127,7 +2162,7 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
                         outside_node_to_ignore);
 }
 
-bool OutgoingCutHelper::TryBlossomSubsetCut(
+bool RoutingCutHelper::TryBlossomSubsetCut(
     std::string name, absl::Span<const ArcWithLpValue> symmetrized_edges,
     absl::Span<const int> subset, LinearConstraintManager* manager) {
   DCHECK_GE(subset.size(), 1);
@@ -2253,6 +2288,126 @@ bool OutgoingCutHelper::TryBlossomSubsetCut(
   if (num_actual_inverted % 2 == 0) return false;
 
   return manager->AddCut(builder.Build(), name);
+}
+
+void RoutingCutHelper::TryInfeasiblePathCuts(LinearConstraintManager* manager) {
+  const int max_path_length = params_.routing_cut_max_infeasible_path_length();
+  if (max_path_length <= 0) return;
+
+  // The outgoing arcs of the residual graph, per tail node, except self arcs
+  // and arcs to or from the depot.
+  std::vector<int> keys;
+  std::vector<std::pair<int, double>> values;
+  for (const auto [arc_index, lp_value] : relevant_arc_indices_) {
+    const int tail = tails_[arc_index];
+    const int head = heads_[arc_index];
+
+    // Self arcs are filtered out in InitializeForNewLpSolution().
+    DCHECK_NE(tail, head);
+    if (tail == 0 || head == 0) continue;
+    keys.push_back(tail);
+    values.push_back({arc_index, lp_value});
+  }
+  CompactVectorVector<int, std::pair<int, double>> outgoing_arcs_with_lp_values;
+  outgoing_arcs_with_lp_values.ResetFromFlatMapping(keys, values, num_nodes_);
+
+  TopNCuts top_n_cuts(5);
+  for (int i = 1; i < num_nodes_; ++i) {
+    GenerateCutsForInfeasiblePaths(
+        i, max_path_length, outgoing_arcs_with_lp_values, manager, top_n_cuts);
+  }
+  top_n_cuts.TransferToManager(manager);
+}
+
+void RoutingCutHelper::GenerateCutsForInfeasiblePaths(
+    int start_node, int max_path_length,
+    const CompactVectorVector<int, std::pair<int, double>>&
+        outgoing_arcs_with_lp_values,
+    LinearConstraintManager* manager, TopNCuts& top_n_cuts) {
+  // Performs a DFS on the residual graph, starting from the given node. To save
+  // stack space, we use a manual stack on the heap instead of using recursion.
+  // Each stack element corresponds to a feasible path from `start_node` to
+  // `last_node`, included.
+  struct State {
+    // The last node of the path.
+    int last_node;
+    // The sum of the lp values of the path's arcs.
+    double sum_of_lp_values;
+    // Variable lower bounds that can be inferred by assuming that the path's
+    // arc literals are true (with the binary relation repository).
+    absl::flat_hash_map<IntegerVariable, IntegerValue> bounds;
+    // The index of the next outgoing arc of `last_node` to explore (in
+    // outgoing_arcs_with_lp_values[last_node]).
+    int iteration;
+  };
+  std::stack<State> states;
+  // Whether each node is on the current path. The current path is the one
+  // corresponding to the top stack element.
+  std::vector<bool> path_nodes(num_nodes_, false);
+  // The literals corresponding to the current path's arcs.
+  std::vector<Literal> path_literals;
+
+  path_nodes[start_node] = true;
+  states.push({start_node, /*sum_of_lp_values=*/0.0, /*bounds=*/{}, 0});
+  while (!states.empty()) {
+    State& state = states.top();
+    DCHECK_EQ(states.size(), path_literals.size() + 1);
+    // The number of arcs in the current path.
+    const int path_length = static_cast<int>(path_literals.size());
+    const auto& outgoing_arcs = outgoing_arcs_with_lp_values[state.last_node];
+
+    bool new_state_pushed = false;
+    while (state.iteration < outgoing_arcs.size()) {
+      const auto [arc_index, lp_value] = outgoing_arcs[state.iteration++];
+      State next_state;
+      next_state.last_node = heads_[arc_index];
+      next_state.sum_of_lp_values = state.sum_of_lp_values + lp_value;
+      next_state.iteration = 0;
+      // We only consider simple paths.
+      if (path_nodes[next_state.last_node]) continue;
+      // If a path of length l is infeasible, we can exclude it by adding a cut
+      // saying the sum of its arcs literals must be strictly less than l. But
+      // this is only beneficial if the sum of the corresponding LP values is
+      // currently greater than l. If it is not, and since it cannot become
+      // greater for some extension of the path (the LP sum increases at most by
+      // 1 for each arc, but l increases exactly by 1), we can stop the search
+      // here.
+      // Note: "<= path_length" is equivalent to "< l" (l = path_length + 1).
+      if (next_state.sum_of_lp_values <=
+          static_cast<double>(path_length) + 1e-4) {
+        continue;
+      }
+
+      const Literal next_literal = literals_[arc_index];
+      next_state.bounds = state.bounds;
+      if (binary_relation_repository_.PropagateLocalBounds(
+              integer_trail_, next_literal, state.bounds, &next_state.bounds)) {
+        // Do not explore "long" paths to keep the search time bounded.
+        if (path_length < max_path_length) {
+          path_nodes[next_state.last_node] = true;
+          path_literals.push_back(literals_[arc_index]);
+          states.push(std::move(next_state));
+          new_state_pushed = true;
+          break;
+        }
+      } else if (path_length > 0) {
+        LinearConstraintBuilder cut_builder(encoder_, 0, path_length);
+        for (const Literal literal : path_literals) {
+          CHECK(cut_builder.AddLiteralTerm(literal, IntegerValue(1)));
+        }
+        CHECK(cut_builder.AddLiteralTerm(next_literal, IntegerValue(1)));
+        top_n_cuts.AddCut(cut_builder.Build(), "CircuitInfeasiblePath",
+                          manager->LpValues());
+      }
+    }
+    if (!new_state_pushed) {
+      if (!path_literals.empty()) {
+        path_literals.pop_back();
+      }
+      path_nodes[state.last_node] = false;
+      states.pop();
+    }
+  }
 }
 
 }  // namespace
@@ -2433,12 +2588,10 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs) {
 //
 // Note that this is mainly a "symmetric" case algo, but it does still work for
 // the asymmetric case.
-void SeparateSubtourInequalities(OutgoingCutHelper& helper,
+void SeparateSubtourInequalities(RoutingCutHelper& helper,
                                  LinearConstraintManager* manager) {
   const int num_nodes = helper.num_nodes();
   if (num_nodes <= 2) return;
-
-  helper.InitializeForNewLpSolution(manager);
 
   std::vector<int> subset_data;
   std::vector<absl::Span<const int>> subsets;
@@ -2561,7 +2714,7 @@ std::vector<IntegerVariable> GetAssociatedVariables(
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals, Model* model) {
-  auto helper = std::make_unique<OutgoingCutHelper>(
+  auto helper = std::make_unique<RoutingCutHelper>(
       num_nodes, /*is_route_constraint=*/false, /*capacity=*/0,
       /*demands=*/absl::Span<const int64_t>(),
       /*flat_node_dim_expressions=*/
@@ -2570,6 +2723,7 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [helper = std::move(helper)](LinearConstraintManager* manager) {
+        helper->InitializeForNewLpSolution(manager);
         SeparateSubtourInequalities(*helper, manager);
         return true;
       };
@@ -2581,14 +2735,16 @@ CutGenerator CreateCVRPCutGenerator(
     absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
     absl::Span<const AffineExpression> flat_node_dim_expressions,
     int64_t capacity, Model* model) {
-  auto helper = std::make_unique<OutgoingCutHelper>(
+  auto helper = std::make_unique<RoutingCutHelper>(
       num_nodes, /*is_route_constraint=*/true, capacity, demands,
       flat_node_dim_expressions, tails, heads, literals, model);
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [helper = std::move(helper)](LinearConstraintManager* manager) {
+        helper->InitializeForNewLpSolution(manager);
         SeparateSubtourInequalities(*helper, manager);
+        helper->TryInfeasiblePathCuts(manager);
         return true;
       };
   return result;

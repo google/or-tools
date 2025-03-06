@@ -100,7 +100,8 @@ class CompactVectorVector {
   // We only check keys.size(), so this can be used with IdentityMap() as
   // second argument.
   template <typename Keys, typename Values>
-  void ResetFromFlatMapping(Keys keys, Values values);
+  void ResetFromFlatMapping(Keys keys, Values values,
+                            int minimum_num_nodes = 0);
 
   // Same as above but for any collections of std::pair<K, V>, or, more
   // generally, any iterable collection of objects that have a `first` and a
@@ -838,14 +839,19 @@ inline bool CompactVectorVector<K, V>::empty() const {
 
 template <typename K, typename V>
 template <typename Keys, typename Values>
-inline void CompactVectorVector<K, V>::ResetFromFlatMapping(Keys keys,
-                                                            Values values) {
-  if (keys.empty()) return clear();
-
+inline void CompactVectorVector<K, V>::ResetFromFlatMapping(
+    Keys keys, Values values, int minimum_num_nodes) {
   // Compute maximum index.
-  int max_key = 0;
+  int max_key = minimum_num_nodes;
   for (const K key : keys) {
     max_key = std::max(max_key, InternalKey(key) + 1);
+  }
+
+  if (keys.empty()) {
+    clear();
+    sizes_.assign(minimum_num_nodes, 0);
+    starts_.assign(minimum_num_nodes, 0);
+    return;
   }
 
   // Compute sizes_;

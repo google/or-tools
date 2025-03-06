@@ -1809,6 +1809,12 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(x.index, copy_x.index)
         self.assertEqual(y.index, copy_y.index)
         self.assertEqual(i.index, copy_i.index)
+        self.assertEqual(b.is_boolean, copy_b.is_boolean)
+        self.assertEqual(x.is_boolean, copy_x.is_boolean)
+        self.assertEqual(y.is_boolean, copy_y.is_boolean)
+        self.assertIs(copy_b.model_proto, b.model_proto)
+        self.assertIs(copy_x.model_proto, x.model_proto)
+        self.assertIs(copy_i.model_proto, i.model_proto)
 
         model_deepcopy = copy.deepcopy(model)
         deepcopy_b = model_deepcopy.get_bool_var_from_proto_index(b.index)
@@ -1820,6 +1826,16 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(x.index, deepcopy_x.index)
         self.assertEqual(y.index, deepcopy_y.index)
         self.assertEqual(i.index, deepcopy_i.index)
+        self.assertEqual(b.is_boolean, deepcopy_b.is_boolean)
+        self.assertEqual(x.is_boolean, deepcopy_x.is_boolean)
+        self.assertEqual(y.is_boolean, deepcopy_y.is_boolean)
+        self.assertIsNot(deepcopy_b.model_proto, b.model_proto)
+        self.assertIsNot(deepcopy_x.model_proto, x.model_proto)
+        self.assertIsNot(deepcopy_y.model_proto, y.model_proto)
+        self.assertIsNot(deepcopy_i.model_proto, i.model_proto)
+        self.assertIs(deepcopy_b.model_proto, deepcopy_x.model_proto)
+        self.assertIs(deepcopy_b.model_proto, deepcopy_y.model_proto)
+        self.assertIs(deepcopy_b.model_proto, deepcopy_i.model_proto)
 
         with self.assertRaises(ValueError):
             new_model.get_bool_var_from_proto_index(-1)
@@ -1838,6 +1854,26 @@ class CpModelTest(absltest.TestCase):
 
         interval_ct = new_model.proto.constraints[copy_i.index].interval
         self.assertEqual(12, interval_ct.size.offset)
+
+        class Composite:
+
+            def __init__(self, model: cp_model.CpModel, var: cp_model.IntVar):
+                self.model = model
+                self.var = var
+
+        c = Composite(model, x)
+        copy_c = copy.copy(c)
+        self.assertIs(copy_c.model, c.model)
+        self.assertIs(copy_c.var, c.var)
+
+        deepcopy_c = copy.deepcopy(c)
+        self.assertIsNot(deepcopy_c.model, c.model)
+        self.assertIsNot(deepcopy_c.var, c.var)
+        self.assertIs(deepcopy_c.model.proto, deepcopy_c.var.model_proto)
+        self.assertIs(
+            deepcopy_c.var,
+            deepcopy_c.model.get_int_var_from_proto_index(x.index),
+        )
 
     def test_custom_log(self) -> None:
         model = cp_model.CpModel()

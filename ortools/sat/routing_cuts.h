@@ -37,10 +37,12 @@
 namespace operations_research {
 namespace sat {
 
-// Helper to recover the mapping between nodes and binary relation variables in
-// simple cases of route constraints (at most one variable per node and
-// "dimension" -- such as time or load, and at most one relation per arc and
-// dimension).
+// Helper to recover the mapping between nodes and "cumul" expressions in simple
+// cases of route constraints (at most one expression per node and "dimension"
+// -- such as time or load, and at most one relation per arc and dimension).
+//
+// We also recover bounds on (node_expr[head] - node_expr[tail]) for each arc
+// (tail -> head) assuming the arc is taken.
 class RouteRelationsHelper {
  public:
   // Creates a RouteRelationsHelper for the given RoutesConstraint and
@@ -49,10 +51,11 @@ class RouteRelationsHelper {
   // nullptr). If `flat_node_dim_expressions` is not empty, uses it to
   // initialize the helper (this list should have num_dimensions times num_nodes
   // elements, with the expression associated with node n and dimension d at
-  // index n * num_dimensions + d). If `model` is null, computes only the node
-  // expressions. Otherwise, also computes the arc relations. If there are more
-  // than one relation per arc and dimension, a single relation is chosen
-  // arbitrarily.
+  // index n * num_dimensions + d).
+  //
+  // If `model` is null, computes only the node expressions. Otherwise, also
+  // computes the tightest bounds we can on (node_expr[head] - node_expr[tail])
+  // for each arc, assuming the arc is taken (its literal is true).
   static std::unique_ptr<RouteRelationsHelper> Create(
       int num_nodes, const std::vector<int>& tails,
       const std::vector<int>& heads, const std::vector<Literal>& literals,
@@ -75,25 +78,19 @@ class RouteRelationsHelper {
     return flat_node_dim_expressions_[node * num_dimensions_ + dimension];
   }
 
-  // Returns the relation tail_coeff.X + head_coeff.Y \in [lhs, rhs] between the
-  // X and Y expressions associated with the tail and head of the given arc,
-  // respectively, and the given dimension (head_coeff is always positive).
-  // Returns an "empty" struct with all fields set to 0 if there is no such
-  // relation.
-  struct Relation {
-    IntegerValue tail_coeff = 0;
-    IntegerValue head_coeff = 0;
-    IntegerValue lhs;
-    IntegerValue rhs;
+  // Each arc stores the bound on expr[head] - expr[tail] \in [lhs, rhs]. Note
+  // that we interpret kMin/kMax integer values as not set. Such bounds will
+  // still be valid though because we have a precondition on the input model
+  // variables to be within [kMin/2, kMax/2].
+  struct HeadMinusTailBounds {
+    IntegerValue lhs = kMinIntegerValue;
+    IntegerValue rhs = kMaxIntegerValue;
 
-    bool empty() const { return tail_coeff == 0 && head_coeff == 0; }
-
-    bool operator==(const Relation& r) const {
-      return tail_coeff == r.tail_coeff && head_coeff == r.head_coeff &&
-             lhs == r.lhs && rhs == r.rhs;
+    bool operator==(const HeadMinusTailBounds& r) const {
+      return lhs == r.lhs && rhs == r.rhs;
     }
   };
-  const Relation& GetArcRelation(int arc, int dimension) const {
+  const HeadMinusTailBounds& GetArcRelation(int arc, int dimension) const {
     return flat_arc_dim_relations_[arc * num_dimensions_ + dimension];
   }
 
@@ -112,7 +109,7 @@ class RouteRelationsHelper {
                        const std::vector<int>& heads,
                        const std::vector<Literal>& literals, int num_dimensions,
                        std::vector<AffineExpression> flat_node_dim_expressions,
-                       std::vector<Relation> flat_arc_dim_relations);
+                       std::vector<HeadMinusTailBounds> flat_arc_dim_relations);
 
   void LogStats() const;
 
@@ -126,7 +123,7 @@ class RouteRelationsHelper {
   std::vector<AffineExpression> flat_node_dim_expressions_;
   // The relation associated with arc a and dimension d is at index a *
   // num_dimensions_ + d.
-  std::vector<Relation> flat_arc_dim_relations_;
+  std::vector<HeadMinusTailBounds> flat_arc_dim_relations_;
 };
 
 // Computes and fills the node expressions of all the routes constraints in
