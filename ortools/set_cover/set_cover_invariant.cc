@@ -131,6 +131,25 @@ void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
   consistency_level_ = CL::kCostAndCoverage;
 }
 
+void SetCoverInvariant::LoadTraceAndCoverage(
+    const std::vector<SetCoverDecision>& trace,
+    const ElementToIntVector& coverage) {
+  ClearRemovabilityInformation();
+  is_selected_.assign(model_->num_subsets(), false);
+  trace_ = trace;
+  coverage_ = coverage;
+  cost_ = 0.0;
+  for (const SetCoverDecision& decision : trace) {
+    if (decision.decision()) {
+      const SubsetIndex subset(decision.subset());
+      is_selected_[subset] = true;
+      cost_ += model_->subset_costs()[subset];
+    }
+  }
+  consistency_level_ = CL::kCostAndCoverage;
+  DCHECK(CheckConsistency(CL::kCostAndCoverage));
+}
+
 bool SetCoverInvariant::NeedToRecompute(ConsistencyLevel cheched_consistency,
                                         ConsistencyLevel target_consistency) {
   return consistency_level_ < cheched_consistency &&
