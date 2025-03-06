@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0b21f5a..bde4883 100644
+index 0b21f5a..ddf1536 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -27,6 +27,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
@@ -13,7 +13,7 @@ index 0b21f5a..bde4883 100644
  option(ZLIB "Use ZLIB" ON)
  option(GMP "Use GMP" ON)
  option(EMSCRIPTEN_HTML "Emscripten HTML output" OFF)
-@@ -43,6 +47,10 @@ option(SANITIZE_THREAD "should the thread sanitizer be enabled in debug mode if
+@@ -43,11 +47,17 @@ option(SANITIZE_THREAD "should the thread sanitizer be enabled in debug mode if
  option(COVERAGE "enable coverage support" OFF)
  option(PAPILO "should papilo library be linked" ON)
  
@@ -23,8 +23,18 @@ index 0b21f5a..bde4883 100644
 +
  SET(COVERAGE_CTEST_ARGS "" CACHE STRING "additional ctest arguments for coverage")
  
- set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-@@ -69,6 +77,8 @@ set(CMAKE_MACOSX_RPATH ON)
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
++if(CMAKE_PROJECT_NAME EQUAL "SOPLEX")
++  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
++  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
++  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
++endif()
+ 
+ # for colorized output
+ if(NOT WIN32)
+@@ -69,6 +79,8 @@ set(CMAKE_MACOSX_RPATH ON)
  
  # use C++14 standard
  set(CMAKE_CXX_STANDARD 14)
@@ -33,7 +43,7 @@ index 0b21f5a..bde4883 100644
  
  # set function visibility default to hidden
  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-@@ -123,12 +133,11 @@ if(COVERAGE)
+@@ -123,12 +135,11 @@ if(COVERAGE)
  endif()
  
  if(ZLIB)
@@ -51,7 +61,7 @@ index 0b21f5a..bde4883 100644
  endif()
  
  if(GMP)
-@@ -170,39 +179,24 @@ else()
+@@ -170,39 +181,24 @@ else()
      set(SOPLEX_WITH_PAPILO off)
  endif()
  
@@ -108,7 +118,7 @@ index 0b21f5a..bde4883 100644
  endif()
  
  # disable fused floating point contraction to enhance reproducibility across compilers and architectures
-@@ -247,7 +241,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/soplex/config.h.in ${PROJECT_BINA
+@@ -247,7 +243,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/soplex/config.h.in ${PROJECT_BINA
  configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake" @ONLY)
  
  add_subdirectory(src)

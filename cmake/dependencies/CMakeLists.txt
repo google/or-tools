@@ -297,18 +297,20 @@ if(BUILD_soplex)
     GIT_REPOSITORY "https://github.com/scipopt/soplex.git"
     GIT_TAG        "release-713"
     GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v7.1.3.patch"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v7.1.3.patch"
   )
-  set(SHARED OFF)
+  set(SHARED ON CACHE BOOL "Soplex param" FORCE)
   set(ZLIB ON CACHE BOOL "Soplex param" FORCE)
   set(GMP OFF CACHE BOOL "Soplex param" FORCE)
-  set(PAPILO OFF CACHE BOOL "Soplex param" FORCE)
   set(BOOST ON CACHE BOOL "Soplex param" FORCE)
   set(QUADMATH  OFF CACHE BOOL "Soplex param" FORCE)
   set(MPFR OFF CACHE BOOL "Soplex param" FORCE)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON CACHE BOOL "Soplex param" FORCE)
-  set(Boost_INCLUDE_DIR "../boost-src/libs/config/include" CACHE PATH "Soplex param" FORCE)
-  FetchContent_MakeAvailable(SOPLEX)
+  set(MT OFF CACHE BOOL "Soplex param" FORCE)
+  set(PAPILO OFF CACHE BOOL "Soplex param" FORCE)
+  #set(Boost_INCLUDE_DIR "../boost-src/libs/config/include" CACHE PATH "Soplex param" FORCE)
+  FetchContent_MakeAvailable(soplex)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -324,20 +326,21 @@ if(BUILD_SCIP)
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
     GIT_TAG        "v921"
     GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v921.patch"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v921.patch"
   )
-  set(SHARED OFF)
-  set(READLINE OFF)
-  set(GMP OFF)
-  set(PAPILO OFF)
-  set(ZIMPL OFF)
-  set(IPOPT OFF)
-  set(AMPL OFF)
-
-  set(TPI "tny" CACHE STRING "Scip param")
-  set(EXPRINT "none" CACHE STRING "Scip param")
-  set(LPS "spx" CACHE STRING "Scip param")
-  set(SYM "none" CACHE STRING "Scip param")
+  set(SHARED ON CACHE BOOL "Scip param" FORCE)
+  set(ZLIB ON CACHE BOOL "Scip param" FORCE)
+  set(READLINE OFF CACHE BOOL "Scip param" FORCE)
+  set(GMP OFF CACHE BOOL "Scip param" FORCE)
+  set(PAPILO OFF CACHE BOOL "Scip param" FORCE)
+  set(ZIMPL OFF CACHE BOOL "Scip param" FORCE)
+  set(AMPL OFF CACHE BOOL "Scip param" FORCE)
+  set(IPOPT OFF CACHE BOOL "Scip param" FORCE)
+  set(TPI "tny" CACHE STRING "Scip param" FORCE)
+  set(EXPRINT "none" CACHE STRING "Scip param" FORCE)
+  set(LPS "spx" CACHE STRING "Scip param" FORCE)
+  set(SYM "none" CACHE STRING "Scip param" FORCE)
   FetchContent_MakeAvailable(scip)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
