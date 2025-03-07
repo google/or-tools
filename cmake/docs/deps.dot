@@ -136,7 +136,10 @@ digraph CMakeDeps {
 
   subgraph clusterSCIPSolver {
     subgraph clusterSCIP {
-      SCIP [label="scip::scip"];
+      SCIP [label="SCIP::libscip"];
+      SPX [label="libsoplex"];
+
+      SPX -> SCIP;
 
       color=royalblue;
       label = "scipopt/scip.git";
@@ -148,7 +151,11 @@ digraph CMakeDeps {
   // inter deps
   ZLIB -> Protobuf;
   ZLIB -> Cbc;
+  ZLIB -> SPX;
+  ZLIB -> SCIP;
+  Absl -> Re2;
   Absl -> Protobuf;
+  Re2 -> Protobuf;
 }
 @enddot
 # vim tw:0
