@@ -373,18 +373,6 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   ~CheapestInsertionFilteredHeuristic() override = default;
 
  protected:
-  struct NodeInsertion {
-    int64_t insert_after;
-    int vehicle;
-    int neg_hint_weight;
-    int64_t value;
-
-    bool operator<(const NodeInsertion& other) const {
-      return std::tie(neg_hint_weight, value, insert_after, vehicle) <
-             std::tie(other.neg_hint_weight, other.value, other.insert_after,
-                      other.vehicle);
-    }
-  };
   struct StartEndValue {
     int64_t distance;
     int vehicle;
@@ -393,6 +381,11 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
       return std::tie(distance, vehicle) <
              std::tie(other.distance, other.vehicle);
     }
+  };
+  struct EvaluatorCache {
+    int64_t value = 0;
+    int64_t node = -1;
+    int vehicle = -1;
   };
   struct Seed {
     absl::InlinedVector<int64_t, 8> properties;
@@ -454,24 +447,28 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   /// made unperformed.
   void InsertBetween(int64_t node, int64_t predecessor, int64_t successor,
                      int vehicle = -1);
-  /// Helper method to the ComputeEvaluatorSortedPositions* methods. Finds all
-  /// possible insertion positions of node 'node_to_insert' in the partial route
-  /// starting at node 'start' and adds them to 'node_insertions' (no sorting is
-  /// done). If ignore_cost is true, insertion costs may not be computed.
-  void AppendInsertionPositionsAfter(
-      int64_t node_to_insert, int64_t start, int64_t next_after_start,
-      int vehicle, bool ignore_cost,
-      std::vector<NodeInsertion>* node_insertions);
   /// Returns the cost of inserting 'node_to_insert' between 'insert_after' and
-  /// 'insert_before' on the 'vehicle', i.e.
-  /// Cost(insert_after-->node) + Cost(node-->insert_before)
-  /// - Cost (insert_after-->insert_before).
+  /// 'insert_before' on the 'vehicle' when the evaluator_ is defined, i.e.
+  /// evaluator_(insert_after-->node) + evaluator_(node-->insert_before)
+  /// - evaluator_(insert_after-->insert_before).
   // TODO(user): Replace 'insert_before' and 'insert_after' by 'predecessor'
   // and 'successor' in the code.
-  int64_t GetInsertionCostForNodeAtPosition(int64_t node_to_insert,
-                                            int64_t insert_after,
-                                            int64_t insert_before,
-                                            int vehicle) const;
+  int64_t GetEvaluatorInsertionCostForNodeAtPosition(int64_t node_to_insert,
+                                                     int64_t insert_after,
+                                                     int64_t insert_before,
+                                                     int vehicle) const;
+  /// Same as above, except that when the evaluator_ is not defined, the cost is
+  /// determined by Evaluate-ing the insertion of the node through the filter
+  /// manager, returning std::nullopt when the insertion is not feasible.
+  std::optional<int64_t> GetInsertionCostForNodeAtPosition(
+      int64_t node_to_insert, int64_t insert_after, int64_t insert_before,
+      int vehicle, int hint_weight = 0);
+  /// Same as above for the insertion of a pickup/delivery pair at the given
+  /// positions.
+  std::optional<int64_t> GetInsertionCostForPairAtPositions(
+      int64_t pickup_to_insert, int64_t pickup_insert_after,
+      int64_t delivery_to_insert, int64_t delivery_insert_after, int vehicle,
+      int hint_weight = 0);
   /// Returns the cost of unperforming node 'node_to_insert'. Returns kint64max
   /// if penalty callback is null or if the node cannot be unperformed.
   int64_t GetUnperformedValue(int64_t node_to_insert) const;
@@ -489,6 +486,8 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   }
 
   std::function<int64_t(int64_t, int64_t, int64_t)> evaluator_;
+  // TODO(user): Remove mutable if possible.
+  mutable std::vector<EvaluatorCache> evaluator_cache_;
   std::function<int64_t(int64_t)> penalty_evaluator_;
   std::vector<int> hint_next_values_;
   std::vector<int> hint_prev_values_;
@@ -656,8 +655,12 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// nodes/pairs on the given vehicle, i.e. iff the route of the given vehicle
   /// is empty and 'all_vehicles' is true.
   bool UseEmptyVehicleTypeCuratorForVehicle(int vehicle,
-                                            bool all_vehicles = true) {
-    return vehicle >= 0 && VehicleIsEmpty(vehicle) && all_vehicles;
+                                            bool all_vehicles = true) const {
+    // NOTE: When the evaluator_ is null, filters are used to evaluate the cost
+    // and feasibility of inserting on each vehicle, so all vehicles are
+    // considered for insertion instead of just one per class.
+    return vehicle >= 0 && VehicleIsEmpty(vehicle) && all_vehicles &&
+           evaluator_ != nullptr;
   }
 
   /// Tries to insert the pickup/delivery pair on a vehicle of the same type and
@@ -818,20 +821,14 @@ class GlobalCheapestInsertionFilteredHeuristic
                     int vehicle,
                     AdjustablePriorityQueue<PairEntry>* priority_queue,
                     std::vector<PairEntries>* pickup_entries,
-                    std::vector<PairEntries>* delivery_entries) const;
+                    std::vector<PairEntries>* delivery_entries);
   /// Updates the pair entry's value and rearranges the priority queue
   /// accordingly.
-  void UpdatePairEntry(
-      PairEntry* pair_entry,
-      AdjustablePriorityQueue<PairEntry>* priority_queue) const;
-  /// Computes and returns the insertion value of inserting 'pickup' and
-  /// 'delivery' respectively after 'pickup_insert_after' and
-  /// 'delivery_insert_after' on 'vehicle'.
-  int64_t GetInsertionValueForPairAtPositions(int64_t pickup,
-                                              int64_t pickup_insert_after,
-                                              int64_t delivery,
-                                              int64_t delivery_insert_after,
-                                              int vehicle) const;
+  /// Returns true iff the pair entry was correctly updated, otherwise returns
+  /// false which indicates the pair entry should be removed from the priority
+  /// queue.
+  bool UpdatePairEntry(PairEntry* pair_entry,
+                       AdjustablePriorityQueue<PairEntry>* priority_queue);
 
   /// Initializes the priority queue and the node entries with the current state
   /// of the solution on the given vehicle routes.
@@ -869,7 +866,7 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// 'insert_after' on 'vehicle' and adds it to the 'queue' and
   /// 'node_entries'.
   void AddNodeEntry(int64_t node, int64_t insert_after, int vehicle,
-                    bool all_vehicles, NodeEntryQueue* queue) const;
+                    bool all_vehicles, NodeEntryQueue* queue);
 
   void ResetVehicleIndices() override {
     node_index_to_vehicle_.assign(node_index_to_vehicle_.size(), -1);
@@ -1125,7 +1122,7 @@ struct PickupDeliveryInsertion {
                     insert_delivery_after, vehicle) <
            std::tie(other.neg_hint_weight, other.value,
                     other.insert_pickup_after, other.insert_delivery_after,
-                                        other.vehicle);
+                    other.vehicle);
   }
 };
 
@@ -1159,10 +1156,29 @@ class LocalCheapestInsertionFilteredHeuristic
   void Initialize() override;
 
  private:
+  struct NodeInsertion {
+    int64_t insert_after;
+    int vehicle;
+    int neg_hint_weight;
+    int64_t value;
+
+    bool operator<(const NodeInsertion& other) const {
+      return std::tie(neg_hint_weight, value, insert_after, vehicle) <
+             std::tie(other.neg_hint_weight, other.value, other.insert_after,
+                      other.vehicle);
+    }
+  };
   /// Computes the order of insertion of the node/pairs in the model based on
   /// the "Seed" values (number of allowed vehicles, penalty, distance from
   /// vehicle start/ends), and stores them in insertion_order_.
   void ComputeInsertionOrder();
+  /// Helper method to the ComputeEvaluatorSortedPositions* methods. Finds all
+  /// possible insertion positions of node 'node_to_insert' in the partial route
+  /// starting at node 'start' and adds them to 'node_insertions' (no sorting is
+  /// done).
+  void AppendInsertionPositionsAfter(
+      int64_t node_to_insert, int64_t start, int64_t next_after_start,
+      int vehicle, std::vector<NodeInsertion>* node_insertions);
   /// Computes the possible insertion positions of 'node' and sorts them
   /// according to the current cost evaluator.
   /// 'node' is a variable index corresponding to a node.
@@ -1219,6 +1235,9 @@ class LocalCheapestInsertionFilteredHeuristic
                      std::vector<RoutingModel::VariableValuePair>*)>
       optimize_on_insertion_;
   bool synchronize_insertion_optimizer_ = true;
+
+  const bool use_random_insertion_order_;
+  std::mt19937 rnd_;
 };
 
 /// Filtered-base decision builder based on the addition heuristic, extending

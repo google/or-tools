@@ -848,19 +848,13 @@ class SparseBitset {
   SparseBitset(const SparseBitset&) = delete;
   SparseBitset& operator=(const SparseBitset&) = delete;
   IntegerType size() const { return bitset_.size(); }
-  void SparseClearAll() {
-    for (const IntegerType i : to_clear_) bitset_.ClearBucket(i);
-    to_clear_.clear();
-  }
-  void ClearAll() {
-    bitset_.ClearAll();
-    to_clear_.clear();
-  }
+  void ResetAllToFalse() { ClearAndResize(size()); }
   void ClearAndResize(IntegerType size) {
     // As of 19/03/2014, experiments show that this is a reasonable threshold.
     const int kSparseThreshold = 300;
     if (to_clear_.size() * kSparseThreshold < size) {
-      SparseClearAll();
+      for (const IntegerType i : to_clear_) bitset_.ClearBucket(i);
+      to_clear_.clear();
       bitset_.Resize(size);
     } else {
       bitset_.ClearAndResize(size);

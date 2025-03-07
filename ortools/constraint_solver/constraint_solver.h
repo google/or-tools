@@ -92,6 +92,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
@@ -3386,7 +3387,7 @@ class BaseObject {
   BaseObject(const BaseObject&) = delete;
   BaseObject& operator=(const BaseObject&) = delete;
 #endif
-  virtual ~BaseObject() {}
+  virtual ~BaseObject() = default;
   virtual std::string DebugString() const { return "BaseObject"; }
 };
 

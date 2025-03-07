@@ -67,7 +67,7 @@ bool FilteredHeuristicLocalSearchOperator::MakeOneNeighbor() {
 }
 
 bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
-  removed_nodes_.SparseClearAll();
+  removed_nodes_.ResetAllToFalse();
 
   const std::function<int64_t(int64_t)> next_accessor =
       SetupNextAccessorForNeighbor();
@@ -170,7 +170,7 @@ int FilteredHeuristicPathLNSOperator::GetFirstNonEmptyRouteAfterCurrentRoute()
   int route = GetNextRoute(current_route_);
   while (route != last_route_ && RouteIsEmpty(route)) {
     route = GetNextRoute(route);
-    }
+  }
   return route;
 }
 
@@ -415,8 +415,8 @@ FilteredHeuristicCloseNodesLNSOperator::SetupNextAccessorForNeighbor() {
   }
   DCHECK(!model_->IsEnd(current_node_));
 
-  changed_nexts_.SparseClearAll();
-  changed_prevs_.SparseClearAll();
+  changed_nexts_.ResetAllToFalse();
+  changed_prevs_.ResetAllToFalse();
 
   RemoveNodeAndActiveSibling(current_node_);
 

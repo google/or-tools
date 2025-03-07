@@ -377,21 +377,21 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       bool needs_resource = resource_group_->VehicleRequiresAResource(v);
       if (needs_resource) {
         if (model_.NextVar(model_.Start(v))->Value() == model_.End(v) &&
-                 !model_.IsVehicleUsedWhenEmpty(v)) {
-        // No resource assignment required for this unused vehicle.
-        // TODO(user): Investigate if we should skip unused vehicles.
+            !model_.IsVehicleUsedWhenEmpty(v)) {
+          // No resource assignment required for this unused vehicle.
+          // TODO(user): Investigate if we should skip unused vehicles.
           needs_resource = false;
-      } else if (model_.ResourceVar(v, rg_index_)->Bound()) {
+        } else if (model_.ResourceVar(v, rg_index_)->Bound()) {
           needs_resource = false;
-        const int resource_idx = model_.ResourceVar(v, rg_index_)->Value();
-        DCHECK_GE(resource_idx, 0);
-        used_resources_per_class
-            ->at(resource_group_->GetResourceClassIndex(resource_idx))
-            .insert(resource_idx);
-      } else {
+          const int resource_idx = model_.ResourceVar(v, rg_index_)->Value();
+          DCHECK_GE(resource_idx, 0);
+          used_resources_per_class
+              ->at(resource_group_->GetResourceClassIndex(resource_idx))
+              .insert(resource_idx);
+        } else {
           num_vehicles_with_resource_assignment++;
+        }
       }
-    }
       vehicle_info.emplace_back(v, GetVehicleRouteSize(model_, v),
                                 needs_resource);
     }
@@ -444,7 +444,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
                                  vehicle, solve_duration_ratio, next_accessor,
                                  dimension_travel_info, resource, cumul_values,
                                  break_start_end_values)
-            : optimizer->ComputeRouteCumuls(
+                           : optimizer->ComputeRouteCumuls(
                                  vehicle, solve_duration_ratio, next_accessor,
                                  dimension_travel_info, resource, cumul_values,
                                  break_start_end_values);
@@ -461,7 +461,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
                          vehicle, solve_duration_ratio, next_accessor,
                          dimension_travel_info, resource, cumul_values,
                          break_start_end_values);
-      }
+    }
     return status != DimensionSchedulingStatus::INFEASIBLE;
   }
 
@@ -629,9 +629,9 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
       // If relaxation is not feasible, try the MILP optimizer.
       status = ComputeCumulBreakAndResourceValues(
-              global_mp_optimizer_, &cumul_values_, &break_start_end_values_,
-              &resource_indices_per_group_);
-      }
+          global_mp_optimizer_, &cumul_values_, &break_start_end_values_,
+          &resource_indices_per_group_);
+    }
     if (status == DimensionSchedulingStatus::INFEASIBLE) {
       return false;
     }

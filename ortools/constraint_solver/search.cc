@@ -3939,14 +3939,14 @@ class GuidedLocalSearch : public Metaheuristic {
       for (const IndexType index : touched_.PositionsSetAtLeastOnce()) {
         base_data_[index] = modified_data_[index];
       }
-      touched_.SparseClearAll();
+      touched_.ResetAllToFalse();
     }
     // Reverts all modified values in the array.
     void Revert() {
       for (const IndexType index : touched_.PositionsSetAtLeastOnce()) {
         modified_data_[index] = base_data_[index];
       }
-      touched_.SparseClearAll();
+      touched_.ResetAllToFalse();
     }
     // Returns the number of values modified since the last call to Commit or
     // Revert.

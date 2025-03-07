@@ -238,7 +238,7 @@ absl::Span<const int64_t> ShortestPathOnAlternatives::GetShortestPath(
   if (predecessor == -1) return path_;
   // Build the path from predecessors on the shortest path.
   path_.resize(chain.size(), predecessor);
-  touched_.SparseClearAll();
+  touched_.ResetAllToFalse();
   touched_.Set(predecessor);
   for (int rank = chain.size() - 2; rank >= 0; --rank) {
     path_[rank] = path_predecessor_[path_[rank + 1]];
@@ -254,14 +254,14 @@ absl::Span<const int64_t> ShortestPathOnAlternatives::GetShortestPath(
 template <bool ignore_path_vars>
 TwoOptWithShortestPathOperator<ignore_path_vars>::
     TwoOptWithShortestPathOperator(
-    const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::vector<std::vector<int64_t>> alternative_sets,
-    RoutingTransitCallback2 arc_evaluator)
+        const std::vector<IntVar*>& vars,
+        const std::vector<IntVar*>& secondary_vars,
+        std::function<int(int64_t)> start_empty_path_class,
+        std::vector<std::vector<int64_t>> alternative_sets,
+        RoutingTransitCallback2 arc_evaluator)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars, /*number_of_base_nodes=*/2,
-                   /*skip_locally_optimal_paths=*/true,
+          /*skip_locally_optimal_paths=*/true,
           /*accept_path_end_base=*/true, std::move(start_empty_path_class),
           nullptr, nullptr),
       shortest_path_manager_(vars.size(), std::move(alternative_sets),
@@ -309,7 +309,7 @@ bool TwoOptWithShortestPathOperator<ignore_path_vars>::MakeNeighbor() {
   // chain with more than one node, or alternatives were swapped.
   return this->SwapActiveAndInactiveChains(
              chain_, shortest_path_manager_.GetShortestPath(
-                                         before_chain, after_chain, chain_)) ||
+                         before_chain, after_chain, chain_)) ||
          chain_.size() > 1;
 }
 
@@ -332,14 +332,14 @@ LocalSearchOperator* MakeTwoOptWithShortestPath(
 template <bool ignore_path_vars>
 SwapActiveToShortestPathOperator<ignore_path_vars>::
     SwapActiveToShortestPathOperator(
-    const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    std::vector<std::vector<int64_t>> alternative_sets,
-    RoutingTransitCallback2 arc_evaluator)
+        const std::vector<IntVar*>& vars,
+        const std::vector<IntVar*>& secondary_vars,
+        std::function<int(int64_t)> start_empty_path_class,
+        std::vector<std::vector<int64_t>> alternative_sets,
+        RoutingTransitCallback2 arc_evaluator)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars, /*number_of_base_nodes=*/1,
-                   /*skip_locally_optimal_paths=*/true,
+          /*skip_locally_optimal_paths=*/true,
           /*accept_path_end_base=*/false, std::move(start_empty_path_class),
           nullptr, nullptr),
       shortest_path_manager_(vars.size(), std::move(alternative_sets),
@@ -696,12 +696,12 @@ LightPairRelocateOperator<ignore_path_vars>::LightPairRelocateOperator(
     std::function<bool(int64_t)> force_lifo)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
-                   /*number_of_base_nodes=*/
-                   get_outgoing_neighbors == nullptr ? 2 : 1,
-                   /*skip_locally_optimal_paths=*/true,
+          /*number_of_base_nodes=*/
+          get_outgoing_neighbors == nullptr ? 2 : 1,
+          /*skip_locally_optimal_paths=*/true,
           /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-                   nullptr,  // Incoming neighbors not used as of 09/2024.
-                   std::move(get_outgoing_neighbors)),
+          nullptr,  // Incoming neighbors not used as of 09/2024.
+          std::move(get_outgoing_neighbors)),
       force_lifo_(std::move(force_lifo)) {
   this->AddPairAlternativeSets(pairs);
 }
@@ -985,12 +985,12 @@ bool PairExchangeRelocateOperator<ignore_path_vars>::MakeNeighbor() {
     return false;
   }
   if (!this->GetPreviousAndSibling(nodes[0][0], &prev[0][0], &nodes[0][1],
-                             &prev[0][1])) {
+                                   &prev[0][1])) {
     this->SetNextBaseToIncrement(kFirstPairFirstNode);
     return false;
   }
   if (!this->GetPreviousAndSibling(nodes[1][0], &prev[1][0], &nodes[1][1],
-                             &prev[1][1])) {
+                                   &prev[1][1])) {
     this->SetNextBaseToIncrement(kSecondPairFirstNode);
     return false;
   }
@@ -1038,7 +1038,7 @@ bool PairExchangeRelocateOperator<ignore_path_vars>::MakeNeighbor() {
 template <bool ignore_path_vars>
 bool PairExchangeRelocateOperator<ignore_path_vars>::MoveNode(
     int pair, int node, int64_t nodes[2][2], int64_t dest[2][2],
-                                            int64_t prev[2][2]) {
+    int64_t prev[2][2]) {
   if (!this->MoveChain(prev[pair][node], nodes[pair][node], dest[pair][node])) {
     return false;
   }
@@ -1055,7 +1055,7 @@ bool PairExchangeRelocateOperator<ignore_path_vars>::MoveNode(
 template <bool ignore_path_vars>
 bool PairExchangeRelocateOperator<ignore_path_vars>::LoadAndCheckDest(
     int pair, int node, int64_t base_node, int64_t nodes[2][2],
-                                                    int64_t dest[2][2]) const {
+    int64_t dest[2][2]) const {
   dest[pair][node] = this->BaseNode(base_node);
   // A destination cannot be a node that will be moved.
   return !(nodes[0][0] == dest[pair][node] || nodes[0][1] == dest[pair][node] ||
@@ -1757,7 +1757,7 @@ bool ExchangeSubtrip<ignore_path_vars>::ExtractChainsAndCheckCanonical(
 template <bool ignore_path_vars>
 bool ExchangeSubtrip<ignore_path_vars>::ExtractChainsFromPickup(
     int64_t base_node, std::vector<int64_t>* rejects,
-                                              std::vector<int64_t>* subtrip) {
+    std::vector<int64_t>* subtrip) {
   DCHECK(pd_data_.IsPickupNode(base_node));
   DCHECK(rejects->empty());
   DCHECK(subtrip->empty());
@@ -1788,7 +1788,7 @@ bool ExchangeSubtrip<ignore_path_vars>::ExtractChainsFromPickup(
 template <bool ignore_path_vars>
 bool ExchangeSubtrip<ignore_path_vars>::ExtractChainsFromDelivery(
     int64_t base_node, std::vector<int64_t>* rejects,
-                                                std::vector<int64_t>* subtrip) {
+    std::vector<int64_t>* subtrip) {
   DCHECK(pd_data_.IsDeliveryNode(base_node));
   DCHECK(rejects->empty());
   DCHECK(subtrip->empty());

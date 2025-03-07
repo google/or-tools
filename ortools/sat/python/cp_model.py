@@ -45,6 +45,7 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
+import copy
 import threading
 import time
 from typing import (
@@ -242,7 +243,7 @@ class IntVar(cmh.BaseIntVar):
         name: Optional[str],
     ) -> None:
         """See CpModel.new_int_var below."""
-        self.__var: cp_model_pb2.IntegerVariableProto
+        self.__model: cp_model_pb2.CpModelProto = model
         # Python do not support multiple __init__ methods.
         # This method is only called from the CpModel class.
         # We hack the parameter to support the two cases:
@@ -252,20 +253,34 @@ class IntVar(cmh.BaseIntVar):
         #     model is a CpModelProto, domain is an index (int), and name is None.
         if isinstance(domain, IntegralTypes) and name is None:
             cmh.BaseIntVar.__init__(self, int(domain), is_boolean)
-            self.__var = model.variables[domain]
         else:
             cmh.BaseIntVar.__init__(self, len(model.variables), is_boolean)
-            self.__var = model.variables.add()
-            self.__var.domain.extend(
+            proto: cp_model_pb2.IntegerVariableProto = self.__model.variables.add()
+            proto.domain.extend(
                 cast(sorted_interval_list.Domain, domain).flattened_intervals()
             )
             if name is not None:
-                self.__var.name = name
+                proto.name = name
+
+    def __copy__(self) -> "IntVar":
+        """Returns a shallowcopy of the variable."""
+        return IntVar(self.__model, self.index, self.is_boolean, None)
+
+    def __deepcopy__(self, memo: Any) -> "IntVar":
+        """Returns a deepcopy of the variable."""
+        return IntVar(
+            copy.deepcopy(self.__model, memo), self.index, self.is_boolean, None
+        )
 
     @property
     def proto(self) -> cp_model_pb2.IntegerVariableProto:
         """Returns the variable protobuf."""
-        return self.__var
+        return self.__model.variables[self.index]
+
+    @property
+    def model_proto(self) -> cp_model_pb2.CpModelProto:
+        """Returns the model protobuf."""
+        return self.__model
 
     def is_equal_to(self, other: Any) -> bool:
         """Returns true if self == other in the python sense."""
@@ -274,28 +289,28 @@ class IntVar(cmh.BaseIntVar):
         return self.index == other.index
 
     def __str__(self) -> str:
-        if not self.__var.name:
+        if not self.proto.name:
             if (
-                len(self.__var.domain) == 2
-                and self.__var.domain[0] == self.__var.domain[1]
+                len(self.proto.domain) == 2
+                and self.proto.domain[0] == self.proto.domain[1]
             ):
                 # Special case for constants.
-                return str(self.__var.domain[0])
+                return str(self.proto.domain[0])
             elif self.is_boolean:
                 return f"BooleanVar({self.__index})"
             else:
                 return f"IntVar({self.__index})"
         else:
-            return self.__var.name
+            return self.proto.name
 
     def __repr__(self) -> str:
-        return f"{self}({display_bounds(self.__var.domain)})"
+        return f"{self}({display_bounds(self.proto.domain)})"
 
     @property
     def name(self) -> str:
-        if not self.__var or not self.__var.name:
+        if not self.proto or not self.proto.name:
             return ""
-        return self.__var.name
+        return self.proto.name
 
     # Pre PEP8 compatibility.
     # pylint: disable=invalid-name
@@ -533,26 +548,31 @@ class IntervalVar:
         return self.__index
 
     @property
-    def proto(self) -> cp_model_pb2.IntervalConstraintProto:
+    def proto(self) -> cp_model_pb2.ConstraintProto:
         """Returns the interval protobuf."""
-        return self.__ct.interval
+        return self.__model.constraints[self.__index]
+
+    @property
+    def model_proto(self) -> cp_model_pb2.CpModelProto:
+        """Returns the model protobuf."""
+        return self.__model
 
     def __str__(self):
-        return self.__ct.name
+        return self.proto.name
 
     def __repr__(self):
-        interval = self.__ct.interval
-        if self.__ct.enforcement_literal:
+        interval = self.proto.interval
+        if self.proto.enforcement_literal:
             return (
-                f"{self.__ct.name}(start ="
+                f"{self.proto.name}(start ="
                 f" {short_expr_name(self.__model, interval.start)}, size ="
                 f" {short_expr_name(self.__model, interval.size)}, end ="
                 f" {short_expr_name(self.__model, interval.end)}, is_present ="
-                f" {short_name(self.__model, self.__ct.enforcement_literal[0])})"
+                f" {short_name(self.__model, self.proto.enforcement_literal[0])})"
             )
         else:
             return (
-                f"{self.__ct.name}(start ="
+                f"{self.proto.name}(start ="
                 f" {short_expr_name(self.__model, interval.start)}, size ="
                 f" {short_expr_name(self.__model, interval.size)}, end ="
                 f" {short_expr_name(self.__model, interval.end)})"
@@ -560,18 +580,18 @@ class IntervalVar:
 
     @property
     def name(self) -> str:
-        if not self.__ct or not self.__ct.name:
+        if not self.proto or not self.proto.name:
             return ""
-        return self.__ct.name
+        return self.proto.name
 
     def start_expr(self) -> LinearExprT:
-        return self.__var_list.rebuild_expr(self.__ct.interval.start)
+        return self.__var_list.rebuild_expr(self.proto.interval.start)
 
     def size_expr(self) -> LinearExprT:
-        return self.__var_list.rebuild_expr(self.__ct.interval.size)
+        return self.__var_list.rebuild_expr(self.proto.interval.size)
 
     def end_expr(self) -> LinearExprT:
-        return self.__var_list.rebuild_expr(self.__ct.interval.end)
+        return self.__var_list.rebuild_expr(self.proto.interval.end)
 
     # Pre PEP8 compatibility.
     # pylint: disable=invalid-name
@@ -581,7 +601,7 @@ class IntervalVar:
     def Index(self) -> int:
         return self.index
 
-    def Proto(self) -> cp_model_pb2.IntervalConstraintProto:
+    def Proto(self) -> cp_model_pb2.ConstraintProto:
         return self.proto
 
     StartExpr = start_expr
@@ -2064,12 +2084,6 @@ class CpModel:
         clone.proto.CopyFrom(self.proto)
         clone.rebuild_var_and_constant_map()
         return clone
-
-    def __copy__(self):
-        return self.clone()
-
-    def __deepcopy__(self, memo):
-        return self.clone()
 
     def rebuild_var_and_constant_map(self):
         """Internal method used during model cloning."""

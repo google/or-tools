@@ -478,6 +478,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     parameters_.set_search_branching(sat::SatParameters::PORTFOLIO_SEARCH);
     parameters_.set_linearization_level(2);
     parameters_.set_cut_level(0);
+    parameters_.set_add_lp_constraints_lazily(false);
     parameters_.set_use_absl_random(false);
   }
   ~RoutingCPSatWrapper() override {}
@@ -636,11 +637,11 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     if (hint_.vars_size() == model_.variables_size()) {
       *hint = hint_;
     } else {
-    for (const auto& [node, cumul] : schedule_variables_) {
-      if (schedule_hint_[node] == 0) continue;
-      hint->add_vars(cumul);
-      hint->add_values(schedule_hint_[node]);
-    }
+      for (const auto& [node, cumul] : schedule_variables_) {
+        if (schedule_hint_[node] == 0) continue;
+        hint->add_vars(cumul);
+        hint->add_values(schedule_hint_[node]);
+      }
     }
     sat::Model model;
     model.Add(sat::NewSatParameters(parameters_));

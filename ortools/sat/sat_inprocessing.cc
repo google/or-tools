@@ -509,7 +509,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
     // Compute hash and mark literals.
     uint64_t signature = 0;
-    marked.SparseClearAll();
+    marked.ResetAllToFalse();
     for (const Literal l : clause->AsSpan()) {
       marked.Set(l.Index());
       signature |= (uint64_t{1} << (l.Variable().value() % 64));

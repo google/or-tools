@@ -714,10 +714,10 @@ class PairNodeSwapActiveOperator : public PathOperator<ignore_path_vars> {
 template <bool swap_first, bool ignore_path_vars>
 PairNodeSwapActiveOperator<swap_first, ignore_path_vars>::
     PairNodeSwapActiveOperator(
-    const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64_t)> start_empty_path_class,
-    const std::vector<PickupDeliveryPair>& pairs)
+        const std::vector<IntVar*>& vars,
+        const std::vector<IntVar*>& secondary_vars,
+        std::function<int(int64_t)> start_empty_path_class,
+        const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator<ignore_path_vars>(vars, secondary_vars, 2, false, false,
                                      std::move(start_empty_path_class), nullptr,
                                      nullptr),

@@ -593,6 +593,8 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
 
     // A singleton variable with or without cost can be removed. See below.
     if (context_->VariableIsUniqueAndRemovable(literal)) {
+      // A variable that doesn't appear in the objective can be seen as
+      // appearing with a coefficient of zero.
       singleton_literal_with_cost.push_back({literal, 0});
       continue;
     }
@@ -661,6 +663,9 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
         mapping_exo->add_literals(lit);
       }
       mapping_exo->add_literals(literal);
+    } else {
+      // If ShiftCostInExactlyOne() failed, keep the literal in the amo.
+      context_->tmp_literals.push_back(literal);
     }
   }
 
@@ -12612,7 +12617,7 @@ bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
       }
     }
   }
-  context_->modified_domains.SparseClearAll();
+  context_->modified_domains.ResetAllToFalse();
 
   // Make sure the order is deterministic! because var_to_constraints[]
   // order changes from one run to the next.
@@ -12762,7 +12767,7 @@ void CpModelPresolver::PresolveToFixPoint() {
         queue.push_back(c);
       }
     }
-    context_->var_with_reduced_small_degree.SparseClearAll();
+    context_->var_with_reduced_small_degree.ResetAllToFalse();
 
     if (ProcessChangedVariables(&in_queue, &queue)) continue;
 
@@ -13730,6 +13735,8 @@ void ApplyVariableMapping(absl::Span<int> mapping,
           const int ref = expr.vars(0);
           const int image = mapping[PositiveRef(ref)];
           if (image < 0) {
+            // TODO(user): is this correct? may this lead to incorrect cuts
+            // in routing_cuts.cc in some cases?
             expr.clear_vars();
             expr.clear_coeffs();
             continue;

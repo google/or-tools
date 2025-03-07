@@ -68,6 +68,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
@@ -1038,14 +1039,14 @@ class LocalSearchOperatorState {
       }
       committed_is_active_.CopyBucket(candidate_is_active_, index);
     }
-    changes_.SparseClearAll();
-    incremental_changes_.SparseClearAll();
+    changes_.ResetAllToFalse();
+    incremental_changes_.ResetAllToFalse();
   }
 
   void CheckPoint() { checkpoint_values_ = committed_values_; }
 
   void Revert(bool only_incremental) {
-    incremental_changes_.SparseClearAll();
+    incremental_changes_.ResetAllToFalse();
     if (only_incremental) return;
 
     for (const int64_t index : changes_.PositionsSetAtLeastOnce()) {
@@ -1056,7 +1057,7 @@ class LocalSearchOperatorState {
       }
       candidate_is_active_.CopyBucket(committed_is_active_, index);
     }
-    changes_.SparseClearAll();
+    changes_.ResetAllToFalse();
   }
 
   const std::vector<int64_t>& CandidateIndicesChanged() const {
@@ -1515,7 +1516,7 @@ class BaseNodeIterators {
 template <bool ignore_path_vars>
 class PathOperator : public IntVarLocalSearchOperator {
  public:
-  /// Set of parameters used to configure how the neighnorhood is traversed.
+  /// Set of parameters used to configure how the neighborhood is traversed.
   struct IterationParameters {
     /// Number of nodes needed to define a neighbor.
     int number_of_base_nodes;
@@ -1986,7 +1987,7 @@ class PathOperator : public IntVarLocalSearchOperator {
                                 int default_value) {
     const int node = node_iterator->GetValue();
     return node >= 0 ? node : default_value;
-    }
+  }
 
   void OnStart() override {
     optimal_paths_enabled_ = false;
@@ -1994,7 +1995,7 @@ class PathOperator : public IntVarLocalSearchOperator {
       iterators_initialized_ = true;
       for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
         base_node_iterators_[i].Initialize();
-    }
+      }
     }
     InitializeBaseNodes();
     InitializeAlternatives();
@@ -2331,7 +2332,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   class ActivePaths {
    public:
     explicit ActivePaths(int num_nodes) : start_to_path_(num_nodes, -1) {}
-    void Clear() { is_path_pair_active_.clear(); }
+    void Clear() { to_reset_ = true; }
     template <typename T>
     void Initialize(T is_start) {
       if (is_path_pair_active_.empty()) {
@@ -2343,14 +2344,15 @@ class PathOperator : public IntVarLocalSearchOperator {
             ++num_paths_;
           }
         }
-        is_path_pair_active_.resize(num_paths_ * num_paths_, true);
       }
     }
     void DeactivatePathPair(int start1, int start2) {
+      if (to_reset_) Reset();
       is_path_pair_active_[start_to_path_[start1] * num_paths_ +
                            start_to_path_[start2]] = false;
     }
     void ActivatePath(int start) {
+      if (to_reset_) Reset();
       const int p1 = start_to_path_[start];
       const int p1_block = num_paths_ * p1;
       for (int p2 = 0; p2 < num_paths_; ++p2) {
@@ -2362,11 +2364,19 @@ class PathOperator : public IntVarLocalSearchOperator {
       }
     }
     bool IsPathPairActive(int start1, int start2) const {
+      if (to_reset_) return true;
       return is_path_pair_active_[start_to_path_[start1] * num_paths_ +
                                   start_to_path_[start2]];
     }
 
    private:
+    void Reset() {
+      if (!to_reset_) return;
+      is_path_pair_active_.assign(num_paths_ * num_paths_, true);
+      to_reset_ = false;
+    }
+
+    bool to_reset_ = true;
     int num_paths_ = 0;
     std::vector<int64_t> start_to_path_;
     std::vector<bool> is_path_pair_active_;

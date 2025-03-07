@@ -351,11 +351,6 @@ cc_test(
 )
 
 cc_library(
-    name = "ebert_graph",
-    hdrs = ["ebert_graph.h"],
-)
-
-cc_library(
     name = "shortest_paths",
     hdrs = ["shortest_paths.h"],
     deps = [
@@ -394,7 +389,6 @@ cc_library(
     hdrs = ["k_shortest_paths.h"],
     deps = [
         ":bounded_dijkstra",
-        ":ebert_graph",
         ":shortest_paths",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:core_headers",
@@ -464,7 +458,6 @@ cc_library(
     name = "generic_max_flow",
     hdrs = ["generic_max_flow.h"],
     deps = [
-        ":ebert_graph",
         ":flow_problem_cc_proto",
         "//ortools/base",
         "//ortools/util:stats",

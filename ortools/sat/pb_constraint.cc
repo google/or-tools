@@ -266,7 +266,7 @@ void MutableUpperBoundedLinearConstraint::ClearAll() {
   for (BooleanVariable var : non_zeros_.PositionsSetAtLeastOnce()) {
     terms_[var] = Coefficient(0);
   }
-  non_zeros_.ClearAll();
+  non_zeros_.ResetAllToFalse();
   rhs_ = 0;
   max_sum_ = 0;
 }

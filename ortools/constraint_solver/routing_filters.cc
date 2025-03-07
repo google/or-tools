@@ -298,7 +298,7 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
     int active;
     int unknown;
   };
-  CommittableVector<ActivityCounts> active_count_per_group_;
+  CommittableArray<ActivityCounts> active_count_per_group_;
   // node_is_active_[node] is true iff node was synced and active at last
   // Synchronize().
   std::vector<bool> node_is_active_;
@@ -458,7 +458,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
     int active = 0;
     int inactive = 0;
   };
-  CommittableVector<ActivityCount> count_per_disjunction_;
+  CommittableArray<ActivityCount> count_per_disjunction_;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
   const bool filter_cost_;
@@ -506,7 +506,7 @@ bool BasePathFilter::Accept(const Assignment* delta,
   for (int64_t touched_path : touched_paths_.PositionsSetAtLeastOnce()) {
     touched_path_chain_start_ends_[touched_path] = {kUnassigned, kUnassigned};
   }
-  touched_paths_.SparseClearAll();
+  touched_paths_.ResetAllToFalse();
 
   const auto update_touched_path_chain_start_end = [this](int64_t index) {
     const int64_t start = node_path_starts_[index];
@@ -616,14 +616,14 @@ void BasePathFilter::SynchronizeFullAssignment() {
 }
 
 void BasePathFilter::OnSynchronize(const Assignment* delta) {
-  new_synchronized_unperformed_nodes_.ClearAll();
+  new_synchronized_unperformed_nodes_.ResetAllToFalse();
   if (delta == nullptr || delta->Empty() ||
       absl::c_all_of(ranks_, [](int rank) { return rank == kUnassigned; })) {
     SynchronizeFullAssignment();
     return;
   }
   const Assignment::IntContainer& container = delta->IntVarContainer();
-  touched_paths_.SparseClearAll();
+  touched_paths_.ResetAllToFalse();
   for (const IntVarElement& new_element : container.elements()) {
     int64_t index = kUnassigned;
     if (FindIndex(new_element.Var(), &index)) {
@@ -1105,6 +1105,114 @@ bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
 
 }  // namespace
 
+bool FillDimensionValuesFromRoutingDimension(
+    int path, int64_t capacity, int64_t span_upper_bound,
+    absl::Span<const DimensionValues::Interval> cumul_of_node,
+    absl::Span<const DimensionValues::Interval> slack_of_node,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> evaluator,
+    DimensionValues& dimension_values) {
+  using Interval = DimensionValues::Interval;
+  // Copy cumul min/max data from cumul variables.
+  const int num_nodes = dimension_values.NumNodes(path);
+  absl::Span<const int> nodes = dimension_values.Nodes(path);
+  absl::Span<Interval> cumuls = dimension_values.MutableCumuls(path);
+  for (int r = 0; r < num_nodes; ++r) {
+    const int node = nodes[r];
+    Interval cumul = cumul_of_node[node];
+    if (!cumul.DecreaseMax(capacity)) return false;
+    cumuls[r] = cumul;
+  }
+  // Extract travel data.
+  // TODO(user): refine this logic to avoid more calls, using PathState
+  // chains to find chains in the middle of the path, and vehicle travel class
+  // to reuse chains from different vehicles.
+  absl::Span<int64_t> travels = dimension_values.MutableTravels(path);
+  {
+    absl::Span<const int> cnodes = dimension_values.CommittedNodes(path);
+    absl::Span<const int64_t> ctravels =
+        dimension_values.CommittedTravels(path);
+    // Reuse committed travels to avoid calling evaluator.
+    // Split [0, num_nodes) into [0, i), [i, j), [j, num_nodes),
+    // so that:
+    // - nodes[r] == cnodes[r] for r in [0, i)
+    // - nodes[r] == cnodes[r + delta] for r in [j, num_nodes)
+    //   with delta = num_cnodes - num_nodes.
+    const int i_limit = std::min(cnodes.size(), nodes.size());
+    DCHECK(cnodes.empty() || cnodes[0] == nodes[0]);
+    int i = 1;
+    while (i < i_limit && cnodes[i] == nodes[i]) {
+      travels[i - 1] = ctravels[i - 1];
+      ++i;
+    }
+    DCHECK(cnodes.empty() || cnodes.back() == nodes.back());
+    int j = num_nodes - 2;
+    const int delta = cnodes.size() - num_nodes;
+    const int j_limit = i + std::max(0, -delta);
+    while (j_limit <= j && nodes[j] == cnodes[j + delta]) {
+      travels[j] = ctravels[j + delta];
+      --j;
+    }
+    ++j;
+    for (int r = i; r <= j; ++r) {
+      const int64_t travel = evaluator(nodes[r - 1], nodes[r]);
+      travels[r - 1] = travel;
+    }
+  }
+  // Extract transit data, fill partial travel sums.
+  absl::Span<Interval> transits = dimension_values.MutableTransits(path);
+  absl::Span<int64_t> travel_sums = dimension_values.MutableTravelSums(path);
+  int64_t total_travel = 0;
+  travel_sums[0] = 0;
+  for (int r = 1; r < num_nodes; ++r) {
+    const int64_t travel = travels[r - 1];
+    CapAddTo(travel, &total_travel);
+    travel_sums[r] = total_travel;
+    Interval transit{.min = travel, .max = travel};
+    transit.Add(slack_of_node[nodes[r - 1]]);
+    transits[r - 1] = transit;
+  }
+  if (travel_sums.back() > span_upper_bound) return false;
+  dimension_values.MutableSpan(path) = {.min = travel_sums.back(),
+                                        .max = span_upper_bound};
+  return true;
+}
+
+// Fills pre- and post-visits of a path, using pre/post-travel evaluators.
+// NOTE: The visit at node A uses time interval
+// [cumul(A) - previsit(A), cumul(A) + postvisit(A)).
+// The pre-travel of travel A->B is the post-visit of A,
+// and the post-travel of travel A->B is the pre-visit of B.
+// TODO(user): when PathCumulFilter uses a PathState, replace
+// dimension_values by a PathState.
+// TODO(user): use committed values as a cache to avoid calling evaluators.
+void FillPrePostVisitValues(
+    int path, const DimensionValues& dimension_values,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
+    PrePostVisitValues& visit_values) {
+  const int num_nodes = dimension_values.NumNodes(path);
+  visit_values.ChangePathSize(path, num_nodes);
+  absl::Span<int64_t> pre_visits = visit_values.MutablePreVisits(path);
+  absl::Span<int64_t> post_visits = visit_values.MutablePostVisits(path);
+  absl::Span<const int> nodes = dimension_values.Nodes(path);
+  if (pre_travel_evaluator == nullptr) {
+    absl::c_fill(post_visits, 0);
+  } else {
+    for (int i = 0; i < num_nodes - 1; ++i) {
+      post_visits[i] = pre_travel_evaluator(nodes[i], nodes[i + 1]);
+    }
+    post_visits.back() = 0;
+  }
+  if (post_travel_evaluator == nullptr) {
+    absl::c_fill(pre_visits, 0);
+  } else {
+    pre_visits[0] = 0;
+    for (int i = 1; i < num_nodes; ++i) {
+      pre_visits[i] = post_travel_evaluator(nodes[i - 1], nodes[i]);
+    }
+  }
+}
+
 bool PropagateLightweightVehicleBreaks(
     int path, DimensionValues& dimension_values,
     absl::Span<const std::pair<int64_t, int64_t>> interbreaks) {
@@ -1392,7 +1500,7 @@ class PathCumulFilter : public BasePathFilter {
   DimensionValues dimension_values_;
   // Maps each path to the sum of its path-only costs: span/slack cost,
   // soft cumul costs, soft span limits.
-  CommittableVector<int64_t> cost_of_path_;
+  CommittableArray<int64_t> cost_of_path_;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
 
@@ -1404,7 +1512,7 @@ class PathCumulFilter : public BasePathFilter {
   // some pickup alternative is on the path, and at what rank (position).
   // Only the Revert() method of CommittableVector is used, to reset all
   // locations to the default dummy value before examining a path.
-  CommittableVector<RankAndIndex> pickup_rank_and_alternative_index_of_pair_;
+  CommittableArray<RankAndIndex> pickup_rank_and_alternative_index_of_pair_;
 
   // node_index_to_precedences_[node_index] contains all NodePrecedence elements
   // with node_index as either "first_node" or "second_node".
@@ -1417,7 +1525,7 @@ class PathCumulFilter : public BasePathFilter {
   };
   // Maps the location of each node in the committed and current solutions.
   // This is used when enforcing precedence constraints
-  CommittableVector<PathAndRank> location_of_node_;
+  CommittableArray<PathAndRank> location_of_node_;
 
   // Name of the dimension, for debugging/profiling purposes.
   const std::string name_;
@@ -1714,39 +1822,12 @@ bool PathCumulFilter::FillDimensionValues(int path) {
     node = next;
   }
   dimension_values_.MakePathFromNewNodes(path);
-  // Copy cumul min/max data from cumul variables.
-  const int num_nodes = dimension_values_.NumNodes(path);
-  absl::Span<const int> nodes = dimension_values_.Nodes(path);
-  absl::Span<Interval> cumuls = dimension_values_.MutableCumuls(path);
-  const int64_t capacity = path_capacities_[path];
-  for (int r = 0; r < num_nodes; ++r) {
-    const int node = nodes[r];
-    Interval cumul = initial_cumul_[node];
-    if (!cumul.DecreaseMax(capacity)) return false;
-    cumuls[r] = cumul;
+  if (!FillDimensionValuesFromRoutingDimension(
+          path, path_capacities_[path], path_span_upper_bounds_[path],
+          initial_cumul_, initial_slack_, *evaluators_[path],
+          dimension_values_)) {
+    return false;
   }
-  // Extract travel and transit data, fill partial travel sums.
-  // TODO(user): use evaluator class to copy travel values from
-  // committed travels, instead of expensive calls to evaluator.
-  absl::Span<int64_t> travels = dimension_values_.MutableTravels(path);
-  absl::Span<Interval> transits = dimension_values_.MutableTransits(path);
-  absl::Span<int64_t> travel_sums = dimension_values_.MutableTravelSums(path);
-  const auto& evaluator = *evaluators_[path];
-  int64_t total_travel = 0;
-  travel_sums[0] = 0;
-  for (int r = 1; r < num_nodes; ++r) {
-    const int node = nodes[r - 1];
-    const int64_t travel = evaluator(node, nodes[r]);
-    travels[r - 1] = travel;
-    CapAddTo(travel, &total_travel);
-    travel_sums[r] = total_travel;
-    Interval transit{.min = travel, .max = travel};
-    transit.Add(initial_slack_[node]);
-    transits[r - 1] = transit;
-  }
-  if (travel_sums.back() > path_span_upper_bounds_[path]) return false;
-  dimension_values_.MutableSpan(path) = {.min = travel_sums.back(),
-                                         .max = path_span_upper_bounds_[path]};
   dimension_values_.MutableVehicleBreaks(path) = initial_vehicle_breaks_[path];
   return true;
 }
@@ -2073,9 +2154,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths(bool synchronizing_all_paths) {
     // OnSynchronizePathFromStart() calls recompute everything. Otherwise we let
     // the InitializeAcceptPath() call below revert the data structures.
     dimension_values_.Reset();
-    cost_of_path_.Revert();
     cost_of_path_.SetAllAndCommit(0);
-    location_of_node_.Revert();
     location_of_node_.SetAllAndCommit({-1, -1});
     global_span_cost_.SetAndCommit(0);
     synchronized_objective_value_ = 0;  // Accept() relies on this value.
@@ -2409,7 +2488,7 @@ class PickupDeliveryFilter : public LocalSearchFilter {
     bool delivery : 1;
     PairStatus() : pickup(false), delivery(false) {}
   };
-  CommittableVector<PairStatus> assigned_status_of_pair_;
+  CommittableArray<PairStatus> assigned_status_of_pair_;
   SparseBitset<int> pair_is_open_;
   CommittableValue<int> num_assigned_pairs_;
   std::deque<int> visited_deque_;
@@ -2445,7 +2524,6 @@ PickupDeliveryFilter::PickupDeliveryFilter(
 }
 
 void PickupDeliveryFilter::Reset() {
-  assigned_status_of_pair_.Revert();
   assigned_status_of_pair_.SetAllAndCommit({});
   num_assigned_pairs_.SetAndCommit(0);
 }
@@ -2471,26 +2549,26 @@ void PickupDeliveryFilter::AssignAllVisitedPairsAndLoopNodes() {
       assigned_pair = assigned_status.pickup;
       assigned_status.delivery = true;
       assigned_status_of_pair_.Set(pair_index, assigned_status);
-        }
+    }
     return assigned_pair;
   };
   for (const int path : path_state_->ChangedPaths()) {
     for (const int node : path_state_->Nodes(path)) {
       num_assigned_pairs += assign_node(node) ? 1 : 0;
-      }
     }
+  }
   for (const int loop : path_state_->ChangedLoops()) {
     num_assigned_pairs += assign_node(loop) ? 1 : 0;
-        }
+  }
   num_assigned_pairs_.Set(num_assigned_pairs);
-        }
+}
 
 void PickupDeliveryFilter::Synchronize(const Assignment* /*assignment*/,
                                        const Assignment* /*delta*/) {
   AssignAllVisitedPairsAndLoopNodes();
   assigned_status_of_pair_.Commit();
   num_assigned_pairs_.Commit();
-      }
+}
 
 bool PickupDeliveryFilter::Accept(const Assignment* /*delta*/,
                                   const Assignment* /*deltadelta*/,
@@ -2504,8 +2582,8 @@ bool PickupDeliveryFilter::Accept(const Assignment* /*delta*/,
     return AcceptPathDispatch<true>();
   } else {
     return AcceptPathDispatch<false>();
-      }
-    }
+  }
+}
 
 template <bool check_assigned_pairs>
 bool PickupDeliveryFilter::AcceptPathDispatch() {
@@ -2513,7 +2591,7 @@ bool PickupDeliveryFilter::AcceptPathDispatch() {
     switch (vehicle_policies_[path]) {
       case RoutingModel::PICKUP_AND_DELIVERY_NO_ORDER:
         if (!AcceptPathDefault<check_assigned_pairs>(path)) return false;
-          break;
+        break;
       case RoutingModel::PICKUP_AND_DELIVERY_LIFO:
         if (!AcceptPathOrdered<true, check_assigned_pairs>(path)) return false;
         break;
@@ -2522,14 +2600,14 @@ bool PickupDeliveryFilter::AcceptPathDispatch() {
         break;
       default:
         continue;
-        }
-        }
+    }
+  }
   return true;
-      }
+}
 
 template <bool check_assigned_pairs>
 bool PickupDeliveryFilter::AcceptPathDefault(int path) {
-  pair_is_open_.SparseClearAll();
+  pair_is_open_.ResetAllToFalse();
   int num_opened_pairs = 0;
   for (const int node : path_state_->Nodes(path)) {
     const auto [is_paired, is_pickup, pair_index] = pair_info_of_node_[node];
@@ -2537,7 +2615,7 @@ bool PickupDeliveryFilter::AcceptPathDefault(int path) {
     if constexpr (check_assigned_pairs) {
       const PairStatus status = assigned_status_of_pair_.Get(pair_index);
       if (!status.pickup || !status.delivery) continue;
-      }
+    }
     if (is_pickup) {
       pair_is_open_.Set(pair_index);
       ++num_opened_pairs;
@@ -2566,7 +2644,7 @@ bool PickupDeliveryFilter::AcceptPathOrdered(int path) {
     }
     if (is_pickup) {
       visited_deque_.emplace_back(pair_index);
-      } else {
+    } else {
       if (visited_deque_.empty()) return false;
       if constexpr (lifo) {
         const int last_pair_index = visited_deque_.back();
@@ -2578,7 +2656,7 @@ bool PickupDeliveryFilter::AcceptPathOrdered(int path) {
         visited_deque_.pop_front();
       }
     }
-    }
+  }
   return visited_deque_.empty();
 }
 
@@ -2633,7 +2711,7 @@ bool VehicleVarFilter::HasConstrainedVehicleVars() const {
 void VehicleVarFilter::Synchronize(const Assignment* /*assignment*/,
                                    const Assignment* /*delta*/) {
   is_disabled_ = !HasConstrainedVehicleVars();
-    }
+}
 
 bool VehicleVarFilter::Accept(const Assignment* /*delta*/,
                               const Assignment* /*deltadelta*/,
@@ -2646,8 +2724,8 @@ bool VehicleVarFilter::Accept(const Assignment* /*delta*/,
          path_state_->Chains(path).DropFirstChain().DropLastChain()) {
       for (const int node : chain) {
         if (!vehicle_vars_[node]->Contains(path)) return false;
-  }
-}
+      }
+    }
   }
   return true;
 }
@@ -2691,7 +2769,7 @@ bool CumulBoundsPropagatorFilter::Accept(const Assignment* delta,
                                          const Assignment* /*deltadelta*/,
                                          int64_t /*objective_min*/,
                                          int64_t /*objective_max*/) {
-  delta_touched_.ClearAll();
+  delta_touched_.ResetAllToFalse();
   for (const IntVarElement& delta_element :
        delta->IntVarContainer().elements()) {
     int64_t index = -1;
@@ -2704,8 +2782,10 @@ bool CumulBoundsPropagatorFilter::Accept(const Assignment* delta,
       delta_nexts_[index] = delta_element.Value();
     }
   }
-  const auto& next_accessor = [this](int64_t index) {
-    return delta_touched_[index] ? delta_nexts_[index] : Value(index);
+  const auto& next_accessor = [this](int64_t index) -> int64_t {
+    return delta_touched_[index] ? delta_nexts_[index]
+           : !IsVarSynced(index) ? -1
+                                 : Value(index);
   };
 
   return propagator_.PropagateCumulBounds(next_accessor, cumul_offset_);
@@ -2762,7 +2842,7 @@ LPCumulFilter::LPCumulFilter(const std::vector<IntVar*>& nexts,
 bool LPCumulFilter::Accept(const Assignment* delta,
                            const Assignment* /*deltadelta*/,
                            int64_t /*objective_min*/, int64_t objective_max) {
-  delta_touched_.ClearAll();
+  delta_touched_.ResetAllToFalse();
   for (const IntVarElement& delta_element :
        delta->IntVarContainer().elements()) {
     int64_t index = -1;
@@ -2776,7 +2856,9 @@ bool LPCumulFilter::Accept(const Assignment* delta,
     }
   }
   const auto& next_accessor = [this](int64_t index) {
-    return delta_touched_[index] ? delta_nexts_[index] : Value(index);
+    return delta_touched_[index] ? delta_nexts_[index]
+           : !IsVarSynced(index) ? -1
+                                 : Value(index);
   };
 
   if (!filter_objective_cost_) {
@@ -2815,7 +2897,7 @@ bool LPCumulFilter::Accept(const Assignment* delta,
       // of the costs between the LP-feasible and CP-SAT (feasible or optimal).
       delta_cost_without_transit_ =
           std::min(delta_cost_without_transit_, mp_cost);
-  }
+    }
   }
 
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
@@ -2836,7 +2918,7 @@ void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
   const auto& next_accessor = [this, &model](int64_t index) {
     return IsVarSynced(index)     ? Value(index)
            : model.IsStart(index) ? model.End(model.VehicleIndex(index))
-                                  : index;
+                                  : -1;
   };
 
   if (!filter_objective_cost_) {
@@ -2857,8 +2939,8 @@ void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
   }
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
     // TODO(user): This should only happen if the LP/MIP solver times out.
-      // DCHECK the fail wasn't due to an infeasible model.
-      synchronized_cost_without_transit_ = 0;
+    // DCHECK the fail wasn't due to an infeasible model.
+    synchronized_cost_without_transit_ = 0;
   }
 }
 
@@ -3092,7 +3174,9 @@ void ResourceGroupAssignmentFilter::OnSynchronizePathFromStart(int64_t start) {
   if (current_synch_failed_) return;
   DCHECK(IsVarSynced(start));
   const int v = model_.VehicleIndex(start);
-  const auto& next_accessor = [this](int64_t index) { return Value(index); };
+  const auto& next_accessor = [this](int64_t index) {
+    return IsVarSynced(index) ? Value(index) : -1;
+  };
   if (!vehicle_requires_resource_assignment_[v]) {
     const int64_t route_cost =
         ComputeRouteCumulCostWithoutResourceAssignment(v, next_accessor);

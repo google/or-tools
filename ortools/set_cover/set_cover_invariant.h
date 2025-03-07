@@ -165,6 +165,15 @@ class SetCoverInvariant {
   // Loads the solution and recomputes the data in the invariant.
   void LoadSolution(const SubsetBoolVector& solution);
 
+  // Loads the trace and the coverage. When both the trace and the coverage are
+  // loaded, the invariant is consistent at level kCostAndCoverage.
+  // It's also faster than to load a solution and recompute the cost and
+  // coverage. The trace and the coverage are expected to be consistent,
+  // otherwise the behavior is undefined (i.e. the invariant is not consistent,
+  // unless the code is run in DEBUG mode).
+  void LoadTraceAndCoverage(const std::vector<SetCoverDecision>& trace,
+                            const ElementToIntVector& coverage);
+
   // Checks the consistency of the invariant at the given consistency level.
   bool CheckConsistency(ConsistencyLevel consistency) const;
 

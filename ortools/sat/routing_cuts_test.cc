@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -31,6 +32,7 @@
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/max_flow.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
@@ -47,14 +49,12 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
-using ::testing::AnyOf;
 using ::testing::ElementsAre;
-using ::testing::Eq;
 using ::testing::EqualsProto;
 using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
-using Relation = RouteRelationsHelper::Relation;
+using HeadMinusTailBounds = RouteRelationsHelper::HeadMinusTailBounds;
 
 TEST(MinOutgoingFlowHelperTest, TwoNodesWithoutConstraints) {
   Model model;
@@ -182,7 +182,7 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest, BasicCapacities) {
   repository->Build();
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
       RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
-                                   *repository);
+                                   *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -249,7 +249,7 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest,
   repository->Build();
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
       RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
-                                   *repository);
+                                   *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -298,12 +298,281 @@ TEST(MinOutgoingFlowHelperTest, NodeExpressionWithConstant) {
       RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
                                    {AffineExpression(), AffineExpression(load1),
                                     AffineExpression(offset_load2, 1, offset)},
-                                   *repository);
+                                   *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
 
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
   const int min_flow =
       helper.ComputeDemandBasedMinOutgoingFlow({1, 2}, *route_relations_helper);
+
+  // The total demand exceeds the capacity.
+  EXPECT_EQ(min_flow, 2);
+}
+
+TEST(MinOutgoingFlowHelperTest, ConstantNodeExpression) {
+  // A graph with 3 nodes: 0 <--> 1 -(demand1)-> 2 <-(demand2)-> 0
+  Model model;
+  const int num_nodes = 3;
+  std::vector<int> tails = {1, 0, 0, 1, 2};
+  std::vector<int> heads = {2, 1, 2, 0, 0};
+  std::vector<Literal> literals;
+  for (int i = 0; i < tails.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+  }
+  // The vehicle capacity and the demand at each node.
+  const int capacity = 100;
+  const int demand1 = 70;
+  const int demand2 = 40;
+  // The load of the vehicle arriving at node 1.
+  const IntegerVariable load1 =
+      model.Add(NewIntegerVariable(0, capacity - demand1));
+  // The load of the vehicle arriving at node 2, a constant value.
+  const IntegerValue load2 = capacity - demand2;
+
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  // Capacity constraint: load2 - load1 >= demand1
+  repository->Add(literals[0], {kNoIntegerVariable, 0}, {load1, -1},
+                  demand1 - load2, 1000);
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   {AffineExpression(), AffineExpression(load1),
+                                    AffineExpression(load2)},
+                                   *repository, &model);
+  ASSERT_NE(route_relations_helper, nullptr);
+
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+  const int min_flow =
+      helper.ComputeDemandBasedMinOutgoingFlow({1, 2}, *route_relations_helper);
+
+  // The total demand exceeds the capacity.
+  EXPECT_EQ(min_flow, 2);
+}
+
+TEST(MinOutgoingFlowHelperTest, NodeExpressionUsingArcLiteralAsVariable) {
+  // A graph with 4 nodes:
+  //  0 <--> 1 -(demand1)-> 2 -(demand2)-> 3 <-(demand3)-> 0
+  //  0 <-----------------> 2
+  Model model;
+  const int num_nodes = 4;
+  std::vector<int> tails = {1, 2, 0, 0, 0, 1, 2, 3};
+  std::vector<int> heads = {2, 3, 1, 2, 3, 0, 0, 0};
+  std::vector<Literal> literals;
+  for (int i = 0; i < tails.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+  }
+  // The vehicle capacity and the demand at each node.
+  const int capacity = 100;
+  const int demand1 = 80;
+  const int demand2 = 10;
+  const int demand3 = 20;
+  // The load of the vehicle arriving at node 1.
+  const IntegerVariable load1 =
+      model.Add(NewIntegerVariable(0, capacity - demand1));
+  // The load of the vehicle arriving at node 2 is a function of the arc 2->3
+  // literal l, namely (capacity - demand2) - demand3 * l.
+  const Literal arc_2_3_lit = literals[1];
+  const IntegerVariable arc_2_3_var =
+      CreateNewIntegerVariableFromLiteral(arc_2_3_lit, &model);
+  const AffineExpression load2 =
+      AffineExpression(arc_2_3_var, -demand3, capacity - demand2);
+  // The load of the vehicle arriving at node 3, a constant value.
+  const IntegerValue load3 = capacity - demand3;
+
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  // Capacity constraint: load2 - load1 >= demand1. This expands to
+  // (capacity - demand2 - demand3 * l) - load1 >= demand1, i.e.,
+  // -demand3 * l - load1 >= demand1 + demand2 - capacity
+  repository->Add(literals[0], {arc_2_3_var, -demand3}, {load1, -1},
+                  demand1 + demand2 - capacity, 1000);
+  // Capacity constraint: load3 - load2 >= demand2. This expands to
+  // (capacity - demand3) - (capacity - demand2 - demand3 * l) >= demand2 which,
+  // when l is 1, simplifies to 0 >= 0. Hence this constraint is ignored.
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   {AffineExpression(), AffineExpression(load1),
+                                    load2, AffineExpression(load3)},
+                                   *repository, &model);
+  ASSERT_NE(route_relations_helper, nullptr);
+
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper);
+
+  // The total demand exceeds the capacity.
+  EXPECT_EQ(min_flow, 2);
+}
+
+TEST(MinOutgoingFlowHelperTest,
+     NodeExpressionUsingNegationOfArcLiteralAsVariable) {
+  // A graph with 4 nodes:
+  //  0 <--> 1 -(demand1)-> 2 -(demand2)-> 3 <-(demand3)-> 0
+  //  0 <-----------------> 2
+  Model model;
+  const int num_nodes = 4;
+  std::vector<int> tails = {1, 2, 0, 0, 0, 1, 2, 3};
+  std::vector<int> heads = {2, 3, 1, 2, 3, 0, 0, 0};
+  std::vector<Literal> literals;
+  for (int i = 0; i < tails.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+  }
+  // The vehicle capacity and the demand at each node.
+  const int capacity = 100;
+  const int demand1 = 80;
+  const int demand2 = 10;
+  const int demand3 = 20;
+  // The load of the vehicle arriving at node 1.
+  const IntegerVariable load1 =
+      model.Add(NewIntegerVariable(0, capacity - demand1));
+  // The load of the vehicle arriving at node 2 is a function of the negated arc
+  // 2->3 literal l, namely (capacity - demand2) - demand3 * (1 - l).
+  const Literal arc_2_3_lit = literals[1];
+  const IntegerVariable arc_2_3_var =
+      CreateNewIntegerVariableFromLiteral(arc_2_3_lit.Negated(), &model);
+  const AffineExpression load2 =
+      AffineExpression(arc_2_3_var, demand3, capacity - demand2 - demand3);
+  // The load of the vehicle arriving at node 3, a constant value.
+  const IntegerValue load3 = capacity - demand3;
+
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  // Capacity constraint: load2 - load1 >= demand1. This expands to
+  // (capacity - demand2 - demand3 + demand3 * l) - load1 >= demand1, i.e.,
+  // demand3 * l - load1 >= demand1 + demand2 + demand3 - capacity
+  repository->Add(literals[0], {arc_2_3_var, demand3}, {load1, -1},
+                  demand1 + demand2 + demand3 - capacity, 1000);
+  // Capacity constraint: load3 - load2 >= demand2. This expands to
+  // (capacity - demand3) - (capacity - demand2 - demand3  + demand3 * l) >=
+  // demand2 which, when l is 0, simplifies to 0 >= 0. Hence this constraint is
+  // ignored.
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   {AffineExpression(), AffineExpression(load1),
+                                    load2, AffineExpression(load3)},
+                                   *repository, &model);
+  ASSERT_NE(route_relations_helper, nullptr);
+
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper);
+
+  // The total demand exceeds the capacity.
+  EXPECT_EQ(min_flow, 2);
+}
+
+TEST(MinOutgoingFlowHelperTest, ArcNodeExpressionsWithSharedVariable) {
+  // A graph with 4 nodes:
+  //  0 <--> 1 -(demand1)-> 2 -(demand2)-> 3 <-(demand3)-> 0
+  //  0 <-----------------> 2
+  Model model;
+  const int num_nodes = 4;
+  std::vector<int> tails = {1, 2, 0, 0, 0, 1, 2, 3};
+  std::vector<int> heads = {2, 3, 1, 2, 3, 0, 0, 0};
+  std::vector<Literal> literals;
+  for (int i = 0; i < tails.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+  }
+  // The vehicle capacity and the demand at each node.
+  const int capacity = 100;
+  const int demand1 = 50;
+  const int demand2 = 20;
+  const int demand3 = 40;
+  // The load of the vehicle arriving at node 1.
+  const IntegerVariable load1 =
+      model.Add(NewIntegerVariable(0, capacity - demand1));
+  // The load of the vehicle arriving at node 2 is a function of an x variable,
+  // namely (capacity - demand2 - demand3) - coeff * x.
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 1));
+  const int coeff = 30;
+  const AffineExpression load2 =
+      AffineExpression(x, -coeff, capacity - demand2 - demand3);
+  // The load of the vehicle arriving at node 3 is another function of x, namely
+  // (capacity - demand3) - coeff * x.
+  const AffineExpression load3 =
+      AffineExpression(x, -coeff, capacity - demand3);
+
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  // Capacity constraint: load2 - load1 >= demand1. This expands to
+  // (capacity - demand2 - demand3) - coeff * x - load1 >= demand1, i.e.,
+  //  -coeff * x - load1 >= demand1 + demand2 + demand3 - capacity.
+  repository->Add(literals[0], {x, -coeff}, {load1, -1},
+                  demand1 + demand2 + demand3 - capacity, 1000);
+  // Capacity constraint: load3 - load2 >= demand2. This expands to
+  // (capacity - demand3) - (capacity - demand2 - demand3) >= demand2, which
+  // simplifies to 0 >= 0. Hence this constraint is ignored.
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(
+          num_nodes, tails, heads, literals,
+          {AffineExpression(), AffineExpression(load1), load2, load3},
+          *repository, &model);
+  ASSERT_NE(route_relations_helper, nullptr);
+
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper);
+
+  // The total demand exceeds the capacity.
+  EXPECT_EQ(min_flow, 2);
+}
+
+TEST(MinOutgoingFlowHelperTest, UnaryRelationForTwoNodeExpressions) {
+  // A graph with 4 nodes:
+  //  0 <--> 1 -(demand1)-> 2 -(demand2)-> 3 <-(demand3)-> 0
+  //  0 <-----------------> 2
+  Model model;
+  const int num_nodes = 4;
+  std::vector<int> tails = {1, 2, 0, 0, 0, 1, 2, 3};
+  std::vector<int> heads = {2, 3, 1, 2, 3, 0, 0, 0};
+  std::vector<Literal> literals;
+  for (int i = 0; i < tails.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+  }
+  // The vehicle capacity and the demand at each node.
+  const int capacity = 100;
+  const int demand1 = 20;
+  const int demand2 = 10;
+  const int demand3 = 80;
+  // The load of the vehicle arriving at node 1.
+  const IntegerVariable load1 =
+      model.Add(NewIntegerVariable(0, capacity - demand1));
+  // The load of the vehicle arriving at node 2 is a function of an x variable,
+  // namely (capacity - demand2) - demand1 * x.
+  const Literal x_lit = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = CreateNewIntegerVariableFromLiteral(x_lit, &model);
+  const AffineExpression load2 =
+      AffineExpression(x, -demand1, capacity - demand2);
+  // The load of the vehicle arriving at node 3.
+  const IntegerVariable load3 =
+      model.Add(NewIntegerVariable(0, capacity - demand3));
+  // Add the implication x_lit => !arc_1_2_lit (<=> arc_1_2_lit => x = 0).
+  model.GetOrCreate<BinaryImplicationGraph>()->AddImplication(
+      x_lit, literals[0].Negated());
+
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  // Capacity constraint: load2 - load1 >= demand1. This expands to
+  // (capacity - demand2) - demand1 * x - load1 >= demand1. Since this
+  // constraint is enforced by arc_1_2_lit we can assume it is true, which
+  // implies that x = 0. Hence the constraint simplifies to load1 <= capacity -
+  // demand2 - demand1.
+  repository->Add(literals[0], {load1, 1}, {kNoIntegerVariable, 0}, 0,
+                  capacity - demand1 - demand2);
+  // Capacity constraint: load3 - load2 >= demand2. This expands to
+  // load3 - ((capacity - demand2) - demand1 * x) >= demand2, i.e. to load3  +
+  // demand1 * x >= capacity
+  repository->Add(literals[1], {load3, 1}, {x, demand1}, capacity, 1000);
+  repository->Build();
+  std::unique_ptr<RouteRelationsHelper> route_relations_helper =
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   {AffineExpression(), AffineExpression(load1),
+                                    load2, AffineExpression(load3)},
+                                   *repository, &model);
+  ASSERT_NE(route_relations_helper, nullptr);
+
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper);
 
   // The total demand exceeds the capacity.
   EXPECT_EQ(min_flow, 2);
@@ -350,7 +619,7 @@ TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
     repository->Build();
     std::unique_ptr<RouteRelationsHelper> route_relations_helper =
         RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
-                                     *repository);
+                                     *repository, &model);
     ASSERT_NE(route_relations_helper, nullptr);
 
     MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -403,7 +672,7 @@ TEST(MinOutgoingFlowHelperTest, BetterUseOfUpperBound) {
     repository->Build();
     std::unique_ptr<RouteRelationsHelper> route_relations_helper =
         RouteRelationsHelper::Create(loads.size(), tails, heads, literals, {},
-                                     *repository);
+                                     *repository, &model);
     ASSERT_NE(route_relations_helper, nullptr);
 
     MinOutgoingFlowHelper helper(loads.size(), tails, heads, literals, &model);
@@ -437,7 +706,7 @@ TEST(MinOutgoingFlowHelperTest, DemandBasedMinOutgoingFlow_IsolatedNodes) {
   repository->Build();
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
       RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
-                                   *repository);
+                                   *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -707,15 +976,17 @@ TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutesRandom) {
   }
 }
 
-int SolveSpecialBinPackingWithCpSat(absl::Span<const ItemOrBin> objects) {
+int SolveSpecialBinPackingWithCpSat(
+    absl::Span<const SpecialBinPackingHelper::ItemOrBin> objects) {
   CpModelBuilder cp_model;
 
   const int n = objects.size();
   std::vector<BoolVar> item_is_bin(n);
   for (int i = 0; i < n; ++i) {
-    if (objects[i].type == ItemOrBin::MUST_BE_BIN) {
+    if (objects[i].type == SpecialBinPackingHelper::ItemOrBin::MUST_BE_BIN) {
       item_is_bin[i] = cp_model.TrueVar();
-    } else if (objects[i].type == ItemOrBin::MUST_BE_ITEM) {
+    } else if (objects[i].type ==
+               SpecialBinPackingHelper::ItemOrBin::MUST_BE_ITEM) {
       item_is_bin[i] = cp_model.FalseVar();
     } else {
       item_is_bin[i] = cp_model.NewBoolVar();
@@ -772,26 +1043,27 @@ int SolveSpecialBinPackingWithCpSat(absl::Span<const ItemOrBin> objects) {
 // Generate a random problem and make sure our bound is always valid.
 // These problems are a bit easy, but with --runs_per_test 1000 there are a few
 // instances where our lower bound is strictly worse than the true optimal.
-TEST(SpecialBinPackingProblemTest, ComputeMinNumberOfBins) {
+TEST(SpecialBinPackingHelperTest, ComputeMinNumberOfBins) {
   Model model;
   absl::BitGen random;
   const int num_objects = 20;
 
-  std::vector<ItemOrBin> objects;
+  std::vector<SpecialBinPackingHelper::ItemOrBin> objects;
   for (int i = 0; i < num_objects; ++i) {
-    ItemOrBin o;
+    SpecialBinPackingHelper::ItemOrBin o;
     o.capacity = absl::Uniform(random, 0, 100);
     o.demand = absl::Uniform(random, 0, 50);
     const int type = absl::Uniform(random, 0, 2);
-    if (type == 0) o.type = ItemOrBin::MUST_BE_ITEM;
-    if (type == 1) o.type = ItemOrBin::ITEM_OR_BIN;
-    if (type == 2) o.type = ItemOrBin::MUST_BE_BIN;
+    if (type == 0) o.type = SpecialBinPackingHelper::ItemOrBin::MUST_BE_ITEM;
+    if (type == 1) o.type = SpecialBinPackingHelper::ItemOrBin::ITEM_OR_BIN;
+    if (type == 2) o.type = SpecialBinPackingHelper::ItemOrBin::MUST_BE_BIN;
     objects.push_back(o);
   }
 
-  bool gcd_was_used;
+  std::string info;
+  SpecialBinPackingHelper helper;
   const int obj_lb =
-      ComputeMinNumberOfBins(absl::MakeSpan(objects), &gcd_was_used);
+      helper.ComputeMinNumberOfBins(absl::MakeSpan(objects), info);
   const int optimal = SolveSpecialBinPackingWithCpSat(objects);
   EXPECT_LE(obj_lb, optimal);
   if (obj_lb != optimal) {
@@ -799,15 +1071,53 @@ TEST(SpecialBinPackingProblemTest, ComputeMinNumberOfBins) {
   }
 }
 
-std::vector<absl::flat_hash_map<int, Relation>> GetRelationByDimensionAndArc(
-    const RouteRelationsHelper& helper) {
-  std::vector<absl::flat_hash_map<int, Relation>> result(
+TEST(SpecialBinPackingHelperTest, GreedyPackingWorks) {
+  std::vector<SpecialBinPackingHelper::ItemOrBin> objects;
+  objects.push_back({.capacity = 10});
+  objects.push_back({.capacity = 10});
+  objects.push_back({.demand = 5});
+  objects.push_back({.demand = 2});  // objects[3]
+  objects.push_back({.demand = 3});
+  objects.push_back({.demand = 2});
+  objects.push_back({.demand = 4});
+  objects.push_back({.demand = 4});
+
+  SpecialBinPackingHelper helper;
+  EXPECT_TRUE(helper.GreedyPackingWorks(2, objects));
+
+  // Note that this is order dependent.
+  std::swap(objects[3], objects.back());
+  EXPECT_FALSE(helper.GreedyPackingWorks(2, objects));
+}
+
+TEST(SpecialBinPackingHelperTest, UseDpToTightenCapacities) {
+  std::vector<SpecialBinPackingHelper::ItemOrBin> objects;
+  objects.push_back({.demand = 7, .capacity = 13});
+  objects.push_back({.demand = 5, .capacity = 12});
+  objects.push_back({.demand = 7, .capacity = 10});
+  objects.push_back({.demand = 10, .capacity = 9});
+
+  // The maximum reachable under 13 should be 7 + 5 = 12.
+  SpecialBinPackingHelper helper;
+  EXPECT_TRUE(helper.UseDpToTightenCapacities(absl::MakeSpan(objects)));
+  EXPECT_EQ(objects[0].capacity, 12);
+  EXPECT_EQ(objects[1].capacity, 12);
+  EXPECT_EQ(objects[2].capacity, 10);
+  EXPECT_EQ(objects[3].capacity, 9);
+}
+
+std::vector<absl::flat_hash_map<int, HeadMinusTailBounds>>
+GetRelationByDimensionAndArc(const RouteRelationsHelper& helper) {
+  std::vector<absl::flat_hash_map<int, HeadMinusTailBounds>> result(
       helper.num_dimensions());
   for (int i = 0; i < helper.num_arcs(); ++i) {
     for (int d = 0; d < helper.num_dimensions(); ++d) {
-      if (!helper.GetArcRelation(i, d).empty()) {
-        result[d][i] = helper.GetArcRelation(i, d);
+      // We don't output trivial relation, as the tests are written this way.
+      if (helper.GetArcRelation(i, d).lhs == kMinIntegerValue &&
+          helper.GetArcRelation(i, d).rhs == kMaxIntegerValue) {
+        continue;
       }
+      result[d][i] = helper.GetArcRelation(i, d);
     }
   }
   return result;
@@ -854,7 +1164,7 @@ TEST(RouteRelationsHelperTest, Basic) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository);
+      num_nodes, tails, heads, literals, {}, repository, &model);
 
   ASSERT_NE(helper, nullptr);
   // Two dimensions (time and load) on the first connected component, and one
@@ -873,13 +1183,13 @@ TEST(RouteRelationsHelperTest, Basic) {
   // Check the arc relations.
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
               UnorderedElementsAre(
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 50, 1000}),
-                                       Pair(1, Relation{-1, 1, 70, 1000}),
-                                       Pair(2, Relation{-1, 1, 40, 1000})),
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 4, 100}),
-                                       Pair(1, Relation{-1, 1, 4, 100}),
-                                       Pair(2, Relation{-1, 1, 3, 100}),
-                                       Pair(3, Relation{-1, 1, 5, 100})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{50, 1000}),
+                                       Pair(1, HeadMinusTailBounds{70, 1000}),
+                                       Pair(2, HeadMinusTailBounds{40, 1000})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 100}),
+                                       Pair(1, HeadMinusTailBounds{4, 100}),
+                                       Pair(2, HeadMinusTailBounds{3, 100}),
+                                       Pair(3, HeadMinusTailBounds{5, 100})),
                   // The relation for the arc 4->5 is not recovered since its
                   // variables cannot be unambiguously associated with nodes.
                   IsEmpty()));
@@ -890,9 +1200,9 @@ TEST(RouteRelationsHelperTest, Basic) {
   EXPECT_EQ(helper->num_arcs(), 3);
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
               UnorderedElementsAre(
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 70, 1000})),
-                  UnorderedElementsAre(Pair(0, Relation{-1, 1, 4, 100}),
-                                       Pair(1, Relation{-1, 1, 5, 100})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{70, 1000})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 100}),
+                                       Pair(1, HeadMinusTailBounds{5, 100})),
                   IsEmpty()));
 }
 
@@ -932,19 +1242,20 @@ TEST(RouteRelationsHelperTest, UnenforcedRelations) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository);
+      num_nodes, tails, heads, literals, {}, repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
               UnorderedElementsAre(UnorderedElementsAre(
                   Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d))));
   // The unenforced relation is taken into account.
-  EXPECT_THAT(
-      GetRelationByDimensionAndArc(*helper),
-      UnorderedElementsAre(UnorderedElementsAre(
-          Pair(0, Relation{-1, 1, 1, 1}), Pair(1, Relation{-1, 1, 2, 2}),
-          Pair(2, Relation{-1, 1, 3, 3}), Pair(3, Relation{-1, 1, 4, 4}),
-          Pair(4, Relation{-1, 1, 5, 5}))));
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{1, 1}),
+                                       Pair(1, HeadMinusTailBounds{2, 2}),
+                                       Pair(2, HeadMinusTailBounds{3, 3}),
+                                       Pair(3, HeadMinusTailBounds{4, 4}),
+                                       Pair(4, HeadMinusTailBounds{5, 5}))));
 }
 
 TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
@@ -975,7 +1286,7 @@ TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository);
+      num_nodes, tails, heads, literals, {}, repository, &model);
 
   EXPECT_EQ(helper, nullptr);
 }
@@ -1001,19 +1312,16 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   repository.Add(literals[1], {c, 2}, {b, -3}, 100, 200);
   repository.Build();
 
-  using Relation = RouteRelationsHelper::Relation;
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository);
+      num_nodes, tails, heads, literals, {}, repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_EQ(helper->num_dimensions(), 1);
   EXPECT_EQ(helper->GetNodeExpression(0, 0), a);
   EXPECT_EQ(helper->GetNodeExpression(1, 0), b);
   EXPECT_EQ(helper->GetNodeExpression(2, 0), c);
-  EXPECT_EQ(helper->GetArcRelation(0, 0), (Relation{-1, 1, 50, 1000}));
-  EXPECT_THAT(
-      helper->GetArcRelation(1, 0),
-      AnyOf(Eq(Relation{-1, 1, 70, 1000}), Eq(Relation{-3, 2, 100, 200})));
+  EXPECT_EQ(helper->GetArcRelation(0, 0), (HeadMinusTailBounds{50, 1000}));
+  EXPECT_EQ(helper->GetArcRelation(1, 0), (HeadMinusTailBounds{70, 1000}));
 }
 
 TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
@@ -1036,7 +1344,7 @@ TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository);
+      num_nodes, tails, heads, literals, {}, repository, &model);
 
   // No variable should be associated with any node, since there is no unique
   // way to do this ([A, B, C] or [C, B, A], for nodes [0, 1, 2] respectively).
@@ -1080,7 +1388,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository);
+      num_nodes, tails, heads, literals, {}, repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
@@ -1088,12 +1396,13 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
                   UnorderedElementsAre(Pair(0, a), Pair(1, b), Pair(2, c),
                                        Pair(3, d), Pair(4, e), Pair(5, f))));
   // The relation for arc 5->3 is filtered out because it is inconsistent.
-  EXPECT_THAT(
-      GetRelationByDimensionAndArc(*helper),
-      UnorderedElementsAre(UnorderedElementsAre(
-          Pair(0, Relation{-1, 1, 0, 0}), Pair(1, Relation{-1, 1, 1, 1}),
-          Pair(2, Relation{-1, 1, 2, 2}), Pair(3, Relation{-1, 1, 3, 3}),
-          Pair(4, Relation{-1, 1, 4, 4}))));
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
+                                       Pair(1, HeadMinusTailBounds{1, 1}),
+                                       Pair(2, HeadMinusTailBounds{2, 2}),
+                                       Pair(3, HeadMinusTailBounds{3, 3}),
+                                       Pair(4, HeadMinusTailBounds{4, 4}))));
 }
 
 TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
@@ -1128,26 +1437,30 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
   repository.Add(literals[1], {c, 1}, {b, -1}, 1, 1);
   repository.Add(literals[2], {d, 1}, {c, -1}, 2, 2);
   repository.Add(literals[3], {a, 1}, {d, -1}, 3, 3);
+
   // Inconsistent relation for arc 4->1 (should be between e and b). Note that
-  // arcs 4->1 and 4->3 are enforced by the same literal.
+  // arcs 4->1 and 4->3 are enforced by the same literal, thus both should
+  // be true at the same time, hence the crossed bounds below.
   repository.Add(literals[4], {e, 1}, {d, -1}, 4, 4);
   repository.Add(literals[5], {e, 1}, {d, -1}, 5, 5);
   repository.Build();
 
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository);
+      num_nodes, tails, heads, literals, {}, repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
               UnorderedElementsAre(UnorderedElementsAre(
                   Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d), Pair(4, e))));
+
   // The relation for arc 4->1 is filtered out because it is inconsistent.
-  EXPECT_THAT(
-      GetRelationByDimensionAndArc(*helper),
-      UnorderedElementsAre(UnorderedElementsAre(
-          Pair(0, Relation{-1, 1, 0, 0}), Pair(1, Relation{-1, 1, 1, 1}),
-          Pair(2, Relation{-1, 1, 2, 2}), Pair(3, Relation{-1, 1, 3, 3}),
-          Pair(5, Relation{-1, 1, 5, 5}))));
+  EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
+              UnorderedElementsAre(
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
+                                       Pair(1, HeadMinusTailBounds{1, 1}),
+                                       Pair(2, HeadMinusTailBounds{2, 2}),
+                                       Pair(3, HeadMinusTailBounds{3, 3}),
+                                       Pair(5, HeadMinusTailBounds{5, 4}))));
 }
 
 TEST(MaybeFillMissingRoutesConstraintNodeExpressions,
@@ -1702,6 +2015,76 @@ TEST(CreateFlowCutGeneratorTest, WithMinusOneArcs) {
   EXPECT_EQ(manager.num_cuts(), 1);
   EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
               ::testing::StartsWith("1 <= 1*X1 1*X2"));
+}
+
+TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
+  // Graph with the following arcs, (demands), and [LP values]:
+  //
+  //                (3)         (4)         (4)
+  //        --[1]--> 1 --[.9]--> 2 --[.9]--> 3 --[1]--
+  //        |         \__[.1]__  ^\__[.1]__  ^       |
+  // depot _|                  \/          \/        v_ depot
+  //        |          __[.1]__/\  __[.1]__/\        ^
+  //        |         /          v/          v       |
+  //        --[1]--> 4 --[.9]--> 5 --[.9]--> 6 --[1]--
+  //                (3)         (3)         (3)
+  //
+  // The path 1->2->3 is infeasible due to the capacity limit. The sum of its LP
+  // values is 1.8, larger than its length minus 1, so we should get a cut for
+  // this path.
+  const int num_nodes = 7;
+  const std::vector<int> demands{0, 3, 4, 4, 3, 3, 3};
+  const std::vector<int> tails{0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6};
+  const std::vector<int> heads{1, 4, 2, 5, 3, 6, 0, 5, 2, 6, 3, 0};
+  const std::vector<double> values{1.0, 1.0, 0.9, 0.1, 0.9, 0.1,
+                                   1.0, 0.9, 0.1, 0.9, 0.1, 1.0};
+
+  Model model;
+  std::vector<Literal> literals;
+  auto& lp_values = *model.GetOrCreate<ModelLpValues>();
+  lp_values.resize(32, 0.0);
+  for (int i = 0; i < values.size(); ++i) {
+    literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+    lp_values[model.Add(NewIntegerVariableFromLiteral(literals.back()))] =
+        values[i];
+  }
+  // The capacity of each vehicle.
+  const int capacity = 10;
+  // The load of the vehicle arriving at each node.
+  std::vector<IntegerVariable> loads;
+  std::vector<AffineExpression> flat_node_dim_expressions;
+  for (int i = 0; i < num_nodes; ++i) {
+    const IntegerVariable load =
+        model.Add(NewIntegerVariable(0, capacity - demands[i]));
+    loads.push_back(load);
+    flat_node_dim_expressions.push_back(AffineExpression(load));
+  }
+  // Capacity constraints.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (int i = 0; i < tails.size(); ++i) {
+    const int tail = tails[i];
+    const int head = heads[i];
+    if (tail == 0 || head == 0) continue;
+    // loads[head] >= loads[tail] + demand[tail]
+    repository->Add(literals[i], {loads[head], 1}, {loads[tail], -1},
+                    demands[tail], 10000);
+  }
+  repository->Build();
+  // Enable the cut generator.
+  model.GetOrCreate<SatParameters>()
+      ->set_routing_cut_max_infeasible_path_length(10);
+
+  CutGenerator generator =
+      CreateCVRPCutGenerator(num_nodes, tails, heads, literals, /*demands=*/{},
+                             flat_node_dim_expressions, /*capacity=*/0, &model);
+
+  LinearConstraintManager manager(&model);
+  generator.generate_cuts(&manager);
+
+  ASSERT_EQ(manager.num_cuts(), 1);
+  // Arcs with ID 2 (1->2) and ID 4 (2->3) should be in the cut.
+  EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
+              ::testing::StartsWith("0 <= 1*X2 1*X4 <= 1"));
 }
 
 }  // namespace

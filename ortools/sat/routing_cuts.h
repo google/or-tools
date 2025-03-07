@@ -37,10 +37,12 @@
 namespace operations_research {
 namespace sat {
 
-// Helper to recover the mapping between nodes and binary relation variables in
-// simple cases of route constraints (at most one variable per node and
-// "dimension" -- such as time or load, and at most one relation per arc and
-// dimension).
+// Helper to recover the mapping between nodes and "cumul" expressions in simple
+// cases of route constraints (at most one expression per node and "dimension"
+// -- such as time or load, and at most one relation per arc and dimension).
+//
+// We also recover bounds on (node_expr[head] - node_expr[tail]) for each arc
+// (tail -> head) assuming the arc is taken.
 class RouteRelationsHelper {
  public:
   // Creates a RouteRelationsHelper for the given RoutesConstraint and
@@ -49,13 +51,16 @@ class RouteRelationsHelper {
   // nullptr). If `flat_node_dim_expressions` is not empty, uses it to
   // initialize the helper (this list should have num_dimensions times num_nodes
   // elements, with the expression associated with node n and dimension d at
-  // index n * num_dimensions + d). If there are more than one relation per arc
-  // and dimension, a single relation is chosen arbitrarily.
+  // index n * num_dimensions + d).
+  //
+  // If `model` is null, computes only the node expressions. Otherwise, also
+  // computes the tightest bounds we can on (node_expr[head] - node_expr[tail])
+  // for each arc, assuming the arc is taken (its literal is true).
   static std::unique_ptr<RouteRelationsHelper> Create(
       int num_nodes, const std::vector<int>& tails,
       const std::vector<int>& heads, const std::vector<Literal>& literals,
       absl::Span<const AffineExpression> flat_node_dim_expressions,
-      const BinaryRelationRepository& binary_relation_repository);
+      const BinaryRelationRepository& binary_relation_repository, Model* model);
 
   // Returns the number of "dimensions", such as time or vehicle load.
   int num_dimensions() const { return num_dimensions_; }
@@ -73,46 +78,44 @@ class RouteRelationsHelper {
     return flat_node_dim_expressions_[node * num_dimensions_ + dimension];
   }
 
-  // Returns the relation tail_coeff.X + head_coeff.Y \in [lhs, rhs] between the
-  // X and Y expressions associated with the tail and head of the given arc,
-  // respectively, and the given dimension (head_coeff is always positive).
-  // Returns an "empty" struct with all fields set to 0 if there is no such
-  // relation.
-  struct Relation {
-    IntegerValue tail_coeff = 0;
-    IntegerValue head_coeff = 0;
-    IntegerValue lhs;
-    IntegerValue rhs;
+  // Each arc stores the bound on expr[head] - expr[tail] \in [lhs, rhs]. Note
+  // that we interpret kMin/kMax integer values as not set. Such bounds will
+  // still be valid though because we have a precondition on the input model
+  // variables to be within [kMin/2, kMax/2].
+  struct HeadMinusTailBounds {
+    IntegerValue lhs = kMinIntegerValue;
+    IntegerValue rhs = kMaxIntegerValue;
 
-    bool empty() const { return tail_coeff == 0 && head_coeff == 0; }
-
-    bool operator==(const Relation& r) const {
-      return tail_coeff == r.tail_coeff && head_coeff == r.head_coeff &&
-             lhs == r.lhs && rhs == r.rhs;
+    bool operator==(const HeadMinusTailBounds& r) const {
+      return lhs == r.lhs && rhs == r.rhs;
     }
   };
-  const Relation& GetArcRelation(int arc, int dimension) const {
+  const HeadMinusTailBounds& GetArcRelation(int arc, int dimension) const {
     return flat_arc_dim_relations_[arc * num_dimensions_ + dimension];
   }
 
-  // Returns the level zero lower or upper bound of the offset between the
-  // expressions associated with the head and tail of the given arc, and the
-  // given dimension.
-  IntegerValue GetArcOffsetBound(int arc, int dimension, bool upper_bound,
-                                 const IntegerTrail& integer_trail) const;
+  // Returns the level zero lower bound of the offset between the (optionally
+  // negated) expressions associated with the head and tail of the given arc,
+  // and the given dimension.
+  IntegerValue GetArcOffsetLowerBound(
+      int arc, int dimension, bool negate_expressions,
+      const IntegerTrail& integer_trail,
+      const IntegerEncoder& integer_encoder) const;
 
   void RemoveArcs(absl::Span<const int> sorted_arc_indices);
 
  private:
   RouteRelationsHelper(const std::vector<int>& tails,
-                       const std::vector<int>& heads, int num_dimensions,
+                       const std::vector<int>& heads,
+                       const std::vector<Literal>& literals, int num_dimensions,
                        std::vector<AffineExpression> flat_node_dim_expressions,
-                       std::vector<Relation> flat_arc_dim_relations);
+                       std::vector<HeadMinusTailBounds> flat_arc_dim_relations);
 
   void LogStats() const;
 
   const std::vector<int>& tails_;
   const std::vector<int>& heads_;
+  const std::vector<Literal>& literals_;
 
   int num_dimensions_;
   // The expression associated with node n and dimension d is at index n *
@@ -120,7 +123,7 @@ class RouteRelationsHelper {
   std::vector<AffineExpression> flat_node_dim_expressions_;
   // The relation associated with arc a and dimension d is at index a *
   // num_dimensions_ + d.
-  std::vector<Relation> flat_arc_dim_relations_;
+  std::vector<HeadMinusTailBounds> flat_arc_dim_relations_;
 };
 
 // Computes and fills the node expressions of all the routes constraints in
@@ -132,46 +135,83 @@ class RouteRelationsHelper {
 std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
     const CpModelProto& input_model, CpModelProto& output_model);
 
-// This is used to represent a "special bin packing" problem where we have
-// objects that can either be items with a given demand or bins with a given
-// capacity. The problem is to choose the minimum number of objects that will
-// be bins, such that the other objects (items) can be packed inside.
-struct ItemOrBin {
-  // Only one option will apply, this can either be an item with given demand
-  // or a bin with given capacity.
-  //
-  // Important: We support negative demands and negative capacity. We just
-  // need that the sum of demand <= capacity for the item in that bin.
-  IntegerValue demand = 0;
-  IntegerValue capacity = 0;
+class SpecialBinPackingHelper {
+ public:
+  SpecialBinPackingHelper() = default;
+  explicit SpecialBinPackingHelper(double dp_effort) : dp_effort_(dp_effort) {}
 
-  // We described the problem where each object can be an item or a bin, but
-  // in practice we might have restriction on what object can be which, and we
-  // use this field to indicate that.
+  // This is used to represent a "special bin packing" problem where we have
+  // objects that can either be items with a given demand or bins with a given
+  // capacity. The problem is to choose the minimum number of objects that will
+  // be bins, such that the other objects (items) can be packed inside.
+  struct ItemOrBin {
+    // Only one option will apply, this can either be an item with given demand
+    // or a bin with given capacity.
+    //
+    // Important: We support negative demands and negative capacity. We just
+    // need that the sum of demand <= capacity for the item in that bin.
+    IntegerValue demand = 0;
+    IntegerValue capacity = 0;
+
+    // We described the problem where each object can be an item or a bin, but
+    // in practice we might have restriction on what object can be which, and we
+    // use this field to indicate that.
+    //
+    // The numerical order is important as we use that in the greedy algorithm.
+    // See ComputeMinNumberOfBins() code.
+    enum {
+      MUST_BE_ITEM = 0,  // capacity will be set at zero.
+      ITEM_OR_BIN = 1,
+      MUST_BE_BIN = 2,  // demand will be set at zero.
+    } type = ITEM_OR_BIN;
+  };
+
+  // Given a "special bin packing" problem as decribed above, return a lower
+  // bound on the number of bins that needs to be taken.
   //
-  // The numerical order is important as we use that in the greedy algorithm.
-  // See ComputeMinNumberOfBins() code.
-  enum {
-    MUST_BE_ITEM = 0,  // capacity will be set at zero.
-    ITEM_OR_BIN = 1,
-    MUST_BE_BIN = 2,  // demand will be set at zero.
-  } type = ITEM_OR_BIN;
+  // This simply sorts the object according to a greedy criteria and minimize
+  // the number of bins such that the "demands <= capacities" constraint is
+  // satisfied.
+  //
+  // If the problem is infeasible, this will return object.size() + 1, which is
+  // a trivially infeasible bound.
+  //
+  // TODO(user): Use fancier DP to derive tighter bound. Also, when there are
+  // many dimensions, the choice of which item go to which bin is correlated,
+  // can we exploit this?
+  int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, std::string& info);
+
+  // Visible for testing.
+  //
+  // Returns true if we can greedily pack items with indices [num_bins, size)
+  // into the first num_bins bins (with indices [0, num_bins)). This function
+  // completely ignores the ItemOrBin types, and just uses the first num_bins
+  // objects as bins and the rest as items. It is up to the caller to make sure
+  // this is okay.
+  //
+  // This is just used to quickly assess if a more precise lower bound on the
+  // number of bins could gain something. It works in O(num_bins * num_items).
+  bool GreedyPackingWorks(int num_bins, absl::Span<const ItemOrBin> objects);
+
+  // Visible for testing.
+  //
+  // If we look at all the possible sum of item demands, it is possible that
+  // some value can never be reached. We use dynamic programming to compute the
+  // set of reachable values and tighten the capacities accordingly.
+  //
+  // Returns true iff we tightened something.
+  bool UseDpToTightenCapacities(absl::Span<ItemOrBin> objects);
+
+ private:
+  // Note that this will sort the objects so that the "best" bins are first.
+  // See implementation.
+  int ComputeMinNumberOfBinsInternal(absl::Span<ItemOrBin> objects);
+
+  const double dp_effort_ = 1e8;
+  std::vector<IntegerValue> tmp_capacities_;
+  std::vector<int64_t> tmp_demands_;
+  MaxBoundedSubsetSumExact max_bounded_subset_sum_exact_;
 };
-
-// Given a "special bin packing" problem as decribed above, return a lower
-// bound on the number of bins that needs to be taken.
-//
-// This simply sorts the object according to a greedy criteria and minimize
-// the number of bins such that the "demands <= capacities" constraint is
-// satisfied.
-//
-// If the problem is infeasible, this will return object.size() + 1, which is
-// a trivially infeasible bound.
-//
-// TODO(user): Use fancier DP to derive tighter bound. Also, when there are
-// many dimensions, the choice of which item go to which bin is correlated,
-// can we exploit this?
-int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, bool* gcd_was_used);
 
 // Helper to compute the minimum flow going out of a subset of nodes, for a
 // given RoutesConstraint.
@@ -263,7 +303,7 @@ class MinOutgoingFlowHelper {
   //
   // We provide a reduction for the cross product of:
   // - Each possible dimension in the RouteRelationsHelper.
-  // - lhs or rhs (when negate_variables = true) in X - Y \in [lhs, rhs].
+  // - lhs or rhs (when negate_expressions = true) in X - Y \in [lhs, rhs].
   // - (start and incoming arcs) or (ends and outgoing arcs).
   //
   // Warning: the returned Span<> is only valid until the next call to this
@@ -271,10 +311,11 @@ class MinOutgoingFlowHelper {
   //
   // TODO(user): Given the info for a subset, we can derive bounds for any
   // smaller set included in it. We just have to ignore the MUST_BE_ITEM
-  // type as this might no longer be true. That might be interseting.
-  absl::Span<ItemOrBin> RelaxIntoSpecialBinPackingProblem(
-      absl::Span<const int> subset, int dimension, bool negate_variables,
-      bool use_incoming, const RouteRelationsHelper& helper);
+  // type as this might no longer be true. That might be interesting.
+  absl::Span<SpecialBinPackingHelper::ItemOrBin>
+  RelaxIntoSpecialBinPackingProblem(absl::Span<const int> subset, int dimension,
+                                    bool negate_expressions, bool use_incoming,
+                                    const RouteRelationsHelper& helper);
 
   // Returns the minimum flow going out of a subset of size `subset_size`,
   // assuming that the longest feasible path inside this subset has
@@ -289,6 +330,7 @@ class MinOutgoingFlowHelper {
   const BinaryRelationRepository& binary_relation_repository_;
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
+  const IntegerEncoder& integer_encoder_;
   SharedStatistics* shared_stats_;
 
   // Temporary data used by ComputeMinOutgoingFlow(). Always contain default
@@ -331,7 +373,8 @@ class MinOutgoingFlowHelper {
   std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
       next_node_var_lower_bounds_;
 
-  std::vector<ItemOrBin> tmp_bin_packing_problem_;
+  SpecialBinPackingHelper bin_packing_helper_;
+  std::vector<SpecialBinPackingHelper::ItemOrBin> tmp_bin_packing_problem_;
 
   // Statistics.
   int64_t num_full_dp_skips_ = 0;

@@ -77,6 +77,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/primary_variables.h"
 #include "ortools/sat/routing_cuts.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_inprocessing.h"
@@ -297,6 +298,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   int no_overlap_num_fixed_intervals = 0;
 
   int num_fixed_intervals = 0;
+  const VariableRelationships relationships =
+      ComputeVariableRelationships(model_proto);
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // We split the linear constraints into 3 buckets has it gives more insight
@@ -537,7 +540,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                    : "");
     absl::StrAppend(&result,
                     "#Variables: ", FormatCounter(model_proto.variables_size()),
-                    objective_string, "\n");
+                    objective_string, " (",
+                    (model_proto.variables_size() -
+                     relationships.secondary_variables.size()),
+                    " primary variables)\n");
   }
   if (num_vars_per_domains.contains(Domain(0, 1))) {
     // We always list Boolean first.

@@ -160,13 +160,18 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
       subset_already_contains_element[element] = false;
     }
   }
+  VLOG(1) << "Finished generating the model with " << num_elements_covered
+          << " elements covered.";
 
   // It can happen -- rarely in practice -- that some of the elements cannot be
   // covered. Let's add them to randomly chosen subsets.
   if (num_elements_covered != num_elements) {
+    VLOG(1) << "Generated model with " << num_elements - num_elements_covered
+            << " elements that cannot be covered. Adding them to random "
+               "subsets.";
     SubsetBoolVector element_already_in_subset(num_subsets, false);
     for (ElementIndex element(0); element.value() < num_elements; ++element) {
-      LOG_EVERY_N_SEC(INFO, 5) << absl::StrFormat(
+      VLOG_EVERY_N_SEC(1, 5) << absl::StrFormat(
           "Generating subsets for element %d (%.1f%%)", element.value(),
           100.0 * element.value() / num_elements);
       if (!contains_element[element]) {
@@ -196,7 +201,11 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
         ++num_elements_covered;
       }
     }
+    VLOG(1) << "Finished generating subsets for elements that were not "
+               "covered in the original model.";
   }
+  VLOG(1) << "Finished generating the model. There are "
+          << num_elements - num_elements_covered << " uncovered elements.";
 
   CHECK_EQ(num_elements_covered, num_elements);
 
@@ -330,8 +339,10 @@ void SetCoverModel::SortElementsInSubsets() {
 
 void SetCoverModel::CreateSparseRowView() {
   if (row_view_is_valid_) {
+    VLOG(1) << "CreateSparseRowView: already valid";
     return;
   }
+  VLOG(1) << "CreateSparseRowView started";
   rows_.resize(num_elements_, SparseRow());
   ElementToIntVector row_sizes(num_elements_, 0);
   for (const SubsetIndex subset : SubsetRange()) {
@@ -357,6 +368,7 @@ void SetCoverModel::CreateSparseRowView() {
   }
   row_view_is_valid_ = true;
   elements_in_subsets_are_sorted_ = true;
+  VLOG(1) << "CreateSparseRowView finished";
 }
 
 bool SetCoverModel::ComputeFeasibility() const {
@@ -365,29 +377,40 @@ bool SetCoverModel::ComputeFeasibility() const {
   CHECK_EQ(columns_.size(), num_subsets());
   CHECK_EQ(subset_costs_.size(), num_subsets());
   CHECK_EQ(all_subsets_.size(), num_subsets());
-  ElementToIntVector coverage(num_elements_, 0);
   for (const Cost cost : subset_costs_) {
     CHECK_GT(cost, 0.0);
   }
+  ElementToIntVector possible_coverage(num_elements_, 0);
   SubsetIndex column_index(0);
   for (const SparseColumn& column : columns_) {
-    // DLOG_IF(INFO, column.empty()) << "Empty column " << column_index.value();
+    DLOG_IF(INFO, column.empty()) << "Empty column " << column_index.value();
     for (const ElementIndex element : column) {
-      ++coverage[element];
+      ++possible_coverage[element];
     }
     // NOMUTANTS -- column_index is only used for logging in debug mode.
     ++column_index;
   }
+  int64_t num_uncoverable_elements = 0;
   for (const ElementIndex element : ElementRange()) {
-    CHECK_GE(coverage[element], 0);
-    if (coverage[element] == 0) {
-      return false;
+    // NOMUTANTS -- num_uncoverable_elements is only used for logging.
+    if (possible_coverage[element] == 0) {
+      ++num_uncoverable_elements;
     }
   }
+  VLOG(1) << "num_uncoverable_elements = " << num_uncoverable_elements;
+  for (const ElementIndex element : ElementRange()) {
+    if (possible_coverage[element] > 0) continue;
+    LOG(ERROR) << "Element " << element << " is not covered.";
+    return false;
+  }
   VLOG(1) << "Max possible coverage = "
-          << *std::max_element(coverage.begin(), coverage.end());
+          << *std::max_element(possible_coverage.begin(),
+                               possible_coverage.end());
   for (const SubsetIndex subset : SubsetRange()) {
-    CHECK_EQ(all_subsets_[subset.value()], subset) << "subset = " << subset;
+    if (all_subsets_[subset.value()] == subset) continue;
+    LOG(ERROR) << "subset = " << subset << " all_subsets_[subset.value()] = "
+               << all_subsets_[subset.value()];
+    return false;
   }
   return true;
 }
@@ -396,19 +419,19 @@ SetCoverProto SetCoverModel::ExportModelAsProto() const {
   CHECK(elements_in_subsets_are_sorted_);
   SetCoverProto message;
   for (const SubsetIndex subset : SubsetRange()) {
-    LOG_EVERY_N_SEC(INFO, 5)
-        << absl::StrFormat("Exporting subset %d (%.1f%%)", subset.value(),
-                           100.0 * subset.value() / num_subsets());
+    VLOG_EVERY_N_SEC(1, 5) << absl::StrFormat(
+        "Exporting subset %d (%.1f%%)", subset.value(),
+        100.0 * subset.value() / num_subsets());
     SetCoverProto::Subset* subset_proto = message.add_subset();
     subset_proto->set_cost(subset_costs_[subset]);
     SparseColumn column = columns_[subset];  // Copy is intentional.
-    // std::sort(column.begin(), column.end());
     BaseInt* data = reinterpret_cast<BaseInt*>(column.data());
     RadixSort(absl::MakeSpan(data, column.size()));
     for (const ElementIndex element : column) {
       subset_proto->add_element(element.value());
     }
   }
+  VLOG(1) << "Finished exporting the model.";
   return message;
 }
 

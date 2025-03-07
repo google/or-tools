@@ -52,6 +52,7 @@ namespace sat {
 namespace {
 
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 
 TEST(CompactVectorVectorTest, EmptyCornerCases) {
   CompactVectorVector<int, int> storage;
@@ -73,6 +74,21 @@ TEST(CompactVectorVectorTest, ResetFromFlatMapping) {
   EXPECT_THAT(storage[0], ElementsAre(5, 6));
   EXPECT_THAT(storage[1], ElementsAre(2, 3, 4));
   EXPECT_THAT(storage[2], ElementsAre(0, 1, 7, 8));
+}
+
+TEST(CompactVectorVectorTest, ResetFromFlatMappingWithMinimumNumNodes) {
+  CompactVectorVector<int, int> storage;
+  EXPECT_EQ(storage.size(), 0);
+
+  const std::vector<int> input = {2, 2, 1, 1, 1, 0, 0, 2, 2};
+  storage.ResetFromFlatMapping(input, IdentityMap<int>(), 5);
+
+  EXPECT_EQ(storage.size(), 5);
+  EXPECT_THAT(storage[0], ElementsAre(5, 6));
+  EXPECT_THAT(storage[1], ElementsAre(2, 3, 4));
+  EXPECT_THAT(storage[2], ElementsAre(0, 1, 7, 8));
+  EXPECT_THAT(storage[3], IsEmpty());
+  EXPECT_THAT(storage[4], IsEmpty());
 }
 
 TEST(CompactVectorVectorTest, RemoveBySwap) {

@@ -74,27 +74,6 @@ std::vector<int64_t> ValuesFromProto(const Values& values) {
   return std::vector<int64_t>(values.begin(), values.end());
 }
 
-void ComputeLinearBounds(const LinearConstraintProto& proto,
-                         CpModelMapping* mapping, IntegerTrail* integer_trail,
-                         int64_t* sum_min, int64_t* sum_max) {
-  *sum_min = 0;
-  *sum_max = 0;
-
-  for (int i = 0; i < proto.vars_size(); ++i) {
-    const int64_t coeff = proto.coeffs(i);
-    const IntegerVariable var = mapping->Integer(proto.vars(i));
-    const int64_t lb = integer_trail->LowerBound(var).value();
-    const int64_t ub = integer_trail->UpperBound(var).value();
-    if (coeff >= 0) {
-      (*sum_min) += coeff * lb;
-      (*sum_max) += coeff * ub;
-    } else {
-      (*sum_min) += coeff * ub;
-      (*sum_max) += coeff * lb;
-    }
-  }
-}
-
 // We check if the constraint is a sum(ax * xi) == value.
 bool ConstraintIsEq(const LinearConstraintProto& proto) {
   return proto.domain_size() == 2 && proto.domain(0) == proto.domain(1);
@@ -104,9 +83,8 @@ bool ConstraintIsEq(const LinearConstraintProto& proto) {
 bool ConstraintIsNEq(const LinearConstraintProto& proto,
                      CpModelMapping* mapping, IntegerTrail* integer_trail,
                      int64_t* single_value) {
-  int64_t sum_min = 0;
-  int64_t sum_max = 0;
-  ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max);
+  const auto [sum_min, sum_max] =
+      mapping->ComputeMinMaxActivity(proto, integer_trail);
 
   const Domain complement =
       Domain(sum_min, sum_max)
@@ -1280,32 +1258,6 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     max_sum += std::max(term_a, term_b);
   }
 
-  // Load conditional precedences and always true binary relations.
-  const SatParameters& params = *m->GetOrCreate<SatParameters>();
-  if (ct.enforcement_literal().size() <= 1 && vars.size() <= 2) {
-    // To avoid overflow in the code below, we tighten the bounds.
-    int64_t rhs_min = ct.linear().domain(0);
-    int64_t rhs_max = ct.linear().domain(ct.linear().domain().size() - 1);
-    rhs_min = std::max(rhs_min, min_sum.value());
-    rhs_max = std::min(rhs_max, max_sum.value());
-
-    auto* repository = m->GetOrCreate<BinaryRelationRepository>();
-    if (ct.enforcement_literal().empty()) {
-      if (vars.size() == 2) {
-        repository->Add(Literal(kNoLiteralIndex), {vars[0], coeffs[0]},
-                        {vars[1], coeffs[1]}, rhs_min, rhs_max);
-      }
-    } else {
-      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
-      if (vars.size() == 1) {
-        repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
-      } else if (vars.size() == 2) {
-        repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]},
-                        rhs_min, rhs_max);
-      }
-    }
-  }
-
   // Load precedences.
   if (!HasEnforcementLiteral(ct)) {
     auto* precedences = m->GetOrCreate<PrecedenceRelations>();
@@ -1366,6 +1318,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     }
   }
 
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
   const IntegerValue domain_size_limit(
       params.max_domain_size_when_encoding_eq_neq_constraints());
   if (ct.linear().vars_size() == 2 && !integer_trail->IsFixed(vars[0]) &&

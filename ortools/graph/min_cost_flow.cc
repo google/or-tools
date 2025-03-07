@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -58,10 +59,12 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
 
   const NodeIndex max_num_nodes = graph_->node_capacity();
   if (max_num_nodes > 0) {
-    first_admissible_arc_.assign(max_num_nodes, Graph::kNilArc);
-    node_potential_.assign(max_num_nodes, 0);
-    node_excess_.assign(max_num_nodes, 0);
-    initial_node_excess_.assign(max_num_nodes, 0);
+    first_admissible_arc_ = std::make_unique<ArcIndex[]>(max_num_nodes);
+    std::fill(first_admissible_arc_.get(),
+              first_admissible_arc_.get() + max_num_nodes, Graph::kNilArc);
+    node_potential_ = std::make_unique<CostValue[]>(max_num_nodes);
+    node_excess_ = std::make_unique<FlowQuantity[]>(max_num_nodes);
+    initial_node_excess_ = std::make_unique<FlowQuantity[]>(max_num_nodes);
   }
   const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
@@ -162,8 +165,9 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
     return false;
   }
 
-  std::vector<FlowQuantity> max_node_excess = node_excess_;
-  std::vector<FlowQuantity> min_node_excess = node_excess_;
+  std::vector<FlowQuantity> max_node_excess(
+      node_excess_.get(), node_excess_.get() + graph_->num_nodes());
+  std::vector<FlowQuantity> min_node_excess = max_node_excess;
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
     const FlowQuantity capacity = residual_arc_capacity_[arc];
     CHECK_GE(capacity, 0);
@@ -454,7 +458,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   }
 
   status_ = NOT_SOLVED;
-  node_potential_.assign(node_potential_.size(), 0);
+  std::fill(node_potential_.get(),
+            node_potential_.get() + graph_->node_capacity(), 0);
 
   ResetFirstAdmissibleArcs();
   if (!ScaleCosts()) return false;

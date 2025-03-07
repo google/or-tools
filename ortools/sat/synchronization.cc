@@ -1027,7 +1027,7 @@ void SharedBoundsManager::Synchronize() {
       id_to_changed_variables_[j].Set(var);
     }
   }
-  changed_variables_since_last_synchronize_.ClearAll();
+  changed_variables_since_last_synchronize_.ResetAllToFalse();
 }
 
 int SharedBoundsManager::RegisterNewId() {
@@ -1062,7 +1062,7 @@ void SharedBoundsManager::GetChangedBounds(
       DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
       variables->push_back(var);
     }
-    id_to_changed_variables_[id].ClearAll();
+    id_to_changed_variables_[id].ResetAllToFalse();
 
     // We need to report the bounds in a deterministic order as it is difficult
     // to guarantee that nothing depend on the order in which the new bounds are

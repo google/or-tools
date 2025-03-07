@@ -133,7 +133,6 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"

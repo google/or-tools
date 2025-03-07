@@ -154,6 +154,9 @@ message RoutingSearchParameters {
     // usage is determined as the ratio of node demand over vehicle capacity.
     // Currently, this property only supports unary dimensions.
     SORTING_PROPERTY_HIGHEST_DIMENSION_USAGE = 7;
+    // Selects nodes in random order.
+    // This property cannot be used in conjunction with other properties.
+    SORTING_PROPERTY_RANDOM = 8;
   }
 
   // The properties used to sort insertion entries in the local cheapest

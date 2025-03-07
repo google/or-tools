@@ -549,6 +549,13 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
             "Duplicate local cheapest insertion sorting property: ",
             RoutingSearchParameters::InsertionSortingProperty_Name(property)));
       }
+      if (property == RoutingSearchParameters::SORTING_PROPERTY_RANDOM &&
+          search_parameters.local_cheapest_insertion_sorting_properties()
+                  .size() > 1) {
+        errors.emplace_back(
+            StrCat("SORTING_PROPERTY_RANDOM cannot be used in conjunction "
+                   "with other properties."));
+      }
     }
   }
   if (const double ratio = search_parameters.ls_operator_neighbors_ratio();

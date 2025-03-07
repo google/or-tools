@@ -20,6 +20,9 @@
 #include "absl/container/flat_hash_map.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/parse_test_proto.h"
+#include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
@@ -32,6 +35,7 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::UnorderedElementsAre;
@@ -487,6 +491,79 @@ TEST(BinaryRelationRepositoryTest, Build) {
   EXPECT_THAT(repository.IndicesOfRelationsBetween(x, z),
               UnorderedElementsAre(5));
   EXPECT_THAT(repository.IndicesOfRelationsBetween(z, y), IsEmpty());
+}
+
+TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      enforcement_literal: [ 0 ]
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 1 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 3 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 3, -2 ]
+        domain: [ -10, 10 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ -5, 5 ]
+      }
+    }
+  )pb");
+  Model model;
+
+  LoadCpModel(model_proto, &model);
+
+  const BinaryRelationRepository& repository =
+      *model.GetOrCreate<BinaryRelationRepository>();
+  std::vector<Relation> relations;
+  for (int i = 0; i < repository.size(); ++i) {
+    relations.push_back(repository.relation(i));
+  }
+  const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
+  EXPECT_THAT(relations, UnorderedElementsAre(Relation{mapping.Literal(0),
+                                                       {mapping.Integer(2), 1},
+                                                       {mapping.Integer(3), -1},
+                                                       0,
+                                                       10},
+                                              Relation{mapping.Literal(1),
+                                                       {mapping.Integer(2), 1},
+                                                       {kNoIntegerVariable, 0},
+                                                       5,
+                                                       10},
+                                              Relation{Literal(kNoLiteralIndex),
+                                                       {mapping.Integer(2), 3},
+                                                       {mapping.Integer(3), -2},
+                                                       -10,
+                                                       10}));
 }
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {

@@ -25,6 +25,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -218,10 +219,9 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
 
   // Non-consecutive intervals related data-structures.
   IntegerValue base_;
-  std::vector<int> indices_to_clear_;
   std::vector<int> index_to_start_index_;
   std::vector<int> index_to_end_index_;
-  std::vector<bool> index_is_present_;
+  SparseBitset<int> index_is_present_;
   std::vector<AffineExpression> index_to_expr_;
 
   // Temporary integer reason.

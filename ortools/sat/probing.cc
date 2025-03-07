@@ -75,7 +75,7 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
 
 bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   new_integer_bounds_.clear();
-  propagated_.SparseClearAll();
+  propagated_.ResetAllToFalse();
   for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
     if (assignment_.LiteralIsAssigned(decision)) continue;
 

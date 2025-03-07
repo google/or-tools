@@ -451,6 +451,9 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
 
   for (const auto [first_node, second_node, offset, performed_constraint] :
        dimension_.GetNodePrecedences()) {
+    if (next_accessor(first_node) == -1 || next_accessor(second_node) == -1) {
+      continue;
+    }
     const bool first_node_unperformed =
         lower_bounds[PositiveNode(first_node)] ==
         std::numeric_limits<int64_t>::min();
@@ -463,7 +466,7 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
       case RoutingDimension::PrecedenceStatus::kActive:
         break;
       case RoutingDimension::PrecedenceStatus::kInactive:
-      continue;
+        continue;
       case RoutingDimension::PrecedenceStatus::kInvalid:
         return false;
     }
@@ -2481,6 +2484,9 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
   // Node precedence constraints, set when both nodes are visited.
   for (const auto [first_node, second_node, offset, performed_constraint] :
        dimension_->GetNodePrecedences()) {
+    if (next_accessor(first_node) == -1 || next_accessor(second_node) == -1) {
+      continue;
+    }
     const int first_cumul_var = index_to_cumul_variable_[first_node];
     const int second_cumul_var = index_to_cumul_variable_[second_node];
     switch (RoutingDimension::GetPrecedenceStatus(
@@ -2488,7 +2494,7 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
       case RoutingDimension::PrecedenceStatus::kActive:
         break;
       case RoutingDimension::PrecedenceStatus::kInactive:
-      continue;
+        continue;
       case RoutingDimension::PrecedenceStatus::kInvalid:
         return false;
     }

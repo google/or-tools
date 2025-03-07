@@ -27,6 +27,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
@@ -36,9 +37,14 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/primary_variables.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+
+ABSL_FLAG(bool, cp_model_check_dependent_variables, false,
+          "When true, check that solutions can be computed only from their "
+          "free variables.");
 
 namespace operations_research {
 namespace sat {
@@ -1956,6 +1962,18 @@ bool SolutionIsFeasible(const CpModelProto& model,
         (static_cast<double>(inner_objective) + model.objective().offset());
     VLOG(2) << "Checker inner objective = " << inner_objective;
     VLOG(2) << "Checker scaled objective = " << scaled_objective;
+  }
+  if (absl::GetFlag(FLAGS_cp_model_check_dependent_variables)) {
+    const VariableRelationships relationships =
+        ComputeVariableRelationships(model);
+    std::vector<int64_t> all_variables(variable_values.begin(),
+                                       variable_values.end());
+    for (const int var : relationships.secondary_variables) {
+      all_variables[var] = -999999;  // Those values should be overwritten.
+    }
+    CHECK(ComputeAllVariablesFromPrimaryVariables(model, relationships,
+                                                  &all_variables));
+    CHECK(absl::MakeSpan(all_variables) == variable_values);
   }
 
   return true;

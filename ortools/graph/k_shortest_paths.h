@@ -55,6 +55,7 @@
 #define OR_TOOLS_GRAPH_K_SHORTEST_PATHS_H_
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <queue>
@@ -206,8 +207,8 @@ class PathWithPriority {
 
   PathWithPriority(PathDistance priority, std::vector<NodeIndex> path)
       : path_(std::move(path)), priority_(priority) {}
-  bool operator<(const PathWithPriority& other) const {
-    return priority_ < other.priority_;
+  bool operator>(const PathWithPriority& other) const {
+    return priority_ > other.priority_;
   }
 
   [[nodiscard]] const std::vector<NodeIndex>& path() const { return path_; }
@@ -318,7 +319,9 @@ KShortestPaths<GraphType> YenKShortestPaths(
 
   // Generate variant paths.
   internal::UnderlyingContainerAdapter<
-      std::priority_queue<internal::PathWithPriority<GraphType>>>
+      std::priority_queue<internal::PathWithPriority<GraphType>,
+                          std::vector<internal::PathWithPriority<GraphType>>,
+                          std::greater<internal::PathWithPriority<GraphType>>>>
       variant_path_queue;
 
   // One path has already been generated (the shortest one). Only k-1 more
@@ -495,7 +498,7 @@ KShortestPaths<GraphType> YenKShortestPaths(
             internal::ComputePathLength(graph, arc_lengths, new_path);
         VLOG(5) << "  New potential path generated: "
                 << absl::StrJoin(new_path, " - ") << " (" << new_path.size()
-                << ")";
+                << ")" << " with length " << path_length;
         VLOG(5) << "    Root: " << absl::StrJoin(root_path, " - ") << " ("
                 << root_path.size() << ")";
         VLOG(5) << "    Spur: " << absl::StrJoin(spur_path, " - ") << " ("
