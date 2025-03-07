@@ -161,7 +161,7 @@ def create_section_data():
           'ortools/graph/connectivity.h ' +
           'ortools/graph/eulerian_path.h ' + 'ortools/graph/graph.h ' +
           'ortools/graph/graphs.h ' + 'ortools/graph/hamiltonian_path.h ' +
-          'ortools/graph/io.h ' + 'ortools/graph/iterators.h ' +
+          'ortools/graph/graph_io.h ' + 'ortools/graph/iterators.h ' +
           'ortools/graph/linear_assignment.h ' + 'ortools/graph/max_flow.h ' +
           'ortools/graph/min_cost_flow.h ' +
           'ortools/graph/minimum_spanning_tree.h ' +
