@@ -41,6 +41,14 @@ digraph CMake {
         label = "abseil/abseil-cpp.git";
       }
 
+      subgraph clusterRe2 {
+        Re2 [label="re2::re2"];
+
+        color=royalblue;
+        label = "google/re2.git";
+      }
+      Absl -> Re2;
+
       subgraph clusterProtobuf {
         Protobuf [label="protobuf::libprotobuf", color=royalblue];
 
@@ -49,6 +57,7 @@ digraph CMake {
       }
       ZLIB -> Protobuf;
       Absl -> Protobuf;
+      Re2 -> Protobuf;
 
       subgraph clusterCoinOR {
         subgraph clusterCoinUtils {
@@ -140,7 +149,10 @@ digraph CMake {
 
       subgraph clusterSCIPSolver {
         subgraph clusterSCIP {
-          SCIP [label="scip::scip"];
+          SCIP [label="SCIP::libscip"];
+          SPX [label="libsoplex"];
+
+          SPX -> SCIP;
 
           color=royalblue;
           label = "scipopt/scip.git";
@@ -148,6 +160,8 @@ digraph CMake {
         color=royalblue;
         label = "SCIP Solver\n(-DUSE_SCIP=ON)";
       }
+      ZLIB -> SPX;
+      ZLIB -> SCIP;
 
       SWIG_WIN [label="swigwin\n(Windows)", color=chocolate];
 
@@ -176,6 +190,7 @@ digraph CMake {
       ZLIB -> OR_SRC;
       Absl -> OR_SRC;
       Protobuf -> OR_SRC;
+      Re2 -> OR_SRC;
       ClpSolver -> OR_SRC;
       CbcSolver -> OR_SRC;
       GLPK -> OR_SRC;
