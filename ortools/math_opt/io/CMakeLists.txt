@@ -30,5 +30,5 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::math_opt_proto
   absl::strings
-  $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_SCIP}>:SCIP::libscip>
 )

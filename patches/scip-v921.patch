@@ -96,7 +96,7 @@ index 559552f9..682ac40a 100644
  set(SCIP_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
  set(SCIP_FOUND TRUE)
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index e6fda2d5..bbc55db1 100644
+index e6fda2d5..2d04b845 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -1149,17 +1149,8 @@ install(TARGETS scip libscip EXPORT scip-targets
@@ -119,7 +119,7 @@ index e6fda2d5..bbc55db1 100644
  
  # configure the config file for the build tree
  set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${PROJECT_BINARY_DIR}")
-@@ -1175,12 +1166,6 @@ ${PROJECT_BINARY_DIR}/scip-config-version.cmake
+@@ -1175,18 +1166,16 @@ ${PROJECT_BINARY_DIR}/scip-config-version.cmake
  
  #configure the config file for the install
  set(CONF_INCLUDE_DIRS "\${CMAKE_CURRENT_LIST_DIR}/../../../include")
@@ -132,3 +132,14 @@ index e6fda2d5..bbc55db1 100644
  configure_file(${PROJECT_SOURCE_DIR}/scip-config.cmake.in
    "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/scip-config.cmake" @ONLY)
  
+ # install the targets of the scip export group and the config file so that other projects
+ # can link easily against scip
+-install(EXPORT scip-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/scip)
++install(EXPORT scip-targets
++  NAMESPACE SCIP::
++  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/scip
++  COMPONENT Devel
++)
+ install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/scip-config.cmake"
+               ${PROJECT_BINARY_DIR}/scip-config-version.cmake
+         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/scip)

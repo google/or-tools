@@ -105,10 +105,10 @@ if(USE_PDLP AND BUILD_PDLP)
 endif()
 
 if(USE_SCIP)
-  if(NOT TARGET libscip)
-    message(FATAL_ERROR "Target libscip not available.")
+  if(NOT TARGET SCIP::libscip)
+    message(FATAL_ERROR "Target SCIP::libscip not available.")
   endif()
-  set(SCIP_DEPS libscip)
+  set(SCIP_DEPS SCIP::libscip)
 endif()
 
 # Check optional Dependencies
