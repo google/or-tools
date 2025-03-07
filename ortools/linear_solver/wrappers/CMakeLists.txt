@@ -25,6 +25,6 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   absl::status
-  $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_SCIP}>:SCIP::libscip>
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::linear_solver_wrappers ALIAS ${NAME})
