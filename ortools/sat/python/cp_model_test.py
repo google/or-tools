@@ -1799,6 +1799,18 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(y.index, clone_y.index)
         self.assertEqual(i.index, clone_i.index)
 
+        solo_copy_b = copy.copy(b)
+        self.assertEqual(b.index, solo_copy_b.index)
+        self.assertEqual(b.is_boolean, solo_copy_b.is_boolean)
+        self.assertIs(solo_copy_b.model_proto, b.model_proto)
+        solo_copy_x = copy.copy(x)
+        self.assertEqual(x.index, solo_copy_x.index)
+        self.assertEqual(x.is_boolean, solo_copy_x.is_boolean)
+        self.assertIs(solo_copy_x.model_proto, x.model_proto)
+        solo_copy_i = copy.copy(i)
+        self.assertEqual(i.index, solo_copy_i.index)
+        self.assertIs(solo_copy_i.model_proto, i.model_proto)
+
         model_copy = copy.copy(model)
         copy_b = model_copy.get_bool_var_from_proto_index(b.index)
         copy_x = model_copy.get_int_var_from_proto_index(x.index)

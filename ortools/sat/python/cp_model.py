@@ -266,7 +266,7 @@ class IntVar(cmh.BaseIntVar):
         """Returns a shallowcopy of the variable."""
         return IntVar(self.__model, self.index, self.is_boolean, None)
 
-    def __deepcopy__(self, memo) -> "IntVar":
+    def __deepcopy__(self, memo: Any) -> "IntVar":
         """Returns a deepcopy of the variable."""
         return IntVar(
             copy.deepcopy(self.__model, memo), self.index, self.is_boolean, None

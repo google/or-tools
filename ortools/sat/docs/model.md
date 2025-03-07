@@ -360,16 +360,21 @@ func main() {
 
 ## Model copy
 
-The CpModel classes supports deep copy from a previous model. This is useful to
-solve variations of a base model. The trick is to recover the copies of the
+The `CpModel` classes supports deep copy from a previous model. This is useful
+to solve variations of a base model. The trick is to recover the copies of the
 variables in the original model to be able to manipulate the new model. This is
 illustrated in the following examples.
 
 ### Python code
 
+The deep copy python mechanism relies on the
+[`copy` Python Standard Library](https://docs.python.org/3/library/copy.html).
+
 ```python
 #!/usr/bin/env python3
 """Showcases deep copying of a model."""
+
+import copy
 
 from ortools.sat.python import cp_model
 
@@ -397,15 +402,24 @@ def clone_model_sample_sat():
     if status == cp_model.OPTIMAL:
         print("Optimal value of the original model: {}".format(solver.objective_value))
 
-    # Clones the model.
-    copy = model.clone()
+    # Creates a dictionary holding the model and the variables you want to use.
+    to_clone = {
+        "model": model,
+        "x": x,
+        "y": y,
+        "z": z,
+    }
 
-    copy_x = copy.get_int_var_from_proto_index(x.index)
-    copy_y = copy.get_int_var_from_proto_index(y.index)
+    # Deep copy the dictionary.
+    clone = copy.deepcopy(to_clone)
 
-    copy.add(copy_x + copy_y <= 1)
+    # Retrieve the cloned model and variables.
+    cloned_model: cp_model.CpModel = clone["model"]
+    cloned_x = clone["x"]
+    cloned_y = clone["y"]
+    cloned_model.add(cloned_x + cloned_y <= 1)
 
-    status = solver.solve(copy)
+    status = solver.solve(cloned_model)
 
     if status == cp_model.OPTIMAL:
         print("Optimal value of the modified model: {}".format(solver.objective_value))
