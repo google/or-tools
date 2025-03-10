@@ -100,7 +100,7 @@ class CoverRectangleSat
         bool solution_found = status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible;
         if (solution_found)
         {
-            char[][] output = new char[sizeY][];
+            char[][] output = new char [sizeY][];
             foreach (var y in Enumerable.Range(0, sizeY))
             {
 
@@ -123,7 +123,8 @@ class CoverRectangleSat
                     {
                         if (output[y][x] != ' ')
                         {
-                            Console.WriteLine(string.Format("Error at position x={0} y{1}, found {2}", x, y, output[y][x]));
+                            Console.WriteLine(
+                                string.Format("Error at position x={0} y{1}, found {2}", x, y, output[y][x]));
                         }
                         output[y][x] = c;
                     }
@@ -139,10 +140,11 @@ class CoverRectangleSat
 
     static void Main()
     {
-        foreach  (int numSquares in Enumerable.Range(1, 15))
+        foreach (int numSquares in Enumerable.Range(1, 15))
         {
             Console.WriteLine("Trying with size = {0}", numSquares);
-            if (CoverRectangle(numSquares)) break;
+            if (CoverRectangle(numSquares))
+                break;
         }
-    }    
+    }
 }
