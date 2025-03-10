@@ -18,7 +18,7 @@
 
 #include <cstddef>
 #include <iterator>
-#include <vector>
+#include <utility>
 
 #include "absl/log/check.h"
 
@@ -37,13 +37,24 @@ namespace util {
 // And a client will use it like this:
 //
 // for (const ArcIndex arc : graph.OutgoingArcs(node)) { ... }
+//
+// Note that `BeginEndWrapper` is conceptually a borrowed range as per the C++
+// standard (`std::ranges::borrowed_range`):
+// "The concept borrowed_range defines the requirements of a range such that a
+// function can take it by value and return iterators obtained from it without
+// danger of dangling". We cannot `static_assert` this property though as
+// `std::ranges` is prohibited in google3.
 template <typename Iterator>
 class BeginEndWrapper {
  public:
   using const_iterator = Iterator;
   using value_type = typename std::iterator_traits<Iterator>::value_type;
 
+  // If `Iterator` is default-constructible, an empty range.
+  BeginEndWrapper() = default;
+
   BeginEndWrapper(Iterator begin, Iterator end) : begin_(begin), end_(end) {}
+
   Iterator begin() const { return begin_; }
   Iterator end() const { return end_; }
   size_t size() const { return end_ - begin_; }
@@ -51,8 +62,8 @@ class BeginEndWrapper {
   bool empty() const { return begin() == end(); }
 
  private:
-  const Iterator begin_;
-  const Iterator end_;
+  Iterator begin_;
+  Iterator end_;
 };
 
 // Inline wrapper methods, to make the client code even simpler.
@@ -225,6 +236,50 @@ class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
             IntegerRangeIterator<IntegerType>(end)) {
     DCHECK_LE(begin, end);
   }
+};
+
+// A helper class for implementing list graph iterators: This does pointer
+// chasing on `next` until `sentinel` is found. `Tag` allows distinguishing
+// different iterators with the same index type and sentinel.
+template <typename IndexT, IndexT sentinel, typename Tag>
+class ChasingIterator
+#if __cplusplus < 202002L
+    : public std::iterator<std::input_iterator_tag, IndexT>
+#endif
+{
+ public:
+  // TODO(b/385094969): This should be `IntegerType` for integers,
+  // `IntegerType:value_type` for strong signed integer types.
+  using difference_type = std::ptrdiff_t;
+  using value_type = IndexT;
+
+  ChasingIterator() : index_(sentinel), next_(nullptr) {}
+
+  ChasingIterator(IndexT index, const IndexT* next)
+      : index_(index), next_(next) {}
+
+  IndexT operator*() const { return index_; }
+
+  ChasingIterator& operator++() {
+    index_ = next_[index_];
+    return *this;
+  }
+  ChasingIterator operator++(int) {
+    auto tmp = *this;
+    index_ = next_[index_];
+    return tmp;
+  }
+
+  friend bool operator==(const ChasingIterator& l, const ChasingIterator& r) {
+    return l.index_ == r.index_;
+  }
+  friend bool operator!=(const ChasingIterator& l, const ChasingIterator& r) {
+    return l.index_ != r.index_;
+  }
+
+ private:
+  IndexT index_;
+  const IndexT* next_;
 };
 
 }  // namespace util
