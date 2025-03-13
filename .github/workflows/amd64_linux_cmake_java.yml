@@ -3,10 +3,14 @@ name: amd64 Linux CMake Java
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Building using the github runner environement directly.
 jobs:
   native:
-    name: Linux • CMake • Java
+    name: amd64•Linux•CMake•Java
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +20,7 @@ jobs:
           swig -version
       - name: Check java
         run: java -version
-      - name: Check cmake
+      - name: Check CMake
         run: cmake --version
       - name: Configure
         run: >
@@ -44,3 +48,9 @@ jobs:
           --config Release
           --target install
           -v
+
+  amd64_linux_cmake_java:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v4

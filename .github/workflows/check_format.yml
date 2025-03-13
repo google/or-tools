@@ -2,6 +2,10 @@ name: Check Format
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 jobs:
   # Building using the github runner environement directly.
   clang-format:

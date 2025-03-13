@@ -2,6 +2,10 @@ name: amd64 FreeBSD CMake
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Only macos-12 runner provide virtualisation with vagrant/virtualbox installed.
 # ref: https://github.com/actions/runner-images/tree/main/images/macos
 # ref: https://app.vagrantup.com/generic/boxes/freebsd13
@@ -20,7 +24,7 @@ jobs:
         - distro: freebsd
           lang: java
           allow_failure: true
-    name: FreeBSD • CMake • ${{ matrix.lang }}
+    name: amd64•FreeBSD•CMake•${{matrix.lang}}
     runs-on: macos-12
     steps:
       - uses: actions/checkout@v4
@@ -29,4 +33,4 @@ jobs:
       - name: VirtualBox version
         run: virtualbox -h
       - name: Build
-        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}
+        run: make --directory=cmake ${{matrix.distro}}_${{matrix.lang}}

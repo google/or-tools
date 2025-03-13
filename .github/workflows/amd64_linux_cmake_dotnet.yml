@@ -3,10 +3,14 @@ name: amd64 Linux CMake .Net
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Building using the github runner environement directly.
 jobs:
   native:
-    name: Linux • CMake • .Net
+    name: amd64•Linux•CMake•.Net
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +24,7 @@ jobs:
           dotnet-version: 6.0.x
       - name: Check dotnet
         run: dotnet --info
-      - name: Check cmake
+      - name: Check CMake
         run: cmake --version
       - name: Configure
         run: >
@@ -48,4 +52,9 @@ jobs:
           --config Release
           --target install
           -v
-          -- DESTDIR=install
+
+  amd64_linux_cmake_dotnet:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v4

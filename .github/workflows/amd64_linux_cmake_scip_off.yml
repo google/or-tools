@@ -3,6 +3,10 @@ name: amd64 Linux CMake SCIP OFF
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
 # Building using the github runner environement directly.
 jobs:
   native:
@@ -15,7 +19,7 @@ jobs:
           {language: 'Python', args: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'},
         ]
       fail-fast: false
-    name: Linux • CMake • ${{ matrix.cmake.language }} • SCIP OFF
+    name: amd64•Linux•CMake•${{matrix.cmake.language}}•SCIP=OFF
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -48,7 +52,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=Release
         -DBUILD_DEPS=ON
         -DUSE_SCIP=OFF
-        ${{ matrix.cmake.args }}
+        ${{matrix.cmake.args}}
     - name: Build
       run: >
         cmake --build build
