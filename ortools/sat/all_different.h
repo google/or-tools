@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"

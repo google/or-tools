@@ -158,6 +158,7 @@ cc_library(
         "//ortools/base:threadpool",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:vlog_is_on",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
     ],
