@@ -8,7 +8,7 @@
 OR_TOOLS_VERSION = "10.0"
 
 module(
-    name = "ortools",
+    name = "or-tools",
     version = OR_TOOLS_VERSION,
 )
 
