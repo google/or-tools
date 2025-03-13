@@ -26,17 +26,20 @@
 // day or two smaller ones which can be taken during a longer period of the day.
 
 #include <cstdint>
+#include <cstdlib>
 #include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -227,9 +230,7 @@ int main(int argc, char** argv) {
         LOG(INFO) << break_interval.Var()->name() << " unperformed";
       }
     }
-    DisplayPlan(manager, routing, *solution, false, 0, 0,
-                routing.GetDimensionOrDie(kCapacity),
-                routing.GetDimensionOrDie(kTime));
+    DisplayPlan(manager, routing, *solution, false, 0, 0, {kCapacity, kTime});
   } else {
     LOG(INFO) << "No solution found.";
   }

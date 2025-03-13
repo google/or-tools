@@ -158,7 +158,7 @@ def create_section_data():
       'input_files':
           'ortools/graph/christofides.h ' + 'ortools/graph/cliques.h ' +
           'ortools/graph/connected_components.h ' +
-          'ortools/graph/connectivity.h ' + 'ortools/graph/ebert_graph.h ' +
+          'ortools/graph/connectivity.h ' +
           'ortools/graph/eulerian_path.h ' + 'ortools/graph/graph.h ' +
           'ortools/graph/graphs.h ' + 'ortools/graph/hamiltonian_path.h ' +
           'ortools/graph/graph_io.h ' + 'ortools/graph/iterators.h ' +

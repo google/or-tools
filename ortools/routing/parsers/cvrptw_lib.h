@@ -20,7 +20,10 @@
 #include <functional>
 #include <memory>
 #include <random>
+#include <string>
+#include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/routing.h"
 
@@ -128,8 +131,7 @@ void DisplayPlan(
     const operations_research::RoutingModel& routing,
     const operations_research::Assignment& plan, bool use_same_vehicle_costs,
     int64_t max_nodes_per_group, int64_t same_vehicle_cost,
-    const operations_research::RoutingDimension& capacity_dimension,
-    const operations_research::RoutingDimension& time_dimension);
+    absl::Span<const std::string> dimension_names);
 
 }  // namespace operations_research
 

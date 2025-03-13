@@ -430,6 +430,7 @@ cc_test(
     deps = [
         ":n_choose_k",
         "//ortools/base:dump_vars",
+        "//ortools/base:fuzztest",
         "//ortools/base:gmock_main",
         "//ortools/base:mathutil",
         "//ortools/util:flat_matrix",

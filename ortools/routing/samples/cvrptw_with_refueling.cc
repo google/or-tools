@@ -20,15 +20,18 @@
 // reaches zero. Fuel consumption is proportional to the distance traveled.
 
 #include <cstdint>
+#include <cstdlib>
 #include <random>
+#include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/random/random.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -46,10 +49,11 @@ using operations_research::RoutingModel;
 using operations_research::RoutingNodeIndex;
 using operations_research::RoutingSearchParameters;
 using operations_research::ServiceTimePlusTransition;
+using operations_research::Solver;
 
-ABSL_FLAG(int, vrp_orders, 100, "Nodes in the problem.");
-ABSL_FLAG(int, vrp_vehicles, 20,
-          "Size of Traveling Salesman Problem instance.");
+ABSL_FLAG(int, vrp_orders, 20, "Nodes in the problem.");
+ABSL_FLAG(int, vrp_vehicles, 4,
+          "Size of the Vehicle Routing Problem instance.");
 ABSL_FLAG(bool, vrp_use_deterministic_random_seed, false,
           "Use deterministic random seeds.");
 ABSL_FLAG(std::string, routing_search_parameters, "",
@@ -84,6 +88,7 @@ int main(int argc, char** argv) {
   const int64_t kXMax = 100000;
   const int64_t kYMax = 100000;
   const int64_t kSpeed = 10;
+  const int64_t kRefuelCost = 10;
   LocationContainer locations(
       kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   for (int location = 0; location <= absl::GetFlag(FLAGS_vrp_orders);
@@ -95,7 +100,8 @@ int main(int argc, char** argv) {
   const int vehicle_cost = routing.RegisterTransitCallback(
       [&locations, &manager](int64_t i, int64_t j) {
         return locations.ManhattanDistance(manager.IndexToNode(i),
-                                           manager.IndexToNode(j));
+                                           manager.IndexToNode(j)) +
+               (IsRefuelNode(i) ? kRefuelCost : 0);
       });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
@@ -162,9 +168,21 @@ int main(int argc, char** argv) {
     // Only let slack free for refueling nodes.
     if (!IsRefuelNode(order) || routing.IsStart(order)) {
       fuel_dimension.SlackVar(order)->SetValue(0);
+    } else {
+      // Ensure that we do not refuel more than the capacity.
+      Solver* solver = routing.solver();
+      solver->AddConstraint(solver->MakeSumLessOrEqual(
+          {fuel_dimension.SlackVar(order), fuel_dimension.CumulVar(order)},
+          kFuelCapacity));
+      routing.AddToAssignment(fuel_dimension.SlackVar(order));
     }
-    // Needed to instantiate fuel quantity at each node.
-    routing.AddVariableMinimizedByFinalizer(fuel_dimension.CumulVar(order));
+    // Needed to instantiate fuel quantity at each node. Deciding to refuel as
+    // much as possible to minimize the risk of running out of fuel.
+    routing.AddVariableMaximizedByFinalizer(fuel_dimension.CumulVar(order));
+  }
+  for (int vehicle = 0; vehicle < routing.vehicles(); ++vehicle) {
+    routing.AddVariableMaximizedByFinalizer(
+        fuel_dimension.CumulVar(routing.End(vehicle)));
   }
 
   // Adding penalty costs to allow skipping orders.
@@ -173,7 +191,8 @@ int main(int argc, char** argv) {
   for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
        order < routing.nodes(); ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
-    routing.AddDisjunction(orders, kPenalty);
+    routing.AddDisjunction(
+        orders, IsRefuelNode(manager.NodeToIndex(order)) ? 0 : kPenalty);
   }
 
   // Solve, returns a solution if any (owned by RoutingModel).
@@ -184,8 +203,7 @@ int main(int argc, char** argv) {
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
                 /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
-                routing.GetDimensionOrDie(kCapacity),
-                routing.GetDimensionOrDie(kTime));
+                {kTime, kCapacity, kFuel});
   } else {
     LOG(INFO) << "No solution found.";
   }

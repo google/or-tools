@@ -24,15 +24,19 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <random>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/random/random.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -170,12 +174,13 @@ int main(int argc, char** argv) {
          order < manager.num_nodes(); ++order) {
       group.push_back(manager.NodeToIndex(order));
       if (group.size() == kMaxNodesPerGroup) {
-        routing.AddSoftSameVehicleConstraint(group, kSameVehicleCost);
+        routing.AddSoftSameVehicleConstraint(std::move(group),
+                                             kSameVehicleCost);
         group.clear();
       }
     }
     if (!group.empty()) {
-      routing.AddSoftSameVehicleConstraint(group, kSameVehicleCost);
+      routing.AddSoftSameVehicleConstraint(std::move(group), kSameVehicleCost);
     }
   }
 
@@ -187,9 +192,7 @@ int main(int argc, char** argv) {
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution,
                 absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs),
-                kMaxNodesPerGroup, kSameVehicleCost,
-                routing.GetDimensionOrDie(kCapacity),
-                routing.GetDimensionOrDie(kTime));
+                kMaxNodesPerGroup, kSameVehicleCost, {kCapacity, kTime});
   } else {
     LOG(INFO) << "No solution found.";
   }

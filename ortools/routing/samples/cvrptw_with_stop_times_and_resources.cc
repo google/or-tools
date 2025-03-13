@@ -20,16 +20,19 @@
 // to one.
 
 #include <cstdint>
+#include <cstdlib>
 #include <random>
+#include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -209,8 +212,7 @@ int main(int argc, char** argv) {
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
                 /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
-                routing.GetDimensionOrDie(kCapacity),
-                routing.GetDimensionOrDie(kTime));
+                {kCapacity, kTime});
     LOG(INFO) << "Stop intervals:";
     for (IntervalVar* const interval : intervals) {
       if (solution->PerformedValue(interval)) {
