@@ -1,0 +1,225 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0b21f5a..ddf1536 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -27,6 +27,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
+ set(CPACK_PACKAGE_VENDOR "Zuse Institute Berlin")
+ include(CPack)
+ 
++# Disable CTest targets
++set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
++include(CTest)
++
+ option(ZLIB "Use ZLIB" ON)
+ option(GMP "Use GMP" ON)
+ option(EMSCRIPTEN_HTML "Emscripten HTML output" OFF)
+@@ -43,11 +47,17 @@ option(SANITIZE_THREAD "should the thread sanitizer be enabled in debug mode if
+ option(COVERAGE "enable coverage support" OFF)
+ option(PAPILO "should papilo library be linked" ON)
+ 
++option(SOPLEX_EXAMPLE "Build example" OFF)
++option(SOPLEX_SOPLEX "Build soplex program" OFF)
++option(SOPLEX_EXPORT "Enable to use soplex from the current project's build tree, without installation." OFF)
++
+ SET(COVERAGE_CTEST_ARGS "" CACHE STRING "additional ctest arguments for coverage")
+ 
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
++if(CMAKE_PROJECT_NAME EQUAL "SOPLEX")
++  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
++  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
++  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
++endif()
+ 
+ # for colorized output
+ if(NOT WIN32)
+@@ -69,6 +79,8 @@ set(CMAKE_MACOSX_RPATH ON)
+ 
+ # use C++14 standard
+ set(CMAKE_CXX_STANDARD 14)
++set(CMAKE_CXX_STANDARD_REQUIRED ON)
++set(CMAKE_CXX_EXTENSIONS OFF)
+ 
+ # set function visibility default to hidden
+ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+@@ -123,12 +135,11 @@ if(COVERAGE)
+ endif()
+ 
+ if(ZLIB)
+-    find_package(ZLIB)
+-endif()
+-if(ZLIB_FOUND)
+-    set(SOPLEX_WITH_ZLIB on)
+-    set(libs ${libs} ${ZLIB_LIBRARIES})
+-    include_directories(${ZLIB_INCLUDE_DIRS})
++  if(NOT TARGET ZLIB::ZLIB)
++    find_package(ZLIB REQUIRED)
++  endif()
++  set(SOPLEX_WITH_ZLIB on)
++  set(libs ${libs} ZLIB::ZLIB)
+ endif()
+ 
+ if(GMP)
+@@ -170,39 +181,24 @@ else()
+     set(SOPLEX_WITH_PAPILO off)
+ endif()
+ 
+-set(BOOST_MINIMUM_VERSION 1.65.0)
++set(BOOST_MINIMUM_VERSION 1.65.0) # PaPILO requires at least Boost 1.65 (on mac 1.72)
+ if(BOOST)
+-    find_package(Boost ${BOOST_MINIMUM_VERSION}) # PaPILO requires at least Boost 1.65 (on mac 1.72)
+-    if(Boost_FOUND)
+-        set(SOPLEX_WITH_BOOST on)
+-        include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+-        if(NOT Boost_VERSION_MACRO)
+-           set(Boost_VERSION_MACRO ${Boost_VERSION})
+-        endif()
+-        if(${Boost_VERSION_MACRO} LESS "107000")
+-            if(NOT SOPLEX_WITH_GMP)
+-               message(SEND_ERROR "If no GMP is linked, then the minimal Boost verion is 1.70. \
+-                       Found Boost version is ${Boost_VERSION_STRING}. Either provide newer Boost, link GMP, or disable Boost by setting BOOST=off.")
+-            else()
+-               message(WARNING "The multiprecision and quadprecision features are disabled with Boost versions older than 1.70. \
+-                       Found Boost version is ${Boost_VERSION_STRING}.")
+-            endif()
+-        endif()
+-        if(MPFR) # MPFR is used within boost multiprecision, so using it without Boost does not make sense
+-            find_package(MPFR)
+-        endif()
+-        if(MPFR_FOUND)
+-            message(STATUS "SoPlex with Boost MPFR libraries")
+-            set(SOPLEX_WITH_MPFR on)
+-            include_directories(${MPFR_INCLUDE_DIRS})
+-            set(libs ${libs} ${MPFR_LIBRARIES})
+-        else()
+-            message(STATUS "SoPlex with Boost CPP multiprecision libraries")
+-            set(SOPLEX_WITH_CPPMPF on)
+-        endif()
+-    else()
+-        set(BOOST off)
+-    endif()
++  if(NOT TARGET Boost::multiprecision OR NOT TARGET Boost::serialization)
++    message(FATAL_ERROR "Boost::multiprecision or Boost::serialization not available!!!")
++    find_package(Boost ${BOOST_MINIMUM_VERSION} REQUIRED)
++  endif()
++  set(SOPLEX_WITH_BOOST on)
++  set(libs ${libs} Boost::multiprecision Boost::serialization)
++  if(MPFR) # MPFR is used within boost multiprecision, so using it without Boost does not make sense
++    find_package(MPFR REQUIRED)
++    message(STATUS "SoPlex with Boost MPFR libraries")
++    set(SOPLEX_WITH_MPFR on)
++    include_directories(${MPFR_INCLUDE_DIRS})
++    set(libs ${libs} ${MPFR_LIBRARIES})
++  else()
++    message(STATUS "SoPlex with Boost CPP multiprecision libraries")
++    set(SOPLEX_WITH_CPPMPF on)
++  endif()
+ endif()
+ 
+ # disable fused floating point contraction to enhance reproducibility across compilers and architectures
+@@ -247,7 +243,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/soplex/config.h.in ${PROJECT_BINA
+ configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake" @ONLY)
+ 
+ add_subdirectory(src)
+-add_subdirectory(tests/c_interface)
+-add_subdirectory(check)
+-
+-enable_testing()
++if(BUILD_TESTING)
++  add_subdirectory(tests/c_interface)
++  add_subdirectory(check)
++endif()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 84ec5a5..6f5d4ef 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -193,24 +193,28 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
+ set_target_properties(libsoplexshared PROPERTIES CXX_VISIBILITY_PRESET default)
+ 
+ # create soplex binary using library without pic
+-add_executable(soplex soplexmain.cpp)
+-target_link_libraries(soplex LINK_PUBLIC libsoplex ${Boost_LIBRARIES})
++if(SOPLEX_SOPLEX)
++  add_executable(soplex EXCLUDE_FROM_ALL soplexmain.cpp)
++  target_link_libraries(soplex PRIVATE libsoplex ${Boost_LIBRARIES})
+ 
+-if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
++  # set the install rpath to the installed destination
++  set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
++
++  if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
+     set_target_properties(soplex PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/soplex_webdemo_shell.html)
+     set(CMAKE_EXECUTABLE_SUFFIX ".html")
+-endif()
++  endif()
+ 
+-if(CMAKE_BUILD_TYPE EQUAL "Debug")
+-   find_package(Sanitizers)
+-   add_sanitizers(soplex)
++  if(CMAKE_BUILD_TYPE EQUAL "Debug")
++    find_package(Sanitizers)
++    add_sanitizers(soplex)
++  endif()
+ endif()
+ 
+-add_executable(example EXCLUDE_FROM_ALL example.cpp)
+-target_link_libraries(example libsoplex)
+-
+-# set the install rpath to the installed destination
+-set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
++if(SOPLEX_EXAMPLE)
++  add_executable(example example.cpp)
++  target_link_libraries(example libsoplex)
++endif()
+ 
+ # install the header files of soplex
+ install(FILES ${headers} ${PROJECT_BINARY_DIR}/soplex/config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/soplex)
+@@ -237,15 +241,28 @@ install(FILES
+   DESTINATION include/soplex/external/zstr)
+ 
+ # install the binary and the library to appropriate lcoations and add them to an export group
+-install(TARGETS soplex libsoplex libsoplex-pic libsoplexshared EXPORT soplex-targets
++if(SOPLEX_SOPLEX)
++  install(TARGETS soplex
++    EXPORT soplex-targets
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++endif()
++
++install(TARGETS libsoplex libsoplex-pic libsoplexshared
++  EXPORT soplex-targets
+ 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+ 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
++install(EXPORT soplex-targets
++  FILE soplex-targets.cmake
++  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soplex)
++
+ # Add library targets to the build-tree export set
+-export(TARGETS libsoplex libsoplex-pic libsoplexshared
+-  FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
++if(SOPLEX_EXPORT)
++  export(TARGETS libsoplex libsoplex-pic libsoplexshared
++    FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
++endif()
+ 
+ #configure the config file for the build tree
+ set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${PROJECT_BINARY_DIR}")
+@@ -259,7 +276,6 @@ ${CMAKE_BINARY_DIR}/soplex-config-version.cmake
+     COMPATIBILITY SameMajorVersion
+     )
+ 
+-
+ #configure the config file for the install
+ set(CONF_INCLUDE_DIRS "\${CMAKE_CURRENT_LIST_DIR}/../../../include")
+ configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in
+@@ -267,7 +283,6 @@ configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in
+ 
+ # install the targets of the soplex export group and the config file so that other projects
+ # can link easily against soplex
+-install(EXPORT soplex-targets FILE soplex-targets.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soplex)
+ install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake"
+ 	           ${CMAKE_BINARY_DIR}/soplex-config-version.cmake
+ 		   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soplex)

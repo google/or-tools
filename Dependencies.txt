@@ -10,7 +10,7 @@ Cgl=0.60.9
 Cbc=2.10.12
 GLPK=5.0
 HiGHS=v1.9.0
-Scip=v920
+Scip=v921
 # Python
 pybind11=v2.13.6
 pybind11_abseil=v202402.0

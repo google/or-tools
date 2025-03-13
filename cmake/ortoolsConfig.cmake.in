@@ -66,7 +66,7 @@ if(@USE_PDLP@)
 endif()
 
 if(@USE_SCIP@)
-  if(NOT TARGET libscip)
+  if(NOT TARGET SCIP::libscip)
     find_dependency(SCIP REQUIRED)
   endif()
 endif()

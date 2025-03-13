@@ -454,6 +454,9 @@ set(need_unix_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
 set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
 set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
 
+set(need_unix_scip_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_SCIP}>>")
+set(need_windows_scip_lib "$<AND:${is_windows},$<BOOL:${BUILD_SCIP}>>")
+
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
 set(need_unix_ortools_lib "$<AND:${is_not_windows},${is_ortools_shared}>")
 set(need_windows_ortools_lib "$<AND:${is_windows},${is_ortools_shared}>")
@@ -597,8 +600,14 @@ add_custom_command(
 
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
-    $<${need_unix_highs_lib}:$<TARGET_SONAME_FILE:highs>>
-    $<${need_windows_highs_lib}:$<TARGET_FILE:highs>>
+    $<${need_unix_highs_lib}:$<TARGET_SONAME_FILE:highs::highs>>
+    $<${need_windows_highs_lib}:$<TARGET_FILE:highs::highs>>
+    ${PYTHON_PROJECT}/.libs
+
+  COMMAND ${CMAKE_COMMAND} -E
+  $<IF:$<BOOL:${BUILD_SCIP}>,copy,true>
+  $<${need_unix_scip_lib}:$<TARGET_SONAME_FILE:SCIP::libscip>>
+    $<${need_windows_scip_lib}:$<TARGET_FILE:SCIP::libscip>>
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
