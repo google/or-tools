@@ -135,15 +135,20 @@ digraph CMakeDeps {
   }
 
   subgraph clusterSCIPSolver {
-    subgraph clusterSCIP {
-      SCIP [label="SCIP::libscip"];
+    subgraph clusterSoplex {
       SPX [label="libsoplex"];
 
-      SPX -> SCIP;
+      color=royalblue;
+      label = "scipopt/soplex.git";
+    }
+    subgraph clusterSCIP {
+      SCIP [label="SCIP::libscip"];
 
       color=royalblue;
       label = "scipopt/scip.git";
     }
+    SPX -> SCIP;
+
     color=royalblue;
     label = "-DUSE_SCIP=ON AND -DBUILD_SCIP=ON";
   }
