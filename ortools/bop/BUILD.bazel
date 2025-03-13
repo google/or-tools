@@ -214,6 +214,7 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
+        "@com_google_absl//absl/log:vlog_is_on",
         "@com_google_absl//absl/status:statusor",
         "//ortools/base:stl_util",
         "//ortools/glop:lp_solver",

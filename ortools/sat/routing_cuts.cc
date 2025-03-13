@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <queue>
@@ -33,6 +34,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"

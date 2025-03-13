@@ -24,6 +24,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
