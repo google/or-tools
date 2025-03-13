@@ -28,6 +28,16 @@ Generic algorithms for shortest paths:
 
 Specific algorithms for paths:
 
+*   [`dag_shortest_path.h`][dag_shortest_path_h]: shortest paths on directed
+    acyclic graphs. If you have such a graph, this implementation is likely to
+    be the fastest. Unlike most implementations, these algorithms have two
+    interfaces: a "simple" one (list of edges and weights) and a standard one
+    (taking as input a graph data structure from
+    [`//ortools/graph/graph.h`][graph_h]).
+
+*   [`dag_constrained_shortest_path.`][dag_constrained_shortest_path_h]:
+    shortest paths on directed acyclic graphs with resource constraints.
+
 *   [`hamiltonian_path.h`][hamiltonian_path_h]: entry point for computing
     minimum [Hamiltonian paths](https://en.wikipedia.org/wiki/Hamiltonian_path)
     and cycles on directed graphs with costs on arcs, using a
