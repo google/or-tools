@@ -1,4 +1,5 @@
 // Copyright 2019-2023 RTE
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,12 +17,14 @@
 #include "ortools/xpress/environment.h"
 
 #include <cstdlib>
+// NOLINTNEXTLINE(build/c++17)
 #include <filesystem>
 #include <functional>
-#include <mutex>
 #include <string>
 #include <vector>
 
+#include "absl/base/call_once.h"
+#include "absl/base/const_init.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -35,11 +38,13 @@ namespace operations_research {
 #define STRINGIFY(X) STRINGIFY2(X)
 
 // Let's not reformat for rest of the file.
-// clang-format off
 // This was generated with the parse_header_xpress.py script.
 // See the comment at the top of the script.
 
 // This is the 'define' section.
+// NOLINTBEGIN(whitespace/line_length)
+// NOLINTBEGIN(google3-runtime-global-variables)
+// clang-format off
 std::function<int(XPRSprob* p_prob)> XPRScreateprob = nullptr;
 std::function<int(XPRSprob prob)> XPRSdestroyprob = nullptr;
 std::function<int(const char* path)> XPRSinit = nullptr;
@@ -105,12 +110,17 @@ std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void
 std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int* solstatus)> XPRSoptimize = nullptr;
+// clang-format on
+// NOLINTEND(google3-runtime-global-variables)
+// NOLINTEND(whitespace/line_length)
 
 void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   // This was generated with the parse_header_xpress.py script.
   // See the comment at the top of the script.
 
   // This is the 'assign' section.
+  // NOLINTBEGIN(whitespace/line_length)
+  // clang-format off
   xpress_dynamic_library->GetFunction(&XPRScreateprob, "XPRScreateprob");
   xpress_dynamic_library->GetFunction(&XPRSdestroyprob, "XPRSdestroyprob");
   xpress_dynamic_library->GetFunction(&XPRSinit, "XPRSinit");
@@ -175,8 +185,9 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
   xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
   xpress_dynamic_library->GetFunction(&XPRSoptimize, "XPRSoptimize");
+  // clang-format on
+  // NOLINTEND(whitespace/line_length)
 }
-// clang-format on
 
 void printXpressBanner(bool error) {
   char banner[XPRS_MAXBANNERLENGTH];
@@ -199,7 +210,7 @@ std::vector<std::string> XpressDynamicLibraryPotentialPaths() {
 #if defined(_MSC_VER)  // Windows
     potential_paths.push_back(
         absl::StrCat(xpressdir_from_env, "\\bin\\xprs.dll"));
-#elif defined(__APPLE__)  // OS X
+#elif defined(__APPLE__)  // macOS
     potential_paths.push_back(
         absl::StrCat(xpressdir_from_env, "/lib/libxprs.dylib"));
 #elif defined(__GNUC__)   // Linux
@@ -218,7 +229,7 @@ std::vector<std::string> XpressDynamicLibraryPotentialPaths() {
   potential_paths.push_back(absl::StrCat("C:\\xpressmp\\bin\\xprs.dll"));
   potential_paths.push_back(
       absl::StrCat("C:\\Program Files\\xpressmp\\bin\\xprs.dll"));
-#elif defined(__APPLE__)  // OS X
+#elif defined(__APPLE__)  // macOS
   potential_paths.push_back(
       absl::StrCat("/Library/xpressmp/lib/libxprs.dylib"));
 #elif defined(__GNUC__)   // Linux
@@ -231,42 +242,42 @@ std::vector<std::string> XpressDynamicLibraryPotentialPaths() {
 }
 
 absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
-  static std::string xpress_lib_path;
-  static std::once_flag xpress_loading_done;
-  static absl::Status xpress_load_status;
-  static DynamicLibrary xpress_library;
+  static std::string* xpress_lib_path = new std::string;
+  static absl::once_flag xpress_loading_done;
+  static absl::Status* xpress_load_status = new absl::Status;
+  static DynamicLibrary* xpress_library = new DynamicLibrary;
   static absl::Mutex mutex(absl::kConstInit);
 
   absl::MutexLock lock(&mutex);
 
-  std::call_once(xpress_loading_done, []() {
+  absl::call_once(xpress_loading_done, []() {
     const std::vector<std::string> canonical_paths =
         XpressDynamicLibraryPotentialPaths();
     for (const std::string& path : canonical_paths) {
-      if (xpress_library.TryToLoad(path)) {
+      if (xpress_library->TryToLoad(path)) {
         LOG(INFO) << "Found the Xpress library in " << path << ".";
-        xpress_lib_path.clear();
+        xpress_lib_path->clear();
         std::filesystem::path p(path);
         p.remove_filename();
-        xpress_lib_path.append(p.string());
+        xpress_lib_path->append(p.string());
         break;
       }
     }
 
-    if (xpress_library.LibraryIsLoaded()) {
+    if (xpress_library->LibraryIsLoaded()) {
       LOG(INFO) << "Loading all Xpress functions";
-      LoadXpressFunctions(&xpress_library);
-      xpress_load_status = absl::OkStatus();
+      LoadXpressFunctions(xpress_library);
+      *xpress_load_status = absl::OkStatus();
     } else {
-      xpress_load_status = absl::NotFoundError(
+      *xpress_load_status = absl::NotFoundError(
           absl::StrCat("Could not find the Xpress shared library. Looked in: [",
                        absl::StrJoin(canonical_paths, "', '"),
                        "]. Please check environment variable XPRESSDIR"));
     }
   });
   xpresspath.clear();
-  xpresspath.append(xpress_lib_path);
-  return xpress_load_status;
+  xpresspath.append(*xpress_lib_path);
+  return *xpress_load_status;
 }
 
 void log_message_about_XPRSinit_argument();
@@ -297,7 +308,7 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
         XPRSgetversion(version);
         LOG(WARNING) << "Optimizer version: " << version
                      << " (OR-Tools was compiled with version " << XPVERSION
-                     << ").\n";
+                     << ").";
       }
       return true;
     } else {
@@ -308,7 +319,7 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
     // if OEM key
     if (verbose) {
       LOG(WARNING) << "XpressInterface : Initialising xpress-MP with OEM key "
-                   << xpress_oem_license_key << "\n";
+                   << xpress_oem_license_key;
     }
 
     int nvalue = 0;
@@ -318,31 +329,31 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
 
     XPRSlicense(&nvalue, slicmsg);
     if (verbose) {
-      VLOG(0) << "XpressInterface : First message from XPRSLicense : "
-              << slicmsg << "\n";
+      DLOG(INFO) << "XpressInterface : First message from XPRSLicense : "
+                 << slicmsg;
     }
 
     nvalue = xpress_oem_license_key - ((nvalue * nvalue) / 19);
     ierr = XPRSlicense(&nvalue, slicmsg);
 
     if (verbose) {
-      VLOG(0) << "XpressInterface : Second message from XPRSLicense : "
-              << slicmsg << "\n";
+      DLOG(INFO) << "XpressInterface : Second message from XPRSLicense : "
+                 << slicmsg;
     }
     if (ierr == 16) {
       if (verbose) {
-        VLOG(0)
-            << "XpressInterface : Optimizer development software detected\n";
+        DLOG(INFO)
+            << "XpressInterface : Optimizer development software detected";
       }
     } else if (ierr != 0) {
       // get the license error message
       XPRSgetlicerrmsg(errmsg, 256);
 
-      LOG(ERROR) << "XpressInterface : " << errmsg << "\n";
+      LOG(ERROR) << "XpressInterface : " << errmsg;
       return false;
     }
 
-    code = XPRSinit(NULL);
+    code = XPRSinit(nullptr);
 
     if (!code) {
       return true;

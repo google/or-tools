@@ -1,4 +1,5 @@
 // Copyright 2019-2023 RTE
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -45,6 +46,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 // from xprs.h via parse_header_xpress.py
 // See the top comment on the parse_header_xpress.py file.
 // This is the header section
+// NOLINTBEGIN(runtime/int)
 #if defined(_WIN32)
 #define XPRSint64 __int64
 #elif defined(__LP64__) || defined(_LP64) || defined(__ILP64__) || \
@@ -53,6 +55,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #else
 #define XPRSint64 long long
 #endif
+// NOLINTEND(runtime/int)
 
 #if defined(_MSC_VER)
 #define XPRS_CC __stdcall
@@ -472,6 +475,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_FREE_SUPER 3
 
 // Let's not reformat for rest of the file.
+// NOLINTBEGIN(whitespace/line_length)
 // clang-format off
 extern std::function<int(XPRSprob* p_prob)> XPRScreateprob;
 extern std::function<int(XPRSprob prob)> XPRSdestroyprob;
@@ -538,8 +542,8 @@ extern std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbpro
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize;
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize;
 extern std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int* solstatus)> XPRSoptimize;
-
 // clang-format on
+// NOLINTEND(whitespace/line_length)
 
 }  // namespace operations_research
 
