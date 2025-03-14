@@ -186,13 +186,10 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       }
 
       // Constraint names.
-      for (int c = 0; c < model.constraint_size(); ++c) {
-        const MPConstraintProto& constraint = model.constraint(c);
-        std::string constraint_name_str = "";
-        if (!constraint.name().empty()) {
-          constraint_name_str = constraint.name();
-          highs.passRowName(c, constraint_name_str);
-        }
+      std::string constraint_name_str = "";
+      if (!constraint.name().empty()) {
+        constraint_name_str = constraint.name();
+        highs.passRowName(c, constraint_name_str);
       }
     }
 
