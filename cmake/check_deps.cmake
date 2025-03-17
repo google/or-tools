@@ -124,6 +124,9 @@ if(BUILD_TESTING)
   if(NOT TARGET benchmark::benchmark)
     message(FATAL_ERROR "Target benchmark::benchmark not available.")
   endif()
+  if(NOT TARGET fuzztest::fuzztest)
+    message(FATAL_ERROR "Target fuzztest::fuzztest not available.")
+  endif()
 endif()
 
 # Check language Dependencies

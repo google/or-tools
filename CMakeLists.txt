@@ -201,12 +201,16 @@ if(BUILD_TESTING)
     "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
+  CMAKE_DEPENDENT_OPTION(BUILD_fuzztest "Build fuzztest" OFF
+    "NOT BUILD_DEPS" ON)
 else()
   set(BUILD_googletest OFF)
   set(BUILD_benchmark OFF)
+  set(BUILD_fuzztest OFF)
 endif()
 message(STATUS "Build googletest: ${BUILD_googletest}")
 message(STATUS "Build benchmark: ${BUILD_benchmark}")
+message(STATUS "Build fuzztest: ${BUILD_fuzztest}")
 
 # Optional third party solvers (enabled by default)
 ## BOP

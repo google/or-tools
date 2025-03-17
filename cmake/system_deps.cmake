@@ -96,6 +96,10 @@ if(BUILD_TESTING AND NOT BUILD_benchmark)
   find_package(benchmark REQUIRED)
 endif()
 
+if(BUILD_TESTING AND NOT BUILD_fuzztest)
+  find_package(fuzztest REQUIRED)
+endif()
+
 # Check language Dependencies
 if(BUILD_PYTHON)
   if(NOT BUILD_pybind11)

@@ -1,0 +1,114 @@
+diff --git a/cmake/BuildDependencies.cmake b/cmake/BuildDependencies.cmake
+index 1f4f08d..cc4d0ba 100644
+--- a/cmake/BuildDependencies.cmake
++++ b/cmake/BuildDependencies.cmake
+@@ -3,20 +3,20 @@ cmake_minimum_required(VERSION 3.19)
+ include(FetchContent)
+ 
+ set(absl_URL https://github.com/abseil/abseil-cpp.git)
+-set(absl_TAG 20240116.0)
++set(absl_TAG 20250127.0)
+ 
+ set(re2_URL https://github.com/google/re2.git)
+-set(re2_TAG 2024-02-01)
++set(re2_TAG 2024-04-01)
+ 
+ set(gtest_URL https://github.com/google/googletest.git)
+-set(gtest_TAG v1.14.0)
++set(gtest_TAG v1.15.2)
+ 
+ # From https://www.antlr.org/download.html
+ set(antlr_cpp_URL https://www.antlr.org/download/antlr4-cpp-runtime-4.12.0-source.zip)
+ set(antlr_cpp_MD5 acf7371bd7562188712751266d8a7b90)
+ 
+ set(proto_URL https://github.com/protocolbuffers/protobuf.git)
+-set(proto_TAG v28.2)
++set(proto_TAG v30.1)
+ 
+ set(nlohmann_json_URL https://github.com/nlohmann/json.git)
+ set(nlohmann_json_TAG v3.11.2)
+@@ -27,7 +27,7 @@ if(POLICY CMP0135)
+ endif()
+ 
+ FetchContent_Declare(
+-  abseil-cpp
++  absl
+   GIT_REPOSITORY ${absl_URL}
+   GIT_TAG        ${absl_TAG}
+ )
+@@ -68,7 +68,7 @@ endif ()
+ 
+ set(ABSL_PROPAGATE_CXX_STD ON)
+ set(ABSL_ENABLE_INSTALL ON)
+-FetchContent_MakeAvailable(abseil-cpp)
++FetchContent_MakeAvailable(absl)
+ 
+ set(RE2_BUILD_TESTING OFF)
+ FetchContent_MakeAvailable(re2)
+@@ -76,6 +76,7 @@ FetchContent_MakeAvailable(re2)
+ set(GTEST_HAS_ABSL ON)
+ FetchContent_MakeAvailable(googletest)
+ 
++set(ANTLR_BUILD_CPP_TESTS OFF)
+ FetchContent_MakeAvailable(antlr_cpp)
+ 
+ if (FUZZTEST_BUILD_TESTING)
+diff --git a/cmake/FuzzTestHelpers.cmake b/cmake/FuzzTestHelpers.cmake
+index b907ff8..bcd3328 100644
+--- a/cmake/FuzzTestHelpers.cmake
++++ b/cmake/FuzzTestHelpers.cmake
+@@ -100,6 +100,13 @@ function(fuzztest_cc_library)
+       ${FUZZTEST_CC_LIB_LINKOPTS}
+       ${FUZZTEST_DEFAULT_LINKOPTS}
+     )
++    if(APPLE)
++      set_target_properties(${_NAME} PROPERTIES
++        INSTALL_RPATH "@loader_path")
++    elseif(UNIX)
++      set_target_properties(${_NAME} PROPERTIES
++        INSTALL_RPATH "$ORIGIN")
++    endif()
+ 
+     set_property(
+       TARGET ${_NAME}
+diff --git a/fuzztest/CMakeLists.txt b/fuzztest/CMakeLists.txt
+index 3d41c8b..3baf705 100644
+--- a/fuzztest/CMakeLists.txt
++++ b/fuzztest/CMakeLists.txt
+@@ -484,6 +484,7 @@ fuzztest_cc_library(
+     "internal/logging.cc"
+   DEPS
+     absl::strings
++    absl::synchronization
+ )
+ 
+ fuzztest_cc_library(
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
+index 79ada1a..124c76b 100644
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
+@@ -2,11 +2,21 @@ add_executable(
+   grammar_domain_code_generator
+   grammar_domain_code_generator.cc
+ )
+-
+ target_link_libraries(
+   grammar_domain_code_generator
+   absl::flags
+   absl::flags_parse
+   fuzztest_logging
+   code_generation
+-)
+\ No newline at end of file
++)
++include(GNUInstallDirs)
++if(APPLE)
++  set_target_properties(grammar_domain_code_generator PROPERTIES
++    INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
++elseif(UNIX)
++  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
++    BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
++    OUTPUT_VARIABLE libdir_relative_path)
++  set_target_properties(grammar_domain_code_generator PROPERTIES
++    INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
++endif()
