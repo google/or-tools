@@ -45,15 +45,17 @@ __docformat__ = "markdown"  # explicitly disable rST processing above.
 __version__ = "@PROJECT_VERSION@"
 
 import os
+import logging
 
 def _load_ortools_libs():
     """Load shared libraries on Windows"""
     if os.name == "nt":
+        logger = logging.getLogger("ortools")
         try:
             from ctypes import WinDLL
             basedir = os.path.dirname(__file__)
         except:
-            pass
+            logger.error(f"ImportError: Cannot import WinDLL")
         else:
             for dll in ["zlib1.dll",
                         "abseil_dll.dll", "utf8_validity.dll", "re2.dll", "libprotobuf.dll",
@@ -61,8 +63,10 @@ def _load_ortools_libs():
                         "ortools.dll"]:
                 dll_path = os.path.join(basedir, ".libs", dll)
                 if os.path.exists(dll_path):
-                    print(f"load {dll_path}...")
+                    logger.debug(f"Loading {dll_path}...")
                     WinDLL(dll_path)
+                else:
+                    logger.debug(f"Cannot find {dll_path}")
 
 
 _load_ortools_libs()
