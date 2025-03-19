@@ -78,12 +78,6 @@ TEST(ShortestPathOnDagTest, EmptyGraph) {
                "num_nodes\\(\\) > 0");
 }
 
-TEST(ShortestPathOnDagTest, NoArcGraph) {
-  EXPECT_DEATH(ShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
-                                  /*source=*/0, /*destination=*/0),
-               "num_arcs\\(\\) > 0");
-}
-
 TEST(ShortestPathOnDagTest, NonExistingSourceBecauseNegative) {
   EXPECT_DEATH(
       ShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, 0.0}},
@@ -135,6 +129,17 @@ TEST(ShortestPathOnDagTest, SimpleGraph) {
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
       FieldsAre(/*length=*/8.0, /*arc_path=*/ElementsAre(0, 2),
                 /*node_path=*/ElementsAre(source, a, destination)));
+}
+
+TEST(ShortestPathOnDagTest, GraphsWithNoArcs) {
+  EXPECT_THAT(ShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
+                                 /*source=*/0, /*destination=*/0),
+              FieldsAre(/*length=*/0, /*arc_path=*/IsEmpty(),
+                        /*node_path=*/ElementsAre(0)));
+  EXPECT_THAT(ShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{},
+                                 /*source=*/0, /*destination=*/1),
+              FieldsAre(/*length=*/kInf, /*arc_path=*/IsEmpty(),
+                        /*node_path=*/IsEmpty()));
 }
 
 TEST(ShortestPathOnDagTest, SourceIsDestination) {
@@ -632,13 +637,6 @@ TEST(KShortestPathOnDagTest, EmptyGraph) {
       "num_nodes\\(\\) > 0");
 }
 
-TEST(KShortestPathOnDagTest, NoArcGraph) {
-  EXPECT_DEATH(
-      KShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
-                          /*source=*/0, /*destination=*/0, /*path_count=*/2),
-      "num_arcs\\(\\) > 0");
-}
-
 TEST(KShortestPathOnDagTest, NonExistingSourceBecauseNegative) {
   EXPECT_DEATH(
       KShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, 0.0}},
@@ -687,6 +685,19 @@ TEST(KShortestPathOnDagTest, OnlyHasOnePath) {
               ElementsAre(FieldsAre(
                   /*length=*/2.0, /*arc_path=*/ElementsAre(0, 1),
                   /*node_path=*/ElementsAre(source, a, destination))));
+}
+
+TEST(KShortestPathOnDagTest, GraphsWithNoArcs) {
+  EXPECT_THAT(
+      KShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
+                          /*source=*/0, /*destination=*/0, /*path_count=*/2),
+      ElementsAre(FieldsAre(/*length=*/0, /*arc_path=*/IsEmpty(),
+                            /*node_path=*/ElementsAre(0))));
+  EXPECT_THAT(
+      KShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{},
+                          /*source=*/0, /*destination=*/1, /*path_count=*/2),
+      ElementsAre(FieldsAre(/*length=*/kInf, /*arc_path=*/IsEmpty(),
+                            /*node_path=*/IsEmpty())));
 }
 
 TEST(KShortestPathOnDagTest, SourceIsDestination) {

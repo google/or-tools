@@ -366,7 +366,6 @@ ShortestPathsOnDagWrapper<GraphType>::ShortestPathsOnDagWrapper(
   CHECK(graph_ != nullptr);
   CHECK(arc_lengths_ != nullptr);
   CHECK_GT(graph_->num_nodes(), 0) << "The graph is empty: it has no nodes";
-  CHECK_GT(graph_->num_arcs(), 0) << "The graph is empty: it has no arcs";
 #ifndef NDEBUG
   CHECK_EQ(arc_lengths_->size(), graph_->num_arcs());
   for (const double arc_length : *arc_lengths_) {
@@ -489,7 +488,6 @@ KShortestPathsOnDagWrapper<GraphType>::KShortestPathsOnDagWrapper(
   CHECK(graph_ != nullptr);
   CHECK(arc_lengths_ != nullptr);
   CHECK_GT(graph_->num_nodes(), 0) << "The graph is empty: it has no nodes";
-  CHECK_GT(graph_->num_arcs(), 0) << "The graph is empty: it has no arcs";
   CHECK_GT(path_count_, 0) << "path_count must be greater than 0";
 #ifndef NDEBUG
   CHECK_EQ(arc_lengths_->size(), graph_->num_arcs());

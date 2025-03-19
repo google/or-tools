@@ -344,6 +344,12 @@ using ArcHeadIterator =
     ArcPropertyIterator<Graph, ArcIterator, typename Graph::NodeIndex,
                         &Graph::Head>;
 
+// An iterator that iterates on the opposite arcs of another iterator.
+template <typename Graph, typename ArcIterator>
+using ArcOppositeArcIterator =
+    ArcPropertyIterator<Graph, ArcIterator, typename Graph::ArcIndex,
+                        &Graph::OppositeArc>;
+
 // Basic graph implementation without reverse arc. This class also serves as a
 // documentation for the generic graph interface (minus the part related to
 // reverse arcs).
@@ -595,8 +601,7 @@ class ReverseArcListGraph
   using OutgoingHeadIterator =
       ArcHeadIterator<ReverseArcListGraph, OutgoingArcIterator>;
   using IncomingArcIterator =
-      ArcPropertyIterator<ReverseArcListGraph, OppositeIncomingArcIterator,
-                          ArcIndexType, &ReverseArcListGraph::OppositeArc>;
+      ArcOppositeArcIterator<ReverseArcListGraph, OppositeIncomingArcIterator>;
 
   // ReverseArcListGraph<>::OutDegree() and ::InDegree() work in O(degree).
   ArcIndexType OutDegree(NodeIndexType node) const;
@@ -713,15 +718,22 @@ class ReverseArcStaticGraph
     }
   }
 
-  // Deprecated.
-  class OutgoingOrOppositeIncomingArcIterator;
-  using OppositeIncomingArcIterator = IntegerRangeIterator<ArcIndexType>;
-  class IncomingArcIterator;
-  using OutgoingArcIterator = IntegerRangeIterator<ArcIndexType>;
+  ArcIndexType OppositeArc(ArcIndexType arc) const;
+  // TODO(user): support Head() and Tail() before Build(), like StaticGraph<>.
+  NodeIndexType Head(ArcIndexType arc) const;
+  NodeIndexType Tail(ArcIndexType arc) const;
 
   // ReverseArcStaticGraph<>::OutDegree() and ::InDegree() work in O(1).
   ArcIndexType OutDegree(NodeIndexType node) const;
   ArcIndexType InDegree(NodeIndexType node) const;
+
+  // Deprecated.
+  class OutgoingOrOppositeIncomingArcIterator;
+  using OppositeIncomingArcIterator = IntegerRangeIterator<ArcIndexType>;
+  using IncomingArcIterator =
+      ArcOppositeArcIterator<ReverseArcStaticGraph,
+                             OppositeIncomingArcIterator>;
+  using OutgoingArcIterator = IntegerRangeIterator<ArcIndexType>;
 
   IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
     return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
@@ -746,12 +758,24 @@ class ReverseArcStaticGraph
                                       limit);
   }
 
-  BeginEndWrapper<IncomingArcIterator> IncomingArcs(NodeIndexType node) const;
+  BeginEndWrapper<IncomingArcIterator> IncomingArcs(NodeIndexType node) const {
+    const auto opposite_incoming_arcs = OppositeIncomingArcs(node);
+    return {IncomingArcIterator(*this, opposite_incoming_arcs.begin()),
+            IncomingArcIterator(*this, opposite_incoming_arcs.end())};
+  }
+
+  BeginEndWrapper<IncomingArcIterator> IncomingArcsStartingFrom(
+      NodeIndexType node, ArcIndexType from) const {
+    DCHECK(Base::IsNodeValid(node));
+    const auto opposite_incoming_arcs = OppositeIncomingArcsStartingFrom(
+        node, from == Base::kNilArc ? Base::kNilArc : OppositeArc(from));
+    return {IncomingArcIterator(*this, opposite_incoming_arcs.begin()),
+            IncomingArcIterator(*this, opposite_incoming_arcs.end())};
+  }
+
   BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
   OutgoingOrOppositeIncomingArcs(NodeIndexType node) const;
 
-  BeginEndWrapper<IncomingArcIterator> IncomingArcsStartingFrom(
-      NodeIndexType node, ArcIndexType from) const;
   BeginEndWrapper<OutgoingOrOppositeIncomingArcIterator>
   OutgoingOrOppositeIncomingArcsStartingFrom(NodeIndexType node,
                                              ArcIndexType from) const;
@@ -760,11 +784,6 @@ class ReverseArcStaticGraph
   // convenient way to achieve this. Moreover this interface is used by some
   // graph algorithms.
   absl::Span<const NodeIndexType> operator[](NodeIndexType node) const;
-
-  ArcIndexType OppositeArc(ArcIndexType arc) const;
-  // TODO(user): support Head() and Tail() before Build(), like StaticGraph<>.
-  NodeIndexType Head(ArcIndexType arc) const;
-  NodeIndexType Tail(ArcIndexType arc) const;
 
   void ReserveArcs(ArcIndexType bound) override;
   void AddNode(NodeIndexType node);
@@ -1592,7 +1611,6 @@ class ReverseArcListGraph<NodeIndexType,
 
 // ReverseArcStaticGraph implementation ----------------------------------------
 
-DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph, Incoming);
 DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcStaticGraph,
                                  OutgoingOrOppositeIncoming);
 
@@ -1718,48 +1736,6 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
     }
   }
 }
-
-template <typename NodeIndexType, typename ArcIndexType>
-class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::IncomingArcIterator
-    : public OppositeIncomingArcIterator {
- public:
-  IncomingArcIterator(const ReverseArcStaticGraph& graph, NodeIndexType node)
-      : limit_(graph.ReverseArcLimit(node)),
-        index_(graph.reverse_start_[node]),
-        graph_(graph) {
-    DCHECK(graph.IsNodeValid(node));
-    DCHECK_LE(index_, limit_);
-  }
-
-  IncomingArcIterator(const ReverseArcStaticGraph& graph, NodeIndexType node,
-                      ArcIndexType arc)
-      : limit_(graph.ReverseArcLimit(node)), graph_(graph) {
-    index_ = arc == Base::kNilArc ? limit_
-                                  : (arc == graph.ReverseArcLimit(node)
-                                         ? graph.ReverseArcLimit(node)
-                                         : graph.OppositeArc(arc));
-    DCHECK(graph.IsNodeValid(node));
-    DCHECK_GE(index_, graph.reverse_start_[node]);
-    DCHECK_LE(index_, limit_);
-  }
-
-  bool Ok() const { return index_ != limit_; }
-  ArcIndexType Index() const {
-    return this->index_ == this->limit_ ? this->limit_
-                                        : graph_.OppositeArc(this->index_);
-  }
-  void Next() {
-    DCHECK(Ok());
-    index_++;
-  }
-
-  DEFINE_STL_ITERATOR_FUNCTIONS(IncomingArcIterator);
-
- private:
-  const ArcIndexType limit_;
-  ArcIndexType index_;
-  const ReverseArcStaticGraph& graph_;
-};
 
 template <typename NodeIndexType, typename ArcIndexType>
 class ReverseArcStaticGraph<
