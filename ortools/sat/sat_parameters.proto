@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 319
+// NEXT TAG: 321
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -476,7 +476,7 @@ message SatParameters {
   optional bool expand_alldiff_constraints = 170 [default = false];
 
   // Max domain size for all_different constraints to be expanded.
-  optional int32 max_alldiff_domain_size = 318 [default = 128];
+  optional int32 max_alldiff_domain_size = 320 [default = 128];
 
   // If true, expand the reservoir constraints by creating booleans for all
   // possible precedences between event and encoding the constraint.
@@ -949,7 +949,14 @@ message SatParameters {
   // be defensive and abort early or not run that often. Still the value of
   // that parameter shouldn't really be much more than 10.
   optional int32 routing_cut_subset_size_for_exact_binary_relation_bound = 316
-      [default = 0];
+      [default = 8];
+
+  // Similar to routing_cut_subset_size_for_exact_binary_relation_bound but
+  // use a bound based on shortest path distances (which respect triangular
+  // inequality). This allows to derive bounds that are valid for any superset
+  // of a given subset. This is slow, so it shouldn't really be larger than 10.
+  optional int32 routing_cut_subset_size_for_shortest_paths_bound = 318
+      [default = 8];
 
   // The amount of "effort" to spend in dynamic programming for computing
   // routing cuts. This is in term of basic operations needed by the algorithm
@@ -959,7 +966,7 @@ message SatParameters {
 
   // If the length of an infeasible path is less than this value, a cut will be
   // added to exclude it.
-  optional int32 routing_cut_max_infeasible_path_length = 317 [default = 10];
+  optional int32 routing_cut_max_infeasible_path_length = 317 [default = 6];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {

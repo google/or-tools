@@ -41,21 +41,37 @@ namespace sat {
 // cases of route constraints (at most one expression per node and "dimension"
 // -- such as time or load, and at most one relation per arc and dimension).
 //
-// We also recover bounds on (node_expr[head] - node_expr[tail]) for each arc
+// This returns an empty vector and num_dimensions == 0 if nothing is detected.
+// Otherwise it returns one expression per node and dimensions.
+struct RoutingCumulExpressions {
+  const AffineExpression& GetNodeExpression(int node, int dimension) const {
+    return flat_node_dim_expressions[node * num_dimensions + dimension];
+  }
+
+  int num_dimensions = 0;
+  std::vector<AffineExpression> flat_node_dim_expressions;
+};
+RoutingCumulExpressions DetectDimensionsAndCumulExpressions(
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals,
+    const BinaryRelationRepository& binary_relation_repository);
+
+// Helper to store the result of DetectDimensionsAndCumulExpressions() and also
+// recover and store bounds on (node_expr[head] - node_expr[tail]) for each arc
 // (tail -> head) assuming the arc is taken.
 class RouteRelationsHelper {
  public:
+  // Visible for testing.
+  RouteRelationsHelper() = default;
+
   // Creates a RouteRelationsHelper for the given RoutesConstraint and
-  // associated binary relations. If `flat_node_dim_expressions` is empty,
-  // infers them from the binary relations, if possible (otherwise, returns
-  // nullptr). If `flat_node_dim_expressions` is not empty, uses it to
-  // initialize the helper (this list should have num_dimensions times num_nodes
-  // elements, with the expression associated with node n and dimension d at
-  // index n * num_dimensions + d).
+  // associated binary relations. The vector `flat_node_dim_expressions` should
+  // be the result of DetectDimensionsAndCumulExpressions(). If it is empty,
+  // this returns nullptr.
   //
-  // If `model` is null, computes only the node expressions. Otherwise, also
-  // computes the tightest bounds we can on (node_expr[head] - node_expr[tail])
-  // for each arc, assuming the arc is taken (its literal is true).
+  // Otherwise this stores it and also computes the tightest bounds we can on
+  // (node_expr[head] - node_expr[tail]) for each arc, assuming the arc is taken
+  // (its literal is true).
   static std::unique_ptr<RouteRelationsHelper> Create(
       int num_nodes, const std::vector<int>& tails,
       const std::vector<int>& heads, const std::vector<Literal>& literals,
@@ -91,39 +107,99 @@ class RouteRelationsHelper {
     }
   };
   const HeadMinusTailBounds& GetArcRelation(int arc, int dimension) const {
+    DCHECK_GE(dimension, 0);
+    DCHECK_LT(dimension, num_dimensions_);
+    DCHECK_GE(arc, 0);
     return flat_arc_dim_relations_[arc * num_dimensions_ + dimension];
+  }
+
+  bool HasShortestPathsInformation() const {
+    return !flat_shortest_path_lbs_.empty();
+  }
+
+  // If any of the bound is at the maximum, then there is no path between tail
+  // and head.
+  bool PathExists(int tail, int head) const {
+    if (flat_shortest_path_lbs_.empty()) return true;
+    const int num_nodes_squared = num_nodes_ * num_nodes_;
+    for (int dim = 0; dim < num_dimensions_; ++dim) {
+      if (flat_shortest_path_lbs_[dim * num_nodes_squared + tail * num_nodes_ +
+                                  head] ==
+          std::numeric_limits<IntegerValue>::max()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool PropagateLocalBoundsUsingShortestPaths(
+      const IntegerTrail& integer_trail, int tail, int head,
+      const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
+      absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const {
+    if (flat_shortest_path_lbs_.empty()) return true;
+    const int num_nodes_squared = num_nodes_ * num_nodes_;
+    for (int dim = 0; dim < num_dimensions_; ++dim) {
+      const AffineExpression& tail_expr = GetNodeExpression(tail, dim);
+      const AffineExpression& head_expr = GetNodeExpression(head, dim);
+      const IntegerValue head_minus_tail_lb =
+          flat_shortest_path_lbs_[dim * num_nodes_squared + tail * num_nodes_ +
+                                  head];
+      if (head_expr.var == kNoIntegerVariable) continue;
+
+      IntegerValue tail_lb = integer_trail.LevelZeroLowerBound(tail_expr);
+      if (tail_expr.var != kNoIntegerVariable) {
+        auto it = input.find(tail_expr.var);
+        if (it != input.end()) {
+          tail_lb = std::max(tail_lb, tail_expr.ValueAt(it->second));
+        }
+      }
+
+      // head_expr >= tail_lb + head_minus_tail_lb;
+      const IntegerLiteral i_lit =
+          head_expr.GreaterOrEqual(CapAddI(tail_lb, head_minus_tail_lb));
+      if (i_lit.bound > integer_trail.LevelZeroUpperBound(i_lit.var)) {
+        return false;  // not possible.
+      }
+      auto [it, inserted] = output->insert({i_lit.var, i_lit.bound});
+      if (!inserted) {
+        it->second = std::max(it->second, i_lit.bound);
+      }
+    }
+    return true;
   }
 
   // Returns the level zero lower bound of the offset between the (optionally
   // negated) expressions associated with the head and tail of the given arc,
   // and the given dimension.
-  IntegerValue GetArcOffsetLowerBound(
-      int arc, int dimension, bool negate_expressions,
-      const IntegerTrail& integer_trail,
-      const IntegerEncoder& integer_encoder) const;
+  IntegerValue GetArcOffsetLowerBound(int arc, int dimension,
+                                      bool negate_expressions) const;
 
   void RemoveArcs(absl::Span<const int> sorted_arc_indices);
 
  private:
-  RouteRelationsHelper(const std::vector<int>& tails,
-                       const std::vector<int>& heads,
-                       const std::vector<Literal>& literals, int num_dimensions,
+  RouteRelationsHelper(int num_dimensions,
                        std::vector<AffineExpression> flat_node_dim_expressions,
-                       std::vector<HeadMinusTailBounds> flat_arc_dim_relations);
+                       std::vector<HeadMinusTailBounds> flat_arc_dim_relations,
+                       std::vector<IntegerValue> flat_shortest_path_lbs);
 
   void LogStats() const;
 
-  const std::vector<int>& tails_;
-  const std::vector<int>& heads_;
-  const std::vector<Literal>& literals_;
+  const int num_nodes_ = 0;
+  const int num_dimensions_ = 0;
 
-  int num_dimensions_;
   // The expression associated with node n and dimension d is at index n *
   // num_dimensions_ + d.
   std::vector<AffineExpression> flat_node_dim_expressions_;
+
   // The relation associated with arc a and dimension d is at index a *
   // num_dimensions_ + d.
   std::vector<HeadMinusTailBounds> flat_arc_dim_relations_;
+
+  // flat_shortest_path_lbs_[dim * num_nodes^2 + i * num_nodes + j] is a lower
+  // bounds on node_expression[dim][j] - node_expression[dim][i] whatever the
+  // path used to join node i to node j (not using the root 0). It only make
+  // sense for i and j != 0.
+  std::vector<IntegerValue> flat_shortest_path_lbs_;
 };
 
 // Computes and fills the node expressions of all the routes constraints in
@@ -140,11 +216,21 @@ class SpecialBinPackingHelper {
   SpecialBinPackingHelper() = default;
   explicit SpecialBinPackingHelper(double dp_effort) : dp_effort_(dp_effort) {}
 
+  // See below.
+  enum ItemOrBinType {
+    MUST_BE_ITEM = 0,  // capacity will be set at zero.
+    ITEM_OR_BIN = 1,
+    MUST_BE_BIN = 2,  // demand will be set at zero.
+  };
+
   // This is used to represent a "special bin packing" problem where we have
   // objects that can either be items with a given demand or bins with a given
   // capacity. The problem is to choose the minimum number of objects that will
   // be bins, such that the other objects (items) can be packed inside.
   struct ItemOrBin {
+    // The initial routing node that correspond to this object.
+    int node = 0;
+
     // Only one option will apply, this can either be an item with given demand
     // or a bin with given capacity.
     //
@@ -159,11 +245,7 @@ class SpecialBinPackingHelper {
     //
     // The numerical order is important as we use that in the greedy algorithm.
     // See ComputeMinNumberOfBins() code.
-    enum {
-      MUST_BE_ITEM = 0,  // capacity will be set at zero.
-      ITEM_OR_BIN = 1,
-      MUST_BE_BIN = 2,  // demand will be set at zero.
-    } type = ITEM_OR_BIN;
+    ItemOrBinType type = ITEM_OR_BIN;
   };
 
   // Given a "special bin packing" problem as decribed above, return a lower
@@ -179,7 +261,10 @@ class SpecialBinPackingHelper {
   // TODO(user): Use fancier DP to derive tighter bound. Also, when there are
   // many dimensions, the choice of which item go to which bin is correlated,
   // can we exploit this?
-  int ComputeMinNumberOfBins(absl::Span<ItemOrBin> objects, std::string& info);
+  int ComputeMinNumberOfBins(
+      absl::Span<ItemOrBin> objects,
+      std::vector<int>& objects_that_cannot_be_bin_and_reach_minimum,
+      std::string& info);
 
   // Visible for testing.
   //
@@ -205,7 +290,9 @@ class SpecialBinPackingHelper {
  private:
   // Note that this will sort the objects so that the "best" bins are first.
   // See implementation.
-  int ComputeMinNumberOfBinsInternal(absl::Span<ItemOrBin> objects);
+  int ComputeMinNumberOfBinsInternal(
+      absl::Span<ItemOrBin> objects,
+      std::vector<int>& objects_that_cannot_be_bin_and_reach_minimum);
 
   const double dp_effort_ = 1e8;
   std::vector<IntegerValue> tmp_capacities_;
@@ -213,10 +300,73 @@ class SpecialBinPackingHelper {
   MaxBoundedSubsetSumExact max_bounded_subset_sum_exact_;
 };
 
+inline std::ostream& operator<<(std::ostream& os,
+                                SpecialBinPackingHelper::ItemOrBin o) {
+  os << absl::StrCat("d=", o.demand, " c=", o.capacity, " t=", o.type);
+  return os;
+}
+
+// Keep the best min outgoing/incoming flow out of a subset.
+class BestBoundHelper {
+ public:
+  BestBoundHelper() = default;
+  explicit BestBoundHelper(std::string base_name) : base_name_(base_name) {}
+
+  void Update(
+      int new_bound, std::string name,
+      absl::Span<const int> cannot_be_first = {},
+      absl::Span<const int> cannot_be_last = {},
+      absl::Span<const int> outside_nodes_that_cannot_be_connected = {}) {
+    if (new_bound < bound_) return;
+    if (new_bound > bound_) {
+      bound_ = new_bound;
+      name_ = name;
+      cannot_be_last_.clear();
+      cannot_be_first_.clear();
+      outside_nodes_that_cannot_be_connected_.clear();
+    }
+    cannot_be_first_.insert(cannot_be_first_.begin(), cannot_be_first.begin(),
+                            cannot_be_first.end());
+    cannot_be_last_.insert(cannot_be_last_.begin(), cannot_be_last.begin(),
+                           cannot_be_last.end());
+    outside_nodes_that_cannot_be_connected_.insert(
+        outside_nodes_that_cannot_be_connected_.begin(),
+        outside_nodes_that_cannot_be_connected.begin(),
+        outside_nodes_that_cannot_be_connected.end());
+    gtl::STLSortAndRemoveDuplicates(&cannot_be_first_);
+    gtl::STLSortAndRemoveDuplicates(&cannot_be_last_);
+    gtl::STLSortAndRemoveDuplicates(&outside_nodes_that_cannot_be_connected_);
+  }
+
+  std::string name() const { return absl::StrCat(base_name_, name_); }
+  int bound() const { return bound_; }
+
+  // To serve the current subset with bound() num vehicles, one cannot exit
+  // the subset with nodes in CannotBeLast() and one cannot enter the subset
+  // with node in CannotBeFirst(). Moreover, one cannot enter from or leave to
+  // nodes in OutsideNodeThatCannotBeConnected().
+  absl::Span<const int> CannotBeLast() const { return cannot_be_last_; }
+  absl::Span<const int> CannotBeFirst() const { return cannot_be_first_; }
+  absl::Span<const int> OutsideNodesThatCannotBeConnected() const {
+    return outside_nodes_that_cannot_be_connected_;
+  }
+
+ private:
+  int bound_ = 0;
+  std::string base_name_;
+  std::string name_;
+  std::vector<int> tmp_;
+  std::vector<int> cannot_be_last_;
+  std::vector<int> cannot_be_first_;
+  std::vector<int> outside_nodes_that_cannot_be_connected_;
+};
+
 // Helper to compute the minimum flow going out of a subset of nodes, for a
 // given RoutesConstraint.
 class MinOutgoingFlowHelper {
  public:
+  // Warning: The underlying tails/heads/literals might be resized from one
+  // call to the next of one of the functions here, so be careful.
   MinOutgoingFlowHelper(int num_nodes, const std::vector<int>& tails,
                         const std::vector<int>& heads,
                         const std::vector<Literal>& literals, Model* model);
@@ -225,11 +375,11 @@ class MinOutgoingFlowHelper {
 
   // Returns the minimum flow going out of `subset`, based on a generalization
   // of the CVRP "rounded capacity inequalities", by using the given helper, if
-  // possible (this requires all nodes to have an associated variable, and all
-  // relations to have +1, -1 coefficients). The complexity is O((subset.size()
-  // + num_arcs()) * num_dimensions()).
-  int ComputeDemandBasedMinOutgoingFlow(absl::Span<const int> subset,
-                                        const RouteRelationsHelper& helper);
+  // possible. The complexity is O((subset.size() + num_arcs()) *
+  // num_dimensions()).
+  int ComputeDimensionBasedMinOutgoingFlow(absl::Span<const int> subset,
+                                           const RouteRelationsHelper& helper,
+                                           BestBoundHelper* best_bound);
 
   // Returns the minimum flow going out of `subset`, based on a conservative
   // estimate of the maximum number of nodes of a feasible path inside this
@@ -251,15 +401,36 @@ class MinOutgoingFlowHelper {
   // given the available enforced linear1 and linear2 constraints. However it
   // can stop as soon as one solution is found.
   //
+  // If special_node is non-negative, we will only look for routes that
+  //   - Start at this special_node if use_outgoing = true
+  //   - End at this special_node if use_outgoing = false
+  //
+  // If the RouteRelationsHelper is non null, then we will use "shortest path"
+  // bounds instead of recomputing them from the binary relation of the model.
+  //
   // TODO(user): the complexity also depends on the longest route and improves
   // if routes fail quickly. Give a better estimate?
-  bool SubsetMightBeServedWithKRoutes(int k, absl::Span<const int> subset);
+  bool SubsetMightBeServedWithKRoutes(int k, absl::Span<const int> subset,
+                                      RouteRelationsHelper* helper = nullptr,
+                                      int special_node = -1,
+                                      bool use_outgoing = true);
+
+  // Advanced. If non-empty, and one of the functions above proved that a subset
+  // needs at least k vehicles to serve it, then these vector list the nodes
+  // that cannot be first (resp. last) in one of the solution with k routes. If
+  // a node is listed here, it means we will need at least k + 1 routes to serve
+  // the subset and enter (resp. leave) from that node.
+  //
+  // This can be used to either reduce the size of the subset and still need
+  // k vehicles, or generate stronger cuts.
+  absl::Span<const int> CannotBeLast() const { return cannot_be_last_; };
+  absl::Span<const int> CannotBeFirst() const { return cannot_be_first_; };
 
   // Just for stats reporting.
   void ReportDpSkip() { num_full_dp_skips_++; }
 
  private:
-  void InitializeGraph(absl::Span<const int> subset);
+  void PrecomputeDataForSubset(absl::Span<const int> subset);
 
   // Given a subset S to serve in a route constraint, returns a special bin
   // packing problem (defined above) where the minimum number of bins will
@@ -343,6 +514,7 @@ class MinOutgoingFlowHelper {
   // consecutive positions at a time: a "current" position i, and a "next"
   // position i+1.
 
+  std::vector<int> tmp_subset_;
   std::vector<bool> in_subset_;
   std::vector<int> index_in_subset_;
 
@@ -376,6 +548,11 @@ class MinOutgoingFlowHelper {
   SpecialBinPackingHelper bin_packing_helper_;
   std::vector<SpecialBinPackingHelper::ItemOrBin> tmp_bin_packing_problem_;
 
+  std::vector<int> objects_that_cannot_be_bin_and_reach_minimum_;
+
+  std::vector<int> cannot_be_last_;
+  std::vector<int> cannot_be_first_;
+
   // Statistics.
   int64_t num_full_dp_skips_ = 0;
   int64_t num_full_dp_calls_ = 0;
@@ -389,7 +566,7 @@ class MinOutgoingFlowHelper {
 //   - Start with each nodes in separate "subsets".
 //   - Consider the arc in order, and each time one connects two separate
 //     subsets, merge the two subsets into a new one.
-//   - Stops when there is only 2 subset left.
+//   - Stops when there is only 'stop_at_num_components' subset left.
 //   - Output all subsets generated this way (at most 2 * num_nodes). The
 //     subsets spans will point in the subset_data vector (which will be of size
 //     exactly num_nodes).
@@ -401,6 +578,9 @@ class MinOutgoingFlowHelper {
 //
 // Note that this is mainly a "symmetric" case algo, but it does still work for
 // the asymmetric case.
+//
+// TODO(user): Returns the tree instead and let caller call
+// ExtractAllSubsetsFromForest().
 void GenerateInterestingSubsets(int num_nodes,
                                 absl::Span<const std::pair<int, int>> arcs,
                                 int stop_at_num_components,

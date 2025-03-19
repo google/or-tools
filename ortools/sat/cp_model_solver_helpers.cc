@@ -1081,17 +1081,62 @@ namespace {
 
 // Fills the BinaryRelationRepository with the enforced linear constraints of
 // size 1 or 2 in the model, and with the non-enforced linear constraints of
-// size 2.
+// size 2. Also expands linear constraints of size 1 enforced by two literals
+// into (up to) 4 binary relations enforced by only one literal.
 void FillBinaryRelationRepository(const CpModelProto& model_proto,
                                   Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* repository = model->GetOrCreate<BinaryRelationRepository>();
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // Load conditional precedences and always true binary relations.
-    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
-        ct.enforcement_literal().size() > 1 || ct.linear().vars_size() > 2) {
+    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
+      continue;
+    }
+    if (ct.enforcement_literal().size() == 2 && ct.linear().vars_size() == 1) {
+      // Add an enforced binary relation ensuring var1 \in var1_domain, as well
+      // as var1 >= implied_lb if lit2 is true.
+      auto process = [&](Literal enforcement_literal, IntegerVariable var1,
+                         const Domain& var1_domain, Literal lit2,
+                         int64_t implied_lb) {
+        const int64_t delta = implied_lb - var1_domain.Min();
+        if (delta <= 0) return;
+        const IntegerVariable var2 = encoder->GetLiteralView(lit2);
+        const IntegerVariable negated_var2 =
+            encoder->GetLiteralView(lit2.Negated());
+        if (var2 != kNoIntegerVariable) {
+          // var1_min <= var1 - delta.var2 <= var1_max, which is equivalent to
+          // the default bounds if var2 = 0, and gives implied_lb <= var1 <=
+          // var1_max + delta otherwise.
+          repository->Add(enforcement_literal, {var1, 1}, {var2, -delta},
+                          var1_domain.Min(), var1_domain.Max());
+        } else if (negated_var2 != kNoIntegerVariable) {
+          // var1_min + delta <= var1 + delta.neg_var2 <= var1_max + delta,
+          // which is equivalent to the default bounds if neg_var2 = 1, and
+          // gives implied_lb <= var1 <= var1_max + delta otherwise.
+          repository->Add(enforcement_literal, {var1, 1}, {negated_var2, delta},
+                          var1_domain.Min() + delta, var1_domain.Max() + delta);
+        }
+      };
+      const IntegerVariable var = mapping->Integer(ct.linear().vars(0));
+      const IntegerVariableProto& var_proto =
+          model_proto.variables(ct.linear().vars(0));
+      const Domain var_domain = ReadDomainFromProto(var_proto);
+      const Domain implied_var_domain =
+          ReadDomainFromProto(ct.linear())
+              .InverseMultiplicationBy(ct.linear().coeffs(0));
+      for (int i = 0; i < 2; ++i) {
+        const Literal lit1 = mapping->Literal(ct.enforcement_literal(i));
+        const Literal lit2 = mapping->Literal(ct.enforcement_literal(1 - i));
+        process(lit1, var, var_domain, lit2, implied_var_domain.Min());
+        process(lit1, NegationOf(var), var_domain.Negation(), lit2,
+                -implied_var_domain.Max());
+      }
+      continue;
+    } else if (ct.enforcement_literal().size() > 1 ||
+               ct.linear().vars_size() > 2) {
       continue;
     }
     const std::vector<IntegerVariable> vars =
@@ -1120,6 +1165,7 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
       }
     }
   }
+  repository->Build();
 }
 
 }  // namespace
@@ -1245,8 +1291,6 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   model->GetOrCreate<ProductDetector>()->ProcessImplicationGraph(
       model->GetOrCreate<BinaryImplicationGraph>());
   model->GetOrCreate<PrecedenceRelations>()->Build();
-
-  model->GetOrCreate<BinaryRelationRepository>()->Build();
 }
 
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {

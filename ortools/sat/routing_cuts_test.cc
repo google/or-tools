@@ -127,10 +127,10 @@ TEST(MinOutgoingFlowHelperTest, CapacityConstraints) {
   EXPECT_EQ(tight_min_flow, 2);
 }
 
-class DemandBasedMinOutgoingFlowHelperTest
+class DimensionBasedMinOutgoingFlowHelperTest
     : public testing::TestWithParam<std::pair<bool, bool>> {};
 
-TEST_P(DemandBasedMinOutgoingFlowHelperTest, BasicCapacities) {
+TEST_P(DimensionBasedMinOutgoingFlowHelperTest, BasicCapacities) {
   // If true, the load variables are the load of the vehicle leaving each node,
   // otherwise they are the load of the vehicle arriving at each node.
   const bool use_outgoing_load = GetParam().first;
@@ -180,21 +180,25 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest, BasicCapacities) {
     }
   }
   repository->Build();
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, *repository);
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-      RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   cumuls.flat_node_dim_expressions,
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
-  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-      {1, 2, 3, 4}, *route_relations_helper);
+  BestBoundHelper best_bound;
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2, 3, 4}, *route_relations_helper, &best_bound);
 
   // The total demand is 50, and the maximum capacity is 49.
   EXPECT_EQ(min_flow, 2);
 }
 
-TEST_P(DemandBasedMinOutgoingFlowHelperTest,
+TEST_P(DimensionBasedMinOutgoingFlowHelperTest,
        NodesWithoutIncomingOrOutgoingArc) {
   // If true, the load variables are the load of the vehicle leaving each node,
   // otherwise they are the load of the vehicle arriving at each node.
@@ -247,25 +251,28 @@ TEST_P(DemandBasedMinOutgoingFlowHelperTest,
     }
   }
   repository->Build();
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, *repository);
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-      RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   cumuls.flat_node_dim_expressions,
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
-  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-      {0, 1, 2, 3}, *route_relations_helper);
+  BestBoundHelper best_bound;
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {0, 1, 2, 3}, *route_relations_helper, &best_bound);
 
   // The total demand is 50, and the maximum capacity is 49.
   EXPECT_EQ(min_flow, 2);
 }
 
-INSTANTIATE_TEST_SUITE_P(AllCombinations, DemandBasedMinOutgoingFlowHelperTest,
-                         testing::Values(std::make_pair(true, true),
-                                         std::make_pair(true, false),
-                                         std::make_pair(false, true),
-                                         std::make_pair(false, false)));
+INSTANTIATE_TEST_SUITE_P(
+    AllCombinations, DimensionBasedMinOutgoingFlowHelperTest,
+    testing::Values(std::make_pair(true, true), std::make_pair(true, false),
+                    std::make_pair(false, true), std::make_pair(false, false)));
 
 TEST(MinOutgoingFlowHelperTest, NodeExpressionWithConstant) {
   // A graph with 3 nodes: 0 <--> 1 -(demand1)-> 2 <-(demand2)-> 0
@@ -301,9 +308,10 @@ TEST(MinOutgoingFlowHelperTest, NodeExpressionWithConstant) {
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
 
+  BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
-  const int min_flow =
-      helper.ComputeDemandBasedMinOutgoingFlow({1, 2}, *route_relations_helper);
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2}, *route_relations_helper, &best_bound);
 
   // The total demand exceeds the capacity.
   EXPECT_EQ(min_flow, 2);
@@ -341,9 +349,10 @@ TEST(MinOutgoingFlowHelperTest, ConstantNodeExpression) {
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
 
+  BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
-  const int min_flow =
-      helper.ComputeDemandBasedMinOutgoingFlow({1, 2}, *route_relations_helper);
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2}, *route_relations_helper, &best_bound);
 
   // The total demand exceeds the capacity.
   EXPECT_EQ(min_flow, 2);
@@ -396,9 +405,10 @@ TEST(MinOutgoingFlowHelperTest, NodeExpressionUsingArcLiteralAsVariable) {
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
 
+  BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
-  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-      {1, 2, 3}, *route_relations_helper);
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper, &best_bound);
 
   // The total demand exceeds the capacity.
   EXPECT_EQ(min_flow, 2);
@@ -453,9 +463,10 @@ TEST(MinOutgoingFlowHelperTest,
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
 
+  BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
-  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-      {1, 2, 3}, *route_relations_helper);
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper, &best_bound);
 
   // The total demand exceeds the capacity.
   EXPECT_EQ(min_flow, 2);
@@ -509,9 +520,10 @@ TEST(MinOutgoingFlowHelperTest, ArcNodeExpressionsWithSharedVariable) {
           *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
 
+  BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
-  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-      {1, 2, 3}, *route_relations_helper);
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper, &best_bound);
 
   // The total demand exceeds the capacity.
   EXPECT_EQ(min_flow, 2);
@@ -546,9 +558,11 @@ TEST(MinOutgoingFlowHelperTest, UnaryRelationForTwoNodeExpressions) {
   // The load of the vehicle arriving at node 3.
   const IntegerVariable load3 =
       model.Add(NewIntegerVariable(0, capacity - demand3));
-  // Add the implication x_lit => !arc_1_2_lit (<=> arc_1_2_lit => x = 0).
+  // Add an indirect implication x_lit => !arc_1_2_lit (= arc_1_2_lit => x = 0).
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  model.GetOrCreate<BinaryImplicationGraph>()->AddImplication(x_lit, b);
   model.GetOrCreate<BinaryImplicationGraph>()->AddImplication(
-      x_lit, literals[0].Negated());
+      b, literals[0].Negated());
 
   auto* repository = model.GetOrCreate<BinaryRelationRepository>();
   // Capacity constraint: load2 - load1 >= demand1. This expands to
@@ -570,9 +584,10 @@ TEST(MinOutgoingFlowHelperTest, UnaryRelationForTwoNodeExpressions) {
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
 
+  BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
-  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-      {1, 2, 3}, *route_relations_helper);
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2, 3}, *route_relations_helper, &best_bound);
 
   // The total demand exceeds the capacity.
   EXPECT_EQ(min_flow, 2);
@@ -617,14 +632,19 @@ TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
                       demands[i], 1000);
     }
     repository->Build();
+
+    const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+        num_nodes, tails, heads, literals, *repository);
     std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-        RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
+        RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                     cumuls.flat_node_dim_expressions,
                                      *repository, &model);
     ASSERT_NE(route_relations_helper, nullptr);
 
+    BestBoundHelper best_bound;
     MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
-    const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-        {1, 2, 3}, *route_relations_helper);
+    const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+        {1, 2, 3}, *route_relations_helper, &best_bound);
 
     // If we cannot enter at 2, the only possibility is 0->1->2->0 and 0->3->0.
     // Otherwise 0->2->1->3->0 is just under the capacity of 8.
@@ -670,20 +690,24 @@ TEST(MinOutgoingFlowHelperTest, BetterUseOfUpperBound) {
                       demands[i], 1000);
     }
     repository->Build();
+    const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+        loads.size(), tails, heads, literals, *repository);
     std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-        RouteRelationsHelper::Create(loads.size(), tails, heads, literals, {},
+        RouteRelationsHelper::Create(loads.size(), tails, heads, literals,
+                                     cumuls.flat_node_dim_expressions,
                                      *repository, &model);
     ASSERT_NE(route_relations_helper, nullptr);
 
+    BestBoundHelper best_bound;
     MinOutgoingFlowHelper helper(loads.size(), tails, heads, literals, &model);
-    const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-        {1, 2}, *route_relations_helper);
+    const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+        {1, 2}, *route_relations_helper, &best_bound);
 
     EXPECT_EQ(min_flow, bounds_forces_two_path ? 2 : 1);
   }
 }
 
-TEST(MinOutgoingFlowHelperTest, DemandBasedMinOutgoingFlow_IsolatedNodes) {
+TEST(MinOutgoingFlowHelperTest, DimensionBasedMinOutgoingFlow_IsolatedNodes) {
   Model model;
   const int num_nodes = 5;
   // A star graph with num_nodes-1 nodes and a depot.
@@ -704,15 +728,19 @@ TEST(MinOutgoingFlowHelperTest, DemandBasedMinOutgoingFlow_IsolatedNodes) {
                     1, 100);
   }
   repository->Build();
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, *repository);
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
-      RouteRelationsHelper::Create(num_nodes, tails, heads, literals, {},
+      RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
+                                   cumuls.flat_node_dim_expressions,
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
-  const int min_flow = helper.ComputeDemandBasedMinOutgoingFlow(
-      {1, 2, 3, 4}, *route_relations_helper);
+  BestBoundHelper best_bound;
+  const int min_flow = helper.ComputeDimensionBasedMinOutgoingFlow(
+      {1, 2, 3, 4}, *route_relations_helper, &best_bound);
 
   EXPECT_EQ(min_flow, 4);
 }
@@ -976,6 +1004,135 @@ TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutesRandom) {
   }
 }
 
+// We are looking for a solution with exactly k vehicles.
+bool SolveTimeWindowProblemStartingFrom(
+    int start, int k, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const int> distance,
+    absl::Span<const std::pair<int, int>> time_windows) {
+  CpModelBuilder cp_model;
+
+  // Cumul variables.
+  std::vector<IntVar> cumul_vars;
+  for (int i = 0; i < time_windows.size(); ++i) {
+    cumul_vars.push_back(cp_model.NewIntVar(
+        Domain(time_windows[i].first, time_windows[i].second)));
+  }
+
+  LinearExpr sum_leaving_the_depot;
+  MultipleCircuitConstraint route = cp_model.AddMultipleCircuitConstraint();
+  for (int arc = 0; arc < tails.size(); ++arc) {
+    const BoolVar arc_is_present = cp_model.NewBoolVar();
+    route.AddArc(tails[arc], heads[arc], arc_is_present);
+
+    // Cumul constraint.
+    // We ignore arcs from/to the depot.
+    if (tails[arc] != 0 && heads[arc] != 0) {
+      const IntVar tail_var = cumul_vars[tails[arc]];
+      const IntVar head_var = cumul_vars[heads[arc]];
+      cp_model.AddGreaterOrEqual(head_var, tail_var + distance[arc])
+          .OnlyEnforceIf(arc_is_present);
+    }
+
+    // Collect arc leaving the depot.
+    if (tails[arc] == 0) {
+      sum_leaving_the_depot += arc_is_present;
+
+      if (heads[arc] == start) {
+        // Forces to start from there.
+        cp_model.FixVariable(arc_is_present, true);
+      }
+    }
+  }
+
+  // Exactly k vehicles.
+  cp_model.AddEquality(sum_leaving_the_depot, k);
+
+  const CpSolverResponse response = Solve(cp_model.Build());
+  return response.status() == CpSolverStatus::OPTIMAL;
+}
+
+// Generate a problem with time windows.
+// Contrary to normal capacity, not all nodes can be used as a starting/ending
+// point to serve a subset. This exercises this part of the code.
+TEST(MinOutgoingFlowHelperTest,
+     SubsetMightBeServedWithKRoutesTimeWindowRandom) {
+  Model model;
+  absl::BitGen random;
+  const int num_nodes = 8;
+  const int horizon = 100;
+
+  // A complete graph with num_nodes.
+  std::vector<int> tails;
+  std::vector<int> heads;
+  std::vector<Literal> literals;
+  std::vector<int> travel_times;
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    for (int head = 0; head < num_nodes; ++head) {
+      if (tail == head) continue;
+      tails.push_back(tail);
+      heads.push_back(head);
+      literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
+
+      // Since SubsetMightBeServedWithKRoutes() ignore arcs to outside the
+      // subset, we make sure these have no cost.
+      travel_times.push_back(
+          tail == 0 || head == 0 ? 0 : absl::Uniform(random, 2, 10));
+    }
+  }
+
+  std::vector<IntegerVariable> cumul_vars;
+  std::vector<std::pair<int, int>> time_windows;
+  time_windows.push_back({0, 0});
+  cumul_vars.push_back(model.Add(NewIntegerVariable(Domain(0))));  // Depot
+  for (int n = 1; n < num_nodes; ++n) {
+    const int start = absl::Uniform(random, 0, horizon);
+    const int length = absl::Uniform(random, 2, 10);
+    LOG(INFO) << n << " " << Domain(start, start + length);
+    time_windows.push_back({start, start + length});
+    cumul_vars.push_back(
+        model.Add(NewIntegerVariable(Domain(start, start + length))));
+  }
+
+  // Travel time constraint.
+  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  for (int arc = 0; arc < tails.size(); ++arc) {
+    const int tail = tails[arc];
+    const int head = heads[arc];
+    const Literal literal = literals[arc];
+
+    // vars[head] >= vars[tail] + travel_times[arc];
+    repository->Add(literal, {cumul_vars[head], 1}, {cumul_vars[tail], -1},
+                    travel_times[arc], 10000);
+  }
+  repository->Build();
+
+  // Serve everyone but the depot.
+  std::vector<int> subset;
+  for (int i = 1; i < num_nodes; ++i) subset.push_back(i);
+
+  // Subject under test.
+  MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
+
+  // Lets compute how many routes we need to serve this subset.
+  int optimal = -1;
+  for (int k = 0; k <= subset.size(); ++k) {
+    if (helper.SubsetMightBeServedWithKRoutes(k, subset)) {
+      optimal = k;
+      break;
+    }
+  }
+
+  LOG(INFO) << "k = " << optimal;
+  if (optimal > 0) {
+    for (const int i : subset) {
+      EXPECT_EQ(SolveTimeWindowProblemStartingFrom(i, optimal, tails, heads,
+                                                   travel_times, time_windows),
+                helper.SubsetMightBeServedWithKRoutes(optimal, subset, nullptr,
+                                                      /*special_node=*/i));
+    }
+  }
+}
+
 int SolveSpecialBinPackingWithCpSat(
     absl::Span<const SpecialBinPackingHelper::ItemOrBin> objects) {
   CpModelBuilder cp_model;
@@ -983,10 +1140,9 @@ int SolveSpecialBinPackingWithCpSat(
   const int n = objects.size();
   std::vector<BoolVar> item_is_bin(n);
   for (int i = 0; i < n; ++i) {
-    if (objects[i].type == SpecialBinPackingHelper::ItemOrBin::MUST_BE_BIN) {
+    if (objects[i].type == SpecialBinPackingHelper::MUST_BE_BIN) {
       item_is_bin[i] = cp_model.TrueVar();
-    } else if (objects[i].type ==
-               SpecialBinPackingHelper::ItemOrBin::MUST_BE_ITEM) {
+    } else if (objects[i].type == SpecialBinPackingHelper::MUST_BE_ITEM) {
       item_is_bin[i] = cp_model.FalseVar();
     } else {
       item_is_bin[i] = cp_model.NewBoolVar();
@@ -1053,21 +1209,44 @@ TEST(SpecialBinPackingHelperTest, ComputeMinNumberOfBins) {
     SpecialBinPackingHelper::ItemOrBin o;
     o.capacity = absl::Uniform(random, 0, 100);
     o.demand = absl::Uniform(random, 0, 50);
-    const int type = absl::Uniform(random, 0, 2);
-    if (type == 0) o.type = SpecialBinPackingHelper::ItemOrBin::MUST_BE_ITEM;
-    if (type == 1) o.type = SpecialBinPackingHelper::ItemOrBin::ITEM_OR_BIN;
-    if (type == 2) o.type = SpecialBinPackingHelper::ItemOrBin::MUST_BE_BIN;
+    const int type = absl::Uniform(random, 0, 3);
+    if (type == 0) o.type = SpecialBinPackingHelper::MUST_BE_ITEM;
+    if (type == 1) o.type = SpecialBinPackingHelper::ITEM_OR_BIN;
+    if (type == 2) o.type = SpecialBinPackingHelper::MUST_BE_BIN;
     objects.push_back(o);
   }
 
   std::string info;
   SpecialBinPackingHelper helper;
-  const int obj_lb =
-      helper.ComputeMinNumberOfBins(absl::MakeSpan(objects), info);
+  std::vector<int> objects_that_cannot_be_bin_and_reach_minimum;
+  const int obj_lb = helper.ComputeMinNumberOfBins(
+      absl::MakeSpan(objects), objects_that_cannot_be_bin_and_reach_minimum,
+      info);
   const int optimal = SolveSpecialBinPackingWithCpSat(objects);
   EXPECT_LE(obj_lb, optimal);
   if (obj_lb != optimal) {
     LOG(INFO) << "bound " << obj_lb << " optimal " << optimal;
+  }
+
+  // For each item in the complement, test that the bound increase if we
+  // force it to be a bin.
+  if (objects_that_cannot_be_bin_and_reach_minimum.empty()) return;
+  std::vector<bool> cannot_be_bin(num_objects, false);
+  for (const int i : objects_that_cannot_be_bin_and_reach_minimum) {
+    cannot_be_bin[i] = true;
+  }
+  for (int i = 0; i < num_objects; ++i) {
+    if (cannot_be_bin[i]) {
+      if (objects[i].type == SpecialBinPackingHelper::MUST_BE_ITEM) continue;
+      EXPECT_EQ(objects[i].type, SpecialBinPackingHelper::ITEM_OR_BIN);
+
+      objects[i].type = SpecialBinPackingHelper::MUST_BE_BIN;
+      std::vector<int> unused;
+      const int new_lb =
+          helper.ComputeMinNumberOfBins(absl::MakeSpan(objects), unused, info);
+      EXPECT_GT(new_lb, obj_lb);
+      objects[i].type = SpecialBinPackingHelper::ITEM_OR_BIN;
+    }
   }
 }
 
@@ -1112,11 +1291,6 @@ GetRelationByDimensionAndArc(const RouteRelationsHelper& helper) {
       helper.num_dimensions());
   for (int i = 0; i < helper.num_arcs(); ++i) {
     for (int d = 0; d < helper.num_dimensions(); ++d) {
-      // We don't output trivial relation, as the tests are written this way.
-      if (helper.GetArcRelation(i, d).lhs == kMinIntegerValue &&
-          helper.GetArcRelation(i, d).rhs == kMaxIntegerValue) {
-        continue;
-      }
       result[d][i] = helper.GetArcRelation(i, d);
     }
   }
@@ -1163,8 +1337,11 @@ TEST(RouteRelationsHelperTest, Basic) {
   repository.Add(literals[4], {z, 1}, {y, -1}, 7, 100);
   repository.Build();
 
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, repository);
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository, &model);
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
 
   ASSERT_NE(helper, nullptr);
   // Two dimensions (time and load) on the first connected component, and one
@@ -1180,19 +1357,27 @@ TEST(RouteRelationsHelperTest, Basic) {
           UnorderedElementsAre(Pair(0, u), Pair(1, v), Pair(2, w), Pair(3, x)),
           // Variables y and z cannot be unambiguously associated with nodes.
           IsEmpty()));
-  // Check the arc relations.
+  // Check the arc relations. No relation for the dimension corresponding to y
+  // and z are recovered since they cannot be unambiguously associated with
+  // nodes 4 and 5, and since the other nodes don't have any associated variable
+  // in this dimension.
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
               UnorderedElementsAre(
-                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{50, 1000}),
-                                       Pair(1, HeadMinusTailBounds{70, 1000}),
-                                       Pair(2, HeadMinusTailBounds{40, 1000})),
-                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 100}),
-                                       Pair(1, HeadMinusTailBounds{4, 100}),
-                                       Pair(2, HeadMinusTailBounds{3, 100}),
-                                       Pair(3, HeadMinusTailBounds{5, 100})),
-                  // The relation for the arc 4->5 is not recovered since its
-                  // variables cannot be unambiguously associated with nodes.
-                  IsEmpty()));
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{50, 100}),
+                                       Pair(1, HeadMinusTailBounds{70, 100}),
+                                       Pair(2, HeadMinusTailBounds{40, 100}),
+                                       Pair(3, HeadMinusTailBounds{-100, 0}),
+                                       Pair(4, HeadMinusTailBounds{0, 0})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 10}),
+                                       Pair(1, HeadMinusTailBounds{4, 10}),
+                                       Pair(2, HeadMinusTailBounds{3, 10}),
+                                       Pair(3, HeadMinusTailBounds{5, 10}),
+                                       Pair(4, HeadMinusTailBounds{0, 0})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
+                                       Pair(1, HeadMinusTailBounds{0, 0}),
+                                       Pair(2, HeadMinusTailBounds{0, 0}),
+                                       Pair(3, HeadMinusTailBounds{0, 0}),
+                                       Pair(4, HeadMinusTailBounds{0, 0}))));
 
   helper->RemoveArcs({0, 2});
 
@@ -1200,10 +1385,15 @@ TEST(RouteRelationsHelperTest, Basic) {
   EXPECT_EQ(helper->num_arcs(), 3);
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
               UnorderedElementsAre(
-                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{70, 1000})),
-                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 100}),
-                                       Pair(1, HeadMinusTailBounds{5, 100})),
-                  IsEmpty()));
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{70, 100}),
+                                       Pair(1, HeadMinusTailBounds{-100, 0}),
+                                       Pair(2, HeadMinusTailBounds{0, 0})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{4, 10}),
+                                       Pair(1, HeadMinusTailBounds{5, 10}),
+                                       Pair(2, HeadMinusTailBounds{0, 0})),
+                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
+                                       Pair(1, HeadMinusTailBounds{0, 0}),
+                                       Pair(2, HeadMinusTailBounds{0, 0}))));
 }
 
 TEST(RouteRelationsHelperTest, UnenforcedRelations) {
@@ -1241,8 +1431,11 @@ TEST(RouteRelationsHelperTest, UnenforcedRelations) {
   repository.Add(Literal(kNoLiteralIndex), {c, 2}, {a, -3}, 3, 8);
   repository.Build();
 
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, repository);
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository, &model);
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
@@ -1285,10 +1478,44 @@ TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
   repository.Add(literals[0], {x, 1}, {a, -1}, 0, 100);
   repository.Build();
 
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, repository);
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository, &model);
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
 
   EXPECT_EQ(helper, nullptr);
+}
+
+TEST(RouteRelationsHelperTest, ComplexVariableRelations) {
+  Model model;
+  // A graph with 2 nodes and the following arcs: 0--l0-->1
+  const int num_nodes = 2;
+  const std::vector<int> tails = {0};
+  const std::vector<int> heads = {1};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true)};
+  // Add relations with "capacity" variables A and B, associated with nodes 0
+  // and 1, respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 150));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 1));
+  BinaryRelationRepository repository;
+  // "complex" relation with non +1/-1 coefficients.
+  repository.Add(literals[0], {b, 10}, {a, 1}, 0, 150);
+  repository.Build();
+
+  const RoutingCumulExpressions cumuls = {
+      .num_dimensions = 0,
+      .flat_node_dim_expressions = {AffineExpression(a),
+                                    AffineExpression(b, -20, 190)}};
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
+
+  ASSERT_NE(helper, nullptr);
+  // 10b + a in [0, 150] should give (190-20b) - a in [30,190], by using the
+  // fact that b is in [0, 1].
+  EXPECT_EQ(helper->GetArcRelation(0, 0), (HeadMinusTailBounds{30, 190}));
 }
 
 TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
@@ -1312,16 +1539,19 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   repository.Add(literals[1], {c, 2}, {b, -3}, 100, 200);
   repository.Build();
 
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, repository);
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository, &model);
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_EQ(helper->num_dimensions(), 1);
   EXPECT_EQ(helper->GetNodeExpression(0, 0), a);
   EXPECT_EQ(helper->GetNodeExpression(1, 0), b);
   EXPECT_EQ(helper->GetNodeExpression(2, 0), c);
-  EXPECT_EQ(helper->GetArcRelation(0, 0), (HeadMinusTailBounds{50, 1000}));
-  EXPECT_EQ(helper->GetArcRelation(1, 0), (HeadMinusTailBounds{70, 1000}));
+  EXPECT_EQ(helper->GetArcRelation(0, 0), (HeadMinusTailBounds{50, 100}));
+  EXPECT_EQ(helper->GetArcRelation(1, 0), (HeadMinusTailBounds{70, 100}));
 }
 
 TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
@@ -1343,8 +1573,11 @@ TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
   repository.Add(literals[0], {c, 1}, {b, -1}, 40, 1000);
   repository.Build();
 
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, repository);
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository, &model);
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
 
   // No variable should be associated with any node, since there is no unique
   // way to do this ([A, B, C] or [C, B, A], for nodes [0, 1, 2] respectively).
@@ -1387,8 +1620,11 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
   repository.Add(literals[5], {f, 2}, {b, -1}, 5, 5);
   repository.Build();
 
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, repository);
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository, &model);
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
@@ -1396,13 +1632,15 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
                   UnorderedElementsAre(Pair(0, a), Pair(1, b), Pair(2, c),
                                        Pair(3, d), Pair(4, e), Pair(5, f))));
   // The relation for arc 5->3 is filtered out because it is inconsistent.
+  // Instead, the default relation bounds between f and d are used.
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
-              UnorderedElementsAre(
-                  UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
-                                       Pair(1, HeadMinusTailBounds{1, 1}),
-                                       Pair(2, HeadMinusTailBounds{2, 2}),
-                                       Pair(3, HeadMinusTailBounds{3, 3}),
-                                       Pair(4, HeadMinusTailBounds{4, 4}))));
+              UnorderedElementsAre(UnorderedElementsAre(
+                  Pair(0, HeadMinusTailBounds{0, 0}),
+                  Pair(1, HeadMinusTailBounds{1, 1}),
+                  Pair(2, HeadMinusTailBounds{2, 2}),
+                  Pair(3, HeadMinusTailBounds{3, 3}),
+                  Pair(4, HeadMinusTailBounds{4, 4}),
+                  Pair(5, HeadMinusTailBounds{-100, 100}))));
 }
 
 TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
@@ -1445,8 +1683,11 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
   repository.Add(literals[5], {e, 1}, {d, -1}, 5, 5);
   repository.Build();
 
+  const RoutingCumulExpressions cumuls = DetectDimensionsAndCumulExpressions(
+      num_nodes, tails, heads, literals, repository);
   std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
-      num_nodes, tails, heads, literals, {}, repository, &model);
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
 
   ASSERT_NE(helper, nullptr);
   EXPECT_THAT(GetNodeExpressionsByDimension(*helper),
@@ -1454,12 +1695,14 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
                   Pair(0, a), Pair(1, b), Pair(2, c), Pair(3, d), Pair(4, e))));
 
   // The relation for arc 4->1 is filtered out because it is inconsistent.
+  // Instead, the default relation bounds between e and b are used.
   EXPECT_THAT(GetRelationByDimensionAndArc(*helper),
               UnorderedElementsAre(
                   UnorderedElementsAre(Pair(0, HeadMinusTailBounds{0, 0}),
                                        Pair(1, HeadMinusTailBounds{1, 1}),
                                        Pair(2, HeadMinusTailBounds{2, 2}),
                                        Pair(3, HeadMinusTailBounds{3, 3}),
+                                       Pair(4, HeadMinusTailBounds{-100, 100}),
                                        Pair(5, HeadMinusTailBounds{5, 4}))));
 }
 
@@ -1892,9 +2135,11 @@ TEST(CreateStronglyConnectedGraphCutGeneratorTest, AnotherExample) {
 
   // The sets {2, 3} and {1, 2, 3} will generate cuts.
   // However as an heuristic, we will wait another round to generate {1, 2, 3}.
-  EXPECT_EQ(manager.num_cuts(), 1);
-  EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
+  ASSERT_EQ(manager.num_cuts(), 2);
+  EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
               ::testing::StartsWith("1 <= 1*X3 1*X6"));
+  EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
+              ::testing::StartsWith("1 <= 1*X1 1*X3"));
 }
 
 TEST(GenerateInterestingSubsetsTest, BasicExample) {
@@ -2081,7 +2326,8 @@ TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
   LinearConstraintManager manager(&model);
   generator.generate_cuts(&manager);
 
-  ASSERT_EQ(manager.num_cuts(), 1);
+  ASSERT_EQ(manager.num_cuts(), 2);
+
   // Arcs with ID 2 (1->2) and ID 4 (2->3) should be in the cut.
   EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
               ::testing::StartsWith("0 <= 1*X2 1*X4 <= 1"));

@@ -809,6 +809,10 @@ class BinaryImplicationGraph : public SatPropagator {
   void ResetWorkDone() { work_done_in_mark_descendants_ = 0; }
   int64_t WorkDone() const { return work_done_in_mark_descendants_; }
 
+  // Returns all the literals that are implied directly or indirectly by `root`.
+  // The result must be used before the next call to this function.
+  absl::Span<const Literal> GetAllImpliedLiterals(Literal root);
+
   // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
   template <bool use_weight = true>
   std::vector<Literal> ExpandAtMostOneWithWeight(
@@ -837,9 +841,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // Remove any literal whose negation is marked (except the first one).
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
 
-  // Fill is_marked_ with all the descendant of root.
+  // Fill is_marked_ with all the descendant of root, and returns them.
   // Note that this also use bfs_stack_.
-  void MarkDescendants(Literal root);
+  absl::Span<const Literal> MarkDescendants(Literal root);
 
   // Expands greedily the given at most one until we get a maximum clique in
   // the underlying incompatibility graph. Note that there is no guarantee that

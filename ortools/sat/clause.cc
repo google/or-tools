@@ -2368,14 +2368,21 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
   return result;
 }
 
-void BinaryImplicationGraph::MarkDescendants(Literal root) {
+absl::Span<const Literal> BinaryImplicationGraph::GetAllImpliedLiterals(
+    Literal root) {
+  is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
+  return MarkDescendants(root);
+}
+
+absl::Span<const Literal> BinaryImplicationGraph::MarkDescendants(
+    Literal root) {
   auto* const stack = bfs_stack_.data();
   auto is_marked = is_marked_.BitsetView();
   auto is_redundant = is_redundant_.const_view();
-  if (is_redundant[root]) return;
 
   int stack_size = 1;
   stack[0] = root;
+  if (is_redundant[root]) return absl::MakeSpan(stack, 1);
   is_marked_.Set(root);
   const int amo_size = static_cast<int>(at_most_ones_.size());
   auto implies_something = implies_something_.const_view();
@@ -2404,6 +2411,7 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
     }
   }
   work_done_in_mark_descendants_ += stack_size;
+  return absl::MakeSpan(stack, stack_size);
 }
 
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(

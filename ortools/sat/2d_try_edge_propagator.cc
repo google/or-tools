@@ -326,7 +326,7 @@ std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
   GreedySolutionGenerator greedy_search(&inv);
   CHECK(greedy_search.NextSolution());
   GuidedLocalSearch search(&inv);
-  CHECK(search.NextSolution(100));
+  CHECK(search.SetMaxIterations(100).NextSolution());
   DCHECK(inv.CheckConsistency(
       SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered));
 

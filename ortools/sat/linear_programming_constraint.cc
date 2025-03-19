@@ -933,14 +933,14 @@ bool LinearProgrammingConstraint::SolveLp() {
   const double unscaling_factor = 1.0 / scaler_.ObjectiveScalingFactor();
   const double offset_before_unscaling =
       ToDouble(integer_objective_offset_) * scaler_.ObjectiveScalingFactor();
-  const auto status = simplex_.MinimizeFromTransposedMatrixWithSlack(
+  auto status = simplex_.MinimizeFromTransposedMatrixWithSlack(
       obj_with_slack_, unscaling_factor, offset_before_unscaling, time_limit_);
 
   // Lets resolve from scratch if we encounter this status.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::ABNORMAL) {
     VLOG(2) << "The LP solver returned abnormal, resolving from scratch";
     simplex_.ClearStateForNextSolve();
-    const auto status = simplex_.MinimizeFromTransposedMatrixWithSlack(
+    status = simplex_.MinimizeFromTransposedMatrixWithSlack(
         obj_with_slack_, unscaling_factor, offset_before_unscaling,
         time_limit_);
   }

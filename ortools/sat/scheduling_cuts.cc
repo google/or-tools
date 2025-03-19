@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <functional>
 #include <limits>
 #include <optional>
 #include <string>

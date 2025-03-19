@@ -298,6 +298,22 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
       result.dependency_resolution_constraint_index.push_back(c);
     }
   }
+
+  for (int i = 0; i < result.secondary_variables.size(); ++i) {
+    const int var = result.secondary_variables[i];
+    const int c = result.dependency_resolution_constraint_index[i];
+    const ConstraintData& data = constraint_data[c];
+    for (const int v : data.input_vars) {
+      if (var_is_secondary.IsSet(v)) {
+        result.variable_dependencies.push_back({var, v});
+      }
+    }
+    for (const int v : data.deducible_vars) {
+      if (var_is_secondary.IsSet(v) && v != var) {
+        result.variable_dependencies.push_back({var, v});
+      }
+    }
+  }
   return result;
 }
 
