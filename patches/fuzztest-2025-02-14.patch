@@ -1,3 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1e34de3..dbacb91 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -13,7 +13,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   set (COMPILER_CLANG 1)
+ else ()
+-  message (FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported")
++  message (WARNING "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported")
+ endif ()
+ 
+ if (COMPILER_GCC AND (FUZZTEST_FUZZING_MODE OR (FUZZTEST_COMPATIBILITY_MODE STREQUAL "libfuzzer")))
 diff --git a/cmake/BuildDependencies.cmake b/cmake/BuildDependencies.cmake
 index 1f4f08d..cc4d0ba 100644
 --- a/cmake/BuildDependencies.cmake
