@@ -556,13 +556,13 @@ std::vector<T> ComputeDeciles(std::vector<T> values) {
   return deciles;
 }
 
-SetCoverModel::Stats SetCoverModel::ComputeCostStats() {
+SetCoverModel::Stats SetCoverModel::ComputeCostStats() const {
   std::vector<Cost> subset_costs(num_subsets());
   std::copy(subset_costs_.begin(), subset_costs_.end(), subset_costs.begin());
   return ComputeStats(std::move(subset_costs));
 }
 
-SetCoverModel::Stats SetCoverModel::ComputeRowStats() {
+SetCoverModel::Stats SetCoverModel::ComputeRowStats() const {
   std::vector<int64_t> row_sizes(num_elements(), 0);
   for (const SparseColumn& column : columns_) {
     for (const ElementIndex element : column) {
@@ -572,7 +572,7 @@ SetCoverModel::Stats SetCoverModel::ComputeRowStats() {
   return ComputeStats(std::move(row_sizes));
 }
 
-SetCoverModel::Stats SetCoverModel::ComputeColumnStats() {
+SetCoverModel::Stats SetCoverModel::ComputeColumnStats() const {
   std::vector<int64_t> column_sizes(columns_.size());
   for (const SubsetIndex subset : SubsetRange()) {
     column_sizes[subset.value()] = columns_[subset].size();

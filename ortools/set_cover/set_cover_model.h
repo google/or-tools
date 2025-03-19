@@ -225,13 +225,13 @@ class SetCoverModel {
   };
 
   // Computes basic statistics on costs and returns a Stats structure.
-  Stats ComputeCostStats();
+  Stats ComputeCostStats() const;
 
   // Computes basic statistics on rows and returns a Stats structure.
-  Stats ComputeRowStats();
+  Stats ComputeRowStats() const;
 
   // Computes basic statistics on columns and returns a Stats structure.
-  Stats ComputeColumnStats();
+  Stats ComputeColumnStats() const;
 
   // Computes deciles on rows and returns a vector of deciles.
   std::vector<int64_t> ComputeRowDeciles() const;
