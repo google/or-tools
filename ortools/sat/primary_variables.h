@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_PRIMARY_VARIABLES_H_
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -40,6 +41,10 @@ namespace sat {
 struct VariableRelationships {
   std::vector<int> secondary_variables;
   std::vector<int> dependency_resolution_constraint_index;
+  // A pair of(x, y) means that one needs to compute the value of y before
+  // computing the value of x. This defines an implicit dependency DAG for
+  // computing the secondary variables from the primary.
+  std::vector<std::pair<int, int>> variable_dependencies;
 };
 
 // Compute the variable relationships for a given model. Note that there are

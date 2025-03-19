@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 
 namespace operations_research {
@@ -24,6 +25,8 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+using ::testing::Contains;
+using ::testing::Pair;
 
 TEST(PrimaryVariablesTest, BasicExample) {
   const CpModelProto model = ParseTestProto(R"pb(
@@ -75,6 +78,7 @@ TEST(PrimaryVariablesTest, BasicExample) {
   const VariableRelationships relationships =
       ComputeVariableRelationships(model);
   EXPECT_GT(relationships.secondary_variables.size(), 1);
+  EXPECT_THAT(relationships.variable_dependencies, Contains(Pair(6, 5)));
   const std::vector<int64_t> solution = {-1, 1, 0, 4, 0, 4, -4};
 
   std::vector<int64_t> all_variables = solution;

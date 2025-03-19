@@ -42,15 +42,14 @@ namespace operations_research {
 namespace sat {
 
 // Replaces all the instance of a variable i (and the literals referring to it)
-// by mapping[i]. The definition of variables i is also moved to its new index.
-// If mapping[i] < 0 the variable can be ignored if possible. If it is not
-// possible, then we will use a new index for it (at the end) and the mapping
-// will be updated to reflect that.
+// by mapping[i] in the working model. The definition of variables i is also
+// moved to its new index. If mapping[i] < 0 the variable can be ignored if
+// possible. If it is not possible, then we will use a new index for it (at the
+// end) and the mapping will be updated to reflect that.
 //
 // The image of the mapping should be dense in [0, reverse_mapping->size()).
-void ApplyVariableMapping(absl::Span<int> mapping,
-                          std::vector<int>* reverse_mapping,
-                          CpModelProto* proto);
+void ApplyVariableMapping(PresolveContext* context, absl::Span<int> mapping,
+                          std::vector<int>* reverse_mapping);
 
 // Presolves the initial content of presolved_model.
 //
@@ -166,7 +165,8 @@ class CpModelPresolver {
                                   LinearArgumentProto* proto);
 
   // For the linear constraints, we have more than one function.
-  bool CanonicalizeLinear(ConstraintProto* ct);
+  ABSL_MUST_USE_RESULT bool CanonicalizeLinear(ConstraintProto* ct,
+                                               bool* changed);
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);

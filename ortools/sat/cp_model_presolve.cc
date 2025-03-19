@@ -1454,7 +1454,10 @@ bool CpModelPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
     arg->add_domain(0);
     AddLinearExpressionToLinearConstraint(target_expr, 1, arg);
     AddLinearExpressionToLinearConstraint(expr, -1, arg);
-    CanonicalizeLinear(new_ct);
+    bool changed = false;
+    if (!CanonicalizeLinear(new_ct, &changed)) {
+      return true;
+    }
     context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
@@ -1468,7 +1471,10 @@ bool CpModelPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
     arg->add_domain(0);
     AddLinearExpressionToLinearConstraint(target_expr, 1, arg);
     AddLinearExpressionToLinearConstraint(expr, 1, arg);
-    CanonicalizeLinear(new_ct);
+    bool changed = false;
+    if (!CanonicalizeLinear(new_ct, &changed)) {
+      return true;
+    }
     context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
@@ -2207,17 +2213,18 @@ bool CpModelPresolver::CanonicalizeLinearExpression(
   return context_->CanonicalizeLinearExpression(ct.enforcement_literal(), exp);
 }
 
-bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct, bool* changed) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return true;
   if (context_->ModelIsUnsat()) return false;
 
   if (ct->linear().domain().empty()) {
     context_->UpdateRuleStats("linear: no domain");
+    *changed = true;
     return MarkConstraintAsFalse(ct);
   }
 
-  bool changed = context_->CanonicalizeLinearConstraint(ct);
-  changed |= DivideLinearByGcd(ct);
+  *changed = context_->CanonicalizeLinearConstraint(ct);
+  *changed |= DivideLinearByGcd(ct);
 
   // For duplicate detection, we always make the first coeff positive.
   //
@@ -2231,7 +2238,7 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
                       ct->mutable_linear());
   }
 
-  return changed;
+  return true;
 }
 
 bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
@@ -2553,7 +2560,9 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
 
   // We use the new variable in the constraint.
   // Note that we will divide everything by the gcd too.
-  return CanonicalizeLinear(ct);
+  bool changed = false;
+  (void)CanonicalizeLinear(ct, &changed);
+  return changed;
 }
 
 namespace {
@@ -3711,7 +3720,8 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
     for (const int lit : must_be_true) {
       if (!context_->SetLiteralToTrue(lit)) return;
     }
-    CanonicalizeLinear(ct);
+    bool changed = false;
+    if (!CanonicalizeLinear(ct, &changed)) return;
     context_->UpdateConstraintVariableUsage(ct_index);
     return;
   }
@@ -4119,8 +4129,12 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
         //
         // TODO(user): we canonicalize it right away, but I am not sure it is
         // really needed.
-        if (CanonicalizeLinear(
-                context_->working_model->mutable_constraints(c))) {
+        bool changed = false;
+        if (!CanonicalizeLinear(context_->working_model->mutable_constraints(c),
+                                &changed)) {
+          return true;
+        }
+        if (changed) {
           context_->UpdateConstraintVariableUsage(c);
         }
         abort = true;
@@ -4177,7 +4191,11 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
   if (new_bounds) {
     context_->UpdateRuleStats("linear: reduced variable domains");
   }
-  if (recanonicalize) return CanonicalizeLinear(ct);
+  if (recanonicalize) {
+    bool changed = false;
+    (void)CanonicalizeLinear(ct, &changed);
+    return changed;
+  }
   return false;
 }
 
@@ -7351,8 +7369,11 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
     }
     sum->add_domain(proto.min_level() - fixed_contrib);
     sum->add_domain(proto.max_level() - fixed_contrib);
-    CanonicalizeLinear(sum_ct);
     context_->UpdateRuleStats("reservoir: converted to linear");
+    bool changed = false;
+    if (!CanonicalizeLinear(sum_ct, &changed)) {
+      return true;
+    }
     return RemoveConstraint(ct);
   }
 
@@ -8615,6 +8636,7 @@ void CpModelPresolver::ExpandObjective() {
 
 void CpModelPresolver::MergeNoOverlapConstraints() {
   if (context_->ModelIsUnsat()) return;
+  if (time_limit_->LimitReached()) return;
 
   const int num_constraints = context_->working_model->constraints_size();
   int old_num_no_overlaps = 0;
@@ -8837,7 +8859,11 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       }
       return PresolveIntMod(c, ct);
     case ConstraintProto::kLinear: {
-      if (CanonicalizeLinear(ct)) {
+      bool changed = false;
+      if (!CanonicalizeLinear(ct, &changed)) {
+        return true;
+      }
+      if (changed) {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (PropagateDomainsInLinear(c, ct)) {
@@ -13147,7 +13173,11 @@ void CpModelPresolver::ExpandCpModelAndCanonicalizeConstraints() {
       }
       if (context_->ModelIsUnsat()) return;
     } else if (type == ConstraintProto::kLinear) {
-      if (CanonicalizeLinear(ct)) {
+      bool changed = false;
+      if (!CanonicalizeLinear(ct, &changed)) {
+        return;
+      }
+      if (changed) {
         context_->UpdateConstraintVariableUsage(c);
       }
     }
@@ -13239,7 +13269,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
         context_->working_model->objective();
   }
 
-  // If there is a large proprotion of fixed variable, lets remap the model
+  // If there is a large proprotion of fixed variables, lets remap the model
   // before we start the actual presolve. This is useful for LNS in particular.
   //
   // fixed_postsolve_mapping[i] will contains the original index of the variable
@@ -13533,7 +13563,11 @@ CpSolverStatus CpModelPresolver::Presolve() {
       }
     }
     if (need_canonicalize) {
-      if (CanonicalizeLinear(&ct)) {
+      bool changed = false;
+      if (!CanonicalizeLinear(&ct, &changed)) {
+        return InfeasibleStatus();
+      }
+      if (changed) {
         context_->UpdateConstraintVariableUsage(c);
       }
     }
@@ -13621,7 +13655,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (context_->VariableIsNotUsedAnymore(i) &&
         (!context_->params().keep_all_feasible_solutions_in_presolve() ||
          context_->IsFixed(i))) {
-      // Tricky. Variables that where not removed by a presolve rule should be
+      // Tricky. Variables that were not removed by a presolve rule should be
       // fixed first during postsolve, so that more complex postsolve rules
       // can use their values. One way to do that is to fix them here.
       //
@@ -13670,8 +13704,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   CanonicalizeRoutesConstraintNodeExpressions(context_);
   UpdateHintInProto(context_);
   const int old_size = postsolve_mapping_->size();
-  ApplyVariableMapping(absl::MakeSpan(mapping), postsolve_mapping_,
-                       context_->working_model);
+  ApplyVariableMapping(context_, absl::MakeSpan(mapping), postsolve_mapping_);
   CHECK_EQ(old_size, postsolve_mapping_->size());
 
   // Compact all non-empty constraint at the beginning.
@@ -13709,9 +13742,9 @@ CpSolverStatus CpModelPresolver::Presolve() {
   return CpSolverStatus::UNKNOWN;
 }
 
-void ApplyVariableMapping(absl::Span<int> mapping,
-                          std::vector<int>* reverse_mapping,
-                          CpModelProto* proto) {
+void ApplyVariableMapping(PresolveContext* context, absl::Span<int> mapping,
+                          std::vector<int>* reverse_mapping) {
+  CpModelProto* proto = context->working_model;
   // Remap all the variable/literal references in the constraints and the
   // enforcement literals in the variables.
   auto mapping_function = [mapping, reverse_mapping](int* ref) mutable {
@@ -13734,6 +13767,13 @@ void ApplyVariableMapping(absl::Span<int> mapping,
           if (expr.vars().empty()) continue;
           DCHECK_EQ(expr.vars().size(), 1);
           const int ref = expr.vars(0);
+          if (context->IsFixed(ref)) {
+            expr.set_offset(expr.offset() +
+                            context->FixedValue(ref) * expr.coeffs(0));
+            expr.clear_vars();
+            expr.clear_coeffs();
+            continue;
+          }
           const int image = mapping[PositiveRef(ref)];
           if (image < 0) {
             // TODO(user): is this correct? may this lead to incorrect cuts
@@ -13884,7 +13924,7 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
     return true;
   }
 
-  // TODO(user): Right now the copy do not remove fixed variable from the
+  // TODO(user): Right now the copy does not remove fixed variables from the
   // objective, but ReadObjectiveFromProto() does it. Maybe we should just not
   // copy them in the first place.
   if (context_->working_model->has_objective()) {
@@ -13901,9 +13941,6 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
   *context_->mapping_model->mutable_variables() =
       context_->working_model->variables();
 
-  // Reset some part of the context, it will re-read the new domains below.
-  context_->ResetAfterCopy();
-
   SOLVER_LOG(logger_, "Large number of fixed variables ",
              FormatCounter(num_fixed), " / ", FormatCounter(num_vars),
              ", doing a first remapping phase to go down to ",
@@ -13912,13 +13949,15 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
   // Perform the actual mapping.
   // Note that this might re-add fixed variable that are still used.
   const int old_size = postsolve_mapping->size();
-  ApplyVariableMapping(absl::MakeSpan(mapping), postsolve_mapping,
-                       context_->working_model);
+  ApplyVariableMapping(context_, absl::MakeSpan(mapping), postsolve_mapping);
   if (postsolve_mapping->size() > old_size) {
     const int new_extra = postsolve_mapping->size() - old_size;
     SOLVER_LOG(logger_, "TODO: ", new_extra,
                " fixed variables still required in the model!");
   }
+
+  // Reset some part of the context, the caller re-reads the new domains.
+  context_->ResetAfterCopy();
   return true;
 }
 

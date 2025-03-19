@@ -542,8 +542,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     absl::StrAppend(&result,
                     "#Variables: ", FormatCounter(model_proto.variables_size()),
                     objective_string, " (",
-                    (model_proto.variables_size() -
-                     relationships.secondary_variables.size()),
+                    FormatCounter(model_proto.variables_size() -
+                                  relationships.secondary_variables.size()),
                     " primary variables)\n");
   }
   if (num_vars_per_domains.contains(Domain(0, 1))) {

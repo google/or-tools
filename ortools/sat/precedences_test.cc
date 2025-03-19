@@ -28,6 +28,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -493,12 +494,28 @@ TEST(BinaryRelationRepositoryTest, Build) {
   EXPECT_THAT(repository.IndicesOfRelationsBetween(z, y), IsEmpty());
 }
 
+std::vector<Relation> GetRelations(Model& model) {
+  const BinaryRelationRepository& repository =
+      *model.GetOrCreate<BinaryRelationRepository>();
+  std::vector<Relation> relations;
+  for (int i = 0; i < repository.size(); ++i) {
+    Relation r = repository.relation(i);
+    if (r.a.coeff < 0) {
+      r = Relation({r.enforcement, {r.a.var, -r.a.coeff}, {r.b.var, -r.b.coeff},
+                   -r.rhs, -r.lhs});
+    }
+    relations.push_back(r);
+  }
+  return relations;
+}
+
 TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 1 ] }
     constraints {
       enforcement_literal: [ 0 ]
       linear {
@@ -516,7 +533,7 @@ TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
       }
     }
     constraints {
-      enforcement_literal: [ 0, 1 ]
+      enforcement_literal: [ 0, 1, 4 ]
       linear {
         vars: [ 3 ]
         coeffs: [ 1 ]
@@ -542,28 +559,169 @@ TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
 
   LoadCpModel(model_proto, &model);
 
-  const BinaryRelationRepository& repository =
-      *model.GetOrCreate<BinaryRelationRepository>();
-  std::vector<Relation> relations;
-  for (int i = 0; i < repository.size(); ++i) {
-    relations.push_back(repository.relation(i));
-  }
   const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
-  EXPECT_THAT(relations, UnorderedElementsAre(Relation{mapping.Literal(0),
-                                                       {mapping.Integer(2), 1},
-                                                       {mapping.Integer(3), -1},
-                                                       0,
-                                                       10},
-                                              Relation{mapping.Literal(1),
-                                                       {mapping.Integer(2), 1},
-                                                       {kNoIntegerVariable, 0},
-                                                       5,
-                                                       10},
-                                              Relation{Literal(kNoLiteralIndex),
-                                                       {mapping.Integer(2), 3},
-                                                       {mapping.Integer(3), -2},
-                                                       -10,
-                                                       10}));
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(Relation{mapping.Literal(0),
+                                            {mapping.Integer(2), 1},
+                                            {mapping.Integer(3), -1},
+                                            0,
+                                            10},
+                                   Relation{mapping.Literal(1),
+                                            {mapping.Integer(2), 1},
+                                            {kNoIntegerVariable, 0},
+                                            5,
+                                            10},
+                                   Relation{Literal(kNoLiteralIndex),
+                                            {mapping.Integer(2), 3},
+                                            {mapping.Integer(3), -2},
+                                            -10,
+                                            10}));
+}
+
+TEST(BinaryRelationRepositoryTest,
+     LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case1) {
+  // x in [10, 90] and "a and b => x in [20, 90]".
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 10, 90 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 20, 90 ]
+      }
+    }
+  )pb");
+  Model model;
+  // This is needed to get an integer view of all the Boolean variables.
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+
+  LoadCpModel(model_proto, &model);
+
+  const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
+  const IntegerEncoder& encoder = *model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable a = encoder.GetLiteralView(mapping.Literal(0));
+  const IntegerVariable b = encoder.GetLiteralView(mapping.Literal(1));
+  const IntegerVariable x = mapping.Integer(2);
+  // Two binary relations enforced by only one literal should be added:
+  // - a => x - 10.b in [10, 90]
+  // - b => x - 10.a in [10, 90]
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(
+                  Relation{mapping.Literal(0), {x, 1}, {b, -10}, 10, 90},
+                  Relation{mapping.Literal(1), {x, 1}, {a, -10}, 10, 90}));
+}
+
+TEST(BinaryRelationRepositoryTest,
+     LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case2) {
+  // x in [10, 90] and "a and b => x in [10, 80]".
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 10, 90 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 10, 80 ]
+      }
+    }
+  )pb");
+  Model model;
+  // This is needed to get an integer view of all the Boolean variables.
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+
+  LoadCpModel(model_proto, &model);
+
+  const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
+  const IntegerEncoder& encoder = *model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable a = encoder.GetLiteralView(mapping.Literal(0));
+  const IntegerVariable b = encoder.GetLiteralView(mapping.Literal(1));
+  const IntegerVariable x = mapping.Integer(2);
+  // Two binary relations enforced by only one literal should be added:
+  // - a => x + 10.b in [10, 90]
+  // - b => x + 10.a in [10, 90]
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(
+                  Relation{mapping.Literal(0), {x, 1}, {b, 10}, 10, 90},
+                  Relation{mapping.Literal(1), {x, 1}, {a, 10}, 10, 90}));
+}
+
+TEST(BinaryRelationRepositoryTest,
+     LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case3) {
+  // x in [10, 90] and "a and not(b) => x in [20, 90]".
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 10, 90 ] }
+    constraints {
+      enforcement_literal: [ 0, -2 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 20, 90 ]
+      }
+    }
+  )pb");
+  Model model;
+  // This is needed to get an integer view of all the Boolean variables.
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+
+  LoadCpModel(model_proto, &model);
+
+  const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
+  const IntegerEncoder& encoder = *model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable a = encoder.GetLiteralView(mapping.Literal(0));
+  const IntegerVariable b = encoder.GetLiteralView(mapping.Literal(1));
+  const IntegerVariable x = mapping.Integer(2);
+  // Two binary relations enforced by only one literal should be added:
+  // - a => x + 10.b in [20, 100]  (<=> a => x - (10-10.b) in [10, 90])
+  // - b => x - 10.a in [10, 90]
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(
+          Relation{mapping.Literal(0), {x, 1}, {b, 10}, 20, 100},
+          Relation{mapping.Literal(1).Negated(), {x, 1}, {a, -10}, 10, 90}));
+}
+
+TEST(BinaryRelationRepositoryTest,
+     LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case4) {
+  // x in [10, 90] and "a and not(b) => x in [10, 80]".
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 10, 90 ] }
+    constraints {
+      enforcement_literal: [ 0, -2 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 10, 80 ]
+      }
+    }
+  )pb");
+  Model model;
+  // This is needed to get an integer view of all the Boolean variables.
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+
+  LoadCpModel(model_proto, &model);
+
+  const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
+  const IntegerEncoder& encoder = *model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable a = encoder.GetLiteralView(mapping.Literal(0));
+  const IntegerVariable b = encoder.GetLiteralView(mapping.Literal(1));
+  const IntegerVariable x = mapping.Integer(2);
+  // Two binary relations enforced by only one literal should be added:
+  // - a => x - 10.b in [0, 80]  (<=> a => x + (10-10.b) in [10, 90])
+  // - b => x + 10.a in [10, 90]
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(
+          Relation{mapping.Literal(0), {x, 1}, {b, -10}, 0, 80},
+          Relation{mapping.Literal(1).Negated(), {x, 1}, {a, 10}, 10, 90}));
 }
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
