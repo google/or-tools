@@ -19,6 +19,8 @@
 #include <string>
 #include <utility>
 
+#include "absl/flags/flag.h"
+#include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
 
 ABSL_FLAG(bool, time_limit_use_usertime, false,

@@ -27,6 +27,7 @@
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
@@ -511,6 +512,10 @@ inline bool TimeLimit::LimitReached() {
 
   const int64_t current_ns = absl::GetCurrentTimeNanos();
   running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));
+  VLOG_EVERY_N_SEC(2, 2) << "current_ns: " << current_ns
+                         << " last_ns: " << last_ns_
+                         << " limit_ns: " << limit_ns_
+                         << " running_max: " << running_max_.GetCurrentMax();
   last_ns_ = current_ns;
   if (current_ns + running_max_.GetCurrentMax() >= limit_ns_) {
     if (absl::GetFlag(FLAGS_time_limit_use_usertime)) {
