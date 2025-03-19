@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -79,6 +80,11 @@ SubsetCostVector VectorDoubleToSubsetCostVector(
     absl::Span<const double> doubles) {
   SubsetCostVector costs(doubles.begin(), doubles.end());
   return costs;
+}
+
+SubsetBoolVector BoolVectorToSubsetBoolVector(const std::vector<bool>& bools) {
+  SubsetBoolVector bools_copy(bools.begin(), bools.end());
+  return bools_copy;
 }
 
 class IntIterator {
@@ -355,6 +361,10 @@ PYBIND11_MODULE(set_cover, m) {
   // set_cover_heuristics.h
   py::class_<TrivialSolutionGenerator>(m, "TrivialSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
+      // TODO(user): make set_max_iterations return a TrivialSolutionGenerator&
+      // so that we can chain the calls.
+      .def("set_max_iterations", &TrivialSolutionGenerator::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
            [](TrivialSolutionGenerator& heuristic) -> bool {
              return heuristic.NextSolution();
@@ -363,10 +373,18 @@ PYBIND11_MODULE(set_cover, m) {
            [](TrivialSolutionGenerator& heuristic,
               absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
+           })
+      .def("next_solution",
+           [](TrivialSolutionGenerator& heuristic,
+              const std::vector<bool>& in_focus) -> bool {
+             return heuristic.NextSolution(
+                 BoolVectorToSubsetBoolVector(in_focus));
            });
 
   py::class_<RandomSolutionGenerator>(m, "RandomSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
+      .def("set_max_iterations", &RandomSolutionGenerator::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
            [](RandomSolutionGenerator& heuristic) -> bool {
              return heuristic.NextSolution();
@@ -375,10 +393,18 @@ PYBIND11_MODULE(set_cover, m) {
            [](RandomSolutionGenerator& heuristic,
               absl::Span<const BaseInt> focus) -> bool {
              return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
+           })
+      .def("next_solution",
+           [](RandomSolutionGenerator& heuristic,
+              const std::vector<bool>& in_focus) -> bool {
+             return heuristic.NextSolution(
+                 BoolVectorToSubsetBoolVector(in_focus));
            });
 
   py::class_<GreedySolutionGenerator>(m, "GreedySolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
+      .def("set_max_iterations", &GreedySolutionGenerator::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
            [](GreedySolutionGenerator& heuristic) -> bool {
              return heuristic.NextSolution();
@@ -390,16 +416,17 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](GreedySolutionGenerator& heuristic,
-              absl::Span<const BaseInt> focus,
-              absl::Span<const double> costs) -> bool {
+              const std::vector<bool>& in_focus) -> bool {
              return heuristic.NextSolution(
-                 VectorIntToVectorSubsetIndex(focus),
-                 VectorDoubleToSubsetCostVector(costs));
+                 BoolVectorToSubsetBoolVector(in_focus));
            });
 
   py::class_<ElementDegreeSolutionGenerator>(m,
                                              "ElementDegreeSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
+      .def("set_max_iterations",
+           &ElementDegreeSolutionGenerator::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
            [](ElementDegreeSolutionGenerator& heuristic) -> bool {
              return heuristic.NextSolution();
@@ -411,16 +438,17 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](ElementDegreeSolutionGenerator& heuristic,
-              absl::Span<const BaseInt> focus,
-              absl::Span<const double> costs) -> bool {
+              const std::vector<bool>& in_focus) -> bool {
              return heuristic.NextSolution(
-                 VectorIntToVectorSubsetIndex(focus),
-                 VectorDoubleToSubsetCostVector(costs));
+                 BoolVectorToSubsetBoolVector(in_focus));
            });
 
   py::class_<LazyElementDegreeSolutionGenerator>(
       m, "LazyElementDegreeSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
+      .def("set_max_iterations",
+           &LazyElementDegreeSolutionGenerator::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
            [](LazyElementDegreeSolutionGenerator& heuristic) -> bool {
              return heuristic.NextSolution();
@@ -432,45 +460,50 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("next_solution",
            [](LazyElementDegreeSolutionGenerator& heuristic,
-              absl::Span<const BaseInt> focus,
-              absl::Span<const double> costs) -> bool {
+              const std::vector<bool>& in_focus) -> bool {
              return heuristic.NextSolution(
-                 VectorIntToVectorSubsetIndex(focus),
-                 VectorDoubleToSubsetCostVector(costs));
+                 BoolVectorToSubsetBoolVector(in_focus));
            });
 
   py::class_<SteepestSearch>(m, "SteepestSearch")
       .def(py::init<SetCoverInvariant*>())
+      .def("set_max_iterations", &SteepestSearch::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
-           [](SteepestSearch& heuristic, int num_iterations) -> bool {
-             return heuristic.NextSolution(num_iterations);
+           [](SteepestSearch& heuristic) -> bool {
+             return heuristic.NextSolution();
            })
       .def("next_solution",
-           [](SteepestSearch& heuristic, absl::Span<const BaseInt> focus,
-              int num_iterations) -> bool {
-             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus),
-                                           num_iterations);
+           [](SteepestSearch& heuristic,
+              absl::Span<const BaseInt> focus) -> bool {
+             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
            })
       .def("next_solution",
-           [](SteepestSearch& heuristic, absl::Span<const BaseInt> focus,
-              absl::Span<const double> costs, int num_iterations) -> bool {
+           [](SteepestSearch& heuristic,
+              const std::vector<bool>& in_focus) -> bool {
              return heuristic.NextSolution(
-                 VectorIntToVectorSubsetIndex(focus),
-                 VectorDoubleToSubsetCostVector(costs), num_iterations);
+                 BoolVectorToSubsetBoolVector(in_focus));
            });
 
   py::class_<GuidedLocalSearch>(m, "GuidedLocalSearch")
       .def(py::init<SetCoverInvariant*>())
       .def("initialize", &GuidedLocalSearch::Initialize)
+      .def("set_max_iterations", &GuidedLocalSearch::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
-           [](GuidedLocalSearch& heuristic, int num_iterations) -> bool {
-             return heuristic.NextSolution(num_iterations);
+           [](GuidedLocalSearch& heuristic) -> bool {
+             return heuristic.NextSolution();
            })
       .def("next_solution",
            [](GuidedLocalSearch& heuristic, absl::Span<const BaseInt> focus,
               int num_iterations) -> bool {
-             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus),
-                                           num_iterations);
+             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
+           })
+      .def("next_solution",
+           [](GuidedLocalSearch& heuristic,
+              const std::vector<bool>& in_focus) -> bool {
+             return heuristic.NextSolution(
+                 BoolVectorToSubsetBoolVector(in_focus));
            });
 
   // Specialization for T = SubsetIndex ~= BaseInt (aka int for Python, whatever
@@ -500,15 +533,22 @@ PYBIND11_MODULE(set_cover, m) {
   py::class_<GuidedTabuSearch>(m, "GuidedTabuSearch")
       .def(py::init<SetCoverInvariant*>())
       .def("initialize", &GuidedTabuSearch::Initialize)
+      .def("set_max_iterations", &GuidedTabuSearch::SetMaxIterations,
+           py::arg("max_iterations"))
       .def("next_solution",
-           [](GuidedTabuSearch& heuristic, int num_iterations) -> bool {
-             return heuristic.NextSolution(num_iterations);
+           [](GuidedTabuSearch& heuristic) -> bool {
+             return heuristic.NextSolution();
            })
       .def("next_solution",
-           [](GuidedTabuSearch& heuristic, absl::Span<const BaseInt> focus,
-              int num_iterations) -> bool {
-             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus),
-                                           num_iterations);
+           [](GuidedTabuSearch& heuristic,
+              absl::Span<const BaseInt> focus) -> bool {
+             return heuristic.NextSolution(VectorIntToVectorSubsetIndex(focus));
+           })
+      .def("next_solution",
+           [](GuidedTabuSearch& heuristic,
+              const std::vector<bool>& in_focus) -> bool {
+             return heuristic.NextSolution(
+                 BoolVectorToSubsetBoolVector(in_focus));
            })
       .def("get_lagrangian_factor", &GuidedTabuSearch::SetLagrangianFactor,
            arg("factor"))

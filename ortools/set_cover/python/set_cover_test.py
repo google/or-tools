@@ -80,14 +80,16 @@ class SetCoverTest(absltest.TestCase):
         greedy_proto = inv.export_solution_as_proto()
 
         steepest = set_cover.SteepestSearch(inv)
-        self.assertTrue(steepest.next_solution(500))
+        steepest.set_max_iterations(500)
+        self.assertTrue(steepest.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
         steepest_proto = inv.export_solution_as_proto()
 
         inv.import_solution_from_proto(greedy_proto)
-        self.assertTrue(steepest.next_solution(500))
+        steepest.set_max_iterations(500)
+        self.assertTrue(steepest.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -113,7 +115,8 @@ class SetCoverTest(absltest.TestCase):
 
         self.assertEqual(inv.num_uncovered_elements(), 0)
         steepest = set_cover.SteepestSearch(inv)
-        self.assertTrue(steepest.next_solution(500))
+        steepest.set_max_iterations(500)
+        self.assertTrue(steepest.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
         )
@@ -142,7 +145,8 @@ class SetCoverTest(absltest.TestCase):
         )
 
         steepest = set_cover.SteepestSearch(inv)
-        self.assertTrue(steepest.next_solution(500))
+        steepest.set_max_iterations(500)
+        self.assertTrue(steepest.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -159,7 +163,8 @@ class SetCoverTest(absltest.TestCase):
         )
 
         steepest = set_cover.SteepestSearch(inv)
-        self.assertTrue(steepest.next_solution(500))
+        steepest.set_max_iterations(500)
+        self.assertTrue(steepest.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -176,7 +181,8 @@ class SetCoverTest(absltest.TestCase):
         )
 
         gls = set_cover.GuidedLocalSearch(inv)
-        self.assertTrue(gls.next_solution(500))
+        gls.set_max_iterations(500)
+        self.assertTrue(gls.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -193,7 +199,8 @@ class SetCoverTest(absltest.TestCase):
         )
 
         steepest = set_cover.SteepestSearch(inv)
-        self.assertTrue(steepest.next_solution(500))
+        steepest.set_max_iterations(500)
+        self.assertTrue(steepest.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -210,7 +217,8 @@ class SetCoverTest(absltest.TestCase):
         )
 
         steepest = set_cover.SteepestSearch(inv)
-        self.assertTrue(steepest.next_solution(500))
+        steepest.set_max_iterations(500)
+        self.assertTrue(steepest.next_solution())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
