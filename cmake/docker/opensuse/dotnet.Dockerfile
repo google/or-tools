@@ -3,19 +3,13 @@ FROM ortools/cmake:opensuse_swig AS env
 # .NET install
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
 RUN zypper refresh \
-&& zypper install -y wget tar gzip libicu-devel \
-&& mkdir -p /usr/share/dotnet \
-&& ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+&& zypper install -y wget tar awk gzip libicu-devel
 
 ## .Net 6.0
-# see: https://dotnet.microsoft.com/download/dotnet-core/6.0
-RUN dotnet_sdk_version=6.0.100 \
-&& wget -qO dotnet.tar.gz \
-"https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
-&& dotnet_sha512='cb0d174a79d6294c302261b645dba6a479da8f7cf6c1fe15ae6998bc09c5e0baec810822f9e0104e84b0efd51fdc0333306cb2a0a6fcdbaf515a8ad8cf1af25b' \
-&& echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-&& tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-&& rm dotnet.tar.gz
+# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
+RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
+&& chmod a+x dotnet-install.sh \
+&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
