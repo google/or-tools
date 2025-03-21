@@ -237,6 +237,18 @@ int main(int argc, char** argv) {
   solution_logger.SetLogToStdOut(true);
   solution_logger.EnableLogging(parameters.ortools_mode);
 
+  if (absl::GetFlag(FLAGS_time_limit) > 0 &&
+      parse_duration > absl::Seconds(absl::GetFlag(FLAGS_time_limit))) {
+    if (parameters.ortools_mode) {
+      SOLVER_LOG(&solution_logger, "%% TIMEOUT");
+    }
+    if (parameters.log_search_progress) {
+      SOLVER_LOG(&logger, "CpSolverResponse summary:");
+      SOLVER_LOG(&logger, "status: UNKNOWN");
+    }
+    return EXIT_SUCCESS;
+  }
+
   operations_research::sat::SolveFzWithCpModelProto(model, parameters,
                                                     absl::GetFlag(FLAGS_params),
                                                     &logger, &solution_logger);
