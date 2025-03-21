@@ -5,7 +5,7 @@
 # For more details, please check https://github.com/bazelbuild/bazel/issues/18958
 ###############################################################################
 
-OR_TOOLS_VERSION = "9.12"
+OR_TOOLS_VERSION = "9.13"
 
 module(
     name = "or-tools",
