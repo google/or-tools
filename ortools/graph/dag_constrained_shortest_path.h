@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -214,6 +215,9 @@ class ConstrainedShortestPathsOnDagWrapper {
   absl::Span<const NodeIndex> destinations_;
   const int num_resources_;
 
+  // Set to a node if and only if this node is in both `sources_` and
+  // `destinations_`.
+  std::optional<NodeIndex> source_is_destination_ = std::nullopt;
   // Data about *reachable* sub-graphs split in two for bidirectional search.
   // Reachable nodes are nodes that can be reached given the resources
   // constraints, i.e., for each resource, the sum of the minimum resource to
@@ -334,13 +338,15 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
           << absl::StrFormat(
                  "max_resource cannot be negative not +inf nor NaN");
     }
-    std::vector<bool> is_source(graph->num_nodes(), false);
-    for (const NodeIndex source : sources) {
-      is_source[source] = true;
-    }
-    for (const NodeIndex destination : destinations) {
-      CHECK(!is_source[destination])
-          << "A node cannot be both a source and destination";
+  }
+  std::vector<bool> is_source(graph->num_nodes(), false);
+  for (const NodeIndex source : sources) {
+    is_source[source] = true;
+  }
+  for (const NodeIndex destination : destinations) {
+    if (is_source[destination]) {
+      source_is_destination_ = destination;
+      return;
     }
   }
 
@@ -542,6 +548,10 @@ template <class GraphType>
 #endif
 GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
     GraphType>::RunConstrainedShortestPathOnDag() {
+  if (source_is_destination_.has_value()) {
+    return {
+        .length = 0, .arc_path = {}, .node_path = {*source_is_destination_}};
+  }
   // Assign lengths on sub-relevant graphs.
   std::vector<double> sub_arc_lengths[2];
   for (const Direction dir : {FORWARD, BACKWARD}) {
@@ -837,9 +847,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
     for (int label_to_index = first_label_to;
          label_to_index < first_label_to + num_labels_to; ++label_to_index) {
       const double length_to = backward_lengths[label_to_index];
-      if (arc_length + length_to >= best_label_pair.length) {
-        continue;
-      }
       for (int label_from_index = first_label_from;
            label_from_index < first_label_from + num_labels_from;
            ++label_from_index) {
