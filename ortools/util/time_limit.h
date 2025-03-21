@@ -281,6 +281,14 @@ class OR_DLL TimeLimit {
   double GetDeterministicLimit() const { return deterministic_limit_; }
 
   /**
+   * Clears the history of the times between calls to LimitReached(). One
+   * should call this method when the behavior of the code that checks the time
+   * limit changes in a way such that past intervals between checks are no
+   * longer representative of the future ones.
+   */
+  void ResetHistory() { running_max_.Reset(); }
+
+  /**
    * Returns information about the time limit object in a human-readable form.
    */
   std::string DebugString() const;

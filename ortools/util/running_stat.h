@@ -83,6 +83,8 @@ class RunningMax {
   // An element must have been added before calling this function.
   Number GetCurrentMax();
 
+  void Reset();
+
  private:
   const int window_size_;
 
@@ -185,6 +187,13 @@ void RunningMax<Number>::Add(Number value) {
   if (++last_index_ == window_size_) {
     last_index_ = 0;
   }
+}
+
+template <class Number>
+void RunningMax<Number>::Reset() {
+  values_.clear();
+  last_index_ = 0;
+  max_index_ = 0;
 }
 
 template <class Number>

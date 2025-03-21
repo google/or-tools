@@ -476,7 +476,7 @@ message SatParameters {
   optional bool expand_alldiff_constraints = 170 [default = false];
 
   // Max domain size for all_different constraints to be expanded.
-  optional int32 max_alldiff_domain_size = 320 [default = 128];
+  optional int32 max_alldiff_domain_size = 320 [default = 256];
 
   // If true, expand the reservoir constraints by creating booleans for all
   // possible precedences between event and encoding the constraint.

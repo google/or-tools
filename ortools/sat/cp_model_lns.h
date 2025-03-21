@@ -195,6 +195,14 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     return result;
   }
 
+  // Returns the vector of objective variables that are not already at their
+  // best possible value. The graph_mutex_ must be locked before calling this
+  // method.
+  std::vector<int> ImprovableObjectiveVariablesWhileHoldingLock(
+      const CpSolverResponse& initial_solution) const
+      ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_)
+          ABSL_LOCKS_EXCLUDED(domain_mutex_);
+
   // Constraints <-> Variables graph.
   // Important:
   //   - The constraint index is NOT related to the one in the cp_model.
@@ -332,9 +340,12 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Constraints by types. This never changes.
   std::vector<std::vector<int>> type_to_constraints_;
 
-  // Whether a model_proto_ variable appear in the objective. This never
+  // Whether a model_proto_ variable appears in the objective. This never
   // changes.
   std::vector<bool> is_in_objective_;
+  // If a model_proto_ variable has a positive coefficient in the objective.
+  // This never changes.
+  std::vector<bool> has_positive_objective_coefficient_;
 
   // A copy of CpModelProto where we did some basic presolving to remove all
   // constraint that are always true. The Variable-Constraint graph is based on
@@ -368,7 +379,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   std::vector<int> tmp_row_;
 
-  mutable absl::Mutex domain_mutex_;
+  mutable absl::Mutex domain_mutex_ ABSL_ACQUIRED_AFTER(graph_mutex_);
 };
 
 // Base class for a CpModelProto neighborhood generator.

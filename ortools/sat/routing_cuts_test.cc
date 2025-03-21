@@ -1518,6 +1518,38 @@ TEST(RouteRelationsHelperTest, ComplexVariableRelations) {
   EXPECT_EQ(helper->GetArcRelation(0, 0), (HeadMinusTailBounds{30, 190}));
 }
 
+TEST(RouteRelationsHelperTest, TwoUnaryRelationsPerArc) {
+  Model model;
+  // A graph with 2 nodes and the following arcs: 0--l0-->1
+  const int num_nodes = 2;
+  const std::vector<int> tails = {0};
+  const std::vector<int> heads = {1};
+  const std::vector<Literal> literals = {
+      Literal(model.Add(NewBooleanVariable()), true)};
+  // Add relations with "capacity" variables A and B, associated with nodes 0
+  // and 1, respectively.
+  const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
+  // Two unary relations on the same arc, one for the head and one for the tail.
+  IntegerEncoder& encoder = *model.GetOrCreate<IntegerEncoder>();
+  encoder.AssociateToIntegerEqualValue(literals[0], a, 20);
+  encoder.AssociateToIntegerLiteral(literals[0], {b, 50});
+  BinaryRelationRepository repository;
+  repository.Build();
+
+  const RoutingCumulExpressions cumuls = {
+      .num_dimensions = 0,
+      .flat_node_dim_expressions = {AffineExpression(a), AffineExpression(b)}};
+  std::unique_ptr<RouteRelationsHelper> helper = RouteRelationsHelper::Create(
+      num_nodes, tails, heads, literals, cumuls.flat_node_dim_expressions,
+      repository, &model);
+
+  ASSERT_NE(helper, nullptr);
+  // The implied unary relations b >= 50 and a = 20 should be used to compute
+  // the arc relation (50 - 20 = 30, ub(b) - 20 = 80).
+  EXPECT_EQ(helper->GetArcRelation(0, 0), (HeadMinusTailBounds{30, 80}));
+}
+
 TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   Model model;
   // A graph with 3 nodes and the following arcs: 0--l0-->1--l1-->2

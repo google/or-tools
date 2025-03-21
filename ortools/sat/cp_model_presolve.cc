@@ -7731,6 +7731,8 @@ void CpModelPresolver::Probe() {
     return (void)context_->NotifyThatModelIsUnsat("during probing");
   }
 
+  time_limit_->ResetHistory();
+
   // Update the presolve context with fixed Boolean variables.
   int num_fixed = 0;
   CHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
@@ -8663,6 +8665,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
   // We reuse the max-clique code from sat.
   Model local_model;
   local_model.GetOrCreate<Trail>()->Resize(num_constraints);
+  local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   graph->Resize(num_constraints);
   for (const std::vector<Literal>& clique : cliques) {
@@ -8699,6 +8702,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
                             new_num_intervals, " intervals).");
     context_->UpdateRuleStats("no_overlap: merged constraints");
   }
+  time_limit_->ResetHistory();
 }
 
 // TODO(user): Should we take into account the exactly_one constraints? note

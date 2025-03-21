@@ -197,9 +197,15 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
 
   const int num_variables = model_proto_.variables().size();
   is_in_objective_.resize(num_variables, false);
+  has_positive_objective_coefficient_.resize(num_variables, false);
   if (model_proto_.has_objective()) {
-    for (const int ref : model_proto_.objective().vars()) {
+    for (int i = 0; i < model_proto_.objective().vars_size(); ++i) {
+      const int ref = model_proto_.objective().vars(i);
+      const int64_t coeff = model_proto_.objective().coeffs(i);
+      DCHECK_NE(coeff, 0);
       is_in_objective_[PositiveRef(ref)] = true;
+      has_positive_objective_coefficient_[PositiveRef(ref)] =
+          ref == PositiveRef(ref) ? coeff > 0 : coeff < 0;
     }
   }
 }
@@ -1318,6 +1324,26 @@ double NeighborhoodGenerator::Synchronize() {
   return total_dtime;
 }
 
+std::vector<int>
+NeighborhoodGeneratorHelper::ImprovableObjectiveVariablesWhileHoldingLock(
+    const CpSolverResponse& initial_solution) const {
+  std::vector<int> result;
+  absl::ReaderMutexLock lock(&domain_mutex_);
+  for (const int var : active_objective_variables_) {
+    const auto& domain =
+        model_proto_with_only_variables_.variables(var).domain();
+    bool at_best_value = false;
+    if (has_positive_objective_coefficient_[var]) {
+      at_best_value = initial_solution.solution(var) == domain[0];
+    } else {
+      at_best_value =
+          initial_solution.solution(var) == domain[domain.size() - 1];
+    }
+    if (!at_best_value) result.push_back(var);
+  }
+  return result;
+}
+
 namespace {
 
 template <class T>
@@ -1407,21 +1433,20 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
 
+    std::vector<int> initial_vars =
+        helper_.ImprovableObjectiveVariablesWhileHoldingLock(initial_solution);
+    if (initial_vars.empty()) {
+      initial_vars = helper_.ActiveVariablesWhileHoldingLock();
+    }
     // The number of active variables can decrease asynchronously.
     // We read the exact number while locked.
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
-    const int num_objective_variables =
-        helper_.ActiveObjectiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(data.difficulty * num_active_vars);
     if (target_size == num_active_vars) return helper_.FullNeighborhood();
 
     const int first_var =
-        num_objective_variables > 0  // Prefer objective variables.
-            ? helper_.ActiveObjectiveVariablesWhileHoldingLock()
-                  [absl::Uniform<int>(random, 0, num_objective_variables)]
-            : helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
-                  random, 0, num_active_vars)];
+        initial_vars[absl::Uniform<int>(random, 0, initial_vars.size())];
     visited_variables_set[first_var] = true;
     visited_variables.push_back(first_var);
     relaxed_variables.push_back(first_var);
@@ -1478,7 +1503,8 @@ Neighborhood ArcGraphNeighborhoodGenerator::Generate(
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
     num_active_vars = helper_.ActiveVariablesWhileHoldingLock().size();
-    active_objective_vars = helper_.ActiveObjectiveVariablesWhileHoldingLock();
+    active_objective_vars =
+        helper_.ImprovableObjectiveVariablesWhileHoldingLock(initial_solution);
     constraints_to_vars = helper_.ConstraintToVar();
     vars_to_constraints = helper_.VarToConstraint();
   }
@@ -1569,13 +1595,12 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const int target_size = std::ceil(data.difficulty * num_active_vars);
     if (target_size == num_active_vars) return helper_.FullNeighborhood();
 
-    // Start by a random constraint.
+    // Start from a random active constraint.
     const int num_active_constraints = helper_.ConstraintToVar().size();
-    if (num_active_constraints != 0) {
-      next_constraints.push_back(
-          absl::Uniform<int>(random, 0, num_active_constraints));
-      added_constraints[next_constraints.back()] = true;
-    }
+    if (num_active_constraints == 0) return helper_.NoNeighborhood();
+    next_constraints.push_back(
+        absl::Uniform<int>(random, 0, num_active_constraints));
+    added_constraints[next_constraints.back()] = true;
 
     while (relaxed_variables.size() < target_size) {
       // Stop if we have a full connected component.
@@ -1667,9 +1692,9 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
       elements[i].tie_break = absl::Uniform<double>(random, 0.0, 1.0);
     }
 
-    // We start by a random active variable.
+    // We start from a random active variable.
     //
-    // Note that while num_vars contains all variables, all the fixed variable
+    // Note that while num_vars contains all variables, all the fixed variables
     // will have no associated constraint, so we don't want to start from a
     // random variable.
     //

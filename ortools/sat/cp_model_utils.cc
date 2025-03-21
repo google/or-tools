@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -35,6 +36,25 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+
+ABSL_FLAG(bool, cp_model_dump_models, false,
+          "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
+          "protos (original model, presolved model, mapping model) in text "
+          "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
+          "mapping_model}.pb.txt.");
+
+#if defined(_MSC_VER)
+ABSL_FLAG(std::string, cp_model_dump_prefix, ".\\",
+          "Prefix filename for all dumped files");
+#else
+ABSL_FLAG(std::string, cp_model_dump_prefix, "/tmp/",
+          "Prefix filename for all dumped files");
+#endif
+
+ABSL_FLAG(bool, cp_model_dump_submodels, false,
+          "DEBUG ONLY. When set to true, solve will dump all "
+          "lns or objective_shaving submodels proto in text format to "
+          "'FLAGS_cp_model_dump_prefix'xxx.pb.txt.");
 
 namespace operations_research {
 namespace sat {
