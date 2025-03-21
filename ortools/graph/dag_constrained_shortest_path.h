@@ -847,9 +847,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
     for (int label_to_index = first_label_to;
          label_to_index < first_label_to + num_labels_to; ++label_to_index) {
       const double length_to = backward_lengths[label_to_index];
-      if (arc_length + length_to >= best_label_pair.length) {
-        continue;
-      }
       for (int label_from_index = first_label_from;
            label_from_index < first_label_from + num_labels_from;
            ++label_from_index) {

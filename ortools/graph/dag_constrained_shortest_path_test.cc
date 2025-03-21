@@ -90,6 +90,32 @@ TEST(ConstrainedShortestPathOnDagTest, SimpleGraph) {
                         /*node_path=*/ElementsAre(source, b, destination)));
 }
 
+TEST(ConstrainedShortestPathOnDagTest, DiamondGraph) {
+  const std::vector<ArcWithLengthAndResources> arcs_with_length_and_resources =
+      {{.from = 0, .to = 1, .length = 1.0, .resources = {1.0}},
+       {.from = 0, .to = 2, .length = 1.0, .resources = {1.0}},
+       {.from = 0, .to = 3, .length = 1.0, .resources = {1.0}},
+       {.from = 0, .to = 4, .length = 1.0, .resources = {1.0}},
+       {.from = 0, .to = 5, .length = 1.0, .resources = {1.0}},
+       {.from = 0, .to = 6, .length = 1.0, .resources = {1.0}},
+       {.from = 1, .to = 2, .length = -1.0, .resources = {1.0}},
+       {.from = 1, .to = 7, .length = -1.0, .resources = {0.0}},
+       {.from = 2, .to = 3, .length = -1.0, .resources = {1.0}},
+       {.from = 2, .to = 7, .length = -1.0, .resources = {0.0}},
+       {.from = 3, .to = 4, .length = -1.0, .resources = {1.0}},
+       {.from = 3, .to = 7, .length = -1.0, .resources = {0.0}},
+       {.from = 4, .to = 5, .length = 1.0, .resources = {1.0}},
+       {.from = 4, .to = 7, .length = 1.0, .resources = {0.0}},
+       {.from = 5, .to = 6, .length = -1.0, .resources = {1.0}},
+       {.from = 5, .to = 7, .length = -1.0, .resources = {0.0}},
+       {.from = 6, .to = 7, .length = -1.0, .resources = {0.0}}};
+
+  EXPECT_THAT(ConstrainedShortestPathsOnDag(8, arcs_with_length_and_resources,
+                                            0, 7, /*max_resources=*/{3.0}),
+              FieldsAre(/*length=*/-2.0, /*arc_path=*/ElementsAre(0, 6, 8, 11),
+                        /*node_path=*/ElementsAre(0, 1, 2, 3, 7)));
+}
+
 TEST(ConstrainedShortestPathOnDagTest, GraphWithNoArcs) {
   EXPECT_THAT(ConstrainedShortestPathsOnDag(
                   /*num_nodes=*/1, /*arcs_with_length_and_resources=*/{},
