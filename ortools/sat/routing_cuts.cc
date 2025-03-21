@@ -14,6 +14,7 @@
 #include "ortools/sat/routing_cuts.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -32,6 +33,7 @@
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
@@ -56,10 +58,19 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
+#include "ortools/sat/routes_support_graph.pb.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
+
+ABSL_FLAG(bool, cp_model_dump_routes_support_graphs, false,
+          "DEBUG ONLY. When set to true, SolveCpModel() dumps the arcs with "
+          "non-zero LP values of the routes constraints, at decision level 0, "
+          "which are used to subsequently generate cuts. The values are "
+          "written as a SupportGraphProto in text format to "
+          "'FLAGS_cp_model_dump_prefix'support_graph_{counter}.pb.txt.");
 
 namespace operations_research {
 namespace sat {
@@ -1307,13 +1318,25 @@ class RouteRelationsBuilder {
           binary_implication_graph.WorkDone() < 1e8
               ? binary_implication_graph.GetAllImpliedLiterals(literals_[i])
               : absl::MakeSpan(arc_literal_singleton);
-      // The integer view of the implied literals (resp. of their negation).
+      // The integer view of the implied literals (resp. of their negation), and
+      // the variable lower bounds implied directly or indirectly by the arc
+      // literal.
       absl::flat_hash_set<IntegerVariable> implied_views;
       absl::flat_hash_set<IntegerVariable> negated_implied_views;
+      absl::flat_hash_map<IntegerVariable, IntegerValue> implied_lower_bounds;
       for (const Literal implied : implied_literals) {
         implied_views.insert(integer_encoder.GetLiteralView(implied));
         negated_implied_views.insert(
             integer_encoder.GetLiteralView(implied.Negated()));
+        for (const auto& [var, lb] :
+             integer_encoder.GetIntegerLiterals(implied)) {
+          auto it = implied_lower_bounds.find(var);
+          if (it == implied_lower_bounds.end()) {
+            implied_lower_bounds[var] = lb;
+          } else {
+            it->second = std::max(it->second, lb);
+          }
+        }
       }
       // Returns the bounds of the given expression, assuming that all the
       // literals implied by the arc literal are 1.
@@ -1333,8 +1356,17 @@ class RouteRelationsBuilder {
           }
         }
         const AffineExpression e(expr.var, expr.coeff, expr.offset);
-        return std ::make_pair(integer_trail.LevelZeroLowerBound(e),
-                               integer_trail.LevelZeroUpperBound(e));
+        IntegerValue lb = integer_trail.LevelZeroLowerBound(e);
+        auto it = implied_lower_bounds.find(e.var);
+        if (it != implied_lower_bounds.end()) {
+          lb = std::max(lb, e.ValueAt(it->second));
+        }
+        IntegerValue ub = integer_trail.LevelZeroUpperBound(e);
+        it = implied_lower_bounds.find(NegationOf(e.var));
+        if (it != implied_lower_bounds.end()) {
+          ub = std::min(ub, e.ValueAt(-it->second));
+        }
+        return std::make_pair(lb, ub);
       };
       // Changes `expr` to a constant expression if possible, and returns true.
       // Otherwise, returns false.
@@ -2015,6 +2047,23 @@ void RoutingCutHelper::InitializeForNewLpSolution(
       if (tails_[arc] == 0 || heads_[arc] == 0) continue;
     }
     ordered_arcs_.push_back({tails_[arc], heads_[arc]});
+  }
+
+  if (absl::GetFlag(FLAGS_cp_model_dump_routes_support_graphs) &&
+      trail_.CurrentDecisionLevel() == 0) {
+    static std::atomic<int> counter = 0;
+    const std::string name =
+        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                     "support_graph_", counter++, ".pb.txt");
+    LOG(INFO) << "Dumping routes support graph to '" << name << "'.";
+    RoutesSupportGraphProto support_graph_proto;
+    for (auto& [tail, head, lp_value] : relevant_arcs_) {
+      auto* arc = support_graph_proto.add_arc_lp_values();
+      arc->set_tail(tail);
+      arc->set_head(head);
+      arc->set_lp_value(lp_value);
+    }
+    CHECK(WriteModelProtoToFile(support_graph_proto, name));
   }
 }
 

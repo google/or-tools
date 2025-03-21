@@ -501,8 +501,11 @@ std::vector<Relation> GetRelations(Model& model) {
   for (int i = 0; i < repository.size(); ++i) {
     Relation r = repository.relation(i);
     if (r.a.coeff < 0) {
-      r = Relation({r.enforcement, {r.a.var, -r.a.coeff}, {r.b.var, -r.b.coeff},
-                   -r.rhs, -r.lhs});
+      r = Relation({r.enforcement,
+                    {r.a.var, -r.a.coeff},
+                    {r.b.var, -r.b.coeff},
+                    -r.rhs,
+                    -r.lhs});
     }
     relations.push_back(r);
   }

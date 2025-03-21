@@ -88,25 +88,6 @@
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
-ABSL_FLAG(bool, cp_model_dump_models, false,
-          "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
-          "protos (original model, presolved model, mapping model) in text "
-          "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
-          "mapping_model}.pb.txt.");
-
-#if defined(_MSC_VER)
-ABSL_FLAG(std::string, cp_model_dump_prefix, ".\\",
-          "Prefix filename for all dumped files");
-#else
-ABSL_FLAG(std::string, cp_model_dump_prefix, "/tmp/",
-          "Prefix filename for all dumped files");
-#endif
-
-ABSL_FLAG(bool, cp_model_dump_submodels, false,
-          "DEBUG ONLY. When set to true, solve will dump all "
-          "lns or objective_shaving submodels proto in text format to "
-          "'FLAGS_cp_model_dump_prefix'xxx.pb.txt.");
-
 ABSL_FLAG(
     std::string, cp_model_load_debug_solution, "",
     "DEBUG ONLY. When this is set to a non-empty file name, "

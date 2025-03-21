@@ -505,8 +505,8 @@ std::string ValidateElementConstraint(const CpModelProto& model,
       RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
       LinearExpressionProto overflow_detection = ct.element().linear_target();
       AppendToOverflowValidator(expr, &overflow_detection, -1);
-      overflow_detection.set_offset(overflow_detection.offset() -
-                                    expr.offset());
+      const int64_t offset = CapSub(overflow_detection.offset(), expr.offset());
+      overflow_detection.set_offset(offset);
       if (PossibleIntegerOverflow(model, overflow_detection.vars(),
                                   overflow_detection.coeffs(),
                                   overflow_detection.offset())) {

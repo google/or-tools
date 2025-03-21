@@ -16,12 +16,9 @@
 
 #include <cstdint>
 #include <memory>
-#include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
-#include "absl/flags/declare.h"
 #include "absl/types/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -33,11 +30,6 @@
 #include "ortools/sat/util.h"
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
-
-ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
-ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
-ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
-ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 
 namespace operations_research {
 namespace sat {

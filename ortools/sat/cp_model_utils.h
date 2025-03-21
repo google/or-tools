@@ -24,6 +24,7 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
+#include "absl/flags/declare.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -36,6 +37,11 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
+
+ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
+ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 
 namespace operations_research {
 namespace sat {

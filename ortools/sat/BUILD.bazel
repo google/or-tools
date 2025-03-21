@@ -209,6 +209,7 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
@@ -2709,6 +2710,33 @@ cc_test(
     ],
 )
 
+proto_library(
+    name = "routes_support_graph_proto",
+    srcs = ["routes_support_graph.proto"],
+)
+
+cc_proto_library(
+    name = "routes_support_graph_cc_proto",
+    deps = [":routes_support_graph_proto"],
+)
+
+cc_binary(
+    name = "render_routes_support_graph",
+    srcs = ["render_routes_support_graph.cc"],
+    deps = [
+        ":routes_support_graph_cc_proto",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/routing/parsers:solomon_parser",
+        "//ortools/util:file_util",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
 cc_library(
     name = "routing_cuts",
     srcs = ["routing_cuts.cc"],
@@ -2724,7 +2752,9 @@ cc_library(
         ":linear_constraint_manager",
         ":model",
         ":precedences",
+        ":routes_support_graph_cc_proto",
         ":sat_base",
+        ":sat_parameters_cc_proto",
         ":synchronization",
         ":util",
         "//ortools/base",
@@ -2734,12 +2764,12 @@ cc_library(
         "//ortools/graph",
         "//ortools/graph:connected_components",
         "//ortools/graph:max_flow",
-        "//ortools/util:bitset",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/log:vlog_is_on",
