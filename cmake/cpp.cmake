@@ -562,6 +562,10 @@ add_subdirectory(ortools/linear_solver/proto_solver)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
 
+add_subdirectory(ortools/routing/parsers)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_routing_parsers>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_routing_parsers)
+
 # Dependencies
 if(APPLE)
   set_target_properties(${PROJECT_NAME} PROPERTIES
