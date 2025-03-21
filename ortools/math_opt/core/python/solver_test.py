@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import threading
 from typing import Callable, Optional, Sequence
 from absl.testing import absltest
@@ -111,8 +112,12 @@ class PybindSolverTest(parameterized.TestCase):
         # Add invalid variable id to cause MathOpt model validation error.
         model.objective.linear_coefficients.ids.append(7)
         model.objective.linear_coefficients.values.append(2.0)
-        with self.assertRaisesRegex(StatusNotOk, "id 7 not found"):
-            _solve_model(model, use_solver_class=use_solver_class)
+        if sys.platform in ("darwin", "win32"):
+            with self.assertRaisesRegex(RuntimeError, "id 7 not found"):
+                _solve_model(model, use_solver_class=use_solver_class)
+        else:
+            with self.assertRaisesRegex(StatusNotOk, "id 7 not found"):
+                _solve_model(model, use_solver_class=use_solver_class)
 
     @parameterized.named_parameters(
         dict(testcase_name="without_solver", use_solver_class=False),
