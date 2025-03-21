@@ -32,7 +32,7 @@ double MathUtil::Stirling(double n) {
 
 double MathUtil::LogCombinations(int n, int k) {
   CHECK_GE(n, k);
-  CHECK_GT(n, 0);
+  CHECK_GE(n, 0);
   CHECK_GE(k, 0);
 
   // use symmetry to pick the shorter calculation
