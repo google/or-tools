@@ -5460,141 +5460,103 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
 
   AllDifferentConstraintProto& all_diff = *ct->mutable_all_diff();
 
-  bool constraint_has_changed = false;
+  bool variables_have_changed = false;
   for (LinearExpressionProto& exp :
        *(ct->mutable_all_diff()->mutable_exprs())) {
-    constraint_has_changed |= CanonicalizeLinearExpression(*ct, &exp);
+    variables_have_changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
 
-  for (;;) {
-    const int size = all_diff.exprs_size();
-    if (size == 0) {
-      context_->UpdateRuleStats("all_diff: empty constraint");
-      return RemoveConstraint(ct);
-    }
-    if (size == 1) {
-      context_->UpdateRuleStats("all_diff: only one variable");
-      return RemoveConstraint(ct);
-    }
+  const int size = all_diff.exprs_size();
+  if (size == 0) {
+    context_->UpdateRuleStats("all_diff: empty constraint");
+    return RemoveConstraint(ct);
+  }
+  if (size == 1) {
+    context_->UpdateRuleStats("all_diff: only one expression");
+    return RemoveConstraint(ct);
+  }
 
-    bool something_was_propagated = false;
-    std::vector<LinearExpressionProto> kept_expressions;
-    for (int i = 0; i < size; ++i) {
-      if (!context_->IsFixed(all_diff.exprs(i))) {
-        kept_expressions.push_back(all_diff.exprs(i));
-        continue;
+  absl::flat_hash_set<int64_t> fixed_values;
+  int new_size = 0;
+  for (int i = 0; i < size; ++i) {
+    if (!context_->IsFixed(all_diff.exprs(i))) {
+      if (i != new_size) {
+        *all_diff.mutable_exprs(new_size) = all_diff.exprs(i);
       }
-
-      const int64_t value = context_->MinOf(all_diff.exprs(i));
-      bool propagated = false;
-      for (int j = 0; j < size; ++j) {
-        if (i == j) continue;
-        if (context_->DomainContains(all_diff.exprs(j), value)) {
-          if (!context_->IntersectDomainWith(all_diff.exprs(j),
-                                             Domain(value).Complement())) {
-            return true;
-          }
-          propagated = true;
-        }
-      }
-      if (propagated) {
-        context_->UpdateRuleStats("all_diff: propagated fixed expressions");
-        something_was_propagated = true;
-      }
-    }
-
-    // CanonicalizeLinearExpression() made sure that only positive variable
-    // appears here, so this order will put expr and -expr one after the other.
-    std::sort(
-        kept_expressions.begin(), kept_expressions.end(),
-        [](const LinearExpressionProto& expr_a,
-           const LinearExpressionProto& expr_b) {
-          DCHECK_EQ(expr_a.vars_size(), 1);
-          DCHECK_EQ(expr_b.vars_size(), 1);
-          const int ref_a = expr_a.vars(0);
-          const int ref_b = expr_b.vars(0);
-          const int64_t coeff_a = expr_a.coeffs(0);
-          const int64_t coeff_b = expr_b.coeffs(0);
-          const int64_t abs_coeff_a = std::abs(coeff_a);
-          const int64_t abs_coeff_b = std::abs(coeff_b);
-          const int64_t offset_a = expr_a.offset();
-          const int64_t offset_b = expr_b.offset();
-          const int64_t abs_offset_a = std::abs(offset_a);
-          const int64_t abs_offset_b = std::abs(offset_b);
-          return std::tie(ref_a, abs_coeff_a, coeff_a, abs_offset_a, offset_a) <
-                 std::tie(ref_b, abs_coeff_b, coeff_b, abs_offset_b, offset_b);
-        });
-
-    // TODO(user): improve algorithm if of (a + offset) and (-a - offset)
-    // might not be together if (a - offset) is present.
-
-    for (int i = 1; i < kept_expressions.size(); ++i) {
-      if (LinearExpressionProtosAreEqual(kept_expressions[i],
-                                         kept_expressions[i - 1], 1)) {
+      ++new_size;
+    } else {
+      const int64_t value = context_->FixedValue(all_diff.exprs(i));
+      if (!fixed_values.insert(value).second) {
         return context_->NotifyThatModelIsUnsat(
-            "Duplicate variable in all_diff");
-      }
-      if (LinearExpressionProtosAreEqual(kept_expressions[i],
-                                         kept_expressions[i - 1], -1)) {
-        bool domain_modified = false;
-        if (!context_->IntersectDomainWith(kept_expressions[i],
-                                           Domain(0).Complement(),
-                                           &domain_modified)) {
-          return false;
-        }
-        if (domain_modified) {
-          context_->UpdateRuleStats(
-              "all_diff: remove 0 from expression appearing with its "
-              "opposite.");
-        }
+            "all_diff: duplicate fixed values");
       }
     }
+  }
 
-    if (kept_expressions.size() < all_diff.exprs_size()) {
-      all_diff.clear_exprs();
-      for (const LinearExpressionProto& expr : kept_expressions) {
-        *all_diff.add_exprs() = expr;
+  if (new_size < size) {
+    all_diff.mutable_exprs()->DeleteSubrange(new_size, size - new_size);
+    context_->UpdateRuleStats("all_diff: remove fixed variables");
+  }
+
+  if (!fixed_values.empty()) {
+    const Domain to_keep =
+        Domain::FromValues({fixed_values.begin(), fixed_values.end()})
+            .Complement();
+    bool propagated = false;
+    for (int i = 0; i < all_diff.exprs_size(); ++i) {
+      if (!context_->IntersectDomainWith(all_diff.exprs(i), to_keep,
+                                         &propagated)) {
+        return true;
       }
-      context_->UpdateRuleStats("all_diff: removed fixed variables");
-      something_was_propagated = true;
-      constraint_has_changed = true;
-      if (kept_expressions.size() <= 1) continue;
     }
+    if (propagated) {
+      context_->UpdateRuleStats("all_diff: propagate fixed values");
+    }
+  }
 
-    // Propagate mandatory value if the all diff is actually a permutation.
-    CHECK_GE(all_diff.exprs_size(), 2);
-    Domain domain = context_->DomainSuperSetOf(all_diff.exprs(0));
+  // Propagate mandatory values if the all diff is actually a permutation.
+  if (all_diff.exprs_size() >= 2 && all_diff.exprs_size() <= 256) {
+    Domain union_of_domains = context_->DomainSuperSetOf(all_diff.exprs(0));
     for (int i = 1; i < all_diff.exprs_size(); ++i) {
-      domain = domain.UnionWith(context_->DomainSuperSetOf(all_diff.exprs(i)));
+      union_of_domains = union_of_domains.UnionWith(
+          context_->DomainSuperSetOf(all_diff.exprs(i)));
     }
-    if (all_diff.exprs_size() == domain.Size()) {
-      absl::flat_hash_map<int64_t, std::vector<LinearExpressionProto>>
-          value_to_exprs;
-      for (const LinearExpressionProto& expr : all_diff.exprs()) {
+
+    if (union_of_domains.Size() < all_diff.exprs_size()) {
+      return context_->NotifyThatModelIsUnsat(
+          "all_diff: more expressions than values");
+    }
+
+    if (all_diff.exprs_size() == union_of_domains.Size()) {
+      absl::flat_hash_map<int64_t, std::vector<int>> value_to_expr_indices;
+      for (int i = 0; i < all_diff.exprs_size(); ++i) {
+        const LinearExpressionProto& expr = all_diff.exprs(i);
         for (const int64_t v : context_->DomainOf(expr.vars(0)).Values()) {
-          value_to_exprs[expr.coeffs(0) * v + expr.offset()].push_back(expr);
+          value_to_expr_indices[AffineExpressionValueAt(expr, v)].push_back(i);
         }
       }
+
       bool propagated = false;
-      for (const auto& it : value_to_exprs) {
-        if (it.second.size() == 1 && !context_->IsFixed(it.second.front())) {
-          const LinearExpressionProto& expr = it.second.front();
+      for (const auto& it : value_to_expr_indices) {
+        if (it.second.size() != 1) continue;
+
+        const LinearExpressionProto& expr = all_diff.exprs(it.second.front());
+        if (!context_->IsFixed(expr)) {
           if (!context_->IntersectDomainWith(expr, Domain(it.first))) {
             return true;
           }
           propagated = true;
         }
       }
+
       if (propagated) {
         context_->UpdateRuleStats(
             "all_diff: propagated mandatory values in permutation");
-        something_was_propagated = true;
       }
     }
-    if (!something_was_propagated) break;
   }
 
-  return constraint_has_changed;
+  return variables_have_changed;
 }
 
 namespace {
@@ -7731,8 +7693,6 @@ void CpModelPresolver::Probe() {
     return (void)context_->NotifyThatModelIsUnsat("during probing");
   }
 
-  time_limit_->ResetHistory();
-
   // Update the presolve context with fixed Boolean variables.
   int num_fixed = 0;
   CHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
@@ -8665,7 +8625,6 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
   // We reuse the max-clique code from sat.
   Model local_model;
   local_model.GetOrCreate<Trail>()->Resize(num_constraints);
-  local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   graph->Resize(num_constraints);
   for (const std::vector<Literal>& clique : cliques) {
@@ -8702,7 +8661,6 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
                             new_num_intervals, " intervals).");
     context_->UpdateRuleStats("no_overlap: merged constraints");
   }
-  time_limit_->ResetHistory();
 }
 
 // TODO(user): Should we take into account the exactly_one constraints? note
