@@ -2720,23 +2720,6 @@ cc_proto_library(
     deps = [":routes_support_graph_proto"],
 )
 
-cc_binary(
-    name = "render_routes_support_graph",
-    srcs = ["render_routes_support_graph.cc"],
-    deps = [
-        ":routes_support_graph_cc_proto",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/routing/parsers:solomon_parser",
-        "//ortools/util:file_util",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:string_view",
-    ],
-)
-
 cc_library(
     name = "routing_cuts",
     srcs = ["routing_cuts.cc"],
