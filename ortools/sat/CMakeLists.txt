@@ -18,7 +18,6 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/opb_reader.h
   ${CMAKE_CURRENT_SOURCE_DIR}/sat_cnf_reader.h
   ${CMAKE_CURRENT_SOURCE_DIR}/sat_runner.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/render_routes_support_graph.cc
 )
 set(NAME ${PROJECT_NAME}_sat)
 
