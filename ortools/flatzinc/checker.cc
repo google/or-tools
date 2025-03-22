@@ -1304,6 +1304,8 @@ CallMap CreateCallMap() {
   m["ortools_array_var_bool_element"] = CheckOrtoolsArrayIntElement;
   m["ortools_array_var_int_element"] = CheckOrtoolsArrayIntElement;
   m["ortools_circuit"] = CheckCircuit;
+  m["ortools_count_eq"] = CheckCountEq;
+  m["ortools_count_eq_cst"] = CheckCountEq;
   m["ortools_cumulative_opt"] = CheckCumulativeOpt;
   m["ortools_disjunctive_strict_opt"] = CheckDisjunctiveStrictOpt;
   m["ortools_inverse"] = CheckInverse;
