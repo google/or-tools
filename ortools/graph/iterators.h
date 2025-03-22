@@ -241,7 +241,7 @@ class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
 // A helper class for implementing list graph iterators: This does pointer
 // chasing on `next` until `sentinel` is found. `Tag` allows distinguishing
 // different iterators with the same index type and sentinel.
-template <typename IndexT, IndexT sentinel, typename Tag>
+template <typename IndexT, const IndexT& sentinel, typename Tag>
 class ChasingIterator
 #if __cplusplus < 202002L
     : public std::iterator<std::input_iterator_tag, IndexT>
@@ -261,12 +261,12 @@ class ChasingIterator
   IndexT operator*() const { return index_; }
 
   ChasingIterator& operator++() {
-    index_ = next_[index_];
+    index_ = next_[static_cast<ptrdiff_t>(index_)];
     return *this;
   }
   ChasingIterator operator++(int) {
     auto tmp = *this;
-    index_ = next_[index_];
+    index_ = next_[static_cast<ptrdiff_t>(index_)];
     return tmp;
   }
 

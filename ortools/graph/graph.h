@@ -164,6 +164,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iterator>
@@ -181,9 +182,15 @@
 
 namespace util {
 
-// Forward declaration.
-template <typename T>
+namespace internal {
+
+template <typename IndexT, typename T>
 class SVector;
+
+template <typename IndexT, typename T>
+class Vector;
+
+}  // namespace internal
 
 // Base class of all Graphs implemented here. The default value for the graph
 // index types is int32_t since almost all graphs that fit into memory do not
@@ -191,6 +198,11 @@ class SVector;
 //
 // Note: The type can be unsigned, except for the graphs with reverse arcs
 // where the ArcIndexType must be signed, but not necessarily the NodeIndexType.
+//
+// `NodeIndexType` and `ArcIndexType` can be any integer type, but can also be
+// strong integer types (e.g. `StrongInt`). Strong integer types are types that
+// behave like integers (comparison, arithmetic, etc.), and are (explicitly)
+// constructible/convertible from/to integers.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t,
           bool HasNegativeReverseArcs = false>
 class BaseGraph {
@@ -229,13 +241,14 @@ class BaseGraph {
 
   // Returns true if the given node is a valid node of the graph.
   bool IsNodeValid(NodeIndexType node) const {
-    return node >= 0 && node < num_nodes_;
+    return node >= NodeIndexType(0) && node < num_nodes_;
   }
 
   // Returns true if the given arc is a valid arc of the graph.
   // Note that the arc validity range changes for graph with reverse arcs.
   bool IsArcValid(ArcIndexType arc) const {
-    return (HasNegativeReverseArcs ? -num_arcs_ : 0) <= arc && arc < num_arcs_;
+    return (HasNegativeReverseArcs ? -num_arcs_ : ArcIndexType(0)) <= arc &&
+           arc < num_arcs_;
   }
 
   // Capacity reserved for future nodes, always >= num_nodes_.
@@ -278,10 +291,11 @@ class BaseGraph {
 
  protected:
   // Functions commented when defined because they are implementation details.
-  void ComputeCumulativeSum(std::vector<ArcIndexType>* v);
-  void BuildStartAndForwardHead(SVector<NodeIndexType>* head,
-                                std::vector<ArcIndexType>* start,
-                                std::vector<ArcIndexType>* permutation);
+  void ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v);
+  void BuildStartAndForwardHead(
+      internal::SVector<ArcIndexType, NodeIndexType>* head,
+      internal::Vector<NodeIndexType, ArcIndexType>* start,
+      std::vector<ArcIndexType>* permutation);
 
   NodeIndexType num_nodes_;
   NodeIndexType node_capacity_;
@@ -350,6 +364,232 @@ using ArcOppositeArcIterator =
     ArcPropertyIterator<Graph, ArcIterator, typename Graph::ArcIndex,
                         &Graph::OppositeArc>;
 
+namespace internal {
+
+// Returns true if `ArcIndexType` is signed. Work for integers and strong
+// integer types.
+template <typename ArcIndexType>
+constexpr bool IsSigned() {
+  return ArcIndexType(-1) < ArcIndexType(0);
+}
+
+// Allows indexing into a vector with an edge or node index.
+template <typename IndexT, typename T>
+class Vector : public std::vector<T> {
+ public:
+  const T& operator[](IndexT index) const {
+    return std::vector<T>::operator[](static_cast<size_t>(index));
+  }
+  T& operator[](IndexT index) {
+    return std::vector<T>::operator[](static_cast<size_t>(index));
+  }
+
+  void resize(IndexT index, const T& value) {
+    return std::vector<T>::resize(static_cast<size_t>(index), value);
+  }
+
+  void reserve(IndexT index) {
+    return std::vector<T>::reserve(static_cast<size_t>(index));
+  }
+
+  void assign(IndexT index, const T& value) {
+    return std::vector<T>::assign(static_cast<size_t>(index), value);
+  }
+
+  IndexT size() const { return IndexT(std::vector<T>::size()); }
+};
+
+// A vector-like class where valid indices are in [- size_, size_) and reserved
+// indices for future growth are in [- capacity_, capacity_). It is used to hold
+// arc related information for graphs with reverse arcs.
+// It supports only up to 2^31-1 elements, for compactness. If you ever need
+// more, consider using templates for the size/capacity integer types.
+//
+// Sample usage:
+//
+// SVector<int> v;
+// v.grow(left_value, right_value);
+// v.resize(10);
+// v.clear();
+// v.swap(new_v);
+// std:swap(v[i], v[~i]);
+template <typename IndexT, typename T>
+class SVector {
+ public:
+  SVector() : base_(nullptr), size_(0), capacity_(0) {}
+
+  ~SVector() { clear_and_dealloc(); }
+
+  // Copy constructor and assignment operator.
+  SVector(const SVector& other) : SVector() { *this = other; }
+  SVector& operator=(const SVector& other) {
+    if (capacity_ < other.size_) {
+      clear_and_dealloc();
+      // NOTE(user): Alternatively, our capacity could inherit from the other
+      // vector's capacity, which can be (much) greater than its size.
+      capacity_ = other.size_;
+      base_ = Allocate(capacity_);
+      CHECK(base_ != nullptr);
+      base_ += capacity_;
+    } else {  // capacity_ >= other.size
+      clear();
+    }
+    // Perform the actual copy of the payload.
+    size_ = other.size_;
+    CopyInternal(other, std::is_integral<T>());
+    return *this;
+  }
+
+  // Move constructor and move assignment operator.
+  SVector(SVector&& other) noexcept : SVector() { swap(other); }
+  SVector& operator=(SVector&& other) noexcept {
+    // NOTE(user): We could just swap() and let the other's destruction take
+    // care of the clean-up, but it is probably less bug-prone to perform the
+    // destruction immediately.
+    clear_and_dealloc();
+    swap(other);
+    return *this;
+  }
+
+  T& operator[](IndexT n) {
+    DCHECK_LT(n, size_);
+    DCHECK_GE(n, -size_);
+    return base_[static_cast<ptrdiff_t>(n)];
+  }
+
+  const T& operator[](IndexT n) const {
+    DCHECK_LT(n, size_);
+    DCHECK_GE(n, -size_);
+    return base_[static_cast<ptrdiff_t>(n)];
+  }
+
+  void resize(IndexT n) {
+    reserve(n);
+    for (IndexT i = -n; i < -size_; ++i) {
+      new (base_ + static_cast<ptrdiff_t>(i)) T();
+    }
+    for (IndexT i = size_; i < n; ++i) {
+      new (base_ + static_cast<ptrdiff_t>(i)) T();
+    }
+    for (IndexT i = -size_; i < -n; ++i) {
+      base_[static_cast<ptrdiff_t>(i)].~T();
+    }
+    for (IndexT i = n; i < size_; ++i) {
+      base_[static_cast<ptrdiff_t>(i)].~T();
+    }
+    size_ = n;
+  }
+
+  void clear() { resize(IndexT(0)); }
+
+  T* data() const { return base_; }
+
+  void swap(SVector<IndexT, T>& x) noexcept {
+    std::swap(base_, x.base_);
+    std::swap(size_, x.size_);
+    std::swap(capacity_, x.capacity_);
+  }
+
+  void reserve(IndexT n) {
+    DCHECK_GE(n, IndexT(0));
+    DCHECK_LE(n, max_size());
+    if (n > capacity_) {
+      const IndexT new_capacity = std::min(n, max_size());
+      T* new_storage = Allocate(new_capacity);
+      CHECK(new_storage != nullptr);
+      T* new_base = new_storage + static_cast<ptrdiff_t>(new_capacity);
+      // TODO(user): in C++17 we could use std::uninitialized_move instead
+      // of this loop.
+      for (ptrdiff_t i = static_cast<ptrdiff_t>(-size_);
+           i < static_cast<ptrdiff_t>(size_); ++i) {
+        new (new_base + i) T(std::move(base_[i]));
+      }
+      IndexT saved_size = size_;
+      clear_and_dealloc();
+      size_ = saved_size;
+      base_ = new_base;
+      capacity_ = new_capacity;
+    }
+  }
+
+  // NOTE(user): This doesn't currently support movable-only objects, but we
+  // could fix that.
+  void grow(const T& left = T(), const T& right = T()) {
+    if (size_ == capacity_) {
+      // We have to copy the elements because they are allowed to be element of
+      // *this.
+      T left_copy(left);    // NOLINT
+      T right_copy(right);  // NOLINT
+      reserve(NewCapacity(IndexT(1)));
+      new (base_ + static_cast<ptrdiff_t>(size_)) T(right_copy);
+      new (base_ - static_cast<ptrdiff_t>(size_) - 1) T(left_copy);
+      ++size_;
+    } else {
+      new (base_ + static_cast<ptrdiff_t>(size_)) T(right);
+      new (base_ - static_cast<ptrdiff_t>(size_) - 1) T(left);
+      ++size_;
+    }
+  }
+
+  IndexT size() const { return size_; }
+
+  IndexT capacity() const { return capacity_; }
+
+  IndexT max_size() const { return std::numeric_limits<IndexT>::max(); }
+
+  void clear_and_dealloc() {
+    if (base_ == nullptr) return;
+    clear();
+    if (capacity_ > IndexT(0)) {
+      free(base_ - static_cast<ptrdiff_t>(capacity_));
+    }
+    capacity_ = IndexT(0);
+    base_ = nullptr;
+  }
+
+ private:
+  // Copies other.base_ to base_ in this SVector. Avoids iteration by copying
+  // entire memory range in a single shot for the most commonly used integral
+  // types which should be safe to copy in this way.
+  void CopyInternal(const SVector& other, std::true_type) {
+    std::memcpy(base_ - static_cast<ptrdiff_t>(other.size_),
+                other.base_ - static_cast<ptrdiff_t>(other.size_),
+                2LL * static_cast<ptrdiff_t>(other.size_) * sizeof(T));
+  }
+
+  // Copies other.base_ to base_ in this SVector. Safe for all types as it uses
+  // constructor for each entry.
+  void CopyInternal(const SVector& other, std::false_type) {
+    for (int i = -size_; i < size_; ++i) {
+      new (base_ + i) T(other.base_[i]);
+    }
+  }
+
+  T* Allocate(IndexT capacity) const {
+    return absl::IgnoreLeak(static_cast<T*>(
+        malloc(2LL * static_cast<ptrdiff_t>(capacity) * sizeof(T))));
+  }
+
+  IndexT NewCapacity(IndexT delta) {
+    // TODO(user): check validity.
+    double candidate = 1.3 * static_cast<size_t>(capacity_);
+    if (candidate > static_cast<size_t>(max_size())) {
+      candidate = static_cast<size_t>(max_size());
+    }
+    IndexT new_capacity(candidate);
+    if (new_capacity > capacity_ + delta) {
+      return new_capacity;
+    }
+    return capacity_ + delta;
+  }
+
+  T* base_;          // Pointer to the element of index 0.
+  IndexT size_;      // Valid index are [- size_, size_).
+  IndexT capacity_;  // Reserved index are [- capacity_, capacity_).
+};
+
+}  // namespace internal
+
 // Basic graph implementation without reverse arc. This class also serves as a
 // documentation for the generic graph interface (minus the part related to
 // reverse arcs).
@@ -383,8 +623,8 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   ListGraph(NodeIndexType num_nodes, ArcIndexType arc_capacity) {
     this->Reserve(num_nodes, arc_capacity);
     this->FreezeCapacities();
-    if (num_nodes > 0) {
-      this->AddNode(num_nodes - 1);
+    if (num_nodes > NodeIndexType(0)) {
+      this->AddNode(num_nodes - NodeIndexType(1));
     }
   }
 
@@ -461,10 +701,10 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   void ReserveArcs(ArcIndexType bound) override;
 
  private:
-  std::vector<ArcIndexType> start_;
-  std::vector<ArcIndexType> next_;
-  std::vector<NodeIndexType> head_;
-  std::vector<NodeIndexType> tail_;
+  internal::Vector<NodeIndexType, ArcIndexType> start_;
+  internal::Vector<ArcIndexType, ArcIndexType> next_;
+  internal::Vector<ArcIndexType, NodeIndexType> head_;
+  internal::Vector<ArcIndexType, NodeIndexType> tail_;
 };
 
 // Most efficient implementation of a graph without reverse arcs:
@@ -496,8 +736,8 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
       : is_built_(false), arc_in_order_(true), last_tail_seen_(0) {
     this->Reserve(num_nodes, arc_capacity);
     this->FreezeCapacities();
-    if (num_nodes > 0) {
-      this->AddNode(num_nodes - 1);
+    if (num_nodes > NodeIndexType(0)) {
+      this->AddNode(num_nodes - NodeIndexType(1));
     }
   }
 
@@ -540,7 +780,7 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
     DCHECK(is_built_);
     DCHECK(Base::IsNodeValid(node));
-    return start_[node + 1];
+    return start_[node + NodeIndexType(1)];
   }
 
   bool is_built_;
@@ -548,9 +788,9 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   NodeIndexType last_tail_seen_;
   // First outgoing arc for each node. If `num_nodes_ > 0`, the "past-the-end"
   // value is a sentinel (`start_[num_nodes_] == num_arcs_`).
-  std::vector<ArcIndexType> start_;
-  std::vector<NodeIndexType> head_;
-  std::vector<NodeIndexType> tail_;
+  internal::Vector<NodeIndexType, ArcIndexType> start_;
+  internal::Vector<ArcIndexType, NodeIndexType> head_;
+  internal::Vector<ArcIndexType, NodeIndexType> tail_;
 };
 
 // Extends the ListGraph by also storing the reverse arcs.
@@ -562,7 +802,8 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcListGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
-  static_assert(std::is_signed_v<ArcIndexType>, "ArcIndexType must be signed");
+  static_assert(internal::IsSigned<ArcIndexType>(),
+                "ArcIndexType must be signed");
 
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
   using Base::arc_capacity_;
@@ -577,8 +818,8 @@ class ReverseArcListGraph
   ReverseArcListGraph(NodeIndexType num_nodes, ArcIndexType arc_capacity) {
     this->Reserve(num_nodes, arc_capacity);
     this->FreezeCapacities();
-    if (num_nodes > 0) {
-      this->AddNode(num_nodes - 1);
+    if (num_nodes > NodeIndexType(0)) {
+      this->AddNode(num_nodes - NodeIndexType(1));
     }
   }
 
@@ -623,7 +864,7 @@ class ReverseArcListGraph
       NodeIndexType node, ArcIndexType from) const {
     DCHECK(Base::IsNodeValid(node));
     if (from == Base::kNilArc) return {};
-    DCHECK_GE(from, 0);
+    DCHECK_GE(from, ArcIndexType(0));
     DCHECK_EQ(Tail(from), node);
     return {OutgoingArcIterator(from, next_.data()), OutgoingArcIterator()};
   }
@@ -655,7 +896,7 @@ class ReverseArcListGraph
       NodeIndexType node, ArcIndexType from) const {
     DCHECK(Base::IsNodeValid(node));
     if (from == Base::kNilArc) return {};
-    DCHECK_LT(from, 0);
+    DCHECK_LT(from, ArcIndexType(0));
     DCHECK_EQ(Tail(from), node);
     return {OppositeIncomingArcIterator(from, next_.data()),
             OppositeIncomingArcIterator()};
@@ -679,10 +920,10 @@ class ReverseArcListGraph
   void Build(std::vector<ArcIndexType>* permutation);
 
  private:
-  std::vector<ArcIndexType> start_;
-  std::vector<ArcIndexType> reverse_start_;
-  SVector<ArcIndexType> next_;
-  SVector<NodeIndexType> head_;
+  internal::Vector<NodeIndexType, ArcIndexType> start_;
+  internal::Vector<NodeIndexType, ArcIndexType> reverse_start_;
+  internal::SVector<ArcIndexType, ArcIndexType> next_;
+  internal::SVector<ArcIndexType, NodeIndexType> head_;
 };
 
 // StaticGraph with reverse arc.
@@ -697,7 +938,8 @@ class ReverseArcListGraph
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcStaticGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
-  static_assert(std::is_signed_v<ArcIndexType>, "ArcIndexType must be signed");
+  static_assert(internal::IsSigned<ArcIndexType>(),
+                "ArcIndexType must be signed");
 
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
   using Base::arc_capacity_;
@@ -713,8 +955,8 @@ class ReverseArcStaticGraph
       : is_built_(false) {
     this->Reserve(num_nodes, arc_capacity);
     this->FreezeCapacities();
-    if (num_nodes > 0) {
-      this->AddNode(num_nodes - 1);
+    if (num_nodes > NodeIndexType(0)) {
+      this->AddNode(num_nodes - NodeIndexType(1));
     }
   }
 
@@ -796,23 +1038,23 @@ class ReverseArcStaticGraph
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
     DCHECK(is_built_);
     DCHECK(Base::IsNodeValid(node));
-    return start_[node + 1];
+    return start_[node + NodeIndexType(1)];
   }
   ArcIndexType ReverseArcLimit(NodeIndexType node) const {
     DCHECK(is_built_);
     DCHECK(Base::IsNodeValid(node));
-    return reverse_start_[node + 1];
+    return reverse_start_[node + NodeIndexType(1)];
   }
 
   bool is_built_;
   // First outgoing arc for each node. If `num_nodes_ > 0`, the "past-the-end"
   // value is a sentinel (`start_[num_nodes_] == num_arcs_`).
-  std::vector<ArcIndexType> start_;
+  internal::Vector<NodeIndexType, ArcIndexType> start_;
   // First reverse outgoing arc for each node. If `num_nodes_ > 0`,
   // the "past-the-end" value is a sentinel (`reverse_start_[num_nodes_] == 0`).
-  std::vector<ArcIndexType> reverse_start_;
-  SVector<NodeIndexType> head_;
-  SVector<ArcIndexType> opposite_;
+  internal::Vector<NodeIndexType, ArcIndexType> reverse_start_;
+  internal::SVector<ArcIndexType, NodeIndexType> head_;
+  internal::SVector<ArcIndexType, ArcIndexType> opposite_;
 };
 
 // Permutes the elements of array_to_permute: element #i will be moved to
@@ -830,14 +1072,14 @@ class ReverseArcStaticGraph
 // internally.
 template <class IntVector, class Array, class ElementType>
 void PermuteWithExplicitElementType(const IntVector& permutation,
-                                    Array* array_to_permute,
+                                    Array& array_to_permute,
                                     ElementType unused) {
   std::vector<ElementType> temp(permutation.size());
   for (size_t i = 0; i < permutation.size(); ++i) {
-    temp[i] = (*array_to_permute)[i];
+    temp[i] = array_to_permute[i];
   }
   for (size_t i = 0; i < permutation.size(); ++i) {
-    (*array_to_permute)[permutation[i]] = temp[i];
+    array_to_permute[static_cast<size_t>(permutation[i])] = temp[i];
   }
 }
 
@@ -846,7 +1088,7 @@ void Permute(const IntVector& permutation, Array* array_to_permute) {
   if (permutation.empty()) {
     return;
   }
-  PermuteWithExplicitElementType(permutation, array_to_permute,
+  PermuteWithExplicitElementType(permutation, *array_to_permute,
                                  (*array_to_permute)[0]);
 }
 
@@ -859,195 +1101,8 @@ void Permute(const IntVector& permutation,
     return;
   }
   bool unused = false;
-  PermuteWithExplicitElementType(permutation, array_to_permute, unused);
+  PermuteWithExplicitElementType(permutation, *array_to_permute, unused);
 }
-
-// A vector-like class where valid indices are in [- size_, size_) and reserved
-// indices for future growth are in [- capacity_, capacity_). It is used to hold
-// arc related information for graphs with reverse arcs.
-// It supports only up to 2^31-1 elements, for compactness. If you ever need
-// more, consider using templates for the size/capacity integer types.
-//
-// Sample usage:
-//
-// SVector<int> v;
-// v.grow(left_value, right_value);
-// v.resize(10);
-// v.clear();
-// v.swap(new_v);
-// std:swap(v[i], v[~i]);
-template <typename T>
-class SVector {
- public:
-  SVector() : base_(nullptr), size_(0), capacity_(0) {}
-
-  ~SVector() { clear_and_dealloc(); }
-
-  // Copy constructor and assignment operator.
-  SVector(const SVector& other) : SVector() { *this = other; }
-  SVector& operator=(const SVector& other) {
-    if (capacity_ < other.size_) {
-      clear_and_dealloc();
-      // NOTE(user): Alternatively, our capacity could inherit from the other
-      // vector's capacity, which can be (much) greater than its size.
-      capacity_ = other.size_;
-      base_ = Allocate(capacity_);
-      CHECK(base_ != nullptr);
-      base_ += capacity_;
-    } else {  // capacity_ >= other.size
-      clear();
-    }
-    // Perform the actual copy of the payload.
-    size_ = other.size_;
-    CopyInternal(other, std::is_integral<T>());
-    return *this;
-  }
-
-  // Move constructor and move assignment operator.
-  SVector(SVector&& other) noexcept : SVector() { swap(other); }
-  SVector& operator=(SVector&& other) noexcept {
-    // NOTE(user): We could just swap() and let the other's destruction take
-    // care of the clean-up, but it is probably less bug-prone to perform the
-    // destruction immediately.
-    clear_and_dealloc();
-    swap(other);
-    return *this;
-  }
-
-  T& operator[](int n) {
-    DCHECK_LT(n, size_);
-    DCHECK_GE(n, -size_);
-    return base_[n];
-  }
-
-  const T& operator[](int n) const {
-    DCHECK_LT(n, size_);
-    DCHECK_GE(n, -size_);
-    return base_[n];
-  }
-
-  void resize(int n) {
-    reserve(n);
-    for (int i = -n; i < -size_; ++i) {
-      new (base_ + i) T();
-    }
-    for (int i = size_; i < n; ++i) {
-      new (base_ + i) T();
-    }
-    for (int i = -size_; i < -n; ++i) {
-      base_[i].~T();
-    }
-    for (int i = n; i < size_; ++i) {
-      base_[i].~T();
-    }
-    size_ = n;
-  }
-
-  void clear() { resize(0); }
-
-  T* data() const { return base_; }
-
-  void swap(SVector<T>& x) noexcept {
-    std::swap(base_, x.base_);
-    std::swap(size_, x.size_);
-    std::swap(capacity_, x.capacity_);
-  }
-
-  void reserve(int n) {
-    DCHECK_GE(n, 0);
-    DCHECK_LE(n, max_size());
-    if (n > capacity_) {
-      const int new_capacity = std::min(n, max_size());
-      T* new_storage = Allocate(new_capacity);
-      CHECK(new_storage != nullptr);
-      T* new_base = new_storage + new_capacity;
-      // TODO(user): in C++17 we could use std::uninitialized_move instead
-      // of this loop.
-      for (int i = -size_; i < size_; ++i) {
-        new (new_base + i) T(std::move(base_[i]));
-      }
-      int saved_size = size_;
-      clear_and_dealloc();
-      size_ = saved_size;
-      base_ = new_base;
-      capacity_ = new_capacity;
-    }
-  }
-
-  // NOTE(user): This doesn't currently support movable-only objects, but we
-  // could fix that.
-  void grow(const T& left = T(), const T& right = T()) {
-    if (size_ == capacity_) {
-      // We have to copy the elements because they are allowed to be element of
-      // *this.
-      T left_copy(left);    // NOLINT
-      T right_copy(right);  // NOLINT
-      reserve(NewCapacity(1));
-      new (base_ + size_) T(right_copy);
-      new (base_ - size_ - 1) T(left_copy);
-      ++size_;
-    } else {
-      new (base_ + size_) T(right);
-      new (base_ - size_ - 1) T(left);
-      ++size_;
-    }
-  }
-
-  int size() const { return size_; }
-
-  int capacity() const { return capacity_; }
-
-  int max_size() const { return std::numeric_limits<int>::max(); }
-
-  void clear_and_dealloc() {
-    if (base_ == nullptr) return;
-    clear();
-    if (capacity_ > 0) {
-      free(base_ - capacity_);
-    }
-    capacity_ = 0;
-    base_ = nullptr;
-  }
-
- private:
-  // Copies other.base_ to base_ in this SVector. Avoids iteration by copying
-  // entire memory range in a single shot for the most commonly used integral
-  // types which should be safe to copy in this way.
-  void CopyInternal(const SVector& other, std::true_type) {
-    std::memcpy(base_ - other.size_, other.base_ - other.size_,
-                2LL * other.size_ * sizeof(T));
-  }
-
-  // Copies other.base_ to base_ in this SVector. Safe for all types as it uses
-  // constructor for each entry.
-  void CopyInternal(const SVector& other, std::false_type) {
-    for (int i = -size_; i < size_; ++i) {
-      new (base_ + i) T(other.base_[i]);
-    }
-  }
-
-  T* Allocate(int capacity) const {
-    return absl::IgnoreLeak(
-        static_cast<T*>(malloc(2LL * capacity * sizeof(T))));
-  }
-
-  int NewCapacity(int delta) {
-    // TODO(user): check validity.
-    double candidate = 1.3 * static_cast<double>(capacity_);
-    if (candidate > static_cast<double>(max_size())) {
-      candidate = static_cast<double>(max_size());
-    }
-    int new_capacity = static_cast<int>(candidate);
-    if (new_capacity > capacity_ + delta) {
-      return new_capacity;
-    }
-    return capacity_ + delta;
-  }
-
-  T* base_;       // Pointer to the element of index 0.
-  int size_;      // Valid index are [- size_, size_).
-  int capacity_;  // Reserved index are [- capacity_, capacity_).
-};
 
 // BaseGraph implementation ----------------------------------------------------
 
@@ -1055,7 +1110,7 @@ template <typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
 IntegerRange<NodeIndexType> BaseGraph<
     NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::AllNodes() const {
-  return IntegerRange<NodeIndexType>(0, num_nodes_);
+  return IntegerRange<NodeIndexType>(NodeIndexType(0), num_nodes_);
 }
 
 template <typename NodeIndexType, typename ArcIndexType,
@@ -1063,7 +1118,7 @@ template <typename NodeIndexType, typename ArcIndexType,
 IntegerRange<ArcIndexType>
 BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::AllForwardArcs()
     const {
-  return IntegerRange<ArcIndexType>(0, num_arcs_);
+  return IntegerRange<ArcIndexType>(ArcIndexType(0), num_arcs_);
 }
 
 template <typename NodeIndexType, typename ArcIndexType,
@@ -1111,10 +1166,10 @@ void BaseGraph<NodeIndexType, ArcIndexType,
 template <typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
 void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
-    ComputeCumulativeSum(std::vector<ArcIndexType>* v) {
-  DCHECK_EQ(v->size(), num_nodes_ + 1);
-  ArcIndexType sum = 0;
-  for (NodeIndexType i = 0; i < num_nodes_; ++i) {
+    ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v) {
+  DCHECK_EQ(v->size(), num_nodes_ + NodeIndexType(1));
+  ArcIndexType sum(0);
+  for (NodeIndexType i(0); i < num_nodes_; ++i) {
     ArcIndexType temp = (*v)[i];
     (*v)[i] = sum;
     sum += temp;
@@ -1131,16 +1186,17 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
 template <typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
 void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
-    BuildStartAndForwardHead(SVector<NodeIndexType>* head,
-                             std::vector<ArcIndexType>* start,
-                             std::vector<ArcIndexType>* permutation) {
+    BuildStartAndForwardHead(
+        internal::SVector<ArcIndexType, NodeIndexType>* head,
+        internal::Vector<NodeIndexType, ArcIndexType>* start,
+        std::vector<ArcIndexType>* permutation) {
   // Computes the outgoing degree of each nodes and check if we need to permute
   // something or not. Note that the tails are currently stored in the positive
   // range of the SVector head.
-  start->assign(num_nodes_ + 1, 0);
-  int last_tail_seen = 0;
+  start->assign(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
+  NodeIndexType last_tail_seen(0);
   bool permutation_needed = false;
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
     NodeIndexType tail = (*head)[i];
     if (!permutation_needed) {
       permutation_needed = tail < last_tail_seen;
@@ -1153,7 +1209,7 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
   // Abort early if we do not need the permutation: we only need to put the
   // heads in the positive range.
   if (!permutation_needed) {
-    for (ArcIndexType i = 0; i < num_arcs_; ++i) {
+    for (ArcIndexType i(0); i < num_arcs_; ++i) {
       (*head)[i] = (*head)[~i];
     }
     if (permutation != nullptr) {
@@ -1164,22 +1220,23 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
 
   // Computes the forward arc permutation.
   // Note that this temporarily alters the start vector.
-  std::vector<ArcIndexType> perm(num_arcs_);
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
-    perm[i] = (*start)[(*head)[i]]++;
+  std::vector<ArcIndexType> perm(static_cast<size_t>(num_arcs_));
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
+    perm[static_cast<size_t>(i)] = (*start)[(*head)[i]]++;
   }
 
   // Restore in (*start)[i] the index of the first arc with tail >= i.
-  DCHECK_GE(num_nodes_, 1);
-  for (NodeIndexType i = num_nodes_ - 1; i > 0; --i) {
-    (*start)[i] = (*start)[i - 1];
+  DCHECK_GE(num_nodes_, NodeIndexType(1));
+  for (NodeIndexType i = num_nodes_ - NodeIndexType(1); i > NodeIndexType(0);
+       --i) {
+    (*start)[i] = (*start)[i - NodeIndexType(1)];
   }
-  (*start)[0] = 0;
+  (*start)[NodeIndexType(0)] = ArcIndexType(0);
 
   // Permutes the head into their final position in head.
   // We do not need the tails anymore at this point.
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
-    (*head)[perm[i]] = (*head)[~i];
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
+    (*head)[perm[static_cast<size_t>(i)]] = (*head)[~i];
   }
   if (permutation != nullptr) {
     permutation->swap(perm);
@@ -1265,15 +1322,15 @@ template <typename NodeIndexType, typename ArcIndexType>
 void ListGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
   if (node < num_nodes_) return;
   DCHECK(!const_capacities_ || node < node_capacity_);
-  num_nodes_ = node + 1;
+  num_nodes_ = node + NodeIndexType(1);
   start_.resize(num_nodes_, Base::kNilArc);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ListGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
-  DCHECK_GE(tail, 0);
-  DCHECK_GE(head, 0);
+  DCHECK_GE(tail, NodeIndexType(0));
+  DCHECK_GE(head, NodeIndexType(0));
   AddNode(tail > head ? tail : head);
   head_.push_back(head);
   tail_.push_back(tail);
@@ -1323,8 +1380,9 @@ StaticGraph<NodeIndexType, ArcIndexType>::FromArcs(NodeIndexType num_nodes,
 template <typename NodeIndexType, typename ArcIndexType>
 absl::Span<const NodeIndexType>
 StaticGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
-  return absl::Span<const NodeIndexType>(head_.data() + start_[node],
-                                         DirectArcLimit(node) - start_[node]);
+  return absl::Span<const NodeIndexType>(
+      head_.data() + static_cast<size_t>(start_[node]),
+      static_cast<size_t>(DirectArcLimit(node) - start_[node]));
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1338,7 +1396,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::ReserveNodes(
     NodeIndexType bound) {
   Base::ReserveNodes(bound);
   if (bound <= num_nodes_) return;
-  start_.reserve(bound + 1);
+  start_.reserve(bound + NodeIndexType(1));
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1353,15 +1411,15 @@ template <typename NodeIndexType, typename ArcIndexType>
 void StaticGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
   if (node < num_nodes_) return;
   DCHECK(!const_capacities_ || node < node_capacity_) << node;
-  num_nodes_ = node + 1;
-  start_.resize(num_nodes_ + 1, 0);
+  num_nodes_ = node + NodeIndexType(1);
+  start_.resize(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
-  DCHECK_GE(tail, 0);
-  DCHECK_GE(head, 0);
+  DCHECK_GE(tail, NodeIndexType(0));
+  DCHECK_GE(head, NodeIndexType(0));
   DCHECK(!is_built_);
   AddNode(tail > head ? tail : head);
   if (arc_in_order_) {
@@ -1413,7 +1471,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
   node_capacity_ = num_nodes_;
   arc_capacity_ = num_arcs_;
   this->FreezeCapacities();
-  if (num_nodes_ == 0) {
+  if (num_nodes_ == NodeIndexType(0)) {
     return;
   }
 
@@ -1428,24 +1486,24 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
 
   // Computes outgoing degree of each nodes. We have to clear start_, since
   // at least the first arc was processed with arc_in_order_ == true.
-  start_.assign(num_nodes_ + 1, 0);
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
+  start_.assign(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
     start_[tail_[i]]++;
   }
   this->ComputeCumulativeSum(&start_);
 
   // Computes the forward arc permutation.
   // Note that this temporarily alters the start_ vector.
-  std::vector<ArcIndexType> perm(num_arcs_);
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
-    perm[i] = start_[tail_[i]]++;
+  std::vector<ArcIndexType> perm(static_cast<size_t>(num_arcs_));
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
+    perm[static_cast<size_t>(i)] = start_[tail_[i]]++;
   }
 
   // We use "tail_" (which now contains rubbish) to permute "head_" faster.
-  CHECK_EQ(tail_.size(), static_cast<size_t>(num_arcs_));
+  CHECK_EQ(tail_.size(), num_arcs_);
   tail_.swap(head_);
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
-    head_[perm[i]] = tail_[i];
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
+    head_[perm[static_cast<size_t>(i)]] = tail_[i];
   }
 
   if (permutation != nullptr) {
@@ -1453,11 +1511,12 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
   }
 
   // Restore in start_[i] the index of the first arc with tail >= i.
-  DCHECK_GE(num_nodes_, 1);
-  for (ArcIndexType i = num_nodes_ - 1; i > 0; --i) {
-    start_[i] = start_[i - 1];
+  DCHECK_GE(num_nodes_, NodeIndexType(1));
+  for (NodeIndexType i = num_nodes_ - NodeIndexType(1); i > NodeIndexType(0);
+       --i) {
+    start_[i] = start_[i - NodeIndexType(1)];
   }
-  start_[0] = 0;
+  start_[NodeIndexType(0)] = ArcIndexType(0);
 
   // Recompute the correct tail_ vector
   for (const NodeIndexType node : Base::AllNodes()) {
@@ -1543,7 +1602,7 @@ void ReverseArcListGraph<NodeIndexType, ArcIndexType>::AddNode(
     NodeIndexType node) {
   if (node < num_nodes_) return;
   DCHECK(!const_capacities_ || node < node_capacity_);
-  num_nodes_ = node + 1;
+  num_nodes_ = node + NodeIndexType(1);
   start_.resize(num_nodes_, Base::kNilArc);
   reverse_start_.resize(num_nodes_, Base::kNilArc);
 }
@@ -1551,8 +1610,8 @@ void ReverseArcListGraph<NodeIndexType, ArcIndexType>::AddNode(
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcListGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
-  DCHECK_GE(tail, 0);
-  DCHECK_GE(head, 0);
+  DCHECK_GE(tail, NodeIndexType(0));
+  DCHECK_GE(head, NodeIndexType(0));
   AddNode(tail > head ? tail : head);
   head_.grow(tail, head);
   next_.grow(reverse_start_[head], start_[tail]);
@@ -1591,7 +1650,7 @@ class ReverseArcListGraph<NodeIndexType,
   ArcIndexType Index() const { return index_; }
   void Next() {
     DCHECK(Ok());
-    if (index_ < 0) {
+    if (index_ < ArcIndexType(0)) {
       index_ = graph_->next_[index_];
       if (index_ == Base::kNilArc) {
         index_ = graph_->start_[node_];
@@ -1630,8 +1689,9 @@ template <typename NodeIndexType, typename ArcIndexType>
 absl::Span<const NodeIndexType>
 ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::operator[](
     NodeIndexType node) const {
-  return absl::Span<const NodeIndexType>(head_.data() + start_[node],
-                                         DirectArcLimit(node) - start_[node]);
+  return absl::Span<const NodeIndexType>(
+      head_.data() + static_cast<size_t>(start_[node]),
+      static_cast<size_t>(DirectArcLimit(node) - start_[node]));
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1670,14 +1730,14 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::AddNode(
     NodeIndexType node) {
   if (node < num_nodes_) return;
   DCHECK(!const_capacities_ || node < node_capacity_);
-  num_nodes_ = node + 1;
+  num_nodes_ = node + NodeIndexType(1);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
-  DCHECK_GE(tail, 0);
-  DCHECK_GE(head, 0);
+  DCHECK_GE(tail, NodeIndexType(0));
+  DCHECK_GE(head, NodeIndexType(0));
   AddNode(tail > head ? tail : head);
 
   // We inverse head and tail here because it is more convenient this way
@@ -1696,14 +1756,14 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
   node_capacity_ = num_nodes_;
   arc_capacity_ = num_arcs_;
   this->FreezeCapacities();
-  if (num_nodes_ == 0) {
+  if (num_nodes_ == NodeIndexType(0)) {
     return;
   }
   this->BuildStartAndForwardHead(&head_, &start_, permutation);
 
   // Computes incoming degree of each nodes.
-  reverse_start_.assign(num_nodes_ + 1, 0);
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
+  reverse_start_.assign(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
     reverse_start_[head_[i]]++;
   }
   this->ComputeCumulativeSum(&reverse_start_);
@@ -1711,23 +1771,24 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
   // Computes the reverse arcs of the forward arcs.
   // Note that this sort the reverse arcs with the same tail by head.
   opposite_.reserve(num_arcs_);
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
     // TODO(user): the 0 is wasted here, but minor optimisation.
-    opposite_.grow(0, reverse_start_[head_[i]]++ - num_arcs_);
+    opposite_.grow(ArcIndexType(0), reverse_start_[head_[i]]++ - num_arcs_);
   }
 
   // Computes in reverse_start_ the start index of the reverse arcs.
-  DCHECK_GE(num_nodes_, 1);
-  reverse_start_[num_nodes_] = 0;  // Sentinel.
-  for (NodeIndexType i = num_nodes_ - 1; i > 0; --i) {
-    reverse_start_[i] = reverse_start_[i - 1] - num_arcs_;
+  DCHECK_GE(num_nodes_, NodeIndexType(1));
+  reverse_start_[num_nodes_] = ArcIndexType(0);  // Sentinel.
+  for (NodeIndexType i = num_nodes_ - NodeIndexType(1); i > NodeIndexType(0);
+       --i) {
+    reverse_start_[i] = reverse_start_[i - NodeIndexType(1)] - num_arcs_;
   }
-  if (num_nodes_ != 0) {
-    reverse_start_[0] = -num_arcs_;
+  if (num_nodes_ != NodeIndexType(0)) {
+    reverse_start_[NodeIndexType(0)] = -num_arcs_;
   }
 
   // Fill reverse arc information.
-  for (ArcIndexType i = 0; i < num_arcs_; ++i) {
+  for (ArcIndexType i(0); i < num_arcs_; ++i) {
     opposite_[opposite_[i]] = i;
   }
   for (const NodeIndexType node : Base::AllNodes()) {
@@ -1861,7 +1922,7 @@ IntegerRange<NodeIndexType>
 CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
     NodeIndexType node) const {
   DCHECK_LT(node, num_nodes_);
-  return IntegerRange<NodeIndexType>(0, num_nodes_);
+  return IntegerRange<NodeIndexType>(NodeIndexType(0), num_nodes_);
 }
 
 // CompleteBipartiteGraph implementation ---------------------------------------
@@ -1957,7 +2018,7 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcs(
         static_cast<ArcIndexType>(right_nodes_) * node,
         static_cast<ArcIndexType>(right_nodes_) * (node + 1));
   } else {
-    return IntegerRange<ArcIndexType>(0, 0);
+    return IntegerRange<ArcIndexType>(ArcIndexType(0), ArcIndexType(0));
   }
 }
 
@@ -1969,7 +2030,7 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
     return IntegerRange<ArcIndexType>(
         from, static_cast<ArcIndexType>(right_nodes_) * (node + 1));
   } else {
-    return IntegerRange<ArcIndexType>(0, 0);
+    return IntegerRange<ArcIndexType>(ArcIndexType(0), ArcIndexType(0));
   }
 }
 
@@ -1980,7 +2041,7 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
   if (node < left_nodes_) {
     return IntegerRange<NodeIndexType>(left_nodes_, left_nodes_ + right_nodes_);
   } else {
-    return IntegerRange<NodeIndexType>(0, 0);
+    return IntegerRange<NodeIndexType>(ArcIndexType(0), ArcIndexType(0));
   }
 }
 
