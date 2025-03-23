@@ -5536,7 +5536,8 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
 
   // Detect duplicate expressions, and remove impossible values from expressions
   // with the same variable.
-  absl::flat_hash_map<int, std::vector<std::pair<int64_t, int64_t>>> terms;
+  // We use btree_map to have a deterministic order.
+  absl::btree_map<int, std::vector<std::pair<int64_t, int64_t>>> terms;
   std::vector<int64_t> forbidden_values;
   for (const LinearExpressionProto& expr : all_diff.exprs()) {
     if (expr.vars_size() != 1) continue;
@@ -5598,7 +5599,7 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     }
 
     if (all_diff.exprs_size() == union_of_domains.Size()) {
-      absl::flat_hash_map<int64_t, UniqueNonNegativeValue> value_to_index;
+      absl::btree_map<int64_t, UniqueNonNegativeValue> value_to_index;
       for (int i = 0; i < all_diff.exprs_size(); ++i) {
         const LinearExpressionProto& expr = all_diff.exprs(i);
         DCHECK_EQ(expr.vars_size(), 1);
