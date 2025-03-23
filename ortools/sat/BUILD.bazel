@@ -47,6 +47,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:typeid",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",

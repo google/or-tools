@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/btree_mapg.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
@@ -200,7 +201,11 @@ class Model {
   const std::string name_;
 
   // Map of FastTypeId<T> to a "singleton" of type T.
+  #if defined(_MSC_VER)
+  absl::btree_map</*typeid*/ size_t, void*> singletons_;
+  #else
   absl::flat_hash_map</*typeid*/ size_t, void*> singletons_;
+  #endif
 
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;
