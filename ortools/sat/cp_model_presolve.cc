@@ -5454,6 +5454,26 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   return changed;
 }
 
+namespace {
+
+// A container that is valid if only one value was added.
+struct UniqueNonNegativeValue {
+  int index = -1;
+
+  void Add(int new_index) {
+    DCHECK_GE(index, 0);
+    if (index == -1) {
+      index = new_index;
+    } else {
+      index = -2;
+    }
+  }
+
+  bool IsValid() const { return index >= 0; }
+};
+
+}  // namespace
+
 bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
@@ -5495,7 +5515,7 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
 
   if (new_size < size) {
     all_diff.mutable_exprs()->DeleteSubrange(new_size, size - new_size);
-    context_->UpdateRuleStats("all_diff: remove fixed variables");
+    context_->UpdateRuleStats("all_diff: remove fixed expressions");
   }
 
   if (!fixed_values.empty()) {
@@ -5514,8 +5534,58 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     }
   }
 
+  // Detect duplicate expressions, and remove impossible values from expressions
+  // with the same variable.
+  absl::flat_hash_map<int, std::vector<std::pair<int64_t, int64_t>>> terms;
+  std::vector<int64_t> forbidden_values;
+  for (const LinearExpressionProto& expr : all_diff.exprs()) {
+    if (expr.vars_size() != 1) continue;
+    terms[expr.vars(0)].push_back(
+        std::make_pair(expr.coeffs(0), expr.offset()));
+  }
+  for (auto& [var, terms] : terms) {
+    if (terms.size() == 1) continue;
+    std::sort(terms.begin(), terms.end());
+
+    // Check for duplicate expressions.
+    for (int i = 1; i < terms.size(); ++i) {
+      if (terms[i] == terms[i - 1]) {
+        return context_->NotifyThatModelIsUnsat(
+            "all_diff: duplicate expressions");
+      }
+    }
+
+    // Remove impossible values from expressions with the same variable.
+    //   a * var + b == c * var + d
+    //   -> (a - c) * var = d - b
+    // Therefore var cannot take the value (d - b) / (a - c) if integral.
+    forbidden_values.clear();
+    for (int i = 0; i + 1 < terms.size(); ++i) {
+      for (int j = i + 1; j < terms.size(); ++j) {
+        const int64_t coeff = terms[i].first - terms[j].first;
+        if (coeff == 0) continue;
+        const int64_t offset = terms[j].second - terms[i].second;
+        const int64_t value = offset / coeff;
+        if (value * coeff == offset) {
+          forbidden_values.push_back(value);
+        }
+      }
+    }
+    if (!forbidden_values.empty()) {
+      const Domain to_keep = Domain::FromValues(forbidden_values).Complement();
+      bool propagated = false;
+      if (!context_->IntersectDomainWith(var, to_keep, &propagated)) {
+        return true;
+      }
+      if (propagated) {
+        context_->UpdateRuleStats(
+            "all_diff: propagate expressions with the same variable");
+      }
+    }
+  }
+
   // Propagate mandatory values if the all diff is actually a permutation.
-  if (all_diff.exprs_size() >= 2 && all_diff.exprs_size() <= 256) {
+  if (all_diff.exprs_size() >= 2 && all_diff.exprs_size() <= 512) {
     Domain union_of_domains = context_->DomainSuperSetOf(all_diff.exprs(0));
     for (int i = 1; i < all_diff.exprs_size(); ++i) {
       union_of_domains = union_of_domains.UnionWith(
@@ -5528,24 +5598,22 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     }
 
     if (all_diff.exprs_size() == union_of_domains.Size()) {
-      absl::flat_hash_map<int64_t, std::vector<int>> value_to_expr_indices;
+      absl::flat_hash_map<int64_t, UniqueNonNegativeValue> value_to_index;
       for (int i = 0; i < all_diff.exprs_size(); ++i) {
         const LinearExpressionProto& expr = all_diff.exprs(i);
+        DCHECK_EQ(expr.vars_size(), 1);
         for (const int64_t v : context_->DomainOf(expr.vars(0)).Values()) {
-          value_to_expr_indices[AffineExpressionValueAt(expr, v)].push_back(i);
+          value_to_index[AffineExpressionValueAt(expr, v)].Add(i);
         }
       }
 
       bool propagated = false;
-      for (const auto& it : value_to_expr_indices) {
-        if (it.second.size() != 1) continue;
+      for (const auto& [value, unique_index] : value_to_index) {
+        if (!unique_index.IsValid()) continue;
 
-        const LinearExpressionProto& expr = all_diff.exprs(it.second.front());
-        if (!context_->IsFixed(expr)) {
-          if (!context_->IntersectDomainWith(expr, Domain(it.first))) {
-            return true;
-          }
-          propagated = true;
+        const LinearExpressionProto& expr = all_diff.exprs(unique_index.index);
+        if (!context_->IntersectDomainWith(expr, Domain(value), &propagated)) {
+          return true;
         }
       }
 
