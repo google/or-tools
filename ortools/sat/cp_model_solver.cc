@@ -2269,6 +2269,10 @@ std::function<SatParameters(Model*)> NewSatParameters(
   };
 }
 
+void StopSearch(Model* model) {
+  model->GetOrCreate<ModelSharedTimeLimit>()->Stop();
+}
+
 namespace {
 void RegisterSearchStatisticCallback(Model* global_model) {
   global_model->GetOrCreate<SharedResponseManager>()

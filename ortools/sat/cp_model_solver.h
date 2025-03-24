@@ -128,6 +128,9 @@ std::function<SatParameters(Model*)> NewSatParameters(
 std::function<SatParameters(Model*)> NewSatParameters(
     const SatParameters& parameters);
 
+/// Stops the current search.
+void StopSearch(Model* model);
+
 // TODO(user): Clean this up.
 /// Solves a CpModelProto without any processing. Only used for unit tests.
 void LoadAndSolveCpModelForTest(const CpModelProto& model_proto, Model* model);

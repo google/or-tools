@@ -182,10 +182,14 @@ void CheckNumberOfSolutions(int size, int num_solutions) {
   if (absl::GetFlag(FLAGS_use_symmetry)) {
     if (size - 1 < kKnownUniqueSolutions) {
       CHECK_EQ(num_solutions, kNumUniqueSolutions[size - 1]);
+    } else if (!absl::GetFlag(FLAGS_cp_disable_solve)) {
+      CHECK_GT(num_solutions, 0);
     }
   } else {
     if (size - 1 < kKnownSolutions) {
       CHECK_EQ(num_solutions, kNumSolutions[size - 1]);
+    } else if (!absl::GetFlag(FLAGS_cp_disable_solve)) {
+      CHECK_GT(num_solutions, 0);
     }
   }
 }

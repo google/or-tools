@@ -53,10 +53,6 @@ void Solve() {
   parameters.set_enumerate_all_solutions(true);
   model.Add(NewSatParameters(parameters));
 
-  // Create an atomic Boolean that will be periodically checked by the limit.
-  std::atomic<bool> stopped(false);
-  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-
   const int kSolutionLimit = 100;
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
@@ -68,7 +64,7 @@ void Solve() {
     LOG(INFO) << "  start_ins = " << SolutionIntegerValue(r, start_ins);
     num_solutions++;
     if (num_solutions >= kSolutionLimit) {
-      stopped = true;
+      StopSearch(&model);
       LOG(INFO) << "Stop search after " << kSolutionLimit << " solutions.";
     }
   }));

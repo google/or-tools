@@ -5457,19 +5457,26 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
 namespace {
 
 // A container that is valid if only one value was added.
-struct UniqueNonNegativeValue {
-  int index = -1;
-
-  void Add(int new_index) {
-    DCHECK_GE(index, 0);
-    if (index == -1) {
-      index = new_index;
+class UniqueNonNegativeValue {
+ public:
+  void Add(int value) {
+    DCHECK_GE(value, 0);
+    if (value_ == -1) {
+      value_ = value;
     } else {
-      index = -2;
+      value_ = -2;
     }
   }
 
-  bool IsValid() const { return index >= 0; }
+  bool HasUniqueValue() const { return value_ >= 0; }
+
+  int64_t value() const {
+    DCHECK(HasUniqueValue());
+    return value_;
+  }
+
+ private:
+  int value_ = -1;
 };
 
 }  // namespace
@@ -5492,7 +5499,7 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
   if (size == 1) {
-    context_->UpdateRuleStats("all_diff: only one expression");
+    context_->UpdateRuleStats("all_diff: one expression");
     return RemoveConstraint(ct);
   }
 
@@ -5530,7 +5537,7 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
       }
     }
     if (propagated) {
-      context_->UpdateRuleStats("all_diff: propagate fixed values");
+      context_->UpdateRuleStats("all_diff: propagate fixed expressions");
     }
   }
 
@@ -5610,9 +5617,10 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
 
       bool propagated = false;
       for (const auto& [value, unique_index] : value_to_index) {
-        if (!unique_index.IsValid()) continue;
+        if (!unique_index.HasUniqueValue()) continue;
 
-        const LinearExpressionProto& expr = all_diff.exprs(unique_index.index);
+        const LinearExpressionProto& expr =
+            all_diff.exprs(unique_index.value());
         if (!context_->IntersectDomainWith(expr, Domain(value), &propagated)) {
           return true;
         }
@@ -7762,6 +7770,8 @@ void CpModelPresolver::Probe() {
     return (void)context_->NotifyThatModelIsUnsat("during probing");
   }
 
+  time_limit_->ResetHistory();
+
   // Update the presolve context with fixed Boolean variables.
   int num_fixed = 0;
   CHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
@@ -8694,6 +8704,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
   // We reuse the max-clique code from sat.
   Model local_model;
   local_model.GetOrCreate<Trail>()->Resize(num_constraints);
+  local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   graph->Resize(num_constraints);
   for (const std::vector<Literal>& clique : cliques) {
@@ -8730,6 +8741,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
                             new_num_intervals, " intervals).");
     context_->UpdateRuleStats("no_overlap: merged constraints");
   }
+  time_limit_->ResetHistory();
 }
 
 // TODO(user): Should we take into account the exactly_one constraints? note

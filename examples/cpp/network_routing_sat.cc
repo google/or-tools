@@ -403,9 +403,6 @@ class NetworkRoutingSolver {
     cp_model.AddAllDifferent(node_vars);
 
     Model model;
-    // Create an atomic Boolean that will be periodically checked by the limit.
-    std::atomic<bool> stopped(false);
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
 
     model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
       const int path_id = all_paths_[demand_index].size();
@@ -415,7 +412,7 @@ class NetworkRoutingSolver {
         all_paths_[demand_index].back().insert(arc);
       }
       if (all_paths_[demand_index].size() >= max_paths) {
-        stopped = true;
+        StopSearch(&model);
       }
     }));
 
