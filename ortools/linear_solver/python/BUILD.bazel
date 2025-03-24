@@ -24,7 +24,7 @@ pybind_extension(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver/wrappers:model_builder_helper",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
         "@eigen",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],

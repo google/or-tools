@@ -65,7 +65,7 @@ pybind_extension(
     deps = [
         ":knapsack_solver_doc",
         "//ortools/algorithms:knapsack_solver_lib",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

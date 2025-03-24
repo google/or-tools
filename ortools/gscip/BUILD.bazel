@@ -44,8 +44,8 @@ cc_library(
     deps = [
         ":gscip_cc_proto",
         "//ortools/base:status_macros",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -55,9 +55,9 @@ cc_library(
     hdrs = ["legacy_scip_params.h"],
     deps = [
         "//ortools/linear_solver:scip_helper_macros",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "@scip",
     ],
 )
@@ -83,12 +83,12 @@ cc_library(
         "//ortools/linear_solver:scip_helper_macros",
         "//ortools/port:proto_utils",
         "//ortools/util:status_macros",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@scip",
     ],
 )
@@ -100,7 +100,7 @@ cc_library(
     deps = [
         ":gscip",
         "//ortools/base:status_macros",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
         "@scip",
     ],
 )
@@ -112,8 +112,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/linear_solver:scip_helper_macros",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@scip",
     ],
 )
@@ -133,11 +133,11 @@ cc_library(
         ":gscip",
         ":gscip_callback_result",
         "//ortools/linear_solver:scip_helper_macros",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
         "@scip",
     ],
 )
