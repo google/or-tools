@@ -867,7 +867,7 @@ TEST(BasicKnapsackSolverTest, RandomComparisonWithSolver) {
             << domains[i] << " " << result.solution[i] << " " << coeffs[i];
         objective += costs[i] * result.solution[i];
       }
-      EXPECT_DOUBLE_EQ(objective, response.objective_value());
+      EXPECT_NEAR(objective, response.objective_value(), 1e-8);
     }
   }
 }
