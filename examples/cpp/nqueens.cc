@@ -29,6 +29,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
 ABSL_FLAG(bool, print, false, "If true, print one of the solution.");
@@ -39,7 +40,6 @@ ABSL_FLAG(
     int, size, 0,
     "Size of the problem. If equal to 0, will test several increasing sizes.");
 ABSL_FLAG(bool, use_symmetry, false, "Use Symmetry Breaking methods");
-ABSL_DECLARE_FLAG(bool, cp_disable_solve);
 
 static const int kNumSolutions[] = {
     1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596, 2279184};
@@ -182,10 +182,14 @@ void CheckNumberOfSolutions(int size, int num_solutions) {
   if (absl::GetFlag(FLAGS_use_symmetry)) {
     if (size - 1 < kKnownUniqueSolutions) {
       CHECK_EQ(num_solutions, kNumUniqueSolutions[size - 1]);
+    } else if (!absl::GetFlag(FLAGS_cp_disable_solve)) {
+      CHECK_GT(num_solutions, 0);
     }
   } else {
     if (size - 1 < kKnownSolutions) {
       CHECK_EQ(num_solutions, kNumSolutions[size - 1]);
+    } else if (!absl::GetFlag(FLAGS_cp_disable_solve)) {
+      CHECK_GT(num_solutions, 0);
     }
   }
 }
