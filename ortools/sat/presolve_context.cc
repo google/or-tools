@@ -2017,22 +2017,15 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     objective_offset_ /= static_cast<double>(gcd);
     objective_scaling_factor_ *= static_cast<double>(gcd);
 
-    // We update the offset accordingly.
-    absl::int128 offset = absl::int128(objective_integer_before_offset_) *
-                              absl::int128(objective_integer_scaling_factor_) +
-                          absl::int128(objective_integer_after_offset_);
-
-    if (objective_domain_.IsFixed()) {
-      // To avoid overflow in (fixed_value * gcd + before_offset) * factor +
-      // after_offset because the objective is constant (and should fit on an
-      // int64_t), we can rewrite it as fixed_value + offset.
-      objective_integer_scaling_factor_ = 1;
-      offset +=
-          absl::int128(gcd - 1) * absl::int128(objective_domain_.FixedValue());
-    } else {
-      objective_integer_scaling_factor_ *= gcd;
-    }
-
+    // We update the integer offsets accordingly.
+    //
+    // We compute the old "a * objective_scaling_factor_ + b" offset and rewrite
+    // it in term of the new "objective_scaling_factor_".
+    const absl::int128 offset =
+        absl::int128(objective_integer_before_offset_) *
+            absl::int128(objective_integer_scaling_factor_) +
+        absl::int128(objective_integer_after_offset_);
+    objective_integer_scaling_factor_ *= gcd;
     objective_integer_before_offset_ = static_cast<int64_t>(
         offset / absl::int128(objective_integer_scaling_factor_));
     objective_integer_after_offset_ = static_cast<int64_t>(

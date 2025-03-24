@@ -71,12 +71,12 @@ func SolveCpModelWithParameters(input *cmpb.CpModelProto, params *sppb.SatParame
 }
 
 // SolveCpModelInterruptibleWithParameters solves a CP Model with the given input proto
-// and parameters and returns a CPSolverResponse. The solve can be interrupted by triggering
-// the `interrupt`.
+// and parameters and returns a CPSolverResponse. The solve can be interrupted by calling
+// the `stopSolve`.
 func SolveCpModelInterruptibleWithParameters(input *cmpb.CpModelProto, params *sppb.SatParameters, interrupt <-chan struct{}) (*cmpb.CpSolverResponse, error) {
-	// Create the atomic bool for interrupting solves.
-	limitReached := newAtomicBoolWrapper()
-	defer limitReached.delete()
+	// Create the environment for interrupting solves.
+	env := newEnvWrapper()
+	defer env.delete()
 
 	// Transform `input` into bytes.
 	bReq, err := proto.Marshal(input)
@@ -100,25 +100,24 @@ func SolveCpModelInterruptibleWithParameters(input *cmpb.CpModelProto, params *s
 	go func() {
 		select {
 		case <-interrupt:
-			limitReached.trigger()
+			env.stopSolve()
 		case <-solveDone:
 		}
 	}()
 
-	// We want to make sure we trigger the atomic Bool before we call the solver
-	// if the input `interrupt` is already closed. We can't trust the
+	// We want to make sure we stop the search before we call the solver. We can't trust the
 	// scheduler to execute the previous goroutine immediately, even calling
 	// `runtime.Gosched()` (the unit test failed 3 out of 1000 times when doing
 	// so).
 	select {
 	case <-interrupt:
-		limitReached.trigger()
+		env.stopSolve()
 	default:
 	}
 
 	var cRes unsafe.Pointer
 	var cResLen C.int
-	C.SolveCpInterruptible(limitReached.ptr, cReq, C.int(len(bReq)), cParams, C.int(len(bParams)), &cRes, &cResLen)
+	C.SolveCpInterruptible(env.ptr, cReq, C.int(len(bReq)), cParams, C.int(len(bParams)), &cRes, &cResLen)
 	defer C.free(cRes)
 
 	// Transform `cRes` into the Go response proto.
@@ -131,29 +130,29 @@ func SolveCpModelInterruptibleWithParameters(input *cmpb.CpModelProto, params *s
 	return result, nil
 }
 
-// atomicBoolWrapper keeps a pointer on a C++ AtomicBool instance.
-type atomicBoolWrapper struct {
+// envWrapper keeps a pointer on a C++ Model instance.
+type envWrapper struct {
 	mutex sync.Mutex
 	ptr   unsafe.Pointer // Guarded by mutex.
 }
 
-// newAtomicBoolWrapper returns a new instance of a C++ AtomicBool.
+// newEnvWrapper returns a new instance of a C++ Model.
 //
 // The returned object must be destroyed with delete() for the C++ object not to
 // leak.
 //
-// This object is thread-safe: delete() and trigger() can be called
+// This object is thread-safe: delete() and stopSolve() can be called
 // concurrently.
-func newAtomicBoolWrapper() *atomicBoolWrapper {
-	return &atomicBoolWrapper{
-		ptr: C.SolveCpNewAtomicBool(),
+func newEnvWrapper() *envWrapper {
+	return &envWrapper{
+		ptr: C.SolveCpNewEnv(),
 	}
 }
 
-// trigger triggers the C++ SolveCpStopSolve method with the atomic bool.
+// stopSolve triggers the C++ SolveCpStopSolve method with the environment.
 //
-// If the atomic bool has been deleted this has no effect.
-func (intr *atomicBoolWrapper) trigger() {
+// If the environment has been deleted this has no effect.
+func (intr *envWrapper) stopSolve() {
 	intr.mutex.Lock()
 	defer intr.mutex.Unlock()
 	if uintptr(intr.ptr) != 0 {
@@ -164,12 +163,12 @@ func (intr *atomicBoolWrapper) trigger() {
 // delete deletes the underlying C++ object.
 //
 // Calling it multiple times has not effect.
-func (intr *atomicBoolWrapper) delete() {
+func (intr *envWrapper) delete() {
 	intr.mutex.Lock()
 	defer intr.mutex.Unlock()
 	// We don't test that intr.ptr is not nullptr here since C++ `delete` can be
 	// called with nullptr.
-	C.SolveCpDestroyAtomicBool(intr.ptr)
+	C.SolveCpDestroyEnv(intr.ptr)
 	intr.ptr = unsafe.Pointer(uintptr(0))
 }
 

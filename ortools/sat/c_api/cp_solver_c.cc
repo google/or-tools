@@ -13,7 +13,6 @@
 
 #include "ortools/sat/c_api/cp_solver_c.h"
 
-#include <atomic>
 #include <string>
 
 #include "absl/log/check.h"
@@ -22,19 +21,15 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
 namespace {
 
-CpSolverResponse solveWithParameters(std::atomic<bool>* const limit_reached,
-                                     const CpModelProto& proto,
+CpSolverResponse solveWithParameters(Model* model, const CpModelProto& proto,
                                      const SatParameters& params) {
-  Model model;
-  model.Add(NewSatParameters(params));
-  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(limit_reached);
-  return SolveCpModel(proto, &model);
+  model->Add(NewSatParameters(params));
+  return SolveCpModel(proto, model);
 }
 
 }  // namespace
@@ -44,31 +39,28 @@ extern "C" {
 void SolveCpModelWithParameters(const void* creq, int creq_len,
                                 const void* cparams, int cparams_len,
                                 void** cres, int* cres_len) {
-  return SolveCpInterruptible(nullptr, creq, creq_len, cparams, cparams_len,
-                              cres, cres_len);
+  Model model;
+  SolveCpInterruptible(&model, creq, creq_len, cparams, cparams_len, cres,
+                       cres_len);
 }
 
-void* SolveCpNewAtomicBool() { return new std::atomic<bool>(false); }
+void* SolveCpNewEnv() { return new Model(); }
 
-void SolveCpDestroyAtomicBool(void* const atomic_bool) {
-  delete static_cast<std::atomic<bool>*>(atomic_bool);
-}
+void SolveCpDestroyEnv(void* const cenv) { delete static_cast<Model*>(cenv); }
 
-void SolveCpStopSolve(void* const atomic_bool) {
-  *static_cast<std::atomic<bool>*>(atomic_bool) = true;
-}
+void SolveCpStopSolve(void* cenv) { StopSearch(static_cast<Model*>(cenv)); }
 
-void SolveCpInterruptible(void* const limit_reached, const void* creq,
-                          int creq_len, const void* cparams, int cparams_len,
-                          void** cres, int* cres_len) {
+void SolveCpInterruptible(void* const cenv, const void* creq, int creq_len,
+                          const void* cparams, int cparams_len, void** cres,
+                          int* cres_len) {
   CpModelProto req;
   CHECK(req.ParseFromArray(creq, creq_len));
 
   SatParameters params;
   CHECK(params.ParseFromArray(cparams, cparams_len));
 
-  CpSolverResponse res = solveWithParameters(
-      static_cast<std::atomic<bool>*>(limit_reached), req, params);
+  CpSolverResponse res =
+      solveWithParameters(static_cast<Model*>(cenv), req, params);
 
   std::string res_str;
   CHECK(res.SerializeToString(&res_str));

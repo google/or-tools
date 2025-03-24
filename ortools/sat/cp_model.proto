@@ -827,10 +827,12 @@ message CpSolverResponse {
 
   // Advanced usage.
   //
-  // A lower bound on the inner integer expression of the objective. This is
-  // either a bound on the expression in the returned integer_objective or on
-  // the integer expression of the original objective if the problem already has
-  // an integer objective.
+  // A lower bound on the integer expression of the objective. This is either a
+  // bound on the expression in the returned integer_objective or on the integer
+  // expression of the original objective if the problem already has an integer
+  // objective.
+  //
+  // TODO(user): This should be renamed integer_objective_lower_bound.
   int64 inner_objective_lower_bound = 29;
 
   // Some statistics about the solve.
