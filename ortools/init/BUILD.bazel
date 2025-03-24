@@ -22,9 +22,9 @@ cc_library(
         "//ortools/gurobi:environment",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:cp_model_solver_helpers",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:globals",
-        "@com_google_absl//absl/log:initialize",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/log:initialize",
     ],
 )

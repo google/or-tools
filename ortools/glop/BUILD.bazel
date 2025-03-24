@@ -60,8 +60,8 @@ cc_library(
         "//ortools/lp_data:base",
         "//ortools/util:bitset",
         "//ortools/util:stats",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
 
@@ -95,9 +95,9 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/log:vlog_is_on",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -165,7 +165,7 @@ cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:sparse",
         "//ortools/util:stats",
-        "@com_google_absl//absl/container:inlined_vector",
+        "@abseil-cpp//absl/container:inlined_vector",
     ],
 )
 
@@ -312,7 +312,7 @@ cc_library(
         "//ortools/lp_data:scattered_vector",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
-        "@com_google_absl//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
 
@@ -359,8 +359,8 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
 
@@ -383,7 +383,7 @@ cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:matrix_scaler",
         "//ortools/lp_data:matrix_utils",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -408,10 +408,10 @@ cc_library(
         "//ortools/util:fp_utils",
         "//ortools/util:logging",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/log:vlog_is_on",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -421,6 +421,6 @@ cc_library(
     hdrs = ["parameters_validation.h"],
     deps = [
         ":parameters_cc_proto",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )

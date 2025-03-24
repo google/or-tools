@@ -32,7 +32,7 @@ cc_library(
     srcs = ["simple_graph.cc"],
     hdrs = ["simple_graph.h"],
     deps = [
-        "@com_google_absl//absl/hash",
+        "@abseil-cpp//absl/hash",
     ],
 )
 
@@ -42,7 +42,7 @@ cc_test(
     srcs = ["simple_graph_test.cc"],
     deps = [
         ":simple_graph",
-        "@com_google_absl//absl/hash:hash_testing",
+        "@abseil-cpp//absl/hash:hash_testing",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -59,7 +59,7 @@ cc_library(
         "//ortools/base:path",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
         "@com_google_re2//:re2",
     ],
 )
@@ -92,7 +92,7 @@ cc_library(
         "//ortools/base:path",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -107,7 +107,7 @@ cc_test(
     deps = [
         ":lilim_parser",
         "//ortools/base:path",
-        "@com_google_absl//absl/flags:flag",
+        "@abseil-cpp//absl/flags:flag",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -148,10 +148,10 @@ cc_test(
         ":carp_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/log:scoped_mock_log",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/log:scoped_mock_log",
     ],
 )
 
@@ -165,8 +165,8 @@ cc_library(
         "//ortools/base:linked_hash_map",
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/hash",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/hash",
     ],
 )
 
@@ -182,8 +182,8 @@ cc_test(
         ":nearp_parser",
         "//ortools/base:file",
         "//ortools/base:path",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/hash:hash_testing",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/hash:hash_testing",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -202,7 +202,7 @@ cc_library(
         "//ortools/base:path",
         "//ortools/base:strtoint",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -237,8 +237,8 @@ cc_library(
         "//ortools/base:strtoint",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
         "@com_google_re2//:re2",
     ],
 )
@@ -263,9 +263,9 @@ cc_test(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:memfile",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -284,7 +284,7 @@ cc_library(
         "//ortools/base:strtoint",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -312,9 +312,9 @@ cc_library(
         ":simple_graph",
         "//ortools/base",
         "//ortools/base:file",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
     ],
 )
 

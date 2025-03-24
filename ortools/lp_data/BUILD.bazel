@@ -65,7 +65,7 @@ cc_library(
         ":base",
         "//ortools/base",
         "//ortools/util:return_macros",
-        "@com_google_absl//absl/random",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -92,8 +92,8 @@ cc_library(
         "//ortools/base",
         "//ortools/graph:iterators",
         "//ortools/util:return_macros",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -139,7 +139,7 @@ cc_library(
         "//ortools/util:fp_utils",
         "//ortools/util:return_macros",
         "//ortools/util:strong_integers",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -190,9 +190,9 @@ cc_library(
         "//ortools/glop:parameters_cc_proto",
         "//ortools/util:fp_utils",
         "//ortools/util:strong_integers",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -249,8 +249,8 @@ cc_library(
         "//ortools/base:case",
         "//ortools/base:map_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@com_google_re2//:re2",
     ],
 )
@@ -275,8 +275,8 @@ cc_library(
         ":base",
         "//ortools/base",
         "//ortools/util:rational_approximation",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -302,13 +302,13 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:status_macros",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -327,9 +327,9 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -362,7 +362,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/glop:parameters_cc_proto",
-        "@com_google_absl//absl/synchronization",
+        "@abseil-cpp//absl/synchronization",
     ],
 )
 
@@ -378,9 +378,9 @@ cc_library(
         "//ortools/base:numbers",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/util:file_util",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )

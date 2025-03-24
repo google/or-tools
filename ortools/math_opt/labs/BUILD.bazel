@@ -19,8 +19,8 @@ cc_library(
     deps = [
         ":linear_expr_util",
         "//ortools/math_opt/cpp:math_opt",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -31,7 +31,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/math_opt/cpp:math_opt",
-        "@com_google_absl//absl/algorithm:container",
+        "@abseil-cpp//absl/algorithm:container",
     ],
 )
 
@@ -45,11 +45,11 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/util:fp_roundtrip_conv",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -64,10 +64,10 @@ cc_library(
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/validators:model_validator",
         "//ortools/util:fp_roundtrip_conv",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -81,8 +81,8 @@ cc_library(
     deps = [
         "//ortools/base:map_util",
         "//ortools/math_opt/cpp:math_opt",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,
 )

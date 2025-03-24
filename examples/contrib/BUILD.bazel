@@ -8,9 +8,9 @@ cc_binary(
         "//ortools/base:path",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )

@@ -35,7 +35,7 @@ def code_sample_cc(name):
             "//ortools/graph:max_flow",
             "//ortools/graph:min_cost_flow",
             "//ortools/graph:rooted_tree",
-            "@com_google_absl//absl/random",
+            "@abseil-cpp//absl/random",
         ],
     )
 
@@ -57,7 +57,7 @@ def code_sample_cc(name):
             "//ortools/graph:max_flow",
             "//ortools/graph:min_cost_flow",
             "//ortools/graph:rooted_tree",
-            "@com_google_absl//absl/random",
+            "@abseil-cpp//absl/random",
         ],
     )
 

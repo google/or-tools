@@ -40,7 +40,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:path",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -71,7 +71,7 @@ cc_library(
         "//ortools/base:file",
         "//ortools/base:path",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

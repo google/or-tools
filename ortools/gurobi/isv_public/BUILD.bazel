@@ -20,9 +20,9 @@ cc_library(
     deps = [
         "//ortools/gurobi:environment",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )

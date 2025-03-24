@@ -27,7 +27,7 @@ def code_sample_cc(name):
             "//ortools/sat:cp_model",
             "//ortools/sat:cp_model_solver",
             "//ortools/util:sorted_interval_list",
-            "@com_google_absl//absl/types:span",
+            "@abseil-cpp//absl/types:span",
         ],
     )
 
@@ -40,7 +40,7 @@ def code_sample_cc(name):
             "//ortools/sat:cp_model",
             "//ortools/sat:cp_model_solver",
             "//ortools/util:sorted_interval_list",
-            "@com_google_absl//absl/types:span",
+            "@abseil-cpp//absl/types:span",
         ],
     )
 

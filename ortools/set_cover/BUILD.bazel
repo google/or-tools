@@ -58,8 +58,8 @@ cc_library(
         ":set_cover_model",
         "//ortools/algorithms:adjustable_k_ary_heap",
         "//ortools/base:threadpool",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/synchronization",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/synchronization",
     ],
 )
 
@@ -73,14 +73,14 @@ cc_library(
         "//ortools/algorithms:radix_sort",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:bits",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -94,9 +94,9 @@ cc_library(
         ":set_cover_model",
         "//ortools/base",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -110,12 +110,12 @@ cc_library(
         ":set_cover_model",
         "//ortools/algorithms:adjustable_k_ary_heap",
         "//ortools/base",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:bits",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -129,9 +129,9 @@ cc_library(
         ":set_cover_model",
         "//ortools/linear_solver",
         "//ortools/lp_data:base",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -145,11 +145,11 @@ cc_library(
         ":set_cover_model",
         "//ortools/base:file",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/strings:string_view",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -163,8 +163,8 @@ cc_library(
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -176,7 +176,7 @@ cc_test(
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -191,12 +191,12 @@ cc_binary(
         ":set_cover_reader",
         "//ortools/base",
         "//ortools/base:timer",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -214,9 +214,9 @@ cc_test(
         ":set_cover_model",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_text_proto",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
         "@com_google_benchmark//:benchmark",
     ],
 )
@@ -248,8 +248,8 @@ cc_library(
         ":set_cover_model",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -271,8 +271,8 @@ cc_library(
         ":capacity_model",
         ":set_cover_model",
         "//ortools/util:saturated_arithmetic",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 

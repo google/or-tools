@@ -28,8 +28,8 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/graph:topologicalsorter",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -45,7 +45,7 @@ cc_library(
         "//ortools/base:file",
         "//ortools/linear_solver",
         "//ortools/packing:vector_bin_packing_cc_proto",
-        "@com_google_absl//absl/flags:flag",
+        "@abseil-cpp//absl/flags:flag",
     ],
 )
 
@@ -72,7 +72,7 @@ cc_library(
         ":vector_bin_packing_cc_proto",
         "//ortools/base",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -88,9 +88,9 @@ cc_binary(
         "//ortools/packing:arc_flow_solver",
         "//ortools/packing:vector_bin_packing_cc_proto",
         "//ortools/packing:vector_bin_packing_parser",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -109,9 +109,9 @@ cc_test(
         "//ortools/packing:arc_flow_solver",
         "//ortools/packing:vector_bin_packing_cc_proto",
         "//ortools/packing:vector_bin_packing_parser",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -138,6 +138,6 @@ cc_library(
         ":multiple_dimensions_bin_packing_cc_proto",
         "//ortools/base",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )

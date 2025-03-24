@@ -78,7 +78,7 @@ cc_binary(
         "//ortools/routing",
         "//ortools/routing:enums_cc_proto",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -99,7 +99,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/routing",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

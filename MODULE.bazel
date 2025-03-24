@@ -13,7 +13,7 @@ module(
 )
 
 # see https://registry.bazel.build/
-bazel_dep(name = "abseil-cpp", version = "20250127.0", repo_name = "com_google_absl")
+bazel_dep(name = "abseil-cpp", version = "20250127.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "contrib_rules_jvm", version = "0.28.0")
 bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.1")
@@ -47,6 +47,14 @@ git_override(
     patch_strip = 1,
     patches = ["//patches:pybind11_abseil.patch"],
     remote = "https://github.com/pybind/pybind11_abseil.git",
+)
+
+git_override(
+    module_name = "pybind11_protobuf",
+    commit = "84653a591aea5df482dc2bde42c19efafbd53a57",
+    patch_strip = 1,
+    patches = ["//patches:pybind11_protobuf.patch"],
+    remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
 SUPPORTED_PYTHON_VERSIONS = [
