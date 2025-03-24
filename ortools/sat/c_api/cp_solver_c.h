@@ -27,7 +27,7 @@ void SolveCpModelWithParameters(const void* creq, int creq_len,
 
 void* SolveCpNewEnv();
 void SolveCpDestroyEnv(void* cenv);
-void SolveCpStopSolve(void* cenv);
+void SolveCpStopSearch(void* cenv);
 // Allows for interruptible solves. Solves can be interrupted by calling
 // `SolveCpStopSolve` with the `cenv` argument.
 void SolveCpInterruptible(void* cenv, const void* creq, int creq_len,

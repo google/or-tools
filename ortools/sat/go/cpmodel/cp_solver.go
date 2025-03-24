@@ -72,7 +72,7 @@ func SolveCpModelWithParameters(input *cmpb.CpModelProto, params *sppb.SatParame
 
 // SolveCpModelInterruptibleWithParameters solves a CP Model with the given input proto
 // and parameters and returns a CPSolverResponse. The solve can be interrupted by calling
-// the `stopSolve`.
+// the `stopSearch`.
 func SolveCpModelInterruptibleWithParameters(input *cmpb.CpModelProto, params *sppb.SatParameters, interrupt <-chan struct{}) (*cmpb.CpSolverResponse, error) {
 	// Create the environment for interrupting solves.
 	env := newEnvWrapper()
@@ -100,7 +100,7 @@ func SolveCpModelInterruptibleWithParameters(input *cmpb.CpModelProto, params *s
 	go func() {
 		select {
 		case <-interrupt:
-			env.stopSolve()
+			env.stopSearch()
 		case <-solveDone:
 		}
 	}()
@@ -111,7 +111,7 @@ func SolveCpModelInterruptibleWithParameters(input *cmpb.CpModelProto, params *s
 	// so).
 	select {
 	case <-interrupt:
-		env.stopSolve()
+		env.stopSearch()
 	default:
 	}
 
@@ -141,7 +141,7 @@ type envWrapper struct {
 // The returned object must be destroyed with delete() for the C++ object not to
 // leak.
 //
-// This object is thread-safe: delete() and stopSolve() can be called
+// This object is thread-safe: delete() and stopSearch() can be called
 // concurrently.
 func newEnvWrapper() *envWrapper {
 	return &envWrapper{
@@ -149,14 +149,14 @@ func newEnvWrapper() *envWrapper {
 	}
 }
 
-// stopSolve triggers the C++ SolveCpStopSolve method with the environment.
+// stopSearch triggers the C++ SolveCpStopSearch method with the environment.
 //
 // If the environment has been deleted this has no effect.
-func (intr *envWrapper) stopSolve() {
+func (intr *envWrapper) stopSearch() {
 	intr.mutex.Lock()
 	defer intr.mutex.Unlock()
 	if uintptr(intr.ptr) != 0 {
-		C.SolveCpStopSolve(intr.ptr)
+		C.SolveCpStopSearch(intr.ptr)
 	}
 }
 

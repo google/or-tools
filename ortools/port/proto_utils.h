@@ -16,15 +16,16 @@
 
 #include <string>
 
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/util/parse_proto.h"
-#endif  // !defined(__PORTABLE_PLATFORM__)
-
+#include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/text_format.h"
+
+#if !defined(__PORTABLE_PLATFORM__)
+#include "ortools/util/parse_proto.h"
+#endif  // !defined(__PORTABLE_PLATFORM__)
 
 namespace operations_research {
 
@@ -33,7 +34,10 @@ std::string ProtobufDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
   return std::string(message.GetTypeName());
 #else   // defined(__PORTABLE_PLATFORM__)
-  return message.DebugString();
+  std::string output;
+  google::protobuf::TextFormat::PrintToString(message, &output);
+  absl::StripTrailingAsciiWhitespace(&output);
+  return output;
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
@@ -42,7 +46,12 @@ std::string ProtobufShortDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
   return std::string(message.GetTypeName());
 #else   // defined(__PORTABLE_PLATFORM__)
-  return message.ShortDebugString();
+  std::string output;
+  google::protobuf::TextFormat::Printer printer;
+  printer.SetSingleLineMode(true);
+  printer.PrintToString(message, &output);
+  absl::StripTrailingAsciiWhitespace(&output);
+  return output;
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
