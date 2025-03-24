@@ -26,7 +26,6 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -156,7 +155,7 @@ operations_research::sat::CpSolverResponse SolveWrapper::Solve(
 }
 
 void SolveWrapper::StopSearch() {
-  model_.GetOrCreate<ModelSharedTimeLimit>()->Stop();
+  ::operations_research::sat::StopSearch(&model_);
 }
 
 std::string CpSatHelper::ModelStats(
