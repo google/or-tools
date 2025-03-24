@@ -210,8 +210,8 @@ if(BUILD_PYTHON)
     FetchContent_Declare(
       pybind11_protobuf
       GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
-      GIT_TAG "84653a591aea5df482dc2bde42c19efafbd53a57" # 2024/06/28
-      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
+      GIT_TAG "f02a2b7653bc50eb5119d125842a3870db95d251" # 2025/02/10
+      #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
       #GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(pybind11_protobuf)
