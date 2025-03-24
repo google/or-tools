@@ -23,9 +23,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/btree_map.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/typeid.h"
 
@@ -112,15 +110,15 @@ class Model {
   template <typename T>
   T* GetOrCreate() {
     const size_t type_id = gtl::FastTypeId<T>();
-    auto find = singletons_.find(type_id);
-    if (find != singletons_.end()) {
-      return static_cast<T*>(find->second);
+    void* find = GetSingletonOrNullptr(type_id);
+    if (find != nullptr) {
+      return static_cast<T*>(find);
     }
 
     // New element.
     // TODO(user): directly store std::unique_ptr<> in singletons_?
     T* new_t = MyNew<T>(0);
-    singletons_[type_id] = new_t;
+    AddNewSingleton(new_t, type_id);
     TakeOwnership(new_t);
     return new_t;
   }
@@ -132,9 +130,7 @@ class Model {
    */
   template <typename T>
   const T* Get() const {
-    const auto& it = singletons_.find(gtl::FastTypeId<T>());
-    return it != singletons_.end() ? static_cast<const T*>(it->second)
-                                   : nullptr;
+    return static_cast<const T*>(GetSingletonOrNullptr(gtl::FastTypeId<T>()));
   }
 
   /**
@@ -142,8 +138,7 @@ class Model {
    */
   template <typename T>
   T* Mutable() const {
-    const auto& it = singletons_.find(gtl::FastTypeId<T>());
-    return it != singletons_.end() ? static_cast<T*>(it->second) : nullptr;
+    return static_cast<T*>(GetSingletonOrNullptr(gtl::FastTypeId<T>()));
   }
 
   /**
@@ -176,9 +171,7 @@ class Model {
    */
   template <typename T>
   void Register(T* non_owned_class) {
-    const size_t type_id = gtl::FastTypeId<T>();
-    CHECK(!singletons_.contains(type_id));
-    singletons_[type_id] = non_owned_class;
+    AddNewSingleton(non_owned_class, gtl::FastTypeId<T>());
   }
 
   const std::string& Name() const { return name_; }
@@ -198,14 +191,13 @@ class Model {
     return new T();
   }
 
+  void AddNewSingleton(void* new_element, size_t type_id);
+  void* GetSingletonOrNullptr(size_t type_id) const;
+
   const std::string name_;
 
   // Map of FastTypeId<T> to a "singleton" of type T.
-  #if defined(_MSC_VER)
-  absl::btree_map</*typeid*/ size_t, void*> singletons_;
-  #else
   absl::flat_hash_map</*typeid*/ size_t, void*> singletons_;
-  #endif
 
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;
