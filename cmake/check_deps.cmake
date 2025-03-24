@@ -109,11 +109,6 @@ if(USE_SCIP)
   set(SCIP_DEPS SCIP::libscip)
 endif()
 
-# Check optional Dependencies
-if(USE_CPLEX AND NOT TARGET CPLEX::CPLEX)
-  message(FATAL_ERROR "Target CPLEX::CPLEX not available.")
-endif()
-
 # CXX Test
 if(BUILD_TESTING)
   if(NOT TARGET GTest::gtest_main)
