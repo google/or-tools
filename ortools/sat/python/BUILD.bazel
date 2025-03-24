@@ -30,11 +30,11 @@ cc_library(
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:sorted_interval_list",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/container:fixed_array",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:fixed_array",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -49,7 +49,7 @@ pybind_extension(
         "//ortools/sat:cp_model_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:swig_helper",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )

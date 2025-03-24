@@ -65,11 +65,11 @@ cc_library(
     hdrs = ["binary_search.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/functional:function_ref",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:int128",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -80,12 +80,12 @@ cc_test(
         ":binary_search",
         "//ortools/base:gmock_main",
         "//ortools/base:murmur",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/numeric:int128",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
         "@com_google_benchmark//:benchmark",
     ],
 )
@@ -95,12 +95,12 @@ cc_library(
     srcs = [],
     hdrs = ["radix_sort.h"],
     deps = [
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:bits",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -119,14 +119,14 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:mathutil",
         "//ortools/base:timer",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:bit_gen_ref",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
         "@com_google_benchmark//:benchmark",
     ],
 )
@@ -136,11 +136,11 @@ cc_library(
     srcs = ["duplicate_remover.cc"],
     hdrs = ["duplicate_remover.h"],
     deps = [
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:bits",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -152,9 +152,9 @@ cc_library(
     hdrs = ["hungarian.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -166,17 +166,17 @@ cc_test(
         ":hungarian",
         "//ortools/base:gmock_main",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
 cc_library(
     name = "adjustable_k_ary_heap",
     hdrs = ["adjustable_k_ary_heap.h"],
-    deps = ["@com_google_absl//absl/log:check"],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_test(
@@ -197,10 +197,10 @@ cc_test(
     deps = [
         ":adjustable_k_ary_heap",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -216,9 +216,9 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
         "//ortools/base:stl_util",
         # We don't link any underlying solver to let the linear_solver_knapsack
         # decide what solvers to include.
@@ -239,7 +239,7 @@ cc_test(
         ":knapsack_solver_lib",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/base:core_headers",
+        "@abseil-cpp//absl/base:core_headers",
     ],
 )
 
@@ -271,9 +271,9 @@ cc_library(
     hdrs = ["dynamic_partition.h"],
     deps = [
         "//ortools/base:murmur",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -284,10 +284,10 @@ cc_test(
         ":dynamic_partition",
         "//ortools/base:gmock_main",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:bit_gen_ref",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -297,8 +297,8 @@ cc_library(
     hdrs = ["sparse_permutation.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -308,8 +308,8 @@ cc_test(
     deps = [
         ":sparse_permutation",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/random:distributions",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/random:distributions",
     ],
 )
 
@@ -320,7 +320,7 @@ cc_library(
     deps = [
         ":sparse_permutation",
         "//ortools/base",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -348,19 +348,19 @@ cc_library(
         "//ortools/graph:util",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:int128",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -380,13 +380,13 @@ cc_test(
         "//ortools/graph:io",
         "//ortools/graph:random_graph",
         "//ortools/graph:util",
-        "@com_google_absl//absl/numeric:bits",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -394,7 +394,7 @@ cc_library(
     name = "binary_indexed_tree",
     hdrs = ["binary_indexed_tree.h"],
     deps = [
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -414,13 +414,13 @@ cc_library(
     deps = [
         ":binary_search",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:int128",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -434,11 +434,11 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:mathutil",
         "//ortools/util:flat_matrix",
-        "@com_google_absl//absl/numeric:int128",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@com_google_benchmark//:benchmark",
     ],
 )

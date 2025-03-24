@@ -29,9 +29,9 @@ cc_library(
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:solver_interface",
         "//ortools/port:proto_utils",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
         "@scip",
     ],
 )

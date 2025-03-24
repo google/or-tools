@@ -30,7 +30,7 @@ cc_library(
     hdrs = ["glpk_formatters.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
         "@glpk",
     ],
 )
