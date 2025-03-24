@@ -110,15 +110,15 @@ class Model {
   template <typename T>
   T* GetOrCreate() {
     const size_t type_id = gtl::FastTypeId<T>();
-    void* find = GetSingletonOrNullptr(type_id);
-    if (find != nullptr) {
-      return static_cast<T*>(find);
+    auto find = singletons_.find(type_id);
+    if (find != singletons_.end()) {
+      return static_cast<T*>(find->second);
     }
 
     // New element.
     // TODO(user): directly store std::unique_ptr<> in singletons_?
     T* new_t = MyNew<T>(0);
-    AddNewSingleton(new_t, type_id);
+    singletons_[type_id] = new_t;
     TakeOwnership(new_t);
     return new_t;
   }
@@ -130,7 +130,9 @@ class Model {
    */
   template <typename T>
   const T* Get() const {
-    return static_cast<const T*>(GetSingletonOrNullptr(gtl::FastTypeId<T>()));
+    const auto& it = singletons_.find(gtl::FastTypeId<T>());
+    return it != singletons_.end() ? static_cast<const T*>(it->second)
+                                   : nullptr;
   }
 
   /**
@@ -138,7 +140,8 @@ class Model {
    */
   template <typename T>
   T* Mutable() const {
-    return static_cast<T*>(GetSingletonOrNullptr(gtl::FastTypeId<T>()));
+    const auto& it = singletons_.find(gtl::FastTypeId<T>());
+    return it != singletons_.end() ? static_cast<T*>(it->second) : nullptr;
   }
 
   /**
@@ -171,7 +174,9 @@ class Model {
    */
   template <typename T>
   void Register(T* non_owned_class) {
-    AddNewSingleton(non_owned_class, gtl::FastTypeId<T>());
+    const size_t type_id = gtl::FastTypeId<T>();
+    CHECK(!singletons_.contains(type_id));
+    singletons_[type_id] = non_owned_class;
   }
 
   const std::string& Name() const { return name_; }
@@ -190,9 +195,6 @@ class Model {
   T* MyNew(...) {
     return new T();
   }
-
-  void AddNewSingleton(void* new_element, size_t type_id);
-  void* GetSingletonOrNullptr(size_t type_id) const;
 
   const std::string name_;
 
