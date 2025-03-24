@@ -48,7 +48,7 @@ void* SolveCpNewEnv() { return new Model(); }
 
 void SolveCpDestroyEnv(void* const cenv) { delete static_cast<Model*>(cenv); }
 
-void SolveCpStopSolve(void* cenv) { StopSearch(static_cast<Model*>(cenv)); }
+void SolveCpStopSearch(void* cenv) { StopSearch(static_cast<Model*>(cenv)); }
 
 void SolveCpInterruptible(void* const cenv, const void* creq, int creq_len,
                           const void* cparams, int cparams_len, void** cres,

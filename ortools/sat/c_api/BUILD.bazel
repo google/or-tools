@@ -25,7 +25,6 @@ cc_library(
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
-        "//ortools/util:time_limit",
         "@abseil-cpp//absl/log:check",
     ],
 )
