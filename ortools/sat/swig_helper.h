@@ -21,6 +21,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -95,6 +96,7 @@ class BestBoundCallback {
 // This class is not meant to be reused after one solve.
 class SolveWrapper {
  public:
+  SolveWrapper();
   // The arguments of the functions defined below must follow these rules
   // to be wrapped by swig correctly:
   // 1) Their types must include the full operations_research::sat::
@@ -124,6 +126,7 @@ class SolveWrapper {
 
  private:
   Model model_;
+  ModelSharedTimeLimit* shared_time_limit_;
 };
 
 // Static methods are stored in a module which name can vary.
