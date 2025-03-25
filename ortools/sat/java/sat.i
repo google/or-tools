@@ -169,6 +169,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
+%unignore operations_research::sat::SolveWrapper::SolveWrapper;
 %rename (addBestBoundCallback) operations_research::sat::SolveWrapper::AddBestBoundCallback;
 %rename (addLogCallback) operations_research::sat::SolveWrapper::AddLogCallback;
 %rename (addSolutionCallback) operations_research::sat::SolveWrapper::AddSolutionCallback;

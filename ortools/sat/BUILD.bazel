@@ -3901,7 +3901,6 @@ cc_library(
         ":util",
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
-        "//ortools/util:time_limit",
         "@abseil-cpp//absl/log:check",
     ],
 )

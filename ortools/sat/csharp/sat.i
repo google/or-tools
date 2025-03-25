@@ -93,6 +93,7 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
+%unignore operations_research::sat::SolveWrapper::SolveWrapper;
 %unignore operations_research::sat::SolveWrapper::AddBestBoundCallbackFromClass;
 %unignore operations_research::sat::SolveWrapper::AddLogCallbackFromClass;
 %unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
