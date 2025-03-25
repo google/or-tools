@@ -2967,11 +2967,5 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
 }
 #endif  // !__PORTABLE_PLATFORM__
 
-void LoadAndSolveCpModelForTest(const CpModelProto& model_proto, Model* model) {
-  model->GetOrCreate<SharedResponseManager>()->InitializeObjective(model_proto);
-  LoadCpModel(model_proto, model);
-  SolveLoadedCpModel(model_proto, model);
-}
-
 }  // namespace sat
 }  // namespace operations_research

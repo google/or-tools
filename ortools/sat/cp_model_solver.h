@@ -56,9 +56,11 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
  * features by configuring some classes in the Model before solve.
  *
  * For instance:
+ * - StopSearch(&model);
  * - model->Add(NewSatParameters(parameters_as_string_or_proto));
- * - model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stop);
  * - model->Add(NewFeasibleSolutionObserver(observer));
+ * - model->Add(NewFeasibleSolutionLogCallback(callback));
+ * - model->Add(NewBestBoundCallback(callback));
  */
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
@@ -130,10 +132,6 @@ std::function<SatParameters(Model*)> NewSatParameters(
 
 /// Stops the current search.
 void StopSearch(Model* model);
-
-// TODO(user): Clean this up.
-/// Solves a CpModelProto without any processing. Only used for unit tests.
-void LoadAndSolveCpModelForTest(const CpModelProto& model_proto, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research
