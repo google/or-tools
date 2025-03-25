@@ -21,46 +21,57 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research::sat {
-
 namespace {
 
-CpSolverResponse solveWithParameters(Model* model, const CpModelProto& proto,
-                                     const SatParameters& params) {
-  model->Add(NewSatParameters(params));
-  return SolveCpModel(proto, model);
-}
+struct CpSatEnv {
+  CpSatEnv() : shared_time_limit(model.GetOrCreate<ModelSharedTimeLimit>()) {}
+  void StopSearch() { shared_time_limit->Stop(); }
+
+  Model model;
+  ModelSharedTimeLimit* shared_time_limit;
+};
 
 }  // namespace
+}  // namespace operations_research::sat
 
 extern "C" {
 
 void SolveCpModelWithParameters(const void* creq, int creq_len,
                                 const void* cparams, int cparams_len,
                                 void** cres, int* cres_len) {
-  Model model;
-  SolveCpInterruptible(&model, creq, creq_len, cparams, cparams_len, cres,
+  operations_research::sat::CpSatEnv env;
+  SolveCpInterruptible(&env, creq, creq_len, cparams, cparams_len, cres,
                        cres_len);
 }
 
-void* SolveCpNewEnv() { return new Model(); }
+void* SolveCpNewEnv() { return new operations_research::sat::CpSatEnv(); }
 
-void SolveCpDestroyEnv(void* const cenv) { delete static_cast<Model*>(cenv); }
+void SolveCpDestroyEnv(void* const cenv) {
+  delete static_cast<operations_research::sat::CpSatEnv*>(cenv);
+}
 
-void SolveCpStopSearch(void* cenv) { StopSearch(static_cast<Model*>(cenv)); }
+void SolveCpStopSearch(void* cenv) {
+  static_cast<operations_research::sat::CpSatEnv*>(cenv)->StopSearch();
+}
 
 void SolveCpInterruptible(void* const cenv, const void* creq, int creq_len,
                           const void* cparams, int cparams_len, void** cres,
                           int* cres_len) {
-  CpModelProto req;
+  operations_research::sat::CpModelProto req;
   CHECK(req.ParseFromArray(creq, creq_len));
 
-  SatParameters params;
+  operations_research::sat::SatParameters params;
   CHECK(params.ParseFromArray(cparams, cparams_len));
 
-  CpSolverResponse res =
-      solveWithParameters(static_cast<Model*>(cenv), req, params);
+  operations_research::sat::CpSatEnv* env =
+      static_cast<operations_research::sat::CpSatEnv*>(cenv);
+
+  env->model.Add(NewSatParameters(params));
+  operations_research::sat::CpSolverResponse res =
+      SolveCpModel(req, &env->model);
 
   std::string res_str;
   CHECK(res.SerializeToString(&res_str));
@@ -71,5 +82,3 @@ void SolveCpInterruptible(void* const cenv, const void* creq, int creq_len,
 }
 
 }  // extern "C"
-
-}  // namespace operations_research::sat
