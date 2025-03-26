@@ -103,26 +103,50 @@ void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
   // We want something <= max_end - min_start
   //
   // TODO(user): Use conditional affine min/max !!
-  const IntegerVariable min_start_var =
-      CreateVariableAtOrAboveMinOf(y->Starts(), model);
-  const IntegerVariable max_end_var =
-      CreateVariableAtOrBelowMaxOf(y->Ends(), model);
-
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  if (integer_trail->UpperBound(max_end_var) <
-      integer_trail->LowerBound(min_start_var)) {
-    // Trivial infeasible case, will be handled by the linear constraint
-    // from the interval.
-    return;
+  bool all_optional = true;
+  for (int i = 0; i < y->NumTasks(); ++i) {
+    if (!y->IsOptional(i)) {
+      all_optional = false;
+      break;
+    }
   }
-  // (max_end - min_start) >= capacity.
-  const AffineExpression capacity(model->Add(NewIntegerVariable(
-      0, CapSub(integer_trail->UpperBound(max_end_var).value(),
-                integer_trail->LowerBound(min_start_var).value()))));
-  const std::vector<int64_t> coeffs = {-capacity.coeff.value(), -1, 1};
-  model->Add(
-      WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
-                                coeffs, capacity.constant.value()));
+
+  AffineExpression capacity;
+  if (all_optional) {
+    IntegerValue min_start = kMaxIntegerValue;
+    IntegerValue max_end = kMinIntegerValue;
+    for (int i = 0; i < y->NumTasks(); ++i) {
+      min_start = std::min(min_start, y->LevelZeroStartMin(i));
+      max_end = std::max(max_end, y->LevelZeroEndMax(i));
+    }
+    if (max_end < min_start) {
+      return;
+    }
+    capacity = AffineExpression(CapSubI(max_end, min_start).value());
+  } else {
+    // This might not work if all task are optional, since the min could be
+    // greater than the max.
+    const IntegerVariable min_start_var =
+        CreateVariableAtOrAboveMinOf(y->Starts(), model);
+    const IntegerVariable max_end_var =
+        CreateVariableAtOrBelowMaxOf(y->Ends(), model);
+
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    if (integer_trail->UpperBound(max_end_var) <
+        integer_trail->LowerBound(min_start_var)) {
+      // Trivial infeasible case, will be handled by the linear constraint
+      // from the interval.
+      return;
+    }
+    // (max_end - min_start) >= capacity.
+    capacity = model->Add(NewIntegerVariable(
+        0, CapSub(integer_trail->UpperBound(max_end_var).value(),
+                  integer_trail->LowerBound(min_start_var).value())));
+    const std::vector<int64_t> coeffs = {-capacity.coeff.value(), -1, 1};
+    model->Add(
+        WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
+                                  coeffs, capacity.constant.value()));
+  }
 
   SchedulingDemandHelper* demands =
       model->GetOrCreate<IntervalsRepository>()->GetOrCreateDemandHelper(

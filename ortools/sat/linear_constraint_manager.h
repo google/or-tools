@@ -283,6 +283,29 @@ class LinearConstraintManager {
   // does not violate the loaded solution.
   bool DebugCheckConstraint(const LinearConstraint& cut);
 
+  // Getter "ReducedCosts" API for cuts.
+  //
+  // It is not possible to set together to true a set of literals 'l' such that
+  // sum_l GetLiteralReducedCost(l) > ReducedCostsGap(). Note that we only
+  // return non-negative "reduced costs" here.
+  absl::int128 ReducedCostsGap() const { return reduced_costs_gap_; }
+  absl::int128 GetLiteralReducedCost(Literal l) const {
+    const auto it = reduced_costs_map_.find(l);
+    if (it == reduced_costs_map_.end()) return 0;
+    return absl::int128(it->second.value());
+  }
+
+  // Reduced cost API for cuts.
+  // These functions allow to clear the data and set the reduced cost info.
+  void ClearReducedCostsInfo() {
+    reduced_costs_gap_ = 0;
+    reduced_costs_map_.clear();
+  }
+  void SetReducedCostsGap(absl::int128 gap) { reduced_costs_gap_ = gap; }
+  void SetLiteralReducedCost(Literal l, IntegerValue coeff) {
+    reduced_costs_map_[l] = coeff;
+  }
+
  private:
   // Heuristic that decide which constraints we should remove from the current
   // LP. Note that such constraints can be added back later by the heuristic
@@ -338,6 +361,10 @@ class LinearConstraintManager {
   // contained in constraints_ and the code is still okay if we do not merge the
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
+
+  // Reduced costs data used by some routing cuts.
+  absl::int128 reduced_costs_gap_ = 0;
+  absl::flat_hash_map<Literal, IntegerValue> reduced_costs_map_;
 
   int64_t num_constraint_updates_ = 0;
   int64_t num_simplifications_ = 0;

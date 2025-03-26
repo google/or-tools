@@ -889,14 +889,32 @@ std::string ValidateObjective(const CpModelProto& model,
                         ProtobufShortDebugString(obj));
   }
   for (const int v : obj.vars()) {
-    if (!VariableReferenceIsValid(model, v)) {
+    if (!VariableIndexIsValid(model, v)) {
       return absl::StrCat("Out of bound integer variable ", v,
                           " in objective: ", ProtobufShortDebugString(obj));
     }
   }
-  if (PossibleIntegerOverflow(model, obj.vars(), obj.coeffs())) {
+  std::pair<int64_t, int64_t> bounds;
+  if (PossibleIntegerOverflow(model, obj.vars(), obj.coeffs(), 0, &bounds)) {
     return "Possible integer overflow in objective: " +
            ProtobufDebugString(obj);
+  }
+  if (!std::isfinite(model.objective().offset())) {
+    return "Objective offset must be finite: " + ProtobufDebugString(obj);
+  }
+  if (model.objective().scaling_factor() != 0 &&
+      model.objective().scaling_factor() != 1 &&
+      model.objective().scaling_factor() != -1) {
+    if (!std::isfinite(
+            std::abs(model.objective().scaling_factor() * bounds.first) +
+            std::abs(model.objective().offset())) ||
+        !std::isfinite(
+            std::abs(model.objective().scaling_factor() * bounds.second) +
+            std::abs(model.objective().offset()))) {
+      return "Possible floating point overflow in objective when multiplied by "
+             "the scaling factor: " +
+             ProtobufDebugString(obj);
+    }
   }
   return "";
 }
@@ -928,6 +946,27 @@ std::string ValidateFloatingPointObjective(double max_valid_magnitude,
   }
   if (!std::isfinite(obj.offset())) {
     return absl::StrCat("Offset must be finite in objective: ",
+                        ProtobufShortDebugString(obj));
+  }
+  double sum_min = obj.offset();
+  double sum_max = obj.offset();
+  for (int i = 0; i < obj.vars().size(); ++i) {
+    const int ref = obj.vars(i);
+    const auto& var_proto = model.variables(PositiveRef(ref));
+    const int64_t min_domain = var_proto.domain(0);
+    const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
+    const double coeff = RefIsPositive(ref) ? obj.coeffs(i) : -obj.coeffs(i);
+    const double prod1 = min_domain * coeff;
+    const double prod2 = max_domain * coeff;
+
+    // Note that we use min/max with zero to disallow "alternative" terms and
+    // be sure that we cannot have an overflow if we do the computation in a
+    // different order.
+    sum_min += std::min(0.0, std::min(prod1, prod2));
+    sum_max += std::max(0.0, std::max(prod1, prod2));
+  }
+  if (!std::isfinite(2.0 * sum_min) || !std::isfinite(2.0 * sum_max)) {
+    return absl::StrCat("Possible floating point overflow in objective: ",
                         ProtobufShortDebugString(obj));
   }
   return "";
@@ -1036,7 +1075,8 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
 
 bool PossibleIntegerOverflow(const CpModelProto& model,
                              absl::Span<const int> vars,
-                             absl::Span<const int64_t> coeffs, int64_t offset) {
+                             absl::Span<const int64_t> coeffs, int64_t offset,
+                             std::pair<int64_t, int64_t>* implied_domain) {
   if (offset == std::numeric_limits<int64_t>::min()) return true;
   int64_t sum_min = -std::abs(offset);
   int64_t sum_max = +std::abs(offset);
@@ -1068,6 +1108,9 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
   // pass but not -expr!
   if (sum_min < -std::numeric_limits<int64_t>::max() / 2) return true;
   if (sum_max > std::numeric_limits<int64_t>::max() / 2) return true;
+  if (implied_domain) {
+    *implied_domain = {sum_min, sum_max};
+  }
   return false;
 }
 
@@ -1223,6 +1266,12 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
            "objective.";
   }
   if (model.has_objective()) {
+    if (model.objective().scaling_factor() != 0 &&
+        !std::isnormal(model.objective().scaling_factor())) {
+      return "A model cannot have an objective with a nan, inf or subnormal "
+             "scaling factor";
+    }
+
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
 
     if (model.objective().integer_scaling_factor() != 0 ||
