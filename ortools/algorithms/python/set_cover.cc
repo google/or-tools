@@ -221,9 +221,9 @@ PYBIND11_MODULE(set_cover, m) {
       .def("sort_elements_in_subsets", &SetCoverModel::SortElementsInSubsets)
       .def("compute_feasibility", &SetCoverModel::ComputeFeasibility)
       .def(
-          "reserve_num_subsets",
+          "resize_num_subsets",
           [](SetCoverModel& model, BaseInt num_subsets) {
-            model.ReserveNumSubsets(num_subsets);
+            model.ResizeNumSubsets(num_subsets);
           },
           arg("num_subsets"))
       .def(

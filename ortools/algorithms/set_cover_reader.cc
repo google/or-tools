@@ -112,7 +112,7 @@ SetCoverModel ReadOrlibScp(absl::string_view filename) {
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
   const SubsetIndex num_cols(reader.ParseNextInteger());
-  model.ReserveNumSubsets(num_cols.value());
+  model.ResizeNumSubsets(num_cols.value());
   for (SubsetIndex subset : SubsetRange(num_cols)) {
     const double cost(reader.ParseNextDouble());
     model.SetSubsetCost(subset.value(), cost);
@@ -141,7 +141,7 @@ SetCoverModel ReadOrlibRail(absl::string_view filename) {
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
   const BaseInt num_cols(reader.ParseNextInteger());
-  model.ReserveNumSubsets(num_cols);
+  model.ResizeNumSubsets(num_cols);
   for (BaseInt subset(0); subset < num_cols; ++subset) {
     LOG_EVERY_N_SEC(INFO, 5)
         << absl::StrFormat("Reading subset %d (%.1f%%)", subset,

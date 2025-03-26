@@ -92,7 +92,7 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
   DCHECK_GT(cost_scale, 0.0);
   model.num_elements_ = num_elements;
   model.num_nonzeros_ = 0;
-  model.ReserveNumSubsets(num_subsets);
+  model.ResizeNumSubsets(num_subsets);
   model.UpdateAllSubsetsList();
   absl::BitGen bitgen;
 
@@ -298,22 +298,22 @@ void SetCoverModel::AddElementToSubset(ElementIndex element,
   AddElementToSubset(element.value(), subset.value());
 }
 
-// Reserves num_subsets columns in the model.
-void SetCoverModel::ReserveNumSubsets(BaseInt num_subsets) {
+// Reserves num_subsets columns in the model creating empty subsets if needed.
+void SetCoverModel::ResizeNumSubsets(BaseInt num_subsets) {
   num_subsets_ = std::max(num_subsets_, num_subsets);
   columns_.resize(num_subsets_, SparseColumn());
   subset_costs_.resize(num_subsets_, 0.0);
   UpdateAllSubsetsList();
 }
 
-void SetCoverModel::ReserveNumSubsets(SubsetIndex num_subsets) {
-  ReserveNumSubsets(num_subsets.value());
+void SetCoverModel::ResizeNumSubsets(SubsetIndex num_subsets) {
+  ResizeNumSubsets(num_subsets.value());
 }
 
 // Reserves num_elements rows in the column indexed by subset.
 void SetCoverModel::ReserveNumElementsInSubset(BaseInt num_elements,
                                                BaseInt subset) {
-  ReserveNumSubsets(subset);
+  ResizeNumSubsets(subset);
   columns_[SubsetIndex(subset)].reserve(ColumnEntryIndex(num_elements));
 }
 
@@ -416,7 +416,7 @@ SetCoverProto SetCoverModel::ExportModelAsProto() const {
 void SetCoverModel::ImportModelFromProto(const SetCoverProto& message) {
   columns_.clear();
   subset_costs_.clear();
-  ReserveNumSubsets(message.subset_size());
+  ResizeNumSubsets(message.subset_size());
   SubsetIndex subset_index(0);
   for (const SetCoverProto::Subset& subset_proto : message.subset()) {
     subset_costs_[subset_index] = subset_proto.cost();
