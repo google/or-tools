@@ -25,10 +25,8 @@
 #ifndef OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 #define OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 
-#include <functional>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -79,14 +77,16 @@ class Xpress {
                           absl::Span<const double> rowcoef);
 
   absl::Status SetObjectiveSense(bool maximize);
-  absl::Status SetLinearObjective(double offset, absl::Span<const int> colind,
-                                  absl::Span<const double> values);
+  absl::Status SetLinearObjective(double constant,
+                                  absl::Span<const int> col_index,
+                                  absl::Span<const double> obj_coeffs);
   absl::Status SetQuadraticObjective(absl::Span<const int> colind1,
                                      absl::Span<const int> colind2,
                                      absl::Span<const double> coefficients);
 
-  absl::Status ChgCoeffs(absl::Span<const int> cind, absl::Span<const int> vind,
-                         absl::Span<const double> val);
+  absl::Status ChgCoeffs(absl::Span<const int> rowind,
+                         absl::Span<const int> colind,
+                         absl::Span<const double> values);
 
   absl::Status LpOptimize(std::string flags);
   // Fetch LP solution (primals, duals, and reduced costs)

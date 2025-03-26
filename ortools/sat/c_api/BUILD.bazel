@@ -26,6 +26,6 @@ cc_library(
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:util",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log:check",
     ],
 )

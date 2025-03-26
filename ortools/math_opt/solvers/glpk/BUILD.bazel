@@ -23,10 +23,10 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/glpk:glpk_computational_form",
         "//ortools/glpk:glpk_formatters",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@glpk",
     ],
 )
@@ -37,7 +37,7 @@ cc_library(
     hdrs = ["glpk_sparse_vector.h"],
     deps = [
         "//ortools/base:logging",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 

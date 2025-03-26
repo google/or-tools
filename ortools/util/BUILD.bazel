@@ -70,8 +70,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -81,7 +81,7 @@ cc_library(
     hdrs = ["bitset.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/base:log_severity",
+        "@abseil-cpp//absl/base:log_severity",
     ],
 )
 
@@ -123,7 +123,7 @@ cc_library(
     deps = [
         ":bitset",
         "//ortools/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -143,9 +143,9 @@ cc_library(
         "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
         "//ortools/base:types",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -155,7 +155,7 @@ cc_library(
     hdrs = ["rational_approximation.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -166,10 +166,10 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -177,7 +177,7 @@ cc_library(
     name = "string_array",
     hdrs = ["string_array.h"],
     deps = [
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -187,8 +187,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:hash",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
     ],
 )
 
@@ -199,10 +199,10 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        #        "@com_google_absl//absl/strings:human_readable",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        #        "@abseil-cpp//absl/strings:human_readable",
         "//ortools/port:sysinfo",
         "//ortools/base:timer",
         "//ortools/port:utf8",
@@ -220,9 +220,9 @@ cc_library(
         "//ortools/base:sysinfo",
         "//ortools/base:timer",
         "//ortools/base:types",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -278,10 +278,10 @@ cc_library(
     srcs = ["proto_tools.cc"],
     hdrs = ["proto_tools.h"],
     deps = [
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:hash",
@@ -350,7 +350,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -370,7 +370,7 @@ cc_library(
     hdrs = ["qap_reader.h"],
     deps = [
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -394,10 +394,10 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:recordio",
         "//ortools/base:status_macros",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -414,8 +414,8 @@ cc_library(
     hdrs = ["string_util.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -428,7 +428,7 @@ cc_library(
 cc_library(
     name = "lazy_mutable_copy",
     hdrs = ["lazy_mutable_copy.h"],
-    deps = ["@com_google_absl//absl/memory"],
+    deps = ["@abseil-cpp//absl/memory"],
 )
 
 cc_library(
@@ -438,7 +438,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -452,7 +452,7 @@ cc_library(
     hdrs = ["strong_integers.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -461,7 +461,7 @@ cc_library(
     hdrs = ["status_macros.h"],
     deps = [
         "//ortools/base:status_macros",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -472,10 +472,10 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:status_builder",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -483,7 +483,7 @@ cc_library(
     name = "flat_matrix",
     hdrs = ["flat_matrix.h"],
     deps = [
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -492,7 +492,7 @@ cc_library(
     testonly = 1,
     hdrs = ["fp_roundtrip_conv_testing.h"],
     deps = [
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -511,8 +511,8 @@ cc_library(
     hdrs = ["vector_sum.h"],
     deps = [
         ":aligned_memory",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -521,7 +521,7 @@ cc_library(
     srcs = ["parse_proto.cc"],
     hdrs = ["parse_proto.h"],
     deps = [
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -531,8 +531,8 @@ cc_library(
     hdrs = ["fixed_shape_binary_tree.h"],
     deps = [
         ":strong_integers",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/numeric:bits",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
     ],
 )
 
@@ -544,9 +544,9 @@ cc_library(
         "//ortools/base",
         "//ortools/base:intops",
         "//ortools/base:linked_hash_map",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
     ],
 )
 
@@ -554,7 +554,7 @@ cc_library(
     name = "dense_set",
     hdrs = ["dense_set.h"],
     deps = [
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )

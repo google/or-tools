@@ -39,7 +39,7 @@ cc_binary(
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_enums_cc_proto",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -60,7 +60,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/constraint_solver:routing",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

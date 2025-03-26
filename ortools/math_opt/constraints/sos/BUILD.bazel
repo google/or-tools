@@ -25,7 +25,7 @@ cc_library(
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -42,7 +42,7 @@ cc_test(
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "//ortools/util:fp_roundtrip_conv_testing",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -58,7 +58,7 @@ cc_library(
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -75,7 +75,7 @@ cc_test(
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "//ortools/util:fp_roundtrip_conv_testing",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -89,8 +89,8 @@ cc_library(
         "//ortools/math_opt/storage:atomic_constraint_storage",
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -105,7 +105,7 @@ cc_test(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_map",
     ],
 )
 
@@ -115,7 +115,7 @@ cc_library(
     deps = [
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/util:fp_roundtrip_conv",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -130,8 +130,8 @@ cc_library(
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/validators:linear_expression_validator",
         "//ortools/math_opt/validators:scalar_validator",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -146,7 +146,7 @@ cc_test(
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/types:span",
     ],
 )

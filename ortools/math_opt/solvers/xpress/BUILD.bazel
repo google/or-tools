@@ -11,33 +11,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Code specific to XPRESS used in xpress_solver.cc.
+package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
+
 cc_library(
-    name = "g_gurobi",
-    srcs = [
-        "g_gurobi.cc",
-    ],
-    hdrs = [
-        "g_gurobi.h",
-    ],
-    visibility = [
-        "//ortools/gurobi:__subpackages__",
-        "//ortools/math_opt:__subpackages__",
-    ],
+    name = "g_xpress",
+    srcs = ["g_xpress.cc"],
+    hdrs = ["g_xpress.h"],
     deps = [
         "//ortools/base:logging",
         "//ortools/base:source_location",
         "//ortools/base:status_macros",
-        "//ortools/gurobi:environment",
-        "//ortools/gurobi/isv_public:gurobi_isv",
-        "//ortools/math_opt/solvers:gurobi_cc_proto",
-        "@abseil-cpp//absl/log",
+        "//ortools/xpress:environment",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
-        "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
     ],
 )

@@ -24,7 +24,7 @@ pybind_extension(
     deps = [
         "//ortools/scheduling:rcpsp_cc_proto",
         "//ortools/scheduling:rcpsp_parser",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )

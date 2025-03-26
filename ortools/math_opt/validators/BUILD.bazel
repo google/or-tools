@@ -20,10 +20,10 @@ cc_library(
     deps = [
         "//ortools/base:status_macros",
         "//ortools/math_opt/core:model_summary",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -32,8 +32,8 @@ cc_library(
     srcs = ["scalar_validator.cc"],
     hdrs = ["scalar_validator.h"],
     deps = [
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -47,9 +47,9 @@ cc_library(
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -61,8 +61,8 @@ cc_library(
         ":scalar_validator",
         "//ortools/base:status_macros",
         "//ortools/math_opt/core:sparse_vector_view",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -85,8 +85,8 @@ cc_library(
         "//ortools/math_opt/constraints/sos:validator",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -97,10 +97,10 @@ cc_library(
     deps = [
         "//ortools/base:protoutil",
         "//ortools/math_opt:result_cc_proto",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -119,7 +119,7 @@ cc_library(
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:model_summary",
         "//ortools/port:proto_utils",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -139,8 +139,8 @@ cc_library(
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -153,10 +153,10 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/util:status_macros",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -179,9 +179,9 @@ cc_library(
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/port:proto_utils",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -201,8 +201,8 @@ cc_library(
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/util:status_macros",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/time",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -218,7 +218,7 @@ cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -233,7 +233,7 @@ cc_library(
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt/core:model_summary",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -246,8 +246,8 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/port:proto_utils",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -260,8 +260,8 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/port:proto_utils",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
