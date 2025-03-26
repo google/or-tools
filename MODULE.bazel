@@ -24,7 +24,7 @@ bazel_dep(name = "google_benchmark", version = "1.9.1", repo_name = "com_google_
 bazel_dep(name = "googletest", version = "1.16.0", repo_name = "com_google_googletest")
 bazel_dep(name = "highs", version = "1.10.0")
 bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
+bazel_dep(name = "protobuf", version = "30.1", repo_name = "com_google_protobuf")
 bazel_dep(name = "pybind11_abseil", version = "202402.0")
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
 bazel_dep(name = "pybind11_protobuf", version = "0.0.0-20240524-1d7a729")
@@ -46,6 +46,14 @@ git_override(
     patch_strip = 1,
     patches = ["//patches:pybind11_abseil.patch"],
     remote = "https://github.com/pybind/pybind11_abseil.git",
+)
+
+git_override(
+    module_name = "pybind11_protobuf",
+    commit = "f02a2b7653bc50eb5119d125842a3870db95d251",
+    #patch_strip = 1,
+    #patches = ["//patches:pybind11_protobuf.patch"],
+    remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
 SUPPORTED_PYTHON_VERSIONS = [
