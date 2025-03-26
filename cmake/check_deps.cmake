@@ -62,12 +62,10 @@ if(NOT TARGET Eigen3::Eigen)
   message(FATAL_ERROR "Target Eigen3::Eigen not available.")
 endif()
 
-if(BUILD_LP_PARSER OR BUILD_TESTING)
-  if(NOT TARGET re2::re2)
-    message(FATAL_ERROR "Target re2::re2 not available.")
-  endif()
-  set(RE2_DEPS re2::re2)
+if(NOT TARGET re2::re2)
+  message(FATAL_ERROR "Target re2::re2 not available.")
 endif()
+set(RE2_DEPS re2::re2)
 
 if(USE_COINOR)
   if(NOT TARGET Coin::CbcSolver)
@@ -109,11 +107,6 @@ if(USE_SCIP)
     message(FATAL_ERROR "Target SCIP::libscip not available.")
   endif()
   set(SCIP_DEPS SCIP::libscip)
-endif()
-
-# Check optional Dependencies
-if(USE_CPLEX AND NOT TARGET CPLEX::CPLEX)
-  message(FATAL_ERROR "Target CPLEX::CPLEX not available.")
 endif()
 
 # CXX Test

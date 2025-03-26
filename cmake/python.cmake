@@ -634,8 +634,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:knapsack_solver_pybind11> ${PYTHON_PROJECT}/algorithms/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/algorithms/python
-  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python

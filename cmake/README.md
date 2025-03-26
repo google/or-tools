@@ -195,27 +195,27 @@ cmake -S. -Bbuild -LH
 | `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
 | | | |
 | `BUILD_DEPS` | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_ZLIB` | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_absl` | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_Protobuf` | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_re2`  | OFF* | Static build the re2 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_Eigen3` | OFF* | Static build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_ZLIB` | OFF* | Build the zlib dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_absl` | OFF* | Build the abseil-cpp dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Protobuf` | OFF* | Build the protobuf dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_re2`  | OFF* | Build the re2 dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Eigen3` | OFF* | Build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | | | |
 | `USE_COINOR` | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_CoinUtils`  | OFF\* | Static build the CoinUtils library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Osi`  | OFF\* | Static build the Osi library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Clp`  | OFF\* | Static build the Clp library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_CoinUtils`  | OFF\* | Build the CoinUtils dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Osi`  | OFF\* | Build the Osi dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Clp`  | OFF\* | Build the Clp dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Cgl`  | OFF\* | Build the Cgl dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Cbc`  | OFF\* | Build the Cbc dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | | | |
 | `USE_GLPK`   | OFF\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_GLPK` | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_GLPK` | OFF\* | Build the GLPK dynamic libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
 | | | |
 | `USE_HIGHS`  | ON\* | Enable HIGHS support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_HIGHS` | OFF\* | Static build the HiGHS libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_HIGHS` | OFF\* | Build the HiGHS dynamic libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON` |
 | | | |
 | `USE_SCIP`   | ON\*  | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_SCIP` | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_SCIP` | OFF\* | Build the SCIP dynamic libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
 | | | |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
 | | | |
@@ -255,6 +255,7 @@ cmake -S. -Bbuild -LH
 | `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
 | | | |
 | `BUILD_pybind11` | `BUILD_DEPS` | Static build the pybind11 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
+| `BUILD_pybind11_abseil` | `BUILD_DEPS` | Static build the pybind11_abseil libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
 | `BUILD_pybind11_protobuf` | `BUILD_DEPS` | Static build the pybind11_protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
 | `GENERATE_PYTHON_STUB` | ON | Generate python stub files<br>Only available if `BUILD_PYTHON=ON` |
 | `BUILD_VENV` | `BUILD_TESTING` | Create python venv in `BINARY_DIR/python/venv`<br>**Forced** to ON if `BUILD_TESTING=ON`<br>Only available if `BUILD_PYTHON=ON` |

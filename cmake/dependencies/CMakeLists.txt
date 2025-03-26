@@ -170,56 +170,55 @@ endif()
 if(BUILD_PYTHON)
   # Find Python 3
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
-endif()
 
-if(BUILD_PYTHON AND BUILD_pybind11)
-  message(CHECK_START "Fetching pybind11")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  set(PYBIND11_FINDPYTHON ON)
-  set(PYBIND11_INSTALL ON)
-  set(PYBIND11_TEST OFF)
-  FetchContent_Declare(
-    pybind11
-    GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-    GIT_TAG "v2.13.6"
-    GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11.patch"
-  )
-  FetchContent_MakeAvailable(pybind11)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
-endif()
+  if(BUILD_pybind11)
+    message(CHECK_START "Fetching pybind11")
+    list(APPEND CMAKE_MESSAGE_INDENT "  ")
+    set(PYBIND11_FINDPYTHON ON)
+    set(PYBIND11_INSTALL ON)
+    set(PYBIND11_TEST OFF)
+    FetchContent_Declare(
+      pybind11
+      GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
+      GIT_TAG "v2.13.6"
+      GIT_SHALLOW TRUE
+      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11.patch"
+    )
+    FetchContent_MakeAvailable(pybind11)
+    list(POP_BACK CMAKE_MESSAGE_INDENT)
+    message(CHECK_PASS "fetched")
+  endif()
 
-if(BUILD_PYTHON AND BUILD_pybind11_abseil)
-  message(CHECK_START "Fetching pybind11_abseil")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  FetchContent_Declare(
-    pybind11_abseil
-    GIT_REPOSITORY "https://github.com/pybind/pybind11_abseil.git" # 2024/01/11
-    GIT_TAG "v202402.0"
-    GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_abseil.patch"
-  )
-  FetchContent_MakeAvailable(pybind11_abseil)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
-endif()
+  if(BUILD_pybind11_abseil)
+    message(CHECK_START "Fetching pybind11_abseil")
+    list(APPEND CMAKE_MESSAGE_INDENT "  ")
+    FetchContent_Declare(
+      pybind11_abseil
+      GIT_REPOSITORY "https://github.com/pybind/pybind11_abseil.git" # 2024/01/11
+      GIT_TAG "v202402.0"
+      GIT_SHALLOW TRUE
+      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_abseil.patch"
+    )
+    FetchContent_MakeAvailable(pybind11_abseil)
+    list(POP_BACK CMAKE_MESSAGE_INDENT)
+    message(CHECK_PASS "fetched")
+  endif()
 
-if(BUILD_PYTHON AND BUILD_pybind11_protobuf)
-  message(CHECK_START "Fetching pybind11_protobuf")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  FetchContent_Declare(
-    pybind11_protobuf
-    GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
-    GIT_TAG "84653a591aea5df482dc2bde42c19efafbd53a57" # 2024/06/28
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
-    #GIT_SHALLOW TRUE
-  )
-  FetchContent_MakeAvailable(pybind11_protobuf)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
+  if(BUILD_pybind11_protobuf)
+    message(CHECK_START "Fetching pybind11_protobuf")
+    list(APPEND CMAKE_MESSAGE_INDENT "  ")
+    FetchContent_Declare(
+      pybind11_protobuf
+      GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
+      GIT_TAG "f02a2b7653bc50eb5119d125842a3870db95d251" # 2025/02/10
+      #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
+      #GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(pybind11_protobuf)
+    list(POP_BACK CMAKE_MESSAGE_INDENT)
+    message(CHECK_PASS "fetched")
+  endif()
 endif()
-
 
 # ##############################################################################
 # GLPK
