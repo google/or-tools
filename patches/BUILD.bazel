@@ -12,7 +12,7 @@
 # limitations under the License.
 
 exports_files([
-    "abseil-cpp-20250127.0.patch",
+    "abseil-cpp-20250127.1.patch",
     "highs-v1.9.0.patch",
     "protobuf-v30.1.patch",
     "pybind11_abseil.patch",
