@@ -12,6 +12,20 @@
 # limitations under the License.
 
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@rules_license//rules:license.bzl", "license")
+
+# Expose license for external usage through bazel.
+licenses(["notice"])
+exports_files(["LICENSE"])
+license(
+  name = "license",
+  package_name = "or-tools",
+  license_kinds = ["@rules_license//licenses/spdx:Apache-2.0"],
+  license_text = ":LICENSE",
+)
+package(
+  default_applicable_licenses = [":license"],
+)
 
 # gazelle:build_file_name BUILD,BUILD.bazel
 # gazelle:prefix github.com/google/or-tools
