@@ -317,7 +317,7 @@ void SetCoverModel::ReserveNumElementsInSubset(BaseInt num_elements,
   columns_[SubsetIndex(subset)].reserve(ColumnEntryIndex(num_elements));
 }
 
-void SetCoverModel::ReserveNumElementsInSubset(ElementIndex num_elements,
+void SetCoverModel::ReserveNumElementsInSubset(RowEntryIndex num_elements,
                                                SubsetIndex subset) {
   ReserveNumElementsInSubset(num_elements.value(), subset.value());
 }

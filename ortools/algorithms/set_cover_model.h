@@ -223,7 +223,7 @@ class SetCoverModel {
 
   // Reserves num_elements rows in the column indexed by subset.
   void ReserveNumElementsInSubset(BaseInt num_elements, BaseInt subset);
-  void ReserveNumElementsInSubset(ElementIndex num_elements,
+  void ReserveNumElementsInSubset(RowEntryIndex num_elements,
                                   SubsetIndex subset);
 
   // Returns the model as a SetCoverProto. Note that the elements of each subset
