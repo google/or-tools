@@ -461,10 +461,10 @@ if(BUILD_googletest)
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.15.2
+    GIT_TAG v1.16.0
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/googletest-v1.15.2.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/googletest-v1.16.0.patch"
     #PATCH_COMMAND git apply --ignore-whitespace ""
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
