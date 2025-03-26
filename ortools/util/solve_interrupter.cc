@@ -42,10 +42,10 @@ void SolveInterrupter::Interrupt() {
   // of if this function has called it.
   interrupted_ = true;
 
-  // We are holding the lock while calling callbacks. This make it impossible to
-  // call Interrupt(), AddInterruptionCallback(), or
+  // We are holding the lock while calling callbacks. This makes it impossible
+  // to call Interrupt(), AddInterruptionCallback(), or
   // RemoveInterruptionCallback() from a callback but it ensures that external
-  // code that can modify callbacks_ will wait the end of Interrupt.
+  // code that can modify callbacks_ will wait until the end of Interrupt.
   for (const auto& [callback_id, callback] : callbacks_) {
     callback();
   }

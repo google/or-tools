@@ -56,6 +56,65 @@ using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 using HeadMinusTailBounds = RouteRelationsHelper::HeadMinusTailBounds;
 
+std::pair<IntegerValue, IntegerValue> ExactDifferenceBounds(
+    const NodeExpression& x_expr, const NodeExpression& y_expr,
+    const sat::Relation& r,
+    const std::pair<IntegerValue, IntegerValue>& x_bounds,
+    const std::pair<IntegerValue, IntegerValue>& y_bounds) {
+  IntegerValue lb = kMaxIntegerValue;
+  IntegerValue ub = kMinIntegerValue;
+  for (IntegerValue x = x_bounds.first; x <= x_bounds.second; ++x) {
+    for (IntegerValue y = y_bounds.first; y <= y_bounds.second; ++y) {
+      const IntegerValue r_value = x * r.a.coeff + y * r.b.coeff;
+      if (r_value < r.lhs || r_value > r.rhs) continue;
+      const IntegerValue difference = y_expr.ValueAt(y) - x_expr.ValueAt(x);
+      lb = std::min(lb, difference);
+      ub = std::max(ub, difference);
+    }
+  }
+  return {lb, ub};
+}
+
+TEST(GetDifferenceBounds, RandomTest) {
+  absl::BitGen random;
+  const IntegerVariable x(0);
+  const IntegerVariable y(2);
+  const Literal lit(BooleanVariable(0), true);
+  const auto x_bounds = std::make_pair(IntegerValue(-5), IntegerValue(13));
+  const auto y_bounds = std::make_pair(IntegerValue(-7), IntegerValue(17));
+  for (int i = 0; i < 10000; ++i) {
+    const IntegerValue A(absl::Uniform<int64_t>(random, -10, 10));
+    const IntegerValue B(absl::Uniform<int64_t>(random, -10, 10));
+    const IntegerValue a(absl::Uniform<int64_t>(random, -10, 10));
+    const IntegerValue b(absl::Uniform<int64_t>(random, -10, 10));
+    if (a == 0 || b == 0 || A == 0 || B == 0) continue;
+    IntegerValue lhs = a * (a >= 0 ? x_bounds.first : x_bounds.second) +
+                       b * (b >= 0 ? y_bounds.first : y_bounds.second);
+    IntegerValue rhs = a * (a >= 0 ? x_bounds.second : x_bounds.first) +
+                       b * (b >= 0 ? y_bounds.second : y_bounds.first);
+    IntegerValue middle = (lhs + rhs) / 2;
+    lhs = IntegerValue(
+        absl::Uniform<int64_t>(random, lhs.value(), middle.value()));
+    rhs = IntegerValue(
+        absl::Uniform<int64_t>(random, middle.value(), rhs.value()));
+    const NodeExpression x_expr(x, A, absl::Uniform<int64_t>(random, -5, 5));
+    const NodeExpression y_expr(y, B, absl::Uniform<int64_t>(random, -5, 5));
+    const Relation r{
+        .enforcement = lit,
+        .a = LinearTerm(x, a),
+        .b = LinearTerm(y, b),
+        .lhs = lhs,
+        .rhs = rhs,
+    };
+    const auto [lb, ub] =
+        GetDifferenceBounds(x_expr, y_expr, r, x_bounds, y_bounds);
+    const auto [exact_lb, exact_ub] =
+        ExactDifferenceBounds(x_expr, y_expr, r, x_bounds, y_bounds);
+    EXPECT_LE(lb, exact_lb);
+    ASSERT_GE(ub, exact_ub);
+  }
+}
+
 TEST(MinOutgoingFlowHelperTest, TwoNodesWithoutConstraints) {
   Model model;
   const std::vector<int> tails = {0, 1};
@@ -1128,6 +1187,7 @@ TEST(MinOutgoingFlowHelperTest,
       EXPECT_EQ(SolveTimeWindowProblemStartingFrom(i, optimal, tails, heads,
                                                    travel_times, time_windows),
                 helper.SubsetMightBeServedWithKRoutes(optimal, subset, nullptr,
+                                                      nullptr,
                                                       /*special_node=*/i));
     }
   }
@@ -2317,6 +2377,9 @@ TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
                                    1.0, 0.9, 0.1, 0.9, 0.1, 1.0};
 
   Model model;
+  model.GetOrCreate<SatParameters>()
+      ->set_routing_cut_subset_size_for_exact_binary_relation_bound(0);
+
   std::vector<Literal> literals;
   auto& lp_values = *model.GetOrCreate<ModelLpValues>();
   lp_values.resize(32, 0.0);

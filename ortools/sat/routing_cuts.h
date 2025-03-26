@@ -56,6 +56,53 @@ RoutingCumulExpressions DetectDimensionsAndCumulExpressions(
     absl::Span<const Literal> literals,
     const BinaryRelationRepository& binary_relation_repository);
 
+// A coeff * var + offset affine expression, where `var` is always a positive
+// reference (contrary to AffineExpression, where the coefficient is always
+// positive).
+struct NodeExpression {
+  IntegerVariable var;
+  IntegerValue coeff;
+  IntegerValue offset;
+
+  NodeExpression() : var(kNoIntegerVariable), coeff(0), offset(0) {}
+
+  NodeExpression(IntegerVariable var, IntegerValue coeff, IntegerValue offset)
+      : var(var), coeff(coeff), offset(offset) {}
+
+  explicit NodeExpression(const AffineExpression& expr) {
+    if (expr.var == kNoIntegerVariable || VariableIsPositive(expr.var)) {
+      var = expr.var;
+      coeff = expr.coeff;
+    } else {
+      var = PositiveVariable(expr.var);
+      coeff = -expr.coeff;
+    }
+    offset = expr.constant;
+  }
+
+  bool IsEmpty() const { return var == kNoIntegerVariable; }
+
+  IntegerValue ValueAt(IntegerValue x) const { return coeff * x + offset; }
+
+  NodeExpression Negated() const {
+    return NodeExpression(var, -coeff, -offset);
+  }
+};
+
+// Returns some bounds on y_expr - x_expr, based on the given relation and the
+// given variable bounds. r.a (resp. r.b) must have the same variable as x_expr
+// (resp. y_expr), which must not be kNoIntegerVariable. Moreover, the
+// coefficients of these variables in x_expr, y_expr and r must not be zero.
+//
+// The returned bounds are generally not the best possible ones (computing them
+// is equivalent to solving a MIP -- min(y_expr - x_expr) subject to r, x.var in
+// x_var_bounds and y.var in y_var_bounds).
+std::pair<IntegerValue, IntegerValue> GetDifferenceBounds(
+    const NodeExpression& x_expr, const NodeExpression& y_expr,
+    const sat::Relation& r,
+    const std::pair<IntegerValue, IntegerValue>& x_var_bounds,
+    const std::pair<IntegerValue, IntegerValue>& y_var_bounds);
+
 // Helper to store the result of DetectDimensionsAndCumulExpressions() and also
 // recover and store bounds on (node_expr[head] - node_expr[tail]) for each arc
 // (tail -> head) assuming the arc is taken.
@@ -410,10 +457,11 @@ class MinOutgoingFlowHelper {
   //
   // TODO(user): the complexity also depends on the longest route and improves
   // if routes fail quickly. Give a better estimate?
-  bool SubsetMightBeServedWithKRoutes(int k, absl::Span<const int> subset,
-                                      RouteRelationsHelper* helper = nullptr,
-                                      int special_node = -1,
-                                      bool use_outgoing = true);
+  bool SubsetMightBeServedWithKRoutes(
+      int k, absl::Span<const int> subset,
+      RouteRelationsHelper* helper = nullptr,
+      LinearConstraintManager* manager = nullptr, int special_node = -1,
+      bool use_outgoing = true);
 
   // Advanced. If non-empty, and one of the functions above proved that a subset
   // needs at least k vehicles to serve it, then these vector list the nodes
@@ -558,6 +606,7 @@ class MinOutgoingFlowHelper {
   int64_t num_full_dp_calls_ = 0;
   int64_t num_full_dp_early_abort_ = 0;
   int64_t num_full_dp_work_abort_ = 0;
+  int64_t num_full_dp_rc_skip_ = 0;
   absl::flat_hash_map<std::string, int> num_by_type_;
 };
 

@@ -2561,6 +2561,37 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
   if (adjusted) ++num_adjusts_;
 }
 
+void LinearProgrammingConstraint::SetReducedCostsInConstraintManager(
+    const LinearConstraint& ct) {
+  constraint_manager_.ClearReducedCostsInfo();
+  absl::int128 ub = ct.ub.value();
+  absl::int128 level_zero_lb = 0;
+  for (int i = 0; i < ct.num_terms; ++i) {
+    IntegerVariable var = ct.vars[i];
+    IntegerValue coeff = ct.coeffs[i];
+    if (coeff < 0) {
+      coeff = -coeff;
+      var = NegationOf(var);
+    }
+
+    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+    level_zero_lb += absl::int128(coeff.value()) * absl::int128(lb.value());
+
+    if (lb == integer_trail_->LevelZeroUpperBound(var)) continue;
+    const LiteralIndex lit = integer_encoder_->GetAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, lb + 1));
+    if (lit != kNoLiteralIndex) {
+      constraint_manager_.SetLiteralReducedCost(Literal(lit), coeff);
+    }
+  }
+  const absl::int128 gap = absl::int128(ct.ub.value()) - level_zero_lb;
+  if (gap > 0) {
+    constraint_manager_.SetReducedCostsGap(gap);
+  } else {
+    constraint_manager_.ClearReducedCostsInfo();
+  }
+}
+
 bool LinearProgrammingConstraint::PropagateLpConstraint(LinearConstraint ct) {
   DCHECK(constraint_manager_.DebugCheckConstraint(ct));
 
@@ -2700,6 +2731,7 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
     return explanation.ub >= 0;
   }
 
+  SetReducedCostsInConstraintManager(explanation);
   return PropagateLpConstraint(std::move(explanation));
 }
 

@@ -38,6 +38,7 @@
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
+#include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -144,6 +145,7 @@ MinOutgoingFlowHelper::~MinOutgoingFlowHelper() {
       {"RoutingDp/num_full_dp_early_abort", num_full_dp_early_abort_});
   stats.push_back(
       {"RoutingDp/num_full_dp_work_abort", num_full_dp_work_abort_});
+  stats.push_back({"RoutingDp/num_full_dp_rc_skip", num_full_dp_rc_skip_});
   for (const auto& [name, count] : num_by_type_) {
     stats.push_back({absl::StrCat("RoutingDp/num_bounds_", name), count});
   }
@@ -751,7 +753,7 @@ int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
 
 bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
     int k, absl::Span<const int> subset, RouteRelationsHelper* helper,
-    int special_node, bool use_outgoing) {
+    LinearConstraintManager* manager, int special_node, bool use_outgoing) {
   cannot_be_first_.clear();
   cannot_be_last_.clear();
   if (k >= subset.size()) return true;
@@ -828,6 +830,13 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
     // Hopefully the DFS order limit the number of entry to O(n^2 * k), so still
     // somewhat reasonable for small values.
     absl::flat_hash_map<IntegerVariable, IntegerValue> lbs;
+
+    // The sum of the reduced costs of all the literals selected to form the
+    // route(s) encoded by this state. If this becomes too large we know that
+    // this state can never be used to get to a better solution than the current
+    // best one and is thus "infeasible" for the problem of finding a better
+    // solution.
+    absl::int128 sum_of_reduced_costs = 0;
   };
 
   const int size = subset.size();
@@ -904,17 +913,33 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
         if (from_state.node_set & head_mask) continue;
 
         State to_state;
-        to_state.lbs = from_state.lbs;  // keep old bounds
 
-        bool ok;
-        if (helper != nullptr) {
-          ok = helper->PropagateLocalBoundsUsingShortestPaths(
-              integer_trail_, tail, head, from_state.lbs, &to_state.lbs);
-        } else {
-          ok = binary_relation_repository_.PropagateLocalBounds(
-              integer_trail_, literal, from_state.lbs, &to_state.lbs);
+        // Use reduced costs to exclude solutions that cannot improve our
+        // current best solution.
+        if (manager != nullptr) {
+          DCHECK_EQ(helper, nullptr);
+          to_state.sum_of_reduced_costs =
+              from_state.sum_of_reduced_costs +
+              manager->GetLiteralReducedCost(literal);
+          if (to_state.sum_of_reduced_costs > manager->ReducedCostsGap()) {
+            ++num_full_dp_rc_skip_;
+            continue;
+          }
         }
-        if (!ok) continue;
+
+        // We start from the old bounds and update them.
+        to_state.lbs = from_state.lbs;
+        if (helper != nullptr) {
+          if (!helper->PropagateLocalBoundsUsingShortestPaths(
+                  integer_trail_, tail, head, from_state.lbs, &to_state.lbs)) {
+            continue;
+          }
+        } else {
+          if (!binary_relation_repository_.PropagateLocalBounds(
+                  integer_trail_, literal, from_state.lbs, &to_state.lbs)) {
+            continue;
+          }
+        }
 
         to_state.node_set = from_state.node_set | head_mask;
         to_state.last_nodes_set = from_state.last_nodes_set | head_mask;
@@ -1099,33 +1124,6 @@ class RouteRelationsBuilder {
   }
 
  private:
-  // A coeff * var + offset affine expression, where `var` is always a positive
-  // reference (contrary to AffineExpression, where the coefficient is always
-  // positive).
-  struct NodeExpression {
-    IntegerVariable var;
-    IntegerValue coeff;
-    IntegerValue offset;
-
-    NodeExpression() : var(kNoIntegerVariable), coeff(0), offset(0) {}
-
-    NodeExpression(IntegerVariable var, IntegerValue coeff, IntegerValue offset)
-        : var(var), coeff(coeff), offset(offset) {}
-
-    explicit NodeExpression(const AffineExpression& expr) {
-      if (expr.var == kNoIntegerVariable || VariableIsPositive(expr.var)) {
-        var = expr.var;
-        coeff = expr.coeff;
-      } else {
-        var = PositiveVariable(expr.var);
-        coeff = -expr.coeff;
-      }
-      offset = expr.constant;
-    }
-
-    bool IsEmpty() const { return var == kNoIntegerVariable; }
-  };
-
   AffineExpression& node_expression(int node, int dimension) {
     return flat_node_dim_expressions_[node * num_dimensions_ + dimension];
   };
@@ -1459,82 +1457,33 @@ class RouteRelationsBuilder {
   // given relation `r` between the variables used in these expressions.
   void ComputeArcRelation(int arc_index, int dimension,
                           const NodeExpression& tail_expr,
-                          const NodeExpression& head_expr,
-                          const sat::Relation& r,
+                          const NodeExpression& head_expr, sat::Relation r,
                           const IntegerTrail& integer_trail) {
     DCHECK((r.a.var == tail_expr.var && r.b.var == head_expr.var) ||
            (r.a.var == head_expr.var && r.b.var == tail_expr.var));
-    int64_t a = r.a.coeff.value();
-    int64_t b = r.b.coeff.value();
-    if (r.a.var != tail_expr.var) std::swap(a, b);
-    if (a == 0 || tail_expr.coeff == 0) {
-      LocalRelation result =
-          ComputeArcUnaryRelation(head_expr, tail_expr, b, r.lhs, r.rhs);
+    if (r.a.var != tail_expr.var) std::swap(r.a, r.b);
+    if (r.a.coeff == 0 || tail_expr.coeff == 0) {
+      LocalRelation result = ComputeArcUnaryRelation(head_expr, tail_expr,
+                                                     r.b.coeff, r.lhs, r.rhs);
       std::swap(result.tail_coeff, result.head_coeff);
       ProcessNewArcRelation(arc_index, dimension, result);
       return;
     }
-    if (b == 0 || head_expr.coeff == 0) {
-      ProcessNewArcRelation(
-          arc_index, dimension,
-          ComputeArcUnaryRelation(tail_expr, head_expr, a, r.lhs, r.rhs));
+    if (r.b.coeff == 0 || head_expr.coeff == 0) {
+      ProcessNewArcRelation(arc_index, dimension,
+                            ComputeArcUnaryRelation(tail_expr, head_expr,
+                                                    r.a.coeff, r.lhs, r.rhs));
       return;
     }
-    // A relation a * X + b * Y \in [lhs, rhs] between the X and Y variables is
-    // equivalent to a (k.a/A) * (A.X+α) + (k.b/B) * (B.Y+β) \in [k.lhs+ɣ,
-    // k.rhs+ɣ] relation between the A.X+α and B.Y+β terms if the divisions are
-    // exact, where ɣ=(k.a/A)*α+(k.b/B)*β. The smallest k > 0 such that k.a/A is
-    // integer is |A|/gcd(a, A), and the smallest k > 0 such that k.b/B is
-    // integer is |B|/gcd(b, B). The least common multiple of the two is the
-    // smallest k ensuring the above equivalence.
-    const int64_t tail_k = std::abs(tail_expr.coeff.value()) /
-                           std::gcd(tail_expr.coeff.value(), a);
-    const int64_t head_k = std::abs(head_expr.coeff.value()) /
-                           std::gcd(head_expr.coeff.value(), b);
-    const int64_t k = std::lcm(tail_k, head_k);
-    // TODO(user): do not add the relation in case of overflow (this can
-    // happen if the expressions are provided by the user in the model proto).
-    const IntegerValue tail_coeff = (k * a) / tail_expr.coeff;
-    const IntegerValue head_coeff = (k * b) / head_expr.coeff;
-    const IntegerValue domain_offset =
-        tail_coeff * tail_expr.offset + head_coeff * head_expr.offset;
-    ProcessNewArcRelation(arc_index, dimension,
-                          {tail_coeff, head_coeff, k * r.lhs + domain_offset,
-                           k * r.rhs + domain_offset});
-    // Transforms the relation into the form b * Y - a * X \in [lhs, rhs], with
-    // b of the same sign as the head expression coefficient.
-    a = -a;
-    IntegerValue lhs = r.lhs;
-    IntegerValue rhs = r.rhs;
-    if ((b < 0) != (head_expr.coeff < 0)) {
-      a = -a;
-      b = -b;
-      lhs = -lhs;
-      rhs = -rhs;
-      std::swap(lhs, rhs);
-    }
-    // Transforms the relation into the form B * Y - A * X \in [lhs, rhs] by
-    // adding (B-b) * Y and (a-A) * X (using the bounds of X and Y to bound the
-    // new terms).
-    // TODO(user): do not add the relation in case of overflow (this can
-    // happen if the expressions are provided by the user in the model proto).
-    auto add_term = [&](IntegerVariable var, IntegerValue coeff) {
-      if (coeff > 0) {
-        lhs += coeff * integer_trail.LevelZeroLowerBound(var);
-        rhs += coeff * integer_trail.LevelZeroUpperBound(var);
-      } else {
-        lhs += coeff * integer_trail.LevelZeroUpperBound(var);
-        rhs += coeff * integer_trail.LevelZeroLowerBound(var);
-      }
-    };
-    add_term(r.b.var, head_expr.coeff.value() - b);
-    add_term(r.a.var, a - tail_expr.coeff.value());
-    // Transforms the relation into head_expr - tail_expr \in [lhs, rhs] by
-    // adding the offset values of the expressions.
-    lhs += head_expr.offset - tail_expr.offset;
-    rhs += head_expr.offset - tail_expr.offset;
-    ProcessNewArcRelation(arc_index, dimension,
-                          {-1, 1, lhs.value(), rhs.value()});
+    const auto [lhs, rhs] =
+        GetDifferenceBounds(tail_expr, head_expr, r,
+                            {integer_trail.LowerBound(tail_expr.var),
+                             integer_trail.UpperBound(tail_expr.var)},
+                            {integer_trail.LowerBound(head_expr.var),
+                             integer_trail.UpperBound(head_expr.var)});
+    ProcessNewArcRelation(
+        arc_index, dimension,
+        {.tail_coeff = -1, .head_coeff = 1, .lhs = lhs, .rhs = rhs});
   }
 
   // Returns a relation between two given expressions which is equivalent to a
@@ -1605,6 +1554,73 @@ RoutingCumulExpressions DetectDimensionsAndCumulExpressions(
   result.flat_node_dim_expressions =
       std::move(builder.flat_node_dim_expressions());
   return result;
+}
+
+namespace {
+// Returns a lower bound of y_expr - x_expr.
+IntegerValue GetDifferenceLowerBound(
+    const NodeExpression& x_expr, const NodeExpression& y_expr,
+    const sat::Relation& r,
+    const std::pair<IntegerValue, IntegerValue>& x_var_bounds,
+    const std::pair<IntegerValue, IntegerValue>& y_var_bounds) {
+  // Let's note x_expr = A.x+α, y_expr = B.x+β, and r = "b.y-a.x in [lhs, rhs]".
+  // We have x in [lb(x), ub(x)] and y in [lb(y), ub(y)], and we want to find
+  // the lower bound of y_expr - x_expr = lb(B.x - A.y) + β - α. We have:
+  //   B.y - A.x = [(B-k.b).y + k.b.y] - [(A-k.a).x + k.a.x]
+  //             = (B+k.b).y + (k.a-A).x + k.(b.y - a.x)
+  // for any k. A lower bound on the first term is (B-k.b).lb(y) if B-k.b >= 0,
+  // and (B-k.b).ub(y) otherwise. This can be written as:
+  //   (B-k.b).y >= max(0, B-k.b).lb(y) + min(0, B-k.b).ub(y)
+  // Similarly:
+  //   (k.a-A).x >= max(0, k.a-A).lb(x) + min(0, k.a-A).ub(x)
+  // And:
+  //   k.(b.y - a.x) >= max(0, k).lhs + min(0, k).rhs
+  // Hence we get:
+  //   B.y - A.x >= max(0, B-k.b).lb(y) + min(0, B-k.b).ub(y) +
+  //                max(0, k.a-A).lb(x) + min(0, k.a-A).ub(x) +
+  //                max(0, k).lhs + min(0, k).rhs
+  // The derivative of this expression with respect to k is piecewise constant
+  // and can only change value around 0, A/a, and B/b. Hence we can compute an
+  // "interesting" lower bound by taking the maximum of this expression around
+  // these points, instead of over all k values.
+  // TODO(user): overflows could happen if the node expressions are
+  // provided by the user in the model proto.
+  auto lower_bound = [&](IntegerValue k) {
+    const IntegerValue y_coeff = y_expr.coeff - k * r.b.coeff;
+    const IntegerValue x_coeff = k * (-r.a.coeff) - x_expr.coeff;
+    return y_coeff * (y_coeff >= 0 ? y_var_bounds.first : y_var_bounds.second) +
+           x_coeff * (x_coeff >= 0 ? x_var_bounds.first : x_var_bounds.second) +
+           k * (k >= 0 ? r.lhs : r.rhs);
+  };
+  const IntegerValue k_x = MathUtil::FloorOfRatio(x_expr.coeff, -r.a.coeff);
+  const IntegerValue k_y = MathUtil::FloorOfRatio(y_expr.coeff, r.b.coeff);
+  IntegerValue result = lower_bound(0);
+  result = std::max(result, lower_bound(k_x));
+  result = std::max(result, lower_bound(k_x + 1));
+  result = std::max(result, lower_bound(k_y));
+  result = std::max(result, lower_bound(k_y + 1));
+  return result + y_expr.offset - x_expr.offset;
+}
+}  // namespace
+
+std::pair<IntegerValue, IntegerValue> GetDifferenceBounds(
+    const NodeExpression& x_expr, const NodeExpression& y_expr,
+    const sat::Relation& r,
+    const std::pair<IntegerValue, IntegerValue>& x_var_bounds,
+    const std::pair<IntegerValue, IntegerValue>& y_var_bounds) {
+  DCHECK_EQ(x_expr.var, r.a.var);
+  DCHECK_EQ(y_expr.var, r.b.var);
+  DCHECK_NE(x_expr.var, kNoIntegerVariable);
+  DCHECK_NE(y_expr.var, kNoIntegerVariable);
+  DCHECK_NE(x_expr.coeff, 0);
+  DCHECK_NE(y_expr.coeff, 0);
+  DCHECK_NE(r.a.coeff, 0);
+  DCHECK_NE(r.b.coeff, 0);
+  const IntegerValue lb =
+      GetDifferenceLowerBound(x_expr, y_expr, r, x_var_bounds, y_var_bounds);
+  const IntegerValue ub = -GetDifferenceLowerBound(
+      x_expr.Negated(), y_expr.Negated(), r, x_var_bounds, y_var_bounds);
+  return {lb, ub};
 }
 
 std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
@@ -2508,19 +2524,24 @@ bool RoutingCutHelper::TrySubsetCut(int known_bound, std::string name,
     // Note that we only look for violated cuts, but also in order to not try
     // all nodes from the subset, we only look at large enough incoming/outgoing
     // weight.
+    //
+    // TODO(user): We could easily look for an arc that cannot be used to enter
+    // or leave a subset rather than a node. This should lead to tighter bound,
+    // and more cuts (that would just ignore that arc rather than all the arcs
+    // entering/leaving from a node).
     const double threshold = static_cast<double>(best_bound.bound()) - 1e-4;
     for (const int n : subset) {
       if (nodes_incoming_weight_[n] > 0.1 &&
           total_incoming_weight - nodes_incoming_weight_[n] < threshold &&
           !min_outgoing_flow_helper_.SubsetMightBeServedWithKRoutes(
-              best_bound.bound(), subset, nullptr, /*special_node=*/n,
+              best_bound.bound(), subset, nullptr, manager, /*special_node=*/n,
               /*use_outgoing=*/true)) {
         best_bound.Update(best_bound.bound(), "", {n}, {});
       }
       if (nodes_outgoing_weight_[n] > 0.1 &&
           total_outgoing_weight - nodes_outgoing_weight_[n] < threshold &&
           !min_outgoing_flow_helper_.SubsetMightBeServedWithKRoutes(
-              best_bound.bound(), subset, nullptr, /*special_node=*/n,
+              best_bound.bound(), subset, nullptr, manager, /*special_node=*/n,
               /*use_outgoing=*/false)) {
         best_bound.Update(best_bound.bound(), "", {}, {n});
       }
@@ -2722,6 +2743,8 @@ void RoutingCutHelper::TryInfeasiblePathCuts(LinearConstraintManager* manager) {
   top_n_cuts.TransferToManager(manager);
 }
 
+// Note that it makes little sense to use reduced cost here as the LP solution
+// should likely satisfy the current LP optimality equation.
 void RoutingCutHelper::GenerateCutsForInfeasiblePaths(
     int start_node, int max_path_length,
     const CompactVectorVector<int, std::pair<int, double>>&
@@ -2734,14 +2757,17 @@ void RoutingCutHelper::GenerateCutsForInfeasiblePaths(
   struct State {
     // The last node of the path.
     int last_node;
+
     // The sum of the lp values of the path's arcs.
-    double sum_of_lp_values;
+    double sum_of_lp_values = 0.0;
+
     // Variable lower bounds that can be inferred by assuming that the path's
     // arc literals are true (with the binary relation repository).
     absl::flat_hash_map<IntegerVariable, IntegerValue> bounds;
+
     // The index of the next outgoing arc of `last_node` to explore (in
     // outgoing_arcs_with_lp_values[last_node]).
-    int iteration;
+    int iteration = 0;
   };
   std::stack<State> states;
   // Whether each node is on the current path. The current path is the one
@@ -2751,7 +2777,7 @@ void RoutingCutHelper::GenerateCutsForInfeasiblePaths(
   std::vector<Literal> path_literals;
 
   path_nodes[start_node] = true;
-  states.push({start_node, /*sum_of_lp_values=*/0.0, /*bounds=*/{}, 0});
+  states.push({start_node});
   while (!states.empty()) {
     State& state = states.top();
     DCHECK_EQ(states.size(), path_literals.size() + 1);

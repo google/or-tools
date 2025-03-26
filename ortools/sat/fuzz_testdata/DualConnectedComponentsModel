@@ -58,13 +58,13 @@ constraints {
   }
 }
 objective {
-  vars: -1
-  vars: -2
-  vars: -3
-  vars: -4
+  vars: 0
+  vars: 1
+  vars: 2
+  vars: 3
   scaling_factor: -1
-  coeffs: 1
-  coeffs: 2
-  coeffs: 3
-  coeffs: 4
+  coeffs: -1
+  coeffs: -2
+  coeffs: -3
+  coeffs: -4
 }
