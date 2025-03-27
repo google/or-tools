@@ -74,8 +74,9 @@ std::function<void(Model*)> AllDifferentBinary(
 }
 
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<AffineExpression>& expressions) {
-  return [=](Model* model) {
+    absl::Span<const AffineExpression> expressions) {
+  return [=, expressions = std::vector<AffineExpression>(
+                 expressions.begin(), expressions.end())](Model* model) {
     if (expressions.empty()) return;
     auto* constraint = new AllDifferentBoundsPropagator(
         expressions, model->GetOrCreate<IntegerTrail>());
