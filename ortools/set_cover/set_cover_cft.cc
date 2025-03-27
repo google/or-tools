@@ -626,10 +626,50 @@ Cost CoverGreedly(const Model& model, const DualState& dual_state,
 namespace {
 
 void FixColumns(CoreModel& model, const std::vector<SubsetIndex>& cols_to_fix,
-                ElementMapVector& new_to_old_map);
-void FixBestColumns(CoreModel& model, PrimalDualState& state);
+                ElementMapVector& new_to_old_map) {
+  // TOD(c4v4): implement
+}
+
+void FixBestColumns(CoreModel& model, PrimalDualState& state) {
+  auto& [best_sol, dual_state] = state;
+
+  std::vector<SubsetIndex> cols_to_fix;
+  CoverCounters row_coverage(model.num_elements());
+  for (SubsetIndex j : model.SubsetRange()) {
+    if (dual_state.reduced_costs()[j] < -0.001) {
+      cols_to_fix.push_back(j);
+      row_coverage.Cover(model.columns()[j]);
+    }
+  }
+
+  // Remove columns that overlap between each other
+  gtl::STLEraseAllFromSequenceIf(&cols_to_fix, [&](SubsetIndex j) {
+    return absl::c_any_of(model.columns()[j],
+                          [&](ElementIndex i) { return row_coverage[i] > 1; });
+  });
+
+  // Ensure at least a minimum number of columns are fixed
+  BaseInt fix_at_least =
+      cols_to_fix.size() + std::max(1, model.num_elements() / 200);
+  CoverGreedly(model, state.dual_state, std::numeric_limits<Cost>::max(),
+               fix_at_least, cols_to_fix);
+
+  // Fix columns and update the model
+  ElementMapVector new_to_old_map;
+  FixColumns(model, cols_to_fix, new_to_old_map);  // TODO(c4v4): implement
+
+  // Update multipliers for the reduced model
+  dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
+    i_mult = state.dual_state.multipliers()[new_to_old_map[i]];
+  });
+}
+
 void RandomizeDualState(const Model& model, DualState& dual_state,
-                        absl::BitGen& rnd);
+                        absl::BitGen& rnd) {
+  dual_state.DualUpdate(model, [&](ElementIndex, Cost i_multiplier) {
+    i_multiplier *= absl::Uniform(rnd, 0.9, 1.1);
+  });
+}
 }  // namespace
 
 void HeuristicCBs::RunHeuristic(const SubgradientContext& context,
