@@ -150,6 +150,7 @@ class BoundCBs : public SubgradientCBs {
   static constexpr Cost kTol = 1e-6;
 
   BoundCBs(const Model& model);
+  Cost step_size() const { return step_size_; }
   bool ExitCondition(const SubgradientContext& context) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
@@ -159,16 +160,33 @@ class BoundCBs : public SubgradientCBs {
   }
   bool UpdateCoreModel(CoreModel& core_model,
                        PrimalDualState& best_state) override;
+
+ private:
+  void MakeMinimalCoverageSubgradient(const SubgradientContext& context,
+                                      ElementCostVector& subgradient);
+
+ private:
+  Cost squared_norm_;
+  ElementCostVector direction_;  // stabilized subgradient
+  std::vector<SubsetIndex> lagrangian_solution_;
+
+  // Stopping condition
+  Cost prev_best_lb_;
+  BaseInt max_iter_countdown_;
+  BaseInt exit_test_countdown_;
+  BaseInt exit_test_period_;
+
+  // Step size
+  void UpdateStepSize(Cost lower_bound);
+  Cost step_size_;
+  Cost last_min_lb_seen_;
+  Cost last_max_lb_seen_;
+  BaseInt step_size_update_countdown_;
+  BaseInt step_size_update_period_;
 };
 
 void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
                              PrimalDualState& best_state);
-
-///////////////////////////////////////////////////////////////////////
-//////////////////////// FULL TO CORE PRICING /////////////////////////
-///////////////////////////////////////////////////////////////////////
-
-class FullToCoreModel : public CoreModel {};
 
 ////////////////////////////////////////////////////////////////////////
 /////////////////////// MULTIPLIERS BASED GREEDY ///////////////////////

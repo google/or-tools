@@ -18,6 +18,8 @@
 #include <absl/status/status.h>
 #include <absl/types/span.h>
 
+#include <limits>
+
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
@@ -80,6 +82,35 @@ class CoverCounters {
 
 }  // namespace
 
+Cost ComputeReducedCosts(const Model& model,
+                         const ElementCostVector& multipliers,
+                         SubsetCostVector& reduced_costs) {
+  // Compute new reduced costs (O(nnz))
+  Cost negative_sum = .0;
+  for (SubsetIndex j : model.SubsetRange()) {
+    reduced_costs[j] = model.subset_costs()[j];
+    for (ElementIndex i : model.columns()[j]) {
+      reduced_costs[j] -= multipliers[i];
+    }
+    if (reduced_costs[j] < .0) {
+      negative_sum += reduced_costs[j];
+    }
+  }
+  return negative_sum;
+}
+
+DualState::DualState(const Model& model)
+    : lower_bound_(),
+      multipliers_(model.num_elements(), std::numeric_limits<Cost>::max()),
+      reduced_costs_(model.subset_costs()) {
+  DualUpdate(model, [&](ElementIndex i, Cost& i_multiplier) {
+    for (SubsetIndex j : model.rows()[i]) {
+      Cost candidate = model.subset_costs()[j] / model.columns()[j].size();
+      i_multiplier = std::min(i_multiplier, candidate);
+    }
+  });
+}
+
 absl::Status ValidateModel(const Model& model) {
   if (model.rows().size() != model.num_elements()) {
     return absl::InvalidArgumentError("Model has no rows.");
@@ -127,6 +158,113 @@ absl::Status ValidateFeasibleSolution(const Model& model,
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////// SUBGRADIENT /////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+
+BoundCBs::BoundCBs(const Model& model)
+    : squared_norm_(static_cast<Cost>(model.num_elements())),
+      direction_(ElementCostVector(model.num_elements(), .0)),
+      prev_best_lb_(std::numeric_limits<Cost>::lowest()),
+      max_iter_countdown_(10 * model.num_elements()),  // Arbitrary from [1]
+      exit_test_countdown_(300),                       // Arbitrary from [1]
+      exit_test_period_(300),                          // Arbitrary from [1]
+      step_size_(0.1),                                 // Arbitrary from [1]
+      last_min_lb_seen_(std::numeric_limits<Cost>::max()),
+      last_max_lb_seen_(.0),
+      step_size_update_countdown_(20),  // Arbitrary from [1]
+      step_size_update_period_(20)      // Arbitrary from [1]
+{}
+
+bool BoundCBs::ExitCondition(const SubgradientContext& context) {
+  if (--max_iter_countdown_ <= 0 || squared_norm_ <= kTol) {
+    return true;
+  }
+  if (--exit_test_countdown_ > 0) {
+    return false;
+  }
+  exit_test_countdown_ = exit_test_period_;
+  Cost best_lower_bound = context.best_dual_state.lower_bound();
+  Cost abs_improvement = best_lower_bound - prev_best_lb_;
+  Cost rel_improvement = DivideIfGE0(abs_improvement, best_lower_bound);
+  prev_best_lb_ = best_lower_bound;
+  return abs_improvement < 1.0 && rel_improvement < .001;
+}
+
+void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
+                                       ElementCostVector& delta_mults) {
+  Cost lower_bound = context.current_dual_state.lower_bound();
+  UpdateStepSize(lower_bound);
+
+  direction_ = context.subgradient;
+  MakeMinimalCoverageSubgradient(context, direction_);
+
+  squared_norm_ = .0;
+  for (ElementIndex i : context.model.ElementRange()) {
+    squared_norm_ += direction_[i] * direction_[i];
+  }
+
+  Cost upper_bound = context.best_solution.cost();
+  Cost delta = upper_bound - lower_bound;
+  Cost step_constant = step_size_ * delta / squared_norm_;
+  for (ElementIndex i : context.model.ElementRange()) {
+    delta_mults[i] = step_constant * direction_[i];
+  }
+}
+
+void BoundCBs::UpdateStepSize(Cost lower_bound) {
+  last_min_lb_seen_ = std::min(last_min_lb_seen_, lower_bound);
+  last_max_lb_seen_ = std::max(last_max_lb_seen_, lower_bound);
+
+  if (--step_size_update_countdown_ <= 0) {
+    step_size_update_countdown_ = step_size_update_period_;
+
+    Cost delta = last_max_lb_seen_ - last_min_lb_seen_;
+    Cost gap = DivideIfGE0(delta, last_max_lb_seen_);
+    if (gap <= .001) {       //
+      step_size_ *= 1.5;     // Arbitray
+    } else if (gap > .01) {  // from [1]
+      step_size_ /= 2.0;     //
+    }
+    last_min_lb_seen_ = std::numeric_limits<Cost>::max();
+    last_max_lb_seen_ = .0;
+    // Not described in the paper, but in rare cases the subgradient diverges
+    step_size_ = std::clamp(step_size_, 1e-6, 10.0);
+  }
+}
+
+void BoundCBs::MakeMinimalCoverageSubgradient(const SubgradientContext& context,
+                                              ElementCostVector& subgradient) {
+  lagrangian_solution_.clear();
+  const auto& reduced_costs = context.current_dual_state.reduced_costs();
+  for (SubsetIndex j : context.model.SubsetRange()) {
+    if (reduced_costs[j] < .0) {
+      lagrangian_solution_.push_back(j);
+    }
+  }
+
+  absl::c_sort(lagrangian_solution_, [&](SubsetIndex j1, SubsetIndex j2) {
+    return reduced_costs[j1] > reduced_costs[j2];
+  });
+
+  const SparseColumnView& cols = context.model.columns();
+  for (SubsetIndex j : lagrangian_solution_) {
+    if (absl::c_all_of(cols[j], [&](auto i) { return subgradient[i] < 0; })) {
+      absl::c_for_each(cols[j], [&](auto i) { subgradient[i] += 1.0; });
+    }
+  }
+}
+
+bool BoundCBs::UpdateCoreModel(CoreModel& core_model,
+                               PrimalDualState& best_state) {
+  if (core_model.UpdateCore(best_state)) {
+    // grant at least 10 iterations before the next exit test
+    prev_best_lb_ =
+        std::min(prev_best_lb_, best_state.dual_state.lower_bound());
+    exit_test_countdown_ = std::max(exit_test_countdown_, 10);
+    max_iter_countdown_ = std::max(max_iter_countdown_, 10);
+    return true;
+  }
+  return false;
+}
+
 void SubgradientOptimization(CoreModel& model, SubgradientCBs& cbs,
                              PrimalDualState& best_state) {
   DCHECK_OK(ValidateModel(model));
