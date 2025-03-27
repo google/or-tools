@@ -16,8 +16,10 @@
 
 #include <cstdint>
 
+#include "absl/time/time.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/timer.h"
 
 namespace operations_research {
 
@@ -57,13 +59,36 @@ using SparseRow = util_intops::StrongVector<RowEntryIndex, SubsetIndex>;
 using ElementToIntVector = util_intops::StrongVector<ElementIndex, BaseInt>;
 using SubsetToIntVector = util_intops::StrongVector<SubsetIndex, BaseInt>;
 
-// Views of the sparse vectors. These need not be aligned as it's their contents
-// that need to be aligned.
+// Views of the sparse vectors.
 using SparseColumnView = util_intops::StrongVector<SubsetIndex, SparseColumn>;
 using SparseRowView = util_intops::StrongVector<ElementIndex, SparseRow>;
 
 using SubsetBoolVector = util_intops::StrongVector<SubsetIndex, bool>;
 using ElementBoolVector = util_intops::StrongVector<ElementIndex, bool>;
+
+// Simple stopwatch class that enables recording the time spent in various
+// functions in the code.
+// It uses RAII to automatically record the time spent in the constructor and
+// destructor, independently of the path taken by the code.
+class StopWatch {
+ public:
+  explicit StopWatch(absl::Duration* duration) : duration_(duration), timer_() {
+    timer_.Start();
+  }
+  ~StopWatch() {
+    timer_.Stop();
+    *duration_ = timer_.GetDuration();
+  }
+  // Returns the elapsed time in seconds at a given moment. To be use to
+  // implement time limits in the derived classes.
+  double elapsed_time_in_seconds() const { return timer_.Get(); }
+
+  absl::Duration GetElapsedDuration() const { return timer_.GetDuration(); }
+
+ private:
+  absl::Duration* duration_;
+  WallTimer timer_;
+};
 
 }  // namespace operations_research
 

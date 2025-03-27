@@ -18,8 +18,10 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 
@@ -42,24 +44,28 @@ namespace operations_research {
 // Algorithms.” Mathematical Programming, 91 (3): 447–78.
 // https://link.springer.com/article/10.1007/s101070100262
 
-class SetCoverLagrangian {
+// The implementation benefits from the features of SetCoverSolutionGenerator.
+// Notice however that NextSolution() is not implemented, and the class is
+// intended to be used only for ComputeLowerBound(). FOR THE TIME BEING.
+
+class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
  public:
-  explicit SetCoverLagrangian(SetCoverInvariant* inv, int num_threads = 1)
-      : inv_(inv),
-        model_(*inv->model()),
-        num_threads_(num_threads),
-        thread_pool_(new ThreadPool(num_threads)) {
-    thread_pool_->StartWorkers();
+  explicit SetCoverLagrangian(SetCoverInvariant* inv,
+                              const absl::string_view name = "Lagrangian")
+      : SubsetListBasedSolutionGenerator(inv, name),
+        num_threads_(1),
+        thread_pool_(nullptr) {}
+
+  SetCoverLagrangian& UseNumThreads(int num_threads) {
+    num_threads_ = num_threads;
+    thread_pool_ = std::make_unique<ThreadPool>(num_threads);
+    return *this;
   }
 
-  // Returns true if a solution was found.
-  // TODO(user): Add time-outs and exit with a partial solution. This seems
-  // unlikely, though.
-  bool NextSolution();
+  using SubsetListBasedSolutionGenerator::NextSolution;
 
-  // Computes the next partial solution considering only the subsets whose
-  // indices are in focus.
-  bool NextSolution(const std::vector<SubsetIndex>& focus);
+  // This is a dummy implementation of NextSolution() that is not used.
+  bool NextSolution(absl::Span<const SubsetIndex> _) final { return false; }
 
   // Initializes the multipliers vector (u) based on the cost per subset.
   ElementCostVector InitializeLagrangeMultipliers() const;
@@ -134,12 +140,6 @@ class SetCoverLagrangian {
       const SubsetCostVector& costs, Cost upper_bound);
 
  private:
-  // The invariant on which the algorithm will run.
-  SetCoverInvariant* inv_;
-
-  // The model on which the invariant is defined.
-  const SetCoverModel& model_;
-
   // The number of threads to use for parallelization.
   int num_threads_;
 

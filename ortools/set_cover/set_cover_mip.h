@@ -14,8 +14,10 @@
 #ifndef OR_TOOLS_SET_COVER_SET_COVER_MIP_H_
 #define OR_TOOLS_SET_COVER_SET_COVER_MIP_H_
 
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 
 namespace operations_research {
@@ -27,43 +29,37 @@ enum class SetCoverMipSolver : int {
   PDLP = 4
 };
 
-class SetCoverMip {
+class SetCoverMip : public SubsetListBasedSolutionGenerator {
  public:
   // Simpler constructor that uses SCIP by default.
-  explicit SetCoverMip(SetCoverInvariant* inv)
-      : inv_(inv), mip_solver_(SetCoverMipSolver::SCIP) {}
+  explicit SetCoverMip(SetCoverInvariant* inv,
+                       const absl::string_view name = "Mip")
+      : SubsetListBasedSolutionGenerator(inv, name),
+        mip_solver_(SetCoverMipSolver::SCIP),
+        use_integers_(true) {}
 
-  // The constructor takes a SetCoverInvariant that will store the resulting
-  // variable choices, and a MIP Solver.
-  SetCoverMip(SetCoverInvariant* inv, SetCoverMipSolver mip_solver)
-      : inv_(inv), mip_solver_(mip_solver) {}
+  SetCoverMip& UseMipSolver(SetCoverMipSolver mip_solver) {
+    mip_solver_ = mip_solver;
+    return *this;
+  }
 
-  // Returns true if a solution was found.
-  // If use_integers is false, lower_bound_ is populated with a linear
-  // lower bound.
-  // time_limit_in_seconds is a (rather soft) time limit for the execution time.
-  // TODO(user): Add time-outs and exit with a partial solution. This seems
-  // unlikely, though.
-  bool NextSolution(bool use_integers, double time_limit_in_seconds);
+  SetCoverMip& UseIntegers(bool use_integers) {
+    use_integers_ = use_integers;
+    return *this;
+  }
+
+  using SubsetListBasedSolutionGenerator::NextSolution;
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(absl::Span<const SubsetIndex> focus, bool use_integers,
-                    double time_limit_in_seconds);
-
-  // Returns the lower bound of the linear relaxation of the problem.
-  double lower_bound() const { return lower_bound_; }
+  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
 
  private:
-  // The invariant used to maintain the state of the problem.
-  SetCoverInvariant* inv_;
-
   // The MIP solver flavor used by the instance.
   SetCoverMipSolver mip_solver_;
 
-  // The lower bound of the problem, when use_integers is false. The MIP with
-  // continuous variables becomes a computationally simpler linear program.
-  double lower_bound_;
+  // Whether to use integer variables in the MIP.
+  bool use_integers_;
 };
 }  // namespace operations_research
 
