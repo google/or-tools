@@ -146,6 +146,8 @@ MinOutgoingFlowHelper::~MinOutgoingFlowHelper() {
   stats.push_back(
       {"RoutingDp/num_full_dp_work_abort", num_full_dp_work_abort_});
   stats.push_back({"RoutingDp/num_full_dp_rc_skip", num_full_dp_rc_skip_});
+  stats.push_back(
+      {"RoutingDp/num_full_dp_unique_arc", num_full_dp_unique_arc_});
   for (const auto& [name, count] : num_by_type_) {
     stats.push_back({absl::StrCat("RoutingDp/num_bounds_", name), count});
   }
@@ -170,6 +172,8 @@ void MinOutgoingFlowHelper::PrecomputeDataForSubset(
 
   has_incoming_arcs_from_outside_.assign(num_nodes, false);
   has_outgoing_arcs_to_outside_.assign(num_nodes, false);
+  incoming_arcs_from_outside_.assign(num_nodes, {});
+  outgoing_arcs_to_outside_.assign(num_nodes, {});
 
   for (auto& v : incoming_arc_indices_) v.clear();
   for (auto& v : outgoing_arc_indices_) v.clear();
@@ -186,8 +190,10 @@ void MinOutgoingFlowHelper::PrecomputeDataForSubset(
       outgoing_arc_indices_[tail].push_back(i);
       incoming_arc_indices_[head].push_back(i);
     } else if (tail_in && !head_in) {
+      outgoing_arcs_to_outside_[tail].Add(i);
       has_outgoing_arcs_to_outside_[tail] = true;
     } else if (!tail_in && head_in) {
+      incoming_arcs_from_outside_[head].Add(i);
       has_incoming_arcs_from_outside_[head] = true;
     }
   }
@@ -261,6 +267,42 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
   std::vector<IntegerValue> max_upper_bound_of_others(num_nodes,
                                                       kMinIntegerValue);
 
+  // Lower bound on the node expression when it is first to serve the subset.
+  const auto lb_when_first = [&helper, this](int n, int dimension,
+                                             bool negate_expressions) {
+    AffineExpression expr = helper.GetNodeExpression(n, dimension);
+    if (negate_expressions) expr = expr.Negated();
+    IntegerValue lb = integer_trail_.LevelZeroLowerBound(expr);
+    if (incoming_arcs_from_outside_[n].IsUnique()) {
+      const int a = incoming_arcs_from_outside_[n].Get();
+      AffineExpression tail_expr =
+          helper.GetNodeExpression(tails_[a], dimension);
+      if (negate_expressions) tail_expr = tail_expr.Negated();
+      const IntegerValue offset =
+          helper.GetArcOffsetLowerBound(a, dimension, negate_expressions);
+      lb = std::max(lb, integer_trail_.LevelZeroLowerBound(tail_expr) + offset);
+    }
+    return lb;
+  };
+
+  // Upper bound on the node expression when it is last to serve the subset.
+  const auto ub_when_last = [&helper, this](int n, int dimension,
+                                            bool negate_expressions) {
+    AffineExpression expr = helper.GetNodeExpression(n, dimension);
+    if (negate_expressions) expr = expr.Negated();
+    IntegerValue ub = integer_trail_.LevelZeroUpperBound(expr);
+    if (outgoing_arcs_to_outside_[n].IsUnique()) {
+      const int a = outgoing_arcs_to_outside_[n].Get();
+      AffineExpression head_expr =
+          helper.GetNodeExpression(heads_[a], dimension);
+      if (negate_expressions) head_expr = head_expr.Negated();
+      const IntegerValue offset =
+          helper.GetArcOffsetLowerBound(a, dimension, negate_expressions);
+      ub = std::min(ub, integer_trail_.LevelZeroUpperBound(head_expr) - offset);
+    }
+    return ub;
+  };
+
   // We do a forward and a backward pass in order to compute the min/max
   // of all the other nodes for each node.
   for (const bool forward_pass : {true, false}) {
@@ -269,8 +311,6 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     const int size = subset.size();
     for (int i = 0; i < size; ++i) {
       const int n = forward_pass ? subset[i] : subset[size - 1 - i];
-      AffineExpression expr = helper.GetNodeExpression(n, dimension);
-      if (negate_expressions) expr = expr.Negated();
 
       // The local_min/max contains the min/max of all nodes strictly before 'n'
       // in the forward pass (resp. striclty after). So after two passes,
@@ -283,20 +323,17 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
 
       // Update local_min/max.
       if (has_incoming_arcs_from_outside_[n]) {
-        local_min =
-            std::min(local_min, integer_trail_.LevelZeroLowerBound(expr));
+        local_min = std::min(local_min,
+                             lb_when_first(n, dimension, negate_expressions));
       }
       if (has_outgoing_arcs_to_outside_[n]) {
         local_max =
-            std::max(local_max, integer_trail_.LevelZeroUpperBound(expr));
+            std::max(local_max, ub_when_last(n, dimension, negate_expressions));
       }
     }
   }
 
   for (const int n : subset) {
-    AffineExpression expr = helper.GetNodeExpression(n, dimension);
-    if (negate_expressions) expr = expr.Negated();
-
     const absl::Span<const int> arcs =
         use_incoming ? incoming_arc_indices_[n] : outgoing_arc_indices_[n];
     IntegerValue demand = kMaxIntegerValue;
@@ -313,16 +350,14 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     // a non-negative capacity (see above).
     obj.capacity = 0;
     if (use_incoming) {
-      if (max_upper_bound_of_others[n] >
-          integer_trail_.LevelZeroLowerBound(expr)) {
-        obj.capacity = max_upper_bound_of_others[n] -
-                       integer_trail_.LevelZeroLowerBound(expr);
+      const IntegerValue lb = lb_when_first(n, dimension, negate_expressions);
+      if (max_upper_bound_of_others[n] > lb) {
+        obj.capacity = max_upper_bound_of_others[n] - lb;
       }
     } else {
-      if (integer_trail_.LevelZeroUpperBound(expr) >
-          min_lower_bound_of_others[n]) {
-        obj.capacity = integer_trail_.LevelZeroUpperBound(expr) -
-                       min_lower_bound_of_others[n];
+      const IntegerValue ub = ub_when_last(n, dimension, negate_expressions);
+      if (ub > min_lower_bound_of_others[n]) {
+        obj.capacity = ub - min_lower_bound_of_others[n];
       }
     }
 
@@ -753,7 +788,8 @@ int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
 
 bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
     int k, absl::Span<const int> subset, RouteRelationsHelper* helper,
-    LinearConstraintManager* manager, int special_node, bool use_outgoing) {
+    LinearConstraintManager* manager, int special_node,
+    bool use_forward_direction) {
   cannot_be_first_.clear();
   cannot_be_last_.clear();
   if (k >= subset.size()) return true;
@@ -789,7 +825,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
     adjacency.Add({});
     const int node = subset[i];
     if (helper != nullptr) {
-      CHECK(use_outgoing);
+      CHECK(use_forward_direction);
       for (int j = 0; j < subset.size(); ++j) {
         if (i == j) continue;
         if (helper->PathExists(node, subset[j])) {
@@ -797,7 +833,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
         }
       }
     } else {
-      if (use_outgoing) {
+      if (use_forward_direction) {
         for (const int arc : outgoing_arc_indices_[node]) {
           adjacency.AppendToLastVector({heads_[arc], literals_[arc]});
         }
@@ -842,10 +878,12 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
   const int size = subset.size();
   const uint32_t final_mask = (1 << size) - 1;
 
-  const auto& can_be_last_set = use_outgoing ? has_outgoing_arcs_to_outside_
-                                             : has_incoming_arcs_from_outside_;
-  const auto& can_be_first_set = use_outgoing ? has_incoming_arcs_from_outside_
-                                              : has_outgoing_arcs_to_outside_;
+  const auto& can_be_last_set = use_forward_direction
+                                    ? has_outgoing_arcs_to_outside_
+                                    : has_incoming_arcs_from_outside_;
+  const auto& can_be_first_set = use_forward_direction
+                                     ? has_incoming_arcs_from_outside_
+                                     : has_outgoing_arcs_to_outside_;
 
   uint32_t can_be_last_mask = 0;
   for (int i = 0; i < subset.size(); ++i) {
@@ -862,10 +900,38 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
   std::vector<State> states;
   states.push_back(State());
 
+  // If a state has an unique arc to enter/leave it, we can update it further.
+  const auto update_using_unique_arc = [manager, this](UniqueArc unique_arc,
+                                                       State& state) {
+    if (!unique_arc.IsUnique()) return true;
+    if (manager == nullptr) return true;
+
+    ++num_full_dp_unique_arc_;
+    const Literal unique_lit = literals_[unique_arc.Get()];
+    state.sum_of_reduced_costs += manager->GetLiteralReducedCost(unique_lit);
+    if (state.sum_of_reduced_costs > manager->ReducedCostsGap()) {
+      ++num_full_dp_rc_skip_;
+      return false;
+    }
+
+    absl::flat_hash_map<IntegerVariable, IntegerValue> copy = state.lbs;
+    return binary_relation_repository_.PropagateLocalBounds(
+        integer_trail_, unique_lit, copy, &state.lbs);
+  };
+
   // We always start with the first node in this case.
   if (special_node >= 0) {
     states.back().node_set = 1;
     states.back().last_nodes_set = 1;
+
+    // If there is a unique way to enter (resp. leave) that subset, we can start
+    // with tighter bounds!
+    const UniqueArc unique_arc = use_forward_direction
+                                     ? incoming_arcs_from_outside_[subset[0]]
+                                     : outgoing_arcs_to_outside_[subset[0]];
+    if (!update_using_unique_arc(unique_arc, states.back())) {
+      return false;  // We can't even start!
+    }
   }
 
   while (!states.empty()) {
@@ -893,11 +959,20 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
         const uint32_t head_mask = (1 << i);
         to_state.node_set = from_state.node_set | head_mask;
         to_state.last_nodes_set = from_state.last_nodes_set | head_mask;
+        to_state.lbs = from_state.lbs;
+        to_state.sum_of_reduced_costs = from_state.sum_of_reduced_costs;
+
+        const UniqueArc unique_arc =
+            use_forward_direction ? incoming_arcs_from_outside_[subset[i]]
+                                  : outgoing_arcs_to_outside_[subset[i]];
+        if (!update_using_unique_arc(unique_arc, to_state)) {
+          continue;
+        }
+
         if (to_state.node_set == final_mask) {
           ++num_full_dp_early_abort_;
           return true;  // All served!
         }
-
         states.push_back(std::move(to_state));
       }
       continue;
@@ -948,6 +1023,25 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
         if (to_state.node_set == final_mask) {
           // One of the last node has no arc to outside, this is not possible.
           if (to_state.last_nodes_set & ~can_be_last_mask) continue;
+
+          // Add the constraints implied by each last node that has an unique
+          // way to leave the subset.
+          bool infeasible = false;
+          int last_mask = to_state.last_nodes_set;
+          for (int j = 0; last_mask; j++, last_mask /= 2) {
+            if ((last_mask & 1) == 0) continue;
+
+            const UniqueArc unique_arc =
+                use_forward_direction ? outgoing_arcs_to_outside_[subset[j]]
+                                      : incoming_arcs_from_outside_[subset[j]];
+            if (!update_using_unique_arc(unique_arc, to_state)) {
+              infeasible = true;
+              break;
+            }
+          }
+          if (infeasible) {
+            continue;
+          }
 
           ++num_full_dp_early_abort_;
           return true;
@@ -2535,14 +2629,14 @@ bool RoutingCutHelper::TrySubsetCut(int known_bound, std::string name,
           total_incoming_weight - nodes_incoming_weight_[n] < threshold &&
           !min_outgoing_flow_helper_.SubsetMightBeServedWithKRoutes(
               best_bound.bound(), subset, nullptr, manager, /*special_node=*/n,
-              /*use_outgoing=*/true)) {
+              /*use_forward_direction=*/true)) {
         best_bound.Update(best_bound.bound(), "", {n}, {});
       }
       if (nodes_outgoing_weight_[n] > 0.1 &&
           total_outgoing_weight - nodes_outgoing_weight_[n] < threshold &&
           !min_outgoing_flow_helper_.SubsetMightBeServedWithKRoutes(
               best_bound.bound(), subset, nullptr, manager, /*special_node=*/n,
-              /*use_outgoing=*/false)) {
+              /*use_forward_direction=*/false)) {
         best_bound.Update(best_bound.bound(), "", {}, {n});
       }
     }

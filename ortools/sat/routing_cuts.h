@@ -449,8 +449,8 @@ class MinOutgoingFlowHelper {
   // can stop as soon as one solution is found.
   //
   // If special_node is non-negative, we will only look for routes that
-  //   - Start at this special_node if use_outgoing = true
-  //   - End at this special_node if use_outgoing = false
+  //   - Start at this special_node if use_forward_direction = true
+  //   - End at this special_node if use_forward_direction = false
   //
   // If the RouteRelationsHelper is non null, then we will use "shortest path"
   // bounds instead of recomputing them from the binary relation of the model.
@@ -461,7 +461,7 @@ class MinOutgoingFlowHelper {
       int k, absl::Span<const int> subset,
       RouteRelationsHelper* helper = nullptr,
       LinearConstraintManager* manager = nullptr, int special_node = -1,
-      bool use_outgoing = true);
+      bool use_forward_direction = true);
 
   // Advanced. If non-empty, and one of the functions above proved that a subset
   // needs at least k vehicles to serve it, then these vector list the nodes
@@ -579,6 +579,25 @@ class MinOutgoingFlowHelper {
   std::vector<bool> has_incoming_arcs_from_outside_;
   std::vector<bool> has_outgoing_arcs_to_outside_;
 
+  // If a subset has an unique arc arriving or leaving at a given node, we can
+  // derive tighter bounds.
+  class UniqueArc {
+   public:
+    bool IsUnique() const { return num_seen_ == 1; }
+    int Get() const { return arc_; }
+
+    void Add(int arc) {
+      ++num_seen_;
+      arc_ = arc;
+    }
+
+   private:
+    int num_seen_ = 0;
+    int arc_ = 0;
+  };
+  std::vector<UniqueArc> incoming_arcs_from_outside_;
+  std::vector<UniqueArc> outgoing_arcs_to_outside_;
+
   // For each node n, whether it can appear at the current and next position in
   // a feasible path.
   std::vector<bool> reachable_;
@@ -607,6 +626,7 @@ class MinOutgoingFlowHelper {
   int64_t num_full_dp_early_abort_ = 0;
   int64_t num_full_dp_work_abort_ = 0;
   int64_t num_full_dp_rc_skip_ = 0;
+  int64_t num_full_dp_unique_arc_ = 0;
   absl::flat_hash_map<std::string, int> num_by_type_;
 };
 
