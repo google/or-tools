@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ortools.scheduling.python.rcpsp."""
-
 from absl import app
 from absl import flags
 from absl.testing import absltest
