@@ -266,10 +266,102 @@ class GreedyScores {
 // Stores the redundancy set and related information
 class RedundancyRemover {
  public:
-  RedundancyRemover(const Model& model, CoverCounters& total_coverage) {}
+  RedundancyRemover(const Model& model, CoverCounters& total_coverage)
+      : redund_set_(),
+        total_coverage_(total_coverage),
+        partial_coverage_(model.num_elements()),
+        partial_cost_(.0),
+        partial_size_(0),
+        partial_cov_count_(0),
+        cols_to_remove_() {}
 
   Cost TryRemoveRedundantCols(const Model& model, Cost cost_cutoff,
-                              std::vector<SubsetIndex>& sol_subsets);
+                              std::vector<SubsetIndex>& sol_subsets) {
+    for (SubsetIndex j : sol_subsets) {
+      if (total_coverage_.IsRedundantUncover(model.columns()[j]))
+        redund_set_.push_back({model.subset_costs()[j], j});
+      else {
+        ++partial_size_;
+        partial_cost_ += model.subset_costs()[j];
+        partial_cov_count_ += partial_coverage_.Cover(model.columns()[j]);
+      }
+      if (partial_cost_ >= cost_cutoff) {
+        return partial_cost_;
+      }
+    }
+    if (redund_set_.empty()) {
+      return partial_cost_;
+    }
+    absl::c_sort(redund_set_,
+                 [](Score a, Score b) { return a.score < b.score; });
+
+    if (partial_cov_count_ < model.num_elements()) {
+      // Complete partial solution heuristically
+      HeuristicRedundancyRemoval(model, cost_cutoff);
+    } else {
+      // All redundant columns can be removed
+      for (Score redund_col : redund_set_) {
+        cols_to_remove_.push_back(redund_col.idx);
+      }
+    }
+
+    // Note: In [1], an enumeration to selected the best redundant columns to
+    // remove is performed when the number of redundant columns is <= 10.
+    // However, based on experiments with github.com/c4v4/cft/, it appears
+    // that this enumeration does not provide significant benefits to justify
+    // the added complexity.
+
+    if (partial_cost_ < cost_cutoff) {
+      gtl::STLEraseAllFromSequenceIf(&sol_subsets, [&](auto j) {
+        return absl::c_any_of(cols_to_remove_,
+                              [j](auto j_r) { return j_r == j; });
+      });
+    }
+    return partial_cost_;
+  }
+
+ private:
+  // Remove redundant columns from the redundancy set using a heuristic
+  void HeuristicRedundancyRemoval(const Model& model, Cost cost_cutoff) {
+    while (!redund_set_.empty()) {
+      if (partial_cov_count_ == model.num_elements()) {
+        return;
+      }
+      SubsetIndex j = redund_set_.back().idx;
+      const SparseColumn& j_col = model.columns()[j];
+      redund_set_.pop_back();
+
+      if (total_coverage_.IsRedundantUncover(j_col)) {
+        total_coverage_.Uncover(j_col);
+        cols_to_remove_.push_back(j);
+      } else {
+        partial_cost_ += model.subset_costs()[j];
+        partial_cov_count_ += partial_coverage_.Cover(j_col);
+      }
+    }
+  }
+
+ private:
+  // redundant columns + their cost
+  std::vector<Score> redund_set_;
+
+  // row-cov if all the remaining columns are selected
+  CoverCounters total_coverage_;
+
+  // row-cov if we selected the current column
+  CoverCounters partial_coverage_;
+
+  // current partial solution cost
+  Cost partial_cost_;
+
+  // current partial solution size
+  BaseInt partial_size_;
+
+  // number of covered rows
+  Cost partial_cov_count_;
+
+  // list of columns to remove
+  std::vector<SubsetIndex> cols_to_remove_;
 };
 
 }  // namespace
