@@ -206,12 +206,22 @@ Cost CoverGreedly(const Model& model, const DualState& dual_state,
 
 class HeuristicCBs : public SubgradientCBs {
  public:
-  bool ExitCondition(const SubgradientContext& context) override;
+  HeuristicCBs() : step_size_(0.1), countdown_(250) {};
+  void set_step_size(Cost step_size) { step_size_ = step_size; }
+  bool ExitCondition(const SubgradientContext& context) override {
+    return --countdown_ <= 0;
+  }
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
-  bool UpdateCoreModel(CoreModel& model, PrimalDualState& state) override;
+  bool UpdateCoreModel(CoreModel& model, PrimalDualState& state) override {
+    return false;
+  }
+
+ private:
+  Cost step_size_;
+  BaseInt countdown_;
 };
 
 absl::StatusOr<PrimalDualState> RunThreePhase(

@@ -632,6 +632,29 @@ void RandomizeDualState(const Model& model, DualState& dual_state,
                         absl::BitGen& rnd);
 }  // namespace
 
+void HeuristicCBs::RunHeuristic(const SubgradientContext& context,
+                                Solution& solution) {
+  solution = RunMultiplierBasedGreedy(context.model, context.current_dual_state,
+                                      context.best_solution.cost());
+}
+
+void HeuristicCBs::ComputeMultipliersDelta(const SubgradientContext& context,
+                                           ElementCostVector& delta_mults) {
+  Cost squared_norm = .0;
+  for (ElementIndex i : context.model.ElementRange()) {
+    squared_norm += context.subgradient[i] * context.subgradient[i];
+  }
+
+  Cost lower_bound = context.current_dual_state.lower_bound();
+  Cost upper_bound = context.best_solution.cost();
+  DCHECK_GE(upper_bound, lower_bound);
+  Cost delta = upper_bound - lower_bound;
+  Cost step_constant = step_size_ * delta / squared_norm;
+  for (ElementIndex i : context.model.ElementRange()) {
+    delta_mults[i] = step_constant * context.subgradient[i];
+  }
+}
+
 absl::StatusOr<PrimalDualState> RunThreePhase(CoreModel& model,
                                               const Solution& init_solution) {
   model.CreateSparseRowView();
@@ -662,6 +685,7 @@ absl::StatusOr<PrimalDualState> RunThreePhase(CoreModel& model,
       best_state.dual_state = curr_state.dual_state;
     }
     // Phase 2: search for good solutions
+    heuristic_cbs.set_step_size(dual_bound_cbs.step_size());
     SubgradientOptimization(model, heuristic_cbs, curr_state);
     if (curr_state.solution.cost() < best_state.solution.cost()) {
       best_state = curr_state;
