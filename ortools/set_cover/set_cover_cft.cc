@@ -702,4 +702,184 @@ absl::StatusOr<PrimalDualState> RunThreePhase(CoreModel& model,
   return best_state;
 }
 
+///////////////////////////////////////////////////////////////////////
+//////////////////////// FULL TO CORE PRICING /////////////////////////
+///////////////////////////////////////////////////////////////////////
+
+namespace {
+void ExtractCoreModel(const Model& full_model,
+                      const SubsetMapVector& columns_map, Model& core_model) {
+  // Fill core model with the selected columns
+  core_model = Model();
+  core_model.ReserveNumSubsets(columns_map.size());
+  for (SubsetIndex core_j : core_model.SubsetRange()) {
+    SubsetIndex full_j = columns_map[core_j];
+    const SparseColumn& full_column = full_model.columns()[full_j];
+    core_model.SetSubsetCost(core_j, full_model.subset_costs()[full_j]);
+    core_model.ReserveNumElementsInSubset(full_column.size(), core_j.value());
+    DCHECK(core_model.columns()[core_j].empty());
+    for (ElementIndex i : full_column) {
+      core_model.AddElementToSubset(i, core_j);
+    }
+  }
+  core_model.CreateSparseRowView();
+}
+
+static constexpr BaseInt kMinCov = 5;
+void FillTentativeCoreModel(const Model& full_model,
+                            SubsetMapVector& columns_map, Model& core_model) {
+  SubsetBoolVector selected(full_model.num_subsets(), false);
+  columns_map.reserve(full_model.num_elements() * kMinCov);
+
+  // Select the first min_row_coverage columns for each row
+  for (const SparseRow& row : full_model.rows()) {
+    BaseInt countdown = kMinCov;
+    for (SubsetIndex j : row) {
+      if (--countdown > 0 && !selected[j]) {
+        selected[j] = true;
+        columns_map.push_back(j);
+      }
+    }
+  }
+  ExtractCoreModel(full_model, columns_map, core_model);
+}
+
+void SelecteMinRedCostColumns(const Model& full_model,
+                              const SubsetCostVector& reduced_costs,
+                              SubsetMapVector& columns_map,
+                              SubsetBoolVector& selected) {
+  DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
+  DCHECK_EQ(selected.size(), full_model.num_subsets());
+  SubsetMapVector candidates;
+  for (SubsetIndex j : full_model.SubsetRange())
+    if (reduced_costs[j] < 0.1) {
+      candidates.push_back(j);
+    }
+
+  BaseInt max_size = 5 * full_model.num_elements();
+  if (candidates.size() > max_size) {
+    absl::c_nth_element(candidates, candidates.begin() + max_size - 1,
+                        [&](SubsetIndex j1, SubsetIndex j2) {
+                          return reduced_costs[j1] < reduced_costs[j2];
+                        });
+    candidates.resize(max_size);
+  }
+  for (SubsetIndex j : candidates) {
+    if (!selected[j]) {
+      selected[j] = true;
+      columns_map.push_back(j);
+    }
+  }
+}
+
+static void SelectMinRedCostByRow(const Model& full_model,
+                                  const SubsetCostVector& reduced_costs,
+                                  SubsetMapVector& columns_map,
+                                  SubsetBoolVector& selected) {
+  DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
+  DCHECK_EQ(selected.size(), full_model.num_subsets());
+
+  for (ElementIndex i : full_model.ElementRange()) {
+    // Collect best `kMinCov` columns covering row `i`
+    SubsetIndex best_cols[kMinCov];
+    BaseInt best_size = 0;
+    for (SubsetIndex j : full_model.rows()[i]) {
+      if (best_size < kMinCov) {
+        best_cols[best_size++] = j;
+        continue;
+      }
+      if (reduced_costs[j] < reduced_costs[best_cols[kMinCov - 1]]) {
+        BaseInt n = kMinCov - 1;
+        while (n > 0 && reduced_costs[j] < reduced_costs[best_cols[n - 1]]) {
+          best_cols[n] = best_cols[n - 1];
+          --n;
+        }
+        best_cols[n] = j;
+      }
+    }
+
+    DCHECK(best_size > 0);
+    for (BaseInt s = 0; s < best_size; ++s) {
+      SubsetIndex j = best_cols[s];
+      if (!selected[j]) {
+        selected[j] = true;
+        columns_map.push_back(j);
+      }
+    }
+  }
+}
+}  // namespace
+
+FullToCoreModel::FullToCoreModel(Model&& full_model)
+    : CoreModel(),
+      columns_map_(),
+      full_model_(std::move(full_model)),
+      full_dual_state_(full_model_),
+      update_countdown_(10),
+      update_period_(10),
+      update_max_period_(std::min(1000, full_model_.num_elements() / 3)) {
+  FillTentativeCoreModel(full_model_, columns_map_, static_cast<Model&>(*this));
+  DCHECK_OK(ValidateModel(*this));
+}
+
+bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
+  if (--update_countdown_ > 0) {
+    return false;
+  }
+
+  full_dual_state_.DualUpdate(full_model_, [&](ElementIndex i, Cost& i_mult) {
+    i_mult = core_state.dual_state.multipliers()[i];
+  });
+  UpdatePricingPeriod(full_dual_state_, core_state);
+
+  SubsetBoolVector selected(full_model_.num_subsets(), false);
+  SubsetMapVector old_column_map = std::move(columns_map_);
+  columns_map_.clear();
+
+  // Always retain best solution in the core model
+  for (SubsetIndex& old_j : core_state.solution.subsets()) {
+    SubsetIndex full_j = old_column_map[old_j];
+    SubsetIndex new_j = SubsetIndex(columns_map_.size());
+    columns_map_.push_back(full_j);
+    selected[full_j] = true;
+    old_j = new_j;
+  }
+
+  SelecteMinRedCostColumns(full_model_, full_dual_state_.reduced_costs(),
+                           columns_map_, selected);
+  SelectMinRedCostByRow(full_model_, full_dual_state_.reduced_costs(),
+                        columns_map_, selected);
+  ExtractCoreModel(full_model_, columns_map_, *this);
+  core_state.dual_state.DualUpdate(*this, [&](ElementIndex i, Cost& i_mult) {
+    i_mult = full_dual_state_.multipliers()[i];
+  });
+
+  DCHECK_OK(ValidateModel(*this));
+  DCHECK_OK(ValidateFeasibleSolution(*this, core_state.solution));
+  DCHECK_GE(core_state.dual_state.lower_bound(),
+            full_dual_state_.lower_bound());
+  std::cout << "Real bound: " << full_dual_state_.lower_bound() << '\n';
+  return true;
+}
+
+void FullToCoreModel::UpdatePricingPeriod(const DualState& full_dual_state,
+                                          const PrimalDualState& core_state) {
+  DCHECK_GE(core_state.dual_state.lower_bound(), full_dual_state.lower_bound());
+  DCHECK_GE(core_state.solution.cost(), .0);
+
+  Cost delta =
+      core_state.dual_state.lower_bound() - full_dual_state.lower_bound();
+  Cost ratio = DivideIfGE0(delta, core_state.solution.cost());
+  if (ratio <= 1e-6) {
+    update_period_ = std::min(update_max_period_, 10 * update_period_);
+  } else if (ratio <= 0.02) {
+    update_period_ = std::min(update_max_period_, 5 * update_period_);
+  } else if (ratio <= 0.2) {
+    update_period_ = std::min(update_max_period_, 2 * update_period_);
+  } else {
+    update_period_ = 10;
+  }
+  update_countdown_ = update_period_;
+}
+
 }  // namespace operations_research::scp

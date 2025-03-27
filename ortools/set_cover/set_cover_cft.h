@@ -227,6 +227,39 @@ class HeuristicCBs : public SubgradientCBs {
 absl::StatusOr<PrimalDualState> RunThreePhase(
     CoreModel& model, const Solution& init_solution = {});
 
+///////////////////////////////////////////////////////////////////////
+//////////////////////// FULL TO CORE PRICING /////////////////////////
+///////////////////////////////////////////////////////////////////////
+
+class FullToCoreModel : public CoreModel {
+  struct UpdateTrigger {
+    BaseInt countdown;
+    BaseInt period;
+    BaseInt max_period;
+  };
+
+ public:
+  FullToCoreModel(Model&& full_model);
+
+  template <typename... Args>
+  FullToCoreModel(Args&&... args)
+      : FullToCoreModel(Model(std::forward<Args>(args)...)) {}
+
+  bool UpdateCore(PrimalDualState& core_state) override;
+
+ private:
+  void UpdatePricingPeriod(const DualState& full_dual_state,
+                           const PrimalDualState& core_state);
+
+  SubsetMapVector columns_map_;
+  Model full_model_;
+  DualState full_dual_state_;
+
+  BaseInt update_countdown_;
+  BaseInt update_period_;
+  BaseInt update_max_period_;
+};
+
 }  // namespace operations_research::scp
 
 #endif /* OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_CFT_H */
