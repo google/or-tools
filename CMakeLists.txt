@@ -197,11 +197,11 @@ if(BUILD_TESTING)
     "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
-  # Fuzztest do not support MSVC
-  if(NOT MSVC)
-    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ON "BUILD_CXX" OFF)
-  else()
+  # Fuzztest do not support MSVC or toolchain
+  if(MSVC OR CMAKE_CROSSCOMPILING)
     set(USE_fuzztest OFF)
+  else()
+    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ON "BUILD_CXX" OFF)
   endif()
   if(NOT USE_fuzztest)
     set(BUILD_fuzztest OFF)
