@@ -128,12 +128,62 @@ absl::Status ValidateFeasibleSolution(const Model& model,
 ////////////////////////////////////////////////////////////////////////
 namespace {
 
+struct Score {
+  Cost score;
+  SubsetIndex idx;
+};
+
 class GreedyScores {
  public:
-  GreedyScores(const Model& model, const DualState& dual_state) {}
+  static constexpr BaseInt removed_idx = -1;
+  static constexpr Cost max_score = std::numeric_limits<Cost>::max();
+
+  GreedyScores(const Model& model, const DualState& dual_state)
+      : bad_size_(),
+        worst_good_score_(std::numeric_limits<Cost>::lowest()),
+        scores_(),
+        reduced_costs_(dual_state.reduced_costs()),
+        covering_counts_(model.num_subsets()),
+        score_map_(model.num_subsets()) {
+    BaseInt s = 0;
+    for (SubsetIndex j : model.SubsetRange()) {
+      covering_counts_[j] = model.columns()[j].size();
+      Cost j_score = ComputeScore(reduced_costs_[j], covering_counts_[j]);
+      scores_.push_back({j_score, j});
+      score_map_[j] = s++;
+      DCHECK(std::isfinite(reduced_costs_[j]));
+      DCHECK(std::isfinite(j_score));
+    }
+    bad_size_ = scores_.size();
+  }
 
   SubsetIndex FindMinScoreColumn(const Model& model,
-                                 const DualState& dual_state) {}
+                                 const DualState& dual_state) {
+    // Check if the bad/good partition should be updated
+    if (bad_size_ == scores_.size()) {
+      if (bad_size_ > model.num_elements()) {
+        bad_size_ = bad_size_ - model.num_elements();
+        absl::c_nth_element(scores_, scores_.begin() + bad_size_,
+                            [](Score a, Score b) { return a.score > b.score; });
+        worst_good_score_ = scores_[bad_size_].score;
+        for (BaseInt s = 0; s < scores_.size(); ++s) {
+          score_map_[scores_[s].idx] = s;
+        }
+      } else {
+        bad_size_ = 0;
+        worst_good_score_ = max_score;
+      }
+      DCHECK(bad_size_ > 0 || worst_good_score_ == max_score);
+    }
+
+    Score min_score =
+        *std::min_element(scores_.begin() + bad_size_, scores_.end(),
+                          [](Score a, Score b) { return a.score < b.score; });
+    SubsetIndex j_star = min_score.idx;
+    DCHECK_LT(min_score.score, max_score);
+
+    return j_star;
+  }
 
   // For each row in the given set, if `cond` returns true, the row is
   // considered newly covered. The function then iterates over the columns of
@@ -142,8 +192,75 @@ class GreedyScores {
   BaseInt UpdateColumnsScoreOfRowsIf(const SparseRowView& rows,
                                      const ElementCostVector& multipliers,
                                      const ElementSpanT& row_idxs, CondT cond) {
+    BaseInt processed_rows_count = 0;
+    for (ElementIndex i : row_idxs) {
+      if (!cond(i)) {
+        continue;
+      }
 
+      ++processed_rows_count;
+      for (SubsetIndex j : rows[i]) {
+        covering_counts_[j] -= 1;
+        reduced_costs_[j] += multipliers[i];
+
+        BaseInt s = score_map_[j];
+        DCHECK_NE(s, removed_idx) << "Column is not in the score map";
+        scores_[s].score = ComputeScore(reduced_costs_[j], covering_counts_[j]);
+
+        if (covering_counts_[j] == 0) {
+          // Column is redundant: its score can be removed
+          if (s < bad_size_) {
+            // Column is bad: promote to good partition before removal
+            SwapScores(s, bad_size_ - 1);
+            s = --bad_size_;
+          }
+          SwapScores(s, scores_.size() - 1);
+          scores_.pop_back();
+        } else if (s >= bad_size_ && scores_[s].score > worst_good_score_) {
+          // Column not good anymore: move it into bad partition
+          SwapScores(s, bad_size_++);
+        }
+      }
+    }
+    return processed_rows_count;
   }
+
+ private:
+  void SwapScores(BaseInt s1, BaseInt s2) {
+    SubsetIndex j1 = scores_[s1].idx, j2 = scores_[s2].idx;
+    std::swap(scores_[s1], scores_[s2]);
+    std::swap(score_map_[j1], score_map_[j2]);
+  }
+
+  // Score computed as described in [1]
+  static Cost ComputeScore(Cost adjusted_reduced_cost,
+                           BaseInt num_rows_covered) {
+    DCHECK(std::isfinite(adjusted_reduced_cost)) << "Gamma is not finite";
+    return num_rows_covered == 0
+               ? max_score
+               : (adjusted_reduced_cost > .0
+                      ? adjusted_reduced_cost / num_rows_covered
+                      : adjusted_reduced_cost * num_rows_covered);
+  }
+
+ private:
+  // scores_ is partitioned into bad-scores / good-scores
+  BaseInt bad_size_;
+
+  // sentinel level to trigger a partition update of the scores
+  Cost worst_good_score_;
+
+  // column scores kept updated
+  std::vector<Score> scores_;
+
+  // reduced costs adjusted to currently uncovered rows (size=n)
+  SubsetCostVector reduced_costs_;
+
+  // number of uncovered rows covered by each column (size=n)
+  SubsetToIntVector covering_counts_;
+
+  // position of each column score into the scores_
+  SubsetToIntVector score_map_;
 };
 
 // Stores the redundancy set and related information
