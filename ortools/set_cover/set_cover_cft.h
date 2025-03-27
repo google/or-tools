@@ -34,6 +34,15 @@ using Model = SetCoverModel;
 
 class Solution {
  public:
+  Solution() = default;
+  template <typename SubsetsT>
+  Solution(const Model& model, SubsetsT&& subsets)
+      : cost_(.0), subsets_(std::forward<SubsetsT>(subsets)) {
+    for (SubsetIndex j : subsets_) {
+      cost_ += model.subset_costs()[j];
+    }
+  }
+
   double cost() const { return cost_; }
   const std::vector<SubsetIndex>& subsets() const { return subsets_; }
   std::vector<SubsetIndex>& subsets() { return subsets_; }
@@ -42,12 +51,15 @@ class Solution {
     cost_ += cost;
   }
   bool Empty() const { return subsets_.empty(); }
+  void Clear() {
+    cost_ = 0.0;
+    subsets_.clear();
+  }
 
  private:
   Cost cost_;
   std::vector<SubsetIndex> subsets_;
 };
-
 class DualState {
  public:
   DualState(const Model& model);
@@ -97,6 +109,10 @@ class FullToCoreModel : public CoreModel {};
 Solution RunMultiplierBasedGreedy(
     const Model& model, const DualState& dual_state,
     Cost cost_cutoff = std::numeric_limits<BaseInt>::max());
+
+Cost CoverGreedly(const Model& model, const DualState& dual_state,
+                  Cost cost_cutoff, BaseInt size_cutoff,
+                  std::vector<SubsetIndex>& sol_subsets);
 
 ///////////////////////////////////////////////////////////////////////
 //////////////////////// THREE PHASE ALGORITHM ////////////////////////

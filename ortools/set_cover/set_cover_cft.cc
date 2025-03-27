@@ -20,6 +20,7 @@
 
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/util/fp_utils.h"
 
@@ -121,6 +122,98 @@ absl::Status ValidateFeasibleSolution(const Model& model,
     }
   }
   return absl::OkStatus();
+}
+////////////////////////////////////////////////////////////////////////
+/////////////////////// MULTIPLIERS BASED GREEDY ///////////////////////
+////////////////////////////////////////////////////////////////////////
+namespace {
+
+class GreedyScores {
+ public:
+  GreedyScores(const Model& model, const DualState& dual_state) {}
+
+  SubsetIndex FindMinScoreColumn(const Model& model,
+                                 const DualState& dual_state) {}
+
+  // For each row in the given set, if `cond` returns true, the row is
+  // considered newly covered. The function then iterates over the columns of
+  // that row, updating the scores of the columns accordingly.
+  template <typename ElementSpanT, typename CondT>
+  BaseInt UpdateColumnsScoreOfRowsIf(const SparseRowView& rows,
+                                     const ElementCostVector& multipliers,
+                                     const ElementSpanT& row_idxs, CondT cond) {
+
+  }
+};
+
+// Stores the redundancy set and related information
+class RedundancyRemover {
+ public:
+  RedundancyRemover(const Model& model, CoverCounters& total_coverage) {}
+
+  Cost TryRemoveRedundantCols(const Model& model, Cost cost_cutoff,
+                              std::vector<SubsetIndex>& sol_subsets);
+};
+
+}  // namespace
+
+Solution RunMultiplierBasedGreedy(const Model& model,
+                                  const DualState& dual_state,
+                                  Cost cost_cutoff) {
+  std::vector<SubsetIndex> sol_subsets;
+  CoverGreedly(model, dual_state, cost_cutoff,
+               std::numeric_limits<BaseInt>::max(), sol_subsets);
+  return Solution(model, std::move(sol_subsets));
+}
+
+Cost CoverGreedly(const Model& model, const DualState& dual_state,
+                  Cost cost_cutoff, BaseInt stop_size,
+                  std::vector<SubsetIndex>& sol_subsets) {
+  Cost sol_cost = .0;
+  for (SubsetIndex j : sol_subsets) {
+    sol_cost += model.subset_costs()[j];
+  }
+  if (sol_cost >= cost_cutoff) {
+    sol_subsets.clear();
+    return std::numeric_limits<Cost>::max();
+  }
+  if (sol_subsets.size() >= stop_size) {
+    // Solution already has required size -> early exit
+    return sol_cost;
+  }
+
+  // Process input solution (if not empty)
+  BaseInt num_rows_to_cover = model.num_elements();
+  CoverCounters covered_rows(model.num_elements());
+  for (SubsetIndex j : sol_subsets) {
+    num_rows_to_cover -= covered_rows.Cover(model.columns()[j]);
+    if (num_rows_to_cover == 0) {
+      return sol_cost;
+    }
+  }
+
+  // Initialize column scores taking into account rows already covered
+  GreedyScores scores(model, dual_state);  // TODO(?): cache it!
+  if (!sol_subsets.empty()) {
+    scores.UpdateColumnsScoreOfRowsIf(
+        model.rows(), dual_state.multipliers(), model.ElementRange(),
+        [&](auto i) { return covered_rows[i] > 0; });
+  }
+
+  // Fill up partial solution
+  while (num_rows_to_cover > 0 && sol_subsets.size() < stop_size) {
+    SubsetIndex j_star = scores.FindMinScoreColumn(model, dual_state);
+    const SparseColumn& column = model.columns()[j_star];
+    num_rows_to_cover -= scores.UpdateColumnsScoreOfRowsIf(
+        model.rows(), dual_state.multipliers(), column,
+        [&](auto i) { return covered_rows[i] == 0; });
+    sol_subsets.push_back(j_star);
+    covered_rows.Cover(column);
+  }
+
+  // Either remove redundant columns or discard solution
+  RedundancyRemover remover(model, covered_rows);  // TODO(?): cache it!
+  return remover.TryRemoveRedundantCols(model, cost_cutoff, sol_subsets);
 }
 
 ///////////////////////////////////////////////////////////////////////
