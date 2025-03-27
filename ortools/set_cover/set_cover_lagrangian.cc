@@ -46,19 +46,19 @@ namespace operations_research {
 //
 // Concerning the fundamental ideas behind this approach, one may refer to [2].
 ElementCostVector SetCoverLagrangian::InitializeLagrangeMultipliers() const {
-  ElementCostVector multipliers(model_.num_elements(),
+  ElementCostVector multipliers(model()->num_elements(),
                                 std::numeric_limits<Cost>::infinity());
-  SubsetCostVector marginal_costs(model_.num_subsets());
+  SubsetCostVector marginal_costs(model()->num_subsets());
   // TODO(user): Parallelize this.
-  for (const SubsetIndex subset : model_.SubsetRange()) {
+  for (const SubsetIndex subset : model()->SubsetRange()) {
     marginal_costs[subset] =
-        model_.subset_costs()[subset] / model_.columns()[subset].size();
+        model()->subset_costs()[subset] / model()->columns()[subset].size();
   }
   // TODO(user): Parallelize this.
-  for (const ElementIndex element : model_.ElementRange()) {
+  for (const ElementIndex element : model()->ElementRange()) {
     // Minimum marginal cost to cover this element.
     Cost min_marginal_cost = std::numeric_limits<Cost>::infinity();
-    const SparseRowView& rows = model_.rows();
+    const SparseRowView& rows = model()->rows();
     // TODO(user): use std::min_element on rows[element] with a custom
     // comparator that gets marginal_costs[subset]. Check performance.
     for (const SubsetIndex subset : rows[element]) {
@@ -108,8 +108,8 @@ BaseInt BlockSize(BaseInt size, int num_threads) {
 // Computes the reduced costs for all subsets in parallel using ThreadPool.
 SubsetCostVector SetCoverLagrangian::ParallelComputeReducedCosts(
     const SubsetCostVector& costs, const ElementCostVector& multipliers) const {
-  const SubsetIndex num_subsets(model_.num_subsets());
-  const SparseColumnView& columns = model_.columns();
+  const SubsetIndex num_subsets(model()->num_subsets());
+  const SparseColumnView& columns = model()->columns();
   SubsetCostVector reduced_costs(num_subsets);
   // TODO(user): compute a close-to-optimal k-subset partitioning of the columns
   // based on their sizes. [***]
@@ -138,7 +138,7 @@ SubsetCostVector SetCoverLagrangian::ParallelComputeReducedCosts(
 //         c_j(u) = c_j - sum_{i \in I_j} a_{ij}.u_i
 SubsetCostVector SetCoverLagrangian::ComputeReducedCosts(
     const SubsetCostVector& costs, const ElementCostVector& multipliers) const {
-  const SparseColumnView& columns = model_.columns();
+  const SparseColumnView& columns = model()->columns();
   SubsetCostVector reduced_costs(costs.size());
   FillReducedCostsSlice(SubsetIndex(0), SubsetIndex(reduced_costs.size()),
                         costs, multipliers, columns, &reduced_costs);
@@ -172,23 +172,23 @@ void FillSubgradientSlice(SubsetIndex slice_start, SubsetIndex slice_end,
 ElementCostVector SetCoverLagrangian::ComputeSubgradient(
     const SubsetCostVector& reduced_costs) const {
   // NOTE(user): Should the initialization be done with coverage[element]?
-  ElementCostVector subgradient(model_.num_elements(), 1.0);
+  ElementCostVector subgradient(model()->num_elements(), 1.0);
   FillSubgradientSlice(SubsetIndex(0), SubsetIndex(reduced_costs.size()),
-                       model_.columns(), reduced_costs, &subgradient);
+                       model()->columns(), reduced_costs, &subgradient);
   return subgradient;
 }
 
 ElementCostVector SetCoverLagrangian::ParallelComputeSubgradient(
     const SubsetCostVector& reduced_costs) const {
-  const SubsetIndex num_subsets(model_.num_subsets());
-  const SparseColumnView& columns = model_.columns();
-  ElementCostVector subgradient(model_.num_elements(), 1.0);
+  const SubsetIndex num_subsets(model()->num_subsets());
+  const SparseColumnView& columns = model()->columns();
+  ElementCostVector subgradient(model()->num_elements(), 1.0);
   // The subgradient has one component per element, each thread processes
   // several subsets. Hence, have one vector per thread to avoid data races.
   // TODO(user): it may be better to split the elements among the threads,
   // although this might be less well-balanced.
   std::vector<ElementCostVector> subgradients(
-      num_threads_, ElementCostVector(model_.num_elements()));
+      num_threads_, ElementCostVector(model()->num_elements()));
   absl::BlockingCounter num_threads_running(num_threads_);
   const SubsetIndex block_size(BlockSize(num_subsets.value(), num_threads_));
   SubsetIndex slice_start(0);
@@ -206,7 +206,7 @@ ElementCostVector SetCoverLagrangian::ParallelComputeSubgradient(
   }
   num_threads_running.Wait();
   for (int thread_index = 0; thread_index < num_threads_; ++thread_index) {
-    for (const ElementIndex element : model_.ElementRange()) {
+    for (const ElementIndex element : model()->ElementRange()) {
       subgradient[element] += subgradients[thread_index][element];
     }
   }
@@ -265,8 +265,8 @@ Cost SetCoverLagrangian::ParallelComputeLagrangianValue(
   }
   std::vector<Cost> lagrangian_values(num_threads_, 0.0);
   absl::BlockingCounter num_threads_running(num_threads_);
-  const SubsetIndex block_size(BlockSize(model_.num_subsets(), num_threads_));
-  const SubsetIndex num_subsets(model_.num_subsets());
+  const SubsetIndex block_size(BlockSize(model()->num_subsets(), num_threads_));
+  const SubsetIndex num_subsets(model()->num_subsets());
   SubsetIndex slice_start(0);
   for (int thread_index = 0; thread_index < num_threads_; ++thread_index) {
     const SubsetIndex slice_end =
@@ -318,7 +318,7 @@ void SetCoverLagrangian::UpdateMultipliers(
   // First compute lambda_k * (UB - L(u^k)).
   const Cost factor =
       step_size * (upper_bound - lagrangian_value) / subgradient_square_norm;
-  for (const ElementIndex element : model_.ElementRange()) {
+  for (const ElementIndex element : model()->ElementRange()) {
     // Avoid multipliers to go negative and to go over the roof. 1e6 chosen
     // arbitrarily. [***]
     (*multipliers)[element] = std::clamp(
@@ -342,7 +342,7 @@ void SetCoverLagrangian::ParallelUpdateMultipliers(
   // First compute lambda_k * (UB - L(u^k)).
   const Cost factor =
       step_size * (upper_bound - lagrangian_value) / subgradient_square_norm;
-  for (const ElementIndex element : model_.ElementRange()) {
+  for (const ElementIndex element : model()->ElementRange()) {
     // Avoid multipliers to go negative and to go through the roof. 1e6 chosen
     const Cost kRoof = 1e6;  // Arbitrary value, from [1].
     (*multipliers)[element] = std::clamp(
@@ -355,7 +355,7 @@ Cost SetCoverLagrangian::ComputeGap(
     const ElementCostVector& multipliers) const {
   Cost gap = 0.0;
   // TODO(user): Parallelize this, if need be.
-  for (const SubsetIndex subset : model_.SubsetRange()) {
+  for (const SubsetIndex subset : model()->SubsetRange()) {
     if (solution[subset] && reduced_costs[subset] > 0.0) {
       gap += reduced_costs[subset];
     } else if (!solution[subset] && reduced_costs[subset] < 0.0) {
@@ -363,8 +363,8 @@ Cost SetCoverLagrangian::ComputeGap(
       gap -= reduced_costs[subset];
     }
   }
-  const ElementToIntVector& coverage = inv_->coverage();
-  for (const ElementIndex element : model_.ElementRange()) {
+  const ElementToIntVector& coverage = inv()->coverage();
+  for (const ElementIndex element : model()->ElementRange()) {
     gap += (coverage[element] - 1) * multipliers[element];
   }
   return gap;
@@ -373,12 +373,12 @@ Cost SetCoverLagrangian::ComputeGap(
 SubsetCostVector SetCoverLagrangian::ComputeDelta(
     const SubsetCostVector& reduced_costs,
     const ElementCostVector& multipliers) const {
-  SubsetCostVector delta(model_.num_subsets());
-  const ElementToIntVector& coverage = inv_->coverage();
+  SubsetCostVector delta(model()->num_subsets());
+  const ElementToIntVector& coverage = inv()->coverage();
   // This is definition (9) in [1].
-  const SparseColumnView& columns = model_.columns();
+  const SparseColumnView& columns = model()->columns();
   // TODO(user): Parallelize this.
-  for (const SubsetIndex subset : model_.SubsetRange()) {
+  for (const SubsetIndex subset : model()->SubsetRange()) {
     delta[subset] = std::max(reduced_costs[subset], 0.0);
     for (const ElementIndex element : columns[subset]) {
       const double size = coverage[element];
@@ -491,6 +491,7 @@ class TopKHeap {
 std::tuple<Cost, SubsetCostVector, ElementCostVector>
 SetCoverLagrangian::ComputeLowerBound(const SubsetCostVector& costs,
                                       Cost upper_bound) {
+  StopWatch stop_watch(&run_time_);
   Cost lower_bound = 0.0;
   ElementCostVector multipliers = InitializeLagrangeMultipliers();
   double step_size = 0.1;               // [***] arbitrary, from [1].
@@ -515,6 +516,7 @@ SetCoverLagrangian::ComputeLowerBound(const SubsetCostVector& costs,
     //   break;
     // }
   }
+  inv()->ReportLowerBound(lower_bound, /*is_cost_consistent=*/false);
   return std::make_tuple(lower_bound, reduced_costs, multipliers);
 }
 

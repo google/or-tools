@@ -130,10 +130,13 @@ PYBIND11_MODULE(set_cover, m) {
       .def_readwrite("median", &SetCoverModel::Stats::median)
       .def_readwrite("mean", &SetCoverModel::Stats::mean)
       .def_readwrite("stddev", &SetCoverModel::Stats::stddev)
-      .def("debug_string", &SetCoverModel::Stats::DebugString);
+      .def_property_readonly("to_string", &SetCoverModel::Stats::ToString)
+      .def_property_readonly("to_verbose_string",
+                             &SetCoverModel::Stats::ToVerboseString);
 
   py::class_<SetCoverModel>(m, "SetCoverModel")
       .def(py::init<>())
+      .def_property_readonly("name", &SetCoverModel::name)
       .def_property_readonly("num_elements", &SetCoverModel::num_elements)
       .def_property_readonly("num_subsets", &SetCoverModel::num_subsets)
       .def_property_readonly("num_nonzeros", &SetCoverModel::num_nonzeros)
@@ -204,6 +207,7 @@ PYBIND11_MODULE(set_cover, m) {
                                    });
                                return subsets;
                              })
+      .def("set_name", &SetCoverModel::SetName)
       .def("add_empty_subset", &SetCoverModel::AddEmptySubset, arg("cost"))
       .def(
           "add_element_to_last_subset",
@@ -227,9 +231,9 @@ PYBIND11_MODULE(set_cover, m) {
       .def("sort_elements_in_subsets", &SetCoverModel::SortElementsInSubsets)
       .def("compute_feasibility", &SetCoverModel::ComputeFeasibility)
       .def(
-          "reserve_num_subsets",
+          "resize_num_subsets",
           [](SetCoverModel& model, BaseInt num_subsets) {
-            model.ReserveNumSubsets(num_subsets);
+            model.ResizeNumSubsets(num_subsets);
           },
           arg("num_subsets"))
       .def(
@@ -379,7 +383,8 @@ PYBIND11_MODULE(set_cover, m) {
               const std::vector<bool>& in_focus) -> bool {
              return heuristic.NextSolution(
                  BoolVectorToSubsetBoolVector(in_focus));
-           });
+           })
+      .def("name", &TrivialSolutionGenerator::name);
 
   py::class_<RandomSolutionGenerator>(m, "RandomSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
