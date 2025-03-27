@@ -123,6 +123,63 @@ absl::Status ValidateFeasibleSolution(const Model& model,
   }
   return absl::OkStatus();
 }
+
+///////////////////////////////////////////////////////////////////////
+///////////////////////////// SUBGRADIENT /////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void SubgradientOptimization(CoreModel& model, SubgradientCBs& cbs,
+                             PrimalDualState& best_state) {
+  DCHECK_OK(ValidateModel(model));
+  DCHECK_OK(ValidateFeasibleSolution(model, best_state.solution));
+
+  ElementCostVector subgradient = ElementCostVector(model.num_elements(), .0);
+  DualState dual_state = best_state.dual_state;
+  Solution solution = best_state.solution;
+
+  ElementCostVector multipliers_delta(model.num_elements());  // to avoid allocs
+  SubgradientContext context = {.model = model,
+                                .current_dual_state = dual_state,
+                                .best_dual_state = best_state.dual_state,
+                                .best_solution = best_state.solution,
+                                .subgradient = subgradient};
+  size_t iter = 0;
+  while (!cbs.ExitCondition(context)) {
+    // Compute subgradient (O(nnz))
+    subgradient.assign(model.num_elements(), 1.0);
+    for (SubsetIndex j : model.SubsetRange()) {
+      if (dual_state.reduced_costs()[j] < .0) {
+        for (ElementIndex i : model.columns()[j]) {
+          subgradient[i] -= 1.0;
+        }
+      }
+    }
+
+    cbs.ComputeMultipliersDelta(context, multipliers_delta);
+    dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
+      i_mult = std::max(.0, i_mult + multipliers_delta[i]);
+    });
+    if (dual_state.lower_bound() > best_state.dual_state.lower_bound()) {
+      best_state.dual_state = dual_state;
+    }
+
+    cbs.RunHeuristic(context, solution);
+    if (!solution.subsets().empty() &&
+        solution.cost() < best_state.solution.cost()) {
+      best_state.solution = solution;
+    }
+
+    if (cbs.UpdateCoreModel(model, best_state)) {
+      std::cout << "Core model has been updated.\n";
+      dual_state = best_state.dual_state;
+    }
+
+    std::cout << "Subgradient Iteration: " << ++iter
+              << "\n  Lower bound:      " << dual_state.lower_bound()
+              << " (best: " << best_state.dual_state.lower_bound()
+              << ")\n  Solution cost: " << best_state.solution.cost() << "\n";
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////
 /////////////////////// MULTIPLIERS BASED GREEDY ///////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -454,7 +511,7 @@ absl::StatusOr<PrimalDualState> RunThreePhase(CoreModel& model,
             << "\nStarting 3-phase algorithm\n";
 
   PrimalDualState curr_state = best_state;
-  BoundCBs dual_bound_cbs;
+  BoundCBs dual_bound_cbs(model);
   HeuristicCBs heuristic_cbs;
   BaseInt iter_count = 0;
   absl::BitGen rnd;

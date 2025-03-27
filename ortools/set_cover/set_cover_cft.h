@@ -60,12 +60,32 @@ class Solution {
   Cost cost_;
   std::vector<SubsetIndex> subsets_;
 };
+
+Cost ComputeReducedCosts(const Model& model,
+                         const ElementCostVector& multipliers,
+                         SubsetCostVector& reduced_costs);
+
 class DualState {
  public:
   DualState(const Model& model);
   Cost lower_bound() const { return lower_bound_; }
   const ElementCostVector& multipliers() const { return multipliers_; }
   const SubsetCostVector& reduced_costs() const { return reduced_costs_; }
+
+  // NOTE: This function contains one of the two O(nnz) subgradient steps
+  template <typename Op>
+  void DualUpdate(const Model& model, Op multiplier_operator) {
+    multipliers_.resize(model.num_elements());
+    reduced_costs_.resize(model.num_subsets());
+    lower_bound_ = .0;
+    // Update multipliers
+    for (ElementIndex i : model.ElementRange()) {
+      multiplier_operator(i, multipliers_[i]);
+      lower_bound_ += multipliers_[i];
+      DCHECK_GE(multipliers_[i], .0);
+    }
+    lower_bound_ += ComputeReducedCosts(model, multipliers_, reduced_costs_);
+  }
 
  private:
   Cost lower_bound_;
@@ -78,7 +98,25 @@ struct PrimalDualState {
   DualState dual_state;
 };
 
-class CoreModel : public Model {};
+class CoreModel : public Model {
+ public:
+  template <typename... Args>
+  CoreModel(Args&&... args) : Model(std::forward<Args>(args)...) {}
+  virtual bool UpdateCore(PrimalDualState& state) = 0;
+  virtual ~CoreModel() = default;
+};
+
+// In the narrow scope of the CFT subgradient, there are often divisions
+// between non-negative quantities (e.g., to compute a relative gap). In these
+// specific cases, the denominator should always be greater than the
+// numerator. This function checks that.
+inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
+  DCHECK_GE(numerator, .0);
+  if (numerator < 1e-6) {
+    return 0.0;
+  }
+  return numerator / denominator;
+}
 
 absl::Status ValidateModel(const Model& model);
 absl::Status ValidateFeasibleSolution(const Model& model,
@@ -89,9 +127,39 @@ absl::Status ValidateFeasibleSolution(const Model& model,
 ///////////////////////////// SUBGRADIENT /////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-class SubgradientCBs {};
+struct SubgradientContext {
+  const Model& model;
+  const DualState& current_dual_state;
+  const DualState& best_dual_state;
+  const Solution& best_solution;
+  const ElementCostVector& subgradient;
+};
 
-class BoundCBs : public SubgradientCBs {};
+class SubgradientCBs {
+ public:
+  virtual bool ExitCondition(const SubgradientContext&) = 0;
+  virtual void RunHeuristic(const SubgradientContext&, Solution&) = 0;
+  virtual void ComputeMultipliersDelta(const SubgradientContext&,
+                                       ElementCostVector& delta_mults) = 0;
+  virtual bool UpdateCoreModel(CoreModel&, PrimalDualState&) = 0;
+  virtual ~SubgradientCBs() = default;
+};
+
+class BoundCBs : public SubgradientCBs {
+ public:
+  static constexpr Cost kTol = 1e-6;
+
+  BoundCBs(const Model& model);
+  bool ExitCondition(const SubgradientContext& context) override;
+  void ComputeMultipliersDelta(const SubgradientContext& context,
+                               ElementCostVector& delta_mults) override;
+  void RunHeuristic(const SubgradientContext& context,
+                    Solution& solution) override {
+    solution.Clear();
+  }
+  bool UpdateCoreModel(CoreModel& core_model,
+                       PrimalDualState& best_state) override;
+};
 
 void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
                              PrimalDualState& best_state);
@@ -118,7 +186,15 @@ Cost CoverGreedly(const Model& model, const DualState& dual_state,
 //////////////////////// THREE PHASE ALGORITHM ////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-class HeuristicCBs : public SubgradientCBs {};
+class HeuristicCBs : public SubgradientCBs {
+ public:
+  bool ExitCondition(const SubgradientContext& context) override;
+  void RunHeuristic(const SubgradientContext& context,
+                    Solution& solution) override;
+  void ComputeMultipliersDelta(const SubgradientContext& context,
+                               ElementCostVector& delta_mults) override;
+  bool UpdateCoreModel(CoreModel& model, PrimalDualState& state) override;
+};
 
 absl::StatusOr<PrimalDualState> RunThreePhase(
     CoreModel& model, const Solution& init_solution = {});
