@@ -432,6 +432,7 @@ generate_proto_library(
 # Routing proto
 file(GLOB_RECURSE ROUTING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/routing/*.proto"
+  "ortools/routing/parsers/*.proto"
 )
 generate_proto_library(
   NAME routing

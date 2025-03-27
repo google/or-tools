@@ -33,6 +33,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  SCIP::libscip
+  $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::gscip ALIAS ${NAME})

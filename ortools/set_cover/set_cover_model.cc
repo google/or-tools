@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <limits>
 #include <numeric>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -30,6 +31,8 @@
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/radix_sort.h"
 #include "ortools/set_cover/base_types.h"
@@ -88,12 +91,13 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
     const SetCoverModel& seed_model, BaseInt num_elements, BaseInt num_subsets,
     double row_scale, double column_scale, double cost_scale) {
   SetCoverModel model;
+  StopWatch stop_watch(&(model.generation_duration_));
   DCHECK_GT(row_scale, 0.0);
   DCHECK_GT(column_scale, 0.0);
   DCHECK_GT(cost_scale, 0.0);
   model.num_elements_ = num_elements;
   model.num_nonzeros_ = 0;
-  model.ReserveNumSubsets(num_subsets);
+  model.ResizeNumSubsets(num_subsets);
   model.UpdateAllSubsetsList();
   absl::BitGen bitgen;
 
@@ -304,28 +308,21 @@ void SetCoverModel::AddElementToSubset(ElementIndex element,
   AddElementToSubset(element.value(), subset.value());
 }
 
-// Reserves num_subsets columns in the model.
-void SetCoverModel::ReserveNumSubsets(BaseInt num_subsets) {
+void SetCoverModel::ResizeNumSubsets(BaseInt num_subsets) {
   num_subsets_ = std::max(num_subsets_, num_subsets);
   columns_.resize(num_subsets_, SparseColumn());
   subset_costs_.resize(num_subsets_, 0.0);
   UpdateAllSubsetsList();
 }
 
-void SetCoverModel::ReserveNumSubsets(SubsetIndex num_subsets) {
-  ReserveNumSubsets(num_subsets.value());
+void SetCoverModel::ResizeNumSubsets(SubsetIndex num_subsets) {
+  ResizeNumSubsets(num_subsets.value());
 }
 
-// Reserves num_elements rows in the column indexed by subset.
 void SetCoverModel::ReserveNumElementsInSubset(BaseInt num_elements,
                                                BaseInt subset) {
-  ReserveNumSubsets(subset);
+  ResizeNumSubsets(subset);
   columns_[SubsetIndex(subset)].reserve(ColumnEntryIndex(num_elements));
-}
-
-void SetCoverModel::ReserveNumElementsInSubset(ElementIndex num_elements,
-                                               SubsetIndex subset) {
-  ReserveNumElementsInSubset(num_elements.value(), subset.value());
 }
 
 void SetCoverModel::SortElementsInSubsets() {
@@ -338,6 +335,7 @@ void SetCoverModel::SortElementsInSubsets() {
 }
 
 void SetCoverModel::CreateSparseRowView() {
+  StopWatch stop_watch(&create_sparse_row_view_duration_);
   if (row_view_is_valid_) {
     VLOG(1) << "CreateSparseRowView: already valid";
     return;
@@ -371,7 +369,108 @@ void SetCoverModel::CreateSparseRowView() {
   VLOG(1) << "CreateSparseRowView finished";
 }
 
-bool SetCoverModel::ComputeFeasibility() const {
+std::vector<SubsetIndex> SetCoverModel::ComputeSliceIndices(
+    int num_partitions) {
+  if (num_partitions <= 1 || columns_.empty()) {
+    return {SubsetIndex(columns_.size())};
+  }
+
+  std::vector<BaseInt> partial_sum_nnz(columns_.size());
+  partial_sum_nnz[0] = columns_[SubsetIndex(0)].size();
+  for (BaseInt col = 1; col < columns_.size(); ++col) {
+    partial_sum_nnz[col] =
+        partial_sum_nnz[col - 1] + columns_[SubsetIndex(col)].size();
+  }
+  const BaseInt total_nnz = partial_sum_nnz.back();
+  const BaseInt target_nnz = (total_nnz + num_partitions - 1) / num_partitions;
+
+  std::vector<SubsetIndex> partition_points(num_partitions);
+  BaseInt threshold = target_nnz;
+  BaseInt pos = 0;
+  for (const SubsetIndex col : SubsetRange()) {
+    if (partial_sum_nnz[col.value()] >= threshold) {
+      partition_points[pos] = col;
+      ++pos;
+      threshold += target_nnz;
+    }
+  }
+  partition_points[num_partitions - 1] = SubsetIndex(columns_.size());
+  return partition_points;
+}
+
+SparseRowView SetCoverModel::ComputeSparseRowViewSlice(SubsetIndex begin_subset,
+                                                       SubsetIndex end_subset) {
+  SparseRowView rows;
+  rows.reserve(num_elements_);
+  ElementToIntVector row_sizes(num_elements_, 0);
+  for (SubsetIndex subset = begin_subset; subset < end_subset; ++subset) {
+    BaseInt* data = reinterpret_cast<BaseInt*>(columns_[subset].data());
+    RadixSort(absl::MakeSpan(data, columns_[subset].size()));
+
+    ElementIndex preceding_element(-1);
+    for (const ElementIndex element : columns_[subset]) {
+      CHECK_GT(element, preceding_element)
+          << "Repetition in column "
+          << subset;  // Fail if there is a repetition.
+      ++row_sizes[element];
+      preceding_element = element;
+    }
+  }
+  for (const ElementIndex element : ElementRange()) {
+    rows[element].reserve(RowEntryIndex(row_sizes[element]));
+  }
+  for (SubsetIndex subset = begin_subset; subset < end_subset; ++subset) {
+    for (const ElementIndex element : columns_[subset]) {
+      rows[element].emplace_back(subset);
+    }
+  }
+  return rows;
+}
+
+std::vector<SparseRowView> SetCoverModel::CutSparseRowViewInSlices(
+    const std::vector<SubsetIndex>& partition_points) {
+  std::vector<SparseRowView> row_views;
+  row_views.reserve(partition_points.size());
+  SubsetIndex begin_subset(0);
+  // This should be done in parallel. It is a bottleneck.
+  for (SubsetIndex end_subset : partition_points) {
+    row_views.push_back(ComputeSparseRowViewSlice(begin_subset, end_subset));
+    begin_subset = end_subset;
+  }
+  return row_views;
+}
+
+SparseRowView SetCoverModel::ReduceSparseRowViewSlices(
+    const std::vector<SparseRowView>& slices) {
+  SparseRowView result_rows;
+  // This is not a ReduceTree. This will be done later through parallelism.
+  result_rows.reserve(num_elements_);
+  ElementToIntVector row_sizes(num_elements_, 0);
+  for (const SparseRowView& slice : slices) {
+    // This should done as a reduce tree, in parallel.
+    for (const ElementIndex element : ElementRange()) {
+      result_rows[element].insert(result_rows[element].end(),
+                                  slice[element].begin(), slice[element].end());
+    }
+  }
+  return result_rows;
+}
+
+SparseRowView SetCoverModel::ComputeSparseRowViewUsingSlices() {
+  StopWatch stop_watch(&compute_sparse_row_view_using_slices_duration_);
+  SparseRowView rows;
+  VLOG(1) << "CreateSparseRowViewUsingSlices started";
+  const std::vector<SubsetIndex> partition_points =
+      ComputeSliceIndices(num_subsets());
+  const std::vector<SparseRowView> slices =
+      CutSparseRowViewInSlices(partition_points);
+  rows = ReduceSparseRowViewSlices(slices);
+  VLOG(1) << "CreateSparseRowViewUsingSlices finished";
+  return rows;
+}
+
+bool SetCoverModel::ComputeFeasibility() {
+  StopWatch stop_watch(&feasibility_duration_);
   CHECK_GT(num_elements(), 0);
   CHECK_GT(num_subsets(), 0);
   CHECK_EQ(columns_.size(), num_subsets());
@@ -438,7 +537,7 @@ SetCoverProto SetCoverModel::ExportModelAsProto() const {
 void SetCoverModel::ImportModelFromProto(const SetCoverProto& message) {
   columns_.clear();
   subset_costs_.clear();
-  ReserveNumSubsets(message.subset_size());
+  ResizeNumSubsets(message.subset_size());
   SubsetIndex subset_index(0);
   for (const SetCoverProto::Subset& subset_proto : message.subset()) {
     subset_costs_[subset_index] = subset_proto.cost();
@@ -454,6 +553,20 @@ void SetCoverModel::ImportModelFromProto(const SetCoverProto& message) {
   }
   UpdateAllSubsetsList();
   CreateSparseRowView();
+}
+
+std::string SetCoverModel::ToVerboseString(absl::string_view sep) const {
+  return absl::StrJoin(
+      std::make_tuple("num_elements", num_elements(), "num_subsets",
+                      num_subsets(), "num_nonzeros", num_nonzeros(),
+                      "fill_rate", FillRate()),
+      sep);
+}
+
+std::string SetCoverModel::ToString(absl::string_view sep) const {
+  return absl::StrJoin(std::make_tuple(num_elements(), num_subsets(),
+                                       num_nonzeros(), FillRate()),
+                       sep);
 }
 
 namespace {
@@ -580,6 +693,18 @@ SetCoverModel::Stats SetCoverModel::ComputeColumnStats() const {
   return ComputeStats(std::move(column_sizes));
 }
 
+std::string SetCoverModel::Stats::ToString(absl::string_view sep) const {
+  return absl::StrJoin(std::make_tuple(min, max, median, mean, stddev, iqr),
+                       sep);
+}
+
+std::string SetCoverModel::Stats::ToVerboseString(absl::string_view sep) const {
+  return absl::StrJoin(
+      std::make_tuple("min", min, "max", max, "median", median, "mean", mean,
+                      "stddev", stddev, "iqr", iqr),
+      sep);
+}
+
 std::vector<int64_t> SetCoverModel::ComputeRowDeciles() const {
   std::vector<int64_t> row_sizes(num_elements(), 0);
   for (const SparseColumn& column : columns_) {
@@ -631,5 +756,4 @@ SetCoverModel::Stats SetCoverModel::ComputeRowDeltaSizeStats() const {
   }
   return acc.ComputeStats();
 }
-
 }  // namespace operations_research

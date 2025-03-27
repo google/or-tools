@@ -49,7 +49,7 @@ std::function<void(Model*)> AllDifferentBinary(
 std::function<void(Model*)> AllDifferentOnBounds(
     absl::Span<const IntegerVariable> vars);
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<AffineExpression>& expressions);
+    absl::Span<const AffineExpression> expressions);
 
 // This constraint forces all variables to take different values. This is meant
 // to be used as a complement to an alldifferent decomposition like

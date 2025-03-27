@@ -42,6 +42,9 @@ void SetCoverInvariant::Initialize() {
 void SetCoverInvariant::Clear() {
   cost_ = 0.0;
 
+  lower_bound_ = 0.0;
+  is_cost_consistent_ = true;
+
   const BaseInt num_subsets = model_->num_subsets();
   const BaseInt num_elements = model_->num_elements();
 

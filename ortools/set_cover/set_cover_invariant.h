@@ -100,8 +100,31 @@ class SetCoverInvariant {
 
   const SetCoverModel* const_model() const { return model_; }
 
+  // Reports the lower bound of the problem.
+  // If is_cost_consistent is true, the lower bound is ignored and the cost is
+  // reported instead.
+  void ReportLowerBound(Cost lower_bound, bool is_cost_consistent) {
+    lower_bound_ = lower_bound;
+    is_cost_consistent_ = is_cost_consistent;
+  }
+
   // Returns the cost of current solution.
   Cost cost() const { return cost_; }
+
+  // Returns the cost of the current solution, or the lower bound if the
+  // solution is a relaxation.
+  Cost CostOrLowerBound() const {
+    // For the time being we assume that we either have a feasible solution or
+    // a relaxation.
+    return is_cost_consistent_ ? cost_ : lower_bound_;
+  }
+
+  // Returns true if the cost of the current solution is consistent with the
+  // solution.
+  bool is_cost_consistent() const { return is_cost_consistent_; }
+
+  // Returns the lower bound of the problem.
+  Cost LowerBound() const { return lower_bound_; }
 
   // Returns the number of uncovered elements.
   BaseInt num_uncovered_elements() const { return num_uncovered_elements_; }
@@ -137,6 +160,19 @@ class SetCoverInvariant {
 
   // Clears the trace.
   void ClearTrace() { trace_.clear(); }
+
+  // Returns the cardinality of the solution in the invariant.
+  BaseInt ComputeCardinality() const {
+    BaseInt cardinality = 0;
+    for (BaseInt i = 0; i < trace().size(); ++i) {
+      const SubsetIndex subset = trace()[i].subset();
+      DCHECK_EQ(trace()[i].decision(), is_selected_[subset]);
+      if (is_selected_[subset]) {
+        ++cardinality;
+      }
+    }
+    return cardinality;
+  }
 
   // Clear the removability information.
   void ClearRemovabilityInformation() {
@@ -236,6 +272,16 @@ class SetCoverInvariant {
 
   // Current cost.
   Cost cost_;
+
+  // True it the cost is consistent with the solution. Used to decide whether to
+  // report the cost or the lower bound.
+  // This is initialized to true, and set to false when a lower bound is
+  // reported without a feasible solution.
+  bool is_cost_consistent_;
+
+  // The lower bound of the problem, when has_relaxation_ is true.
+  // By default it is 0.0.
+  Cost lower_bound_;
 
   // The number of uncovered (or free) elements in the current solution.
   BaseInt num_uncovered_elements_;

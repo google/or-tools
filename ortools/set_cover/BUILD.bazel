@@ -45,6 +45,8 @@ cc_library(
     deps = [
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
+        "//ortools/base:timer",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -54,12 +56,14 @@ cc_library(
     hdrs = ["set_cover_lagrangian.h"],
     deps = [
         ":base_types",
+        ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/algorithms:adjustable_k_ary_heap",
         "//ortools/base:threadpool",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -115,6 +119,8 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:bits",
         "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -125,12 +131,14 @@ cc_library(
     hdrs = ["set_cover_mip.h"],
     deps = [
         ":base_types",
+        ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/linear_solver",
         "//ortools/lp_data:base",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -189,8 +197,10 @@ cc_binary(
         ":set_cover_invariant",
         ":set_cover_model",
         ":set_cover_reader",
+
         "//ortools/base",
         "//ortools/base:timer",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

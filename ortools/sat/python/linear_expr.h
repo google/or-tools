@@ -24,6 +24,7 @@
 #include "absl/container/fixed_array.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -299,8 +300,8 @@ class SumArray : public LinearExpr {
 /// A class to hold a weighted sum of floating point linear expressions.
 class FloatWeightedSum : public LinearExpr {
  public:
-  FloatWeightedSum(const std::vector<std::shared_ptr<LinearExpr>>& exprs,
-                   const std::vector<double>& coeffs, double offset);
+  FloatWeightedSum(absl::Span<const std::shared_ptr<LinearExpr>> exprs,
+                   absl::Span<const double> coeffs, double offset);
   ~FloatWeightedSum() override = default;
 
   void VisitAsFloat(FloatExprVisitor& lin, double c) override;
@@ -320,8 +321,8 @@ class FloatWeightedSum : public LinearExpr {
 /// A class to hold a weighted sum of integer linear expressions.
 class IntWeightedSum : public LinearExpr {
  public:
-  IntWeightedSum(const std::vector<std::shared_ptr<LinearExpr>>& exprs,
-                 const std::vector<int64_t>& coeffs, int64_t offset);
+  IntWeightedSum(absl::Span<const std::shared_ptr<LinearExpr>> exprs,
+                 absl::Span<const int64_t> coeffs, int64_t offset);
   ~IntWeightedSum() override = default;
 
   void VisitAsFloat(FloatExprVisitor& lin, double c) override;

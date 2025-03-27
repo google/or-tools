@@ -25,6 +25,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -403,8 +404,8 @@ std::string SumArray::DebugString() const {
 }
 
 FloatWeightedSum::FloatWeightedSum(
-    const std::vector<std::shared_ptr<LinearExpr>>& exprs,
-    const std::vector<double>& coeffs, double offset)
+    absl::Span<const std::shared_ptr<LinearExpr>> exprs,
+    absl::Span<const double> coeffs, double offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(coeffs.begin(), coeffs.end()),
       offset_(offset) {
@@ -480,8 +481,8 @@ std::string FloatWeightedSum::DebugString() const {
 }
 
 IntWeightedSum::IntWeightedSum(
-    const std::vector<std::shared_ptr<LinearExpr>>& exprs,
-    const std::vector<int64_t>& coeffs, int64_t offset)
+    absl::Span<const std::shared_ptr<LinearExpr>> exprs,
+    absl::Span<const int64_t> coeffs, int64_t offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(coeffs.begin(), coeffs.end()),
       offset_(offset) {}

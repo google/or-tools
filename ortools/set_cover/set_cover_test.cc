@@ -474,7 +474,8 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
   for (int i = 0; i < 1'000; ++i) {
     auto focus = ClearRandomSubsets(0.1 * inv.trace().size(), &inv);
     SetCoverMip mip(&inv);
-    mip.NextSolution(focus, true, 1);
+    mip.UseIntegers(true).SetTimeLimitInSeconds(1.0);
+    mip.NextSolution(focus);
     EXPECT_TRUE(inv.CheckConsistency(CL::kCostAndCoverage));
     if (inv.cost() < best_cost) {
       best_cost = inv.cost();
@@ -502,7 +503,7 @@ TEST(SetCoverTest, KnightsCoverMip) {
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
   SetCoverMip mip(&inv);
-  mip.NextSolution(true, .5);
+  mip.UseIntegers(true).SetTimeLimitInSeconds(0.5).NextSolution();
   LOG(INFO) << "Mip cost: " << inv.cost();
   knights.DisplaySolution(inv.is_selected());
   if (BoardSize == 50) {

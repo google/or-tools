@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ortools.util.python.sorted_interval_list."""
-
 from absl.testing import absltest
 from ortools.util.python import sorted_interval_list
 

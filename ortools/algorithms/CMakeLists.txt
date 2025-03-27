@@ -52,15 +52,17 @@ if(BUILD_TESTING)
         GTest::gmock
     )
   endforeach()
-  ortools_cxx_test(
-    NAME
+  if(USE_fuzztest)
+    ortools_cxx_test(
+      NAME
       algorithms_n_choose_k_test
-    SOURCES
+      SOURCES
       "./n_choose_k_test.cc"
-    LINK_LIBRARIES
+      LINK_LIBRARIES
       benchmark::benchmark
       fuzztest::fuzztest
       fuzztest::fuzztest_gtest_main
       GTest::gmock
-  )
+    )
+  endif()
 endif()

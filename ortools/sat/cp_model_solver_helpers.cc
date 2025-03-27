@@ -430,7 +430,7 @@ void InitializeLinearConstraintSymmetrizerIfRequested(
       orbit_is_ok.resize(orbit_index + 1, true);
     }
 
-    // In linerization level >=2, all variables should have a view.
+    // In linearization level >=2, all variables should have a view.
     // Otherwise revisit and skip orbit without a full view.
     const IntegerVariable var = mapping->Integer(proto_var);
     CHECK_NE(var, kNoIntegerVariable);
@@ -1191,9 +1191,13 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     LoadBooleanSymmetries(model_proto, model);
   }
 
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
+  if (time_limit->LimitReached()) return;
+
   ExtractEncoding(model_proto, model);
   PropagateEncodingFromEquivalenceRelations(model_proto, model);
 
+  if (time_limit->LimitReached()) return;
   // Check the model is still feasible before continuing.
   if (sat_solver->ModelIsUnsat()) return unsat();
 
@@ -1207,8 +1211,12 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   FillBinaryRelationRepository(model_proto, model);
 
+  if (time_limit->LimitReached()) return;
+
   // Load the constraints.
   int num_ignored_constraints = 0;
+  int time_limit_check_count = 0;
+  static const int kTimeLimitCheckFrequency = 1000;
   absl::flat_hash_set<ConstraintProto::ConstraintCase> unsupported_types;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) {
@@ -1219,6 +1227,12 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     if (!LoadConstraint(ct, model)) {
       unsupported_types.insert(ct.constraint_case());
       continue;
+    }
+
+    ++time_limit_check_count;
+    if (time_limit_check_count >= kTimeLimitCheckFrequency) {
+      if (time_limit->LimitReached()) return;
+      time_limit_check_count = 0;
     }
 
     // We propagate after each new Boolean constraint but not the integer
@@ -1277,6 +1291,8 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
   LoadBaseModel(model_proto, model);
 
+  if (model->GetOrCreate<TimeLimit>()->LimitReached()) return;
+
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   if (parameters.linearization_level() == 0) return;
@@ -1308,6 +1324,8 @@ void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
 // This should only be called once on a given 'Model' class.
 void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   LoadBaseModel(model_proto, model);
+
+  if (model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
   // We want to load the debug solution before the initial propag.
   // But at this point the objective is not loaded yet, so we will not have
@@ -1571,6 +1589,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;
 
+  if (model->GetOrCreate<TimeLimit>()->LimitReached()) return;
   const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
   if (parameters.stop_after_root_propagation()) return;
 
@@ -1701,6 +1720,8 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
 // The CpModelProto must already be loaded in the Model.
 void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   if (!model_proto.has_solution_hint()) return;
+
+  if (model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;

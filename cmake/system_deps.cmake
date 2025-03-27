@@ -105,8 +105,10 @@ if(BUILD_TESTING)
     find_package(benchmark REQUIRED)
   endif()
 
-  if(NOT BUILD_fuzztest AND NOT TARGET fuzztest::fuzztest)
-    find_package(fuzztest REQUIRED)
+  if(USE_fuzztest)
+    if(NOT BUILD_fuzztest AND NOT TARGET fuzztest::fuzztest)
+      find_package(fuzztest REQUIRED)
+    endif()
   endif()
 endif()
 

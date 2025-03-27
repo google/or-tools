@@ -46,6 +46,7 @@ using CL = SetCoverInvariant::ConsistencyLevel;
 
 bool TrivialSolutionGenerator::NextSolution(
     absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
   const SubsetIndex num_subsets(model()->num_subsets());
   SubsetBoolVector choices(num_subsets, false);
   for (const SubsetIndex subset : focus) {
@@ -60,6 +61,7 @@ bool TrivialSolutionGenerator::NextSolution(
 
 bool RandomSolutionGenerator::NextSolution(
     absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
   inv()->ClearTrace();
   std::vector<SubsetIndex> shuffled(focus.begin(), focus.end());
   std::shuffle(shuffled.begin(), shuffled.end(), absl::BitGen());
@@ -78,6 +80,7 @@ bool RandomSolutionGenerator::NextSolution(
 
 bool GreedySolutionGenerator::NextSolution(
     absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   inv()->Recompute(CL::kFreeAndUncovered);
   inv()->ClearTrace();
@@ -358,6 +361,7 @@ double Determinant(Cost c1, BaseInt n1, Cost c2, BaseInt n2) {
 
 bool ElementDegreeSolutionGenerator::NextSolution(
     const SubsetBoolVector& in_focus) {
+  StopWatch stop_watch(&run_time_);
   DVLOG(1) << "Entering ElementDegreeSolutionGenerator::NextSolution";
   inv()->Recompute(CL::kFreeAndUncovered);
   // Create the list of all the indices in the problem.
@@ -415,6 +419,7 @@ bool ElementDegreeSolutionGenerator::NextSolution(
 
 bool LazyElementDegreeSolutionGenerator::NextSolution(
     const SubsetBoolVector& in_focus) {
+  StopWatch stop_watch(&run_time_);
   inv()->CompressTrace();
   DVLOG(1) << "Entering LazyElementDegreeSolutionGenerator::NextSolution";
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
@@ -464,6 +469,7 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
 // SteepestSearch.
 
 bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
+  StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   inv()->Recompute(CL::kFreeAndUncovered);
@@ -519,6 +525,7 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
 // LazySteepestSearch.
 
 bool LazySteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
+  StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   DVLOG(1) << "Entering LazySteepestSearch::NextSolution, num_iterations = "
@@ -614,6 +621,7 @@ void GuidedTabuSearch::UpdatePenalties(absl::Span<const SubsetIndex> focus) {
 }
 
 bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
   DVLOG(1) << "Entering GuidedTabuSearch::NextSolution, num_iterations = "
@@ -723,6 +731,7 @@ Cost GuidedLocalSearch::ComputeDelta(SubsetIndex subset) const {
 }
 
 bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   inv()->Recompute(CL::kRedundancy);
   Cost best_cost = inv()->cost();

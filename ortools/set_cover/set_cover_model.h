@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/set_cover/base_types.h"
@@ -56,8 +56,9 @@ namespace operations_research {
 class SetCoverModel {
  public:
   // Constructs an empty weighted set-covering problem.
-  SetCoverModel()
-      : num_elements_(0),
+  explicit SetCoverModel(const absl::string_view name = "SetCoverModel")
+      : name_(name),
+        num_elements_(0),
         num_subsets_(0),
         num_nonzeros_(0),
         row_view_is_valid_(false),
@@ -68,6 +69,10 @@ class SetCoverModel {
         columns_(),
         rows_(),
         all_subsets_() {}
+
+  std::string name() const { return name_; }
+
+  void SetName(const absl::string_view name) { name_ = name; }
 
   // Constructs a weighted set-covering problem from a seed model, with
   // num_elements elements and num_subsets subsets.
@@ -103,13 +108,41 @@ class SetCoverModel {
 
   // Current number of subsets in the model. In matrix terms, this is the
   // number of columns.
-  BaseInt num_subsets() const { return num_subsets_; }
+  BaseInt num_subsets() const {
+    CHECK_NE(this, nullptr);
+    return num_subsets_;
+  }
 
   // Current number of nonzeros in the matrix.
   int64_t num_nonzeros() const { return num_nonzeros_; }
 
+  // Returns the fill rate of the matrix.
   double FillRate() const {
     return 1.0 * num_nonzeros() / (1.0 * num_elements() * num_subsets());
+  }
+
+  // Computes the number of singleton columns in the model, i.e. subsets
+  // covering only one element.
+  BaseInt ComputeNumSingletonColumns() const {
+    BaseInt num_singleton_columns = 0;
+    for (const SparseColumn& column : columns_) {
+      if (column.size() == 1) {
+        ++num_singleton_columns;
+      }
+    }
+    return num_singleton_columns;
+  }
+
+  // Computes the number of singleton rows in the model, i.e. elements in the
+  // model that can be covered by one subset only.
+  BaseInt ComputeNumSingletonRows() const {
+    BaseInt num_singleton_rows = 0;
+    for (const SparseRow& row : rows_) {
+      if (row.size() == 1) {
+        ++num_singleton_rows;
+      }
+    }
+    return num_singleton_rows;
   }
 
   // Vector of costs for each subset.
@@ -157,6 +190,17 @@ class SetCoverModel {
   // Returns the list of indices for all the subsets in the model.
   std::vector<SubsetIndex> all_subsets() const { return all_subsets_; }
 
+  // Accessors to the durations of the different stages of the model creation.
+  absl::Duration generation_duration() const { return generation_duration_; }
+
+  absl::Duration create_sparse_row_view_duration() const {
+    return create_sparse_row_view_duration_;
+  }
+
+  absl::Duration compute_sparse_row_view_using_slices_duration() const {
+    return compute_sparse_row_view_using_slices_duration_;
+  }
+
   // Adds an empty subset with a cost to the problem. In matrix terms, this
   // adds a column to the matrix.
   void AddEmptySubset(Cost cost);
@@ -184,18 +228,50 @@ class SetCoverModel {
   // the elements in each subset.
   void CreateSparseRowView();
 
-  // Returns true if the problem is feasible, i.e. if the subsets cover all
-  // the elements.
-  bool ComputeFeasibility() const;
+  // Same as CreateSparseRowView, but uses a slicing algorithm, more prone to
+  // parallelism.
+  SparseRowView ComputeSparseRowViewUsingSlices();
 
-  // Reserves num_subsets columns in the model.
-  void ReserveNumSubsets(BaseInt num_subsets);
-  void ReserveNumSubsets(SubsetIndex num_subsets);
+  // The following functions are used by CreateSparseRowViewUsingSlices.
+  // They are exposed for testing purposes.
+
+  // Returns a vector of subset indices that partition columns into
+  // `num_partitions` partitions of roughly equal size in number of non-zeros.
+  // The resulting vector contains the index of the first subset in the next
+  // partition. Therefore the last element is the total number of subsets.
+  // Also the vector is sorted.
+  std::vector<SubsetIndex> ComputeSliceIndices(int num_partitions);
+
+  // Returns a view of the rows of the problem with subset in the range
+  // [begin_subset, end_subset).
+  SparseRowView ComputeSparseRowViewSlice(SubsetIndex begin_subset,
+                                          SubsetIndex end_subset);
+
+  // Returns a vector of row views, each corresponding to a partition of the
+  // problem. The partitions are defined by the given partition points.
+  std::vector<SparseRowView> CutSparseRowViewInSlices(
+      const std::vector<SubsetIndex>& partition_points);
+
+  // Returns the union of the rows of the given row views.
+  // The returned view is valid only as long as the given row views are valid.
+  // The indices in the rows are sorted.
+  SparseRowView ReduceSparseRowViewSlices(
+      const std::vector<SparseRowView>& row_slices);
+
+  // Returns true if the problem is feasible, i.e. if the subsets cover all
+  // the elements. Could be const, but it updates the feasibility_duration_
+  // field.
+  bool ComputeFeasibility();
+
+  // Resizes the model to have at least num_subsets columns. The new columns
+  // correspond to empty subsets.
+  // This function will never remove a column, i.e. if num_subsets is smaller
+  // than the current instance size the function does nothing.
+  void ResizeNumSubsets(BaseInt num_subsets);
+  void ResizeNumSubsets(SubsetIndex num_subsets);
 
   // Reserves num_elements rows in the column indexed by subset.
   void ReserveNumElementsInSubset(BaseInt num_elements, BaseInt subset);
-  void ReserveNumElementsInSubset(ElementIndex num_elements,
-                                  SubsetIndex subset);
 
   // Returns the model as a SetCoverProto. Note that the elements of each subset
   // are sorted locally before being exported to the proto. This is done to
@@ -207,6 +283,13 @@ class SetCoverModel {
   // Imports the model from a SetCoverProto.
   void ImportModelFromProto(const SetCoverProto& message);
 
+  // Returns a verbose string representation of the model, using the given
+  // separator.
+  std::string ToVerboseString(absl::string_view sep) const;
+
+  // Returns a string representation of the model, using the given separator.
+  std::string ToString(absl::string_view sep) const;
+
   // A struct enabling to show basic statistics on rows and columns.
   // The meaning of the fields is obvious.
   struct Stats {
@@ -217,11 +300,16 @@ class SetCoverModel {
     double stddev;
     double iqr;  // Interquartile range.
 
-    std::string DebugString() const {
-      return absl::StrCat("min = ", min, ", max = ", max, ", mean = ", mean,
-                          ", median = ", median, ", stddev = ", stddev, ", ",
-                          "iqr = ", iqr);
-    }
+    // Returns a string representation of the stats. TODO(user): remove this as
+    // it is obsolete.
+    std::string DebugString() const { return ToVerboseString(", "); }
+
+    // Returns a string representation of the stats, using the given separator.
+    std::string ToString(absl::string_view sep) const;
+
+    // Returns a verbose string representation of the stats, using the given
+    // separator.
+    std::string ToVerboseString(absl::string_view sep) const;
   };
 
   // Computes basic statistics on costs and returns a Stats structure.
@@ -252,6 +340,9 @@ class SetCoverModel {
   // columns.size() - 1
   void UpdateAllSubsetsList();
 
+  // The name of the model, "SetCoverModel" as default.
+  std::string name_;
+
   // Number of elements.
   BaseInt num_elements_;
 
@@ -276,6 +367,20 @@ class SetCoverModel {
 
   // True when is_unicost_ is up-to-date.
   bool is_unicost_valid_;
+
+  // Stores the run time for CreateSparseRowView. Interesting to compare with
+  // the time spent to actually generate a solution to the model.
+  absl::Duration create_sparse_row_view_duration_;
+
+  // Stores the run time for ComputeSparseRowViewUsingSlices.
+  absl::Duration compute_sparse_row_view_using_slices_duration_;
+
+  // Stores the run time for GenerateRandomModelFrom.
+  absl::Duration generation_duration_;
+
+  // Stores the run time for ComputeFeasibility. A good estimate of the time
+  // needed to traverse the complete model.
+  absl::Duration feasibility_duration_;
 
   // Vector of columns. Each column corresponds to a subset and contains the
   // elements of the given subset.
@@ -375,7 +480,6 @@ class IntersectingSubsetsIterator {
   // already seen by the iterator.
   SubsetBoolVector subset_seen_;
 };
-
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_
