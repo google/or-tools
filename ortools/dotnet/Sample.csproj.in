@@ -41,7 +41,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="@SAMPLE_FILE_NAME@" />
+    <Compile Include="@SAMPLE_NAME@.cs" />
     <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.*" />
   </ItemGroup>
 </Project>
