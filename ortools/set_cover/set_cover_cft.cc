@@ -111,7 +111,7 @@ DualState::DualState(const Model& model)
   });
 }
 
-absl::Status ValidateModel(const Model& model) {
+absl::Status ValidateModel(Model& model) {
   if (model.rows().size() != model.num_elements()) {
     return absl::InvalidArgumentError("Model has no rows.");
   }
@@ -627,7 +627,7 @@ namespace {
 
 void FixColumns(CoreModel& model, const std::vector<SubsetIndex>& cols_to_fix,
                 ElementMapVector& new_to_old_map) {
-  // TOD(c4v4): implement
+  CHECK(false) << "FixColumns not implemented";
 }
 
 void FixBestColumns(CoreModel& model, PrimalDualState& state) {
@@ -751,7 +751,7 @@ void ExtractCoreModel(const Model& full_model,
                       const SubsetMapVector& columns_map, Model& core_model) {
   // Fill core model with the selected columns
   core_model = Model();
-  core_model.ReserveNumSubsets(columns_map.size());
+  core_model.ResizeNumSubsets(columns_map.size());
   for (SubsetIndex core_j : core_model.SubsetRange()) {
     SubsetIndex full_j = columns_map[core_j];
     const SparseColumn& full_column = full_model.columns()[full_j];

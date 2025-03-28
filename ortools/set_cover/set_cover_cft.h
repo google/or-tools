@@ -19,6 +19,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research::scp {
@@ -118,7 +119,7 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
   return numerator / denominator;
 }
 
-absl::Status ValidateModel(const Model& model);
+absl::Status ValidateModel(Model& model);
 absl::Status ValidateFeasibleSolution(const Model& model,
                                       const Solution& solution,
                                       Cost tolerance = 1e-6);
