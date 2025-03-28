@@ -32,7 +32,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="@TEST_FILE_NAME@" />
+    <Compile Include="@TEST_NAME@.cs" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.8.2" />
     <PackageReference Include="xunit.runner.console" Version="2.8.2" />
