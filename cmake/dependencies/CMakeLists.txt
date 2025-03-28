@@ -113,10 +113,10 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v30.1"
+    GIT_TAG "v30.2"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v30.1.patch"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v30.2.patch"
   )
   FetchContent_MakeAvailable(Protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -489,6 +489,22 @@ if(BUILD_benchmark)
   set(BENCHMARK_ENABLE_WERROR OFF)
   set(BENCHMARK_ENABLE_INSTALL OFF)
   FetchContent_MakeAvailable(benchmark)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
+if(BUILD_fuzztest)
+  message(CHECK_START "Fetching fuzztest")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  FetchContent_Declare(
+    fuzztest
+    GIT_REPOSITORY https://github.com/google/fuzztest.git
+    GIT_TAG 2025-02-14
+    GIT_SHALLOW TRUE
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/fuzztest-2025-02-14.patch"
+  )
+  FetchContent_MakeAvailable(fuzztest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()

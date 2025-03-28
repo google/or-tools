@@ -163,8 +163,8 @@ public class SatSolverTest
     static CpObjectiveProto NewMaximize1(int v1, long c1)
     {
         CpObjectiveProto obj = new CpObjectiveProto();
-        obj.Vars.Add(-v1 - 1);
-        obj.Coeffs.Add(c1);
+        obj.Vars.Add(v1);
+        obj.Coeffs.Add(-c1);
         obj.ScalingFactor = -1;
         return obj;
     }
@@ -172,10 +172,10 @@ public class SatSolverTest
     static CpObjectiveProto NewMaximize2(int v1, int v2, long c1, long c2)
     {
         CpObjectiveProto obj = new CpObjectiveProto();
-        obj.Vars.Add(-v1 - 1);
-        obj.Vars.Add(-v2 - 1);
-        obj.Coeffs.Add(c1);
-        obj.Coeffs.Add(c2);
+        obj.Vars.Add(v1);
+        obj.Vars.Add(v2);
+        obj.Coeffs.Add(-c1);
+        obj.Coeffs.Add(-c2);
         obj.ScalingFactor = -1;
         return obj;
     }
