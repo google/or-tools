@@ -28,7 +28,7 @@ index 1f4f08d..cc4d0ba 100644
  
  set(gtest_URL https://github.com/google/googletest.git)
 -set(gtest_TAG v1.14.0)
-+set(gtest_TAG v1.15.2)
++set(gtest_TAG v1.16.0)
  
  # From https://www.antlr.org/download.html
  set(antlr_cpp_URL https://www.antlr.org/download/antlr4-cpp-runtime-4.12.0-source.zip)
@@ -36,7 +36,7 @@ index 1f4f08d..cc4d0ba 100644
  
  set(proto_URL https://github.com/protocolbuffers/protobuf.git)
 -set(proto_TAG v28.2)
-+set(proto_TAG v30.1)
++set(proto_TAG v30.2)
  
  set(nlohmann_json_URL https://github.com/nlohmann/json.git)
  set(nlohmann_json_TAG v3.11.2)
