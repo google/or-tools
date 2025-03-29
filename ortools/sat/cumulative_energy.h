@@ -25,8 +25,8 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/theta_tree.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/scheduling.h"
 
 namespace operations_research {
 namespace sat {

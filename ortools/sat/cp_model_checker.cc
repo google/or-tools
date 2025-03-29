@@ -654,15 +654,6 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
         "All nodes in a route constraint must have incident arcs");
   }
 
-  // If the demands field is present, it must be of size nodes.size().
-  if (!ct.routes().demands().empty() &&
-      ct.routes().demands().size() != nodes.size()) {
-    return absl::StrCat(
-        "If the demands fields in a route constraint is set, it must be of "
-        "size num_nodes:",
-        nodes.size());
-  }
-
   for (const RoutesConstraintProto::NodeExpressions& dimension :
        ct.routes().dimensions()) {
     if (dimension.exprs().size() != nodes.size()) {

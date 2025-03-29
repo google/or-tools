@@ -197,7 +197,6 @@ cc_binary(
         ":set_cover_invariant",
         ":set_cover_model",
         ":set_cover_reader",
-
         "//ortools/base",
         "//ortools/base:timer",
         "@abseil-cpp//absl/base:core_headers",

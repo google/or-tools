@@ -29,8 +29,8 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_filters.h"
-#include "ortools/sat/theta_tree.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/scheduling.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {

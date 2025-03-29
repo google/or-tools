@@ -16,23 +16,30 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <functional>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -359,30 +366,22 @@ class BestBoundHelper {
   BestBoundHelper() = default;
   explicit BestBoundHelper(std::string base_name) : base_name_(base_name) {}
 
-  void Update(
-      int new_bound, std::string name,
-      absl::Span<const int> cannot_be_first = {},
-      absl::Span<const int> cannot_be_last = {},
-      absl::Span<const int> outside_nodes_that_cannot_be_connected = {}) {
+  void Update(int new_bound, std::string name,
+              absl::Span<const int> cannot_be_first = {},
+              absl::Span<const int> cannot_be_last = {}) {
     if (new_bound < bound_) return;
     if (new_bound > bound_) {
       bound_ = new_bound;
       name_ = name;
       cannot_be_last_.clear();
       cannot_be_first_.clear();
-      outside_nodes_that_cannot_be_connected_.clear();
     }
     cannot_be_first_.insert(cannot_be_first_.begin(), cannot_be_first.begin(),
                             cannot_be_first.end());
     cannot_be_last_.insert(cannot_be_last_.begin(), cannot_be_last.begin(),
                            cannot_be_last.end());
-    outside_nodes_that_cannot_be_connected_.insert(
-        outside_nodes_that_cannot_be_connected_.begin(),
-        outside_nodes_that_cannot_be_connected.begin(),
-        outside_nodes_that_cannot_be_connected.end());
     gtl::STLSortAndRemoveDuplicates(&cannot_be_first_);
     gtl::STLSortAndRemoveDuplicates(&cannot_be_last_);
-    gtl::STLSortAndRemoveDuplicates(&outside_nodes_that_cannot_be_connected_);
   }
 
   std::string name() const { return absl::StrCat(base_name_, name_); }
@@ -394,9 +393,6 @@ class BestBoundHelper {
   // nodes in OutsideNodeThatCannotBeConnected().
   absl::Span<const int> CannotBeLast() const { return cannot_be_last_; }
   absl::Span<const int> CannotBeFirst() const { return cannot_be_first_; }
-  absl::Span<const int> OutsideNodesThatCannotBeConnected() const {
-    return outside_nodes_that_cannot_be_connected_;
-  }
 
  private:
   int bound_ = 0;
@@ -405,7 +401,6 @@ class BestBoundHelper {
   std::vector<int> tmp_;
   std::vector<int> cannot_be_last_;
   std::vector<int> cannot_be_first_;
-  std::vector<int> outside_nodes_that_cannot_be_connected_;
 };
 
 // Helper to compute the minimum flow going out of a subset of nodes, for a
@@ -732,9 +727,8 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 // d at index n * num_dimensions + d.
 CutGenerator CreateCVRPCutGenerator(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
-    absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
-    absl::Span<const AffineExpression> flat_node_dim_expressions,
-    int64_t capacity, Model* model);
+    absl::Span<const Literal> literals,
+    absl::Span<const AffineExpression> flat_node_dim_expressions, Model* model);
 
 // Try to find a subset where the current LP capacity of the outgoing or
 // incoming arc is not enough to satisfy the demands.

@@ -605,14 +605,12 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
     num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
     num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
   }
-  if (ct.routes().demands().empty() || ct.routes().capacity() == 0) {
+  const int num_dimensions = ct.routes().dimensions_size();
+  if (num_dimensions == 0) {
     relaxation->cut_generators.push_back(
         CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
                                                  literals, m));
   } else {
-    const std::vector<int64_t> demands(ct.routes().demands().begin(),
-                                       ct.routes().demands().end());
-    int num_dimensions = ct.routes().dimensions_size();
     std::vector<AffineExpression> flat_node_dim_expressions(
         num_dimensions * num_nodes, AffineExpression());
     for (int d = 0; d < num_dimensions; ++d) {
@@ -631,8 +629,7 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
       }
     }
     relaxation->cut_generators.push_back(CreateCVRPCutGenerator(
-        num_nodes, tails, heads, literals, demands, flat_node_dim_expressions,
-        ct.routes().capacity(), m));
+        num_nodes, tails, heads, literals, flat_node_dim_expressions, m));
   }
 }
 
