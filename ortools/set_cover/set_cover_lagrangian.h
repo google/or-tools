@@ -18,6 +18,7 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/set_cover/base_types.h"
@@ -50,9 +51,11 @@ namespace operations_research {
 
 class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
  public:
-  explicit SetCoverLagrangian(SetCoverInvariant* inv,
-                              const absl::string_view name = "Lagrangian")
-      : SubsetListBasedSolutionGenerator(inv, name),
+  explicit SetCoverLagrangian(SetCoverInvariant* inv)
+      : SetCoverLagrangian(inv, class_name()) {}
+
+  SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
+      : SubsetListBasedSolutionGenerator(inv, "Lagrangian", name),
         num_threads_(1),
         thread_pool_(nullptr) {}
 
