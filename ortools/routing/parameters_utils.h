@@ -21,10 +21,10 @@
 
 namespace operations_research::routing {
 
-// Takes RoutingSearchParameters::local_cheapest_insertion_sorting_properties in
-// input and returns the ordered list of properties that is used to sort nodes
-// when performing a local cheapest insertion first heuristic.
-std::vector<RoutingSearchParameters::InsertionSortingProperty>
+// Takes LocalCheapestInsertionParameters::insertion_sorting_properties
+// in input and returns the ordered list of properties that is used to sort
+// nodes when performing a local cheapest insertion first heuristic.
+std::vector<LocalCheapestInsertionParameters::InsertionSortingProperty>
 GetLocalCheapestInsertionSortingProperties(
     absl::Span<const int> lci_insertion_sorting_properties);
 

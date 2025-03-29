@@ -1024,7 +1024,7 @@ class Search {
   bool AtSolution();
   bool AcceptSolution();
   void NoMoreSolutions();
-  bool LocalOptimum();
+  bool ContinueAtLocalOptimum();
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   void AcceptNeighbor();
   void AcceptUncheckedNeighbor();
@@ -1316,15 +1316,15 @@ bool Search::AtSolution() {
 
 void Search::NoMoreSolutions() { CALL_EVENT_LISTENERS(NoMoreSolutions); }
 
-bool Search::LocalOptimum() {
-  bool at_local_optimum = false;
+bool Search::ContinueAtLocalOptimum() {
+  bool continue_at_local_optimum = false;
   for (SearchMonitor* const monitor :
        GetEventListeners(Solver::MonitorEvent::kLocalOptimum)) {
-    if (monitor->LocalOptimum()) {
-      at_local_optimum = true;
+    if (monitor->AtLocalOptimum()) {
+      continue_at_local_optimum = true;
     }
   }
-  return at_local_optimum;
+  return continue_at_local_optimum;
 }
 
 bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
@@ -1375,7 +1375,9 @@ void Search::Accept(ModelVisitor* const visitor) const {
 
 #undef CALL_EVENT_LISTENERS
 
-bool LocalOptimumReached(Search* search) { return search->LocalOptimum(); }
+bool ContinueAtLocalOptimum(Search* search) {
+  return search->ContinueAtLocalOptimum();
+}
 
 bool AcceptDelta(Search* search, Assignment* delta, Assignment* deltadelta) {
   return search->AcceptDelta(delta, deltadelta);
@@ -2894,7 +2896,7 @@ void SearchMonitor::EndInitialPropagation() {}
 bool SearchMonitor::AcceptSolution() { return true; }
 bool SearchMonitor::AtSolution() { return false; }
 void SearchMonitor::NoMoreSolutions() {}
-bool SearchMonitor::LocalOptimum() { return false; }
+bool SearchMonitor::AtLocalOptimum() { return false; }
 bool SearchMonitor::AcceptDelta([[maybe_unused]] Assignment* delta,
                                 [[maybe_unused]] Assignment* deltadelta) {
   return true;

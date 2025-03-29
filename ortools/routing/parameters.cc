@@ -98,10 +98,11 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization(  // NOLINT
       false);
   p.set_cheapest_insertion_add_unperformed_entries(false);
-  p.set_local_cheapest_insertion_pickup_delivery_strategy(
-      RoutingSearchParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
-  p.set_local_cheapest_cost_insertion_pickup_delivery_strategy(
-      RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR);
+  p.mutable_local_cheapest_insertion_parameters()->set_pickup_delivery_strategy(
+      LocalCheapestInsertionParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
+  p.mutable_local_cheapest_cost_insertion_parameters()
+      ->set_pickup_delivery_strategy(
+          LocalCheapestInsertionParameters::BEST_PICKUP_DELIVERY_PAIR);
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
       p.mutable_local_search_operators();
   o->set_use_relocate(BOOL_TRUE);
@@ -532,25 +533,32 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
         ". Must be greater or equal to 1."));
   }
   {
-    absl::flat_hash_map<RoutingSearchParameters::InsertionSortingProperty, int>
+    absl::flat_hash_map<
+        LocalCheapestInsertionParameters::InsertionSortingProperty, int>
         sorting_properties_map;
-    for (const RoutingSearchParameters::InsertionSortingProperty property :
-         REPEATED_ENUM_ADAPTER(search_parameters,
-                               local_cheapest_insertion_sorting_properties)) {
-      if (property == RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED) {
-        errors.emplace_back(
-            StrCat("Invalid local cheapest insertion sorting property: ",
-                   RoutingSearchParameters::InsertionSortingProperty_Name(
-                       RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED)));
+    for (const LocalCheapestInsertionParameters::InsertionSortingProperty
+             property : REPEATED_ENUM_ADAPTER(
+                 search_parameters.local_cheapest_insertion_parameters(),
+                 insertion_sorting_properties)) {
+      if (property ==
+          LocalCheapestInsertionParameters::SORTING_PROPERTY_UNSPECIFIED) {
+        errors.emplace_back(StrCat(
+            "Invalid local cheapest insertion sorting property: ",
+            LocalCheapestInsertionParameters::InsertionSortingProperty_Name(
+                LocalCheapestInsertionParameters::
+                    SORTING_PROPERTY_UNSPECIFIED)));
       }
       const int occurrences = sorting_properties_map[property]++;
       if (occurrences == 2) {
         errors.emplace_back(StrCat(
             "Duplicate local cheapest insertion sorting property: ",
-            RoutingSearchParameters::InsertionSortingProperty_Name(property)));
+            LocalCheapestInsertionParameters::InsertionSortingProperty_Name(
+                property)));
       }
-      if (property == RoutingSearchParameters::SORTING_PROPERTY_RANDOM &&
-          search_parameters.local_cheapest_insertion_sorting_properties()
+      if (property ==
+              LocalCheapestInsertionParameters::SORTING_PROPERTY_RANDOM &&
+          search_parameters.local_cheapest_insertion_parameters()
+                  .insertion_sorting_properties()
                   .size() > 1) {
         errors.emplace_back(
             StrCat("SORTING_PROPERTY_RANDOM cannot be used in conjunction "

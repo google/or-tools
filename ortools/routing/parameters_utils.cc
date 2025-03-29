@@ -20,15 +20,15 @@
 
 namespace operations_research::routing {
 
-std::vector<RoutingSearchParameters::InsertionSortingProperty>
+std::vector<LocalCheapestInsertionParameters::InsertionSortingProperty>
 GetLocalCheapestInsertionSortingProperties(
     absl::Span<const int> lci_insertion_sorting_properties) {
-  std::vector<RoutingSearchParameters::InsertionSortingProperty>
+  std::vector<LocalCheapestInsertionParameters::InsertionSortingProperty>
       sorting_properties;
 
   for (const int property : lci_insertion_sorting_properties) {
     sorting_properties.push_back(
-        static_cast<RoutingSearchParameters::InsertionSortingProperty>(
+        static_cast<LocalCheapestInsertionParameters::InsertionSortingProperty>(
             property));
   }
 
@@ -37,9 +37,9 @@ GetLocalCheapestInsertionSortingProperties(
   // ones with the highest penalty.
   if (sorting_properties.empty()) {
     sorting_properties.push_back(
-        RoutingSearchParameters::SORTING_PROPERTY_ALLOWED_VEHICLES);
+        LocalCheapestInsertionParameters::SORTING_PROPERTY_ALLOWED_VEHICLES);
     sorting_properties.push_back(
-        RoutingSearchParameters::SORTING_PROPERTY_PENALTY);
+        LocalCheapestInsertionParameters::SORTING_PROPERTY_PENALTY);
   }
   return sorting_properties;
 }

@@ -558,3 +558,9 @@ cc_library(
         "@abseil-cpp//absl/types:span",
     ],
 )
+
+cc_library(
+    name = "scheduling",
+    hdrs = ["scheduling.h"],
+    deps = ["@abseil-cpp//absl/log:check"],
+)

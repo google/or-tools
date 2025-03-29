@@ -2414,9 +2414,8 @@ TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
   model.GetOrCreate<SatParameters>()
       ->set_routing_cut_max_infeasible_path_length(10);
 
-  CutGenerator generator =
-      CreateCVRPCutGenerator(num_nodes, tails, heads, literals, /*demands=*/{},
-                             flat_node_dim_expressions, /*capacity=*/0, &model);
+  CutGenerator generator = CreateCVRPCutGenerator(
+      num_nodes, tails, heads, literals, flat_node_dim_expressions, &model);
 
   LinearConstraintManager manager(&model);
   generator.generate_cuts(&manager);

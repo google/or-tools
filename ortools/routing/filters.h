@@ -478,7 +478,7 @@ LocalSearchFilter* MakeVehicleVarFilter(const RoutingModel& routing_model,
 /// pair of nodes and given policies.
 LocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const PathState* path_state,
-    const std::vector<PickupDeliveryPair>& pairs,
+    absl::Span<const PickupDeliveryPair> pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);
 
 // This checker enforces dimension requirements.

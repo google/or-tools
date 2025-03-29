@@ -2119,30 +2119,6 @@ cc_test(
 )
 
 cc_library(
-    name = "theta_tree",
-    srcs = ["theta_tree.cc"],
-    hdrs = ["theta_tree.h"],
-    deps = [
-        ":integer_base",
-        "@abseil-cpp//absl/log:check",
-    ],
-)
-
-cc_test(
-    name = "theta_tree_test",
-    size = "small",
-    srcs = ["theta_tree_test.cc"],
-    deps = [
-        ":integer_base",
-        ":theta_tree",
-        "//ortools/base:gmock_main",
-        "//ortools/util:random_engine",
-        "//ortools/util:strong_integers",
-        "@com_google_benchmark//:benchmark",
-    ],
-)
-
-cc_library(
     name = "disjunctive",
     srcs = ["disjunctive.cc"],
     hdrs = ["disjunctive.h"],
@@ -2156,9 +2132,9 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":synchronization",
-        ":theta_tree",
         ":timetable",
         ":util",
+        "//ortools/util:scheduling",
         "//ortools/util:sort",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/algorithm:container",
@@ -2314,13 +2290,12 @@ cc_library(
         ":diffn_util",
         ":integer",
         ":integer_base",
-        ":intervals",
         ":model",
         ":scheduling_helpers",
         ":synchronization",
-        ":theta_tree",
         ":util",
         "//ortools/base:iterator_adaptors",
+        "//ortools/util:scheduling",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",

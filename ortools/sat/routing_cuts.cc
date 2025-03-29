@@ -1901,15 +1901,12 @@ namespace {
 
 class RoutingCutHelper {
  public:
-  RoutingCutHelper(int num_nodes, bool is_route_constraint, int64_t capacity,
-                   absl::Span<const int64_t> demands,
+  RoutingCutHelper(int num_nodes, bool is_route_constraint,
                    absl::Span<const AffineExpression> flat_node_dim_expressions,
                    absl::Span<const int> tails, absl::Span<const int> heads,
                    absl::Span<const Literal> literals, Model* model)
       : num_nodes_(num_nodes),
         is_route_constraint_(is_route_constraint),
-        capacity_(capacity),
-        demands_(demands.begin(), demands.end()),
         tails_(tails.begin(), tails.end()),
         heads_(heads.begin(), heads.end()),
         literals_(literals.begin(), literals.end()),
@@ -1928,11 +1925,7 @@ class RoutingCutHelper {
         min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model),
         route_relations_helper_(RouteRelationsHelper::Create(
             num_nodes, tails_, heads_, literals_, flat_node_dim_expressions,
-            *model->GetOrCreate<BinaryRelationRepository>(), model)) {
-    // Compute the total demands in order to know the minimum incoming/outgoing
-    // flow.
-    for (const int64_t demand : demands) total_demand_ += demand;
-  }
+            *model->GetOrCreate<BinaryRelationRepository>(), model)) {}
 
   int num_nodes() const { return num_nodes_; }
 
@@ -2027,7 +2020,7 @@ class RoutingCutHelper {
   // relevant.
   bool AddOutgoingCut(LinearConstraintManager* manager, std::string name,
                       int subset_size, const std::vector<bool>& in_subset,
-                      int64_t rhs_lower_bound, int outside_node_to_ignore);
+                      int64_t rhs_lower_bound);
 
   bool MaybeAddStrongerFlowCut(LinearConstraintManager* manager,
                                std::string name, int k,
@@ -2043,8 +2036,6 @@ class RoutingCutHelper {
 
   const int num_nodes_;
   const bool is_route_constraint_;
-  const int64_t capacity_;
-  std::vector<int64_t> demands_;
   std::vector<int> tails_;
   std::vector<int> heads_;
   std::vector<Literal> literals_;
@@ -2060,7 +2051,6 @@ class RoutingCutHelper {
   ModelRandomGenerator* random_;
   IntegerEncoder* encoder_;
 
-  int64_t total_demand_ = 0;
   std::vector<bool> in_subset_;
 
   // Self-arc information, indexed in [0, num_nodes_)
@@ -2294,11 +2284,10 @@ bool RoutingCutHelper::MaybeAddStrongerFlowCut(
 bool RoutingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
                                       std::string name, int subset_size,
                                       const std::vector<bool>& in_subset,
-                                      int64_t rhs_lower_bound,
-                                      int outside_node_to_ignore) {
+                                      int64_t rhs_lower_bound) {
   // Skip cut if it is not violated.
-  const auto [in_flow, out_flow] = GetIncomingAndOutgoingLpFlow(
-      relevant_arcs_, in_subset, outside_node_to_ignore);
+  const auto [in_flow, out_flow] =
+      GetIncomingAndOutgoingLpFlow(relevant_arcs_, in_subset);
   const double out_violation = static_cast<double>(rhs_lower_bound) - out_flow;
   const double in_violation = static_cast<double>(rhs_lower_bound) - in_flow;
   if (out_violation <= 1e-3 && in_violation <= 1e-3) return false;
@@ -2316,10 +2305,8 @@ bool RoutingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
     const bool tail_in = in_subset[tails_[i]];
     const bool head_in = in_subset[heads_[i]];
     if (tail_in && !head_in) {
-      if (heads_[i] == outside_node_to_ignore) continue;
       CHECK(outgoing.AddLiteralTerm(literals_[i], IntegerValue(1)));
     } else if (!tail_in && head_in) {
-      if (tails_[i] == outside_node_to_ignore) continue;
       CHECK(incoming.AddLiteralTerm(literals_[i], IntegerValue(1)));
     }
   }
@@ -2457,8 +2444,7 @@ bool RoutingCutHelper::TrySubsetCut(int known_bound, std::string name,
   // TODO(user): deal with non-mandatory node in the route constraint?
   if (!is_route_constraint_ || !all_subset_nodes_are_mandatory) {
     return AddOutgoingCut(manager, name, subset.size(), in_subset_,
-                          /*rhs_lower_bound=*/1,
-                          /*outside_node_to_ignore=*/-1);
+                          /*rhs_lower_bound=*/1);
   }
 
   // Compute the LP weight from/to the subset, and also the LP weight incoming
@@ -2505,114 +2491,6 @@ bool RoutingCutHelper::TrySubsetCut(int known_bound, std::string name,
     best_bound.Update(bound, "Automatic");
   }
 
-  // Bounds coming from the demands_/capacity_ fields (if set).
-  // If we cannot reach the capacity given the demands in the subset, we can
-  // derive tighter bounds.
-  if (!demands_.empty()) {
-    int64_t has_excessive_demands = false;
-    int64_t has_negative_demands = false;
-    int64_t sum_of_elements = 0;
-    std::vector<int64_t> elements;
-    for (const int n : subset) {
-      const int64_t d = demands_[n];
-      if (d < 0) has_negative_demands = true;
-      if (d > capacity_) has_excessive_demands = true;
-      sum_of_elements += d;
-      elements.push_back(d);
-    }
-
-    // Lets wait for these to disappear before adding cuts.
-    if (has_excessive_demands) return false;
-
-    // Try to tighten the capacity using DP. Note that there is no point doing
-    // anything if one route can serve all demands since then the bound is
-    // already tight.
-    //
-    // TODO(user): Compute a bound in the presence of negative demands?
-    int64_t tightened_capacity = capacity_;
-    int tightening_level = 0;
-    if (!has_negative_demands && sum_of_elements > capacity_) {
-      max_bounded_subset_sum_.Reset(capacity_);
-      for (const int64_t e : elements) {
-        max_bounded_subset_sum_.Add(e);
-      }
-      tightened_capacity = max_bounded_subset_sum_.CurrentMax();
-      if (tightened_capacity < capacity_) {
-        tightening_level = 1;
-      }
-
-      // If the complexity looks ok, try a more expensive DP than the quick
-      // one above.
-      if (max_bounded_subset_sum_exact_.ComplexityEstimate(
-              elements.size(), capacity_) < params_.routing_cut_dp_effort()) {
-        const int64_t exact =
-            max_bounded_subset_sum_exact_.MaxSubsetSum(elements, capacity_);
-        CHECK_LE(exact, tightened_capacity);
-        if (exact < tightened_capacity) {
-          tightening_level = 2;
-          tightened_capacity = exact;
-        }
-      }
-    }
-
-    const int64_t flow_lower_bound =
-        MathUtil::CeilOfRatio(sum_of_elements, tightened_capacity);
-    best_bound.Update(flow_lower_bound,
-                      absl::StrCat("Demand", tightening_level));
-
-    if (flow_lower_bound >= best_bound.bound()) {
-      // We compute the biggest extra item that could fit in
-      // 'flow_lower_bound' bins. If the first (flow_lower_bound - 1) bins are
-      // tight, i.e. all their tightened_capacity is filled, then the last bin
-      // will have 'last_bin_fillin' stuff, which will leave 'space_left' to
-      // fit an extra item.
-      const int64_t last_bin_fillin =
-          sum_of_elements - (flow_lower_bound - 1) * tightened_capacity;
-      const int64_t space_left = capacity_ - last_bin_fillin;
-      DCHECK_GE(space_left, 0);
-      DCHECK_LT(space_left, capacity_);
-
-      // It is possible to make this cut stronger, using similar reasoning to
-      // the Multistar CVRP cuts: if there is a node n (other than the depot)
-      // outside of `subset`, with a demand that is greater than space_left,
-      // then the outgoing flow of (subset + n) is >= flow_lower_bound + 1.
-      // Using this, we can show that we still need `flow_lower_bound` on the
-      // outgoing arcs of `subset` other than those towards n (noted A in the
-      // diagram below):
-      //
-      //         ^       ^
-      //         |       |
-      //    ----------------
-      // <--|  subset  | n |-->
-      //    ----------------
-      //         |       |
-      //         v       v
-      //
-      // \------A------/\--B--/
-      //
-      // By hypothesis, outgoing_flow(A) + outgoing_flow(B) > flow_lower_bound
-      // and, since n is not the depot, outgoing_flow(B) <= 1. Hence
-      // outgoing_flow(A) >= flow_lower_bound.
-      //
-      // Note that this reasoning also applies to the incoming_flow, we have
-      // the same lower bound from the incoming flow not arriving from such
-      // node.
-      //
-      // Also of note, is that even if this node is optional, the bound is
-      // still valid since if any flow leave or come to this node, it must be
-      // in the tour.
-      std::vector<int> to_ignore_candidates;
-      for (int n = 1; n < num_nodes_; ++n) {
-        if (in_subset_[n]) continue;
-        if (demands_[n] > space_left) {
-          to_ignore_candidates.push_back(n);
-        }
-      }
-      best_bound.Update(flow_lower_bound, "Lifted", {}, {},
-                        to_ignore_candidates);
-    }
-  }
-
   if (subset.size() <=
       params_.routing_cut_subset_size_for_exact_binary_relation_bound()) {
     // Note that we only look for violated cuts, but also in order to not try
@@ -2649,35 +2527,8 @@ bool RoutingCutHelper::TrySubsetCut(int known_bound, std::string name,
     return true;
   }
 
-  // Out of OutsideNodesThatCannotBeConnected(), use an heuristic to pick one.
-  // TODO(user): merge with PickBestNode() except these are node outside.
-  int outside_node_to_ignore = -1;
-  if (!best_bound.OutsideNodesThatCannotBeConnected().empty()) {
-    // Pick the set of candidates with the highest lp weight.
-    std::vector<int> bests;
-    double best_weight = 0.0;
-    for (const int n : best_bound.OutsideNodesThatCannotBeConnected()) {
-      const double weight =
-          std::max(nodes_outgoing_weight_[n], nodes_incoming_weight_[n]);
-      if (bests.empty() || weight > best_weight) {
-        bests.clear();
-        bests.push_back(n);
-        best_weight = weight;
-      } else if (weight == best_weight) {
-        bests.push_back(n);
-      }
-    }
-
-    // Randomly pick if we have many "bests".
-    outside_node_to_ignore =
-        bests.size() == 1
-            ? bests[0]
-            : bests[absl::Uniform<int>(*random_, 0, bests.size())];
-  }
-
   return AddOutgoingCut(manager, best_bound.name(), subset.size(), in_subset_,
-                        /*rhs_lower_bound=*/best_bound.bound(),
-                        outside_node_to_ignore);
+                        /*rhs_lower_bound=*/best_bound.bound());
 }
 
 bool RoutingCutHelper::TryBlossomSubsetCut(
@@ -2738,7 +2589,7 @@ bool RoutingCutHelper::TryBlossomSubsetCut(
 
   // For the route constraint, it is actually allowed to have circuit of size
   // 2, so the reasoning is wrong if one of the edges touches the depot.
-  if (!demands_.empty()) {
+  if (!is_route_constraint_) {
     for (const auto [tail, head] : special_edges) {
       if (tail == 0) return false;
     }
@@ -3271,8 +3122,7 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals, Model* model) {
   auto helper = std::make_unique<RoutingCutHelper>(
-      num_nodes, /*is_route_constraint=*/false, /*capacity=*/0,
-      /*demands=*/absl::Span<const int64_t>(),
+      num_nodes, /*is_route_constraint=*/false,
       /*flat_node_dim_expressions=*/
       absl::Span<const AffineExpression>{}, tails, heads, literals, model);
   CutGenerator result;
@@ -3288,12 +3138,12 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 
 CutGenerator CreateCVRPCutGenerator(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
-    absl::Span<const Literal> literals, absl::Span<const int64_t> demands,
+    absl::Span<const Literal> literals,
     absl::Span<const AffineExpression> flat_node_dim_expressions,
-    int64_t capacity, Model* model) {
+    Model* model) {
   auto helper = std::make_unique<RoutingCutHelper>(
-      num_nodes, /*is_route_constraint=*/true, capacity, demands,
-      flat_node_dim_expressions, tails, heads, literals, model);
+      num_nodes, /*is_route_constraint=*/true, flat_node_dim_expressions, tails,
+      heads, literals, model);
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
