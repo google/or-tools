@@ -34,7 +34,7 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
  public:
   // Simpler constructors that uses SCIP by default.
   explicit SetCoverMip(SetCoverInvariant* inv)
-      : SetCoverMip(inv, class_name()) {}
+      : SetCoverMip(inv, "SetCoverMip") {}
 
   SetCoverMip(SetCoverInvariant* inv, absl::string_view name)
       : SubsetListBasedSolutionGenerator(inv, "Mip", name),
