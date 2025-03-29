@@ -189,10 +189,10 @@
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_utils.h"
 #include "ortools/graph/graph.h"
-#include "ortools/sat/theta_tree.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/scheduling.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -2799,7 +2799,7 @@ class DisjunctivePropagator {
  private:
   /// The main algorithm uses Vilim's theta tree data structure.
   /// See Petr Vilim's PhD thesis "Global Constraints in Scheduling".
-  sat::ThetaLambdaTree<int64_t> theta_lambda_tree_;
+  ThetaLambdaTree<int64_t> theta_lambda_tree_;
   /// Mappings between events and tasks.
   std::vector<int> tasks_by_start_min_;
   std::vector<int> tasks_by_end_max_;
