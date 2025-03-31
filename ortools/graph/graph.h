@@ -286,8 +286,12 @@ class BaseGraph {
 
   // Constants that will never be a valid node or arc.
   // They are the maximum possible node and arc capacity.
-  static const NodeIndexType kNilNode;
-  static const ArcIndexType kNilArc;
+  static_assert(std::numeric_limits<NodeIndexType>::is_specialized);
+  static constexpr NodeIndexType kNilNode =
+      std::numeric_limits<NodeIndexType>::max();
+  static_assert(std::numeric_limits<ArcIndexType>::is_specialized);
+  static constexpr ArcIndexType kNilArc =
+      std::numeric_limits<ArcIndexType>::max();
 
  protected:
   // Functions commented when defined because they are implementation details.
@@ -589,6 +593,26 @@ class SVector {
 };
 
 }  // namespace internal
+
+// Graph traits, to allow algorithms to manipulate graphs as adjacency lists.
+// This works with any graph type, and any object that has:
+// - a size() method returning the number of nodes.
+// - an operator[] method taking a node index and returning a range of neighbour
+//   node indices.
+// One common example is using `std::vector<std::vector<int>>` to represent
+// adjacency lists.
+template <typename Graph>
+struct GraphTraits {
+ private:
+  // The type of the range returned by `operator[]`.
+  using NeighborRangeType = std::decay_t<
+      decltype(std::declval<Graph>()[std::declval<Graph>().size()])>;
+
+ public:
+  // The index type for nodes of the graph.
+  using NodeIndex =
+      std::decay_t<decltype(*(std::declval<NeighborRangeType>().begin()))>;
+};
 
 // Basic graph implementation without reverse arc. This class also serves as a
 // documentation for the generic graph interface (minus the part related to
@@ -1120,18 +1144,6 @@ BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::AllForwardArcs()
     const {
   return IntegerRange<ArcIndexType>(ArcIndexType(0), num_arcs_);
 }
-
-template <typename NodeIndexType, typename ArcIndexType,
-          bool HasNegativeReverseArcs>
-const NodeIndexType
-    BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::kNilNode =
-        std::numeric_limits<NodeIndexType>::max();
-
-template <typename NodeIndexType, typename ArcIndexType,
-          bool HasNegativeReverseArcs>
-const ArcIndexType
-    BaseGraph<NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::kNilArc =
-        std::numeric_limits<ArcIndexType>::max();
 
 template <typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>

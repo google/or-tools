@@ -30,6 +30,7 @@
 #ifndef UTIL_GRAPH_TOPOLOGICALSORTER_H__
 #define UTIL_GRAPH_TOPOLOGICALSORTER_H__
 
+#include <cstddef>
 #include <functional>
 #include <limits>
 #include <queue>
@@ -84,7 +85,9 @@ namespace graph {
 //       FastTopologicalSort(util::StaticGraph<>::FromArcs(num_nodes, arcs)));
 //
 template <class AdjacencyLists>  // vector<vector<int>>, util::StaticGraph<>, ..
-absl::StatusOr<std::vector<int>> FastTopologicalSort(const AdjacencyLists& adj);
+absl::StatusOr<
+    std::vector<typename util::GraphTraits<AdjacencyLists>::NodeIndex>>
+FastTopologicalSort(const AdjacencyLists& adj);
 
 // Finds a cycle in the directed graph given as argument: nodes are dense
 // integers in 0..num_nodes-1, and (directed) arcs are pairs of nodes
@@ -93,7 +96,9 @@ absl::StatusOr<std::vector<int>> FastTopologicalSort(const AdjacencyLists& adj);
 // if the cycle 1->4->3->1 exists.
 // If the graph is acyclic, returns an empty vector.
 template <class AdjacencyLists>  // vector<vector<int>>, util::StaticGraph<>, ..
-absl::StatusOr<std::vector<int>> FindCycleInGraph(const AdjacencyLists& adj);
+absl::StatusOr<
+    std::vector<typename util::GraphTraits<AdjacencyLists>::NodeIndex>>
+FindCycleInGraph(const AdjacencyLists& adj);
 
 }  // namespace graph
 
@@ -615,38 +620,38 @@ std::vector<T> StableTopologicalSortOrDie(
 }
 
 template <class AdjacencyLists>
-absl::StatusOr<std::vector<int>> FastTopologicalSort(
-    const AdjacencyLists& adj) {
-  const size_t num_nodes = adj.size();
-  if (num_nodes > std::numeric_limits<int>::max()) {
-    return absl::InvalidArgumentError("More than kint32max nodes");
+absl::StatusOr<std::vector<typename GraphTraits<AdjacencyLists>::NodeIndex>>
+FastTopologicalSort(const AdjacencyLists& adj) {
+  using NodeIndex = typename GraphTraits<AdjacencyLists>::NodeIndex;
+  if (adj.size() > std::numeric_limits<NodeIndex>::max()) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("Too many nodes: adj.size()=%v", adj.size()));
   }
-  std::vector<int> indegree(num_nodes, 0);
-  std::vector<int> topo_order;
-  topo_order.reserve(num_nodes);
-  for (int from = 0; from < num_nodes; ++from) {
-    for (const int head : adj[from]) {
-      // We cast to unsigned int to test "head < 0 || head ≥ num_nodes" with a
-      // single test. Microbenchmarks showed a ~1% overall performance gain.
-      if (static_cast<uint32_t>(head) >= num_nodes) {
+  const NodeIndex num_nodes(adj.size());
+  std::vector<NodeIndex> indegree(static_cast<size_t>(num_nodes), NodeIndex(0));
+  std::vector<NodeIndex> topo_order;
+  topo_order.reserve(static_cast<size_t>(num_nodes));
+  for (NodeIndex from(0); from < num_nodes; ++from) {
+    for (const NodeIndex head : adj[from]) {
+      if (!(NodeIndex(0) <= head && head < num_nodes)) {
         return absl::InvalidArgumentError(
-            absl::StrFormat("Invalid arc in adj[%d]: %d (num_nodes=%d)", from,
+            absl::StrFormat("Invalid arc in adj[%v]: %v (num_nodes=%v)", from,
                             head, num_nodes));
       }
       // NOTE(user): We could detect self-arcs here (head == from) and exit
       // early, but microbenchmarks show a 2 to 4% slow-down if we do it, so we
       // simply rely on self-arcs being detected as cycles in the topo sort.
-      ++indegree[head];
+      ++indegree[static_cast<size_t>(head)];
     }
   }
-  for (int i = 0; i < num_nodes; ++i) {
-    if (!indegree[i]) topo_order.push_back(i);
+  for (NodeIndex i(0); i < num_nodes; ++i) {
+    if (!indegree[static_cast<size_t>(i)]) topo_order.push_back(i);
   }
   size_t num_visited = 0;
   while (num_visited < topo_order.size()) {
-    const int from = topo_order[num_visited++];
-    for (const int head : adj[from]) {
-      if (!--indegree[head]) topo_order.push_back(head);
+    const NodeIndex from = topo_order[num_visited++];
+    for (const NodeIndex head : adj[from]) {
+      if (!--indegree[static_cast<size_t>(head)]) topo_order.push_back(head);
     }
   }
   if (topo_order.size() < static_cast<size_t>(num_nodes)) {
@@ -656,77 +661,99 @@ absl::StatusOr<std::vector<int>> FastTopologicalSort(
 }
 
 template <class AdjacencyLists>
-absl::StatusOr<std::vector<int>> FindCycleInGraph(const AdjacencyLists& adj) {
-  const size_t num_nodes = adj.size();
-  if (num_nodes > std::numeric_limits<int>::max()) {
+absl::StatusOr<
+    std::vector<typename util::GraphTraits<AdjacencyLists>::NodeIndex>>
+FindCycleInGraph(const AdjacencyLists& adj) {
+  using NodeIndex = typename GraphTraits<AdjacencyLists>::NodeIndex;
+  if (adj.size() > std::numeric_limits<NodeIndex>::max()) {
     return absl::InvalidArgumentError(
-        absl::StrFormat("Too many nodes: adj.size()=%d", adj.size()));
+        absl::StrFormat("Too many nodes: adj.size()=%v", adj.size()));
+  }
+  const NodeIndex num_nodes(adj.size());
+
+  // First pass to validate that inputs are valid.
+  for (NodeIndex node(0); node < NodeIndex(node); ++node) {
+    for (const NodeIndex head : adj[node]) {
+      if (head >= num_nodes) {
+        return absl::InvalidArgumentError(
+            absl::StrFormat("Invalid child %v in adj[%v]", head, node));
+      }
+    }
   }
 
   // To find a cycle, we start a DFS from each yet-unvisited node and
   // try to find a cycle, if we don't find it then we know for sure that
   // no cycle is reachable from any of the explored nodes (so, we don't
   // explore them in later DFSs).
-  std::vector<bool> no_cycle_reachable_from(num_nodes, false);
+  std::vector<bool> no_cycle_reachable_from(static_cast<size_t>(num_nodes),
+                                            false);
   // The DFS stack will contain a chain of nodes, from the root of the
   // DFS to the current leaf.
   struct DfsState {
-    int node;
+    NodeIndex node;
     // Points at the first child node that we did *not* yet look at.
-    int adj_list_index;
-    explicit DfsState(int _node) : node(_node), adj_list_index(0) {}
+    decltype(adj[NodeIndex(0)].begin()) children;
+    decltype(adj[NodeIndex(0)].end()) children_end;
+
+    explicit DfsState(NodeIndex _node,
+                      const decltype(adj[NodeIndex(0)])& neighbours)
+        : node(_node),
+          children(neighbours.begin()),
+          children_end(neighbours.end()) {}
   };
   std::vector<DfsState> dfs_stack;
-  std::vector<bool> in_cur_stack(num_nodes, false);
-  for (int start_node = 0; start_node < static_cast<int>(num_nodes);
+  std::vector<bool> visited(static_cast<size_t>(num_nodes), false);
+  for (NodeIndex start_node(0); start_node < NodeIndex(num_nodes);
        ++start_node) {
-    if (no_cycle_reachable_from[start_node]) continue;
+    if (no_cycle_reachable_from[static_cast<size_t>(start_node)]) continue;
+
     // Start the DFS.
-    dfs_stack.push_back(DfsState(start_node));
-    in_cur_stack[start_node] = true;
+    visited[static_cast<size_t>(start_node)] = true;
+    dfs_stack.push_back(DfsState(start_node, adj[start_node]));
     while (!dfs_stack.empty()) {
-      DfsState* cur_state = &dfs_stack.back();
-      if (static_cast<size_t>(cur_state->adj_list_index) >=
-          adj[cur_state->node].size()) {
-        no_cycle_reachable_from[cur_state->node] = true;
-        in_cur_stack[cur_state->node] = false;
+      DfsState* const cur_state = &dfs_stack.back();
+      while (
+          cur_state->children != cur_state->children_end &&
+          no_cycle_reachable_from[static_cast<size_t>(*cur_state->children)]) {
+        ++cur_state->children;
+      }
+      if (cur_state->children == cur_state->children_end) {
+        no_cycle_reachable_from[static_cast<size_t>(cur_state->node)] = true;
         dfs_stack.pop_back();
         continue;
       }
-      // Look at the current child, and increase the current state's
-      // adj_list_index.
-      // TODO(user): Caching adj[cur_state->node] in a local stack to improve
-      // locality and so that the [] operator is called exactly once per node.
-      const int child = adj[cur_state->node][cur_state->adj_list_index++];
-      if (static_cast<size_t>(child) >= num_nodes) {
-        return absl::InvalidArgumentError(absl::StrFormat(
-            "Invalid child %d in adj[%d]", child, cur_state->node));
-      }
-      if (no_cycle_reachable_from[child]) continue;
-      if (in_cur_stack[child]) {
+
+      const NodeIndex child = *cur_state->children;
+      // At that point the child is either:
+      // - visited and all finalized (all its children are visited). We know
+      //   that it's not part of a cycle, otherwise we'd already have
+      //   returned.
+      // - visited and not finalized (some of its children are not visited).
+      //   That means that we've reached it again from a child, so we've found
+      //   a cycle.
+      // - not visited. We push it on the stack and explore it.
+      if (no_cycle_reachable_from[static_cast<size_t>(child)]) continue;
+      if (visited[static_cast<size_t>(child)]) {
         // We detected a cycle! It corresponds to the tail end of dfs_stack,
         // in reverse order, until we find "child".
-        int cycle_start = dfs_stack.size() - 1;
+        size_t cycle_start = dfs_stack.size() - 1;
         while (dfs_stack[cycle_start].node != child) --cycle_start;
-        const int cycle_size = dfs_stack.size() - cycle_start;
-        std::vector<int> cycle(cycle_size);
-        for (int c = 0; c < cycle_size; ++c) {
+        const size_t cycle_size = dfs_stack.size() - cycle_start;
+        std::vector<NodeIndex> cycle(cycle_size);
+        for (size_t c = 0; c < cycle_size; ++c) {
           cycle[c] = dfs_stack[cycle_start + c].node;
         }
         return cycle;
       }
+
       // Push the child onto the stack.
-      dfs_stack.push_back(DfsState(child));
-      in_cur_stack[child] = true;
-      // Verify that its adjacency list seems valid.
-      if (adj[child].size() > std::numeric_limits<int>::max()) {
-        return absl::InvalidArgumentError(absl::StrFormat(
-            "Invalid adj[%d].size() = %d", child, adj[child].size()));
-      }
+      dfs_stack.push_back(DfsState(child, adj[child]));
+      visited[static_cast<size_t>(child)] = true;
     }
   }
+
   // If we're here, then all the DFS stopped, and there is no cycle.
-  return std::vector<int>{};
+  return std::vector<NodeIndex>{};
 }
 
 }  // namespace graph

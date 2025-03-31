@@ -57,6 +57,8 @@ class BeginEndWrapper {
 
   Iterator begin() const { return begin_; }
   Iterator end() const { return end_; }
+
+  // Available only if `Iterator` is a random access iterator.
   size_t size() const { return end_ - begin_; }
 
   bool empty() const { return begin() == end(); }
@@ -127,8 +129,6 @@ class IntegerRangeIterator
 #endif
 {
  public:
-  // TODO(b/385094969): This should be `IntegerType` for integers,
-  // `IntegerType:value_type` for strong signed integer types.
   using difference_type = ptrdiff_t;
   using value_type = IntegerType;
 
@@ -210,7 +210,7 @@ class IntegerRangeIterator
 
   friend difference_type operator-(const IntegerRangeIterator l,
                                    const IntegerRangeIterator r) {
-    return l.index_ - r.index_;
+    return static_cast<difference_type>(l.index_ - r.index_);
   }
 
  private:
@@ -248,9 +248,7 @@ class ChasingIterator
 #endif
 {
  public:
-  // TODO(b/385094969): This should be `IntegerType` for integers,
-  // `IntegerType:value_type` for strong signed integer types.
-  using difference_type = std::ptrdiff_t;
+  using difference_type = ptrdiff_t;
   using value_type = IndexT;
 
   ChasingIterator() : index_(sentinel), next_(nullptr) {}
