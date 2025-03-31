@@ -2196,7 +2196,7 @@ class OR_DLL RoutingModel {
       const std::vector<int>& state_dependent_evaluator_indices,
       int64_t slack_max, bool fix_start_cumul_to_zero,
       RoutingDimension* dimension);
-  DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
+  DimensionIndex GetDimensionIndex(absl::string_view dimension_name) const;
 
   /// Creates global and local cumul optimizers for the dimensions needing them,
   /// and stores them in the corresponding [local|global]_dimension_optimizers_

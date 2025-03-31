@@ -1086,7 +1086,7 @@ bool RoutingModel::HasDimension(absl::string_view dimension_name) const {
 }
 
 RoutingModel::DimensionIndex RoutingModel::GetDimensionIndex(
-    const std::string& dimension_name) const {
+    absl::string_view dimension_name) const {
   return gtl::FindWithDefault(dimension_name_to_index_, dimension_name,
                               kNoDimension);
 }
