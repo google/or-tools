@@ -455,6 +455,58 @@ namespace std {
 template <typename StrongIntName, typename ValueType>
 struct hash<util_intops::StrongInt<StrongIntName, ValueType>>
     : util_intops::StrongInt<StrongIntName, ValueType>::Hasher {};
+
+template <typename TagType, typename NativeType>
+struct numeric_limits<util_intops::StrongInt<TagType, NativeType>> {
+ private:
+  using StrongIntT = util_intops::StrongInt<TagType, NativeType>;
+
+ public:
+  // NOLINTBEGIN(google3-readability-class-member-naming)
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = numeric_limits<NativeType>::is_signed;
+  static constexpr bool is_integer = numeric_limits<NativeType>::is_integer;
+  static constexpr bool is_exact = numeric_limits<NativeType>::is_exact;
+  static constexpr bool has_infinity = numeric_limits<NativeType>::has_infinity;
+  static constexpr bool has_quiet_NaN =
+      numeric_limits<NativeType>::has_quiet_NaN;
+  static constexpr bool has_signaling_NaN =
+      numeric_limits<NativeType>::has_signaling_NaN;
+  static constexpr float_denorm_style has_denorm =
+      numeric_limits<NativeType>::has_denorm;
+  static constexpr bool has_denorm_loss =
+      numeric_limits<NativeType>::has_denorm_loss;
+  static constexpr float_round_style round_style =
+      numeric_limits<NativeType>::round_style;
+  static constexpr bool is_iec559 = numeric_limits<NativeType>::is_iec559;
+  static constexpr bool is_bounded = numeric_limits<NativeType>::is_bounded;
+  static constexpr bool is_modulo = numeric_limits<NativeType>::is_modulo;
+  static constexpr int digits = numeric_limits<NativeType>::digits;
+  static constexpr int digits10 = numeric_limits<NativeType>::digits10;
+  static constexpr int max_digits10 = numeric_limits<NativeType>::max_digits10;
+  static constexpr int radix = numeric_limits<NativeType>::radix;
+  static constexpr int min_exponent = numeric_limits<NativeType>::min_exponent;
+  static constexpr int min_exponent10 =
+      numeric_limits<NativeType>::min_exponent10;
+  static constexpr int max_exponent = numeric_limits<NativeType>::max_exponent;
+  static constexpr int max_exponent10 =
+      numeric_limits<NativeType>::max_exponent10;
+  static constexpr bool traps = numeric_limits<NativeType>::traps;
+  static constexpr bool tinyness_before =
+      numeric_limits<NativeType>::tinyness_before;
+  // NOLINTEND(google3-readability-class-member-naming)
+
+  static constexpr StrongIntT(min)() { return StrongIntT(numeric_limits<NativeType>::min()); }
+  static constexpr StrongIntT lowest() { return StrongIntT(numeric_limits<NativeType>::min()); }
+  static constexpr StrongIntT(max)() { return StrongIntT(numeric_limits<NativeType>::max()); }
+  static constexpr StrongIntT epsilon() { return StrongIntT(numeric_limits<NativeType>::epsilon()); }
+  static constexpr StrongIntT round_error() { return StrongIntT(numeric_limits<NativeType>::round_error()); }
+  static constexpr StrongIntT infinity() { return StrongIntT(numeric_limits<NativeType>::infinity()); }
+  static constexpr StrongIntT quiet_NaN() { return StrongIntT(numeric_limits<NativeType>::quiet_NaN()); }
+  static constexpr StrongIntT signaling_NaN() { return StrongIntT(numeric_limits<NativeType>::signaling_NaN()); }
+  static constexpr StrongIntT denorm_min() { return StrongIntT(numeric_limits<NativeType>::denorm_min()); }
+};
+
 }  // namespace std
 
 #endif  // OR_TOOLS_BASE_STRONG_INT_H_
