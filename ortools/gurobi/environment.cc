@@ -346,7 +346,7 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
-  const std::vector<std::string> kGurobiVersions = {
+  const std::vector<absl::string_view> kGurobiVersions = {
       "1201", "1200", "1103", "1102", "1101", "1100", "1003",
       "1002", "1001", "1000", "952",  "951",  "950",  "911",
       "910",  "903",  "902",  "811",  "801",  "752"};
@@ -355,8 +355,8 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   // Look for libraries pointed by GUROBI_HOME first.
   const char* gurobi_home_from_env = getenv("GUROBI_HOME");
   if (gurobi_home_from_env != nullptr) {
-    for (const std::string& version : kGurobiVersions) {
-      const std::string lib = version.substr(0, version.size() - 1);
+    for (const absl::string_view version : kGurobiVersions) {
+      const absl::string_view lib = version.substr(0, version.size() - 1);
 #if defined(_MSC_VER)  // Windows
       potential_paths.push_back(
           absl::StrCat(gurobi_home_from_env, "\\bin\\gurobi", lib, ".dll"));
@@ -376,8 +376,8 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   }
 
   // Search for canonical places.
-  for (const std::string& version : kGurobiVersions) {
-    const std::string lib = version.substr(0, version.size() - 1);
+  for (const absl::string_view version : kGurobiVersions) {
+    const absl::string_view lib = version.substr(0, version.size() - 1);
 #if defined(_MSC_VER)  // Windows
     potential_paths.push_back(absl::StrCat("C:\\Program Files\\gurobi", version,
                                            "\\win64\\bin\\gurobi", lib,
@@ -407,7 +407,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   }
 
 #if defined(__GNUC__)  // path in linux64 gurobi/optimizer docker image.
-  for (const std::string& version :
+  for (const absl::string_view version :
        {"12.0.1", "12.0.0", "11.0.3", "11.0.2", "11.0.1", "11.0.0", "10.0.3",
         "10.0.2", "10.0.1", "10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
     potential_paths.push_back(
@@ -418,7 +418,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 }
 
 absl::Status LoadGurobiDynamicLibrary(
-    std::vector<std::string> potential_paths) {
+    std::vector<absl::string_view> potential_paths) {
   static std::once_flag gurobi_loading_done;
   static absl::Status gurobi_load_status;
   static DynamicLibrary gurobi_library;
@@ -431,7 +431,7 @@ absl::Status LoadGurobiDynamicLibrary(
         GurobiDynamicLibraryPotentialPaths();
     potential_paths.insert(potential_paths.end(), canonical_paths.begin(),
                            canonical_paths.end());
-    for (const std::string& path : potential_paths) {
+    for (const absl::string_view path : potential_paths) {
       if (gurobi_library.TryToLoad(path)) {
         LOG(INFO) << "Found the Gurobi library in '" << path << ".";
         break;

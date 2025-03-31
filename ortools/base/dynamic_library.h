@@ -17,6 +17,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 
 #if defined(_MSC_VER)
@@ -44,12 +45,12 @@ class DynamicLibrary {
 #endif
   }
 
-  bool TryToLoad(const std::string& library_name) {
+  bool TryToLoad(const absl::string_view library_name) {
     library_name_ = library_name;
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
-    library_handle_ = static_cast<void*>(LoadLibraryA(library_name.c_str()));
+    library_handle_ = static_cast<void*>(LoadLibraryA(library_name_.c_str()));
 #elif defined(__GNUC__)
-    library_handle_ = dlopen(library_name.c_str(), RTLD_NOW);
+    library_handle_ = dlopen(library_name_.c_str(), RTLD_NOW);
 #endif
     return library_handle_ != nullptr;
   }
