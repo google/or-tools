@@ -15,7 +15,6 @@
 #define OR_TOOLS_BASE_DYNAMIC_LIBRARY_H_
 
 #include <functional>
-#include <stdexcept>
 #include <string>
 
 #include "ortools/base/logging.h"
@@ -46,7 +45,7 @@ class DynamicLibrary {
   }
 
   bool TryToLoad(const std::string& library_name) {
-    library_name_ = std::string(library_name);
+    library_name_ = library_name;
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
     library_handle_ = static_cast<void*>(LoadLibraryA(library_name.c_str()));
 #elif defined(__GNUC__)
