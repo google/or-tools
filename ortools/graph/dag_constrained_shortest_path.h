@@ -81,9 +81,6 @@ PathWithLength ConstrainedShortestPathsOnDag(
 // Advanced API.
 // -----------------------------------------------------------------------------
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 struct GraphPathWithLength {
   double length = 0.0;
   // The returned arc indices points into the `arcs_with_length` passed to the
@@ -97,9 +94,6 @@ struct GraphPathWithLength {
 // computations efficiently on the given DAG (on which resources do not change).
 // `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 class ConstrainedShortestPathsOnDagWrapper {
  public:
   using NodeIndex = typename GraphType::NodeIndex;
@@ -285,9 +279,6 @@ std::vector<T> GetInversePermutation(const std::vector<T>& permutation);
 // -----------------------------------------------------------------------------
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 ConstrainedShortestPathsOnDagWrapper<GraphType>::
     ConstrainedShortestPathsOnDagWrapper(
         const GraphType* graph, const std::vector<double>* arc_lengths,
@@ -543,9 +534,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
     GraphType>::RunConstrainedShortestPathOnDag() {
   if (source_is_destination_.has_value()) {
@@ -664,9 +652,6 @@ GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 void ConstrainedShortestPathsOnDagWrapper<GraphType>::
     RunHalfConstrainedShortestPathOnDag(
         const GraphType& reverse_graph, absl::Span<const double> arc_lengths,
@@ -792,9 +777,6 @@ void ConstrainedShortestPathsOnDagWrapper<GraphType>::
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 typename GraphType::ArcIndex
 ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
     const GraphType& graph, absl::Span<const double> arc_lengths,
@@ -879,9 +861,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 std::vector<typename GraphType::ArcIndex>
 ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
     const int best_label_index,
@@ -901,9 +880,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
 }
 
 template <typename GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 std::vector<typename GraphType::NodeIndex>
 ConstrainedShortestPathsOnDagWrapper<GraphType>::NodePathImpliedBy(
     absl::Span<const ArcIndex> arc_path, const GraphType& graph) const {

@@ -26,11 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.AbstractMap;
 import java.util.Objects;
 
 /** Load native libraries needed for using ortools-java. */
@@ -144,28 +144,28 @@ public class Loader {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
         // libraries order does matter <LibraryName, isMandatory> !
-        List<Map.Entry<String,Boolean>> dlls = Arrays.asList(
-        (new AbstractMap.SimpleEntry("zlib1", true)),
-        (new AbstractMap.SimpleEntry("abseil_dll", true)),
-        (new AbstractMap.SimpleEntry("re2", true)),
-        (new AbstractMap.SimpleEntry("libutf8_validity", true)),
-        (new AbstractMap.SimpleEntry("libprotobuf", true)),
-        (new AbstractMap.SimpleEntry("highs", false)),
-        (new AbstractMap.SimpleEntry("libscip", false)),
-        (new AbstractMap.SimpleEntry("ortools", true)),
-        (new AbstractMap.SimpleEntry("jniortools", true)));
+        List<Map.Entry<String, Boolean>> dlls =
+            Arrays.asList((new AbstractMap.SimpleEntry("zlib1", true)),
+                (new AbstractMap.SimpleEntry("abseil_dll", true)),
+                (new AbstractMap.SimpleEntry("re2", true)),
+                (new AbstractMap.SimpleEntry("libutf8_validity", true)),
+                (new AbstractMap.SimpleEntry("libprotobuf", true)),
+                (new AbstractMap.SimpleEntry("highs", false)),
+                (new AbstractMap.SimpleEntry("libscip", false)),
+                (new AbstractMap.SimpleEntry("ortools", true)),
+                (new AbstractMap.SimpleEntry("jniortools", true)));
 
-        for (Map.Entry<String,Boolean> dll : dlls) {
+        for (Map.Entry<String, Boolean> dll : dlls) {
           try {
-            //System.out.println("System.load(" + dll.getKey() + ")");
+            // System.out.println("System.load(" + dll.getKey() + ")");
             System.load(tempPath.resolve(RESOURCE_PATH)
                     .resolve(System.mapLibraryName(dll.getKey()))
                     .toAbsolutePath()
                     .toString());
           } catch (UnsatisfiedLinkError e) {
             System.out.println("System.load(" + dll.getKey() + ") failed!");
-            if(dll.getValue()) {
-                throw new RuntimeException(e);
+            if (dll.getValue()) {
+              throw new RuntimeException(e);
             }
           }
         }

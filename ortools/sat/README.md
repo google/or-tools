@@ -126,8 +126,6 @@ CP solver built on top of the SAT solver:
     Propagation algorithms for the cumulative scheduling constraint.
 *   [cumulative_energy.h](../sat/cumulative_energy.h):
     Propagation algorithms for a more general cumulative constraint.
-*   [theta_tree.h](../sat/theta_tree.h):
-    Data structure used in the cumulative/disjunctive propagation algorithm.
 
 ### Packing constraints
 

@@ -101,62 +101,66 @@ class ThetaLambdaTree {
   // allows to keep the same memory for each call.
   void Reset(int num_events);
 
-  // Recomputes the values of internal nodes of the tree from the values in the
-  // leaves. We enable batching modifications to the tree by providing
-  // DelayedXXX() methods that run in O(1), but those methods do not
-  // update internal nodes. This breaks tree invariants, so that GetXXX()
-  // methods will not reflect modifications made to events.
-  // RecomputeTreeForDelayedOperations() restores those invariants in O(n).
-  // Thus, batching operations can be done by first doing calls to DelayedXXX()
-  // methods, then calling RecomputeTreeForDelayedOperations() once.
-  void RecomputeTreeForDelayedOperations();
-
   // Makes event present and updates its initial envelope and min/max energies.
-  // The initial_envelope must be >= ThetaLambdaTreeNegativeInfinity().
   // This updates the tree in O(log n).
   void AddOrUpdateEvent(int event, IntegerType initial_envelope,
-                        IntegerType energy_min, IntegerType energy_max);
-
-  // Delayed version of AddOrUpdateEvent(),
-  // see RecomputeTreeForDelayedOperations().
-  void DelayedAddOrUpdateEvent(int event, IntegerType initial_envelope,
-                               IntegerType energy_min, IntegerType energy_max);
+                        IntegerType energy_min, IntegerType energy_max) {
+    DCHECK_LE(0, energy_min);
+    DCHECK_LE(energy_min, energy_max);
+    const int node = GetLeafFromEvent(event);
+    tree_[node] = {.envelope = initial_envelope + energy_min,
+                   .envelope_opt = initial_envelope + energy_max,
+                   .sum_of_energy_min = energy_min,
+                   .max_of_energy_delta = energy_max - energy_min};
+    RefreshNode(node);
+  }
 
   // Adds event to the lambda part of the tree only.
   // This will leave GetEnvelope() unchanged, only GetOptionalEnvelope() can
-  // be affected. This is done by setting envelope to IntegerTypeMinimumValue(),
+  // be affected, by setting envelope to std::numeric_limits<>::min(),
   // energy_min to 0, and initial_envelope_opt and energy_max to the parameters.
   // This updates the tree in O(log n).
   void AddOrUpdateOptionalEvent(int event, IntegerType initial_envelope_opt,
-                                IntegerType energy_max);
-
-  // Delayed version of AddOrUpdateOptionalEvent(),
-  // see RecomputeTreeForDelayedOperations().
-  void DelayedAddOrUpdateOptionalEvent(int event,
-                                       IntegerType initial_envelope_opt,
-                                       IntegerType energy_max);
+                                IntegerType energy_max) {
+    DCHECK_LE(0, energy_max);
+    const int node = GetLeafFromEvent(event);
+    tree_[node] = {.envelope = std::numeric_limits<IntegerType>::min(),
+                   .envelope_opt = initial_envelope_opt + energy_max,
+                   .sum_of_energy_min = IntegerType{0},
+                   .max_of_energy_delta = energy_max};
+    RefreshNode(node);
+  }
 
   // Makes event absent, compute the new envelope in O(log n).
-  void RemoveEvent(int event);
-
-  // Delayed version of RemoveEvent(), see RecomputeTreeForDelayedOperations().
-  void DelayedRemoveEvent(int event);
+  void RemoveEvent(int event) {
+    const int node = GetLeafFromEvent(event);
+    tree_[node] = {.envelope = std::numeric_limits<IntegerType>::min(),
+                   .envelope_opt = std::numeric_limits<IntegerType>::min(),
+                   .sum_of_energy_min = IntegerType{0},
+                   .max_of_energy_delta = IntegerType{0}};
+    RefreshNode(node);
+  }
 
   // Returns the maximum envelope using all the energy_min in O(1).
-  // If theta is empty, returns ThetaLambdaTreeNegativeInfinity().
-  IntegerType GetEnvelope() const;
+  // If theta is empty, returns std::numeric_limits<>::min().
+  IntegerType GetEnvelope() const { return tree_[1].envelope; }
 
   // Returns the maximum envelope using the energy min of all task but
   // one and the energy max of the last one in O(1).
-  // If theta and lambda are empty, returns ThetaLambdaTreeNegativeInfinity().
-  IntegerType GetOptionalEnvelope() const;
+  // If theta and lambda are empty, returns std::numeric_limits<>::min().
+  IntegerType GetOptionalEnvelope() const { return tree_[1].envelope_opt; }
 
   // Computes the maximum event s.t. GetEnvelopeOf(event) > envelope_max.
   // There must be such an event, i.e. GetEnvelope() > envelope_max.
   // This finds the maximum event e such that
   // initial_envelope(e) + sum_{e' >= e} energy_min(e') > target_envelope.
   // This operation is O(log n).
-  int GetMaxEventWithEnvelopeGreaterThan(IntegerType target_envelope) const;
+  int GetMaxEventWithEnvelopeGreaterThan(IntegerType target_envelope) const {
+    DCHECK_LT(target_envelope, tree_[1].envelope);
+    IntegerType unused;
+    return GetEventFromLeaf(
+        GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope, &unused));
+  }
 
   // Returns initial_envelope(event) + sum_{event' >= event} energy_min(event'),
   // in time O(log n).
@@ -181,7 +185,14 @@ class ThetaLambdaTree {
   // This operation is O(log n).
   void GetEventsWithOptionalEnvelopeGreaterThan(
       IntegerType target_envelope, int* critical_event, int* optional_event,
-      IntegerType* available_energy) const;
+      IntegerType* available_energy) const {
+    int critical_leaf;
+    int optional_leaf;
+    GetLeavesWithOptionalEnvelopeGreaterThan(target_envelope, &critical_leaf,
+                                             &optional_leaf, available_energy);
+    *critical_event = GetEventFromLeaf(critical_leaf);
+    *optional_event = GetEventFromLeaf(optional_leaf);
+  }
 
   // Getters.
   IntegerType EnergyMin(int event) const {
@@ -196,10 +207,36 @@ class ThetaLambdaTree {
     IntegerType max_of_energy_delta;
   };
 
-  TreeNode ComposeTreeNodes(const TreeNode& left, const TreeNode& right);
+  TreeNode ComposeTreeNodes(const TreeNode& left, const TreeNode& right) {
+    return {
+        .envelope =
+            std::max(right.envelope, left.envelope + right.sum_of_energy_min),
+        .envelope_opt =
+            std::max(right.envelope_opt,
+                     right.sum_of_energy_min +
+                         std::max(left.envelope_opt,
+                                  left.envelope + right.max_of_energy_delta)),
+        .sum_of_energy_min = left.sum_of_energy_min + right.sum_of_energy_min,
+        .max_of_energy_delta =
+            std::max(right.max_of_energy_delta, left.max_of_energy_delta)};
+  }
 
-  int GetLeafFromEvent(int event) const;
-  int GetEventFromLeaf(int leaf) const;
+  int GetLeafFromEvent(int event) const {
+    DCHECK_LE(0, event);
+    DCHECK_LT(event, num_events_);
+    // Keeping the ordering of events is important, so the first set of events
+    // must be mapped to the set of leaves at depth d, and the second set of
+    // events must be mapped to the set of leaves at depth d-1.
+    const int r = power_of_two_ + event;
+    return r < 2 * num_leaves_ ? r : r - num_leaves_;
+  }
+
+  int GetEventFromLeaf(int leaf) const {
+    DCHECK_GE(leaf, num_leaves_);
+    DCHECK_LT(leaf, 2 * num_leaves_);
+    const int r = leaf - power_of_two_;
+    return r >= 0 ? r : r + num_leaves_;
+  }
 
   // Propagates the change of leaf energies and envelopes towards the root.
   void RefreshNode(int node);
@@ -225,32 +262,12 @@ class ThetaLambdaTree {
   int num_leaves_;
   int power_of_two_;
 
-  // A bool used in debug mode, to check that sequences of delayed operations
-  // are ended by Reset() or RecomputeTreeForDelayedOperations().
-  bool leaf_nodes_have_delayed_operations_ = false;
-
   // Envelopes and energies of nodes.
   std::vector<TreeNode> tree_;
 };
 
 template <typename IntegerType>
-typename ThetaLambdaTree<IntegerType>::TreeNode
-ThetaLambdaTree<IntegerType>::ComposeTreeNodes(const TreeNode& left,
-                                               const TreeNode& right) {
-  return {std::max(right.envelope, left.envelope + right.sum_of_energy_min),
-          std::max(right.envelope_opt,
-                   right.sum_of_energy_min +
-                       std::max(left.envelope_opt,
-                                left.envelope + right.max_of_energy_delta)),
-          left.sum_of_energy_min + right.sum_of_energy_min,
-          std::max(right.max_of_energy_delta, left.max_of_energy_delta)};
-}
-
-template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::Reset(int num_events) {
-#ifndef NDEBUG
-  leaf_nodes_have_delayed_operations_ = false;
-#endif
   // Because the algorithm needs to access a node sibling (i.e. node_index ^ 1),
   // our tree will always have an even number of leaves, just large enough to
   // fit our number of events. And at least 2 for the empty tree case.
@@ -258,9 +275,11 @@ void ThetaLambdaTree<IntegerType>::Reset(int num_events) {
   num_leaves_ = std::max(2, num_events + (num_events & 1));
 
   const int num_nodes = 2 * num_leaves_;
-  tree_.assign(num_nodes, TreeNode{std::numeric_limits<IntegerType>::min(),
-                                   std::numeric_limits<IntegerType>::min(),
-                                   IntegerType{0}, IntegerType{0}});
+  tree_.assign(num_nodes,
+               TreeNode{.envelope = std::numeric_limits<IntegerType>::min(),
+                        .envelope_opt = std::numeric_limits<IntegerType>::min(),
+                        .sum_of_energy_min = IntegerType{0},
+                        .max_of_energy_delta = IntegerType{0}});
 
   // If num_leaves is not a power or two, the last depth of the tree will not be
   // full, and the array will look like:
@@ -271,146 +290,7 @@ void ThetaLambdaTree<IntegerType>::Reset(int num_events) {
 }
 
 template <typename IntegerType>
-int ThetaLambdaTree<IntegerType>::GetLeafFromEvent(int event) const {
-  DCHECK_LE(0, event);
-  DCHECK_LT(event, num_events_);
-  // Keeping the ordering of events is important, so the first set of events
-  // must be mapped to the set of leaves at depth d, and the second set of
-  // events must be mapped to the set of leaves at depth d-1.
-  const int r = power_of_two_ + event;
-  return r < 2 * num_leaves_ ? r : r - num_leaves_;
-}
-
-template <typename IntegerType>
-int ThetaLambdaTree<IntegerType>::GetEventFromLeaf(int leaf) const {
-  DCHECK_GE(leaf, num_leaves_);
-  DCHECK_LT(leaf, 2 * num_leaves_);
-  const int r = leaf - power_of_two_;
-  return r >= 0 ? r : r + num_leaves_;
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::RecomputeTreeForDelayedOperations() {
-#ifndef NDEBUG
-  leaf_nodes_have_delayed_operations_ = false;
-#endif
-  // Only recompute internal nodes.
-  const int last_internal_node = tree_.size() / 2 - 1;
-  for (int node = last_internal_node; node >= 1; --node) {
-    const int right = 2 * node + 1;
-    const int left = 2 * node;
-    tree_[node] = ComposeTreeNodes(tree_[left], tree_[right]);
-  }
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::DelayedAddOrUpdateEvent(
-    int event, IntegerType initial_envelope, IntegerType energy_min,
-    IntegerType energy_max) {
-#ifndef NDEBUG
-  leaf_nodes_have_delayed_operations_ = true;
-#endif
-  DCHECK_LE(0, energy_min);
-  DCHECK_LE(energy_min, energy_max);
-  const int node = GetLeafFromEvent(event);
-  tree_[node] = {initial_envelope + energy_min, initial_envelope + energy_max,
-                 energy_min, energy_max - energy_min};
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::AddOrUpdateEvent(
-    int event, IntegerType initial_envelope, IntegerType energy_min,
-    IntegerType energy_max) {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
-  DCHECK_LE(0, energy_min);
-  DCHECK_LE(energy_min, energy_max);
-  const int node = GetLeafFromEvent(event);
-  tree_[node] = {initial_envelope + energy_min, initial_envelope + energy_max,
-                 energy_min, energy_max - energy_min};
-  RefreshNode(node);
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::AddOrUpdateOptionalEvent(
-    int event, IntegerType initial_envelope_opt, IntegerType energy_max) {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
-  DCHECK_LE(0, energy_max);
-  const int node = GetLeafFromEvent(event);
-  tree_[node] = {std::numeric_limits<IntegerType>::min(),
-                 initial_envelope_opt + energy_max, IntegerType{0}, energy_max};
-  RefreshNode(node);
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::DelayedAddOrUpdateOptionalEvent(
-    int event, IntegerType initial_envelope_opt, IntegerType energy_max) {
-#ifndef NDEBUG
-  leaf_nodes_have_delayed_operations_ = true;
-#endif
-  DCHECK_LE(0, energy_max);
-  const int node = GetLeafFromEvent(event);
-  tree_[node] = {std::numeric_limits<IntegerType>::min(),
-                 initial_envelope_opt + energy_max, IntegerType{0}, energy_max};
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::RemoveEvent(int event) {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
-  const int node = GetLeafFromEvent(event);
-  tree_[node] = {std::numeric_limits<IntegerType>::min(),
-                 std::numeric_limits<IntegerType>::min(), IntegerType{0},
-                 IntegerType{0}};
-  RefreshNode(node);
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::DelayedRemoveEvent(int event) {
-#ifndef NDEBUG
-  leaf_nodes_have_delayed_operations_ = true;
-#endif
-  const int node = GetLeafFromEvent(event);
-  tree_[node] = {std::numeric_limits<IntegerType>::min(),
-                 std::numeric_limits<IntegerType>::min(), IntegerType{0},
-                 IntegerType{0}};
-}
-
-template <typename IntegerType>
-IntegerType ThetaLambdaTree<IntegerType>::GetEnvelope() const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
-  return tree_[1].envelope;
-}
-template <typename IntegerType>
-IntegerType ThetaLambdaTree<IntegerType>::GetOptionalEnvelope() const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
-  return tree_[1].envelope_opt;
-}
-
-template <typename IntegerType>
-int ThetaLambdaTree<IntegerType>::GetMaxEventWithEnvelopeGreaterThan(
-    IntegerType target_envelope) const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
-  DCHECK_LT(target_envelope, tree_[1].envelope);
-  IntegerType unused;
-  return GetEventFromLeaf(
-      GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope, &unused));
-}
-
-template <typename IntegerType>
-void ThetaLambdaTree<IntegerType>::GetEventsWithOptionalEnvelopeGreaterThan(
-    IntegerType target_envelope, int* critical_event, int* optional_event,
-    IntegerType* available_energy) const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
-  int critical_leaf;
-  int optional_leaf;
-  GetLeavesWithOptionalEnvelopeGreaterThan(target_envelope, &critical_leaf,
-                                           &optional_leaf, available_energy);
-  *critical_event = GetEventFromLeaf(critical_leaf);
-  *optional_event = GetEventFromLeaf(optional_leaf);
-}
-
-template <typename IntegerType>
 IntegerType ThetaLambdaTree<IntegerType>::GetEnvelopeOf(int event) const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
   const int leaf = GetLeafFromEvent(event);
   IntegerType envelope = tree_[leaf].envelope;
   for (int node = leaf; node > 1; node >>= 1) {
@@ -434,7 +314,6 @@ void ThetaLambdaTree<IntegerType>::RefreshNode(int node) {
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetMaxLeafWithEnvelopeGreaterThan(
     int node, IntegerType target_envelope, IntegerType* extra) const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LT(target_envelope, tree_[node].envelope);
   while (node < num_leaves_) {
     const int left = node << 1;
@@ -454,7 +333,6 @@ int ThetaLambdaTree<IntegerType>::GetMaxLeafWithEnvelopeGreaterThan(
 
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetLeafWithMaxEnergyDelta(int node) const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
   const IntegerType delta_node = tree_[node].max_of_energy_delta;
   while (node < num_leaves_) {
     const int left = node << 1;
@@ -474,7 +352,6 @@ template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::GetLeavesWithOptionalEnvelopeGreaterThan(
     IntegerType target_envelope, int* critical_leaf, int* optional_leaf,
     IntegerType* available_energy) const {
-  DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LT(target_envelope, tree_[1].envelope_opt);
   int node = 1;
   while (node < num_leaves_) {

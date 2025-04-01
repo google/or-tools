@@ -766,6 +766,8 @@ cc_test(
         ":io",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
         "//ortools/util:flat_matrix",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log:check",

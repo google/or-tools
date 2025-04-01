@@ -575,7 +575,7 @@ PYBIND11_MODULE(set_cover, m) {
         return {cleared.begin(), cleared.end()};
       });
   m.def("clear_random_subsets",
-        [](const std::vector<BaseInt>& focus, BaseInt num_subsets,
+        [](absl::Span<const BaseInt> focus, BaseInt num_subsets,
            SetCoverInvariant* inv) -> std::vector<BaseInt> {
           const std::vector<SubsetIndex> cleared = ClearRandomSubsets(
               VectorIntToVectorSubsetIndex(focus), num_subsets, inv);

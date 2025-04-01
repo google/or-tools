@@ -20,12 +20,13 @@
 #include "absl/flags/usage.h"
 #include "absl/log/globals.h"
 #include "absl/log/initialize.h"
+#include "absl/strings/string_view.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
 
 namespace operations_research {
-void CppBridge::InitLogging(const std::string& usage) {
+void CppBridge::InitLogging(absl::string_view usage) {
   absl::SetProgramUsageMessage(usage);
   absl::InitializeLog();
 }
@@ -41,7 +42,7 @@ void CppBridge::SetFlags(const CppFlags& flags) {
   absl::SetFlag(&FLAGS_cp_model_dump_response, flags.cp_model_dump_response);
 }
 
-bool CppBridge::LoadGurobiSharedLibrary(const std::string& full_library_path) {
+bool CppBridge::LoadGurobiSharedLibrary(absl::string_view full_library_path) {
   return LoadGurobiDynamicLibrary({full_library_path}).ok();
 }
 
