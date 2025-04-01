@@ -14,24 +14,22 @@
 #ifndef OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_CFT_H
 #define OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_CFT_H
 
+#include <absl/algorithm/container.h>
 #include <absl/base/internal/pretty_function.h>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
+#include "ortools/set_cover/set_cover_views.h"
 
 namespace operations_research::scp {
+
+using Model = SetCoverModel;
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////// COMMON DEFINITIONS //////////////////////////
 ////////////////////////////////////////////////////////////////////////
-
-// Mappings to translate btween models with different indices.
-using SubsetMapVector = util_intops::StrongVector<SubsetIndex, SubsetIndex>;
-using ElementMapVector = util_intops::StrongVector<ElementIndex, ElementIndex>;
-using Model = SetCoverModel;
 
 class Solution {
  public:
@@ -99,12 +97,84 @@ struct PrimalDualState {
   DualState dual_state;
 };
 
-class CoreModel : public Model {
+// The SubModelView abstraction provides a mechanism to interact with a subset
+// of the rows and columns of a SetCoverModel, effectively creating a filtered
+// view of the model. This abstraction allows operations to be performed on a
+// restricted portion of the model without modifying the original data
+// structure.
+//
+// The filtering is achieved using index lists and boolean vectors, which define
+// the active rows and columns. These filters are applied dynamically, meaning
+// that the views are constructed on-the-fly as needed, based on the provided
+// indices and flags. This approach ensures flexibility and avoids unnecessary
+// duplication of data.
+//
+// To optimize performance, all the underneath views handle explicitly the
+// "identity view" case (where no filtering is applied, and the view represents
+// the entire model). In this scenario, explicit boolean flags
+// (`col_view_is_valid_` and `row_view_is_valid_`) are used to indicate that the
+// views are unfiltered. This allows the compiler to optimize operations by
+// treating the identity view as a special case, enabling techniques like loop
+// hoisting.
+class SubModelView {
  public:
-  template <typename... Args>
-  CoreModel(Args&&... args) : Model(std::forward<Args>(args)...) {}
-  virtual bool UpdateCore(PrimalDualState& state) = 0;
-  virtual ~CoreModel() = default;
+  SubModelView(const Model& model) { RestoreFullModel(model); }
+
+  virtual ~SubModelView() = default;
+
+  auto subset_costs() const
+      -> IndexListView<SubsetCostVector, std::vector<SubsetIndex>> {
+    return IndexListView(model_->subset_costs(), &columns_focus_);
+  }
+  auto columns() const
+      -> SparseFilteredView<SparseColumnView, std::vector<SubsetIndex>,
+                            ElementBoolVector> {
+    return SparseFilteredView(model_->columns(), columns_focus(), rows_flags());
+  }
+  auto rows() const
+      -> SparseFilteredView<SparseRowView, std::vector<ElementIndex>,
+                            SubsetBoolVector> {
+    return SparseFilteredView(model_->rows(), rows_focus(), columns_flags());
+  }
+  auto SubsetRange() const
+      -> IndexListView<IntRange<SubsetIndex>, std::vector<SubsetIndex>> {
+    return IndexListView(all_columns_range_, columns_focus());
+  }
+  auto ElementRange() const
+      -> IndexListView<IntRange<ElementIndex>, std::vector<ElementIndex>> {
+    return IndexListView(all_rows_range_, rows_focus());
+  }
+
+  virtual void RestoreFullModel(const Model& model);
+  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+  virtual bool UpdateCore(PrimalDualState& state) { return false; }
+
+ private:
+  const std::vector<SubsetIndex>* columns_focus() const {
+    return col_view_is_valid_ ? &columns_focus_ : nullptr;
+  };
+  const std::vector<ElementIndex>* rows_focus() const {
+    return row_view_is_valid_ ? &rows_focus_ : nullptr;
+  };
+  const SubsetBoolVector* columns_flags() const {
+    return col_view_is_valid_ ? &columns_flags_ : nullptr;
+  };
+  const ElementBoolVector* rows_flags() const {
+    return row_view_is_valid_ ? &rows_flags_ : nullptr;
+  };
+
+  const Model* model_;
+  bool col_view_is_valid_;
+  bool row_view_is_valid_;
+  IntRange<SubsetIndex> all_columns_range_;
+  IntRange<ElementIndex> all_rows_range_;
+  std::vector<SubsetIndex> columns_focus_;
+  std::vector<ElementIndex> rows_focus_;
+  SubsetBoolVector columns_flags_;
+  ElementBoolVector rows_flags_;
+
+  std::vector<SubsetIndex> fixed_columns_;
+  Cost fixed_cost_;
 };
 
 // In the narrow scope of the CFT subgradient, there are often divisions
@@ -142,7 +212,7 @@ class SubgradientCBs {
   virtual void RunHeuristic(const SubgradientContext&, Solution&) = 0;
   virtual void ComputeMultipliersDelta(const SubgradientContext&,
                                        ElementCostVector& delta_mults) = 0;
-  virtual bool UpdateCoreModel(CoreModel&, PrimalDualState&) = 0;
+  virtual bool UpdateCoreModel(SubModelView&, PrimalDualState&) = 0;
   virtual ~SubgradientCBs() = default;
 };
 
@@ -159,7 +229,7 @@ class BoundCBs : public SubgradientCBs {
                     Solution& solution) override {
     solution.Clear();
   }
-  bool UpdateCoreModel(CoreModel& core_model,
+  bool UpdateCoreModel(SubModelView& core_model,
                        PrimalDualState& best_state) override;
 
  private:
@@ -186,7 +256,7 @@ class BoundCBs : public SubgradientCBs {
   BaseInt step_size_update_period_;
 };
 
-void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
+void SubgradientOptimization(SubModelView& core_model, SubgradientCBs& cbs,
                              PrimalDualState& best_state);
 
 ////////////////////////////////////////////////////////////////////////
@@ -216,7 +286,7 @@ class HeuristicCBs : public SubgradientCBs {
                     Solution& solution) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
-  bool UpdateCoreModel(CoreModel& model, PrimalDualState& state) override {
+  bool UpdateCoreModel(SubModelView& model, PrimalDualState& state) override {
     return false;
   }
 
@@ -226,13 +296,13 @@ class HeuristicCBs : public SubgradientCBs {
 };
 
 absl::StatusOr<PrimalDualState> RunThreePhase(
-    CoreModel& model, const Solution& init_solution = {});
+    SubModelView& model, const Solution& init_solution = {});
 
 ///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-class FullToCoreModel : public CoreModel {
+class FullToCoreModel : public SubModelView {
   struct UpdateTrigger {
     BaseInt countdown;
     BaseInt period;
